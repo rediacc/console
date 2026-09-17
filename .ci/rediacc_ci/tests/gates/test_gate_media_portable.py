@@ -1,48 +1,25 @@
 r"""Port of `.ci/scripts/test/gates/test-media-portable.sh`.
 
-`.ci/media/portable.sh`, the seams where this pipeline names a system tool that is
-spelled differently, or does not exist, off Linux.
+`.ci/media/portable.sh`, the seams where this pipeline names a system tool that is spelled differently, or does not exist, off Linux.
 
-WHY A SEAM MODULE NEEDS A GATE MORE THAN MOST CODE DOES. Its whole value is in the
-branch that never runs here. `stat -c %Y` works on this host, so does `nproc`, so
+WHY A SEAM MODULE NEEDS A GATE MORE THAN MOST CODE DOES. Its whole value is in the branch that never runs here. `stat -c %Y` works on this host, so does `nproc`, so
 does `sha256sum`; a test that only calls the seams on this machine proves that the
-GNU spelling still works, which nobody doubted, and says nothing at all about the
-fallbacks that are the reason the file exists. So every seam is driven THREE ways:
-the platform spelling this host has, the fallback spelling with the first one hidden
+GNU spelling still works, which nobody doubted, and says nothing at all about the fallbacks that are the reason the file exists. So every seam is driven THREE ways: the platform spelling this host has, the fallback spelling with the first one hidden
 from PATH, and the case where NOTHING answers, which must produce a named refusal
-rather than an empty string. The third is the one that matters: the defect this
-module was written to close was `stat -c %Y` returning nothing into `$(( now -  ))`,
-and "nothing" is what a fallback chain produces when its last link also fails
-silently.
+rather than an empty string. The third is the one that matters: the defect this module was written to close was `stat -c %Y` returning nothing into `$(( now - ))`, and "nothing" is what a fallback chain produces when its last link also fails silently.
 
-THE FOURTH CASE IS THE ONE THAT KEEPS THE OTHERS TRUE. Seams do not decay by
-breaking, they decay by being BYPASSED: the next person writes `stat -c %Y` inline
-because it works on the machine in front of them, and portable.sh becomes a file that
-three call sites use and eleven do not. `test_no_unseamed_platform_tool_remains_in_this_folder`
-scans the whole folder and refuses any un-seamed spelling, so the careless version is
-not available rather than merely discouraged.
+THE FOURTH CASE IS THE ONE THAT KEEPS THE OTHERS TRUE. Seams do not decay by breaking, they decay by being BYPASSED: the next person writes `stat -c %Y` inline because it works on the machine in front of them, and portable.sh becomes a file that three call sites use and eleven do not. `test_no_unseamed_platform_tool_remains_in_this_folder` scans the whole folder and refuses any
+un-seamed spelling, so the careless version is not available rather than merely discouraged.
 
-THE SCAN IS REIMPLEMENTED, AND THAT IS THE INTERESTING PART OF THIS PORT. The twin
-spells it as a `grep -rnE` with an eleven-branch alternation, piped through three
-`grep -v` filters. This module runs the SAME eleven branches as one Python regex over
-the same files, with the same three exclusions, and the fifth case below is what
-makes the two agree rather than merely look alike: it plants every one of the eleven
-spellings, requires each to be found, plants a COMMENT naming them and requires
-silence, and plants five near-miss portable forms and requires silence again. Both
-directions, on both spellings.
+THE SCAN IS REIMPLEMENTED, AND THAT IS THE INTERESTING PART OF THIS PORT. The twin spells it as a `grep -rnE` with an eleven-branch alternation, piped through three `grep -v` filters. This module runs the SAME eleven branches as one Python regex over the same files, with the same three exclusions, and the fifth case below is what makes the two agree rather than merely look alike:
+it plants every one of the eleven spellings, requires each to be found, plants a COMMENT naming them and requires silence, and plants five near-miss portable forms and requires silence again. Both directions, on both spellings.
 
-There is a house reason to prefer Python here beyond tidiness. `grep -E` on this host
-is ugrep 7.5.0, which returns SILENT FALSE ZEROS when `^` is alternated with a negated
-character class -- exactly the shape of the twin's `grep -vE '^[^:]+:[0-9]+:\s*#'`
-comment filter. A comment filter that quietly matched nothing would make the scan
-report the seam module's own explanations as findings, which the twin's own control
+There is a house reason to prefer Python here beyond tidiness. `grep -E` on this host is ugrep 7.5.0, which returns SILENT FALSE ZEROS when `^` is alternated with a negated character class -- exactly the shape of the twin's `grep -vE '^[^:]+:[0-9]+:\s*#'` comment filter. A comment filter that quietly matched nothing would make the scan report the seam module's own explanations as
+findings, which the twin's own control
 would catch; a filter that quietly matched EVERYTHING would suppress every finding,
-which nothing on the bash side is watching for. Python's `re` has no such behaviour,
-and the planted-spelling case pins it either way.
+which nothing on the bash side is watching for. Python's `re` has no such behaviour, and the planted-spelling case pins it either way.
 
-Nothing here needs docker, node, npm, nvcc, aws, ssh, a GPU or a network. The
-fallbacks are driven with scripted fakes on an emptied PATH, and the refusals with an
-emptied PATH and a meminfo path that points at nothing.
+Nothing here needs docker, node, npm, nvcc, aws, ssh, a GPU or a network. The fallbacks are driven with scripted fakes on an emptied PATH, and the refusals with an emptied PATH and a meminfo path that points at nothing.
 
 NO `xdist_group`. `fake_bin` mutates PATH on this process and restores it in a
 `finally`; every case owns its own `mktemp -d`, and the real `.ci/media` folder is
@@ -75,18 +52,10 @@ COMMENT = re.compile(r"^\s*#")
 def probe_portable(gate, code: str) -> harness.RunResult:
     """Source ONLY portable.sh in a fresh bash and run `code`. Streams MERGED.
 
-    FRESH, because `MEDIA_SHA256` is resolved at SOURCE time by a `command -v` probe:
-    a fallback test has to source the module again with the emptied PATH in effect,
-    not reuse the array an earlier source produced.
+    FRESH, because `MEDIA_SHA256` is resolved at SOURCE time by a `command -v` probe: a fallback test has to source the module again with the emptied PATH in effect, not reuse the array an earlier source produced.
 
-    THE COVERAGE PRELUDE IS SPLICED IN, and leaving it out was a measurement defect
-    rather than a style slip. This file does not go through `media_run_module` -- it
-    needs a shell that sources ONLY portable.sh -- so it never inherited the
-    `MEDIA_COVERAGE_FILE` seam, and `.ci/media/coverage.sh` therefore reported
-    portable.sh at 7 PERCENT while a 260-line gate test drove every seam in it three
-    ways. That number was not a fact about the tests, it was a fact about the
-    instrument. The prelude is empty when the variable is unset, so a normal run is
-    unchanged, and the trace goes to descriptor 9 rather than onto the streams below.
+    THE COVERAGE PRELUDE IS SPLICED IN, and leaving it out was a measurement defect rather than a style slip. This file does not go through `media_run_module` -- it needs a shell that sources ONLY portable.sh -- so it never inherited the `MEDIA_COVERAGE_FILE` seam, and `.ci/media/coverage.sh` therefore reported portable.sh at 7 PERCENT while a 260-line gate test drove every seam in
+    it three ways. That number was not a fact about the tests, it was a fact about the instrument. The prelude is empty when the variable is unset, so a normal run is unchanged, and the trace goes to descriptor 9 rather than onto the streams below.
     """
     if not MODULE.is_file():
         gate.log_fail("subject under test is missing: %s" % MODULE)
@@ -183,9 +152,7 @@ def test_every_seam_answers_on_this_host(gate):
 def stage_bsd_host(bindir) -> None:
     """A PATH that looks like macOS: no nproc, no sha256sum, and a REFUSING `stat`.
 
-    Faking the refusal rather than simply omitting `stat` is what makes this a
-    fallback test -- GNU stat exits 1 on `-f`, BSD stat exits 1 on `-c`, and the seam
-    has to try the second AFTER the first fails rather than after it is absent.
+    Faking the refusal rather than simply omitting `stat` is what makes this a fallback test -- GNU stat exits 1 on `-f`, BSD stat exits 1 on `-c`, and the seam has to try the second AFTER the first fails rather than after it is absent.
     """
     write_exec(
         bindir / "stat",
@@ -351,10 +318,7 @@ def test_no_unseamed_platform_tool_remains_in_this_folder(gate):
 def test_the_unseamed_scan_can_fail(gate):
     """CONTROL, in both directions.
 
-    A pattern-based invariant is the shape that goes quiet most easily: change a
-    character class and it matches nothing while still reporting success. Plant one of
-    each spelling in a COPY of the folder and require every one to be found, then
-    confirm the scan is silent on the copy once they are removed.
+    A pattern-based invariant is the shape that goes quiet most easily: change a character class and it matches nothing while still reporting success. Plant one of each spelling in a COPY of the folder and require every one to be found, then confirm the scan is silent on the copy once they are removed.
     """
     gate.log_test("CONTROL: the scan must find every planted spelling and refuse none in use")
     with harness.temp_dir() as d:

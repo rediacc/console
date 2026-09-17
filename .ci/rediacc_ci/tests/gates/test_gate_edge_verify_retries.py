@@ -2,19 +2,12 @@
 
 Assert the edge smoke test cannot be failed by ONE unlucky sample.
 
-WHY THIS EXISTS, AND WHY IT IS A PR GATE. On 2026-08-08 release run 31234422166
-deployed edge successfully and then failed
-`edge.rediacc.com footer does not render v1.2.19` -- while edge was ALREADY serving
-v1.2.19. The assertion sampled an eventually-consistent CDN exactly once, moments
-after the deploy, and lost the race. The failure cascaded: `Tag & GitHub Release`
-was skipped, so a good release shipped with NO git tag and NO GitHub Release.
+WHY THIS EXISTS, AND WHY IT IS A PR GATE. On 2026-08-08 release run 31234422166 deployed edge successfully and then failed `edge.rediacc.com footer does not render v1.2.19` -- while edge was ALREADY serving v1.2.19. The assertion sampled an eventually-consistent CDN exactly once, moments after the deploy, and lost the race. The failure cascaded: `Tag & GitHub Release` was skipped,
+so a good release shipped with NO git tag and NO GitHub Release.
 
-`verify-edge-endpoints.sh` runs ONLY from cd-v2.yml, which is dispatch-only and
-main-only. So the DEPLOY it verifies genuinely cannot be exercised on a PR -- and
-that was the reasoning that nearly left this unguarded. The reasoning was wrong.
+`verify-edge-endpoints.sh` runs ONLY from cd-v2.yml, which is dispatch-only and main-only. So the DEPLOY it verifies genuinely cannot be exercised on a PR -- and that was the reasoning that nearly left this unguarded. The reasoning was wrong.
 The defect was never "edge served the wrong version"; it was "the assertion samples
-once". That is a property of a shell script, and a shell script can be driven
-against a FAKE curl on any PR, with no deploy at all.
+once". That is a property of a shell script, and a shell script can be driven against a FAKE curl on any PR, with no deploy at all.
 
 WHAT IT ASSERTS
   1. RETRIES     a surface that is stale then correct is ACCEPTED (the incident).
@@ -22,13 +15,9 @@ WHAT IT ASSERTS
                  have become "eventually pass no matter what".
   3. NO BARE     no assertion still reads a network surface exactly once.
 
-CONTROL-FIRST: assertion 1 is re-run against a copy with the retry stripped, and
-MUST fail there. If the planted defect passes, this gate declares ITSELF broken.
+CONTROL-FIRST: assertion 1 is re-run against a copy with the retry stripped, and MUST fail there. If the planted defect passes, this gate declares ITSELF broken.
 
-THE TWIN IS A FLAT SCRIPT with no `test_*()` functions, so the port chooses the
-split: one pytest test per numbered assertion above, plus the control. Every
-`log_pass` line in the twin survives, one per test, which is what
-`test_twin_parity.py` counts.
+THE TWIN IS A FLAT SCRIPT with no `test_*()` functions, so the port chooses the split: one pytest test per numbered assertion above, plus the control. Every `log_pass` line in the twin survives, one per test, which is what `test_twin_parity.py` counts.
 """
 
 import pathlib
@@ -59,8 +48,7 @@ def fetch_retry_source() -> str:
 def run_case(fn_source: str, fails: int, retries: int, state: pathlib.Path) -> bool:
     """True when `fetch_retry` ACCEPTS a predicate that fails `fails` times first.
 
-    The predicate counts its own invocations in a file, so "how many samples did
-    it take" is a property of the fixture rather than of the shell's memory.
+    The predicate counts its own invocations in a file, so "how many samples did it take" is a property of the fixture rather than of the shell's memory.
     """
     state.write_text("0\n", encoding="utf-8")
     program = (
@@ -84,8 +72,7 @@ def run_case(fn_source: str, fails: int, retries: int, state: pathlib.Path) -> b
 def test_the_extractor_matches_the_twins_awk(gate):
     """CONTROL FOR THE PORT ITSELF. The twin extracts the function with an awk
     RANGE (`/^fetch_retry\\(\\) \\{/,/^\\}/`); this file uses a Python regex. A
-    port that swaps the reader without comparing it against the original has
-    replaced a tested extractor with an untested one, and every case below would
+    port that swaps the reader without comparing it against the original has replaced a tested extractor with an untested one, and every case below would
     then be exercising whatever the new one happened to grab."""
     awk = harness.run(["awk", r"/^fetch_retry\(\) \{/,/^\}/", str(TARGET)])
     gate.assert_exit_code(0, awk.rc, "the twin's awk still runs")

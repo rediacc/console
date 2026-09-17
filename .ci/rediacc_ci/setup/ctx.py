@@ -1,27 +1,14 @@
 """The one seam every ported setup phase reaches the machine through.
 
-WHY A SEAM AND NOT `shutil.which` EVERYWHERE. The bash this replaces is proven
-by driving it, not by reading it: `.ci/rediacc_ci/setup/shadow_driver.py` runs
+WHY A SEAM AND NOT `shutil.which` EVERYWHERE. The bash this replaces is proven by driving it, not by reading it: `.ci/rediacc_ci/setup/shadow_driver.py` runs
 `bash -c 'source .ci/lib/setup.sh; setup_node_toolchain'` beside the Python and
-compares. The bash side can only be steered by PATH and by the environment,
-because there is nothing else to inject into a sourced function. So the Python
-side must be steerable by exactly the same two things and by NOTHING ELSE. A
-port that reads `shutil.which` (which consults `os.environ` at call time, but
-also caches nothing and ignores an env dict a caller hands it) or `os.isatty(0)`
-directly cannot be pointed at a fixture the way the bash can, and the
-differential would then be comparing two different questions.
+compares. The bash side can only be steered by PATH and by the environment, because there is nothing else to inject into a sourced function. So the Python side must be steerable by exactly the same two things and by NOTHING ELSE. A port that reads `shutil.which` (which consults `os.environ` at call time, but also caches nothing and ignores an env dict a caller hands it) or
+`os.isatty(0)` directly cannot be pointed at a fixture the way the bash can, and the differential would then be comparing two different questions.
 
-Hence: every probe in this package goes through a `Ctx`. `Ctx.which` resolves
-against `ctx.env["PATH"]`, `Ctx.run` passes `ctx.env` down, and `ctx.stdin_tty`
-is a value rather than a call. Point both sides at the same PATH and the same
-env and they are answering the same question about the same machine.
+Hence: every probe in this package goes through a `Ctx`. `Ctx.which` resolves against `ctx.env["PATH"]`, `Ctx.run` passes `ctx.env` down, and `ctx.stdin_tty` is a value rather than a call. Point both sides at the same PATH and the same env and they are answering the same question about the same machine.
 
-WHAT IS DELIBERATELY NOT HERE. No installer, no sudo, no network. Those live in
-the phase modules, are guarded by `ctx.stdin_tty` and `ctx.confirm`, and in the
-differential they are never reached: both sides run with stdin closed, which is
-the branch that PRINTS the command instead of running it. That is the branch
-this repository's users meet most often (an agent session, a CI checkout, a
-piped run), and it is the only branch a differential can honestly drive.
+WHAT IS DELIBERATELY NOT HERE. No installer, no sudo, no network. Those live in the phase modules, are guarded by `ctx.stdin_tty` and `ctx.confirm`, and in the differential they are never reached: both sides run with stdin closed, which is the branch that PRINTS the command instead of running it. That is the branch this repository's users meet most often (an agent session, a CI
+checkout, a piped run), and it is the only branch a differential can honestly drive.
 """
 
 from __future__ import annotations
@@ -49,9 +36,7 @@ DEFAULT_TIMEOUT = 30
 class Result:
     """One finished child. `out` and `err` are text, never bytes.
 
-    `rc` is the exit status, or 124 for a timeout, which is what coreutils
-    `timeout` returns and therefore what every bash caller in this tree already
-    branches on.
+    `rc` is the exit status, or 124 for a timeout, which is what coreutils `timeout` returns and therefore what every bash caller in this tree already branches on.
     """
 
     rc: int
@@ -73,8 +58,7 @@ class Ctx:
 
     `env` is a COPY the caller owns. Nothing here writes to `os.environ`: the
     bash mutates its own process env with `export PATH=...` after installing
-    node, and the Python equivalent is mutating `ctx.env`, which keeps the
-    blast radius inside the object the differential controls.
+    node, and the Python equivalent is mutating `ctx.env`, which keeps the blast radius inside the object the differential controls.
     """
 
     root: pathlib.Path
@@ -95,9 +79,7 @@ class Ctx:
         """`command -v <name>`, resolved against THIS ctx's PATH.
 
         `shutil.which(name, path=...)` and not the bare form: the bare form
-        reads `os.environ["PATH"]`, which is the process's PATH and not the
-        fixture's, and a probe that ignores the fixture is a probe that reports
-        on the developer's laptop while claiming to report on the tree.
+        reads `os.environ["PATH"]`, which is the process's PATH and not the fixture's, and a probe that ignores the fixture is a probe that reports on the developer's laptop while claiming to report on the tree.
         """
         return shutil.which(name, path=self.env.get("PATH", ""))
 
@@ -110,9 +92,7 @@ class Ctx:
     ) -> Result:
         """One child, both streams captured SEPARATELY, never merged.
 
-        Merging them is how progress text ends up parsed as data. Every caller
-        here reads exactly one of the two, and the other is still available when
-        the call fails, which is the only moment it matters.
+        Merging them is how progress text ends up parsed as data. Every caller here reads exactly one of the two, and the other is still available when the call fails, which is the only moment it matters.
         """
         # `stdin=` AND `input=` TOGETHER IS A ValueError, not a preference:
         # `subprocess.run` refuses the pair outright ("stdin and input arguments may not both be used"). Found by running this driver rather than by reading it, which is the whole reason the differential exists. The two cases are therefore built separately: no input means stdin is CLOSED, which is what makes every `[[ -t 0 ]]` branch in the bash take its non-interactive arm here
@@ -165,10 +145,7 @@ class Ctx:
         """`prompt_continue`, .ci/lib/local-common.sh:371.
 
         `read -p "$message (y/N): " response; [[ "$response" =~ ^[yY]$ ]]` --
-        so ONE character, y or Y, and nothing else. `yes` is a NO there, and
-        that surprising detail is carried rather than improved: the differential
-        would catch the improvement as a disagreement, and the bash is the
-        specification until the day the bash is gone.
+        so ONE character, y or Y, and nothing else. `yes` is a NO there, and that surprising detail is carried rather than improved: the differential would catch the improvement as a disagreement, and the bash is the specification until the day the bash is gone.
         """
         if self.answer is not None:
             return self.answer

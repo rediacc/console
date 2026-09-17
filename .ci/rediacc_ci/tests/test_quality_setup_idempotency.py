@@ -1,10 +1,6 @@
 """`rediacc_ci.quality.setup_idempotency` against the awk and shell it replaces.
 
-WHAT THIS FILE COVERS. The function-body extractor (an awk one-liner whose exact
-stop condition matters), the two settle oracles that decide whether a tree delta
-belongs to `setup --check` or to a neighbouring gate, and the four assertions
-that read a file rather than running one. The whole gate, including the E and C
-subprocesses, is covered by
+WHAT THIS FILE COVERS. The function-body extractor (an awk one-liner whose exact stop condition matters), the two settle oracles that decide whether a tree delta belongs to `setup --check` or to a neighbouring gate, and the four assertions that read a file rather than running one. The whole gate, including the E and C subprocesses, is covered by
 `.ci/shadow/w7p2-setup-idempotency.observations.jsonl` over five distinct trees.
 """
 
@@ -44,9 +40,7 @@ def test_function_body_matches_awk(tmp_path: pathlib.Path, source: str, name: st
 def test_the_settle_oracle_ignores_a_neighbour_and_catches_a_real_change() -> None:
     """Two false accusations produced this shape; both are asserted here.
 
-    2026-08-31: another gate's pid-suffixed fixture landed between the two
-    snapshots. 2026-09-03: a TRACKED file the filter had no pattern for was open
-    across them. The answer is a settle poll SCOPED to the delta paths.
+    2026-08-31: another gate's pid-suffixed fixture landed between the two snapshots. 2026-09-03: a TRACKED file the filter had no pattern for was open across them. The answer is a settle poll SCOPED to the delta paths.
     """
     before = "?? a.txt"
     after = "?? a.txt\n?? scratch.tmp"
@@ -72,8 +66,7 @@ def test_the_fixture_noise_filter_is_narrow() -> None:
 def test_check_g_judges_the_code_not_the_prose(tmp_path: pathlib.Path) -> None:
     """ORDER is the invariant, and comments are stripped before it is judged.
 
-    The first version matched "private/renet/go.mod" inside the comment that
-    EXPLAINS the ordering and concluded the correct code was broken.
+    The first version matched "private/renet/go.mod" inside the comment that EXPLAINS the ordering and concluded the correct code was broken.
     """
     report = mod.Report(colour={"RED": "", "GREEN": "", "NC": ""})
     ordered = tmp_path / "ordered.sh"

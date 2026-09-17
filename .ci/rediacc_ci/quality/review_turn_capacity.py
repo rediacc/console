@@ -62,10 +62,7 @@ THE FLOOR IS ANCHORED TO MEASUREMENT, NOT TASTE, and the twin says how:
     (22.0/KLOC), so the floor sits between them, nearer the survivor. Raising it
     is safe; lowering it below 17.8 would re-admit the exact diff that failed.
 
-THE EXTRACTION IS BY ANCHOR ON PURPOSE: "so a rename or rewrite breaks THIS gate
-loudly instead of silently leaving it testing a stale copy pasted in here." That
-is the whole reason the gate reads the real file rather than carrying its own
-copy of the budget function.
+THE EXTRACTION IS BY ANCHOR ON PURPOSE: "so a rename or rewrite breaks THIS gate loudly instead of silently leaving it testing a stale copy pasted in here." That is the whole reason the gate reads the real file rather than carrying its own copy of the budget function.
 
 THE `|| true` INSIDE `turns_for` IS LOAD-BEARING, and the twin records why:
 
@@ -81,32 +78,17 @@ PORT NOTES.
 
 THE PORT STILL RUNS BASH, AND THAT IS THE POINT. `emit_review_turns` is a bash
 function in a bash file; the gate's claim is about what THAT function does, not
-about a Python re-derivation of its arithmetic. Re-implementing the budget here
-would produce a gate that agrees with itself and says nothing about the file it
-names. So the port assembles the same harness the twin assembles -- `gh` stubbed
-to echo a size, `log_info` silenced, `GITHUB_OUTPUT` a temporary file -- and runs
-the extracted text.
+about a Python re-derivation of its arithmetic. Re-implementing the budget here would produce a gate that agrees with itself and says nothing about the file it names. So the port assembles the same harness the twin assembles -- `gh` stubbed to echo a size, `log_info` silenced, `GITHUB_OUTPUT` a temporary file -- and runs the extracted text.
 
 COLOUR IS UNCONDITIONAL IN THIS GATE, exactly as in the twin, which assigns
 `RED=$'\033[0;31m'` with no tty test and never sources `common.sh`. Using
-`rediacc_ci.log` would decide colour by `isatty` and change the bytes on every
-non-tty run, so the port prints raw with the twin's own sequences. Reported as an
-inconsistency in the twin rather than repaired here.
+`rediacc_ci.log` would decide colour by `isatty` and change the bytes on every non-tty run, so the port prints raw with the twin's own sequences. Reported as an inconsistency in the twin rather than repaired here.
 
-`printf '  %s\n' "$REAL_OUT"` INDENTS ONLY THE FIRST LINE. A single multi-line
-argument is one `%s`, so the second and later findings come out flush left. That
-reads as a bug and is carried, because the differential compares finding text and
-"fixing" it here would be a behaviour change wearing a tidy-up's clothes.
+`printf ' %s\n' "$REAL_OUT"` INDENTS ONLY THE FIRST LINE. A single multi-line argument is one `%s`, so the second and later findings come out flush left. That reads as a bug and is carried, because the differential compares finding text and "fixing" it here would be a behaviour change wearing a tidy-up's clothes.
 
-INTEGER DIVISION IS FLOOR DIVISION ON BOTH SIDES. Bash `$((a / b))` truncates
-toward zero and every operand here is non-negative, so Python's `//` agrees. The
-density figure is therefore the same integer on both sides, including at the
-boundary where a rounding difference would move one probe size across the floor.
+INTEGER DIVISION IS FLOOR DIVISION ON BOTH SIDES. Bash `$((a / b))` truncates toward zero and every operand here is non-negative, so Python's `//` agrees. The density figure is therefore the same integer on both sides, including at the boundary where a rounding difference would move one probe size across the floor.
 
-THE 2>/dev/null ON THE INNER bash IS PRESERVED as a discarded stderr. Without it
-a stubbed-out `gh` writing to stderr, or a syntax error in a rewritten function,
-would leak into the gate's own output and be scored as a finding by anything
-parsing it.
+THE 2>/dev/null ON THE INNER bash IS PRESERVED as a discarded stderr. Without it a stubbed-out `gh` writing to stderr, or a syntax error in a rewritten function, would leak into the gate's own output and be scored as a finding by anything parsing it.
 """
 
 import os
@@ -171,10 +153,7 @@ NUMERIC = re.compile(r"^[0-9]+$")
 def extract_function(text: str) -> str:
     """The `emit_review_turns` body, by anchors, exactly as awk ranges it.
 
-    RETURNS THE EMPTY STRING when the anchors do not match, which is what makes
-    the twin's "renamed? rewritten?" refusal reachable. An exception here would
-    turn a rename into a stack trace, and a stack trace reads as flake rather
-    than as the loud breakage the anchor exists to produce.
+    RETURNS THE EMPTY STRING when the anchors do not match, which is what makes the twin's "renamed? rewritten?" refusal reachable. An exception here would turn a rename into a stack trace, and a stack trace reads as flake rather than as the loud breakage the anchor exists to produce.
     """
     out: list[str] = []
     inside = False
@@ -195,8 +174,7 @@ def extract_function(text: str) -> str:
 def harness(fn: str) -> str:
     """The bash program `turns_for` runs, with `fn` spliced in.
 
-    EVERY STUB HERE IS LOAD-BEARING. `gh` must be a FUNCTION rather than a script
-    on PATH, so the real `gh` cannot be reached even if it is installed and
+    EVERY STUB HERE IS LOAD-BEARING. `gh` must be a FUNCTION rather than a script on PATH, so the real `gh` cannot be reached even if it is installed and
     authenticated; `log_info` must exist because the subject calls it and an
     unbound command would take the whole probe down; `GITHUB_OUTPUT` must be a
     real file because the subject appends to it and reads nothing back.
@@ -216,11 +194,7 @@ def harness(fn: str) -> str:
 def turns_for(size: int, fn: str) -> str:
     """Run the REAL function with `gh` stubbed to report `size` lines changed.
 
-    Returns the budget as the STRING the twin's command substitution produces, or
-    `"0"` when nothing came back. A string rather than an int because TOTAL's
-    message quotes the raw value (`routed to a non-positive budget ('$turns')`),
-    and a port that parsed early would have to invent a spelling for the
-    unparseable case.
+    Returns the budget as the STRING the twin's command substitution produces, or `"0"` when nothing came back. A string rather than an int because TOTAL's message quotes the raw value (`routed to a non-positive budget ('$turns')`), and a port that parsed early would have to invent a spelling for the unparseable case.
     """
     env = dict(os.environ)
     env["FAKE_SIZE"] = str(size)
@@ -314,8 +288,7 @@ def fail(message: str) -> int:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 when all four properties hold, 1 otherwise.
 
-    `--selftest` is intercepted BEFORE the subject file is even read, so a tree
-    whose review gate has been renamed can still prove this file's own logic.
+    `--selftest` is intercepted BEFORE the subject file is even read, so a tree whose review gate has been renamed can still prove this file's own logic.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -413,8 +386,7 @@ _FIXTURE_HEALTHY = """emit_review_turns() {
 def selftest() -> int:
     """Both directions on the extraction and on all four properties.
 
-    THE FLOOR IS DERIVED, not typed: it counts the cases below, so a case that
-    stops running turns the suite red rather than quietly shortening it.
+    THE FLOOR IS DERIVED, not typed: it counts the cases below, so a case that stops running turns the suite red rather than quietly shortening it.
     """
     extraction = [
         ("the whole body, anchors included", _FIXTURE_HEALTHY, True),

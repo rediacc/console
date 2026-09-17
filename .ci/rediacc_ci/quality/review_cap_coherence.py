@@ -3,25 +3,16 @@
 Ported from `.ci/scripts/quality/check-review-cap-coherence.sh`, which is not
 deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHY THE TWIN EXISTS, carried over from its own header because the incident IS
-the specification. On 2026-08-07 PR #553 became green, ready, thread-clean and
-PERMANENTLY UNMERGEABLE. `review-status.sh` carries an explicit DEADLOCK GUARD
+WHY THE TWIN EXISTS, carried over from its own header because the incident IS the specification. On 2026-08-07 PR #553 became green, ready, thread-clean and PERMANENTLY UNMERGEABLE. `review-status.sh` carries an explicit DEADLOCK GUARD
 for exactly that outcome: when the cap is reached the marker can never advance,
-so it passes loudly instead of failing. The guard never fired, because the two
-scripts counted different numerators against the same cap:
+so it passes loudly instead of failing. The guard never fired, because the two scripts counted different numerators against the same cap:
 
     claude-review-gate.sh   posted + spent attempts  -> 3/3, refuses to review
     review-status.sh        posted reports only      -> 0/3, guard stays mute
 
-Each script's own logic was self-consistent and locally correct. The defect
-lived BETWEEN them, where no single-script check could see it, which is why this
-gate compares the two rather than validating either.
+Each script's own logic was self-consistent and locally correct. The defect lived BETWEEN them, where no single-script check could see it, which is why this gate compares the two rather than validating either.
 
-`lib/common.sh` was created to stop precisely this drift, and it half-worked: it
-shared the DENOMINATOR (`review_cap_for`) while the numerator stayed split
-across two files, one of which did not know spent attempts existed. Sharing a
-file is not the same as sharing the computation, so this gate checks the
-computation.
+`lib/common.sh` was created to stop precisely this drift, and it half-worked: it shared the DENOMINATOR (`review_cap_for`) while the numerator stayed split across two files, one of which did not know spent attempts existed. Sharing a file is not the same as sharing the computation, so this gate checks the computation.
 
 WHAT IT ASSERTS, unchanged by the port:
 
@@ -35,52 +26,28 @@ WHAT IT ASSERTS, unchanged by the port:
                         the branch that runs. This is the behavioural half:
                         1 to 3 could all hold while the guard was dead code.
 
-CONTROL-FIRST, and this is the property a port is most likely to lose. Before
-judging the tree the gate PLANTS the original defect (review-status counting
-posted reports alone) and requires the assertions to FAIL on it. If the planted
-defect passes, the gate declares ITSELF broken and exits non-zero. A green here
-therefore means the checks CAN fire, not merely that nothing tripped them.
+CONTROL-FIRST, and this is the property a port is most likely to lose. Before judging the tree the gate PLANTS the original defect (review-status counting posted reports alone) and requires the assertions to FAIL on it. If the planted defect passes, the gate declares ITSELF broken and exits non-zero. A green here therefore means the checks CAN fire, not merely that nothing tripped
+them.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE BEHAVIOURAL HALF STAYS IN BASH, AND IT HAS TO. Assertion 4 extracts the
-`currency_ok` branch out of `review-status.sh` by anchor and EXECUTES it, with
-`review_count` and `MAX_REVIEWS_PER_PR` both pinned to 3, inside a wrapper that
-stubs the loggers and inspects the two arrays afterwards. That branch is bash:
-it appends to a bash array, calls bash functions and reads bash parameter
-expansions. Reimplementing it in Python would mean reimplementing the thing
-under test, which is the one rewrite a differential cannot catch. So the port
-shells out to `bash -c` exactly as the twin does, with the same wrapper text.
+THE BEHAVIOURAL HALF STAYS IN BASH, AND IT HAS TO. Assertion 4 extracts the `currency_ok` branch out of `review-status.sh` by anchor and EXECUTES it, with `review_count` and `MAX_REVIEWS_PER_PR` both pinned to 3, inside a wrapper that stubs the loggers and inspects the two arrays afterwards. That branch is bash: it appends to a bash array, calls bash functions and reads bash
+parameter expansions. Reimplementing it in Python would mean reimplementing the thing under test, which is the one rewrite a differential cannot catch. So the port shells out to `bash -c` exactly as the twin does, with the same wrapper text.
 
-`$g$s` IS CONCATENATED WITHOUT A SEPARATOR, AND THAT IS CARRIED. The
-ONE-DEFINITION scan greps `<<<"$g$s"`, and `$(cat file)` has already stripped
-the trailing newline from `$g`, so the last line of claude-review-gate.sh and
-the FIRST line of review-status.sh are joined into one line. A helper redefined
-on line 1 of review-status.sh would therefore be invisible to the `^` anchor.
+`$g$s` IS CONCATENATED WITHOUT A SEPARATOR, AND THAT IS CARRIED. The ONE-DEFINITION scan greps `<<<"$g$s"`, and `$(cat file)` has already stripped the trailing newline from `$g`, so the last line of claude-review-gate.sh and the FIRST line of review-status.sh are joined into one line. A helper redefined on line 1 of review-status.sh would therefore be invisible to the `^` anchor.
 It is a shebang there today, so nothing is missed in practice; the port
-reproduces the join rather than quietly fixing it, and the defect is reported
-instead. Fixing it would change the verdict, which is not a port's business.
+reproduces the join rather than quietly fixing it, and the defect is reported instead. Fixing it would change the verdict, which is not a port's business.
 
-`printf '  %s\\n' "$REAL_OUT"` INDENTS ONLY THE FIRST LINE. printf receives ONE
-argument holding embedded newlines, so the two-space prefix is applied once and
-every subsequent finding is flush left. That is the twin's output and the port
-prints the same bytes. Also reported.
+`printf ' %s\\n' "$REAL_OUT"` INDENTS ONLY THE FIRST LINE. printf receives ONE argument holding embedded newlines, so the two-space prefix is applied once and every subsequent finding is flush left. That is the twin's output and the port prints the same bytes. Also reported.
 
 COLOUR IS UNCONDITIONAL IN THE TWIN. `RED=$'\\033[0;31m'` and its siblings are
-assigned with no `[ -t 1 ]` test and no `NO_COLOR` check, so escape sequences
-land in a pipe, in a file, and in the GitHub log viewer, which renders them as
-literal text. `rediacc_ci.log` exists to make that impossible, and this port
-deliberately does NOT use it: the differential compares output, and swapping in
-a tty-aware logger would make the two sides disagree for a reason that has
-nothing to do with the gate's verdict. The escapes are reproduced byte for byte
-and the defect is reported.
+assigned with no `[ -t 1 ]` test and no `NO_COLOR` check, so escape sequences land in a pipe, in a file, and in the GitHub log viewer, which renders them as literal text. `rediacc_ci.log` exists to make that impossible, and this port deliberately does NOT use it: the differential compares output, and swapping in a tty-aware logger would make the two sides disagree for a reason that
+has nothing to do with the gate's verdict. The escapes are reproduced byte for byte and the defect is reported.
 
 THE ROOT IS `paths.repo_root()`. The twin derives it from `${BASH_SOURCE[0]}`,
-three directories up. Both resolve to the same place from their own file's
-location, and the package-wide override is what lets the selftest point the gate
-at a fixture without inventing a ninth `*_ROOT` variable.
+three directories up. Both resolve to the same place from their own file's location, and the package-wide override is what lets the selftest point the gate at a fixture without inventing a ninth `*_ROOT` variable.
 """
 
 import os
@@ -150,17 +117,10 @@ _GUARD_ENV = {
 def _records(text: str) -> list[str]:
     """The lines awk would read as RECORDS, which is not `split("\\n")`.
 
-    A file ending in a newline has N records, not N+1: `"a\\nb\\n"` is two lines
-    to awk and three elements to `split`. The phantom third element is empty, so
-    it never matches a pattern, and every per-line grep in this module is
-    unaffected by it. `extract_guard` is NOT unaffected: it JOINS the records it
-    kept, and a trailing empty element becomes a trailing newline that
-    `$(awk ...)` would have stripped. That divergence shipped in a draft and the
-    pytest differential caught it on the unterminated-block case.
+    A file ending in a newline has N records, not N+1: `"a\\nb\\n"` is two lines to awk and three elements to `split`. The phantom third element is empty, so it never matches a pattern, and every per-line grep in this module is unaffected by it. `extract_guard` is NOT unaffected: it JOINS the records it kept, and a trailing empty element becomes a trailing newline that `$(awk ...)`
+    would have stripped. That divergence shipped in a draft and the pytest differential caught it on the unterminated-block case.
 
-    `splitlines()` is deliberately not used: it also splits on \\v, \\f, \\x1c and
-    U+2028, none of which awk treats as a record separator, so it would make the
-    port see records the twin does not.
+    `splitlines()` is deliberately not used: it also splits on \\v, \\f, \\x1c and U+2028, none of which awk treats as a record separator, so it would make the port see records the twin does not.
     """
     lines = text.split("\n")
     if lines and lines[-1] == "":
@@ -172,14 +132,9 @@ def extract_guard(status_src: str) -> str:
     """The `currency_ok` branch of review-status.sh, or "" when it is gone.
 
     `awk '/^if \\[\\[ "\\$currency_ok" == true \\]\\]/{f=1} f{print} f&&/^fi$/{exit}'`,
-    reproduced with its ordering intact: the terminating `fi` is PRINTED and
-    then the scan exits, so the block is complete and runnable. An
-    implementation that exited first would return a block with an unbalanced
-    `if`, which fails to parse and looks exactly like a broken guard.
+    reproduced with its ordering intact: the terminating `fi` is PRINTED and then the scan exits, so the block is complete and runnable. An implementation that exited first would return a block with an unbalanced `if`, which fails to parse and looks exactly like a broken guard.
 
-    Returns "" when the anchor is not found, which the caller reports as
-    "rewritten?" rather than as a passing guard: an extraction that found
-    nothing has tested nothing.
+    Returns "" when the anchor is not found, which the caller reports as "rewritten?" rather than as a passing guard: an extraction that found nothing has tested nothing.
     """
     out: list[str] = []
     started = False
@@ -197,11 +152,7 @@ def extract_guard(status_src: str) -> str:
 def run_guard(guard: str) -> str:
     """Execute the extracted branch at numerator == cap. Returns its stdout.
 
-    STDERR IS DISCARDED, matching the twin's `2>/dev/null`. That is a real loss
-    of information (a branch that failed to parse says so on stderr and is then
-    indistinguishable from one that simply did not fire) and it is preserved
-    because the finding text the gate prints, "got: nothing", is what a reader
-    acts on either way.
+    STDERR IS DISCARDED, matching the twin's `2>/dev/null`. That is a real loss of information (a branch that failed to parse says so on stderr and is then indistinguishable from one that simply did not fire) and it is preserved because the finding text the gate prints, "got: nothing", is what a reader acts on either way.
     """
     env = dict(os.environ)
     env.update(_GUARD_ENV)
@@ -221,12 +172,8 @@ def run_guard(guard: str) -> str:
 def evaluate(gate_src: str, status_src: str, lib_src: str) -> list[str]:
     """One string per failure, empty when the cap is measured coherently.
 
-    RETURNS A LIST RATHER THAN PRINTING, which is the twin's shape too: it
-    `echo`s findings on stdout and ALWAYS returns 0, with its own comment saying
-    why ("a non-zero return here would abort the whole gate under `set -e`
-    before it could print a single one"). The list makes that structural instead
-    of conventional, and it is what lets the control plant be judged by the same
-    code path as the real run.
+    RETURNS A LIST RATHER THAN PRINTING, which is the twin's shape too: it `echo`s findings on stdout and ALWAYS returns 0, with its own comment saying why ("a non-zero return here would abort the whole gate under `set -e` before it could print a single one"). The list makes that structural instead of conventional, and it is what lets the control plant be judged by the same code
+    path as the real run.
     """
     findings: list[str] = []
 
@@ -300,8 +247,7 @@ def fail(message: str) -> int:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 coherent, 1 otherwise.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no
-    arguments at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -418,10 +364,7 @@ fi
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY ASSERTION. The mirrors matter more here than in
-    most gates: four of the five checks are substring or anchored-regex tests
-    over shell source, and a substring test that has become too loose flags a
-    correct tree while still passing every positive plant.
+    BOTH DIRECTIONS FOR EVERY ASSERTION. The mirrors matter more here than in most gates: four of the five checks are substring or anchored-regex tests over shell source, and a substring test that has become too loose flags a correct tree while still passing every positive plant.
     """
     ctl = Controls("review-cap-coherence", floor=24, verbose=True)
 

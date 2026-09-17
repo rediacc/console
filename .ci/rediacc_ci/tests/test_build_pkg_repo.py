@@ -1,10 +1,7 @@
 """Differential: `.ci/rediacc_ci/build/build_pkg_repo.py` against its twin
 `.ci/scripts/build/build-pkg-repo.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that. This script's
-product is a published package repository, so "what it said" includes the FILES.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that. This script's product is a published package repository, so "what it said" includes the FILES.
 
 WHAT IS COMPARED, per case:
 
@@ -36,11 +33,7 @@ TWO NORMALISATIONS, AND WHY EACH IS NOT A LOOPHOLE.
   which is what proves the fallback path (`date -Ru`) is reached at all.
 
 THE DESTRUCTIVE TOOLS ARE FAKES, AND THE PATH IS REPLACED, NEVER PREPENDED.
-`gpg`, `dpkg-scanpackages`, `createrepo_c` and `docker` are recording stubs.
-`_binder` builds the ENTIRE PATH from a named list, then ASSERTS that the real
-`gpg` and the real `docker` are NOT reachable through it: a prepended PATH that
-silently fell through to the real docker would try to pull `alpine:latest`, and
-a case built to prove "docker is absent" would prove nothing.
+`gpg`, `dpkg-scanpackages`, `createrepo_c` and `docker` are recording stubs. `_binder` builds the ENTIRE PATH from a named list, then ASSERTS that the real `gpg` and the real `docker` are NOT reachable through it: a prepended PATH that silently fell through to the real docker would try to pull `alpine:latest`, and a case built to prove "docker is absent" would prove nothing.
 
 THE FIXTURE HOLDS COPIES OF BOTH SUBJECTS, because each derives the console root
 from its own location (`BASH_SOURCE`/`__file__`, three directories up). Driving
@@ -265,9 +258,7 @@ def _fixture(
 def _binder(where: pathlib.Path, *, with_docker: bool = True, gpg: bool = True) -> str:
     """The COMPLETE PATH for one run: real coreutils, symlinked, plus the fakes.
 
-    Every exclusion is ASSERTED. `--docker` absent is a whole test case (DEFECT
-    1), and a PATH that leaked the real docker would turn that case into an
-    attempt to pull `alpine:latest` over the network.
+    Every exclusion is ASSERTED. `--docker` absent is a whole test case (DEFECT 1), and a PATH that leaked the real docker would turn that case into an attempt to pull `alpine:latest` over the network.
     """
     binder = where / "bin"
     binder.mkdir(parents=True, exist_ok=True)
@@ -312,9 +303,7 @@ def _binder(where: pathlib.Path, *, with_docker: bool = True, gpg: bool = True) 
 def _normalise_release(text: str, *, mask_date: bool) -> str:
     """Mask what gzip's header makes unstable, and nothing else.
 
-    Only the DIGEST of a `.gz` row is masked. The size stays, the path stays, and
-    every non-`.gz` row is untouched, so a port that wrote a wrong `Packages`
-    index, dropped an architecture or reordered the rows still fails.
+    Only the DIGEST of a `.gz` row is masked. The size stays, the path stays, and every non-`.gz` row is untouched, so a port that wrote a wrong `Packages` index, dropped an architecture or reordered the rows still fails.
     """
     text = GZ_DIGEST_ROW.sub(r" <gz-digest> \1 \2", text)
     if mask_date:
@@ -566,8 +555,7 @@ def _assert_agree(old: dict[str, object], new: dict[str, object]) -> None:
     sides in full.
 
     A whole-dict `assert a == b` over the artifact map prints two multi-kilobyte
-    repr()s of binary content, which is unreadable and therefore unactionable.
-    This names the paths that differ and shows only those.
+    repr()s of binary content, which is unreadable and therefore unactionable. This names the paths that differ and shows only those.
     """
     for field in ("exit", "stdout", "stderr", "calls"):
         assert new[field] == old[field], "%s diverged:\n twin: %r\n port: %r" % (
@@ -592,8 +580,7 @@ def _assert_agree(old: dict[str, object], new: dict[str, object]) -> None:
 def test_the_fakes_are_actually_reached_and_the_repository_is_real(tmp_path):
     """ANTI-VACUITY, and it is the load-bearing test in this file.
 
-    Every comparison above is worthless if both sides did nothing. This pins the
-    SHAPE of a successful run: gpg imported, listed, verified the fingerprint and
+    Every comparison above is worthless if both sides did nothing. This pins the SHAPE of a successful run: gpg imported, listed, verified the fingerprint and
     produced three signatures; dpkg-scanpackages ran TWICE, from the pool's own
     directory; createrepo_c ran once; docker ran FOUR times, two images by two
     architectures. Then it names the files that must exist.
@@ -645,11 +632,7 @@ def test_the_fakes_are_actually_reached_and_the_repository_is_real(tmp_path):
 def test_a_docker_less_run_dies_before_it_finishes_and_both_sides_know_it(tmp_path):
     """DEFECT 1, named rather than left inside a parametrised diff.
 
-    The twin prints "Docker not available, cannot generate APKINDEX" and then
-    dies at `:389` with tar's status, so phase 7 never runs and the summary never
-    prints. This asserts all three: the status, the warning, and the ABSENCE of
-    the summary line -- because a port that warned and then carried on would
-    produce a BETTER program and a failing differential nobody could explain.
+    The twin prints "Docker not available, cannot generate APKINDEX" and then dies at `:389` with tar's status, so phase 7 never runs and the summary never prints. This asserts all three: the status, the warning, and the ABSENCE of the summary line -- because a port that warned and then carried on would produce a BETTER program and a failing differential nobody could explain.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("d1-%s" % subject.name))
@@ -671,8 +654,7 @@ def test_a_docker_less_run_dies_before_it_finishes_and_both_sides_know_it(tmp_pa
 def test_one_deb_publishes_three_empty_repositories_at_exit_zero(tmp_path):
     """DEFECT 2. The APT floor is the only floor, and this is what that costs.
 
-    Driven on BOTH sides, because the interesting claim is about the twin and the
-    port only has to agree with it.
+    Driven on BOTH sides, because the interesting claim is about the twin and the port only has to agree with it.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("d2-%s" % subject.name), packages="deb-only")
@@ -738,10 +720,7 @@ def test_a_zero_padded_floor_disables_the_refusal(tmp_path):
 def test_dry_run_writes_one_config_file_and_not_the_other(tmp_path):
     """DEFECT 4, both halves, on both sides.
 
-    `rpm/rediacc.repo` is written OUTSIDE the dry-run guard and
-    `archlinux/rediacc.conf` INSIDE it, so a "preview" leaves one behind. The
-    second half, found by driving: the `.rpm` PAYLOAD is copied too, because the
-    `find -exec cp` that populates the RPM repository is also outside the guard.
+    `rpm/rediacc.repo` is written OUTSIDE the dry-run guard and `archlinux/rediacc.conf` INSIDE it, so a "preview" leaves one behind. The second half, found by driving: the `.rpm` PAYLOAD is copied too, because the `find -exec cp` that populates the RPM repository is also outside the guard.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("d4-%s" % subject.name))
@@ -766,11 +745,7 @@ def test_dry_run_writes_one_config_file_and_not_the_other(tmp_path):
 def test_max_versions_without_a_value_dies_with_zero_bytes(tmp_path):
     """DEFECT 5, and the contrast that makes it a defect rather than a style.
 
-    `--max-versions` at the end of argv fails a `shift 2` and `set -e` ends the
-    run: exit 1, ZERO bytes on stdout, ZERO bytes on stderr. `--version` at the
-    end of argv names the line it died on. Both spellings are driven on both
-    sides, and the SILENT one is asserted silent, because a silent exit 1 is
-    indistinguishable from a gate failing for a real reason.
+    `--max-versions` at the end of argv fails a `shift 2` and `set -e` ends the run: exit 1, ZERO bytes on stdout, ZERO bytes on stderr. `--version` at the end of argv names the line it died on. Both spellings are driven on both sides, and the SILENT one is asserted silent, because a silent exit 1 is indistinguishable from a gate failing for a real reason.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("d5-%s" % subject.name))
@@ -795,11 +770,7 @@ def test_max_versions_without_a_value_dies_with_zero_bytes(tmp_path):
 def test_a_missing_flag_value_names_the_program_that_refused(tmp_path):
     """The other half of DEFECT 5's contrast, and divergence 1.
 
-    Every value-taking flag dies with bash's `$2: unbound variable` naming the
-    ASSIGNMENT'S line. The port prints the same sentence against its own path, so
-    the prefix is masked, the rest is compared byte for byte, and the two
-    unmasked strings are asserted DIFFERENT so the mask cannot start hiding a
-    real change.
+    Every value-taking flag dies with bash's `$2: unbound variable` naming the ASSIGNMENT'S line. The port prints the same sentence against its own path, so the prefix is masked, the rest is compared byte for byte, and the two unmasked strings are asserted DIFFERENT so the mask cannot start hiding a real change.
     """
     for flag, line in (
         ("--version", 40),
@@ -835,10 +806,7 @@ def test_a_missing_flag_value_names_the_program_that_refused(tmp_path):
 def test_two_apks_for_one_arch_collapse_into_one_published_file(tmp_path):
     """DEFECT 7, found by driving rather than by reading.
 
-    `apk_name` is recomputed inside the per-file loop from the SAME
-    `APKINDEX.tar.gz`, with an awk program that stops at the first `V:`. Every
-    file therefore lands on one name. Two `.apk` files in, one out, exit 0, no
-    warning.
+    `apk_name` is recomputed inside the per-file loop from the SAME `APKINDEX.tar.gz`, with an awk program that stops at the first `V:`. Every file therefore lands on one name. Two `.apk` files in, one out, exit 0, no warning.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("d7-%s" % subject.name), packages="two-apks-one-arch")
@@ -856,10 +824,7 @@ def test_two_apks_for_one_arch_collapse_into_one_published_file(tmp_path):
 def test_bash_arith_is_bashs_grammar_and_not_int(tmp_path):
     """The pure half, driven against BASH ITSELF rather than against a constant.
 
-    A constant copied out of the port cannot contradict the port. Each token is
-    compared through a real `[[ 0 -lt TOKEN ]]`, so the octal rule, the hex rule,
-    the bare-word rule and the "an error is FALSE" rule are all checked against
-    the interpreter whose behaviour is being reproduced.
+    A constant copied out of the port cannot contradict the port. Each token is compared through a real `[[ 0 -lt TOKEN ]]`, so the octal rule, the hex rule, the bare-word rule and the "an error is FALSE" rule are all checked against the interpreter whose behaviour is being reproduced.
     """
     del tmp_path
     for token in ("", "0", "1", "007", "0x10", "08", "09", "abc", " 5 ", "-3", "10"):
@@ -884,12 +849,9 @@ def test_bash_arith_is_bashs_grammar_and_not_int(tmp_path):
 def test_the_restated_constants_match_constants_sh():
     """The two values this port copies out of `.ci/config/constants.sh`.
 
-    A stale constant here is a repository published under the wrong package name
-    or pointing at the wrong host, so the alarm is not optional. The two are
-    parsed with DIFFERENT patterns on purpose: `PKG_NAME` is a bare `readonly`
+    A stale constant here is a repository published under the wrong package name or pointing at the wrong host, so the alarm is not optional. The two are parsed with DIFFERENT patterns on purpose: `PKG_NAME` is a bare `readonly`
     and `RELEASES_BASE_URL` is a `readonly X="${X:-default}"`, and the port
-    depends on that difference -- one is a constant, the other an overridable
-    default.
+    depends on that difference -- one is a constant, the other an overridable default.
     """
     text = CONSTANTS.read_text(encoding="utf-8")
 
@@ -915,8 +877,7 @@ def test_the_restated_constants_match_constants_sh():
 
 def test_source_common_exports_what_sourcing_the_library_would(monkeypatch):
     """`common.sh` runs on SOURCE, before line 28 of the twin, so every child
-    inherits `CI_OS`, `CI_ARCH` and `CI_TEMP`. Compared against the library
-    itself rather than against a constant, so a change to `detect_os` is caught.
+    inherits `CI_OS`, `CI_ARCH` and `CI_TEMP`. Compared against the library itself rather than against a constant, so a change to `detect_os` is caught.
     """
     monkeypatch.delenv("CI_OS", raising=False)
     monkeypatch.delenv("CI_ARCH", raising=False)
@@ -939,11 +900,7 @@ def test_the_harness_refuses_a_path_that_leaks_the_real_docker(tmp_path):
     """A CONTROL ON THE CONTROL.
 
     `_binder(with_docker=False)` is what makes the DEFECT 1 case mean anything.
-    If an exclusion silently failed, that case would run the REAL docker, try to
-    pull `alpine:latest`, and either hang or produce a divergence nobody could
-    attribute. The assertion inside `_binder` is exercised here by asking for the
-    exclusion and then checking it took, and by proving the INCLUSION resolves to
-    the fake rather than to `/usr/bin/docker`.
+    If an exclusion silently failed, that case would run the REAL docker, try to pull `alpine:latest`, and either hang or produce a divergence nobody could attribute. The assertion inside `_binder` is exercised here by asking for the exclusion and then checking it took, and by proving the INCLUSION resolves to the fake rather than to `/usr/bin/docker`.
     """
     without = _binder(tmp_path / "no", with_docker=False)
     assert shutil.which("docker", path=without) is None

@@ -1,9 +1,6 @@
 """`rediacc_ci.quality.editorconfig` against the shell and the awk it replaces.
 
-WHAT IS WORTH TESTING HERE, and it is not "does it see a CRLF". The shadow
-ledger `.ci/shadow/w7p2-editorconfig.observations.jsonl` drives the whole gate
-over five distinct trees carrying all four violation classes. What a ledger row
-cannot isolate is the two pieces that decide WHICH FILES ARE EVEN LOOKED AT:
+WHAT IS WORTH TESTING HERE, and it is not "does it see a CRLF". The shadow ledger `.ci/shadow/w7p2-editorconfig.observations.jsonl` drives the whole gate over five distinct trees carrying all four violation classes. What a ledger row cannot isolate is the two pieces that decide WHICH FILES ARE EVEN LOOKED AT:
 
   * the awk binary classifier, whose bug the twin's own header documents (a
     path containing the substring "binary" used to exempt a us-ascii file from
@@ -11,8 +8,7 @@ cannot isolate is the two pieces that decide WHICH FILES ARE EVEN LOOKED AT:
   * `file --mime-encoding`, the single binary oracle, whose verdict on a SHORT
     text file is "binary" and therefore quietly removes it from checks 1 to 3
 
-Both are compared against the real programs below, because a classifier that
-narrows turns this gate green over a corpus it stopped looking at.
+Both are compared against the real programs below, because a classifier that narrows turns this gate green over a corpus it stopped looking at.
 """
 
 import pathlib
@@ -29,11 +25,7 @@ AWK_CLASSIFY = "awk -F': ' '$NF ~ /binary/ { sub(/: [^:]*$/, \"\", $0); print }'
 def _bash_classify(lines: list[str]) -> list[str]:
     """Run the twin's awk over `lines`.
 
-    `printf '%s\\n' a b c` and NOT `printf '%s' 'a\\nb'`: `%s` does not interpret
-    a backslash escape, so the second form hands awk ONE line containing the
-    two characters backslash and n. The first version of this helper did that
-    and the comparison failed against a single-line input, which looks like the
-    classifier disagreeing when it is the harness feeding it the wrong thing.
+    `printf '%s\\n' a b c` and NOT `printf '%s' 'a\\nb'`: `%s` does not interpret a backslash escape, so the second form hands awk ONE line containing the two characters backslash and n. The first version of this helper did that and the comparison failed against a single-line input, which looks like the classifier disagreeing when it is the harness feeding it the wrong thing.
     """
     quoted = " ".join("'%s'" % line.replace("'", "'\\''") for line in lines)
     code, out, err = diff.bash_streams("printf '%%s\\n' %s | %s" % (quoted, AWK_CLASSIFY))
@@ -50,7 +42,7 @@ def test_classifier_matches_the_twins_awk_on_the_two_control_inputs() -> None:
 
 def test_classifier_matches_on_padded_output() -> None:
     """`file` pads the filename column when given more than one path, so the
-    real input to awk is not `a: b` but `a:       b`. A classifier that split on
+    real input to awk is not `a: b` but `a: b`. A classifier that split on
     ':' rather than ': ' would still pass the control above and fail here."""
     lines = ["a.sh:       us-ascii", "b.png:      binary", "c.woff:     binary"]
     assert ec.classify_binary(lines) == _bash_classify(lines) == ["b.png", "c.woff"]
@@ -75,9 +67,7 @@ def test_classifier_treats_a_line_with_no_separator_as_its_own_last_field() -> N
 def test_file_calls_a_short_text_file_binary(tmp_path: pathlib.Path) -> None:
     """A REPORTED TWIN BLIND SPOT, pinned so it cannot change unnoticed.
 
-    `file --mime-encoding` answers "binary" for a one-byte text file, so such a
-    file is exempted from the final-newline, BOM and CRLF checks entirely. The
-    gate cannot see a missing newline on it. Both implementations share the
+    `file --mime-encoding` answers "binary" for a one-byte text file, so such a file is exempted from the final-newline, BOM and CRLF checks entirely. The gate cannot see a missing newline on it. Both implementations share the
     oracle, so both share the hole; this asserts the hole is where it is
     believed to be rather than somewhere worse.
     """
@@ -101,8 +91,7 @@ def test_the_classifier_control_passes() -> None:
 
 def test_tracked_files_matches_git_ls_files(tmp_path: pathlib.Path) -> None:
     """The enumeration, against the real git. THE `--recurse-submodules` FLAG IS
-    CARRIED FROM THE TWIN AND IS A REPORTED DEFECT: the manifest lane checks out
-    without submodules, so the flag buys nothing there. Compared as-is, because
+    CARRIED FROM THE TWIN AND IS A REPORTED DEFECT: the manifest lane checks out without submodules, so the flag buys nothing there. Compared as-is, because
     the port's job is to keep the corpus, not to widen it."""
     (tmp_path / "a.ts").write_bytes(b"const a = 1;\n")
     (tmp_path / "sub").mkdir()

@@ -1,13 +1,9 @@
 """The refuse-early half of `.ci/scripts/lib/common.sh`, the tree's base library.
 
-`.ci/scripts/lib/common.sh` is 772 lines and **208 files source it** (re-derived
-2026-09-10 with `grep -rlP '^\\s*(source|\\.)\\s+.*lib/common\\.sh'`, excluding
-`node_modules` and `.git`, minus the one `.md` mention: 206 `.sh` plus two
-`.py` test files that emit a source line). The plan's "251" and the later "209"
+`.ci/scripts/lib/common.sh` is 772 lines and **208 files source it** (re-derived 2026-09-10 with `grep -rlP '^\\s*(source|\\.)\\s+.*lib/common\\.sh'`, excluding `node_modules` and `.git`, minus the one `.md` mention: 206 `.sh` plus two `.py` test files that emit a source line). The plan's "251" and the later "209"
 both counted files rather than real sourcers; the number to quote is 208.
 
-It is NOT one library. It is seven, stacked in one file, and five of them were
-already ported by earlier waves under names that describe what they do:
+It is NOT one library. It is seven, stacked in one file, and five of them were already ported by earlier waves under names that describe what they do:
 
     common.sh:17-55    colours + log_info/warn/error/step/debug -> `rediacc_ci.log`
     common.sh:205-210  get_repo_root                            -> `rediacc_ci.paths`
@@ -15,11 +11,7 @@ already ported by earlier waves under names that describe what they do:
                        run_with_timeout                         -> `rediacc_ci.proc`
     common.sh:434-473  _gh_probe / gh_retry / gh_json           -> `core.ghx`
 
-Re-porting any of those would be a second implementation of a thing that has
-one, so this module deliberately does not. What is left, and what is here, is
-the REFUSE-EARLY half: the eleven functions a script calls in its first twenty
-lines to decide whether it may proceed at all, plus the three `CI_*` variables
-the file exports at source time.
+Re-porting any of those would be a second implementation of a thing that has one, so this module deliberately does not. What is left, and what is here, is the REFUSE-EARLY half: the eleven functions a script calls in its first twenty lines to decide whether it may proceed at all, plus the three `CI_*` variables the file exports at source time.
 
     common.sh:63-72    detect_os           4 referring files
     common.sh:88-94    sed_in_place        8
@@ -41,19 +33,9 @@ the file exports at source time.
 
 NOT HERE, AND SAID OUT LOUD RATHER THAN LEFT AS AN ABSENCE:
 
-DETECT_OS AND DETECT_ARCH ARE HERE ON PURPOSE, EVEN THOUGH `core.platform`
-EXISTS. `core.platform` deliberately refused them, and says so at
-`platform.py:54-59`: "`.ci/scripts/lib/common.sh:64` is a THIRD spelling
-(`macos`, `windows`) and it is deliberately NOT a row here, because it also
-carries a fail-open default arm ... Adopting it would import that behaviour.
-Reported to the driver rather than reproduced." That refusal is right for a
-module whose job is building download URLs, and it leaves a hole: `CI_OS` and
-`CI_ARCH` are EXPORTED by common.sh into every one of the 208 sourcers' child
-processes carrying exactly that third spelling, and `sed_in_place` branches on
-it. So the spelling is reproduced here, in the file whose twin owns it, with the
-fail-open arm intact and named -- `platform.os_name()` RAISES where this returns
-the string `unknown`, and a caller comparing against `unknown` is comparing
-against something that reads like an answer.
+DETECT_OS AND DETECT_ARCH ARE HERE ON PURPOSE, EVEN THOUGH `core.platform` EXISTS. `core.platform` deliberately refused them, and says so at `platform.py:54-59`: "`.ci/scripts/lib/common.sh:64` is a THIRD spelling (`macos`, `windows`) and it is deliberately NOT a row here, because it also carries a fail-open default arm ... Adopting it would import that behaviour. Reported to the
+driver rather than reproduced." That refusal is right for a module whose job is building download URLs, and it leaves a hole: `CI_OS` and `CI_ARCH` are EXPORTED by common.sh into every one of the 208 sourcers' child processes carrying exactly that third spelling, and `sed_in_place` branches on it. So the spelling is reproduced here, in the file whose twin owns it, with the
+fail-open arm intact and named -- `platform.os_name()` RAISES where this returns the string `unknown`, and a caller comparing against `unknown` is comparing against something that reads like an answer.
 
   * `r2_count_objects` (common.sh:381-413, 6 referring files). It shells out to
     `aws s3api list-objects-v2`, and there is no `aws` binary on this machine
@@ -68,61 +50,43 @@ against something that reads like an answer.
 THE ERROR MODEL, AND WHY IT IS NOT `sys.exit`
 --------------------------------------------------------------------------
 Every `require_*` in the twin ends `log_error ...; exit 1`, and because the twin
-is SOURCED that `exit` kills the caller's whole script. A Python library cannot
-do that: it is imported into a process that may have other work, and a module
-that calls `sys.exit` from a helper is untestable without catching SystemExit.
+is SOURCED that `exit` kills the caller's whole script. A Python library cannot do that: it is imported into a process that may have other work, and a module that calls `sys.exit` from a helper is untestable without catching SystemExit.
 
-So each `require_*` here raises `RefusalError`, which carries the exact stderr lines
-the twin would have printed and the exit code it would have used, and `main()`
-prints them through `rediacc_ci.log.error` and returns that code. The bytes on
-stderr and the process exit status are therefore identical through the CLI --
-which is what the differential compares -- while an importing caller gets an
-exception it can catch. `test_core_common.py` drives both halves.
+So each `require_*` here raises `RefusalError`, which carries the exact stderr lines the twin would have printed and the exit code it would have used, and `main()` prints them through `rediacc_ci.log.error` and returns that code. The bytes on stderr and the process exit status are therefore identical through the CLI -- which is what the differential compares -- while an importing
+caller gets an exception it can catch. `test_core_common.py` drives both halves.
 
 --------------------------------------------------------------------------
 FIVE REAL QUIRKS, EACH DRIVEN ON bash 5.3.9 ON 2026-09-10, NONE FIXED IN THE TWIN
 --------------------------------------------------------------------------
-`.ci/scripts/lib/` is invariant 5 and outside this writer's ownership, so every
-one of these is reproduced or pinned rather than repaired.
+`.ci/scripts/lib/` is invariant 5 and outside this writer's ownership, so every one of these is reproduced or pinned rather than repaired.
 
-QUIRK 1 -- `require_input` PASSES VACUOUSLY ON AN EMPTY PATH LIST, and it is the
-one helper in the file whose entire stated purpose is anti-vacuity. Its own
-header (common.sh:169-185) says "Refuse unless every required input exists, in
-the GATE'S OWN WORDS", yet:
+QUIRK 1 -- `require_input` PASSES VACUOUSLY ON AN EMPTY PATH LIST, and it is the one helper in the file whose entire stated purpose is anti-vacuity. Its own header (common.sh:169-185) says "Refuse unless every required input exists, in the GATE'S OWN WORDS", yet:
 
     $ bash -c 'source common.sh; require_input -f "missing {}" "why"; echo "rc=$?"'
     reached rc=0
 
-`for p in "$@"` over zero arguments runs zero times and the function returns 0.
-Two of the three call sites pass named scalars and cannot be empty. The third,
-`.ci/scripts/quality/check-no-app-admin-perm.sh:56-58`, passes
+`for p in "$@"` over zero arguments runs zero times and the function returns 0. Two of the three call sites pass named scalars and cannot be empty. The third, `.ci/scripts/quality/check-no-app-admin-perm.sh:56-58`, passes
 `"${SCAN_DIRS[@]}"` -- an ARRAY -- and that array is two hard-coded literals
-today, so the defect is LATENT rather than live. It is exactly the shape that
-stops being latent the day someone builds that array from a glob or a `find`.
+today, so the defect is LATENT rather than live. It is exactly the shape that stops being latent the day someone builds that array from a glob or a `find`.
 `REQUIRE_INPUT_VACUOUS_IS_A_PASS` below records the twin's answer; this module's
 `require_input` refuses on an empty list, and both directions are pinned.
 
-QUIRK 2 -- `require_input` MISREPORTS A BAD TEST FLAG AS A MISSING FILE.
-`test -q /nope` writes "unary operator expected" and exits 2, `! test ...` reads
-that as true, and the caller is told its file is missing:
+QUIRK 2 -- `require_input` MISREPORTS A BAD TEST FLAG AS A MISSING FILE. `test -q /nope` writes "unary operator expected" and exits 2, `! test ...` reads that as true, and the caller is told its file is missing:
 
     $ bash -c 'source common.sh; require_input -q "missing {}" "why" /nope'
     common.sh: line 191: test: -q: unary operator expected
     ✗ missing /nope
     ✗ why
 
-It fails CLOSED, which is the right direction, with a diagnosis that names the
-wrong thing. This module raises a distinct `RefusalError` naming the flag.
+It fails CLOSED, which is the right direction, with a diagnosis that names the wrong thing. This module raises a distinct `RefusalError` naming the flag.
 
-QUIRK 3 -- `parse_args` KILLS THE SCRIPT ON A FLAG WHOSE NAME IS NOT A VALID
-SHELL IDENTIFIER, with an error that names common.sh rather than the caller:
+QUIRK 3 -- `parse_args` KILLS THE SCRIPT ON A FLAG WHOSE NAME IS NOT A VALID SHELL IDENTIFIER, with an error that names common.sh rather than the caller:
 
     $ bash -c 'source common.sh; parse_args --foo.bar=x; echo reached'
     common.sh: line 333: printf: `ARG_FOO.BAR': not a valid identifier
     ; exit 2
 
-`printf -v` returns 2, `set -e` is on from common.sh:11, and `reached` never
-prints. 53 files call `parse_args`. Reproduced: `parse_args()` here raises
+`printf -v` returns 2, `set -e` is on from common.sh:11, and `reached` never prints. 53 files call `parse_args`. Reproduced: `parse_args()` here raises
 `RefusalError(code=2)` carrying the twin's exact message.
 
 QUIRK 4 -- `parse_args` SWALLOWS THE NEXT TOKEN WHEN IT STARTS WITH ONE DASH.
@@ -132,11 +96,9 @@ The lookahead is `[[ ! "$2" =~ ^-- ]]`, which only excludes long options:
     ARG_VERBOSE=[-x] ARG_OTHER=[true]
 
 `--verbose` was meant to be a boolean and ate `-x`. Reproduced exactly; a port
-that treated any leading `-` as the next flag would silently disagree with 53
-callers.
+that treated any leading `-` as the next flag would silently disagree with 53 callers.
 
-QUIRK 5 -- `get_repo_root` LEAKS A `cd` INTO THE CALLER'S SHELL. Its last line
-is a bare `cd "$script_dir/../../.." && pwd`, not a subshell:
+QUIRK 5 -- `get_repo_root` LEAKS A `cd` INTO THE CALLER'S SHELL. Its last line is a bare `cd "$script_dir/../../.." && pwd`, not a subshell:
 
     $ bash -c 'source common.sh; cd /; echo $PWD; get_repo_root >/dev/null; echo $PWD'
     /
@@ -144,12 +106,8 @@ is a bare `cd "$script_dir/../../.." && pwd`, not a subshell:
 
 LATENT, NOT LIVE, AND THAT WAS MEASURED RATHER THAN ASSUMED. 99 `.sh` files
 name `get_repo_root`; grepping for the command-substitution spelling finds 97
-occurrences of it, and a command substitution runs in a subshell, so the
-only three occurrences that are NOT are string literals inside two gates and one
-awk pattern (`test-breakpoint-portability.sh:174,176`,
-`check-pool-writer-safety.sh:188`). So there is no live caller that could be
-moved. `repo_root()` below delegates to `rediacc_ci.paths.repo_root()` and
-CANNOT chdir a process, which is a divergence stated rather than discovered.
+occurrences of it, and a command substitution runs in a subshell, so the only three occurrences that are NOT are string literals inside two gates and one awk pattern (`test-breakpoint-portability.sh:174,176`, `check-pool-writer-safety.sh:188`). So there is no live caller that could be moved. `repo_root()` below delegates to `rediacc_ci.paths.repo_root()` and CANNOT chdir a process,
+which is a divergence stated rather than discovered.
 
 --------------------------------------------------------------------------
 THREE MORE DIVERGENCES THAT ARE DECISIONS RATHER THAN BUGS
@@ -171,13 +129,8 @@ THREE MORE DIVERGENCES THAT ARE DECISIONS RATHER THAN BUGS
 --------------------------------------------------------------------------
 WHAT IS DIFFERENTIALLY PROVED
 --------------------------------------------------------------------------
-`.ci/shadow/w7p5b-common.observations.jsonl` drives BOTH sides through a real
-caller shape: a script that sources `common.sh` (or imports this module) and
-then runs the same refuse-early sequence a quality gate runs in its opening
-lines -- `require_cmd`, `require_file`, `require_dir`, `require_var`,
-`require_input`, `parse_args`, `get_temp_dir`, `is_ci`. That is the sequence 208
-files actually execute, which is why the ledger is not a synthetic per-function
-harness.
+`.ci/shadow/w7p5b-common.observations.jsonl` drives BOTH sides through a real caller shape: a script that sources `common.sh` (or imports this module) and then runs the same refuse-early sequence a quality gate runs in its opening lines -- `require_cmd`, `require_file`, `require_dir`, `require_var`, `require_input`, `parse_args`, `get_temp_dir`, `is_ci`. That is the sequence 208
+files actually execute, which is why the ledger is not a synthetic per-function harness.
 """
 
 from __future__ import annotations
@@ -231,11 +184,7 @@ UNKNOWN = "unknown"
 class RefusalError(Exception):
     """One `log_error ...; exit N` from the twin, as a catchable object.
 
-    `lines` are the stderr lines in order, without the `✗ ` marker -- the marker
-    belongs to `log_error`, and `rediacc_ci.log.error` adds it. `code` is the
-    twin's exit status: 1 for every `require_*`, 2 for the `printf -v` failure
-    in `parse_args` (QUIRK 3), which is `printf`'s own status rather than a
-    number the script chose.
+    `lines` are the stderr lines in order, without the `✗ ` marker -- the marker belongs to `log_error`, and `rediacc_ci.log.error` adds it. `code` is the twin's exit status: 1 for every `require_*`, 2 for the `printf -v` failure in `parse_args` (QUIRK 3), which is `printf`'s own status rather than a number the script chose.
     """
 
     def __init__(self, *lines: str, code: int = 1) -> None:
@@ -258,9 +207,7 @@ def _env(env: dict[str, str] | None) -> dict[str, str]:
 def detect_os(system: str | None = None) -> str:
     """`detect_os` (common.sh:63-72). linux | macos | windows | unknown.
 
-    FAILS OPEN, and that is the whole reason `core.platform` would not take it.
-    An unrecognised `uname -s` yields the STRING `unknown`, which every caller
-    then compares against as though it were an answer -- `sed_in_place` twelve
+    FAILS OPEN, and that is the whole reason `core.platform` would not take it. An unrecognised `uname -s` yields the STRING `unknown`, which every caller then compares against as though it were an answer -- `sed_in_place` twelve
     lines down asks `== "macos"` and takes the GNU arm for `unknown`, which is
     correct by luck rather than by decision. Reproduced verbatim; `core.platform`
     is where a caller goes when it wants a refusal instead.
@@ -275,13 +222,9 @@ def detect_os(system: str | None = None) -> str:
 def detect_arch(machine: str | None = None) -> str:
     """`detect_arch` (common.sh:98-106). x64 | arm64 | unknown.
 
-    Same fail-open arm as `detect_os`, and the same divergence from
-    `core.platform.machine_key()`, which raises `UnsupportedPlatformError`. The
-    spellings differ too: this answers `x64`, `machine_key` answers `x86_64`,
-    and `arch_for("node")` answers `x64` -- three functions, two of which agree.
+    Same fail-open arm as `detect_os`, and the same divergence from `core.platform.machine_key()`, which raises `UnsupportedPlatformError`. The spellings differ too: this answers `x64`, `machine_key` answers `x86_64`, and `arch_for("node")` answers `x64` -- three functions, two of which agree.
 
-    The twin matches EXACT words, not prefixes, so anything that is not one of
-    the four literals is `unknown`.
+    The twin matches EXACT words, not prefixes, so anything that is not one of the four literals is `unknown`.
     """
     raw = _stdlib_platform.machine() if machine is None else machine
     return ARCH_ALIASES.get(raw, UNKNOWN)
@@ -290,11 +233,7 @@ def detect_arch(machine: str | None = None) -> str:
 def sed_in_place_argv(args: list[str], os_name: str | None = None) -> list[str]:
     """`sed_in_place`'s argv (common.sh:88-94), without running it.
 
-    The whole function is one branch: macOS `sed` REQUIRES a backup suffix after
-    `-i` and GNU `sed` refuses one, so the twin inserts an empty `''` argument on
-    macOS only. Exposed as an argv builder because that branch is the entire
-    content, and asserting on a list is how a test on Linux can prove the macOS
-    arm without a Mac.
+    The whole function is one branch: macOS `sed` REQUIRES a backup suffix after `-i` and GNU `sed` refuses one, so the twin inserts an empty `''` argument on macOS only. Exposed as an argv builder because that branch is the entire content, and asserting on a list is how a test on Linux can prove the macOS arm without a Mac.
 
     `os_name` is `detect_os`'s answer. The twin calls `detect_os` -- and
     therefore forks `uname` -- on EVERY invocation; this does not, which is a
@@ -336,8 +275,7 @@ def get_temp_dir(env: dict[str, str] | None = None) -> str:
 
     `[[ -n "${RUNNER_TEMP:-}" ]]` then `[[ -n "${TMPDIR:-}" ]]` then `/tmp`. The
     test is NON-EMPTY, not "set", so `RUNNER_TEMP=` falls through to TMPDIR
-    (driven). Nothing checks that the answer exists or is writable, which is the
-    twin's contract and not an oversight to correct in a port.
+    (driven). Nothing checks that the answer exists or is writable, which is the twin's contract and not an oversight to correct in a port.
     """
     e = _env(env)
     for name in TEMP_DIR_ENV_NAMES:
@@ -357,11 +295,7 @@ def require_var(name: str, env: dict[str, str] | None = None) -> str:
     expansion, so a variable that is exported as the empty string is reported as
     "not set" (driven: `export FOO=""; require_var FOO` refuses). Reproduced.
 
-    The twin has a third outcome this cannot have: `require_var 'a-b'` dies with
-    `common.sh: line 133: a-b: invalid variable name`, exit 1, before any
-    `log_error` runs -- bash refuses the indirection itself. A Python dict lookup
-    has no such rule, so the port refuses through the normal path with the normal
-    message. Named here because the exit code is the same and the stderr is not.
+    The twin has a third outcome this cannot have: `require_var 'a-b'` dies with `common.sh: line 133: a-b: invalid variable name`, exit 1, before any `log_error` runs -- bash refuses the indirection itself. A Python dict lookup has no such rule, so the port refuses through the normal path with the normal message. Named here because the exit code is the same and the stderr is not.
     """
     value = _env(env).get(name, "")
     if not value:
@@ -372,13 +306,9 @@ def require_var(name: str, env: dict[str, str] | None = None) -> str:
 def require_cmd(cmd: str, env: dict[str, str] | None = None) -> str:
     """`require_cmd` (common.sh:141-147). Returns the resolved path.
 
-    `command -v "$cmd" &>/dev/null`. `shutil.which` is the closest available
-    equivalent and differs on one point worth naming: `command -v` also answers
+    `command -v "$cmd" &>/dev/null`. `shutil.which` is the closest available equivalent and differs on one point worth naming: `command -v` also answers
     for shell BUILTINS and functions, which `which` cannot see. Every one of the
-    83 referring files passes an external binary (`gh`, `jq`, `docker`, `go`,
-    `node`), so the difference is not reachable from any live call site -- but it
-    is a difference, and a caller that ever passes `cd` would get opposite
-    answers from the two.
+    83 referring files passes an external binary (`gh`, `jq`, `docker`, `go`, `node`), so the difference is not reachable from any live call site -- but it is a difference, and a caller that ever passes `cd` would get opposite answers from the two.
     """
     e = _env(env)
     found = shutil.which(cmd, path=e.get("PATH"))
@@ -390,9 +320,7 @@ def require_cmd(cmd: str, env: dict[str, str] | None = None) -> str:
 def require_file(path: str | os.PathLike[str]) -> pathlib.Path:
     """`require_file` (common.sh:151-157). `[[ ! -f "$file" ]]`.
 
-    `-f` follows symlinks and is TRUE only for a regular file, so a directory and
-    a dangling link both refuse. `pathlib.Path.is_file()` has the same two
-    properties.
+    `-f` follows symlinks and is TRUE only for a regular file, so a directory and a dangling link both refuse. `pathlib.Path.is_file()` has the same two properties.
     """
     p = pathlib.Path(path)
     if not p.is_file():
@@ -411,10 +339,7 @@ def require_dir(path: str | os.PathLike[str]) -> pathlib.Path:
 def require_input(test_flag: str, lead: str, why: str, paths_: list[str | os.PathLike[str]]) -> int:
     """`require_input` (common.sh:186-197). Returns how many paths were checked.
 
-    THE RETURN VALUE IS THE DIVERGENCE, and it is the point. The twin returns 0
-    on an empty list (QUIRK 1) -- the anti-vacuity helper passing vacuously. This
-    returns the count so a caller can see that it was non-trivial, and RAISES on
-    an empty list rather than reporting a green that proves nothing.
+    THE RETURN VALUE IS THE DIVERGENCE, and it is the point. The twin returns 0 on an empty list (QUIRK 1) -- the anti-vacuity helper passing vacuously. This returns the count so a caller can see that it was non-trivial, and RAISES on an empty list rather than reporting a green that proves nothing.
 
     Everything else is the twin, exactly:
 
@@ -463,8 +388,7 @@ def repo_root() -> pathlib.Path:
 
     NOT a re-port. `paths.repo_root()` is already the module the whole package
     resolves the root through, and re-deriving `${BASH_SOURCE[0]}/../../..` here
-    would be a second answer to a question that has one. Two differences, both
-    deliberate:
+    would be a second answer to a question that has one. Two differences, both deliberate:
 
       * QUIRK 5: the twin's final `cd` is not in a subshell and therefore moves
         the caller's shell. This cannot, and a port that could would be a defect.
@@ -481,16 +405,9 @@ def repo_root() -> pathlib.Path:
 def to_upper(text: str) -> str:
     """`to_upper` (common.sh:301-303). `echo "$1" | tr '[:lower:]' '[:upper:]'`.
 
-    `tr '[:lower:]' '[:upper:]'` is BYTE-WISE and locale-dependent in a way
-    `str.upper()` is not: `str.upper()` maps `ß` to `SS` and `ı` to `I`, and `tr`
-    maps neither. Every key that reaches this from `parse_args` is ASCII by the
-    time it arrives, so `str.upper()` is used, and the divergence is named rather
-    than hidden.
+    `tr '[:lower:]' '[:upper:]'` is BYTE-WISE and locale-dependent in a way `str.upper()` is not: `str.upper()` maps `ß` to `SS` and `ı` to `I`, and `tr` maps neither. Every key that reaches this from `parse_args` is ASCII by the time it arrives, so `str.upper()` is used, and the divergence is named rather than hidden.
 
-    The twin also has QUIRK: `to_upper -n` prints nothing, because `echo` eats
-    its own flag (driven). Not reproduced -- reproducing it would mean writing an
-    `echo` emulator into a case-folding helper -- and pinned in the tests so the
-    absence is a recorded decision.
+    The twin also has QUIRK: `to_upper -n` prints nothing, because `echo` eats its own flag (driven). Not reproduced -- reproducing it would mean writing an `echo` emulator into a case-folding helper -- and pinned in the tests so the absence is a recorded decision.
     """
     return text.upper()
 
@@ -504,8 +421,7 @@ def _arg_key(flag: str) -> str:
 def _valid_identifier(name: str) -> bool:
     """What `printf -v NAME` accepts: `[A-Za-z_][A-Za-z0-9_]*`.
 
-    Deliberately NOT `str.isidentifier()`, which accepts Unicode letters that
-    bash rejects. This is bash's rule, so it is spelled as bash's rule.
+    Deliberately NOT `str.isidentifier()`, which accepts Unicode letters that bash rejects. This is bash's rule, so it is spelled as bash's rule.
     """
     if not name:
         return False
@@ -527,9 +443,7 @@ def parse_args(argv: list[str]) -> dict[str, str]:
         parse_args '--foo=a"; PROOF=INJECTED; :"'
         ARG_FOO=[a"; PROOF=INJECTED; :"]   PROOF=[none]
 
-    The bytes are stored, nothing runs. A dict cannot execute anything, so the
-    port has the property structurally, and `test_core_common.py` asserts the
-    same string round-trips.
+    The bytes are stored, nothing runs. A dict cannot execute anything, so the port has the property structurally, and `test_core_common.py` asserts the same string round-trips.
 
     THE THREE PARSING RULES, all reproduced:
 
@@ -544,8 +458,7 @@ def parse_args(argv: list[str]) -> dict[str, str]:
          arguments are invisible to this parser.
 
     QUIRK 3 is reproduced as a `RefusalError(code=2)`: a key that is not a valid shell
-    identifier is `printf -v`'s error, exit 2, and under the twin's `set -e` it
-    takes the caller's whole script down.
+    identifier is `printf -v`'s error, exit 2, and under the twin's `set -e` it takes the caller's whole script down.
     """
     out: dict[str, str] = {}
     i = 0
@@ -599,18 +512,13 @@ def require_submodule(
                             `--recursive` is still workable. Callers spell it
                             `require_submodule ... || exit 0`.
 
-    `[[ -e "$marker" ]]` is EXISTENCE, not file-ness, so an uninitialised
-    submodule's empty directory counts as PRESENT -- git leaves the mount point
-    behind. Reproduced with `os.path.exists`, which is the same test.
+    `[[ -e "$marker" ]]` is EXISTENCE, not file-ness, so an uninitialised submodule's empty directory counts as PRESENT -- git leaves the mount point behind. Reproduced with `os.path.exists`, which is the same test.
 
     The CI branch is `[[ "${CI:-false}" == "true" ]]` -- the literal again, NOT
     `is_ci()`. So `GITHUB_ACTIONS=true` with `CI` unset takes the LOCAL branch
-    here while `is_ci()` twelve lines up says CI. That inconsistency is the
-    twin's, it is inside one file, and it is reproduced rather than harmonised.
+    here while `is_ci()` twelve lines up says CI. That inconsistency is the twin's, it is inside one file, and it is reproduced rather than harmonised.
 
-    `.ci/rediacc_ci/quality/subscription_schema.py:129` already re-implements
-    this privately. That is a duplicate, named here rather than repointed: the
-    gate is not this writer's file, and a cutover is a driver decision.
+    `.ci/rediacc_ci/quality/subscription_schema.py:129` already re-implements this privately. That is a duplicate, named here rather than repointed: the gate is not this writer's file, and a cutover is a driver decision.
     """
     if os.path.exists(marker):
         return True
@@ -630,16 +538,11 @@ def require_submodule(
 def ci_env(env: dict[str, str] | None = None) -> dict[str, str]:
     """`CI_OS` / `CI_ARCH` / `CI_TEMP` (common.sh:509-514), as a snapshot.
 
-    The twin computes these once at SOURCE time and `export`s them, so a caller
-    that changes `RUNNER_TEMP` afterwards keeps the old `CI_TEMP` while
+    The twin computes these once at SOURCE time and `export`s them, so a caller that changes `RUNNER_TEMP` afterwards keeps the old `CI_TEMP` while
     `get_temp_dir` answers the new one (driven: `CI_TEMP=/rt` and
-    `get_temp_dir` -> `/other`, same shell). A function cannot have source-time
-    semantics, so the caller decides when to take the snapshot -- and gets to
-    take a second one, which the twin cannot.
+    `get_temp_dir` -> `/other`, same shell). A function cannot have source-time semantics, so the caller decides when to take the snapshot -- and gets to take a second one, which the twin cannot.
 
-    `CI_ARCH` has ZERO referring files (measured 2026-09-10) and `CI_OS` has 3.
-    It is here because the twin exports it and a subprocess can read it, which is
-    a fan-in this grep cannot see.
+    `CI_ARCH` has ZERO referring files (measured 2026-09-10) and `CI_OS` has 3. It is here because the twin exports it and a subprocess can read it, which is a fan-in this grep cannot see.
     """
     return {
         "CI_OS": detect_os(),

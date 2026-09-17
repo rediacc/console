@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
 """Every hook script .claude/settings.json references must exist and be runnable.
 
-WHY THIS EXISTS. This repo's guard layer is largely hooks: they block a
-non-draft PR create, a premature `gh pr ready`, an admin merge, a force push, a
-`git worktree add`, a long sleep, a push onto a rebased branch. Each one is a
-check, and a hook whose script has been renamed, moved or deleted **does not
-error: it simply stops firing.** The guard disappears and every subsequent run
-looks clean, which is the exact failure this session spent a night eliminating
-everywhere else: a check that reports success while doing nothing.
+WHY THIS EXISTS. This repo's guard layer is largely hooks: they block a non-draft PR create, a premature `gh pr ready`, an admin merge, a force push, a `git worktree add`, a long sleep, a push onto a rebased branch. Each one is a check, and a hook whose script has been renamed, moved or deleted **does not error: it simply stops firing.** The guard disappears and every subsequent
+run looks clean, which is the exact failure this session spent a night eliminating everywhere else: a check that reports success while doing nothing.
 
-Nothing verified this. `git mv` on a hook, or a settings edit with a typo, was
-silent.
+Nothing verified this. `git mv` on a hook, or a settings edit with a typo, was silent.
 
 WHAT IT CHECKS, for every command in settings.json's hook blocks:
   - the script it names exists on disk
@@ -24,15 +18,9 @@ WHAT IT CHECKS, for every command in settings.json's hook blocks:
     order is invisible to every other check here (added 2026-09-06, see
     first_guard_verdicts)
 
-WHAT IT DOES NOT DO. It does not execute the hooks or judge their logic --
-`.ci/scripts/test/gates/` owns behaviour. This asserts only that the wiring
-resolves, which is the part that fails silently.
+WHAT IT DOES NOT DO. It does not execute the hooks or judge their logic -- `.ci/scripts/test/gates/` owns behaviour. This asserts only that the wiring resolves, which is the part that fails silently.
 
----- gate ----
-step: Hooks resolvable
-needs: none
-selftest: true
----- end gate ----
+---- gate ---- step: Hooks resolvable needs: none selftest: true ---- end gate ----
 """
 
 import argparse
@@ -119,8 +107,7 @@ FIRST_GUARD = "require-jq.sh"
 def guarded_blocks(settings):
     """(label, block) for every chain require-jq.sh must lead.
 
-    Every PreToolUse block -- Bash, the Edit family, AskUserQuestion -- plus the
-    PostToolUse block matched on Bash. The other PostToolUse blocks are matcher-
+    Every PreToolUse block -- Bash, the Edit family, AskUserQuestion -- plus the PostToolUse block matched on Bash. The other PostToolUse blocks are matcher-
     less and fire for every tool; they are not jq-parsing Bash chains, so they
     are deliberately out of scope.
     """
@@ -140,23 +127,13 @@ def guarded_blocks(settings):
 def first_guard_verdicts(settings):
     """require-jq.sh must lead every jq-parsing chain. Pure, so controls drive it.
 
-    WHY POSITION, AND WHY NOTHING ELSE HERE CAN SEE IT. Every other verdict in
-    this file is about a command in isolation: does the file exist, is it a file,
-    is it non-empty, is its git mode right. `commands()` flattens the whole hooks
-    tree precisely because that is all those checks need. Order survives none of
-    that flattening, and order is the entire contract of require-jq.sh: it fails
-    closed when jq is missing so the hooks BEHIND it never get to parse an empty
-    string and exit 0. Registered second, the hook it was meant to cover has
-    already run and already returned ALLOW.
+    WHY POSITION, AND WHY NOTHING ELSE HERE CAN SEE IT. Every other verdict in this file is about a command in isolation: does the file exist, is it a file, is it non-empty, is its git mode right. `commands()` flattens the whole hooks tree precisely because that is all those checks need. Order survives none of that flattening, and order is the entire contract of require-jq.sh: it
+    fails closed when jq is missing so the hooks BEHIND it never get to parse an empty string and exit 0. Registered second, the hook it was meant to cover has already run and already returned ALLOW.
 
-    Measured 2026-09-06: require-jq.sh led all three PreToolUse chains and was
-    absent from PostToolUse entirely, so both post-bash hooks (cancel-old-ci.sh
-    and refresh-pr-body.sh, each parsing stdin with `jq -r ... 2>/dev/null`)
-    failed OPEN on a machine without jq -- they ran, found nothing, said nothing.
+    Measured 2026-09-06: require-jq.sh led all three PreToolUse chains and was absent from PostToolUse entirely, so both post-bash hooks (cancel-old-ci.sh and refresh-pr-body.sh, each parsing stdin with `jq -r ... 2>/dev/null`) failed OPEN on a machine without jq -- they ran, found nothing, said nothing.
     Registering it there is one line; keeping it FIRST there is this predicate.
 
-    On PostToolUse it prevents nothing, the tool having already run. It converts
-    a silent no-op into a visible one, which is the whole difference.
+    On PostToolUse it prevents nothing, the tool having already run. It converts a silent no-op into a visible one, which is the whole difference.
     """
     out = []
     blocks = guarded_blocks(settings)
@@ -235,19 +212,12 @@ GUARD_PREFIXES = ("block-", "warn-")
 def unregistered_guards(root, refs):
     """Guard scripts on disk that settings.json never names.
 
-    THE OTHER HALF OF THIS GATE. Everything above answers "settings.json names a
-    script, does it exist?". This answers the reverse, "a guard exists, is it
-    wired?", and the reverse is the direction an AUTHOR gets wrong: writing a
-    guard, testing it by hand, and never adding it to settings.json. The result
-    is indistinguishable from a guard that works, because a hook that is never
+    THE OTHER HALF OF THIS GATE. Everything above answers "settings.json names a script, does it exist?". This answers the reverse, "a guard exists, is it wired?", and the reverse is the direction an AUTHOR gets wrong: writing a guard, testing it by hand, and never adding it to settings.json. The result is indistinguishable from a guard that works, because a hook that is never
     invoked never complains, and the author's hand-test passed.
 
-    Found by probing rather than reasoning, 2026-08-19: two guards were added
-    that day and nothing in CI would have noticed if either registration line had
-    been skipped.
+    Found by probing rather than reasoning, 2026-08-19: two guards were added that day and nothing in CI would have noticed if either registration line had been skipped.
 
-    Names are compared, not paths, because settings.json interpolates
-    $CLAUDE_PROJECT_DIR and a path comparison would be brittle against that.
+    Names are compared, not paths, because settings.json interpolates $CLAUDE_PROJECT_DIR and a path comparison would be brittle against that.
     """
     named = {pathlib.Path(r).name for r in refs}
     missing = []

@@ -2,49 +2,24 @@
 
 Drive `wl_git.py rebase-resolve` against REAL halted rebases, one per kind.
 
-WHY A REAL HALT AND NOT A STAGE TABLE. wl_git.py's own selftest already checks
-the classifier and the union as pure functions over hand-written inputs, and that
-proves their ARITHMETIC. It says nothing about whether the verb reads what git
-actually writes into `.git/rebase-merge` and the index, and it did not: the first
-wiring passed `conflicted_paths`' `(sha, mode)` tuples to an oracle that wanted
-bare shas, and unpacked a `(target, why)` return as if it were a string. Both are
-invisible to a pure-function test and both died instantly here.
+WHY A REAL HALT AND NOT A STAGE TABLE. wl_git.py's own selftest already checks the classifier and the union as pure functions over hand-written inputs, and that proves their ARITHMETIC. It says nothing about whether the verb reads what git actually writes into `.git/rebase-merge` and the index, and it did not: the first wiring passed `conflicted_paths`' `(sha, mode)` tuples to an
+oracle that wanted bare shas, and unpacked a `(target, why)` return as if it were a string. Both are invisible to a pure-function test and both died instantly here.
 
-The five kinds are the taxonomy measured across two real rebases of branch 0826-3
-on 2026-08-26/27: ten conflicts, one gitlink, six registry unions, two genuine
-judgement calls.
+The five kinds are the taxonomy measured across two real rebases of branch 0826-3 on 2026-08-26/27: ten conflicts, one gitlink, six registry unions, two genuine judgement calls.
 
-THE FIXTURE LIBRARY IS DRIVEN, NOT REIMPLEMENTED. `git_fixture_rebase <kind>` and
-`git_fixture_cleanup <dir>` live in `.ci/scripts/test/lib/git-fixture.sh` and
+THE FIXTURE LIBRARY IS DRIVEN, NOT REIMPLEMENTED. `git_fixture_rebase <kind>` and `git_fixture_cleanup <dir>` live in `.ci/scripts/test/lib/git-fixture.sh` and
 build a real repository with a real halted rebase in it; this module calls them
 through `bash -c 'source ...; git_fixture_rebase <kind>'` and reads the directory
-off stdout. Reimplementing a hundred lines of git plumbing in Python would be a
-second fixture, and two fixtures that are supposed to be one is how the two sides
-stop testing the same thing.
+off stdout. Reimplementing a hundred lines of git plumbing in Python would be a second fixture, and two fixtures that are supposed to be one is how the two sides stop testing the same thing.
 
-WHY ONE PYTEST FUNCTION PER KIND rather than the twin's accumulate-and-summarise
-loop. The twin uses `soft_fail` and a counter because `log_fail` EXITS, and eight
-independent kinds stopping at the first would hide seven behind one fixture
-problem. pytest gives that property natively: each case is its own function, so a
-failure in one leaves the other seven still driven and still reported. The twin's
-`ran < 8` anti-vacuity counter is therefore replaced by something stronger, not
-dropped: `test_every_kind_ran` asserts the case table itself still holds the
-eight it is supposed to, so a case deleted from the table is a finding rather
-than a smaller green.
+WHY ONE PYTEST FUNCTION PER KIND rather than the twin's accumulate-and-summarise loop. The twin uses `soft_fail` and a counter because `log_fail` EXITS, and eight independent kinds stopping at the first would hide seven behind one fixture problem. pytest gives that property natively: each case is its own function, so a failure in one leaves the other seven still driven and still
+reported. The twin's `ran < 8` anti-vacuity counter is therefore replaced by something stronger, not dropped: `test_every_kind_ran` asserts the case table itself still holds the eight it is supposed to, so a case deleted from the table is a finding rather than a smaller green.
 
-THE TWIN IS FLAT (it declares no `test_*` functions), so `test_twin_parity.py`
-compares this module's control count against the twin's runtime `PASS:` count.
-Nine controls here against the twin's nine PASS lines.
+THE TWIN IS FLAT (it declares no `test_*` functions), so `test_twin_parity.py` compares this module's control count against the twin's runtime `PASS:` count. Nine controls here against the twin's nine PASS lines.
 
-NO `xdist_group`, and the question was asked rather than assumed because this is
-the port in the batch that comes closest to needing one. `git_fixture_rebase`
-builds a COMPLETE repository under its own `mktemp -d` and every git command runs
+NO `xdist_group`, and the question was asked rather than assumed because this is the port in the batch that comes closest to needing one. `git_fixture_rebase` builds a COMPLETE repository under its own `mktemp -d` and every git command runs
 with `-C` or `cwd` pointed at it, so the two cases that drive
-`rebase-continue --execute` write only inside their own throwaway repo and there
-is no index, no lock and no ref shared between two cases. The subject
-(`wl_git.py`) and the fixture library are read, never written. Nothing here is
-observable from a second worker, so grouping would only serialise the slowest
-cases in the module for no property gained.
+`rebase-continue --execute` write only inside their own throwaway repo and there is no index, no lock and no ref shared between two cases. The subject (`wl_git.py`) and the fixture library are read, never written. Nothing here is observable from a second worker, so grouping would only serialise the slowest cases in the module for no property gained.
 """
 
 import hashlib
@@ -164,9 +139,7 @@ def test_a_mixed_halt_is_all_or_nothing(gate):
 def exec_case(gate, label: str, kind: str, want_done: bool, needle: str) -> None:
     """`exec_case <label> <kind> <expect-finished> <needle>`, against a real repo.
 
-    Everything above drives the PLAN. This drives the EXECUTOR, because "it
-    decided correctly" and "it left the tree in the state it claimed" are
-    different questions, and only the second one can leave a rebase half-applied.
+    Everything above drives the PLAN. This drives the EXECUTOR, because "it decided correctly" and "it left the tree in the state it claimed" are different questions, and only the second one can leave a rebase half-applied.
     """
     directory = fixture_rebase(gate, kind)
     try:

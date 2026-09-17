@@ -1,37 +1,23 @@
 """A control written below its own suite's exit verdict asserts nothing.
 
-THE DEFECT, TWICE. The script-style suites under `.claude/hooks/stop/` count
-assertions on a `Tally` and end with
+THE DEFECT, TWICE. The script-style suites under `.claude/hooks/stop/` count assertions on a `Tally` and end with
 
     if Tally.fails:
         print("FAIL: ...", file=sys.stderr)
         sys.exit(1)
     print(f"{Tally.count} control(s) passed")
 
-Anything appended BELOW that verdict still runs and still prints `  FAIL`, but
-nothing reads `Tally.fails` again, so the process exits 0. And
-`.claude/hooks/test-hooks.sh:2612` scores these files by their EXIT CODE --
+Anything appended BELOW that verdict still runs and still prints ` FAIL`, but nothing reads `Tally.fails` again, so the process exits 0. And `.claude/hooks/test-hooks.sh:2612` scores these files by their EXIT CODE --
 `if out="$(python3 ...)"; then` -- so it takes the success branch, scrapes the
-"N control(s) passed" line, and reports `ok`. The controls are decorative: they
-can print a failure and change nothing.
+"N control(s) passed" line, and reports `ok`. The controls are decorative: they can print a failure and change nothing.
 
-It has happened twice. Two blocks were stranded in `test-judge-schema.py` on
-2026-09-04 and stayed unfalsifiable until somebody noticed the control COUNT had
-not moved. On 2026-09-08 a second author appended seven more to the same file --
-in a session spent hunting vacuous controls, into the one file whose own comment
-warns about this in capitals. Reading the warning is evidently not enough, which
-is the argument for a gate rather than a louder comment.
+It has happened twice. Two blocks were stranded in `test-judge-schema.py` on 2026-09-04 and stayed unfalsifiable until somebody noticed the control COUNT had not moved. On 2026-09-08 a second author appended seven more to the same file -- in a session spent hunting vacuous controls, into the one file whose own comment warns about this in capitals. Reading the warning is evidently
+not enough, which is the argument for a gate rather than a louder comment.
 
-WHY THE EXIT CODE CANNOT CATCH IT, and why this gate is structural rather than
-behavioural: a stranded control produces exactly the same exit code as a healthy
-one. There is no run you can perform that distinguishes the two states, so the
-only evidence is the SHAPE of the file. That is what this reads.
+WHY THE EXIT CODE CANNOT CATCH IT, and why this gate is structural rather than behavioural: a stranded control produces exactly the same exit code as a healthy one. There is no run you can perform that distinguishes the two states, so the only evidence is the SHAPE of the file. That is what this reads.
 
-WHAT IT DOES NOT CLAIM. It does not check that a control is correct, or that the
-suite is complete, or that the verdict is reached -- only that no `control(...)`
-call sits after the verdict that decides the exit code. A file with no verdict at
-all is out of scope: pytest modules fail on assertion rather than on a tally, and
-demanding this idiom of them would be a rule about a convention they do not use.
+WHAT IT DOES NOT CLAIM. It does not check that a control is correct, or that the suite is complete, or that the verdict is reached -- only that no `control(...)` call sits after the verdict that decides the exit code. A file with no verdict at all is out of scope: pytest modules fail on assertion rather than on a tally, and demanding this idiom of them would be a rule about a
+convention they do not use.
 
 NO `BASH_TWIN`: this gate is new, not a port, so `test_twin_parity` leaves it be.
 """
@@ -52,10 +38,7 @@ CONTROL = "control"
 def _verdict_end(tree: ast.AST) -> int | None:
     """Line of the last statement of the `if Tally.fails: ... sys.exit(...)` block.
 
-    KEYED ON THE STATEMENT, NEVER ON THE TEXT. `grep -n 'if Tally.fails:'` finds
-    the file's own COMMENT quoting it in backticks before it finds the code --
-    that mis-anchoring produced a wrong count during the manual sweep this gate
-    replaces, and a gate repeating it would be worse than none.
+    KEYED ON THE STATEMENT, NEVER ON THE TEXT. `grep -n 'if Tally.fails:'` finds the file's own COMMENT quoting it in backticks before it finds the code -- that mis-anchoring produced a wrong count during the manual sweep this gate replaces, and a gate repeating it would be worse than none.
     """
     for node in ast.walk(tree):
         if not isinstance(node, ast.If):
@@ -223,10 +206,7 @@ def _dotted(func: ast.expr) -> str:
 def _is_terminator(node: ast.stmt) -> bool:
     """A statement after which nothing in the SAME block can run.
 
-    THE NAME ALONE IS NOT ENOUGH, and keying on it produced a false positive on
-    the first sweep: `c.fail("d")` in `test_controls.py` is a `Controls` method
-    RECORDING a failure, not an exit, and the assertion after it is the test's
-    whole point. So the call must be dotted and in `_TERMINAL`.
+    THE NAME ALONE IS NOT ENOUGH, and keying on it produced a false positive on the first sweep: `c.fail("d")` in `test_controls.py` is a `Controls` method RECORDING a failure, not an exit, and the assertion after it is the test's whole point. So the call must be dotted and in `_TERMINAL`.
     """
     if isinstance(node, (ast.Return, ast.Raise)):
         return True

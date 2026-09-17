@@ -1,26 +1,13 @@
 """Port of `.ci/scripts/test/gates/test-bws-map.sh`.
 
-Drives the REAL scan in `.ci/scripts/quality/check_bws_map.py` against fixture
-trees, which its internal `selftest()` cannot do.
+Drives the REAL scan in `.ci/scripts/quality/check_bws_map.py` against fixture trees, which its internal `selftest()` cannot do.
 
-WHY BOTH EXIST. `selftest()` proves the pure logic -- the request parser and
-every way of writing a bad exemption -- and it runs before any verdict, so a
-broken instrument never judges anything. What it CANNOT reach is assertions 5-9,
-which are defined over the tree: the map, the allowlist, the reachability record,
-the workflows and the deploy scripts. Those had no fixture coverage at all, and
-they are about to be the sole guard on every credential once GitHub secrets go
-away. A gate whose only controls are internal is thinner than this repo's
-standard for far less load-bearing checks.
+WHY BOTH EXIST. `selftest()` proves the pure logic -- the request parser and every way of writing a bad exemption -- and it runs before any verdict, so a broken instrument never judges anything. What it CANNOT reach is assertions 5-9, which are defined over the tree: the map, the allowlist, the reachability record, the workflows and the deploy scripts. Those had no fixture coverage
+at all, and they are about to be the sole guard on every credential once GitHub secrets go away. A gate whose only controls are internal is thinner than this repo's standard for far less load-bearing checks.
 
-`BWS_MAP_ROOT` re-points every ROOT-derived path at a fixture. It is not an
-escape hatch: the anti-vacuity clauses fail on a tree that holds nothing, which
-the last case here proves.
+`BWS_MAP_ROOT` re-points every ROOT-derived path at a fixture. It is not an escape hatch: the anti-vacuity clauses fail on a tree that holds nothing, which the last case here proves.
 
-THE FIXTURE IS A GIT REPOSITORY, and that is not scaffolding. The gate's corpus
-scan enumerates TRACKED files, so a fixture with an untracked map is a fixture
-the gate reads as empty -- and it would then fail every case for the wrong
-reason. `git init` plus one commit is the cheapest way to be a tree the subject
-can actually see.
+THE FIXTURE IS A GIT REPOSITORY, and that is not scaffolding. The gate's corpus scan enumerates TRACKED files, so a fixture with an untracked map is a fixture the gate reads as empty -- and it would then fail every case for the wrong reason. `git init` plus one commit is the cheapest way to be a tree the subject can actually see.
 """
 
 import json
@@ -189,11 +176,7 @@ def test_the_instrument_runs_before_any_verdict(gate):
     """PORT-ONLY. Every case above reads a VERDICT out of the gate, and a verdict
     is worth nothing if the instrument that produced it was never proven.
 
-    `check_bws_map.py` runs its own `selftest()` ahead of every judgement (its
-    `main` calls it and refuses when it fails), so this drives that path directly
-    and requires it green. A gate whose pure logic is broken must never reach the
-    tree at all, and this is the case that says so out loud rather than trusting
-    the ordering to stay put.
+    `check_bws_map.py` runs its own `selftest()` ahead of every judgement (its `main` calls it and refuses when it fails), so this drives that path directly and requires it green. A gate whose pure logic is broken must never reach the tree at all, and this is the case that says so out loud rather than trusting the ordering to stay put.
     """
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE)

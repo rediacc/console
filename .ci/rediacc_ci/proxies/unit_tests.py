@@ -1,14 +1,10 @@
 """Port of `.ci/scripts/test/proxies/proxy-unit-tests.sh`.
 
-Local proxy for a workspace unit-test suite that CI runs and the local gate set
-does not, wired as TWO registered gates over one script:
-`check:test-provisioning` (`package.json:393`, `@rediacc/provisioning test`) and
-`check:test-e2e-unit` (`package.json:394`, `@rediacc/e2e-tests test:unit`).
+Local proxy for a workspace unit-test suite that CI runs and the local gate set does not, wired as TWO registered gates over one script: `check:test-provisioning` (`package.json:393`, `@rediacc/provisioning test`) and `check:test-e2e-unit` (`package.json:394`, `@rediacc/e2e-tests test:unit`).
 
     python3 -m rediacc_ci.proxies.unit_tests <workspace> <npm script key>
 
-WHY A WRAPPER AND NOT A BARE `npm run test -w <ws>`, preserved from the twin
-because all three reasons are real failure shapes:
+WHY A WRAPPER AND NOT A BARE `npm run test -w <ws>`, preserved from the twin because all three reasons are real failure shapes:
 
  1. THE 77 CONTRACT. A bare npm key cannot distinguish "the suite failed" from
     "vitest is not installed on this host". Both exit 1.
@@ -23,8 +19,7 @@ because all three reasons are real failure shapes:
 -----------------------------------------------------------------------------
 FIXED 2026-09-10: THE SUMMARY READER WAS COLOUR-BLIND AND TOOK THE WRONG TOKEN
 -----------------------------------------------------------------------------
-The twin's old `:122-133` (and this port's old `SUMMARY_RE`) had two bugs,
-both measured against a real vitest on a scratch workspace:
+The twin's old `:122-133` (and this port's old `SUMMARY_RE`) had two bugs, both measured against a real vitest on a scratch workspace:
 
 1. COLOUR-BLIND. vitest's ANSI SGR escapes sit BETWEEN "Tests" and the number
    in any CI-shaped run (`CI=true GITHUB_ACTIONS=true`, no real TTY needed --
@@ -39,18 +34,13 @@ both measured against a real vitest on a scratch workspace:
    suite this coincidentally matched the true count and only leaked one
    misleading PASS line inside an already-red run.
 
-The fix strips ANSI SGR sequences first (`_ANSI_RE`), then reads the trailing
-"(N)" total off the "Tests" line -- correct in the clean, coloured and mixed
-cases alike, and does not depend on which side of "|" wins. Pinned by
-`test_proxies_unit_tests.py::test_a_partly_failing_suite_reports_the_failed_
-count_on_both_sides` and `test_the_summary_regex_cannot_see_a_coloured_
+The fix strips ANSI SGR sequences first (`_ANSI_RE`), then reads the trailing "(N)" total off the "Tests" line -- correct in the clean, coloured and mixed cases alike, and does not depend on which side of "|" wins. Pinned by `test_proxies_unit_tests.py::test_a_partly_failing_suite_reports_the_failed_ count_on_both_sides` and `test_the_summary_regex_cannot_see_a_coloured_
 vitest_line`.
 
 -----------------------------------------------------------------------------
 THE WORKSPACE RESOLVER IS PYTHON, AND THE `npm query` IT AVOIDS STAYS AVOIDED
 -----------------------------------------------------------------------------
-`:65-74` resolves the workspace directory by globbing the root package.json's
-own `workspaces` entries and reading each candidate's `name`, deliberately not
+`:65-74` resolves the workspace directory by globbing the root package.json's own `workspaces` entries and reading each candidate's `name`, deliberately not
 with `npm query` (same answer, 31 ms against 1,056 ms, and no dependency on
 npm query's output schema). `resolve_workspace` does the same walk in Python;
 the FIRST match wins and the search stops, as `process.exit(0)` does there.
@@ -119,11 +109,7 @@ def has_script(root: pathlib.Path, ws_dir: str, key: str) -> bool:
 
 def summary_count(both: str) -> str:
     """FIXED 2026-09-10, mirroring `:122-133` of the twin. Strip vitest's ANSI
-    SGR escapes first (they sit BETWEEN "Tests" and the number in any
-    CI-shaped run, which made the old regex simply not match), then read the
-    trailing "(N)" total off the "Tests" line -- correct whether the run is
-    clean ("Tests  N passed (N)") or mixed ("Tests  F failed | P passed (N)"),
-    since it no longer depends on which token comes first.
+    SGR escapes first (they sit BETWEEN "Tests" and the number in any CI-shaped run, which made the old regex simply not match), then read the trailing "(N)" total off the "Tests" line -- correct whether the run is clean ("Tests N passed (N)") or mixed ("Tests F failed | P passed (N)"), since it no longer depends on which token comes first.
     """
     found = SUMMARY_RE.findall(_ANSI_RE.sub("", both))
     return found[-1] if found else ""

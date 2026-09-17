@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """The quality-gate battery: run every `.ci/scripts/test/gates/test-*.sh` and judge it.
 
-THE TWIN IT COEXISTS WITH IS `.ci/scripts/test/run-all.sh`, AND IT IS NOT DELETED.
-Invariant 5: a twin is never removed in the change that ports it. Both runners
+THE TWIN IT COEXISTS WITH IS `.ci/scripts/test/run-all.sh`, AND IT IS NOT DELETED. Invariant 5: a twin is never removed in the change that ports it. Both runners
 schedule the same 148 files and both must reach the same verdict; deleting the shell
 one here would remove the only thing that can contradict this one on a real tree.
 
-WHAT IT KEEPS FROM run-all.sh, deliberately byte-for-byte, because a reader will put
-the two transcripts side by side:
+WHAT IT KEEPS FROM run-all.sh, deliberately byte-for-byte, because a reader will put the two transcripts side by side:
 
   * the per-test block: `TEST: <file>` then the test's own PASS lines,
   * the verdict banner `Quality-gate tests: N passed, M failed (A assertions)`,
@@ -25,37 +23,18 @@ THE THREE REFUSALS, and every one of them was paid for on the shell side first:
   3. ZERO TESTS MATCHED is a FAILURE. A glob that stops matching otherwise reports
      success having run nothing.
 
-Plus a fourth this runner inherits: the battery may not leave a TRACKED file
-modified. On 2026-09-03 a gate test drove `--upgrade` against the real
-.devcontainer/Dockerfile and restored it from a trap, and an unrelated gate reported
-"setup --check changed the working tree", sending the reader into run.sh.
+Plus a fourth this runner inherits: the battery may not leave a TRACKED file modified. On 2026-09-03 a gate test drove `--upgrade` against the real .devcontainer/Dockerfile and restored it from a trap, and an unrelated gate reported "setup --check changed the working tree", sending the reader into run.sh.
 
-WHERE ISOLATION COMES FROM, AND WHAT HAPPENS WHEN IT IS NOT THERE. The W/S/T schedule
-is DERIVED from `scripts/ci-runner/gates.lock.json`: a gate test declaring a `tree:`
-resource under `mutex` is a real-tree WRITER, one declaring it under `reads` is a
-SCANNER, and everything else is fixture-isolated. That is the same contract
-`scripts/ci-runner/pool.ts` schedules by, which is the whole point -- two schedulers
-that decide isolation separately WILL disagree, and on 2026-09-06 they did: run-all.sh
-honoured three writers while the manifest registered none, so `npm run ci` ran exactly
-the combination that manufactures a flake.
+WHERE ISOLATION COMES FROM, AND WHAT HAPPENS WHEN IT IS NOT THERE. The W/S/T schedule is DERIVED from `scripts/ci-runner/gates.lock.json`: a gate test declaring a `tree:` resource under `mutex` is a real-tree WRITER, one declaring it under `reads` is a SCANNER, and everything else is fixture-isolated. That is the same contract `scripts/ci-runner/pool.ts` schedules by, which is the
+whole point -- two schedulers that decide isolation separately WILL disagree, and on 2026-09-06 they did: run-all.sh honoured three writers while the manifest registered none, so `npm run ci` ran exactly the combination that manufactures a flake.
 
-MEASURED 2026-09-07, EARLIER THE SAME DAY: zero of the 148 gate-test entries in
-gates.lock.json carried `mutex`, `reads`, `heavy` or `weight` -- the lock declared no
-isolation at all, and this paragraph said so. The cause was a MISSING TYPE rather than
-missing effort: `gate-spec.ts` declared `mutex?: string[]` and had no `reads` field,
-so the 21 scanner gate tests were undeclarable while `classify_from_lock` was already
-asking for exactly that claim.
+MEASURED 2026-09-07, EARLIER THE SAME DAY: zero of the 148 gate-test entries in gates.lock.json carried `mutex`, `reads`, `heavy` or `weight` -- the lock declared no isolation at all, and this paragraph said so. The cause was a MISSING TYPE rather than missing effort: `gate-spec.ts` declared `mutex?: string[]` and had no `reads` field, so the 21 scanner gate tests were undeclarable
+while `classify_from_lock` was already asking for exactly that claim.
 
-CORRECTED LATER THE SAME DAY: `reads?: string[]` was added to the spec and the lock now
-carries `mutex: ['tree:repo']` on the 4 real-tree writers and `reads: ['tree:repo']` on
-the 21 scanners, derived FROM run-all.sh's fallback arrays rather than invented. So this
-runner reads a real contract and no longer degrades to serial on the live lock.
+CORRECTED LATER THE SAME DAY: `reads?: string[]` was added to the spec and the lock now carries `mutex: ['tree:repo']` on the 4 real-tree writers and `reads: ['tree:repo']` on the 21 scanners, derived FROM run-all.sh's fallback arrays rather than invented. So this runner reads a real contract and no longer degrades to serial on the live lock.
 
-The degrade-to-serial path STAYS, because the reason for it is unchanged: this runner
-still does NOT carry a hand-written W/S list -- copying the fallback arrays here would
-make three copies of a definition whose duplication is the defect being removed -- and
-serial is the only safe choice under an unknown contract. Classifying everything as
-fixture-isolated would be a guess, and the guess is wrong for at least four files.
+The degrade-to-serial path STAYS, because the reason for it is unchanged: this runner still does NOT carry a hand-written W/S list -- copying the fallback arrays here would make three copies of a definition whose duplication is the defect being removed -- and serial is the only safe choice under an unknown contract. Classifying everything as fixture-isolated would be a guess, and
+the guess is wrong for at least four files.
 
     RUN_ALL_WRITERS / RUN_ALL_SCANNERS override membership, the same names and the
     same meaning run-all.sh gives them, so a driver that already sets them gets the
@@ -73,21 +52,11 @@ EXIT CODES
     .ci/rediacc_ci/battery.py --list        print the schedule without running it
     .ci/rediacc_ci/battery.py --selftest    prove this runner can fail
 
-NO `---- gate ----` HEADER HERE, AND THE REASON THIS FILE USED TO GIVE WAS FALSE.
-It said `scripts/gate-bind.ts` "only scans `.ci/scripts/` and `scripts/`", so a
-header at this path would be inert. Measured 2026-09-09 by CALLING the real
+NO `---- gate ----` HEADER HERE, AND THE REASON THIS FILE USED TO GIVE WAS FALSE. It said `scripts/gate-bind.ts` "only scans `.ci/scripts/` and `scripts/`", so a header at this path would be inert. Measured 2026-09-09 by CALLING the real
 function rather than reading it: `inScope('.ci/rediacc_ci/battery.py')` is TRUE.
-`.ci/rediacc_ci` was added to that regex on 2026-09-06 and the comment above it
-says why -- a header outside the scan is INVISIBLE rather than unregistered, which
-is worse. The live scope is `scripts/gate-bind.ts:207-208`:
-`/^(\\.ci\\/scripts|\\.ci\\/rediacc_ci|scripts)\\//`. A stale premise here would have
-decided the registration, so it is corrected rather than left as prose.
+`.ci/rediacc_ci` was added to that regex on 2026-09-06 and the comment above it says why -- a header outside the scan is INVISIBLE rather than unregistered, which is worse. The live scope is `scripts/gate-bind.ts:207-208`: `/^(\\.ci\\/scripts|\\.ci\\/rediacc_ci|scripts)\\//`. A stale premise here would have decided the registration, so it is corrected rather than left as prose.
 
-THE DECISION IS UNCHANGED, but it now rests on the real reason: this file is a
-RUNNER, not a gate. `check:ci-quality-gates` is registered by hand in
-`scripts/ci-runner/manifest.ts` with `gate: false` against the existing
-"Quality-gate unit tests" step, exactly as its predecessor was, and the runner it
-points at carries no header either. Registration is the root driver's, via
+THE DECISION IS UNCHANGED, but it now rests on the real reason: this file is a RUNNER, not a gate. `check:ci-quality-gates` is registered by hand in `scripts/ci-runner/manifest.ts` with `gate: false` against the existing "Quality-gate unit tests" step, exactly as its predecessor was, and the runner it points at carries no header either. Registration is the root driver's, via
 package.json, the manifest and the workflow.
 """
 
@@ -137,9 +106,7 @@ def classify_from_lock(lock_path: pathlib.Path, claim: str) -> set[str]:
     """Basenames of gate tests whose lock entry declares a `tree:` resource under
     `claim` (`mutex` for exclusive, `reads` for shared).
 
-    Returns an EMPTY SET when the lock is unreadable or declares nothing, and the
-    caller decides what that means -- "no declarations yet" and "the lock is broken"
-    must not silently become the same thing as "nothing needs isolating".
+    Returns an EMPTY SET when the lock is unreadable or declares nothing, and the caller decides what that means -- "no declarations yet" and "the lock is broken" must not silently become the same thing as "nothing needs isolating".
     """
     try:
         with lock_path.open(encoding="utf-8") as handle:
@@ -178,10 +145,7 @@ def _env_set(name: str, env: dict[str, str]) -> set[str] | None:
 class Schedule:
     """W / S / T membership, plus WHERE it came from and what that costs.
 
-    `source` is part of the value, not a log line. A caller that cannot tell a
-    schedule derived from the registry apart from one that fell back has no way to
-    decide whether running in parallel is safe, which is exactly the decision that
-    went wrong when two runners disagreed about isolation.
+    `source` is part of the value, not a log line. A caller that cannot tell a schedule derived from the registry apart from one that fell back has no way to decide whether running in parallel is safe, which is exactly the decision that went wrong when two runners disagreed about isolation.
     """
 
     def __init__(self, writers: set[str], scanners: set[str], source: str) -> None:
@@ -204,14 +168,8 @@ class Schedule:
 def build_schedule(lock_path: pathlib.Path, env: dict[str, str] | None = None) -> Schedule:
     """`env` is an EXPLICIT INPUT, defaulting to the process environment.
 
-    IT IS A PARAMETER BECAUSE THE SELFTEST NEEDS TO CONTROL IT, and that was not a
-    guess: this function read os.environ directly until 2026-09-07, when the runner
-    was driven on a shell that had exported RUN_ALL_WRITERS for the twin. Four
-    controls that assert on the SOURCE of a schedule ("lock", "undeclared") got "env"
-    instead and the runner refused to report -- correctly, loudly, and for a defect
-    in its own controls rather than in the battery. A control whose verdict depends
-    on an ambient variable is a control that passes or fails for reasons the reader
-    cannot see.
+    IT IS A PARAMETER BECAUSE THE SELFTEST NEEDS TO CONTROL IT, and that was not a guess: this function read os.environ directly until 2026-09-07, when the runner was driven on a shell that had exported RUN_ALL_WRITERS for the twin. Four controls that assert on the SOURCE of a schedule ("lock", "undeclared") got "env" instead and the runner refused to report -- correctly, loudly,
+    and for a defect in its own controls rather than in the battery. A control whose verdict depends on an ambient variable is a control that passes or fails for reasons the reader cannot see.
     """
     env = os.environ if env is None else env
     env_writers = _env_set("RUN_ALL_WRITERS", env)
@@ -298,8 +256,7 @@ def tree_state(root: pathlib.Path) -> str:
     several tests legitimately plant fixtures inside the tree; a TRACKED file
     changing is the defect.
 
-    An unavailable git yields an EMPTY snapshot on both sides, so the before/after
-    comparison stays honest rather than firing spuriously.
+    An unavailable git yields an EMPTY snapshot on both sides, so the before/after comparison stays honest rather than firing spuriously.
     """
     try:
         proc = subprocess.run(
@@ -336,8 +293,7 @@ class Report:
 def score(outcome: Outcome, report: Report) -> None:
     """The whole verdict for one test, as a pure function of its Outcome.
 
-    PURE AND SEPARATE FROM PRINTING, so the selftest can drive every branch --
-    including `lost`, which is hard to produce for real -- without a scheduler.
+    PURE AND SEPARATE FROM PRINTING, so the selftest can drive every branch -- including `lost`, which is hard to produce for real -- without a scheduler.
     """
     verdict = outcome.verdict
     if verdict == "pass":

@@ -1,14 +1,9 @@
 """`rediacc_ci.quality.toolchain_pins` against the shell pipelines it replaces.
 
-WHY A DIFFERENTIAL. A1's detector is a three-stage grep pipeline whose behaviour
-on a comment, on a line that READS the pin, and on a line that restates it is
-decided by grep's `-F`/`-v` semantics rather than by anything a reader could
-infer, and the twin's own comments record two false positives it produced. A6's
-detector is four chained greps with three exemptions, each added after a
-measured false positive with a run id attached. Both are run for real here.
+WHY A DIFFERENTIAL. A1's detector is a three-stage grep pipeline whose behaviour on a comment, on a line that READS the pin, and on a line that restates it is decided by grep's `-F`/`-v` semantics rather than by anything a reader could infer, and the twin's own comments record two false positives it produced. A6's detector is four chained greps with three exemptions, each added
+after a measured false positive with a run id attached. Both are run for real here.
 
-The whole gate is covered by `.ci/shadow/w7p2-toolchain-pins.observations.jsonl`
-over five distinct trees.
+The whole gate is covered by `.ci/shadow/w7p2-toolchain-pins.observations.jsonl` over five distinct trees.
 """
 
 import os
@@ -108,20 +103,15 @@ def test_a9_executes_the_pin_rather_than_reading_it(
 ) -> None:
     """A1-A8 were all green while `toolchain_pin_for` returned "" with status 0.
 
-    The empty value travelled into a download URL and produced a curl 404 naming
-    GitHub, which is the wrong problem to go debugging. A9 exists because no
-    textual assertion could have caught it.
+    The empty value travelled into a download URL and produced a curl 404 naming GitHub, which is the wrong problem to go debugging. A9 exists because no textual assertion could have caught it.
 
-    THE `*_VERSION` NAMES ARE CLEARED FIRST, and without that the mutant half of
-    this test measures the ENVIRONMENT instead of the library. `pin_from_bare_
+    THE `*_VERSION` NAMES ARE CLEARED FIRST, and without that the mutant half of this test measures the ENVIRONMENT instead of the library. `pin_from_bare_
     source` shells out and inherits `os.environ`; a CI lane runs
     `.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"`, which exports
     `SHELLCHECK_VERSION=0.10.0` into every later step. So the mutant -- a copy of
-    the library with `toolchain_load` stubbed to a no-op, whose whole purpose is
-    to resolve EMPTY -- happily resolved `0.10.0` from the ambient environment,
+    the library with `toolchain_load` stubbed to a no-op, whose whole purpose is to resolve EMPTY -- happily resolved `0.10.0` from the ambient environment,
     and this assertion read `assert '0.10.0' == ''` in run 34970782616. On a
-    developer shell nothing exports those names, so it passed for a reason that
-    had nothing to do with the code under test.
+    developer shell nothing exports those names, so it passed for a reason that had nothing to do with the code under test.
     """
     for name in [key for key in os.environ if key.endswith("_VERSION")]:
         monkeypatch.delenv(name, raising=False)

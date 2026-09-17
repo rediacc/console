@@ -1,23 +1,15 @@
 r"""`rediacc_ci.quality.agent_browser_exit` against the shell it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Almost every decision in
-this gate is made by a shell construct whose exact behaviour is not inferable
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Almost every decision in this gate is made by a shell construct whose exact behaviour is not inferable
 from reading it: an ERE with a POSIX character class (`-[a-z]*e`), five `case`
 patterns matched against the RAW line, a `while IFS= read -r` loop that silently
-drops a file's last line when it has no trailing newline, and a two-line
-`printf` whose second line is post-processed by `sed`. A table of expected
-strings would be a table of what the PORT does, asserted against itself.
+drops a file's last line when it has no trailing newline, and a two-line `printf` whose second line is post-processed by `sed`. A table of expected strings would be a table of what the PORT does, asserted against itself.
 
-These are the seams the committed ledger cannot isolate.
-`.ci/shadow/w7p2-agent-browser-exit.observations.jsonl` compares the WHOLE gate
+These are the seams the committed ledger cannot isolate. `.ci/shadow/w7p2-agent-browser-exit.observations.jsonl` compares the WHOLE gate
 over five distinct trees; it cannot tell you which of the five `case` arms
-rejected a line, because both sides simply printed nothing for it. This file
-takes each arm on its own.
+rejected a line, because both sides simply printed nothing for it. This file takes each arm on its own.
 
-THE FRAGMENTS BELOW ARE LIFTED FROM `.ci/scripts/quality/check-agent-browser-exit.sh`
-lines 31-49 with the variables substituted and nothing else changed. Where a
-fragment is a `case`, it is reproduced as a `case` rather than as an equivalent
-`if`, because the equivalence is the thing under test.
+THE FRAGMENTS BELOW ARE LIFTED FROM `.ci/scripts/quality/check-agent-browser-exit.sh` lines 31-49 with the variables substituted and nothing else changed. Where a fragment is a `case`, it is reproduced as a `case` rather than as an equivalent `if`, because the equivalence is the thing under test.
 """
 
 import pathlib
@@ -68,10 +60,7 @@ def test_set_e_eligibility_matches_grep(tmp_path: pathlib.Path, line: str) -> No
 def test_set_o_errexit_is_a_carried_blind_spot() -> None:
     """Pinned as a DECISION, not left to be inferred from the table above.
 
-    `set -o errexit` kills a script exactly as `set -e` does, and this gate does
-    not look at such a file at all. The assertion exists so that a later
-    "improvement" to the regex has to delete a named control rather than quietly
-    widen the corpus, which would change the verdict on the real tree.
+    `set -o errexit` kills a script exactly as `set -e` does, and this gate does not look at such a file at all. The assertion exists so that a later "improvement" to the regex has to delete a named control rather than quietly widen the corpus, which would change the verdict on the real tree.
     """
     assert abe.SET_E_RE.search("set -o errexit") is None
     assert abe.SET_E_RE.search("set -e") is not None
@@ -147,9 +136,7 @@ def test_line_skip_list_matches_case(tmp_path: pathlib.Path, line: str) -> None:
 def test_unterminated_last_line_is_dropped_by_both(tmp_path: pathlib.Path) -> None:
     """The defect this port preserves, proven against bash rather than asserted.
 
-    `read` returns non-zero at EOF even though it has already assigned the
-    partial line, so the loop body never runs for it. Any "fix" in the port
-    would make it report a finding the twin does not, which is the NEW_SIDE_NOISY
+    `read` returns non-zero at EOF even though it has already assigned the partial line, so the loop body never runs for it. Any "fix" in the port would make it report a finding the twin does not, which is the NEW_SIDE_NOISY
     class the shadow comparator names.
     """
     target = tmp_path / "f.sh"
@@ -189,9 +176,7 @@ REPORT_CASES = [
 def test_report_shape_matches_printf_and_sed(tmp_path: pathlib.Path, line: str) -> None:
     """`printf '  %s:%d\\n    %s\\n' "$rel" "$n" "$(echo "$line" | sed ...)"`.
 
-    The `sed 's/^[[:space:]]*//'` strips the LEADING indent only, and the whole
-    thing sits inside a command substitution, which strips trailing NEWLINES but
-    not trailing spaces. Both halves of that are in the table.
+    The `sed 's/^[[:space:]]*//'` strips the LEADING indent only, and the whole thing sits inside a command substitution, which strips trailing NEWLINES but not trailing spaces. Both halves of that are in the table.
     """
     code, out, err = diff.bash_streams(
         """printf '  %s:%d\n    %s\n' "sub/x.sh" 7 "$(echo "$LINE" | sed 's/^[[:space:]]*//')" """,
@@ -208,8 +193,7 @@ def test_report_shape_matches_printf_and_sed(tmp_path: pathlib.Path, line: str) 
 def test_shell_corpus_matches_grep_rl(tmp_path: pathlib.Path) -> None:
     """`grep -rl --include='*.sh' | grep -v ... | sort`, file set and order.
 
-    Sorted comparison, because the ORDER decides the order findings are printed
-    in and a reordered report is a reordered diff for every future reviewer.
+    Sorted comparison, because the ORDER decides the order findings are printed in and a reordered report is a reordered diff for every future reviewer.
     """
     (tmp_path / "a.sh").write_text('agent-browser open "$u"\n', encoding="utf-8")
     (tmp_path / "b.sh").write_text("nothing here\n", encoding="utf-8")
@@ -239,10 +223,7 @@ def test_shell_corpus_matches_grep_rl(tmp_path: pathlib.Path) -> None:
 def test_js_corpus_prunes_dist_and_the_shell_one_does_not(tmp_path: pathlib.Path) -> None:
     """The two prune lists genuinely differ, and that difference is the twin's.
 
-    `dist` is excluded from the JS corpus and NOT from the shell corpus. Asserted
-    rather than commented, because it reads like a copy-paste slip and is not:
-    built JS is a copy of source that would double every finding, while a `.sh`
-    under a `dist` directory is an ordinary script.
+    `dist` is excluded from the JS corpus and NOT from the shell corpus. Asserted rather than commented, because it reads like a copy-paste slip and is not: built JS is a copy of source that would double every finding, while a `.sh` under a `dist` directory is an ordinary script.
     """
     dist = tmp_path / "dist"
     dist.mkdir()
@@ -258,9 +239,7 @@ def test_js_corpus_prunes_dist_and_the_shell_one_does_not(tmp_path: pathlib.Path
 def test_js_half_runs_first_and_hides_the_shell_half(tmp_path: pathlib.Path) -> None:
     """A tree with BOTH defects reports only the JavaScript one.
 
-    This is control flow, not a finding rule, and it is the property most likely
-    to be lost by someone merging the two reports into one pass. The ledger's
-    `abe-4` row is the whole-gate version of this same claim.
+    This is control flow, not a finding rule, and it is the property most likely to be lost by someone merging the two reports into one pass. The ledger's `abe-4` row is the whole-gate version of this same claim.
     """
     (tmp_path / "a.ts").write_text("execSync('agent-browser open ' + u);\n", encoding="utf-8")
     (tmp_path / "b.sh").write_text('set -e\nagent-browser open "$u"\n', encoding="utf-8")
@@ -273,9 +252,7 @@ def test_js_half_runs_first_and_hides_the_shell_half(tmp_path: pathlib.Path) -> 
 def test_selftest_is_green() -> None:
     """The port's own plants and mirrors, driven from pytest.
 
-    Not redundant with running `--selftest` from the shell: this is the call that
-    fails the pytest suite if a control is deleted, which is the failure mode the
-    flag on its own cannot catch (nobody runs it).
+    Not redundant with running `--selftest` from the shell: this is the call that fails the pytest suite if a control is deleted, which is the failure mode the flag on its own cannot catch (nobody runs it).
     """
     assert abe.selftest() == 0
 

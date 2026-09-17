@@ -1,18 +1,13 @@
 """Port of `.ci/scripts/infra/ci-start-elite.sh` (120 lines).
 
-Starts the Elite on-premise Docker Compose stack through the operator entry
-point (`private/elite/run.sh up`), writes the `.env` that entry point reads,
-waits for the web health endpoint, and prints the surviving containers.
+Starts the Elite on-premise Docker Compose stack through the operator entry point (`private/elite/run.sh up`), writes the `.env` that entry point reads, waits for the web health endpoint, and prints the surviving containers.
 
 LIVE CALLERS OF THE TWIN, neither repointed by this port:
   * `.github/workflows/ci.yml:1117` -- `run: .ci/scripts/infra/ci-start-elite.sh`
   * `.ci/breakpoint/scripts/start-origin.sh:88,92,111` -- the breakpoint
     `--services onprem` hook, which reads the twin's path from a variable.
 
-WHAT MOVES AND WHAT DOES NOT. The orchestration moves to Python: the `.env`
-write, the poll loop, the diagnostics, the exit codes. Two things stay bash and
-are still driven as bash, because a Python reimplementation of either would be a
-second instrument certifying itself:
+WHAT MOVES AND WHAT DOES NOT. The orchestration moves to Python: the `.env` write, the poll loop, the diagnostics, the exit codes. Two things stay bash and are still driven as bash, because a Python reimplementation of either would be a second instrument certifying itself:
 
   * `.ci/scripts/infra/ci-env.sh` is SOURCED, not executed. It is on
     `.ci/policy/.language-policy-allowlist` as a sourced-only file for exactly
@@ -26,61 +21,34 @@ PORT NOTES, each driven before it was written down.
 
 ONLY EXPORTED VARIABLES SURVIVE THE SOURCE, and that is exact rather than
 approximate. `env -0` lists the exported set; ci-env.sh's `WORKFLOW_TAG`,
-`WORKFLOW_CI_MODE`, `WORKFLOW_WEB_TAG`, `KEYS`, `X25519_KEYS` and
-`PERSISTED_ENV` are plain shell variables, and the twin reads none of them after
-the `source` on :23. The four names the twin does interpolate into `.env`
-(`DOCKER_REGISTRY`, `TAG`, `WEB_TAG`, `SYSTEM_DOMAIN`) are all `export`ed by
-ci-env.sh (:32, :44, :45, :106).
+`WORKFLOW_CI_MODE`, `WORKFLOW_WEB_TAG`, `KEYS`, `X25519_KEYS` and `PERSISTED_ENV` are plain shell variables, and the twin reads none of them after the `source` on :23. The four names the twin does interpolate into `.env` (`DOCKER_REGISTRY`, `TAG`, `WEB_TAG`, `SYSTEM_DOMAIN`) are all `export`ed by ci-env.sh (:32, :44, :45, :106).
 
-FOUR NAMES ARE DELIBERATELY NOT IMPORTED BACK: `_`, `SHLVL`, `PWD`, `OLDPWD`.
-Those describe the bash that did the sourcing, not the configuration it
-produced, and `SHLVL` in particular differs between a bash parent and a Python
-parent no matter how faithful the rest is.
+FOUR NAMES ARE DELIBERATELY NOT IMPORTED BACK: `_`, `SHLVL`, `PWD`, `OLDPWD`. Those describe the bash that did the sourcing, not the configuration it produced, and `SHLVL` in particular differs between a bash parent and a Python parent no matter how faithful the rest is.
 
 A FAILING `source` KILLS THE SCRIPT, and the port reproduces the exit status
 rather than a status of its own. ci-env.sh runs `set -e`; sourced into a caller
-that also runs `set -e` (:9), any failing command inside it exits the whole
-script right there. `source_ci_env` therefore returns bash's own rc and `main`
-returns it unchanged.
+that also runs `set -e` (:9), any failing command inside it exits the whole script right there. `source_ci_env` therefore returns bash's own rc and `main` returns it unchanged.
 
 THE `.env` REDIRECT IS THE FIRST THING THAT CAN DIE ON A HOST WITHOUT THE
 SUBMODULE. `{ ... } >"$ELITE_DIR/.env"` (:36-45) fails when `private/elite` is
-absent, and under `set -e` bash exits 1 after printing its own diagnostic:
-`ci-start-elite.sh: line 45: <path>/.env: No such file or directory`. Driven.
-This port exits 1 with a message naming the same path, and DOES NOT forge
-bash's `line 45` prefix -- a hard-coded line number in a port goes stale the
-first time the twin gains a comment. `test_infra_ci_start_elite.py` pins this
-as a named, deliberate divergence rather than letting it pass unnoticed.
+absent, and under `set -e` bash exits 1 after printing its own diagnostic: `ci-start-elite.sh: line 45: <path>/.env: No such file or directory`. Driven. This port exits 1 with a message naming the same path, and DOES NOT forge bash's `line 45` prefix -- a hard-coded line number in a port goes stale the first time the twin gains a comment. `test_infra_ci_start_elite.py` pins this as
+a named, deliberate divergence rather than letting it pass unnoticed.
 
-`./run.sh logs web` FAILING ON THE FAILURE PATH SUPPRESSES THE `exit 1`. The
-recovery block (:106-112) is the command following the final `||`, so `set -e`
-is NOT relaxed inside it: if `./run.sh logs web` fails, bash exits with THAT
-status and :111's `exit 1` never runs. Driven:
+`./run.sh logs web` FAILING ON THE FAILURE PATH SUPPRESSES THE `exit 1`. The recovery block (:106-112) is the command following the final `||`, so `set -e` is NOT relaxed inside it: if `./run.sh logs web` fails, bash exits with THAT status and :111's `exit 1` never runs. Driven:
 `bash -c 'set -e; f(){ return 1; }; f || { ./nope.sh; exit 1; }'` exits 127.
-Reproduced exactly -- `main` returns the logs command's rc when it is non-zero,
-1 otherwise.
+Reproduced exactly -- `main` returns the logs command's rc when it is non-zero, 1 otherwise.
 
-THE HEALTH POLL IS A BUDGET, NOT A DEADLINE, on both sides. The twin adds
-`interval` to `elapsed` after each sleep and re-tests `elapsed < timeout`, so a
+THE HEALTH POLL IS A BUDGET, NOT A DEADLINE, on both sides. The twin adds `interval` to `elapsed` after each sleep and re-tests `elapsed < timeout`, so a
 180s/2s budget performs 90 probes and the last one starts at t=178s; the wall
-clock the probes themselves consume is not counted. Reproduced with the same
-arithmetic rather than with a monotonic deadline, because a deadline would
-change the probe COUNT on a slow host and the probe count is what a differential
-against a scripted fake `curl` can see.
+clock the probes themselves consume is not counted. Reproduced with the same arithmetic rather than with a monotonic deadline, because a deadline would change the probe COUNT on a slow host and the probe count is what a differential against a scripted fake `curl` can see.
 
-`\t` INSIDE THE TWIN'S DOUBLE QUOTES IS A LITERAL BACKSLASH-T, NOT A TAB, and
-this port had it wrong until the differential's argv record caught it. Bash does
-not process `\t` inside `"..."`, so `docker ps --format "table
+`\t` INSIDE THE TWIN'S DOUBLE QUOTES IS A LITERAL BACKSLASH-T, NOT A TAB, and this port had it wrong until the differential's argv record caught it. Bash does not process `\t` inside `"..."`, so `docker ps --format "table
 {{.Names}}\t{{.Status}}\t{{.Ports}}"` passes docker a format string containing
-two backslash-t sequences, which docker's own `table` directive then expands.
-A Python `"\t"` would have handed docker a real tab and quietly changed the
-column layout of a diagnostic nobody reads closely. The argument is a raw
-string here for that reason.
+two backslash-t sequences, which docker's own `table` directive then expands. A Python `"\t"` would have handed docker a real tab and quietly changed the column layout of a diagnostic nobody reads closely. The argument is a raw string here for that reason.
 
 `curl` MISSING IS A FAILED PROBE, NOT A CRASH. The twin never checks for the
 binary; bash turns a missing one into 127 which the `if` treats as "not ready".
-`subprocess.run` raises `FileNotFoundError` for that case, so it is caught and
-folded into the same "not ready" arm.
+`subprocess.run` raises `FileNotFoundError` for that case, so it is caught and folded into the same "not ready" arm.
 
 Exit: 0 when the web service came up; the twin's own non-zero status otherwise.
 """
@@ -106,11 +74,7 @@ _SHELL_PRIVATE = frozenset({"_", "SHLVL", "PWD", "OLDPWD"})
 def _console_root() -> pathlib.Path:
     """The twin's `SCRIPT_DIR/../../..` from `.ci/scripts/infra/`.
 
-    This module sits one directory deeper (`.ci/rediacc_ci/infra/`), so the same
-    repository root is `parents[3]` here where the twin's is `parents[2]` of its
-    own directory. `rediacc_ci.paths.repo_root()` is deliberately not used: it
-    honours $REDIACC_CI_ROOT and the twin has no such override, so a fixture
-    pointing one at a tree and not the other would diverge silently.
+    This module sits one directory deeper (`.ci/rediacc_ci/infra/`), so the same repository root is `parents[3]` here where the twin's is `parents[2]` of its own directory. `rediacc_ci.paths.repo_root()` is deliberately not used: it honours $REDIACC_CI_ROOT and the twin has no such override, so a fixture pointing one at a tree and not the other would diverge silently.
     """
     return pathlib.Path(__file__).resolve().parents[3]
 
@@ -118,10 +82,7 @@ def _console_root() -> pathlib.Path:
 def source_ci_env(ci_env_sh: pathlib.Path) -> tuple[int, dict[str, str]]:
     """Run the real bash `ci-env.sh` and return `(rc, exported environment)`.
 
-    stdout and stderr are INHERITED, not captured. ci-env.sh prints three
-    summary lines (:172-175) and up to eight `::add-mask::` directives (:94-100,
-    :109) that must land on this process's real streams, in order, exactly as
-    they do when the twin sources it.
+    stdout and stderr are INHERITED, not captured. ci-env.sh prints three summary lines (:172-175) and up to eight `::add-mask::` directives (:94-100, :109) that must land on this process's real streams, in order, exactly as they do when the twin sources it.
     """
     with tempfile.TemporaryDirectory() as td:
         dump = pathlib.Path(td) / "env.0"

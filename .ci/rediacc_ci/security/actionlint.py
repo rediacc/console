@@ -5,15 +5,12 @@ W7P6 wave 28. The bash twin stays the LIVE registered gate ("Workflow lint
 (actionlint)", lane quality-code); this module is its VERIFIED-EQUIVALENT
 ALTERNATIVE, proved byte-for-byte on both streams by
 `.ci/rediacc_ci/tests/test_security_actionlint.py` and by the K=5 shadow ledger
-`.ci/shadow/w7p6-actionlint.observations.jsonl`. Nothing is repointed at this
-file. Cutover is a separate, later, driver-only step.
+`.ci/shadow/w7p6-actionlint.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
 WHAT IT DOES. Acquires actionlint at the pin (a PATH binary at the exact pinned
 version wins; otherwise a checksum-verified release tarball is fetched into
 a cache directory whose rungs are NOT the ones the twin's line reads as; see `cache_dir`), enumerates every
-workflow file under `.github/workflows/` PLUS the vendorable templates under
-`.ci/*/workflow/`, refuses an empty corpus, and runs `actionlint -no-color` over
-the lot.
+workflow file under `.github/workflows/` PLUS the vendorable templates under `.ci/*/workflow/`, refuses an empty corpus, and runs `actionlint -no-color` over the lot.
 
 REAL RUNS OR STUBS: BOTH, SPLIT THE SAME WAY WAVE 27's dependency-inventory PORT
 SPLIT THEM.
@@ -34,8 +31,7 @@ SPLIT THEM.
     two streams: a port that produced identical bytes by asking a DIFFERENT
     question would pass a stdout comparison and fail the call-log one.
 
-PORT NOTES. Unless an item says otherwise the behaviour is REPRODUCED, not
-repaired.
+PORT NOTES. Unless an item says otherwise the behaviour is REPRODUCED, not repaired.
 
   1. `tr -d 'v'` DELETES EVERY `v`, NOT A LEADING ONE. The PATH-version probe is
      `actionlint --version | head -1 | tr -d 'v'`, so a hypothetical version
@@ -128,8 +124,7 @@ repaired.
      Reproduced by `path_version` returning its status and `ensure_actionlint`
      raising `SystemExit(status)` on it.
 
-ONE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours
-`$REDIACC_CI_ROOT` and the twin's `SCRIPT_DIR/../../..` does not.
+ONE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin's `SCRIPT_DIR/../../..` does not.
 """
 
 from __future__ import annotations
@@ -210,28 +205,20 @@ def cache_dir(version: str) -> pathlib.Path:
 
         CACHE_DIR="${CI_TEMP:-${RUNNER_TEMP:-/tmp}}/actionlint-${ACTIONLINT_VERSION}"
 
-    two lines after `source common.sh`, and `common.sh:509-514` does this at
-    source time, unconditionally:
+    two lines after `source common.sh`, and `common.sh:509-514` does this at source time, unconditionally:
 
         CI_TEMP="$(get_temp_dir)"   # RUNNER_TEMP, else TMPDIR, else /tmp
         export CI_OS CI_ARCH CI_TEMP
 
-    So by the time that line runs, `$CI_TEMP` is ALWAYS non-empty and always
-    common.sh's own answer. Two consequences, both measured 2026-09-14:
+    So by the time that line runs, `$CI_TEMP` is ALWAYS non-empty and always common.sh's own answer. Two consequences, both measured 2026-09-14:
 
         CI_TEMP=/CALLER_SET                 -> CI_TEMP is /tmp    (caller ignored)
         CI_TEMP=/CALLER_SET TMPDIR=/TMPD    -> CI_TEMP is /TMPD   (caller ignored)
 
-    A caller that exports `CI_TEMP` to steer this gate's cache is SILENTLY
-    OVERRULED, and the `:-` fallbacks in the twin's own line are dead text: the
-    effective rung order is `RUNNER_TEMP`, then `TMPDIR`, then `/tmp`, which is
-    not the order the line reads as. Note that this makes the gate DISAGREE with
-    `toolchain.sh:toolchain_cache_dir`, whose order really is `CI_TEMP`,
-    `RUNNER_TEMP`, `TMPDIR` -- so on a host with `CI_TEMP` set, actionlint and
-    shfmt cache in two different places for reasons nobody wrote down.
+    A caller that exports `CI_TEMP` to steer this gate's cache is SILENTLY OVERRULED, and the `:-` fallbacks in the twin's own line are dead text: the effective rung order is `RUNNER_TEMP`, then `TMPDIR`, then `/tmp`, which is not the order the line reads as. Note that this makes the gate DISAGREE with `toolchain.sh:toolchain_cache_dir`, whose order really is `CI_TEMP`,
+    `RUNNER_TEMP`, `TMPDIR` -- so on a host with `CI_TEMP` set, actionlint and shfmt cache in two different places for reasons nobody wrote down.
 
-    Reproduced, not repaired: this function reads the rungs that actually
-    decide, and deliberately does NOT read `CI_TEMP`.
+    Reproduced, not repaired: this function reads the rungs that actually decide, and deliberately does NOT read `CI_TEMP`.
     """
     base = os.environ.get("RUNNER_TEMP", "") or os.environ.get("TMPDIR", "") or "/tmp"
     return pathlib.Path(base) / ("actionlint-%s" % version)
@@ -245,13 +232,9 @@ def path_version(binary: str) -> tuple[str, int]:
 
     THE STATUS IS RETURNED BECAUSE IT IS FATAL. Port notes 1 and 10: the twin
     runs this as `have="$(...)"` under `set -euo pipefail`, so a `--version`
-    that exits non-zero takes the pipeline's status through the command
-    substitution and kills the gate on the spot, silently, with THAT code.
+    that exits non-zero takes the pipeline's status through the command substitution and kills the gate on the spot, silently, with THAT code.
 
-    `126` for a binary that cannot be executed, which is bash's own status for
-    the same condition. `command -v` has already said the path is executable by
-    the time this runs, so it is the OSError-on-fork case rather than a routine
-    one.
+    `126` for a binary that cannot be executed, which is bash's own status for the same condition. `command -v` has already said the path is executable by the time this runs, so it is the OSError-on-fork case rather than a routine one.
     """
     try:
         proc = subprocess.run(
@@ -381,10 +364,7 @@ def collect_targets(root: pathlib.Path | None = None) -> list[str]:
 def template_glob_expansion(root: pathlib.Path | None = None) -> list[str]:
     """What bash's `"$REPO_ROOT"/.ci/*/workflow/*.yml` expands to, LITERAL included.
 
-    A glob that matches nothing is left as its own text by bash (no `nullglob`
-    here), and that literal is what the twin's final `[[ -f "$f" ]]` tests. The
-    literal is returned rather than an empty list precisely so the caller can
-    reproduce the test on it.
+    A glob that matches nothing is left as its own text by bash (no `nullglob` here), and that literal is what the twin's final `[[ -f "$f" ]]` tests. The literal is returned rather than an empty list precisely so the caller can reproduce the test on it.
     """
     base = paths.repo_root() if root is None else root
     pattern = str(base / ".ci" / "*" / "workflow" / "*.yml")
@@ -401,9 +381,7 @@ def template_glob_expansion(root: pathlib.Path | None = None) -> list[str]:
 def collect_targets_status(root: pathlib.Path | None = None) -> int:
     """`collect_targets`'s RETURN STATUS, which is what `set -e` acts on.
 
-    The status of the last `[[ -f "$f" ]]` in the last loop. See port note 3:
-    this is the whole reason an empty corpus exits 1 in silence instead of
-    reaching the exit-3 refusal.
+    The status of the last `[[ -f "$f" ]]` in the last loop. See port note 3: this is the whole reason an empty corpus exits 1 in silence instead of reaching the exit-3 refusal.
     """
     last = template_glob_expansion(root)[-1]
     return 0 if pathlib.Path(last).is_file() else 1

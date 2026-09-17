@@ -2,41 +2,23 @@
 
 Every vacuity floor must actually REFUSE an empty corpus.
 
-WHY THIS IS NOT A `check-*.ts`. `check:ci-enumeration-vacuity` proves a guard is
-PRESENT -- a `MIN_*`, the word VACUOUS, an explicit refusal -- and says so in its
-own blind-spot line. Presence is a source shape. Whether the floor FIRES is
-behaviour. A static version was written on 2026-09-04 and discarded: it was wrong
-on all six names it flagged (names inside string literals and comments, an env var
-compared by a different script, and one floor wired indirectly as
+WHY THIS IS NOT A `check-*.ts`. `check:ci-enumeration-vacuity` proves a guard is PRESENT -- a `MIN_*`, the word VACUOUS, an explicit refusal -- and says so in its own blind-spot line. Presence is a source shape. Whether the floor FIRES is behaviour. A static version was written on 2026-09-04 and discarded: it was wrong on all six names it flagged (names inside string literals and
+comments, an env var compared by a different script, and one floor wired indirectly as
 `needed = observed * MIN_HEADROOM`). No name-matcher can see that last one.
 Running the thing can.
 
-WHAT A GREEN HERE DOES NOT COVER, stated so it is not read as more than it is:
-only the floors whose corpus is addressable from outside, through an environment
-override or a function parameter. The seven whose corpus is fixed relative to
-`__dirname`, or which need a built tree or AWS, are confirmed by reading only.
+WHAT A GREEN HERE DOES NOT COVER, stated so it is not read as more than it is: only the floors whose corpus is addressable from outside, through an environment override or a function parameter. The seven whose corpus is fixed relative to `__dirname`, or which need a built tree or AWS, are confirmed by reading only.
 
-EXIT 77 IS "CANNOT RUN", NOT A VERDICT, and the twin's header records what
-conflating the two cost: `.ci/scripts/security/shfmt.sh` exits 77 when it cannot
-obtain shfmt at the pin, and in the `quality-security` lane `go install shfmt`
-fails. A first version read any non-zero exit as "refused" and then demanded the
-word VACUOUS, so CI reported `FAIL: shfmt: refused (exit 77) but never said
-VACUOUS` about a floor it never reached. A tool that is absent proves nothing
-either way -- and a run where EVERY case skipped has verified nothing, which is
-what the exercised-count refusal below is for.
+EXIT 77 IS "CANNOT RUN", NOT A VERDICT, and the twin's header records what conflating the two cost: `.ci/scripts/security/shfmt.sh` exits 77 when it cannot obtain shfmt at the pin, and in the `quality-security` lane `go install shfmt` fails. A first version read any non-zero exit as "refused" and then demanded the word VACUOUS, so CI reported `FAIL: shfmt: refused (exit 77) but
+never said VACUOUS` about a floor it never reached. A tool that is absent proves nothing either way -- and a run where EVERY case skipped has verified nothing, which is what the exercised-count refusal below is for.
 
 WHERE THE PORT REIMPLEMENTS THE TWIN. The twin greps its captured output with
 `grep -qi 'vacuous'`; the port lowercases the combined streams and asks for the
-substring. Same predicate, one fewer subprocess, and it reads both streams rather
-than a merge decided by the shell.
+substring. Same predicate, one fewer subprocess, and it reads both streams rather than a merge decided by the shell.
 
 THE EXERCISED COUNTER IS NOT MODULE STATE, and that is deliberate. The twin
 increments `EXERCISED` across a straight-line script; a Python module doing the
-same would be shared mutable state across test functions, which under
-`-n 8 --dist loadgroup` is exactly the thing that forces an `xdist_group`. Keeping
-the four floors and their count inside ONE test function removes the need for the
-group instead of declaring one, so this module has NO `xdist_group`: every case is
-a subprocess writing only into its own `mkdtemp` directory.
+same would be shared mutable state across test functions, which under `-n 8 --dist loadgroup` is exactly the thing that forces an `xdist_group`. Keeping the four floors and their count inside ONE test function removes the need for the group instead of declaring one, so this module has NO `xdist_group`: every case is a subprocess writing only into its own `mkdtemp` directory.
 """
 
 import pathlib
@@ -182,9 +164,7 @@ def test_action_refs_accepts_the_real_corpus(gate):
 
 def test_the_four_subjects_are_all_present(gate):
     """PORT-ONLY, and it is the refusal the twin cannot make cheaply. Every case
-    above runs a script BY PATH. A path that no longer exists produces a non-zero
-    exit and no VACUOUS text, which the twin reports as `refused but never said
-    VACUOUS` -- a message about wording for a file that is not there. Probing
+    above runs a script BY PATH. A path that no longer exists produces a non-zero exit and no VACUOUS text, which the twin reports as `refused but never said VACUOUS` -- a message about wording for a file that is not there. Probing
     first names the missing subject instead."""
     gate.log_test("each floor's subject is where this module drives it")
     missing = [

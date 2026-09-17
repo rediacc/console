@@ -1,7 +1,6 @@
 r"""`rediacc_ci.quality.env_manifest`: the entry point, the real tree, and the plants.
 
-WHAT IS WORTH TESTING HERE, given the gate already runs 26 controls on every
-invocation. Three things a control inside the gate cannot do:
+WHAT IS WORTH TESTING HERE, given the gate already runs 26 controls on every invocation. Three things a control inside the gate cannot do:
 
   1. Drive the ENTRY POINT as a subprocess, the way CI runs it. The controls
      exercise the pure helpers in-process, which proves the arithmetic and proves
@@ -16,28 +15,15 @@ invocation. Three things a control inside the gate cannot do:
      the manifest must produce exactly five UNCLASSIFIED findings, which cannot
      happen unless all five readers really parsed real tracked files.
 
-NO PLANT BELOW EVER WRITES THE REAL MANIFEST, and that is the correction this
-file exists in its current form for. `planted()` used to copy
-`.ci/config/env-manifest.json`, write a mutated version OVER the tracked file,
+NO PLANT BELOW EVER WRITES THE REAL MANIFEST, and that is the correction this file exists in its current form for. `planted()` used to copy `.ci/config/env-manifest.json`, write a mutated version OVER the tracked file,
 run the gate, and restore in a `finally`; `test_a_deleted_manifest_...` went
-further and `unlink`ed it. A hard kill anywhere in those windows leaves the
-tracked manifest corrupted or gone, with the only backup in a temp directory
-the same kill orphans. That is not a hypothesis -- the identical shape destroyed
-`.ci/policy/worklist-env-registry.json` twice in one session, once from a
-`check:ci-pytest` timeout and once from a concurrent pytest run in a second
-worktree. Every mutation now happens to a TMP COPY, and
-`ENV_MANIFEST_OVERRIDE_FILE` points the real entry point at it. The corpus side
-is untouched: the five readers still derive names from the real tracked tree,
-so a plant still proves the live gate reads the live repository.
+further and `unlink`ed it. A hard kill anywhere in those windows leaves the tracked manifest corrupted or gone, with the only backup in a temp directory the same kill orphans. That is not a hypothesis -- the identical shape destroyed `.ci/policy/worklist-env-registry.json` twice in one session, once from a `check:ci-pytest` timeout and once from a concurrent pytest run in a second
+worktree. Every mutation now happens to a TMP COPY, and `ENV_MANIFEST_OVERRIDE_FILE` points the real entry point at it. The corpus side is untouched: the five readers still derive names from the real tracked tree, so a plant still proves the live gate reads the live repository.
 
-`xdist_group` IS DECLARED, and its justification changed with the seam. It used
-to be required, because every plant mutated one shared file in the real tree and
-two of them on different workers would interleave: worker A plants a STALE entry,
-worker B runs the gate expecting green, and the failure lands on B with no
-explanation in it. Nothing is shared any more, so the group is no longer load
+`xdist_group` IS DECLARED, and its justification changed with the seam. It used to be required, because every plant mutated one shared file in the real tree and two of them on different workers would interleave: worker A plants a STALE entry, worker B runs the gate expecting green, and the failure lands on B with no explanation in it. Nothing is shared any more, so the group is no
+longer load
 bearing for correctness; it is kept because each case forks the whole gate across
-the whole tracked tree, and one worker running them back to back is cheaper than
-several doing it at once.
+the whole tracked tree, and one worker running them back to back is cheaper than several doing it at once.
 """
 
 import contextlib
@@ -76,10 +62,7 @@ def _run(root, override=None):
 def planted(mutate):
     """Mutate a TMP COPY of the manifest, run the gate against it, yield the run.
 
-    The real file is read and never written, so there is no restore to race and
-    no window a kill can land in. The caller gets the same thing it always got:
-    a real subprocess run of the real entry point over the real tracked tree,
-    disagreeing with a manifest that says something wrong.
+    The real file is read and never written, so there is no restore to race and no window a kill can land in. The caller gets the same thing it always got: a real subprocess run of the real entry point over the real tracked tree, disagreeing with a manifest that says something wrong.
     """
     root = paths.repo_root()
     live = root / em.MANIFEST_REL
@@ -105,13 +88,9 @@ def test_entry_point_is_green_on_the_real_tree():
 def test_no_current_count_is_written_into_either_authored_file():
     """The box's strongest instruction, held as an assertion rather than a habit.
 
-    WHAT IS FORBIDDEN IS TODAY'S NUMBER, not every digit. The first cut of this
-    test banned the historical figures too, and it red-lighted the manifest's own
-    header -- which cites 1,014 / 745 / 721 / 777 precisely in order to say that
-    none of them reproduced and that no count belongs in the file. Prose ABOUT a
+    WHAT IS FORBIDDEN IS TODAY'S NUMBER, not every digit. The first cut of this test banned the historical figures too, and it red-lighted the manifest's own header -- which cites 1,014 / 745 / 721 / 777 precisely in order to say that none of them reproduced and that no count belongs in the file. Prose ABOUT a
     stale number is the opposite of the defect; a LIVE number is the defect. So
-    the tokens are DERIVED here and then looked for, which means this assertion
-    cannot go stale either.
+    the tokens are DERIVED here and then looked for, which means this assertion cannot go stale either.
     """
     root = paths.repo_root()
     manifest = json.loads((root / em.MANIFEST_REL).read_text(encoding="utf-8"))
@@ -237,12 +216,7 @@ def test_collision_authority_is_word_bounded_not_a_substring():
 def test_a_deleted_manifest_is_a_refusal_not_a_pass():
     """rc 2, not rc 0. An instrument with nothing to compare against has no verdict.
 
-    This case used to `unlink` the real tracked manifest and copy it back in a
-    `finally` -- the worst member of the plant class, because a kill in that
-    window leaves no truncated file to notice, just an absence. The override
-    points at a path inside a temp directory that is deliberately never created,
-    which is the same input (a manifest that is not there) with nothing real at
-    risk.
+    This case used to `unlink` the real tracked manifest and copy it back in a `finally` -- the worst member of the plant class, because a kill in that window leaves no truncated file to notice, just an absence. The override points at a path inside a temp directory that is deliberately never created, which is the same input (a manifest that is not there) with nothing real at risk.
     """
     root = paths.repo_root()
     live = root / em.MANIFEST_REL

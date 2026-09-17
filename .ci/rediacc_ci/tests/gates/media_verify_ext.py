@@ -1,24 +1,14 @@
 """The four `.ci/media/verify.sh` helpers `media_verify.py` does not carry yet.
 
-`media_chain_probe`, `media_chain_mutate`, `media_chain_run` and
-`media_assert_absent_from_origins`.
+`media_chain_probe`, `media_chain_mutate`, `media_chain_run` and `media_assert_absent_from_origins`.
 
-WHY A SECOND MODULE RATHER THAN FOUR MORE FUNCTIONS IN `media_verify.py`.
-`media_verify.py` says in its own docstring that a later batch porting a chain
-test "adds those three here rather than building a second sandbox", and that is
-the right home. This batch is not allowed to edit tracked files under its brief,
-and `media_verify.py` is tracked and clean, so the three land beside it instead
-of inside it, and `media_chain_sandbox` is IMPORTED from there rather than
-copied. There is still exactly one sandbox builder, which is the property the
+WHY A SECOND MODULE RATHER THAN FOUR MORE FUNCTIONS IN `media_verify.py`. `media_verify.py` says in its own docstring that a later batch porting a chain test "adds those three here rather than building a second sandbox", and that is the right home. This batch is not allowed to edit tracked files under its brief, and `media_verify.py` is tracked and clean, so the three land beside
+it instead of inside it, and `media_chain_sandbox` is IMPORTED from there rather than copied. There is still exactly one sandbox builder, which is the property the
 note was protecting; only the file boundary differs. Fold this module into
 `media_verify.py` whenever that file is next opened for writing.
 
-WHAT THE CHAIN PROVES, restated from the bash header because it is the reason
-these three exist at all. A stub defined next to the call site would prove only
-that `media-entry.sh`'s case tree routes. A marker planted INSIDE THE MODULE
-FUNCTION'S OWN BODY proves the interpreter got as far as reading THAT FILE for
-THAT NAME, having crossed `./run.sh`'s `exec`. Nothing downstream of the marker
-runs, which is what keeps a probe of `www tutorials record` from wanting a VM.
+WHAT THE CHAIN PROVES, restated from the bash header because it is the reason these three exist at all. A stub defined next to the call site would prove only that `media-entry.sh`'s case tree routes. A marker planted INSIDE THE MODULE FUNCTION'S OWN BODY proves the interpreter got as far as reading THAT FILE for THAT NAME, having crossed `./run.sh`'s `exec`. Nothing downstream of
+the marker runs, which is what keeps a probe of `www tutorials record` from wanting a VM.
 
 WHERE THIS REIMPLEMENTS awk AND sed, AND WHY THE ANSWERS AGREE.
 
@@ -79,10 +69,7 @@ class ChainError(Exception):
 def probe(repo: pathlib.Path, module: str, name: str) -> None:
     """Restore `module` from the real folder, then make `name()`'s first act a marker.
 
-    RESTORING FIRST is not tidiness: the twin's route table plants sixteen probes
-    into ONE sandbox, one after another, and without the restore each probe would
-    stack on the last one's marker and every row after the first would report the
-    wrong function's name.
+    RESTORING FIRST is not tidiness: the twin's route table plants sixteen probes into ONE sandbox, one after another, and without the restore each probe would stack on the last one's marker and every row after the first would report the wrong function's name.
     """
     source = MEDIA_DIR / module
     if not source.is_file():
@@ -106,9 +93,7 @@ def probe(repo: pathlib.Path, module: str, name: str) -> None:
 def mutate(repo: pathlib.Path, relative: str, pattern: str, replacement: str) -> None:
     """One anchored line substitution in a sandbox file, REFUSING a no-op.
 
-    `sed` exits 0 when its expression matched nothing, which is exactly how a
-    control comes to pass for the wrong reason after its anchor moves. This
-    raises instead, so an anchor that has drifted is a red naming the anchor.
+    `sed` exits 0 when its expression matched nothing, which is exactly how a control comes to pass for the wrong reason after its anchor moves. This raises instead, so an anchor that has drifted is a red naming the anchor.
     """
     target = repo / relative
     if not target.is_file():
@@ -134,8 +119,7 @@ def mutate(repo: pathlib.Path, relative: str, pattern: str, replacement: str) ->
 def run(repo: pathlib.Path, script: str, *argv: str) -> harness.RunResult:
     """The sandbox's own `./run.sh` or `./media.sh`, streams MERGED as in bash.
 
-    Called from inside `harness.fake_bin`, so PATH holds only what the test
-    admitted -- for the whole chain that is `uname` and `dirname` and nothing
+    Called from inside `harness.fake_bin`, so PATH holds only what the test admitted -- for the whole chain that is `uname` and `dirname` and nothing
     else. Measured, not assumed: run.sh resolves ROOT_DIR with dirname on its
     first line, and .ci/scripts/lib/common.sh runs detect_os at source time.
     """
@@ -153,22 +137,15 @@ def assert_absent_from_origins(gate, pattern: str, root: pathlib.Path, message: 
 
     TUTORIAL_COLS, `_BRIDGE_SSH_CONFIG` and the tutorials usage string are not
     functions, so `media_assert_sole_owner` cannot see them; this asserts the same
-    thing for a PATTERN, over the same origin set, with the same refusal to treat a
-    missing origin as a clean one.
+    thing for a PATTERN, over the same origin set, with the same refusal to treat a missing origin as a clean one.
 
-    NO `-F` FLAG HERE, AND THAT IS THE POINT OF THE SIGNATURE. The bash version
-    takes an optional `-F` and forwards it to grep, because one caller hunts a fixed
-    string containing `[record|extract|...]`, which as a basic regular expression is
-    a bracket expression matching ONE CHARACTER -- so the unflagged form would look
+    NO `-F` FLAG HERE, AND THAT IS THE POINT OF THE SIGNATURE. The bash version takes an optional `-F` and forwards it to grep, because one caller hunts a fixed string containing `[record|extract|...]`, which as a basic regular expression is a bracket expression matching ONE CHARACTER -- so the unflagged form would look
     for something else entirely and answer "not present" whatever the file held. In
-    Python the two cases are `re.search` and `in`, and rather than reproduce a flag
-    whose omission is silent, the caller passes an already-escaped pattern (or
-    `re.escape(...)`) and this always treats it as a regex. The fixed-string caller
+    Python the two cases are `re.search` and `in`, and rather than reproduce a flag whose omission is silent, the caller passes an already-escaped pattern (or `re.escape(...)`) and this always treats it as a regex. The fixed-string caller
     therefore cannot get it wrong by forgetting a flag; it gets it wrong loudly, by
     the pattern not compiling or by matching nothing where it should match.
 
-    `media_origins` returns the complaints about missing origins rather than
-    raising, so this is where "a file nobody read" becomes a FAILURE.
+    `media_origins` returns the complaints about missing origins rather than raising, so this is where "a file nobody read" becomes a FAILURE.
     """
     gate.assertions += 1
     problem = absent_from_origins(pattern, root)
@@ -179,13 +156,8 @@ def assert_absent_from_origins(gate, pattern: str, root: pathlib.Path, message: 
 def absent_from_origins(pattern: str, root: pathlib.Path) -> str | None:
     """None when the pattern is absent from every origin, else the ONE reason it is not.
 
-    SPLIT OUT OF THE ASSERTION SO A CONTROL CAN OBSERVE IT. The bash twin has the
-    same problem and solves it the same way, by running the assertion in a SUBSHELL
-    (`_absence_verdict`) so that `log_fail`'s `exit` takes down the subshell rather
-    than the gate. A Python `log_fail` RAISES, so catching it would work too and
-    would be worse: an exception caught by a control is indistinguishable from an
-    exception raised by a bug in the control. Returning the reason makes both
-    directions ordinary values.
+    SPLIT OUT OF THE ASSERTION SO A CONTROL CAN OBSERVE IT. The bash twin has the same problem and solves it the same way, by running the assertion in a SUBSHELL (`_absence_verdict`) so that `log_fail`'s `exit` takes down the subshell rather than the gate. A Python `log_fail` RAISES, so catching it would work too and would be worse: an exception caught by a control is
+    indistinguishable from an exception raised by a bug in the control. Returning the reason makes both directions ordinary values.
     """
     origins, missing = media_origins(root)
     if missing:

@@ -2,14 +2,8 @@
 """check:ci-bws-map -- every secret a workflow requests from Bitwarden must be
 one the committed map can resolve, and the map must be fresh.
 
-THE GATE THIS REPLACES. check-workflow-gates.sh CHECK 2 proves that a reusable
-workflow reads only secrets its caller passes, by comparing `secrets.X` reads
-against `secrets:` declarations. It exists because OTLP_CLIENT_CREDENTIALS once
-shipped EMPTY to every account Worker and nothing caught it. The moment secrets
-arrive as $GITHUB_ENV injections from bitwarden/sm-action, there is no
-`secrets.X` left to read, CHECK 2's USE_RE matches nothing, and it goes green
-asserting nothing. This gate is its replacement on the Bitwarden side, and it
-must be in place BEFORE the first workflow flips.
+THE GATE THIS REPLACES. check-workflow-gates.sh CHECK 2 proves that a reusable workflow reads only secrets its caller passes, by comparing `secrets.X` reads against `secrets:` declarations. It exists because OTLP_CLIENT_CREDENTIALS once shipped EMPTY to every account Worker and nothing caught it. The moment secrets arrive as $GITHUB_ENV injections from bitwarden/sm-action, there is
+no `secrets.X` left to read, CHECK 2's USE_RE matches nothing, and it goes green asserting nothing. This gate is its replacement on the Bitwarden side, and it must be in place BEFORE the first workflow flips.
 
 WHAT IS ASSERTED
   1. every NAME requested through .github/actions/bws-secrets exists in
@@ -29,20 +23,13 @@ DELIBERATELY NOT ASSERTED
   - that a value is non-empty. sm-action exports "" without complaint and zod
     normalises "" to undefined; that is the deploy scripts' non-empty guards.
 
-CALLER FLOOR. The shadow-run wired 20 workflow files to the composite on
-2026-09-02, so MIN_CALLERS is 20: an edit that silently drops the wiring from a
-file now fails here instead of quietly narrowing what the shadow compares.
+CALLER FLOOR. The shadow-run wired 20 workflow files to the composite on 2026-09-02, so MIN_CALLERS is 20: an edit that silently drops the wiring from a file now fails here instead of quietly narrowing what the shadow compares.
 Raise it when a new workflow gains the composite; never lower it to get past
 a red.
 
 COVERAGE, ADDED 2026-09-02, AND WHY ONE DIRECTION WAS NEVER ENOUGH.
-Assertion 1 is `requested SUBSET-OF map`. Measured on the real tree, 53 secrets
-were mapped and 35 requested, and the 18-name gap was an EXACT BIJECTION with
-"has no GitHub secret of that name" -- the shadow's left operand is a GitHub
-secret, so a name with no twin has nothing to compare against. That is one
-mechanical consequence, not eighteen decisions. But nothing said so, and nothing
-would have noticed a nineteenth that was a real omission. Three more assertions,
-each the converse of something already checked:
+Assertion 1 is `requested SUBSET-OF map`. Measured on the real tree, 53 secrets were mapped and 35 requested, and the 18-name gap was an EXACT BIJECTION with "has no GitHub secret of that name" -- the shadow's left operand is a GitHub secret, so a name with no twin has nothing to compare against. That is one mechanical consequence, not eighteen decisions. But nothing said so, and
+nothing would have noticed a nineteenth that was a real omission. Three more assertions, each the converse of something already checked:
 
   5. COVERAGE. Every name in the map is requested by some call site, or carries
      an entry in .ci/config/bws-unrequested.json whose `kind` this gate
@@ -84,15 +71,9 @@ each the converse of something already checked:
      every one of them, and nothing said so. secret-rename.py now refuses a
      `secrets.` context the way it already refused a `vars.` one.
 
-Control-first: the parser is proven on synthetic input in both directions
-before any verdict, and the failure direction is proven by a planted name.
+Control-first: the parser is proven on synthetic input in both directions before any verdict, and the failure direction is proven by a planted name.
 
----- gate ----
-step: Bitwarden secret map
-needs: submodules
-selftest: true
-lane: quality-security
----- end gate ----
+---- gate ---- step: Bitwarden secret map needs: submodules selftest: true lane: quality-security ---- end gate ----
 """
 
 from __future__ import annotations
@@ -151,8 +132,7 @@ ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 def parse_requests(yaml_text: str) -> list[tuple[int, str, str]]:
     """[(line_no, name, env_name)] for every `secrets:` block under a
-    `uses: ./.github/actions/bws-secrets` step. A hand parser on purpose: the
-    shape is fixed and pulling in a YAML dependency for it would add a way for
+    `uses: ./.github/actions/bws-secrets` step. A hand parser on purpose: the shape is fixed and pulling in a YAML dependency for it would add a way for
     this gate to go stale."""
     out: list[tuple[int, str, str]] = []
     lines = yaml_text.split("\n")
@@ -210,8 +190,7 @@ def call_sites() -> list[Path]:
 def rename_pairs() -> list[tuple[str, str]]:
     """(old, new) from secret-rename.py's RENAMES, read as data.
 
-    Imported by exec rather than by parsing, because a second copy of the table
-    is a second thing to get wrong -- and this gate's whole subject is two
+    Imported by exec rather than by parsing, because a second copy of the table is a second thing to get wrong -- and this gate's whole subject is two
     records disagreeing about a name."""
     ns: dict = {}
     text = RENAME_TABLE.read_text(encoding="utf-8")
@@ -240,14 +219,9 @@ def superseded_problems(name: str, rec: dict, suffixes: list[str]) -> list[str]:
     """Re-derive a `superseded-at-runtime` claim against the ACTUAL branch.
 
     The first version of this asked whether `== "ASIA"` and `${PREFIX_EU`
-    appeared ANYWHERE in the script, which an audit defeated three ways in one
-    sitting: invert the condition so the substitution applies to the other
-    regions, comment the assignments out, or delete the whole block and leave a
-    comment naming both strings. All three kept the exemption. A substring test
-    over a whole file is not a re-derivation, it is a coincidence detector.
+    appeared ANYWHERE in the script, which an audit defeated three ways in one sitting: invert the condition so the substitution applies to the other regions, comment the assignments out, or delete the whole block and leave a comment naming both strings. All three kept the exemption. A substring test over a whole file is not a re-derivation, it is a coincidence detector.
 
-    So: find the branch that tests this suffix, take its BODY up to the matching
-    `fi`, strip comments, and require the reassignment to be in there.
+    So: find the branch that tests this suffix, take its BODY up to the matching `fi`, strip comments, and require the reassignment to be in there.
     """
     other = str(rec.get("superseded_by", ""))
     if not other:
@@ -293,11 +267,7 @@ def superseded_problems(name: str, rec: dict, suffixes: list[str]) -> list[str]:
 def represented_problems(secrets: dict, exemptions: dict) -> tuple[list[str], tuple[int, int]]:
     """Assertion 8: every stored name must APPEAR IN THE CODE.
 
-    Operator, 2026-09-02: "we should always have what we have at bitwarden side
-    in the code. That way we can also do proper renaming." Assertions 1 and 5
-    only reach names a WORKFLOW requests. A secret consumed by a deploy script,
-    a submodule, or a sibling repo can sit in the store while nothing in the tree
-    ever spells it -- which is precisely the state that makes a rename unsafe,
+    Operator, 2026-09-02: "we should always have what we have at bitwarden side in the code. That way we can also do proper renaming." Assertions 1 and 5 only reach names a WORKFLOW requests. A secret consumed by a deploy script, a submodule, or a sibling repo can sit in the store while nothing in the tree ever spells it -- which is precisely the state that makes a rename unsafe,
     because a rename tool can only move a name it can see.
 
     Two exclusions, both deliberate:
@@ -308,9 +278,7 @@ def represented_problems(secrets: dict, exemptions: dict) -> tuple[list[str], tu
         lists it. Neither does `agent/`: a plan discussing a name is not the code
         using it.
 
-    Submodules are IN, via --recurse-submodules, and so are the gitignored
-    sibling repos, which have their own git and are invisible to console's index
-    -- the blindness that let a rename break private/growth's publish pipeline.
+    Submodules are IN, via --recurse-submodules, and so are the gitignored sibling repos, which have their own git and are invisible to console's index -- the blindness that let a rename break private/growth's publish pipeline.
     """
     names = sorted(n for n in secrets if not n.startswith("_"))
     if not names:
@@ -367,19 +335,12 @@ def represented_problems(secrets: dict, exemptions: dict) -> tuple[list[str], tu
 def load_preimage(path: Path | None = None) -> tuple[dict[str, str], list[str]]:
     """{github name it is READ under} -> {name the store holds}, plus problems.
 
-    WHY THIS RELATION EXISTS AT ALL. The migration gave every credential one
-    name at every layer it controls. It does not control GitHub: the operator
-    ruled the org secrets are being DELETED, not renamed, and `gh secret set`
-    cannot re-supply a value it is forbidden to read, so renaming there means
+    WHY THIS RELATION EXISTS AT ALL. The migration gave every credential one name at every layer it controls. It does not control GitHub: the operator ruled the org secrets are being DELETED, not renamed, and `gh secret set` cannot re-supply a value it is forbidden to read, so renaming there means
     retyping 45 values by hand. So `${{ secrets.X }}` -- and only there -- keeps
     the old spelling, and this file is the dictionary.
 
-    It is SCAFFOLD, and the assertions below are what stop it becoming a second
-    exemption list. Every entry must earn its place twice: the store side must
-    be a name the map really holds, and the GitHub side must really be read by
-    a workflow. An entry that fails either is dead weight to be deleted, not a
-    licence. When the org secrets go, so does the file, and assertion 9 goes
-    back to demanding an exact match.
+    It is SCAFFOLD, and the assertions below are what stop it becoming a second exemption list. Every entry must earn its place twice: the store side must be a name the map really holds, and the GitHub side must really be read by a workflow. An entry that fails either is dead weight to be deleted, not a licence. When the org secrets go, so does the file, and assertion 9 goes back
+    to demanding an exact match.
     """
     src = path or PREIMAGE
     try:
@@ -427,11 +388,7 @@ def load_preimage(path: Path | None = None) -> tuple[dict[str, str], list[str]]:
 def preimage_problems(alias: dict[str, str], secrets: dict, read: set[str]) -> list[str]:
     """Assertion 10: no row of the pre-image file may be dead scaffold.
 
-    Both directions, because each hides a different mistake. A row whose STORE
-    name is not in the map is a typo that would make assertion 9 forgive a read
-    resolving to nothing -- the precise failure this whole file exists to stop.
-    A row whose GITHUB name nothing reads is a rename that already finished, and
-    leaving it behind is how a temporary list becomes permanent.
+    Both directions, because each hides a different mistake. A row whose STORE name is not in the map is a typo that would make assertion 9 forgive a read resolving to nothing -- the precise failure this whole file exists to stop. A row whose GITHUB name nothing reads is a rename that already finished, and leaving it behind is how a temporary list becomes permanent.
     """
     out = []
     for github_name, store_name in sorted(alias.items()):
@@ -467,20 +424,15 @@ MIN_LEDGER_REASON = 80
 def expected_mismatch_problems() -> tuple[list[str], int, int]:
     """Assertion 12: every excused shadow mismatch is recorded, and every record is used.
 
-    SHADOW_EXPECTED_MISMATCH stops a KNOWN value drift from failing its job. That is
-    the right call -- the drift is already the operator's, and blocking on it took the
-    CI watchdog down on 2026-09-03 without it monitoring anything -- but it is also an
-    escape hatch, and an escape hatch with no liveness rule becomes a blanket
-    exemption. The runtime half is in the compare step itself (an excused name that
-    starts MATCHING fails until its entry is deleted). This is the static half:
+    SHADOW_EXPECTED_MISMATCH stops a KNOWN value drift from failing its job. That is the right call -- the drift is already the operator's, and blocking on it took the CI watchdog down on 2026-09-03 without it monitoring anything -- but it is also an escape hatch, and an escape hatch with no liveness rule becomes a blanket exemption. The runtime half is in the compare step itself
+    (an excused name that starts MATCHING fails until its entry is deleted). This is the static half:
 
       a. an excused name must have a ledger entry carrying a substantive BLOCKER
          reason, the run that found it, and the door that says who can resolve it;
       b. a ledger entry must be excused by at least one workflow, or it is describing
          a drift nothing acts on.
 
-    Both directions, because they fail in opposite ways: (a) is an exemption nobody
-    wrote down, (b) is a reason that outlived the thing it excused.
+    Both directions, because they fail in opposite ways: (a) is an exemption nobody wrote down, (b) is a reason that outlived the thing it excused.
     """
     problems: list[str] = []
     # Collect what the tree excuses FIRST. A tree that excuses nothing needs no ledger, and demanding one anyway would make this assertion fail on every fixture tree instead of on a real defect. The moment anything IS excused the ledger becomes mandatory, and unreadable means refuse rather than forgive.
@@ -559,31 +511,18 @@ def shadow_triple_problems() -> tuple[list[str], int]:
 
     THE COMPARE STEP DERIVES BOTH SIDES BY STRING CONCATENATION -- `gv="GH_$n"`,
     `bv="BWS_$n"` over the words in SHADOW_NAMES -- so a name that is renamed in one
-    of the three places and not the others produces `GH_<new>` unset, which the step
-    reports as "EMPTY ... nothing was compared". It fails LOUDLY, which is right, but
-    it fails in CI, minutes after a push, on a defect that is a pure text property of
-    the file.
+    of the three places and not the others produces `GH_<new>` unset, which the step reports as "EMPTY ... nothing was compared". It fails LOUDLY, which is right, but it fails in CI, minutes after a push, on a defect that is a pure text property of the file.
 
-    It cost a CI round to learn: a rename pass rewrote the bare `GITHUB_APP_PRIVATE_KEY`
-    in SHADOW_NAMES but not the `GH_`/`BWS_`-prefixed forms, because its lookbehind
-    treated the `_` in `GH_` as a word character. 104 lines across 15 files, and the
-    first thing that noticed was run 33690518859. secret-rename.py's own pattern has
-    carried an optional `(GH_|BWS_)` group for exactly this reason since it was
+    It cost a CI round to learn: a rename pass rewrote the bare `GITHUB_APP_PRIVATE_KEY` in SHADOW_NAMES but not the `GH_`/`BWS_`-prefixed forms, because its lookbehind treated the `_` in `GH_` as a word character. 104 lines across 15 files, and the first thing that noticed was run 33690518859. secret-rename.py's own pattern has carried an optional `(GH_|BWS_)` group for exactly
+    this reason since it was
     written; the repair script did not, and nothing compared them.
 
-    Set equality, not containment, in both directions: an orphan `GH_X` with no
-    SHADOW_NAMES entry is a leg that will never be compared, which is the silent half.
+    Set equality, not containment, in both directions: an orphan `GH_X` with no SHADOW_NAMES entry is a leg that will never be compared, which is the silent half.
 
-    ONE EXEMPTION, AND THE CUTOVER IS WHY. This assertion was written when every fetch
-    was a SHADOW -- fetched only to be compared -- so a fetched name absent from
-    SHADOW_NAMES could only mean a broken triple. After a name is cut over that is no
+    ONE EXEMPTION, AND THE CUTOVER IS WHY. This assertion was written when every fetch was a SHADOW -- fetched only to be compared -- so a fetched name absent from SHADOW_NAMES could only mean a broken triple. After a name is cut over that is no
     longer true: the fetch feeds a LIVE READ (`${{ env.BWS_X }}`) and its comparator is
-    deleted along with the GitHub secret it compared against. Reported 26 such names
-    the moment the first three were retired, every one of them correct.
-    So a fetched name is accounted for when it is EITHER compared (in SHADOW_NAMES) or
-    CONSUMED (read in that file). Not neither -- that is still the silent case this
-    assertion exists for, and assertion 13 separately proves each consumer has its
-    fetch above it.
+    deleted along with the GitHub secret it compared against. Reported 26 such names the moment the first three were retired, every one of them correct. So a fetched name is accounted for when it is EITHER compared (in SHADOW_NAMES) or CONSUMED (read in that file). Not neither -- that is still the silent case this assertion exists for, and assertion 13 separately proves each
+    consumer has its fetch above it.
     """
     problems: list[str] = []
     files = call_sites()
@@ -628,20 +567,12 @@ def unmapped_read_problems(
 ) -> tuple[list[str], int, set[str]]:
     """Assertion 9: an org secret a workflow READS must be in the map, or exempt.
 
-    Assertion 6 checks the other direction and, by construction, only reaches names
-    the map ALREADY holds (`if bw_name not in secrets ... continue`). So a workflow
-    that starts reading a brand-new org secret nobody put in the store is invisible
-    to 5 (map -> requested), 6 (skips unmapped) and 7 (only SUFFIX literals under
-    .ci/scripts/deploy). That is the cutover-ships-blank shape with no scan on it.
+    Assertion 6 checks the other direction and, by construction, only reaches names the map ALREADY holds (`if bw_name not in secrets ... continue`). So a workflow that starts reading a brand-new org secret nobody put in the store is invisible to 5 (map -> requested), 6 (skips unmapped) and 7 (only SUFFIX literals under .ci/scripts/deploy). That is the cutover-ships-blank shape
+    with no scan on it.
 
-    Scoped to secrets the reachability record says console can actually READ, so a
-    typo'd `secrets.FOO` is left to actionlint rather than reported twice here.
+    Scoped to secrets the reachability record says console can actually READ, so a typo'd `secrets.FOO` is left to actionlint rather than reported twice here.
 
-    `alias` is the pre-image relation (see load_preimage): during the cutover a
-    workflow reads GitHub's older spelling while the store holds the new one, so
-    a read is satisfied by EITHER. Aliasing is the one thing this gate must not
-    do generously -- every row is itself asserted by assertion 10, in both
-    directions, so a typo here cannot quietly forgive a read that resolves to
+    `alias` is the pre-image relation (see load_preimage): during the cutover a workflow reads GitHub's older spelling while the store holds the new one, so a read is satisfied by EITHER. Aliasing is the one thing this gate must not do generously -- every row is itself asserted by assertion 10, in both directions, so a typo here cannot quietly forgive a read that resolves to
     nothing.
     """
     read: set[str] = set()
@@ -740,17 +671,11 @@ def read_order_problems() -> tuple[list[str], int]:
 
     THE CONVERSE OF ASSERTION 12, and the one the cutover can actually break. That one
     asks whether a job that reads a GitHub secret also fetches its twin; this asks
-    whether a job that reads a BITWARDEN value ever fetched it. The failure it catches
-    is silent by construction: `env.BWS_APP_PRIVATE_KEY` with no fetch is an EMPTY
-    STRING, not an error, and app-token's complaint then names the App rather than the
-    key.
+    whether a job that reads a BITWARDEN value ever fetched it. The failure it catches is silent by construction: `env.BWS_APP_PRIVATE_KEY` with no fetch is an EMPTY STRING, not an error, and app-token's complaint then names the App rather than the key.
 
-    ORDER, not just presence, because seven jobs on this branch had the fetch step
-    AFTER app-token -- the shape that made the cutover a reordering rather than a
-    substitution. A fetch that runs later supplies nothing to a read above it.
+    ORDER, not just presence, because seven jobs on this branch had the fetch step AFTER app-token -- the shape that made the cutover a reordering rather than a substitution. A fetch that runs later supplies nothing to a read above it.
 
-    It matters most for what CI never runs. Nine of these files are cron- or
-    dispatch-only (cd-deploy-*, promote-stable, housekeeping, edge-clone-d1,
+    It matters most for what CI never runs. Nine of these files are cron- or dispatch-only (cd-deploy-*, promote-stable, housekeeping, edge-clone-d1,
     cleanup-preview, backfill-release-sentinel); a mistake there ships and waits.
     """
     problems: list[str] = []
@@ -812,9 +737,7 @@ def read_order_in(lines: list[str], label: str) -> tuple[list[str], int]:
 def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = None) -> list[str]:
     """Assertions 5, 6 and 7. Every one is the converse of assertion 1.
 
-    `no_fetch` maps "<path>#<job>" to a record whose `reason` says why that ONE job must
-    not fetch a secret it reads. Name-scoped exemptions cannot express that: the names in
-    question are read by nearly every job in the tree.
+    `no_fetch` maps "<path>#<job>" to a record whose `reason` says why that ONE job must not fetch a secret it reads. Name-scoped exemptions cannot express that: the names in question are read by nearly every job in the tree.
     """
     problems: list[str] = []
     no_fetch = no_fetch or {}

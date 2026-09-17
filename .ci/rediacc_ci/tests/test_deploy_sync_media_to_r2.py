@@ -1,35 +1,19 @@
 """Differential: `rediacc_ci.deploy.sync_media_to_r2` against its twin
 `.ci/scripts/deploy/sync-media-to-r2.sh`.
 
-A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches Cloudflare R2:
-the fake logs its exact argv, answers from the environment, and the only real
-credential name in the file is an environment KEY, never a value.
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one
-real run" clause and says in as many words that the mocked parity ledger is a
+A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches Cloudflare R2: the fake logs its exact argv, answers from the environment, and the only real credential name in the file is an environment KEY, never a value. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
 separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS COMPARED AS WELL AS THE TWO STREAMS, and for an UPLOAD script it
-is the half that matters. What gets printed is three `Syncing ...` lines and a
+THE CALL LOG IS COMPARED AS WELL AS THE TWO STREAMS, and for an UPLOAD script it is the half that matters. What gets printed is three `Syncing ...` lines and a
 three-line closing recipe, none of it derived from what moved; the entire
-observable effect is which local directory went to which prefix, with which
-headers. A port that dropped `--cache-control` would print identical output and
-exit 0 while publishing objects that expire in an hour instead of a year, and a
-port that appended `--delete` in the wrong position would look identical too.
-`test_planted_defect_is_caught` plants the first of those.
+observable effect is which local directory went to which prefix, with which headers. A port that dropped `--cache-control` would print identical output and exit 0 while publishing objects that expire in an hour instead of a year, and a port that appended `--delete` in the wrong position would look identical too. `test_planted_defect_is_caught` plants the first of those.
 
-`--cache-control` IS ONE ARGV ELEMENT CONTAINING A SPACE, so the fake records
-argv tab-separated and echoes it `shlex.quote`d. A space-joined log cannot tell
+`--cache-control` IS ONE ARGV ELEMENT CONTAINING A SPACE, so the fake records argv tab-separated and echoes it `shlex.quote`d. A space-joined log cannot tell
 `--cache-control 'public, max-age=31536000'` from `--cache-control public,`
 followed by a stray `max-age=31536000`, and those are different calls.
 
-EVERY RUN HAPPENS IN A COPIED TREE UNDER `tmp_path`, NEVER IN THE CHECKOUT.
-Both implementations derive `REPO_ROOT` from their OWN location
-(`<file>/../../..`), and the behaviour under test is precisely what happens when
-`packages/www/public/assets/...` is present, absent, or a file. None of those
-three states can be arranged in a shared checkout other sessions are working in.
-Copying the eight files each side needs into `tmp_path` makes `REPO_ROOT` the
-fixture and removes any need for a machine-wide lock: `tmp_path` is unique per
-test, so two concurrent runs of this file in one checkout cannot collide.
+EVERY RUN HAPPENS IN A COPIED TREE UNDER `tmp_path`, NEVER IN THE CHECKOUT. Both implementations derive `REPO_ROOT` from their OWN location (`<file>/../../..`), and the behaviour under test is precisely what happens when `packages/www/public/assets/...` is present, absent, or a file. None of those three states can be arranged in a shared checkout other sessions are working in.
+Copying the eight files each side needs into `tmp_path` makes `REPO_ROOT` the fixture and removes any need for a machine-wide lock: `tmp_path` is unique per test, so two concurrent runs of this file in one checkout cannot collide.
 """
 
 from __future__ import annotations
@@ -126,11 +110,7 @@ def _bin(tree: pathlib.Path, *, drop: str = "") -> str:
 def _tree(tmp_path: pathlib.Path) -> pathlib.Path:
     """A miniature checkout whose root is `tmp_path/tree`.
 
-    Both implementations resolve `REPO_ROOT` three directories up from
-    themselves, so placing them at `.ci/scripts/deploy/` and
-    `.ci/rediacc_ci/deploy/` inside this directory makes `tmp_path/tree` the
-    repository root for both, with no environment variable involved and no
-    difference from how they resolve it in the real checkout.
+    Both implementations resolve `REPO_ROOT` three directories up from themselves, so placing them at `.ci/scripts/deploy/` and `.ci/rediacc_ci/deploy/` inside this directory makes `tmp_path/tree` the repository root for both, with no environment variable involved and no difference from how they resolve it in the real checkout.
     """
     tree = tmp_path / "tree"
     if tree.exists():
@@ -226,8 +206,7 @@ CLOSING = (
 
 def test_the_default_run_uploads_three_prefixes_in_order(tmp_path: pathlib.Path) -> None:
     """THE WHOLE CONTRACT, PINNED AGAINST LITERAL BYTES rather than against the
-    port's own helpers, so a change in both would still be caught. Three calls,
-    in the twin's order, each carrying the endpoint, the one-year
+    port's own helpers, so a change in both would still be caught. Three calls, in the twin's order, each carrying the endpoint, the one-year
     `Cache-Control` as a SINGLE argument, and `--no-progress`."""
     old, new, old_calls, new_calls = run_both(tmp_path, [])
     tree = _tree(tmp_path)
@@ -263,8 +242,7 @@ def test_the_default_run_uploads_three_prefixes_in_order(tmp_path: pathlib.Path)
 
 def test_the_closing_recipe_does_not_interpolate_the_endpoint(tmp_path: pathlib.Path) -> None:
     """`\\$CLOUDFLARE_R2_MEDIA_ENDPOINT` is an ESCAPED dollar inside the twin's
-    double quotes, so the closing line hands the reader a variable to paste, not
-    the endpoint this run used. A port that interpolated it would leak the
+    double quotes, so the closing line hands the reader a variable to paste, not the endpoint this run used. A port that interpolated it would leak the
     endpoint into a log that is routinely shared."""
     old, new, _oc, _nc = run_both(tmp_path, ["--tutorials-only"])
     assert "--endpoint-url $CLOUDFLARE_R2_MEDIA_ENDPOINT" in old.stderr
@@ -398,10 +376,7 @@ def test_defect_require_var_checks_only_its_first_argument(tmp_path: pathlib.Pat
     """THE DEFECT, PINNED, and it is the shape of the 2026-08-28 incident this
     repository's pre-bash hook still warns about. The twin passes THREE names to
     `require_var` and `common.sh:131-137` reads `local var_name="$1"`, so two
-    documented-as-required credentials are never checked. `set -u` catches them
-    only when UNSET, so an EXPORTED-EMPTY secret and an EXPORTED-EMPTY endpoint
-    sail through: `aws` is handed `--endpoint-url` followed by the empty string,
-    the closing recipe prints, and the run exits 0.
+    documented-as-required credentials are never checked. `set -u` catches them only when UNSET, so an EXPORTED-EMPTY secret and an EXPORTED-EMPTY endpoint sail through: `aws` is handed `--endpoint-url` followed by the empty string, the closing recipe prints, and the run exits 0.
 
     Reproduced because agreement with the live twin is the deliverable;
     repaired, this test goes red and names the port that must follow.
@@ -425,10 +400,7 @@ def test_defect_require_var_checks_only_its_first_argument(tmp_path: pathlib.Pat
 
 def test_divergence_set_u_names_the_bash_file_and_line(tmp_path: pathlib.Path) -> None:
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. An UNSET secret is caught by `set -u`, not by the
-    script, so bash's own message names the bash FILE and a bash LINE NUMBER.
-    The port carries the `NAME: unbound variable` half, on the same stream, with
-    the same exit status. Same ruling as `deploy/promote_r2_to_stable.py` makes
+    "FIXED" BY ACCIDENT. An UNSET secret is caught by `set -u`, not by the script, so bash's own message names the bash FILE and a bash LINE NUMBER. The port carries the `NAME: unbound variable` half, on the same stream, with the same exit status. Same ruling as `deploy/promote_r2_to_stable.py` makes
     for its `${VAR:?msg}` guards."""
     tree = _tree(tmp_path)
     _layout(tree, ALL_DIRS)
@@ -500,8 +472,7 @@ def test_a_missing_directory_is_a_warning_and_the_other_legs_still_run(
 
 def test_defect_a_run_that_uploads_nothing_still_says_complete(tmp_path: pathlib.Path) -> None:
     """THE DEFECT, PINNED, AND IT IS THE VACUITY CLASS IN A SCRIPT WHOSE ONLY JOB
-    IS TO MOVE BYTES. With none of the three directories present the run makes
-    ZERO `aws` calls, prints three warnings and then `Sync complete. Verify
+    IS TO MOVE BYTES. With none of the three directories present the run makes ZERO `aws` calls, prints three warnings and then `Sync complete. Verify
     with:` plus its two recipe lines, and exits 0. Nothing counts the skips, so
     "it said complete" is not evidence that anything was published.
 
@@ -521,8 +492,7 @@ def test_defect_a_file_where_a_directory_belongs_is_reported_as_absent(
     tmp_path: pathlib.Path,
 ) -> None:
     """`[[ ! -d ]]` cannot tell a regular file from an absent path, so a
-    half-finished write at `packages/www/public/assets/videos` produces
-    `(not present locally)`. Fails closed, with a diagnosis that names the wrong
+    half-finished write at `packages/www/public/assets/videos` produces `(not present locally)`. Fails closed, with a diagnosis that names the wrong
     thing; `os.path.isdir` reproduces it exactly."""
     tree = _tree(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -538,8 +508,7 @@ def test_defect_a_file_where_a_directory_belongs_is_reported_as_absent(
 
 def test_a_symlink_to_a_directory_is_synced_not_skipped(tmp_path: pathlib.Path) -> None:
     """THE NEGATIVE HALF OF THE PREVIOUS CONTROL. `[[ -d ]]` and `os.path.isdir`
-    both FOLLOW symlinks, so a checkout whose media directory is a symlink to a
-    scratch disk is uploaded rather than silently skipped. Without this, a port
+    both FOLLOW symlinks, so a checkout whose media directory is a symlink to a scratch disk is uploaded rather than silently skipped. Without this, a port
     that answered `Path.is_dir(follow_symlinks=False)` would pass every other
     test in this file."""
     tree = _tree(tmp_path)
@@ -611,10 +580,7 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on `CACHE_CONTROL` -- the one value that decides how
-    long media.rediacc.com serves an object before revalidating, and whose
-    corruption leaves both streams, the exit code and the call COUNT completely
-    unchanged while every uploaded object gets the wrong header. Driven red,
-    then the source is confirmed byte-identical and green.
+    long media.rediacc.com serves an object before revalidating, and whose corruption leaves both streams, the exit code and the call COUNT completely unchanged while every uploaded object gets the wrong header. Driven red, then the source is confirmed byte-identical and green.
     """
     original = (ROOT / PORT_REL).read_text(encoding="utf-8")
     mutated = original.replace(

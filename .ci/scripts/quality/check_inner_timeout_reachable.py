@@ -1,42 +1,20 @@
 #!/usr/bin/env python3
 """An in-script kill timer above its own job's ceiling is dead code in CI.
 
-WHY THIS EXISTS, and it is a defect this repository actually shipped for a few
-hours on 2026-09-08. `check:ci-pytest` carries its own `RUN_TIMEOUT_S`, raised
-to 3600s so a long suite would be KILLED with a named cause rather than crash.
-It runs as the `Python package tests` step of `quality-security` in
-`ci-quality.yml`, and that job declares `timeout-minutes: 20`. 3600 > 1200, so
-the timer could never fire: GitHub cancels the job at twenty minutes, and a
-cancelled job's only clue is
+WHY THIS EXISTS, and it is a defect this repository actually shipped for a few hours on 2026-09-08. `check:ci-pytest` carries its own `RUN_TIMEOUT_S`, raised to 3600s so a long suite would be KILLED with a named cause rather than crash. It runs as the `Python package tests` step of `quality-security` in `ci-quality.yml`, and that job declares `timeout-minutes: 20`. 3600 > 1200, so
+the timer could never fire: GitHub cancels the job at twenty minutes, and a cancelled job's only clue is
 
     The operation was canceled.
 
-No verdict, no KILLED line, no cause -- exactly the chain
-`check_job_timeout_headroom.py` documents, one level down. Seven gates were
-green over that raise. They could not see it: the number is legal Python, the
-suite passes locally where no ceiling applies, and nothing compared the two.
+No verdict, no KILLED line, no cause -- exactly the chain `check_job_timeout_headroom.py` documents, one level down. Seven gates were green over that raise. They could not see it: the number is legal Python, the suite passes locally where no ceiling applies, and nothing compared the two.
 
-WHY THE HEADROOM GATE DOES NOT COVER IT. `check:ci-timeout-headroom` asks
-whether a JOB's declared `timeout-minutes` clears its OBSERVED worst case. That
-is the outer dimension and a different question, and its baseline names two jobs
-(`Validate Promotion`, `Stage Artifacts`), both in `ci.yml`. It never reads a
-script, so an in-script timer is invisible to it in every workflow.
+WHY THE HEADROOM GATE DOES NOT COVER IT. `check:ci-timeout-headroom` asks whether a JOB's declared `timeout-minutes` clears its OBSERVED worst case. That is the outer dimension and a different question, and its baseline names two jobs (`Validate Promotion`, `Stage Artifacts`), both in `ci.yml`. It never reads a script, so an in-script timer is invisible to it in every workflow.
 
-WHAT THIS ASSERTS. For every registered gate that declares a `*_TIMEOUT_S`
-constant and runs as a CI step, that timer must be STRICTLY BELOW its job's
-`timeout-minutes`. Equal is a finding too: a timer that fires at the same
-instant the job dies is a race, not a diagnostic.
+WHAT THIS ASSERTS. For every registered gate that declares a `*_TIMEOUT_S` constant and runs as a CI step, that timer must be STRICTLY BELOW its job's `timeout-minutes`. Equal is a finding too: a timer that fires at the same instant the job dies is a race, not a diagnostic.
 
-WHAT IT DOES NOT ASSERT. Not that the number is big enough -- that is a
-measurement, and it belongs with the suite that measures. Only that the smaller
-of the two guards is the one that can actually speak.
+WHAT IT DOES NOT ASSERT. Not that the number is big enough -- that is a measurement, and it belongs with the suite that measures. Only that the smaller of the two guards is the one that can actually speak.
 
----- gate ----
-step: Inner kill timers are reachable
-needs: none
-selftest: true
-lane: quality-code
-why: A gate's own kill timer must sit below its job's timeout-minutes, or CI
+---- gate ---- step: Inner kill timers are reachable needs: none selftest: true lane: quality-code why: A gate's own kill timer must sit below its job's timeout-minutes, or CI
      cancels the job first and the gate's diagnostic never prints -- the failure
      shape reads as an unexplained cancel rather than as a named verdict.
 ---- end gate ----
@@ -59,11 +37,7 @@ TIMER_RE = re.compile(r"^([A-Z][A-Z0-9_]*_TIMEOUT_S)\s*=.*?(\d{2,})", re.MULTILI
 def job_ceilings(workflow_text: str) -> dict[str, int]:
     """`{job id: timeout-minutes}` for one workflow.
 
-    Read with a line scanner rather than a YAML parser on purpose: this gate
-    must run with no third-party import, and the two shapes it needs -- a job
-    key at two spaces, its `timeout-minutes` at four -- are pinned by the repo's
-    own workflow lint. A job with no declared ceiling is simply absent, which
-    the caller reports rather than treats as infinity.
+    Read with a line scanner rather than a YAML parser on purpose: this gate must run with no third-party import, and the two shapes it needs -- a job key at two spaces, its `timeout-minutes` at four -- are pinned by the repo's own workflow lint. A job with no declared ceiling is simply absent, which the caller reports rather than treats as infinity.
     """
     out: dict[str, int] = {}
     current = None

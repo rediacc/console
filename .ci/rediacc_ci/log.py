@@ -11,27 +11,15 @@ not agree. Counted by grepping the assignment and its guard:
     if [[ -t 2 ]] && [[ -z "${NO_COLOR:-}" ]]      .ci/scripts/lib/common.sh:18
                                                    .ci/breakpoint/lib/breakpoint-common.sh:37
 
-Read the first three rows next to the fourth and the disagreement is not
-cosmetic. The 11-file variant tests **stdout** for a tty and then writes its
-coloured message to **stderr**, so redirecting stdout to a file while watching
-stderr in a terminal produces uncoloured output, and the reverse produces escape
-sequences in the file. The 9-file variant tests CI and nothing else, so a
-developer piping a gate into `less` gets escapes. Only `common.sh` tests the
-stream it actually writes to, and it is the only one that ignores CI.
+Read the first three rows next to the fourth and the disagreement is not cosmetic. The 11-file variant tests **stdout** for a tty and then writes its coloured message to **stderr**, so redirecting stdout to a file while watching stderr in a terminal produces uncoloured output, and the reverse produces escape sequences in the file. The 9-file variant tests CI and nothing else, so a
+developer piping a gate into `less` gets escapes. Only `common.sh` tests the stream it actually writes to, and it is the only one that ignores CI.
 
 The colour VALUES disagree too: `YELLOW` is `\\033[1;33m` in `common.sh` and
 `\\033[0;33m` in `.ci/bootstrap.sh`. Both are "yellow"; neither file knows the
 other exists.
 
-THE INCIDENT THIS MODULE IS SHAPED BY (2026-09-06, recorded verbatim at
-`.ci/scripts/lib/emit-advisory.sh:22-50` and pinned by
-`.ci/scripts/test/gates/test-emit-advisory.sh:85-105`). `emit-advisory.sh` used
-to assign RED/GREEN/YELLOW/NC and define log_error / log_success / log_warn /
-log_info UNCONDITIONALLY. Four quality gates -- check-profiler-coverage.sh,
-check-swallowed-failures.sh, check-ci-job-aggregation.sh and check-go-deps.sh --
-source `common.sh` first and then reach `emit-advisory.sh` transitively through
-`blocker-validator.sh:26`, so the later definitions won and silently replaced
-common.sh's TTY-gated logger. Two consequences:
+THE INCIDENT THIS MODULE IS SHAPED BY (2026-09-06, recorded verbatim at `.ci/scripts/lib/emit-advisory.sh:22-50` and pinned by `.ci/scripts/test/gates/test-emit-advisory.sh:85-105`). `emit-advisory.sh` used to assign RED/GREEN/YELLOW/NC and define log_error / log_success / log_warn / log_info UNCONDITIONALLY. Four quality gates -- check-profiler-coverage.sh,
+check-swallowed-failures.sh, check-ci-job-aggregation.sh and check-go-deps.sh -- source `common.sh` first and then reach `emit-advisory.sh` transitively through `blocker-validator.sh:26`, so the later definitions won and silently replaced common.sh's TTY-gated logger. Two consequences:
 
   1. log_info / log_warn / log_success moved from stderr to STDOUT, so a gate
      whose stdout a caller pipes for data got colour escapes mixed into that
@@ -39,14 +27,12 @@ common.sh's TTY-gated logger. Two consequences:
   2. log_error interpolated `"$1"` rather than `"$*"`, so `log_error a b`
      printed only `a` and silently dropped the rest.
 
-`check-pool-writer-safety.sh` sources only common.sh, never reaches
-blocker-validator.sh, and so was never affected -- which is why nothing noticed.
+`check-pool-writer-safety.sh` sources only common.sh, never reaches blocker-validator.sh, and so was never affected -- which is why nothing noticed.
 
 The fix there was a deference rule: every assignment guarded with `${RED+x}` and
 every definition guarded with `declare -F`. That is the correct repair for two
 libraries that must coexist. It is not a design; it is two implementations
-agreeing to take turns. THIS module is the design: one implementation, imported
-rather than sourced, so there is no second definition to defer to.
+agreeing to take turns. THIS module is the design: one implementation, imported rather than sourced, so there is no second definition to defer to.
 
 THE THREE RULES, and why each is not negotiable.
 
@@ -69,25 +55,17 @@ THE DELIBERATE DIVERGENCE FROM common.sh, stated out loud rather than discovered
 later. Under `CI=true` with stderr attached to a tty, common.sh emits colour and
 this module does not. That combination is rare (a CI runner rarely has a tty) but
 it is real in a devbox with `CI=true` exported, and it is the case where the two
-implementations genuinely disagree rather than merely differing in spelling.
-`tests/test_log.py::test_ci_true_is_the_one_deliberate_divergence` asserts BOTH
-sides of it, so the divergence is a pinned decision instead of a surprise.
+implementations genuinely disagree rather than merely differing in spelling. `tests/test_log.py::test_ci_true_is_the_one_deliberate_divergence` asserts BOTH sides of it, so the divergence is a pinned decision instead of a surprise.
 
-A SECOND DIVERGENCE, and this one is a bug being dropped rather than a decision.
-common.sh logs with `echo -e`, which interprets backslash escapes IN THE MESSAGE:
-`log_error 'C:\tmp\new'` prints a tab and a newline. This module formats the
-message as data. The differential test asserts the two disagree there, so a
-future reader does not "fix" the Python to match.
+A SECOND DIVERGENCE, and this one is a bug being dropped rather than a decision. common.sh logs with `echo -e`, which interprets backslash escapes IN THE MESSAGE: `log_error 'C:\tmp\new'` prints a tab and a newline. This module formats the message as data. The differential test asserts the two disagree there, so a future reader does not "fix" the Python to match.
 
-USAGE. The module-level functions use one process-wide logger and are what a
-gate wants:
+USAGE. The module-level functions use one process-wide logger and are what a gate wants:
 
     from rediacc_ci import log
     log.info("linting %d file(s)" % n)
     log.error("ruff reported findings")
 
-A caller that needs a second, independently configured logger -- a test
-capturing output, a sub-run whose colour must be forced off -- constructs one:
+A caller that needs a second, independently configured logger -- a test capturing output, a sub-run whose colour must be forced off -- constructs one:
 
     buf = io.StringIO()
     Logger(stream=buf, colour=False).warn("...")
@@ -129,18 +107,15 @@ DEBUG_ON = "true"
 def colour_allowed(stream=None, env=None) -> bool:
     """Should THIS stream carry colour?
 
-    Three conditions, all required. Stated as one function so there is one place
-    to read the answer, and so a caller can ask without a Logger.
+    Three conditions, all required. Stated as one function so there is one place to read the answer, and so a caller can ask without a Logger.
 
-    NO_COLOR IS TESTED FOR PRESENCE, NOT TRUTH. no-color.org specifies that the
-    variable disables colour when it is present with ANY value, and every bash
+    NO_COLOR IS TESTED FOR PRESENCE, NOT TRUTH. no-color.org specifies that the variable disables colour when it is present with ANY value, and every bash
     variant in this repo agrees (`[ -z "${NO_COLOR:-}" ]` is a presence test on
     a non-empty value). The one gap: `NO_COLOR=` (set but empty) is `-z` in bash
     and would be falsy here too, so the two agree by accident of the same rule.
 
     A STREAM WITHOUT isatty IS NOT A TTY. io.StringIO has the method; a mock or
-    a file-like without it must not crash a logger, because the place a logger
-    crashes is the place something has already gone wrong.
+    a file-like without it must not crash a logger, because the place a logger crashes is the place something has already gone wrong.
     """
     environ = os.environ if env is None else env
     if environ.get("NO_COLOR"):
@@ -158,9 +133,7 @@ def colour_allowed(stream=None, env=None) -> bool:
 class Logger:
     """A logger bound to one stream, with colour decided once at construction.
 
-    DECIDED ONCE, ON PURPOSE. Re-testing `isatty()` per message would be more
-    "correct" and would make a long run's output inconsistent if something
-    reopened the stream mid-flight. It would also make every message pay a
+    DECIDED ONCE, ON PURPOSE. Re-testing `isatty()` per message would be more "correct" and would make a long run's output inconsistent if something reopened the stream mid-flight. It would also make every message pay a
     syscall. The bash originals decide once at source time; this matches them.
 
     `colour=None` means decide; `True` and `False` force it, which is what the
@@ -189,11 +162,7 @@ class Logger:
     def format(self, level: str, message: str) -> str:
         """The exact line, WITHOUT its trailing newline.
 
-        Separated from writing so the differential test can compare the string a
-        Logger would produce against the bytes bash produced, without owning a
-        stream. `KeyError` on an unknown level is deliberate and unhandled: a
-        typo'd level name is a defect in the caller, and a logger that silently
-        prints an unformatted line for it hides the typo forever.
+        Separated from writing so the differential test can compare the string a Logger would produce against the bytes bash produced, without owning a stream. `KeyError` on an unknown level is deliberate and unhandled: a typo'd level name is a defect in the caller, and a logger that silently prints an unformatted line for it hides the typo forever.
         """
         colour, glyph = _LEVELS[level]
         if not self.colour:
@@ -204,8 +173,7 @@ class Logger:
         """Write one line and flush.
 
         FLUSHED EVERY TIME. stderr is unbuffered only when it is a tty; redirected
-        to a file it is block-buffered, so a gate that dies mid-run loses exactly
-        the messages that would say why. That is the one place a logger's output
+        to a file it is block-buffered, so a gate that dies mid-run loses exactly the messages that would say why. That is the one place a logger's output
         matters most, so the flush is not optional and there is no `flush=`
         argument to get wrong.
         """
@@ -232,9 +200,7 @@ class Logger:
     def debug(self, message: str) -> None:
         """Silent unless DEBUG=true, matching common.sh:51-55.
 
-        The gate is read from the environment at CALL time, not construction,
-        because a program that sets DEBUG for a section of its own run is a real
-        pattern and a logger constructed at import would have missed it.
+        The gate is read from the environment at CALL time, not construction, because a program that sets DEBUG for a section of its own run is a real pattern and a logger constructed at import would have missed it.
         """
         if self.env.get(DEBUG_ENV, "false") == DEBUG_ON:
             self.emit("debug", message)
@@ -255,9 +221,7 @@ def default() -> Logger:
 def reset(stream=None, colour: bool | None = None, env=None) -> Logger:
     """Rebuild the default logger. Returns it.
 
-    Exists for two callers: a test that has just swapped sys.stderr, and a
-    program that has parsed `--no-color` from its own argv and must apply the
-    answer to a logger some imported module already used.
+    Exists for two callers: a test that has just swapped sys.stderr, and a program that has parsed `--no-color` from its own argv and must apply the answer to a logger some imported module already used.
     """
     global _default  # noqa: PLW0603
     _default = Logger(stream=stream, colour=colour, env=env)

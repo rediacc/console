@@ -1,14 +1,8 @@
 """`rediacc_ci.quality.scope_scripts_reachability` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-scope-scripts-reachability.sh`
-over a git fixture with stdout and stderr captured SEPARATELY, and its bytes are
-compared against the port's. Same recipe as the committed ledger,
-`.ci/shadow/w7p2-scope-scripts-reachability.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-scope-scripts-reachability.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-scope-scripts-reachability.observations.jsonl`.
 
-THE FIXTURE CARRIES THE REAL `scope-map.cjs`, and it has to. The gate's verdict is
-whatever `classify()` says, and that file's rule ORDER is semantics (first match
-wins, driver contract section 3). A stubbed classifier would make these cases
-assert that the port agrees with the stub.
+THE FIXTURE CARRIES THE REAL `scope-map.cjs`, and it has to. The gate's verdict is whatever `classify()` says, and that file's rule ORDER is semantics (first match wins, driver contract section 3). A stubbed classifier would make these cases assert that the port agrees with the stub.
 
 TWO CASES HERE ARE NOT IN THE LEDGER, and both are the interesting ones.
 
@@ -48,11 +42,7 @@ esac
 def build(tmp_path: pathlib.Path, extra: dict[str, str], *, runsh: bool = True) -> pathlib.Path:
     """A sealed git specimen with both implementations, scope-map.cjs and a run.sh.
 
-    THE BASELINE IS DELIBERATELY ABOVE BOTH FLOORS: twelve `.ci/scripts/deploy`
-    references from a workflow and twelve `.ci/scripts/build` ones from a build
-    script clear the 20-reference `.ci` floor, and the run.sh drill arm clears the
-    dispatch floor of 1. A case that wants a floor to fire removes the baseline
-    rather than lowering the floor, because a floor a test can lower is not a
+    THE BASELINE IS DELIBERATELY ABOVE BOTH FLOORS: twelve `.ci/scripts/deploy` references from a workflow and twelve `.ci/scripts/build` ones from a build script clear the 20-reference `.ci` floor, and the run.sh drill arm clears the dispatch floor of 1. A case that wants a floor to fire removes the baseline rather than lowering the floor, because a floor a test can lower is not a
     floor.
     """
     src = pathlib.Path(diff.repo())
@@ -190,16 +180,10 @@ def test_differential(tmp_path, extra, runsh, want_exit):
 def test_the_dispatch_floor_refusal_exits_127_on_both_sides(tmp_path):
     """The `log_fail` defect, pinned so a one-sided repair is a disagreement.
 
-    The twin never sources `.ci/scripts/lib/common.sh`, and `log_fail` is defined
-    only in `.ci/scripts/test/lib/test-helpers.sh` and four test scripts. Under
-    `set -euo pipefail` the unknown command exits 127 at that line, so the three
-    explanatory `echo`s and the `exit 1` beneath it never run. The identical
-    defect is already on the record for check-pool-writer-safety.sh at
+    The twin never sources `.ci/scripts/lib/common.sh`, and `log_fail` is defined only in `.ci/scripts/test/lib/test-helpers.sh` and four test scripts. Under `set -euo pipefail` the unknown command exits 127 at that line, so the three explanatory `echo`s and the `exit 1` beneath it never run. The identical defect is already on the record for check-pool-writer-safety.sh at
     `.ci/scripts/test/run-all.sh:215-219`.
 
-    NOT IN THE LEDGER: both sides print one shell diagnostic and no finding, so the
-    comparator scores it VACUOUS_BOTH_EMPTY and refuses to record it. Byte equality
-    can rule on it, which is why the case lives here.
+    NOT IN THE LEDGER: both sides print one shell diagnostic and no finding, so the comparator scores it VACUOUS_BOTH_EMPTY and refuses to record it. Byte equality can rule on it, which is why the case lives here.
     """
     root = build(tmp_path, {}, runsh=False)
     (old_rc, old_out, old_err), (new_rc, new_out, new_err) = run_both(root)
@@ -216,11 +200,7 @@ def test_the_dispatch_floor_refusal_exits_127_on_both_sides(tmp_path):
 def test_the_single_quote_lead_is_dead_under_gnu_grep():
     """`\\x27` is the literal `x27`, not a quote, so `require('./x.sh')` is invisible.
 
-    Measured 2026-09-06: `/usr/bin/grep -oE '\\x27'` prints `x27` on a line
-    containing `ax27b` and does not match a line containing `a'b`. The consequence
-    on the real tree is five `.cjs` paths under `.github/workflows` that this gate
-    cannot see. Asserted in BOTH directions so a future edit that "fixes" the
-    escape is caught as the behaviour change it is.
+    Measured 2026-09-06: `/usr/bin/grep -oE '\\x27'` prints `x27` on a line containing `ax27b` and does not match a line containing `a'b`. The consequence on the real tree is five `.cjs` paths under `.github/workflows` that this gate cannot see. Asserted in BOTH directions so a future edit that "fixes" the escape is caught as the behaviour change it is.
     """
     assert "x27" in gate._LEAD
     assert "'" not in gate._LEAD, "restoring the quote changes which paths are judged"

@@ -1,25 +1,13 @@
 """Differential: `rediacc_ci.deploy.cf_purge_urls` against its twin
 `.ci/scripts/deploy/cf-purge-urls.sh`.
 
-A RECORDING FAKE `curl` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the
-fake logs its exact argv, answers from the environment, and every case pins a
-fixture zone id and a fixture credential, so even a bypassed fake would not name
-a real zone. `.ci/shadow/w7p5a-status.json` records this path as blocked only for
-the "one real run" clause and says in as many words that the mocked parity ledger
-is a separate, achievable piece of work. This is that piece.
+A RECORDING FAKE `curl` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv, answers from the environment, and every case pins a fixture zone id and a fixture credential, so even a bypassed fake would not name a real zone. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the
+mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE REQUEST LOG IS COMPARED, NOT JUST THE STREAMS. The observable effect of this
-script is a set of POST bodies against a live CDN, and two implementations can
-print the same tally while purging different URLs, batching differently, or
-sending the credential in the wrong header.
-`test_the_request_shape_is_asserted_in_full` pins the literal argv of a purge --
-method, URL, both headers, and the `--data` payload -- and then checks the port's
-own builders produce the same thing.
+THE REQUEST LOG IS COMPARED, NOT JUST THE STREAMS. The observable effect of this script is a set of POST bodies against a live CDN, and two implementations can print the same tally while purging different URLs, batching differently, or sending the credential in the wrong header. `test_the_request_shape_is_asserted_in_full` pins the literal argv of a purge -- method, URL, both
+headers, and the `--data` payload -- and then checks the port's own builders produce the same thing.
 
-BOTH DEFECT PATHS ARE DRIVEN, because the twin's header promises "always exits 0
-even on credential/auth/API failures" and two paths break that promise: a curl
-transport failure exits 6 and a non-JSON body exits 5. Reproduced, because
-agreement with the live twin is the deliverable.
+BOTH DEFECT PATHS ARE DRIVEN, because the twin's header promises "always exits 0 even on credential/auth/API failures" and two paths break that promise: a curl transport failure exits 6 and a non-JSON body exits 5. Reproduced, because agreement with the live twin is the deliverable.
 """
 
 from __future__ import annotations
@@ -345,8 +333,7 @@ def test_stdin_urls_are_appended_to_the_positional_ones(tmp_path: pathlib.Path) 
 
 def test_a_final_line_without_a_newline_is_dropped(tmp_path: pathlib.Path) -> None:
     """THE BASH FACT A `for line in sys.stdin` PORT GETS WRONG. `read` stores the
-    partial last line and then returns non-zero at EOF, so the loop body never
-    runs for it: the twin purges ONE url here, not two. A port that kept it
+    partial last line and then returns non-zero at EOF, so the loop body never runs for it: the twin purges ONE url here, not two. A port that kept it
     would purge a URL the twin does not."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--zone", ZONE], stdin="https://kept\nhttps://dropped"
@@ -435,9 +422,7 @@ def test_defect_a_non_json_body_exits_five_despite_the_always_zero_promise(
     tmp_path: pathlib.Path,
 ) -> None:
     """DEFECT 1, PINNED. The header (twin lines 21-28) promises the script
-    "always exits 0 even on credential/auth/API failures". An HTML error page
-    reaches an unguarded `jq` inside an ASSIGNMENT, so jq's parse error goes to
-    stderr and `set -e` ends the run with jq's status 5.
+    "always exits 0 even on credential/auth/API failures". An HTML error page reaches an unguarded `jq` inside an ASSIGNMENT, so jq's parse error goes to stderr and `set -e` ends the run with jq's status 5.
 
     Reproduced because agreement with the live twin is the deliverable;
     repaired, this test goes red and names the port that must follow.
@@ -456,8 +441,7 @@ def test_defect_a_transport_failure_exits_six_despite_the_always_zero_promise(
     tmp_path: pathlib.Path,
 ) -> None:
     """DEFECT 2, PINNED. `RESPONSE=$(curl -sS ...)` is an assignment, so a curl
-    that cannot resolve the host ends the run with CURL's status. The "purging N
-    URL(s)" line has already printed, so the caller sees a started purge, curl's
+    that cannot resolve the host ends the run with CURL's status. The "purging N URL(s)" line has already printed, so the caller sees a started purge, curl's
     own message, and a non-zero exit the header says cannot happen."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--zone", ZONE, "https://a"], FAKE_CURL_RC="6"
@@ -491,8 +475,7 @@ def test_divergence_a_trailing_zone_flag_is_bashs_own_unbound_variable(
     tmp_path: pathlib.Path,
 ) -> None:
     """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED"
-    BY ACCIDENT. `--zone` as the last token reads `"$2"` under `set -u`, and the
-    twin dies with bash's own message naming the bash FILE and a bash LINE. The
+    BY ACCIDENT. `--zone` as the last token reads `"$2"` under `set -u`, and the twin dies with bash's own message naming the bash FILE and a bash LINE. The
     port cannot honestly print that; it prints its own sentence. Same stream,
     same exit status, no request from either."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--zone"])
@@ -550,9 +533,7 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the batch size -- the one number whose loss is
-    invisible in the exit code and in every printed line, and which in production
-    means Cloudflare rejecting an oversized purge while the script reports
-    success. Driven red, then the source is confirmed byte-identical and green.
+    invisible in the exit code and in every printed line, and which in production means Cloudflare rejecting an oversized purge while the script reports success. Driven red, then the source is confirmed byte-identical and green.
     """
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace("BATCH_SIZE = 30", "BATCH_SIZE = 60", 1)

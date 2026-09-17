@@ -1,11 +1,7 @@
 """`rediacc_ci.quality.prose_style`, driven mostly by the rules file's own examples.
 
-WHAT IS WORTH TESTING HERE, and it is not "does the regex match". Every rule in
-`.ci/config/prose-style-rules.json` ships with `examples`, and those examples ARE
-the fixtures: this module generates one pytest case per example rather than
-restating them, so a rule whose example stops being detected reds without anybody
-remembering to write a second copy. The alternative -- a hand-written fixture list
-beside the rules -- is two places to change and one of them always rots.
+WHAT IS WORTH TESTING HERE, and it is not "does the regex match". Every rule in `.ci/config/prose-style-rules.json` ships with `examples`, and those examples ARE the fixtures: this module generates one pytest case per example rather than restating them, so a rule whose example stops being detected reds without anybody remembering to write a second copy. The alternative -- a
+hand-written fixture list beside the rules -- is two places to change and one of them always rots.
 
 THE THREE EXPECTATIONS, and the third one is the honest part:
 
@@ -16,17 +12,13 @@ THE THREE EXPECTATIONS, and the third one is the honest part:
                 COUNTED, so the coverage gap is a number in the output instead of
                 a sentence in a comment somebody stops reading
 
-`undetected` is not a skip and is not an excuse. R12's bad example "The project
-failed." and R3's good example "The build failed after the last change." are the
+`undetected` is not a skip and is not an excuse. R12's bad example "The project failed." and R3's good example "The build failed after the last change." are the
 same surface shape; a pattern catching one catches the other. The rules file says
-so, this file asserts the consequence, and `test_undetectable_set_is_small_and_declared`
-keeps the set from quietly growing into a way of retiring rules.
+so, this file asserts the consequence, and `test_undetectable_set_is_small_and_declared` keeps the set from quietly growing into a way of retiring rules.
 
 THE REST OF THIS FILE IS THE EXTRACTOR, which is where a prose linter actually
 lives. Matching four characters is easy; deciding that the four characters inside
-a fence, an inline code span, a blockquote or a `bad:` exemplar are not prose is
-the entire gate, and each of those is a way for it to go green while meaning
-nothing.
+a fence, an inline code span, a blockquote or a `bad:` exemplar are not prose is the entire gate, and each of those is a way for it to go green while meaning nothing.
 """
 
 import ast
@@ -67,8 +59,7 @@ def test_the_rules_file_is_not_empty():
 def test_every_rule_carries_at_least_one_example():
     """An example-driven suite is only as wide as the examples.
 
-    A rule with none contributes ZERO cases below and is indistinguishable, from
-    the outside, from a rule that passes.
+    A rule with none contributes ZERO cases below and is indistinguishable, from the outside, from a rule that passes.
     """
     bare = [r.id for r in RULES if not r.examples]
     assert not bare, "these rules ship no example, so nothing here exercises them: %s" % bare
@@ -77,8 +68,7 @@ def test_every_rule_carries_at_least_one_example():
 def test_every_rule_has_a_good_example():
     """The NEGATIVE direction, per rule.
 
-    A rule with only `bad` examples is a rule this suite cannot catch
-    over-matching on, and an over-matching prose rule flags the whole tree.
+    A rule with only `bad` examples is a rule this suite cannot catch over-matching on, and an over-matching prose rule flags the whole tree.
     """
     one_sided = [r.id for r in RULES if not any(e.get("kind") == "good" for e in r.examples)]
     assert not one_sided, (
@@ -135,9 +125,7 @@ def test_example(rule_id, index, example):
 def test_undetectable_set_is_small_and_declared():
     """`undetected` must stay a declared exception, never a drain.
 
-    Without a ceiling, the cheapest way to make any future rule pass is to mark
-    its examples undetectable, which retires the rule while leaving it in the
-    documentation looking enforced.
+    Without a ceiling, the cheapest way to make any future rule pass is to mark its examples undetectable, which retires the rule while leaving it in the documentation looking enforced.
     """
     undetected = [
         (r.id, e["text"]) for r in RULES for e in r.examples if e.get("expect") == "undetected"
@@ -329,12 +317,8 @@ def test_write_baseline_refuses_a_drain_that_added(tmp_path):
 def test_by_rule_sum_matches_count_when_a_finding_repeats(tmp_path):
     """Two physical lines, one fid: `by_rule` must not double-count it.
 
-    `fid` hashes (path, rule, text) and not the line number on purpose, so
-    the identical template string flagged on two different lines of one
-    file collapses to ONE baseline entry -- `count`/`findings` already
-    dedupe by fid. `by_rule`'s own tally must collapse the same way, or its
-    sum drifts from `count`: measured live, 8 such repeats in the real tree
-    inflated the printed total by 11 before this was fixed.
+    `fid` hashes (path, rule, text) and not the line number on purpose, so the identical template string flagged on two different lines of one file collapses to ONE baseline entry -- `count`/`findings` already dedupe by fid. `by_rule`'s own tally must collapse the same way, or its sum drifts from `count`: measured live, 8 such repeats in the real tree inflated the printed total by
+    11 before this was fixed.
     """
     (tmp_path / ".ci" / "config").mkdir(parents=True)
     repeated_a = [_finding(line=3, rule="R1", text="Did you run it?")] * 2
@@ -377,9 +361,7 @@ def _repo(tmp_path, tracked, *, ignore=(), untracked=()):
     """A real checkout: `tracked` staged, `ignore` written to .gitignore,
     `untracked` planted AFTER the add so git never sees it.
 
-    NO COMMIT. `git ls-files` reads the index, so `git add` is the whole
-    requirement, and skipping the commit skips every way a global identity
-    or signing configuration could make this fixture machine-dependent.
+    NO COMMIT. `git ls-files` reads the index, so `git add` is the whole requirement, and skipping the commit skips every way a global identity or signing configuration could make this fixture machine-dependent.
     """
     root = _tree(tmp_path, tracked)
     if ignore:
@@ -464,8 +446,7 @@ def test_zero_files_is_a_failure(tmp_path, capsys):
 def test_zero_prose_lines_is_a_failure(tmp_path, capsys):
     """A non-empty file set that extracts nothing is the EXTRACTOR breaking.
 
-    Distinct from the glob arm and invisible to it: the file count is healthy and
-    the finding count is zero, which is exactly what a clean tree looks like.
+    Distinct from the glob arm and invisible to it: the file count is healthy and the finding count is zero, which is exactly what a clean tree looks like.
     """
     root = _tree(tmp_path, {"a.md": "```\njust code\n```\n"})
     rc = ps.run_check(root, GLOBALS, RULES, ["a.md"])
@@ -727,10 +708,9 @@ def test_reflow_comments_over_the_width_rewraps_and_loses_no_word():
 def _docstring_normalized_dump(tree):
     """`ast.dump`, with every module/class/function docstring's TEXT blanked out.
 
-    A docstring is a string literal, so reflowing one changes `ast.dump` BY DESIGN -- the whole point of this refactor is that R19 and reflow can now see one, where before neither ever looked inside a docstring at all.
-    The safety proof this module used to run (exact `ast.dump` equality across a reflow) asserted something no longer true and that must not become true again: this is its replacement, proving a reflow never touches anything OUTSIDE a docstring node.
-    `node.body[0]` is only ever a docstring when it is an `Expr` wrapping a string `Constant` as the FIRST statement of a module, class or function -- the same grammar `_is_docstring` already checks token-by-token in `prose_style.py`.
-    Walking the AST for it here is independent confirmation, not a restatement of that same code.
+    A docstring is a string literal, so reflowing one changes `ast.dump` BY DESIGN -- the whole point of this refactor is that R19 and reflow can now see one, where before neither ever looked inside a docstring at all. The safety proof this module used to run (exact `ast.dump` equality across a reflow) asserted something no longer true and that must not become true again: this is
+    its replacement, proving a reflow never touches anything OUTSIDE a docstring node. `node.body[0]` is only ever a docstring when it is an `Expr` wrapping a string `Constant` as the FIRST statement of a module, class or function -- the same grammar `_is_docstring` already checks token-by-token in `prose_style.py`. Walking the AST for it here is independent confirmation, not a
+    restatement of that same code.
     """
     for node in ast.walk(tree):
         if not isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
@@ -749,11 +729,11 @@ def _docstring_normalized_dump(tree):
 def test_reflow_comments_preserves_the_ast_of_every_tracked_python_file():
     """THE test that caught the regex version: 52 of 1051 files, silently rewritten.
 
-    A comment is not part of the AST, and a reflowed docstring is a CHANGED string constant by design -- both facts are folded into one property here: a reflow may change a docstring's own text and NOTHING else.
-    Blanking every docstring's value in both trees before comparing turns that into an assertable claim instead of "trust the diff": anything outside a docstring that moves is a real corruption and fails loudly, a docstring's text changing is the feature under test, and the two are told apart by construction rather than by inspection.
+    A comment is not part of the AST, and a reflowed docstring is a CHANGED string constant by design -- both facts are folded into one property here: a reflow may change a docstring's own text and NOTHING else. Blanking every docstring's value in both trees before comparing turns that into an assertable claim instead of "trust the diff": anything outside a docstring that moves is
+    a real corruption and fails loudly, a docstring's text changing is the feature under test, and the two are told apart by construction rather than by inspection.
 
-    WIDTH 40, NOT 384. The real corpus was reflowed to 384 tree-wide in an earlier session, so a 384-width run now finds almost nothing left to join -- not because the property stopped holding, but because the debt it used to measure is gone.
-    A narrow width forces real multi-line comment AND docstring paragraphs to rejoin regardless of the tree's current wrap state, so the vacuity floor stays meaningful independent of when this runs.
+    WIDTH 40, NOT 384. The real corpus was reflowed to 384 tree-wide in an earlier session, so a 384-width run now finds almost nothing left to join -- not because the property stopped holding, but because the debt it used to measure is gone. A narrow width forces real multi-line comment AND docstring paragraphs to rejoin regardless of the tree's current wrap state, so the vacuity
+    floor stays meaningful independent of when this runs.
     """
     files = gitx.ls_files("*.py", root=ROOT, existing=True)
     assert len(files) > 500, "the corpus collapsed to %d file(s); this asserts nothing" % len(files)
@@ -834,6 +814,38 @@ def test_a_rest_field_list_inside_a_docstring_is_never_rewrapped():
     text = (
         'def f():\n    """Do a thing.\n\n    :param x: the value\n    :param y: another one\n'
         '    :returns: the result\n    """\n'
+    )
+    assert ps.reflow_comments(text, ".py", 384) == text
+
+
+def test_a_rule_line_banner_is_never_absorbed_into_the_prose_beside_it():
+    """MEASURED DAMAGE, not a hypothetical. One reflow pass over 400 tracked `.py` files absorbed 793 banner lines across 154 files, turning the three-line `---- / TITLE / ----` section rule this repository writes inside its own module docstrings into a single run-on line joined to the paragraph beneath it.
+    `REFLOW_STOP` has carried `RULE_LINE` for markdown since the beginning; the comment path simply never applied it, on the since-corrected belief that a comment carries no structure worth protecting.
+    """
+    text = (
+        'def f():\n    """Header.\n\n    ----------------------------------------\n'
+        "    THE SECTION TITLE\n    ----------------------------------------\n"
+        "    Body prose that follows the banner and would otherwise swallow it whole.\n"
+        '    """\n'
+    )
+    assert ps.reflow_comments(text, ".py", 384) == text
+
+
+def test_a_standalone_allcaps_heading_is_never_absorbed():
+    """The same measurement found 296 all-caps section headings absorbed into the paragraph after them. The stop requires the WHOLE line to be caps, so this module's own `WHAT THIS ENFORCES. The single source ...` lead-in -- caps followed by ordinary prose on one line -- still joins normally, which the second half of this control pins."""
+    heading = 'def f():\n    """Header.\n\n    TWO HAZARDS IN THE TWIN, REPORTED AND PRESERVED\n    Body prose beneath the heading.\n    """\n'
+    assert ps.reflow_comments(heading, ".py", 384) == heading
+    lead_in = 'def f():\n    """Header.\n\n    WHAT THIS ENFORCES. The single\n    source of truth is one file.\n    """\n'
+    assert ps.reflow_comments(lead_in, ".py", 384) != lead_in
+
+
+def test_a_list_inside_a_hash_comment_block_is_never_absorbed():
+    """A `#` comment block carries enumerated structure exactly as a docstring does, and the reflow path used to check neither. Joining item 1 into its own continuations while leaving item 2 alone is the shape this pins, since the inconsistency is what makes the damage hard to see in a diff."""
+    text = (
+        "#   1. The first rule, which carries a continuation line\n"
+        "#      that belongs to it and must not be merged upward.\n"
+        "#   2. The second rule, which must stay a separate item.\n"
+        "x = 1\n"
     )
     assert ps.reflow_comments(text, ".py", 384) == text
 
@@ -1039,9 +1051,7 @@ def test_the_loader_accepts_the_real_file():
 def test_the_gate_selftest_passes():
     """The gate's own controls, run from inside the suite that also tests it.
 
-    Both matter and neither replaces the other: `--selftest` runs against a
-    miniature rules file it controls completely, this module runs against the
-    REAL one, and a bug in either direction shows up in exactly one of them.
+    Both matter and neither replaces the other: `--selftest` runs against a miniature rules file it controls completely, this module runs against the REAL one, and a bug in either direction shows up in exactly one of them.
     """
     assert ps.selftest() == 0
 

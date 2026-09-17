@@ -1,33 +1,18 @@
 """`rediacc_ci.ci.derive_image_tag` against its bash twin.
 
-EVERY CASE RUNS IN A DISPOSABLE GIT REPOSITORY UNDER `tmp_path`, NEVER IN THE
-CHECKOUT. The auto-derive arm reads `git tag -l 'v*'`, so running it here would
-make the expected answer whatever the console repo happens to be tagged at that
-hour -- a test that passes today and fails after the next release. `scratch_repo`
-builds a one-commit repository with exactly the tags a case needs, and
-`assert_is_scratch` re-derives `git rev-parse --show-toplevel` before any case
-uses it, so a bug in the fixture cannot point the differential at the real tree.
+EVERY CASE RUNS IN A DISPOSABLE GIT REPOSITORY UNDER `tmp_path`, NEVER IN THE CHECKOUT. The auto-derive arm reads `git tag -l 'v*'`, so running it here would make the expected answer whatever the console repo happens to be tagged at that hour -- a test that passes today and fails after the next release. `scratch_repo` builds a one-commit repository with exactly the tags a case
+needs, and `assert_is_scratch` re-derives `git rev-parse --show-toplevel` before any case uses it, so a bug in the fixture cannot point the differential at the real tree.
 
-THE FAKE `git` IS RECORDING, AND IT REFUSES `fetch`. The twin's shallow-clone
-arm runs `git fetch --tags --force --no-recurse-submodules origin`, which is a
-NETWORK call. A scratch repository has no `origin`, so a real git would fail
-locally and never reach the network -- but "would fail locally" is a property of
-the fixture, not a guarantee, and a differential that depends on it is one
-`git remote add` away from dialling out. So the fetch arm is driven through a
-fake `git` that logs its exact argv and exits non-zero for `fetch` while
-delegating everything else to the real binary. Both sides get the same fake and
-the two call logs are compared.
+THE FAKE `git` IS RECORDING, AND IT REFUSES `fetch`. The twin's shallow-clone arm runs `git fetch --tags --force --no-recurse-submodules origin`, which is a NETWORK call. A scratch repository has no `origin`, so a real git would fail locally and never reach the network -- but "would fail locally" is a property of the fixture, not a guarantee, and a differential that depends on it
+is one `git remote add` away from dialling out. So the fetch arm is driven through a fake `git` that logs its exact argv and exits non-zero for `fetch` while delegating everything else to the real binary. Both sides get the same fake and the two call logs are compared.
 
 WHAT IS NORMALISED. Two of the twin's exits are bash's own `${...?message}`
-diagnostics, which begin `<program>: line <N>:`, and the help text interpolates
-`$0`. The program NAME necessarily differs between a `.sh` and a module file, so
-`strip_prog` replaces that one token and `help_body` drops it from the help
+diagnostics, which begin `<program>: line <N>:`, and the help text interpolates `$0`. The program NAME necessarily differs between a `.sh` and a module file, so `strip_prog` replaces that one token and `help_body` drops it from the help
 lines; the line NUMBERS are compared, because a drifting line number is exactly
 the silent failure this pinning exists to catch.
 
 The K=5 ledger is `.ci/shadow/w7p6-derive-image-tag.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-derive-image-tag --assert
---k 5`).
+(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-derive-image-tag --assert --k 5`).
 """
 
 from __future__ import annotations
@@ -80,9 +65,7 @@ _HELP_PROG = re.compile(r"\S*derive[-_]image[-_]tag\.(?:sh|py)")
 def help_body(stdout: str) -> list[str]:
     """The help text with the program's own name replaced and runs collapsed.
 
-    `$0` appears five times (the usage line and four examples), and the column
-    alignment of the four example comments is padded to a fixed width, so the
-    LENGTH of the name changes the trailing spacing too. The name becomes
+    `$0` appears five times (the usage line and four examples), and the column alignment of the four example comments is padded to a fixed width, so the LENGTH of the name changes the trailing spacing too. The name becomes
     `<prog>` and whitespace runs collapse; every option, every description and
     both auto-derivation lines survive and are compared.
     """
@@ -94,10 +77,7 @@ def help_body(stdout: str) -> list[str]:
 def assert_is_scratch(repo: pathlib.Path) -> None:
     """Refuse to touch anything that is not the disposable repository.
 
-    Not defensive theatre: every git command below is run with `-C <repo>`, and
-    a `-C` that silently resolved into the real checkout would run `git tag`
-    against work in progress. `--show-toplevel` is the only answer that settles
-    it, and it must NOT be the console tree.
+    Not defensive theatre: every git command below is run with `-C <repo>`, and a `-C` that silently resolved into the real checkout would run `git tag` against work in progress. `--show-toplevel` is the only answer that settles it, and it must NOT be the console tree.
     """
     top = subprocess.run(
         ["git", "-C", str(repo), "rev-parse", "--show-toplevel"],
@@ -227,8 +207,7 @@ def test_defect_b_an_empty_explicit_version_is_silently_auto_derived(
 ) -> None:
     """`${2?...}` refuses ABSENT, not EMPTY, and the decision is `[[ -n "$VERSION" ]]`.
 
-    A blank `workflow_dispatch` input therefore produces a tag nobody asked for
-    rather than a refusal, and the only sign of it is on stderr.
+    A blank `workflow_dispatch` input therefore produces a tag nobody asked for rather than a refusal, and the only sign of it is on stderr.
     """
     repo = scratch_repo(tmp_path, "v3.4.5")
     old, new, files = run_both(tmp_path, "--version", "", cwd=repo)
@@ -313,8 +292,7 @@ def test_the_branch_arm_picks_the_highest_version_not_the_highest_string(
 ) -> None:
     """`--sort=-v:refname` puts v1.10.0 above v1.9.0. A lexicographic sort does not.
 
-    This is the one case a hand-rolled Python sort would get wrong, and it is why
-    the port shells out to git instead of reimplementing the ordering.
+    This is the one case a hand-rolled Python sort would get wrong, and it is why the port shells out to git instead of reimplementing the ordering.
     """
     repo = scratch_repo(tmp_path, "v1.9.0", "v1.10.0", "v1.2.0")
     old, new, files = run_both(
@@ -338,9 +316,7 @@ def test_non_v_tags_are_invisible_and_the_fetch_arm_then_fires(
 ) -> None:
     """No `v*` tag means the shallow-clone fetch, and then the `latest` fallback.
 
-    The fake git records the fetch rather than performing it, and the two sides'
-    call logs must be identical -- which is what proves the port sends the same
-    four flags in the same order.
+    The fake git records the fetch rather than performing it, and the two sides' call logs must be identical -- which is what proves the port sends the same four flags in the same order.
     """
     repo = scratch_repo(tmp_path, "release-1", "2.0.0")
     old, new, files = run_both(
@@ -391,10 +367,7 @@ def test_outside_a_git_repository_the_answer_is_latest(tmp_path: pathlib.Path) -
 def test_a_missing_git_derives_latest_and_exits_zero(tmp_path: pathlib.Path) -> None:
     """The missing-tool arm, and it is GREEN. Pinned in both directions.
 
-    All three git calls have their stderr on `/dev/null` and their status either
-    tested or `|| true`d, so a machine without git prints nothing about it and
-    ships an image tagged `latest`. The port raised `FileNotFoundError` here
-    until `git_stdout` existed, which is the divergence this case keeps out.
+    All three git calls have their stderr on `/dev/null` and their status either tested or `|| true`d, so a machine without git prints nothing about it and ships an image tagged `latest`. The port raised `FileNotFoundError` here until `git_stdout` existed, which is the divergence this case keeps out.
     """
     bindir = tmp_path / "nogit"
     bindir.mkdir()
@@ -455,8 +428,7 @@ def test_the_format_check_runs_before_the_length_check(tmp_path: pathlib.Path) -
 
     A 200-character non-ASCII tag is rejected for its FORMAT, never reaching the
     length comparison where bash counts bytes under LC_ALL=C and Python counts
-    characters. Reorder the two checks and the two implementations start
-    disagreeing on exactly this input.
+    characters. Reorder the two checks and the two implementations start disagreeing on exactly this input.
     """
     old, new, files = run_both(tmp_path, "--version", "é" * 200)
     assert old[0] == 1

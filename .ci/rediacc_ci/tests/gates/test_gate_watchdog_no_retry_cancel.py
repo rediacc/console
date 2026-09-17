@@ -1,19 +1,13 @@
 """Port of `.ci/scripts/test/gates/test-watchdog-no-retry-cancel.sh`.
 
-The no-retry force-cancel decision in `.ci/scripts/ci/watchdog-monitor.cjs`:
-WHICH failures kill the run immediately, and WHAT the kill waits for.
+The no-retry force-cancel decision in `.ci/scripts/ci/watchdog-monitor.cjs`: WHICH failures kill the run immediately, and WHAT the kill waits for.
 
-HISTORY. The twin was `test-watchdog-cancel-label.sh` and existed for the
-`no-cancel-failure` label, which suppressed the force-cancel so a run could finish
-and report every red at once. The label was removed 2026-08-05: holding a known-red
-run open makes every CI iteration wait out the expensive legs (E2E, OPS) for
-information the drain already delivers for the deterministic lanes. What remains
-under test is the part that outlived it -- the branch ordering and the drain.
+HISTORY. The twin was `test-watchdog-cancel-label.sh` and existed for the `no-cancel-failure` label, which suppressed the force-cancel so a run could finish and report every red at once. The label was removed 2026-08-05: holding a known-red run open makes every CI iteration wait out the expensive legs (E2E, OPS) for information the drain already delivers for the deterministic
+lanes. What remains under test is the part that outlived it -- the branch ordering and the drain.
 
 WHY A UNIT TEST AND NOT A MIRROR. It would be easy to re-implement the boolean here
 and assert on the copy; that proves nothing about the watchdog. This calls the
-EXPORTED decision and reads `WATCHDOG_NO_RETRY_PATTERNS` out of the REAL
-`watchdog-monitor.yml`, so a renamed pattern or a reordered branch fails here.
+EXPORTED decision and reads `WATCHDOG_NO_RETRY_PATTERNS` out of the REAL `watchdog-monitor.yml`, so a renamed pattern or a reordered branch fails here.
 
 Both directions matter:
   - Too quiet: a deterministic Quality failure stops killing the run, and one lint
@@ -21,16 +15,11 @@ Both directions matter:
   - Too loud: a Quality CANCELLATION (a runner flake, not a code verdict) kills a
     run with zero failed jobs.
 
-THE PATTERN READ IS REIMPLEMENTED, and the two spellings agree by construction.
-The twin lifts the value with
+THE PATTERN READ IS REIMPLEMENTED, and the two spellings agree by construction. The twin lifts the value with
 
     sed -n "s/^ *WATCHDOG_NO_RETRY_PATTERNS: *'\\(.*\\)'$/\\1/p"
 
-and this module uses the same expression as a Python regex under `re.MULTILINE`.
-Both are greedy on `.*` and both anchor the closing quote at end of line, so a
-value containing a quote resolves identically in either. The port then REFUSES an
-empty result exactly as the twin does, because a pattern list that read as empty
-would make every case below pass for the wrong reason.
+and this module uses the same expression as a Python regex under `re.MULTILINE`. Both are greedy on `.*` and both anchor the closing quote at end of line, so a value containing a quote resolves identically in either. The port then REFUSES an empty result exactly as the twin does, because a pattern list that read as empty would make every case below pass for the wrong reason.
 
 NO `xdist_group`. Every case is a short-lived `node -e` subprocess that reads two
 tracked files and writes nothing; nothing is bound and no module global is mutated.
@@ -54,10 +43,7 @@ PATTERN_LINE = re.compile(r"^ *WATCHDOG_NO_RETRY_PATTERNS: *'(.*)'$", re.MULTILI
 def no_retry_patterns(gate) -> str:
     """The comma-joined list CI actually sets, or a loud refusal.
 
-    A guard that works on invented job names while the real config never matches
-    is the exact failure this gate exists to catch, so the value is READ rather
-    than typed. An empty read is a failure and never a default: every case below
-    would pass for the wrong reason against an empty pattern list.
+    A guard that works on invented job names while the real config never matches is the exact failure this gate exists to catch, so the value is READ rather than typed. An empty read is a failure and never a default: every case below would pass for the wrong reason against an empty pattern list.
     """
     if not CI_WORKFLOW.is_file():
         gate.log_fail(
@@ -79,10 +65,7 @@ def no_retry_patterns(gate) -> str:
 def node_probe(gate, program: str, *argv: str) -> str:
     """One `node -e` against the REAL module, stdout only.
 
-    stdout ALONE and not `.combined`, deliberately: the probe writes its verdict
-    word to stdout and node writes deprecation notices and stack traces to stderr,
-    so merging them would let a warning turn `"cancel"` into something that merely
-    contains it.
+    stdout ALONE and not `.combined`, deliberately: the probe writes its verdict word to stdout and node writes deprecation notices and stack traces to stderr, so merging them would let a warning turn `"cancel"` into something that merely contains it.
     """
     if not WATCHDOG.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(WATCHDOG))
@@ -187,9 +170,7 @@ def test_review_gate_cancels(gate):
 def test_no_suppression_hatch_remains(gate):
     """The point of the 2026-08-05 removal, asserted rather than assumed.
 
-    The decision takes NO argument that can hold the cancel back. Passing the old
-    suppression flag must not change the answer, so a half-reverted removal -- the
-    branch restored, the plumbing not -- cannot pass silently.
+    The decision takes NO argument that can hold the cancel back. Passing the old suppression flag must not change the answer, so a half-reverted removal -- the branch restored, the plumbing not -- cannot pass silently.
     """
     gate.assert_eq(
         node_probe(gate, SUPPRESSION_JS, no_retry_patterns(gate)),

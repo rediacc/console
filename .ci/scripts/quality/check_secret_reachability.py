@@ -1,43 +1,21 @@
 #!/usr/bin/env python3
 """A workflow may not reference a secret its repository cannot read.
 
-WHY THIS EXISTS. On 2026-08-07 it turned out that `Claude Review` had NEVER
-succeeded in rediacc/account or rediacc/renet -- every run since at least
-2026-07-28 failed, including runs on `main`. Both repos carry a
-`claude-review.yml` that references `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. That
+WHY THIS EXISTS. On 2026-08-07 it turned out that `Claude Review` had NEVER succeeded in rediacc/account or rediacc/renet -- every run since at least 2026-07-28 failed, including runs on `main`. Both repos carry a `claude-review.yml` that references `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. That
 secret is an ORGANISATION secret with `visibility=selected`, and its
-selected-repositories list contains exactly one entry: `console`. So in those
-two repos the reference resolved to an empty string and the action aborted on
-environment validation.
+selected-repositories list contains exactly one entry: `console`. So in those two repos the reference resolved to an empty string and the action aborted on environment validation.
 
-For eleven days two repositories appeared to have automated review and had
-none. The 0804-1 wave merged renet#98 and account#74 with neither submodule
-half ever reviewed. Nothing noticed, because no gate connects a workflow's
-`secrets.X` reference to whether X is actually reachable from that repository:
-workflow linting checks SYNTAX, and a missing secret is syntactically perfect.
+For eleven days two repositories appeared to have automated review and had none. The 0804-1 wave merged renet#98 and account#74 with neither submodule half ever reviewed. Nothing noticed, because no gate connects a workflow's `secrets.X` reference to whether X is actually reachable from that repository: workflow linting checks SYNTAX, and a missing secret is syntactically perfect.
 
-WHAT IT CHECKS. Every `secrets.NAME` reference in every workflow of this repo
-and its submodules must have a committed record saying that repository can read
-that secret. A reference with no record, or with a record saying `false`, fails.
+WHAT IT CHECKS. Every `secrets.NAME` reference in every workflow of this repo and its submodules must have a committed record saying that repository can read that secret. A reference with no record, or with a record saying `false`, fails.
 
-WHY A COMMITTED BASELINE. `npm run ci` must work offline and deterministically,
-and reading secret visibility needs an org-admin token that most runs do not
+WHY A COMMITTED BASELINE. `npm run ci` must work offline and deterministically, and reading secret visibility needs an org-admin token that most runs do not
 have. So the gate compares committed facts; the network lives only in
-`--refresh`, which rewrites them from the API. A gate that needs a token is a
-gate that silently degrades to "passed" wherever the token is absent -- which is
-the same failure shape as the thing it is here to catch.
+`--refresh`, which rewrites them from the API. A gate that needs a token is a gate that silently degrades to "passed" wherever the token is absent -- which is the same failure shape as the thing it is here to catch.
 
-WHAT IT CANNOT DO. It cannot see an org admin removing a repo from an allowlist
-after the last refresh. That is what MAX_BASELINE_AGE_DAYS is for: the record
-going stale is itself a failure, so the blind window is bounded and visible
-rather than open-ended.
+WHAT IT CANNOT DO. It cannot see an org admin removing a repo from an allowlist after the last refresh. That is what MAX_BASELINE_AGE_DAYS is for: the record going stale is itself a failure, so the blind window is bounded and visible rather than open-ended.
 
----- gate ----
-step: Secret reachability
-needs: python-yaml
-selftest: true
-lane: quality-security
----- end gate ----
+---- gate ---- step: Secret reachability needs: python-yaml selftest: true lane: quality-security ---- end gate ----
 """
 
 import argparse
@@ -106,31 +84,16 @@ def repo_roots(root):
 def declared_secrets(text):
     """Names a reusable workflow DECLARES under on.workflow_call.secrets.
 
-    WHY PyYAML AND NOT A REGEX, carried here from the workflow step that used to
-    install it (ci-quality.yml, quality-security) before that step was generated
+    WHY PyYAML AND NOT A REGEX, carried here from the workflow step that used to install it (ci-quality.yml, quality-security) before that step was generated
     from this gate's own header. A generated step keeps the command and drops the
     prose, so reasoning left there dies at the cutover.
 
-    This gate must know which secret reads are a reusable's own DECLARED INPUTS
-    rather than org secrets, and that lives in NESTED `on.workflow_call.secrets`.
-    Hand-rolling a parser for nested YAML is a correctness risk a gate cannot
-    afford, and a yaml-if-available-else-regex fallback would make the gate mean
-    different things in CI and locally.
+    This gate must know which secret reads are a reusable's own DECLARED INPUTS rather than org secrets, and that lives in NESTED `on.workflow_call.secrets`. Hand-rolling a parser for nested YAML is a correctness risk a gate cannot afford, and a yaml-if-available-else-regex fallback would make the gate mean different things in CI and locally.
 
-    A TRAP PAID FOR ALREADY: naming the read form literally in that workflow
-    comment made CHECK 2 of check-workflow-gates.sh match its own prose and report
-    the file as reading an undeclared secret. A detector matching a comment about
-    itself is a documented trap in TRAPS.md, and it is why the phrasing here
-    describes the shape rather than spelling it.
+    A TRAP PAID FOR ALREADY: naming the read form literally in that workflow comment made CHECK 2 of check-workflow-gates.sh match its own prose and report the file as reading an undeclared secret. A detector matching a comment about itself is a documented trap in TRAPS.md, and it is why the phrasing here describes the shape rather than spelling it.
 
-    Inside a reusable, `secrets.X` reads the DECLARED INPUT, not an org secret
-    of that name -- the caller supplies it, under whatever name the caller has.
-    Once the two name-spaces diverge (the org keeps `R2_ACCESS_KEY_ID` while the
-    workflow layer says `CLOUDFLARE_R2_ACCESS_KEY_ID`) that distinction stops
-    being academic: 18 declared inputs read as unreachable org secrets, which is
-    a false red on the callee for something only the CALLER can get wrong -- and
-    the caller's passthrough is still scanned, so nothing is lost by excluding
-    these.
+    Inside a reusable, `secrets.X` reads the DECLARED INPUT, not an org secret of that name -- the caller supplies it, under whatever name the caller has. Once the two name-spaces diverge (the org keeps `R2_ACCESS_KEY_ID` while the workflow layer says `CLOUDFLARE_R2_ACCESS_KEY_ID`) that distinction stops being academic: 18 declared inputs read as unreachable org secrets, which is a
+    false red on the callee for something only the CALLER can get wrong -- and the caller's passthrough is still scanned, so nothing is lost by excluding these.
 
     Parsed, not regexed. `on` is the YAML boolean True after safe_load, which is
     the one gotcha; both spellings are tried.
@@ -306,15 +269,10 @@ def staleness_problems(record, now):
 
     TWO WAYS A RECORD GOES WRONG, and the second is the one that shipped.
 
-    AGE is the obvious one: an org allowlist changes without any commit here, so a
-    record nobody refreshed eventually describes a world that moved on.
+    AGE is the obvious one: an org allowlist changes without any commit here, so a record nobody refreshed eventually describes a world that moved on.
 
-    PREDATING A KNOWN CHANGE is the other, and it looks fine. On 2026-09-05, 45 org
-    secrets were deleted. This record was refreshed 2026-09-02 -- three days EARLIER
-    -- and the 45-day age window kept it admissible until 2026-10-17. So the gate went
-    on certifying six references as reachable, two of them wrong, straight past the
-    event that made them wrong, and reported it as a clean green. A record is
-    inadmissible the moment it predates a change it cannot have seen, however young.
+    PREDATING A KNOWN CHANGE is the other, and it looks fine. On 2026-09-05, 45 org secrets were deleted. This record was refreshed 2026-09-02 -- three days EARLIER -- and the 45-day age window kept it admissible until 2026-10-17. So the gate went on certifying six references as reachable, two of them wrong, straight past the event that made them wrong, and reported it as a clean
+    green. A record is inadmissible the moment it predates a change it cannot have seen, however young.
     """
     out = []
     try:

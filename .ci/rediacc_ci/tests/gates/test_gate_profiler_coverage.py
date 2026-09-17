@@ -1,51 +1,27 @@
 """Port of `.ci/scripts/test/gates/test-profiler-coverage.sh`.
 
-Tests for `.ci/scripts/quality/check-profiler-coverage.sh`: every Linux job uses
-the runner profiler, and every job that uses it is configured right.
+Tests for `.ci/scripts/quality/check-profiler-coverage.sh`: every Linux job uses the runner profiler, and every job that uses it is configured right.
 
-Driven entirely through the gate's env seams (`PROFILER_COVERAGE_WORKFLOW_DIR`,
-`_ALLOWLIST`, `_ACTION_DIR`, `_WRAPPER_DIRS`, `_COVERING_ACTIONS` and the three
-floors) against temp fixtures, so no tracked workflow or allowlist is touched.
-The last twin case is the exception and the important one: it runs the gate
-SEAM-FREE over the real tree, which is what makes the manifest's CI-coverage
-claim true.
+Driven entirely through the gate's env seams (`PROFILER_COVERAGE_WORKFLOW_DIR`, `_ALLOWLIST`, `_ACTION_DIR`, `_WRAPPER_DIRS`, `_COVERING_ACTIONS` and the three floors) against temp fixtures, so no tracked workflow or allowlist is touched. The last twin case is the exception and the important one: it runs the gate SEAM-FREE over the real tree, which is what makes the manifest's
+CI-coverage claim true.
 
-Every fire case has its control: the same fixture, one thing changed, and the
-opposite verdict asserted. A gate that cannot be made to fire is not a gate.
+Every fire case has its control: the same fixture, one thing changed, and the opposite verdict asserted. A gate that cannot be made to fire is not a gate.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `gate-test:profiler-coverage`
-declares `reads: ["tree:repo"]` in `scripts/ci-runner/gates.lock.json`, so the
-twin is in the set `xdist_groups.real_tree_twins` derives and
-`real_tree_admission` requires the declaration. It is right on the merits too:
-`test_real_tree_seam_free` sweeps the real `.github/workflows`,
-`test_setup_workspace_is_builtin_coverage` and
-`test_wrapper_that_lost_the_profiler_refuses` read the real
-`.github/actions/setup-workspace`, and `test_undeclared_input_fails` is checked
-against the real `.github/actions/profiler/action.yml`. A battery step rewriting
-any of those mid-sweep is a divergence that would be blamed on this port. The
-opt-in is honoured only because this module declares no `XDIST_GROUP` of its
-own.
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `gate-test:profiler-coverage` declares `reads: ["tree:repo"]` in `scripts/ci-runner/gates.lock.json`, so the twin is in the set `xdist_groups.real_tree_twins` derives and `real_tree_admission` requires the declaration. It is right on the merits too: `test_real_tree_seam_free` sweeps the real `.github/workflows`,
+`test_setup_workspace_is_builtin_coverage` and `test_wrapper_that_lost_the_profiler_refuses` read the real `.github/actions/setup-workspace`, and `test_undeclared_input_fails` is checked against the real `.github/actions/profiler/action.yml`. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on this port. The opt-in is honoured only because this
+module declares no `XDIST_GROUP` of its own.
 
 --------------------------------------------------------------------------
 IS THIS FILE VISIBLE TO THE SWEEP IT DRIVES? NO, AND IT IS CHECKED
 --------------------------------------------------------------------------
-The question is owed by any port whose fixtures are the very shapes its subject
-hunts for, and it was asked before a fixture was written. The subject enumerates
-`*.yml` under a workflow DIRECTORY and reconciles what it finds against an
+The question is owed by any port whose fixtures are the very shapes its subject hunts for, and it was asked before a fixture was written. The subject enumerates `*.yml` under a workflow DIRECTORY and reconciles what it finds against an
 allowlist; this file is a `.py` under `.ci/rediacc_ci/tests/gates`, so it is
-outside the sweep on both counts and the fixtures are written out literally, as
-the twin writes them.
+outside the sweep on both counts and the fixtures are written out literally, as the twin writes them.
 
-What replaces that argument with a control is
-`test_this_module_plants_no_workflow_the_real_sweep_can_see`, added by the port:
-it points the REAL subject's workflow directory at this very directory and
-requires it to REFUSE with "ZERO workflow files". A `.yml` appearing beside these
-ports, or the walker widening, turns that control red HERE, by name, rather than
-reddening `check:ci-profiler-coverage` for whoever runs it next.
+What replaces that argument with a control is `test_this_module_plants_no_workflow_the_real_sweep_can_see`, added by the port: it points the REAL subject's workflow directory at this very directory and requires it to REFUSE with "ZERO workflow files". A `.yml` appearing beside these ports, or the walker widening, turns that control red HERE, by name, rather than reddening
+`check:ci-profiler-coverage` for whoever runs it next.
 
-The twin's own leak check is kept as well: `test_real_tree_seam_free` forbids the
-string `fixture-` anywhere in the real run's output, so a seam that stopped
-isolating shows up as this file's job names appearing in a real verdict.
+The twin's own leak check is kept as well: `test_real_tree_seam_free` forbids the string `fixture-` anywhere in the real run's output, so a seam that stopped isolating shows up as this file's job names appearing in a real verdict.
 """
 
 import os
@@ -87,8 +63,7 @@ def run_gate(
 ) -> harness.RunResult:
     """`run_gate <workflow-dir> <allowlist> [min-workflows] [min-jobs] [min-linux]`.
 
-    The twin captures `2>&1` into `LAST_OUT` and asserts on the merged text, so
-    every caller below reads `.combined` for the same reason. Env is passed per
+    The twin captures `2>&1` into `LAST_OUT` and asserts on the merged text, so every caller below reads `.combined` for the same reason. Env is passed per
     call rather than exported, which is what the twin's inline `VAR=... bash`
     form buys it: one case cannot leak a seam into the next.
     """
@@ -132,9 +107,7 @@ def write_workflow(gate, d, *jobs: str):
 
     ANTI-VACUITY. A workflow with NO jobs is the fixture
     `test_zero_jobs_refuses` builds on purpose, and it builds it directly; every
-    other case passing zero jobs through here would be driving the gate over a
-    file it cannot classify and reading the refusal as whatever it expected. So
-    an empty job list is a FAILURE here rather than a fixture that says nothing.
+    other case passing zero jobs through here would be driving the gate over a file it cannot classify and reading the refusal as whatever it expected. So an empty job list is a FAILURE here rather than a fixture that says nothing.
     """
     if not jobs:
         gate.log_fail(
@@ -487,8 +460,7 @@ NESTED_JOB = (
 
 def test_nest_probe_is_not_coverage(gate):
     """Nesting works (run 31252148469), but that did NOT make every composite
-    coverage: only a DECLARED, verified wrapper counts. nest-probe is the
-    probe's own instrument and is deliberately not one, so a job carrying it is
+    coverage: only a DECLARED, verified wrapper counts. nest-probe is the probe's own instrument and is deliberately not one, so a job carrying it is
     still uncovered."""
     with harness.temp_dir() as d:
         wf, allow = write_workflow(gate, d, NESTED_JOB)
@@ -509,9 +481,7 @@ def test_nest_probe_is_not_coverage(gate):
 
 def test_declared_wrapper_counts_as_coverage(gate):
     """The UNVERIFIED extension seam, for a wrapper that lives outside this
-    repo's action tree: a ref named in PROFILER_COVERAGE_COVERING_ACTIONS is
-    taken on trust. Exercised here so it is live code rather than a comment that
-    has never run. (The built-in wrapper list is the verified path, and is
+    repo's action tree: a ref named in PROFILER_COVERAGE_COVERING_ACTIONS is taken on trust. Exercised here so it is live code rather than a comment that has never run. (The built-in wrapper list is the verified path, and is
     pinned by test_setup_workspace_is_builtin_coverage below.)"""
     with harness.temp_dir() as d:
         wf, allow = write_workflow(gate, d, NESTED_JOB)
@@ -537,11 +507,9 @@ def test_declared_wrapper_counts_as_coverage(gate):
 
 def test_setup_workspace_is_builtin_coverage(gate):
     """THE PHASE-1 INVARIANT. profiler-probe.yml run 31252148469 proved a nested
-    post: hook fires, so ./.github/actions/setup-workspace carries the profiler
-    and every job calling it is covered. Driven with NO wrapper seam at all here:
+    post: hook fires, so ./.github/actions/setup-workspace carries the profiler and every job calling it is covered. Driven with NO wrapper seam at all here:
     if somebody reverts the built-in wrapper list to empty, or deletes the
-    profiler step out of setup-workspace, this case goes red -- which is the only
-    thing standing between that edit and ~26 jobs that report as profiled while
+    profiler step out of setup-workspace, this case goes red -- which is the only thing standing between that edit and ~26 jobs that report as profiled while
     profiling nothing."""
     with harness.temp_dir() as d:
         wf, allow = write_workflow(
@@ -810,16 +778,9 @@ def test_real_tree_seam_free(gate):
 def test_this_module_plants_no_workflow_the_real_sweep_can_see(gate):
     """ADDED BY THE PORT, and it is the control on this port's central claim.
 
-    Every fixture above is a workflow the subject is built to hunt through, and
-    they are written out LITERALLY because the subject cannot see this file: it
-    enumerates `*.yml` under a workflow directory, and this is a `.py` under
-    `.ci/rediacc_ci/tests/gates`. That is an argument, and an argument is not a
-    control.
+    Every fixture above is a workflow the subject is built to hunt through, and they are written out LITERALLY because the subject cannot see this file: it enumerates `*.yml` under a workflow directory, and this is a `.py` under `.ci/rediacc_ci/tests/gates`. That is an argument, and an argument is not a control.
 
-    So: point the REAL subject's workflow directory at this directory and require
-    it to REFUSE with "ZERO workflow files". A `.yml` appearing beside these
-    ports reds this case BY NAME instead of reddening
-    `check:ci-profiler-coverage` for whoever runs it next.
+    So: point the REAL subject's workflow directory at this directory and require it to REFUSE with "ZERO workflow files". A `.yml` appearing beside these ports reds this case BY NAME instead of reddening `check:ci-profiler-coverage` for whoever runs it next.
     """
     here = paths.from_root(*HERE_REL.split("/"))
     if not here.is_dir():

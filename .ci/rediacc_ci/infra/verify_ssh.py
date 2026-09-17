@@ -1,25 +1,16 @@
 """Port of `.ci/scripts/infra/verify-ssh.sh`.
 
-Polls one or more hosts until SSH answers, or fails after N attempts, and
-succeeds as soon as ANY target answers. `ops up` returns when libvirt has
+Polls one or more hosts until SSH answers, or fails after N attempts, and succeeds as soon as ANY target answers. `ops up` returns when libvirt has
 started the domain; sshd comes up later, and every later step SSHes in, so
-waiting here turns a confusing mid-suite connection refusal into one clear
-timeout with an attempt count. A target is `host` or `host:port` (the
-`localhost:2201` shape `ops` emits).
+waiting here turns a confusing mid-suite connection refusal into one clear timeout with an attempt count. A target is `host` or `host:port` (the `localhost:2201` shape `ops` emits).
 
-HOST-KEY CHECKING STAYS OFF, and the twin's reason is carried over verbatim
-rather than "improved": these are ephemeral CI VMs whose keys are regenerated
+HOST-KEY CHECKING STAYS OFF, and the twin's reason is carried over verbatim rather than "improved": these are ephemeral CI VMs whose keys are regenerated
 on every provision, so `StrictHostKeyChecking=no` with
 `UserKnownHostsFile=/dev/null` is the only thing that survives a second run.
 A port that quietly hardened this would break every caller on provision two.
 
-RELATIONSHIP TO `wait_for_vm_ssh.py`, which is the sibling port in this box.
-The two twins were written independently and SHARE NO CODE, not even through
-`common.sh`: they each open-code their own poll loop, their own attempt
-counter, and their own ssh argument list. The duplication is real but it is
-NOT identical, and the differences are behavioural rather than cosmetic, so
-neither port factors a shared helper out (that would be a refactor of two live
-scripts, not a port):
+RELATIONSHIP TO `wait_for_vm_ssh.py`, which is the sibling port in this box. The two twins were written independently and SHARE NO CODE, not even through `common.sh`: they each open-code their own poll loop, their own attempt counter, and their own ssh argument list. The duplication is real but it is NOT identical, and the differences are behavioural rather than cosmetic, so
+neither port factors a shared helper out (that would be a refactor of two live scripts, not a port):
 
   * host keys       verify-ssh REFUSES to learn them (`no` + /dev/null);
                     wait-for-vm-ssh LEARNS them (`accept-new`, then an
@@ -34,12 +25,9 @@ scripts, not a port):
   * ssh stderr      verify-ssh lets it through; wait-for-vm-ssh sends it to
                     /dev/null.
 
-Only the 5-second inter-attempt sleep and the "poll a host over ssh" shape are
-genuinely common, and a helper carrying just that would be smaller than the
-argument list each caller would have to hand it.
+Only the 5-second inter-attempt sleep and the "poll a host over ssh" shape are genuinely common, and a helper carrying just that would be smaller than the argument list each caller would have to hand it.
 
-`sleep` AND `whoami` ARE EXECUTED AS PROGRAMS, NOT REPLACED WITH THE PYTHON
-EQUIVALENT, and both choices are load-bearing rather than lazy.
+`sleep` AND `whoami` ARE EXECUTED AS PROGRAMS, NOT REPLACED WITH THE PYTHON EQUIVALENT, and both choices are load-bearing rather than lazy.
 
   `sleep` -- the twin runs the external `sleep(1)`. Using `time.sleep` here
   would make the two implementations respond DIFFERENTLY to the same PATH, and
@@ -70,14 +58,9 @@ DIVERGENCES THAT ARE DELIBERATE, all three in refusal text nobody parses:
      base"). Both exit 1 before any ssh call, and so does this port, with one
      message that says which value was rejected.
 
-THE DEFECT THIS PORT PRESERVES, reported rather than fixed. On the FINAL
-attempt the twin still prints "retrying in 5s..." and still sleeps 5 seconds
-before giving up. The message is false at that point and the sleep is pure
-latency on the failure path (75s of a 15-attempt run's tail is not, but the
-last 5s are). It is preserved here because the acceptance rule for this wave is
+THE DEFECT THIS PORT PRESERVES, reported rather than fixed. On the FINAL attempt the twin still prints "retrying in 5s..." and still sleeps 5 seconds before giving up. The message is false at that point and the sleep is pure latency on the failure path (75s of a 15-attempt run's tail is not, but the last 5s are). It is preserved here because the acceptance rule for this wave is
 byte-equivalence with the live twin; fixing it means changing both files in one
-edit, which is a behaviour change to a live CI script and belongs to whoever
-owns the cutover.
+edit, which is a behaviour change to a live CI script and belongs to whoever owns the cutover.
 
 K=5 LEDGER: `.ci/shadow/w7p6-verify-ssh.observations.jsonl`.
 """
@@ -105,11 +88,7 @@ def split_target(target: str) -> tuple[str, str]:
     """`host[:port]` the way the twin splits it, character for character.
 
     `${target%%:*}` is everything before the FIRST colon and `${target##*:}` is
-    everything after the LAST one, so `a:b:c` yields host `a` and port `c`.
-    That is not a sensible parse, and it is reproduced exactly: an IPv6 literal
-    goes through both implementations equally wrong, which is the property a
-    differential is allowed to assert. `partition`/`rpartition` are the direct
-    translation of the two bash operators.
+    everything after the LAST one, so `a:b:c` yields host `a` and port `c`. That is not a sensible parse, and it is reproduced exactly: an IPv6 literal goes through both implementations equally wrong, which is the property a differential is allowed to assert. `partition`/`rpartition` are the direct translation of the two bash operators.
     """
     if ":" not in target:
         return target, "22"
@@ -119,17 +98,11 @@ def split_target(target: str) -> tuple[str, str]:
 def parse_attempts(raw: str) -> int | None:
     """The `ATTEMPTS` env value as bash's `((i<=ATTEMPTS))` would read it.
 
-    None means "bash would have failed here", which is exit 1 before the first
-    ssh call. Bash arithmetic accepts a leading sign and C-style bases (`0x10`
-    is 16, `010` is 8), and this reproduces that trio because a value written
+    None means "bash would have failed here", which is exit 1 before the first ssh call. Bash arithmetic accepts a leading sign and C-style bases (`0x10` is 16, `010` is 8), and this reproduces that trio because a value written
     with a leading zero silently meaning octal is precisely the kind of thing
     a port must not quietly re-interpret as decimal.
 
-    NOT REPRODUCED, and stated rather than discovered later: bash would also
-    evaluate `2+3`, `$((n))` and a bare name as a nested variable reference.
-    Nothing in this repo passes ATTEMPTS anything but a decimal literal, and a
-    Python expression evaluator here would be a larger attack surface than the
-    behaviour it matched.
+    NOT REPRODUCED, and stated rather than discovered later: bash would also evaluate `2+3`, `$((n))` and a bare name as a nested variable reference. Nothing in this repo passes ATTEMPTS anything but a decimal literal, and a Python expression evaluator here would be a larger attack surface than the behaviour it matched.
     """
     text = raw.strip()
     if not text:

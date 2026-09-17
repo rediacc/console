@@ -1,23 +1,11 @@
 """`rediacc_ci.quality.ci_scans_tracked_paths` against the bash it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-ci-scans-tracked-paths.observations.jsonl` drives the whole gate
-over five distinct trees: an offender in a workflow, one in a CI script, one in
-both, an `npx tsx` form, and a two-level ignored root. What a ledger row cannot
-isolate is the piece the twin spends most of its comments on: the pair of tests
-that decide whether a line is EXECUTING an ignored path or merely NAMING one.
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-ci-scans-tracked-paths.observations.jsonl` drives the whole gate over five distinct trees: an offender in a workflow, one in a CI script, one in both, an `npx tsx` form, and a two-level ignored root. What a ledger row cannot isolate is the piece the twin spends most of its comments on: the pair of tests that decide
+whether a line is EXECUTING an ignored path or merely NAMING one.
 
-That pair is a bash `case` statement with eleven patterns and a second `case`
-that strips the command keyword. It is re-run here as real bash, over the same
-inputs, and compared token for token. A port that widened it by one pattern would
-turn every artifact path list into a finding, and a gate that cries wolf is one
-the next session learns to route around.
+That pair is a bash `case` statement with eleven patterns and a second `case` that strips the command keyword. It is re-run here as real bash, over the same inputs, and compared token for token. A port that widened it by one pattern would turn every artifact path list into a finding, and a gate that cries wolf is one the next session learns to route around.
 
-Also compared: the sed escaping (a seven-character class whose spelling looks
-like a typo and is not), and the fact that `git check-ignore` SKIPS TRACKED
-PATHS. That last one is not academic. Force-adding the fixture's ignored
-directory made all five differential trees report VACUOUS_BOTH_EMPTY: the plant
-had silently stopped being a plant, and nothing about the gate was wrong.
+Also compared: the sed escaping (a seven-character class whose spelling looks like a typo and is not), and the fact that `git check-ignore` SKIPS TRACKED PATHS. That last one is not academic. Force-adding the fixture's ignored directory made all five differential trees report VACUOUS_BOTH_EMPTY: the plant had silently stopped being a plant, and nothing about the gate was wrong.
 """
 
 import pathlib
@@ -88,8 +76,7 @@ def _twin_token(line: str) -> str | None:
 def test_executable_token_agrees_with_the_twins_case_statements() -> None:
     """Eighteen lines, both directions, compared against real bash.
 
-    The `None` answers are as load-bearing as the tokens: they are the lines the
-    gate must NOT flag, and they are the reason this gate is still switched on.
+    The `None` answers are as load-bearing as the tokens: they are the lines the gate must NOT flag, and they are the reason this gate is still switched on.
     """
     for line in CASES:
         assert st.executable_token(line) == _twin_token(line), line
@@ -123,8 +110,7 @@ def test_check_ignore_skips_tracked_paths(tmp_path: pathlib.Path) -> None:
 
     Both directions: untracked, the directory reads as ignored and the gate finds
     the offender; tracked, `git check-ignore` says nothing and the same tree is
-    reported clean. Pinned because the failure looks exactly like a gate that
-    cannot fail.
+    reported clean. Pinned because the failure looks exactly like a gate that cannot fail.
     """
     root = st.build_control_tree(tmp_path)
     assert st.ignored_roots(root) == ["ignoredir"]
@@ -156,10 +142,7 @@ def test_ignored_roots_skips_dotted_directories(tmp_path: pathlib.Path) -> None:
 def test_grep_lines_are_sorted_bytewise(tmp_path: pathlib.Path) -> None:
     """`| sort` under LC_ALL=C sorts the WHOLE `path:line:text` string, bytewise.
 
-    The consequence is worth pinning: `:10:` sorts BEFORE `:1:` because `0` is
-    0x30 and `:` is 0x3A, so the report for a file with twelve hits comes out
-    10, 11, 12, 1, 2, ... A port that sorted the parsed tuples would order them
-    numerically and disagree with the twin on every such file.
+    The consequence is worth pinning: `:10:` sorts BEFORE `:1:` because `0` is 0x30 and `:` is 0x3A, so the report for a file with twelve hits comes out 10, 11, 12, 1, 2, ... A port that sorted the parsed tuples would order them numerically and disagree with the twin on every such file.
     """
     root = tmp_path
     (root / ".ci" / "scripts").mkdir(parents=True)

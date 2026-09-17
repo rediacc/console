@@ -2,40 +2,20 @@
 
 CI wrapper for the Stop-hook harnesses under `.claude/hooks/stop/`.
 
-WHY THIS EXISTS. Its sibling `test-claude-hooks.sh` wraps the PRE-BASH/PRE-EDIT guard
-harness, and that asymmetry was invisible: the STOP hook -- which gates the end of
-every turn, owns the worklist store, the deferral machinery and the judge subprocess
--- had a 431-case suite that ran only when somebody remembered to type it. A
-regression in it could never turn CI red. That gap was found the way these always
-are: a real Stop-gate defect shipped, and the test written to prevent its return had
-nowhere to run. A fix whose test cannot execute in CI is a fix with no gate.
+WHY THIS EXISTS. Its sibling `test-claude-hooks.sh` wraps the PRE-BASH/PRE-EDIT guard harness, and that asymmetry was invisible: the STOP hook -- which gates the end of every turn, owns the worklist store, the deferral machinery and the judge subprocess -- had a 431-case suite that ran only when somebody remembered to type it. A regression in it could never turn CI red. That gap
+was found the way these always are: a real Stop-gate defect shipped, and the test written to prevent its return had nowhere to run. A fix whose test cannot execute in CI is a fix with no gate.
 
-WHY IT TAKES A LIST. `test-report-inbox.sh` was created with the EXACT problem quoted
-above: cases that ran only when somebody typed them. Rather than let the same gap
-reopen under a second file name, this takes a list, so adding a third harness is one
-entry and can never again mean "and a CI gate nobody remembered to write".
+WHY IT TAKES A LIST. `test-report-inbox.sh` was created with the EXACT problem quoted above: cases that ran only when somebody typed them. Rather than let the same gap reopen under a second file name, this takes a list, so adding a third harness is one entry and can never again mean "and a CI gate nobody remembered to write".
 
-THE VACUITY GUARD IS THE POINT OF THE WRAPPER. A harness that silently ran ZERO cases
-must FAIL here rather than report a pass, because "0 failed" and "nothing executed"
-are the same exit code. So the summary line is parsed as well as the status.
+THE VACUITY GUARD IS THE POINT OF THE WRAPPER. A harness that silently ran ZERO cases must FAIL here rather than report a pass, because "0 failed" and "nothing executed" are the same exit code. So the summary line is parsed as well as the status.
 
 THE STOP-HOOK SUITE IS DELEGATED, NOT DROPPED (2026-09-06).
-`check:ci-hook-worklist-suite` runs the very same `test-worklist-v5.sh` as a
-first-class manifest gate, and both were scheduled in the same full local run, so the
-802-case suite executed TWICE per `npm run ci`. Measured by sampling the process
-table: two top-level `test-worklist-v5.sh` processes alive for 775 seconds each.
-A DELEGATION NOBODY CHECKS REOPENS THE HOLE THIS FILE WAS WRITTEN ABOUT the moment
-the key is renamed, deleted, repointed, or flipped to `gate: false` -- every one of
-those a silent, green-looking change -- so the delegate is verified on every run, in
-four separate ways, each with its own diagnostic.
+`check:ci-hook-worklist-suite` runs the very same `test-worklist-v5.sh` as a first-class manifest gate, and both were scheduled in the same full local run, so the 802-case suite executed TWICE per `npm run ci`. Measured by sampling the process table: two top-level `test-worklist-v5.sh` processes alive for 775 seconds each. A DELEGATION NOBODY CHECKS REOPENS THE HOLE THIS FILE WAS
+WRITTEN ABOUT the moment the key is renamed, deleted, repointed, or flipped to `gate: false` -- every one of those a silent, green-looking change -- so the delegate is verified on every run, in four separate ways, each with its own diagnostic.
 
-A FLAT TWIN, so the parity floor is its runtime `PASS:` count. Measured 2026-09-07:
-the twin emits TWO lines matching `^PASS:` (the delegation control and the final
-summary) and, separately, `PASS[report-inbox]:` and `PASS[stop-hook]:` lines that do
-NOT match that anchor because of the bracket. This module records five controls, so
+A FLAT TWIN, so the parity floor is its runtime `PASS:` count. Measured 2026-09-07: the twin emits TWO lines matching `^PASS:` (the delegation control and the final summary) and, separately, `PASS[report-inbox]:` and `PASS[stop-hook]:` lines that do NOT match that anchor because of the bracket. This module records five controls, so
 the floor is cleared with room; the count is stated here rather than left implicit
-because a reader comparing the two files will otherwise wonder where the bracketed
-lines went.
+because a reader comparing the two files will otherwise wonder where the bracketed lines went.
 
 WHERE THIS REIMPLEMENTS grep, awk AND sed, AND WHY THE ANSWERS AGREE.
 
@@ -63,21 +43,11 @@ WHERE THIS REIMPLEMENTS grep, awk AND sed, AND WHY THE ANSWERS AGREE.
   `sed -E 's/passed=([0-9]+).*/\\1/'` and `s/.*failed=([0-9]+)/\\1/` are the two capture
   groups of the same match, read directly here.
 
-`XDIST_GROUP` IS DECLARED, and it is worth being precise about what it buys, because
-the obvious reading of it is wrong. `test-report-inbox.sh` is the real harness for
-the durable sub-agent report inbox: 131 cases, 54 seconds, and it drives the Stop
-hook's inbox machinery for real. It IS fixture-isolated -- it captures one
-`mktemp -d` base at startup and gives every case its own `TMPDIR` and
-`CLAUDE_CONFIG_DIR` under it (test-report-inbox.sh:74-91) -- so two concurrent copies
-cannot corrupt each other, and the declaration is about COST rather than correctness:
-54 seconds of one core, doubled, is the same doubling this gate's own header records
-having measured and removed once already.
+`XDIST_GROUP` IS DECLARED, and it is worth being precise about what it buys, because the obvious reading of it is wrong. `test-report-inbox.sh` is the real harness for the durable sub-agent report inbox: 131 cases, 54 seconds, and it drives the Stop hook's inbox machinery for real. It IS fixture-isolated -- it captures one `mktemp -d` base at startup and gives every case its own
+`TMPDIR` and `CLAUDE_CONFIG_DIR` under it (test-report-inbox.sh:74-91) -- so two concurrent copies cannot corrupt each other, and the declaration is about COST rather than correctness: 54 seconds of one core, doubled, is the same doubling this gate's own header records having measured and removed once already.
 
-WHAT IT DOES NOT BUY, said out loud rather than assumed: the group serialises this
-module against anything else declaring the same name, and NOT against
-`test_twin_parity.py`'s own `bash <twin>` invocation, which lives in a different
-module with no group. That overlap is a property every port in this directory
-already has, not something this declaration introduces or could fix from here.
+WHAT IT DOES NOT BUY, said out loud rather than assumed: the group serialises this module against anything else declaring the same name, and NOT against `test_twin_parity.py`'s own `bash <twin>` invocation, which lives in a different module with no group. That overlap is a property every port in this directory already has, not something this declaration introduces or could fix from
+here.
 """
 
 import pathlib
@@ -132,8 +102,7 @@ def delegation_problem(
 ) -> str | None:
     """None when all five hold, else the ONE that did not, as the twin's own message.
 
-    RETURNS THE REASON RATHER THAN RAISING, so the control can observe a verdict. The
-    twin gets the same property by running the function in a SUBSHELL and reading its
+    RETURNS THE REASON RATHER THAN RAISING, so the control can observe a verdict. The twin gets the same property by running the function in a SUBSHELL and reading its
     exit status; here a value is cheaper and, unlike a caught exception, cannot be
     confused with a bug in the control itself.
     """
@@ -207,8 +176,7 @@ def test_the_delegation_assertion_fires_when_the_delegate_npm_key_is_removed(gat
 
 def test_the_manifest_entry_reader_stops_at_the_entrys_own_brace(gate):
     """ADDED CASE, not in the twin. The awk this reimplements is the one piece of the
-    twin whose failure mode is SILENT: an extractor that ran past the closing brace
-    would read the NEXT entry's `gate: true` as this one's and report a delegation
+    twin whose failure mode is SILENT: an extractor that ran past the closing brace would read the NEXT entry's `gate: true` as this one's and report a delegation
     that is not there. So the reader is shown both directions on the real manifest."""
     source = MANIFEST.read_text(encoding="utf-8")
     key = DELEGATED[0][1]

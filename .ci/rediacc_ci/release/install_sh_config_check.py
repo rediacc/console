@@ -3,8 +3,7 @@
 
 Unit test for `install.sh`'s `write_install_config` function.
 
-Covers the five scenarios the worker rewrite can land us in when a user runs
-`curl -fsSL https://<preview>.rediacc.com/install.sh | bash`:
+Covers the five scenarios the worker rewrite can land us in when a user runs `curl -fsSL https://<preview>.rediacc.com/install.sh | bash`:
 
   worker_full                    both rewritten, server unreachable
   worker_channel_only            only CHANNEL rewritten (fail-safe path)
@@ -14,52 +13,34 @@ Covers the five scenarios the worker rewrite can land us in when a user runs
                                  returning a different updateChannel
                                  (regression guard: baked channel must win)
 
-REGISTERED CI GATE: `check:ci-install-sh-config`, step "install.sh config
-tests" in `.github/workflows/ci-quality.yml`, job `quality-static`.
+REGISTERED CI GATE: `check:ci-install-sh-config`, step "install.sh config tests" in `.github/workflows/ci-quality.yml`, job `quality-static`.
 
-WHAT MOVES AND WHAT DOES NOT. Only the HARNESS moves: the five cases, the mock
-server, the assertions, the tally. The SUBJECT is `write_install_config`, a
-bash function inside the user-facing `packages/www/public/install.sh`, and it
-is still sourced and called AS BASH, once per case, exactly as the twin does. A
-Python reimplementation of the installer's config writer would be a second
-instrument certifying itself -- the objection that got
-`.ci/scripts/test/lib/git-fixture.sh` allowlisted rather than ported.
+WHAT MOVES AND WHAT DOES NOT. Only the HARNESS moves: the five cases, the mock server, the assertions, the tally. The SUBJECT is `write_install_config`, a bash function inside the user-facing `packages/www/public/install.sh`, and it is still sourced and called AS BASH, once per case, exactly as the twin does. A Python reimplementation of the installer's config writer would be a
+second instrument certifying itself -- the objection that got `.ci/scripts/test/lib/git-fixture.sh` allowlisted rather than ported.
 
 PORT NOTES, each driven before being written down.
 
-THE SUBSHELL INHERITS `set -euo pipefail`, so the port's `bash -c` must set it
-too. The twin's `( ... )` on `test-install-sh-config.sh:56-80` is a subshell of
+THE SUBSHELL INHERITS `set -euo pipefail`, so the port's `bash -c` must set it too. The twin's `( ... )` on `test-install-sh-config.sh:56-80` is a subshell of
 a script that set those options on :28; a bare `bash -c` would run the same
 source-and-call under DIFFERENT shell options, and `install.sh` reads
 `${REDIACC_CHANNEL:-}`-style defaults whose behaviour under `-u` is the whole
 point of the exercise.
 
 `local x; x=$(python3 ...)` IS FATAL UNDER `set -e`, and the twin has no
-`|| echo PARSE_ERR` fallback here (unlike its sibling
-`test-rdc-sh-env.sh:172`). A `rediacc.json` that parses but lacks
+`|| echo PARSE_ERR` fallback here (unlike its sibling `test-rdc-sh-env.sh:172`). A `rediacc.json` that parses but lacks
 `account.updateChannel` therefore kills the twin outright: rc=1, CPython's own
-traceback on stderr, and no tally. `read_account_field` below runs the twin's
-identical `python3 -c` command rather than reading the JSON in-process,
+traceback on stderr, and no tally. `read_account_field` below runs the twin's identical `python3 -c` command rather than reading the JSON in-process,
 precisely so that traceback is produced rather than forged; see its docstring.
 
-THE SUBSHELL'S OWN FAILURE IS FATAL TOO. `run_case` is called at top level, so
-a non-zero `write_install_config` ends the twin with that status and no
-"Passed:" summary. Reproduced.
+THE SUBSHELL'S OWN FAILURE IS FATAL TOO. `run_case` is called at top level, so a non-zero `write_install_config` ends the twin with that status and no "Passed:" summary. Reproduced.
 
-THE MOCK PORT IS THE ONE BYTE THE TWO SIDES CANNOT SHARE. Case five's PASS line
-quotes `http://127.0.0.1:<port>`, and the port is whatever the kernel handed
+THE MOCK PORT IS THE ONE BYTE THE TWO SIDES CANNOT SHARE. Case five's PASS line quotes `http://127.0.0.1:<port>`, and the port is whatever the kernel handed
 out; two runs of the SAME implementation disagree on it. The differential
-normalizes `127\\.0\\.0\\.1:\\d+` on both sides and asserts the rest byte for
-byte, and the four other cases -- where every planted defect in the ledger
-lives -- quote no volatile value at all.
+normalizes `127\\.0\\.0\\.1:\\d+` on both sides and asserts the rest byte for byte, and the four other cases -- where every planted defect in the ledger lives -- quote no volatile value at all.
 
-`write_install_config` PRINTS A BARE `echo ""` BEFORE ITS SUCCESS LINE
-(`install.sh:301`), and the test stubs `success` to a no-op AFTER sourcing, so
-the blank line survives and the success text does not. Those blank lines are
-part of the twin's stdout, interleaved with the tally lines, which is why every
+`write_install_config` PRINTS A BARE `echo ""` BEFORE ITS SUCCESS LINE (`install.sh:301`), and the test stubs `success` to a no-op AFTER sourcing, so the blank line survives and the success text does not. Those blank lines are part of the twin's stdout, interleaved with the tally lines, which is why every
 `print` here passes `flush=True`: Python fully buffers against a pipe while the
-bash child writes to the inherited fd directly, so without the flush the port's
-own lines land out of order regardless of when they were printed.
+bash child writes to the inherited fd directly, so without the flush the port's own lines land out of order regardless of when they were printed.
 
 Exit: 0 when no case failed, 1 otherwise.
 """
@@ -130,15 +111,9 @@ def config_mode(config_file: pathlib.Path) -> str:
 def read_account_field(config_file: pathlib.Path, field: str) -> subprocess.CompletedProcess[str]:
     """The twin's own `python3 -c` one-liner, run as a real subprocess.
 
-    NOT reimplemented in-process, and the reason is the FAILURE path. The twin
-    (`test-install-sh-config.sh:98-99`) does NOT redirect the child's stderr, so
-    a config whose `account` has no such key prints CPython's own traceback --
-    caret ruler, tilde underline and all -- straight onto the gate's stderr, and
-    then `set -e` kills the run. That rendering is a property of the exact
+    NOT reimplemented in-process, and the reason is the FAILURE path. The twin (`test-install-sh-config.sh:98-99`) does NOT redirect the child's stderr, so a config whose `account` has no such key prints CPython's own traceback -- caret ruler, tilde underline and all -- straight onto the gate's stderr, and then `set -e` kills the run. That rendering is a property of the exact
     interpreter, and no reimplementation can forge it byte for byte; running the
-    identical command produces it for free. (Its sibling
-    `test-rdc-sh-env.sh:172` DOES add `2>/dev/null || echo PARSE_ERR`, which is
-    why that port reads the JSON in-process instead.)
+    identical command produces it for free. (Its sibling `test-rdc-sh-env.sh:172` DOES add `2>/dev/null || echo PARSE_ERR`, which is why that port reads the JSON in-process instead.)
     """
     return subprocess.run(
         [

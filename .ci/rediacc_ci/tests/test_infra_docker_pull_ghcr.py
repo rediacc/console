@@ -1,14 +1,8 @@
 """Differential: `rediacc_ci.infra.docker_pull_ghcr` against its twin
 `.ci/scripts/infra/docker-pull-ghcr.sh`.
 
-A RECORDING FAKE `docker` ON A PREPENDED PATH, the same seam
-`rediacc_ci.tests.test_infra_docker_prepull` established and
-`rediacc_ci.tests.test_infra_ci_pull_images`
-reuses. The reason is stronger here than for a plain pull: the subject's second
-action is `docker login ghcr.io --password-stdin`, which WRITES a credential
-into `~/.docker/config.json`, and its last action is `docker logout ghcr.io`,
-which would log the developer's machine OUT of a registry it may be using. Four
-guards keep the real binary unreachable:
+A RECORDING FAKE `docker` ON A PREPENDED PATH, the same seam `rediacc_ci.tests.test_infra_docker_prepull` established and `rediacc_ci.tests.test_infra_ci_pull_images` reuses. The reason is stronger here than for a plain pull: the subject's second action is `docker login ghcr.io --password-stdin`, which WRITES a credential into `~/.docker/config.json`, and its last action is `docker
+logout ghcr.io`, which would log the developer's machine OUT of a registry it may be using. Four guards keep the real binary unreachable:
 
   1. the stub directory is FIRST on PATH and
      `test_the_fake_docker_is_the_docker` asserts the resolution rather than
@@ -18,23 +12,16 @@ guards keep the real binary unreachable:
      per-case so a leaked docker's refusal text cannot differ between sides;
   4. every image is `registry.invalid/...`, which no registry can serve.
 
-THE CALL LOG IS THE PRIMARY ARTIFACT. This script's whole observable effect is
-three docker invocations in a fixed order with a token on stdin, and the
-interesting failures are invisible in the text: a port that dropped `--quiet`,
-or that logged out before pulling, or that sent the token without its trailing
-newline, prints exactly what a correct one prints. The login line's recorded
-argv carries the STDIN BYTES for that reason.
+THE CALL LOG IS THE PRIMARY ARTIFACT. This script's whole observable effect is three docker invocations in a fixed order with a token on stdin, and the interesting failures are invisible in the text: a port that dropped `--quiet`, or that logged out before pulling, or that sent the token without its trailing newline, prints exactly what a correct one prints. The login line's
+recorded argv carries the STDIN BYTES for that reason.
 
 THE `:latest` LADDER IS DRIVEN ON ALL THREE ARMS, and the third one is the one a
 reader misses: `USE_CI_IMAGES` unset and `USE_CI_IMAGES=TRUE` take the SAME
-branch, because the twin compares against the exact literal `true`. Both are
-cases here.
+branch, because the twin compares against the exact literal `true`. Both are cases here.
 
-`require_cmd docker` IS THE DIFFERENCE FROM `ci-pull-images.sh`, and it means
-there is NO named divergence in this file: the twin refuses through common.sh
+`require_cmd docker` IS THE DIFFERENCE FROM `ci-pull-images.sh`, and it means there is NO named divergence in this file: the twin refuses through common.sh
 with a message `rediacc_ci.core.common` reproduces byte for byte, so the
-missing-docker case compares equal on all four channels rather than being
-excused.
+missing-docker case compares equal on all four channels rather than being excused.
 
 K=5 LEDGER: `.ci/shadow/w7p6-docker-pull-ghcr.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
@@ -184,10 +171,7 @@ def test_the_twin_parses_under_bash() -> None:
 def test_neither_twin_shares_a_ghcr_helper_because_common_sh_has_none() -> None:
     """THE DUPLICATION CLAIM IN BOTH DOCSTRINGS, MEASURED RATHER THAN ASSERTED.
 
-    Both ports say the GHCR-auth dance is duplicated in bash and deliberately
-    not factored, on the grounds that `common.sh` offers nothing to call. If a
-    helper ever lands there, this goes red and the two docstrings become wrong
-    in the same run.
+    Both ports say the GHCR-auth dance is duplicated in bash and deliberately not factored, on the grounds that `common.sh` offers nothing to call. If a helper ever lands there, this goes red and the two docstrings become wrong in the same run.
     """
     common_sh = (ROOT / ".ci" / "scripts" / "lib" / "common.sh").read_text(encoding="utf-8")
     assert "ghcr" not in common_sh.lower()
@@ -373,9 +357,7 @@ def test_a_failing_login_stops_before_the_pull_and_keeps_dockers_status() -> Non
 
 def test_a_failing_pull_never_reaches_the_logout() -> None:
     """SAME HAZARD AS `ci-pull-images.sh`, in a smaller script and with no
-    subshell to blame: `set -e` walks out past `docker logout`, so a failed pull
-    leaves the GHCR credential in `~/.docker/config.json`. Both sides do it.
-    Reported to the driver rather than repaired, because repairing it means
+    subshell to blame: `set -e` walks out past `docker logout`, so a failed pull leaves the GHCR credential in `~/.docker/config.json`. Both sides do it. Reported to the driver rather than repaired, because repairing it means
     changing the live twin."""
     exit_code, _, stderr, calls = _sides(
         "pull-fails", ["--image", IMAGE], FAKE_DOCKER_FAIL_ON="pull"
@@ -413,8 +395,7 @@ def test_dockers_own_stdout_reaches_the_caller_unwrapped() -> None:
 
 def test_a_flag_that_is_not_a_shell_identifier_kills_the_run_on_both_sides() -> None:
     """common.sh QUIRK 3, reached through this script's `parse_args "$@"`:
-    `printf -v 'ARG_FOO.BAR'` fails, `set -e` is on, and the script dies at exit
-    2 with a message naming common.sh rather than the caller. `core.common`
+    `printf -v 'ARG_FOO.BAR'` fails, `set -e` is on, and the script dies at exit 2 with a message naming common.sh rather than the caller. `core.common`
     reproduces the text; only bash's `common.sh: line 333: ` prefix differs, so
     the exit status and the absence of any docker call are what is compared."""
     results = []

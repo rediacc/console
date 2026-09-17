@@ -1,25 +1,16 @@
 """Port of `.ci/scripts/autopilot/sweep-collect.sh`.
 
-Collects every PR the 2-hourly sweeper should re-dispatch: LABEL-ARMED UNION
-CAMPAIGN-ARMED, one number per line in `--out`.
+Collects every PR the 2-hourly sweeper should re-dispatch: LABEL-ARMED UNION CAMPAIGN-ARMED, one number per line in `--out`.
 
-THE UNION IS THE FIX, in the twin's words: the sweep used to list label-armed
-PRs only, and its own comment admitted the gap. A PR armed only by an open
-campaign carries no label, so campaign rounds rode their own `workflow_run`
-events -- and those events are exactly what a sweeper exists to survive the
-loss of. The sweep was reaching the arming path that needs it least.
+THE UNION IS THE FIX, in the twin's words: the sweep used to list label-armed PRs only, and its own comment admitted the gap. A PR armed only by an open campaign carries no label, so campaign rounds rode their own `workflow_run` events -- and those events are exactly what a sweeper exists to survive the loss of. The sweep was reaching the arming path that needs it least.
 
 READ-ONLY. Listing PRs and reading comments needs no app token; the dispatch
-that follows is a separate step with a separate credential. Trust in a campaign
-comes from `sweep-campaigns.sh`, which this script SHELLS OUT TO rather than
-reimplements (see below), because console is public and a lookalike comment
-claiming `campaign: open` is the obvious way to make the sweeper dispatch
-rounds nobody armed.
+that follows is a separate step with a separate credential. Trust in a campaign comes from `sweep-campaigns.sh`, which this script SHELLS OUT TO rather than reimplements (see below), because console is public and a lookalike comment claiming `campaign: open` is the obvious way to make the sweeper dispatch rounds nobody armed.
 
 -----------------------------------------------------------------------------
 WHAT IS PORTED AND WHAT IS DELIBERATELY STILL A SUBPROCESS
 -----------------------------------------------------------------------------
-`sweep-campaigns.sh`  STILL THE BASH SCRIPT, invoked exactly as the twin
+`sweep-campaigns.sh` STILL THE BASH SCRIPT, invoked exactly as the twin
                       invokes it, resolved from this file's own location
                       (`parents[3]/.ci/scripts/autopilot/`) the way the twin
                       resolves it from `SCRIPT_DIR`. It is a separate script
@@ -27,63 +18,43 @@ WHAT IS PORTED AND WHAT IS DELIBERATELY STILL A SUBPROCESS
                       is what the twin does, and reimplementing its trust rule
                       here would put two copies of a SECURITY decision in the
                       tree that can disagree.
-`jq`                  STILL jq, for both filters. The comment transform's
+`jq` STILL jq, for both filters. The comment transform's
                       output is a FILE another program reads, so its bytes
                       (jq's two-space pretty printing, its key order, its
                       trailing newline) are part of the interface. A
                       hand-rolled `json.dumps` would produce a different file
                       that happens to parse the same, and any comparison of
                       the intermediate artifacts would then be meaningless.
-`gh`                  STILL `gh`, through a transliteration of `common.sh`'s
+`gh` STILL `gh`, through a transliteration of `common.sh`'s
                       `_gh_probe`: three attempts, a `log_warn` between them,
                       a 3-then-6-second backoff, JSON validity checked only
                       for the `gh_json` call, and the captured stderr replayed
                       indented four spaces on final failure.
 
-`jq -e` IS NOT `json.loads`, AND THE DIFFERENCE IS A RETRY. `_gh_probe`
-validates with `jq -e .`, whose exit status is 1 when the LAST OUTPUT VALUE is
-`null` or `false`. So a `gh` call that exits 0 with the body `null` is
-classified UNUSABLE and retried three times before the script dies, where a
-port validating with `json.loads` alone would accept it and write `null` into
+`jq -e` IS NOT `json.loads`, AND THE DIFFERENCE IS A RETRY. `_gh_probe` validates with `jq -e .`, whose exit status is 1 when the LAST OUTPUT VALUE is `null` or `false`. So a `gh` call that exits 0 with the body `null` is classified UNUSABLE and retried three times before the script dies, where a port validating with `json.loads` alone would accept it and write `null` into
 `prs.json`. `_json_usable` below implements jq's rule, not Python's.
 
 -----------------------------------------------------------------------------
 FILE CREATION ORDER IS OBSERVABLE, AND IT IS BASH'S, NOT THE SCRIPT'S
 -----------------------------------------------------------------------------
-`gh_json ... >"$WORK/prs.json"` opens and TRUNCATES the target before `gh`
-runs. When the call then fails after three attempts, the script exits 1 having
-left an EMPTY `prs.json` behind -- not an absent one. A later step, or a human,
-that tests for the file's existence sees a different world in each case, so
-every redirection here is opened at the same point in the sequence the twin
-opens it.
+`gh_json ... >"$WORK/prs.json"` opens and TRUNCATES the target before `gh` runs. When the call then fails after three attempts, the script exits 1 having left an EMPTY `prs.json` behind -- not an absent one. A later step, or a human, that tests for the file's existence sees a different world in each case, so every redirection here is opened at the same point in the sequence the
+twin opens it.
 
 -----------------------------------------------------------------------------
 THE UNION IS BUILT WITH A LEXICOGRAPHIC SORT, WHICH IS NOT A NUMERIC ONE
 -----------------------------------------------------------------------------
 `LC_ALL=C sort -u` puts `10` before `9`, and `--out` is therefore in string
-order rather than PR order. Preserved: the caller re-dispatches every line and
-does not care about order, but a port that "fixed" it would change a committed
-artifact's bytes for no reason. `grep -E '^[0-9]+$'` then drops anything that
-is not a bare number, which is the last line of defence between a comment body
-and a dispatch target.
+order rather than PR order. Preserved: the caller re-dispatches every line and does not care about order, but a port that "fixed" it would change a committed artifact's bytes for no reason. `grep -E '^[0-9]+$'` then drops anything that is not a bare number, which is the last line of defence between a comment body and a dispatch target.
 
 -----------------------------------------------------------------------------
 TWO DEFECTS IN THE TWIN, REPRODUCED AND NAMED, both pinned by tests
 -----------------------------------------------------------------------------
-DEFECT 1: A MALFORMED `prs.json` SCANS ZERO PRS AND STILL SUCCEEDS. The PR
-number loop reads from a PROCESS SUBSTITUTION (`done < <(jq -r ... )`), whose
-exit status bash never checks and `pipefail` cannot reach. If that jq fails,
-the loop body runs zero times, no comment dump is written, `sweep-campaigns.sh`
-reports no campaigns, and the sweep exits 0 announcing "0 armed PR(s)". The
-label-armed half still works, which is what makes it look plausible. `gh_json`
-validating the body makes this hard to reach today, and "hard to reach" is not
+DEFECT 1: A MALFORMED `prs.json` SCANS ZERO PRS AND STILL SUCCEEDS. The PR number loop reads from a PROCESS SUBSTITUTION (`done < <(jq -r ... )`), whose exit status bash never checks and `pipefail` cannot reach. If that jq fails, the loop body runs zero times, no comment dump is written, `sweep-campaigns.sh` reports no campaigns, and the sweep exits 0 announcing "0 armed PR(s)".
+The label-armed half still works, which is what makes it look plausible. `gh_json` validating the body makes this hard to reach today, and "hard to reach" is not
 "cannot happen": a body of `{}` parses, satisfies `jq -e`, and then breaks
 `.[].number`.
 
-DEFECT 2: `--out` IN AN UNWRITABLE PLACE IS ANNOUNCED AS AN EMPTY SWEEP. The
-final pipeline carries `|| true`, which swallows a REDIRECTION failure just as
-happily as `grep`'s no-match exit 1. The count then comes from
-`$(grep -c . "$OUT" || true)` on a file that does not exist, so the summary
+DEFECT 2: `--out` IN AN UNWRITABLE PLACE IS ANNOUNCED AS AN EMPTY SWEEP. The final pipeline carries `|| true`, which swallows a REDIRECTION failure just as happily as `grep`'s no-match exit 1. The count then comes from `$(grep -c . "$OUT" || true)` on a file that does not exist, so the summary
 line reads `sweeper:  armed PR(s) = ...` with an empty number where the total
 should be. Both halves are reproduced; only bash's own diagnostic text for the
 failed redirection differs, which the differential compares by shape.
@@ -129,9 +100,7 @@ NUMBER_FILTER = ".[].number"
 def campaign_script() -> pathlib.Path:
     """`$SCRIPT_DIR/sweep-campaigns.sh`, from this file's own location.
 
-    `rediacc_ci.paths.repo_root()` is deliberately not used: it honours
-    `$REDIACC_CI_ROOT`, the twin has no such override, and a fixture that moved
-    one and not the other would diverge for a reason unrelated to this script.
+    `rediacc_ci.paths.repo_root()` is deliberately not used: it honours `$REDIACC_CI_ROOT`, the twin has no such override, and a fixture that moved one and not the other would diverge for a reason unrelated to this script.
     """
     return (
         pathlib.Path(__file__).resolve().parents[3]
@@ -145,9 +114,7 @@ def campaign_script() -> pathlib.Path:
 def _json_usable(body: bytes) -> bool:
     """`[[ -n "$out" ]] && jq -e . <<<"$out"`.
 
-    `jq -e` exits 1 when the last output value is `null` or `false`, so those
-    two bodies are UNUSABLE even though they are valid JSON. Anything jq cannot
-    parse at all is unusable too.
+    `jq -e` exits 1 when the last output value is `null` or `false`, so those two bodies are UNUSABLE even though they are valid JSON. Anything jq cannot parse at all is unusable too.
     """
     if not body:
         return False
@@ -163,11 +130,9 @@ def gh_probe(
 ) -> tuple[bool, bytes]:
     """`common.sh`'s `_gh_probe`, transliterated. (ok, stdout bytes).
 
-    BYTES, because `$(...)` is bytes: a comment body is whatever somebody
-    typed. The one transformation bash applies is stripping TRAILING NEWLINES
+    BYTES, because `$(...)` is bytes: a comment body is whatever somebody typed. The one transformation bash applies is stripping TRAILING NEWLINES
     from the substitution, which `rstrip(b"\\n")` reproduces; `printf '%s'`
-    then writes the result with no newline of its own, which is why every file
-    this script writes through `gh` lacks a final newline.
+    then writes the result with no newline of its own, which is why every file this script writes through `gh` lacks a final newline.
     """
     rc = 0
     err = b""
@@ -216,9 +181,7 @@ def gh_probe(
 def grep_count(path: str) -> str:
     """`$(grep -c . "$path" || true)`: how many NON-EMPTY lines the file has.
 
-    Returns the text the command substitution would capture, so a MISSING file
-    yields the empty string (grep writes its complaint to stderr and prints
-    nothing) rather than a zero. That empty string is defect 2's visible half.
+    Returns the text the command substitution would capture, so a MISSING file yields the empty string (grep writes its complaint to stderr and prints nothing) rather than a zero. That empty string is defect 2's visible half.
     """
     try:
         with open(path, "rb") as handle:
@@ -236,9 +199,7 @@ def grep_count(path: str) -> str:
 def count_nonempty(data: bytes) -> int:
     """`grep -c .`: lines with at least one character.
 
-    A file with no trailing newline still ends in a line, and an empty file has
-    none. `.` does not match a newline, so a line that is only a newline is not
-    counted.
+    A file with no trailing newline still ends in a line, and an empty file has none. `.` does not match a newline, so a line that is only a newline is not counted.
     """
     lines = data.split(b"\n")
     if lines and lines[-1] == b"":
@@ -249,9 +210,7 @@ def count_nonempty(data: bytes) -> int:
 def sort_unique(chunks: list[bytes]) -> list[bytes]:
     """`LC_ALL=C sort -u <a> <b>`: byte order, duplicates collapsed.
 
-    LEXICOGRAPHIC, so `10` sorts before `9`. Each input's final unterminated
-    line is still a line, which is exactly the shape `printf '%s'` leaves
-    behind.
+    LEXICOGRAPHIC, so `10` sorts before `9`. Each input's final unterminated line is still a line, which is exactly the shape `printf '%s'` leaves behind.
     """
     lines: list[bytes] = []
     for chunk in chunks:

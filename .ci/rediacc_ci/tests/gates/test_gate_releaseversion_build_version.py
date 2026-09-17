@@ -1,7 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-releaseversion-build-version.sh`.
 
-Both-ways test for the two version checks inside
-`.ci/scripts/build/build-cli-executables.sh`.
+Both-ways test for the two version checks inside `.ci/scripts/build/build-cli-executables.sh`.
 
 WHAT THEY ARE FOR.
   1. The release guard: on the publishable path (RELEASE_BUILD=true, set by
@@ -12,30 +11,19 @@ WHAT THEY ARE FOR.
      version out of freshly built bytes.
 
 WHAT WAS BROKEN. Check 2 asserted only `[[ -n "$CLI_VERSION" ]] && [[ ... != "null"
-]]` -- it never compared the reported version to the version the build was told to
-produce, and it parsed the reported value into the SAME variable name that carried
-the expected one, destroying the only copy. A SEA built as 0.0.0-dev passed with a
-cheerful "CLI version: 0.0.0-dev", and release 31154305287 published binaries built
-as 1.2.16 under the label 1.2.17 with this step green. Check 1 did not exist at all.
+]]` -- it never compared the reported version to the version the build was told to produce, and it parsed the reported value into the SAME variable name that carried the expected one, destroying the only copy. A SEA built as 0.0.0-dev passed with a cheerful "CLI version: 0.0.0-dev", and release 31154305287 published binaries built as 1.2.16 under the label 1.2.17 with this step
+green. Check 1 did not exist at all.
 
-HOW THE SMOKE TEST IS EXERCISED. Building a real SEA takes minutes, so the
-comparison block is EXTRACTED FROM THE REAL SCRIPT by its own anchors and run
-against planted doctor output. It is the script's own bytes, not a copy of its
+HOW THE SMOKE TEST IS EXERCISED. Building a real SEA takes minutes, so the comparison block is EXTRACTED FROM THE REAL SCRIPT by its own anchors and run against planted doctor output. It is the script's own bytes, not a copy of its
 logic; if someone rewrites the block, the anchors stop matching and
 `test_block_is_extractable` fails rather than silently testing nothing.
 
-TWO REFUSALS THE PORT ADDS, both guarding controls rather than the subject. An
-extraction that comes back EMPTY produces a runner that exits 0 having done
+TWO REFUSALS THE PORT ADDS, both guarding controls rather than the subject. An extraction that comes back EMPTY produces a runner that exits 0 having done
 nothing, which would turn four cases green for the wrong reason; and the planted
-mutation in the last case is asserted to have CHANGED something, because a
-`sed` whose pattern stopped matching plants the FIXED code and then reports that
-the fixed code lets a mismatch through, which it does not -- the case would red
+mutation in the last case is asserted to have CHANGED something, because a `sed` whose pattern stopped matching plants the FIXED code and then reports that the fixed code lets a mismatch through, which it does not -- the case would red
 while naming the opposite of what happened.
 
-THE BUILD IS DRIVEN AT ITS REAL PATH, unchanged from the twin, because the release
-guard sits between the `--dry-run` exit and `node bundle.mjs`: a refused build
-costs a second and writes nothing. `--output` still points into a per-test tmpdir
-so the one case that gets PAST the guard has nowhere to land but scratch.
+THE BUILD IS DRIVEN AT ITS REAL PATH, unchanged from the twin, because the release guard sits between the `--dry-run` exit and `node bundle.mjs`: a refused build costs a second and writes nothing. `--output` still points into a per-test tmpdir so the one case that gets PAST the guard has nowhere to land but scratch.
 """
 
 import json
@@ -177,9 +165,7 @@ def test_release_build_refuses_a_malformed_version(gate, tmp_path):
 
 def test_dev_build_still_accepts_the_placeholder(gate, tmp_path):
     """THE OTHER DIRECTION: without RELEASE_BUILD the same placeholder is fine, so PR
-    CI and local `./rdc.sh --native` keep working. Proven by letting the build get
-    PAST the guard and die at the bundler instead (a stub node makes that instant and
-    writes nothing).
+    CI and local `./rdc.sh --native` keep working. Proven by letting the build get PAST the guard and die at the bundler instead (a stub node makes that instant and writes nothing).
     """
     gate.log_test("a non-release build still accepts 0.0.0-dev")
     bindir = tmp_path / "bin"
@@ -267,8 +253,7 @@ def test_empty_version_still_fails(gate, tmp_path):
 
 def test_planted_noncomparing_check_lets_the_mismatch_through(gate, tmp_path):
     """THE CONTROL. Plant the pre-fix behaviour -- a comparison that compares nothing
-    -- and watch the mismatch sail through. If this planted defect FAILED,
-    `test_mismatched_version_fails` would prove nothing about the comparison.
+    -- and watch the mismatch sail through. If this planted defect FAILED, `test_mismatched_version_fails` would prove nothing about the comparison.
     """
     gate.log_test("control: with the comparison neutered, the mismatch passes")
     result = run_block(gate, tmp_path, "1.2.17", "1.2.16", mutate=True)

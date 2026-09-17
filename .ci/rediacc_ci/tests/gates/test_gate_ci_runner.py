@@ -2,10 +2,7 @@
 
 Unit test for the parallel gate runner: `scripts/ci-runner/{run,pool,exec,report}.ts`.
 
-WHAT THIS GUARDS, carried across from the twin's header. `npm run ci` used to be
-a 93-step `&&` string. Replacing it with a scheduler moves four properties out
-of the shell and into TypeScript, and every one of them is silent when it
-breaks:
+WHAT THIS GUARDS, carried across from the twin's header. `npm run ci` used to be a 93-step `&&` string. Replacing it with a scheduler moves four properties out of the shell and into TypeScript, and every one of them is silent when it breaks:
 
   1. A failing gate must make the run exit non-zero AND print its complete
      captured output. A runner that swallowed either would report green over a
@@ -20,18 +17,12 @@ breaks:
      reading; the pool has to be observed, so every concurrency case records
      real start/end timestamps from the gate processes themselves.
 
-CONTROL-PROVEN. Cases 4 and 6 each carry an inverted leg: the same probe over
-the same fixture with the constraint removed must observe the OPPOSITE
-concurrency. Without that, a probe hardcoded to report 1 (or a runner that
-accidentally serialises everything) would pass the mutex case while proving
-nothing at all.
+CONTROL-PROVEN. Cases 4 and 6 each carry an inverted leg: the same probe over the same fixture with the constraint removed must observe the OPPOSITE concurrency. Without that, a probe hardcoded to report 1 (or a runner that accidentally serialises everything) would pass the mutex case while proving nothing at all.
 
 --------------------------------------------------------------------------
 NO CASE HERE CAN LAUNCH A REAL GATE SWEEP, AND THAT IS CHECKED
 --------------------------------------------------------------------------
-THIS IS THE TRAP THE PORT WAS WARNED ABOUT. The subject IS the CI runner, so a
-port that got the seam wrong would not fail -- it would run the entire 400-plus
-gate battery inside `check:ci-pytest`, nested, once per case.
+THIS IS THE TRAP THE PORT WAS WARNED ABOUT. The subject IS the CI runner, so a port that got the seam wrong would not fail -- it would run the entire 400-plus gate battery inside `check:ci-pytest`, nested, once per case.
 
 Two things stop that, and neither is a promise:
 
@@ -44,15 +35,9 @@ Two things stop that, and neither is a promise:
     (`selftest:pass`, `selftest:fail`, `selftest:dependent`) rather than reading
     the manifest. It runs `echo`, not a gate.
 
-`test_the_manifest_seam_is_honoured` is the control on the first bullet, added
-by the port: it drives a one-gate fixture and requires the summary to name
-exactly ONE gate, against a real registered set two orders of magnitude bigger.
-A seam that stopped being honoured therefore reds by name, in under a second,
-instead of quietly turning one pytest case into a full nested battery.
+`test_the_manifest_seam_is_honoured` is the control on the first bullet, added by the port: it drives a one-gate fixture and requires the summary to name exactly ONE gate, against a real registered set two orders of magnitude bigger. A seam that stopped being honoured therefore reds by name, in under a second, instead of quietly turning one pytest case into a full nested battery.
 
-NO CASE WAS NARROWED. Every one of the twin's twelve is driven against the same
-fixture the twin uses, with the same real `tsx` invocation of the same real
-`run.ts`.
+NO CASE WAS NARROWED. Every one of the twin's twelve is driven against the same fixture the twin uses, with the same real `tsx` invocation of the same real `run.ts`.
 
 --------------------------------------------------------------------------
 THE TWO PLACES THIS PORT DOES NOT SHELL OUT WHERE THE TWIN DOES
@@ -66,9 +51,7 @@ Both are the same substitution and neither changes a claim.
   * Case 11 reads `package.json`'s `scripts.ci` with `json.loads` instead of
     `node -e 'require("./package.json")'`.
 
-`tsx` and `node` are still REQUIRED, loudly, because the subject is TypeScript
-and cannot be driven without them. A missing one is a failure carrying the fix,
-never a skip: a case that could not run has not been checked.
+`tsx` and `node` are still REQUIRED, loudly, because the subject is TypeScript and cannot be driven without them. A missing one is a failure carrying the fix, never a skip: a case that could not run has not been checked.
 """
 
 import json
@@ -112,8 +95,7 @@ class Run:
 def require_runner(gate) -> str:
     """tsx and the runner, proved present before anything is claimed.
 
-    A MISSING TOOL IS A LOUD FAILURE CARRYING THE FIX, not a stack trace that
-    reads as flake and not a skip. The twin does the same two checks at file
+    A MISSING TOOL IS A LOUD FAILURE CARRYING THE FIX, not a stack trace that reads as flake and not a skip. The twin does the same two checks at file
     scope; here they are per-case so one missing binary names itself in every
     case rather than aborting collection.
     """
@@ -131,10 +113,7 @@ def require_runner(gate) -> str:
 def manifest(gate, work, name: str, entries: list[dict]) -> str:
     """`manifest <name>` -- write a JSON fixture, substituting @WORK@.
 
-    ANTI-VACUITY. An EMPTY entry list here would mean the case drove the runner
-    over nothing, and `test_empty_manifest_refuses` is the only case entitled to
-    do that -- it passes its own literal `[]` rather than coming through here.
-    Everywhere else an empty fixture is a broken test, not a quiet one.
+    ANTI-VACUITY. An EMPTY entry list here would mean the case drove the runner over nothing, and `test_empty_manifest_refuses` is the only case entitled to do that -- it passes its own literal `[]` rather than coming through here. Everywhere else an empty fixture is a broken test, not a quiet one.
     """
     if not entries:
         gate.log_fail(
@@ -151,9 +130,7 @@ def manifest(gate, work, name: str, entries: list[dict]) -> str:
 def spec(gid: str, run: str, **extra) -> dict:
     """One synthetic manifest entry, in the twin's exact shape.
 
-    `ci.kind: local-only` with a BLOCKER reason is what the twin writes on every
-    fixture entry, and it is not decoration: the runner validates the `ci` block,
-    so a fixture without it would be rejected before the scheduler was reached.
+    `ci.kind: local-only` with a BLOCKER reason is what the twin writes on every fixture entry, and it is not decoration: the runner validates the `ci` block, so a fixture without it would be rejected before the scheduler was reached.
     """
     entry = {
         "id": gid,
@@ -174,8 +151,7 @@ def stamped(log: str) -> str:
 def run_ci(gate, mf: str, *args: str, env: dict | None = None) -> Run:
     """`run_ci <manifest> [args...]` -- drive the REAL runner, streams apart.
 
-    Never merged: case 2 asserts on the split, and a helper that merged them
-    here would make that case unfalsifiable.
+    Never merged: case 2 asserts on the split, and a helper that merged them here would make that case unfalsifiable.
     """
     tsx = require_runner(gate)
     overlay = {"CI_RUNNER_MANIFEST": mf}
@@ -190,10 +166,7 @@ def run_ci(gate, mf: str, *args: str, env: dict | None = None) -> Run:
 def max_concurrency(gate, path) -> int:
     """`max_concurrency <logfile>` -- replay S/E events in timestamp order.
 
-    The gates write these lines THEMSELVES, so this measures real process
-    overlap rather than the scheduler's own bookkeeping. An empty log is a
-    FAILURE: zero observed events is what a probe that never ran looks like, and
-    reporting concurrency 0 would satisfy nothing and alarm no one.
+    The gates write these lines THEMSELVES, so this measures real process overlap rather than the scheduler's own bookkeeping. An empty log is a FAILURE: zero observed events is what a probe that never ran looks like, and reporting concurrency 0 would satisfy nothing and alarm no one.
     """
     if not path.is_file():
         gate.log_fail(
@@ -224,9 +197,7 @@ def max_concurrency(gate, path) -> int:
 def first_ts(marker: str, path) -> int | None:
     """`first_ts <marker> <logfile>` -- the earliest timestamp for a marker.
 
-    FILE ORDER, not sorted order, exactly as the twin's `grep | head -1` reads
-    it. `None` rather than an empty string when nothing matched, so the explicit
-    check in case 5 reports what went wrong instead of comparing against "".
+    FILE ORDER, not sorted order, exactly as the twin's `grep | head -1` reads it. `None` rather than an empty string when nothing matched, so the explicit check in case 5 reports what went wrong instead of comparing against "".
     """
     if not path.is_file():
         return None
@@ -403,19 +374,11 @@ def test_mutex_serialises(gate):
 
 def test_reads_shares_and_excludes(gate):
     """The OTHER claim strength. `reads` is the shared half of the isolation
-    contract defined in pool.ts: any number of readers of a resource may
-    overlap, none may overlap a writer of it. Case 4 above proves the exclusive
-    half and would stay green if `reads` were ignored entirely, or if it were
-    treated as a second exclusive group -- and those two mistakes fail in
-    opposite directions, one losing the isolation and one serialising twenty-one
-    read-only tests for nothing. Both have to be observed, so both are asserted
-    here.
+    contract defined in pool.ts: any number of readers of a resource may overlap, none may overlap a writer of it. Case 4 above proves the exclusive half and would stay green if `reads` were ignored entirely, or if it were treated as a second exclusive group -- and those two mistakes fail in opposite directions, one losing the isolation and one serialising twenty-one read-only
+    tests for nothing. Both have to be observed, so both are asserted here.
 
-    WHY IT MATTERS BEYOND THE SCHEDULER. Until 2026-09-06 the two schedulers over
-    the gate-test battery decided isolation separately: .ci/scripts/test/run-all.sh
-    carried hand-maintained W/S name lists while the manifest declared nothing,
-    so `npm run ci` ran the three real-tree writers concurrently with the
-    scanners that enumerate the same directories. run-all.sh now derives its sets
+    WHY IT MATTERS BEYOND THE SCHEDULER. Until 2026-09-06 the two schedulers over the gate-test battery decided isolation separately: .ci/scripts/test/run-all.sh carried hand-maintained W/S name lists while the manifest declared nothing, so `npm run ci` ran the three real-tree writers concurrently with the scanners that enumerate the same directories. run-all.sh now derives its
+    sets
     from the same `mutex`/`reads` declarations this case exercises.
     """
     with harness.temp_dir() as work:
@@ -703,9 +666,7 @@ def test_selftest_is_wired_into_the_npm_key(gate):
 
 def test_missing_tool_fails_loudly(gate):
     """A gate whose tool does not resolve must FAIL, never pass quietly. This is
-    not hypothetical: during this work an `npx biome` in a directory with no
-    node_modules link exited 0 on a deliberately misformatted file, and the
-    green came from a tool that never really ran. A runner that swallowed a 127
+    not hypothetical: during this work an `npx biome` in a directory with no node_modules link exited 0 on a deliberately misformatted file, and the green came from a tool that never really ran. A runner that swallowed a 127
     would turn that class of accident into a green CI report."""
     with harness.temp_dir() as work:
         mf = manifest(
@@ -736,14 +697,9 @@ def test_missing_tool_fails_loudly(gate):
 def test_the_manifest_seam_is_honoured(gate):
     """ADDED BY THE PORT: the guard against this file becoming a nested battery.
 
-    The subject is the CI runner. If `CI_RUNNER_MANIFEST` ever stopped being
-    read, none of the twelve cases above would report "the seam broke" -- they
-    would each launch the REAL gate set, inside `check:ci-pytest`, and the first
-    symptom would be a pytest run that never ends.
+    The subject is the CI runner. If `CI_RUNNER_MANIFEST` ever stopped being read, none of the twelve cases above would report "the seam broke" -- they would each launch the REAL gate set, inside `check:ci-pytest`, and the first symptom would be a pytest run that never ends.
 
-    So this drives a ONE-gate fixture and requires the summary to name exactly
-    one gate, against a registered set two orders of magnitude larger. It costs
-    under a second and it fails in one, by name, saying which number it saw.
+    So this drives a ONE-gate fixture and requires the summary to name exactly one gate, against a registered set two orders of magnitude larger. It costs under a second and it fails in one, by name, saying which number it saw.
     """
     lock = paths.from_root(*LOCK_REL.split("/"))
     if not lock.is_file():

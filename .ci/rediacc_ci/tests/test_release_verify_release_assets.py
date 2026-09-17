@@ -1,9 +1,7 @@
 """`rediacc_ci.release.verify_release_assets` against its bash twin.
 
 `gh` is faked on PATH (prepended, real `jq` stays reachable); `jq` itself is
-real on both sides, since it is a generic JSON tool with no credentials and no
-production traffic, same reasoning as every other release-side port in this
-box.
+real on both sides, since it is a generic JSON tool with no credentials and no production traffic, same reasoning as every other release-side port in this box.
 """
 
 from __future__ import annotations

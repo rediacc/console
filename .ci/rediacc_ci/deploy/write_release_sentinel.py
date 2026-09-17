@@ -1,37 +1,22 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/write-release-sentinel.sh`.
 
-Writes the `.released` commit sentinel, which is the ATOMIC COMMIT POINT of the
-release pipeline: after this, `write_once_guard` in `upload-to-r2.sh` refuses to
-overwrite the bytes and the drift gate requires a matching git tag. The twin's
+Writes the `.released` commit sentinel, which is the ATOMIC COMMIT POINT of the release pipeline: after this, `write_once_guard` in `upload-to-r2.sh` refuses to overwrite the bytes and the drift gate requires a matching git tag. The twin's
 header carries the contract; this docstring records only what the PORT decided.
 
-THE VALIDATOR LIBRARY IS NOT RE-PORTED HERE. `rediacc_ci.core.
-release_state_validator` is already the Python side of
-`.ci/scripts/lib/release-state-validator.sh`, so `binary_count` and
-`get_sentinel_payload` come from there rather than being spelled a second time.
-One consequence is visible in the differential and named rather than hidden:
-that module's `_log_error` deliberately omits `common.sh`'s `✗ ` glyph (its own
-docstring says so), while the twin's `log_error` emits it. The two stderr
-streams therefore differ by exactly that prefix on the `rsv_binary_count`
-failure path, and `test_deploy_write_release_sentinel` normalises that one
-prefix and nothing else.
+THE VALIDATOR LIBRARY IS NOT RE-PORTED HERE. `rediacc_ci.core. release_state_validator` is already the Python side of `.ci/scripts/lib/release-state-validator.sh`, so `binary_count` and `get_sentinel_payload` come from there rather than being spelled a second time. One consequence is visible in the differential and named rather than hidden: that module's `_log_error` deliberately
+omits `common.sh`'s `✗ ` glyph (its own docstring says so), while the twin's `log_error` emits it. The two stderr streams therefore differ by exactly that prefix on the `rsv_binary_count` failure path, and `test_deploy_write_release_sentinel` normalises that one prefix and nothing else.
 
-`aws` AND `jq` ARE SHELLED OUT TO. `aws` because it is a credentialed tool with
-a real remote side, which is precisely the kind the campaign fakes on `PATH`
+`aws` AND `jq` ARE SHELLED OUT TO. `aws` because it is a credentialed tool with a real remote side, which is precisely the kind the campaign fakes on `PATH`
 rather than reimplements; `jq` because the payload IS jq's bytes. `jq -nc`
 with five `--arg`s produces a specific key order and a specific escaping, and a
-`json.dumps` here would be a second answer to a question the twin has already
-answered. The payload is uploaded verbatim and read back for comparison, so any
-byte difference is a real difference.
+`json.dumps` here would be a second answer to a question the twin has already answered. The payload is uploaded verbatim and read back for comparison, so any byte difference is a real difference.
 
-THE ONE THING NEITHER SIDE CAN MAKE IDENTICAL is `released_at`. The twin stamps
-`date -u +'%Y-%m-%dT%H:%M:%SZ'` and this stamps
+THE ONE THING NEITHER SIDE CAN MAKE IDENTICAL is `released_at`. The twin stamps `date -u +'%Y-%m-%dT%H:%M:%SZ'` and this stamps
 `datetime.now(UTC).strftime(...)`; two processes started a second apart produce
 two different payloads. Nothing in either program's OUTPUT quotes the
 timestamp, so stdout and stderr still compare byte for byte; the differential
-compares the uploaded payload with that one field normalised, and asserts
-separately that both sides emit the same FORMAT.
+compares the uploaded payload with that one field normalised, and asserts separately that both sides emit the same FORMAT.
 
 TWO TWIN DEFECTS ARE CARRIED, NOT FIXED (they belong to a later cutover box):
 
@@ -88,9 +73,7 @@ def parse_flags(argv: list[str]) -> tuple[str, str, str]:
     Returns `(version, channel, commit_sha)`, any of which may be empty; the
     required-flag checks are the caller's, exactly as in the twin.
 
-    THE MISSING-VALUE CASE IS FINDING 5 and is reproduced, not corrected:
-    `--version` as the last argument makes `shift 2` fail, and under `set -e`
-    that is exit 1 with NO output. `_ShiftFailedError` below carries that.
+    THE MISSING-VALUE CASE IS FINDING 5 and is reproduced, not corrected: `--version` as the last argument makes `shift 2` fail, and under `set -e` that is exit 1 with NO output. `_ShiftFailedError` below carries that.
     """
     version = channel = commit_sha = ""
     known = {"--version": "version", "--channel": "channel", "--commit-sha": "commit_sha"}
@@ -121,9 +104,7 @@ def build_payload(
 ) -> str:
     """`build_payload` (write-release-sentinel.sh:92-108), via real `jq -nc`.
 
-    The key order in the object literal is the twin's and is preserved by jq,
-    so the uploaded bytes are the twin's bytes. `--arg` is used for all five,
-    which means every value is a JSON STRING even when it looks numeric.
+    The key order in the object literal is the twin's and is preserved by jq, so the uploaded bytes are the twin's bytes. `--arg` is used for all five, which means every value is a JSON STRING even when it looks numeric.
     """
     proc = subprocess.run(
         [

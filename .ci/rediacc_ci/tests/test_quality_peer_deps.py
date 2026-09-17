@@ -1,19 +1,13 @@
 """`rediacc_ci.quality.peer_deps` against `.ci/scripts/quality/check-peer-deps.sh`.
 
-HOW EQUIVALENCE IS PROVEN HERE. Not by reading both and agreeing they look
-alike. A bash child runs the REAL twin over a fixture, with stdout and stderr
-captured SEPARATELY, and the bytes it produced are compared against the port's
-over the same fixture. That is the shape `.ci/scripts/quality/check-python-lint.sh`
-uses for its own control: build a specimen, run the instrument, compare.
+HOW EQUIVALENCE IS PROVEN HERE. Not by reading both and agreeing they look alike. A bash child runs the REAL twin over a fixture, with stdout and stderr captured SEPARATELY, and the bytes it produced are compared against the port's over the same fixture. That is the shape `.ci/scripts/quality/check-python-lint.sh` uses for its own control: build a specimen, run the instrument,
+compare.
 
-THE COMMITTED LEDGER IS THE OTHER HALF, and neither replaces the other. The
-ledger (`.ci/shadow/w7p2-peerdeps.observations.jsonl`) records the verdict over
+THE COMMITTED LEDGER IS THE OTHER HALF, and neither replaces the other. The ledger (`.ci/shadow/w7p2-peerdeps.observations.jsonl`) records the verdict over
 K distinct trees and is the evidence a reviewer reads; these cases run on every
 `pytest` and are what catches a regression the day someone edits either file.
 
-BOTH SIDES RESOLVE `npm` THROUGH PATH, which is why the fixture ships a shim
-rather than patching `subprocess`. A mock inside this process would prove
-nothing about the resolution the twin performs.
+BOTH SIDES RESOLVE `npm` THROUGH PATH, which is why the fixture ships a shim rather than patching `subprocess`. A mock inside this process would prove nothing about the resolution the twin performs.
 """
 
 import pathlib
@@ -84,9 +78,7 @@ def test_port_and_twin_agree(tmp_path: pathlib.Path, shim: str, want_exit: int) 
 def test_the_clean_case_is_not_vacuously_equal(tmp_path: pathlib.Path) -> None:
     """A green run is only evidence if the red run differs from it.
 
-    Two implementations that both print nothing agree about nothing, which is
-    `shadow-gate.ts`'s VACUOUS_BOTH_EMPTY. This case pins that the fixture pair
-    used above genuinely separates the two outcomes.
+    Two implementations that both print nothing agree about nothing, which is `shadow-gate.ts`'s VACUOUS_BOTH_EMPTY. This case pins that the fixture pair used above genuinely separates the two outcomes.
     """
     clean_out = run_both(build(tmp_path / "a", SHIM_CLEAN))[0][1]
     dirty_out = run_both(build(tmp_path / "b", SHIM_STDOUT))[0][1]
@@ -96,9 +88,7 @@ def test_the_clean_case_is_not_vacuously_equal(tmp_path: pathlib.Path) -> None:
 def test_missing_npm_is_cannot_run_not_a_pass(tmp_path: pathlib.Path) -> None:
     """The divergence the port declares, asserted in BOTH directions.
 
-    The twin captures bash's own "command not found" into its variable, finds no
-    "invalid" in it and reports the tree CLEAN. The port exits 77. Both halves
-    are asserted so the difference is a pinned decision rather than a surprise.
+    The twin captures bash's own "command not found" into its variable, finds no "invalid" in it and reports the tree CLEAN. The port exits 77. Both halves are asserted so the difference is a pinned decision rather than a surprise.
     """
     root = build(tmp_path, SHIM_CLEAN)
     (root / "bin/npm").unlink()

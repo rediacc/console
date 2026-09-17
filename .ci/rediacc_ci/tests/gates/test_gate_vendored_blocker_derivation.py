@@ -1,10 +1,8 @@
 """The W4 P3d gate, driven as a PROCESS rather than as a function.
 
-WHAT THIS ADDS OVER THE MODULE'S OWN CONTROLS, which is the only reason a gate
-test earns its place. `selftest()` inside
+WHAT THIS ADDS OVER THE MODULE'S OWN CONTROLS, which is the only reason a gate test earns its place. `selftest()` inside
 `rediacc_ci.quality.vendored_blocker_derivation` proves the predicates; it can
-prove nothing about the wrapper, the exit codes, the streams, or the one claim
-that is only meaningful against the REAL directory:
+prove nothing about the wrapper, the exit codes, the streams, or the one claim that is only meaningful against the REAL directory:
 
   * the entry point is reachable at the path the registry will name, and its
     `--selftest` flag exits 0 rather than 1 (an inverted `return 1 if ...`
@@ -34,9 +32,7 @@ VENDORED = paths.from_root(".ci", "breakpoint", "lib", "breakpoint-blocker.sh")
 def _tree_digest(root: pathlib.Path) -> str:
     """One digest over every file under `root`, path included.
 
-    PATHS ARE HASHED TOO, not just contents. A digest over contents alone cannot
-    see a rename, and a rename inside a vendored, drift-locked directory is
-    exactly as much of a write as an edit is.
+    PATHS ARE HASHED TOO, not just contents. A digest over contents alone cannot see a rename, and a rename inside a vendored, drift-locked directory is exactly as much of a write as an edit is.
     """
     accumulator = hashlib.sha256()
     for path in sorted(p for p in root.rglob("*") if p.is_file()):

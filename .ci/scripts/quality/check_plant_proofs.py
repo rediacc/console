@@ -2,17 +2,9 @@
 """Entry point for the control-plant proof gate.
 
 The logic lives in `rediacc_ci.quality.plant_proofs`; this file exists so the
-registry can invoke it BY PATH, for the parity-tokenizer reason recorded in
-`gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring. The
-`---- gate ----` header is HERE and not on the module, because `gate-bind` reads
-the file package.json names.
+registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring. The `---- gate ----` header is HERE and not on the module, because `gate-bind` reads the file package.json names.
 
----- gate ----
-step: Control plant proofs
-needs: none
-lane: quality-static
-selftest: true
-why: a control proves a gate can fail by feeding it a MUTATED fixture, and a
+---- gate ---- step: Control plant proofs needs: none lane: quality-static selftest: true why: a control proves a gate can fail by feeding it a MUTATED fixture, and a
      mutation whose needle has gone changes nothing -- so the control scans the
      clean text, asserts the opposite verdict about identical input, and passes
      for free. Python already refuses this via `rediacc_ci.controls.plant`

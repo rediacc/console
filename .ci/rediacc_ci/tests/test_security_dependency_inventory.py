@@ -20,13 +20,8 @@ TWO KINDS OF CASE, AND THE SPLIT IS THE POINT.
   by asking DIFFERENT questions would pass a stdout comparison and fail this
   one.
 
-WHY THE FIXTURE COPIES BOTH IMPLEMENTATIONS. Each side resolves the repository
-root from its OWN location -- `get_repo_root` walks up from
-`.ci/scripts/lib/common.sh`, `paths.repo_root()` walks up from
-`.ci/rediacc_ci/paths.py` -- and both then hard-code `packages/www`,
-`packages/cli`, `private/account` and `private/renet` relative to it. There is
-no `$ROOT` seam on the bash side, so the only way to point both at a fixture is
-to put both INSIDE the fixture at their real relative paths.
+WHY THE FIXTURE COPIES BOTH IMPLEMENTATIONS. Each side resolves the repository root from its OWN location -- `get_repo_root` walks up from `.ci/scripts/lib/common.sh`, `paths.repo_root()` walks up from `.ci/rediacc_ci/paths.py` -- and both then hard-code `packages/www`, `packages/cli`, `private/account` and `private/renet` relative to it. There is no `$ROOT` seam on the bash side,
+so the only way to point both at a fixture is to put both INSIDE the fixture at their real relative paths.
 
 TWO NORMALISED CASES, both named:
   * the missing-option-value case, where bash prints
@@ -265,9 +260,7 @@ def _hashes() -> dict[str, str]:
 
     `if path.is_file(): ...` was the first version, and it makes the whole guard
     vacuous the moment a submodule is not checked out: `_hashes() == before`
-    then compares two empty dicts and reports "nothing was mutated" having
-    hashed nothing. All four are present in any working checkout, so demanding
-    all four costs nothing and closes the hole.
+    then compares two empty dicts and reports "nothing was mutated" having hashed nothing. All four are present in any working checkout, so demanding all four costs nothing and closes the hole.
     """
     out = {}
     for rel in GUARDED:
@@ -304,9 +297,7 @@ def _run_real(*args: str) -> tuple[tuple, tuple]:
 def test_the_real_repository_agrees_in_table_format() -> None:
     """1,760 records over four real packages, byte for byte on both streams.
 
-    No fixture reproduces this input, and it is the only case that exercises
-    `align_tsv` at real column widths, the four real truncation warnings and the
-    real Go module graph at once.
+    No fixture reproduces this input, and it is the only case that exercises `align_tsv` at real column widths, the four real truncation warnings and the real Go module graph at once.
     """
     before = _hashes()
     old, new = _run_real()
@@ -353,9 +344,7 @@ def test_help_is_byte_identical(fixture: pathlib.Path) -> None:
 def test_help_text_constant_still_matches_the_twin() -> None:
     """`sed -n '2,35p' "$0" | sed 's/^# \\?//'`, re-derived from the twin's bytes.
 
-    The port cannot slice its OWN source and get the twin's header, so the text
-    is a constant -- and a constant is a second source of truth unless something
-    re-derives it. This is that something.
+    The port cannot slice its OWN source and get the twin's header, so the text is a constant -- and a constant is a second source of truth unless something re-derives it. This is that something.
     """
     lines = TWIN.read_text(encoding="utf-8").split("\n")[1:35]
     derived = "".join(re.sub(r"^# ?", "", line) + "\n" for line in lines)
@@ -365,16 +354,11 @@ def test_help_text_constant_still_matches_the_twin() -> None:
 def test_the_jq_diagnostics_still_match_this_host() -> None:
     """The two jq error texts the port emits, re-derived from the jq on PATH.
 
-    THE --argjson BANNER IS NO LONGER A CONSTANT, and this test is why the
-    change was needed rather than optional. jq moved its documentation URL
-    between releases -- 1.7.x says `https://jqlang.github.io/jq`, 1.8.x says
-    `https://jqlang.org` -- so a pinned string is right on one host and wrong on
+    THE --argjson BANNER IS NO LONGER A CONSTANT, and this test is why the change was needed rather than optional. jq moved its documentation URL between releases -- 1.7.x says `https://jqlang.github.io/jq`, 1.8.x says `https://jqlang.org` -- so a pinned string is right on one host and wrong on
     another AT THE SAME TIME. That is not drift a pin can catch up with; both
-    hosts are correct. The port now asks jq, and what this test checks is that
-    asking produces exactly what jq produces, and that the answer is not vacuous.
+    hosts are correct. The port now asks jq, and what this test checks is that asking produces exactly what jq produces, and that the answer is not vacuous.
 
-    `JQ_OPEN_ERROR` stays a constant: it carries no version-dependent text, and
-    it is still asserted below so a future jq rewording it goes red here.
+    `JQ_OPEN_ERROR` stays a constant: it carries no version-dependent text, and it is still asserted below so a future jq rewording it goes red here.
     """
     banner = subprocess.run(
         ["jq", "-c", "--argjson", "p", "", "."],
@@ -423,8 +407,7 @@ def test_a_bad_max_chains(fixture: pathlib.Path, value: str) -> None:
 def test_a_missing_option_value(fixture: pathlib.Path, flag: str) -> None:
     """THE ONE STRUCTURALLY-NORMALISED CASE. See the port's note 3.
 
-    Bash's `$2: unbound variable` names the SCRIPT's path and the SCRIPT's line
-    number, neither of which the port can honestly copy. Exit code, stdout and
+    Bash's `$2: unbound variable` names the SCRIPT's path and the SCRIPT's line number, neither of which the port can honestly copy. Exit code, stdout and
     the call log are still compared raw; only the path and the number are
     replaced, and the sentence itself is asserted intact on both sides.
     """
@@ -522,9 +505,7 @@ def test_json_format_on_the_fixture(fixture: pathlib.Path) -> None:
 def test_output_to_a_file(fixture: pathlib.Path, fmt: str) -> None:
     """`--output` writes the document and logs one line; stdout stays empty.
 
-    The two sides write to DIFFERENT paths on purpose, because the confirmation
-    line quotes the path: writing to one shared path would let a port that never
-    wrote anything pass by reading the twin's file.
+    The two sides write to DIFFERENT paths on purpose, because the confirmation line quotes the path: writing to one shared path would let a port that never wrote anything pass by reading the twin's file.
     """
     results = []
     logs = []
@@ -591,9 +572,7 @@ def test_npm_producing_invalid_json(fixture: pathlib.Path) -> None:
 def test_an_invalid_prod_tree_is_tolerated(fixture: pathlib.Path) -> None:
     """`prodset='{}'`: the run continues and every record reports prodReachable false.
 
-    The POSITIVE control's twin. Without it nothing distinguishes "invalid prod
-    tree" from "invalid all tree", and a port that failed on either would pass
-    every other case here.
+    The POSITIVE control's twin. Without it nothing distinguishes "invalid prod tree" from "invalid all tree", and a port that failed on either would pass every other case here.
     """
     (data_dir(fixture) / "npm.@rediacc_www.prod").write_text("not json", encoding="utf-8")
     old = assert_agree(fixture)
@@ -604,9 +583,7 @@ def test_an_invalid_prod_tree_is_tolerated(fixture: pathlib.Path) -> None:
 def test_npm_printing_nothing_silently_drops_the_package(fixture: pathlib.Path) -> None:
     """A REPRODUCED DEFECT, pinned so nobody 'fixes' one side alone.
 
-    With `tree_all` empty every jq downstream has no input and emits none, so
-    `$WORK/pkg_0.json` is written EMPTY, `jq -s` slurps nothing from it, and
-    @rediacc/www vanishes from an SBOM that still exits 0 and still says
+    With `tree_all` empty every jq downstream has no input and emits none, so `$WORK/pkg_0.json` is written EMPTY, `jq -s` slurps nothing from it, and @rediacc/www vanishes from an SBOM that still exits 0 and still says
     `packages=3` as though three were all that was asked for. Reported in this
     wave's findings; fixed in neither side, because a one-sided fix would make
     this differential lie.
@@ -622,9 +599,7 @@ def test_npm_printing_nothing_silently_drops_the_package(fixture: pathlib.Path) 
 def test_an_empty_prod_tree_dies_on_a_raw_jq_diagnostic(fixture: pathlib.Path) -> None:
     """A second REPRODUCED DEFECT: `--argjson prodset ""`, exit 2, no explanation.
 
-    `jq -c '<keyset>' <<<""` produces no output, the shell assigns the empty
-    string, and jq refuses it with its usage banner. Nothing in the message
-    names npm, the package or the tool.
+    `jq -c '<keyset>' <<<""` produces no output, the shell assigns the empty string, and jq refuses it with its usage banner. Nothing in the message names npm, the package or the tool.
     """
     (data_dir(fixture) / "npm.@rediacc_www.prod").write_text("", encoding="utf-8")
     old = assert_agree(fixture)
@@ -668,8 +643,7 @@ def test_a_go_probe_whose_stderr_lacks_a_final_newline(fixture: pathlib.Path) ->
         $ printf 'a\\nb' | sed 's/^/    /' | xxd
         2020 2020 610a 2020 2020 62          .a.    b
 
-    A `go` probe that dies mid-line is the only way to reach it, so nothing else
-    in this file would have caught the extra byte.
+    A `go` probe that dies mid-line is the only way to reach it, so nothing else in this file would have caught the extra byte.
     """
     (data_dir(fixture) / "go.listm.err").write_text("go: broke", encoding="utf-8")
     old = assert_agree(fixture)
@@ -700,9 +674,7 @@ def test_an_empty_go_mod_graph(fixture: pathlib.Path) -> None:
 def test_a_workspace_key_absent_from_the_npm_tree(fixture: pathlib.Path) -> None:
     """`rootexpr // {}`: jq indexes null without raising, and the package is empty.
 
-    Distinct from the empty-output case above: here `npm ls` returns a VALID
-    tree that simply does not mention the workspace, so the package object DOES
-    appear, with zero dependencies.
+    Distinct from the empty-output case above: here `npm ls` returns a VALID tree that simply does not mention the workspace, so the package object DOES appear, with zero dependencies.
     """
     (data_dir(fixture) / "npm.@rediacc_www.all").write_text(
         '{"name":"root","dependencies":{}}\n', encoding="utf-8"
@@ -715,8 +687,7 @@ def test_a_workspace_key_absent_from_the_npm_tree(fixture: pathlib.Path) -> None
 def test_colour_is_emitted_when_stderr_is_a_terminal(fixture: pathlib.Path) -> None:
     """`[[ -t 2 ]] && [[ -z "${NO_COLOR:-}" ]]`, the branch a human sees.
 
-    Every other case runs off a tty and therefore proves only the uncoloured
-    half. `CI` is left unset: `rediacc_ci.log` also disables colour on
+    Every other case runs off a tty and therefore proves only the uncoloured half. `CI` is left unset: `rediacc_ci.log` also disables colour on
     `CI=true` while common.sh does not, which is `log.py`'s documented
     deliberate divergence and is not this tool's subject.
     """

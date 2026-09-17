@@ -1,31 +1,17 @@
 """Port of `.ci/scripts/test/gates/test-media-helpers.sh`.
 
-Two subjects, and the first one carries the second: `with_fake_bin` /
-`fake_bin_record` in `.ci/scripts/test/lib/test-helpers.sh`, and the `.ci/media`
-scan root in `.ci/scripts/quality/check-dead-case-arms.sh`.
+Two subjects, and the first one carries the second: `with_fake_bin` / `fake_bin_record` in `.ci/scripts/test/lib/test-helpers.sh`, and the `.ci/media` scan root in `.ci/scripts/quality/check-dead-case-arms.sh`.
 
-WHY THE HELPER IS TESTED AT ALL. Six other gate tests claim to prove things about
-code that drives a GPU, a libvirt cluster and an R2 bucket, and every one of those
-claims rests on `with_fake_bin` actually EMPTYING PATH. A helper that quietly left
-PATH intact would make all six pass against the host's real binaries while
-reporting hermetic isolation, which is the exact shape of a green that means
-nothing. So the helper is tested first, and the assertion carrying the most weight
-is the negative one: the binaries nobody named are GONE.
+WHY THE HELPER IS TESTED AT ALL. Six other gate tests claim to prove things about code that drives a GPU, a libvirt cluster and an R2 bucket, and every one of those claims rests on `with_fake_bin` actually EMPTYING PATH. A helper that quietly left PATH intact would make all six pass against the host's real binaries while reporting hermetic isolation, which is the exact shape of a
+green that means nothing. So the helper is tested first, and the assertion carrying the most weight is the negative one: the binaries nobody named are GONE.
 
-THE PORT DRIVES THE BASH HELPER, NOT ITS PYTHON COUSIN, and this is the whole
-reason the module is written the way it is. `rediacc_ci.tests.gates.harness` has
-its own `fake_bin` with the same contract, and calling that here would be a test of
-the port's own library while the file claims to be testing
-`.ci/scripts/test/lib/test-helpers.sh`. Every case below therefore runs
+THE PORT DRIVES THE BASH HELPER, NOT ITS PYTHON COUSIN, and this is the whole reason the module is written the way it is. `rediacc_ci.tests.gates.harness` has its own `fake_bin` with the same contract, and calling that here would be a test of the port's own library while the file claims to be testing `.ci/scripts/test/lib/test-helpers.sh`. Every case below therefore runs
 `bash -c 'source test-helpers.sh; with_fake_bin ... probe'` in a subprocess and
-reads its exit code, so the subject under test is the shipped shell function and
-nothing else. The probe bodies are the twin's, verbatim in shell, because
-translating them would change what is being asserted about a shell helper.
+reads its exit code, so the subject under test is the shipped shell function and nothing else. The probe bodies are the twin's, verbatim in shell, because translating them would change what is being asserted about a shell helper.
 
 NO `xdist_group`. Each case is one `bash -c` subprocess with its own `mkdtemp`
 fixture; `with_fake_bin` scopes its PATH change to a subshell inside that process,
-so nothing leaks even between the cases in one file, let alone between workers.
-The two cases that run the real `check-dead-case-arms.sh` only READ the tree.
+so nothing leaks even between the cases in one file, let alone between workers. The two cases that run the real `check-dead-case-arms.sh` only READ the tree.
 """
 
 import pathlib
@@ -44,13 +30,8 @@ MEDIA = paths.from_root(".ci", "media")
 def drive(gate, body: str) -> harness.RunResult:
     """Source the real helper library and run `body`, in one bash subprocess.
 
-    `set -euo pipefail`, THE TWIN'S OWN PRELUDE, and the `-e` is load-bearing. A
-    first draft of this port used `set -uo pipefail`, reasoning that `log_fail`
-    exits 1 by itself. It does -- but `with_fake_bin` runs the body in a SUBSHELL,
-    so that exit kills the subshell and returns non-zero to a parent that, without
-    `-e`, simply carries on and exits 0. Measured: planting the exact defect the
-    twin's header describes (`with_fake_bin` PREFIXING PATH instead of replacing
-    it) turned the twin RED and left this port GREEN. That was a defect in the
+    `set -euo pipefail`, THE TWIN'S OWN PRELUDE, and the `-e` is load-bearing. A first draft of this port used `set -uo pipefail`, reasoning that `log_fail` exits 1 by itself. It does -- but `with_fake_bin` runs the body in a SUBSHELL, so that exit kills the subshell and returns non-zero to a parent that, without `-e`, simply carries on and exits 0. Measured: planting the exact
+    defect the twin's header describes (`with_fake_bin` PREFIXING PATH instead of replacing it) turned the twin RED and left this port GREEN. That was a defect in the
     CONTROL, not in the gate; the gate's own assertion was firing correctly inside
     the subshell and nothing was reading its status.
     """
@@ -257,10 +238,7 @@ def test_an_empty_media_root_is_vacuous_not_clean(gate, tmp_path: pathlib.Path):
 def test_the_real_media_folder_is_not_itself_empty(gate):
     """PORT-ONLY, and it closes the gap between the two cases above.
 
-    `test_the_real_media_folder_is_clean_and_counted` asserts the verdict does not
-    carry the literal `(0 media shell file(s)` phrase, which is a claim about the
-    gate's WORDING. If that phrase were ever reworded, the assertion would keep
-    passing over a scan of nothing. Counting the files on disk is the same claim
+    `test_the_real_media_folder_is_clean_and_counted` asserts the verdict does not carry the literal `(0 media shell file(s)` phrase, which is a claim about the gate's WORDING. If that phrase were ever reworded, the assertion would keep passing over a scan of nothing. Counting the files on disk is the same claim
     made about the tree instead of about a string."""
     gate.log_test("the media root this gate scans really holds shell files")
     if not MEDIA.is_dir():

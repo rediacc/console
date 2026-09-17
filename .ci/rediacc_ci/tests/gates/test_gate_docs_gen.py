@@ -1,14 +1,9 @@
 """Port of `.ci/scripts/test/gates/test-docs-gen.sh`.
 
-Subject: `scripts/gen-docs.ts`, the documentation generator, proved in both
-directions.
+Subject: `scripts/gen-docs.ts`, the documentation generator, proved in both directions.
 
-WHY IT NEEDS A GATE AT ALL. The generator exists because hand-typed registry
-numbers go stale in silence: `.dead-bash-allowlist` said "the 17 gate scripts"
-against 131, `check-ci-parity.ts` said "runs 57 gate tests", and
-`docs/agent-reference/ci-gates.md` said "254 fast gates" against a live 312. A
-generator that quietly stops generating puts the tree straight back into that
-state, and the symptom -- a document that looks fine -- is invisible.
+WHY IT NEEDS A GATE AT ALL. The generator exists because hand-typed registry numbers go stale in silence: `.dead-bash-allowlist` said "the 17 gate scripts" against 131, `check-ci-parity.ts` said "runs 57 gate tests", and `docs/agent-reference/ci-gates.md` said "254 fast gates" against a live 312. A generator that quietly stops generating puts the tree straight back into that state,
+and the symptom -- a document that looks fine -- is invisible.
 
 WHAT IS PROVED, and why each case is here rather than assumed:
 
@@ -34,26 +29,15 @@ WHAT IS DELIBERATELY NOT ASSERTED: that the live sets still equal the snapshot.
 They are SUPPOSED to diverge as the ports land; `--diff-snapshot` is where that
 comparison belongs, run by the wave that does the porting.
 
-THE TWIN IS FLAT -- it declares no `test_*()` functions -- so `test_twin_parity.py`
-has no case set to compare and falls back to the twin's runtime `PASS:` count as
-the floor on this port's recorded controls. The five cases below are therefore
-split so that each of the twin's six PASS lines has a control of its own, plus the
-two the port adds.
+THE TWIN IS FLAT -- it declares no `test_*()` functions -- so `test_twin_parity.py` has no case set to compare and falls back to the twin's runtime `PASS:` count as the floor on this port's recorded controls. The five cases below are therefore split so that each of the twin's six PASS lines has a control of its own, plus the two the port adds.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP, and it is the sharpest reason in
-the batch. Case B WRITES a perturbation into `scripts/data/doc-registry.md` and
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP, and it is the sharpest reason in the batch. Case B WRITES a perturbation into `scripts/data/doc-registry.md` and
 case C runs `--write`, which rewrites every discovered region in every `.md` file
-in the repository -- `CLAUDE.md` among them. The lock records
-`mutex: ["tree:repo"]` for `gate-test:docs-gen` for exactly that. Two of these
-running at once, or one running beside a gate that reads those files, is a
+in the repository -- `CLAUDE.md` among them. The lock records `mutex: ["tree:repo"]` for `gate-test:docs-gen` for exactly that. Two of these running at once, or one running beside a gate that reads those files, is a
 corruption rather than a flake. `REAL_TREE_TWIN = True` buys the serialisation,
 and it is honoured only because this module names no `XDIST_GROUP` of its own.
 
-THE `--write` IS SAFE ONLY BECAUSE A IS ASSERTED FIRST, and that ordering is
-load-bearing rather than stylistic: a green verify means the rendered text already
-equals the file, so `--write` cannot change a byte. `assert_targets_unchanged`
-makes that a claim rather than an assumption by digesting every target before and
-after.
+THE `--write` IS SAFE ONLY BECAUSE A IS ASSERTED FIRST, and that ordering is load-bearing rather than stylistic: a green verify means the rendered text already equals the file, so `--write` cannot change a byte. `assert_targets_unchanged` makes that a claim rather than an assumption by digesting every target before and after.
 """
 
 import contextlib
@@ -110,10 +94,7 @@ def region_targets() -> list[pathlib.Path]:
     """Every `.md` file `--write` could rewrite, discovered the way the generator
     discovers them: a real marker line, not a mention of one.
 
-    THIS IS WHAT MAKES THE `--write` CASES AUDITABLE. Digesting only
-    `doc-registry.md` would miss `CLAUDE.md`, which the same run rewrites, so a
-    non-deterministic render there would go unnoticed by a test that claims to
-    prove determinism.
+    THIS IS WHAT MAKES THE `--write` CASES AUDITABLE. Digesting only `doc-registry.md` would miss `CLAUDE.md`, which the same run rewrites, so a non-deterministic render there would go unnoticed by a test that claims to prove determinism.
     """
     git = harness.require_tool("git", "install git; the generator enumerates through git")
     proc = harness.run(
@@ -171,9 +152,7 @@ def assert_targets_unchanged(gate, label: str):
 def perturb_first_row(gate, text: str) -> str:
     """Append a marker to the first data row of the first generated table.
 
-    FOUND BY SHAPE, not by content, so this control survives every rewording of
-    every provider: the row after a `|---` separator that itself follows a `| `
-    header.
+    FOUND BY SHAPE, not by content, so this control survives every rewording of every provider: the row after a `|---` separator that itself follows a `| ` header.
     """
     lines = text.split("\n")
     for index, line in enumerate(lines):
@@ -212,10 +191,7 @@ def test_verify_accepts_the_tree_as_it_stands(gate):
 def test_a_perturbed_row_is_reported_as_drift(gate):
     """B. THE CONTROL, and the restore is asserted rather than trusted.
 
-    A killed run must not leave a perturbed row behind: the next verify would red,
-    which is the safe direction, but the finding would name a defect nobody
-    introduced. So the original bytes are captured first and written back in a
-    `finally`, and the file's digest is compared afterwards.
+    A killed run must not leave a perturbed row behind: the next verify would red, which is the safe direction, but the finding would name a defect nobody introduced. So the original bytes are captured first and written back in a `finally`, and the file's digest is compared afterwards.
     """
     require_inputs(gate)
     original = TARGET.read_bytes()
@@ -245,9 +221,7 @@ def test_a_perturbed_row_is_reported_as_drift(gate):
 def test_two_write_runs_are_byte_identical(gate):
     """C. Determinism AND idempotence, in one measurement.
 
-    `test_verify_accepts_the_tree_as_it_stands` has already established that the
-    render equals the file, so BOTH writes must be no-ops. Anything else is either
-    a non-deterministic provider or a verify that lied.
+    `test_verify_accepts_the_tree_as_it_stands` has already established that the render equals the file, so BOTH writes must be no-ops. Anything else is either a non-deterministic provider or a verify that lied.
     """
     require_inputs(gate)
     with assert_targets_unchanged(gate, "--write") as targets:
@@ -290,8 +264,7 @@ def test_selftest_passes_and_still_plants_its_defects(gate):
 
 def test_the_preport_snapshot_is_recorded_and_well_formed(gate):
     """E. A snapshot that is absent, truncated or quietly re-baselined catches
-    nothing, and the reasoning is part of the artifact: a snapshot whose file does
-    not say WHY a set beats a count is a pile of strings the next reader will feel
+    nothing, and the reasoning is part of the artifact: a snapshot whose file does not say WHY a set beats a count is a pile of strings the next reader will feel
     free to regenerate."""
     require_inputs(gate)
     try:
@@ -341,12 +314,8 @@ def test_the_preport_snapshot_is_recorded_and_well_formed(gate):
 def test_the_write_target_set_is_wider_than_the_file_this_gate_names(gate):
     """ADDED BY THE PORT, and it names a hazard the twin leaves implicit.
 
-    Cases B and C reason about `scripts/data/doc-registry.md`, but a single
-    `--write` rewrites EVERY discovered region -- `CLAUDE.md` included. A reader of
-    the twin could reasonably conclude the blast radius is one file. It is not, and
-    a session running this gate should know that before it runs. Printing the set
-    also makes a COLLAPSE visible: if the discovery ever narrowed to one file, the
-    determinism claim above would silently shrink with it.
+    Cases B and C reason about `scripts/data/doc-registry.md`, but a single `--write` rewrites EVERY discovered region -- `CLAUDE.md` included. A reader of the twin could reasonably conclude the blast radius is one file. It is not, and a session running this gate should know that before it runs. Printing the set also makes a COLLAPSE visible: if the discovery ever narrowed to one
+    file, the determinism claim above would silently shrink with it.
     """
     targets = region_targets()
     if len(targets) < 2:

@@ -1,45 +1,23 @@
 #!/usr/bin/env python3
 """The trees the quality gates read must actually be present before they report.
 
-WHY THIS EXISTS. On 2026-08-07 a newly written gate was found scanning one
-repository out of three and reporting green. `actions/checkout` defaults to
-`submodules: false`, so in a job that does not ask for them the submodules are
-EMPTY DIRECTORIES -- and a gate that walks them finds nothing, has nothing to
-complain about, and passes.
+WHY THIS EXISTS. On 2026-08-07 a newly written gate was found scanning one repository out of three and reporting green. `actions/checkout` defaults to `submodules: false`, so in a job that does not ask for them the submodules are EMPTY DIRECTORIES -- and a gate that walks them finds nothing, has nothing to complain about, and passes.
 
-That gate was fixed to refuse a partial scan. Then the obvious question was
-whether it was alone, and it was not. Measured the same day by moving
-`private/account` aside and re-running the real gates:
+That gate was fixed to refuse a partial scan. Then the obvious question was whether it was alone, and it was not. Measured the same day by moving `private/account` aside and re-running the real gates:
 
     check:ci-lockfile             rc=0
     check:ci-subscription-schema  rc=0
     check:ci-lint-scope-coverage  rc=0
 
-Three green verdicts about a submodule that was not on disk. A dozen gates
-reach into `private/`, so fixing each one individually is both a large change
-and a permanent tax on every gate written afterwards.
+Three green verdicts about a submodule that was not on disk. A dozen gates reach into `private/`, so fixing each one individually is both a large change and a permanent tax on every gate written afterwards.
 
-The existing anti-vacuity battery does NOT cover this. It proves each gate
-rejects an EMPTY tree, which is a different failure: empty input is loud
-because everything disappears at once. A PARTIAL tree is quiet, because what
-remains still looks like a healthy subject.
+The existing anti-vacuity battery does NOT cover this. It proves each gate rejects an EMPTY tree, which is a different failure: empty input is loud because everything disappears at once. A PARTIAL tree is quiet, because what remains still looks like a healthy subject.
 
-WHAT IT DOES. One precondition, checked once, before the lane's verdicts mean
-anything: every submodule this repo declares must be present and non-empty. It
-converts "twelve gates quietly examine less" into a single loud failure that
-names what is missing.
+WHAT IT DOES. One precondition, checked once, before the lane's verdicts mean anything: every submodule this repo declares must be present and non-empty. It converts "twelve gates quietly examine less" into a single loud failure that names what is missing.
 
-WHAT IT DOES NOT DO. It does not verify each gate's own scope logic -- that
-stays each gate's job, and `check_secret_reachability.py` is the model, refusing
-a verdict when a repo it knows about is unscannable. This is the floor beneath
-them, not a replacement for them.
+WHAT IT DOES NOT DO. It does not verify each gate's own scope logic -- that stays each gate's job, and `check_secret_reachability.py` is the model, refusing a verdict when a repo it knows about is unscannable. This is the floor beneath them, not a replacement for them.
 
----- gate ----
-step: Scope completeness
-needs: none
-selftest: true
-lane: quality-security
----- end gate ----
+---- gate ---- step: Scope completeness needs: none selftest: true lane: quality-security ---- end gate ----
 """
 
 import argparse

@@ -1,26 +1,13 @@
 """`rediacc_ci.quality.label_references` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-label-references.sh` over a
-specimen with stdout and stderr captured SEPARATELY, and its bytes are compared
-against the port's. Same recipe as the committed ledger,
-`.ci/shadow/w7p2-label-references.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-label-references.sh` over a specimen with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-label-references.observations.jsonl`.
 
-THIS FILE ASSEMBLES EVERY LABEL-CONSUMING SHAPE AT RUNTIME, and that is not
-style. This file lives under `.ci`, which is one of the two directories the real
-sweep reads. Written as literals, its fixtures would BE label references, and the
-real gate would report them as undeclared: the port's first draft did exactly
-that, and `check-label-references.sh` went red naming
+THIS FILE ASSEMBLES EVERY LABEL-CONSUMING SHAPE AT RUNTIME, and that is not style. This file lives under `.ci`, which is one of the two directories the real sweep reads. Written as literals, its fixtures would BE label references, and the real gate would report them as undeclared: the port's first draft did exactly that, and `check-label-references.sh` went red naming
 `.ci/rediacc_ci/quality/label_references.py`. The twin dodges the same problem by
 excluding its own basename AND its test's basename; the port cannot use that dodge
-without scanning a different corpus than the twin, so it removes the reason
-instead. Every helper below therefore builds its line from a token that is itself
-assembled.
+without scanning a different corpus than the twin, so it removes the reason instead. Every helper below therefore builds its line from a token that is itself assembled.
 
-BOTH DIRECTIONS. The corpus carries an undeclared label (must fire), a declared
-one (must stay quiet), a templated placeholder (must be dropped), a broken
-extractor (must be caught by the self-test before the sweep), a collapsed sweep
-(must hit the floor), and an EMPTY labels file, which is the case the twin's
-missing `|| true` made unreachable until 96355d3b5 on 2026-09-06.
+BOTH DIRECTIONS. The corpus carries an undeclared label (must fire), a declared one (must stay quiet), a templated placeholder (must be dropped), a broken extractor (must be caught by the self-test before the sweep), a collapsed sweep (must hit the floor), and an EMPTY labels file, which is the case the twin's missing `|| true` made unreachable until 96355d3b5 on 2026-09-06.
 """
 
 import pathlib
@@ -58,8 +45,7 @@ def build(tmp_path: pathlib.Path, labels: str | None, scan: dict[str, str]) -> p
     """A specimen holding BOTH implementations, `fx/labels.yml` and `fx/scan/`.
 
     `labels=None` means the declaration file is ABSENT, which is a different
-    refusal from an EMPTY one: the first says "I cannot find it", the second is
-    the collapsed-parse case the floor exists for.
+    refusal from an EMPTY one: the first says "I cannot find it", the second is the collapsed-parse case the floor exists for.
     """
     src = pathlib.Path(diff.repo())
     root = tmp_path / "fixture"
@@ -157,11 +143,7 @@ def test_differential(tmp_path, labels, scan, want_exit):
 def test_an_empty_labels_file_does_not_kill_the_reader():
     """The defect 96355d3b5 fixed, asserted at the function it lives in.
 
-    `grep -E '^- name:'` exits 1 on a file with no declarations, and without
-    `|| true` that killed the twin AT THE ASSIGNMENT under `set -e` -- so the
-    floor message written for exactly this case ("this reader is broken, not the
-    file") could never fire. The port cannot reproduce the defect, which is
-    precisely why it needs a control: an empty list, never an exception.
+    `grep -E '^- name:'` exits 1 on a file with no declarations, and without `|| true` that killed the twin AT THE ASSIGNMENT under `set -e` -- so the floor message written for exactly this case ("this reader is broken, not the file") could never fire. The port cannot reproduce the defect, which is precisely why it needs a control: an empty list, never an exception.
     """
     assert gate.declared_labels("") == []
     assert gate.declared_labels("# only a comment\n") == []
@@ -180,10 +162,7 @@ def test_every_pattern_has_a_sample_and_the_sample_fires(tmp_path):
 def test_no_pattern_matches_a_bare_mention(tmp_path):
     """The half the twin's inline self-test does not have.
 
-    A pattern degraded to a bare identifier class would satisfy all ten of the
-    twin's positive checks and then report every word in the tree as a label. Ten
-    positive controls with no negative one is a gate that will happily flag the
-    whole tree.
+    A pattern degraded to a bare identifier class would satisfy all ten of the twin's positive checks and then report every word in the tree as a label. Ten positive controls with no negative one is a gate that will happily flag the whole tree.
     """
     probe = tmp_path / "sample.txt"
     probe.write_text("the %s appears here only in prose\n" % gate.SELFTEST_LABEL, encoding="utf-8")
@@ -194,9 +173,7 @@ def test_no_pattern_matches_a_bare_mention(tmp_path):
 def test_this_file_and_the_port_contribute_no_label_references():
     """The self-poisoning control, and it is the reason this file is written oddly.
 
-    Both files live under `.ci`, which the real sweep reads. If either carried a
-    consumption shape as a literal, the REAL gate would report a phantom
-    undeclared label and the tree would go red for a reason that has nothing to do
+    Both files live under `.ci`, which the real sweep reads. If either carried a consumption shape as a literal, the REAL gate would report a phantom undeclared label and the tree would go red for a reason that has nothing to do
     with labels. That happened once, on 2026-09-06, while this port was being
     written; the fix was to assemble every shape at runtime.
     """

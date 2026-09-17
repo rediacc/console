@@ -1,14 +1,9 @@
 """Port of `.ci/scripts/release/check-stable-manifest.sh`.
 
-Reads the live stable CLI manifest and decides whether it already matches
-`EDGE_VERSION`. A missing stable manifest is not an error (the very first
-promotion has nothing to compare against), so `STABLE_VERSION` stays empty
+Reads the live stable CLI manifest and decides whether it already matches `EDGE_VERSION`. A missing stable manifest is not an error (the very first promotion has nothing to compare against), so `STABLE_VERSION` stays empty
 and `same=false`.
 
-SHELLS OUT TO THE REAL `curl`, same reasoning as the `check_edge_manifest`
-sibling: the twin's URL is a hardcoded literal with no override hook, so
-parity is proved by putting a fake `curl` first on PATH for both sides,
-never the real `releases.rediacc.com`.
+SHELLS OUT TO THE REAL `curl`, same reasoning as the `check_edge_manifest` sibling: the twin's URL is a hardcoded literal with no override hook, so parity is proved by putting a fake `curl` first on PATH for both sides, never the real `releases.rediacc.com`.
 
 REWORDED, NOT BYTE-IDENTICAL, on the missing-env-var paths only; see the
 `check_edge_manifest` sibling's module docstring for why.

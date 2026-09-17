@@ -1,13 +1,8 @@
 """`rediacc_ci.quality.go_module_sync` against the discovery it replaces.
 
-WHAT IS WORTH TESTING HERE, and it is not the `go mod tidy -diff` call. That
-part is one subprocess whose verdict is Go's, and the shadow ledger
-`.ci/shadow/w7p2-go-module-sync.observations.jsonl` drives it end to end over
-five distinct trees with real untidy modules. What the ledger cannot isolate is
+WHAT IS WORTH TESTING HERE, and it is not the `go mod tidy -diff` call. That part is one subprocess whose verdict is Go's, and the shadow ledger `.ci/shadow/w7p2-go-module-sync.observations.jsonl` drives it end to end over five distinct trees with real untidy modules. What the ledger cannot isolate is
 the DISCOVERY -- a `grep -rln --include=go.mod` pipeline whose four properties
-(basename matching, the `./` prefix, symlinks not followed, `node_modules` as a
-SUBSTRING) each decide which modules the gate is even aware of. A discovery that
-quietly narrows turns this gate green while the coupling it guards rots.
+(basename matching, the `./` prefix, symlinks not followed, `node_modules` as a SUBSTRING) each decide which modules the gate is even aware of. A discovery that quietly narrows turns this gate green while the coupling it guards rots.
 
 So every case below compares the Python against the REAL pipeline under bash.
 """
@@ -102,10 +97,7 @@ def test_an_absent_go_is_a_setup_error_not_a_verdict(tmp_path: pathlib.Path, mon
 def test_selftest_is_green() -> None:
     """Drives the tidy/untidy plants, which need a real Go toolchain.
 
-    NOT SKIPPED WHEN go IS ABSENT. `selftest` records the missing toolchain as a
-    FAILED control naming the fix, so this assertion goes red with a message
-    that sends the reader to `https://go.dev/dl/` rather than quietly reporting
-    a green suite that exercised only the discovery.
+    NOT SKIPPED WHEN go IS ABSENT. `selftest` records the missing toolchain as a FAILED control naming the fix, so this assertion goes red with a message that sends the reader to `https://go.dev/dl/` rather than quietly reporting a green suite that exercised only the discovery.
     """
     assert gms.selftest() == 0, (
         "go_module_sync selftest failed. If this host has no Go toolchain the "

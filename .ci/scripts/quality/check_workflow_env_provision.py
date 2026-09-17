@@ -1,49 +1,30 @@
 #!/usr/bin/env python3
 """check:ci-workflow-env-provision -- a job may not use a variable nothing gives it.
 
-WHY THIS EXISTS, measured 2026-09-03 (run for 652233865, job 100717989555). The
-`quality-security` job ran
+WHY THIS EXISTS, measured 2026-09-03 (run for 652233865, job 100717989555). The `quality-security` job ran
 
     python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
 
-and that variable is provisioned by a "Load gate toolchain pins" step which
-`quality-static` has and `quality-security` did not. The shell expanded it to
+and that variable is provisioned by a "Load gate toolchain pins" step which `quality-static` has and `quality-security` did not. The shell expanded it to
 EMPTY, pip was handed the literal `PyYAML==`, and CI reported
 
     ERROR: Could not find a version that satisfies the requirement PyYAML==
 
--- a message about pip, in a step named "Secret reachability", in a job whose
-actual defect was three steps earlier and entirely invisible in that text.
+-- a message about pip, in a step named "Secret reachability", in a job whose actual defect was three steps earlier and entirely invisible in that text.
 
-THE SHAPE, and it is why an unset variable is worse than a missing file: bash
-expands an undefined name to the empty string without a word of complaint, so
-the failure always surfaces somewhere downstream wearing somebody else's name.
-A step copied between jobs without the step that feeds it is the usual cause.
+THE SHAPE, and it is why an unset variable is worse than a missing file: bash expands an undefined name to the empty string without a word of complaint, so the failure always surfaces somewhere downstream wearing somebody else's name. A step copied between jobs without the step that feeds it is the usual cause.
 
-WHAT IS AND IS NOT A FINDING. Only names this repo PROVISIONS SOMEWHERE are
-judged: a name that appears in some `env:` block, is written to $GITHUB_ENV, or
-is emitted by toolchain.sh. Runner built-ins ($RUNNER_TEMP, $GITHUB_SHA, $HOME)
-are never provisioned by this tree, so they cannot be flagged, and no allowlist
-is needed to protect them. That is what keeps this at zero false positives
-across 124 jobs rather than becoming the kind of noise a gate gets suppressed for.
+WHAT IS AND IS NOT A FINDING. Only names this repo PROVISIONS SOMEWHERE are judged: a name that appears in some `env:` block, is written to $GITHUB_ENV, or is emitted by toolchain.sh. Runner built-ins ($RUNNER_TEMP, $GITHUB_SHA, $HOME) are never provisioned by this tree, so they cannot be flagged, and no allowlist is needed to protect them. That is what keeps this at zero false
+positives across 124 jobs rather than becoming the kind of noise a gate gets suppressed for.
 
-ONE HOP INTO SCRIPTS, and it is load-bearing rather than a nicety. Nine jobs use
-$RENET_BINARY, which no workflow line defines: `.ci/scripts/infra/build-renet.sh`
-writes it to $GITHUB_ENV. Without following the script named in the run block
-this gate reports nine confident findings that are all wrong. (The first version
-DID -- because `m.lstrip('./')` strips every leading dot AND slash, turning
-`.ci/scripts/...` into `ci/scripts/...`, which resolves to nothing. The nine
-findings looked like a real defect class. `removeprefix` is the fix, and a broken
+ONE HOP INTO SCRIPTS, and it is load-bearing rather than a nicety. Nine jobs use $RENET_BINARY, which no workflow line defines: `.ci/scripts/infra/build-renet.sh` writes it to $GITHUB_ENV. Without following the script named in the run block this gate reports nine confident findings that are all wrong. (The first version DID -- because `m.lstrip('./')` strips every leading dot AND
+slash, turning `.ci/scripts/...` into `ci/scripts/...`, which resolves to nothing. The nine findings looked like a real defect class. `removeprefix` is the fix, and a broken
 path resolver that reports MORE is the lucky direction; the same bug in a gate
 that reports less is silent.)
 
 Exit 1 on any finding, 2 on a failed control.
 
----- gate ----
-step: Workflow env provision
-needs: python-yaml
-selftest: true
----- end gate ----
+---- gate ---- step: Workflow env provision needs: python-yaml selftest: true ---- end gate ----
 """
 
 from __future__ import annotations

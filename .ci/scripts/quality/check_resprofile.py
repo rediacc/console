@@ -2,9 +2,7 @@
 """check:ci-resprofile -- structural findings from the PREVIOUS run's process-tree captures.
 
 WHY THE PREVIOUS RUN. Gates run in parallel; a capture of a gate still running is
-incomplete, so a gate that judged THIS run would read torn files. scripts/ci-runner/run.ts
-rotates `.ci/cache/profiles` -> `.ci/cache/profiles.prev` at start, and this gate reads
-the completed set. The first run therefore has nothing to judge, and says so.
+incomplete, so a gate that judged THIS run would read torn files. scripts/ci-runner/run.ts rotates `.ci/cache/profiles` -> `.ci/cache/profiles.prev` at start, and this gate reads the completed set. The first run therefore has nothing to judge, and says so.
 
 WHAT IS ENFORCED, AND THE ONE RULE. A finding class may ENFORCE only while it is
 admissible: J >= 20 judgeable captures and a one-sided 95% upper bound on its fire rate
@@ -13,36 +11,20 @@ Every predicate is dilation-invariant (wall stretched by k changes no verdict) a
 is proven per run: the captures are re-derived at k=2.3 and the two finding sets must be
 byte-identical or the gate refuses its own verdict.
 
-PRISTINE BOOTSTRAP, copied from .runner-advice-allowlist. Until
-.ci/config/resprofile-baseline.json is SEEDED (`--seed <captures-dir>`, by a human, from
-real numbers), the gate WARNS and exits 0. Seeded means enforced, which is the only reason
-the pristine pass is not a permanent hole. Seeding from one machine's first run is how a
+PRISTINE BOOTSTRAP, copied from .runner-advice-allowlist. Until .ci/config/resprofile-baseline.json is SEEDED (`--seed <captures-dir>`, by a human, from real numbers), the gate WARNS and exits 0. Seeded means enforced, which is the only reason the pristine pass is not a permanent hole. Seeding from one machine's first run is how a
 bad number gets enshrined, so the seed command refuses an EMPTY corpus outright; seeds
 accumulate, and only a NAMED --reseed-class can replace a class's numbers.
 
-THE KILL TRIGGER, fixed in advance. `sunset` in the baseline is 30 days after seeding.
-Past it, if no commit in the last 30 days mentions `resprofile:` AND touches a file a
-finding named, this gate FAILS with the remedy `git rm` -- a metrics layer nobody acts
-on is write-only data, and this hook directory already holds one (wl_admit.py:596-600).
+THE KILL TRIGGER, fixed in advance. `sunset` in the baseline is 30 days after seeding. Past it, if no commit in the last 30 days mentions `resprofile:` AND touches a file a finding named, this gate FAILS with the remedy `git rm` -- a metrics layer nobody acts on is write-only data, and this hook directory already holds one (wl_admit.py:596-600).
 
-ANTI-VACUITY. A captures dir with zero judgeable captures is UNJUDGEABLE, never clean:
-warn while pristine, fail once seeded. Exit 1 on an enforced finding, 2 on a failed control.
+ANTI-VACUITY. A captures dir with zero judgeable captures is UNJUDGEABLE, never clean: warn while pristine, fail once seeded. Exit 1 on an enforced finding, 2 on a failed control.
 
-KNOWN OPEN, 2026-09-15 (docs/ci-overhaul/07-tooling-decisions.md O-4). The dilation
-control fired for real, standalone, twice: "a predicate is reading wall-clock", after a
-heavily-serialized battery (`npx tsx scripts/ci-runner/run.ts --jobs 4 --heavy-limit 1`,
+KNOWN OPEN, 2026-09-15 (docs/ci-overhaul/07-tooling-decisions.md O-4). The dilation control fired for real, standalone, twice: "a predicate is reading wall-clock", after a heavily-serialized battery (`npx tsx scripts/ci-runner/run.ts --jobs 4 --heavy-limit 1`,
 3354s wall, k=2.3). It went green again on the next run because the triggering captures
-live outside the tree (`~/.claude/resprofile/<repo>/<day>/<run>/` via
-`.ci/cache/profiles.prev`) and regenerate every run -- the data that exposed the
-divergence was already gone by the time anyone looked. NOT fixed: whoever reproduces the
-triggering run config and diffs `W.derive(caps)` against `W.derive([W.dilate(c, 2.3) for
+live outside the tree (`~/.claude/resprofile/<repo>/<day>/<run>/` via `.ci/cache/profiles.prev`) and regenerate every run -- the data that exposed the divergence was already gone by the time anyone looked. NOT fixed: whoever reproduces the triggering run config and diffs `W.derive(caps)` against `W.derive([W.dilate(c, 2.3) for
 c in caps])` will name the offending predicate; nobody has spent the ~56 minutes yet.
 
----- gate ----
-step: Resource profile (previous run's captures)
-needs: none
-lane: quality-branch
----- end gate ----
+---- gate ---- step: Resource profile (previous run's captures) needs: none lane: quality-branch ---- end gate ----
 """
 
 from __future__ import annotations
@@ -241,17 +223,12 @@ ACTED_ON_FLOOR = 2
 def acts_outside(files: list[str]) -> bool:
     """Did this commit change something the ranking could plausibly have DRIVEN?
 
-    PROSE DOES NOT COUNT, and that exclusion was paid for immediately. The first
-    commit ever to carry a `Resprofile:` trailer changed wl_profile.py,
-    check_resprofile.py and agent/PLAN-resprofile-wave2.md -- three files, all of
-    them the layer or a document about the layer -- and this function accepted it,
-    because the plan file is not in LAYER_FILES. The retirement trigger asks whether
+    PROSE DOES NOT COUNT, and that exclusion was paid for immediately. The first commit ever to carry a `Resprofile:` trailer changed wl_profile.py, check_resprofile.py and agent/PLAN-resprofile-wave2.md -- three files, all of them the layer or a document about the layer -- and this function accepted it, because the plan file is not in LAYER_FILES. The retirement trigger asks
+    whether
     the profiler drove work in the CODEBASE; a commit that only writes about the
     profiler answers that question with its own subject.
 
-    So: at least one changed file outside the layer that is not documentation. Docs
-    are `.md` anywhere, plus everything under agent/ and docs/, which are prose trees
-    whatever the extension.
+    So: at least one changed file outside the layer that is not documentation. Docs are `.md` anywhere, plus everything under agent/ and docs/, which are prose trees whatever the extension.
     """
     for f in files:
         if any(f.startswith(x) for x in LAYER_FILES):
@@ -267,9 +244,7 @@ def acted_on_commits(days: int = SUNSET_DAYS) -> list[str]:
 
     A TRAILER, not a grep for the word. The previous version ran
     `git log --grep=resprofile:`, which matches prose -- including a commit that
-    merely maintains the profiler, and including this very docstring. The repo
-    already enforces a trailer shape for PR-TASK (a trailer must START a line), so
-    the same discipline applies here and the query becomes mechanical.
+    merely maintains the profiler, and including this very docstring. The repo already enforces a trailer shape for PR-TASK (a trailer must START a line), so the same discipline applies here and the query becomes mechanical.
     """
     try:
         out = subprocess.run(
@@ -307,11 +282,7 @@ def acted_on_commits(days: int = SUNSET_DAYS) -> list[str]:
 def kill_trigger_fired(base: dict | None) -> str | None:
     """Evaluated even when PRISTINE -- the previous version could never fire.
 
-    It ran AFTER main()'s pristine return, and the baseline is deliberately unseeded,
-    so the layer's own design deferred the act that armed its retirement. Worse, every
-    `--seed` rewrote `sunset` to now + 30 days, making an accumulate-seed a free
-    extension. Both are fixed here: the window is measured from `installed` (set once)
-    and the check runs before any other verdict.
+    It ran AFTER main()'s pristine return, and the baseline is deliberately unseeded, so the layer's own design deferred the act that armed its retirement. Worse, every `--seed` rewrote `sunset` to now + 30 days, making an accumulate-seed a free extension. Both are fixed here: the window is measured from `installed` (set once) and the check runs before any other verdict.
     """
     anchor = (base or {}).get("installed") or (base or {}).get("sunset")
     if not anchor:
@@ -333,9 +304,7 @@ def kill_trigger_fired(base: dict | None) -> str | None:
 def bash_corpus_today(corpus: Path | None = None) -> tuple[int, str]:
     """(records written today, a phrase saying where I looked).
 
-    Counted rather than merely existence-checked: bash_env.sh creates the day folder
-    before it knows whether the supervisor is there, so an EMPTY bash.jsonl -- or a
-    missing one beside a populated exit.jsonl -- is the exact signature of the hole.
+    Counted rather than merely existence-checked: bash_env.sh creates the day folder before it knows whether the supervisor is there, so an EMPTY bash.jsonl -- or a missing one beside a populated exit.jsonl -- is the exact signature of the hole.
     """
     import time  # noqa: PLC0415
 

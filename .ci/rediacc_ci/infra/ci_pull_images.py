@@ -1,36 +1,24 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/infra/ci-pull-images.sh`.
 
-Authenticate to GHCR with a short-lived token, pull the two backend images the
-CI job needs, then scrub the credentials back off the runner. The twin's header
-calls itself a "self-contained replacement for elite/action/ci-pull-images.sh",
-which is why it carries its own credential cleanup rather than leaning on an
-action's post step.
+Authenticate to GHCR with a short-lived token, pull the two backend images the CI job needs, then scrub the credentials back off the runner. The twin's header calls itself a "self-contained replacement for elite/action/ci-pull-images.sh", which is why it carries its own credential cleanup rather than leaning on an action's post step.
 
-NOT `docker-prepull.sh`, which pulls PUBLIC base images with no credentials and
-retries each one three times. This one authenticates, pulls exactly two OUR-OWN
-images, and never retries. The two scripts are neighbours in the same directory
-and it is worth knowing which is which before reading either.
+NOT `docker-prepull.sh`, which pulls PUBLIC base images with no credentials and retries each one three times. This one authenticates, pulls exactly two OUR-OWN images, and never retries. The two scripts are neighbours in the same directory and it is worth knowing which is which before reading either.
 
 -----------------------------------------------------------------------------
 THE GHCR-AUTH DUPLICATION IS REAL, AND IT IS DELIBERATELY NOT FACTORED HERE
 -----------------------------------------------------------------------------
-`.ci/scripts/infra/docker-pull-ghcr.sh` (ported beside this file as
-`rediacc_ci.infra.docker_pull_ghcr`) runs the SAME three-line dance:
+`.ci/scripts/infra/docker-pull-ghcr.sh` (ported beside this file as `rediacc_ci.infra.docker_pull_ghcr`) runs the SAME three-line dance:
 
     echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
     docker pull ... ; docker logout ghcr.io
 
-`.ci/scripts/lib/common.sh` is 772 lines and has NO ghcr, docker or registry
-helper at all (grepped 2026-09-13: zero hits for `ghcr` and for `docker login`).
-So the two bash twins do not share a helper, and inventing one on the Python
-side would give the port a structure its twin does not have, which is exactly
-the shape that makes a differential stop being a comparison. The duplication is
+`.ci/scripts/lib/common.sh` is 772 lines and has NO ghcr, docker or registry helper at all (grepped 2026-09-13: zero hits for `ghcr` and for `docker login`). So the two bash twins do not share a helper, and inventing one on the Python side would give the port a structure its twin does not have, which is exactly the shape that makes a differential stop being a comparison. The
+duplication is
 NAMED here and left in place; a shared `core.ghcr` is a cutover decision, not a
 porting one.
 
-FOUR WAYS THE TWO SCRIPTS DISAGREE WHILE DOING "THE SAME THING", all preserved,
-because each is a live behavioural difference and not a spelling one:
+FOUR WAYS THE TWO SCRIPTS DISAGREE WHILE DOING "THE SAME THING", all preserved, because each is a live behavioural difference and not a spelling one:
 
   1. `docker-pull-ghcr.sh` calls `require_cmd docker` first. THIS ONE DOES NOT,
      so a runner with no docker reaches `docker login` and dies with bash's own
@@ -46,22 +34,13 @@ because each is a live behavioural difference and not a spelling one:
 HAZARD, REPORTED RATHER THAN REPAIRED: A FAILED PULL LEAVES THE CREDENTIALS ON
 THE RUNNER
 -----------------------------------------------------------------------------
-The cleanup block is straight-line code AFTER the subshell, with no `trap`. The
-subshell runs under `set -e`, so a failing `docker login` or a failing
-`docker pull` takes the whole script down at that line, and every line below it
--- `docker logout`, the `jq del(.auths["ghcr.io"])` scrub, the "environment is
-now safe for debug access" claim -- is never reached. The comment on line 45
+The cleanup block is straight-line code AFTER the subshell, with no `trap`. The subshell runs under `set -e`, so a failing `docker login` or a failing `docker pull` takes the whole script down at that line, and every line below it -- `docker logout`, the `jq del(.auths["ghcr.io"])` scrub, the "environment is now safe for debug access" claim -- is never reached. The comment on line
+45
 says the subshell exists "to contain credential exposure"; a subshell contains a
-VARIABLE, not a file, and `~/.docker/config.json` is written by `docker login`
-in the real filesystem where it outlives the subshell.
+VARIABLE, not a file, and `~/.docker/config.json` is written by `docker login` in the real filesystem where it outlives the subshell.
 
-So the failure mode is: pull fails, job continues into a debug/ssh step, and the
-GHCR token is sitting in `~/.docker/config.json`. The fix is one `trap ... EXIT`
-around the cleanup block. It is NOT applied here: this port's contract is
-one-for-one equivalence with a twin that stays live and registered, and a port
-that cleaned up where the twin does not would be a divergence in exactly the
-direction a differential cannot bless. Pinned by
-`test_a_failing_pull_skips_the_credential_cleanup_on_both_sides`.
+So the failure mode is: pull fails, job continues into a debug/ssh step, and the GHCR token is sitting in `~/.docker/config.json`. The fix is one `trap ... EXIT` around the cleanup block. It is NOT applied here: this port's contract is one-for-one equivalence with a twin that stays live and registered, and a port that cleaned up where the twin does not would be a divergence in
+exactly the direction a differential cannot bless. Pinned by `test_a_failing_pull_skips_the_credential_cleanup_on_both_sides`.
 
 TWO SMALLER WARTS, both preserved:
 
@@ -92,8 +71,7 @@ WHAT IS EXECUTED RATHER THAN REIMPLEMENTED, AND WHY
     the two would agree today -- and running the real binary means they agree
     regardless of which grep the runner has, which is the property worth having.
 
-`docker` itself always inherits both streams: the twin never captures it, so a
-pull's progress and any error text land on the caller's terminal interleaved
+`docker` itself always inherits both streams: the twin never captures it, so a pull's progress and any error text land on the caller's terminal interleaved
 with this script's own log lines, and a port that captured and replayed would
 reorder them.
 
@@ -152,10 +130,7 @@ def resolve_tags(env: dict[str, str]) -> tuple[str, str, str]:
     """Lines 40-43 -> (registry, renet_tag, web_tag).
 
     `${VAR:-default}` is the COLON form throughout, so a variable exported as
-    the empty string falls back to the default rather than producing
-    `ghcr.io/rediacc/renet:`. Exported so the differential can drive the
-    defaulting ladder directly: `TAG` feeds BOTH image tags, and either can
-    override it on its own.
+    the empty string falls back to the default rather than producing `ghcr.io/rediacc/renet:`. Exported so the differential can drive the defaulting ladder directly: `TAG` feeds BOTH image tags, and either can override it on its own.
     """
     registry = env.get("DOCKER_REGISTRY") or DEFAULT_REGISTRY
     tag = env.get("TAG") or DEFAULT_TAG
@@ -165,12 +140,7 @@ def resolve_tags(env: dict[str, str]) -> tuple[str, str, str]:
 def _not_found(binary: str) -> int:
     """bash's `command not found`, as this port's nearest honest equivalent.
 
-    A NAMED DIVERGENCE. bash prefixes its own `<script>: line <n>: `, which
-    names a line number this file does not have, so the two sides cannot be
-    byte-identical here. What IS identical is the exit status (127) and the fact
-    that a missing tool is loud rather than a traceback.
-    `test_a_missing_docker_is_127_on_both_sides_with_a_named_text_divergence`
-    asserts both halves.
+    A NAMED DIVERGENCE. bash prefixes its own `<script>: line <n>: `, which names a line number this file does not have, so the two sides cannot be byte-identical here. What IS identical is the exit status (127) and the fact that a missing tool is loud rather than a traceback. `test_a_missing_docker_is_127_on_both_sides_with_a_named_text_divergence` asserts both halves.
     """
     print("%s: %s" % (binary, NOT_FOUND_TAIL), file=sys.stderr, flush=True)
     return NO_DOCKER_STATUS
@@ -179,10 +149,7 @@ def _not_found(binary: str) -> int:
 def _run(argv: list[str], stderr: object = None) -> int:
     """`subprocess.run` with both streams inherited unless stderr is redirected.
 
-    STDOUT IS FLUSHED FIRST, EVERY TIME. The child writes straight to fd 1 while
-    this process buffers, so an unflushed `print` would land AFTER the child's
-    output in a redirected stdout even though it was issued before. bash has no
-    such buffer, so skipping the flush is a reordering the twin cannot produce.
+    STDOUT IS FLUSHED FIRST, EVERY TIME. The child writes straight to fd 1 while this process buffers, so an unflushed `print` would land AFTER the child's output in a redirected stdout even though it was issued before. bash has no such buffer, so skipping the flush is a reordering the twin cannot produce.
     """
     sys.stdout.flush()
     try:
@@ -194,9 +161,7 @@ def _run(argv: list[str], stderr: object = None) -> int:
 def docker_login(token: str, actor: str) -> int:
     """`echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin`.
 
-    THE NEWLINE MATTERS. `echo` appends one, and `--password-stdin` reads the
-    whole of stdin and strips a single trailing newline, so a token piped
-    without it is the same token -- but a port that sent no newline would differ
+    THE NEWLINE MATTERS. `echo` appends one, and `--password-stdin` reads the whole of stdin and strips a single trailing newline, so a token piped without it is the same token -- but a port that sent no newline would differ
     from the twin on any docker that ever stops stripping. The twin's bytes are
     reproduced: token plus `\\n`.
     """
@@ -220,9 +185,7 @@ def pull(image: str) -> int:
 def authenticate_and_pull(token: str, actor: str, registry: str, renet: str, web: str) -> int:
     """The subshell (lines 46-60). Returns the status the subshell would exit with.
 
-    `set -e` IS INHERITED BY A SUBSHELL, which is why this returns on the first
-    non-zero instead of pressing on: a failed login must not be followed by two
-    pulls that would fail again with worse messages.
+    `set -e` IS INHERITED BY A SUBSHELL, which is why this returns on the first non-zero instead of pressing on: a failed login must not be followed by two pulls that would fail again with worse messages.
     """
     log.step("Authenticating with ghcr.io...")
     code = docker_login(token, actor)
@@ -246,16 +209,9 @@ def authenticate_and_pull(token: str, actor: str, registry: str, renet: str, web
 def scrub_docker_config(home: str) -> None:
     """Lines 67-75: strip the `ghcr.io` entry out of `~/.docker/config.json`.
 
-    THREE GUARDS, IN THE TWIN'S ORDER, and the third is the one that matters:
-    the file must exist, `jq` must resolve, and the rewrite must SUCCEED before
-    the temporary file replaces the original. `>"$cfg.tmp"` truncates the
-    temporary first, so a jq that fails writes an empty file, and the `||`
-    branch deletes it rather than moving an empty file over the user's config.
+    THREE GUARDS, IN THE TWIN'S ORDER, and the third is the one that matters: the file must exist, `jq` must resolve, and the rewrite must SUCCEED before the temporary file replaces the original. `>"$cfg.tmp"` truncates the temporary first, so a jq that fails writes an empty file, and the `||` branch deletes it rather than moving an empty file over the user's config.
 
-    `$HOME` UNSET IS NOT SPECIAL-CASED, because it is not special-cased in the
-    twin either: `"$HOME/.docker/config.json"` becomes `/.docker/config.json`,
-    which does not exist, and the block is skipped. `env.get("HOME", "")` lands
-    on the same path.
+    `$HOME` UNSET IS NOT SPECIAL-CASED, because it is not special-cased in the twin either: `"$HOME/.docker/config.json"` becomes `/.docker/config.json`, which does not exist, and the block is skipped. `env.get("HOME", "")` lands on the same path.
     """
     cfg = pathlib.Path(home) / ".docker" / "config.json"
     if not cfg.is_file():
@@ -284,12 +240,9 @@ def scrub_docker_config(home: str) -> None:
 def list_pulled_images() -> None:
     """`docker images --format ... | grep -E "(rediacc|REPOSITORY)" || true`.
 
-    THE REAL `grep`, PIPED, not `re.search` over captured text. See the module
-    docstring: this decides bytes on stdout, and running the same binary the
-    twin runs removes the whole question of whose regex engine is in play.
+    THE REAL `grep`, PIPED, not `re.search` over captured text. See the module docstring: this decides bytes on stdout, and running the same binary the twin runs removes the whole question of whose regex engine is in play.
 
-    `|| true` swallows grep's exit 1 on no match, so this is the LAST command of
-    the script and the script's exit status is 0 whatever docker said.
+    `|| true` swallows grep's exit 1 on no match, so this is the LAST command of the script and the script's exit status is 0 whatever docker said.
     """
     sys.stdout.flush()
     try:

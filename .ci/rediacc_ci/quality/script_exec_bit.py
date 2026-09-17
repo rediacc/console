@@ -47,8 +47,7 @@ THE THREE THINGS THE EXTRACTION GETS RIGHT, each paid for, carried verbatim:
     resolution above started working: one file the Dockerfile chmods itself, one
     that is SOURCED and therefore needs no exec bit at all.
 
-THE PARENT-REFERENCE CONTROL IS THE INTERESTING ONE, and the twin records why its
-first version could not fail:
+THE PARENT-REFERENCE CONTROL IS THE INTERESTING ONE, and the twin records why its first version could not fail:
 
     This control is built so the two behaviours produce DIFFERENT path sets, which
     the first version of it did not: it planted `../victim.sh` in the SAME
@@ -62,13 +61,9 @@ first version could not fail:
     against the subdirectory, naming sub/decoy.sh, which IS tracked and IS
     non-executable, so it is reported. The sets differ by exactly one entry.
 
-That is a control about the CONTROL, and it is the reason this port keeps the
-decoy in a subdirectory rather than "simplifying" it back into the root: a plant
-that fires under both the right and the wrong implementation is not a plant.
+That is a control about the CONTROL, and it is the reason this port keeps the decoy in a subdirectory rather than "simplifying" it back into the root: a plant that fires under both the right and the wrong implementation is not a plant.
 
-THE NEGATIVE CONTROL IS NOT OPTIONAL, and the twin says why in one sentence: "A
-second control: the SAME fixture, made executable, must go quiet. Without this, a
-detector that flags every script would also 'pass' the check above."
+THE NEGATIVE CONTROL IS NOT OPTIONAL, and the twin says why in one sentence: "A second control: the SAME fixture, made executable, must go quiet. Without this, a detector that flags every script would also 'pass' the check above."
 
 THE SINGLE-QUOTE DETAIL IN THE REFUSAL MESSAGES, which shfmt caught:
 
@@ -76,9 +71,7 @@ THE SINGLE-QUOTE DETAIL IN THE REFUSAL MESSAGES, which shfmt caught:
     echo are COMMAND SUBSTITUTION, so the error path would try to execute the very
     script it is complaining about.
 
-Python has no such hazard, so the note survives here as archaeology rather than
-as a constraint on this file: it explains why the twin's message block is quoted
-inconsistently, which otherwise reads as sloppiness and invites a "tidy".
+Python has no such hazard, so the note survives here as archaeology rather than as a constraint on this file: it explains why the twin's message block is quoted inconsistently, which otherwise reads as sloppiness and invites a "tidy".
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -86,46 +79,25 @@ PORT NOTES.
 
 COLOUR IS UNCONDITIONAL IN THIS GATE, and that is carried rather than corrected.
 The twin assigns `RED=$'\033[31m'` and friends with NO tty test and NO `NO_COLOR`
-test, unlike `.ci/scripts/lib/common.sh:18`, which it never sources. So this gate
-writes escapes into a CI log and into a pipe, always. `rediacc_ci.log` decides
-colour by `isatty`, so using it here would change the bytes on every non-tty run
-and the differential would score a mismatch on every tree. The port therefore
+test, unlike `.ci/scripts/lib/common.sh:18`, which it never sources. So this gate writes escapes into a CI log and into a pipe, always. `rediacc_ci.log` decides colour by `isatty`, so using it here would change the bytes on every non-tty run and the differential would score a mismatch on every tree. The port therefore
 prints raw, with the twin's exact sequences: `31m`/`32m`/`33m`, NOT the `0;31m`
-form `common.sh` uses. Reported as an inconsistency in the twin rather than fixed
-here.
+form `common.sh` uses. Reported as an inconsistency in the twin rather than fixed here.
 
-EVERYTHING GOES TO STDOUT, INCLUDING THE FAILURES. The twin's `echo` calls carry
-no `>&2`, so a caller redirecting stdout to a file sees nothing on the terminal
-even when the gate fails. Carried, and reported.
+EVERYTHING GOES TO STDOUT, INCLUDING THE FAILURES. The twin's `echo` calls carry no `>&2`, so a caller redirecting stdout to a file sees nothing on the terminal even when the gate fails. Carried, and reported.
 
-THE ENUMERATION IS `git ls-files` PLUS A PYTHON REGEX, NOT `git grep -nP`.
-Shelling out to `git grep` would make the port trivially equivalent and would
+THE ENUMERATION IS `git ls-files` PLUS A PYTHON REGEX, NOT `git grep -nP`. Shelling out to `git grep` would make the port trivially equivalent and would
 also make it a wrapper rather than a port; the risk of reimplementing is that
-git's pathspec and binary handling differ from Python's. Both are pinned here:
-the pathspecs are passed to `git ls-files` UNCHANGED, so git still decides which
-files are in scope (a bare `*.sh` pathspec matches at any depth, because git does
-not set FNM_PATHNAME), and a file containing a NUL byte is skipped, which is what
-`git grep` does when it reports `Binary file X matches` instead of lines. `git
-grep` is git's own matcher and is NOT affected by which `grep` is on PATH, which
-is worth stating because an interactive Claude Code shell replaces `grep` with a
+git's pathspec and binary handling differ from Python's. Both are pinned here: the pathspecs are passed to `git ls-files` UNCHANGED, so git still decides which files are in scope (a bare `*.sh` pathspec matches at any depth, because git does not set FNM_PATHNAME), and a file containing a NUL byte is skipped, which is what `git grep` does when it reports `Binary file X matches`
+instead of lines. `git grep` is git's own matcher and is NOT affected by which `grep` is on PATH, which is worth stating because an interactive Claude Code shell replaces `grep` with a
 FUNCTION wrapping a bundled ugrep and a script sees GNU grep 3.12; that
-substitution produced two wrong port notes elsewhere in this wave and cannot
-reach this gate.
+substitution produced two wrong port notes elsewhere in this wave and cannot reach this gate.
 
-MEASURED END TO END ON THE REAL TREE, 2026-09-06: `git grep -nP` returns 830 hit
-lines, the twin's shell pipeline resolves them to 102 distinct paths, and the
-port's own enumeration returns the SAME 102, compared as sorted files. That is the
-check worth repeating after any change here, because a green run on a clean tree
-proves only that both sides found nothing.
+MEASURED END TO END ON THE REAL TREE, 2026-09-06: `git grep -nP` returns 830 hit lines, the twin's shell pipeline resolves them to 102 distinct paths, and the port's own enumeration returns the SAME 102, compared as sorted files. That is the check worth repeating after any change here, because a green run on a clean tree proves only that both sides found nothing.
 
 `\w` IS SPELLED OUT AS `[A-Za-z0-9_]`. PCRE's `\w` without the UTF mode is ASCII;
-Python's is unicode-aware and would admit an accented letter in a path, which
-would change which references are extracted. This is the class of difference that
-does not show up in any fixture and shows up once, on a real path, years later.
+Python's is unicode-aware and would admit an accented letter in a path, which would change which references are extracted. This is the class of difference that does not show up in any fixture and shows up once, on a real path, years later.
 
-EXIT 2 IS THE REFUSAL AND IS PRESERVED EXACTLY. It is not exit 1: the twin
-distinguishes "the control could not fire" from "the tree has offenders", and a
-port that collapsed them would make an unrunnable gate look like a failing tree.
+EXIT 2 IS THE REFUSAL AND IS PRESERVED EXACTLY. It is not exit 1: the twin distinguishes "the control could not fire" from "the tree has offenders", and a port that collapsed them would make an unrunnable gate look like a failing tree.
 """
 
 import os
@@ -177,9 +149,7 @@ def _git(root: str, *args: str) -> subprocess.CompletedProcess:
 def is_comment_line(text: str) -> bool:
     """Does this line's CONTENT read as documentation rather than an invocation?
 
-    The twin strips leading whitespace and then matches `'#'* | '//'* | '*'*`.
-    Both false-positive cases it was written for are real: a Dockerfile that
-    chmods its own subject, and a file that is SOURCED and needs no exec bit.
+    The twin strips leading whitespace and then matches `'#'* | '//'* | '*'*`. Both false-positive cases it was written for are real: a Dockerfile that chmods its own subject, and a file that is SOURCED and needs no exec bit.
     """
     lead = text.lstrip()
     return lead.startswith(COMMENT_LEADS)
@@ -188,9 +158,7 @@ def is_comment_line(text: str) -> bool:
 def first_ref(text: str) -> str | None:
     """The FIRST `./...sh` reference on a line, or None.
 
-    `head -1` in the twin. A line naming two scripts contributes only the first,
-    which is a known imprecision carried unchanged: narrowing it would change
-    which paths are judged, and that is a behaviour change disguised as a fix.
+    `head -1` in the twin. A line naming two scripts contributes only the first, which is a known imprecision carried unchanged: narrowing it would change which paths are judged, and that is a behaviour change disguised as a fix.
     """
     match = REF_RE.search(text)
     if match is None:
@@ -202,10 +170,7 @@ def resolve(src: str, ref: str) -> str:
     """Resolve `ref` against the DIRECTORY OF THE FILE THAT SAYS IT.
 
     `"$(dirname "$src")/${ref#./}"` then `${f#./}`. A file at the repo root gives
-    dirname `.`, so the join produces `./x.sh` and the second strip removes the
-    prefix. Deliberately NOT `os.path.normpath`: the twin does no normalisation,
-    so a `sub/../x.sh` would be judged under that spelling on both sides, and
-    normalising here would silently start judging a different path than the twin.
+    dirname `.`, so the join produces `./x.sh` and the second strip removes the prefix. Deliberately NOT `os.path.normpath`: the twin does no normalisation, so a `sub/../x.sh` would be judged under that spelling on both sides, and normalising here would silently start judging a different path than the twin.
     """
     # `dirname` on a bare filename is `.` in the shell and `""` in Python. That one-character difference produced `/victim.sh` for every root-level reference, which is an absolute path and matches nothing in the index, so the gate would have reported a clean tree for exactly the files the 2026-08-20 incident was about. Caught by this file's own control.
     joined = "%s/%s" % (os.path.dirname(src) or ".", ref.removeprefix("./"))
@@ -215,9 +180,7 @@ def resolve(src: str, ref: str) -> str:
 def enumerate_hits(root: str) -> list[tuple[str, int, str]]:
     """`git grep -nP <ref> -- <pathspecs>` as (path, lineno, text) triples.
 
-    THE FILE LIST COMES FROM GIT, THE MATCHING FROM PYTHON. See the port notes:
-    git keeps ownership of the pathspec semantics, which is the part that would
-    diverge invisibly if it were reimplemented.
+    THE FILE LIST COMES FROM GIT, THE MATCHING FROM PYTHON. See the port notes: git keeps ownership of the pathspec semantics, which is the part that would diverge invisibly if it were reimplemented.
     """
     listed = _git(root, "ls-files", "-z", "--", *PATHSPECS)
     if listed.returncode != 0:
@@ -245,8 +208,7 @@ def enumerate_hits(root: str) -> list[tuple[str, int, str]]:
 def referenced_paths(hits: list[tuple[str, int, str]]) -> list[str]:
     """Every path a hit resolves to, sorted and deduplicated.
 
-    A PURE FUNCTION over the grep output on purpose, so the selftest can drive the
-    parent-reference control without building a git repository. `sort -u` in the
+    A PURE FUNCTION over the grep output on purpose, so the selftest can drive the parent-reference control without building a git repository. `sort -u` in the
     twin; `sorted(set(...))` here, and both run under `LC_ALL=C`, which
     `scripts/lib/shadow-gate.ts:buildEnv` pins for both sides.
     """
@@ -264,9 +226,7 @@ def referenced_paths(hits: list[tuple[str, int, str]]) -> list[str]:
 def scan_repo(root: str) -> list[str]:
     """Offenders under `root`, one `"<path> (mode <mode>)"` string per line.
 
-    ONLY TRACKED PATHS ARE JUDGED, and the twin says why: "a `./x.sh` inside a
-    heredoc meant for another checkout is not ours." An untracked path yields no
-    mode and is skipped rather than reported.
+    ONLY TRACKED PATHS ARE JUDGED, and the twin says why: "a `./x.sh` inside a heredoc meant for another checkout is not ours." An untracked path yields no mode and is skipped rather than reported.
     """
     offenders: list[str] = []
     for path in referenced_paths(enumerate_hits(root)):
@@ -283,9 +243,7 @@ def scan_repo(root: str) -> list[str]:
 def build_control(directory: str) -> None:
     """The twin's control fixture, planted exactly as it plants it.
 
-    TWO PLANTS AND A DECOY, and the decoy's PLACEMENT is the load-bearing part:
-    `sub/decoy.sh` referenced as `../decoy.sh` from `sub/parentref.yml`. See the
-    module docstring for the version of this control that could not fail.
+    TWO PLANTS AND A DECOY, and the decoy's PLACEMENT is the load-bearing part: `sub/decoy.sh` referenced as `../decoy.sh` from `sub/parentref.yml`. See the module docstring for the version of this control that could not fail.
     """
     root = pathlib.Path(directory)
     _git(directory, "init", "-q", ".")
@@ -310,8 +268,7 @@ def refuse(lines: list[str]) -> int:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 clean, 1 offenders, 2 the controls could not fire.
 
-    `--selftest` is intercepted BEFORE the control fixture is built, let alone the
-    real scan. The twin takes no arguments and ignores any it is given.
+    `--selftest` is intercepted BEFORE the control fixture is built, let alone the real scan. The twin takes no arguments and ignores any it is given.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -396,9 +353,7 @@ def selftest() -> int:
 
     THE PLANT AND ITS MIRROR FOR EVERY RULE. A gate that only ever fires flags the
     whole tree; a gate that never fires reports every tree clean. So each rule
-    below carries a case it must catch and a case it must ignore, and the floor is
-    DERIVED from the corpus rather than typed, so a case that stops running turns
-    the suite red instead of quietly shortening it.
+    below carries a case it must catch and a case it must ignore, and the floor is DERIVED from the corpus rather than typed, so a case that stops running turns the suite red instead of quietly shortening it.
     """
     # (label, source path, line text, expected resolved path or None)
     extraction = [

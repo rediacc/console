@@ -1,10 +1,8 @@
 """Port of `.ci/scripts/test/gates/test-housekeeping-phases.sh`.
 
-Both-ways test for `.ci/scripts/housekeeping/cleanup-versions.sh`, specifically for
-the parts of it that had never executed anywhere.
+Both-ways test for `.ci/scripts/housekeeping/cleanup-versions.sh`, specifically for the parts of it that had never executed anywhere.
 
-WHY THIS GATE EXISTS. A single `return 1` in Phase 8d, placed inside that phase's own
-`set +e` region, produced three failures at once and every one of them was silent:
+WHY THIS GATE EXISTS. A single `return 1` in Phase 8d, placed inside that phase's own `set +e` region, produced three failures at once and every one of them was silent:
 
   1. The nightly reported SUCCESS on every drifted run (08-18 .. 08-23). The return
      was swallowed by `set +e`, so `cleanup_r2` looked clean.
@@ -14,21 +12,13 @@ WHY THIS GATE EXISTS. A single `return 1` in Phase 8d, placed inside that phase'
      retention from 2026-08-22 on. Run 32616474098's log jumps straight from `8d:` to
      `Phase 9:` with no `8f:` line in between.
 
-Nothing caught any of that because nothing ever ran the script's failure paths. Phase
-9's DELETE arm in particular had never executed anywhere in this repo's history: every
-real run either found no stale branch or ran with `--dry-run`, which takes a different
-branch of the code.
+Nothing caught any of that because nothing ever ran the script's failure paths. Phase 9's DELETE arm in particular had never executed anywhere in this repo's history: every real run either found no stale branch or ran with `--dry-run`, which takes a different branch of the code.
 
-HOW. The script is driven as a real program with `gh` and `aws` replaced by routing
-fakes on PATH, so no case can reach GitHub or R2. Every fake records its argv, and
-every assertion that a call was NOT made is PAIRED with a control proving the recorder
-does capture that call when it happens. Without the pairing, "no DELETE was issued"
-would also pass against a fake that recorded nothing at all.
+HOW. The script is driven as a real program with `gh` and `aws` replaced by routing fakes on PATH, so no case can reach GitHub or R2. Every fake records its argv, and every assertion that a call was NOT made is PAIRED with a control proving the recorder does capture that call when it happens. Without the pairing, "no DELETE was issued" would also pass against a fake that recorded
+nothing at all.
 
 THE ONE STATIC CASE IS THE ONE THAT NAMES THE BUG.
-`test_no_return_inside_the_errexit_relaxed_region` is lexical rather than behavioural,
-because a `set +e` region spanning ~340 lines cannot be exercised into every early
-exit. Its control plants the exact defect into a COPY under `tmp_path` and requires it
+`test_no_return_inside_the_errexit_relaxed_region` is lexical rather than behavioural, because a `set +e` region spanning ~340 lines cannot be exercised into every early exit. Its control plants the exact defect into a COPY under `tmp_path` and requires it
 to be reported; the real subject is never written to.
 """
 
@@ -272,8 +262,7 @@ def returns_in_relaxed_region(path: pathlib.Path) -> list[str]:
     """One entry per `return`/`exit` lexically between `set +e` and the `set -e`
     that closes it; empty means clean.
 
-    A PURE FUNCTION over the file's text, exported so the control below can run the
-    IDENTICAL code path against a planted copy. The twin shells out to an inline
+    A PURE FUNCTION over the file's text, exported so the control below can run the IDENTICAL code path against a planted copy. The twin shells out to an inline
     `python3` heredoc twice; this is the same predicate, called twice.
     """
     lines = path.read_text(encoding="utf-8").split("\n")

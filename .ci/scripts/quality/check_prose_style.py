@@ -5,13 +5,8 @@ Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
 see it; the logic lives in `rediacc_ci.quality.prose_style`, which pytest and
 this file's own `--selftest` import directly.
 
-NOT A PORT. Every other guard and gate in this family was transliterated from a
-bash original and is judged against it by a differential. There is no bash
-original here and there never was: `.ci/scripts/quality/check_language_policy.py`
-freezes the SET of shell files under `.ci` and `.claude` and refuses a new one
-("the surface may shrink and may never grow"), so a twin could not have been
-written even as a formality. The evidence this gate works is therefore its own,
-and it is of three kinds rather than one:
+NOT A PORT. Every other guard and gate in this family was transliterated from a bash original and is judged against it by a differential. There is no bash original here and there never was: `.ci/scripts/quality/check_language_policy.py` freezes the SET of shell files under `.ci` and `.claude` and refuses a new one ("the surface may shrink and may never grow"), so a twin could not
+have been written even as a formality. The evidence this gate works is therefore its own, and it is of three kinds rather than one:
 
   * `--selftest`, 65 controls, every one of them a PLANT with a MIRROR. Two
     defects were planted into the engine on 2026-09-16 to prove the suite can go
@@ -24,14 +19,9 @@ and it is of three kinds rather than one:
   * the two hook guards, `block_prose_style_edit` and `block_prose_style_commit`,
     with their own per-guard suites beside them in the guards directory.
 
-WHY AN ENTRY POINT AT ALL, the two measured reasons `check_npmrc.py` states: a
-port cannot be run by path (nothing puts `.ci` on `sys.path`, hence `_cipath`),
-and `python3 -m rediacc_ci.quality.prose_style` works but registers wrong,
-because `check:ci-parity`'s tokenizer cannot read `-m` and resolves the leaves to
-`[python3]`.
+WHY AN ENTRY POINT AT ALL, the two measured reasons `check_npmrc.py` states: a port cannot be run by path (nothing puts `.ci` on `sys.path`, hence `_cipath`), and `python3 -m rediacc_ci.quality.prose_style` works but registers wrong, because `check:ci-parity`'s tokenizer cannot read `-m` and resolves the leaves to `[python3]`.
 
-WHAT A GREEN HERE DOES AND DOES NOT MEAN, said plainly so nobody reads it as more
-than it is:
+WHAT A GREEN HERE DOES AND DOES NOT MEAN, said plainly so nobody reads it as more than it is:
 
   * The gate is SHRINK-ONLY against `.ci/config/prose-style-baseline.json`. A
     green means NO NEW finding, not a clean tree. The baselined count is printed
@@ -47,15 +37,9 @@ than it is:
 
 ZERO INPUTS IS A FAILURE HERE, in two places rather than one. Zero files matched
 fails; so does a non-empty file set that yields ZERO extracted prose lines, which
-is the extractor breaking rather than the glob, and which would otherwise look
-exactly like a clean tree.
+is the extractor breaking rather than the glob, and which would otherwise look exactly like a clean tree.
 
----- gate ----
-step: Check prose style (the work, not the person)
-needs: none
-selftest: true
-lane: quality-content
----- end gate ----
+---- gate ---- step: Check prose style (the work, not the person) needs: none selftest: true lane: quality-content ---- end gate ----
 """
 
 import sys

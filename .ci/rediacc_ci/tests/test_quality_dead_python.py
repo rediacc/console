@@ -1,7 +1,6 @@
 r"""`rediacc_ci.quality.dead_python`: the reachability predicate, and the real tree.
 
-WHAT IS WORTH TESTING HERE, given the gate already carries 40 controls that run
-on every invocation. Two things a control inside the gate cannot do:
+WHAT IS WORTH TESTING HERE, given the gate already carries 40 controls that run on every invocation. Two things a control inside the gate cannot do:
 
   1. Drive the ENTRY POINT as a subprocess, the way CI runs it. The controls
      exercise `scan()` in-process, which proves the predicate and proves nothing
@@ -11,12 +10,8 @@ on every invocation. Two things a control inside the gate cannot do:
      files each; the real tree is 593 Python files with 3489 referrers, and every
      route's shape is only meaningful there.
 
-THIS FILE IS ALSO THE ENTRY POINT'S ROUTE, deliberately and with the gate's own
-predicate in mind. Until the driver registers the gate in `package.json`, the
-manifest and a workflow step, `check_dead_python.py` is reached by exactly one
-thing: pytest collecting this file, which names it and runs it. That is route
-`mentioned` under route `pytest`, it is a real execution path rather than a
-paper one, and if this file is deleted the gate reports its own entry point.
+THIS FILE IS ALSO THE ENTRY POINT'S ROUTE, deliberately and with the gate's own predicate in mind. Until the driver registers the gate in `package.json`, the manifest and a workflow step, `check_dead_python.py` is reached by exactly one thing: pytest collecting this file, which names it and runs it. That is route `mentioned` under route `pytest`, it is a real execution path rather
+than a paper one, and if this file is deleted the gate reports its own entry point.
 """
 
 import secrets
@@ -59,9 +54,7 @@ def test_selftest_flag_is_green_and_counts_its_controls():
 def test_real_tree_every_route_carries_something_or_says_why():
     """The shape line's numbers, asserted as a SET rather than typed as a floor.
 
-    A typed floor ("at least 500 reached") becomes a false red on the first
-    legitimate deletion. What is actually invariant is that the corpus equals
-    what git reports and that reached plus findings equals the corpus.
+    A typed floor ("at least 500 reached") becomes a false red on the first legitimate deletion. What is actually invariant is that the corpus equals what git reports and that reached plus findings equals the corpus.
     """
     root = paths.repo_root()
     report = dp.scan(root)
@@ -88,10 +81,7 @@ def test_real_tree_every_route_carries_something_or_says_why():
 def test_the_gate_can_fail_on_the_real_tree(tmp_path):
     """A planted orphan is reported, and REMOVING it restores the green.
 
-    Planted into a COPY of the tree rather than the tree itself: this suite runs
-    beside other sessions' uncommitted work and a gate test that writes to the
-    real checkout is the failure `check:ci-pool-writer-safety` exists for. The
-    copy is made with `git ls-files`, so it is the same corpus the gate scans.
+    Planted into a COPY of the tree rather than the tree itself: this suite runs beside other sessions' uncommitted work and a gate test that writes to the real checkout is the failure `check:ci-pool-writer-safety` exists for. The copy is made with `git ls-files`, so it is the same corpus the gate scans.
     """
     root = paths.repo_root()
     report = dp.scan(root)
@@ -111,10 +101,7 @@ def test_the_gate_can_fail_on_the_real_tree(tmp_path):
 def test_prose_is_not_an_admission_route_on_the_real_tree():
     """`agent/` names hundreds of Python paths; none of them is a route.
 
-    Pinned against the real tree because the fixture version of this control
-    cannot show the SIZE of the hole it closes: the referrer corpus excludes
-    3489 minus the prose files, and if that exclusion were dropped the gate
-    would go permanently green.
+    Pinned against the real tree because the fixture version of this control cannot show the SIZE of the hole it closes: the referrer corpus excludes 3489 minus the prose files, and if that exclusion were dropped the gate would go permanently green.
     """
     assert dp.is_prose("agent/PLAN-tooling-transformation.md")
     assert dp.is_prose("docs/agent-reference/ci-gates.md")
@@ -126,11 +113,7 @@ def test_prose_is_not_an_admission_route_on_the_real_tree():
 def test_shadow_route_is_parsed_from_the_real_ledger():
     """The route exists and reads the real files, whether or not it carries anyone today.
 
-    It carries ZERO on this tree, and that is a measurement rather than a bug:
-    every port named as the new side of an EQUIVALENT record is ALSO registered,
-    so the stronger route claims it first. The assertion is therefore about the
-    parse, not about the count, and it is here so that the day a port lands
-    unregistered the route is known to work.
+    It carries ZERO on this tree, and that is a measurement rather than a bug: every port named as the new side of an EQUIVALENT record is ALSO registered, so the stronger route claims it first. The assertion is therefore about the parse, not about the count, and it is here so that the day a port lands unregistered the route is known to work.
     """
     root = paths.repo_root()
     pyset = frozenset(f for f in dp.tracked_files(root) if f.endswith(".py"))

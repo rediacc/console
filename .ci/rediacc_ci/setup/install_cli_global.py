@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/setup/install-cli-global.sh`.
 
-`npm pack` in `packages/cli`, then `npm install -g` the tarball it produced,
-then delete the tarball and report which name the CLI answers to. Sixty-two
-lines, used by CI to test the CLI the way a user gets it rather than through
-`npm link`.
+`npm pack` in `packages/cli`, then `npm install -g` the tarball it produced, then delete the tarball and report which name the CLI answers to. Sixty-two lines, used by CI to test the CLI the way a user gets it rather than through `npm link`.
 
     .ci/scripts/setup/install-cli-global.sh
     .ci/scripts/setup/install-cli-global.sh --package-dir packages/cli
@@ -45,15 +42,10 @@ Driven on this machine, 2026-09-14, in an empty scratch directory:
     $ bash t.sh; echo "exit=$?"
     exit=2
 
-`REACHED` never printed. So the real behaviour when `npm pack` produces nothing
-is: **exit 2, with not one byte on either stream** -- no `log_error`, no
-`No tarball found after npm pack`, nothing. A caller sees a bare 2 and the
-message that was written for exactly this case is unreachable. That is the
-"exit 1 with zero bytes on both streams" shape, and it looks precisely like a
+`REACHED` never printed. So the real behaviour when `npm pack` produces nothing is: **exit 2, with not one byte on either stream** -- no `log_error`, no `No tarball found after npm pack`, nothing. A caller sees a bare 2 and the message that was written for exactly this case is unreachable. That is the "exit 1 with zero bytes on both streams" shape, and it looks precisely like a
 gate failing for a real reason.
 
-REPRODUCED, NOT REPAIRED. This port returns 2 and prints nothing, and keeps the
-unreachable message as a named constant so the string still exists to be grepped
+REPRODUCED, NOT REPAIRED. This port returns 2 and prints nothing, and keeps the unreachable message as a named constant so the string still exists to be grepped
 for. Fixing the twin is a cutover-box decision.
 
 =============================================================================
@@ -89,13 +81,9 @@ TWO DIVERGENCES, STATED RATHER THAN DISCOVERED LATER
 =============================================================================
 `command -v` VERSUS `shutil.which`. `command -v rdc` also answers for shell
 functions, aliases and builtins; `shutil.which` sees only files on PATH.
-`core.common.require_cmd` records the same gap at its own call site. Nothing
-installs `rdc` as a shell function, so the difference is not reachable from this
-script -- but it is a difference, and it is here rather than nowhere.
+`core.common.require_cmd` records the same gap at its own call site. Nothing installs `rdc` as a shell function, so the difference is not reachable from this script -- but it is a difference, and it is here rather than nowhere.
 
-A `parse_args` KEY THAT IS NOT A VALID IDENTIFIER (`--foo.bar`) makes bash's
-`printf -v` fail with a message that names `common.sh` and a line number, then
-`set -e` ends the run with 2. `core.common.parse_args` raises `RefusalError`
+A `parse_args` KEY THAT IS NOT A VALID IDENTIFIER (`--foo.bar`) makes bash's `printf -v` fail with a message that names `common.sh` and a line number, then `set -e` ends the run with 2. `core.common.parse_args` raises `RefusalError`
 with the message text but no file-and-line prefix, so the exit code matches and
 the stderr bytes do not. That quirk belongs to `core.common` (its QUIRK 3) and
 is not re-litigated here; no caller of this script passes such a flag.
@@ -148,19 +136,14 @@ def package_dir(argv: list[str]) -> str:
 def choose_tarball() -> str | None:
     """`ls -1 rediacc-cli-*.tgz 2>/dev/null | head -n 1`, in the current directory.
 
-    Returns the lexicographically first match, or None when there is none -- and
-    None is the case the twin cannot survive (see the module docstring), so the
-    caller turns it into a silent exit 2 rather than into the message the twin
-    has written for it.
+    Returns the lexicographically first match, or None when there is none -- and None is the case the twin cannot survive (see the module docstring), so the caller turns it into a silent exit 2 rather than into the message the twin has written for it.
 
     SORTED BYTE-WISE, matching `ls` under `LC_ALL=C`. Python's `sorted` on `str`
-    compares code points, which agrees with C collation for the ASCII filenames
-    npm produces. Under a collating locale `ls` would order differently and this
+    compares code points, which agrees with C collation for the ASCII filenames npm produces. Under a collating locale `ls` would order differently and this
     would not; every caller of this script runs under CI's `LC_ALL=C`, and the
     differential pins it.
 
-    A DANGLING SYMLINK STILL COUNTS, in both: `glob` matches on the name and `ls`
-    lists the entry, neither stats the target.
+    A DANGLING SYMLINK STILL COUNTS, in both: `glob` matches on the name and `ls` lists the entry, neither stats the target.
     """
     matches = sorted(glob.glob(TARBALL_GLOB))
     return matches[0] if matches else None
@@ -169,11 +152,9 @@ def choose_tarball() -> str | None:
 def remove_tarball(name: str) -> None:
     """`rm -f "$TARBALL"` (install-cli-global.sh:55).
 
-    `missing_ok` is what `-f` means. Any OTHER `OSError` -- a read-only directory,
-    a permission problem -- would make `rm` exit non-zero and `set -e` end the
+    `missing_ok` is what `-f` means. Any OTHER `OSError` -- a read-only directory, a permission problem -- would make `rm` exit non-zero and `set -e` end the
     twin, so it must not become a Python traceback here; the caller turns it into
-    a non-zero return. That is the one place the two cannot print the same bytes,
-    because the twin's bytes are `rm`'s own message and this port never runs `rm`.
+    a non-zero return. That is the one place the two cannot print the same bytes, because the twin's bytes are `rm`'s own message and this port never runs `rm`.
     """
     try:
         os.unlink(name)
@@ -186,8 +167,7 @@ def npm(args: list[str], **kwargs) -> int:
 
     `npm pack` writes the filename it created to stdout and its progress to
     stderr; the twin captures neither, and a port that captured either would
-    change what a CI log contains and would hold a minutes-long global install
-    silent until it finished.
+    change what a CI log contains and would hold a minutes-long global install silent until it finished.
     """
     return subprocess.run(["npm", *args], check=False, **kwargs).returncode
 

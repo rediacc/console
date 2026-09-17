@@ -1,15 +1,9 @@
 """`rediacc_ci.quality.cli_contract` against the diff logic it replaces.
 
-WHAT THE SHADOW LEDGER CANNOT REACH. `.ci/shadow/w7p2-cli-contract.observations.jsonl`
-drives the whole gate over five distinct trees with `npm` and `npx` shimmed, so
-the wiring, the exit codes and the finding text are already compared end to end.
-What it cannot isolate is the COMPARISON ITSELF: which lines the version filter
-drops, what an unterminated file does to it, and the no-nullglob behaviour that
-makes an empty i18n directory report a locale whose name is a glob.
+WHAT THE SHADOW LEDGER CANNOT REACH. `.ci/shadow/w7p2-cli-contract.observations.jsonl` drives the whole gate over five distinct trees with `npm` and `npx` shimmed, so the wiring, the exit codes and the finding text are already compared end to end. What it cannot isolate is the COMPARISON ITSELF: which lines the version filter drops, what an unterminated file does to it, and the
+no-nullglob behaviour that makes an empty i18n directory report a locale whose name is a glob.
 
-The last of those is a DEFECT in the twin, carried deliberately. It is pinned
-here so that a future reader who "fixes" it discovers, from a red test, that
-they have changed the verdict rather than tidied the code.
+The last of those is a DEFECT in the twin, carried deliberately. It is pinned here so that a future reader who "fixes" it discovers, from a red test, that they have changed the verdict rather than tidied the code.
 """
 
 import pathlib
@@ -85,9 +79,7 @@ def test_a_missing_generated_file_is_not_equal(tmp_path: pathlib.Path) -> None:
 def test_glob_or_literal_both_directions(tmp_path: pathlib.Path) -> None:
     """Bash has no nullglob here, so an empty match yields the PATTERN.
 
-    Both halves in one test on purpose: the literal branch only means something
-    beside the populated branch, and a reader deleting one would see the other
-    still passing.
+    Both halves in one test on purpose: the literal branch only means something beside the populated branch, and a reader deleting one would see the other still passing.
     """
     directory = tmp_path / "i18n"
     directory.mkdir()
@@ -111,9 +103,7 @@ def test_glob_or_literal_matches_bash(tmp_path: pathlib.Path) -> None:
 def test_empty_i18n_yields_a_glob_named_finding(tmp_path: pathlib.Path) -> None:
     """THE DEFECT, PINNED. See the module docstring of the port.
 
-    An empty COMMITTED i18n directory makes the orphan loop iterate over the
-    literal pattern and emit a finding naming a glob. Changing this is changing
-    the verdict, which is why it is asserted rather than described.
+    An empty COMMITTED i18n directory makes the orphan loop iterate over the literal pattern and emit a finding naming a glob. Changing this is changing the verdict, which is why it is asserted rather than described.
     """
     committed = tmp_path / "committed"
     generated = tmp_path / "generated"
@@ -129,9 +119,7 @@ def test_empty_i18n_yields_a_glob_named_finding(tmp_path: pathlib.Path) -> None:
 def test_the_orphan_message_carries_the_twins_em_dash() -> None:
     """Byte fidelity on the one string the house style would otherwise rewrite.
 
-    The twin emits U+2014. The port writes it as an escape so no em dash is
-    typed into authored text, and this asserts the EMITTED value is unchanged --
-    which is what the shadow differential compares.
+    The twin emits U+2014. The port writes it as an escape so no em dash is typed into authored text, and this asserts the EMITTED value is unchanged -- which is what the shadow differential compares.
     """
     assert cc.ORPHAN_SUFFIX == " (orphaned \u2014 no such locale)"
     assert "\u2014" in cc.ORPHAN_SUFFIX
@@ -140,8 +128,7 @@ def test_the_orphan_message_carries_the_twins_em_dash() -> None:
 def test_locale_bundles_are_not_version_filtered(tmp_path: pathlib.Path) -> None:
     """The asymmetry between the two comparisons, asserted directly.
 
-    A locale bundle whose only difference is a line containing `"version":` IS
-    drift. Unifying the two comparisons would silence it.
+    A locale bundle whose only difference is a line containing `"version":` IS drift. Unifying the two comparisons would silence it.
     """
     committed = tmp_path / "committed"
     generated = tmp_path / "generated"
@@ -162,9 +149,7 @@ def test_selftest_is_green() -> None:
 def test_main_intercepts_selftest_before_scanning(tmp_path: pathlib.Path, monkeypatch) -> None:
     """`--selftest` must be handled BEFORE anything real runs, in BOTH directions.
 
-    The root override is pointed at a path that does not exist, which makes
-    `paths.repo_root()` raise. A real scan therefore RAISES, and `--selftest`
-    returns 0 -- so the flag is proven to short-circuit rather than merely to
+    The root override is pointed at a path that does not exist, which makes `paths.repo_root()` raise. A real scan therefore RAISES, and `--selftest` returns 0 -- so the flag is proven to short-circuit rather than merely to
     return the same number a scan would have returned.
     """
     monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path / "does-not-exist"))

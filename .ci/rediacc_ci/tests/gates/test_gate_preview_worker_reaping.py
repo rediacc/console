@@ -1,30 +1,18 @@
 """Port of `.ci/scripts/test/gates/test-preview-worker-reaping.sh`.
 
-Phase 5b of `.ci/scripts/housekeeping/cleanup-versions.sh` reaps orphaned per-PR
-preview Workers -- and must never reap anything else, because there is no undo.
+Phase 5b of `.ci/scripts/housekeeping/cleanup-versions.sh` reaps orphaned per-PR preview Workers -- and must never reap anything else, because there is no undo.
 
-WHAT WENT WRONG, measured 2026-08-26: `Cleanup PR Preview` run 32903006150 died
-at the app-token step on GitHub's OWN internal DNS
-(internal-api.service.iad.github.net, "Name or service not known") before
+WHAT WENT WRONG, measured 2026-08-26: `Cleanup PR Preview` run 32903006150 died at the app-token step on GitHub's OWN internal DNS (internal-api.service.iad.github.net, "Name or service not known") before
 checkout, so neither of its two cleanups ran. Phase 5 backstops the Pages side;
-nothing backstopped `wrangler delete --name pr-<n>` (cleanup-preview.yml:60), so
-the Worker leaked with nothing to reap it -- one per failed cleanup, forever.
+nothing backstopped `wrangler delete --name pr-<n>` (cleanup-preview.yml:60), so the Worker leaked with nothing to reap it -- one per failed cleanup, forever.
 
 THIS GATE IS MOSTLY ABOUT WHAT MUST **NOT** BE DELETED. A reaping phase that
 works is easy; a reaping phase that cannot over-reach is the whole risk, since it
-runs unattended at 03:00 with production Cloudflare credentials. So the selector
-is tested against names chosen to break it: the production and bench Workers, a
-pr-prefixed name that is not a PR number, and an open PR's Worker.
+runs unattended at 03:00 with production Cloudflare credentials. So the selector is tested against names chosen to break it: the production and bench Workers, a pr-prefixed name that is not a PR number, and an open PR's Worker.
 
-FAIL-CLOSED IS AN ASSERTION HERE, not a comment. Phase 4 (Pages) falls back to
-keep-N when the open-PR lookup fails, because its worst case is retaining too
-much. Phase 5b's worst case is deleting a LIVE preview, so an unreadable PR list
-must SKIP the phase. The two phases must not be "made consistent".
+FAIL-CLOSED IS AN ASSERTION HERE, not a comment. Phase 4 (Pages) falls back to keep-N when the open-PR lookup fails, because its worst case is retaining too much. Phase 5b's worst case is deleting a LIVE preview, so an unreadable PR list must SKIP the phase. The two phases must not be "made consistent".
 
-WHAT THIS GATE CANNOT SEE: it tests the SELECTOR and the guards by reading them,
-not a live Cloudflare account. It cannot prove the real API deletes what the
-selector chose, and it cannot prove no long-lived Worker in the real account
-happens to match ^pr-[0-9]+$ -- that needs a live listing.
+WHAT THIS GATE CANNOT SEE: it tests the SELECTOR and the guards by reading them, not a live Cloudflare account. It cannot prove the real API deletes what the selector chose, and it cannot prove no long-lived Worker in the real account happens to match ^pr-[0-9]+$ -- that needs a live listing.
 
 READ-ONLY against the subject; this module writes nothing anywhere.
 """
@@ -178,8 +166,7 @@ def test_phase_is_actually_invoked(gate):
 def test_control_overbroad_selector_is_caught(gate):
     """CONTROL: an unanchored selector must be detectable.
 
-    Built by construction: a DIFFERENT predicate, not a mutation of the real one.
-    A substring-style selector would sweep names the anchored one rejects.
+    Built by construction: a DIFFERENT predicate, not a mutation of the real one. A substring-style selector would sweep names the anchored one rejects.
     """
     loose = "pr-"
     victim = "rediacc-console-bench"

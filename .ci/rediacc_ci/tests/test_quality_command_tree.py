@@ -1,25 +1,11 @@
 """`rediacc_ci.quality.command_tree` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-command-tree.sh` over a
-fixture whose `npm` and `npx` are shims, with stdout and stderr captured
-SEPARATELY, and its bytes are compared against the port's. The committed ledger
-(`.ci/shadow/w7p2-cmdtree.observations.jsonl`) records the same comparison over
-K distinct trees, one of which exceeds the `head -40` cap.
+A bash child runs the REAL `.ci/scripts/quality/check-command-tree.sh` over a fixture whose `npm` and `npx` are shims, with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. The committed ledger (`.ci/shadow/w7p2-cmdtree.observations.jsonl`) records the same comparison over K distinct trees, one of which exceeds the `head -40` cap.
 
-THE SHIMS ARE THE POINT, NOT A SHORTCUT. The subject of this gate is the
-COMPARISON, not the exporter: `npm run build:packages` and `npx tsx
-export-command-tree.ts` are how the live tree is obtained, and both
-implementations must obtain it the same way, through PATH. Driving the real
-exporter here would make a unit test take a minute and would test the CLI rather
-than the gate.
+THE SHIMS ARE THE POINT, NOT A SHORTCUT. The subject of this gate is the COMPARISON, not the exporter: `npm run build:packages` and `npx tsx export-command-tree.ts` are how the live tree is obtained, and both implementations must obtain it the same way, through PATH. Driving the real exporter here would make a unit test take a minute and would test the CLI rather than the gate.
 
-WHAT IS NOT COMPARED, and why: the prose block on stdout. The twin's line reads
-"fails OPEN <em dash> they keep passing while checking nothing" and the port's
-reads "fails OPEN, they keep passing while checking nothing", because this
-repository forbids em dashes in authored text. Both are indented continuation
-prose on stdout, which `shadow-gate.ts` classifies as chatter, so the difference
-changes no finding. The DIFF BODY, which is the part a reader acts on, is
-compared line for line below.
+WHAT IS NOT COMPARED, and why: the prose block on stdout. The twin's line reads "fails OPEN <em dash> they keep passing while checking nothing" and the port's reads "fails OPEN, they keep passing while checking nothing", because this repository forbids em dashes in authored text. Both are indented continuation prose on stdout, which `shadow-gate.ts` classifies as chatter, so the
+difference changes no finding. The DIFF BODY, which is the part a reader acts on, is compared line for line below.
 """
 
 import json
@@ -142,13 +128,8 @@ def test_an_exporter_that_writes_nothing_is_the_declared_divergence(
 ) -> None:
     """Both halves of the divergence, so it stays a pinned decision.
 
-    MEASURED, NOT ASSUMED, and worse than the port notes first claimed. The twin
-    declares the committed tree STALE -- blaming the file the exporter failed to
-    produce a rival for -- and then DIES at its own diff pipeline: `diff` exits 2
-    on the missing operand, `set -euo pipefail` carries that out, and the gate
-    exits 2 having printed "Diff (committed vs live):" and nothing under it. The
-    author is told to run `npm run export:command-tree`, which would commit the
-    empty tree. The port refuses before any of that.
+    MEASURED, NOT ASSUMED, and worse than the port notes first claimed. The twin declares the committed tree STALE -- blaming the file the exporter failed to produce a rival for -- and then DIES at its own diff pipeline: `diff` exits 2 on the missing operand, `set -euo pipefail` carries that out, and the gate exits 2 having printed "Diff (committed vs live):" and nothing under it.
+    The author is told to run `npm run export:command-tree`, which would commit the empty tree. The port refuses before any of that.
     """
     root = build(tmp_path, tree(["repo"]), None)
     (old_exit, old_out, old_err), (new_exit, _, new_err) = run_both(root)

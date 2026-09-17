@@ -1,20 +1,12 @@
 """Differential: `rediacc_ci.setup.install_cli_global` against its twin
 `.ci/scripts/setup/install-cli-global.sh`.
 
-NOTHING HERE INSTALLS ANYTHING GLOBALLY. A recording fake `npm` on a scratch
-PATH logs its argv, writes a tarball-shaped file where `npm pack` would, and
-exits with whatever the fixture says. `ls`, `head` and `rm` are the real
-binaries, because the twin's tarball selection is a `ls | head` pipeline whose
-exact exit status under `pipefail` is the subject of the most important case in
-this file.
+NOTHING HERE INSTALLS ANYTHING GLOBALLY. A recording fake `npm` on a scratch PATH logs its argv, writes a tarball-shaped file where `npm pack` would, and exits with whatever the fixture says. `ls`, `head` and `rm` are the real binaries, because the twin's tarball selection is a `ls | head` pipeline whose exact exit status under `pipefail` is the subject of the most important case
+in this file.
 
-THE CASE THAT MATTERS MOST IS `test_no_tarball_exits_2_with_zero_bytes`. The
-twin's own error branch for "npm pack produced nothing" is DEAD CODE:
+THE CASE THAT MATTERS MOST IS `test_no_tarball_exits_2_with_zero_bytes`. The twin's own error branch for "npm pack produced nothing" is DEAD CODE:
 `TARBALL=$(ls -1 rediacc-cli-*.tgz 2>/dev/null | head -n 1)` under
-`set -euo pipefail` ends the script with `ls`'s exit 2 before the `if [[ -z
-"$TARBALL" ]]` is reached, and `2>/dev/null` means not one byte is printed.
-Exit 2, both streams empty -- indistinguishable from a gate failing for a real
-reason. The port reproduces it, and that test is what pins the reproduction.
+`set -euo pipefail` ends the script with `ls`'s exit 2 before the `if [[ -z "$TARBALL" ]]` is reached, and `2>/dev/null` means not one byte is printed. Exit 2, both streams empty -- indistinguishable from a gate failing for a real reason. The port reproduces it, and that test is what pins the reproduction.
 
 THREE KINDS OF EVIDENCE:
 
@@ -26,10 +18,7 @@ THREE KINDS OF EVIDENCE:
   3. The surviving directory, because `rm -f "$TARBALL"` removes ONE file and
      leaves any other tarball behind to win the next run.
 
-THE LEDGER LINE. `→ ` and `✓ ` are CHATTER to `shadow-gate.ts` before any
-`--finding-re` is consulted, so the fake echoes `call: npm ...` on stdout for
-the shadow ledger to compare. See
-`.ci/shadow/w7p6-install-cli-global.observations.jsonl`.
+THE LEDGER LINE. `→ ` and `✓ ` are CHATTER to `shadow-gate.ts` before any `--finding-re` is consulted, so the fake echoes `call: npm ...` on stdout for the shadow ledger to compare. See `.ci/shadow/w7p6-install-cli-global.observations.jsonl`.
 """
 
 from __future__ import annotations
@@ -220,8 +209,7 @@ def _assert_agree(old3, new3, label: str) -> None:
 
 def test_the_default_run_packs_installs_and_cleans_up(tmp_path: pathlib.Path) -> None:
     """PINNED AGAINST LITERAL BYTES. Two npm calls, four stderr lines, and no
-    tarball left behind. The closing arm here is the WARNING one, because nothing
-    named `rdc` or `rediacc` is on the stub PATH -- which is also fact 3: a
+    tarball left behind. The closing arm here is the WARNING one, because nothing named `rdc` or `rediacc` is on the stub PATH -- which is also fact 3: a
     successful install of nothing exits 0."""
     old3, new3 = run_both(tmp_path)
     old, old_calls, old_fs = old3
@@ -334,12 +322,9 @@ def test_a_positional_argument_is_ignored(tmp_path: pathlib.Path) -> None:
 def test_no_tarball_exits_2_with_zero_bytes(tmp_path: pathlib.Path) -> None:
     """THE DEAD BRANCH. `npm pack` exits 0 and writes nothing; `ls` cannot stat
     the unexpanded pattern and exits 2; `pipefail` makes the pipeline 2; `set -e`
-    ends the script at the ASSIGNMENT, before the `if [[ -z "$TARBALL" ]]` that
-    would have printed `No tarball found after npm pack`.
+    ends the script at the ASSIGNMENT, before the `if [[ -z "$TARBALL" ]]` that would have printed `No tarball found after npm pack`.
 
-    So the observable behaviour is exit 2 with NOTHING on stderr beyond the three
-    step lines, and the message written for exactly this case never runs. The
-    string is asserted ABSENT, which is what makes this a test of the deadness
+    So the observable behaviour is exit 2 with NOTHING on stderr beyond the three step lines, and the message written for exactly this case never runs. The string is asserted ABSENT, which is what makes this a test of the deadness
     rather than of the exit code alone."""
     old3, new3 = run_both(tmp_path, FAKE_PACK_NAME="")
     old = old3[0]
@@ -391,10 +376,7 @@ def test_a_failing_global_install_leaves_the_tarball_behind(
 def test_a_stale_tarball_wins_over_the_one_just_packed(tmp_path: pathlib.Path) -> None:
     """FACT 1, DRIVEN. `npm pack` creates `rediacc-cli-0.8.3.tgz` and prints that
     name; the script ignores the printed name and takes the lexicographically
-    first entry of the directory, which is the leftover
-    `rediacc-cli-0.0.0-dev.tgz` -- the placeholder version every package.json in
-    this repo carries. That stale file is what gets installed globally, and
-    `rm -f` then removes it while leaving the freshly packed one behind to lose
+    first entry of the directory, which is the leftover `rediacc-cli-0.0.0-dev.tgz` -- the placeholder version every package.json in this repo carries. That stale file is what gets installed globally, and `rm -f` then removes it while leaving the freshly packed one behind to lose
     again next time."""
     old3, new3 = run_both(
         tmp_path,

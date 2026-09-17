@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 """check:ci-docker-npm-pins -- no Dockerfile may install an npm package at an unpinned version.
 
-WHY THIS EXISTS, and it is a regression test for a build that broke with no commit
-behind it. On 2026-09-04 private/account's image stopped building:
+WHY THIS EXISTS, and it is a regression test for a build that broke with no commit behind it. On 2026-09-04 private/account's image stopped building:
 
     npm error Cannot read properties of null (reading 'edgesOut')
 
-an arborist crash inside #loadPeerSet while walking vitest 4's peer graph. It failed
-in CI (job 100832669673) and reproduced identically on a laptop. Nothing in this repo
+an arborist crash inside #loadPeerSet while walking vitest 4's peer graph. It failed in CI (job 100832669673) and reproduced identically on a laptop. Nothing in this repo
 had changed; a package published that morning had. The stage resolved its whole
-dependency tree live from the registry on every build, so a stranger's publish was
-enough.
+dependency tree live from the registry on every build, so a stranger's publish was enough.
 
-THE RULE. Every `npm install` / `npm i` / `npm add` inside a tracked Dockerfile must
-name a version for each package, or install from a lockfile. Concretely:
+THE RULE. Every `npm install` / `npm i` / `npm add` inside a tracked Dockerfile must name a version for each package, or install from a lockfile. Concretely:
 
   * a global install (`-g`) must spell `pkg@<version>`, and `@latest`, `@next`,
     `@beta` and a bare name are all UNPINNED -- a tag is a moving target, which is
@@ -25,18 +21,11 @@ name a version for each package, or install from a lockfile. Concretely:
 A `${VAR}` version is PINNED: an ARG is a value in the file, reviewable and diffable,
 and it is the shape the devcontainer already uses.
 
-The escape hatch is .ci/config/docker-npm-pin-exclusions.json, keyed `<path>:<line
-substring>`, whose reason must start with BLOCKER:. An entry that matches nothing is
-REFUSED as dead scaffold.
+The escape hatch is .ci/config/docker-npm-pin-exclusions.json, keyed `<path>:<line substring>`, whose reason must start with BLOCKER:. An entry that matches nothing is REFUSED as dead scaffold.
 
 Exit 1 on an unpinned install or a dead exclusion, 2 on a failed control.
 
----- gate ----
-step: Dockerfile npm pins
-needs: submodules
-selftest: true
-lane: quality-code
-why: A build that broke with no commit behind it: private/account's image resolved
+---- gate ---- step: Dockerfile npm pins needs: submodules selftest: true lane: quality-code why: A build that broke with no commit behind it: private/account's image resolved
      its whole dep tree live, and a package published that morning crashed npm's
      arborist. This is the regression test for the CLASS, not for that package.
 ---- end gate ----
@@ -101,13 +90,8 @@ def dockerfiles() -> list[str]:
 def workflows() -> list[str]:
     """WORKFLOWS TOO, since 2026-09-04, and the omission cost a red the same night.
 
-    This gate shipped scanning Dockerfiles only, caught three unpinned installs there,
-    and reported a clean tree while `.github/workflows/ci-quality.yml` ran
-    `npm install -g agent-browser@latest` on every run of the tutorial-player gate. A
-    version that moves on its own is a CI result that changes with no commit behind
-    it -- the exact class this gate exists for -- and scoping it by FILE TYPE rather
-    than by the thing it forbids left the largest population of `npm install -g` lines
-    in the repo unscanned.
+    This gate shipped scanning Dockerfiles only, caught three unpinned installs there, and reported a clean tree while `.github/workflows/ci-quality.yml` ran `npm install -g agent-browser@latest` on every run of the tutorial-player gate. A version that moves on its own is a CI result that changes with no commit behind it -- the exact class this gate exists for -- and scoping it by
+    FILE TYPE rather than by the thing it forbids left the largest population of `npm install -g` lines in the repo unscanned.
     """
     return [
         p
@@ -162,16 +146,11 @@ FROM_RE = re.compile(r"^\s*FROM\b", re.IGNORECASE)
 def findings_for(text: str, kind: str = "dockerfile") -> tuple[list[tuple[str, str]], int]:
     """([(line, why)], number of npm-install lines seen) for one Dockerfile.
 
-    A bare `npm install` with no package list is judged on whether a LOCKFILE reached
-    THIS STAGE. Per-stage, not per-file, and that is not pedantry -- it is the exact
-    false negative this gate nearly shipped with. private/account/Dockerfile's FIRST
+    A bare `npm install` with no package list is judged on whether a LOCKFILE reached THIS STAGE. Per-stage, not per-file, and that is not pedantry -- it is the exact false negative this gate nearly shipped with. private/account/Dockerfile's FIRST
     stage was fixed on 2026-09-04 to copy `package*.json` and run `npm ci`; a
-    whole-file scan then read that one COPY as forgiveness for the two LATER stages,
-    which still copy `package.json` alone and still re-resolve their trees live. The
-    gate written to catch tonight's break would have reported tonight's break clean.
+    whole-file scan then read that one COPY as forgiveness for the two LATER stages, which still copy `package.json` alone and still re-resolve their trees live. The gate written to catch tonight's break would have reported tonight's break clean.
 
-    The count is returned so the caller can refuse a verdict when NOTHING was
-    inspected: "no Dockerfile installs anything" is what a broken scan looks like.
+    The count is returned so the caller can refuse a verdict when NOTHING was inspected: "no Dockerfile installs anything" is what a broken scan looks like.
     """
     out: list[tuple[str, str]] = []
     seen = 0

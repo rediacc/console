@@ -1,35 +1,20 @@
 """check:ci-w7p5a-real-run-blockers -- FRAGMENT, drafted and driven by a writer
-agent outside the real tree (scripts/ and .ci/rediacc_ci/** are outside its
-write grant). Intended final home: .ci/rediacc_ci/quality/w7p5a_real_run_blockers.py,
+agent outside the real tree (scripts/ and .ci/rediacc_ci/** are outside its write grant). Intended final home: .ci/rediacc_ci/quality/w7p5a_real_run_blockers.py,
 with a thin entry point at .ci/scripts/quality/check_w7p5a_real_run_blockers.py
 (see check_go_deps.py / check_worklist_env_registry.py for the split).
 
-WHAT THIS CLOSES. W7P5-a's acceptance ("agent/PLAN-tooling-transformation.md")
-requires every one of the 48 deploy/release bash scripts under port to carry
+WHAT THIS CLOSES. W7P5-a's acceptance ("agent/PLAN-tooling-transformation.md") requires every one of the 48 deploy/release bash scripts under port to carry
 either a K=5 shadow-gate ledger or an allowlist entry with a BLOCKER -- no
-third state. The 39 real-run-blocked paths had BLOCKER-shaped reasons that
-validated, but only inside .ci/shadow/w7p5a-status.json, a status file nothing
-in CI reads. This gate reads .ci/policy/.w7p5a-real-run-blocklist instead
-(BLOCKER-gated through the canonical rediacc_ci.core.allowlist validator, same
-as every other .ci/policy/ mechanism) and checks it in BOTH directions against
-the box's own tracker, so the "no third state" acceptance is an assertion a
-machine makes, not a claim a status file's prose makes on its own behalf.
+third state. The 39 real-run-blocked paths had BLOCKER-shaped reasons that validated, but only inside .ci/shadow/w7p5a-status.json, a status file nothing in CI reads. This gate reads .ci/policy/.w7p5a-real-run-blocklist instead (BLOCKER-gated through the canonical rediacc_ci.core.allowlist validator, same as every other .ci/policy/ mechanism) and checks it in BOTH directions
+against the box's own tracker, so the "no third state" acceptance is an assertion a machine makes, not a claim a status file's prose makes on its own behalf.
 
-LIVENESS IS IN-GATE (the `.runner-advice-allowlist` / `.profiler-coverage-allowlist`
-precedent in docs/agent-reference/suppressions.md, not a
-check-suppression-liveness.ts probe): the oracle is whether
-.ci/shadow/w7p5a-status.json still records the path as "blocked" rather than
+LIVENESS IS IN-GATE (the `.runner-advice-allowlist` / `.profiler-coverage-allowlist` precedent in docs/agent-reference/suppressions.md, not a check-suppression-liveness.ts probe): the oracle is whether .ci/shadow/w7p5a-status.json still records the path as "blocked" rather than
 "ledger". An entry whose path graduated to a K=5 ledger is stale here and must
 be removed by whoever did that work -- not folded into the baseline.
 
-Two vacuity refusals distinct from the four regular findings: zero entries in
-the allowlist, and a missing or unparseable status.json. Both are exit 1 with
-the fix named, never a silent pass.
+Two vacuity refusals distinct from the four regular findings: zero entries in the allowlist, and a missing or unparseable status.json. Both are exit 1 with the fix named, never a silent pass.
 
-Exit 0: every entry validates, every path still exists, no entry has
-graduated to a ledger, and the allowlist and the status file's "blocked" set
-are the same set. Exit 1 otherwise, naming every finding. Exit 2 when the
-gate's own --selftest fails (controls_first convention).
+Exit 0: every entry validates, every path still exists, no entry has graduated to a ledger, and the allowlist and the status file's "blocked" set are the same set. Exit 1 otherwise, naming every finding. Exit 2 when the gate's own --selftest fails (controls_first convention).
 """
 
 from __future__ import annotations

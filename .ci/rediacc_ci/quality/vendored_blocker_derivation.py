@@ -2,9 +2,7 @@
 
 WHAT WAS ALREADY TRUE BEFORE THIS FILE, so a reader can see what is new.
 
-`.ci/breakpoint/lib/breakpoint-blocker.sh` is a deliberately reduced copy of the
-one BLOCKER convention, vendored into a directory invariant 8 says nobody writes
-to. Two instruments already watch it:
+`.ci/breakpoint/lib/breakpoint-blocker.sh` is a deliberately reduced copy of the one BLOCKER convention, vendored into a directory invariant 8 says nobody writes to. Two instruments already watch it:
 
   * `.ci/scripts/test/gates/test-breakpoint-portability.sh` `check_subset`
     asserts `BREAKPOINT_LOW_EFFORT_BLOCKERS` is contained in the bash canonical's
@@ -15,14 +13,8 @@ to. Two instruments already watch it:
     implementations over a 20-case corpus and pins the vendored copy as
     differing on exactly FIVE of them.
 
-THE GAP IS THE WORD "EXACTLY FIVE". It is a magic number. Nothing says WHICH
-five, nothing says why, and nothing notices when the number stays five while the
-membership changes -- the composition trap, one row in and one row out. Worse,
-two of the five are a different KIND of difference from the other three and the
-corpus cannot tell them apart: three are two implementations rejecting the same
-reason for different stated reasons, and two are the vendored copy ACCEPTING a
-reason the canonical one REFUSES. Only the second kind is a hole in a
-suppression gate.
+THE GAP IS THE WORD "EXACTLY FIVE". It is a magic number. Nothing says WHICH five, nothing says why, and nothing notices when the number stays five while the membership changes -- the composition trap, one row in and one row out. Worse, two of the five are a different KIND of difference from the other three and the corpus cannot tell them apart: three are two implementations
+rejecting the same reason for different stated reasons, and two are the vendored copy ACCEPTING a reason the canonical one REFUSES. Only the second kind is a hole in a suppression gate.
 
 SO THE CLAIM HERE IS ABOUT THE LISTS, AND THE CORPUS IS ITS CONSEQUENCE:
 
@@ -39,11 +31,7 @@ SO THE CLAIM HERE IS ABOUT THE LISTS, AND THE CORPUS IS ITS CONSEQUENCE:
      non-empty. A derivation that explains nothing because one class is empty is
      not a derivation.
 
-AND THE GATE'S OWN INNOCENCE, because invariant 8 is the reason this is a
-separate instrument rather than an addition to a test that already sources the
-vendored file. `.ci/breakpoint/` is read and hashed here, never written:
-sha256 is taken BEFORE and AFTER the body, and both are compared to the row in
-`.ci/breakpoint/MANIFEST.sha256`. Three separate claims, deliberately:
+AND THE GATE'S OWN INNOCENCE, because invariant 8 is the reason this is a separate instrument rather than an addition to a test that already sources the vendored file. `.ci/breakpoint/` is read and hashed here, never written: sha256 is taken BEFORE and AFTER the body, and both are compared to the row in `.ci/breakpoint/MANIFEST.sha256`. Three separate claims, deliberately:
 
   before == manifest   the copy this gate reasoned about is the vendored one, so
                        its verdict is about the artifact and not about somebody's
@@ -57,8 +45,7 @@ sha256 is taken BEFORE and AFTER the body, and both are compared to the row in
                        it costs a line and assumes the manifest did not change
                        under us.
 
-Nothing here mutates anything. The perturbation controls in `selftest()` build
-their own temporary copies and never name the real directory as a write target.
+Nothing here mutates anything. The perturbation controls in `selftest()` build their own temporary copies and never name the real directory as a write target.
 """
 
 from __future__ import annotations
@@ -107,11 +94,7 @@ def sha256_of(path: pathlib.Path) -> str:
 def manifest_digest(manifest: pathlib.Path, row: str) -> str:
     """The pinned digest for one row, or a refusal naming what was missing.
 
-    A MISSING MANIFEST IS THE CHEAPEST FREE PASS AVAILABLE, which is why it is a
-    refusal rather than a skip: `test-breakpoint-portability.sh` already records
-    that deleting `MANIFEST.sha256` is the least-effort way to make a diverged
-    copy look clean, and a gate that shrugged at an absent pin would hand that
-    back.
+    A MISSING MANIFEST IS THE CHEAPEST FREE PASS AVAILABLE, which is why it is a refusal rather than a skip: `test-breakpoint-portability.sh` already records that deleting `MANIFEST.sha256` is the least-effort way to make a diverged copy look clean, and a gate that shrugged at an absent pin would hand that back.
     """
     if not manifest.is_file():
         raise RefusalError(
@@ -134,10 +117,7 @@ def manifest_digest(manifest: pathlib.Path, row: str) -> str:
 def parse_array(source: str, name: str) -> list[str]:
     """Every double-quoted member of `readonly <name>=( ... )`, in order.
 
-    Comments are stripped FIRST. The vendored file's array is preceded and
-    interleaved with prose that quotes phrases (`the npm-audit specific ones
-    ("no upstream fix", "dev dep") are dropped`), and a naive quote scan would
-    read those back as members and report the list as a SUPERSET of itself.
+    Comments are stripped FIRST. The vendored file's array is preceded and interleaved with prose that quotes phrases (`the npm-audit specific ones ("no upstream fix", "dev dep") are dropped`), and a naive quote scan would read those back as members and report the list as a SUPERSET of itself.
     """
     match = re.search(
         r"^readonly\s+%s=\(\s*(.*?)^\)" % re.escape(name), source, re.DOTALL | re.MULTILINE
@@ -156,10 +136,7 @@ def parse_min_length(source: str, name: str) -> int | None:
 def array_names(source: str) -> list[str]:
     """Every `readonly NAME=(` array in the file. The census the substring claim needs.
 
-    Stated as "which arrays exist" rather than "is there an array called
-    SUBSTRINGS", because the claim being defended is that the vendored copy has
-    ONE list. A second list under any name is the thing that would make the
-    derivation below wrong, whatever it is called.
+    Stated as "which arrays exist" rather than "is there an array called SUBSTRINGS", because the claim being defended is that the vendored copy has ONE list. A second list under any name is the thing that would make the derivation below wrong, whatever it is called.
     """
     return re.findall(r"^readonly\s+(\w+)=\(", source, re.MULTILINE)
 
@@ -186,11 +163,9 @@ class Case:
 def parse_corpus(source: str) -> list[Case]:
     """The `<id>|<reason>|<ts>|<sh>|<bp>` heredoc, as rows.
 
-    THE HEREDOC IS THE RECORD AND THE PARSE MUST NOT BE CLEVER. The corpus gate
-    states in its own header that no field may contain a `|`, so a five-way split
+    THE HEREDOC IS THE RECORD AND THE PARSE MUST NOT BE CLEVER. The corpus gate states in its own header that no field may contain a `|`, so a five-way split
     is exact; a row that does not split into five is returned to the caller as a
-    refusal rather than skipped, because a silently dropped row is a case this
-    gate would then claim to have derived.
+    refusal rather than skipped, because a silently dropped row is a case this gate would then claim to have derived.
     """
     # ANCHORED ON THE VARIABLE NAME AND TOLERANT OF WHAT FOLLOWS THE REDIRECT. The first draft matched `<<'EOF'\n` and found nothing, because the real line is `read -r -d '' CORPUS <<'EOF' || true` -- the `|| true` sits between the redirect and the newline. That parsed to zero rows, which the refusal caught and a laxer gate would have reported as a clean run over an empty corpus.
     match = re.search(r"CORPUS\s*<<'EOF'[^\n]*\n(.*?)\nEOF\n", source, re.DOTALL)
@@ -216,10 +191,7 @@ def parse_corpus(source: str) -> list[Case]:
 def canonical_verdict(reason: str) -> str:
     """What the ONE validator says, from the canonical implementation itself.
 
-    This calls `rediacc_ci.core.allowlist`, it does not re-implement it. The
-    corpus's `sh` column was recorded by driving the live bash reader, so
-    comparing the two is a real cross-check between the canonical module and the
-    behaviour the corpus froze, not a tautology.
+    This calls `rediacc_ci.core.allowlist`, it does not re-implement it. The corpus's `sh` column was recorded by driving the live bash reader, so comparing the two is a real cross-check between the canonical module and the behaviour the corpus froze, not a tautology.
     """
     rejection = allowlist.validate_reason("entry", reason, "corpus")
     return "accept" if rejection is None else "reject:%s" % rejection.kind
@@ -229,11 +201,7 @@ def vendored_verdict(reason: str, phrases: frozenset[str], min_length: int) -> s
     """What the vendored copy says, modelled from the two rules it has.
 
     THE MODEL IS FOUR LINES BECAUSE THE VENDORED FILE IS FOUR LINES OF LOGIC:
-    normalize, exact-match the one phrase list, then the length floor. It is a
-    MODEL and not an import (the original is bash and invariant 8 forbids
-    sourcing it from here), so its fidelity is not assumed: `run()` asserts it
-    reproduces the recorded `bp` column for every corpus row, and a model that
-    stopped describing the file fails there before any derivation is reported.
+    normalize, exact-match the one phrase list, then the length floor. It is a MODEL and not an import (the original is bash and invariant 8 forbids sourcing it from here), so its fidelity is not assumed: `run()` asserts it reproduces the recorded `bp` column for every corpus row, and a model that stopped describing the file fails there before any derivation is reported.
     """
     normalized = allowlist.normalize_reason(reason)
     if normalized in phrases:

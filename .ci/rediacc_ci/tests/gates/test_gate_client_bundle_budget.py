@@ -2,44 +2,25 @@ r"""Port of `.ci/scripts/test/gates/test-client-bundle-budget.sh`.
 
 `scripts/gates/check-client-bundle-budget.ts`, and, crucially, a MUTANT of it.
 
-WHY THIS EXISTS. That gate was green for as long as it had existed while
-under-reporting the homepage by 124,673 B. `importSpecifiers` required whitespace
-after `import`, which minified side-effect imports do not have
+WHY THIS EXISTS. That gate was green for as long as it had existed while under-reporting the homepage by 124,673 B. `importSpecifiers` required whitespace after `import`, which minified side-effect imports do not have
 (`import"./x.js";import"./y.js";`), so the walk dead-ended at a 129-byte facade
-chunk and never saw the 122,110 B video player every homepage visitor downloads.
-It reported 451,621 B for a page shipping 576,294 B, and printed a checkmark.
+chunk and never saw the 122,110 B video player every homepage visitor downloads. It reported 451,621 B for a page shipping 576,294 B, and printed a checkmark.
 
 The gate's own fixture is why nothing caught it: it only ever wrote
 `import { x } from "./heavy.js"` -- spaced, and via `from`. A fixture that never
 writes the shape the real bundler emits cannot fail on it.
 
-So the case that matters here is the MUTANT: revert the one quantifier and the
-selftest must go red and NAME the facade plant. Without it the plants are
-unfalsifiable, and their first draft genuinely was -- they asserted on chunks the
-fixture already reached by another path, so they passed against the very defect
-they were written for.
+So the case that matters here is the MUTANT: revert the one quantifier and the selftest must go red and NAME the facade plant. Without it the plants are unfalsifiable, and their first draft genuinely was -- they asserted on chunks the fixture already reached by another path, so they passed against the very defect they were written for.
 
-WHERE THE MUTANT LIVES. Outside the repo, with `node_modules` SYMLINKED in.
-Writing it to `scripts/` was the twin's first draft and `check:ci-pool-writer-safety`
-caught it: run-all.sh would then schedule that file in the shared pool beside tests
-reading the same paths. The gate imports only node builtins plus `@rediacc/locales`,
-so one symlink resolves everything.
+WHERE THE MUTANT LIVES. Outside the repo, with `node_modules` SYMLINKED in. Writing it to `scripts/` was the twin's first draft and `check:ci-pool-writer-safety` caught it: run-all.sh would then schedule that file in the shared pool beside tests reading the same paths. The gate imports only node builtins plus `@rediacc/locales`, so one symlink resolves everything.
 
-THE THIRD ARM IS REIMPLEMENTED, and the two spellings agree by measurement rather
-than by inspection. The twin counts the real build's no-space edges with
+THE THIRD ARM IS REIMPLEMENTED, and the two spellings agree by measurement rather than by inspection. The twin counts the real build's no-space edges with
 `grep -rohE 'import"[^"]+"' | wc -l`; this port walks the same two directories with
-a BYTES regex applied LINE BY LINE. Line-by-line is what makes them the same
-question: `grep` cannot match across a newline, while Python's `[^"]` matches one
-happily, so a whole-file `findall` would count edges grep never sees. Bytes rather
-than decoded text because a bundle is not guaranteed to be valid UTF-8 and a decode
-error is not a reason to report zero. Measured on this tree 2026-09-07: both
-spellings answer 49 in `dist/assets` and 0 in `dist/scripts`.
+a BYTES regex applied LINE BY LINE. Line-by-line is what makes them the same question: `grep` cannot match across a newline, while Python's `[^"]` matches one happily, so a whole-file `findall` would count edges grep never sees. Bytes rather than decoded text because a bundle is not guaranteed to be valid UTF-8 and a decode error is not a reason to report zero. Measured on this
+tree 2026-09-07: both spellings answer 49 in `dist/assets` and 0 in `dist/scripts`.
 
-WHY IT IS A LOUD SKIP AND NOT A FAILURE when `dist` is absent, which is the one
-place this directory's "unknown is a failure" rule is deliberately not applied:
-the arm asks a question about a BUILD ARTIFACT, and a tree that has not been built
-has no answer rather than an unknown one. The twin says so in its own output and
-the port keeps that word-for-word, so the reader sees that the arm asserted nothing.
+WHY IT IS A LOUD SKIP AND NOT A FAILURE when `dist` is absent, which is the one place this directory's "unknown is a failure" rule is deliberately not applied: the arm asks a question about a BUILD ARTIFACT, and a tree that has not been built has no answer rather than an unknown one. The twin says so in its own output and the port keeps that word-for-word, so the reader sees that
+the arm asserted nothing.
 
 NO `xdist_group`. Each case runs `tsx` in a subprocess against its own `tmp_path`;
 the real-dist arm only reads. Nothing is bound and no module global is mutated.
@@ -72,10 +53,7 @@ DIST_SUBDIRS = ("assets", "scripts")
 def run_tsx(gate, script, *args: str) -> harness.RunResult:
     """Drive a TypeScript program through the workspace `npx tsx`, from the repo root.
 
-    THE EXISTENCE REFUSAL IS NOT DECORATION. Both callers hand this a path, and one
-    of them is a MUTANT written a moment earlier. A mutant that failed to be written
-    would make `tsx` exit non-zero for a reason that has nothing to do with the
-    plant, and the case asserting `exit 1` would go green on it.
+    THE EXISTENCE REFUSAL IS NOT DECORATION. Both callers hand this a path, and one of them is a MUTANT written a moment earlier. A mutant that failed to be written would make `tsx` exit non-zero for a reason that has nothing to do with the plant, and the case asserting `exit 1` would go green on it.
     """
     if not pathlib.Path(script).is_file():
         gate.log_fail(
@@ -145,8 +123,7 @@ def test_mutant_reverts_the_fix(gate, tmp_path):
 def test_real_dist_has_the_shape(gate):
     """ANTI-VACUITY against the real build, when one exists.
 
-    49 no-space edges across 20 files in the dist as measured on 2026-09-03, and
-    49 again on 2026-09-07. A floor of ONE is anti-vacuous and goes red the
+    49 no-space edges across 20 files in the dist as measured on 2026-09-03, and 49 again on 2026-09-07. A floor of ONE is anti-vacuous and goes red the
     instant the regex regresses; an absent dist is a LOUD skip, never a silent
     pass.
     """
@@ -174,11 +151,7 @@ def test_the_reimplemented_count_agrees_with_grep(gate):
     """ADDED BY THE PORT, because the arm above stopped being a `grep`.
 
     The twin runs `grep -rohE 'import\"[^\"]+\"' | wc -l`; this module runs a
-    Python regex. Two spellings of one question is two answers, and the expensive
-    half is that both look right, so the two are driven side by side on the real
-    dist and required to agree. It also catches the direction a floor of one
-    cannot: a Python count that is far too HIGH (the whole-file `[^\"]`-spans-
-    newlines mistake) would satisfy the floor and be wrong.
+    Python regex. Two spellings of one question is two answers, and the expensive half is that both look right, so the two are driven side by side on the real dist and required to agree. It also catches the direction a floor of one cannot: a Python count that is far too HIGH (the whole-file `[^\"]`-spans- newlines mistake) would satisfy the floor and be wrong.
     """
     gate.log_test("the Python count and the twin's grep must answer the same number")
     if not DIST.is_dir():

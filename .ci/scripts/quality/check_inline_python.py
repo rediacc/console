@@ -1,31 +1,16 @@
 #!/usr/bin/env python3
 """Refuse Python source embedded inside JavaScript/TypeScript.
 
-WHY THIS EXISTS. A ruff gate landed on 2026-08-06 that lints every TRACKED .py
-file. Python living inside a JS/TS string literal is invisible to it: never
-linted, never formatted, never type-checked by anything at all. That blind spot
-was not hypothetical -- packages/cli/src/remote/vscode/bootstrap.ts held a
-130-line, 4871-character Python program in a template literal, and four of the
-six values interpolated into it went in unescaped. Python's own parser confirms
+WHY THIS EXISTS. A ruff gate landed on 2026-08-06 that lints every TRACKED .py file. Python living inside a JS/TS string literal is invisible to it: never linted, never formatted, never type-checked by anything at all. That blind spot was not hypothetical -- packages/cli/src/remote/vscode/bootstrap.ts held a 130-line, 4871-character Python program in a template literal, and four of
+the six values interpolated into it went in unescaped. Python's own parser confirms
 the consequence: a universalUser of `'; import os; os.system('id'); x='` parses
-cleanly and turns the middle into executable Python, which then runs on a remote
-host under `sudo -u`. Nothing in the repo could have seen it, because no tool
-looks inside a template literal.
+cleanly and turns the middle into executable Python, which then runs on a remote host under `sudo -u`. Nothing in the repo could have seen it, because no tool looks inside a template literal.
 
-THE RULE, and why it is drawn this way. "Mentions Python" is far too wide: of
-999 tracked JS/TS files, four match /python3?/ and THREE of those are innocent
-(an interpreter binary name in a config default, the word "python" inside a word
-list, and the string "check:ci-python-lint"). A rule that flagged those would be
-turned off within a week. So a file is flagged only when a string in it looks
-like Python SOURCE -- two or more distinct statement-shaped signals, each at the
-start of a line, inside one quoted region. Naming the interpreter is not a
+THE RULE, and why it is drawn this way. "Mentions Python" is far too wide: of 999 tracked JS/TS files, four match /python3?/ and THREE of those are innocent (an interpreter binary name in a config default, the word "python" inside a word list, and the string "check:ci-python-lint"). A rule that flagged those would be turned off within a week. So a file is flagged only when a string
+in it looks like Python SOURCE -- two or more distinct statement-shaped signals, each at the start of a line, inside one quoted region. Naming the interpreter is not a
 finding; shipping a program is.
 
-THIS IS A DETECTOR, NOT A PARSER, and the difference is stated rather than
-hidden: it reads quoted regions with a small scanner instead of a JS grammar. It
-can therefore be fooled by source that assembles Python from fragments, and it
-is not asked to catch that. What it does catch is the shape the incident
-actually took -- a readable program pasted into a template literal -- and it
+THIS IS A DETECTOR, NOT A PARSER, and the difference is stated rather than hidden: it reads quoted regions with a small scanner instead of a JS grammar. It can therefore be fooled by source that assembles Python from fragments, and it is not asked to catch that. What it does catch is the shape the incident actually took -- a readable program pasted into a template literal -- and it
 catches it before review rather than after.
 
 Run modes:
@@ -33,12 +18,7 @@ Run modes:
     check_inline_python.py --file P   judge ONE file, for the pre-edit hook
     check_inline_python.py --selftest controls only, no repo scan
 
----- gate ----
-step: No inline Python in JS/TS
-needs: none
-id: check:ci-no-inline-python
-selftest: true
----- end gate ----
+---- gate ---- step: No inline Python in JS/TS needs: none id: check:ci-no-inline-python selftest: true ---- end gate ----
 """
 
 import argparse

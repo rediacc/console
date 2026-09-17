@@ -2,11 +2,7 @@
 
 Tests for `scripts/gates/check-hydration-clean.ts`.
 
-The gate is RED on the real tree today: four React islands compute a different
-initial state on the server than in the browser, so React discards their
-server-rendered trees. The fix belongs to a later wave, so this test does NOT pin
-the verdict -- pinning `exit 1` would turn the gate red the day the bug is fixed.
-It pins the three properties that make the verdict worth reading:
+The gate is RED on the real tree today: four React islands compute a different initial state on the server than in the browser, so React discards their server-rendered trees. The fix belongs to a later wave, so this test does NOT pin the verdict -- pinning `exit 1` would turn the gate red the day the bug is fixed. It pins the three properties that make the verdict worth reading:
 
   1. the gate can FAIL -- its inline controls plant the InstallMethods shape AND
      the indirect ThemeToggle shape, and require both to be reported;
@@ -14,11 +10,7 @@ It pins the three properties that make the verdict worth reading:
   3. the real scan really ran, over a component count above its floor, and refuses
      an empty tree rather than reporting it clean.
 
-THE MUTANT IS BUILT IN A TEMPDIR AND THE REAL GATE IS NEVER WRITTEN TO, and the
-port adds the refusal the twin lacks: a `sed` whose pattern stopped matching writes
-a byte-identical copy whose selftest PASSES, which would make
-`test_the_control_can_actually_fail` red for the opposite of its stated reason. The
-occurrence count is asserted before the mutant is run.
+THE MUTANT IS BUILT IN A TEMPDIR AND THE REAL GATE IS NEVER WRITTEN TO, and the port adds the refusal the twin lacks: a `sed` whose pattern stopped matching writes a byte-identical copy whose selftest PASSES, which would make `test_the_control_can_actually_fail` red for the opposite of its stated reason. The occurrence count is asserted before the mutant is run.
 """
 
 from rediacc_ci import paths

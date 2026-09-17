@@ -1,30 +1,16 @@
 """`rediacc_ci.core.review_budget` against the live `.ci/scripts/lib/common.sh`.
 
-THE TWIN IS LIVE AND MERGE-BLOCKING. `.ci/scripts/review/review-status.sh:343`
-and `.ci/scripts/review/claude-review-gate.sh:858` both call
-`review_spend_total`, and `.github/workflows/review-status.yml:115` turns the
-first one's verdict into the required "Review Complete" check run. So these
-comparisons source the real file.
+THE TWIN IS LIVE AND MERGE-BLOCKING. `.ci/scripts/review/review-status.sh:343` and `.ci/scripts/review/claude-review-gate.sh:858` both call `review_spend_total`, and `.github/workflows/review-status.yml:115` turns the first one's verdict into the required "Review Complete" check run. So these comparisons source the real file.
 
 THE AWK IS COMPARED AGAINST THE REAL AWK, EXTRACTED FROM THE TWIN AT TEST TIME.
-`review_attempt_states` cannot be driven end to end without `gh` and a live PR,
-but the interesting half of it is a pure awk program, and `_twin_awk()` below
-pulls that program out of the twin's own source rather than pasting a copy into
+`review_attempt_states` cannot be driven end to end without `gh` and a live PR, but the interesting half of it is a pure awk program, and `_twin_awk()` below pulls that program out of the twin's own source rather than pasting a copy into
 this file. A copy would agree with itself forever; the extraction goes red when
 the twin's awk changes, which is exactly when a reader should look.
 
 DEFECT 1 WAS FIXED 2026-09-10, IN THE TWIN, IN LOCKSTEP WITH THIS FILE.
-`review_report_count`, `review_attempt_states`, `review_spend_total` and
-`review_spent_attempt_count` now route through `gh_retry` (the exact fix their
-own file already carried 160 lines above them) and propagate a `gh` failure as
-a real nonzero return instead of `... || true`. `pr_diff_loc` is UNCHANGED and
-UNCHANGED ON PURPOSE: its own comment states failing to 0 is the deliberate,
-safe direction (an unreadable PR lands in the smallest review-cost tier), which
-is the opposite of the other three's problem (a swallowed failure zeroes the
-NUMERATOR, so the cap never arrives and every push pays for another review).
-`test_the_twin_now_fails_loudly_on_a_gh_failure` drives the TWIN with a failing
-`gh` on PATH and asserts the three fixed functions now exit nonzero while
-`pr_diff_loc` still answers `0` at exit 0. `test_the_port_refuses_rather_than_
+`review_report_count`, `review_attempt_states`, `review_spend_total` and `review_spent_attempt_count` now route through `gh_retry` (the exact fix their own file already carried 160 lines above them) and propagate a `gh` failure as a real nonzero return instead of `... || true`. `pr_diff_loc` is UNCHANGED and UNCHANGED ON PURPOSE: its own comment states failing to 0 is the
+deliberate, safe direction (an unreadable PR lands in the smallest review-cost tier), which is the opposite of the other three's problem (a swallowed failure zeroes the NUMERATOR, so the cap never arrives and every push pays for another review). `test_the_twin_now_fails_loudly_on_a_gh_failure` drives the TWIN with a failing `gh` on PATH and asserts the three fixed functions now
+exit nonzero while `pr_diff_loc` still answers `0` at exit 0. `test_the_port_refuses_rather_than_
 answering_zero` drives the PORT the same way; both sides now agree.
 """
 
@@ -146,9 +132,7 @@ def test_class_is_infra_agrees_with_the_twin(cls):
 def test_no_infra_class_contains_a_space():
     """common.sh:655-660 can only state this rule in a comment. Here it is checked.
 
-    "Space-separated, and therefore SINGLE-TOKEN ONLY: the membership test word-
-    splits this string, so a multi-word class added here would silently never
-    match."
+    "Space-separated, and therefore SINGLE-TOKEN ONLY: the membership test word- splits this string, so a multi-word class added here would silently never match."
     """
     assert rb.INFRA_CLASSES
     for cls in rb.INFRA_CLASSES:
@@ -167,9 +151,7 @@ def test_the_unclassified_fallback_is_deliberately_not_infra():
 def _twin_awk_program() -> str:
     """Extract the awk program from `review_attempt_states` in the live twin.
 
-    NOT A PASTED COPY. A copy would agree with itself forever. This reads the
-    real function body and pulls the single-quoted awk script out of it, so a
-    change to the twin's awk turns these tests red.
+    NOT A PASTED COPY. A copy would agree with itself forever. This reads the real function body and pulls the single-quoted awk script out of it, so a change to the twin's awk turns these tests red.
     """
     source = TWIN.read_text(encoding="utf-8")
     match = re.search(r"^review_attempt_states\(\) \{(.*?)^\}", source, re.DOTALL | re.MULTILINE)
@@ -431,10 +413,7 @@ def failing_gh(tmp_path):
 def test_the_twin_now_fails_loudly_on_a_gh_failure(failing_gh):
     """DEFECT 1, FIXED 2026-09-10. If this goes red, the fix has regressed.
 
-    Three functions now route through `gh_retry`, so a failing `gh` (pipefail
-    on, `gh_retry` returning 1) propagates as a real nonzero return instead of
-    being discarded by `|| true`. `pr_diff_loc` is deliberately UNCHANGED: its
-    own comment says failing to 0 is the safe, intended direction there.
+    Three functions now route through `gh_retry`, so a failing `gh` (pipefail on, `gh_retry` returning 1) propagates as a real nonzero return instead of being discarded by `|| true`. `pr_diff_loc` is deliberately UNCHANGED: its own comment says failing to 0 is the safe, intended direction there.
     """
     env = {
         "PATH": "%s:/usr/bin:/bin" % failing_gh,
@@ -459,11 +438,7 @@ def test_the_twin_now_fails_loudly_on_a_gh_failure(failing_gh):
 def test_the_twin_now_fails_loudly_on_an_unbound_variable(failing_gh):
     """DEFECT 1's second face, also closed by the same fix.
 
-    Before the fix, `set -u` firing inside the command substitution left
-    `posted` empty and `$(( + 4))` silently evaluated to 4 -- a hard abort
-    produced a number. The new `|| return 1` on the assignment itself now
-    catches that too, since bash gives a failed command substitution's exit
-    status to the assignment statement that captured it.
+    Before the fix, `set -u` firing inside the command substitution left `posted` empty and `$(( + 4))` silently evaluated to 4 -- a hard abort produced a number. The new `|| return 1` on the assignment itself now catches that too, since bash gives a failed command substitution's exit status to the assignment statement that captured it.
     """
     rc, _out, err = twin(
         'review_spend_total 553 P "" 4',
@@ -477,10 +452,7 @@ def test_the_twin_now_fails_loudly_on_an_unbound_variable(failing_gh):
 def test_the_file_now_uses_the_fix_it_used_to_carry_unused():
     """`_gh_probe` / `gh_retry` / `gh_json` are 160 lines ABOVE these four.
 
-    Before the fix this asserted the swallow sites did NOT use them, which
-    was the contradiction DEFECT 1 named. Now it asserts the opposite: the
-    three repaired functions adopted the pattern the file already had.
-    `pr_diff_loc` deliberately did not, and is asserted to still swallow.
+    Before the fix this asserted the swallow sites did NOT use them, which was the contradiction DEFECT 1 named. Now it asserts the opposite: the three repaired functions adopted the pattern the file already had. `pr_diff_loc` deliberately did not, and is asserted to still swallow.
     """
     source = TWIN.read_text(encoding="utf-8")
     assert "_gh_probe()" in source

@@ -1,13 +1,9 @@
 """Port of `.ci/scripts/test/gates/test-policy-path.sh`.
 
-`scripts/lib/policy-paths.ts` is the ONE seam that says where a suppression
-policy file lives. Fifteen allow / block / exempt files used to sit at the
-repository root with their readers mostly hard-coding that, and four of them read
-a BARE RELATIVE NAME which was correct only because the reader happened to `cd`
-to the repo root first. The move to `.ci/policy` landed 2026-09-06 at b80552370.
+`scripts/lib/policy-paths.ts` is the ONE seam that says where a suppression policy file lives. Fifteen allow / block / exempt files used to sit at the repository root with their readers mostly hard-coding that, and four of them read a BARE RELATIVE NAME which was correct only because the reader happened to `cd` to the repo root first. The move to `.ci/policy` landed 2026-09-06 at
+b80552370.
 
-THE THREE PROPERTIES PINNED HERE, each of them a refusal, and they are the
-twin's words because they are the reason the seam exists:
+THE THREE PROPERTIES PINNED HERE, each of them a refusal, and they are the twin's words because they are the reason the seam exists:
 
   1. PURE JOIN. `policyPath()` never touches the filesystem, so it answers the
      same string against a root containing nothing at all. A caller that cannot
@@ -20,21 +16,13 @@ twin's words because they are the reason the seam exists:
      plausible path for a typo reads to every consumer here as an EMPTY
      allowlist, which is indistinguishable from "nothing is suppressed".
 
-Plus the liveness assertion that keeps the name list honest: every name the
-module knows must resolve to a file that is there TODAY.
+Plus the liveness assertion that keeps the name list honest: every name the module knows must resolve to a file that is there TODAY.
 
-WHY THE MODULE'S OWN CLI RATHER THAN AN IMPORT, carried over verbatim from the
-twin's reasoning. An earlier bash version generated a temp `.ts` that imported
+WHY THE MODULE'S OWN CLI RATHER THAN AN IMPORT, carried over verbatim from the twin's reasoning. An earlier bash version generated a temp `.ts` that imported
 the module; that needed four more exports than any TypeScript caller wants, and
-`lint:unused` was right to refuse them. The workspace `tsx` binary is called
-directly rather than through `npx`, which also skips npx's re-resolution -- and
-stdout and stderr are kept SEPARATE, because npx prints an unrelated "Unknown
-project config minimum-release-age" warning on stderr and the first run of the
-bash file compared a path against that warning.
+`lint:unused` was right to refuse them. The workspace `tsx` binary is called directly rather than through `npx`, which also skips npx's re-resolution -- and stdout and stderr are kept SEPARATE, because npx prints an unrelated "Unknown project config minimum-release-age" warning on stderr and the first run of the bash file compared a path against that warning.
 
-NO `xdist_group`. Every case here reads the real tree and writes only into its
-own `mktemp -d`, and the one filesystem mutation (the fixture root) is created
-and removed inside a single case. Nothing is bound, nothing global is mutated.
+NO `xdist_group`. Every case here reads the real tree and writes only into its own `mktemp -d`, and the one filesystem mutation (the fixture root) is created and removed inside a single case. Nothing is bound, nothing global is mutated.
 """
 
 import pathlib
@@ -68,8 +56,7 @@ def pp(gate, *args: str) -> harness.RunResult:
 def all_paths(gate) -> list[str]:
     """`pp --all-paths`, one path per line.
 
-    ONE process, not one per name. The obvious loop calling `--path <name>`
-    fifteen times cost fifteen node startups and made the bash twin the
+    ONE process, not one per name. The obvious loop calling `--path <name>` fifteen times cost fifteen node startups and made the bash twin the
     third-slowest gate in the quick lane; the answers are identical because
     `--all-paths` is `policyPath()` mapped over the same name list.
     """

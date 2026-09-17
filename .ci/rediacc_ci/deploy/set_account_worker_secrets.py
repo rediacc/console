@@ -1,17 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/set-account-worker-secrets.sh`.
 
-Pushes twenty-nine runtime secrets into ONE regional account Worker in a single
-`wrangler secret bulk` call. The twin's header carries the reason the call is
-bulk and not twenty-nine `secret put`s: each `put` mints a new Worker version,
-and on an assets-bound Worker a new version disassociates the static assets the
-deploy just uploaded.
+Pushes twenty-nine runtime secrets into ONE regional account Worker in a single `wrangler secret bulk` call. The twin's header carries the reason the call is bulk and not twenty-nine `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
 
-THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the
-other two are the whole content of the port. `set-preview-worker-secrets.sh`
-(15 keys) and `set-www-worker-secrets.sh` (24 keys) MARSHAL: they read a name,
-they write that name. This one DECIDES, four times over, and every decision is a
-place a port can be quietly wrong:
+THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the other two are the whole content of the port. `set-preview-worker-secrets.sh` (15 keys) and `set-www-worker-secrets.sh` (24 keys) MARSHAL: they read a name, they write that name. This one DECIDES, four times over, and every decision is a place a port can be quietly wrong:
 
   1. CHANNEL. `TARGET=stable` takes the Stripe key and the region's webhook
      secret; anything else is the edge channel, where Stripe is deliberately
@@ -40,27 +32,13 @@ SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS. `argv` is visible
 in `ps` and in some log surfaces; a value travels env -> `jq --arg` -> the pipe
 into `wrangler` and nowhere else.
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` is the only external tool that
-carries a credential, so the differential
-(`.ci/rediacc_ci/tests/test_deploy_set_account_worker_secrets.py`) puts a
-RECORDING FAKE `npx` on a scratch PATH that logs its exact argv AND the bytes on
-its stdin. As with the www sibling the document IS the evidence on the happy
-path: this twin prints nothing of its own when it succeeds, so a port that sent
-the wrong bucket, the wrong region's SES key, or an un-jurisdictioned endpoint
-would produce byte-identical streams and exit 0.
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` is the only external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_set_account_worker_secrets.py`) puts a RECORDING FAKE `npx` on a scratch PATH that logs its exact argv AND the bytes on its stdin. As with the www sibling the document IS the evidence on the happy path: this twin prints nothing
+of its own when it succeeds, so a port that sent the wrong bucket, the wrong region's SES key, or an un-jurisdictioned endpoint would produce byte-identical streams and exit 0.
 
-`jq` IS CALLED, NOT REIMPLEMENTED, for the reason `set_preview_worker_secrets.py`
-states at length: the bytes on wrangler's stdin ARE the contract, and
-`json.dumps` differs from jq on inputs a secret can really contain (raw UTF-8
-versus `\\uXXXX`, and U+007F). A secret is opaque bytes chosen by someone else.
+`jq` IS CALLED, NOT REIMPLEMENTED, for the reason `set_preview_worker_secrets.py` states at length: the bytes on wrangler's stdin ARE the contract, and `json.dumps` differs from jq on inputs a secret can really contain (raw UTF-8 versus `\\uXXXX`, and U+007F). A secret is opaque bytes chosen by someone else.
 
-PIPEFAIL IS REPRODUCED, NOT APPROXIMATED. The twin's header (:94-98) records that
-the workflow block it came from ran under plain `bash -e` and that `-uo pipefail`
-were added because "a jq failure previously went unnoticed because wrangler's
-status won". So the run's status is the RIGHTMOST non-zero one, and `main` runs
-both halves even when jq fails. The concurrency caveat is the siblings': a
-wrangler exiting 0 without draining stdin would SIGPIPE jq in bash and cannot
-here.
+PIPEFAIL IS REPRODUCED, NOT APPROXIMATED. The twin's header (:94-98) records that the workflow block it came from ran under plain `bash -e` and that `-uo pipefail` were added because "a jq failure previously went unnoticed because wrangler's status won". So the run's status is the RIGHTMOST non-zero one, and `main` runs both halves even when jq fails. The concurrency caveat is the
+siblings': a wrangler exiting 0 without draining stdin would SIGPIPE jq in bash and cannot here.
 
 TWO DIVERGENCES, BOTH IN TEXT NOBODY PARSES, BOTH ASSERTED IN THE DIFFERENTIAL
 SO NEITHER CAN BE "FIXED" INTO AGREEMENT BY ACCIDENT.
@@ -98,8 +76,7 @@ SO NEITHER CAN BE "FIXED" INTO AGREEMENT BY ACCIDENT.
      and left. It is also the SAFE direction: the port refuses where the twin
      would deploy, rather than deploying something the twin refused.
 
-WHAT THE SIBLINGS' KNOWN DEFECTS DO HERE, checked one by one because this file is
-the copy-paste target of both:
+WHAT THE SIBLINGS' KNOWN DEFECTS DO HERE, checked one by one because this file is the copy-paste target of both:
 
   * THE GUARD LABEL IS CORRECT HERE. `set-preview-worker-secrets.sh:53` prints
     `WORKER_NAME=` for a script whose variable is `WORKER`; this twin really does
@@ -258,12 +235,8 @@ SUCCESS_IS_SILENT = True
 class ScriptRefusalError(Exception):
     """One refusal the SCRIPT ITSELF prints: some stderr lines and an exit status.
 
-    NOT `common.RefusalError`, which this module also catches. That one is the
-    library half (`require_cmd` and friends) and its lines are printed through
-    `rediacc_ci.log.error`, so they carry the `✗ ` marker. These are the twin's
-    own bare `echo ... >&2` lines and carry no marker at all. Two spellings
-    because they really are two things, and a reader who conflates them will
-    put a marker on output that has never had one.
+    NOT `common.RefusalError`, which this module also catches. That one is the library half (`require_cmd` and friends) and its lines are printed through `rediacc_ci.log.error`, so they carry the `✗ ` marker. These are the twin's own bare `echo ... >&2` lines and carry no marker at all. Two spellings because they really are two things, and a reader who conflates them will put a
+    marker on output that has never had one.
     """
 
     def __init__(self, *lines: str, code: int = 1) -> None:
@@ -287,11 +260,7 @@ class GuardError(ScriptRefusalError):
 def read_env() -> dict[str, str]:
     """Every variable the twin reads, ONE EXPLICIT `os.environ.get` PER NAME.
 
-    NO `dict(os.environ)` ALIAS, deliberately. The AST scanner behind
-    `.ci/config/python-env-registry.json` records the literal NAME at the call
-    site and cannot see through an alias, so a wholesale copy would register this
-    module as reading nothing at all while it reads thirty-two names by hand plus
-    four it constructs.
+    NO `dict(os.environ)` ALIAS, deliberately. The AST scanner behind `.ci/config/python-env-registry.json` records the literal NAME at the call site and cannot see through an alias, so a wholesale copy would register this module as reading nothing at all while it reads thirty-two names by hand plus four it constructs.
 
     UNSET AND EMPTY ARE THE SAME CASE THROUGHOUT, so a plain `str` per name is
     faithful: every read in the twin is `"${NAME:-}"`, `"${NAME:?...}"` or a
@@ -347,8 +316,7 @@ def read_env() -> dict[str, str]:
 def indirect(env: dict[str, str], prefix: str, suffix: str) -> str:
     """`var="<PREFIX>_${SUFFIX}"; "${!var:-}"`, with bash's own refusal.
 
-    Raises `ScriptRefusalError` when the constructed name is not something bash would accept
-    as a variable name, which is divergence B in the module docstring.
+    Raises `ScriptRefusalError` when the constructed name is not something bash would accept as a variable name, which is divergence B in the module docstring.
     """
     name = "%s_%s" % (prefix, suffix)
     if not IDENTIFIER.match(name):
@@ -359,11 +327,7 @@ def indirect(env: dict[str, str], prefix: str, suffix: str) -> str:
 def apply_jurisdiction(endpoint: str, jurisdiction: str) -> str:
     """Splice the R2 jurisdiction label into the host (:160-165).
 
-    An EU-jurisdiction bucket lives at `<account>.eu.r2.cloudflarestorage.com`
-    and the default host cannot see it, so a correct bucket name against the
-    default host still fails. An endpoint already carrying the jurisdictional
-    form is left alone, which is why the third clause is a NEGATIVE test rather
-    than an unconditional splice.
+    An EU-jurisdiction bucket lives at `<account>.eu.r2.cloudflarestorage.com` and the default host cannot see it, so a correct bucket name against the default host still fails. An endpoint already carrying the jurisdictional form is left alone, which is why the third clause is a NEGATIVE test rather than an unconditional splice.
     """
     if not jurisdiction:
         return endpoint
@@ -376,10 +340,7 @@ def apply_jurisdiction(endpoint: str, jurisdiction: str) -> str:
 def resolve(env: dict[str, str]) -> dict[str, str]:
     """The four decisions, in the twin's order, as jq variable -> value.
 
-    ORDER IS OBSERVABLE and it is the reason this is one function rather than
-    four: an invalid SUFFIX is refused at the FIRST indirection reached, which is
-    the Stripe webhook on stable (:115) and the SES key on edge (:124), and the
-    bucket refusal (:150) comes before every `_require_nonempty` guard.
+    ORDER IS OBSERVABLE and it is the reason this is one function rather than four: an invalid SUFFIX is refused at the FIRST indirection reached, which is the Stripe webhook on stable (:115) and the SES key on edge (:124), and the bucket refusal (:150) comes before every `_require_nonempty` guard.
     """
     target = env.get("TARGET", "")
     suffix = env.get("SUFFIX", "")
@@ -449,9 +410,7 @@ def check_nonempty(values: dict[str, str], env: dict[str, str]) -> None:
 def jq_filter() -> str:
     """The object constructor (:248-277), rebuilt from `KEYS`.
 
-    Whitespace inside a jq program does not reach the output, so this is the
-    twin's filter in meaning rather than in indentation. What MUST match is the
-    key list and its order.
+    Whitespace inside a jq program does not reach the output, so this is the twin's filter in meaning rather than in indentation. What MUST match is the key list and its order.
     """
     body = ", ".join("%s: $%s" % (key, var) for key, var, _source in KEYS)
     return "{%s}" % body
@@ -469,9 +428,7 @@ def jq_argv(values: dict[str, str]) -> list[str]:
 def _jq(argv: list[str]) -> tuple[int, str]:
     """The left half of the pipe: stdout captured, stderr INHERITED.
 
-    jq's diagnostics are the only explanation a workflow log would get if the
-    document could not be built, and the twin's header records that this status
-    used to be swallowed. Not captured here either.
+    jq's diagnostics are the only explanation a workflow log would get if the document could not be built, and the twin's header records that this status used to be swallowed. Not captured here either.
     """
     proc = subprocess.run(argv, stdout=subprocess.PIPE, text=True, check=False)
     return proc.returncode, proc.stdout

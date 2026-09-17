@@ -1,7 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-workflow-env-shell-vars.sh`.
 
-Both-ways test for the env-shell-var rule in
-`.ci/scripts/quality/check-workflows.sh`.
+Both-ways test for the env-shell-var rule in `.ci/scripts/quality/check-workflows.sh`.
 
 THE BUG IT GUARDS. GitHub does not expand shell syntax in an `env:` VALUE, only
 `${{ }}` expressions, and bash does not recursively expand a variable's value. So
@@ -9,26 +8,14 @@ THE BUG IT GUARDS. GitHub does not expand shell syntax in an `env:` VALUE, only
     env:
       SSH_KEY: $RUNNER_TEMP/renet/staging/.ssh/id_rsa
 
-reaches the script as a literal string starting with a dollar sign, and the
-failure is a baffling "chown: cannot access '$RUNNER_TEMP/renet'". Observed on
-OPS Provision, run 29830623794.
+reaches the script as a literal string starting with a dollar sign, and the failure is a baffling "chown: cannot access '$RUNNER_TEMP/renet'". Observed on OPS Provision, run 29830623794.
 
-It is specifically an INLINE-EXTRACTION hazard: inside a `run:` block the shell
-DOES expand $RUNNER_TEMP, so moving that same text into `env:` while extracting a
-script silently changes its meaning. That is exactly how it got there.
+It is specifically an INLINE-EXTRACTION hazard: inside a `run:` block the shell DOES expand $RUNNER_TEMP, so moving that same text into `env:` while extracting a script silently changes its meaning. That is exactly how it got there.
 
-WHY THIS TEST EXISTS AT ALL, and it is the reason every case below is written in
-pairs. The rule was born VACUOUS. Its first version used `\\b` for a word
-boundary, but in awk regex `\\b` is a BACKSPACE, and because it was written
-through a non-raw Python string a literal 0x08 byte landed in the script. The
-regex therefore required an actual backspace character and matched nothing, while
-the gate reported "All workflows are clean". It was caught only by planting a
-violation and watching it NOT fire. A rule that has already been silently dead
-once does not get to rely on review.
+WHY THIS TEST EXISTS AT ALL, and it is the reason every case below is written in pairs. The rule was born VACUOUS. Its first version used `\\b` for a word boundary, but in awk regex `\\b` is a BACKSPACE, and because it was written through a non-raw Python string a literal 0x08 byte landed in the script. The regex therefore required an actual backspace character and matched nothing,
+while the gate reported "All workflows are clean". It was caught only by planting a violation and watching it NOT fire. A rule that has already been silently dead once does not get to rely on review.
 
-NO `xdist_group`. Each case gets its own `mktemp -d` fixture directory, and the
-subject is driven with a per-subprocess environment rather than by mutating this
-one.
+NO `xdist_group`. Each case gets its own `mktemp -d` fixture directory, and the subject is driven with a per-subprocess environment rather than by mutating this one.
 """
 
 from rediacc_ci.tests.gates import harness, workflow_rule
@@ -172,16 +159,9 @@ def test_the_fixture_directory_is_what_is_judged(gate):
 
     Every case here claims a verdict about a fixture tree, and every one of those
     claims rests on `WORKFLOW_INLINE_ONLY=1` actually emptying GITHUB_YAMLS so the
-    banned-pattern scans become no-ops and `WORKFLOW_DIR` is the only thing
-    judged. If that switch stopped working, the rule would be reading the REAL
-    `.github/workflows` -- which is clean, and has to stay clean, so the passing
-    cases would keep passing for a reason that has nothing to do with their
-    fixtures.
+    banned-pattern scans become no-ops and `WORKFLOW_DIR` is the only thing judged. If that switch stopped working, the rule would be reading the REAL `.github/workflows` -- which is clean, and has to stay clean, so the passing cases would keep passing for a reason that has nothing to do with their fixtures.
 
-    That matters more for THIS rule than for its siblings, because this is the
-    rule that was born vacuous: an awk `\\b` that matched nothing while the gate
-    reported "All workflows are clean". A harness that reads the wrong tree
-    produces the identical shape of green.
+    That matters more for THIS rule than for its siblings, because this is the rule that was born vacuous: an awk `\\b` that matched nothing while the gate reported "All workflows are clean". A harness that reads the wrong tree produces the identical shape of green.
     """
     with harness.temp_dir() as root:
         bad = root / "bad"

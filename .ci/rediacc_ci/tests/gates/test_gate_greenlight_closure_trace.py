@@ -1,62 +1,31 @@
 """Port of `.ci/scripts/test/gates/test-greenlight-closure-trace.sh`.
 
-Completeness gate for the cross-PR greenlight closure table,
-`.ci/scripts/ci/greenlight.cjs::CLOSURES`.
+Completeness gate for the cross-PR greenlight closure table, `.ci/scripts/ci/greenlight.cjs::CLOSURES`.
 
-WHAT THIS GUARDS, and why it is a different question from `test-greenlight.sh`.
-That file proves the ENGINE obeys its rules and that every path the table declares
-still exists. Neither property notices the failure that actually ships: a workflow
-gains a step, the job starts consuming an input nobody added to the table, and the
-greenlight keeps firing on evidence that no longer covers what the job runs. Every
-declared path still exists, every rule still holds, and a PR editing that new input
-inherits a green it did not earn. That is a WRONG SKIP, the one failure class this
-design must not risk.
+WHAT THIS GUARDS, and why it is a different question from `test-greenlight.sh`. That file proves the ENGINE obeys its rules and that every path the table declares still exists. Neither property notices the failure that actually ships: a workflow gains a step, the job starts consuming an input nobody added to the table, and the greenlight keeps firing on evidence that no longer
+covers what the job runs. Every declared path still exists, every rule still holds, and a PR editing that new input inherits a green it did not earn. That is a WRONG SKIP, the one failure class this design must not risk.
 
-THE PROPERTY. For each key, derive the set of repo paths its DEFINING workflow job
-block references, then assert the table COVERS every one of them, either as an exact
-entry or as an ancestor directory entry. The direction is one-way on purpose:
-derived must be a subset of declared.
+THE PROPERTY. For each key, derive the set of repo paths its DEFINING workflow job block references, then assert the table COVERS every one of them, either as an exact entry or as an ancestor directory entry. The direction is one-way on purpose: derived must be a subset of declared.
 
-THE CHECKER IS NOT REIMPLEMENTED, AND THAT IS THE WHOLE DESIGN DECISION HERE. The
-twin does not check anything itself: it writes a 222-line Node program to a temp file
-and drives it, twice over deliberately mutated tables. That program is a line-based
-YAML block extractor, a shell source/invoke sweeper and a directory-aware coverage
-walk, and every one of those is the kind of thing that agrees with its twin TODAY and
-diverges the first time a job id or a `source` line moves. So the port carries the
-SAME PROGRAM, byte for byte, in `CHECKER_PATH`, and drives it the same four ways.
-What is ported is the harness, not the instrument.
+THE CHECKER IS NOT REIMPLEMENTED, AND THAT IS THE WHOLE DESIGN DECISION HERE. The twin does not check anything itself: it writes a 222-line Node program to a temp file and drives it, twice over deliberately mutated tables. That program is a line-based YAML block extractor, a shell source/invoke sweeper and a directory-aware coverage walk, and every one of those is the kind of thing
+that agrees with its twin TODAY and diverges the first time a job id or a `source` line moves. So the port carries the SAME PROGRAM, byte for byte, in `CHECKER_PATH`, and drives it the same four ways. What is ported is the harness, not the instrument.
 
 THE COPY LIVES BESIDE THIS FILE RATHER THAN INSIDE IT, and that is not cosmetic. A
 heredoc's bytes are unambiguous; a Python string literal's are not, because the same
-program embedded as a literal would have to survive whatever quoting the literal
-imposes, and a port whose fidelity claim rests on nobody having mis-escaped a
-backslash is not making a fidelity claim. `trace_checker.cjs.fixture` is copied out
-of the twin unmodified and read from disk, then MATERIALISED into `tmp_path` as
-`trace.cjs` before each run -- which is what the twin does too, into its own
-`mktemp -d`.
+program embedded as a literal would have to survive whatever quoting the literal imposes, and a port whose fidelity claim rests on nobody having mis-escaped a backslash is not making a fidelity claim. `trace_checker.cjs.fixture` is copied out of the twin unmodified and read from disk, then MATERIALISED into `tmp_path` as `trace.cjs` before each run -- which is what the twin does
+too, into its own `mktemp -d`.
 
-THE `.fixture` SUFFIX IS LOAD-BEARING AND WAS PAID FOR. Named plainly
-`trace_checker.cjs`, the file is JavaScript source of this repository and
+THE `.fixture` SUFFIX IS LOAD-BEARING AND WAS PAID FOR. Named plainly `trace_checker.cjs`, the file is JavaScript source of this repository and
 `npm run lint` covers `.ci`: `npx eslint` on it reports
-`89:33 error Unnecessary escape character` (`no-useless-escape`), measured
-2026-09-07. That finding is real and is INVISIBLE today only because the program
-lives inside a bash heredoc where no linter looks. Fixing the escape would break the
-byte-identity this port's whole fidelity argument rests on, so the file is named for
-what it is -- a fixture, a frozen copy of somebody else's bytes -- and node is handed
-a `.cjs` copy instead. Node refuses an unknown extension outright
-(`ERR_UNKNOWN_FILE_EXTENSION`), so the materialisation is not optional.
+`89:33 error Unnecessary escape character` (`no-useless-escape`), measured 2026-09-07. That finding is real and is INVISIBLE today only because the program lives inside a bash heredoc where no linter looks. Fixing the escape would break the byte-identity this port's whole fidelity argument rests on, so the file is named for what it is -- a fixture, a frozen copy of somebody else's
+bytes -- and node is handed a `.cjs` copy instead. Node refuses an unknown extension outright (`ERR_UNKNOWN_FILE_EXTENSION`), so the materialisation is not optional.
 
-THE PRICE OF A SECOND COPY IS DRIFT, so the copy is a CHECKED INVARIANT rather than a
-hope. `test_the_checker_is_byte_identical_to_the_twins` -- an ADDED case, not one of
-the twin's four -- extracts the twin's heredoc and requires it to equal the file. A
-drift that would otherwise make the two files silently answer different questions is
-a red naming the byte count on each side. When W7 P5 deletes the twin, that case has
+THE PRICE OF A SECOND COPY IS DRIFT, so the copy is a CHECKED INVARIANT rather than a hope. `test_the_checker_is_byte_identical_to_the_twins` -- an ADDED case, not one of the twin's four -- extracts the twin's heredoc and requires it to equal the file. A drift that would otherwise make the two files silently answer different questions is a red naming the byte count on each side.
+When W7 P5 deletes the twin, that case has
 nothing left to compare and must be deleted with it; it is written to FAIL rather
 than skip if the twin is gone, so the deletion cannot be forgotten.
 
-WHERE THIS REIMPLEMENTS awk AND grep, AND WHY THE ANSWERS AGREE. Only the assertions
-around the checker's own stdout, which is a fixed line grammar the checker writes
-itself (`DERIVED <key> <n>` and `UNCOVERED <key> <path> <why>`):
+WHERE THIS REIMPLEMENTS awk AND grep, AND WHY THE ANSWERS AGREE. Only the assertions around the checker's own stdout, which is a fixed line grammar the checker writes itself (`DERIVED <key> <n>` and `UNCOVERED <key> <path> <why>`):
 
   `grep -c '^DERIVED '` counts LINES beginning with that literal, which is a per-line
   `startswith` count. Not a byte count and not a match count; the checker writes
@@ -68,11 +37,9 @@ itself (`DERIVED <key> <n>` and `UNCOVERED <key> <path> <why>`):
   comparison is NUMERIC in awk because both operands look numeric; `int()` makes that
   explicit rather than leaving it to a coercion rule.
 
-`node` IS REQUIRED, and its absence is a loud failure carrying the fix rather than a
-skip. A case that could not run has not been checked.
+`node` IS REQUIRED, and its absence is a loud failure carrying the fix rather than a skip. A case that could not run has not been checked.
 
-NO `xdist_group`. Every mutated table is written under pytest's own `tmp_path`, and
-everything read from the checkout is read-only.
+NO `xdist_group`. Every mutated table is written under pytest's own `tmp_path`, and everything read from the checkout is read-only.
 """
 
 import pathlib
@@ -127,9 +94,7 @@ def table_json(gate, directory: pathlib.Path) -> pathlib.Path:
 def write_checker(gate, directory: pathlib.Path) -> pathlib.Path:
     """Materialise the frozen fixture as a runnable `.cjs`, exactly as the twin does.
 
-    Node refuses to execute an unknown extension, so this is a requirement rather
-    than a convenience. See the module docstring for why the stored copy is not
-    itself called `.cjs`.
+    Node refuses to execute an unknown extension, so this is a requirement rather than a convenience. See the module docstring for why the stored copy is not itself called `.cjs`.
     """
     if not CHECKER_PATH.is_file():
         gate.log_fail(
@@ -162,9 +127,7 @@ def derived(text: str, index: int, key: str | None = None) -> list[str]:
 def mutate_table(gate, source: pathlib.Path, target: pathlib.Path, program: str) -> None:
     """One of the twin's `node -e` table rewrites, driven the same way.
 
-    THE MUTATION IS DONE IN NODE, not in Python's `json`, and that is deliberate: the
-    table is produced by `JSON.stringify` and consumed by `JSON.parse`, so a rewrite
-    in a third serializer would be a third opinion about the same bytes.
+    THE MUTATION IS DONE IN NODE, not in Python's `json`, and that is deliberate: the table is produced by `JSON.stringify` and consumed by `JSON.parse`, so a rewrite in a third serializer would be a third opinion about the same bytes.
     """
     result = harness.run([node(gate), "-e", program, str(source), str(target)])
     if result.rc != 0:

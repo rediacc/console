@@ -1,14 +1,9 @@
 """Differential: `.ci/rediacc_ci/build/build_cli.py` against its twin
 `.ci/scripts/build/build-cli.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-WHAT IS COMPARED, AND WHY THE CALL LOG IS THE IMPORTANT ONE. This script's whole
-job is to decide WHICH of three commands to run, so a comparison of its own
-transcript would agree happily with a port that ran none of them. Every case
-compares:
+WHAT IS COMPARED, AND WHY THE CALL LOG IS THE IMPORTANT ONE. This script's whole job is to decide WHICH of three commands to run, so a comparison of its own transcript would agree happily with a port that ran none of them. Every case compares:
 
   1. the exit code -- always 1 on any failure, never the delegate's own, which is
      DEFECT 2;
@@ -19,26 +14,18 @@ compares:
      `npm run build:cli`, or ran it from `packages/cli` instead of the root,
      passes a transcript comparison and builds the wrong thing.
 
-`ls` IS FAKED, AND IT HAS TO BE. The twin ends `--verify` with a literal
-`ls -lah packages/cli/dist/`, whose output carries sizes, mtimes and a locale
-date. Two fixture trees are created milliseconds apart in different directories,
-so a REAL `ls` would differ between the two runs on the timestamp alone and every
+`ls` IS FAKED, AND IT HAS TO BE. The twin ends `--verify` with a literal `ls -lah packages/cli/dist/`, whose output carries sizes, mtimes and a locale date. Two fixture trees are created milliseconds apart in different directories, so a REAL `ls` would differ between the two runs on the timestamp alone and every
 case would report a false MISMATCH. The fake records its argv and prints a fixed
-listing, which makes the comparison about the argv -- the thing the port could
-actually get wrong -- rather than about the clock.
+listing, which makes the comparison about the argv -- the thing the port could actually get wrong -- rather than about the clock.
 
 PATH IS REPLACED, NEVER PREPENDED. This host has a real `npm`, and the subject
 `cd`s to a root it derives itself; a subject that mis-derived it would run a REAL
 `npm run build:cli` inside the live checkout. `_binder` builds the ENTIRE PATH
 from named tools plus the two fakes, and asserts every exclusion really took --
-a control on the control, because a probe that cannot fire looks exactly like a
-subject that cannot fail.
+a control on the control, because a probe that cannot fire looks exactly like a subject that cannot fail.
 
 THE ONE DELIBERATE DIVERGENCE IS TESTED, NOT HIDDEN.
-`test_a_missing_npm_agrees_on_the_branch_and_not_on_the_diagnostic` masks the
-`<path>: line <n>: ` prefix each side puts on the interpreter's own
-"command not found", compares the rest, and then asserts the two unmasked
-strings DIFFER so the mask cannot quietly start hiding nothing.
+`test_a_missing_npm_agrees_on_the_branch_and_not_on_the_diagnostic` masks the `<path>: line <n>: ` prefix each side puts on the interpreter's own "command not found", compares the rest, and then asserts the two unmasked strings DIFFER so the mask cannot quietly start hiding nothing.
 """
 
 import pathlib
@@ -104,13 +91,9 @@ def _fixture(
 ) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because each subject derives the console root from its own location
-    (`BASH_SOURCE`/`__file__`, then three directories up). Driving the TRACKED
-    files with a `cwd` would point them at the real repository, where
-    `npm run build:cli` is a real build and `packages/cli/dist` is real output.
+    Copies, because each subject derives the console root from its own location (`BASH_SOURCE`/`__file__`, then three directories up). Driving the TRACKED files with a `cwd` would point them at the real repository, where `npm run build:cli` is a real build and `packages/cli/dist` is real output.
 
-    `dist` and `index_js` are the two `--verify` probes, separately settable
-    because the twin checks them in order and reports them differently.
+    `dist` and `index_js` are the two `--verify` probes, separately settable because the twin checks them in order and reports them differently.
     """
     root = where.resolve() / "tree"
     (root / ".ci" / "scripts" / "build").mkdir(parents=True)
@@ -308,10 +291,7 @@ def test_no_bundle_really_skips_the_bundle(tmp_path):
 def test_an_unknown_argument_is_a_full_build_in_both(tmp_path):
     """DEFECT 1, pinned in BOTH implementations.
 
-    There is no `*)` arm, so `--no-bundl` (one letter short) and `--help` are
-    accepted in silence and the script runs everything. `--help` in particular
-    runs a full CLI build and a bundle for anyone who typed it hoping for usage
-    text. Reported, not fixed -- the repair is a cutover-box decision.
+    There is no `*)` arm, so `--no-bundl` (one letter short) and `--help` are accepted in silence and the script runs everything. `--help` in particular runs a full CLI build and a bundle for anyone who typed it hoping for usage text. Reported, not fixed -- the repair is a cutover-box decision.
     """
     for subject in (TWIN_REL, PORT_REL):
         for arg in ("--no-bundl", "--help", "-h", "--no_verify", "gibberish"):
@@ -333,8 +313,7 @@ def test_the_delegates_exit_code_is_thrown_away_in_both(tmp_path):
     """DEFECT 2, pinned in BOTH implementations.
 
     npm exits 9; both subjects report 1. Every npm failure mode -- a failed
-    script, a missing one, a signal -- arrives at the workflow as the same
-    number and the same sentence. Reported, not fixed.
+    script, a missing one, a signal -- arrives at the workflow as the same number and the same sentence. Reported, not fixed.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("e-%s" % subject.name))
@@ -363,10 +342,7 @@ def test_verify_only_checks_that_two_paths_exist(tmp_path):
 def test_a_missing_npm_agrees_on_the_branch_and_not_on_the_diagnostic(tmp_path):
     """THE ONE DELIBERATE DIVERGENCE, asserted in both directions.
 
-    With no `npm` on PATH, bash prints `<script>: line <n>: npm: command not
-    found`, the `if` sees 127, and the `else` arm exits 1 with the script's own
-    message. The port prints the same shape naming ITS path and line and takes
-    the same branch. The BRANCH is what matters and is compared with the prefix
+    With no `npm` on PATH, bash prints `<script>: line <n>: npm: command not found`, the `if` sees 127, and the `else` arm exits 1 with the script's own message. The port prints the same shape naming ITS path and line and takes the same branch. The BRANCH is what matters and is compared with the prefix
     masked; the unmasked strings are asserted DIFFERENT so the mask cannot
     quietly start hiding nothing.
     """
@@ -388,11 +364,7 @@ def test_a_missing_npm_agrees_on_the_branch_and_not_on_the_diagnostic(tmp_path):
 def test_parse_flags_is_the_twins_case_statement():
     """The pure half, driven against BASH's own `case` rather than a constant.
 
-    A constant copied out of the port cannot contradict the port, so each
-    argument list is fed to a bash snippet holding the twin's four arms verbatim
-    and the two answers are compared. This is also where the ABSENCE of a `*)`
-    arm is proven rather than asserted: an unrecognised argument changes nothing
-    on either side.
+    A constant copied out of the port cannot contradict the port, so each argument list is fed to a bash snippet holding the twin's four arms verbatim and the two answers are compared. This is also where the ABSENCE of a `*)` arm is proven rather than asserted: an unrecognised argument changes nothing on either side.
     """
     snippet = """
     BUNDLE="$1"; VERIFY="$2"; shift 2

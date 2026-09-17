@@ -3,31 +3,15 @@
 
 A REAL GIT REPOSITORY, BUILT WITH PLUMBING, AND A RECORDING FAKE FOR `gh`.
 
-`git` IS NOT STUBBED, and that is the central choice in this file. Every fact
-this script rules on is `git`'s answer to a question about commit topology and
-tree content, so a fake `git` would be a fake of the SUBJECT rather than of a
-dependency: the differential would then prove the two implementations agree
-about a script's own fixture. Real gitlinks are made without any submodule at
-all, with `git update-index --add --cacheinfo 160000,<sha>,<path>`, so
-`diff-tree -r --raw` produces genuine `:160000 160000` lines and the walk sees
-real parents, real trees and a real merge commit.
+`git` IS NOT STUBBED, and that is the central choice in this file. Every fact this script rules on is `git`'s answer to a question about commit topology and tree content, so a fake `git` would be a fake of the SUBJECT rather than of a dependency: the differential would then prove the two implementations agree about a script's own fixture. Real gitlinks are made without any
+submodule at all, with `git update-index --add --cacheinfo 160000,<sha>,<path>`, so `diff-tree -r --raw` produces genuine `:160000 160000` lines and the walk sees real parents, real trees and a real merge commit.
 
-`gh` IS THE ONLY THING FAKED, because it is the only thing that carries a
-credential and leaves the machine. It records its argv and answers three
-endpoints: the baseline's check-runs, a submodule commit's tree sha, and the
-`NEW...main` comparison.
+`gh` IS THE ONLY THING FAKED, because it is the only thing that carries a credential and leaves the machine. It records its argv and answers three endpoints: the baseline's check-runs, a submodule commit's tree sha, and the `NEW...main` comparison.
 
-COMMITS ARE MADE WITH `commit-tree`, NOT `git commit`. Two reasons: the working
-tree never needs a `private/x` directory for a gitlink to exist in the index,
-and the plumbing form takes explicit dates so a fixture's shas are stable across
-runs of this file.
+COMMITS ARE MADE WITH `commit-tree`, NOT `git commit`. Two reasons: the working tree never needs a `private/x` directory for a gitlink to exist in the index, and the plumbing form takes explicit dates so a fixture's shas are stable across runs of this file.
 
-THE PROOF THAT THE FIXTURE IS SHAPED LIKE A REAL PULL REQUEST is the merge
-commit. `actions/checkout` hands a `pull_request` job the synthetic
-`refs/pull/N/merge` commit, so HEAD is a two-parent merge of the branch tip and
-the target branch, and the branch tip is only reachable through the event
-payload. Both of this script's live defects are consequences of that shape, and
-neither is visible in a fixture where HEAD is the tip.
+THE PROOF THAT THE FIXTURE IS SHAPED LIKE A REAL PULL REQUEST is the merge commit. `actions/checkout` hands a `pull_request` job the synthetic `refs/pull/N/merge` commit, so HEAD is a two-parent merge of the branch tip and the target branch, and the branch tip is only reachable through the event payload. Both of this script's live defects are consequences of that shape, and neither
+is visible in a fixture where HEAD is the tip.
 """
 
 from __future__ import annotations
@@ -226,10 +210,7 @@ def fixture(
                 \\        \\
                  main ---- merge   (HEAD, when merge_head is True)
 
-    `tip_is_pointer_only` decides whether `tip` moves only the gitlink or also
-    touches a file. `main_moves` gives the target branch a commit of its own,
-    which is what makes the merge's tree differ from the tip's. `gitmodules`
-    names the path recorded in `.gitmodules`, or None to omit the file entirely.
+    `tip_is_pointer_only` decides whether `tip` moves only the gitlink or also touches a file. `main_moves` gives the target branch a commit of its own, which is what makes the merge's tree differ from the tip's. `gitmodules` names the path recorded in `.gitmodules`, or None to omit the file entirely.
     """
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "ci").mkdir(parents=True, exist_ok=True)
@@ -366,8 +347,7 @@ def _agree(old, new, label: str) -> None:
 
     The only normalisation is `_mask`, which collapses bash's own
     `<file>: line <n>:` prefix; see its comment. Nothing else is masked, and the
-    commit shas are the SAME repository's, so a mask there could only hide a
-    real difference.
+    commit shas are the SAME repository's, so a mask there could only hide a real difference.
     """
     old_proc, old_calls = old
     new_proc, new_calls = new
@@ -443,8 +423,7 @@ def test_the_two_tokens_are_the_two_different_variables(tmp_path) -> None:
 
 def test_an_unset_token_is_still_exported_as_the_empty_string(tmp_path) -> None:
     """`GH_TOKEN="${CHECKS_TOKEN:-}" gh api` sets the variable EVEN WHEN the
-    source is unset, and `gh` refuses differently for an empty token than for an
-    absent one. A port that skipped the assignment would be making the same call
+    source is unset, and `gh` refuses differently for an empty token than for an absent one. A port that skipped the assignment would be making the same call
     with a different credential."""
     _repo, old, new = run_both(
         tmp_path, fixture_kw={"merge_head": False}, drop_env=("CHECKS_TOKEN",)
@@ -512,8 +491,7 @@ def test_a_push_event_never_reaches_git_at_all(tmp_path) -> None:
 
 def test_a_merge_commit_in_the_walk_stops_it(tmp_path) -> None:
     """The event payload is REMOVED here, so `current` falls back to
-    `git rev-parse HEAD`, which on this fixture is the merge commit. That is
-    exactly the pre-D9 behaviour the twin's header describes, and it still
+    `git rev-parse HEAD`, which on this fixture is the merge commit. That is exactly the pre-D9 behaviour the twin's header describes, and it still
     happens whenever the payload is unreadable."""
     repo, old, new = run_both(tmp_path, with_event=False)
     _agree(old, new, "merge-in-walk")
@@ -546,8 +524,7 @@ def test_a_check_runs_lookup_that_fails_is_refused_and_not_assumed_green(
     tmp_path,
 ) -> None:
     """AN API CALL THAT COULD NOT RUN IS NOT A PASS. This is the one place this
-    script gets that right, and it is worth pinning: `gh` exits 1, its stderr is
-    discarded, and the script refuses rather than treating an unknown as a
+    script gets that right, and it is worth pinning: `gh` exits 1, its stderr is discarded, and the script refuses rather than treating an unknown as a
     green."""
     repo, old, new = run_both(tmp_path, fixture_kw={"merge_head": False}, FAKE_CHECKRUNS_FAILS="1")
     _agree(old, new, "checkruns-fails")
@@ -571,9 +548,7 @@ def test_an_empty_check_runs_answer_is_zero_and_refuses(tmp_path) -> None:
 
 def test_defect_d_a_non_numeric_check_runs_answer_is_a_hard_exit_1(tmp_path) -> None:
     """A BARE WORD IN A BASH ARITHMETIC CONTEXT IS A VARIABLE REFERENCE, and an
-    unset one under `set -u` ends the script: exit 1, nothing on stdout, and no
-    `pointer_bump_only` pair for the caller to read. Every other doubt in this
-    file is exit 0 with a reason.
+    unset one under `set -u` ends the script: exit 1, nothing on stdout, and no `pointer_bump_only` pair for the caller to read. Every other doubt in this file is exit 0 with a reason.
 
     Not reachable through today's `gh --jq '... | length'`, which answers with a
     number or fails; one shape change in that jq program away, and the same
@@ -657,8 +632,7 @@ def test_a_compare_call_that_fails_is_refused(tmp_path) -> None:
 def test_defect_a_the_head_guard_cannot_fire_on_a_pull_request(tmp_path) -> None:
     """A PR whose tip is an ORDINARY commit. `current` is the tip (from the
     payload) and `head_sha` is the merge commit, so the `current == head_sha`
-    test at :138 is false, the loop breaks with no baseline, and the operator is
-    told `no baseline within 5 commits` about a branch whose very first commit
+    test at :138 is false, the loop breaks with no baseline, and the operator is told `no baseline within 5 commits` about a branch whose very first commit
     was the answer."""
     assert port.THE_HEAD_GUARD_IS_UNREACHABLE_ON_A_PULL_REQUEST
     _repo, old, new = run_both(tmp_path, fixture_kw={"tip_is_pointer_only": False})
@@ -688,8 +662,7 @@ def test_defect_a_control_the_guard_does_fire_when_head_really_is_the_tip(
 
 def test_defect_b_step_three_diffs_against_the_merge_commit(tmp_path) -> None:
     """A PR whose tip IS pointer-only, on a target branch that has moved. The
-    walk succeeds and the baseline passes CI, and then the net diff -- taken
-    against HEAD, the merge -- carries main's file change and the fast path is
+    walk succeeds and the baseline passes CI, and then the net diff -- taken against HEAD, the merge -- carries main's file change and the fast path is
     refused for a branch that qualifies."""
     assert port.STEP_THREE_STILL_COMPARES_AGAINST_THE_MERGE_COMMIT
     _repo, old, new = run_both(tmp_path, fixture_kw={"main_moves": True})
@@ -703,8 +676,7 @@ def test_defect_b_step_three_diffs_against_the_merge_commit(tmp_path) -> None:
 
 def test_defect_b_control_an_unmoved_target_branch_still_fast_paths(tmp_path) -> None:
     """THE CONTROL. Same PR shape, same merge commit, main NOT moved: the
-    merge's tree equals the tip's, the net diff is gitlink-only, and the fast
-    path fires. So the refusal above is caused by main moving and by nothing
+    merge's tree equals the tip's, the net diff is gitlink-only, and the fast path fires. So the refusal above is caused by main moving and by nothing
     else."""
     repo, old, new = run_both(tmp_path, fixture_kw={"main_moves": False})
     _agree(old, new, "defect-b-control")
@@ -716,9 +688,7 @@ def test_defect_b_control_an_unmoved_target_branch_still_fast_paths(tmp_path) ->
 
 def test_defect_c_a_gitmodules_with_no_entries_is_a_hard_exit_1(tmp_path) -> None:
     """EVERY OTHER DOUBT IN THIS SCRIPT IS EXIT 0 WITH A REASON. This one is
-    exit 1 with nothing: `git config --get-regexp` matches nothing, `pipefail`
-    makes that the assignment's status, and `set -e` ends the run before the
-    guard on the next line is reached. The caller (`initialize.sh`) sees a
+    exit 1 with nothing: `git config --get-regexp` matches nothing, `pipefail` makes that the assignment's status, and `set -e` ends the run before the guard on the next line is reached. The caller (`initialize.sh`) sees a
     failed step."""
     assert port.AN_EMPTY_GITMODULES_IS_A_HARD_EXIT_NOT_A_FAIL_SAFE
     _repo, old, new = run_both(tmp_path, fixture_kw={"merge_head": False, "gitmodules": None})
@@ -840,8 +810,7 @@ def test_the_port_carries_no_gate_header() -> None:
 
 def test_the_environment_this_module_reads_is_read_with_literal_keys() -> None:
     """`check:ci-python-env-registry` derives a module's inputs by walking the
-    AST for literal `os.environ` reads, so a read through a local alias would be
-    invisible and the module would report zero inputs while depending on six.
+    AST for literal `os.environ` reads, so a read through a local alias would be invisible and the module would report zero inputs while depending on six.
 
     THE LIST IS THE TWIN'S OWN HEADER, in its order."""
     source = PORT_FILE.read_text(encoding="utf-8")

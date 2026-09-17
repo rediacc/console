@@ -3,75 +3,38 @@
 Ported from `.ci/scripts/quality/check-cli-contract.sh`, which is not deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHAT THE CONTRACT IS, from the twin's header. `packages/shared/src/cli-contract/data`
-is derived from the live Commander tree, COMMAND_METADATA and the i18n
-catalogues. It drives the web console, the `rdc --proxy` thin client and the
-executor, so a stale contract means those consumers disagree with the CLI they
-are driving.
+WHAT THE CONTRACT IS, from the twin's header. `packages/shared/src/cli-contract/data` is derived from the live Commander tree, COMMAND_METADATA and the i18n catalogues. It drives the web console, the `rdc --proxy` thin client and the executor, so a stale contract means those consumers disagree with the CLI they are driving.
 
 Exit codes, unchanged: 0 contract is up-to-date, 1 stale contract detected.
 
-HOW IT DECIDES. It REGENERATES the contract into a temporary directory and
-diffs, rather than checking a hash or a timestamp. That is the expensive answer
-and the only honest one: a hash pinned in a file is a claim about a generator
-nobody re-ran, and a timestamp says which file is newer, not whether they agree.
+HOW IT DECIDES. It REGENERATES the contract into a temporary directory and diffs, rather than checking a hash or a timestamp. That is the expensive answer and the only honest one: a hash pinned in a file is a claim about a generator nobody re-ran, and a timestamp says which file is newer, not whether they agree.
 
-THE VERSION IS EXCLUDED FROM THE DIFF, and the twin says why: "The version is
-injected at build time, so ignore it when diffing (both the TS constant and the
-JSON field). Mirrors check-renet-types.sh." This repository stores no version in
-source at all -- every package.json carries the `0.0.0-dev` placeholder and the
-real value arrives from a git tag at build time -- so a contract regenerated on
-a developer's machine differs from the committed one in exactly those two lines
-and in nothing else.
+THE VERSION IS EXCLUDED FROM THE DIFF, and the twin says why: "The version is injected at build time, so ignore it when diffing (both the TS constant and the JSON field). Mirrors check-renet-types.sh." This repository stores no version in source at all -- every package.json carries the `0.0.0-dev` placeholder and the real value arrives from a git tag at build time -- so a contract
+regenerated on a developer's machine differs from the committed one in exactly those two lines and in nothing else.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE GLOB HAS NO `nullglob`, AND THAT IS A DEFECT THE PORT REPRODUCES RATHER THAN
-REPAIRS. `for generated in "$TEMP_DIR"/i18n/*.json` in bash, with no `shopt -s
-nullglob`, iterates ONCE over the LITERAL PATTERN when nothing matches. The loop
-body then computes `basename` as the string `*.json`, tests `-f
-"$OUTPUT_DIR/i18n/*.json"` (false, because no file is named that), and appends
-`i18n/*.json (missing)` to the stale list. So an EMPTY generated i18n directory
-does not report "no locales were generated", it reports a missing locale whose
-name is a glob. The second loop, over the committed directory, has the same
-shape and produces `i18n/*.json (orphaned ...)`.
+THE GLOB HAS NO `nullglob`, AND THAT IS A DEFECT THE PORT REPRODUCES RATHER THAN REPAIRS. `for generated in "$TEMP_DIR"/i18n/*.json` in bash, with no `shopt -s nullglob`, iterates ONCE over the LITERAL PATTERN when nothing matches. The loop body then computes `basename` as the string `*.json`, tests `-f "$OUTPUT_DIR/i18n/*.json"` (false, because no file is named that), and appends
+`i18n/*.json (missing)` to the stale list. So an EMPTY generated i18n directory does not report "no locales were generated", it reports a missing locale whose name is a glob. The second loop, over the committed directory, has the same shape and produces `i18n/*.json (orphaned ...)`.
 
-It is carried because a port that changes the verdict is not a port, and it is
-reported as a finding instead of quietly fixed. The message it produces is
-recognisable once you know it, which is the only reason it has never been
-mistaken for a real locale.
+It is carried because a port that changes the verdict is not a port, and it is reported as a finding instead of quietly fixed. The message it produces is recognisable once you know it, which is the only reason it has never been mistaken for a real locale.
 
-THE SAME FILE CARRIES AN EM DASH IN USER-FACING OUTPUT: `i18n/$lang (orphaned <em dash>
-no such locale)`. The house rule forbids em dashes in authored text, and the
-differential requires the port to emit the same bytes. Both are satisfied by
-writing the character as the escape `\\u2014`, so no em dash is typed into this
-file while the emitted string stays byte-identical to the twin's. The finding
-belongs to the twin and is reported rather than repaired here.
+THE SAME FILE CARRIES AN EM DASH IN USER-FACING OUTPUT: `i18n/$lang (orphaned <em dash> no such locale)`. The house rule forbids em dashes in authored text, and the differential requires the port to emit the same bytes. Both are satisfied by writing the character as the escape `\\u2014`, so no em dash is typed into this file while the emitted string stays byte-identical to the
+twin's. The finding belongs to the twin and is reported rather than repaired here.
 
-`npm` AND `npx` ARE RESOLVED THROUGH PATH, DELIBERATELY. The twin runs them as
-bare words and so does this module, which is what lets a hermetic fixture put a
-shim ahead of the real binaries and drive the whole gate without a build. A port
-that hardcoded a path, or reached into `node_modules/.bin`, would be untestable
-by exactly the harness that proves it equivalent.
+`npm` AND `npx` ARE RESOLVED THROUGH PATH, DELIBERATELY. The twin runs them as bare words and so does this module, which is what lets a hermetic fixture put a shim ahead of the real binaries and drive the whole gate without a build. A port that hardcoded a path, or reached into `node_modules/.bin`, would be untestable by exactly the harness that proves it equivalent.
 
-BUILD FAILURE PROPAGATES THE BUILDER'S EXIT CODE, not 1. The twin runs under
-`set -euo pipefail`, so a failing `npm run build:packages` aborts the script
+BUILD FAILURE PROPAGATES THE BUILDER'S EXIT CODE, not 1. The twin runs under `set -euo pipefail`, so a failing `npm run build:packages` aborts the script
 with npm's own status and the gate never reaches its comparison. Collapsing that
-to 1 would tell a reader "the contract is stale" when the truth is "the build
-did not happen", which is the difference between a finding and a cannot-run.
+to 1 would tell a reader "the contract is stale" when the truth is "the build did not happen", which is the difference between a finding and a cannot-run.
 
 STDOUT OF BOTH SUBPROCESSES IS DISCARDED AND STDERR IS NOT. `>/dev/null` in the
 twin redirects stdout only. A build's progress chatter is noise; its errors are
-the only thing that explains a non-zero status, and swallowing them is how a
-gate failure becomes unreadable.
+the only thing that explains a non-zero status, and swallowing them is how a gate failure becomes unreadable.
 
-WHAT THIS GATE CANNOT SEE, unchanged: whether the generator itself is correct.
-It proves the committed data equals what the generator produces TODAY, so a
-generator that started emitting nonsense would make the tree stale, get
-regenerated, and go green on the nonsense. That is the twin's blind spot and the
-port inherits it rather than growing a second opinion.
+WHAT THIS GATE CANNOT SEE, unchanged: whether the generator itself is correct. It proves the committed data equals what the generator produces TODAY, so a generator that started emitting nonsense would make the tree stale, get regenerated, and go green on the nonsense. That is the twin's blind spot and the port inherits it rather than growing a second opinion.
 """
 
 import os
@@ -105,10 +68,7 @@ ORPHAN_SUFFIX = " (orphaned \u2014 no such locale)"
 def strip_version_lines(path: pathlib.Path) -> str | None:
     """A file's content with every version-bearing line removed.
 
-    Returns None when the file cannot be read, which is what `grep` on a missing
-    file amounts to: an empty stream plus a complaint on stderr. The caller
-    reproduces the complaint, because the twin's process substitutions inherit
-    the script's stderr and the message reaches a reader today.
+    Returns None when the file cannot be read, which is what `grep` on a missing file amounts to: an empty stream plus a complaint on stderr. The caller reproduces the complaint, because the twin's process substitutions inherit the script's stderr and the message reaches a reader today.
     """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -126,8 +86,7 @@ def strip_version_lines(path: pathlib.Path) -> str | None:
 def compare_ignoring_version(committed: pathlib.Path, generated: pathlib.Path) -> bool:
     """True when the two files agree once version lines are removed.
 
-    `diff -q ... >/dev/null 2>&1` in the twin, so a diff of any size is one bit
-    of information. The bit is what the stale list records.
+    `diff -q ... >/dev/null 2>&1` in the twin, so a diff of any size is one bit of information. The bit is what the stale list records.
     """
     left = strip_version_lines(committed)
     right = strip_version_lines(generated)
@@ -140,8 +99,7 @@ def compare_ignoring_version(committed: pathlib.Path, generated: pathlib.Path) -
 def _glob_or_literal(directory: pathlib.Path) -> list[pathlib.Path]:
     """`<directory>/*.json` with BASH's no-nullglob behaviour.
 
-    An empty match yields ONE entry: the unexpanded pattern itself. See the port
-    notes for what the twin then does with it. Sorted for the same reason bash
+    An empty match yields ONE entry: the unexpanded pattern itself. See the port notes for what the twin then does with it. Sorted for the same reason bash
     sorts a glob, and by bytes because LC_ALL=C is what CI runs under.
     """
     matches = sorted(directory.glob("*.json"), key=lambda p: str(p).encode())
@@ -153,9 +111,7 @@ def _glob_or_literal(directory: pathlib.Path) -> list[pathlib.Path]:
 def stale_entries(output_dir: pathlib.Path, temp_dir: pathlib.Path) -> list[str]:
     """Everything the twin would put in its STALE array, in the twin's order.
 
-    Three passes, and the third is the one people forget: a locale bundle left
-    behind after its locale was removed is drift in the other direction, and a
-    gate that only compared generated-against-committed would never see it.
+    Three passes, and the third is the one people forget: a locale bundle left behind after its locale was removed is drift in the other direction, and a gate that only compared generated-against-committed would never see it.
     """
     stale: list[str] = []
 
@@ -185,10 +141,7 @@ def stale_entries(output_dir: pathlib.Path, temp_dir: pathlib.Path) -> list[str]
 def _files_equal(left: pathlib.Path, right: pathlib.Path) -> bool:
     """Plain `diff -q`: no version filtering for the i18n bundles.
 
-    The twin filters versions out of the two top-level artefacts and NOT out of
-    the locale bundles, because no version is injected into them. Applying the
-    filter uniformly would be tidier and would stop the gate seeing a locale
-    whose text happens to contain `"version":`, which several of them do.
+    The twin filters versions out of the two top-level artefacts and NOT out of the locale bundles, because no version is injected into them. Applying the filter uniformly would be tidier and would stop the gate seeing a locale whose text happens to contain `"version":`, which several of them do.
     """
     try:
         return left.read_bytes() == right.read_bytes()
@@ -286,10 +239,7 @@ _GOLDEN = {
 def selftest() -> int:
     """Plant each kind of drift, prove it reds; remove it, prove it greens.
 
-    THE SHIMS ARE THE POINT. Driving the real `npm run build:packages` here
-    would make the selftest a build, which is slow enough that it would get
-    switched off, and would prove nothing about the comparison logic that is
-    the gate's actual subject.
+    THE SHIMS ARE THE POINT. Driving the real `npm run build:packages` here would make the selftest a build, which is slow enough that it would get switched off, and would prove nothing about the comparison logic that is the gate's actual subject.
     """
     ctl = Controls("cli-contract", floor=15, verbose=True)
 

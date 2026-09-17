@@ -1,22 +1,14 @@
 """`rediacc_ci.ci.check_rerun_attempt` against its bash twin.
 
-THE FAKE `gh` IS RECORDING, AND THAT IS NOT DECORATION. The twin's only input
-besides the environment is one `gh api ... --jq '.run_attempt'` call, so a
-differential that only compared the two scripts' log lines would pass a port
-that asked for the wrong run, the wrong repository, or piped the body through a
-different filter. The fake appends its exact argv to `$FAKE_LOG`, both sides
-write into their OWN log, and every case asserts the two logs are identical.
+THE FAKE `gh` IS RECORDING, AND THAT IS NOT DECORATION. The twin's only input besides the environment is one `gh api ... --jq '.run_attempt'` call, so a differential that only compared the two scripts' log lines would pass a port that asked for the wrong run, the wrong repository, or piped the body through a different filter. The fake appends its exact argv to `$FAKE_LOG`, both
+sides write into their OWN log, and every case asserts the two logs are identical.
 
 WHAT IS NORMALISED, AND ONLY THIS. Three of the twin's five exits are bash's own
 diagnostics (`${RUN_ID:?}`, `${GH_REPO:?}` and the `null` arithmetic), and they
-begin `<program>: line <N>:`. The program NAME necessarily differs -- bash
-prints the `.sh` path, Python prints the module file -- so `strip_prog` replaces
-exactly that leading token with `<prog>` and compares everything after it,
-INCLUDING the line number, which is the part that would silently drift.
+begin `<program>: line <N>:`. The program NAME necessarily differs -- bash prints the `.sh` path, Python prints the module file -- so `strip_prog` replaces exactly that leading token with `<prog>` and compares everything after it, INCLUDING the line number, which is the part that would silently drift.
 
 The K=5 ledger is `.ci/shadow/w7p6-check-rerun-attempt.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-check-rerun-attempt --assert
---k 5`).
+(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-check-rerun-attempt --assert --k 5`).
 """
 
 from __future__ import annotations
@@ -66,10 +58,7 @@ def make_fakebin(tmp_path: pathlib.Path, *, with_gh: bool = True) -> pathlib.Pat
     """A PATH directory holding the fake `gh` and the tools common.sh needs.
 
     `with_gh=False` is how the missing-tool arm is reached: `gh` really is
-    installed at /usr/bin/gh on this machine, so the only honest way to test
-    `require_cmd gh` refusing is a PATH that does not contain /usr/bin at all.
-    `uname` is symlinked in because common.sh computes CI_OS/CI_ARCH at SOURCE
-    time and would otherwise fail for a reason unrelated to the case.
+    installed at /usr/bin/gh on this machine, so the only honest way to test `require_cmd gh` refusing is a PATH that does not contain /usr/bin at all. `uname` is symlinked in because common.sh computes CI_OS/CI_ARCH at SOURCE time and would otherwise fail for a reason unrelated to the case.
     """
     bindir = tmp_path / ("fakebin-gh" if with_gh else "fakebin-nogh")
     bindir.mkdir(exist_ok=True)
@@ -95,9 +84,7 @@ def run_both(
 ) -> tuple[tuple[int, str, str], tuple[int, str, str], dict[str, str]]:
     """Drive both sides through their own fake-gh call log and GITHUB_ENV file.
 
-    Returns the two `(exit, stdout, stderr)` triples plus a dict of the
-    side-effect files, so a caller can assert on the call log and the exported
-    variable without re-deriving the paths.
+    Returns the two `(exit, stdout, stderr)` triples plus a dict of the side-effect files, so a caller can assert on the call log and the exported variable without re-deriving the paths.
     """
     bindir = make_fakebin(tmp_path, with_gh=with_gh)
     path = str(bindir) if not with_gh else "%s:%s" % (bindir, os.environ.get("PATH", ""))
@@ -196,10 +183,7 @@ def test_defect_a_an_unset_github_env_makes_the_happy_path_exit_1(
 ) -> None:
     """The twin ends on `[[ -n "$GITHUB_ENV" ]] && echo ...`, so a false test IS the exit.
 
-    `GITHUB_ENV` is OPTIONAL by the twin's own header, and leaving it out turns
-    a run that printed "rerun is allowed" into a failure with no failing
-    message. Pinned in BOTH directions in one test: identical output, exit 1
-    without the variable and exit 0 with it.
+    `GITHUB_ENV` is OPTIONAL by the twin's own header, and leaving it out turns a run that printed "rerun is allowed" into a failure with no failing message. Pinned in BOTH directions in one test: identical output, exit 1 without the variable and exit 0 with it.
     """
     old, new, files = run_both(
         tmp_path, env_extra={"RUN_ID": "5", "GH_REPO": "a/b"}, github_env=False
@@ -293,9 +277,7 @@ def test_a_missing_gh_is_a_named_refusal_on_both_sides(tmp_path: pathlib.Path) -
 def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
     """The three constants are bash's line numbers, so they must be re-derived.
 
-    A paragraph inserted above any of them moves it, and every diagnostic this
-    port prints would then name a line that says something else. Re-read the
-    twin rather than trust the constants.
+    A paragraph inserted above any of them moves it, and every diagnostic this port prints would then name a line that says something else. Re-read the twin rather than trust the constants.
     """
     with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
         lines = fh.read().split("\n")

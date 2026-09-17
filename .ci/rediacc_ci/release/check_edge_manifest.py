@@ -1,28 +1,15 @@
 """Port of `.ci/scripts/release/check-edge-manifest.sh`.
 
-Reads the live edge CLI manifest and emits `version` / `date` / `skip` step
-outputs. A missing manifest is not an error (a brand-new bucket has nothing to
+Reads the live edge CLI manifest and emits `version` / `date` / `skip` step outputs. A missing manifest is not an error (a brand-new bucket has nothing to
 promote yet), so it emits `skip=true` and exits 0.
 
-SHELLS OUT TO THE REAL `curl` AND `jq`, same reasoning as
-`rediacc_ci.release.check_soak_period`'s date-parsing subprocess: the twin's
-URL (`https://releases.rediacc.com/cli/edge/manifest.json`) is a HARDCODED
-literal with no override hook, so there is no way to point either side at a
-fixture except by putting a fake `curl` in front of both of them on PATH.
-Reimplementing the HTTP call with `urllib` (as `wait_for_preview_worker.py`
-does) would not help here -- there is nothing to inject a fixture URL through,
-so the twin and a from-scratch client could each drift from `curl`'s own
-exit/retry/redirect semantics unnoticed. Shelling out to the identical `curl
--sf <url>` command keeps both sides looking at the same client, and the
-differential test proves parity by putting a fake `curl` first on PATH for
-BOTH the bash run and this port's run -- never the real
-`releases.rediacc.com`.
+SHELLS OUT TO THE REAL `curl` AND `jq`, same reasoning as `rediacc_ci.release.check_soak_period`'s date-parsing subprocess: the twin's URL (`https://releases.rediacc.com/cli/edge/manifest.json`) is a HARDCODED literal with no override hook, so there is no way to point either side at a fixture except by putting a fake `curl` in front of both of them on PATH. Reimplementing the HTTP
+call with `urllib` (as `wait_for_preview_worker.py` does) would not help here -- there is nothing to inject a fixture URL through, so the twin and a from-scratch client could each drift from `curl`'s own exit/retry/redirect semantics unnoticed. Shelling out to the identical `curl -sf <url>` command keeps both sides looking at the same client, and the differential test proves parity
+by putting a fake `curl` first on PATH for BOTH the bash run and this port's run -- never the real `releases.rediacc.com`.
 
 REWORDED, NOT BYTE-IDENTICAL, on the missing-GITHUB_OUTPUT path only: the
 twin's `${VAR:?msg}` diagnostic carries a bash line number that is not worth
-reproducing (same reasoning as every other port's module docstring). The
-manifest-found and manifest-missing paths are byte-identical, because those
-are this port's own literal strings, matching the twin's.
+reproducing (same reasoning as every other port's module docstring). The manifest-found and manifest-missing paths are byte-identical, because those are this port's own literal strings, matching the twin's.
 """
 
 from __future__ import annotations

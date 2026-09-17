@@ -1,42 +1,22 @@
 """Differential: `rediacc_ci.infra.verify_ssh` against its twin
 `.ci/scripts/infra/verify-ssh.sh`.
 
-SSH IS MOCKED, NOT REQUIRED. The subject's whole job is a retry loop around a
-network call, so the interesting behaviour is entirely in HOW it calls ssh and
-how many times: a differential that needed a reachable host would be skipped on
-every developer machine and would then be no differential at all. The seam is
-PATH. A recording stub `ssh` on a scratch PATH lets every case assert the ARGV
-SEQUENCE both implementations produced, which is the half a stdout comparison
-cannot see -- a port that printed "SSH connection successful" without ever
-running ssh would pass a stdout-only check.
+SSH IS MOCKED, NOT REQUIRED. The subject's whole job is a retry loop around a network call, so the interesting behaviour is entirely in HOW it calls ssh and how many times: a differential that needed a reachable host would be skipped on every developer machine and would then be no differential at all. The seam is PATH. A recording stub `ssh` on a scratch PATH lets every case assert
+the ARGV SEQUENCE both implementations produced, which is the half a stdout comparison cannot see -- a port that printed "SSH connection successful" without ever running ssh would pass a stdout-only check.
 
-`sleep` IS STUBBED FOR THE SAME REASON AND IT IS WHY THIS FILE IS FAST. The
-twin waits 5 real seconds between passes and so does the port, because the port
-EXECS `sleep` rather than calling `time.sleep` (see the port's docstring). One
-stub therefore serves both sides identically, an exhaustion case costs
-milliseconds instead of a minute, and -- the part that matters -- the stub's
-own log records every sleep, so the comparison can assert the two
-implementations slept the same number of times. A `time.sleep` port would have
-left the bash side stubbed and the Python side sleeping for real, which is two
-differently-timed programs being called equivalent.
+`sleep` IS STUBBED FOR THE SAME REASON AND IT IS WHY THIS FILE IS FAST. The twin waits 5 real seconds between passes and so does the port, because the port EXECS `sleep` rather than calling `time.sleep` (see the port's docstring). One stub therefore serves both sides identically, an exhaustion case costs milliseconds instead of a minute, and -- the part that matters -- the stub's
+own log records every sleep, so the comparison can assert the two implementations slept the same number of times. A `time.sleep` port would have left the bash side stubbed and the Python side sleeping for real, which is two differently-timed programs being called equivalent.
 
-`whoami`, `sudo`, `cut` AND `nproc` ARE STUBBED TOO, so the login name, the
-chown and the diagnostics are deterministic rather than dependent on who ran
-the suite.
+`whoami`, `sudo`, `cut` AND `nproc` ARE STUBBED TOO, so the login name, the chown and the diagnostics are deterministic rather than dependent on who ran the suite.
 
-THREE OUTCOMES ARE DRIVEN, as the box requires: immediate success, success
-after N retries, and exhausted retries. Each is compared on exit code, stdout,
-stderr and the full argv log.
+THREE OUTCOMES ARE DRIVEN, as the box requires: immediate success, success after N retries, and exhausted retries. Each is compared on exit code, stdout, stderr and the full argv log.
 
 TWO REFUSALS DIVERGE IN TEXT AND ARE COMPARED BY SHAPE, both named in the
 port's docstring: `${SSH_KEY:?...}` is a bash diagnostic carrying the twin's
-path and LINE NUMBER, and the usage line interpolates `$0`, which cannot be the
-same string for a `.sh` and a `.py`. Exit code, stream and ordering are
-compared exactly in both cases.
+path and LINE NUMBER, and the usage line interpolates `$0`, which cannot be the same string for a `.sh` and a `.py`. Exit code, stream and ordering are compared exactly in both cases.
 
 K=5 LEDGER: `.ci/shadow/w7p6-verify-ssh.observations.jsonl`, recorded against a
-disposable scratch git repository built outside this checkout, since
-`shadow-gate.ts --record` refuses a dirty tree and this checkout never is.
+disposable scratch git repository built outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout never is.
 """
 
 from __future__ import annotations
@@ -314,8 +294,7 @@ def test_exhausted_retries() -> None:
     """Outcome 3 of 3, and THE DEFECT THIS PORT PRESERVES.
 
     `succeed_on=0` means the stub never answers. Note the trailing `sleep` in
-    the expected sequence: the twin prints "retrying in 5s..." and sleeps AFTER
-    the final attempt, when there is nothing left to retry. The port reproduces
+    the expected sequence: the twin prints "retrying in 5s..." and sleeps AFTER the final attempt, when there is nothing left to retry. The port reproduces
     it; this assertion is what pins the defect so a future cutover cannot fix
     one side and quietly diverge from the other.
     """

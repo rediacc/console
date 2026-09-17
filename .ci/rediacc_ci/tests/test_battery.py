@@ -12,14 +12,9 @@ run-all.sh's header is a list of the ways it did:
   * a glob that stops matching, reporting success having run nothing,
   * and two schedulers deciding isolation separately and disagreeing.
 
-Each of those is a case below, driven against a fixture battery rather than the real
-one, so a control that is supposed to go RED can be planted without touching a tree
-other sessions are working in.
+Each of those is a case below, driven against a fixture battery rather than the real one, so a control that is supposed to go RED can be planted without touching a tree other sessions are working in.
 
-THE PROGRAM IS ALSO DRIVEN AS A PROGRAM. Exit codes and stream separation are
-invisible to a function-level test: `--selftest` must exit 0, a vacuous fixture must
-exit 1, and an absent bash must exit 77 and NOT 1, because 77 is this repo's
-"no verdict was reached" and 1 would say the battery judged the code and found it bad.
+THE PROGRAM IS ALSO DRIVEN AS A PROGRAM. Exit codes and stream separation are invisible to a function-level test: `--selftest` must exit 0, a vacuous fixture must exit 1, and an absent bash must exit 77 and NOT 1, because 77 is this repo's "no verdict was reached" and 1 would say the battery judged the code and found it bad.
 """
 
 import json
@@ -276,10 +271,7 @@ def test_the_selftest_exits_zero_and_prints_a_floored_control_count():
 def test_the_selftest_writes_nothing_to_stderr(tmp_path):
     """A green run must not print a FAIL line anywhere.
 
-    The selftest plants a deliberately vacuous fixture test and requires the runner
-    to refuse it. That refusal used to print `FAIL: test-vacuous.sh exited 0 without
-    a single PASS: line` onto the real stderr of a PASSING selftest -- a scary line
-    on a green run, which is exactly how a reader is trained to stop reading stderr.
+    The selftest plants a deliberately vacuous fixture test and requires the runner to refuse it. That refusal used to print `FAIL: test-vacuous.sh exited 0 without a single PASS: line` onto the real stderr of a PASSING selftest -- a scary line on a green run, which is exactly how a reader is trained to stop reading stderr.
     The fixture runs are `quiet=True`; this keeps them that way.
     """
     proc = _run_program(["--selftest"])
@@ -301,10 +293,7 @@ def test_the_selftest_writes_nothing_to_stderr(tmp_path):
 def test_the_selftest_is_hermetic_against_an_ambient_env_seam():
     """THE DEFECT THIS PINS, found 2026-09-07 by the runner refusing to report.
 
-    `battery.py` was driven on a shell that had exported RUN_ALL_WRITERS for the
-    bash twin. `build_schedule` read os.environ directly, so four controls asserting
-    on the SOURCE of a schedule got "env" where they wanted "lock" or "undeclared",
-    and the runner declared its own controls broken rather than judging the battery.
+    `battery.py` was driven on a shell that had exported RUN_ALL_WRITERS for the bash twin. `build_schedule` read os.environ directly, so four controls asserting on the SOURCE of a schedule got "env" where they wanted "lock" or "undeclared", and the runner declared its own controls broken rather than judging the battery.
     That refusal was correct; a control whose verdict depends on an ambient variable
     is a control that passes or fails for reasons the reader cannot see.
     """

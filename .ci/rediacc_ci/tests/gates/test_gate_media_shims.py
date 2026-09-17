@@ -1,7 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-media-shims.sh`.
 
-Tests for the two COMPATIBILITY ENTRY POINTS W10 phase 3 left behind, and for the
-interfaces they forward to. Four claims, in the twin's order:
+Tests for the two COMPATIBILITY ENTRY POINTS W10 phase 3 left behind, and for the interfaces they forward to. Four claims, in the twin's order:
 
   1. Both old paths exist, are executable, and are exec shims with no logic of
      their own (a shim that grew argument handling is a second implementation of
@@ -19,33 +18,16 @@ interfaces they forward to. Four claims, in the twin's order:
 
 Nothing here needs docker, node, npm, nvcc, aws, ssh, a GPU or a network.
 
-WHY THIS PORT DOES NOT CALL `media_verify.media_chain_mutate`. That helper does
-not exist on the Python side yet, and the twin uses it here only as "apply this
-sed to one file in my own sandbox". The two mutations are written out below as
-explicit line edits instead, each with a REFUSAL when its anchor is missing,
-which is the same discipline the twin gets from the follow-up greps around its
-sed calls. They agree with the sed forms because both target the single line that
-begins `exec "$ROOT`: the first prefixes a `shift` line before it, the second
-turns it into a non-exec call with `|| true` appended.
+WHY THIS PORT DOES NOT CALL `media_verify.media_chain_mutate`. That helper does not exist on the Python side yet, and the twin uses it here only as "apply this sed to one file in my own sandbox". The two mutations are written out below as explicit line edits instead, each with a REFUSAL when its anchor is missing, which is the same discipline the twin gets from the follow-up greps
+around its sed calls. They agree with the sed forms because both target the single line that begins `exec "$ROOT`: the first prefixes a `shift` line before it, the second turns it into a non-exec call with `|| true` appended.
 
-WHERE THIS REIMPLEMENTS grep AND sort, AND WHY THE ANSWERS AGREE. `upload_flags`
-is `grep -oE '^ +--[a-z-]+\\)' | tr -d ' )' | sort -u`, and `tts_env_names` is
-`grep -vE '^\\s*#' | grep -oE '\\b(REDIACC|RDC)_[A-Z0-9_]+' | sort -u`. Both are
-line-oriented regex scans over ASCII identifiers, and Python's `sorted()` on a set
-of ASCII strings is `sort -u` under any collation that cannot reorder them: every
-flag shares the `--` prefix and every variable shares an uppercase alphabet, so
-the two orders coincide. The frozen lists below are the twin's, unchanged, which
-is what makes that claim checkable rather than asserted.
+WHERE THIS REIMPLEMENTS grep AND sort, AND WHY THE ANSWERS AGREE. `upload_flags` is `grep -oE '^ +--[a-z-]+\\)' | tr -d ' )' | sort -u`, and `tts_env_names` is `grep -vE '^\\s*#' | grep -oE '\\b(REDIACC|RDC)_[A-Z0-9_]+' | sort -u`. Both are line-oriented regex scans over ASCII identifiers, and Python's `sorted()` on a set of ASCII strings is `sort -u` under any collation that
+cannot reorder them: every flag shares the `--` prefix and every variable shares an uppercase alphabet, so the two orders coincide. The frozen lists below are the twin's, unchanged, which is what makes that claim checkable rather than asserted.
 
-ONE DELIBERATE DIFFERENCE, stated because it is a difference: the twin measures a
-shim's code size with `printf '%s\\n' "$code" | wc -l`, which reports 1 for an
-EMPTY code set. This module counts the lines it actually has, so an empty shim
-reports 0. Both are under the ceiling of 4 and both then fail the `exec` check on
+ONE DELIBERATE DIFFERENCE, stated because it is a difference: the twin measures a shim's code size with `printf '%s\\n' "$code" | wc -l`, which reports 1 for an EMPTY code set. This module counts the lines it actually has, so an empty shim reports 0. Both are under the ceiling of 4 and both then fail the `exec` check on
 the next line, so no verdict moves; the Python number is simply the honest one.
 
-NO `xdist_group`. Every sandbox is built under pytest's own `tmp_path`, and the
-two cases that drive the REAL shims execute them read-only from an arbitrary cwd.
-`harness.fake_bin` mutates `os.environ["PATH"]` and restores it in a `finally`,
+NO `xdist_group`. Every sandbox is built under pytest's own `tmp_path`, and the two cases that drive the REAL shims execute them read-only from an arbitrary cwd. `harness.fake_bin` mutates `os.environ["PATH"]` and restores it in a `finally`,
 which is per-process and therefore per-worker; pytest never runs two tests at once
 inside one worker, so no case can observe another's PATH.
 """
@@ -100,9 +82,7 @@ def shim_sandbox(directory: pathlib.Path, shim: str, target: str) -> pathlib.Pat
     """The smallest tree in which the shim resolves: the shim at its real relative
     depth, and a RECORDER where the relocated program would be.
 
-    THE TARGET IS A RECORDER, NOT THE REAL PROGRAM, and that is the point. What is
-    under test is the forward, and the forward has to be observable independently
-    of whatever the far side does with the arguments.
+    THE TARGET IS A RECORDER, NOT THE REAL PROGRAM, and that is the point. What is under test is the forward, and the forward has to be observable independently of whatever the far side does with the arguments.
     """
     repo = directory / "repo"
     (repo / shim).parent.mkdir(parents=True, exist_ok=True)
@@ -117,8 +97,7 @@ def shim_sandbox(directory: pathlib.Path, shim: str, target: str) -> pathlib.Pat
 def mutate_exec_line(gate, path: pathlib.Path, kind: str) -> None:
     """The twin's two `media_chain_mutate` seds, as explicit line edits.
 
-    `shift`  : prefix a `shift` line before the `exec "$ROOT...` line.
-    `swallow`: turn `exec "$ROOT..."` into `"$ROOT..." || true`, which is how a
+    `shift` : prefix a `shift` line before the `exec "$ROOT...` line. `swallow`: turn `exec "$ROOT..."` into `"$ROOT..." || true`, which is how a
                wrapper reports success for a failed run.
     """
     lines = path.read_text(encoding="utf-8").splitlines()
@@ -143,9 +122,7 @@ def upload_flags(path: pathlib.Path) -> str:
 def tts_env_names(path: pathlib.Path) -> str:
     """Every REDIACC_/RDC_ variable the CODE reads, sorted and unique.
 
-    Comment lines are stripped first: the header discusses these names at length,
-    and a freeze that counted prose would be pinned to the documentation rather
-    than the interface.
+    Comment lines are stripped first: the header discusses these names at length, and a freeze that counted prose would be pinned to the documentation rather than the interface.
     """
     code = [
         line

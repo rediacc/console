@@ -1,11 +1,9 @@
 """`npm ls` must not report an invalid peer dependency.
 
 Ported from `.ci/scripts/quality/check-peer-deps.sh`, which is NOT deleted; see
-`rediacc_ci.quality.__init__` for why both copies live until a differential
-ledger row exists over K distinct trees.
+`rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees.
 
-WHAT THE TWIN SAYS, carried whole because it is the entire statement of intent
-the original ever made:
+WHAT THE TWIN SAYS, carried whole because it is the entire statement of intent the original ever made:
 
     Check for peer dependency conflicts
     Usage: check-peer-deps.sh
@@ -16,45 +14,27 @@ the original ever made:
     Example:
       .ci/scripts/quality/check-peer-deps.sh
 
-Its gate header registers it as step "Verify no peer dependency conflicts",
-needs none, lane quality-code.
+Its gate header registers it as step "Verify no peer dependency conflicts", needs none, lane quality-code.
 
 -----------------------------------------------------------------------------
 PORT NOTES. What is identical, what is deliberately stronger, and why.
 -----------------------------------------------------------------------------
 
-THE MERGE IS THE CONTRACT. The twin runs `npm ls 2>&1` and greps the COMBINED
-text, and that is not laziness: `npm ls` prints the dependency tree on stdout and
-its `npm error invalid: ...` lines on stderr, so a search of one stream alone
-would pass while the evidence went to the other. `rediacc_ci.proc.run` refuses to
-merge streams (its docstring names the 2026-09-06 stream-swap incident recorded
-at `.ci/scripts/lib/emit-advisory.sh:22-52`), so this module reaches for
+THE MERGE IS THE CONTRACT. The twin runs `npm ls 2>&1` and greps the COMBINED text, and that is not laziness: `npm ls` prints the dependency tree on stdout and its `npm error invalid: ...` lines on stderr, so a search of one stream alone would pass while the evidence went to the other. `rediacc_ci.proc.run` refuses to merge streams (its docstring names the 2026-09-06 stream-swap
+incident recorded at `.ci/scripts/lib/emit-advisory.sh:22-52`), so this module reaches for
 `subprocess` directly with `stderr=STDOUT` rather than quietly weakening the
 shared helper. Reproducing the merge is reproducing the subject.
 
-`|| true` IS REPRODUCED, AND IT IS LOAD-BEARING. `npm ls` exits non-zero on
-ANY tree problem, including the extraneous-package warnings this repository
-produces routinely, so the twin deliberately ignores the exit status and rules
-only on the TEXT. A port that trusted the exit code would fail on trees the twin
-passes. The status is therefore captured and reported in the success line, where
-a reader can see it, and never used as a verdict.
+`|| true` IS REPRODUCED, AND IT IS LOAD-BEARING. `npm ls` exits non-zero on ANY tree problem, including the extraneous-package warnings this repository produces routinely, so the twin deliberately ignores the exit status and rules only on the TEXT. A port that trusted the exit code would fail on trees the twin passes. The status is therefore captured and reported in the success
+line, where a reader can see it, and never used as a verdict.
 
-"invalid" IS A SUBSTRING TEST, NOT A WORD TEST. `grep -q "invalid"` matches
-`invalidate`, `Invalidated` is NOT matched (the pattern is case-sensitive), and
-matching inside a package name is possible in principle. The over-match is
-carried across on purpose: for a dead-code gate a false positive deletes live
-code, but for THIS gate a false positive is a human reading one extra line of
-`npm ls`, while a false negative ships a broken peer tree. The selftest pins the
-over-match in both directions so the next reader knows it is a decision.
+"invalid" IS A SUBSTRING TEST, NOT A WORD TEST. `grep -q "invalid"` matches `invalidate`, `Invalidated` is NOT matched (the pattern is case-sensitive), and matching inside a package name is possible in principle. The over-match is carried across on purpose: for a dead-code gate a false positive deletes live code, but for THIS gate a false positive is a human reading one extra line
+of `npm ls`, while a false negative ships a broken peer tree. The selftest pins the over-match in both directions so the next reader knows it is a decision.
 
-THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the
-one archaeology token this file would otherwise drop. `log_step`, `log_error`,
-`log_info` and `get_repo_root` are the gate's only dependency on the shared bash
-library, which is what makes the twin cheap to retire. Here `log.*` comes from
-`rediacc_ci.log` and the root from `rediacc_ci.paths.repo_root()`.
+THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the one archaeology token this file would otherwise drop. `log_step`, `log_error`, `log_info` and `get_repo_root` are the gate's only dependency on the shared bash library, which is what makes the twin cheap to retire. Here `log.*` comes from `rediacc_ci.log` and the root from
+`rediacc_ci.paths.repo_root()`.
 
-TWO PLACES THIS IS DELIBERATELY STRONGER THAN THE TWIN, both of them cases where
-the twin reports a clean tree having verified NOTHING. Neither can fire on a tree
+TWO PLACES THIS IS DELIBERATELY STRONGER THAN THE TWIN, both of them cases where the twin reports a clean tree having verified NOTHING. Neither can fire on a tree
 where npm works, so neither is reachable from the differential ledger; they are
 stated here so the divergence is a decision on the record rather than a surprise.
 
@@ -67,10 +47,7 @@ stated here so the divergence is a decision on the record rather than a surprise
      the tree, and an empty haystack contains no needle, so the twin is green.
      This port refuses in the repository's own vocabulary instead.
 
-WHAT NEITHER IMPLEMENTATION CAN SEE: whether the peer ranges are RIGHT. `npm ls`
-reports what the installed tree violates, so a dependency nobody installed, a
-workspace nobody linked, and an `overrides` entry that papers over a genuine
-conflict are all invisible here.
+WHAT NEITHER IMPLEMENTATION CAN SEE: whether the peer ranges are RIGHT. `npm ls` reports what the installed tree violates, so a dependency nobody installed, a workspace nobody linked, and an `overrides` entry that papers over a genuine conflict are all invisible here.
 """
 
 import os
@@ -97,8 +74,7 @@ EXIT_CANNOT_RUN = 77
 def invalid_lines(output: str) -> list[str]:
     """The lines `echo "$NPM_LS_OUTPUT" | grep "invalid"` would print.
 
-    Pure, so the selftest and pytest can drive it without an npm on PATH. The
-    trailing-newline strip reproduces `$( )`, which eats trailing newlines before
+    Pure, so the selftest and pytest can drive it without an npm on PATH. The trailing-newline strip reproduces `$( )`, which eats trailing newlines before
     the text ever reaches grep; without it the last element is an empty string
     that grep never sees.
     """
@@ -173,9 +149,7 @@ def main(argv: list[str] | None = None) -> int:
 def _shim(bin_dir: pathlib.Path, body: str) -> None:
     """Write an `npm` the gate will find on PATH.
 
-    A FILE, not a Python mock. The subject resolves `npm` through PATH exactly as
-    the bash twin does, and a patched `subprocess.run` would prove nothing about
-    that resolution -- which is the very thing case MISSING TOOL is about.
+    A FILE, not a Python mock. The subject resolves `npm` through PATH exactly as the bash twin does, and a patched `subprocess.run` would prove nothing about that resolution -- which is the very thing case MISSING TOOL is about.
     """
     shim = bin_dir / "npm"
     shim.write_text("#!/bin/bash\n%s\n" % body, encoding="utf-8")
@@ -185,8 +159,7 @@ def _shim(bin_dir: pathlib.Path, body: str) -> None:
 def selftest() -> int:
     """Plant a defect in BOTH directions and require the gate to notice.
 
-    Every case has its mirror. A gate that always fires is as useless as one that
-    never does, and red is the direction a reviewer waves through.
+    Every case has its mirror. A gate that always fires is as useless as one that never does, and red is the direction a reviewer waves through.
     """
     # floor=13 rather than 0: the floor is the only thing that catches a selftest
     # whose cases stopped executing, and a default of zero is a floor that cannot fail. See rediacc_ci.controls for the five drifted copies that taught it.

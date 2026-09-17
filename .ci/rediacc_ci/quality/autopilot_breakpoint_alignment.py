@@ -4,39 +4,25 @@ breakpoint. This gate holds the copies to the original.
 Ported from `.ci/scripts/quality/check-autopilot-breakpoint-alignment.sh`, which
 is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHY A GATE AND NOT A COMMENT. `.github/workflows/autopilot.yml`'s model job can
-hold its runner open with a tmate shell behind a Cloudflare tunnel, driven by the
-vendored scripts in `.ci/breakpoint/scripts/`. The inputs that drive it
-(`hold-duration`, `debug-shell`, `send-email`) are hand-copied from
-`.ci/breakpoint/workflow/breakpoint.yml`, because breakpoint.yml is FROZEN in
-MANIFEST.sha256 and cannot grow an autopilot-shaped variant, and GitHub has no
-include mechanism for workflow inputs. Hand-copied shapes drift silently, and the
-drift is worst exactly where it matters: `send-email` defaulting to false in one
-file and true in the other would mean one of the two tools prints a
-bearer-credential URL into a world-readable log while the operator believes both
-behave the same way.
+WHY A GATE AND NOT A COMMENT. `.github/workflows/autopilot.yml`'s model job can hold its runner open with a tmate shell behind a Cloudflare tunnel, driven by the vendored scripts in `.ci/breakpoint/scripts/`. The inputs that drive it (`hold-duration`, `debug-shell`, `send-email`) are hand-copied from `.ci/breakpoint/workflow/breakpoint.yml`, because breakpoint.yml is FROZEN in
+MANIFEST.sha256 and cannot grow an autopilot-shaped variant, and GitHub has no include mechanism for workflow inputs. Hand-copied shapes drift silently, and the drift is worst exactly where it matters: `send-email` defaulting to false in one file and true in the other would mean one of the two tools prints a bearer-credential URL into a world-readable log while the operator
+believes both behave the same way.
 
-breakpoint.yml is the CANONICAL side. autopilot.yml follows it, never the reverse:
-this gate never asks anyone to edit the frozen file.
+breakpoint.yml is the CANONICAL side. autopilot.yml follows it, never the reverse: this gate never asks anyone to edit the frozen file.
 
 WHAT IS COMPARED
   breakpoint `duration`      options == autopilot `hold-duration` options
   breakpoint `debug-shell`   type + default == autopilot `debug-shell`
   breakpoint `send-email`    type + default == autopilot `send-email`
-Descriptions are deliberately NOT compared: breakpoint's `duration` text talks
-about named-mode Access logins, which the autopilot (quick tunnel only) does not
-have, and forcing prose equality would make the gate wrong.
+Descriptions are deliberately NOT compared: breakpoint's `duration` text talks about named-mode Access logins, which the autopilot (quick tunnel only) does not have, and forcing prose equality would make the gate wrong.
 
-ANTI-VACUITY. Every extraction that comes back empty is a FAILURE, not a pass: a
-missing file, a missing input block, a missing field, or an options list that
-parses to nothing all exit 1. A gate that silently compares "" to "" is the
-failure mode this repo has already shipped once.
+ANTI-VACUITY. Every extraction that comes back empty is a FAILURE, not a pass: a missing file, a missing input block, a missing field, or an options list that parses to nothing all exit 1. A gate that silently compares "" to "" is the failure mode this repo has already shipped once.
 
 Env seams (for the gate's own test; both default to the real files):
   AUTOPILOT_BP_ALIGN_BREAKPOINT_FILE
   AUTOPILOT_BP_ALIGN_AUTOPILOT_FILE
 
-Exit:  0 aligned, 1 drift or nothing-to-check.
+Exit: 0 aligned, 1 drift or nothing-to-check.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -44,51 +30,26 @@ PORT NOTES.
 
 THE EXTRACTOR IS A HAND-ROLLED SCANNER ON BOTH SIDES, AND DELIBERATELY SO. This
 package already owns a YAML reader -- `rediacc_ci.workflows` -- and the obvious
-port routes `input_field` through it. That would be a DIFFERENT GATE. The twin's
-awk program reads `on:` -> `workflow_dispatch:` -> `inputs:` positionally, by
-indentation, and its comment states the constraint that makes that correct: "both
-files declare inputs at the same depth (`on:` -> `workflow_dispatch:` -> `inputs:`
--> the input at 6 spaces, its fields at 8), so one extractor serves both. Scanning
-is scoped to the inputs block: a 6-space bare key elsewhere in the file (there are
-several) must never be mistaken for an input." A real YAML parser would resolve
-anchors, accept a block list where the twin returns empty, and accept a different
-indentation where the twin exits -- each of which turns an anti-vacuity refusal
-into a silent pass. So the scanner is reproduced line for line, and the reason it
-is not a parser is recorded here rather than rediscovered by whoever next reaches
+port routes `input_field` through it. That would be a DIFFERENT GATE. The twin's awk program reads `on:` -> `workflow_dispatch:` -> `inputs:` positionally, by indentation, and its comment states the constraint that makes that correct: "both files declare inputs at the same depth (`on:` -> `workflow_dispatch:` -> `inputs:` -> the input at 6 spaces, its fields at 8), so one extractor
+serves both. Scanning is scoped to the inputs block: a 6-space bare key elsewhere in the file (there are several) must never be mistaken for an input." A real YAML parser would resolve anchors, accept a block list where the twin returns empty, and accept a different indentation where the twin exits -- each of which turns an anti-vacuity refusal into a silent pass. So the scanner is
+reproduced line for line, and the reason it is not a parser is recorded here rather than rediscovered by whoever next reaches
 for `workflows.load`.
 
-`if (ind < 6) exit` IS THE END OF THE INPUTS BLOCK, and it is an `exit` in awk --
-the whole program stops, not just the loop. Reproduced as an early `return`, which
-is the same thing for a function that has already found nothing.
+`if (ind < 6) exit` IS THE END OF THE INPUTS BLOCK, and it is an `exit` in awk -- the whole program stops, not just the loop. Reproduced as an early `return`, which is the same thing for a function that has already found nothing.
 
 VALUES ARE READ AS WRITTEN, then normalized by the caller. An inline flow list
 (`['5', '10']`) is the shape both files use; a block list would return empty here
 and be caught by the anti-vacuity check rather than silently comparing nothing.
 
-`normalize_options` IS `tr -d "[]'\\" "` FOLLOWED BY `sed 's/,$//'`. Character
-deletion, not tokenisation: the comparison is over the VALUES, not over the YAML
-author's spacing. Reproduced as `str.translate` plus one trailing-comma strip,
-because a "cleaner" split-and-rejoin would silently normalise `5,,10` into `5,10`
-and stop the gate noticing a malformed list.
+`normalize_options` IS `tr -d "[]'\\" "` FOLLOWED BY `sed 's/,$//'`. Character deletion, not tokenisation: the comparison is over the VALUES, not over the YAML author's spacing. Reproduced as `str.translate` plus one trailing-comma strip, because a "cleaner" split-and-rejoin would silently normalise `5,,10` into `5,10` and stop the gate noticing a malformed list.
 
-THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the
-one archaeology token this file would otherwise drop. Its two `# shellcheck
+THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the one archaeology token this file would otherwise drop. Its two `# shellcheck
 source=` / `# BLOCKER:` lines record that `log_error`, `log_info` and
-`get_repo_root` are used throughout, and that the BLOCKER exists because
-`check-python-gate-deps` and shellcheck would otherwise read the source line as
-unused. In the port `log_*` comes from `rediacc_ci.log` and the root from
-`rediacc_ci.paths.repo_root()`, so there is no source line and no suppression to
-justify -- but the FACT that these three helpers are the gate's only dependency on
-the shared bash library is what makes the twin cheap to retire, and that is worth
-keeping.
+`get_repo_root` are used throughout, and that the BLOCKER exists because `check-python-gate-deps` and shellcheck would otherwise read the source line as unused. In the port `log_*` comes from `rediacc_ci.log` and the root from `rediacc_ci.paths.repo_root()`, so there is no source line and no suppression to justify -- but the FACT that these three helpers are the gate's only
+dependency on the shared bash library is what makes the twin cheap to retire, and that is worth keeping.
 
-THE MULTI-LINE FINDING. The twin's `fail()` calls `log_error` with an embedded
-newline, so only the FIRST line carries the `✗` glyph and the rest arrive as
-indented continuation. `scripts/lib/shadow-gate.ts` handles exactly that with its
-continuation rule -- "findings in this tree are overwhelmingly printed as a marked
-HEADER followed by the actual findings on unmarked indented lines" -- so the
-newlines are preserved rather than flattened into one long line, which would make
-the port's finding set a different size from the twin's and read as a mismatch.
+THE MULTI-LINE FINDING. The twin's `fail()` calls `log_error` with an embedded newline, so only the FIRST line carries the `✗` glyph and the rest arrive as indented continuation. `scripts/lib/shadow-gate.ts` handles exactly that with its continuation rule -- "findings in this tree are overwhelmingly printed as a marked HEADER followed by the actual findings on unmarked indented
+lines" -- so the newlines are preserved rather than flattened into one long line, which would make the port's finding set a different size from the twin's and read as a mismatch.
 """
 
 import os
@@ -125,11 +86,7 @@ _OPTION_STRIP = str.maketrans("", "", "[]'\" ")
 def input_field(path: pathlib.Path, want: str, field: str) -> str:
     """One field out of one workflow_dispatch input block, as written.
 
-    A faithful transcription of the twin's awk program. The `next`/`exit` control
-    flow is preserved as `continue`/`return` at the same points, because the
-    points are where the anti-vacuity refusals come from: every path that returns
-    "" here becomes a `require_value` failure in the caller, and a port that
-    returned a value where awk returned nothing would turn a refusal into a pass.
+    A faithful transcription of the twin's awk program. The `next`/`exit` control flow is preserved as `continue`/`return` at the same points, because the points are where the anti-vacuity refusals come from: every path that returns "" here becomes a `require_value` failure in the caller, and a port that returned a value where awk returned nothing would turn a refusal into a pass.
     """
     in_dispatch = False
     in_inputs = False
@@ -175,8 +132,7 @@ def normalize_options(value: str) -> str:
 def _require_value(label: str, value: str) -> bool:
     """An empty extraction means the parser lost its target.
 
-    That is a broken gate, not an aligned pair, and the distinction is the whole
-    anti-vacuity contract: two empty strings compare equal.
+    That is a broken gate, not an aligned pair, and the distinction is the whole anti-vacuity contract: two empty strings compare equal.
     """
     if value:
         return True
@@ -311,11 +267,7 @@ jobs:
 def selftest() -> int:
     """Plant every drift the gate names, plus the mirror for each.
 
-    The mirrors are not padding. This gate's failure mode is an extractor that
-    stopped finding anything, and an extractor that finds nothing reports DRIFT
-    on every plant while being completely broken -- so a suite of plants alone
-    would look perfect on a dead scanner. Each plant is therefore paired with the
-    unmutated fixture, which must come back clean.
+    The mirrors are not padding. This gate's failure mode is an extractor that stopped finding anything, and an extractor that finds nothing reports DRIFT on every plant while being completely broken -- so a suite of plants alone would look perfect on a dead scanner. Each plant is therefore paired with the unmutated fixture, which must come back clean.
     """
     ctl = Controls("autopilot-breakpoint-alignment", floor=14, verbose=True)
 

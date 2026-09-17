@@ -1,24 +1,15 @@
 """Port of `.ci/scripts/test/gates/test-breakpoint-portability.sh`.
 
-Makes the "self-contained, copyable folder" claim about `.ci/breakpoint/`
-ENFORCEABLE rather than aspirational.
+Makes the "self-contained, copyable folder" claim about `.ci/breakpoint/` ENFORCEABLE rather than aspirational.
 
-`.ci/breakpoint/` exists to be copied wholesale into renet / account / elite,
-repos that have no `.ci/scripts/`, no package.json, no app-token plumbing and no
-rediacc-specific anything. Nothing about a copy FAILS loudly when that stops
-being true: the folder keeps working here, in console, where all of those things
-happen to exist, and only breaks in the downstream repo months later, in somebody
+`.ci/breakpoint/` exists to be copied wholesale into renet / account / elite, repos that have no `.ci/scripts/`, no package.json, no app-token plumbing and no rediacc-specific anything. Nothing about a copy FAILS loudly when that stops being true: the folder keeps working here, in console, where all of those things happen to exist, and only breaks in the downstream repo months
+later, in somebody
 else's CI, with an error that points nowhere useful.
 
-SO THE FIXTURE IS THE POINT. Every case runs against a COPY of `.ci/breakpoint/`
-made into an empty temp dir with no `.ci/scripts`, no package.json and no `.git`
-alongside it. What passes there is what a downstream repo actually gets. NOTHING
-HERE WRITES UNDER `.ci/breakpoint/`: the two cases that mutate (deleting
-`MANIFEST.sha256`, mutating the canonical validator) mutate the COPY, which is
-what makes this subject safe to drive from a tree holding other sessions' work.
+SO THE FIXTURE IS THE POINT. Every case runs against a COPY of `.ci/breakpoint/` made into an empty temp dir with no `.ci/scripts`, no package.json and no `.git` alongside it. What passes there is what a downstream repo actually gets. NOTHING HERE WRITES UNDER `.ci/breakpoint/`: the two cases that mutate (deleting `MANIFEST.sha256`, mutating the canonical validator) mutate the
+COPY, which is what makes this subject safe to drive from a tree holding other sessions' work.
 
-TWO ASSERTIONS ARE NARROWER THAN THEY LOOK, both written strict first and both
-having found something real:
+TWO ASSERTIONS ARE NARROWER THAN THEY LOOK, both written strict first and both having found something real:
   * console's script tree IS referenced, in three scripts, as an OPTIONAL hook
     guarded by `[[ -x ]]`. That is portable (absent means skipped), so the case
     pins the exact file set plus the guard, not a blanket zero.
@@ -27,15 +18,11 @@ having found something real:
     diagnostic, so the case pins those two shapes, not a blanket zero.
 Both keep the property that a NEW hardcoded reference is red.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `gates.lock.json` records
-`reads: ["tree:repo"]` for `gate-test:breakpoint-portability`: every case copies
-`.ci/breakpoint/` and the subset cases read `.ci/scripts/lib/blocker-validator.sh`
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `gates.lock.json` records `reads: ["tree:repo"]` for `gate-test:breakpoint-portability`: every case copies `.ci/breakpoint/` and the subset cases read `.ci/scripts/lib/blocker-validator.sh`
 while another gate may be rewriting neither, but the lock is the contract and
-`real_tree_admission` refuses a twin in that set that does not declare
-`REAL_TREE_TWIN`.
+`real_tree_admission` refuses a twin in that set that does not declare `REAL_TREE_TWIN`.
 
-`check_subset` TAKES ITS EXTRACTOR AS AN ARGUMENT, which is the port's shape for
-the twin's function shadowing. The flaky-read control needs the SAME code path
+`check_subset` TAKES ITS EXTRACTOR AS AN ARGUMENT, which is the port's shape for the twin's function shadowing. The flaky-read control needs the SAME code path
 driven with a truncating reader; a control that re-implemented the comparison
 would prove only that it agrees with itself.
 """
@@ -134,8 +121,7 @@ def bp_hit_files(root: pathlib.Path, pattern: str) -> list[str]:
 def extract_array(path: pathlib.Path, name: str) -> list[str]:
     """The quoted string elements of a `readonly <name>=(` array literal.
 
-    Comment lines inside the array carry no quotes and are therefore skipped for
-    free, exactly as the twin's `grep -oE '"[^"]*"'` skips them.
+    Comment lines inside the array carry no quotes and are therefore skipped for free, exactly as the twin's `grep -oE '"[^"]*"'` skips them.
     """
     start = "readonly %s=(" % name
     out: list[str] = []
@@ -159,21 +145,11 @@ def extract_array(path: pathlib.Path, name: str) -> list[str]:
 def check_subset(canon_path: pathlib.Path, bp: pathlib.Path, extract=extract_array):
     """`(rc, log)` for "the vendored BLOCKER list is a subset of the canonical one".
 
-    A SEPARATE FUNCTION taking both paths AND its extractor, precisely so the
-    planted-defect controls below can drive it against synthetic inputs instead of
-    only ever exercising today's real, already-agreeing files. A test that only
-    runs the happy path proves the mechanism ran, never that it can still catch
-    anything -- which is exactly how the two count-floors this function replaced
-    went undetected until they misfired in CI.
+    A SEPARATE FUNCTION taking both paths AND its extractor, precisely so the planted-defect controls below can drive it against synthetic inputs instead of only ever exercising today's real, already-agreeing files. A test that only runs the happy path proves the mechanism ran, never that it can still catch anything -- which is exactly how the two count-floors this function
+    replaced went undetected until they misfired in CI.
 
-    THE RE-VERIFICATION IS THE POINT, and it is ANNOUNCED rather than silent. The
-    `canon_count` floor was added after a truncated canonical read false-accused
-    the vendored list on 2026-07-31, and it is NOT sufficient: on 2026-08-28 the
-    lane reported "vendored-only phrase: 'skipped'" and failed while the same gate
-    passed standalone three times, and a read that drops ONE phrase clears a floor
-    of 30 comfortably. A second, independent read separates the two cases by
-    construction: a transient truncation does not survive it, a real subset
-    violation does.
+    THE RE-VERIFICATION IS THE POINT, and it is ANNOUNCED rather than silent. The `canon_count` floor was added after a truncated canonical read false-accused the vendored list on 2026-07-31, and it is NOT sufficient: on 2026-08-28 the lane reported "vendored-only phrase: 'skipped'" and failed while the same gate passed standalone three times, and a read that drops ONE phrase
+    clears a floor of 30 comfortably. A second, independent read separates the two cases by construction: a transient truncation does not survive it, a real subset violation does.
     """
     log: list[str] = []
 
@@ -288,23 +264,14 @@ def test_no_nonportable_common_helpers(gate):
 def test_no_app_token_plumbing(gate):
     """No GitHub App / token plumbing on the DEFAULT path.
 
-    THE CONTRACT CHANGED AND THIS ENCODES THE NEW ONE. The original rule was "no
-    app token anywhere", correct while breakpoint only served its own origin.
-    Then `services: onprem` landed, and the on-prem compose file lives in a
-    PRIVATE repo the default GITHUB_TOKEN cannot clone. So the property is no
-    longer "never", it is "not on the default path": `services` defaults to
-    `none`, the default dispatch stays token-free, and the token step is legal
+    THE CONTRACT CHANGED AND THIS ENCODES THE NEW ONE. The original rule was "no app token anywhere", correct while breakpoint only served its own origin. Then `services: onprem` landed, and the on-prem compose file lives in a PRIVATE repo the default GITHUB_TOKEN cannot clone. So the property is no longer "never", it is "not on the default path": `services` defaults to `none`, the
+    default dispatch stays token-free, and the token step is legal
     ONLY in the workflow and ONLY behind `inputs.services != 'none'`.
 
-    Scripts remain absolutely forbidden: a script is what gets vendored and called
-    directly, so a token dependency there has no `if:` to hide behind.
+    Scripts remain absolutely forbidden: a script is what gets vendored and called directly, so a token dependency there has no `if:` to hide behind.
 
-    NOT COMMENT-STRIPPED, on purpose: even a commented-out app-token step is a
-    copy-paste hazard in a repo with no such app registered. BOTH spellings are
-    matched because this is a DETECTOR pattern rather than a reference -- the
-    2026-09-02 rename rewrote `APP_PRIVATE_KEY` to `GITHUB_APP_PRIVATE_KEY` and
-    the assertion silently stopped matching, while a vendored copy in an
-    un-renamed repo is exactly where the old spelling is a violation.
+    NOT COMMENT-STRIPPED, on purpose: even a commented-out app-token step is a copy-paste hazard in a repo with no such app registered. BOTH spellings are matched because this is a DETECTOR pattern rather than a reference -- the 2026-09-02 rename rewrote `APP_PRIVATE_KEY` to `GITHUB_APP_PRIVATE_KEY` and the assertion silently stopped matching, while a vendored copy in an un-renamed
+    repo is exactly where the old spelling is a violation.
     """
     token_re = re.compile(r"app-token|vars\.APP_ID|(?:GITHUB_)?APP_PRIVATE_KEY")
     with harness.temp_dir() as tmp:
@@ -353,8 +320,7 @@ def test_no_app_token_plumbing(gate):
 def test_upstream_slug_is_configurable(gate):
     """The upstream slug lives in conf, not welded into scripts.
 
-    FINDING, reported rather than fixed, because `.ci/breakpoint/` is another
-    owner's: code lines DO name the canonical slug. Some are
+    FINDING, reported rather than fixed, because `.ci/breakpoint/` is another owner's: code lines DO name the canonical slug. Some are
     `${BREAKPOINT_UPSTREAM_REPO:-...}` fallbacks (harmless: conf wins, and every
     vendored copy ships a conf) and one is an `e.g.` in an error message. A
     blanket zero-reference assertion is therefore false today; this pins the two
@@ -387,9 +353,7 @@ def test_upstream_slug_is_configurable(gate):
 def test_workflow_runner_choices(gate):
     """The workflow cannot be dispatched onto a runner that cannot host a session.
 
-    ubuntu-slim's hard 15-minute cap makes a debug session impossible: the box
-    dies mid-investigation, which reads as a breakpoint bug rather than as a
-    runner limit. Offering it as a choice is offering a trap.
+    ubuntu-slim's hard 15-minute cap makes a debug session impossible: the box dies mid-investigation, which reads as a breakpoint bug rather than as a runner limit. Offering it as a choice is offering a trap.
     """
     with harness.temp_dir() as tmp:
         bp = make_isolated(tmp)
@@ -427,8 +391,7 @@ def test_workflow_runner_choices(gate):
 def test_all_scripts_parse_standalone(gate):
     """Every script parses with no console around it.
 
-    `env -i` is the point: a script that only parses because this shell exported
-    something is not portable, and the downstream repo will not have it.
+    `env -i` is the point: a script that only parses because this shell exported something is not portable, and the downstream repo will not have it.
     """
     bash = harness.require_tool("bash", "install bash; the subject is a folder of shell scripts")
     with harness.temp_dir() as tmp:
@@ -456,9 +419,7 @@ def test_all_scripts_parse_standalone(gate):
 def test_drift_gate_runs_standalone(gate):
     """The folder SELF-VERIFIES with no console around it.
 
-    This is the assertion that makes the rest credible: the integrity gate is the
-    one script a downstream repo MUST be able to run, and it must not need
-    console's `.ci/`, a git remote, or the network to do it.
+    This is the assertion that makes the rest credible: the integrity gate is the one script a downstream repo MUST be able to run, and it must not need console's `.ci/`, a git remote, or the network to do it.
     """
     bash = harness.require_tool("bash", "install bash; the drift gate is a shell script")
     with harness.temp_dir() as tmp:
@@ -516,11 +477,7 @@ def test_subset_check_catches_a_real_violation(gate):
     """PLANTED-DEFECT REGRESSION: a REAL subset violation must still fire, and
     must be named as one rather than excused as instability.
 
-    Both reads of the mutated canonical see the SAME (genuinely missing) content,
-    which is exactly what distinguishes a real violation from the transient case
-    below. The deleted phrase is the exact one this gate's own history cites as
-    having false-accused the vendored list on 2026-08-28, so the fixture is not a
-    synthetic string the check happens to ignore.
+    Both reads of the mutated canonical see the SAME (genuinely missing) content, which is exactly what distinguishes a real violation from the transient case below. The deleted phrase is the exact one this gate's own history cites as having false-accused the vendored list on 2026-08-28, so the fixture is not a synthetic string the check happens to ignore.
     """
     with harness.temp_dir() as tmp:
         bp = make_isolated(tmp)
@@ -556,16 +513,10 @@ def test_subset_check_survives_a_flaky_second_read(gate):
     """PLANTED-DEFECT REGRESSION: a TRANSIENT truncation on the FIRST read must be
     reported as a re-verified phrase, never as a subset violation.
 
-    This is the exact shape of the 2026-07-31 and 2026-08-28 incidents: the two
-    reads DISAGREE, which is the one fact that proves the list is not at fault.
+    This is the exact shape of the 2026-07-31 and 2026-08-28 incidents: the two reads DISAGREE, which is the one fact that proves the list is not at fault.
 
-    THE TRUNCATION IS ON CALL #1, not on the re-verify call, and that ordering is
-    the whole control: call #1 is the initial canon capture the loop checks
-    vendored phrases against, so truncating THAT is what makes a real phrase look
-    absent on first read and forces the re-verify path to fire. Exactly ONE real
-    phrase is dropped -- the same one the 2026-08-28 incident dropped -- so the
-    canonical count stays comfortably above its floor and the per-phrase
-    re-verify loop is what has to catch this, not the coarse floor.
+    THE TRUNCATION IS ON CALL #1, not on the re-verify call, and that ordering is the whole control: call #1 is the initial canon capture the loop checks vendored phrases against, so truncating THAT is what makes a real phrase look absent on first read and forces the re-verify path to fire. Exactly ONE real phrase is dropped -- the same one the 2026-08-28 incident dropped -- so the
+    canonical count stays comfortably above its floor and the per-phrase re-verify loop is what has to catch this, not the coarse floor.
     """
     with harness.temp_dir() as tmp:
         bp = make_isolated(tmp)
@@ -612,15 +563,10 @@ def test_subset_check_survives_a_flaky_second_read(gate):
 def test_the_isolated_copy_is_a_copy_and_the_source_is_untouched(gate):
     """ADDED BY THE PORT, and it is the claim every other case rests on.
 
-    Two cases MUTATE their fixture: one deletes `MANIFEST.sha256`, one rewrites
-    the canonical validator. Both are safe only because `make_isolated` copies
-    first. If it ever returned the real path -- a refactor, a symlink, a
-    `copytree(dirs_exist_ok)` pointed at the source -- the delete would land on
-    `.ci/breakpoint/` in a tree holding other sessions' work, and the very next
-    drift check would report a defect nobody introduced.
+    Two cases MUTATE their fixture: one deletes `MANIFEST.sha256`, one rewrites the canonical validator. Both are safe only because `make_isolated` copies first. If it ever returned the real path -- a refactor, a symlink, a `copytree(dirs_exist_ok)` pointed at the source -- the delete would land on `.ci/breakpoint/` in a tree holding other sessions' work, and the very next drift
+    check would report a defect nobody introduced.
 
-    So: the copy is not the source, it holds the same file set, and the source's
-    digest is unchanged after a full copy-and-mutate cycle.
+    So: the copy is not the source, it holds the same file set, and the source's digest is unchanged after a full copy-and-mutate cycle.
     """
 
     def tree_digest(root: pathlib.Path) -> str:

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Stop the CI backend services and clean up after them.
 
-PORT OF `.ci/scripts/infra/ci-stop.sh` (ruling 7, W7P6). Behaviour-for-behaviour,
-including the parts that look like accidents and are not:
+PORT OF `.ci/scripts/infra/ci-stop.sh` (ruling 7, W7P6). Behaviour-for-behaviour, including the parts that look like accidents and are not:
 
   * EVERY message goes to STDOUT, not stderr. The twin uses bare `echo`, and the
     workflow step that runs this reads the log as one stream; splitting them here
@@ -17,14 +16,10 @@ including the parts that look like accidents and are not:
     greps `^<name>$` against `--format '{{.Names}}'`, so `rediacc-account-server-2`
     is a different container and is left alone.
 
-WHY THE PORT IS STDLIB-ONLY. `.ci/scripts/housekeeping/retire-shadowed-secrets.py`
-set the precedent for a non-gate entry point under `.ci/scripts/`: no `_cipath`
-hop and no `rediacc_ci` import, because this file runs during TEARDOWN, after a
-job has already failed as often as not, and a teardown that cannot start because
-a package import failed is a teardown that leaves the machine dirty.
+WHY THE PORT IS STDLIB-ONLY. `.ci/scripts/housekeeping/retire-shadowed-secrets.py` set the precedent for a non-gate entry point under `.ci/scripts/`: no `_cipath` hop and no `rediacc_ci` import, because this file runs during TEARDOWN, after a job has already failed as often as not, and a teardown that cannot start because a package import failed is a teardown that leaves the
+machine dirty.
 
-WHAT IS DELIBERATELY NOT HERE. No `--dry-run`, no `--force`, no flags at all. The
-twin takes none, and a port that grows an interface is not a port.
+WHAT IS DELIBERATELY NOT HERE. No `--dry-run`, no `--force`, no flags at all. The twin takes none, and a port that grows an interface is not a port.
 """
 
 import pathlib
@@ -45,11 +40,7 @@ CONTAINERS = ("rediacc-account-server",)
 def docker_missing() -> str | None:
     """A LOUD refusal rather than a FileNotFoundError traceback.
 
-    The twin gets `docker: command not found` from the shell and, under `set -e`
-    inside `( ... )`, prints its fallback line and carries on to a force-removal
-    loop whose every `docker` call also fails silently -- so it exits 0 having
-    removed nothing. That is the vacuous green this file refuses to reproduce:
-    teardown that cannot reach the daemon has not torn anything down.
+    The twin gets `docker: command not found` from the shell and, under `set -e` inside `( ... )`, prints its fallback line and carries on to a force-removal loop whose every `docker` call also fails silently -- so it exits 0 having removed nothing. That is the vacuous green this file refuses to reproduce: teardown that cannot reach the daemon has not torn anything down.
     """
     if shutil.which("docker"):
         return None
@@ -63,8 +54,7 @@ def docker_missing() -> str | None:
 def running_container_names() -> list[str]:
     """Every container name docker knows about, running or not.
 
-    `docker ps -a` and not `docker ps`: the twin passes `-a` because a container
-    that EXITED still holds its name and still has to be `docker rm`'d.
+    `docker ps -a` and not `docker ps`: the twin passes `-a` because a container that EXITED still holds its name and still has to be `docker rm`'d.
     """
     proc = subprocess.run(
         ["docker", "ps", "-a", "--format", "{{.Names}}"],

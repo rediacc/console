@@ -2,30 +2,18 @@
 
 Ported from `.ci/scripts/quality/check-profiler-coverage.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live until W7
-phase 5. The twin's own registration is `kind: test`, covered by
-`.ci/scripts/test/gates/test-profiler-coverage.sh`, whose BLOCKER reads:
-`test-profiler-coverage.sh:584 runs the gate seam-free against the real tree
-inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests")`
+phase 5. The twin's own registration is `kind: test`, covered by `.ci/scripts/test/gates/test-profiler-coverage.sh`, whose BLOCKER reads: `test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests")`
 with the real `.github/workflows`, the real `.profiler-coverage-allowlist`, the
 real `.github/actions/profiler/action.yml` and the real floors, so the full
 121-job parse and both relations execute every CI run; the 22 fixture cases
-around it prove every fire direction, including the anti-vacuity refusals (empty
-dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree
-run can never exercise.
+around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree run can never exercise.
 
 -----------------------------------------------------------------------------
 THE TWIN'S ARCHAEOLOGY, CARRIED.
 -----------------------------------------------------------------------------
 
-WHY. Standard runners are free and unlimited on this public repo, which is
-exactly what makes oversizing invisible: a job that uses about 1 core on a
-4-vCPU ubuntu-latest VM burns four cores' worth of the world's electricity to do
-one core's work, and no bill ever says so. The profiler action
-(`.github/actions/profiler`) turns runner sizing into a measurement. A
-measurement that covers 20 of 97 jobs measures nothing useful, and coverage
-maintained by habit decays the moment somebody adds a job in a hurry. This gate
-makes coverage an INVARIANT instead: a new Linux job is red until it is either
-profiled or written down here with a reason.
+WHY. Standard runners are free and unlimited on this public repo, which is exactly what makes oversizing invisible: a job that uses about 1 core on a 4-vCPU ubuntu-latest VM burns four cores' worth of the world's electricity to do one core's work, and no bill ever says so. The profiler action (`.github/actions/profiler`) turns runner sizing into a measurement. A measurement that
+covers 20 of 97 jobs measures nothing useful, and coverage maintained by habit decays the moment somebody adds a job in a hurry. This gate makes coverage an INVARIANT instead: a new Linux job is red until it is either profiled or written down here with a reason.
 
 TWO RELATIONS, because there are two ways the wiring is wrong:
 
@@ -39,30 +27,15 @@ TWO RELATIONS, because there are two ways the wiring is wrong:
       read off a 1-core / 5 GB box).
 
 FAIL-CLOSED ON WHAT IT CANNOT RESOLVE. `runs-on: ${{ inputs.runner }}` cannot be
-resolved statically. An unresolvable runner counts as REQUIRING coverage, never
-as exempt: "we could not tell" must cost an allowlist line with a reason,
-because the alternative is a silent hole shaped exactly like the ones this repo
-keeps finding.
+resolved statically. An unresolvable runner counts as REQUIRING coverage, never as exempt: "we could not tell" must cost an allowlist line with a reason, because the alternative is a silent hole shaped exactly like the ones this repo keeps finding.
 
-COVERAGE IS DIRECT OR THROUGH A VERIFIED WRAPPER. A job is covered when its own
-steps use the action, or when they use a composite that carries it. Whether a
-JavaScript action's `post:` hook still fires when the action is nested inside a
-composite was the open question profiler-probe.yml existed to answer, and on
-2026-08-08 it answered YES on real runners (run 31252148469: the panel appeared
-on ubuntu-slim and on ubuntu-latest through a composite wrapper). So
-`./.github/actions/setup-workspace` is a wrapper from here on, and the roughly
-26 jobs that already call it are covered without an edit each.
+COVERAGE IS DIRECT OR THROUGH A VERIFIED WRAPPER. A job is covered when its own steps use the action, or when they use a composite that carries it. Whether a JavaScript action's `post:` hook still fires when the action is nested inside a composite was the open question profiler-probe.yml existed to answer, and on 2026-08-08 it answered YES on real runners (run 31252148469: the
+panel appeared on ubuntu-slim and on ubuntu-latest through a composite wrapper). So `./.github/actions/setup-workspace` is a wrapper from here on, and the roughly 26 jobs that already call it are covered without an edit each.
 
-A WRAPPER IS VERIFIED, NOT TRUSTED. Coverage for those jobs now hangs on one
-`uses:` line inside somebody else's file, and deleting that line would leave 26
-jobs reporting as profiled while profiling nothing, a fail-open of exactly the
-shape this gate exists to prevent. So each wrapper's own `action.yml` must be
-shown to reference the profiler before it counts, and a wrapper that stops doing
-so REFUSES rather than quietly covering nothing.
+A WRAPPER IS VERIFIED, NOT TRUSTED. Coverage for those jobs now hangs on one `uses:` line inside somebody else's file, and deleting that line would leave 26 jobs reporting as profiled while profiling nothing, a fail-open of exactly the shape this gate exists to prevent. So each wrapper's own `action.yml` must be shown to reference the profiler before it counts, and a wrapper that
+stops doing so REFUSES rather than quietly covering nothing.
 
-ANTI-VACUITY. Every extractor self-tests against a planted sample BEFORE the
-sweep, and the sweep refuses on zero workflows, zero jobs, zero declared action
-inputs, or counts under the floors. An empty scan is a broken instrument, never
+ANTI-VACUITY. Every extractor self-tests against a planted sample BEFORE the sweep, and the sweep refuses on zero workflows, zero jobs, zero declared action inputs, or counts under the floors. An empty scan is a broken instrument, never
 a clean tree; this repo has shipped gates that checked zero files for weeks.
 
 TEST SEAMS, all optional, used by `.ci/scripts/test/gates/test-profiler-coverage.sh`:
@@ -77,39 +50,24 @@ TEST SEAMS, all optional, used by `.ci/scripts/test/gates/test-profiler-coverage
   PROFILER_COVERAGE_MIN_JOBS          floor on jobs parsed
   PROFILER_COVERAGE_MIN_LINUX         floor on Linux jobs found
 
-Usage: python3 -m rediacc_ci.quality.profiler_coverage
-Exits 0 when both relations hold, 1 on any gap or any refusal.
+Usage: python3 -m rediacc_ci.quality.profiler_coverage Exits 0 when both relations hold, 1 on any gap or any refusal.
 
-THE ALLOWLIST is a suppression list and is held to the same BLOCKER quality bar
-as every other allowlist in the repo, which is why the twin sources
-`blocker-validator.sh` and why this module reaches `rediacc_ci.core.allowlist`.
+THE ALLOWLIST is a suppression list and is held to the same BLOCKER quality bar as every other allowlist in the repo, which is why the twin sources `blocker-validator.sh` and why this module reaches `rediacc_ci.core.allowlist`.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE EIGHT EXTRACTORS ARE PORTED AS awk WAS WRITTEN, NOT AS YAML SHOULD BE READ.
-It is tempting to replace the whole file with a YAML parser, and it would be
-wrong twice over. First, the twin is the thing this port is judged against, and
-a real parser answers differently on every workflow the awk mis-reads, which is
+THE EIGHT EXTRACTORS ARE PORTED AS awk WAS WRITTEN, NOT AS YAML SHOULD BE READ. It is tempting to replace the whole file with a YAML parser, and it would be wrong twice over. First, the twin is the thing this port is judged against, and a real parser answers differently on every workflow the awk mis-reads, which is
 where the interesting cases live (`runs-on: ${{ inputs.runner }}`, a matrix
-`include:` block, a `uses:` with a trailing comment). Second, PyYAML is not a
-dependency of this package and adding one to a gate that must run inside the
-anti-vacuity fixture is how a gate stops being runnable. So the state machines
-below are transliterations, rule for rule, in awk's evaluation order.
+`include:` block, a `uses:` with a trailing comment). Second, PyYAML is not a dependency of this package and adding one to a gate that must run inside the anti-vacuity fixture is how a gate stops being runnable. So the state machines below are transliterations, rule for rule, in awk's evaluation order.
 
-awk's RULE ORDER IS SEMANTICS, and two of these machines depend on it. In
-`job_block`, the "a new top-level key ends the jobs block" rule does NOT `next`,
+awk's RULE ORDER IS SEMANTICS, and two of these machines depend on it. In `job_block`, the "a new top-level key ends the jobs block" rule does NOT `next`,
 so control falls through to `!in_jobs { next }` on the same line; writing the
-Python as an if/elif chain in a different order silently changes which line ends
-a block. Each machine below therefore keeps the twin's order and says so where
-the order is load-bearing.
+Python as an if/elif chain in a different order silently changes which line ends a block. Each machine below therefore keeps the twin's order and says so where the order is load-bearing.
 
 `[[:space:]]` UNDER `LC_ALL=C` IS THE ASCII SET MINUS THE NEWLINE, spelled out
-rather than written as `\\s`, because Python's `\\s` on a `str` pattern also
-matches U+00A0 and the other Unicode separators. A non-breaking space in a
-workflow would then parse differently on the two sides, which is invisible in
-every ASCII fixture.
+rather than written as `\\s`, because Python's `\\s` on a `str` pattern also matches U+00A0 and the other Unicode separators. A non-breaking space in a workflow would then parse differently on the two sides, which is invisible in every ASCII fixture.
 
 `covering_uses` ESCAPES ONLY THE DOT. The twin builds its pattern with
 `${ref//./\\.}`, which escapes `.` and nothing else, so a reference containing
@@ -117,24 +75,14 @@ another regex metacharacter is a regex on both sides. `re.escape` would be
 STRICTER and would therefore differ; the twin's exact substitution is
 reproduced, and the difference is named here rather than improved in silence.
 
-THE INLINE SELF-TEST RUNS ON EVERY INVOCATION, exactly as the twin's does. It is
-not behind the `--selftest` flag: the twin plants a sample and checks ten
-extractor answers before it looks at the real tree, and a port that moved that
-behind a flag would change what a plain run does. `--selftest` is an ADDITION on
-top, driving the decision function through plants and mirrors the inline
-controls cannot express.
+THE INLINE SELF-TEST RUNS ON EVERY INVOCATION, exactly as the twin's does. It is not behind the `--selftest` flag: the twin plants a sample and checks ten extractor answers before it looks at the real tree, and a port that moved that behind a flag would change what a plain run does. `--selftest` is an ADDITION on top, driving the decision function through plants and mirrors the
+inline controls cannot express.
 
-THE `mktemp -d` SCRATCH DIRECTORIES ARE GONE and nothing depends on them. The
-twin writes each job's body to `$WORK_DIR/block.txt` because its extractors take
+THE `mktemp -d` SCRATCH DIRECTORIES ARE GONE and nothing depends on them. The twin writes each job's body to `$WORK_DIR/block.txt` because its extractors take
 FILES; these take lists of lines. The `trap 'rm -rf ...' EXIT` that cleaned them
-up, and the second `trap` that had to re-list both directories after the work
-directory appeared, disappear with them.
+up, and the second `trap` that had to re-list both directories after the work directory appeared, disappear with them.
 
-EXIT CODES ARE UNCHANGED: 0 and 1 only. Every refusal in the twin is `exit 1`,
-including the ones a reader might expect to be a setup error, and that is
-deliberate on the twin's part: an unscannable surface is a broken instrument,
-not a clean tree, and reporting it as a different class would let a runner treat
-it as skippable.
+EXIT CODES ARE UNCHANGED: 0 and 1 only. Every refusal in the twin is `exit 1`, including the ones a reader might expect to be a setup error, and that is deliberate on the twin's part: an unscannable surface is a broken instrument, not a clean tree, and reporting it as a different class would let a runner treat it as skippable.
 """
 
 import os
@@ -192,8 +140,7 @@ def job_keys(lines: list[str]) -> list[str]:
     """One top-level job id per line.
 
     Job keys are the only 2-space-indented bare keys inside the `jobs:` block;
-    bodies sit at 4 spaces or deeper. Scoping to that block keeps `on:`,
-    `permissions:` and `concurrency:` (also 2-space) out.
+    bodies sit at 4 spaces or deeper. Scoping to that block keeps `on:`, `permissions:` and `concurrency:` (also 2-space) out.
     """
     out: list[str] = []
     in_jobs = False
@@ -213,11 +160,9 @@ def job_keys(lines: list[str]) -> list[str]:
 def job_block(lines: list[str], job: str) -> list[str]:
     """The body lines of one job.
 
-    Anchored inside the `jobs:` block so a job named after a trigger (`push`)
-    cannot accidentally match the `on:` section instead.
+    Anchored inside the `jobs:` block so a job named after a trigger (`push`) cannot accidentally match the `on:` section instead.
 
-    RULE ORDER IS LOAD-BEARING HERE. In the twin the "a new top-level key ends
-    the jobs block" rule does not `next`, so the very same line then hits
+    RULE ORDER IS LOAD-BEARING HERE. In the twin the "a new top-level key ends the jobs block" rule does not `next`, so the very same line then hits
     `!in_jobs { next }` and is dropped. `job` is interpolated into a REGEX by
     awk, not quoted, so a job id containing a metacharacter is a pattern on both
     sides; every real id is `[A-Za-z0-9_-]+`.
@@ -249,8 +194,7 @@ def job_block(lines: list[str], job: str) -> list[str]:
 def runs_on(block: list[str]) -> str:
     """The raw `runs-on:` value, trailing comment stripped.
 
-    Empty when the job declares none (a reusable-workflow caller, or malformed).
-    The FIRST one wins, which is the `!seen` guard in the twin.
+    Empty when the job declares none (a reusable-workflow caller, or malformed). The FIRST one wins, which is the `!seen` guard in the twin.
     """
     for line in block:
         if not re.match(r"^    runs-on:", line):
@@ -264,8 +208,7 @@ def runs_on(block: list[str]) -> str:
 def is_caller(block: list[str]) -> bool:
     """True when the job is a reusable-workflow call.
 
-    Such a job has no runner of its own: its steps are the called workflow's
-    jobs, which this gate sees separately in that workflow's file.
+    Such a job has no runner of its own: its steps are the called workflow's jobs, which this gate sees separately in that workflow's file.
     """
     pattern = re.compile(r"^    uses:%s*\./\.github/workflows/" % _HS)
     return any(pattern.search(line) for line in block)
@@ -274,9 +217,7 @@ def is_caller(block: list[str]) -> bool:
 def matrix_values(block: list[str], key: str) -> list[str]:
     """Every literal value the job's `strategy.matrix` gives `key`.
 
-    Across the `include:` form, the inline-list form (`os: [a, b]`) and the
-    block-list form. `key` is interpolated into a regex by the twin, so it is
-    here too.
+    Across the `include:` form, the inline-list form (`os: [a, b]`) and the block-list form. `key` is interpolated into a regex by the twin, so it is here too.
     """
     out: list[str] = []
     in_strategy = False
@@ -313,8 +254,7 @@ def matrix_values(block: list[str], key: str) -> list[str]:
 def _uses_pattern(ref: str) -> re.Pattern:
     """The twin's `${ref//./\\.}` substitution, and only that.
 
-    `re.escape` would escape more characters and therefore answer differently on
-    a reference containing another metacharacter. See the PORT NOTES.
+    `re.escape` would escape more characters and therefore answer differently on a reference containing another metacharacter. See the PORT NOTES.
     """
     return re.compile(
         r"^%s*(-%s+)?uses:%s*%s%s*(#.*)?$" % (_HS, _HS, _HS, ref.replace(".", r"\."), _HS)
@@ -324,9 +264,7 @@ def _uses_pattern(ref: str) -> re.Pattern:
 def covering_uses(block: list[str], ref: str) -> int:
     """Count of steps in the job that use `ref` EXACTLY.
 
-    A trailing comment is allowed, a longer path is not, so
-    `.../profiler/nest-probe` does not match `.../profiler`. `grep -c` counts
-    LINES, not occurrences, and a line can carry only one `uses:`.
+    A trailing comment is allowed, a longer path is not, so `.../profiler/nest-probe` does not match `.../profiler`. `grep -c` counts LINES, not occurrences, and a line can carry only one `uses:`.
     """
     pattern = _uses_pattern(ref)
     return sum(1 for line in block if pattern.search(line))
@@ -335,9 +273,7 @@ def covering_uses(block: list[str], ref: str) -> int:
 def malformed_refs(block: list[str], ref: str) -> list[str]:
     """`uses:` lines that mention the profiler but are not a legal local ref.
 
-    `uses: .github/actions/profiler` (no leading `./`) is not a local action
-    reference at all: GitHub reads it as owner/repo and the job fails at parse
-    time.
+    `uses: .github/actions/profiler` (no leading `./`) is not a local action reference at all: GitHub reads it as owner/repo and the job fails at parse time.
     """
     out: list[str] = []
     for raw in block:
@@ -360,10 +296,7 @@ def _indent(text: str) -> int:
 def step_inputs(block: list[str], ref: str) -> list[str]:
     """`key=value` for every input passed to the profiler step's `with:` block.
 
-    The `uses:` key column is the anchor: in `      - uses: X` and in the
-    `        uses: X` of a named step, `uses:` starts at the same column as the
-    sibling `with:`, and `with:`'s own keys sit two columns deeper. A non-blank
-    line left of that column ends the step.
+    The `uses:` key column is the anchor: in ` - uses: X` and in the ` uses: X` of a named step, `uses:` starts at the same column as the sibling `with:`, and `with:`'s own keys sit two columns deeper. A non-blank line left of that column ends the step.
     """
     out: list[str] = []
     state = 0
@@ -527,19 +460,12 @@ def records(text: str) -> list[str]:
 
     THE ONE-ELEMENT DIFFERENCE THAT IS NOT COSMETIC. A POSIX text file ends with
     a newline, and awk reads it as N records; `str.split("\n")` reads it as N+1,
-    the last being the empty string. That phantom record sits INSIDE the last
-    job's block, so `job_block` emitted one extra blank line and the port and the
-    twin disagreed byte for byte on the final job of every workflow.
+    the last being the empty string. That phantom record sits INSIDE the last job's block, so `job_block` emitted one extra blank line and the port and the twin disagreed byte for byte on the final job of every workflow.
 
-    It changes no verdict today -- every consumer either skips a blank line or is
-    unaffected by one, which is why the shadow differential over five trees and
-    the real 124-job tree all read EQUIVALENT. It is still fixed rather than
-    documented as harmless: the next consumer added to `job_block`'s output will
-    not know the phantom is there, and "harmless" is a property of today's
+    It changes no verdict today -- every consumer either skips a blank line or is unaffected by one, which is why the shadow differential over five trees and the real 124-job tree all read EQUIVALENT. It is still fixed rather than documented as harmless: the next consumer added to `job_block`'s output will not know the phantom is there, and "harmless" is a property of today's
     callers rather than of the data.
 
-    Only ONE trailing empty element is dropped, because a file ending in two
-    newlines really does have a trailing blank record and awk prints it.
+    Only ONE trailing empty element is dropped, because a file ending in two newlines really does have a trailing blank record and awk prints it.
     """
     lines = text.split("\n")
     if lines and lines[-1] == "":
@@ -958,23 +884,14 @@ def _in_ci() -> bool:
 def ci_error(message: str) -> None:
     """`::error::<m>` on stdout under CI, `log_error <m>` on stderr otherwise.
 
-    THE TWIN REACHES THIS THROUGH `blocker-validator.sh`, WHICH REACHES
-    `emit-advisory.sh:136`. Every head line `verify_all_blockers` prints -- the
-    missing reason, the low-effort placeholder, the routine-bump deferral and
-    the too-short reason -- goes through `ci_error`, while the CONTINUATION
-    lines beneath each are plain `echo` to stdout and the gate's own two
-    "this is a hole in the invariant" lines are plain `log_error` to stderr.
-    Three different renderings in one failure, and only the head moves stream.
+    THE TWIN REACHES THIS THROUGH `blocker-validator.sh`, WHICH REACHES `emit-advisory.sh:136`. Every head line `verify_all_blockers` prints -- the missing reason, the low-effort placeholder, the routine-bump deferral and the too-short reason -- goes through `ci_error`, while the CONTINUATION lines beneath each are plain `echo` to stdout and the gate's own two "this is a hole in
+    the invariant" lines are plain `log_error` to stderr. Three different renderings in one failure, and only the head moves stream.
 
     THIS WAS A REAL PORT GAP, found by the W7 P4 batch 8a cutover differential
     and not by any test. Driven with CI=true against an allowlist entry whose
-    BLOCKER had been reset by an inserted blank line, the twin put
-    `::error::Allowlist ...` on STDOUT and this port put `✗ Allowlist ...` on
-    STDERR: same exit code, same words, different stream and different prefix.
+    BLOCKER had been reset by an inserted blank line, the twin put `::error::Allowlist ...` on STDOUT and this port put `✗ Allowlist ...` on STDERR: same exit code, same words, different stream and different prefix.
     Under `CI=true`, which is how CI runs it, the annotation is what surfaces
-    the finding in the Actions UI, so losing it is losing the report while
-    keeping the red. `go_deps.py:220` and `swallowed_failures.py:525` carry the
-    same helper for the same reason.
+    the finding in the Actions UI, so losing it is losing the report while keeping the red. `go_deps.py:220` and `swallowed_failures.py:525` carry the same helper for the same reason.
     """
     if _in_ci():
         print("::error::%s" % message)

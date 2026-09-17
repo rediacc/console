@@ -1,25 +1,12 @@
 """`rediacc_ci.core.gate_controls` against the live `gate-controls.sh`.
 
-THE TWIN IS LIVE HERE, NOT FROZEN, which is the opposite of `test_core_ports.py`
-and is correct for the opposite reason. `.ci/lib/find-port.sh` was shimmed, so
-"the bash original" no longer exists in the tree and had to be frozen into that
-file. `.ci/scripts/lib/gate-controls.sh` still carries its implementation and is
-still sourced by `check-staging-tag-guard.sh`, `check-release-key-canonical.sh`
-and `check-release-signing-coverage.sh`. Running the live file is therefore
-strictly better: a frozen copy could agree with a port while both had drifted
-away from what the three gates actually execute.
+THE TWIN IS LIVE HERE, NOT FROZEN, which is the opposite of `test_core_ports.py` and is correct for the opposite reason. `.ci/lib/find-port.sh` was shimmed, so "the bash original" no longer exists in the tree and had to be frozen into that file. `.ci/scripts/lib/gate-controls.sh` still carries its implementation and is still sourced by `check-staging-tag-guard.sh`,
+`check-release-key-canonical.sh` and `check-release-signing-coverage.sh`. Running the live file is therefore strictly better: a frozen copy could agree with a port while both had drifted away from what the three gates actually execute.
 
-THE BASH DRIVER IS A STRING IN THIS FILE and not a script under `.ci/`. RULING 7
-freezes the tracked `.sh` count, and a driver is exactly the kind of file that
-gets added without anyone deciding to. It is also the honest place for it: the
-driver is part of the TEST, not part of the tree under test.
+THE BASH DRIVER IS A STRING IN THIS FILE and not a script under `.ci/`. RULING 7 freezes the tracked `.sh` count, and a driver is exactly the kind of file that gets added without anyone deciding to. It is also the honest place for it: the driver is part of the TEST, not part of the tree under test.
 
-WHAT THE PLANTED CONTROL PROVES, AND WHY IT IS NOT THE SELFTEST. Every case
-below could pass against a port that was byte-identical to nothing at all if the
-comparison were misassembled -- a helper comparing a string to itself, a case
-list that is empty, a `diff` whose exit code is discarded.
-`test_the_differential_can_fail` mutates ONE character of the port's output
-contract and asserts the same comparison goes red. It runs the real bash and the
+WHAT THE PLANTED CONTROL PROVES, AND WHY IT IS NOT THE SELFTEST. Every case below could pass against a port that was byte-identical to nothing at all if the comparison were misassembled -- a helper comparing a string to itself, a case list that is empty, a `diff` whose exit code is discarded. `test_the_differential_can_fail` mutates ONE character of the port's output contract and
+asserts the same comparison goes red. It runs the real bash and the
 real Python; only the expected bytes move.
 """
 
@@ -126,11 +113,7 @@ def test_the_corpus_is_not_empty() -> None:
 def test_the_differential_can_fail() -> None:
     """A one-character mutation of the port's contract must turn the comparison red.
 
-    THE MUTATION IS APPLIED TO THE EXPECTED BYTES, not to the tree. Editing
-    `gate_controls.py` on disk and restoring it is the other way to write this,
-    and it leaves the tree broken if the test aborts between the two. Here the
-    real bash and the real Python both run unmodified and the ASSERTION is what
-    moves, which proves the same thing: that these bytes are actually compared.
+    THE MUTATION IS APPLIED TO THE EXPECTED BYTES, not to the tree. Editing `gate_controls.py` on disk and restoring it is the other way to write this, and it leaves the tree broken if the test aborts between the two. Here the real bash and the real Python both run unmodified and the ASSERTION is what moves, which proves the same thing: that these bytes are actually compared.
     """
     old, new = run_both(program([("check", "one", "a", "a"), ("finish", "1", "s")]))
     assert old == new
@@ -188,9 +171,7 @@ def test_module_tally_is_process_wide_like_the_bash_globals() -> None:
 def test_a_broken_program_is_a_refusal_not_a_pass(rows, expected: int) -> None:
     """Anti-vacuity, in the entry point. Every one of these used to be a 0 or a 1.
 
-    An empty program with no `finish` would otherwise exit 0 having asserted
-    nothing, and a driver typo would surface as "the battery is not being
-    executed as written" -- true, and naming the wrong cause.
+    An empty program with no `finish` would otherwise exit 0 having asserted nothing, and a driver typo would surface as "the battery is not being executed as written" -- true, and naming the wrong cause.
     """
     assert gc.run_program([US.join(row) for row in rows]) == expected
 

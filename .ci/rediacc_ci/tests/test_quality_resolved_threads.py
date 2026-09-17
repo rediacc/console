@@ -1,24 +1,13 @@
 """`rediacc_ci.quality.resolved_threads` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-resolved-threads.sh` over a
-specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and
-its bytes are compared against the port's. Same recipe as the committed ledger,
-`.ci/shadow/w7p2-resolved-threads.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-resolved-threads.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-resolved-threads.observations.jsonl`.
 
-THE STUB DISPATCHES ON THE ENDPOINT ARGUMENT, and that detail is here because
-getting it wrong is invisible. `gh_json` calls `gh api <endpoint> --paginate`, so
+THE STUB DISPATCHES ON THE ENDPOINT ARGUMENT, and that detail is here because getting it wrong is invisible. `gh_json` calls `gh api <endpoint> --paginate`, so
 the endpoint is `$2`; a sibling fixture keyed on `$3` (which is `--paginate`) and
-therefore failed EVERY call. Both implementations then failed identically, byte for
-byte, and the differential scored EQUIVALENT over six trees. Only the comparator's
-distinct-fingerprint rule -- six trees, one finding set -- refused it. A stub that
-answers nothing is the both-empty trap wearing a costume.
+therefore failed EVERY call. Both implementations then failed identically, byte for byte, and the differential scored EQUIVALENT over six trees. Only the comparator's distinct-fingerprint rule -- six trees, one finding set -- refused it. A stub that answers nothing is the both-empty trap wearing a costume.
 
-BOTH DIRECTIONS. The corpus carries a fully resolved PR (must be silent), an
-unresolved thread, an OUTDATED unresolved thread (must be silent, because it points
-at a line that no longer exists), a standing CHANGES_REQUESTED, a block that a
-later approval supersedes (must be silent), and a GraphQL error response, which is
-valid JSON and exits 0 and therefore has to be caught per page rather than by an
-exit code.
+BOTH DIRECTIONS. The corpus carries a fully resolved PR (must be silent), an unresolved thread, an OUTDATED unresolved thread (must be silent, because it points at a line that no longer exists), a standing CHANGES_REQUESTED, a block that a later approval supersedes (must be silent), and a GraphQL error response, which is valid JSON and exits 0 and therefore has to be caught per
+page rather than by an exit code.
 """
 
 import json
@@ -187,10 +176,7 @@ def test_differential(tmp_path, threads, reviews, want_exit):
 def test_the_stub_actually_answers(tmp_path):
     """The control on the control, and it is not paranoia.
 
-    A `gh` stub that fails every call makes both implementations fail identically,
-    which is byte-equal and proves nothing. This asserts the clean case reaches the
-    SUCCESS path, so a stub that stopped answering reds this test rather than
-    silently turning every case above into a comparison of two error messages.
+    A `gh` stub that fails every call makes both implementations fail identically, which is byte-equal and proves nothing. This asserts the clean case reaches the SUCCESS path, so a stub that stopped answering reds this test rather than silently turning every case above into a comparison of two error messages.
     """
     root = build(tmp_path, graphql([DONE_THREAD]), "[]")
     (old_rc, _old_out, old_err), _new = run_both(root)
@@ -202,9 +188,7 @@ def test_the_stub_actually_answers(tmp_path):
 def test_reviewers_are_named_in_login_order():
     """jq's `group_by` SORTS by key, so the failure block is login-ordered.
 
-    A port using insertion order would name the same reviewers differently and the
-    differential would only catch it on a PR with two blocking reviewers, which is
-    rare enough to ship.
+    A port using insertion order would name the same reviewers differently and the differential would only catch it on a PR with two blocking reviewers, which is rare enough to ship.
     """
     reviews = [
         {"user": {"login": "zoe"}, "state": "CHANGES_REQUESTED", "submitted_at": "t"},
@@ -243,8 +227,7 @@ def test_the_thread_renderer_defaults_and_cuts():
 def test_a_failed_read_returns_none_and_never_an_empty_list():
     """`|| echo "[]"` is what this replaces, and it was a silent green.
 
-    Driven with a nonexistent binary and an injected sleeper, so the control needs
-    neither `gh` nor nine seconds.
+    Driven with a nonexistent binary and an injected sleeper, so the control needs neither `gh` nor nine seconds.
     """
     waits: list[float] = []
     assert gate.gh_json("t", ["x"], sleeper=waits.append, binary="gh-does-not-exist-zzz") is None

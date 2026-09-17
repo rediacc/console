@@ -21,8 +21,7 @@ WHAT IT CHECKS, in the twin's own words:
       PR_NUMBER          - Pull request number
       GITHUB_REPOSITORY  - Repository in owner/repo format
 
-THE ADVICE BLOCK IS THE POINT OF THE GATE, and one line of it was WRONG in a way
-that destroyed data. Carried verbatim because it is the only record of why:
+THE ADVICE BLOCK IS THE POINT OF THE GATE, and one line of it was WRONG in a way that destroyed data. Carried verbatim because it is the only record of why:
 
     NOT a whole-body replacement, and the distinction is the point. This repo's
     PR bodies carry TWO machine-written sections, <!-- worklist-epics --> and
@@ -33,70 +32,45 @@ that destroyed data. Carried verbatim because it is the only record of why:
     that refuses those edits was itself found to have been narrowed into allowing
     them.
 
-So the block's step 5 is not decoration: a port that "tightened" the advice would
-re-introduce a data-loss instruction, and nothing in the exit code would notice.
+So the block's step 5 is not decoration: a port that "tightened" the advice would re-introduce a data-loss instruction, and nothing in the exit code would notice.
 
-THE HEREDOC AROUND THE GRAPHQL QUERY IS ALSO ARCHAEOLOGY: "Use heredoc to safely
-construct the GraphQL query (avoids bash ! escaping issues)". Python has no such
-hazard, so the note survives here rather than as a constraint, which is what stops
-the next reader collapsing the query into a one-liner in the twin and
-rediscovering the escaping problem.
+THE HEREDOC AROUND THE GRAPHQL QUERY IS ALSO ARCHAEOLOGY: "Use heredoc to safely construct the GraphQL query (avoids bash ! escaping issues)". Python has no such hazard, so the note survives here rather than as a constraint, which is what stops the next reader collapsing the query into a one-liner in the twin and rediscovering the escaping problem.
 
 -----------------------------------------------------------------------------
 DEFECT FOUND WHILE PORTING, REPRODUCED RATHER THAN FIXED.
 -----------------------------------------------------------------------------
 
-THE GRAPHQL READ HAS THE UNGUARDED-PIPELINE BUG THAT 96355d3b5 FIXED IN THREE
-SIBLING GATES AND NOT IN THIS ONE. The twin runs
+THE GRAPHQL READ HAS THE UNGUARDED-PIPELINE BUG THAT 96355d3b5 FIXED IN THREE SIBLING GATES AND NOT IN THIS ONE. The twin runs
 
     DESCRIPTION_TIME=$(gh api graphql ... 2>/dev/null | jq -r '...')
 
-under `set -euo pipefail`. When `gh` exits non-zero, pipefail promotes that to
-the pipeline, the pipeline is the whole right-hand side of an assignment, and
-`set -e` kills the script AT THE ASSIGNMENT. The handler written for exactly that
+under `set -euo pipefail`. When `gh` exits non-zero, pipefail promotes that to the pipeline, the pipeline is the whole right-hand side of an assignment, and `set -e` kills the script AT THE ASSIGNMENT. The handler written for exactly that
 case, three lines below,
 
     if [[ -z "$DESCRIPTION_TIME" ]] || [[ "$DESCRIPTION_TIME" == "null" ]]; then
         log_warn "Could not get PR description edit time - skipping check"
 
-is therefore UNREACHABLE. Measured 2026-09-06 with a `gh` stub that exits 1: the
-script exits 1 with ZERO bytes on both streams, which reads exactly like a gate
-failing for a real reason. The same probe with a `gh` that exits 0 printing
-non-JSON exits 5 with a `jq: parse error` line.
+is therefore UNREACHABLE. Measured 2026-09-06 with a `gh` stub that exits 1: the script exits 1 with ZERO bytes on both streams, which reads exactly like a gate failing for a real reason. The same probe with a `gh` that exits 0 printing non-JSON exits 5 with a `jq: parse error` line.
 
-The port reproduces both statuses, because invariant 5 says the twin is not
-edited in the change that ports it and the differential rules on behaviour, not
-on intent. It is reported as a defect in the twin.
+The port reproduces both statuses, because invariant 5 says the twin is not edited in the change that ports it and the differential rules on behaviour, not on intent. It is reported as a defect in the twin.
 
-A SECOND, QUIETER ONE: this gate calls `gh` DIRECTLY rather than through
-`gh_json` from `.ci/scripts/lib/common.sh`, so it gets no retry and no
-body-parses-as-JSON check. `gh_json`'s own comment says why that matters: "gh api
-graphql can exit 0 while returning a truncated or malformed body, so an exit-code
-check alone misses it." Eight other call sites across the review gates were moved
+A SECOND, QUIETER ONE: this gate calls `gh` DIRECTLY rather than through `gh_json` from `.ci/scripts/lib/common.sh`, so it gets no retry and no body-parses-as-JSON check. `gh_json`'s own comment says why that matters: "gh api graphql can exit 0 while returning a truncated or malformed body, so an exit-code check alone misses it." Eight other call sites across the review gates were
+moved
 onto it; this one was left behind.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`date` IS SHELLED OUT TO, NOT REIMPLEMENTED. The twin's chain is
-`date -d <ts> +%s || date -j -f <fmt> <ts> +%s || echo 0` -- GNU first, BSD
-second, zero last -- and GNU `date -d` accepts a far wider grammar than
-`datetime.fromisoformat`. Re-deriving that grammar in Python would be a new
-source of divergence on exactly the inputs nobody tests, so the port runs the
-same two commands in the same order and falls back to the same "0".
+`date` IS SHELLED OUT TO, NOT REIMPLEMENTED. The twin's chain is `date -d <ts> +%s || date -j -f <fmt> <ts> +%s || echo 0` -- GNU first, BSD second, zero last -- and GNU `date -d` accepts a far wider grammar than `datetime.fromisoformat`. Re-deriving that grammar in Python would be a new source of divergence on exactly the inputs nobody tests, so the port runs the same two commands
+in the same order and falls back to the same "0".
 
-THE JSON IS PARSED IN PYTHON, NOT THROUGH jq, and the one place that shows is an
-UNPARSEABLE body: jq prints `jq: parse error: ...` on stderr and exits 5, and this
-port cannot emit jq's wording. `gh pr view --json` either fails (in which case the
+THE JSON IS PARSED IN PYTHON, NOT THROUGH jq, and the one place that shows is an UNPARSEABLE body: jq prints `jq: parse error: ...` on stderr and exits 5, and this port cannot emit jq's wording. `gh pr view --json` either fails (in which case the
 twin substitutes `{}`) or emits valid JSON, so the shape is one `gh` does not
 produce; the divergence is stated here rather than hidden, and the exit status is
 reproduced.
 
-STDERR CARRIES THE PROGRESS, STDOUT CARRIES THE ADVICE. The twin's `log_step` and
-`log_info` go to stderr through `common.sh`, and every line of the stale-PR block
-is a bare `echo` to stdout. Both are preserved: a caller that redirects one stream
-sees exactly what it saw before.
+STDERR CARRIES THE PROGRESS, STDOUT CARRIES THE ADVICE. The twin's `log_step` and `log_info` go to stderr through `common.sh`, and every line of the stale-PR block is a bare `echo` to stdout. Both are preserved: a caller that redirects one stream sees exactly what it saw before.
 """
 
 import json
@@ -128,9 +102,7 @@ GRAPHQL_QUERY = """query($owner: String!, $repo: String!, $number: Int!) {
 def _run(argv: list[str], *, quiet_stderr: bool = True) -> tuple[int, str]:
     """Run `argv`, returning (status, stdout with trailing newlines stripped).
 
-    THE STRIP IS THE SHELL'S, NOT A TIDY-UP. `$(...)` removes trailing newlines,
-    and several comparisons below are against the empty string, so a port that
-    kept the newline would take a different branch on an empty-but-newline result.
+    THE STRIP IS THE SHELL'S, NOT A TIDY-UP. `$(...)` removes trailing newlines, and several comparisons below are against the empty string, so a port that kept the newline would take a different branch on an empty-but-newline result.
     """
     try:
         proc = subprocess.run(
@@ -151,9 +123,7 @@ def _run(argv: list[str], *, quiet_stderr: bool = True) -> tuple[int, str]:
 def to_epoch(timestamp: str) -> str:
     """`date -d <ts> +%s`, then the BSD form, then "0". Returned as a STRING.
 
-    A string because the twin compares it against the literal `"0"` before doing
-    any arithmetic, and because `date` on some hosts prints a value this port has
-    no business reinterpreting.
+    A string because the twin compares it against the literal `"0"` before doing any arithmetic, and because `date` on some hosts prints a value this port has no business reinterpreting.
     """
     code, out = _run(["date", "-d", timestamp, "+%s"])
     if code == 0 and out:
@@ -167,9 +137,7 @@ def to_epoch(timestamp: str) -> str:
 def stale_block(repo: str, pr_number: str, commit_count: int, age_minutes: int) -> list[str]:
     """The advice block, as the lines it prints. Empty is never returned.
 
-    A FUNCTION SO A TEST CAN READ IT. The block is the gate's entire product, and
-    the one line that matters most -- step 5, about not dropping the generated
-    marker sections -- is a correction from 2026-09-03 that no exit code protects.
+    A FUNCTION SO A TEST CAN READ IT. The block is the gate's entire product, and the one line that matters most -- step 5, about not dropping the generated marker sections -- is a correction from 2026-09-03 that no exit code protects.
     """
     return [
         "",
@@ -223,10 +191,7 @@ def stale_block(repo: str, pr_number: str, commit_count: int, age_minutes: int) 
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 fresh or not applicable, 1 stale or unreadable.
 
-    THE EXIT STATUSES ARE NOT ALL VERDICTS, and the twin does not distinguish
-    them. `1` means "the description is stale", "PR data could not be fetched",
-    or -- through the unguarded pipeline described in the module docstring -- "gh
-    failed and the script died". The port reproduces all three because the
+    THE EXIT STATUSES ARE NOT ALL VERDICTS, and the twin does not distinguish them. `1` means "the description is stale", "PR data could not be fetched", or -- through the unguarded pipeline described in the module docstring -- "gh failed and the script died". The port reproduces all three because the
     differential rules on behaviour; the third is reported as a defect.
     """
     args = list(argv or [])
@@ -364,10 +329,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions on the arithmetic, the block, and the required variables.
 
-    THE ADVICE BLOCK IS ASSERTED, NOT JUST ITS LENGTH. Its step 5 exists because
-    the previous wording told readers to overwrite the whole PR body, deleting two
-    machine-written sections. Nothing about the exit code protects that sentence,
-    so a control does.
+    THE ADVICE BLOCK IS ASSERTED, NOT JUST ITS LENGTH. Its step 5 exists because the previous wording told readers to overwrite the whole PR body, deleting two machine-written sections. Nothing about the exit code protects that sentence, so a control does.
     """
     ctl = Controls("pr-description", floor=14)
 

@@ -1,30 +1,16 @@
 #!/usr/bin/env python3
 """No tutorial may opt itself out of the sequence.
 
-WHY THIS EXISTS. The rclone retirement left tutorial-backup-restore.sh teaching
-a command that now refuses, so a `# TUTORIAL_DRAFT:` marker was added and
-run-sequence.sh learned to skip it. That was the wrong repair, and the operator
-rejected it: a tutorial is executable documentation, and a skipped one is a
-customer-facing page nothing verifies. The marker also had no expiry, so the
-skip would have outlived its reason by default rather than by decision.
+WHY THIS EXISTS. The rclone retirement left tutorial-backup-restore.sh teaching a command that now refuses, so a `# TUTORIAL_DRAFT:` marker was added and run-sequence.sh learned to skip it. That was the wrong repair, and the operator rejected it: a tutorial is executable documentation, and a skipped one is a customer-facing page nothing verifies. The marker also had no expiry, so
+the skip would have outlived its reason by default rather than by decision.
 
-The right repair is to fix the tutorial. This gate makes the wrong one
-impossible to reintroduce quietly.
+The right repair is to fix the tutorial. This gate makes the wrong one impossible to reintroduce quietly.
 
-WHAT IT FORBIDS: any self-exclusion marker in a tutorial script, and any skip
-mechanism in the runner that reads one. `TUTORIAL_ONLY` is deliberately NOT
-forbidden -- it is an operator-driven subset for local iteration, passed on the
-command line, which cannot silently shrink a CI run.
+WHAT IT FORBIDS: any self-exclusion marker in a tutorial script, and any skip mechanism in the runner that reads one. `TUTORIAL_ONLY` is deliberately NOT forbidden -- it is an operator-driven subset for local iteration, passed on the command line, which cannot silently shrink a CI run.
 
-WHAT IT CANNOT SEE. A tutorial that runs but asserts nothing. Coverage of that
-belongs to the sequence runner's own exit codes, not here.
+WHAT IT CANNOT SEE. A tutorial that runs but asserts nothing. Coverage of that belongs to the sequence runner's own exit codes, not here.
 
----- gate ----
-step: Tutorials cannot skip themselves
-needs: none
-selftest: true
-lane: quality-content
----- end gate ----
+---- gate ---- step: Tutorials cannot skip themselves needs: none selftest: true lane: quality-content ---- end gate ----
 """
 
 import pathlib

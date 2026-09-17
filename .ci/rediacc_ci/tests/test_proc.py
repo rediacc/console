@@ -10,18 +10,12 @@ THE THINGS BEING REPLACED, and every case below runs the real one:
     replacement that already exists.
   * `.ci/scripts/lib/common.sh:187-210` `retry_with_backoff` -- 8 call sites.
 
-HOW THE RETRY SCHEDULE IS OBSERVED WITHOUT WAITING FOR IT. `retry_with_backoff`
-calls `sleep "$delay"`, and a bash FUNCTION named `sleep` shadows the binary. The
-differential defines one that prints its argument instead of sleeping, so the
-exact schedule the bash implementation would follow is read out in milliseconds
-rather than in the 6 to 62 seconds the real call sites take. The Python side gets
+HOW THE RETRY SCHEDULE IS OBSERVED WITHOUT WAITING FOR IT. `retry_with_backoff` calls `sleep "$delay"`, and a bash FUNCTION named `sleep` shadows the binary. The differential defines one that prints its argument instead of sleeping, so the exact schedule the bash implementation would follow is read out in milliseconds rather than in the 6 to 62 seconds the real call sites take. The
+Python side gets
 the same treatment through `proc.retry_with_backoff(sleep=...)`, which is why
 that parameter exists.
 
-WHAT A GREEN HERE DOES NOT MEAN. These cases prove the two implementations agree
-on exit codes, on the backoff schedule, and on which of them enforces a deadline.
-They say nothing about behaviour under a filled pipe buffer or a signal storm,
-because neither implementation is exercised that way anywhere in this tree.
+WHAT A GREEN HERE DOES NOT MEAN. These cases prove the two implementations agree on exit codes, on the backoff schedule, and on which of them enforces a deadline. They say nothing about behaviour under a filled pipe buffer or a signal storm, because neither implementation is exercised that way anywhere in this tree.
 """
 
 import os
@@ -51,17 +45,10 @@ def bash_rc(script: str) -> int:
     `|| rc=$?`, and having one helper stops a case silently measuring 0 because it
     forgot.
 
-    TRAP TWO, and it is a measurement rather than a preference: the whole script
-    is run with both streams on /dev/null. `common.sh:246-249` backgrounds a
-    watchdog SUBSHELL that runs `sleep "$timeout_secs"`, then kills the subshell
-    and not the sleep. The orphaned sleep inherits the harness's pipes, and
-    `subprocess.run` waits for EOF on those pipes rather than merely for the child
-    to exit -- so `run_with_timeout 5 true` took 5.15 SECONDS to observe before
-    this redirect, for a command that had finished in milliseconds. The exit code
-    is unaffected, and it is the only thing these cases read.
+    TRAP TWO, and it is a measurement rather than a preference: the whole script is run with both streams on /dev/null. `common.sh:246-249` backgrounds a watchdog SUBSHELL that runs `sleep "$timeout_secs"`, then kills the subshell and not the sleep. The orphaned sleep inherits the harness's pipes, and `subprocess.run` waits for EOF on those pipes rather than merely for the child to
+    exit -- so `run_with_timeout 5 true` took 5.15 SECONDS to observe before this redirect, for a command that had finished in milliseconds. The exit code is unaffected, and it is the only thing these cases read.
 
-    That is the same leak `test_the_bash_timeout_leaks_grandchildren...` asserts
-    directly, showing up here as a cost rather than as a failure.
+    That is the same leak `test_the_bash_timeout_leaks_grandchildren...` asserts directly, showing up here as a cost rather than as a failure.
     """
     rc, _out, _err = diff.bash_streams("{ %s\n} >/dev/null 2>&1" % script)
     return rc
@@ -73,8 +60,7 @@ def bash_rc(script: str) -> int:
 def test_gnu_timeout_is_present_for_the_differential():
     """Without it, every timeout comparison below silently compares nothing.
 
-    This is also the measurement behind the module's central claim: `timeout(1)`
-    is a GNU coreutils binary that this repo assumes and macOS does not ship.
+    This is also the measurement behind the module's central claim: `timeout(1)` is a GNU coreutils binary that this repo assumes and macOS does not ship.
     """
     found = proc.which("timeout")
     assert found, "GNU timeout(1) is required to run this differential"
@@ -125,10 +111,7 @@ def test_a_timeout_is_124_in_all_three():
 def test_the_timeout_actually_fires_rather_than_the_command_finishing():
     """CONTROL for the case above.
 
-    `sleep 5` under a 1-second bound must be cut short. Without this, a machine
-    where `sleep` failed instantly would give 124 for the wrong reason on one
-    side and 0 on the others -- and the assertion above would have caught that,
-    but only by accident. This states the property directly.
+    `sleep 5` under a 1-second bound must be cut short. Without this, a machine where `sleep` failed instantly would give 124 for the wrong reason on one side and 0 on the others -- and the assertion above would have caught that, but only by accident. This states the property directly.
     """
     started = time.monotonic()
     result = proc.run_with_timeout(["sleep", "5"], FAST)
@@ -140,8 +123,7 @@ def test_the_timeout_actually_fires_rather_than_the_command_finishing():
 def test_a_missing_binary_is_127_and_not_an_exception():
     """Matching wl_git.py:110 and wl_reggate.py:763, and matching the shell.
 
-    The shell's own answer for "command not found" is 127, so a Python wrapper
-    that raised FileNotFoundError instead would force every call site to grow a
+    The shell's own answer for "command not found" is 127, so a Python wrapper that raised FileNotFoundError instead would force every call site to grow a
     try/except that none of the bash sites needed.
     """
     result = proc.run(["definitely-not-a-real-binary-9f3a"], timeout=5)
@@ -158,12 +140,9 @@ def test_neither_bash_timeout_enforces_its_deadline_and_this_one_does():
 
     A child that traps SIGTERM outlives both bash bounds. GNU timeout reports 124
     but only once the child finished on its own; common.sh reports **0**, so the
-    timeout is not merely late, it is invisible. SIGKILL cannot be trapped, so
-    the Python side ends at its deadline.
+    timeout is not merely late, it is invisible. SIGKILL cannot be trapped, so the Python side ends at its deadline.
 
-    ASSERTED IN BOTH DIRECTIONS on purpose. If a future coreutils starts passing
-    `--kill-after` by default, or common.sh grows one, this fails and the
-    divergence gets re-decided rather than silently disappearing.
+    ASSERTED IN BOTH DIRECTIONS on purpose. If a future coreutils starts passing `--kill-after` by default, or common.sh grows one, this fails and the divergence gets re-decided rather than silently disappearing.
     """
     trapper = r'bash -c "trap \"\" TERM; sleep 2"'
 
@@ -192,18 +171,10 @@ def test_neither_bash_timeout_enforces_its_deadline_and_this_one_does():
 def test_the_bash_timeout_leaks_grandchildren_and_this_one_does_not(tmp_path):
     """DEFECT 2, proven by asking the operating system whether the pid is alive.
 
-    `common.sh:248` signals exactly one pid, so a shell that backgrounds work and
-    waits leaves that work running after the wrapper has "timed out". The
-    grandchild writes its own pid before sleeping, and signal 0 then asks "does
-    this process exist" without delivering anything.
+    `common.sh:248` signals exactly one pid, so a shell that backgrounds work and waits leaves that work running after the wrapper has "timed out". The grandchild writes its own pid before sleeping, and signal 0 then asks "does this process exist" without delivering anything.
 
-    THE `>/dev/null 2>&1` IS LOAD-BEARING, and finding out why cost a confusing
-    red. A leaked grandchild INHERITS the pipes the harness gave the outer bash,
-    and `subprocess.run` waits for EOF on those pipes, not merely for the child
-    to exit. So without the redirect the harness blocks for the grandchild's full
-    five seconds, the grandchild is dead by the time the assertion runs, and the
-    leak that is really happening reads as absent. The redirect hands the
-    grandchild /dev/null so the harness returns when the wrapper does.
+    THE `>/dev/null 2>&1` IS LOAD-BEARING, and finding out why cost a confusing red. A leaked grandchild INHERITS the pipes the harness gave the outer bash, and `subprocess.run` waits for EOF on those pipes, not merely for the child to exit. So without the redirect the harness blocks for the grandchild's full five seconds, the grandchild is dead by the time the assertion runs, and
+    the leak that is really happening reads as absent. The redirect hands the grandchild /dev/null so the harness returns when the wrapper does.
 
     That is worth stating beyond this test: a process that outlives its parent
     while holding its parent's stdout is invisible to anything that measures the
@@ -306,8 +277,7 @@ def test_the_schedule_probe_really_sees_the_sleeps():
 def test_there_are_attempts_minus_one_delays_never_attempts():
     """`common.sh:200` sleeps only when another attempt is coming.
 
-    An off-by-one here adds a final unused delay to every exhausted retry in the
-    tree -- 32 wasted seconds on the `6 2` call site alone, invisible in a log.
+    An off-by-one here adds a final unused delay to every exhausted retry in the tree -- 32 wasted seconds on the `6 2` call site alone, invisible in a log.
     """
     for attempts in range(1, 7):
         assert len(proc.backoff_delays(attempts, 1)) == attempts - 1
@@ -316,9 +286,7 @@ def test_there_are_attempts_minus_one_delays_never_attempts():
 def test_the_backoff_is_exponential_base_two_with_no_jitter_and_no_cap():
     """Pinned because all fifteen bash implementations agree on it.
 
-    None uses jitter and none has a cap, so a port that added either would be
-    quietly different from every call site it replaces -- and jitter in
-    particular would make the differential above non-deterministic.
+    None uses jitter and none has a cap, so a port that added either would be quietly different from every call site it replaces -- and jitter in particular would make the differential above non-deterministic.
     """
     assert proc.backoff_delays(5, 1) == [1.0, 2.0, 4.0, 8.0]
     assert proc.backoff_delays(4, 3, factor=3.0) == [3.0, 9.0, 27.0]
@@ -405,8 +373,7 @@ def test_stdout_and_stderr_are_returned_separately():
 def test_partial_output_survives_a_timeout():
     """The second communicate() after the kill. Partial output is the evidence.
 
-    A child that prints and then hangs is the single most common real timeout,
-    and dropping what it printed removes the only clue about where it got to.
+    A child that prints and then hangs is the single most common real timeout, and dropping what it printed removes the only clue about where it got to.
     """
     result = proc.run(["bash", "-c", "printf HALF; sleep 5"], timeout=FAST)
     assert result.timed_out
@@ -417,8 +384,7 @@ def test_stdin_is_closed_by_default():
     """A command that decides to prompt must fail, not hang.
 
     `cat` with no argument reads stdin; against /dev/null it gets EOF at once.
-    Inheriting the caller's stdin is the latent hang the module docstring names,
-    and only one of the tree's nineteen Python call sites closes it today.
+    Inheriting the caller's stdin is the latent hang the module docstring names, and only one of the tree's nineteen Python call sites closes it today.
     """
     result = proc.run(["cat"], timeout=2)
     assert result.ok
@@ -477,15 +443,11 @@ def _described(rc):
 def test_describe_says_killed_when_a_signal_ended_the_child():
     """A SIGNALLED CHILD DID NOT "EXIT", and calling it one misdirects the reader.
 
-    Learned expensively on 2026-09-08 in `wl_judge`, whose equivalent line read
-    "judge exited 143" and let a reader conclude the model was unreachable -- the
+    Learned expensively on 2026-09-08 in `wl_judge`, whose equivalent line read "judge exited 143" and let a reader conclude the model was unreachable -- the
     remedy that message offers is to DISABLE the gate. The model was healthy; an
     outer deadline had SIGTERMed the child.
 
-    BOTH SPELLINGS, deliberately: `subprocess` reports a signalled child as a
-    NEGATIVE returncode, while a shell in between reports 128+N -- and the live
-    failure arrived as 143, the shell form, so testing only the negative form
-    would have missed the case that actually happened.
+    BOTH SPELLINGS, deliberately: `subprocess` reports a signalled child as a NEGATIVE returncode, while a shell in between reports 128+N -- and the live failure arrived as 143, the shell form, so testing only the negative form would have missed the case that actually happened.
     """
     assert "KILLED by signal 15" in _described(-15)
     assert "KILLED by signal 15" in _described(143)

@@ -1,9 +1,6 @@
 """Port of `.ci/scripts/deploy/resolve-www-deploy-target.sh`.
 
-Picks the deploy-script name / Worker name / domain / sandbox flag for the
-www Worker and emits them as GitHub Actions step outputs. Pure computation,
-same shape as `rediacc_ci.deploy.resolve_account_deploy_config`: no network,
-no subprocess, one file write to `$GITHUB_OUTPUT`.
+Picks the deploy-script name / Worker name / domain / sandbox flag for the www Worker and emits them as GitHub Actions step outputs. Pure computation, same shape as `rediacc_ci.deploy.resolve_account_deploy_config`: no network, no subprocess, one file write to `$GITHUB_OUTPUT`.
 
 REWORDED, NOT BYTE-IDENTICAL, same reasoning as that sibling: the bash twin's
 `${VAR:?msg}` diagnostic carries a bash line number that is not worth

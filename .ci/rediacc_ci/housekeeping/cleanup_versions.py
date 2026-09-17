@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/housekeeping/cleanup-versions.sh` (2055 lines, 14 phases).
 
-The nightly reaper. It deletes GitHub releases, git tags, GHCR package versions,
-deployment records, Cloudflare Pages preview deployments, per-PR preview Workers,
-GitHub environments, D1 preview databases, per-PR Turnstile widgets, R2 orphans,
-stale branches, workflow runs, workflow artifacts and Actions cache entries, in
-that order, under one global delete budget.
+The nightly reaper. It deletes GitHub releases, git tags, GHCR package versions, deployment records, Cloudflare Pages preview deployments, per-PR preview Workers, GitHub environments, D1 preview databases, per-PR Turnstile widgets, R2 orphans, stale branches, workflow runs, workflow artifacts and Actions cache entries, in that order, under one global delete budget.
 
 Usage: cleanup_versions.py [--days N] [--versions N] [--dry-run]
 
@@ -14,8 +10,7 @@ THE TWIN IS THE LIVE GATE. THIS IS THE VERIFIED-EQUIVALENT ALTERNATIVE.
 -----------------------------------------------------------------------------
 Nothing here is wired into `npm run ci`, the manifest, or any workflow. The bash
 twin stays registered and stays the thing that runs nightly; this file exists so
-the cutover, when a driver makes it, is a one-line change against a port whose
-equivalence is already on the record.
+the cutover, when a driver makes it, is a one-line change against a port whose equivalence is already on the record.
 
     differential: `.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py`
     K=5 ledger:   `.ci/shadow/w7p6-cleanup-versions.observations.jsonl`
@@ -23,29 +18,22 @@ equivalence is already on the record.
 -----------------------------------------------------------------------------
 THE SEAM THAT MAKES ONE PHASE DRIVABLE, AND WHY IT IS SHAPED LIKE THIS
 -----------------------------------------------------------------------------
-The twin's own header says it: "The phase sequence lives in a function so a test
-can source this file and drive ONE phase in isolation -- which is how Phase 9's
-delete arm finally got executed anywhere." That seam is
+The twin's own header says it: "The phase sequence lives in a function so a test can source this file and drive ONE phase in isolation -- which is how Phase 9's delete arm finally got executed anywhere." That seam is
 
     source .ci/scripts/housekeeping/cleanup-versions.sh --dry-run
     cleanup_stale_branches
 
-and sourcing is what runs `parse_args`, the five `require_*` guards, and the
-config block. The port mirrors it exactly:
+and sourcing is what runs `parse_args`, the five `require_*` guards, and the config block. The port mirrors it exactly:
 
     hk = Housekeeping(["--dry-run"])       # parse_args + require_* + config
     hk.cleanup_stale_branches()            # one phase, in isolation
 
-`Housekeeping.__init__` therefore does everything the twin does at SOURCE time,
-including the guards, and a phase method does everything one twin function does.
-That is not decoration: the differential drives all 14 phases through it, one at
-a time, against the same recording fakes.
+`Housekeeping.__init__` therefore does everything the twin does at SOURCE time, including the guards, and a phase method does everything one twin function does. That is not decoration: the differential drives all 14 phases through it, one at a time, against the same recording fakes.
 
 -----------------------------------------------------------------------------
 WHAT IS EXECUTED RATHER THAN REIMPLEMENTED
 -----------------------------------------------------------------------------
-`gh`, `curl`, `aws`, `date`, `sleep` and `sort -V` are EXECUTED, with the twin's
-argv byte for byte. Three reasons, in descending order of how much they matter:
+`gh`, `curl`, `aws`, `date`, `sleep` and `sort -V` are EXECUTED, with the twin's argv byte for byte. Three reasons, in descending order of how much they matter:
 
   1. The argv IS the behaviour. This program's whole output is a sequence of
      API calls; a port that issued a different call would be wrong even if every
@@ -63,105 +51,59 @@ runs jq roughly sixty times; every filter is one of a dozen shapes (`length`,
 `.[]`, `sort_by(...)|reverse`, `[.[]|{...}]`, `group_by`, `add // 0`, a slice,
 an `index($x) != null`, a `test("^pr-[0-9]+$")` select). Each one is a named
 function in the JQ FILTERS section below, the twin's filter text is quoted in its
-docstring, and `test_..._filters_agree_with_the_real_jq` drives every one of them
-against the real `jq` binary over a corpus that includes the empty case, the
-missing-key case and the null case. `require_cmd jq` still runs, on purpose:
-dropping it would widen the set of hosts this runs on, and that is a cutover
-decision, not a porting one.
+docstring, and `test_..._filters_agree_with_the_real_jq` drives every one of them against the real `jq` binary over a corpus that includes the empty case, the missing-key case and the null case. `require_cmd jq` still runs, on purpose: dropping it would widen the set of hosts this runs on, and that is a cutover decision, not a porting one.
 
-THE ONE PLACE jq IS STILL EXECUTED is the failure path. When the twin feeds jq
-something that is not JSON, jq prints its own diagnostic and exits 5, and `set
--e` takes the run down with that status. `_jq_or_die` reproduces that by handing
-the offending bytes to the real jq and exiting with its status and its message,
-rather than by inventing a Python-shaped traceback for a path the twin has a
-byte-exact answer for.
+THE ONE PLACE jq IS STILL EXECUTED is the failure path. When the twin feeds jq something that is not JSON, jq prints its own diagnostic and exits 5, and `set -e` takes the run down with that status. `_jq_or_die` reproduces that by handing the offending bytes to the real jq and exiting with its status and its message, rather than by inventing a Python-shaped traceback for a path the
+twin has a byte-exact answer for.
 
 -----------------------------------------------------------------------------
 BASH ARITHMETIC IS EMULATED, INCLUDING THE OCTAL TRAP
 -----------------------------------------------------------------------------
-`[[ $index -lt $KEEP_VERSIONS ]]` and `$((...))` are arithmetic contexts, and
-bash's integer literal rules are C's: a leading `0` means OCTAL. So
+`[[ $index -lt $KEEP_VERSIONS ]]` and `$((...))` are arithmetic contexts, and bash's integer literal rules are C's: a leading `0` means OCTAL. So
 
     cleanup-versions.sh --versions 010     keeps EIGHT versions, silently
     cleanup-versions.sh --versions 08      prints
         ...: line 211: [[: 08: value too great for base (error token is "08")
       and evaluates FALSE, i.e. the item is treated as outside the keep window
 
-Both are the twin's live behaviour on an operator's own input (`--days` and
-`--versions` are documented flags), and both are reproduced by `arith` rather
-than papered over: a port that read these with `int()` would keep ten versions
-where the twin keeps eight, which is a difference in what gets DELETED.
+Both are the twin's live behaviour on an operator's own input (`--days` and `--versions` are documented flags), and both are reproduced by `arith` rather than papered over: a port that read these with `int()` would keep ten versions where the twin keeps eight, which is a difference in what gets DELETED.
 
 THE ONE NAMED DIVERGENCE IN THE WHOLE PORT is the text of that error. bash
 prefixes it with the script path and the LINE NUMBER of the comparison; this port
-cannot honestly claim a line in a file it is not. It prints the same sentence
-under its own name and takes the same branch (false). Pinned, in both directions,
-by `test_a_zero_padded_versions_value_is_octal_on_both_sides` and
-`test_an_invalid_octal_versions_value_takes_the_same_branch_on_both_sides`.
+cannot honestly claim a line in a file it is not. It prints the same sentence under its own name and takes the same branch (false). Pinned, in both directions, by `test_a_zero_padded_versions_value_is_octal_on_both_sides` and `test_an_invalid_octal_versions_value_takes_the_same_branch_on_both_sides`.
 
 -----------------------------------------------------------------------------
 HAZARDS IN THE TWIN, REPRODUCED RATHER THAN REPAIRED
 -----------------------------------------------------------------------------
-Every one of these is preserved byte for byte, because a port that improves the
-thing it is being compared against cannot be compared against it. They are
-listed so the cutover box has the list, and each is pinned by a test.
+Every one of these is preserved byte for byte, because a port that improves the thing it is being compared against cannot be compared against it. They are listed so the cutover box has the list, and each is pinned by a test.
 
-HAZARD 1 -- "COULD NOT LIST" READS AS "NOTHING TO DELETE", IN NINE PHASES.
-`gh release list ... 2>/dev/null || echo "[]"` (Phase 1) and its eight siblings
-turn an expired token, a 5xx, a rate limit and a genuinely empty account into
-the same empty list, and the phase then reports `deleted 0 of 0` and returns 0.
-Phase 5b is the one that gets this right, and its banner says why: it FAILS
-CLOSED because its worst case is deleting a live preview. Phases 1, 2, 3, 4, 5,
-6, 7, 7b, 9 and 11 all fail OPEN. Phase 10 is the only other one that says
-anything at all ("No active workflows listed (API error?)").
+HAZARD 1 -- "COULD NOT LIST" READS AS "NOTHING TO DELETE", IN NINE PHASES. `gh release list ... 2>/dev/null || echo "[]"` (Phase 1) and its eight siblings turn an expired token, a 5xx, a rate limit and a genuinely empty account into the same empty list, and the phase then reports `deleted 0 of 0` and returns 0. Phase 5b is the one that gets this right, and its banner says why: it
+FAILS CLOSED because its worst case is deleting a live preview. Phases 1, 2, 3, 4, 5, 6, 7, 7b, 9 and 11 all fail OPEN. Phase 10 is the only other one that says anything at all ("No active workflows listed (API error?)").
 
-HAZARD 2 -- PHASE 3 COUNTS A DRY-RUN DELETE AND PHASE 1 DOES NOT. Phase 1's
-dry-run arm logs `[DRY-RUN] Would delete release` and leaves `deleted` alone, so
-its summary always reads `would delete 0 of N`. Phase 3, 4, 6, 7, 7b, 9, 10, 11
-and 12 all increment. So `--dry-run` under-reports exactly one phase, and it is
-the first one in the run.
+HAZARD 2 -- PHASE 3 COUNTS A DRY-RUN DELETE AND PHASE 1 DOES NOT. Phase 1's dry-run arm logs `[DRY-RUN] Would delete release` and leaves `deleted` alone, so its summary always reads `would delete 0 of N`. Phase 3, 4, 6, 7, 7b, 9, 10, 11 and 12 all increment. So `--dry-run` under-reports exactly one phase, and it is the first one in the run.
 
-HAZARD 3 -- PHASE 5b NEVER CALLS `record_delete`. It deletes Workers through the
-Cloudflare API and does not charge them to the global budget, so a run that
-deletes 40 Workers still believes it has deleted zero. Every other destructive
-arm in the file records. Pinned by
-`test_phase_5b_does_not_charge_the_delete_budget`.
+HAZARD 3 -- PHASE 5b NEVER CALLS `record_delete`. It deletes Workers through the Cloudflare API and does not charge them to the global budget, so a run that deletes 40 Workers still believes it has deleted zero. Every other destructive arm in the file records. Pinned by `test_phase_5b_does_not_charge_the_delete_budget`.
 
-HAZARD 4 -- PHASE 6 CANNOT SUCCEED, BY DESIGN. Deleting an environment object
-needs Administration:write, which `check-no-app-admin-perm.sh` forbids the App
+HAZARD 4 -- PHASE 6 CANNOT SUCCEED, BY DESIGN. Deleting an environment object needs Administration:write, which `check-no-app-admin-perm.sh` forbids the App
 from ever holding. The phase's own banner says so. It is ported unchanged,
-including the `log_info` (not `log_warn`) on the 403 and the `break` that stops
-after the first one.
+including the `log_info` (not `log_warn`) on the 403 and the `break` that stops after the first one.
 
-HAZARD 5 -- PHASE 4's `for env in $environments` IS UNQUOTED, so an environment
-name containing whitespace would split into two names and an environment name
-containing a glob metacharacter would be pathname-expanded against the CWD.
-Neither can happen with `pr-N`/`edge`/`stable`, and the port splits on
-whitespace without globbing. Named because it is a difference, not because it is
-reachable.
+HAZARD 5 -- PHASE 4's `for env in $environments` IS UNQUOTED, so an environment name containing whitespace would split into two names and an environment name containing a glob metacharacter would be pathname-expanded against the CWD. Neither can happen with `pr-N`/`edge`/`stable`, and the port splits on whitespace without globbing. Named because it is a difference, not because it
+is reachable.
 
-HAZARD 6 -- PHASE 9's DELETE FAILURE IS THE ONLY ONE THAT FAILS THE RUN.
-`housekeeping_fail` is called from exactly two places: the Phase 8d drift arm and
-the Phase 9 delete arm. Every other failed delete in the file is a `log_warn` and
-the run still exits 0.
+HAZARD 6 -- PHASE 9's DELETE FAILURE IS THE ONLY ONE THAT FAILS THE RUN. `housekeeping_fail` is called from exactly two places: the Phase 8d drift arm and the Phase 9 delete arm. Every other failed delete in the file is a `log_warn` and the run still exits 0.
 
-HAZARD 7 -- `should_retain` RE-DERIVES THE CUTOFF PER ITEM, so the twin forks
-`date` twice for every release, tag, package version and Pages deployment it
-looks at. Reproduced (the port shells out to `date` identically), and it is the
-single biggest cost in the port's own runtime.
+HAZARD 7 -- `should_retain` RE-DERIVES THE CUTOFF PER ITEM, so the twin forks `date` twice for every release, tag, package version and Pages deployment it looks at. Reproduced (the port shells out to `date` identically), and it is the single biggest cost in the port's own runtime.
 
 -----------------------------------------------------------------------------
 ENVIRONMENT
 -----------------------------------------------------------------------------
-Read directly at each call site, never through a `dict(os.environ)` alias:
-GH_TOKEN, GITHUB_ACTIONS, DEBUG (through `rediacc_ci.log`), MAX_DELETES_PER_RUN,
+Read directly at each call site, never through a `dict(os.environ)` alias: GH_TOKEN, GITHUB_ACTIONS, DEBUG (through `rediacc_ci.log`), MAX_DELETES_PER_RUN,
 BRANCH_MAX_AGE_DAYS, RELEASES_BUCKET, CLOUDFLARE_API_TOKEN,
 CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID,
 CLOUDFLARE_R2_SECRET_ACCESS_KEY, CLOUDFLARE_R2_ENDPOINT, IN_FLIGHT_VERSION.
 
-Exit: 0 on every path except a latched failure (1, from `run_all_phases` after
-every phase has run), a `require_*` refusal (1), a `parse_args` refusal (2), and
-whatever `jq` exits with when the twin's `set -e` would have died on it.
+Exit: 0 on every path except a latched failure (1, from `run_all_phases` after every phase has run), a `require_*` refusal (1), a `parse_args` refusal (2), and whatever `jq` exits with when the twin's `set -e` would have died on it.
 """
 
 from __future__ import annotations
@@ -246,8 +188,7 @@ CONSECUTIVE_FAILURE_LIMIT = 5
 class BashArithError(Exception):
     """A word bash's arithmetic evaluator refuses, e.g. `08` or `1x`.
 
-    Carries the token bash would name in `(error token is "...")`, so the caller
-    can print the same sentence.
+    Carries the token bash would name in `(error token is "...")`, so the caller can print the same sentence.
     """
 
     def __init__(self, token: str) -> None:
@@ -258,11 +199,7 @@ class BashArithError(Exception):
 def arith(word: object) -> int:
     """Evaluate one bash arithmetic WORD, with bash's integer literal rules.
 
-    Only the shapes that can reach this program's comparisons are supported: an
-    optional sign, then a literal in one of bash's bases. That is deliberate --
-    a general `$((...))` evaluator would be a much larger thing to get wrong for
-    inputs the twin's variables cannot hold, since every operand here comes from
-    `date +%s`, a jq number, a loop counter, or an operator's flag value.
+    Only the shapes that can reach this program's comparisons are supported: an optional sign, then a literal in one of bash's bases. That is deliberate -- a general `$((...))` evaluator would be a much larger thing to get wrong for inputs the twin's variables cannot hold, since every operand here comes from `date +%s`, a jq number, a loop counter, or an operator's flag value.
 
     THE RULES, from bash's `strtol`-shaped constant parser:
 
@@ -282,8 +219,7 @@ def arith(word: object) -> int:
         branch in `[[ ]]`, which is what callers here act on, so the two are not
         distinguished.
 
-    An int passes straight through: the phase code counts with real integers and
-    only the values that came from outside need the bash reading.
+    An int passes straight through: the phase code counts with real integers and only the values that came from outside need the bash reading.
     """
     if isinstance(word, int):
         return word
@@ -318,11 +254,7 @@ def _arith_report(token: str, context: str = "[[: ") -> None:
         <script>: line <N>: [[: 08: value too great for base (error token is "08")
 
     for a comparison and the same line WITHOUT the `[[: ` for a `$(( ))`, and
-    this writes the same two sentences under this file's own name, without a
-    line number: claiming a line in `cleanup-versions.sh` from here would be a
-    lie, and claiming one in this file would be a number the reader of a ported
-    message cannot use. The BRANCH taken is identical either way, which is the
-    part that decides what gets deleted.
+    this writes the same two sentences under this file's own name, without a line number: claiming a line in `cleanup-versions.sh` from here would be a lie, and claiming one in this file would be a number the reader of a ported message cannot use. The BRANCH taken is identical either way, which is the part that decides what gets deleted.
     """
     sys.stderr.write(
         "cleanup_versions.py: %s%s: value too great for base "
@@ -334,10 +266,7 @@ def _arith_report(token: str, context: str = "[[: ") -> None:
 def arith_cmp(left: object, op: str, right: object) -> bool:
     """`[[ left -op right ]]`, including what bash does when a word is refused.
 
-    bash evaluates the comparison, prints the diagnostic for the offending word,
-    and returns 1 -- FALSE -- without aborting, because the `[[ ]]` sits in an
-    `if` condition everywhere it appears here. Verified against the real bash by
-    `test_bash_refuses_08_and_returns_false_without_aborting`.
+    bash evaluates the comparison, prints the diagnostic for the offending word, and returns 1 -- FALSE -- without aborting, because the `[[ ]]` sits in an `if` condition everywhere it appears here. Verified against the real bash by `test_bash_refuses_08_and_returns_false_without_aborting`.
     """
     try:
         a = arith(left)
@@ -368,8 +297,7 @@ def arith_cmp(left: object, op: str, right: object) -> bool:
 def _capture(argv: list[str], *, stderr: int | None) -> tuple[int, str]:
     """One command inside `$( )`: returns its status and its stdout, denewlined.
 
-    `$( )` strips ALL trailing newlines, not one, which matters for the several
-    places the twin compares a captured value against the empty string.
+    `$( )` strips ALL trailing newlines, not one, which matters for the several places the twin compares a captured value against the empty string.
 
     A MISSING BINARY IS 127 WITH BASH'S OWN SENTENCE. Every caller here is
     already `|| something`, so this only decides which arm runs; getting the
@@ -422,9 +350,7 @@ def run_silent(argv: list[str]) -> int:
 def run_quiet_err(argv: list[str]) -> int:
     """`cmd 2>/dev/null` -- status only; stdout is INHERITED, stderr discarded.
 
-    This is what `retry_with_backoff 3 2 gh api -X DELETE ... 2>/dev/null` runs,
-    and the inherited stdout is not an accident: `gh api -X DELETE` prints its
-    response body there, and the twin lets it through.
+    This is what `retry_with_backoff 3 2 gh api -X DELETE ... 2>/dev/null` runs, and the inherited stdout is not an accident: `gh api -X DELETE` prints its response body there, and the twin lets it through.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -450,19 +376,13 @@ def run_plain(argv: list[str]) -> int:
 def retry_with_backoff(attempts: int, delay: int, argv: list[str], *, quiet: bool) -> bool:
     """`retry_with_backoff <max_attempts> <initial_delay> <command...>`.
 
-    common.sh:218-240, transliterated. `quiet` is the CALL SITE's redirection,
-    not an option of the bash function: four of the five call sites write
+    common.sh:218-240, transliterated. `quiet` is the CALL SITE's redirection, not an option of the bash function: four of the five call sites write
 
         retry_with_backoff 3 2 gh api -X DELETE "..." 2>/dev/null
 
-    and that `2>/dev/null` covers the WHOLE function invocation, so it discards
-    the command's stderr AND the `Attempt 1/3 failed...` lines the retry logic
-    itself prints. Phase 1's call has no redirection, so its retries are visible.
-    Getting this wrong would add or remove three log lines per failing delete.
+    and that `2>/dev/null` covers the WHOLE function invocation, so it discards the command's stderr AND the `Attempt 1/3 failed...` lines the retry logic itself prints. Phase 1's call has no redirection, so its retries are visible. Getting this wrong would add or remove three log lines per failing delete.
 
-    THE `sleep` IS THE `sleep` BINARY, resolved through PATH, for the reason the
-    module docstring gives: one stub answers for both sides, so the differential
-    does not pay six real seconds per failing retry.
+    THE `sleep` IS THE `sleep` BINARY, resolved through PATH, for the reason the module docstring gives: one stub answers for both sides, so the differential does not pay six real seconds per failing retry.
 
     THE DELAYS ARE INTEGERS AND PRINT AS SUCH. bash's `delay=$((delay * 2))`
     gives `2s` then `4s`; a float would print `2.0s` and diverge on text alone.
@@ -503,8 +423,7 @@ def date_epoch(spec: str) -> str:
 def date_epoch_utc(spec: str) -> str:
     """`date -u -d "<spec>" +%s 2>/dev/null || echo 0`.
 
-    The two-arm form used in Phases 7b, 8a, 8b, 8d, 8f and 8e. No BSD fallback
-    in the twin at these sites, so there is none here.
+    The two-arm form used in Phases 7b, 8a, 8b, 8d, 8f and 8e. No BSD fallback in the twin at these sites, so there is none here.
     """
     code, out = capture_quiet(["date", "-u", "-d", spec, "+%s"])
     return out if code == 0 else "0"
@@ -548,9 +467,7 @@ def _jq_or_die(blob: str, filter_text: str) -> None:
 
     Reached only when `json_values` has already failed, i.e. exactly when the
     twin's `total="$(echo "$blob" | jq 'length')"` would have failed too. Under
-    `set -e` that assignment ends the run with jq's status (5 for a parse error)
-    and jq's message already on stderr, so the honest reproduction is to let the
-    real jq say it.
+    `set -e` that assignment ends the run with jq's status (5 for a parse error) and jq's message already on stderr, so the honest reproduction is to let the real jq say it.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -571,14 +488,9 @@ def _jq_or_die(blob: str, filter_text: str) -> None:
 def json_values(blob: str, filter_text: str = "length") -> list:
     """The stream of JSON values `echo "$blob" | jq ...` would read.
 
-    A STREAM, not a value: `gh api --paginate --jq '[...]'` emits ONE ARRAY PER
-    PAGE with nothing between them, and the twin slurps that with `jq -s`. A
-    parser that accepted only a single document would silently see page 1 and
-    drop the rest, which is the exact shape of bug this whole port exists to not
-    introduce.
+    A STREAM, not a value: `gh api --paginate --jq '[...]'` emits ONE ARRAY PER PAGE with nothing between them, and the twin slurps that with `jq -s`. A parser that accepted only a single document would silently see page 1 and drop the rest, which is the exact shape of bug this whole port exists to not introduce.
 
-    Whitespace-only input is the EMPTY stream and exits 0 with no output, which
-    is why `total` can legitimately end up as the empty string.
+    Whitespace-only input is the EMPTY stream and exits 0 with no output, which is why `total` can legitimately end up as the empty string.
     """
     decoder = json.JSONDecoder()
     out: list = []
@@ -601,8 +513,7 @@ def length_text(blob: str, filter_text: str = "length") -> str:
 
     Only ever applied to arrays here, so the array case is the only one
     implemented; a string or object would answer differently in jq and cannot
-    reach these call sites (each blob is either `[]`, a `[...]` from a filter,
-    or empty).
+    reach these call sites (each blob is either `[]`, a `[...]` from a filter, or empty).
     """
     return "\n".join(
         str(len(v)) if isinstance(v, (list, dict, str)) else "1"
@@ -647,11 +558,7 @@ def jq_text(value: object) -> str:
 def _ord(value: object) -> tuple:
     """A sort key implementing jq's TOTAL ORDER over JSON values.
 
-    `null < false < true < numbers < strings < arrays < objects`, arrays
-    element-wise, objects by their SORTED KEY LIST first and then by the values
-    in that order. Needed because half the values sorted here can be `null` (a
-    deployment with no `created_at`, a Pages deployment with no branch), and
-    Python refuses to compare `None` with `str` at all.
+    `null < false < true < numbers < strings < arrays < objects`, arrays element-wise, objects by their SORTED KEY LIST first and then by the values in that order. Needed because half the values sorted here can be `null` (a deployment with no `created_at`, a Pages deployment with no branch), and Python refuses to compare `None` with `str` at all.
     """
     if value is None:
         return (0,)
@@ -674,13 +581,9 @@ def jq_sort_by(items: list, key) -> list:
 
     THE TIE-BREAK WAS MEASURED, NOT ASSUMED, and the first version of this
     function got it wrong. jq's `sort_by` is a stable merge sort over the key
-    alone, so two tags cut in the same second keep their input order -- it does
-    NOT fall back to comparing the whole element, which is what a reading of
-    `_sort_by_impl(map([f]))` suggests. `test_jq_filters_agree_with_the_real_jq`
-    carries a tie case in its corpus for exactly this reason, and it went red.
+    alone, so two tags cut in the same second keep their input order -- it does NOT fall back to comparing the whole element, which is what a reading of `_sort_by_impl(map([f]))` suggests. `test_jq_filters_agree_with_the_real_jq` carries a tie case in its corpus for exactly this reason, and it went red.
 
-    That matters downstream: `sort_by(.date) | reverse` therefore REVERSES the
-    input order of tied items, so the two tags are deleted in the opposite order
+    That matters downstream: `sort_by(.date) | reverse` therefore REVERSES the input order of tied items, so the two tags are deleted in the opposite order
     from the one they arrived in, and the call log records it.
     """
     return sorted(items, key=lambda item: _ord(key(item)))
@@ -725,10 +628,7 @@ def jq_flatten(items: list) -> list:
 def jq_add(values: list) -> object:
     """`add` over a stream that has been slurped: array concatenation here.
 
-    `add` on an EMPTY array is `null`, and the twin's Phase 3 would then feed
-    null to `sort_by` and die -- unreachable, because the only path to that line
-    guarantees at least one page. Preserved as `None` rather than `[]` so the
-    unreachable case stays visibly unreachable.
+    `add` on an EMPTY array is `null`, and the twin's Phase 3 would then feed null to `sort_by` and die -- unreachable, because the only path to that line guarantees at least one page. Preserved as `None` rather than `[]` so the unreachable case stays visibly unreachable.
     """
     if not values:
         return None
@@ -741,11 +641,7 @@ def jq_add(values: list) -> object:
 def jq_get(value: object, *path: str) -> object:
     """`.a.b.c` -- a missing key, or a lookup into a non-object, is `null`.
 
-    jq raises a TYPE ERROR for a lookup into a STRING or a NUMBER, and returns
-    null only for a lookup into null or an object. That distinction is
-    unreachable from every call site here (the twin only ever indexes into
-    objects it built or the API returned) and is collapsed to null, which is the
-    conservative direction: it cannot turn a crash into a deletion.
+    jq raises a TYPE ERROR for a lookup into a STRING or a NUMBER, and returns null only for a lookup into null or an object. That distinction is unreachable from every call site here (the twin only ever indexes into objects it built or the API returned) and is collapsed to null, which is the conservative direction: it cannot turn a crash into a deletion.
     """
     current = value
     for key in path:
@@ -808,19 +704,12 @@ class ExpansionAbortError(Exception):
         <file>: line N: 08: value too great for base (error token is "08")
         alive
 
-    Note what is MISSING: `after`, `g after f`, and `g failed`. bash abandoned
-    both function frames and did NOT run the `||` arm, but it did not exit
-    either -- it resumed at the next TOP-LEVEL command, which is why `alive`
-    printed and that script ended 0.
+    Note what is MISSING: `after`, `g after f`, and `g failed`. bash abandoned both function frames and did NOT run the `||` arm, but it did not exit either -- it resumed at the next TOP-LEVEL command, which is why `alive` printed and that script ended 0.
 
-    THE EXIT STATUS DEPENDS ON WHAT FOLLOWS, and for this script nothing does:
-    `run_all_phases` is the last top-level command, so the shell ends carrying
-    the failed expansion's own status, 1. Measured both ways (probe with and
-    without a trailing `echo`).
+    THE EXIT STATUS DEPENDS ON WHAT FOLLOWS, and for this script nothing does: `run_all_phases` is the last top-level command, so the shell ends carrying the failed expansion's own status, 1. Measured both ways (probe with and without a trailing `echo`).
 
     Applied to the real thing, `BRANCH_MAX_AGE_DAYS=08` means Phase 9 stops
-    where it stands, Phases 10, 11 and 12 and the whole final summary never run,
-    and the only evidence is one line of bash arithmetic diagnostics. That is
+    where it stands, Phases 10, 11 and 12 and the whole final summary never run, and the only evidence is one line of bash arithmetic diagnostics. That is
     HAZARD 8. HAZARD 9 reaches the same unwind from an ordinary API failure; see
     `cleanup_actions_cache`.
     """
@@ -829,9 +718,7 @@ class ExpansionAbortError(Exception):
 def bash_div(numerator: int, denominator: int) -> int:
     """`$((a / b))`: C division, TRUNCATED TOWARD ZERO, not floored.
 
-    Only visible on a negative numerator, which happens when a timestamp is in
-    the future -- an API clock skew, or the `created_on` of a widget made in the
-    same second. Python's `//` floors, so `-1 // 3600` is -1 where bash says 0.
+    Only visible on a negative numerator, which happens when a timestamp is in the future -- an API clock skew, or the `created_on` of a widget made in the same second. Python's `//` floors, so `-1 // 3600` is -1 where bash says 0.
     """
     quotient = abs(numerator) // abs(denominator)
     return -quotient if (numerator < 0) != (denominator < 0) else quotient
@@ -846,11 +733,9 @@ def _blank() -> None:
 def _grep_qx(needle: str, haystack: str) -> bool:
     """`grep -qx "$needle" <<<"$haystack"`: a WHOLE-LINE match.
 
-    `-x` anchors both ends, and the needle is still a BASIC REGULAR EXPRESSION,
-    not a literal (that would be `-F`). Every needle here is a PR number matched
+    `-x` anchors both ends, and the needle is still a BASIC REGULAR EXPRESSION, not a literal (that would be `-F`). Every needle here is a PR number matched
     against a list of PR numbers, so the distinction cannot bite; it is
-    reproduced with an anchored search anyway because a port that quietly became
-    stricter than its twin is still a divergence.
+    reproduced with an anchored search anyway because a port that quietly became stricter than its twin is still a divergence.
     """
     return any(line == needle for line in records(haystack))
 
@@ -858,9 +743,7 @@ def _grep_qx(needle: str, haystack: str) -> bool:
 def _stream_lines(text: str) -> list[str]:
     """The lines a `while read` over a PROCESS SUBSTITUTION sees.
 
-    Different from `records`: a stream has no phantom final record, because
-    there is no here-string appending a newline. An empty stream is zero
-    iterations, and a final line without a trailing newline is still one.
+    Different from `records`: a stream has no phantom final record, because there is no here-string appending a newline. An empty stream is zero iterations, and a final line without a trailing newline is still one.
     """
     if text == "":
         return []
@@ -873,8 +756,7 @@ def _stream_lines(text: str) -> list[str]:
 def _capture_raw(argv: list[str]) -> tuple[int, str]:
     """stdout EXACTLY as written, newlines and all, stderr discarded.
 
-    For the two places the twin feeds a command's output to a `while read` loop
-    through a process substitution instead of capturing it in `$( )`.
+    For the two places the twin feeds a command's output to a `while read` loop through a process substitution instead of capturing it in `$( )`.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -889,9 +771,7 @@ def _capture_raw(argv: list[str]) -> tuple[int, str]:
 def _capture_stderr(argv: list[str]) -> tuple[int, str]:
     """`$(cmd 2>&1 >/dev/null)`: STDERR captured, stdout binned.
 
-    The order of the two redirections is the whole trick, and Phase 9 is the one
-    place in this file that uses it: `2>&1` first points stderr at the pipe the
-    substitution is reading, and `>/dev/null` then moves stdout away.
+    The order of the two redirections is the whole trick, and Phase 9 is the one place in this file that uses it: `2>&1` first points stderr at the pipe the substitution is reading, and `>/dev/null` then moves stdout away.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -906,9 +786,7 @@ def _capture_stderr(argv: list[str]) -> tuple[int, str]:
 def _pipe_grep(argv: list[str], pattern) -> tuple[int, str]:
     """`$(cmd 2>/dev/null | grep -E '<pattern>' || true)`.
 
-    The `|| true` is what keeps grep's exit-1-on-no-match from tripping
-    `pipefail`, and it is also what hides a failure of `cmd`. Both are the
-    twin's, so both are here.
+    The `|| true` is what keeps grep's exit-1-on-no-match from tripping `pipefail`, and it is also what hides a failure of `cmd`. Both are the twin's, so both are here.
     """
     code, out = capture_quiet(argv)
     kept = [line for line in _stream_lines(out + "\n") if pattern.search(line)]
@@ -918,9 +796,7 @@ def _pipe_grep(argv: list[str], pattern) -> tuple[int, str]:
 def _sort_v_first(left: str, right: str) -> str:
     """`printf '%s\\n%s\\n' "$a" "$b" | sort -V | head -1`.
 
-    `sort -V` IS EXECUTED. GNU version sort has its own rules for suffixes and
-    leading zeros, and the two inputs here are a floor and a version that a
-    human may have written by hand into `release-contract-floor.txt`.
+    `sort -V` IS EXECUTED. GNU version sort has its own rules for suffixes and leading zeros, and the two inputs here are a floor and a version that a human may have written by hand into `release-contract-floor.txt`.
     """
     sys.stdout.flush()
     try:
@@ -939,10 +815,7 @@ def _sort_v_first(left: str, right: str) -> str:
 def _awk_pre_field(line: str, pattern) -> str:
     """`awk '/<pattern>/ {print $2}'` over ONE line.
 
-    awk's default field splitting is on runs of whitespace with leading
-    whitespace ignored, so `                           PRE dryrun-x/` has $1
-    `PRE` and $2 `dryrun-x/`. A matching line with fewer than two fields prints
-    an empty line, which the caller's `[[ -z ]]` then skips.
+    awk's default field splitting is on runs of whitespace with leading whitespace ignored, so ` PRE dryrun-x/` has $1 `PRE` and $2 `dryrun-x/`. A matching line with fewer than two fields prints an empty line, which the caller's `[[ -z ]]` then skips.
     """
     if not pattern.search(line):
         return ""
@@ -958,10 +831,7 @@ def _awk_channel_listing(raw: str) -> str:
         rest = fname; sub(/^rediacc-cli[-_]/, "", rest);
         if (match(rest, /^[0-9]+\\.[0-9]+\\.[0-9]+/)) { ... }
 
-    `$4` IS THE FOURTH WHITESPACE FIELD, so a key containing a space is
-    TRUNCATED at the space and the tail is lost. Reproduced rather than fixed:
-    no release artifact has ever had a space in its name, and a port that
-    handled one would delete a key the twin would not.
+    `$4` IS THE FOURTH WHITESPACE FIELD, so a key containing a space is TRUNCATED at the space and the tail is lost. Reproduced rather than fixed: no release artifact has ever had a space in its name, and a port that handled one would delete a key the twin would not.
     """
     out = []
     for line in _stream_lines(raw):
@@ -1011,9 +881,7 @@ def _top_versions(listing: str, keep: int) -> str:
 def _success_text(blob: str) -> str:
     """`jq -r '.success // false'`.
 
-    `//` is jq's ALTERNATIVE operator, which fires on `false` as well as on
-    `null`, so a response with `"success": false` and one with no `success` key
-    at all both answer `false`. The caller compares against the literal `true`.
+    `//` is jq's ALTERNATIVE operator, which fires on `false` as well as on `null`, so a response with `"success": false` and one with no `success` key at all both answer `false`. The caller compares against the literal `true`.
     """
     out = []
     for value in json_values(blob, ".success // false"):
@@ -1025,10 +893,7 @@ def _success_text(blob: str) -> str:
 def _iterate_result(blob: str) -> list:
     """`.result[]` -- a jq TYPE ERROR when `.result` is not an array.
 
-    That error is fatal in the twin (it is inside a command substitution under
-    errexit), so it is fatal here too, through the real jq. The alternative --
-    quietly yielding nothing -- would turn a run-ending misconfiguration into a
-    silent no-op, which is the failure mode this whole file is a monument to.
+    That error is fatal in the twin (it is inside a command substitution under errexit), so it is fatal here too, through the real jq. The alternative -- quietly yielding nothing -- would turn a run-ending misconfiguration into a silent no-op, which is the failure mode this whole file is a monument to.
     """
     out: list = []
     for value in json_values(blob, ".result[]"):
@@ -1053,11 +918,7 @@ def _soft_length_text(blob: str) -> str:
     """`jq 'length'` inside the twin's `set +e` region: a failure is an EMPTY
     string, not a dead run.
 
-    `aws --query 'Uploads[]...'` renders `null` when there are no uploads, and
-    `null | length` is a jq error. The twin's `mpu_count` is then empty, and
-    `[[ "" -eq 0 ]]` is true, so the phase reports "no ongoing multipart
-    uploads". Getting this wrong in either direction changes what an empty
-    bucket prints.
+    `aws --query 'Uploads[]...'` renders `null` when there are no uploads, and `null | length` is a jq error. The twin's `mpu_count` is then empty, and `[[ "" -eq 0 ]]` is true, so the phase reports "no ongoing multipart uploads". Getting this wrong in either direction changes what an empty bucket prints.
     """
     values = try_json_values(blob)
     if values is None:
@@ -1074,9 +935,7 @@ def _soft_length_text(blob: str) -> str:
 def _upload_rows(blob: str) -> str:
     """`jq -r '.[] | "\\(.Key)\\t\\(.UploadId)\\t\\(.Initiated)"' 2>/dev/null`.
 
-    String interpolation renders each value the way `jq -r` would, so a missing
-    key becomes the four characters `null` and lands in the loop's variable as
-    such. Errors are discarded (`2>/dev/null`) and produce no rows.
+    String interpolation renders each value the way `jq -r` would, so a missing key becomes the four characters `null` and lands in the loop's variable as such. Errors are discarded (`2>/dev/null`) and produce no rows.
     """
     values = try_json_values(blob)
     if values is None:
@@ -1100,9 +959,7 @@ def _upload_rows(blob: str) -> str:
 def _sum_sizes(entries: list) -> int:
     """`jq '[.[].size] | add // 0'` over ONE array.
 
-    `add` over an empty array is `null`, which `// 0` turns into 0. `add` also
-    treats `null` as the identity, so an entry with no `size` contributes
-    nothing rather than making the whole sum null.
+    `add` over an empty array is `null`, which `// 0` turns into 0. `add` also treats `null` as the identity, so an entry with no `size` contributes nothing rather than making the whole sum null.
     """
     total = 0
     for entry in entries:
@@ -1117,8 +974,7 @@ def _sum_sizes(entries: list) -> int:
 def _arith_expand(word: object) -> int:
     """`$((word))` -- a refused word ABORTS, it does not evaluate to false.
 
-    The difference from `arith_cmp` is the whole of HAZARD 8: inside `[[ ]]` bash
-    prints and continues, inside `$(( ))` it prints and unwinds every enclosing
+    The difference from `arith_cmp` is the whole of HAZARD 8: inside `[[ ]]` bash prints and continues, inside `$(( ))` it prints and unwinds every enclosing
     function.
     """
     try:
@@ -1131,10 +987,7 @@ def _arith_expand(word: object) -> int:
 def records(text: str) -> list[str]:
     """The lines a `while IFS= read -r x; do ...; done <<<"$text"` loop sees.
 
-    A here-string always appends a newline, so an EMPTY string yields exactly
-    one empty record -- which is why every such loop in the twin opens with
-    `[[ -z "$x" ]] && continue`. Reproduced, rather than returning `[]`, because
-    two of those loops count the records they skip.
+    A here-string always appends a newline, so an EMPTY string yields exactly one empty record -- which is why every such loop in the twin opens with `[[ -z "$x" ]] && continue`. Reproduced, rather than returning `[]`, because two of those loops count the records they skip.
     """
     return text.split("\n")
 
@@ -1143,8 +996,7 @@ def try_json_values(blob: str) -> list | None:
     """`json_values` that ANSWERS instead of dying. `None` means "not JSON".
 
     Phase 3's `jq -e 'type == "array"'` sits inside an `if !` with both streams
-    discarded, so malformed bytes there are a soft "page not usable" rather than
-    the run-ending parse error every other blob would cause.
+    discarded, so malformed bytes there are a soft "page not usable" rather than the run-ending parse error every other blob would cause.
     """
     decoder = json.JSONDecoder()
     out: list = []
@@ -1165,8 +1017,7 @@ class Housekeeping:
     """The twin's SOURCE-TIME state: parsed args, config, guards, counters.
 
     Constructing one is `source cleanup-versions.sh <args>`; calling a method is
-    calling the function of that name. See the module docstring for why the seam
-    is shaped this way.
+    calling the function of that name. See the module docstring for why the seam is shaped this way.
     """
 
     def __init__(self, argv: list[str]) -> None:
@@ -1222,10 +1073,7 @@ class Housekeeping:
     def housekeeping_fail(self, title: str, message: str) -> None:
         """The run-spanning failure latch (:179-189). ALWAYS RETURNS NONE.
 
-        The annotation goes to STDOUT (`echo`), while `log_error` goes to
-        stderr, and the two streams are never merged by this port for the reason
-        `differential.py` gives at length: a stream swap is exactly the defect
-        this whole comparison exists to catch.
+        The annotation goes to STDOUT (`echo`), while `log_error` goes to stderr, and the two streams are never merged by this port for the reason `differential.py` gives at length: a stream swap is exactly the defect this whole comparison exists to catch.
         """
         self.housekeeping_failed = 1
         log.error(message)
@@ -1236,13 +1084,11 @@ class Housekeeping:
     def cf_api(self, method: str, endpoint: str, *extra: str) -> tuple[int, str]:
         """`cf_api <method> <endpoint> [curl args...]` (:193-201).
 
-        The argv is the twin's, in the twin's order, including the two headers
-        it always sends. Every call site wraps this in `$( ... 2>/dev/null || echo
+        The argv is the twin's, in the twin's order, including the two headers it always sends. Every call site wraps this in `$( ... 2>/dev/null || echo
         '{"success":false}')`, so the status is returned rather than acted on
         here.
 
-        `$CLOUDFLARE_API_TOKEN` IS UNGUARDED IN THE TWIN -- under `set -u` an
-        unset token would abort the whole run inside this function. Every caller
+        `$CLOUDFLARE_API_TOKEN` IS UNGUARDED IN THE TWIN -- under `set -u` an unset token would abort the whole run inside this function. Every caller
         checks it first, so the path is unreachable; the port reads it with a
         `""` default rather than reproducing an abort nothing can trigger.
         """
@@ -1264,15 +1110,9 @@ class Housekeeping:
     def _cutoff_epoch(self) -> str:
         """`date -d "$RETENTION_DAYS days ago" +%s || date -v-${D}d +%s`, both quiet.
 
-        THERE IS NO `|| echo 0` ON THIS ONE, unlike the created_at parse two
-        lines above it, so when BOTH arms fail the twin's variable holds the
-        EMPTY STRING and the assignment's non-zero status is swallowed -- errexit
-        is suspended for the whole call because `should_retain` is always invoked
+        THERE IS NO `|| echo 0` ON THIS ONE, unlike the created_at parse two lines above it, so when BOTH arms fail the twin's variable holds the EMPTY STRING and the assignment's non-zero status is swallowed -- errexit is suspended for the whole call because `should_retain` is always invoked
         as an `if` condition. Verified against the real bash rather than assumed;
-        the empty string then reads as 0 in the `-gt` below, so an unparseable
-        `--days` value RETAINS EVERYTHING (every real epoch is greater than 0)
-        rather than deleting it. That is the safe direction, and it is luck
-        rather than design, so it is stated here.
+        the empty string then reads as 0 in the `-gt` below, so an unparseable `--days` value RETAINS EVERYTHING (every real epoch is greater than 0) rather than deleting it. That is the safe direction, and it is luck rather than design, so it is stated here.
 
         `date -v-${RETENTION_DAYS}d` IS UNQUOTED in the twin, so a value with
         whitespace becomes several arguments. Reproduced with a whitespace split.
@@ -1289,8 +1129,7 @@ class Housekeeping:
         """`should_retain <created_at_iso> <index_from_newest>` (:206-233).
 
         True = keep. The two conditions are OR: inside the newest
-        `KEEP_VERSIONS`, or inside the retention window. An UNDATABLE item is
-        kept and says so.
+        `KEEP_VERSIONS`, or inside the retention window. An UNDATABLE item is kept and says so.
         """
         if arith_cmp(index, "lt", self.keep_versions):
             return True
@@ -1306,9 +1145,7 @@ class Housekeeping:
     def cleanup_releases(self) -> None:
         """`cleanup_releases` (:239-292).
 
-        HAZARD 2 LIVES HERE: the dry-run arm does NOT increment `deleted`, so a
-        dry run of this phase always ends `would delete 0 of N` no matter how
-        many releases it named. Every other phase's dry-run arm counts.
+        HAZARD 2 LIVES HERE: the dry-run arm does NOT increment `deleted`, so a dry run of this phase always ends `would delete 0 of N` no matter how many releases it named. Every other phase's dry-run arm counts.
         """
         log.step("Phase 1: Cleaning up GitHub releases (%s)" % RELEASE_REPO)
 
@@ -1384,9 +1221,7 @@ class Housekeeping:
     def cleanup_tags(self) -> None:
         """`cleanup_tags` (:298-392). Two repos, up to four API calls per tag.
 
-        THE COST IS THE POINT OF THE CALL LOG. Dating one tag takes one call for
-        the ref, one for the tag object when it is annotated, one more for the
-        tag object's target, and one for the commit -- and the twin issues them
+        THE COST IS THE POINT OF THE CALL LOG. Dating one tag takes one call for the ref, one for the tag object when it is annotated, one more for the tag object's target, and one for the commit -- and the twin issues them
         for EVERY tag, including the ones it is about to keep. A port that
         memoised would be faster and would no longer be the same program.
         """
@@ -1515,9 +1350,7 @@ class Housekeeping:
     def cleanup_packages(self) -> None:
         """`cleanup_packages` (:398-522).
 
-        THE PAGINATION IS THE FIX FOR A REAL VACUOUS GREEN, in the twin's own
-        comment: a single-page fetch only ever saw the newest 100 versions, all
-        of them inside the retention window, so the phase deleted 0 every day
+        THE PAGINATION IS THE FIX FOR A REAL VACUOUS GREEN, in the twin's own comment: a single-page fetch only ever saw the newest 100 versions, all of them inside the retention window, so the phase deleted 0 every day
         while `elite/web` accumulated 8.7k versions behind page 1.
         """
         log.step("Phase 3: Cleaning up GHCR package versions")
@@ -1659,8 +1492,7 @@ class Housekeeping:
 
         FAILS OPEN ON THE OPEN-PR LOOKUP, and the twin explains why: its worst
         case is retaining too much history, so an API blip must not wipe an open
-        PR's preview record. Phase 5b, whose worst case is deleting a live
-        preview, fails CLOSED instead. The asymmetry is deliberate on both sides.
+        PR's preview record. Phase 5b, whose worst case is deleting a live preview, fails CLOSED instead. The asymmetry is deliberate on both sides.
         """
         log.step("Phase 4: Cleaning up GitHub deployments")
         keep_per_env = DEPLOYMENTS_KEEP_PER_ENV
@@ -1799,11 +1631,7 @@ class Housekeeping:
     def cleanup_cf_pages(self) -> None:
         """`cleanup_cf_pages` (:633-739).
 
-        THE LATEST DEPLOYMENT PER BRANCH IS UNDELETABLE at the Cloudflare end, so
-        the phase computes that set first and skips it, counting the skips into
-        the summary line rather than into `deleted`. `group_by` SORTS, so
-        `.[0].id` is the newest only because `all_deployments` was reversed into
-        newest-first immediately above -- reproduced with the same ordering, not
+        THE LATEST DEPLOYMENT PER BRANCH IS UNDELETABLE at the Cloudflare end, so the phase computes that set first and skips it, counting the skips into the summary line rather than into `deleted`. `group_by` SORTS, so `.[0].id` is the newest only because `all_deployments` was reversed into newest-first immediately above -- reproduced with the same ordering, not
         with a max().
         """
         log.step("Phase 5: Cleaning up Cloudflare Pages preview deployments")
@@ -1926,14 +1754,9 @@ class Housekeeping:
     def cleanup_preview_workers(self) -> None:
         """`cleanup_preview_workers` (:957-1016).
 
-        FAILS CLOSED. An unreadable open-PR list SKIPS the phase, because the
-        worst case here is deleting a live preview and that cannot be undone by
-        the next run. The twin's banner says so at length, and names the run that
-        made it necessary: `Cleanup PR Preview` 32903006150 died on GitHub's own
-        internal DNS before checkout, leaking a Worker with nothing to notice.
+        FAILS CLOSED. An unreadable open-PR list SKIPS the phase, because the worst case here is deleting a live preview and that cannot be undone by the next run. The twin's banner says so at length, and names the run that made it necessary: `Cleanup PR Preview` 32903006150 died on GitHub's own internal DNS before checkout, leaking a Worker with nothing to notice.
 
-        HAZARD 3 IS HERE: no `record_delete` on the success arm, so Workers are
-        deleted without being charged to the global budget.
+        HAZARD 3 IS HERE: no `record_delete` on the success arm, so Workers are deleted without being charged to the global budget.
         """
         log.step("Phase 5b: Cleaning up orphaned per-PR preview Workers")
 
@@ -2031,11 +1854,7 @@ class Housekeeping:
     def cleanup_environments(self) -> None:
         """`cleanup_environments` (:766-839). HAZARD 4: IT CANNOT SUCCEED.
 
-        Deleting an environment OBJECT needs Administration:write, and
-        `check-no-app-admin-perm.sh` is a BLOCKING gate that forbids granting it
-        to the App -- so the 403 arm is the designed outcome, which is why it
-        logs at INFO and stops after the first one rather than warning per
-        environment. Ported exactly, including that choice.
+        Deleting an environment OBJECT needs Administration:write, and `check-no-app-admin-perm.sh` is a BLOCKING gate that forbids granting it to the App -- so the 403 arm is the designed outcome, which is why it logs at INFO and stops after the first one rather than warning per environment. Ported exactly, including that choice.
         """
         log.step("Phase 6: Cleaning up stale GitHub preview environments")
 
@@ -2153,8 +1972,7 @@ class Housekeeping:
     def cleanup_d1_databases(self) -> None:
         """`cleanup_d1_databases` (:845-927).
 
-        The one phase whose successful delete logs at INFO rather than DEBUG, so
-        a nightly with no DEBUG still shows which databases went.
+        The one phase whose successful delete logs at INFO rather than DEBUG, so a nightly with no DEBUG still shows which databases went.
         """
         log.step("Phase 7: Cleaning up orphaned D1 preview databases")
 
@@ -2256,9 +2074,7 @@ class Housekeeping:
     def cleanup_orphan_turnstile_widgets(self) -> None:
         """`cleanup_orphan_turnstile_widgets` (:1028-1125).
 
-        A 24h GRACE WINDOW so the explicit `cleanup-preview` path always wins the
-        race, and the hold message counts the remaining hours by rounding UP
-        (`(remaining + 3599) / 3600` in integer arithmetic).
+        A 24h GRACE WINDOW so the explicit `cleanup-preview` path always wins the race, and the hold message counts the remaining hours by rounding UP (`(remaining + 3599) / 3600` in integer arithmetic).
         """
         log.step("Phase 7b: Cleaning up orphan per-PR Turnstile widgets")
 
@@ -2393,9 +2209,7 @@ class Housekeeping:
     def r2_ls_prefix(self, prefix: str) -> str:
         """`aws s3 ls "s3://$R2_BUCKET/$prefix" --endpoint-url ... 2>/dev/null || true`.
 
-        Returns the RAW stdout, newlines included, because two callers want
-        different things from it: `while read` over a process substitution (line
-        by line, no trailing strip) and `[[ -n "$(...)" ]]` (which strips).
+        Returns the RAW stdout, newlines included, because two callers want different things from it: `while read` over a process substitution (line by line, no trailing strip) and `[[ -n "$(...)" ]]` (which strips).
         """
         _code, out = _capture_raw(
             [
@@ -2413,10 +2227,7 @@ class Housekeeping:
     def r2_prefix_last_modified(self, prefix: str) -> str:
         """LastModified of the first object under a prefix; "" when empty/unreadable.
 
-        `list-objects-v2`, NOT `aws s3 ls --recursive`, and the twin says why:
-        the latter exits 1 on an empty prefix, which under `set -eo pipefail`
-        would abort the whole housekeeping run silently. The literal `None` that
-        `--output text` prints for a missing key is treated as empty.
+        `list-objects-v2`, NOT `aws s3 ls --recursive`, and the twin says why: the latter exits 1 on an empty prefix, which under `set -eo pipefail` would abort the whole housekeeping run silently. The literal `None` that `--output text` prints for a missing key is treated as empty.
         """
         code, stamp = capture_quiet(
             [
@@ -2446,9 +2257,7 @@ class Housekeeping:
     def r2_rm_recursive(self, prefix: str, label: str = "") -> None:
         """Delete a prefix recursively, or log the intent in dry-run.
 
-        ONE `record_delete` FOR THE WHOLE PREFIX even though `--recursive` may
-        remove many keys: the budget exists to protect GitHub's REST quota, and
-        R2 deletes do not spend it.
+        ONE `record_delete` FOR THE WHOLE PREFIX even though `--recursive` may remove many keys: the budget exists to protect GitHub's REST quota, and R2 deletes do not spend it.
         """
         suffix = " (%s)" % label if label != "" else ""
         if self.dry_run:
@@ -2471,15 +2280,11 @@ class Housekeeping:
 
     def cleanup_r2(self) -> None:
         """`cleanup_r2` (:1187-1553). Six sub-phases, in the twin's ORDER OF
-        EXECUTION, which is 8a, 8b, 8c, 8d, 8f, 8e -- 8f really does run before
-        8e in the file, and the labels really are out of order.
+        EXECUTION, which is 8a, 8b, 8c, 8d, 8f, 8e -- 8f really does run before 8e in the file, and the labels really are out of order.
 
-        `set +e` FOR THE WHOLE PHASE, restored at the end. The twin relaxes
-        errexit here because several `aws | awk` pipes have SIGPIPE edges that
+        `set +e` FOR THE WHOLE PHASE, restored at the end. The twin relaxes errexit here because several `aws | awk` pipes have SIGPIPE edges that
         would otherwise kill the job silently; every destructive call carries its
-        own guard. The port has no errexit to relax, and the one place the
-        difference shows is 8e's `jq 'length'` over an `aws` response of `null`,
-        which is a soft failure here and a soft failure there.
+        own guard. The port has no errexit to relax, and the one place the difference shows is 8e's `jq 'length'` over an `aws` response of `null`, which is a soft failure here and a soft failure there.
         """
         log.step("Phase 8: Cleaning up R2 orphans")
 
@@ -2877,16 +2682,10 @@ class Housekeeping:
     def cleanup_stale_branches(self) -> None:
         """`cleanup_stale_branches` (:1562-1664). Six repos, two calls per branch.
 
-        THE DRY-RUN COUNTER IS SEPARATE, and the twin's comment says why: it used
-        to increment `deleted`, so a dry run ended with "deleted 7" having
-        deleted nothing, indistinguishable in the log from a run that really
-        removed seven branches.
+        THE DRY-RUN COUNTER IS SEPARATE, and the twin's comment says why: it used to increment `deleted`, so a dry run ended with "deleted 7" having deleted nothing, indistinguishable in the log from a run that really removed seven branches.
 
         THIS IS THE ONLY DELETE FAILURE IN THE FILE THAT FAILS THE RUN
-        (`housekeeping_fail`, latched, reported once at the end), and the twin's
-        comment explains that too: a 403 from a token without contents:write
-        would otherwise be a `log_warn` nobody reads under a phase reporting a
-        clean sweep it never performed.
+        (`housekeeping_fail`, latched, reported once at the end), and the twin's comment explains that too: a 403 from a token without contents:write would otherwise be a `log_warn` nobody reads under a phase reporting a clean sweep it never performed.
         """
         log.step(
             "Phase 9: Cleaning up stale branches (>%s days, no open PR)" % self.branch_max_age_days
@@ -3038,12 +2837,8 @@ class Housekeeping:
     def cleanup_workflow_runs(self) -> None:
         """`cleanup_workflow_runs` (:1673-1813).
 
-        THE VACUOUS-GREEN CHECK at the end is the reason this phase is worth
-        reading twice. It deleted nothing for `watchdog-monitor.yml` for months
-        and reported success, because the scan window (MAX_PAGES x 100 runs)
-        never reached back as far as the retention threshold. The warning fires
-        only when the window was TRUNCATED (`page` exceeded the cap), so a young
-        low-volume workflow with nothing to reap stays quiet.
+        THE VACUOUS-GREEN CHECK at the end is the reason this phase is worth reading twice. It deleted nothing for `watchdog-monitor.yml` for months and reported success, because the scan window (MAX_PAGES x 100 runs) never reached back as far as the retention threshold. The warning fires only when the window was TRUNCATED (`page` exceeded the cap), so a young low-volume workflow
+        with nothing to reap stays quiet.
         """
         log.step("Phase 10: Cleaning up completed workflow runs")
 
@@ -3482,13 +3277,9 @@ class Housekeeping:
     def run_all_phases(self) -> int:
         """`run_all_phases` (:2004-2051), in the twin's order, blank lines and all.
 
-        THE BLANK LINES GO TO STDOUT (`echo ""`) while every log line goes to
-        stderr, so the two streams interleave differently and a comparison that
-        merged them would not notice if one moved.
+        THE BLANK LINES GO TO STDOUT (`echo ""`) while every log line goes to stderr, so the two streams interleave differently and a comparison that merged them would not notice if one moved.
 
-        ONE EXIT POINT for every latched failure, AFTER every phase has had its
-        run. Returning non-zero out of a phase instead is what once disabled
-        Phase 8f and unset errexit for Phases 9-12.
+        ONE EXIT POINT for every latched failure, AFTER every phase has had its run. Returning non-zero out of a phase instead is what once disabled Phase 8f and unset errexit for Phases 9-12.
         """
         log.step("Housekeeping: cleanup-versions")
         log.step(
@@ -3541,10 +3332,7 @@ class Housekeeping:
     def run_phase(self, name: str) -> int:
         """Drive ONE phase, the way `source ...; cleanup_stale_branches` does.
 
-        The names are the twin's function names. Anything else is a caller
-        error and says so rather than silently running nothing, because a typo
-        that ran zero phases and exited 0 is precisely the vacuous green this
-        differential exists to prevent.
+        The names are the twin's function names. Anything else is a caller error and says so rather than silently running nothing, because a typo that ran zero phases and exited 0 is precisely the vacuous green this differential exists to prevent.
         """
         method = getattr(self, name, None)
         if method is None or not name.startswith(("cleanup_", "run_all")):

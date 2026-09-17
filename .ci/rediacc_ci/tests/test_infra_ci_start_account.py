@@ -1,12 +1,8 @@
 """Differential: `rediacc_ci.infra.ci_start_account` against its twin
 `.ci/scripts/infra/ci-start-account.sh`.
 
-Same seam and same discipline as `test_infra_ci_start_elite.py`: both subjects
-derive the console root from their own file location, so every case copies both
-into a fresh tree at the right relative depth, runs the copies, and asserts on
-the DOCKER ARGV SEQUENCE as well as on both streams, the written `.env` and
-`$GITHUB_OUTPUT`. A port that printed "Account server is healthy" without ever
-inspecting anything would pass a stdout-only comparison.
+Same seam and same discipline as `test_infra_ci_start_elite.py`: both subjects derive the console root from their own file location, so every case copies both into a fresh tree at the right relative depth, runs the copies, and asserts on the DOCKER ARGV SEQUENCE as well as on both streams, the written `.env` and `$GITHUB_OUTPUT`. A port that printed "Account server is healthy"
+without ever inspecting anything would pass a stdout-only comparison.
 
 THE REAL `ci-env.sh` IS COPIED IN AND SOURCED FOR REAL, with every secret it
 would otherwise generate pre-set so both sides take its `${VAR:-...}` arms and
@@ -14,20 +10,13 @@ the result is byte-deterministic.
 
 ONLY THE SLEEPS ARE REWRITTEN IN THE COPIES. The twin polls for 180s at a 3s
 interval and then sleeps a further 2s; nulling those three sleeps keeps every
-constant, so both sides still perform all 60 probes, still print the progress
-line on the same multiples of 15, and the comparison is over the real arithmetic
-instead of a miniature of it. `test_the_null_sleep_anchors_still_exist` and
-`test_the_probe_count_is_the_real_one` are the controls on that rewrite.
+constant, so both sides still perform all 60 probes, still print the progress line on the same multiples of 15, and the comparison is over the real arithmetic instead of a miniature of it. `test_the_null_sleep_anchors_still_exist` and `test_the_probe_count_is_the_real_one` are the controls on that rewrite.
 
-ONE LINE IS NORMALIZED: `  load average (1m 5m 15m): ...`, which both sides read
+ONE LINE IS NORMALIZED: ` load average (1m 5m 15m): ...`, which both sides read
 from the real `/proc/loadavg` seconds apart. `test_the_load_line_is_really_there`
 asserts both printed a well-formed one so the mask cannot hide its absence.
 
-THE `unhealthy` DEFECT IS PINNED HERE, NOT FIXED. `ci-start-account.sh:106`
-greps for the SUBSTRING `healthy`, which `unhealthy` contains, so a container
-docker has failed is announced as healthy. The port reproduces the match and
-`test_unhealthy_is_read_as_healthy` locks it in with the measurement of how
-reachable it is today. Fixing the twin changes a live CI step's pass/fail
+THE `unhealthy` DEFECT IS PINNED HERE, NOT FIXED. `ci-start-account.sh:106` greps for the SUBSTRING `healthy`, which `unhealthy` contains, so a container docker has failed is announced as healthy. The port reproduces the match and `test_unhealthy_is_read_as_healthy` locks it in with the measurement of how reachable it is today. Fixing the twin changes a live CI step's pass/fail
 behaviour and is outside this port's file ownership.
 
 K=5 LEDGER: `.ci/shadow/w7p6-ci-start-account.observations.jsonl`.
@@ -375,30 +364,18 @@ def test_the_secret_guards_run_before_anything_else() -> None:
 def test_unhealthy_is_read_as_healthy() -> None:
     """THE PINNED DEFECT, on both sides.
 
-    `ci-start-account.sh:106` is `docker inspect ... | grep -q "healthy"`, a
-    SUBSTRING test. Both the twin and this port therefore announce a container
-    docker has marked UNHEALTHY as healthy and let the job continue.
+    `ci-start-account.sh:106` is `docker inspect ... | grep -q "healthy"`, a SUBSTRING test. Both the twin and this port therefore announce a container docker has marked UNHEALTHY as healthy and let the job continue.
 
-    HOW REACHABLE IT IS TODAY, MEASURED RATHER THAN ESTIMATED, and the margin is
-    thinner than it looks. The container's healthcheck
-    (`.ci/docker/ci/docker-compose.yml:52-62`) declares `start_period: 150s`,
-    `interval: 10s`, `retries: 6`. Docker does not count a failing probe against
-    `retries` during `start_period`, so the failing streak can only begin at
+    HOW REACHABLE IT IS TODAY, MEASURED RATHER THAN ESTIMATED, and the margin is thinner than it looks. The container's healthcheck (`.ci/docker/ci/docker-compose.yml:52-62`) declares `start_period: 150s`, `interval: 10s`, `retries: 6`. Docker does not count a failing probe against `retries` during `start_period`, so the failing streak can only begin at
     t=150s and the earliest `unhealthy` is around t=200s.
 
-    The loop's 180s is a budget of SLEEPS, not a deadline: the wall clock the
-    probes themselves consume is never added to `elapsed`. Timed against the
-    real daemon on this host (docker 29.7.2), `docker inspect <missing>
+    The loop's 180s is a budget of SLEEPS, not a deadline: the wall clock the probes themselves consume is never added to `elapsed`. Timed against the real daemon on this host (docker 29.7.2), `docker inspect <missing>
     --format=...` costs 0.131s and `docker ps --format {{.Names}}` 0.052s, so 60
     iterations add 11.0s and the last probe lands at roughly t=191s. That clears
     t=200s by about 9 seconds. The defect therefore goes LIVE, with no change to
-    any file, as soon as the average inspect+ps round trip exceeds about 0.33s
-    against the 0.183s measured here -- a factor of 1.8, which a contended
-    runner supplies routinely. It also goes live if `start_period` drops below
-    120s or `retries` below 3.
+    any file, as soon as the average inspect+ps round trip exceeds about 0.33s against the 0.183s measured here -- a factor of 1.8, which a contended runner supplies routinely. It also goes live if `start_period` drops below 120s or `retries` below 3.
 
-    It is pinned, not fixed: correcting it changes a live CI step's pass/fail
-    behaviour and is outside this port's file ownership.
+    It is pinned, not fixed: correcting it changes a live CI step's pass/fail behaviour and is outside this port's file ownership.
     """
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
@@ -471,8 +448,7 @@ def test_the_progress_line_fires_only_on_multiples_of_fifteen() -> None:
 def test_planted_defect_is_caught_by_this_differential() -> None:
     """ "Fix" the substring match in a COPY of the port and watch it diverge.
 
-    Turning `grep -q "healthy"` into an equality test is the change a reader
-    would make on sight, and it is a real behaviour change against the twin.
+    Turning `grep -q "healthy"` into an equality test is the change a reader would make on sight, and it is a real behaviour change against the twin.
     This mutates an in-memory copy; the file on disk is never touched.
     """
     source = PORT.read_text(encoding="utf-8")

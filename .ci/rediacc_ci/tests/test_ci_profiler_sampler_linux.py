@@ -1,8 +1,7 @@
 """Differential: `rediacc_ci.ci.profiler_sampler_linux` against its twin
 `.ci/scripts/ci/profiler/sampler-linux.sh`.
 
-FOUR LAYERS, because this pair has four genuinely different risks and only one
-of them is "does the output match".
+FOUR LAYERS, because this pair has four genuinely different risks and only one of them is "does the output match".
 
   1. `--help` IS A SLICE OF THE SCRIPT'S OWN SOURCE. `usage()` is
      `sed -n '2,40p' "$0" | sed 's/^# \\?//'` (`sampler-linux.sh:80`), so the
@@ -20,8 +19,7 @@ of them is "does the output match".
      normalization is named in the function that does it rather than applied by
      a blanket regex.
 
-WHAT IS DELIBERATELY NOT COMPARED, and why each is a fact rather than a
-convenience:
+WHAT IS DELIBERATELY NOT COMPARED, and why each is a fact rather than a convenience:
 
   * `**bash:** ${BASH_VERSION:-unknown}`. The field asks which bash is running
     the sampler; in the port there is none, so it renders `unknown`. Forging the
@@ -124,9 +122,7 @@ def _slice_2_40(path: pathlib.Path) -> str:
 def test_the_carried_header_block_is_byte_identical() -> None:
     """The port's lines 2-40 ARE the twin's lines 2-40, in both directions.
 
-    This is the transcription check. If the twin's header is edited and the port
-    is not, `--help` starts lying about the flags it accepts, and nothing else
-    in this file would notice.
+    This is the transcription check. If the twin's header is edited and the port is not, `--help` starts lying about the flags it accepts, and nothing else in this file would notice.
     """
     assert _slice_2_40(PORT) == _slice_2_40(TWIN)
 
@@ -141,9 +137,7 @@ def test_help_is_byte_identical() -> None:
 def test_help_keeps_the_twins_dangling_backslash() -> None:
     """`sed -n '2,40p'` cuts the example mid-continuation; that is the twin's output.
 
-    Line 41 (`--out /tmp/p.tsv --interval 2 &`) is outside the range, so the last
-    line of `--help` ends in a bare `\\`. Tidying it in the port would make the
-    two renderings differ, so it is pinned as a fact.
+    Line 41 (`--out /tmp/p.tsv --interval 2 &`) is outside the range, so the last line of `--help` ends in a bare `\\`. Tidying it in the port would make the two renderings differ, so it is pinned as a fact.
     """
     old, _ = run_both(["--help"])
     assert old[1].rstrip("\n").endswith("\\")
@@ -180,8 +174,7 @@ def test_argument_refusals_are_byte_identical(args: list[str]) -> None:
 def test_the_meta_record_carries_the_normalised_interval(tmp_path: pathlib.Path) -> None:
     """FIXED 2026-09-10 in BOTH SIDES. This test used to assert `01`.
 
-    `01` is all digits, so `is_num` always accepted it, and the twin then echoed
-    the RAW STRING into `#META` because it never converted `$INTERVAL` at all. The
+    `01` is all digits, so `is_num` always accepted it, and the twin then echoed the RAW STRING into `#META` because it never converted `$INTERVAL` at all. The
     first version of this port stored `int(raw)` and wrote `1`; the differential
     caught that, reading the file did not. The twin now normalises with
     `INTERVAL=$((10#$INTERVAL))` -- the fix for the `08` death two cases down --
@@ -204,26 +197,14 @@ def test_a_dangling_value_flag_exits_on_both_sides() -> None:
     """FIXED 2026-09-10 in BOTH SIDES. This test used to require a TIMEOUT to end.
 
     `sampler-linux.sh` did `OUT="${2:-}"; shift 2`. With the flag as the LAST
-    argument, `shift 2` returns non-zero and shifts NOTHING, and `set -e` is
-    deliberately off (`:54-57`), so `while (($# > 0))` never terminated. Measured
-    then: `timeout 3` reported wall 3.01s, user 3.00s, cpu 100% -- one whole core,
-    no output on either stream, no exit.
+    argument, `shift 2` returns non-zero and shifts NOTHING, and `set -e` is deliberately off (`:54-57`), so `while (($# > 0))` never terminated. Measured then: `timeout 3` reported wall 3.01s, user 3.00s, cpu 100% -- one whole core, no output on either stream, no exit.
 
-    Why it mattered more than its reachability suggested: the production caller
-    (`.github/actions/profiler/index.js:117-123`) spawns the sampler
-    `detached: true` and `child.unref()`s it, so nothing would have reaped the spin
-    before GitHub's 6-hour job ceiling, and `PROFILER_MAX_SECONDS` could not help
-    because it is evaluated inside a loop the spin never reached.
+    Why it mattered more than its reachability suggested: the production caller (`.github/actions/profiler/index.js:117-123`) spawns the sampler `detached: true` and `child.unref()`s it, so nothing would have reaped the spin before GitHub's 6-hour job ceiling, and `PROFILER_MAX_SECONDS` could not help because it is evaluated inside a loop the spin never reached.
 
-    Counted, not estimated: of the twin's 14 real invocation sites, TWELVE pass a
-    value after the flag (`index.js:117`, `profiler-control.sh:121`,
-    `test-profiler-report.sh:398,409,421,478,506`,
-    `test_gate_profiler_report.py:548,568,592,656,703`) and TWO use `--probe` only
-    (`profiler-probe.yml:54,72`), so ZERO were reachable -- it was one hand-typed
-    invocation away and it failed silently, which is why it was worth fixing.
+    Counted, not estimated: of the twin's 14 real invocation sites, TWELVE pass a value after the flag (`index.js:117`, `profiler-control.sh:121`, `test-profiler-report.sh:398,409,421,478,506`, `test_gate_profiler_report.py:548,568,592,656,703`) and TWO use `--probe` only (`profiler-probe.yml:54,72`), so ZERO were reachable -- it was one hand-typed invocation away and it failed
+    silently, which is why it was worth fixing.
 
-    THE TIMEOUT STAYS on `run`. It is now the control: if either side regresses to
-    the spin, this fails as a TimeoutExpired rather than hanging the suite.
+    THE TIMEOUT STAYS on `run`. It is now the control: if either side regresses to the spin, this fails as a TimeoutExpired rather than hanging the suite.
     """
     for flag in ("--out", "--interval"):
         old, new = run_both([flag], timeout=10)
@@ -289,11 +270,7 @@ def _sample_both(
 
     `PROFILER_MAX_SECONDS=0`, NOT 1, AND THAT IS A FIX FOR A RACE THIS FILE HIT.
     The stop test is `elapsed_s >= MAX_SECONDS` evaluated AFTER a row is written,
-    so at 1 a first tick landing at 0.99s writes a SECOND row. Measured 16/16
-    single-row runs on an idle machine, and a 2-row run under the load of the
-    full suite -- `row count: twin 1, port 2`, which reads exactly like a port
-    defect and was the harness. At 0 the comparison is true at the first tick
-    unconditionally, so both sides write exactly one row on any machine.
+    so at 1 a first tick landing at 0.99s writes a SECOND row. Measured 16/16 single-row runs on an idle machine, and a 2-row run under the load of the full suite -- `row count: twin 1, port 2`, which reads exactly like a port defect and was the harness. At 0 the comparison is true at the first tick unconditionally, so both sides write exactly one row on any machine.
     """
     env = {
         "PROFILER_CGROUP_ROOT": str(cg),
@@ -379,9 +356,7 @@ def test_proc_host_tier_when_the_cgroup_is_empty(tmp_path: pathlib.Path) -> None
 def test_cpu_max_without_a_quota_is_a_host_reading(tmp_path: pathlib.Path) -> None:
     """`cpu.max` = "max 100000": the cgroup exists and imposes no quota.
 
-    `CPU_MODE` stays V2 (so usage still comes from `cpu.stat`) while `CPU_SRC`
-    falls to PROC_HOST, which is the pair of facts the twin's comment at
-    `:154-156` describes and the one place the two variables disagree.
+    `CPU_MODE` stays V2 (so usage still comes from `cpu.stat`) while `CPU_SRC` falls to PROC_HOST, which is the pair of facts the twin's comment at `:154-156` describes and the one place the two variables disagree.
     """
     cg = tmp_path / "cg-max"
     cg.mkdir()
@@ -396,10 +371,7 @@ def test_cpu_max_without_a_quota_is_a_host_reading(tmp_path: pathlib.Path) -> No
 def test_an_unterminated_cgroup_file_defeats_the_whole_branch(tmp_path: pathlib.Path) -> None:
     """`read` returns NON-ZERO without a trailing newline, so the `if` is false.
 
-    `cpu.max` written as `100000 100000` with no `\\n` sends `detect_cpu_ceiling`
-    past both cgroup branches to `nproc`, leaving `CPU_MODE` empty as well. This
-    is the single behaviour of `read` most likely to be lost in a port, because
-    `open().readline()` returns the same STRING and a different STATUS.
+    `cpu.max` written as `100000 100000` with no `\\n` sends `detect_cpu_ceiling` past both cgroup branches to `nproc`, leaving `CPU_MODE` empty as well. This is the single behaviour of `read` most likely to be lost in a port, because `open().readline()` returns the same STRING and a different STATUS.
     """
     cg = tmp_path / "cg-nonl"
     cg.mkdir()
@@ -438,8 +410,7 @@ def test_a_slim_label_within_the_ceiling_does_not_leak(tmp_path: pathlib.Path) -
 def test_runner_environment_is_rejected_whole_not_cleaned(tmp_path: pathlib.Path) -> None:
     """`case $RUNNER_ENV in '' | *[!a-z-]*)` (`:218-220`).
 
-    An uppercase or underscored value becomes `unknown` ENTIRELY, rather than
-    being stripped down to its acceptable characters. Both directions.
+    An uppercase or underscored value becomes `unknown` ENTIRELY, rather than being stripped down to its acceptable characters. Both directions.
     """
     cg = _cgroup_v2(tmp_path)
     _o, _n, a, b = _sample_both(tmp_path, cg, RUNNER_ENVIRONMENT="Github-Hosted")
@@ -463,14 +434,9 @@ def test_the_missing_memory_current_diagnostic_is_the_twins_alone(
     """A NAMED, DELIBERATELY-NOT-REPRODUCED DIVERGENCE, pinned as still real.
 
     `read_mem_bytes:314` guards `$CG/memory.current` with `[ "$MEM_MODE" = "V2" ]`
-    and NOT with `-r`, so a tree with `memory.max` and no `memory.current` makes
-    real bash write `<twin path>: line 314: <CG>/memory.current: No such file or
-    directory` -- ONCE PER TICK, measured: 4 ticks produced exactly 4 lines. This
-    port matches the DECISION (fall through) and does not forge a diagnostic
-    carrying the twin's own path and line number.
+    and NOT with `-r`, so a tree with `memory.max` and no `memory.current` makes real bash write `<twin path>: line 314: <CG>/memory.current: No such file or directory` -- ONCE PER TICK, measured: 4 ticks produced exactly 4 lines. This port matches the DECISION (fall through) and does not forge a diagnostic carrying the twin's own path and line number.
 
-    Unreachable in production: a real cgroup v2 tree always exposes both files,
-    so this needs `PROFILER_CGROUP_ROOT`, which is a declared test seam.
+    Unreachable in production: a real cgroup v2 tree always exposes both files, so this needs `PROFILER_CGROUP_ROOT`, which is a declared test seam.
     """
     cg = tmp_path / "cg-nocur"
     cg.mkdir()
@@ -490,22 +456,17 @@ def test_an_octal_invalid_interval_now_runs_on_both_sides(tmp_path: pathlib.Path
     """FIXED 2026-09-10 in BOTH SIDES. This test used to assert the death.
 
     `DISK_EVERY=$(((DISK_EVERY_S + INTERVAL - 1) / INTERVAL))` and `$(( ))` reads a
-    leading `0` as OCTAL. `08` and `09` are not valid octal, so bash refused the
-    expression, left `DISK_EVERY` unassigned, and the next line expanded it into
-    `set -u`. Measured:
+    leading `0` as OCTAL. `08` and `09` are not valid octal, so bash refused the expression, left `DISK_EVERY` unassigned, and the next line expanded it into `set -u`. Measured:
 
         sampler-linux.sh: line 584: 08: value too great for base (error token is "08")
         sampler-linux.sh: line 585: DISK_EVERY: unbound variable
         rc=1, one #META line written, zero samples
 
-    The `#META` record is written BEFORE that point, so the artefact a consumer
-    picked up was a header with no body -- which `report.awk` reads as a profile
+    The `#META` record is written BEFORE that point, so the artefact a consumer picked up was a header with no body -- which `report.awk` reads as a profile
     that collected nothing rather than as a crash. `INTERVAL=$((10#$INTERVAL))`
     closes it; `#META` now records the normalised `8`.
 
-    Blast radius: `.github/actions/profiler/action.yml:25` defaults `interval` to
-    `'10'` and the three live callers of the composite
-    (`profiler-probe.yml:89,108,127`) pass `'5'`, so zero were affected.
+    Blast radius: `.github/actions/profiler/action.yml:25` defaults `interval` to `'10'` and the three live callers of the composite (`profiler-probe.yml:89,108,127`) pass `'5'`, so zero were affected.
     """
     cg = _cgroup_v2(tmp_path)
     env = {
@@ -533,12 +494,9 @@ def test_an_octal_invalid_disk_cadence_now_runs_on_both_sides(
 ) -> None:
     """THE SIBLING OF THE CASE ABOVE, found on 2026-09-10 by sweeping for it.
 
-    `PROFILER_DISK_EVERY_S` is guarded by `is_num "$X" && [ "$X" -ge 1 ]`, and BOTH
-    halves say yes to `08`: it is all digits, and `test` parses base 10. So `08`
-    reached the same `$(( ))` one line further on and produced the same two
+    `PROFILER_DISK_EVERY_S` is guarded by `is_num "$X" && [ "$X" -ge 1 ]`, and BOTH halves say yes to `08`: it is all digits, and `test` parses base 10. So `08` reached the same `$(( ))` one line further on and produced the same two
     diagnostics and the same rc=1, from a knob whose guard looks like it validates.
-    Fixing only `--interval` would have left this open, which is why the sweep
-    happened before the fix was called done.
+    Fixing only `--interval` would have left this open, which is why the sweep happened before the fix was called done.
     """
     cg = _cgroup_v2(tmp_path)
     _o, _n, a, b = _sample_both(tmp_path, cg, PROFILER_DISK_EVERY_S=bad)
@@ -554,14 +512,9 @@ def test_a_valid_octal_interval_is_now_one_number(tmp_path: pathlib.Path) -> Non
 
     `$((010))` is 8, so the disk-decimation divisor was 8; `read -t 010` waits 10
     real seconds (measured on a fifo: 10.01s); `[ 010 -lt 1 ]` reads decimal 10; and
-    the `#META` record said `010`. One flag, four readings, three values. The quiet
-    half of the `08` case, and the reason the fix normalises rather than merely
-    rejecting a leading zero: `010` never errored, it just meant different things in
-    different lines. It is `10` everywhere now.
+    the `#META` record said `010`. One flag, four readings, three values. The quiet half of the `08` case, and the reason the fix normalises rather than merely rejecting a leading zero: `010` never errored, it just meant different things in different lines. It is `10` everywhere now.
 
-    `_arith` stays and is driven directly here: it is still the correct model of
-    `$(( ))`, and it is what makes the normalisation a choice rather than an
-    accident of Python's `int()`.
+    `_arith` stays and is driven directly here: it is still the correct model of `$(( ))`, and it is what makes the normalisation a choice rather than an accident of Python's `int()`.
     """
     cg = _cgroup_v2(tmp_path)
     env = {
@@ -588,24 +541,17 @@ def test_a_valid_octal_interval_is_now_one_number(tmp_path: pathlib.Path) -> Non
 def test_a_non_numeric_max_seconds_is_refused_at_startup(tmp_path: pathlib.Path, bad: str) -> None:
     """FIXED 2026-09-10 in BOTH SIDES. This test used to require BOTH to be killed.
 
-    The only use was `[ <elapsed> -ge "$MAX_SECONDS" ]`, and `test` prints
-    `[: abc: integer expected` and evaluates FALSE on a non-numeric operand. So
+    The only use was `[ <elapsed> -ge "$MAX_SECONDS" ]`, and `test` prints `[: abc: integer expected` and evaluates FALSE on a non-numeric operand. So
     `PROFILER_MAX_SECONDS=abc` did not clamp the sampler to some default -- it
-    removed the self-termination ENTIRELY, on a process the production caller
-    detaches and unrefs. Measured: 3 ticks in 4 seconds, three diagnostics, no stop,
-    killed by `timeout`. The old version of this test asserted exactly that, and a
-    port that stopped on its own would have been the safer program and the wrong
+    removed the self-termination ENTIRELY, on a process the production caller detaches and unrefs. Measured: 3 ticks in 4 seconds, three diagnostics, no stop, killed by `timeout`. The old version of this test asserted exactly that, and a port that stopped on its own would have been the safer program and the wrong
     port; the fix had to land on both sides at once for that reason.
 
-    REJECTED, not coerced to the 6-hour default: this file has both conventions
-    (`--interval` refuses, `PROFILER_DISK_EVERY_S` falls back silently) and the line
-    between them is what a wrong value costs. A wrong `df` cadence costs a sampling
+    REJECTED, not coerced to the 6-hour default: this file has both conventions (`--interval` refuses, `PROFILER_DISK_EVERY_S` falls back silently) and the line between them is what a wrong value costs. A wrong `df` cadence costs a sampling
     rate; a wrong max-seconds costs a sampler running forever.
 
     NOT in the matrix: `""`. `${VAR:-default}` treats exported-empty as UNSET, so an
     empty value is the 21600 default and not a refusal at all;
-    `test_an_empty_max_seconds_is_the_default_not_a_refusal` is that control, and it
-    is separate because driving it here would mean waiting out a six-hour default.
+    `test_an_empty_max_seconds_is_the_default_not_a_refusal` is that control, and it is separate because driving it here would mean waiting out a six-hour default.
     """
     cg = _cgroup_v2(tmp_path)
     env = {
@@ -629,11 +575,7 @@ def test_a_non_numeric_max_seconds_is_refused_at_startup(tmp_path: pathlib.Path,
 def test_an_empty_max_seconds_is_the_default_not_a_refusal(tmp_path: pathlib.Path) -> None:
     """THE NEGATIVE CONTROL for the refusal above, and for `${VAR:-default}`.
 
-    An exported-but-EMPTY value is UNSET to `:-`, so it is the 21600 default and must
-    NOT be refused. Driven through `--probe`, which returns before any sampling: the
-    refusal is checked at startup, so if empty were being rejected the probe would
-    exit 2 here instead of printing its report. Sampling it directly would mean
-    waiting out six hours to prove a negative.
+    An exported-but-EMPTY value is UNSET to `:-`, so it is the 21600 default and must NOT be refused. Driven through `--probe`, which returns before any sampling: the refusal is checked at startup, so if empty were being rejected the probe would exit 2 here instead of printing its report. Sampling it directly would mean waiting out six hours to prove a negative.
     """
     env = {
         "PROFILER_CGROUP_ROOT": str(_cgroup_v2(tmp_path)),
@@ -654,8 +596,7 @@ def test_a_non_numeric_max_seconds_is_refused_in_probe_mode_too(
 ) -> None:
     """Deliberate: `--probe` answers "will the sampler work on this runner".
 
-    The knob is validated BEFORE the `--probe` branch, so a value that would stop
-    the sampler cannot pass quietly through the very command that exists to say so.
+    The knob is validated BEFORE the `--probe` branch, so a value that would stop the sampler cannot pass quietly through the very command that exists to say so.
     """
     env = {
         "PROFILER_CGROUP_ROOT": str(_cgroup_v2(tmp_path)),
@@ -672,9 +613,7 @@ def test_a_non_numeric_max_seconds_is_refused_in_probe_mode_too(
 def test_a_leading_zero_max_seconds_is_read_in_base_ten(tmp_path: pathlib.Path) -> None:
     """`010` was octal 8 to `$(( ))` and decimal 10 to `test`; now it is 10 to both.
 
-    Driven at `00`, which is 0 either way, so the guard fires on the first tick and
-    the message reports the NORMALISED value -- the same reassignment the interval
-    gets, and the reason both sides print `0` rather than `00`.
+    Driven at `00`, which is 0 either way, so the guard fires on the first tick and the message reports the NORMALISED value -- the same reassignment the interval gets, and the reason both sides print `0` rather than `00`.
     """
     cg = _cgroup_v2(tmp_path)
     env = {
@@ -777,17 +716,10 @@ def test_probe_tees_into_the_step_summary(tmp_path: pathlib.Path) -> None:
 def test_sigterm_latency_matches_the_twin(tmp_path: pathlib.Path) -> None:
     """bash DEFERS the trap until `read -t` times out, and so must the port.
 
-    THIS TEST EXISTS BECAUSE THE FIRST VERSION OF THE PORT GOT IT BACKWARDS. It
-    used `signal.set_wakeup_fd` to make `select` return the instant a SIGTERM
-    arrived, on the assumption that bash's `read -t` does the same. Measured at
-    `--interval 5` with the signal 1.2s in: twin 3.80s, port 0.043s. bash waits
-    out the remaining interval. That is not cosmetic -- the production stopper
-    (`.github/actions/profiler/index.js:148-166`) SIGTERMs, waits, then SIGKILLs
-    and annotates the panel with "the sampler had to be SIGKILLed", so a faster
-    port would silently change which note a job's panel carries.
+    THIS TEST EXISTS BECAUSE THE FIRST VERSION OF THE PORT GOT IT BACKWARDS. It used `signal.set_wakeup_fd` to make `select` return the instant a SIGTERM arrived, on the assumption that bash's `read -t` does the same. Measured at `--interval 5` with the signal 1.2s in: twin 3.80s, port 0.043s. bash waits out the remaining interval. That is not cosmetic -- the production stopper
+    (`.github/actions/profiler/index.js:148-166`) SIGTERMs, waits, then SIGKILLs and annotates the panel with "the sampler had to be SIGKILLed", so a faster port would silently change which note a job's panel carries.
 
-    The assertion is a RELATIVE one against the twin measured in the same run,
-    not an absolute number, because the absolute is a property of the machine.
+    The assertion is a RELATIVE one against the twin measured in the same run, not an absolute number, because the absolute is a property of the machine.
     """
     cg = _cgroup_v2(tmp_path)
     interval = 5
@@ -850,8 +782,7 @@ def test_is_num_matches_the_bash_case_statement(value: str | None, expected: boo
 def test_is_num_agrees_with_real_bash() -> None:
     """The helper against the real `case` it reproduces, not against a table.
 
-    A table only proves the table. This drives `is_num`'s own body out of the
-    twin under a real bash, over the same inputs.
+    A table only proves the table. This drives `is_num`'s own body out of the twin under a real bash, over the same inputs.
     """
     probe = (
         "is_num() { case \"${1:-}\" in '' | *[!0-9]*) return 1 ;; *) return 0 ;; esac; }\n"
@@ -940,10 +871,7 @@ def test_a_planted_missing_inactive_file_subtraction_is_caught(
 ) -> None:
     """Report `memory.current` raw instead of minus `inactive_file`.
 
-    The tidiest-looking wrong change here: page cache counted as usage inflates
-    every memory reading, and on a clean runner the two numbers are close enough
-    that nobody would notice by eye. On the static fixture they are 1048576 and
-    983040.
+    The tidiest-looking wrong change here: page cache counted as usage inflates every memory reading, and on a clean runner the two numbers are close enough that nobody would notice by eye. On the static fixture they are 1048576 and 983040.
     """
     before = PORT.read_bytes()
     copy = _planted_copy(
@@ -976,15 +904,10 @@ def test_a_planted_regression_of_the_dangling_flag_guard_is_caught(
 ) -> None:
     """Plant the OLD defect back into the port and prove the comparison sees it.
 
-    Until 2026-09-10 this ran the other way round: it planted the obvious REPAIR
-    (refuse `--out` with no value) into a port that had to reproduce a twin which
-    spun. The bug is fixed in both sides now, so the tempting change is the reverse
-    one -- dropping the arity check back to `args[1] if len(args) > 1 else ""` --
-    and that is what is planted. Either way the claim is the same: a port may
-    reword, never change what it does.
+    Until 2026-09-10 this ran the other way round: it planted the obvious REPAIR (refuse `--out` with no value) into a port that had to reproduce a twin which spun. The bug is fixed in both sides now, so the tempting change is the reverse one -- dropping the arity check back to `args[1] if len(args) > 1 else ""` -- and that is what is planted. Either way the claim is the same: a
+    port may reword, never change what it does.
 
-    The plant is a SPIN, so the port copy is run under a short timeout and the
-    TimeoutExpired IS the assertion.
+    The plant is a SPIN, so the port copy is run under a short timeout and the TimeoutExpired IS the assertion.
     """
     before = PORT.read_bytes()
     guard = (

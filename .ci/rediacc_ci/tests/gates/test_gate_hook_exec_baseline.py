@@ -1,22 +1,14 @@
 """The gate test for `check:ci-hook-exec-baseline`, which has no bash twin.
 
-NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name
-here and nothing to compare against. What it tests instead is the thing a
-selftest structurally cannot: the gate as a PROCESS, invoked the way CI invokes
-it, against the REAL `.claude/settings.json` and the REAL pinned baseline.
+NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name here and nothing to compare against. What it tests instead is the thing a selftest structurally cannot: the gate as a PROCESS, invoked the way CI invokes it, against the REAL `.claude/settings.json` and the REAL pinned baseline.
 
-WHY THAT DISTINCTION IS NOT PEDANTRY, and it is this gate's own history. Every
-one of its thirteen selftest controls passed while `_load_counter()` resolved the
-counter against the tree being JUDGED rather than against the instrument. The
-controls could not see it because they all resolve the counter once, before any
-fixture root exists. The first run against a scratch copy of the real tree died
+WHY THAT DISTINCTION IS NOT PEDANTRY, and it is this gate's own history. Every one of its thirteen selftest controls passed while `_load_counter()` resolved the counter against the tree being JUDGED rather than against the instrument. The controls could not see it because they all resolve the counter once, before any fixture root exists. The first run against a scratch copy of the
+real tree died
 with `ModuleNotFoundError`. So the cases below drive the entry point by path,
 with `$REDIACC_CI_ROOT` pointed at copies of the real files, and plant into
 those copies.
 
-THE LIVE `.claude/settings.json` IS NEVER MUTATED. It is copied into a temp root
-first. Other sessions share this worktree and a hook wiring that is wrong for
-even a second is a hook wiring some other session's Bash call ran under.
+THE LIVE `.claude/settings.json` IS NEVER MUTATED. It is copied into a temp root first. Other sessions share this worktree and a hook wiring that is wrong for even a second is a hook wiring some other session's Bash call ran under.
 """
 
 import json

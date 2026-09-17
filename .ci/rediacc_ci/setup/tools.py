@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """THE INSTALL TABLE: every tool this repository needs, in one place, as data.
 
-WHAT IT REPLACES. Today the answer to "what does a machine need before the gates
-can run" is spread across six files that agree with none of the others, and each
-of them enumerates a DIFFERENT subset. Read on 2026-09-06, with the line each
-row below cites as its provenance:
+WHAT IT REPLACES. Today the answer to "what does a machine need before the gates can run" is spread across six files that agree with none of the others, and each of them enumerates a DIFFERENT subset. Read on 2026-09-06, with the line each row below cites as its provenance:
 
   .ci/lib/setup.sh:249            setup_system_tools   cc, make, jq
   .ci/lib/local-common.sh:587     ensure_host_tools    jq, zstd, curl, git, cc
@@ -13,65 +10,39 @@ row below cites as its provenance:
   .ci/lib/setup.sh:40, :330       node and go          node, go
   .devcontainer/Dockerfile        the image            the union, in apt syntax
 
-None of those six is wrong. The problem is that a tool can be REQUIRED by a gate
-and named in none of them, which is invisible by construction: nothing compares
-the list of things that get installed against the list of things that get used.
-The gate half of this module (`audit`, below) is that comparison, and it is why
-this is a Python module with a verdict rather than a Markdown table.
+None of those six is wrong. The problem is that a tool can be REQUIRED by a gate and named in none of them, which is invisible by construction: nothing compares the list of things that get installed against the list of things that get used. The gate half of this module (`audit`, below) is that comparison, and it is why this is a Python module with a verdict rather than a Markdown
+table.
 
 --------------------------------------------------------------------------
 WHY THE pytest ROW IS THE POINT OF THIS FILE
 --------------------------------------------------------------------------
-`docs/ci-overhaul/08-driver-contract.md` section 5d records the gap in the
-programme's own words: the drafted enumeration for this table covered
+`docs/ci-overhaul/08-driver-contract.md` section 5d records the gap in the programme's own words: the drafted enumeration for this table covered
 
     cc make jq python3 git curl zstd tmux xz node go gh docker
     ruff shfmt shellcheck actionlint uv gitleaks bws PyYAML
 
-and carried NO pytest row, while W1, W5 and W7 each make a Python test runner the
-PRIMARY local proof of their port. A table that installs everything except the
-thing the ports are judged by describes an environment that cannot run the test
-gate. pytest is provisioned by the uv shim (`.ci/bootstrap.sh install`), it is
-pinned at `PYTEST_VERSION` in `.devcontainer/toolchain.env`, and
+and carried NO pytest row, while W1, W5 and W7 each make a Python test runner the PRIMARY local proof of their port. A table that installs everything except the thing the ports are judged by describes an environment that cannot run the test gate. pytest is provisioned by the uv shim (`.ci/bootstrap.sh install`), it is pinned at `PYTEST_VERSION` in `.devcontainer/toolchain.env`, and
 `.ci/rediacc_ci/check_pytest.py` is the gate that runs on it.
 
-So the pytest row is here, and assertion A6 below names it EXPLICITLY rather than
-letting it be covered by the general "every pinned tool has a row" rule. A6 is
-redundant with A2 the day it is written, and that is deliberate: A2 would go
-quiet if `pytest` ever left `toolchain.TOOL_KEYS`, and the gap the contract
-recorded would reopen with no gate noticing. A named control cannot go quiet.
+So the pytest row is here, and assertion A6 below names it EXPLICITLY rather than letting it be covered by the general "every pinned tool has a row" rule. A6 is redundant with A2 the day it is written, and that is deliberate: A2 would go quiet if `pytest` ever left `toolchain.TOOL_KEYS`, and the gap the contract recorded would reopen with no gate noticing. A named control cannot go
+quiet.
 
 --------------------------------------------------------------------------
 WHY EVERY ROW MUST HAVE A DARWIN ANSWER (assertion A4)
 --------------------------------------------------------------------------
-This module ships in the same wave as four macOS defects found in
-`.ci/scripts/lib/`, all four of which had the same root: a file that a developer
-is told to run locally, written as though Linux were the only host. A4 refuses a
-row that names an apt package and nothing a Mac can act on, because a table with
-a hole on one platform is how the next one of those gets written.
+This module ships in the same wave as four macOS defects found in `.ci/scripts/lib/`, all four of which had the same root: a file that a developer is told to run locally, written as though Linux were the only host. A4 refuses a row that names an apt package and nothing a Mac can act on, because a table with a hole on one platform is how the next one of those gets written.
 
-`repo` is a legitimate darwin answer: it means "a script in this repository
-installs it at the pin, on every platform it supports" (that is what
-`.ci/bootstrap.sh` does for uv and pytest and what `toolchain_acquire` does for
-shfmt and shellcheck). It is not an excuse arm -- `.ci/scripts/lib/toolchain.sh`
-refuses on a Mac today for shfmt, loudly, because only the LINUX checksum
+`repo` is a legitimate darwin answer: it means "a script in this repository installs it at the pin, on every platform it supports" (that is what `.ci/bootstrap.sh` does for uv and pytest and what `toolchain_acquire` does for shfmt and shellcheck). It is not an excuse arm -- `.ci/scripts/lib/toolchain.sh` refuses on a Mac today for shfmt, loudly, because only the LINUX checksum
 constants exist, and that refusal is recorded in the row's own note.
 
 --------------------------------------------------------------------------
 WHAT THIS MODULE DELIBERATELY DOES NOT DO
 --------------------------------------------------------------------------
-IT NEVER RUNS AN INSTALLER. It prints one. Every install line here needs root or
-mutates a developer's machine, and a gate that can `sudo apt-get install` as a
-side effect of being run is a gate nobody can run. `./run.sh setup` remains the
+IT NEVER RUNS AN INSTALLER. It prints one. Every install line here needs root or mutates a developer's machine, and a gate that can `sudo apt-get install` as a side effect of being run is a gate nobody can run. `./run.sh setup` remains the
 thing that acts; this is the thing that KNOWS, and the separation is the same one
-`.ci/scripts/lib/toolchain.sh` already draws between `toolchain_check` (answers)
-and `toolchain_acquire` (gets).
+`.ci/scripts/lib/toolchain.sh` already draws between `toolchain_check` (answers) and `toolchain_acquire` (gets).
 
-IT DOES NOT OWN A VERSION. Every pin lives in `.devcontainer/toolchain.env` and
-is reached through `rediacc_ci.core.toolchain`. A row names a KEY, never a value,
-so this file cannot become a second place a version is written down. A3 asserts
-every key a row names actually exists in the pins file, which is what makes the
-indirection checkable rather than decorative.
+IT DOES NOT OWN A VERSION. Every pin lives in `.devcontainer/toolchain.env` and is reached through `rediacc_ci.core.toolchain`. A row names a KEY, never a value, so this file cannot become a second place a version is written down. A3 asserts every key a row names actually exists in the pins file, which is what makes the indirection checkable rather than decorative.
 
 --------------------------------------------------------------------------
 COMMAND LINE
@@ -93,18 +64,9 @@ COMMAND LINE
         the paste-able install commands for one package manager, defaulting to
         the one detected on this host.
 
-EXIT 77 IS CANNOT-RUN AND IS NEVER A VERDICT. It is returned for exactly one
-condition: the repository root could not be resolved, so the pins corpus that
-every corpus-derived floor here is keyed on cannot be read at all. That is a
-harness fault, not a finding about the tree, and reporting it as 1 would put a
-green-able number on a run that scanned nothing.
+EXIT 77 IS CANNOT-RUN AND IS NEVER A VERDICT. It is returned for exactly one condition: the repository root could not be resolved, so the pins corpus that every corpus-derived floor here is keyed on cannot be read at all. That is a harness fault, not a finding about the tree, and reporting it as 1 would put a green-able number on a run that scanned nothing.
 
----- gate ----
-id: check:ci-install-table
-step: Install table
-needs: none
-selftest: true
-why: six bash enumerations answered "what a machine needs" and none compared the set installed against the set used, so a pinned tool could be required by a gate and named nowhere -- which is how the drafted table came to carry no pytest row
+---- gate ---- id: check:ci-install-table step: Install table needs: none selftest: true why: six bash enumerations answered "what a machine needs" and none compared the set installed against the set used, so a pinned tool could be required by a gate and named nowhere -- which is how the drafted table came to carry no pytest row
      (Only the FIRST line of `why:` reaches the parser, measured against
      check_allowlist_key_matching.py which behaves the same way, so the line
      above is written to stand alone. The rest is for a reader of this file.
@@ -151,15 +113,11 @@ ALL_MANAGERS = (*LINUX_MANAGERS, *DARWIN_MANAGERS, REPO_MANAGER)
 class Tool:
     """One row of the install table.
 
-    `pin_key` NAMES A KEY, NEVER A VALUE. See the module docstring: a value here
-    would make this the second place a version is written down, and the whole
-    reason `.devcontainer/toolchain.env` exists is that there used to be three.
+    `pin_key` NAMES A KEY, NEVER A VALUE. See the module docstring: a value here would make this the second place a version is written down, and the whole reason `.devcontainer/toolchain.env` exists is that there used to be three.
 
-    `install` maps a manager name to the command a human pastes. It is prose, not
-    something this module executes, so it may carry a `sudo` and a `&&`.
+    `install` maps a manager name to the command a human pastes. It is prose, not something this module executes, so it may carry a `sudo` and a `&&`.
 
-    `provenance` is `file:line` for where this row's knowledge lived before this
-    table existed, or the file that owns it now. It is checked for shape by A7
+    `provenance` is `file:line` for where this row's knowledge lived before this table existed, or the file that owns it now. It is checked for shape by A7
     rather than for truth, which is the honest limit of a mechanical check; a
     reviewer confirms the lines, and the audit's job is to stop a row appearing
     with no citation at all.
@@ -656,9 +614,7 @@ TOOLS: tuple[Tool, ...] = (
 def detect_manager() -> str:
     """The package manager THIS host offers, or "" when none is recognised.
 
-    Darwin is answered before the Linux managers because a Mac with Homebrew's
-    coreutils on PATH can satisfy neither test cleanly, and the OS is the more
-    reliable signal than the presence of a binary.
+    Darwin is answered before the Linux managers because a Mac with Homebrew's coreutils on PATH can satisfy neither test cleanly, and the OS is the more reliable signal than the presence of a binary.
     """
     if _platform.system() == "Darwin":
         return "brew" if shutil.which("brew") else ""
@@ -672,9 +628,7 @@ def detect_manager() -> str:
 def _python_dist_present(module: str) -> bool:
     """Is an importable module present, without importing it into this process?
 
-    A subprocess rather than `importlib.util.find_spec`, because the question is
-    about the interpreter a GATE will run under, and this process may have been
-    started with a different sys.path by a harness.
+    A subprocess rather than `importlib.util.find_spec`, because the question is about the interpreter a GATE will run under, and this process may have been started with a different sys.path by a harness.
     """
     try:
         completed = subprocess.run(
@@ -691,9 +645,7 @@ def _python_dist_present(module: str) -> bool:
 def present(tool: Tool) -> str | None:
     """Where `tool` is on this host, or None. Never raises.
 
-    Returns a PATH for an executable and the literal "(importable)" for a Python
-    distribution, because a distribution has no single path a reader can act on
-    and printing site-packages would be noise.
+    Returns a PATH for an executable and the literal "(importable)" for a Python distribution, because a distribution has no single path a reader can act on and printing site-packages would be noise.
     """
     if tool.python_dist:
         return "(importable)" if _python_dist_present(tool.python_dist) else None
@@ -710,10 +662,7 @@ def present(tool: Tool) -> str | None:
 def probe_version(tool: Tool) -> str | None:
     """The normalised version string `tool` reports, or None.
 
-    None covers three DIFFERENT situations on purpose -- no probe defined, the
-    binary is absent, the binary printed nothing a version could be read from --
-    because this function feeds a REPORT and not a verdict. `toolchain_check` is
-    the thing that rules on a version, and it distinguishes all three.
+    None covers three DIFFERENT situations on purpose -- no probe defined, the binary is absent, the binary printed nothing a version could be read from -- because this function feeds a REPORT and not a verdict. `toolchain_check` is the thing that rules on a version, and it distinguishes all three.
     """
     if tool.probe is None:
         return None
@@ -751,21 +700,16 @@ def audit(
 ) -> list[str]:
     """Every finding about the TABLE, as actionable lines. Empty means clean.
 
-    `table`, `pins` and `tool_keys` are parameters rather than globals so the
-    selftest can drive both directions on synthetic inputs without touching the
-    tree. That is the whole reason this function takes arguments.
+    `table`, `pins` and `tool_keys` are parameters rather than globals so the selftest can drive both directions on synthetic inputs without touching the tree. That is the whole reason this function takes arguments.
 
-    THE FLOORS ARE CORPUS-DERIVED, never hand-typed (driver contract section 6).
-    There are two corpora and neither is a number in this file:
+    THE FLOORS ARE CORPUS-DERIVED, never hand-typed (driver contract section 6). There are two corpora and neither is a number in this file:
 
       * `tool_keys` -- `toolchain.TOOL_KEYS`, the tool-to-pin mapping the bash
         `toolchain_pin_for` case is checked against. A2 requires a row for each.
       * `pins` -- the parsed `.devcontainer/toolchain.env`. A3 requires every
         `pin_key` a row names to exist in it.
 
-    A ZERO-ROW TABLE IS A FINDING AND NOT A PASS. A0 says so first, before any
-    other assertion runs, because every rule below is a `for row in table` and an
-    empty table satisfies all of them at once.
+    A ZERO-ROW TABLE IS A FINDING AND NOT A PASS. A0 says so first, before any other assertion runs, because every rule below is a `for row in table` and an empty table satisfies all of them at once.
     """
     pin_table = toolchain.load_pins() if pins is None else pins
     keys = dict(toolchain.TOOL_KEYS) if tool_keys is None else tool_keys
@@ -954,8 +898,7 @@ def report(table: tuple[Tool, ...] = TOOLS) -> int:
 def install_plan(manager: str, table: tuple[Tool, ...] = TOOLS) -> int:
     """Print the paste-able commands for one manager. Non-zero on an unknown one.
 
-    ONLY THE ABSENT ROWS, because a plan that re-installs what is already at the
-    pin is a plan nobody runs twice.
+    ONLY THE ABSENT ROWS, because a plan that re-installs what is already at the pin is a plan nobody runs twice.
     """
     if manager not in ALL_MANAGERS:
         print(
@@ -984,9 +927,7 @@ def install_plan(manager: str, table: tuple[Tool, ...] = TOOLS) -> int:
 def _row(**kwargs: object) -> Tool:
     """A minimal valid row, so a control can break exactly one field.
 
-    Written as a helper rather than repeated per control because a control that
-    accidentally breaks TWO fields at once still fires, and then proves nothing
-    about the assertion it was named after.
+    Written as a helper rather than repeated per control because a control that accidentally breaks TWO fields at once still fires, and then proves nothing about the assertion it was named after.
     """
     base: dict[str, object] = {
         "name": "widget",
@@ -1002,10 +943,7 @@ def _row(**kwargs: object) -> Tool:
 def selftest(*, verbose: bool = True) -> int:
     """Both-direction controls over `audit`, on synthetic tables only.
 
-    THE FLOOR IS NOT A HAND-TYPED COUNT OF ASSERTIONS. It is `len(cases)` plus
-    the three controls declared after the loop, so adding a case raises the floor
-    in the same edit. A hand-typed number is one nobody re-derives, and the driver
-    contract's section 6 refuses those for exactly that reason.
+    THE FLOOR IS NOT A HAND-TYPED COUNT OF ASSERTIONS. It is `len(cases)` plus the three controls declared after the loop, so adding a case raises the floor in the same edit. A hand-typed number is one nobody re-derives, and the driver contract's section 6 refuses those for exactly that reason.
 
     `verbose` is False on the leg `main` runs BEFORE every real scan, where 16
     `ok` lines would bury the verdict. The controls still run; only their
@@ -1146,14 +1084,9 @@ def main(argv: list[str]) -> int:
 
     NOT ONLY UNDER `--selftest`. A gate whose controls run only when someone asks
     for them is a gate whose instrument is unproven on every run that matters:
-    the wiring convention here is `<gate> --selftest && <gate>`, and for a `.py`
-    gate `scripts/lib/gate-header.ts` derives the run as the BARE PATH, so the
-    `--selftest` leg is never actually invoked by CI. Running the controls inline
-    is what makes `selftest: true` in the header true rather than decorative.
+    the wiring convention here is `<gate> --selftest && <gate>`, and for a `.py` gate `scripts/lib/gate-header.ts` derives the run as the BARE PATH, so the `--selftest` leg is never actually invoked by CI. Running the controls inline is what makes `selftest: true` in the header true rather than decorative.
 
-    A CONTROL THAT CANNOT FIRE STOPS THE RUN. If the controls fail, this refuses
-    WITHOUT judging the tree, because a verdict from an instrument that cannot
-    fail is worse than no verdict.
+    A CONTROL THAT CANNOT FIRE STOPS THE RUN. If the controls fail, this refuses WITHOUT judging the tree, because a verdict from an instrument that cannot fail is worse than no verdict.
     """
     if "--selftest" in argv:
         return selftest()

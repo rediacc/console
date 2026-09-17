@@ -1,17 +1,10 @@
 """`rediacc_ci.core.proxyx`, the shared contract every `rediacc_ci.proxies.*`
 port imports in place of sourcing `.ci/scripts/test/proxies/proxy-lib.sh`.
 
-NO BASH TWIN OF ITS OWN: `proxy-lib.sh` has no exec bit and is never run as a
-subprocess by anything (see that file's own header, and `proxyx`'s module
-docstring for the call-site check that confirmed it). What IS twinned is
-`run_selftest()` against `proxy_lib_selftest`, byte-for-byte, exercised
-through every `rediacc_ci.proxies.*` module's own `--selftest` flag in
-`test_proxies_cli_manifest.py` and `test_proxies_docker_prepull.py`. This file
-covers the contract directly, at the unit level, so a defect in `Proxy` itself
-is caught here rather than only through two downstream twins.
+NO BASH TWIN OF ITS OWN: `proxy-lib.sh` has no exec bit and is never run as a subprocess by anything (see that file's own header, and `proxyx`'s module docstring for the call-site check that confirmed it). What IS twinned is `run_selftest()` against `proxy_lib_selftest`, byte-for-byte, exercised through every `rediacc_ci.proxies.*` module's own `--selftest` flag in
+`test_proxies_cli_manifest.py` and `test_proxies_docker_prepull.py`. This file covers the contract directly, at the unit level, so a defect in `Proxy` itself is caught here rather than only through two downstream twins.
 
-BOTH DIRECTIONS, same shape as the bash `proxy_lib_selftest` it is porting:
-a proxy that asserts something and has every requirement present must return
+BOTH DIRECTIONS, same shape as the bash `proxy_lib_selftest` it is porting: a proxy that asserts something and has every requirement present must return
 0; one that is missing a requirement must return 77, never 0; one that makes
 zero checks must return 1, never 0; one that declares zero requirements must
 refuse at `preflight()` with 2, before it can even run.

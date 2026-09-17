@@ -1,28 +1,17 @@
 """Differential: `rediacc_ci.quality.typecheck_workers` against its twin
 `.ci/scripts/quality/typecheck-workers.sh`.
 
-RECORDING FAKES FOR `npm` AND `npx` ON A SCRATCH PATH, INSIDE A FIXTURE REPO.
-Nothing here reaches the npm registry and nothing runs a real TypeScript
-compiler: the two programs that would are the two the fakes model, and every
-other tool the twin reaches for (`find`, `sort`, `dirname`) is the real binary
-symlinked into the same scratch directory, because both sides call the same one.
+RECORDING FAKES FOR `npm` AND `npx` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches the npm registry and nothing runs a real TypeScript compiler: the two programs that would are the two the fakes model, and every other tool the twin reaches for (`find`, `sort`, `dirname`) is the real binary symlinked into the same scratch directory, because both sides call the same
+one.
 
-THE CALL LOG IS EVIDENCE ON EQUAL FOOTING WITH THE STREAMS. This script's
-observable behaviour is half what it prints and half WHICH projects it installs
-and typechecks, in what order, with which flags. A port that printed the same
-five lines while calling `npm install` where the twin calls `npm ci` would pass
-a stdout comparison and be wrong in the way that matters.
+THE CALL LOG IS EVIDENCE ON EQUAL FOOTING WITH THE STREAMS. This script's observable behaviour is half what it prints and half WHICH projects it installs and typechecks, in what order, with which flags. A port that printed the same five lines while calling `npm install` where the twin calls `npm ci` would pass a stdout comparison and be wrong in the way that matters.
 
-THE FIXTURE HAS TWO WORKERS, NOT ONE, and they differ: `alpha` has a
-`package-lock.json` (so `npm ci`) and `beta` does not (so `npm install`). One
-worker would let a port that hard-coded either verb through.
+THE FIXTURE HAS TWO WORKERS, NOT ONE, and they differ: `alpha` has a `package-lock.json` (so `npm ci`) and `beta` does not (so `npm install`). One worker would let a port that hard-coded either verb through.
 
 `REDIACC_CI_ROOT` STEERS THE PORT, THE COPY STEERS THE TWIN. The twin derives
 its root from `${BASH_SOURCE[0]}/../../..`, so the copy inside the fixture makes
 it land on the fixture root; the port asks `rediacc_ci.paths`, which honours the
-variable. Both then `cd` there, which is why `cwd` for the subprocess is
-deliberately the fixture's PARENT: a side that did not chdir would find no
-`workers/` at all.
+variable. Both then `cd` there, which is why `cwd` for the subprocess is deliberately the fixture's PARENT: a side that did not chdir would find no `workers/` at all.
 """
 
 from __future__ import annotations
@@ -177,8 +166,7 @@ def run_both(tmp_path: pathlib.Path, *, fixture_kw: dict | None = None, **kw):
 def _agree(old, new, label: str) -> None:
     """THE THREE STREAMS SEPARATELY, plus the call log.
 
-    Nothing is masked. Neither side writes a temporary path, a timestamp or a
-    duration, so a mask here would only be able to hide a real difference.
+    Nothing is masked. Neither side writes a temporary path, a timestamp or a duration, so a mask here would only be able to hide a real difference.
     """
     old_proc, old_calls = old
     new_proc, new_calls = new
@@ -280,8 +268,7 @@ def test_an_empty_workers_directory_also_refuses(tmp_path) -> None:
 
 def test_the_refusal_precedes_list_so_list_can_never_print_an_empty_set(tmp_path) -> None:
     """ORDER MATTERS HERE. The guard is above the `--list` arm in the twin, so a
-    coverage gate asking for the set gets a REFUSAL rather than zero lines and a
-    green exit. A port that put the arm first would satisfy every other test in
+    coverage gate asking for the set gets a REFUSAL rather than zero lines and a green exit. A port that put the arm first would satisfy every other test in
     this file."""
     _root, old, new = run_both(tmp_path, fixture_kw={"workers": ()}, args=("--list",))
     _agree(old, new, "list-refusal")
@@ -361,12 +348,9 @@ def test_defect_b_a_partial_find_failure_is_a_smaller_green_run(tmp_path) -> Non
     """A REAL UNREADABLE DIRECTORY, not a fake `find`. `workers/beta` is chmod
     000, so the real `find` prints its complaint, lists `alpha` anyway and exits
     1. Both sides discard that status, report ONE project and exit 0, so the
-    count in the success line is the only trace and nothing compares it to
-    anything.
+    count in the success line is the only trace and nothing compares it to anything.
 
-    The mode is restored in a `finally` because pytest's own tmp-dir reaper
-    cannot delete a directory it may not enter, and a fixture that breaks the
-    NEXT session's collection is a worse bug than the one being demonstrated.
+    The mode is restored in a `finally` because pytest's own tmp-dir reaper cannot delete a directory it may not enter, and a fixture that breaks the NEXT session's collection is a worse bug than the one being demonstrated.
     """
     assert port.A_PARTIAL_FIND_FAILURE_IS_A_SMALLER_GREEN_RUN
     root = fixture(tmp_path)
@@ -465,14 +449,9 @@ def test_tsc_argv_is_the_twins_words() -> None:
 def test_the_port_does_not_carry_a_second_copy_of_the_gate_header() -> None:
     """The twin is the REGISTERED gate. `scripts/ci-runner` derives the estate
     from `---- gate ----` blocks, so a copy of the block in the port would
-    register `lint:unused` twice from two files. The twin's own block is
-    asserted present in the same breath, because "neither file has one" would
-    satisfy a one-sided check.
+    register `lint:unused` twice from two files. The twin's own block is asserted present in the same breath, because "neither file has one" would satisfy a one-sided check.
 
-    THE MATCHER IS `scripts/lib/gate-header.ts`'s OWN, transcribed: an opening
-    marker is a WHOLE LINE, optionally commented. A substring test reads as
-    stricter and is in fact wrong -- it fails on this file's own prose, which
-    names the marker in a sentence and declares nothing.
+    THE MATCHER IS `scripts/lib/gate-header.ts`'s OWN, transcribed: an opening marker is a WHOLE LINE, optionally commented. A substring test reads as stricter and is in fact wrong -- it fails on this file's own prose, which names the marker in a sentence and declares nothing.
     """
     open_marker = re.compile(r"^\s*(?:#|//|\*)?\s*-{2,}\s*gate\s*-{2,}\s*$")
     twin_lines = TWIN.read_text(encoding="utf-8").split("\n")
@@ -486,9 +465,7 @@ def test_the_port_does_not_carry_a_second_copy_of_the_gate_header() -> None:
 
 def test_the_port_reads_no_environment_variable_of_its_own() -> None:
     """Every input is a positional argument or the filesystem. The only
-    environment this module is sensitive to is `$REDIACC_CI_ROOT`, and that is
-    read inside `rediacc_ci.paths`, which already declares it. A future edit that
-    reaches for `os.environ` here owes an env-registry entry, and this is the
+    environment this module is sensitive to is `$REDIACC_CI_ROOT`, and that is read inside `rediacc_ci.paths`, which already declares it. A future edit that reaches for `os.environ` here owes an env-registry entry, and this is the
     line that will say so."""
     source = PORT_FILE.read_text(encoding="utf-8")
     body = source.split('"""', 2)[2]
@@ -511,8 +488,7 @@ def test_the_twin_still_says_what_this_port_says_it_says() -> None:
 
 def test_the_helpers_the_selftest_leans_on_are_exported() -> None:
     """The pure helpers are module-level functions, not closures, so this file
-    can drive them without shelling out. Asserted rather than assumed, because a
-    refactor that hid one inside `main` would silently reduce this suite to
+    can drive them without shelling out. Asserted rather than assumed, because a refactor that hid one inside `main` would silently reduce this suite to
     subprocess tests only."""
     for name in ("read_configs", "dirname", "npm_argv", "tsc_argv", "discover"):
         assert inspect.isfunction(getattr(port, name)), name

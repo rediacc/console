@@ -1,23 +1,11 @@
 r"""`rediacc_ci.quality.battery_clean_tree` against the shell it replaces.
 
-RETARGETED 2026-09-09 (W7P3-BAT) WITH ITS SUBJECT. The gate polices the runner's
-tracked-tree snapshot, the runner became `.ci/rediacc_ci/battery.py`, and both
-implementations moved together. What changed here is the SHAPE TABLE and the
-extractor being compared: the differential structure, and the reason for it, are
-unchanged.
+RETARGETED 2026-09-09 (W7P3-BAT) WITH ITS SUBJECT. The gate polices the runner's tracked-tree snapshot, the runner became `.ci/rediacc_ci/battery.py`, and both implementations moved together. What changed here is the SHAPE TABLE and the extractor being compared: the differential structure, and the reason for it, are unchanged.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The extraction at the
-heart of this gate is a short awk program with three conditions, two of them
-anchored to column 1 and one of them applied only to the definition line. Whether
-a given `tree_state` shape is extracted whole, extracted short, or missed
-entirely is decided by awk, not by anything a reader can infer. A table of
-expected strings would be a table of what the PORT does, asserted against
-itself.
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The extraction at the heart of this gate is a short awk program with three conditions, two of them anchored to column 1 and one of them applied only to the definition line. Whether a given `tree_state` shape is extracted whole, extracted short, or missed entirely is decided by awk, not by anything a reader can infer. A table
+of expected strings would be a table of what the PORT does, asserted against itself.
 
-The committed ledger `.ci/shadow/w7p2-battery-clean-tree.observations.jsonl`
-compares the WHOLE gate over five distinct trees. It cannot isolate the
-extractor, because on a tree where extraction fails both sides simply print the
-same refusal. This file takes the extractor apart, shape by shape.
+The committed ledger `.ci/shadow/w7p2-battery-clean-tree.observations.jsonl` compares the WHOLE gate over five distinct trees. It cannot isolate the extractor, because on a tree where extraction fails both sides simply print the same refusal. This file takes the extractor apart, shape by shape.
 
 THE AWK PROGRAM BELOW IS LIFTED FROM
 `.ci/scripts/quality/check-battery-clean-tree.sh` unchanged.
@@ -104,11 +92,9 @@ def test_refusal_condition_matches_bash(tmp_path: pathlib.Path, text: str) -> No
     """`[[ -z "$GUARD" ]] || ! [[ "$GUARD" =~ git[^A-Za-z0-9_]{0,8}status ]]`.
 
     BOTH DIRECTIONS. Half these shapes must produce a refusal and half must not;
-    a table that only held misses would pass against a gate that refuses every
-    battery.py in existence.
+    a table that only held misses would pass against a gate that refuses every battery.py in existence.
 
-    THE PATTERN IS THE RE-KEY THE RETARGET TURNED ON. The twin used to test the
-    literal substring `git status`, which is right for a shell pipeline and FALSE
+    THE PATTERN IS THE RE-KEY THE RETARGET TURNED ON. The twin used to test the literal substring `git status`, which is right for a shell pipeline and FALSE
     for the argv list battery.py writes.
     """
     (tmp_path / "battery.py").write_text(text, encoding="utf-8")
@@ -127,12 +113,8 @@ def test_refusal_condition_matches_bash(tmp_path: pathlib.Path, text: str) -> No
 def test_the_indented_definition_is_a_carried_blind_spot() -> None:
     """Pinned as a DECISION, not left to be inferred from the table above.
 
-    `/^def tree_state\\(/` is anchored at column 1. A battery.py that indented its
-    definition, or renamed it, would make this gate REFUSE rather than pass, which
-    is the safe direction -- but it would refuse for a formatting reason while
-    reporting that the guard was removed. The assertion exists so a later reader
-    cannot mistake it for an accident, and so a loosened regex has to delete a
-    named control.
+    `/^def tree_state\\(/` is anchored at column 1. A battery.py that indented its definition, or renamed it, would make this gate REFUSE rather than pass, which is the safe direction -- but it would refuse for a formatting reason while reporting that the guard was removed. The assertion exists so a later reader cannot mistake it for an accident, and so a loosened regex has to
+    delete a named control.
     """
     assert bct.extract_guard("    def tree_state(root):\n        return 1\n") == ""
     assert bct.extract_guard("def  tree_state(root):\n    return 1\n") == ""
@@ -144,8 +126,7 @@ def test_the_argv_spelling_is_why_the_substring_test_had_to_go() -> None:
 
     battery.py spells the snapshot `["git", "status", "--porcelain"]`. The twin's
     old condition was `"$GUARD" != *"git status"*`, which is FALSE against that
-    text, so a gate carried over unchanged would have refused on a perfectly good
-    guard while reporting that the guard was gone.
+    text, so a gate carried over unchanged would have refused on a perfectly good guard while reporting that the guard was gone.
     """
     argv_spelling = '["git", "status", "--porcelain"]'
     assert "git status" not in argv_spelling
@@ -217,9 +198,7 @@ DRIVE_GUARDS = [
 def test_drive_matches_bash(tmp_path: pathlib.Path, guard: str, dirty: bool) -> None:
     """`rc=<n> out=<value>`, produced by the twin's heredocs and by the port.
 
-    Ten cases, because the interesting property is a 5x2 table: each guard shape
-    against a clean tree AND a dirty one. A guard is only wrong in one of the two
-    columns, and a test that drove only one column would bless half of them.
+    Ten cases, because the interesting property is a 5x2 table: each guard shape against a clean tree AND a dirty one. A guard is only wrong in one of the two columns, and a test that drove only one column would bless half of them.
     """
     repo = tmp_path / ("dirty" if dirty else "clean")
     bct.make_repo(str(repo), dirty=dirty)
@@ -235,9 +214,7 @@ def test_drive_matches_bash(tmp_path: pathlib.Path, guard: str, dirty: bool) -> 
 def test_make_repo_builds_what_the_assertions_assume(tmp_path: pathlib.Path) -> None:
     """The FIXTURE, checked against git rather than against the port's intent.
 
-    A "clean" repo that was not clean, or a "dirty" one that was not dirty, would
-    make every assertion in this gate true for the wrong reason. This is the
-    control on the control.
+    A "clean" repo that was not clean, or a "dirty" one that was not dirty, would make every assertion in this gate true for the wrong reason. This is the control on the control.
     """
     clean = tmp_path / "c"
     dirty = tmp_path / "d"
@@ -259,16 +236,9 @@ def test_the_untracked_file_is_why_the_pre_fix_guard_survived_review(
 ) -> None:
     """The historical defect, reproduced end to end rather than described.
 
-    `grep -v '^??'` filters everything out exactly when there is nothing MODIFIED,
-    so it aborts on a clean checkout and works on a developer's. That asymmetry is
-    the whole reason the bug shipped and could not be reproduced locally, and it
-    is the property the gate's PLANT relies on: if the pre-fix guard ever stopped
-    aborting, the two assertions after it would be checking nothing.
+    `grep -v '^??'` filters everything out exactly when there is nothing MODIFIED, so it aborts on a clean checkout and works on a developer's. That asymmetry is the whole reason the bug shipped and could not be reproduced locally, and it is the property the gate's PLANT relies on: if the pre-fix guard ever stopped aborting, the two assertions after it would be checking nothing.
 
-    THE MARKER IS ASSERTED, not just the rc. The driver catches the exception and
-    prints `ERR:<type>: <message>` rather than letting a traceback out, because a
-    traceback carries the driver's own mktemp path and would differ between two
-    runs of the same code.
+    THE MARKER IS ASSERTED, not just the rc. The driver catches the exception and prints `ERR:<type>: <message>` rather than letting a traceback out, because a traceback carries the driver's own mktemp path and would differ between two runs of the same code.
     """
     clean = tmp_path / "c"
     dirty = tmp_path / "d"
@@ -299,8 +269,6 @@ def test_the_live_subject_is_still_extractable() -> None:
 def test_selftest_is_green() -> None:
     """The port's own plants and mirrors, driven from pytest.
 
-    Not redundant with running `--selftest` from the shell: this is the call that
-    fails the pytest suite when a control is deleted, which is the failure mode
-    the flag on its own cannot catch (nobody runs it).
+    Not redundant with running `--selftest` from the shell: this is the call that fails the pytest suite when a control is deleted, which is the failure mode the flag on its own cannot catch (nobody runs it).
     """
     assert bct.selftest() == 0

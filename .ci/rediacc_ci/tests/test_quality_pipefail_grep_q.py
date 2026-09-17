@@ -1,23 +1,12 @@
 """`rediacc_ci.quality.pipefail_grep_q` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-pipefail-grep-q.sh` over a
-git fixture with stdout and stderr captured SEPARATELY, and its bytes are compared
-against the port's. The twin has no environment seam -- it resolves its root from
-its OWN location and enumerates through `git -C "$ROOT" ls-files` -- so the
-fixture is a real git repository holding BOTH implementations. Same recipe as the
-committed ledger, `.ci/shadow/w7p2-pipefail-grepq.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-pipefail-grep-q.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. The twin has no environment seam -- it resolves its root from its OWN location and enumerates through `git -C "$ROOT" ls-files` -- so the fixture is a real git repository holding BOTH implementations.
+Same recipe as the committed ledger, `.ci/shadow/w7p2-pipefail-grepq.observations.jsonl`.
 
-THE MECHANISM CONTROL RUNS FOR REAL IN EVERY CASE BELOW, on both sides: a 300 KB
-producer piped into `grep -q` under pipefail, asserted to report MISSED. It is the
-one control that cannot be a pure assertion, because the claim is about what the
-kernel does to a writer whose reader has exited. If the host ever stops
-reproducing the race, both implementations go red together and these cases say so
-rather than quietly agreeing about a myth.
+THE MECHANISM CONTROL RUNS FOR REAL IN EVERY CASE BELOW, on both sides: a 300 KB producer piped into `grep -q` under pipefail, asserted to report MISSED. It is the one control that cannot be a pure assertion, because the claim is about what the kernel does to a writer whose reader has exited. If the host ever stops reproducing the race, both implementations go red together and
+these cases say so rather than quietly agreeing about a myth.
 
-THE RACING SHAPE IS ASSEMBLED AT RUNTIME in this file too, exactly as the twin
-assembles its own fixture, so that this file's TEXT never carries it contiguously.
-The twin flagged itself the first time it became a tracked file for precisely that
-reason.
+THE RACING SHAPE IS ASSEMBLED AT RUNTIME in this file too, exactly as the twin assembles its own fixture, so that this file's TEXT never carries it contiguously. The twin flagged itself the first time it became a tracked file for precisely that reason.
 """
 
 import pathlib
@@ -40,10 +29,7 @@ GQ = "grep -q"
 def offender_file(count: int) -> str:
     """A scanned script with `count` racing pipelines and three DECOYS.
 
-    The decoys are the negative half and they are not decoration: a comment
-    naming the shape, a string literal quoting it, and the sanctioned
-    command-substitution fix must all stay unflagged, or the gate is over-broad
-    and gets switched off.
+    The decoys are the negative half and they are not decoration: a comment naming the shape, a string literal quoting it, and the sanctioned command-substitution fix must all stay unflagged, or the gate is over-broad and gets switched off.
     """
     lines = [
         "#!/bin/bash",
@@ -233,9 +219,7 @@ def test_local_functions(text: str, names: list[str]) -> None:
 def test_the_mechanism_control_reproduces_on_this_host(tmp_path: pathlib.Path) -> None:
     """The OS half of the gate, asserted here as well as inside the gate.
 
-    If this ever stops saying MISSED, the gate is guarding a myth on this host
-    and every green it prints is worthless. That is worth a failing test, not a
-    skip.
+    If this ever stops saying MISSED, the gate is guarding a myth on this host and every green it prints is worthless. That is worth a failing test, not a skip.
     """
     assert gate.mechanism_output(tmp_path) == "MISSED"
 
@@ -243,11 +227,9 @@ def test_the_mechanism_control_reproduces_on_this_host(tmp_path: pathlib.Path) -
 def test_the_builtin_mechanism_control_reproduces_on_this_host(tmp_path: pathlib.Path) -> None:
     """The OTHER half of the OS claim, and a different kernel path from the above.
 
-    bash traps SIGPIPE for its own builtins, so `printf` does not die -- it takes
-    EPIPE from write(2) and returns non-zero, which pipefail promotes. The gate
+    bash traps SIGPIPE for its own builtins, so `printf` does not die -- it takes EPIPE from write(2) and returns non-zero, which pipefail promotes. The gate
     flags eleven `printf`/`echo` sites on the strength of that; if it ever stops
-    reproducing, those flags are guarding a myth and this must go red rather than
-    skip.
+    reproducing, those flags are guarding a myth and this must go red rather than skip.
     """
     assert gate.mechanism_builtin_output(tmp_path) == "MISSED"
 
@@ -263,9 +245,7 @@ def test_the_builtin_mechanism_control_reproduces_on_this_host(tmp_path: pathlib
 def test_inherited_pipefail_is_decided_by_path(rel: str | None, hits: int) -> None:
     """Identical bytes, classified by PATH alone.
 
-    `.ci/lib/devbox.sh:1082` sets no pipefail of its own and inherits it from every
-    sourcer (scripts/dev/worktree.sh:12, .ci/lib/local-common.sh:937,983 via
-    rdc.sh:11), which is why the gate could not see the sweep's strongest finding.
+    `.ci/lib/devbox.sh:1082` sets no pipefail of its own and inherits it from every sourcer (scripts/dev/worktree.sh:12, .ci/lib/local-common.sh:937,983 via rdc.sh:11), which is why the gate could not see the sweep's strongest finding.
     """
     text = (
         'lib_detect() { git -C "$1" status --porcelain; }\n'

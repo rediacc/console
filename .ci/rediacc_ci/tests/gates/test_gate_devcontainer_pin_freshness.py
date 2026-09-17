@@ -1,48 +1,28 @@
 """Port of `.ci/scripts/test/gates/test-devcontainer-pin-freshness.sh`.
 
-`scripts/gates/check-devcontainer-pin-freshness.ts`, driven entirely through its test
-seams so it runs offline and deterministically:
+`scripts/gates/check-devcontainer-pin-freshness.ts`, driven entirely through its test seams so it runs offline and deterministically:
 
   DEVCONTAINER_FRESHNESS_FIXTURE  a JSON map of base -> latest version/date/digests,
                                   used INSTEAD of the network
   DEVCONTAINER_BLOCKLIST_FILE     the blocklist whose BLOCKER convention is enforced
   DEVCONTAINER_DOCKERFILE         the file `--upgrade` rewrites
 
-Proved: it passes when nothing is behind, FIRES on a stale pin, DEFERS a
-just-released version (the shared soak), FAILS SOFT when a source cannot be
-checked, and enforces the BLOCKER convention on its blocklist.
+Proved: it passes when nothing is behind, FIRES on a stale pin, DEFERS a just-released version (the shared soak), FAILS SOFT when a source cannot be checked, and enforces the BLOCKER convention on its blocklist.
 
-Plus the assertion this gate exists for, which the embed gate's test has no reason
-to make: `--upgrade` must move the VERSION and its sha256 ARGs TOGETHER, and must
-refuse to move the version at all when a digest is missing. A tree carrying a new
-version beside a stale hash does not build, so an upgrade path that can produce one
-is worse than no upgrade path.
+Plus the assertion this gate exists for, which the embed gate's test has no reason to make: `--upgrade` must move the VERSION and its sha256 ARGs TOGETHER, and must refuse to move the version at all when a digest is missing. A tree carrying a new version beside a stale hash does not build, so an upgrade path that can produce one is worse than no upgrade path.
 
-THE REAL DOCKERFILE IS NEVER WRITTEN, and the twin's comment on that is a
-correction rather than a tidy-up. Its earlier shape copied the tracked file aside,
+THE REAL DOCKERFILE IS NEVER WRITTEN, and the twin's comment on that is a correction rather than a tidy-up. Its earlier shape copied the tracked file aside,
 let `--upgrade` rewrite it IN PLACE, and restored from an EXIT trap. The restore
-was correct as far as it went (`log_fail` exits immediately, so a restore placed
-after the call is skipped by exactly the runs that need it) but the mutation itself
-is visible to every other gate sharing the tree: on 2026-09-03 it reddened
-`check:ci-setup-idempotency` in the pre-push lane, which reported
-"setup --check changed the working tree" over a file `run.sh` never writes. The
-gate therefore takes a Dockerfile PATH and the test hands it a copy.
+was correct as far as it went (`log_fail` exits immediately, so a restore placed after the call is skipped by exactly the runs that need it) but the mutation itself is visible to every other gate sharing the tree: on 2026-09-03 it reddened `check:ci-setup-idempotency` in the pre-push lane, which reported "setup --check changed the working tree" over a file `run.sh` never writes.
+The gate therefore takes a Dockerfile PATH and the test hands it a copy.
 
-WHERE THE PORT DIFFERS, and it removes a whole class of coupling. The twin builds
-ONE fixture directory at file scope and calls `restore_dockerfile` between the two
-`--upgrade` cases, because the second must not see the first one's `9999.1.0`.
-Here every case builds its own fixture set under pytest's `tmp_path`, so there is
-nothing to restore and no ordering between cases at all: an `--upgrade` case cannot
-leave a mutated Dockerfile for its neighbour, because its neighbour has a different
-one. The `chmod u+w` the twin needs survives for the same reason it exists there --
-`shutil.copy2` copies the source's mode, and `--upgrade` must be able to rewrite.
+WHERE THE PORT DIFFERS, and it removes a whole class of coupling. The twin builds ONE fixture directory at file scope and calls `restore_dockerfile` between the two `--upgrade` cases, because the second must not see the first one's `9999.1.0`. Here every case builds its own fixture set under pytest's `tmp_path`, so there is nothing to restore and no ordering between cases at all:
+an `--upgrade` case cannot leave a mutated Dockerfile for its neighbour, because its neighbour has a different one. The `chmod u+w` the twin needs survives for the same reason it exists there -- `shutil.copy2` copies the source's mode, and `--upgrade` must be able to rewrite.
 
 WHY THE ONE-HOUR TIMESTAMP IS COMPUTED HERE. The twin spells it
 `date -u -d '1 hour ago'` with a BSD `date -u -v-1H` fallback; the port uses
 `datetime.now(UTC) - timedelta(hours=1)` and formats it with the same
-`%Y-%m-%dT%H:%M:%SZ`. Same instant, same wire format, and no dependence on which
-`date` the host ships -- which is the exact portability trap `.ci/media/portable.sh`
-exists for elsewhere in this tree.
+`%Y-%m-%dT%H:%M:%SZ`. Same instant, same wire format, and no dependence on which `date` the host ships -- which is the exact portability trap `.ci/media/portable.sh` exists for elsewhere in this tree.
 
 NO `xdist_group`. Every case owns its whole fixture set under `tmp_path` and the
 tracked Dockerfile is only ever READ; nothing is bound and no module global is
@@ -68,8 +48,7 @@ BW_SHA_ARM64 = "74d822a5dceda5896ed8fc07bc61925b29afd98d96a6a3e9e525ae556c3083a8
 def build_fixtures(gate, directory):
     """Every fixture the twin's `setup_fixtures` writes, into `directory`.
 
-    Returns the path of the WRITABLE Dockerfile copy. The real one is read and
-    never touched.
+    Returns the path of the WRITABLE Dockerfile copy. The real one is read and never touched.
     """
     if not VALIDATOR.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(VALIDATOR))
@@ -139,10 +118,7 @@ def build_fixtures(gate, directory):
 def run_gate(gate, directory, dockerfile, fixture: str, *args: str) -> harness.RunResult:
     """The gate with its fixture upstream map, streams MERGED as the twin captures them.
 
-    THE FIXTURE REFUSAL IS LOAD-BEARING. `DEVCONTAINER_FRESHNESS_FIXTURE` pointing at
-    a file that is not there does not make the gate fail -- it makes it fall back to
-    the NETWORK, so a mistyped fixture name would turn an offline unit test into a
-    live upstream query whose verdict depends on what Bitwarden released this week.
+    THE FIXTURE REFUSAL IS LOAD-BEARING. `DEVCONTAINER_FRESHNESS_FIXTURE` pointing at a file that is not there does not make the gate fail -- it makes it fall back to the NETWORK, so a mistyped fixture name would turn an offline unit test into a live upstream query whose verdict depends on what Bitwarden released this week.
     """
     if not (directory / fixture).is_file():
         gate.log_fail(
@@ -166,10 +142,7 @@ def run_gate_blocklist(gate, directory, dockerfile, fixture: str, blocklist: str
     """The gate with a fixture map AND a fixture blocklist, so the BLOCKER
     validation is exercised in isolation from the network.
 
-    Both fixtures are refused when absent, for the reason `run_gate` gives about the
-    upstream map, and for a second one about the blocklist: an absent
-    `DEVCONTAINER_BLOCKLIST_FILE` reads as an EMPTY blocklist, which is
-    indistinguishable from "every entry is well formed".
+    Both fixtures are refused when absent, for the reason `run_gate` gives about the upstream map, and for a second one about the blocklist: an absent `DEVCONTAINER_BLOCKLIST_FILE` reads as an EMPTY blocklist, which is indistinguishable from "every entry is well formed".
     """
     for name in (fixture, blocklist):
         if not (directory / name).is_file():
@@ -194,9 +167,7 @@ def run_gate_blocklist(gate, directory, dockerfile, fixture: str, blocklist: str
 def arg_value(text: str, name: str) -> str:
     """`grep -oP '^ARG <name>=\\K\\S+'`, reimplemented as a line scan.
 
-    A scan rather than a regex because the twin's spelling needs `grep -P` here
-    (`\\K` is a PCRE construct that `-E` does not have at all), and this repo's
-    `grep -E` is ugrep, which returns SILENT FALSE ZEROS on some alternated-anchor
+    A scan rather than a regex because the twin's spelling needs `grep -P` here (`\\K` is a PCRE construct that `-E` does not have at all), and this repo's `grep -E` is ugrep, which returns SILENT FALSE ZEROS on some alternated-anchor
     patterns. Splitting on the first `=` of an anchored `ARG ` line is the same
     claim with nothing to get wrong.
     """
@@ -286,10 +257,7 @@ def test_upgrade_moves_version_and_hashes(gate, tmp_path):
 def test_upgrade_refuses_when_a_digest_is_missing(gate, tmp_path):
     """THE ASSERTION THIS GATE EXISTS FOR.
 
-    A half-applied upgrade -- new version, old hash -- is a tree that fails
-    `docker build` at `sha256sum -c -`, and an operator who ran `--upgrade` and got
-    that learns to distrust the gate rather than the release. So a missing digest
-    must leave the Dockerfile COMPLETELY untouched.
+    A half-applied upgrade -- new version, old hash -- is a tree that fails `docker build` at `sha256sum -c -`, and an operator who ran `--upgrade` and got that learns to distrust the gate rather than the release. So a missing digest must leave the Dockerfile COMPLETELY untouched.
     """
     dockerfile = build_fixtures(gate, tmp_path)
     before = dockerfile.read_bytes()

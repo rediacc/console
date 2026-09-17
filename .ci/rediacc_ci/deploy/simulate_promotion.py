@@ -1,66 +1,41 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/simulate-promotion.sh`.
 
-Simulates an edge-to-stable promotion into a throwaway `<channel>-promoted` R2
-channel, so the package-manager install tests (apt/dnf/apk/pacman) can run
-against PROMOTED bytes before a real promotion happens. A broken promotion is
-then caught in CI rather than after `promote-stable` has already moved
-production bytes.
+Simulates an edge-to-stable promotion into a throwaway `<channel>-promoted` R2 channel, so the package-manager install tests (apt/dnf/apk/pacman) can run against PROMOTED bytes before a real promotion happens. A broken promotion is then caught in CI rather than after `promote-stable` has already moved production bytes.
 
-NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST. `aws` and (through
-`cf-purge-urls.sh`) `curl` are the two external tools that carry a credential,
-so the differential
-(`.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py`) puts RECORDING FAKES
+NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST. `aws` and (through `cf-purge-urls.sh`) `curl` are the two external tools that carry a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py`) puts RECORDING FAKES
 for both on a scratch PATH, with an on-disk fixture standing in for the bucket.
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one
-real run" clause and says in as many words that the mocked parity ledger is a
-separate, achievable piece of work. This is that piece.
+`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS THE PRIMARY EVIDENCE. The run prints six or seven `log_info`
 lines, none of them derived from what moved; the ENTIRE observable effect is the
-`aws` invocations, the exact `--key`/`--copy-source` pairs they carry, and the
-URL list handed to `cf-purge-urls.sh`.
+`aws` invocations, the exact `--key`/`--copy-source` pairs they carry, and the URL list handed to `cf-purge-urls.sh`.
 
 -----------------------------------------------------------------------------
 `awk`, `sed`, `sleep` AND `cf-purge-urls.sh` ARE CALLED, NOT REIMPLEMENTED
 -----------------------------------------------------------------------------
-`awk` because the field program at twin :187 is what turns an
-`aws s3 ls --recursive` listing into keys, and its exact behaviour is the thing
-that has to survive: default `FS` splits on RUNS of whitespace, so a key
-containing two consecutive spaces comes back with one, and `printf "%s%s", $i,
-(i < NF ? OFS : ORS)` rejoins with single spaces. A Python `line.split(None,
-3)[3]` would keep the doubled space and quietly promote a different key. Driven
-2026-09-13 in the fixture, where a key with an embedded space is deliberately
-present.
+`awk` because the field program at twin :187 is what turns an `aws s3 ls --recursive` listing into keys, and its exact behaviour is the thing that has to survive: default `FS` splits on RUNS of whitespace, so a key containing two consecutive spaces comes back with one, and `printf "%s%s", $i, (i < NF ? OFS : ORS)` rejoins with single spaces. A Python `line.split(None, 3)[3]` would
+keep the doubled space and quietly promote a different key. Driven 2026-09-13 in the fixture, where a key with an embedded space is deliberately present.
 
 `sed`, through `core.common.sed_in_place`, because the substitution is a regex
 with `|` delimiters.
 
-`sleep` because both retry loops call it as an external program, and calling it
-here rather than using `time.sleep` makes the RETRY SCHEDULE observable in the
-call log rather than only in wall-clock time. That is what lets the differential
-prove `1 2 3 4 5` attempts with 15/30/45/60-second gaps without waiting three
-minutes for it, and it is what a `time.sleep` port would have hidden.
+`sleep` because both retry loops call it as an external program, and calling it here rather than using `time.sleep` makes the RETRY SCHEDULE observable in the call log rather than only in wall-clock time. That is what lets the differential prove `1 2 3 4 5` attempts with 15/30/45/60-second gaps without waiting three minutes for it, and it is what a `time.sleep` port would have
+hidden.
 
-`cf-purge-urls.sh` is invoked as the bash script the twin invokes, for the
-reason `upload_repos_to_r2.py` gives: agreement with the live twin includes that
-script's exact bytes.
+`cf-purge-urls.sh` is invoked as the bash script the twin invokes, for the reason `upload_repos_to_r2.py` gives: agreement with the live twin includes that script's exact bytes.
 
 -----------------------------------------------------------------------------
 THE COPIES ARE PARALLEL, SO THEIR ORDER IS NOT DETERMINISTIC ON EITHER SIDE
 -----------------------------------------------------------------------------
 `xargs -P 8 -I{} bash -c 'copy_one_object "$@"' _ {}` dispatches up to eight
-independent server-side copies at once, so two runs of the SAME implementation
-can log them in different orders. The port uses a `ThreadPoolExecutor` with the
-same width and reproduces xargs' failure contract:
+independent server-side copies at once, so two runs of the SAME implementation can log them in different orders. The port uses a `ThreadPoolExecutor` with the same width and reproduces xargs' failure contract:
 
   * a command exiting 1..125 does NOT stop the run, every remaining item is
     still attempted, and xargs exits 123 at the end;
   * `set -e` then ends the script with that 123.
 
-The differential compares the copy calls as a MULTISET within each directory
-block rather than as a sequence, and says so where it does it. Everything
-outside those blocks is compared in order.
+The differential compares the copy calls as a MULTISET within each directory block rather than as a sequence, and says so where it does it. Everything outside those blocks is compared in order.
 
 -----------------------------------------------------------------------------
 FIVE FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FIVE ARE REPRODUCED
@@ -98,24 +73,17 @@ FIVE FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FIVE ARE REPRODUCED
      lets `cf-purge-urls.sh` do the refusing.
      `AN_UNSET_ZONE_IS_AN_UNBOUND_VARIABLE_AT_THE_END` names it.
 
-None is repaired here. This wave's acceptance rule is agreement with the live
-twin.
+None is repaired here. This wave's acceptance rule is agreement with the live twin.
 
 -----------------------------------------------------------------------------
 ONE `${VAR:?msg}` GUARD, ONE DIVERGENCE, AND TWO SMALLER ONES
 -----------------------------------------------------------------------------
 `: "${CHANNEL:?CHANNEL is required (the source channel, e.g. pr-123)}"` is
-bash's own refusal and names the bash FILE and a bash LINE NUMBER before the
-message. This port prints the `VAR: msg` half, on the same stream, with the same
-exit status 1. Identical ruling to `deploy/promote_r2_to_stable.py`.
+bash's own refusal and names the bash FILE and a bash LINE NUMBER before the message. This port prints the `VAR: msg` half, on the same stream, with the same exit status 1. Identical ruling to `deploy/promote_r2_to_stable.py`.
 
-`set -u` ON `$CLOUDFLARE_ZONE_ID` (fact 5) is the second: bash says
-`CLOUDFLARE_ZONE_ID: unbound variable` with its own prefix, this port says the
-same words with the script's name.
+`set -u` ON `$CLOUDFLARE_ZONE_ID` (fact 5) is the second: bash says `CLOUDFLARE_ZONE_ID: unbound variable` with its own prefix, this port says the same words with the script's name.
 
-A `$GITHUB_ENV` THAT CANNOT BE APPENDED TO is the third, and it is the same
-shape: bash's redirection error against this port's own sentence, same stream,
-same status 1.
+A `$GITHUB_ENV` THAT CANNOT BE APPENDED TO is the third, and it is the same shape: bash's redirection error against this port's own sentence, same stream, same status 1.
 
 K=5 LEDGER: `.ci/shadow/w7p6-simulate-promotion.observations.jsonl`.
 """
@@ -250,12 +218,9 @@ def list_argv(prefix: str, endpoint: str) -> list[str]:
 def copy_object_argv(dst_key: str, src_key: str, endpoint: str) -> list[str]:
     """`aws s3api copy-object ...` (twin :161-167).
 
-    `s3api`, NOT `s3 cp`/`s3 sync`, and the twin's comment is emphatic about
-    why: R2 does not implement the object-tagging surface, and the high-level
-    commands reach for it on EVERY s3-to-s3 path. `--tagging-directive` is
+    `s3api`, NOT `s3 cp`/`s3 sync`, and the twin's comment is emphatic about why: R2 does not implement the object-tagging surface, and the high-level commands reach for it on EVERY s3-to-s3 path. `--tagging-directive` is
     omitted, so neither the tag read nor the tag replace is attempted;
-    `--metadata-directive REPLACE` is required because a new Cache-Control is
-    being set.
+    `--metadata-directive REPLACE` is required because a new Cache-Control is being set.
     """
     return [
         "aws",
@@ -291,8 +256,7 @@ def download_argv(key: str, endpoint: str) -> list[str]:
 def upload_argv(key: str, endpoint: str) -> list[str]:
     """`aws_s3_cp_retry /tmp/config "s3://..." "${EP[@]}" --cache-control ...` (twin :211).
 
-    `aws_s3_cp_retry` prepends `s3 cp --cli-read-timeout 0` (twin :81), so the
-    flag lands BEFORE the two paths rather than at the end.
+    `aws_s3_cp_retry` prepends `s3 cp --cli-read-timeout 0` (twin :81), so the flag lands BEFORE the two paths rather than at the end.
     """
     return [
         "aws",
@@ -327,8 +291,7 @@ def strip_prefix(key: str, prefix: str) -> str:
 def read_lines(text: str) -> list[str]:
     """`while IFS= read -r key; do [[ -n "$key" ]] || continue; ...` (twin :200-203).
 
-    A FINAL LINE WITH NO NEWLINE IS DROPPED (`read` returns non-zero at EOF), and
-    an EMPTY line is skipped by the explicit `continue`.
+    A FINAL LINE WITH NO NEWLINE IS DROPPED (`read` returns non-zero at EOF), and an EMPTY line is skipped by the explicit `continue`.
     """
     if not text:
         return []
@@ -351,8 +314,7 @@ def _run(argv: list[str], **kwargs) -> int:
 def _sleep(seconds: int) -> None:
     """`sleep $((n))` as the EXTERNAL PROGRAM bash runs.
 
-    Not `time.sleep`. See the module docstring: shelling out is what puts the
-    retry schedule in the call log, where a differential can read it.
+    Not `time.sleep`. See the module docstring: shelling out is what puts the retry schedule in the call log, where a differential can read it.
     """
     _run(["sleep", str(seconds)])
 
@@ -360,13 +322,9 @@ def _sleep(seconds: int) -> None:
 def list_keys(prefix: str, endpoint: str) -> list[str]:
     """`aws s3 ls ... | awk '...' >"$KEYS"` (twin :186-187), under `pipefail`.
 
-    Raises `BashExitError` when either stage fails, which is fact 3: the floor
-    below is only reached when the pipeline SUCCEEDED, so an `aws s3 ls` that
-    exits non-zero on an empty prefix ends the run here instead.
+    Raises `BashExitError` when either stage fails, which is fact 3: the floor below is only reached when the pipeline SUCCEEDED, so an `aws s3 ls` that exits non-zero on an empty prefix ends the run here instead.
 
-    THE TEMPORARY FILE IS REAL, because the twin reads it twice (once for the
-    copies, once for the purge URLs) and `[[ -s ]]` asks about the FILE. Its
-    name is `mktemp`'s and appears nowhere observable.
+    THE TEMPORARY FILE IS REAL, because the twin reads it twice (once for the copies, once for the purge URLs) and `[[ -s ]]` asks about the FILE. Its name is `mktemp`'s and appears nowhere observable.
     """
     handle, keys_path = tempfile.mkstemp()
     os.close(handle)
@@ -402,9 +360,7 @@ def copy_one_object(src_key: str, src_prefix: str, dst_prefix: str, endpoint: st
 
     THE PREFIX GUARD IS THE POINT OF THE FUNCTION. A key that does not start
     with `SRC_PREFIX` would make the strip below a silent no-op and write to a
-    DOUBLED destination (`apk/edge-promoted/apt/edge/...`). A wrong destination
-    is worse than a failed copy, because the install tests that follow would
-    read a channel nobody wrote.
+    DOUBLED destination (`apk/edge-promoted/apt/edge/...`). A wrong destination is worse than a failed copy, because the install tests that follow would read a channel nobody wrote.
 
     Returns the child's status; 1 for either refusal, 0 for a copy that landed.
     """
@@ -431,9 +387,7 @@ def copy_one_object(src_key: str, src_prefix: str, dst_prefix: str, endpoint: st
 def aws_s3_cp_retry(argv_tail: list[str], display: list[str]) -> int:
     """`aws_s3_cp_retry` (twin :78-91). Five attempts, 15/30/45/60-second gaps.
 
-    `display` is what `$*` expands to in the failure message: the arguments the
-    FUNCTION was called with, NOT the `aws s3 cp --cli-read-timeout 0` prefix it
-    adds. Kept separate for that reason alone.
+    `display` is what `$*` expands to in the failure message: the arguments the FUNCTION was called with, NOT the `aws s3 cp --cli-read-timeout 0` prefix it adds. Kept separate for that reason alone.
     """
     for attempt in range(1, CP_ATTEMPTS + 1):
         if _run(argv_tail) == 0:
@@ -482,8 +436,7 @@ def _sed_fix(channel: str, promoted: str, endpoint: str, purge_urls: list[str]) 
     """The two config rewrites (twin :208-216).
 
     THE DOWNLOAD IS THE CONDITION: `if aws s3 cp ... 2>/dev/null; then`, so a
-    file that is not in the promoted channel is skipped in silence. Everything
-    after it is unguarded.
+    file that is not in the promoted channel is skipped in silence. Everything after it is unguarded.
     """
     for template in SED_FIX_FILES:
         key = template % promoted
@@ -507,8 +460,7 @@ def _purge(purge_urls: list[str], zone: str) -> None:
     """`printf '%s\\n' "${PURGE_URLS[@]}" | cf-purge-urls.sh --zone <zone>` (twin :225-226).
 
     Guarded by `${#PURGE_URLS[@]} -gt 0`, so an empty list makes no call at all.
-    Under `pipefail` the pipeline's status is the purge script's, since `printf`
-    cannot fail here.
+    Under `pipefail` the pipeline's status is the purge script's, since `printf` cannot fail here.
     """
     payload = "".join(url + "\n" for url in purge_urls)
     argv = purge_argv(zone)

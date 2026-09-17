@@ -7,11 +7,7 @@ see `rediacc_ci.quality.__init__`.
 THE TWIN'S HEADER, CARRIED ACROSS.
 -----------------------------------------------------------------------------
 
-Why this exists. Measured 2026-08-25, before .devcontainer/toolchain.env: ruff
-was pinned in two places, PyYAML in four, and shfmt and shellcheck in none at
-all -- so the same gate reached different verdicts in different lanes. The host
-had shellcheck 0.9.0, the image had none, and CI used whatever the runner
-shipped. shfmt agreed across lanes only by luck.
+Why this exists. Measured 2026-08-25, before .devcontainer/toolchain.env: ruff was pinned in two places, PyYAML in four, and shfmt and shellcheck in none at all -- so the same gate reached different verdicts in different lanes. The host had shellcheck 0.9.0, the image had none, and CI used whatever the runner shipped. shfmt agreed across lanes only by luck.
 
   A1  a pin's value appears in exactly one place
   A2  nothing acquires a gate tool unpinned (@latest / releases/latest)
@@ -21,163 +17,89 @@ shipped. shfmt agreed across lanes only by luck.
   A9  a pin must RESOLVE, not merely exist
   A10 all THREE readers must still READ the pins
 
-Controls are built by CONSTRUCTION -- fixtures written literally into a temp
-dir, never by substituting into real source -- so rewording a real file cannot
-silently void them (see .ci/scripts/quality/check-control-vacuity.sh).
+Controls are built by CONSTRUCTION -- fixtures written literally into a temp dir, never by substituting into real source -- so rewording a real file cannot silently void them (see .ci/scripts/quality/check-control-vacuity.sh).
 
 -----------------------------------------------------------------------------
 THE PER-ASSERTION ARCHAEOLOGY, all of it the twin's.
 -----------------------------------------------------------------------------
 
-A1'S PATHSPEC IS `.ci/*.sh`, NOT `.ci/**/*.sh`. Git's default (non-`:(glob)`)
-wildmatch lets `*` cross `/`, so `.ci/*.sh` already reaches every depth, while
-`.ci/**/*.sh` demands a literal slash after `.ci/` and therefore MISSES every
-script sitting directly under `.ci/`. Measured 2026-09-06 when .ci/bootstrap.sh
-became the first file in that class: the two spellings return the same 453
-tracked files, and only the second one drops bootstrap.sh. A scanner that
-silently skips a file is the vacuity this gate exists to prevent, so the
-narrower spelling is a bug.
+A1'S PATHSPEC IS `.ci/*.sh`, NOT `.ci/**/*.sh`. Git's default (non-`:(glob)`) wildmatch lets `*` cross `/`, so `.ci/*.sh` already reaches every depth, while `.ci/**/*.sh` demands a literal slash after `.ci/` and therefore MISSES every script sitting directly under `.ci/`. Measured 2026-09-06 when .ci/bootstrap.sh became the first file in that class: the two spellings return the
+same 453 tracked files, and only the second one drops bootstrap.sh. A scanner that silently skips a file is the vacuity this gate exists to prevent, so the narrower spelling is a bug.
 
-A1 EXEMPTS NODE_VERSION AND GO_VERSION, because both are also expressed as bare
-majors by third-party actions (actions/setup-node) and by go.mod, which are not
-ours to unify. `check-toolchain-env-dockerfile-sync.sh` is the narrower check
-that exemption made necessary.
+A1 EXEMPTS NODE_VERSION AND GO_VERSION, because both are also expressed as bare majors by third-party actions (actions/setup-node) and by go.mod, which are not ours to unify. `check-toolchain-env-dockerfile-sync.sh` is the narrower check that exemption made necessary.
 
-COMMENTS ARE NOT DEFINITIONS. An earlier draft of A1 flagged this gate's own
-measurement notes and a checksum URL containing the version -- prose ABOUT a
-pin, not a second copy of it. Flagging prose would push someone to delete the
-evidence for a rule in order to satisfy the rule, so comment lines are stripped
-before the comparison. A line that names the KEY is reading the pin, not
+COMMENTS ARE NOT DEFINITIONS. An earlier draft of A1 flagged this gate's own measurement notes and a checksum URL containing the version -- prose ABOUT a pin, not a second copy of it. Flagging prose would push someone to delete the evidence for a rule in order to satisfy the rule, so comment lines are stripped before the comparison. A line that names the KEY is reading the pin, not
 restating it.
 
-A2 COVERS ONLY THE TOOLS A GATE DEPENDS ON. Editor tooling (gopls, dlv,
-staticcheck, golangci-lint, goimports) stays out of THIS assertion, but the
-reason changed on 2026-09-06 and the old one is worth not re-deriving: it used
-to be "nothing gates on its output, so pinning would buy churn". Those five are
-now pinned as ARG <NAME>_VERSION lines in .devcontainer/Dockerfile, and three of
-them are watched by check-devcontainer-pin-freshness. They remain outside A2
-because A2 asks a different question: does a SHELL SCRIPT acquire a gate tool
-without a version. A Dockerfile ARG is not that shape, and the freshness gate
-already owns it. The control therefore still earns its place: it proves this
-regex does not reach past the gate tools, using a synthetic fixture rather than
-the real Dockerfile, which no longer contains a version-less install to sample.
+A2 COVERS ONLY THE TOOLS A GATE DEPENDS ON. Editor tooling (gopls, dlv, staticcheck, golangci-lint, goimports) stays out of THIS assertion, but the reason changed on 2026-09-06 and the old one is worth not re-deriving: it used to be "nothing gates on its output, so pinning would buy churn". Those five are now pinned as ARG <NAME>_VERSION lines in .devcontainer/Dockerfile, and three
+of them are watched by check-devcontainer-pin-freshness. They remain outside A2 because A2 asks a different question: does a SHELL SCRIPT acquire a gate tool without a version. A Dockerfile ARG is not that shape, and the freshness gate already owns it. The control therefore still earns its place: it proves this regex does not reach past the gate tools, using a synthetic fixture
+rather than the real Dockerfile, which no longer contains a version-less install to sample.
 
-A8 CATCHES UNPINNED USE, where A2 catches unpinned ACQUISITION. A workflow step
-that runs `shfmt -d .` itself, instead of running the gate script that resolves
-the tool at the pin, would silently lint with whatever the runner image happens
+A8 CATCHES UNPINNED USE, where A2 catches unpinned ACQUISITION. A workflow step that runs `shfmt -d .` itself, instead of running the gate script that resolves the tool at the pin, would silently lint with whatever the runner image happens
 to ship. Nothing does that today; this exists so nothing starts. NOTE ON SHAPE,
-because it is the opposite of what it may look like: a workflow invoking a gate
-SCRIPT directly (`run: .ci/scripts/security/shfmt.sh`) is the REQUIRED pattern
-here -- scripts/gates/check-ci-parity.ts enforces three-point wiring in which the
-workflow step names the script. It is invoking the TOOL that is forbidden, not
-invoking the script.
+because it is the opposite of what it may look like: a workflow invoking a gate SCRIPT directly (`run: .ci/scripts/security/shfmt.sh`) is the REQUIRED pattern here -- scripts/gates/check-ci-parity.ts enforces three-point wiring in which the workflow step names the script. It is invoking the TOOL that is forbidden, not invoking the script.
 
-THE A8 CONTROLS `mkdir` FIRST. The shared fixture dir is created in the controls
-section further down, and writing before it exists made these silently write
-nothing -- the control then reported DID NOT FIRE, which is the correct
-direction for that mistake to fail in.
+THE A8 CONTROLS `mkdir` FIRST. The shared fixture dir is created in the controls section further down, and writing before it exists made these silently write nothing -- the control then reported DID NOT FIRE, which is the correct direction for that mistake to fail in.
 
-A6 IS DISCOVERED, NOT HARDCODED. It named shfmt.sh and shellcheck.sh literally,
-so a THIRD gate invoking a pinned tool escaped the rule entirely -- the
-assertion kept passing while the invariant rotted. Tracked AND untracked,
-because `git ls-files` alone is blind to a gate not yet committed: proven by
-planting one, which A6 then said nothing about. Same blind spot
+A6 IS DISCOVERED, NOT HARDCODED. It named shfmt.sh and shellcheck.sh literally, so a THIRD gate invoking a pinned tool escaped the rule entirely -- the assertion kept passing while the invariant rotted. Tracked AND untracked, because `git ls-files` alone is blind to a gate not yet committed: proven by planting one, which A6 then said nothing about. Same blind spot
 .ci/scripts/security/shellcheck.sh:68 documents for its own enumerator.
 
-PROSE IS NOT AN INVOCATION, and an echoed string is prose too. Measured
-2026-08-26 (run 32907xxx, Quality / Code): A6 flagged check-shell-size.sh, whose
-only two matches were
+PROSE IS NOT AN INVOCATION, and an echoed string is prose too. Measured 2026-08-26 (run 32907xxx, Quality / Code): A6 flagged check-shell-size.sh, whose only two matches were
 
     echo "         # shellcheck extended-analysis=false"
     echo '# shellcheck extended-analysis=false'
 
-i.e. the directive it TELLS you to add. It never runs shellcheck at all, so
-demanding it acquire shellcheck at the pin was incoherent. Only a line whose
-FIRST word is echo/printf and that carries no command separator is dropped:
+i.e. the directive it TELLS you to add. It never runs shellcheck at all, so demanding it acquire shellcheck at the pin was incoherent. Only a line whose FIRST word is echo/printf and that carries no command separator is dropped:
 `echo x; shfmt y` still gets scrutinised, so this narrows the false-positive
 without opening a bypass.
 
 DATA IS NOT AN INVOCATION EITHER, the same reasoning one step over. A
 `NAME=(a b c)` array literal naming a gated tool as one of its elements is being
-DEFINED, not run -- check-host-toolchain-coverage.sh's own NPX_TOOLS/BARE_TOOLS
-fixtures tripped this before the exemption existed (measured 2026-08-28, run
-98854256844, Quality / Code), because the tool name sits after `(` and before a
-space, which the invocation regex cannot distinguish from a bare command word.
+DEFINED, not run -- check-host-toolchain-coverage.sh's own NPX_TOOLS/BARE_TOOLS fixtures tripped this before the exemption existed (measured 2026-08-28, run 98854256844, Quality / Code), because the tool name sits after `(` and before a space, which the invocation regex cannot distinguish from a bare command word.
 Only a line matching `NAME=(...)` in full (the assignment is complete on one
-line, no command separator) is dropped, same narrowing discipline as the
-echo/printf case.
+line, no command separator) is dropped, same narrowing discipline as the echo/printf case.
 
-A6 DEMANDS RESOLVING AT A PIN, not merely NAMING one. The first version accepted
-any `*_VERSION` mention, and check-python-lint.sh passed it while still taking
-an unversioned `command -v ruff` from PATH -- the assertion was satisfied by a
-variable that the acquisition path never consulted.
+A6 DEMANDS RESOLVING AT A PIN, not merely NAMING one. The first version accepted any `*_VERSION` mention, and check-python-lint.sh passed it while still taking an unversioned `command -v ruff` from PATH -- the assertion was satisfied by a variable that the acquisition path never consulted.
 
 A9 EXECUTES THE PIN. A1-A8 are source scans, and every one of them was green
 while this was broken: toolchain_pin_for printed "" AND RETURNED 0 whenever the
-pins had not been loaded, because sourcing toolchain.sh does not populate them.
-The empty value then travelled into a download URL. Measured 2026-08-26 in a
-fresh shell:
+pins had not been loaded, because sourcing toolchain.sh does not populate them. The empty value then travelled into a download URL. Measured 2026-08-26 in a fresh shell:
 
   .../releases/download/v/shellcheck-v.linux.aarch64.tar.xz  -> curl 404
 
-The 404 names GitHub, so the symptom points away from the cause. No textual
-assertion could have caught this: the source looked correct and the defect lived
-in what the function RETURNED. So A9 executes it, in a subshell that sources
-nothing but the library -- which is exactly the caller that broke.
+The 404 names GitHub, so the symptom points away from the cause. No textual assertion could have caught this: the source looked correct and the defect lived in what the function RETURNED. So A9 executes it, in a subshell that sources nothing but the library -- which is exactly the caller that broke.
 
-THE A9 CONTROL IS A COPY PLUS AN APPENDED NO-OP OVERRIDE of toolchain_load.
-Appending cannot silently fail to apply the way a pattern substitution can when
-the targeted line is later reworded.
+THE A9 CONTROL IS A COPY PLUS AN APPENDED NO-OP OVERRIDE of toolchain_load. Appending cannot silently fail to apply the way a pattern substitution can when the targeted line is later reworded.
 
-A10 ASSERTS THE UNIT, not the parts. A3 proves the file is PARSEABLE by three
-readers. Nothing proved they still read it. Delete the `. toolchain.env` from
-constants.sh, or the COPY from the Dockerfile, or the --env step from the
-workflow, and every assertion above stays green while the pins go back to being
-decorative -- which is the exact state this whole file exists to end. The
+A10 ASSERTS THE UNIT, not the parts. A3 proves the file is PARSEABLE by three readers. Nothing proved they still read it. Delete the `. toolchain.env` from constants.sh, or the COPY from the Dockerfile, or the --env step from the workflow, and every assertion above stays green while the pins go back to being decorative -- which is the exact state this whole file exists to end. The
 three-point wiring is the invariant; asserting the parts individually never
-asserted the unit. Each reader is checked for the mechanism it actually uses,
-not for the string "toolchain.env": a COMMENT mentioning the file would
-otherwise satisfy the rule, and every one of these three files has several such
-comments. The Actions reader is checked via `--env`, never a bare `cat`:
+asserted the unit. Each reader is checked for the mechanism it actually uses, not for the string "toolchain.env": a COMMENT mentioning the file would otherwise satisfy the rule, and every one of these three files has several such comments. The Actions reader is checked via `--env`, never a bare `cat`:
 $GITHUB_ENV accepts only KEY=value and would choke on the comments, which is why
 the emitter exists at all.
 
-THE BLIND SPOT, stated so a green is not read as more than it is: A1 is a
-LITERAL scan, so a pin written 0.16 against a value of 0.16.1 escapes it.
+THE BLIND SPOT, stated so a green is not read as more than it is: A1 is a LITERAL scan, so a pin written 0.16 against a value of 0.16.1 escapes it.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`set -uo pipefail` WITHOUT `-e` is the twin's mode, so a failing grep is a
-verdict rather than an abort. Every probe below therefore returns a value and
+`set -uo pipefail` WITHOUT `-e` is the twin's mode, so a failing grep is a verdict rather than an abort. Every probe below therefore returns a value and
 nothing raises; the one place that would have raised in Python (a missing file)
 is guarded, because "unreadable" and "clean" have to stay distinguishable.
 
-`grep -F "$value" file | grep -vE '^\s*#' | grep -qvF "$key"` IS A THREE-STAGE
-PIPELINE AND IS REPRODUCED STAGE BY STAGE. Read it as: the lines containing the
+`grep -F "$value" file | grep -vE '^\s*#' | grep -qvF "$key"` IS A THREE-STAGE PIPELINE AND IS REPRODUCED STAGE BY STAGE. Read it as: the lines containing the
 VALUE, minus the comment lines, minus the lines that also name the KEY; if
-anything survives, that file restates the pin. Collapsing it into one pass over
-the file would be equivalent only by accident, because the second stage drops
-comment lines by their own shape rather than by the match's position.
+anything survives, that file restates the pin. Collapsing it into one pass over the file would be equivalent only by accident, because the second stage drops comment lines by their own shape rather than by the match's position.
 
 THE A9 SUBSHELL IS STILL A SUBSHELL. `bash -c "source toolchain.sh;
-toolchain_pin_for shfmt"` is what A9 exists to run, and re-reading
-`toolchain.env` in Python would test this module's idea of the loader rather
-than the loader. The twin swallows both a crash and an empty pin into the same
-"bad" answer, and says so in a `swallowed-failure-ok` waiver: "either a crash or
-a genuinely empty pin makes t bad on the next line, so the cause does not change
+toolchain_pin_for shfmt"` is what A9 exists to run, and re-reading `toolchain.env` in Python would test this module's idea of the loader rather than the loader. The twin swallows both a crash and an empty pin into the same "bad" answer, and says so in a `swallowed-failure-ok` waiver: "either a crash or a genuinely empty pin makes t bad on the next line, so the cause does not change
 the outcome".
 
-`git ls-files` PATHSPECS ARE PASSED TO GIT UNCHANGED, including the deliberate
-`.ci/*.sh` spelling. Re-implementing the walk in Python would silently re-decide
-the `*`-crosses-`/` question that paragraph is about.
+`git ls-files` PATHSPECS ARE PASSED TO GIT UNCHANGED, including the deliberate `.ci/*.sh` spelling. Re-implementing the walk in Python would silently re-decide the `*`-crosses-`/` question that paragraph is about.
 
-STREAMS. `fail()` is `✗ <msg>` on STDERR and `pass()` is `ok   <msg>` on STDOUT,
+STREAMS. `fail()` is `✗ <msg>` on STDERR and `pass()` is `ok <msg>` on STDOUT,
 neither through a logger. The A1/A2/A8 detail lists follow their `✗` on STDERR;
-the A10 detail list goes to STDOUT with a nine-space indent, which is an
-inconsistency in the twin and is preserved because moving it would change which
-stream a reader greps.
+the A10 detail list goes to STDOUT with a nine-space indent, which is an inconsistency in the twin and is preserved because moving it would change which stream a reader greps.
 """
 
 import fnmatch
@@ -276,8 +198,7 @@ def is_exempt(rel: str) -> bool:
 def git_lines(root: pathlib.Path, args: list[str]) -> list[str]:
     """`git -C root <args>` split into lines, or [] on any failure.
 
-    A failed git is [] here exactly as the twin's `2>/dev/null` makes it empty,
-    and the A1 vacuity branch is what stops that from reading as a clean tree.
+    A failed git is [] here exactly as the twin's `2>/dev/null` makes it empty, and the A1 vacuity branch is what stops that from reading as a clean tree.
     """
     try:
         proc = subprocess.run(
@@ -484,9 +405,7 @@ def check_a6(report: Report, root: pathlib.Path) -> None:
 def pin_from_bare_source(library: pathlib.Path, tool: str) -> str:
     """`bash -c "source <lib>; toolchain_pin_for <tool>"`. Never raises.
 
-    swallowed-failure-ok in the twin, and the reason is quoted there: "either a
-    crash or a genuinely empty pin makes t bad on the next line, so the cause
-    does not change the outcome".
+    swallowed-failure-ok in the twin, and the reason is quoted there: "either a crash or a genuinely empty pin makes t bad on the next line, so the cause does not change the outcome".
     """
     try:
         proc = subprocess.run(
@@ -569,13 +488,9 @@ def run_a8_controls(report: Report, tmp: pathlib.Path) -> None:
 
     ORDER IS OUTPUT, and output is what the differential compares. These two
     lines sit between A8 and A6 in `check-toolchain-pins.sh:181-197`; running
-    them from the tail block instead left both sides with the same 21 lines in
-    a different order, which is a real disagreement and not a normalisation.
+    them from the tail block instead left both sides with the same 21 lines in a different order, which is a real disagreement and not a normalisation.
 
-    THE MKDIR MOVED HERE WITH THEM. The twin's own comment at line 181 says
-    "mkdir first": the shared fixture dir used to be created further down, and
-    writing before it existed made these controls silently write nothing.
-    Creating it here keeps that property while restoring the twin's order.
+    THE MKDIR MOVED HERE WITH THEM. The twin's own comment at line 181 says "mkdir first": the shared fixture dir used to be created further down, and writing before it existed made these controls silently write nothing. Creating it here keeps that property while restoring the twin's order.
     """
     control_dir = tmp / "c"
     control_dir.mkdir(parents=True, exist_ok=True)
@@ -608,8 +523,7 @@ def run_a8_controls(report: Report, tmp: pathlib.Path) -> None:
 def run_a9_control(report: Report, root: pathlib.Path, tmp: pathlib.Path) -> None:
     """The A9 control, INLINE after A9, where the twin runs it (twin line 286).
 
-    By construction: a copy of the real library plus an APPENDED no-op override,
-    never a substitution into sampled source.
+    By construction: a copy of the real library plus an APPENDED no-op override, never a substitution into sampled source.
     """
     a9_dir = tmp / "a9"
     a9_dir.mkdir(parents=True, exist_ok=True)
@@ -635,13 +549,9 @@ def run_a9_control(report: Report, root: pathlib.Path, tmp: pathlib.Path) -> Non
 def run_controls(report: Report, tmp: pathlib.Path) -> None:
     """The remaining controls, by CONSTRUCTION, in the twin's tail order.
 
-    A control built by substituting into real source stops controlling anything
-    the day that source is reworded, which is what
-    `check-control-vacuity.sh` exists to catch.
+    A control built by substituting into real source stops controlling anything the day that source is reworded, which is what `check-control-vacuity.sh` exists to catch.
 
-    `run_a8_controls` already created the shared fixture dir. The `exist_ok`
-    here is not decoration: it keeps this function callable on its own, so the
-    split cannot make the tail controls depend on an ordering accident.
+    `run_a8_controls` already created the shared fixture dir. The `exist_ok` here is not decoration: it keeps this function callable on its own, so the split cannot make the tail controls depend on an ordering accident.
     """
     control_dir = tmp / "c"
     control_dir.mkdir(parents=True, exist_ok=True)

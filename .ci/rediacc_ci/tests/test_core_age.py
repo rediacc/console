@@ -1,23 +1,14 @@
 """`rediacc_ci.core.age` against real git fixtures, and against its bash shim.
 
-WHY THE FIXTURES ARE REAL REPOSITORIES WITH BACKDATED COMMITS. The subject is
-"how long ago was this line added", and there is no way to ask that of a mock
-that would also catch the defect the module exists for. `.ci/scripts/test/gates/
-test-age-check.sh` -- which still passes UNCHANGED against the port, and is the
+WHY THE FIXTURES ARE REAL REPOSITORIES WITH BACKDATED COMMITS. The subject is "how long ago was this line added", and there is no way to ask that of a mock that would also catch the defect the module exists for. `.ci/scripts/test/gates/ test-age-check.sh` -- which still passes UNCHANGED against the port, and is the
 end-to-end proof -- builds fixtures exactly this way; these cases add the parts
-a bash harness cannot reach cheaply: the verdict table as a pure function, the
-shim's TAB-separated contract, and the shim's fail-closed behaviour.
+a bash harness cannot reach cheaply: the verdict table as a pure function, the shim's TAB-separated contract, and the shim's fail-closed behaviour.
 
 THE ONE DEFECT EVERY CASE HERE IS ABOUT, restated because it is easy to lose.
 Measured 2026-09-03: `git log --diff-filter=A` on a TRUNCATED history attributes
-every line at the graft boundary to the boundary commit. The real entry
-github.com/docker/docker in .go-deps-upgrade-blocklist read 195 days on a full
-clone (added 2026-02-20) and 2 days on a truncated one (added 2026-09-01). With
-AGE_WARN_DAYS at 180 that entry silently stopped warning, and at
+every line at the graft boundary to the boundary commit. The real entry github.com/docker/docker in .go-deps-upgrade-blocklist read 195 days on a full clone (added 2026-02-20) and 2 days on a truncated one (added 2026-09-01). With AGE_WARN_DAYS at 180 that entry silently stopped warning, and at
 AGE_FAIL_DAYS=365 it could never fail. So `test_truncated_history_cannot_verify`
-below is not an edge case, it is the whole point, and it carries its control:
-the SAME fixture cloned fully must still measure the real age, or a -1 would
-only mean the fixture was broken.
+below is not an edge case, it is the whole point, and it carries its control: the SAME fixture cloned fully must still measure the real age, or a -1 would only mean the fixture was broken.
 """
 
 import subprocess
@@ -90,8 +81,7 @@ def test_old_entry_reports_its_real_age(tmp_path) -> None:
 def test_untracked_file_on_a_complete_history_is_age_zero(tmp_path) -> None:
     """0, not -1: on a COMPLETE history a line git has never seen is genuinely new.
 
-    The distinction is the whole reason -1 exists. Collapsing the two would
-    either expire brand-new suppressions or excuse ancient ones.
+    The distinction is the whole reason -1 exists. Collapsing the two would either expire brand-new suppressions or excuse ancient ones.
     """
     repo = _fixture(tmp_path / "untracked", 5, "ENTRY")
     (repo / "floating").write_text("floating\n")
@@ -131,9 +121,7 @@ def test_truncated_history_cannot_verify(tmp_path) -> None:
 def test_verdict_boundaries(days: int, ci: bool, level: str) -> None:
     """The thresholds are `>`, not `>=`, on both rungs, and CI only moves -1.
 
-    Written as a table because the two off-by-one boundaries (180/181 and
-    365/366) are the values a rewrite gets wrong, and a case that only tests 200
-    and 400 cannot see it.
+    Written as a table because the two off-by-one boundaries (180/181 and 365/366) are the values a rewrite gets wrong, and a case that only tests 200 and 400 cannot see it.
     """
     assert age.verdict(days, ci=ci).level == level
 
@@ -153,9 +141,7 @@ def test_shim_verdict_line_is_tab_separated_and_carries_the_exit_code(
 ) -> None:
     """The shim reads three TAB fields and returns the exit code. Both, together.
 
-    A change that kept the fields and dropped the exit code would leave
-    `check_entry_age` emitting an error and returning 0 -- a gate that prints
-    its own failure and passes.
+    A change that kept the fields and dropped the exit code would leave `check_entry_age` emitting an error and returning 0 -- a gate that prints its own failure and passes.
     """
     repo = _fixture(tmp_path / "old", 400, "ENTRY_OLD")
     script = textwrap.dedent(f"""

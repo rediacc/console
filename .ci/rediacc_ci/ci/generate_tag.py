@@ -1,53 +1,37 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/generate-tag.sh` (362 lines, 4 tag modes).
 
-Mints the tag a CI-built Docker image is published under. The twin is mostly
-COMMENT -- roughly 200 of its 362 lines argue for the membership of each hashed
-input, record the measured incidents that shaped the closure key (the v1.2.12
-"Version mismatch: expected '1.2.13', got '1.2.12'" runs, the weekly bucket, the
-12-hex widening after 3-char collisions), and name what the key still does not
+Mints the tag a CI-built Docker image is published under. The twin is mostly COMMENT -- roughly 200 of its 362 lines argue for the membership of each hashed input, record the measured incidents that shaped the closure key (the v1.2.12 "Version mismatch: expected '1.2.13', got '1.2.12'" runs, the weekly bucket, the 12-hex widening after 3-char collisions), and name what the key
+still does not
 cover. All of that stays in the twin and is not restated here; what follows is
 only what a reader of THIS file needs.
 
-FOUR MODES, in the twin's own precedence order (`--submodule` > `--closure` >
-`--self` > time-based). The precedence is silent: `--self --closure web` runs
-the closure and says nothing about the ignored flag.
+FOUR MODES, in the twin's own precedence order (`--submodule` > `--closure` > `--self` > time-based). The precedence is silent: `--self --closure web` runs the closure and says nothing about the ignored flag.
 
-LIVE CALLERS, not repointed: `.ci/scripts/ci/initialize.sh` calls `--submodule
-private/renet`, `--closure web` and `--closure rdc`, publishing the last two as
-`web_tag`/`rdc_tag`, which `cd-stage.yml` retags straight onto a release
+LIVE CALLERS, not repointed: `.ci/scripts/ci/initialize.sh` calls `--submodule private/renet`, `--closure web` and `--closure rdc`, publishing the last two as `web_tag`/`rdc_tag`, which `cd-stage.yml` retags straight onto a release
 channel. The bash twin stays the registered gate; this module is its
-verified-equivalent alternative, and the cutover is a separate, later,
-driver-only step.
+verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
-Ledger: `.ci/shadow/w7p6-generate-tag.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-generate-tag --assert --k 5`).
+Ledger: `.ci/shadow/w7p6-generate-tag.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-generate-tag --assert --k 5`).
 
 -----------------------------------------------------------------------------
 DEFECT G: `--github-output` WITH $GITHUB_OUTPUT UNSET IS A SILENT NO-OP
 -----------------------------------------------------------------------------
     if [[ "$GITHUB_OUTPUT_MODE" == "true" ]] && [[ -n "${GITHUB_OUTPUT:-}" ]]
 
-The caller ASKED for a GitHub Actions output. When the variable is absent the
-twin writes nothing, says nothing, and exits 0:
+The caller ASKED for a GitHub Actions output. When the variable is absent the twin writes nothing, says nothing, and exits 0:
 
     $ bash .ci/scripts/ci/generate-tag.sh --self --github-output
     (info) Generated self tag: b99162b7f
     b99162b7f
     exit=0
 
-Downstream that is `steps.<id>.outputs.ci_tag` resolving to the empty string,
-and every consumer of it reading an empty image tag. "The write could not
-happen" is folded into "the write happened". Reproduced, not repaired.
-`GITHUB_OUTPUT_IS_SILENTLY_OPTIONAL` names it so a test can assert it by name.
+Downstream that is `steps.<id>.outputs.ci_tag` resolving to the empty string, and every consumer of it reading an empty image tag. "The write could not happen" is folded into "the write happened". Reproduced, not repaired. `GITHUB_OUTPUT_IS_SILENTLY_OPTIONAL` names it so a test can assert it by name.
 
 -----------------------------------------------------------------------------
 DEFECT H: THE FAIL-LOUD BUILD-CONFIG CHECK IS CWD-DEPENDENT
 -----------------------------------------------------------------------------
-Three of the six `BUILD_CONFIG_FILES` are repo-relative (`.github/workflows/...`,
-`.ci/scripts/build/build-renet.sh`), so the check the twin added specifically so
-a renamed input could not "silently narrow what the tag covers" fires on a
-correct input reached from the wrong directory, and blames the file:
+Three of the six `BUILD_CONFIG_FILES` are repo-relative (`.github/workflows/...`, `.ci/scripts/build/build-renet.sh`), so the check the twin added specifically so a renamed input could not "silently narrow what the tag covers" fires on a correct input reached from the wrong directory, and blames the file:
 
     $ cd /tmp && bash <repo>/.ci/scripts/ci/generate-tag.sh \\
         --submodule <repo>/private/renet
@@ -55,25 +39,19 @@ correct input reached from the wrong directory, and blames the file:
     (error) This file is hashed into the renet image tag. ...
     exit=1
 
-The message sends the reader to `BUILD_CONFIG_FILES` when the fault is the
-working directory. Reproduced verbatim.
+The message sends the reader to `BUILD_CONFIG_FILES` when the fault is the working directory. Reproduced verbatim.
 
 -----------------------------------------------------------------------------
 DEFECT I: THE `else CI_TAG="$SUBMODULE_COMMIT"` ARM IS UNREACHABLE
 -----------------------------------------------------------------------------
-`BUILD_CONFIG_HASH` is built from a NON-EMPTY hard-coded list whose every miss
-exits 1, so `[[ -n "$BUILD_CONFIG_HASH" ]]` is always true and the bare-commit
-tag can never be produced. Dead code that reads as a supported fallback.
+`BUILD_CONFIG_HASH` is built from a NON-EMPTY hard-coded list whose every miss exits 1, so `[[ -n "$BUILD_CONFIG_HASH" ]]` is always true and the bare-commit tag can never be produced. Dead code that reads as a supported fallback.
 `UNREACHABLE_BARE_COMMIT_TAG` names it; the port keeps the arm so the two files
 stay line-comparable.
 
 -----------------------------------------------------------------------------
 DEFECT J: A MISSING OPTION VALUE DIES AS BASH, NOT AS THE SCRIPT
 -----------------------------------------------------------------------------
-`--output`, `--submodule`, `--closure` and `--extra` read `"$2"` under `set -u`,
-so as the last token each dies with
-`<path>: line 30: $2: unbound variable`, exit 1, instead of the `Unknown
-option:` message the parser exists to print.
+`--output`, `--submodule`, `--closure` and `--extra` read `"$2"` under `set -u`, so as the last token each dies with `<path>: line 30: $2: unbound variable`, exit 1, instead of the `Unknown option:` message the parser exists to print.
 
 -----------------------------------------------------------------------------
 DIVERGENCES, ALL IN TEXT ONLY A HUMAN READS
@@ -91,13 +69,8 @@ DIVERGENCES, ALL IN TEXT ONLY A HUMAN READS
  4. common.sh's `echo -e` interprets backslash escapes in the message;
     `rediacc_ci.log` formats the message as data.
 
-WHAT IS SHELLED OUT TO AND WHAT IS NOT. `git` is shelled out to, because the
-answers are git's (`rev-parse --short` honours core.abbrev, `rev-parse HEAD:p`
-resolves a gitlink to its recorded commit) and a reimplementation would be a
-second answer to a question git has already answered. So is
-`resolve-version.sh`, which is a sibling script rather than a tool. `sha256sum`
-and `cut -c1-N` are NOT: hashlib produces the same digest and the slice is a
-slice, so two processes per hashed file would buy nothing.
+WHAT IS SHELLED OUT TO AND WHAT IS NOT. `git` is shelled out to, because the answers are git's (`rev-parse --short` honours core.abbrev, `rev-parse HEAD:p` resolves a gitlink to its recorded commit) and a reimplementation would be a second answer to a question git has already answered. So is `resolve-version.sh`, which is a sibling script rather than a tool. `sha256sum` and `cut
+-c1-N` are NOT: hashlib produces the same digest and the slice is a slice, so two processes per hashed file would buy nothing.
 
 Exit: 0 on a tag, 1 on any refusal.
 """
@@ -206,8 +179,7 @@ def sha256_hex(data: bytes) -> str:
 def git_out(args: list[str], *, quiet: bool = False) -> tuple[int, str]:
     """`git <args>`. Returns (status, stdout with trailing newlines stripped).
 
-    `quiet` sends stderr to /dev/null, which is what the twin's `2>/dev/null`
-    does on the two lookups that have a fallback.
+    `quiet` sends stderr to /dev/null, which is what the twin's `2>/dev/null` does on the two lookups that have a fallback.
     """
     try:
         proc = subprocess.run(
@@ -225,10 +197,7 @@ def git_out(args: list[str], *, quiet: bool = False) -> tuple[int, str]:
 def help_text(program: str) -> str:
     """The twin's `-h|--help` block (twin :54-69), `$0` substituted.
 
-    Reproduced as data rather than extracted from the twin: extracting would
-    make this module depend on the twin still existing, and the cutover deletes
-    it. `test_ci_generate_tag.py` re-derives the block from the twin file and
-    fails if the two ever drift.
+    Reproduced as data rather than extracted from the twin: extracting would make this module depend on the twin still existing, and the cutover deletes it. `test_ci_generate_tag.py` re-derives the block from the twin file and fails if the two ever drift.
     """
     return "\n".join(
         [
@@ -340,8 +309,7 @@ def submodule_tag(submodule_path: str) -> str:
 def iso_week_bucket(now: datetime.datetime | None = None) -> str:
     """`date -u +%G%V` (twin :281). ISO year and week, NOT `%Y%W`.
 
-    The twin's own note: the last days of December must not collide with the
-    first days of January, which `%Y%W` allows and `%G%V` does not.
+    The twin's own note: the last days of December must not collide with the first days of January, which `%Y%W` allows and `%G%V` does not.
     """
     moment = datetime.datetime.now(datetime.UTC) if now is None else now
     return moment.strftime("%G%V")
@@ -350,11 +318,7 @@ def iso_week_bucket(now: datetime.datetime | None = None) -> str:
 def closure_version() -> tuple[str, bool]:
     """`resolve-version.sh --current`, with the twin's fallback (twin :329-333).
 
-    Returns `(value, fell_back)`. Failure is NOT fatal -- this runs where no tag
-    is reachable (a shallow clone, a fresh fork, initialize.sh Step 5 before it
-    fetches tags) -- but the fallback is DISTINGUISHING rather than empty: an
-    empty marker would collapse every untagged build to one key, which is the
-    exact failure the version component was added to fix.
+    Returns `(value, fell_back)`. Failure is NOT fatal -- this runs where no tag is reachable (a shallow clone, a fresh fork, initialize.sh Step 5 before it fetches tags) -- but the fallback is DISTINGUISHING rather than empty: an empty marker would collapse every untagged build to one key, which is the exact failure the version component was added to fix.
     """
     script = str(paths.repo_root() / RESOLVE_VERSION)
     try:

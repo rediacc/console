@@ -2,49 +2,28 @@
 
 CI wrapper for the Claude hook harness at `.claude/hooks/test-hooks.sh`.
 
-WHY THE WRAPPER EXISTS AT ALL. The pre-bash hooks carry live PR policy: draft-only
-creation, green-gated `gh pr ready`, the `--admin` merge ban, merge-time review
-hygiene. The harness (quote-strip evasion, command-position anchoring, prose
-false-positive controls) previously ran only when someone remembered to run it, so a
-hook regression could never turn CI red. Discovery by the battery is what put it
-inside `npm run ci`.
+WHY THE WRAPPER EXISTS AT ALL. The pre-bash hooks carry live PR policy: draft-only creation, green-gated `gh pr ready`, the `--admin` merge ban, merge-time review hygiene. The harness (quote-strip evasion, command-position anchoring, prose false-positive controls) previously ran only when someone remembered to run it, so a hook regression could never turn CI red. Discovery by the
+battery is what put it inside `npm run ci`.
 
 THIS MODULE NO LONGER RUNS THE HARNESS, and that is the point of it now.
 
 The wrapper's own translation logic -- `FAIL=0`, a nonzero case count, and a summary
-line that is PRESENT and parseable -- still matters, and it still runs: it lives in
-`.ci/scripts/test/gates/test-claude-hooks.sh`, registered as `gate-test:claude-hooks`.
-This module used to reimplement all three assertions and re-execute the harness to
-check them, which bought no coverage and cost 931s.
+line that is PRESENT and parseable -- still matters, and it still runs: it lives in `.ci/scripts/test/gates/test-claude-hooks.sh`, registered as `gate-test:claude-hooks`. This module used to reimplement all three assertions and re-execute the harness to check them, which bought no coverage and cost 931s.
 
-WHY THAT WAS INTOLERABLE RATHER THAN MERELY WASTEFUL. The harness was executed THREE
-times per CI cycle inside ONE job: by the registered gate, by this module, and by
-`test_hooks_delegates.py` re-running the two sub-suites the harness already runs.
-`quality-security` caps at `timeout-minutes: 20` (1200s) and carries both `Python
+WHY THAT WAS INTOLERABLE RATHER THAN MERELY WASTEFUL. The harness was executed THREE times per CI cycle inside ONE job: by the registered gate, by this module, and by `test_hooks_delegates.py` re-running the two sub-suites the harness already runs. `quality-security` caps at `timeout-minutes: 20` (1200s) and carries both `Python
 package tests` and `Quality-gate unit tests`, so ~2784s of identical work could never
-fit. That lane had never once reported across four CI runs, which is exactly why the
-overrun stayed invisible: a job that cannot finish hides everything inside it.
+fit. That lane had never once reported across four CI runs, which is exactly why the overrun stayed invisible: a job that cannot finish hides everything inside it.
 
-WHAT IS KEPT. Delegation is a claim that can rot silently -- a delegate renamed,
-de-gated, or quietly no longer invoking the harness looks IDENTICAL to a harness that
-ran and passed. So the chain is asserted link by link, with two controls that plant
-each break against a doctored copy in `tmp_path`.
+WHAT IS KEPT. Delegation is a claim that can rot silently -- a delegate renamed, de-gated, or quietly no longer invoking the harness looks IDENTICAL to a harness that ran and passed. So the chain is asserted link by link, with two controls that plant each break against a doctored copy in `tmp_path`.
 
-A FLAT TWIN. It declares no `test_*()` functions, so `test_twin_parity.py` compares
-against its runtime `PASS:` count (one line) rather than a case set.
+A FLAT TWIN. It declares no `test_*()` functions, so `test_twin_parity.py` compares against its runtime `PASS:` count (one line) rather than a case set.
 
-TWIN_TIMEOUT IS STILL DECLARED, and still load-bearing, but for the PARITY DRIVER
-rather than for anything here. `test_twin_parity` drives this flat twin to count its
-runtime `PASS:` lines, so it is the thing that now pays the harness's wall time. The
-600s default is not enough -- `subprocess.run` RAISES on timeout and the driver
-emitted a `TimeoutExpired` traceback instead of a verdict, which reads as a broken
-harness rather than a slow subject.
+TWIN_TIMEOUT IS STILL DECLARED, and still load-bearing, but for the PARITY DRIVER rather than for anything here. `test_twin_parity` drives this flat twin to count its runtime `PASS:` lines, so it is the thing that now pays the harness's wall time. The 600s default is not enough -- `subprocess.run` RAISES on timeout and the driver emitted a `TimeoutExpired` traceback instead of a
+verdict, which reads as a broken harness rather than a slow subject.
 
 The number, re-measured 2026-09-14 rather than inherited: the harness takes 931.14s
 standalone and uncontended (PASS=2269, rc=0), and it is SERIAL -- 478 sub-suites one
-after another, no worker pool -- so more cores cannot help it and CI's slower
-per-core `ubuntu-latest` makes it worse. 1000s therefore leaves 6.9% headroom, which
-is thin. If this ever needs more than the 1800s cap the answer is to SHARD the
+after another, no worker pool -- so more cores cannot help it and CI's slower per-core `ubuntu-latest` makes it worse. 1000s therefore leaves 6.9% headroom, which is thin. If this ever needs more than the 1800s cap the answer is to SHARD the
 harness, not to raise it; that is tracked as O-3 in
 docs/ci-overhaul/07-tooling-decisions.md with the measurements attached.
 """
@@ -90,9 +69,7 @@ def manifest_entry(source: str, key: str) -> str:
 def delegation_problem(manifest: pathlib.Path, wrapper: pathlib.Path) -> str | None:
     """None when the whole chain holds, else the ONE link that broke.
 
-    RETURNS THE REASON RATHER THAN RAISING so the control can observe a verdict,
-    exactly as `test_gate_worklist_hooks.delegation_problem` does. A caught
-    exception cannot be distinguished from a bug in the control itself.
+    RETURNS THE REASON RATHER THAN RAISING so the control can observe a verdict, exactly as `test_gate_worklist_hooks.delegation_problem` does. A caught exception cannot be distinguished from a bug in the control itself.
     """
     if not HARNESS.is_file():
         return "FAIL: %s does not exist, so nothing runs it anywhere." % HARNESS_REL
@@ -133,17 +110,10 @@ def test_the_harness_is_delegated_to_its_registered_gate(gate):
 
     WHY THIS STOPPED EXECUTING THE HARNESS. `.claude/hooks/test-hooks.sh` measures
     931.14s standalone (PASS=2269, uncontended). It was being executed THREE times per
-    CI cycle inside ONE job: by `gate-test:claude-hooks` (the registered gate), by this
-    module, and by `test_hooks_delegates.py` re-running the two sub-suites the harness
-    already runs itself. `quality-security` caps at `timeout-minutes: 20` (1200s), so
-    ~2784s of identical work could never fit and that lane had never once reported in
-    four CI runs -- which is precisely why the overrun stayed invisible.
+    CI cycle inside ONE job: by `gate-test:claude-hooks` (the registered gate), by this module, and by `test_hooks_delegates.py` re-running the two sub-suites the harness already runs itself. `quality-security` caps at `timeout-minutes: 20` (1200s), so ~2784s of identical work could never fit and that lane had never once reported in four CI runs -- which is precisely why the
+    overrun stayed invisible.
 
-    Re-executing a harness that a registered gate already executes buys no coverage.
-    What it DOES buy, and what is kept here, is proof that the delegation is real: a
-    delegate that is renamed, de-gated, or quietly stopped pointing at the harness
-    looks EXACTLY like a harness that ran and passed. So the chain is asserted link by
-    link, and none of it runs anything.
+    Re-executing a harness that a registered gate already executes buys no coverage. What it DOES buy, and what is kept here, is proof that the delegation is real: a delegate that is renamed, de-gated, or quietly stopped pointing at the harness looks EXACTLY like a harness that ran and passed. So the chain is asserted link by link, and none of it runs anything.
     """
     gate.log_test("the harness is reachable through its registered delegate")
     problem = delegation_problem(MANIFEST, WRAPPER)
@@ -158,9 +128,7 @@ def test_the_harness_is_delegated_to_its_registered_gate(gate):
 def test_the_delegation_assertion_fires_when_the_delegate_is_de_gated(gate, tmp_path):
     """CONTROL. An assertion that cannot fail is worth what no assertion is worth.
 
-    The failure guarded against -- a harness that runs nowhere -- looks identical to a
-    harness that ran and passed, so the SAME predicate is driven against a manifest
-    whose delegate entry has been stripped of `gate: true`. A pass there is itself a
+    The failure guarded against -- a harness that runs nowhere -- looks identical to a harness that ran and passed, so the SAME predicate is driven against a manifest whose delegate entry has been stripped of `gate: true`. A pass there is itself a
     failure. The doctored copy goes to `tmp_path`; the real manifest is never written,
     which is the seam T-12 exists to require.
     """
@@ -196,9 +164,7 @@ def test_the_delegation_assertion_fires_when_the_delegate_is_de_gated(gate, tmp_
 def test_the_delegation_assertion_fires_when_the_wrapper_stops_invoking_the_harness(gate, tmp_path):
     """CONTROL, the other link. The delegate can stay registered and stop delegating.
 
-    A wrapper that is still `gate: true` but no longer invokes `test-hooks.sh` is the
-    quiet version of this failure: CI stays green, the harness runs nowhere, and no
-    name changed. Driven against a doctored copy of the wrapper.
+    A wrapper that is still `gate: true` but no longer invokes `test-hooks.sh` is the quiet version of this failure: CI stays green, the harness runs nowhere, and no name changed. Driven against a doctored copy of the wrapper.
     """
     gate.log_test("CONTROL: a wrapper that no longer runs the harness must be caught")
     body = WRAPPER.read_text(encoding="utf-8")

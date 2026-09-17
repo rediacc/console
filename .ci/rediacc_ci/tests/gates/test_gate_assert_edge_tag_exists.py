@@ -1,14 +1,9 @@
 """Port of `.ci/scripts/test/gates/test-assert-edge-tag-exists.sh`.
 
-`promote-stable` must refuse to promote a version that does not fully exist -- and
-must refuse just as loudly when it CANNOT TELL whether it exists.
+`promote-stable` must refuse to promote a version that does not fully exist -- and must refuse just as loudly when it CANNOT TELL whether it exists.
 
-WHY THIS EXISTS. `cli/edge/manifest.json` advertised 1.3.1 with no v1.3.1 tag, no
-GitHub Release and no `cli/v1.3.1/.released`. `promote-stable.yml` would have copied
-those bytes to stable and retagged Docker `:stable` FIRST and only then failed on
-`ref: v1.3.1` while checking out for the three regional deploys -- a half-applied
-production release. This drives the precondition that turns that ordering into a
-loud no-op.
+WHY THIS EXISTS. `cli/edge/manifest.json` advertised 1.3.1 with no v1.3.1 tag, no GitHub Release and no `cli/v1.3.1/.released`. `promote-stable.yml` would have copied those bytes to stable and retagged Docker `:stable` FIRST and only then failed on `ref: v1.3.1` while checking out for the three regional deploys -- a half-applied production release. This drives the precondition that
+turns that ordering into a loud no-op.
 
 WHAT IT ASSERTS, with a fake `gh` and a fake `aws` (no network, no promotion):
   1. no tag ref                 -> exit 1
@@ -22,32 +17,17 @@ WHAT IT ASSERTS, with a fake `gh` and a fake `aws` (no network, no promotion):
   7. ANTI-VACUITY: the passing case must have actually CALLED all three probes. A
      script returning 0 without probing would satisfy 4 alone.
 
-CONTROL-FIRST. The mutant is assembled BY CONSTRUCTION -- head, a literal
-replacement arm written here, tail, split on the subject's own
-`COULD_NOT_TELL_ARM_BEGIN` / `_END` anchors -- in which "could not tell" returns 0
+CONTROL-FIRST. The mutant is assembled BY CONSTRUCTION -- head, a literal replacement arm written here, tail, split on the subject's own `COULD_NOT_TELL_ARM_BEGIN` / `_END` anchors -- in which "could not tell" returns 0
 instead of failing. Case 5 must go GREEN against it; if it does not, this module
-declares itself broken. The mutant is also proven LIVE (case 4 still 0, case 1 still
-1) so a mutant that merely crashes cannot masquerade as a firing control.
+declares itself broken. The mutant is also proven LIVE (case 4 still 0, case 1 still 1) so a mutant that merely crashes cannot masquerade as a firing control.
 
-NO PATTERN SUBSTITUTION OF A LIVE LINE, and that is the point of the anchors: a
-reworded arm cannot silently yield a "mutant" identical to the source. The port
-keeps both refusals the twin has -- anchors missing, and mutant identical to source
--- because either one turns the control into decoration.
+NO PATTERN SUBSTITUTION OF A LIVE LINE, and that is the point of the anchors: a reworded arm cannot silently yield a "mutant" identical to the source. The port keeps both refusals the twin has -- anchors missing, and mutant identical to source -- because either one turns the control into decoration.
 
-WHY THE MUTANT NEEDS A SANDBOX. The subject resolves its library with
-`"$SCRIPT_DIR/../lib/common.sh"`, so a mutant dropped in a bare temp directory dies
-at its source line, and the liveness probe below would (correctly) refuse to accept
-that as a firing control. The sandbox mirrors the real layout with the library
-symlinked in.
+WHY THE MUTANT NEEDS A SANDBOX. The subject resolves its library with `"$SCRIPT_DIR/../lib/common.sh"`, so a mutant dropped in a bare temp directory dies at its source line, and the liveness probe below would (correctly) refuse to accept that as a firing control. The sandbox mirrors the real layout with the library symlinked in.
 
-STATED BLIND SPOT, carried over verbatim: this cannot see whether
-`promote-stable.yml` actually RUNS the script, nor whether it runs BEFORE the first
-promotion write. A precondition wired after the promotion is worth nothing. That
-step-order assertion belongs to the workflow-invariant gate (plan T2), not here.
+STATED BLIND SPOT, carried over verbatim: this cannot see whether `promote-stable.yml` actually RUNS the script, nor whether it runs BEFORE the first promotion write. A precondition wired after the promotion is worth nothing. That step-order assertion belongs to the workflow-invariant gate (plan T2), not here.
 
-NO `xdist_group`. Every case builds its own fixture tree under pytest's `tmp_path`
-and passes PATH per invocation as an ENV OVERLAY rather than mutating this process's
-own PATH, so two of these in one worker cannot see each other's fakes.
+NO `xdist_group`. Every case builds its own fixture tree under pytest's `tmp_path` and passes PATH per invocation as an ENV OVERLAY rather than mutating this process's own PATH, so two of these in one worker cannot see each other's fakes.
 """
 
 import os

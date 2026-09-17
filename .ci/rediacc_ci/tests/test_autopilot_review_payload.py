@@ -1,35 +1,21 @@
 """Differential: `rediacc_ci.autopilot.review_payload` against its twin
 `.ci/scripts/autopilot/review-payload.sh`.
 
-NO STUBS AND NO NETWORK, because the subject genuinely has neither. The twin's
-own header calls itself PURE -- one JSON file in, one JSON object out -- so
-every case here is a real JSON fixture written to a temp directory, and the
-comparison is the exact bytes of stdout, the exact bytes of stderr, the exit
-code, and (when `--out` is used) the file the subject wrote.
+NO STUBS AND NO NETWORK, because the subject genuinely has neither. The twin's own header calls itself PURE -- one JSON file in, one JSON object out -- so every case here is a real JSON fixture written to a temp directory, and the comparison is the exact bytes of stdout, the exact bytes of stderr, the exit code, and (when `--out` is used) the file the subject wrote.
 
-WHAT THE FIXTURES ARE FOR, since a payload builder is easy to test vacuously.
-The dangerous direction here is a thread reaching the model that should not
-have, so the fixtures carry, in one array: a resolved thread, an outdated
-thread, a thread rooted by an OUTSIDER with a matching REPLY (the attack the
-root-author filter exists to stop), and a matching thread whose replies must be
-carried through. A test that only fed matching threads would agree with the
-twin while the filter was inverted.
+WHAT THE FIXTURES ARE FOR, since a payload builder is easy to test vacuously. The dangerous direction here is a thread reaching the model that should not have, so the fixtures carry, in one array: a resolved thread, an outdated thread, a thread rooted by an OUTSIDER with a matching REPLY (the attack the root-author filter exists to stop), and a matching thread whose replies must be
+carried through. A test that only fed matching threads would agree with the twin while the filter was inverted.
 
 THREE CONTROLS PIN THE THREE MEASURED jq/PYTHON DIVERGENCES the port documents:
 `test_zero_is_not_false` (jq's `0 == false` is false, Python's is true),
-`test_del_is_escaped_like_jq` (U+007F costs six bytes in `tojson`, one in
-`json.dumps`), and `test_byte_cap_counts_bytes_not_codepoints` (a CJK payload
-measures three times what `length` would say). Each is written so it FAILS if
+`test_del_is_escaped_like_jq` (U+007F costs six bytes in `tojson`, one in `json.dumps`), and `test_byte_cap_counts_bytes_not_codepoints` (a CJK payload measures three times what `length` would say). Each is written so it FAILS if
 the port reverts to the naive Python spelling; that is checked by mutating the
 port in-memory in `test_the_controls_can_fire`.
 
-THE jq ERROR SURFACE IS COMPARED EXACTLY, not by shape: the port reproduces
-jq's `jq: error (at <file>:<n>): ...` frame including the newline-count offset,
-and these cases are what proves the reproduction rather than the docstring.
+THE jq ERROR SURFACE IS COMPARED EXACTLY, not by shape: the port reproduces jq's `jq: error (at <file>:<n>): ...` frame including the newline-count offset, and these cases are what proves the reproduction rather than the docstring.
 
 K=5 LEDGER: `.ci/shadow/w7p6-review-payload.observations.jsonl`, recorded in a
-disposable scratch git repository outside this checkout (`--record` refuses a
-dirty tree and this checkout is never clean).
+disposable scratch git repository outside this checkout (`--record` refuses a dirty tree and this checkout is never clean).
 """
 
 from __future__ import annotations
@@ -125,8 +111,7 @@ def _sides(
 ):
     """Run both subjects over one fixture in two private directories.
 
-    A FRESH DIRECTORY PER SIDE even though this subject only writes when `--out`
-    is given: sharing one would let an `--out` case read the other side's file.
+    A FRESH DIRECTORY PER SIDE even though this subject only writes when `--out` is given: sharing one would let an `--out` case read the other side's file.
     """
     argv = list(argv) if argv is not None else ["--threads", "threads.json"]
     results = []
@@ -227,8 +212,7 @@ def test_del_is_escaped_like_jq() -> None:
 def test_byte_cap_counts_bytes_not_codepoints() -> None:
     """CONTROL for divergence 3, plus the shedding order.
 
-    The CJK body is three bytes per codepoint, so a cap measured in codepoints
-    would keep a thread the twin sheds.
+    The CJK body is three bytes per codepoint, so a cap measured in codepoints would keep a thread the twin sheds.
     """
     threads = [_thread("T-old", bodies=["一" * 200]), _thread("T-new", bodies=["short"])]
     exit_code, stdout, stderr, _ = _sides(
@@ -326,9 +310,7 @@ def test_not_a_json_array() -> None:
 def test_jq_runtime_errors_are_reproduced_exactly() -> None:
     """The type errors inside the filter: jq's frame, jq's text, jq's exit 5.
 
-    Both a single-line and a multi-line fixture, because the `(at file:N)`
-    offset is the input's newline count and a one-case test would pass with the
-    offset hard-coded to zero.
+    Both a single-line and a multi-line fixture, because the `(at file:N)` offset is the input's newline count and a one-case test would pass with the offset hard-coded to zero.
     """
     code, _, err, _ = _sides("element-is-a-number", None, raw=b"[1]")
     assert code == 5

@@ -1,47 +1,24 @@
 """Differential: `rediacc_ci.infra.ci_start_elite` against its twin
 `.ci/scripts/infra/ci-start-elite.sh`.
 
-THE SEAM IS PATH AND THE FIXTURE ROOT, on the `test_infra_ci_stop_elite.py`
-precedent. Both subjects derive the console root from their own file location
-(`BASH_SOURCE[0]` / `__file__`), so each case COPIES both of them into a fresh
+THE SEAM IS PATH AND THE FIXTURE ROOT, on the `test_infra_ci_stop_elite.py` precedent. Both subjects derive the console root from their own file location (`BASH_SOURCE[0]` / `__file__`), so each case COPIES both of them into a fresh
 tree at the right relative depth and runs the copies; driving the tracked files
-would point both at this checkout's real `private/elite` and its real
-`.ci/docker/ci`. `run.sh`, `curl` and `docker` are recording fakes, so the
-comparison asserts on the ARGV SEQUENCE both sides produced as well as on
-stdout: a port that printed "Starting Elite services via ./run.sh up" and never
-ran it would pass a stdout-only comparison.
+would point both at this checkout's real `private/elite` and its real `.ci/docker/ci`. `run.sh`, `curl` and `docker` are recording fakes, so the comparison asserts on the ARGV SEQUENCE both sides produced as well as on stdout: a port that printed "Starting Elite services via ./run.sh up" and never ran it would pass a stdout-only comparison.
 
-THE REAL `ci-env.sh` IS COPIED IN AND SOURCED FOR REAL. It is not stubbed,
-because the whole question this differential answers about the `source` on the
-twin's :23 is whether the port's `env -0` round trip delivers the same exported
-set that bash's `source` delivers into the caller's own shell. Every secret it
-would otherwise GENERATE is pre-set in the fixture environment so that both
+THE REAL `ci-env.sh` IS COPIED IN AND SOURCED FOR REAL. It is not stubbed, because the whole question this differential answers about the `source` on the twin's :23 is whether the port's `env -0` round trip delivers the same exported set that bash's `source` delivers into the caller's own shell. Every secret it would otherwise GENERATE is pre-set in the fixture environment so that
+both
 sides take its `${VAR:-...}` arms and the result is deterministic -- a generated
-Ed25519 pair differs on every run and would make byte comparison impossible.
-`test_generated_secrets_path_agrees_on_shape` covers the generating arm
-separately, on names rather than values.
+Ed25519 pair differs on every run and would make byte comparison impossible. `test_generated_secrets_path_agrees_on_shape` covers the generating arm separately, on names rather than values.
 
-THE SLEEP IS NULLED IN THE COPIES, AND NOTHING ELSE IS. The health budget is
-180s at a 2s interval, so waiting it out on both sides costs six minutes per
+THE SLEEP IS NULLED IN THE COPIES, AND NOTHING ELSE IS. The health budget is 180s at a 2s interval, so waiting it out on both sides costs six minutes per
 timeout case. The obvious shortcut -- shrinking `timeout=180` -- also shrinks
-the PROBE COUNT, which is the thing this differential can actually see. So the
-copies keep every constant and replace only `sleep $interval` / `sleep 0`, which
-means both sides still perform all 90 probes and the comparison is over the real
-arithmetic rather than over a miniature of it. `test_the_null_sleep_anchors_still_exist`
-fails the moment either anchor moves, so the rewrite can never silently stop
-applying and leave a case that waits three real minutes, or -- far worse --
-passes because both sides skipped the loop.
+the PROBE COUNT, which is the thing this differential can actually see. So the copies keep every constant and replace only `sleep $interval` / `sleep 0`, which means both sides still perform all 90 probes and the comparison is over the real arithmetic rather than over a miniature of it. `test_the_null_sleep_anchors_still_exist` fails the moment either anchor moves, so the rewrite
+can never silently stop applying and leave a case that waits three real minutes, or -- far worse -- passes because both sides skipped the loop.
 
-ONE LINE IS NORMALIZED, and only one: `  load average (1m 5m 15m): ...`. Both
-sides read the real `/proc/loadavg`, seconds apart, so the numbers legitimately
-differ. `_normalize` masks the values and `test_the_load_line_is_really_there`
-asserts both sides printed a well-formed one, so the mask cannot hide its
-absence.
+ONE LINE IS NORMALIZED, and only one: ` load average (1m 5m 15m): ...`. Both sides read the real `/proc/loadavg`, seconds apart, so the numbers legitimately differ. `_normalize` masks the values and `test_the_load_line_is_really_there` asserts both sides printed a well-formed one, so the mask cannot hide its absence.
 
 K=5 LEDGER: `.ci/shadow/w7p6-ci-start-elite.observations.jsonl`, recorded
-against a disposable git repo built outside this checkout (this checkout is
-never clean and `shadow-gate.ts --record` refuses a dirty tree). See that
-file's own recording notes in the wave report.
+against a disposable git repo built outside this checkout (this checkout is never clean and `shadow-gate.ts --record` refuses a dirty tree). See that file's own recording notes in the wave report.
 """
 
 from __future__ import annotations
@@ -333,8 +310,7 @@ def test_the_null_sleep_anchors_still_exist() -> None:
 
 def test_the_probe_count_is_the_real_one() -> None:
     """ANTI-VACUITY for the null-sleep rewrite: the timeout path must really
-    perform TIMEOUT/INTERVAL probes on both sides, not a shrunken few. A copy
-    that had accidentally kept a shrunken budget would still "agree" while
+    perform TIMEOUT/INTERVAL probes on both sides, not a shrunken few. A copy that had accidentally kept a shrunken budget would still "agree" while
     proving nothing about the loop the twin actually runs in CI."""
     expected = REAL_TIMEOUT // 2
     with tempfile.TemporaryDirectory() as td:
@@ -406,9 +382,7 @@ def test_generated_secrets_path_agrees_on_shape() -> None:
 def test_planted_defect_is_caught_by_this_differential() -> None:
     """Delete the `set -e` reproduction on the failure path from a COPY.
 
-    `./run.sh logs web` failing suppresses the twin's own `exit 1` and the
-    script exits with the LOGS command's status. A port that "tidied" that into
-    a plain `return 1` would be right-looking and wrong, and would only diverge
+    `./run.sh logs web` failing suppresses the twin's own `exit 1` and the script exits with the LOGS command's status. A port that "tidied" that into a plain `return 1` would be right-looking and wrong, and would only diverge
     on a case nobody runs by hand. This mutates an in-memory copy; the real file
     on disk is never touched.
     """

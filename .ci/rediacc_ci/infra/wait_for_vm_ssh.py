@@ -1,42 +1,19 @@
 """Port of `.ci/scripts/infra/wait-for-vm-ssh.sh`.
 
-Blocks until EVERY named VM accepts SSH, then trusts its host key. `ops up`
-returns once libvirt has started the domains, but the guest is still booting,
-and every later step SSHes in, so waiting here turns a confusing mid-suite
-connection refusal into one clear timeout.
+Blocks until EVERY named VM accepts SSH, then trusts its host key. `ops up` returns once libvirt has started the domains, but the guest is still booting, and every later step SSHes in, so waiting here turns a confusing mid-suite connection refusal into one clear timeout.
 
-`ssh-keyscan` RUNS ONLY AFTER A VM ANSWERS, which is the twin's whole ordering
-argument and is preserved exactly: scanning a half-booted guest writes a key
-that is about to be regenerated into `~/.ssh/known_hosts`, and every later
-connection then fails host-key verification for a reason nobody can see.
+`ssh-keyscan` RUNS ONLY AFTER A VM ANSWERS, which is the twin's whole ordering argument and is preserved exactly: scanning a half-booted guest writes a key that is about to be regenerated into `~/.ssh/known_hosts`, and every later connection then fails host-key verification for a reason nobody can see.
 
-36 attempts, 5 seconds apart, 180 seconds per VM. The twin's own header
-explains the number (raised from 150s because this repo has a documented
-incident where a DIFFERENT subsystem's 150s healthcheck budget was insufficient
-on a downclocked host, and nested-KVM boot under contention is the same
-physical phenomenon). The budget is hardcoded there, so it is hardcoded here:
-inventing an env knob would be a new feature wearing a port's clothes, and the
-first thing a knob does is get set to 1 in a test that then proves nothing
-about the real timeout.
+36 attempts, 5 seconds apart, 180 seconds per VM. The twin's own header explains the number (raised from 150s because this repo has a documented incident where a DIFFERENT subsystem's 150s healthcheck budget was insufficient on a downclocked host, and nested-KVM boot under contention is the same physical phenomenon). The budget is hardcoded there, so it is hardcoded here: inventing
+an env knob would be a new feature wearing a port's clothes, and the first thing a knob does is get set to 1 in a test that then proves nothing about the real timeout.
 
-SIBLING, NOT DUPLICATE, of `verify_ssh.py`. Read that module's docstring for
-the six-way behavioural comparison (host keys, identity, ports, budget, ANY vs
-EVERY, and where ssh's stderr goes). The short version: the two twins share the
-SHAPE of a poll loop and nothing else, they disagree on host-key policy in
-opposite directions, and a shared helper would be smaller than the argument
-list each caller would have to hand it. Neither port factors one out, because
-factoring two live bash scripts together is a refactor, not a port.
+SIBLING, NOT DUPLICATE, of `verify_ssh.py`. Read that module's docstring for the six-way behavioural comparison (host keys, identity, ports, budget, ANY vs EVERY, and where ssh's stderr goes). The short version: the two twins share the SHAPE of a poll loop and nothing else, they disagree on host-key policy in opposite directions, and a shared helper would be smaller than the
+argument list each caller would have to hand it. Neither port factors one out, because factoring two live bash scripts together is a refactor, not a port.
 
-EXTERNAL PROGRAMS ARE EXECUTED, NOT REIMPLEMENTED: `sleep`, `ssh`,
-`ssh-keyscan`, `cut` and `nproc`. `sleep` in particular is why the differential
+EXTERNAL PROGRAMS ARE EXECUTED, NOT REIMPLEMENTED: `sleep`, `ssh`, `ssh-keyscan`, `cut` and `nproc`. `sleep` in particular is why the differential
 for the 36-attempt exhaustion path costs milliseconds instead of three minutes
--- both implementations resolve it through PATH, so one stub serves both. Using
-`time.sleep` would leave the bash side stubbed and the Python side sleeping for
-real, and a comparison timed differently on the two sides is not a comparison.
-`cut`/`nproc` matter for a smaller reason: the failure line's exact text
-(including `unavailable` / `unknown` when /proc or the binary is missing) is
-what a human reads out of a CI log, and reading /proc/loadavg in Python would
-reproduce it only until the day the two formats disagreed.
+-- both implementations resolve it through PATH, so one stub serves both. Using `time.sleep` would leave the bash side stubbed and the Python side sleeping for real, and a comparison timed differently on the two sides is not a comparison. `cut`/`nproc` matter for a smaller reason: the failure line's exact text (including `unavailable` / `unknown` when /proc or the binary is
+missing) is what a human reads out of a CI log, and reading /proc/loadavg in Python would reproduce it only until the day the two formats disagreed.
 
 TWO HAZARDS IN THE TWIN, PRESERVED AND REPORTED, not repaired here:
 
@@ -52,17 +29,10 @@ TWO HAZARDS IN THE TWIN, PRESERVED AND REPORTED, not repaired here:
      waiting for any remaining VM. This port reproduces that, including the
      exit code.
 
-Fixing either means editing a live CI script, which is the cutover box's call,
-not this one's: the acceptance rule for this wave is that the port and the twin
-agree.
+Fixing either means editing a live CI script, which is the cutover box's call, not this one's: the acceptance rule for this wave is that the port and the twin agree.
 
-A NOTE ON THE FAILURE LINE'S VOLATILITY, for whoever reads the differential.
-`load average (1m 5m 15m): ...` reports live kernel data, so two runs a second
-apart can legitimately differ. The differential masks that field rather than
-asserting on it, and asserts the SHAPE (the label, three fields or the literal
-`unavailable`, and a core count) instead. Asserting the numbers would produce a
-test that fails on a busy machine for no reason, which is how a test gets
-deleted.
+A NOTE ON THE FAILURE LINE'S VOLATILITY, for whoever reads the differential. `load average (1m 5m 15m): ...` reports live kernel data, so two runs a second apart can legitimately differ. The differential masks that field rather than asserting on it, and asserts the SHAPE (the label, three fields or the literal `unavailable`, and a core count) instead. Asserting the numbers would
+produce a test that fails on a busy machine for no reason, which is how a test gets deleted.
 
 K=5 LEDGER: `.ci/shadow/w7p6-wait-for-vm-ssh.observations.jsonl`.
 """
@@ -89,9 +59,7 @@ BUDGET_LABEL = "180s"
 def default_targets(net_base: str) -> list[str]:
     """`.1` and `.11` off VM_NET_BASE, the twin's two-host default.
 
-    Deliberately not a range and not derived from anything: those are the two
-    addresses `ops` assigns (the host and the first guest), and a port that
-    generalised the list would wait for machines that do not exist.
+    Deliberately not a range and not derived from anything: those are the two addresses `ops` assigns (the host and the first guest), and a port that generalised the list would wait for machines that do not exist.
     """
     return [f"{net_base}.1", f"{net_base}.11"]
 
@@ -99,11 +67,7 @@ def default_targets(net_base: str) -> list[str]:
 def _load_line() -> str:
     """The twin's `load average ...` line, built from the same two programs.
 
-    `cut -d' ' -f1-3 /proc/loadavg 2>/dev/null || echo unavailable` and
-    `nproc 2>/dev/null || echo unknown`, both with stderr discarded and both
-    falling back to a literal. A missing binary is `FileNotFoundError` in
-    Python where bash gives 127, so it is caught and folded into the same
-    fallback the twin's `||` produces.
+    `cut -d' ' -f1-3 /proc/loadavg 2>/dev/null || echo unavailable` and `nproc 2>/dev/null || echo unknown`, both with stderr discarded and both falling back to a literal. A missing binary is `FileNotFoundError` in Python where bash gives 127, so it is caught and folded into the same fallback the twin's `||` produces.
     """
 
     def _sub(argv: list[str], fallback: str) -> str:

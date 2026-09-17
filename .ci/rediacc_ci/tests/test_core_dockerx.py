@@ -1,25 +1,13 @@
 """`rediacc_ci.core.dockerx` against fake `docker` binaries, in both directions.
 
-WHAT THIS FILE IS REALLY TESTING. Not "does the wrapper call docker" -- that is
-trivially true and worth nothing. It is testing the three-way distinction the
-module exists for: a machine with no docker, a machine whose docker cannot reach
-an engine, and a command that reached an engine and failed. Every real spelling
-in this tree flattens at least two of those together, and the flattening is
-invisible because all three exit 1.
+WHAT THIS FILE IS REALLY TESTING. Not "does the wrapper call docker" -- that is trivially true and worth nothing. It is testing the three-way distinction the module exists for: a machine with no docker, a machine whose docker cannot reach an engine, and a command that reached an engine and failed. Every real spelling in this tree flattens at least two of those together, and the
+flattening is invisible because all three exit 1.
 
-THE FAKES ARE DRIVEN BY FROZEN MEASUREMENTS. Every stdout and stderr asserted
-below was captured from the real docker 29.7.2 on this host on 2026-09-06, and
-the capture command sits beside each one. That matters more here than usual: the
-central case is that `docker info` prints a FULL, HEALTHY-LOOKING client report
-on stdout while failing, and a hand-invented fixture would never have thought to
-do that.
+THE FAKES ARE DRIVEN BY FROZEN MEASUREMENTS. Every stdout and stderr asserted below was captured from the real docker 29.7.2 on this host on 2026-09-06, and the capture command sits beside each one. That matters more here than usual: the central case is that `docker info` prints a FULL, HEALTHY-LOOKING client report on stdout while failing, and a hand-invented fixture would never
+have thought to do that.
 
-EVERY LOAD-BEARING CASE HAS A CONTROL. Each `_assert_*` helper is called twice:
-once against the module as written, and once with a defect planted into it --
-the classifier collapsed, the state probe made naive -- which must make the same
-assertion fail. Where the naive alternative is a shell one-liner rather than a
-Python function, the control RUNS that one-liner against the same fake and
-asserts it reaches the wrong conclusion.
+EVERY LOAD-BEARING CASE HAS A CONTROL. Each `_assert_*` helper is called twice: once against the module as written, and once with a defect planted into it -- the classifier collapsed, the state probe made naive -- which must make the same assertion fail. Where the naive alternative is a shell one-liner rather than a Python function, the control RUNS that one-liner against the same
+fake and asserts it reaches the wrong conclusion.
 """
 
 import json
@@ -89,11 +77,7 @@ VERSION_OK_STDOUT = (
 def fake_bin(tmp_path, monkeypatch):
     """A factory that puts an executable of our own making on PATH, alone.
 
-    PATH IS REPLACED, so the ABSENT case is a directory with no `docker` in it
-    and no real binary can leak into any case. The fakes are PYTHON scripts with
-    an absolute shebang rather than `#!/bin/sh` bodies calling `cat`, because a
-    replaced PATH also hides `cat` -- and that failure is silent in the worst
-    way: the fake exits 0 having printed nothing, which reads exactly like the
+    PATH IS REPLACED, so the ABSENT case is a directory with no `docker` in it and no real binary can leak into any case. The fakes are PYTHON scripts with an absolute shebang rather than `#!/bin/sh` bodies calling `cat`, because a replaced PATH also hides `cat` -- and that failure is silent in the worst way: the fake exits 0 having printed nothing, which reads exactly like the
     empty answer these cases exist to tell apart from a real one.
     """
     bindir = tmp_path / "bin"
@@ -111,10 +95,7 @@ def fake_bin(tmp_path, monkeypatch):
     ) -> pathlib.Path:
         """A fake docker.
 
-        `per_verb` maps a matcher string (matched against the joined argv) to a
-        (stdout, stderr, rc) triple, which is how one binary can answer
-        `docker --version` and `docker version` differently -- the exact
-        asymmetry MEASUREMENT 3 in the module is about.
+        `per_verb` maps a matcher string (matched against the joined argv) to a (stdout, stderr, rc) triple, which is how one binary can answer `docker --version` and `docker version` differently -- the exact asymmetry MEASUREMENT 3 in the module is about.
         """
         counter["n"] += 1
         table = {"": (stdout, stderr, rc), **(per_verb or {})}
@@ -347,10 +328,7 @@ def test_client_version_works_without_an_engine_and_still_checks_status(fake_bin
 def test_the_rejected_spelling_really_does_fail_while_printing_the_answer(fake_bin):
     """Why `client_version` does not use `docker version --format ...`.
 
-    The fake reproduces the measured asymmetry: the Client field is printed and
-    the call exits non-zero, so the only way to consume it is to ignore the exit
-    code. Asserted here so the choice in the module is anchored to a behaviour
-    rather than to a preference.
+    The fake reproduces the measured asymmetry: the Client field is printed and the call exits non-zero, so the only way to consume it is to ignore the exit code. Asserted here so the choice in the module is anchored to a behaviour rather than to a preference.
     """
     fake_bin(
         stdout="",
@@ -521,9 +499,7 @@ def test_retries_follow_the_documented_backoff(fake_bin):
 
 def test_the_cannot_run_code_agrees_with_every_other_definition_in_the_repo():
     """CORPUS-DERIVED, not hand-typed. 77 is written in four places (pool.ts owns
-    it, and three consumers duplicate the literal because they cannot import a
-    TypeScript constant). This reads them and asserts they all still agree, so
-    the day one of them drifts is the day something says so.
+    it, and three consumers duplicate the literal because they cannot import a TypeScript constant). This reads them and asserts they all still agree, so the day one of them drifts is the day something says so.
     """
     root = paths.repo_root()
     found = {}
@@ -593,17 +569,11 @@ def test_the_77_mapping(fake_bin):
 def test_control_a_docker_that_always_succeeds_breaks_the_77_mapping(fake_bin, monkeypatch):
     """PLANTED DEFECT, and the plant has to reach a CHILD process.
 
-    `python -m rediacc_ci.core.dockerx` runs the module source AGAIN under the
-    name `__main__`, so patching `rediacc_ci.core.dockerx.state` in a
-    sitecustomize does nothing: the running copy is a different module object
+    `python -m rediacc_ci.core.dockerx` runs the module source AGAIN under the name `__main__`, so patching `rediacc_ci.core.dockerx.state` in a sitecustomize does nothing: the running copy is a different module object
     with its own globals. Learned by watching this control fail to fire, which is
     the whole reason a control exists.
 
-    The plant therefore goes one layer down, at `rediacc_ci.proc.retry_command`,
-    which BOTH copies import from the same place. Making it always answer
-    "exit 0" is exactly the "assume docker is fine" defect: the unreachable case
-    then reports ready and exits 0 where the contract demands 77, and the mapping
-    assertion must catch it.
+    The plant therefore goes one layer down, at `rediacc_ci.proc.retry_command`, which BOTH copies import from the same place. Making it always answer "exit 0" is exactly the "assume docker is fine" defect: the unreachable case then reports ready and exits 0 where the contract demands 77, and the mapping assertion must catch it.
     """
     plant_dir = fake_bin.tmp / "plant"
     plant_dir.mkdir()

@@ -1,22 +1,14 @@
 """`rediacc_ci.quality.autopilot_no_bypass` against the jq programs it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-autopilot-no-bypass.observations.jsonl` drives the whole gate
-over five distinct trees: an unset App id, a failed list call, no active branch
-ruleset, the unauthenticated (blind) payload, and a live bypass entry. What a
-ledger row cannot isolate is that the port's Python re-implements THREE jq
-programs, and a jq program is not obvious:
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-autopilot-no-bypass.observations.jsonl` drives the whole gate over five distinct trees: an unset App id, a failed list call, no active branch ruleset, the unauthenticated (blind) payload, and a live bypass entry. What a ledger row cannot isolate is that the port's Python re-implements THREE jq programs, and a jq program
+is not obvious:
 
   * `.[] | select(.target == "branch" and .enforcement == "active") | .id`
   * `.bypass_actors[] | select((.actor_id|tostring) == $id) | "\\(.actor_type)/\\(.bypass_mode)"`
   * `[.bypass_actors[] | "\\(.actor_type):\\(.actor_id)"] | join(", ")`
 
-Each is run through the real jq below and compared, because the interesting
-cases are the ones where jq's behaviour is surprising: `-r` prints the four
-characters `null` for a missing key, `tostring` makes the id comparison a STRING
-comparison, and iterating a missing `.bypass_actors` is an ERROR rather than an
-empty sequence. That last one is the difference between a blind read being
-caught and a blind read being reported as clean.
+Each is run through the real jq below and compared, because the interesting cases are the ones where jq's behaviour is surprising: `-r` prints the four characters `null` for a missing key, `tostring` makes the id comparison a STRING comparison, and iterating a missing `.bypass_actors` is an ERROR rather than an empty sequence. That last one is the difference between a blind read
+being caught and a blind read being reported as clean.
 """
 
 import json
@@ -33,9 +25,7 @@ pytestmark = pytest.mark.skipif(shutil.which("jq") is None, reason="jq is not in
 def _jq(program: str, payload: str, *args: str) -> tuple[int, str]:
     """Run the real jq. Returns (exit status, stdout), stderr deliberately dropped.
 
-    The twin discards jq's stderr in the `hit` and `actors` queries and does NOT
-    discard it in the two assignments, which is part of why an unparseable
-    payload kills it. Only the status and the value are compared here.
+    The twin discards jq's stderr in the `hit` and `actors` queries and does NOT discard it in the two assignments, which is part of why an unparseable payload kills it. Only the status and the value are compared here.
     """
     proc = subprocess.run(
         ["jq", "-r", *args, program],
@@ -72,8 +62,7 @@ def test_ruleset_selection_matches_jq() -> None:
 def test_ruleset_selection_of_an_empty_list_matches_jq() -> None:
     """The mirror. An empty selection is not an error in jq, and it must not be here.
 
-    It is also the input the gate must treat as a FAILURE rather than a pass,
-    which is asserted at the gate level in the selftest.
+    It is also the input the gate must treat as a FAILURE rather than a pass, which is asserted at the gate level in the selftest.
     """
     code, out = _jq(SELECT, "[]")
     assert code == 0
@@ -102,8 +91,7 @@ def test_the_hit_query_matches_jq_in_both_directions() -> None:
 def test_the_hit_query_is_a_string_comparison_like_tostring() -> None:
     """`(.actor_id|tostring) == $id` matches the integer 42 against the string "42".
 
-    A port comparing integers would pass every case above and fail the moment an
-    id arrived as a string, which is the class of change nobody notices.
+    A port comparing integers would pass every case above and fail the moment an id arrived as a string, which is the class of change nobody notices.
     """
     payload = json.dumps({"bypass_actors": [{"actor_id": 42}]})
     code, out = _jq(HIT, payload, "--arg", "id", "42")
@@ -115,10 +103,7 @@ def test_the_hit_query_is_a_string_comparison_like_tostring() -> None:
 def test_a_missing_bypass_actors_key_is_an_error_in_jq_and_empty_here() -> None:
     """The blind read, and the reason presence is asserted BEFORE contents.
 
-    jq exits 5 iterating a missing `.bypass_actors`, so the twin's `hit`
-    assignment yields the empty string either way: an absent key and an empty
-    list are indistinguishable downstream. That is exactly why the gate tests
-    `has("bypass_actors")` first, and why this port's `bypass_hit` is allowed to
+    jq exits 5 iterating a missing `.bypass_actors`, so the twin's `hit` assignment yields the empty string either way: an absent key and an empty list are indistinguishable downstream. That is exactly why the gate tests `has("bypass_actors")` first, and why this port's `bypass_hit` is allowed to
     return "" for both.
     """
     blind = json.dumps(dict.fromkeys(anb.UNAUTHENTICATED_KEYS, "x"))

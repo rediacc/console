@@ -1,41 +1,23 @@
 """Port of `.ci/scripts/test/gates/test-backfill-commit-resolve.sh`.
 
-Both-ways test for `.ci/scripts/release/resolve-backfill-commit.sh` -- the step
-that decides which commit a backfilled release sentinel records.
+Both-ways test for `.ci/scripts/release/resolve-backfill-commit.sh` -- the step that decides which commit a backfilled release sentinel records.
 
-WHY THIS CLASS NEEDS A GATE. The script had none, and its only caller is a
-manually-dispatched workflow (`.github/workflows/backfill-release-sentinel.yml`),
-so its failure paths are seen by a human roughly never, and then only by a human
-already mid-incident, reading the message to decide what went wrong. A wrong
+WHY THIS CLASS NEEDS A GATE. The script had none, and its only caller is a manually-dispatched workflow (`.github/workflows/backfill-release-sentinel.yml`), so its failure paths are seen by a human roughly never, and then only by a human already mid-incident, reading the message to decide what went wrong. A wrong
 message there does not fail loudly; it sends the investigation somewhere else.
 
-THE DEFECT THIS PINS. `git merge-base --is-ancestor` returns non-zero for two
-unrelated situations: a commit that exists but sits off main, and a SHA that is not
-an object in this repository at all. Git's own "Not a valid object name" for the
-second went to a `2>/dev/null`, so BOTH produced "commit <sha> is not reachable
+THE DEFECT THIS PINS. `git merge-base --is-ancestor` returns non-zero for two unrelated situations: a commit that exists but sits off main, and a SHA that is not an object in this repository at all. Git's own "Not a valid object name" for the second went to a `2>/dev/null`, so BOTH produced "commit <sha> is not reachable
 from origin/main" -- which reads as a real tag pointing somewhere odd. After the
-2026-08-23 history rewrite the second case is the LIKELY one, because any SHA
-copied out of an old release note or an R2 sentinel no longer exists.
+2026-08-23 history rewrite the second case is the LIKELY one, because any SHA copied out of an old release note or an R2 sentinel no longer exists.
 
-HOW. Every case runs the REAL script (not a copy) with its working directory set to
-a purpose-built synthetic repository, so the git behaviour under test is git's and
-not a fake's. The one exception is the anti-swallow control, which needs the
-existence probe neutralised and says so.
+HOW. Every case runs the REAL script (not a copy) with its working directory set to a purpose-built synthetic repository, so the git behaviour under test is git's and not a fake's. The one exception is the anti-swallow control, which needs the existence probe neutralised and says so.
 
-EXIT CODES ARE PART OF THE CONTRACT. This was a diagnosis change, not a
-control-flow change, so every case asserts the exit code as well as the text. A
-"clearer message" that also changed which inputs are accepted would be a different
-and much worse change.
+EXIT CODES ARE PART OF THE CONTRACT. This was a diagnosis change, not a control-flow change, so every case asserts the exit code as well as the text. A "clearer message" that also changed which inputs are accepted would be a different and much worse change.
 
 WHERE THE PORT REIMPLEMENTS THE TWIN. `swallowed_distinction` only. The twin builds
 it from `grep -a '::error::'` piped into two `sed` substitutions; the port filters
-the same lines and applies the same two substitutions with `re.sub`. Both
-normalise every 40-hex run to `<SHA>` before comparing, which is what keeps the
-comparison from being trivially true -- the informational echoes name the SHA, so
-raw outputs always differ and comparing them would make the whole check vacuous.
+the same lines and applies the same two substitutions with `re.sub`. Both normalise every 40-hex run to `<SHA>` before comparing, which is what keeps the comparison from being trivially true -- the informational echoes name the SHA, so raw outputs always differ and comparing them would make the whole check vacuous.
 
-NO `xdist_group`. Each case builds its own git repository under pytest's `tmp_path`
-and runs the script with that directory as cwd. Nothing in the real tree is read
+NO `xdist_group`. Each case builds its own git repository under pytest's `tmp_path` and runs the script with that directory as cwd. Nothing in the real tree is read
 for state or written at all.
 """
 
@@ -74,8 +56,7 @@ def make_repo(gate, base: pathlib.Path) -> pathlib.Path:
       * `v1.0.0` on main            (reachable)
       * `v9.9.9` on an off-main commit that REALLY EXISTS (detached, not a ghost)
 
-    The detached commit is the whole point: it is the case the existence probe
-    could plausibly break by re-classifying it as "does not exist".
+    The detached commit is the whole point: it is the case the existence probe could plausibly break by re-classifying it as "does not exist".
     """
     harness.require_tool("git", "install git; this gate drives real git deliberately")
     if not SUT.is_file():
@@ -243,8 +224,7 @@ def test_a_missing_tag_is_unchanged(gate, tmp_path: pathlib.Path):
 def swallowed_distinction(ghost_out: str, detached_out: str) -> str:
     """One line describing a swallowed distinction, or "" when the two differ.
 
-    Compares only `::error::` lines: the informational echoes name the SHA, so raw
-    outputs always differ and comparing them would make this vacuous.
+    Compares only `::error::` lines: the informational echoes name the SHA, so raw outputs always differ and comparing them would make this vacuous.
     """
 
     def errors(text: str) -> str:

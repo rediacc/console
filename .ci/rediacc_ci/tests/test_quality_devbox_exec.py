@@ -1,14 +1,8 @@
 """`rediacc_ci.quality.devbox_exec` against the grep it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-devbox-exec.observations.jsonl` drives the whole gate over five
-distinct trees, but this gate emits exactly ONE finding line -- its failure
-count -- because every per-assertion line is unmarked and reads as progress. So
-a ledger row proves the counts agree and says nothing about WHICH assertion
-fired.
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-devbox-exec.observations.jsonl` drives the whole gate over five distinct trees, but this gate emits exactly ONE finding line -- its failure count -- because every per-assertion line is unmarked and reads as progress. So a ledger row proves the counts agree and says nothing about WHICH assertion fired.
 
-The interesting content is therefore entirely in three greps, and all three are
-patterns where a small widening costs the gate its life:
+The interesting content is therefore entirely in three greps, and all three are patterns where a small widening costs the gate its life:
 
   * `BUG_RE` must catch a quoted `"$d"` in command position and must NOT catch
     `$d`, `"${dk[@]}"`, or `"$d"` used as an argument. It flagged nothing in the
@@ -18,8 +12,7 @@ patterns where a small widening costs the gate its life:
     the floor and over-widening it hides a collapsed enumeration.
   * `code_of` is the reason a scan does not fire on its own documentation.
 
-Each is run through the real `grep -E` on the same input and compared, and the
-line-numbering defect the twin carries is pinned rather than described.
+Each is run through the real `grep -E` on the same input and compared, and the line-numbering defect the twin carries is pinned rather than described.
 """
 
 import subprocess
@@ -109,10 +102,7 @@ def test_code_of_matches_grep_v() -> None:
 def test_the_line_number_defect_is_reproduced_not_repaired() -> None:
     """The twin reports a position in the FILTERED stream. Both sides must agree.
 
-    The offending line is line 4 of the file and both implementations call it
-    line 2, because `code_of` drops the comment lines before anything is
-    numbered. A port that reported the file position would be more useful and
-    would disagree with its twin on every finding.
+    The offending line is line 4 of the file and both implementations call it line 2, because `code_of` drops the comment lines before anything is numbered. A port that reported the file position would be more useful and would disagree with its twin on every finding.
     """
     text = '# a\n   # b\nkept # tail\n"$d" exec x\n'
     got = dx.grep_n(dx.BUG_RE, dx.code_of(text))

@@ -4,9 +4,7 @@ Ported from `.ci/scripts/quality/check-e2e-coverage.sh`, which is NOT deleted;
 `rediacc_ci.quality.__init__` says why both copies live until W7 phase 5.
 
 -----------------------------------------------------------------------------
-THE TWIN'S HEADER, CARRIED. Everything below this line up to PORT NOTES is the
-bash file's own archaeology, transliterated rather than summarised, because the
-prose is the only copy of why the gate has this shape.
+THE TWIN'S HEADER, CARRIED. Everything below this line up to PORT NOTES is the bash file's own archaeology, transliterated rather than summarised, because the prose is the only copy of why the gate has this shape.
 -----------------------------------------------------------------------------
 
 This gate has two halves:
@@ -37,57 +35,34 @@ Exit codes:
 
 PHASE 3: THE REVERSE DIRECTION, does e2e dispatch a verb that no longer EXISTS?
 
-The forward half walks live -> e2e: "is every renet function exercised?" That is
-only half the contract, and the missing half is the one that bites. An e2e test
-calling a DELETED verb passed the old gate in total silence, which is exactly
+The forward half walks live -> e2e: "is every renet function exercised?" That is only half the contract, and the missing half is the one that bites. An e2e test calling a DELETED verb passed the old gate in total silence, which is exactly
 how `datastore_init` / `mount` / `unmount`, `datastore_ceph_{init,fork,unfork}`
-and `kube_csi_template` outlived their own removal in P1 and only surfaced when
-the Tests + Infra tier finally ran (it is gated behind the upstream gates, so it
-had not executed once all campaign).
+and `kube_csi_template` outlived their own removal in P1 and only surfaced when the Tests + Infra tier finally ran (it is gated behind the upstream gates, so it had not executed once all campaign).
 
-The oracle is RENET_BRIDGE_FUNCTIONS: every name in the dispatcher's Registry,
-internal verbs included. RENET_FUNCTIONS (the forward half's subject) is the
-PUBLIC surface and omits them, and the bridge drives mostly internal verbs
-(`datastore_*`, `machine_check_*`, `daemon_*`), so it cannot answer this
-question. A schema-derived list cannot either: a verb may be registered WITHOUT a
-schema (`ceph_clone_create` is) and still dispatch fine. This half stays scanning
-ALL files.
+The oracle is RENET_BRIDGE_FUNCTIONS: every name in the dispatcher's Registry, internal verbs included. RENET_FUNCTIONS (the forward half's subject) is the PUBLIC surface and omits them, and the bridge drives mostly internal verbs (`datastore_*`, `machine_check_*`, `daemon_*`), so it cannot answer this question. A schema-derived list cannot either: a verb may be registered WITHOUT
+a schema (`ceph_clone_create` is) and still dispatch fine. This half stays scanning ALL files.
 
-Every `function: 'name'` literal in the harness IS a dispatch. That is how
-`src/utils/bridge/methods/*.ts` name the verb they send to `functions once`.
+Every `function: 'name'` literal in the harness IS a dispatch. That is how `src/utils/bridge/methods/*.ts` name the verb they send to `functions once`.
 
 THE SECOND WAY THE HARNESS DISPATCHES, and the gate could not see it.
 
-`function: 'name'` is how the METHOD classes name a verb. But a test can also
-shell the bridge out directly, as a raw command string:
+`function: 'name'` is how the METHOD classes name a verb. But a test can also shell the bridge out directly, as a raw command string:
 
     sudo renet functions once --test-mode --function datastore_init \
         --datastore-path ...
 
-That is the SAME dispatch through a different door, and the first sweep is blind
-to it, which is exactly how the dual-group migrate suite kept calling the DELETED
-`datastore_init` and dying with "no command builder registered", while the
-coverage gate reported that every e2e-dispatched verb existed. A gate that checks
-one of two call sites is not a gate.
+That is the SAME dispatch through a different door, and the first sweep is blind to it, which is exactly how the dual-group migrate suite kept calling the DELETED `datastore_init` and dying with "no command builder registered", while the coverage gate reported that every e2e-dispatched verb existed. A gate that checks one of two call sites is not a gate.
 
-COMMENTS ARE SKIPPED in the raw-dispatch sweep. Both this gate's own explanation
-and OpsManager's name the dead verb in prose ("the old
-`functions once --function datastore_init` path fails..."), and a gate that reds
-on a comment about a bug is a gate people delete.
+COMMENTS ARE SKIPPED in the raw-dispatch sweep. Both this gate's own explanation and OpsManager's name the dead verb in prose ("the old `functions once --function datastore_init` path fails..."), and a gate that reds on a comment about a bug is a gate people delete.
 
 -----------------------------------------------------------------------------
 PORT NOTES. What changed in the translation, and what deliberately did not.
 -----------------------------------------------------------------------------
 
-THE FORWARD HALF IS STILL SHELLED OUT, and that is the port, not a shortcut.
-The twin runs `npx tsx scripts/gates/check-e2e-coverage.ts` from the repository root
+THE FORWARD HALF IS STILL SHELLED OUT, and that is the port, not a shortcut. The twin runs `npx tsx scripts/gates/check-e2e-coverage.ts` from the repository root
 and keeps only its exit code; its output goes straight to the gate's own two
-streams. Reimplementing a playwright-config expansion in Python would be a
-SECOND forward half, and two implementations of one rule is the failure this
-whole workstream is trying to remove. So the subprocess inherits stdout and
-stderr rather than capturing them: the TypeScript half's findings must land on
-the same streams they land on today, or the differential would score a port that
-silently swallowed them as equivalent while a human saw nothing.
+streams. Reimplementing a playwright-config expansion in Python would be a SECOND forward half, and two implementations of one rule is the failure this whole workstream is trying to remove. So the subprocess inherits stdout and stderr rather than capturing them: the TypeScript half's findings must land on the same streams they land on today, or the differential would score a port
+that silently swallowed them as equivalent while a human saw nothing.
 
 THE TWO GREP SWEEPS BECOME `os.walk` PLUS `re`, AND FOUR PROPERTIES OF
 `grep -rn --include='*.ts'` ARE BEHAVIOUR RATHER THAN INCIDENT:
@@ -111,31 +86,15 @@ THE TWO GREP SWEEPS BECOME `os.walk` PLUS `re`, AND FOUR PROPERTIES OF
 
 RECURSION ORDER IS NOT PRESERVED, AND IT IS NOT PART OF THE VERDICT. GNU grep
 walks with fts and does not sort; `os.walk` yields in `os.scandir` order. The
-differential compares finding MULTISETS precisely so an ordering difference is
-not scored as a behaviour difference. The walk here sorts its directories and
-files anyway, so that a human diffing two runs of the PORT sees a stable list.
+differential compares finding MULTISETS precisely so an ordering difference is not scored as a behaviour difference. The walk here sorts its directories and files anyway, so that a human diffing two runs of the PORT sees a stable list.
 
-THE VERB EXTRACTION IS GREEDY, ON PURPOSE. The twin pipes the matched line
-through `sed -E "s/.*function:[[:space:]]*'([a-z0-9_]+)'.*/\\1/"`. `sed`'s
-leading `.*` is greedy, so on a line carrying two `function: '...'` literals the
-LAST one is the verb extracted, and the first is invisible. That is a defect
-(reported, not fixed, see the report accompanying this port) and it is
-REPRODUCED here rather than corrected: a port that fixes a bug changes the
-verdict, and the differential would rule MISMATCH_FINDINGS on the very tree that
-would prove the fix right. Whoever retires the twin owns the fix.
+THE VERB EXTRACTION IS GREEDY, ON PURPOSE. The twin pipes the matched line through `sed -E "s/.*function:[[:space:]]*'([a-z0-9_]+)'.*/\\1/"`. `sed`'s leading `.*` is greedy, so on a line carrying two `function: '...'` literals the LAST one is the verb extracted, and the first is invisible. That is a defect (reported, not fixed, see the report accompanying this port) and it is
+REPRODUCED here rather than corrected: a port that fixes a bug changes the verdict, and the differential would rule MISMATCH_FINDINGS on the very tree that would prove the fix right. Whoever retires the twin owns the fix.
 
-THE COMMENT SKIP IS A PREFIX TEST ON THE CODE COLUMN, not a parse. The twin
-strips leading whitespace from the third field of the grep hit and matches the
-shell patterns `'//'*`, `'*'*` and `'/*'*`. A `--function` inside a trailing
-comment on a live line is therefore NOT skipped by either implementation, which
-is the same blind spot in both. Named here so the next reader knows it is
-inherited rather than introduced.
+THE COMMENT SKIP IS A PREFIX TEST ON THE CODE COLUMN, not a parse. The twin strips leading whitespace from the third field of the grep hit and matches the shell patterns `'//'*`, `'*'*` and `'/*'*`. A `--function` inside a trailing comment on a live line is therefore NOT skipped by either implementation, which is the same blind spot in both. Named here so the next reader knows it
+is inherited rather than introduced.
 
-`is_dispatchable` IS A LINEAR SCAN IN THE TWIN and a set membership here. Same
-answer, and the twin's shape is the constraint disappearing rather than a
-simplification anyone chose: bash has no set type, and `check:ci-shell-commands`
-refuses `mapfile`, which is what pushed the twin to a `while read` accumulation
-loop in the first place.
+`is_dispatchable` IS A LINEAR SCAN IN THE TWIN and a set membership here. Same answer, and the twin's shape is the constraint disappearing rather than a simplification anyone chose: bash has no set type, and `check:ci-shell-commands` refuses `mapfile`, which is what pushed the twin to a `while read` accumulation loop in the first place.
 
 EXIT CODES ARE UNCHANGED. 0 and 1 only; the twin has no setup-error code and no
 77. `77` is reserved by the W7 contract for cannot-run, and neither half of this
@@ -195,15 +154,9 @@ _EM_DASH = "\u2014"
 def bridge_functions(text: str) -> list[str]:
     """Every name in the RENET_BRIDGE_FUNCTIONS array literal, in file order.
 
-    THE STATE MACHINE IS THE TWIN'S, LINE FOR LINE. Open on the assignment,
-    close on `] as const`, and take the first quoted lowercase-and-underscore
-    token from every line in between. Anything cleverer (a real TypeScript
-    parse) would answer differently on a file the twin mis-reads, and the whole
-    point of a differential is that the two answer the same.
+    THE STATE MACHINE IS THE TWIN'S, LINE FOR LINE. Open on the assignment, close on `] as const`, and take the first quoted lowercase-and-underscore token from every line in between. Anything cleverer (a real TypeScript parse) would answer differently on a file the twin mis-reads, and the whole point of a differential is that the two answer the same.
 
-    A DUPLICATE IS KEPT. The twin appends to a bash array with no de-duplication
-    and then reports its length in `Found N dispatchable verbs`, so a repeated
-    name is counted twice on both sides.
+    A DUPLICATE IS KEPT. The twin appends to a bash array with no de-duplication and then reports its length in `Found N dispatchable verbs`, so a repeated name is counted twice on both sides.
     """
     names: list[str] = []
     in_array = False
@@ -223,12 +176,8 @@ def bridge_functions(text: str) -> list[str]:
 def ts_files(directory: pathlib.Path) -> list[str]:
     """Every `*.ts` under `directory`, absolute, sorted, symlinks not followed.
 
-    A MISSING DIRECTORY IS AN EMPTY LIST, NOT AN ERROR. The twin sends grep's
-    stderr to `/dev/null` and appends `|| true`, so a missing `src` or `tests`
-    contributes nothing and the other one is still swept. That is the right
-    direction for a rot detector, and it is also why the CALLER carries the
-    real anti-vacuity refusal: an empty sweep here is only safe because the
-    oracle itself is floored, which is checked before either sweep runs.
+    A MISSING DIRECTORY IS AN EMPTY LIST, NOT AN ERROR. The twin sends grep's stderr to `/dev/null` and appends `|| true`, so a missing `src` or `tests` contributes nothing and the other one is still swept. That is the right direction for a rot detector, and it is also why the CALLER carries the real anti-vacuity refusal: an empty sweep here is only safe because the oracle itself
+    is floored, which is checked before either sweep runs.
     """
     found: list[str] = []
     for dirpath, dirnames, filenames in paths.walk_tree(directory):
@@ -244,8 +193,7 @@ def ts_files(directory: pathlib.Path) -> list[str]:
 def _hits(path: str, grep_re: re.Pattern) -> list[tuple[int, str]]:
     """`grep -n` over one file: (1-based line number, the line) for each match.
 
-    Unreadable is SKIPPED, matching grep, which prints a diagnostic to the
-    stderr the twin discards and carries on with the next file.
+    Unreadable is SKIPPED, matching grep, which prints a diagnostic to the stderr the twin discards and carries on with the next file.
     """
     try:
         text = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
@@ -290,14 +238,9 @@ def raw_dispatches(files: list[str]) -> list[tuple[str, str, int]]:
 def forward_half(root: pathlib.Path) -> int:
     """`(cd "$REPO_ROOT" && npx tsx scripts/gates/check-e2e-coverage.ts)`, exit code only.
 
-    STREAMS ARE INHERITED, NOT CAPTURED. See the PORT NOTES: the TypeScript
-    half's findings are the gate's findings, and a port that buffered them would
-    change which stream carried them and when.
+    STREAMS ARE INHERITED, NOT CAPTURED. See the PORT NOTES: the TypeScript half's findings are the gate's findings, and a port that buffered them would change which stream carried them and when.
 
-    A MISSING `npx` IS THE SAME 127 THE TWIN REPORTS. `subprocess` raises
-    FileNotFoundError where bash prints `command not found` and yields 127, so
-    the exception is converted rather than allowed to escape as a traceback that
-    a reader would file as flake rather than as a missing toolchain.
+    A MISSING `npx` IS THE SAME 127 THE TWIN REPORTS. `subprocess` raises FileNotFoundError where bash prints `command not found` and yields 127, so the exception is converted rather than allowed to escape as a traceback that a reader would file as flake rather than as a missing toolchain.
     """
     try:
         completed = subprocess.run(
@@ -392,11 +335,9 @@ def main(argv: list[str] | None = None) -> int:
 def _relative(root: pathlib.Path, path: str) -> str:
     """`${file#"$REPO_ROOT"/}`: a PREFIX STRIP, not a path computation.
 
-    The distinction matters for a file outside the root, which bash leaves
-    untouched (the prefix does not match) where `os.path.relpath` would invent a
+    The distinction matters for a file outside the root, which bash leaves untouched (the prefix does not match) where `os.path.relpath` would invent a
     `../../..` chain. The sweep cannot reach outside the root today; the twin's
-    behaviour is reproduced anyway, because "cannot happen" is how a difference
-    survives until it can.
+    behaviour is reproduced anyway, because "cannot happen" is how a difference survives until it can.
     """
     prefix = str(root) + os.sep
     return path.removeprefix(prefix)
@@ -420,10 +361,7 @@ export const RENET_AFTER = ['never_seen'] as const;
 def selftest() -> int:
     """Both directions on every extractor, then the gate itself on real trees.
 
-    A GATE WITH ONLY POSITIVE CONTROLS WILL HAPPILY FLAG THE WHOLE TREE, so
-    every plant below is paired with the mirror that must NOT fire: a live verb
-    beside a dead one, a commented dispatch beside a real one, a name outside
-    the array beside the names inside it.
+    A GATE WITH ONLY POSITIVE CONTROLS WILL HAPPILY FLAG THE WHOLE TREE, so every plant below is paired with the mirror that must NOT fire: a live verb beside a dead one, a commented dispatch beside a real one, a name outside the array beside the names inside it.
     """
     ctl = Controls("e2e-coverage", floor=19, verbose=True)
 

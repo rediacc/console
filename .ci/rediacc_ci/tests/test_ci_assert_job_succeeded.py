@@ -1,14 +1,12 @@
 """`rediacc_ci.ci.assert_job_succeeded` against its bash twin.
 
 argv in, two streams and an exit code out; no subprocess, no file, no env
-beyond the colour decision, so both sides are driven directly and compared
-byte-for-byte. The only normalisation is the `$0` token in the usage line,
+beyond the colour decision, so both sides are driven directly and compared byte-for-byte. The only normalisation is the `$0` token in the usage line,
 which is the program's own name and therefore necessarily differs; `usage_tail`
 strips exactly that and nothing else.
 
 The K=5 ledger is `.ci/shadow/w7p6-assert-job-succeeded.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-job-succeeded --assert
---k 5`).
+(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-job-succeeded --assert --k 5`).
 """
 
 from __future__ import annotations
@@ -106,9 +104,7 @@ def test_a_missing_second_argument_is_the_same_as_an_empty_one() -> None:
 def test_the_label_is_interpolated_into_every_advice_line() -> None:
     """Five occurrences in the skipped arm, TWO of them on one line.
 
-    Counted rather than eyeballed: the `Prefix the if: on the <label> job` line
-    names the label twice, and a port that interpolated only the first
-    occurrence would still pass every substring assertion above.
+    Counted rather than eyeballed: the `Prefix the if: on the <label> job` line names the label twice, and a port that interpolated only the first occurrence would still pass every substring assertion above.
     """
     old = assert_identical("some-other-job", "skipped", expect_exit=1)
     assert old[2].count("some-other-job") == 5
@@ -145,9 +141,7 @@ def test_every_advice_line_is_the_twins_line_verbatim() -> None:
     """The two advice tuples are a COPY. Re-read the twin rather than restate it.
 
     The label is `${JOB_LABEL}` in bash and `{label}` here, so the template is
-    rendered with the bash spelling and must then appear in the twin verbatim.
-    A reworded line in either file breaks this before a differential case has
-    to notice it through a byte comparison.
+    rendered with the bash spelling and must then appear in the twin verbatim. A reworded line in either file breaks this before a differential case has to notice it through a byte comparison.
     """
     with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
         text = fh.read()

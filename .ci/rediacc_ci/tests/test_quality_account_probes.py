@@ -1,10 +1,6 @@
 """`rediacc_ci.quality.account_probes` against the shell shapes it reproduces.
 
-WHAT IS WORTH TESTING HERE, and it is not "does the gate exit 1 on a broken
-probe". The shadow ledger `.ci/shadow/w7p2-account-probes.observations.jsonl`
-drives the whole gate over five distinct trees carrying a missing library, a
-library with no probe, the 2026-08-04 defect, an always-dead probe and an
-inverted one. What a ledger row cannot isolate is the three pieces whose exact
+WHAT IS WORTH TESTING HERE, and it is not "does the gate exit 1 on a broken probe". The shadow ledger `.ci/shadow/w7p2-account-probes.observations.jsonl` drives the whole gate over five distinct trees carrying a missing library, a library with no probe, the 2026-08-04 defect, an always-dead probe and an inverted one. What a ledger row cannot isolate is the three pieces whose exact
 SHAPE decides whether the gate is measuring anything at all:
 
   * `historical_capture`, which must reproduce bash's `$(curl ... || echo 000)`
@@ -17,8 +13,7 @@ SHAPE decides whether the gate is measuring anything at all:
     an unresolved `$SCRIPT_DIR/../../lib` and prints it verbatim; the resolved
     spelling names the same directory and different bytes.
 
-Each is compared against the real bash rather than against a remembered
-description of it.
+Each is compared against the real bash rather than against a remembered description of it.
 """
 
 import pathlib
@@ -42,8 +37,7 @@ def test_historical_capture_matches_bash_on_a_closed_port() -> None:
     """The 2026-08-04 line, run as bash, must produce what the port produces.
 
     This is the assertion the whole gate rests on: `%{http_code}` yields `000`
-    on a refused connection AND curl exits non-zero, so the `|| echo 000`
-    fallback appends a second one and the value is `000000`.
+    on a refused connection AND curl exits non-zero, so the `|| echo 000` fallback appends a second one and the value is `000000`.
     """
     port = _free_port()
     script = (
@@ -59,8 +53,7 @@ def test_historical_capture_matches_bash_on_a_closed_port() -> None:
 def test_historical_capture_matches_bash_on_a_live_port() -> None:
     """The mirror. Without it, a capture hard-wired to '000000' would pass above.
 
-    A live port makes curl exit 0, so the fallback never runs and the value is
-    the real status code with no concatenation.
+    A live port makes curl exit 0, so the fallback never runs and the value is the real status code with no concatenation.
     """
     port = _free_port()
     server = ap.start_listener(port)
@@ -83,15 +76,10 @@ def test_probe_script_carries_both_letters_of_set_plus_eu(tmp_path: pathlib.Path
     """Under strict flags the library never loads, and that reads as "dead".
 
     `.ci/lib/account.sh:8` is `[[ -n "${ACCOUNT_LIB_LOADED:-}" ]] && return 0`,
-    an `&&` list that returns NON-ZERO on a first load. Under `set -e` the
-    sourcing shell dies AT THE SOURCE LINE, before `declare -F` can report the
-    missing function, so the subshell exits 1 -- which is exactly what a healthy
-    probe returns for a closed port. The two states are indistinguishable, and a
-    gate that took the strict form would report a PASS on assertion 1 while
-    testing nothing at all.
+    an `&&` list that returns NON-ZERO on a first load. Under `set -e` the sourcing shell dies AT THE SOURCE LINE, before `declare -F` can report the missing function, so the subshell exits 1 -- which is exactly what a healthy probe returns for a closed port. The two states are indistinguishable, and a gate that took the strict form would report a PASS on assertion 1 while testing
+    nothing at all.
 
-    Shown against a LIVE port, because that is the only place the difference is
-    visible: `+eu` says ALIVE and `-eu` says the same thing a dead port says.
+    Shown against a LIVE port, because that is the only place the difference is visible: `+eu` says ALIVE and `-eu` says the same thing a dead port says.
     """
     root = _fixture(tmp_path, ap.FIXTURE_HEALTHY)
     port = _free_port()
@@ -131,10 +119,7 @@ def test_probe_script_distinguishes_a_missing_function_from_a_dead_port(
 def test_ci_lib_dir_matches_the_twins_unresolved_spelling() -> None:
     """`$SCRIPT_DIR/../../lib`, evaluated by bash, must equal what the port prints.
 
-    The twin never resolves the path and prints it in the load-failure message,
-    so a port that tidied it would report a different finding for the same
-    defect. Compared against bash's own expansion rather than against a copy of
-    the string, so a change to the twin's layout is visible here.
+    The twin never resolves the path and prints it in the load-failure message, so a port that tidied it would report a different finding for the same defect. Compared against bash's own expansion rather than against a copy of the string, so a change to the twin's layout is visible here.
     """
     root = pathlib.Path("/x/y")
     script = 'SCRIPT_DIR=%s/.ci/scripts/quality; printf %%s "$SCRIPT_DIR/../../lib"' % root
@@ -156,8 +141,7 @@ def test_free_port_hands_back_a_bindable_port() -> None:
 def test_selftest_runs_and_meets_its_floor() -> None:
     """The gate's own both-direction controls, driven from pytest.
 
-    Exit 0 with zero controls is a failure, so the floor inside `Controls` is
-    the thing being exercised here as much as the controls themselves.
+    Exit 0 with zero controls is a failure, so the floor inside `Controls` is the thing being exercised here as much as the controls themselves.
     """
     assert ap.selftest() == 0
 
@@ -165,9 +149,7 @@ def test_selftest_runs_and_meets_its_floor() -> None:
 def _fixture(root: pathlib.Path, body: str) -> pathlib.Path:
     """A throwaway tree carrying just the two files the probe library needs.
 
-    `.ci/scripts/quality` is created empty because CI_LIB_DIR is the twin's
-    unresolved `.../.ci/scripts/quality/../../lib`, and the kernel resolves `..`
-    against directories that actually exist.
+    `.ci/scripts/quality` is created empty because CI_LIB_DIR is the twin's unresolved `.../.ci/scripts/quality/../../lib`, and the kernel resolves `..` against directories that actually exist.
     """
     (root / ".ci" / "lib").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "quality").mkdir(parents=True, exist_ok=True)

@@ -1,31 +1,17 @@
 """Port of `.ci/scripts/autopilot/linked-sub-prs.sh`.
 
-Turns a console PR body back into the submodule PRs it links, one
-`<owner>/<repo> <number>` per line. PURE: no network, no git, no `gh`.
+Turns a console PR body back into the submodule PRs it links, one `<owner>/<repo> <number>` per line. PURE: no network, no git, no `gh`.
 
-WHY IT EXISTS, in the twin's words: `check-submodule-branches.sh` reds the
-console PR while a LINKED submodule PR carries unresolved review threads, and
-the autopilot's review machinery only ever saw console's own threads. A round
-would answer every console finding and still sit red on a gate whose complaint
-lived in another repository.
+WHY IT EXISTS, in the twin's words: `check-submodule-branches.sh` reds the console PR while a LINKED submodule PR carries unresolved review threads, and the autopilot's review machinery only ever saw console's own threads. A round would answer every console finding and still sit red on a gate whose complaint lived in another repository.
 
-THE OTHER HALF OF THE PAIR IS `submodule-prs.sh`, WHICH WRITES WHAT THIS READS.
-The twin says so ("the same links submodule-prs.sh writes there"), and the
-coupling is the reason the three accepted spellings below are a CONTRACT and
-not an implementation detail: `submodule-prs.sh` composes the body block,
-`check-submodule-branches.sh` decides a body is acceptable, and this script
-parses it back. A spelling added to one and not the others is a link that is
-written and never read, or read and never gated. This port does not touch
+THE OTHER HALF OF THE PAIR IS `submodule-prs.sh`, WHICH WRITES WHAT THIS READS. The twin says so ("the same links submodule-prs.sh writes there"), and the coupling is the reason the three accepted spellings below are a CONTRACT and not an implementation detail: `submodule-prs.sh` composes the body block, `check-submodule-branches.sh` decides a body is acceptable, and this script
+parses it back. A spelling added to one and not the others is a link that is written and never read, or read and never gated. This port does not touch
 `submodule-prs.sh`; it records the coupling so a future edit to either one is
 made knowing the other exists.
 
-THE REPO ALLOWLIST IS THE SECURITY BOUNDARY, and it is `SUB_REPOS` below. A PR
-body is operator-authored on an armed PR but is still text, and this output
-decides which repositories the gate will fetch review comments from and hand to
+THE REPO ALLOWLIST IS THE SECURITY BOUNDARY, and it is `SUB_REPOS` below. A PR body is operator-authored on an armed PR but is still text, and this output decides which repositories the gate will fetch review comments from and hand to
 a model. Only the four submodules are recognised; a link to anything else,
-however well-formed, is ignored. The list is held to
-`check-submodule-branches.sh`'s own hardcoded map, so a submodule missing there
-is invisible here too, exactly as the twin intends.
+however well-formed, is ignored. The list is held to `check-submodule-branches.sh`'s own hardcoded map, so a submodule missing there is invisible here too, exactly as the twin intends.
 
 -----------------------------------------------------------------------------
 WHAT `grep` DOES THAT A NAIVE PORT WOULD NOT, all four reproduced
@@ -65,28 +51,18 @@ WHAT `grep` DOES THAT A NAIVE PORT WOULD NOT, all four reproduced
 -----------------------------------------------------------------------------
 THE ONE KNOWN DIVERGENCE, PINNED BY A TEST
 -----------------------------------------------------------------------------
-`--owner` IS INTERPOLATED INTO A REGULAR EXPRESSION, in the twin and therefore
-here: `re.escape` would be a different program, matching owners the twin does
-not. An owner carrying an unbalanced bracket is consequently invalid regex
-syntax, where the twin gets grep's own diagnostic (`grep: Unmatched ( or \\(`,
-exit 2, four times, all swallowed by `|| true`) and this port gets Python's.
+`--owner` IS INTERPOLATED INTO A REGULAR EXPRESSION, in the twin and therefore here: `re.escape` would be a different program, matching owners the twin does not. An owner carrying an unbalanced bracket is consequently invalid regex syntax, where the twin gets grep's own diagnostic (`grep: Unmatched ( or \\(`, exit 2, four times, all swallowed by `|| true`) and this port gets
+Python's.
 Exit code, stdout and the empty result agree; only the diagnostic text differs,
-and `test_divergence_an_owner_that_is_not_valid_regex` asserts exactly that so
-nobody later "fixes" the port into refusing.
+and `test_divergence_an_owner_that_is_not_valid_regex` asserts exactly that so nobody later "fixes" the port into refusing.
 
-Not a security hole in either implementation: an owner that fails to compile
-matches NOTHING, which is the safe direction, and the allowlist of four names
-is applied whatever the owner is.
+Not a security hole in either implementation: an owner that fails to compile matches NOTHING, which is the safe direction, and the allowlist of four names is applied whatever the owner is.
 
 -----------------------------------------------------------------------------
 UNREACHABLE CODE IN THE TWIN, REPORTED RATHER THAN COPIED
 -----------------------------------------------------------------------------
-The twin's inner loop ends `[[ -n "$n" ]] && printf ...`, whose failure would
-be the `while` loop's exit status and, under `set -e` inside a `for` body,
-would end the script with 1 before the remaining submodules were scanned. It
-cannot fire: `sort` only ever emits the non-empty digit runs the second grep
-produced. Left as a note because the guard reads as though the empty case were
-expected, and a future edit that makes it reachable inherits a wrong exit.
+The twin's inner loop ends `[[ -n "$n" ]] && printf ...`, whose failure would be the `while` loop's exit status and, under `set -e` inside a `for` body, would end the script with 1 before the remaining submodules were scanned. It cannot fire: `sort` only ever emits the non-empty digit runs the second grep produced. Left as a note because the guard reads as though the empty case
+were expected, and a future edit that makes it reachable inherits a wrong exit.
 
 K=5 LEDGER: `.ci/shadow/w7p6-linked-sub-prs.observations.jsonl`.
 """
@@ -119,9 +95,7 @@ def link_pattern(owner: str, name: str) -> bytes:
     """The twin's first grep expression for one submodule, as bytes.
 
     `(https://github\\.com/)?<owner>/<name>(/pull/|#)[0-9]{1,7}` -- the full
-    URL, `owner/repo#N` and `owner/repo/pull/N`. BYTES because grep matches
-    bytes: a PR body is whatever GitHub stored, and a port that decoded it
-    would refuse input the twin passes through.
+    URL, `owner/repo#N` and `owner/repo/pull/N`. BYTES because grep matches bytes: a PR body is whatever GitHub stored, and a port that decoded it would refuse input the twin passes through.
     """
     return (
         rb"(https://github\.com/)?"
@@ -135,9 +109,7 @@ def link_pattern(owner: str, name: str) -> bytes:
 def is_binary(body: bytes) -> bool:
     """GNU grep's binary test under `LC_ALL=C`: a NUL byte anywhere in the file.
 
-    See point 2 of the module docstring for the locale caveat. Deliberately not
-    a heuristic over the first N bytes: grep reads the whole buffer it has, and
-    the twin's bodies are small enough that grep has all of it at once.
+    See point 2 of the module docstring for the locale caveat. Deliberately not a heuristic over the first N bytes: grep reads the whole buffer it has, and the twin's bodies are small enough that grep has all of it at once.
     """
     return b"\x00" in body
 
@@ -145,9 +117,7 @@ def is_binary(body: bytes) -> bool:
 def _sort_un(numbers: list[bytes]) -> list[bytes]:
     """`LC_ALL=C sort -un`: numeric order, first of each equal run survives.
 
-    Python's `sorted` is stable, so keying on `int` and keeping the first
-    occurrence of each key reproduces GNU sort's `-u` exactly, including the
-    leading-zero case that makes two different STRINGS one PR.
+    Python's `sorted` is stable, so keying on `int` and keeping the first occurrence of each key reproduces GNU sort's `-u` exactly, including the leading-zero case that makes two different STRINGS one PR.
     """
     seen: set[int] = set()
     out: list[bytes] = []
@@ -163,10 +133,7 @@ def _sort_un(numbers: list[bytes]) -> list[bytes]:
 def numbers_for(body: bytes, owner: str, name: str) -> list[bytes]:
     """Every PR number this body links for one submodule, sorted and deduped.
 
-    The pipeline, stage for stage: first grep for the link, second grep for the
-    trailing number, `sort -un`. An unparseable owner yields NOTHING (see the
-    divergence note in the module docstring), which is what an invalid regex
-    costs the twin too.
+    The pipeline, stage for stage: first grep for the link, second grep for the trailing number, `sort -un`. An unparseable owner yields NOTHING (see the divergence note in the module docstring), which is what an invalid regex costs the twin too.
     """
     try:
         pattern = re.compile(link_pattern(owner, name))
@@ -179,8 +146,7 @@ def numbers_for(body: bytes, owner: str, name: str) -> list[bytes]:
 def scan(body: bytes, owner: str, path: str, stderr=None) -> list[bytes]:
     """Every output line, in the twin's order: one submodule at a time.
 
-    `path` and `stderr` exist for the binary-file diagnostic, which names the
-    file exactly as it was given on the command line because grep does.
+    `path` and `stderr` exist for the binary-file diagnostic, which names the file exactly as it was given on the command line because grep does.
     """
     stream = sys.stderr if stderr is None else stderr
     binary = is_binary(body)

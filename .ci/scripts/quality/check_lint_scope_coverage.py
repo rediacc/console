@@ -2,8 +2,7 @@
 """No tracked source file may be invisible to every linter, and biome's
 allowlist must actually be in force.
 
-WHY THIS EXISTS. Two failures on 2026-08-06, and neither was a rule being wrong
-about code -- both were code no rule ever looked at.
+WHY THIS EXISTS. Two failures on 2026-08-06, and neither was a rule being wrong about code -- both were code no rule ever looked at.
 
   1. SCOPE INVISIBILITY. `check:lint` ran eslint over `packages scripts
      private/account`, and four ignore entries removed most of what remained.
@@ -40,21 +39,12 @@ about code -- both were code no rule ever looked at.
      script_roots(). The shard names are deliberately not written down here; a
      fifth shard registers itself simply by being linked.
 
-Both are the same shape as the dead i18n rules: the instrument reports success
-because it never examined anything. check_lint_rule_liveness.py proves an
+Both are the same shape as the dead i18n rules: the instrument reports success because it never examined anything. check_lint_rule_liveness.py proves an
 ENABLED RULE can fire; this proves the FILES reach a rule at all.
 
-WHAT IT DOES NOT DO. It does not judge whether a file's rules are the right
-rules -- only that some linter sees it. A file linted by a config that happens
-to enable nothing would pass here and be caught by the liveness gate instead.
-The two are complements and neither subsumes the other.
+WHAT IT DOES NOT DO. It does not judge whether a file's rules are the right rules -- only that some linter sees it. A file linted by a config that happens to enable nothing would pass here and be caught by the liveness gate instead. The two are complements and neither subsumes the other.
 
----- gate ----
-step: Every source file reaches a linter
-needs: submodules
-selftest: true
-lane: quality-code
----- end gate ----
+---- gate ---- step: Every source file reaches a linter needs: submodules selftest: true lane: quality-code ---- end gate ----
 """
 
 import argparse
@@ -208,18 +198,12 @@ def segment_roots(segment):
 def script_roots(scripts, name, seen=None):
     """Every eslint root `npm run <name>` ultimately reaches, following `npm run` links.
 
-    PARSED, NOT DUPLICATED, and TRANSITIVE for the same reason. A hard-coded copy
-    of the root list here would be a second source of truth that drifts from the
-    scripts it claims to describe, and a gate comparing its own constant against
+    PARSED, NOT DUPLICATED, and TRANSITIVE for the same reason. A hard-coded copy of the root list here would be a second source of truth that drifts from the scripts it claims to describe, and a gate comparing its own constant against
     itself proves nothing about what eslint actually runs over. A hard-coded list
-    of SHARD NAMES is the same mistake one level up: `check:lint` is an aggregate
-    of four sharded scripts, and naming those four here would mean a fifth shard
-    lints files this gate never counts, silently, which is failure 3 in the
-    docstring wearing a different hat. So the links are followed instead, and the
+    of SHARD NAMES is the same mistake one level up: `check:lint` is an aggregate of four sharded scripts, and naming those four here would mean a fifth shard lints files this gate never counts, silently, which is failure 3 in the docstring wearing a different hat. So the links are followed instead, and the
     question stays the only one that matters: what is eslint actually pointed at.
 
-    A cycle contributes nothing and is not an error here -- npm itself would spin
-    forever on it, so it is not a scope failure this gate can usefully report.
+    A cycle contributes nothing and is not an error here -- npm itself would spin forever on it, so it is not a scope failure this gate can usefully report.
 
     Returns a LintScope, or None when `name` is not a script at all.
     """
@@ -256,9 +240,7 @@ def script_roots(scripts, name, seen=None):
 def lint_roots(root):
     """{script name: LintScope} for the three lint scripts, parsed from package.json.
 
-    Returns None when package.json cannot be read at all -- which is refused rather
-    than treated as "no roots", because an empty list would make every file look
-    uncovered and blame the wrong thing.
+    Returns None when package.json cannot be read at all -- which is refused rather than treated as "no roots", because an empty list would make every file look uncovered and blame the wrong thing.
     """
     try:
         scripts = json.loads((root / "package.json").read_text())["scripts"]
@@ -286,18 +268,10 @@ def unmeasured(candidates, some_roots):
 def scope_disagreements(by_script, roots, candidates):
     """Lines explaining how the lint scripts differ in SCOPE, or [] when they do not.
 
-    THE THREE MUST REACH THE SAME FILES, which is not the same as passing the same
-    LIST. `check:lint` is sharded into four scripts whose roots are packages/cli,
-    packages/www and so on, while `lint` and `fix:lint` stay unsharded and pass
-    `packages`. Different strings, identical scope. String equality would red on
-    that refinement while still missing the failure that matters -- a shard whose
-    roots stop reaching files CI lints -- so this compares COVERAGE over the tracked
-    candidates, plus set-equality on the roots coverage cannot speak for. That second
-    half is not decoration: a submodule root contributes no tracked file here, so
-    dropping it from one script only would otherwise be invisible.
+    THE THREE MUST REACH THE SAME FILES, which is not the same as passing the same LIST. `check:lint` is sharded into four scripts whose roots are packages/cli, packages/www and so on, while `lint` and `fix:lint` stay unsharded and pass `packages`. Different strings, identical scope. String equality would red on that refinement while still missing the failure that matters -- a
+    shard whose roots stop reaching files CI lints -- so this compares COVERAGE over the tracked candidates, plus set-equality on the roots coverage cannot speak for. That second half is not decoration: a submodule root contributes no tracked file here, so dropping it from one script only would otherwise be invisible.
 
-    ONE FUNCTION, TWO CALLERS, for the same reason uncovered_by() has one: the
-    direction tests drive exactly the code the verdict comes from, not a lookalike.
+    ONE FUNCTION, TWO CALLERS, for the same reason uncovered_by() has one: the direction tests drive exactly the code the verdict comes from, not a lookalike.
     """
     out = []
     ci_covers = covers(candidates, roots)
@@ -353,9 +327,7 @@ def scope_disagreements(by_script, roots, candidates):
 def uncovered_by(paths, roots):
     """The files no lint root reaches.
 
-    The gate's real question when handed the WHOLE root list, and the mutant's
-    when handed the list minus one. One function for both so the mutant exercises
-    the same code the verdict comes from, rather than a lookalike of it.
+    The gate's real question when handed the WHOLE root list, and the mutant's when handed the list minus one. One function for both so the mutant exercises the same code the verdict comes from, rather than a lookalike of it.
     """
     return [p for p in paths if not any(p == r or p.startswith(r + "/") for r in roots)]
 
@@ -367,12 +339,8 @@ class BiomeUnreadableError(Exception):
 def biome_processes(root, path):
     """True when biome's file selection admits `path`, False when it excludes it.
 
-    RAISES rather than guessing when biome did not run. The first version
-    returned `"No files were processed" not in output`, which quietly turned
-    "biome is missing" into "biome processed the file" -- and that is exactly
-    how it failed: green locally, and on CI it accused biome.json of a discarded
-    allowlist when the real story was that biome never executed. A probe that
-    cannot distinguish absence from a negative answer is not a probe.
+    RAISES rather than guessing when biome did not run. The first version returned `"No files were processed" not in output`, which quietly turned "biome is missing" into "biome processed the file" -- and that is exactly how it failed: green locally, and on CI it accused biome.json of a discarded allowlist when the real story was that biome never executed. A probe that cannot
+    distinguish absence from a negative answer is not a probe.
     """
     try:
         out = subprocess.run(

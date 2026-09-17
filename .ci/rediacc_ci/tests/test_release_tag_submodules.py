@@ -1,26 +1,13 @@
 """Differential: `rediacc_ci.release.tag_submodules` against its twin
 `.ci/scripts/release/tag-submodules.sh`.
 
-THE SUBJECT PUSHES TAGS, so the first design decision is where. Never at the
-real `private/renet` remote: every case here builds a throwaway parent
-directory holding its own `private/renet` git repository whose `origin` is a
-BARE repository in the same tmpdir, and the remote is added as the RELATIVE
-path `../renet-remote.git`. Relative on purpose -- `git push` prints `To
-<remote>` to stderr, and an absolute path would differ between the two
-independent fixtures and defeat byte-for-byte comparison for a reason that has
-nothing to do with the port.
+THE SUBJECT PUSHES TAGS, so the first design decision is where. Never at the real `private/renet` remote: every case here builds a throwaway parent directory holding its own `private/renet` git repository whose `origin` is a BARE repository in the same tmpdir, and the remote is added as the RELATIVE path `../renet-remote.git`. Relative on purpose -- `git push` prints `To <remote>`
+to stderr, and an absolute path would differ between the two independent fixtures and defeat byte-for-byte comparison for a reason that has nothing to do with the port.
 
-TWO FIXTURES PER CASE, ONE PER SIDE, because this subject MUTATES: the first
-run creates the tag, so a second run against the same tree would take the
-reuse arm and the two sides would be compared on different behaviour. The
-fixtures are built with fixed content and fixed author/committer identity and
-dates, which makes the commit SHA identical in both -- so even the
-`(<sha>)` inside the reuse notice compares byte for byte.
+TWO FIXTURES PER CASE, ONE PER SIDE, because this subject MUTATES: the first run creates the tag, so a second run against the same tree would take the reuse arm and the two sides would be compared on different behaviour. The fixtures are built with fixed content and fixed author/committer identity and dates, which makes the commit SHA identical in both -- so even the `(<sha>)`
+inside the reuse notice compares byte for byte.
 
-ALL THREE ARMS ARE DRIVEN, not just the happy path, because the arm the twin's
-own header singles out is the failure one: "Drift is a hard failure, not a
-silent retag." `test_drift_is_a_hard_failure` asserts the refusal AND that the
-remote was left untouched, and `test_planted_defect_is_caught` removes that arm
+ALL THREE ARMS ARE DRIVEN, not just the happy path, because the arm the twin's own header singles out is the failure one: "Drift is a hard failure, not a silent retag." `test_drift_is_a_hard_failure` asserts the refusal AND that the remote was left untouched, and `test_planted_defect_is_caught` removes that arm
 from the port to prove the case can fire.
 
 ONE DOCUMENTED DIVERGENCE: a missing/empty `VERSION` is `${VERSION:?...}` in
@@ -29,12 +16,9 @@ agreement on exit code, stream and substance; everything else here is
 byte-for-byte.
 
 K=5 LEDGER: `.ci/shadow/w7p6-tag-submodules.observations.jsonl` -- five
-distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct
-trees". Recorded in a disposable scratch repo outside this checkout (dirty
+distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty
 tree; `--record` refuses one) through a `drive-tag.sh` fixture builder that
-makes the same throwaway parent/submodule/bare-remote this file makes, one
-mode per tree: fresh tag, reuse at HEAD, drift, unborn HEAD, and a missing
-origin. No real remote is ever contacted.
+makes the same throwaway parent/submodule/bare-remote this file makes, one mode per tree: fresh tag, reuse at HEAD, drift, unborn HEAD, and a missing origin. No real remote is ever contacted.
 """
 
 from __future__ import annotations
@@ -353,8 +337,7 @@ def test_is_initialized_helper(tmp_path: pathlib.Path) -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY on the arm the twin's header exists for. Delete the drift
-    refusal so the port silently reuses whatever tag it finds -- exactly the
-    "silent retag" the twin forbids. Driven red against the drift fixture,
+    refusal so the port silently reuses whatever tag it finds -- exactly the "silent retag" the twin forbids. Driven red against the drift fixture,
     then the source is restored byte-identical and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace("        if existing_sha != head_sha:\n", "        if False:\n")

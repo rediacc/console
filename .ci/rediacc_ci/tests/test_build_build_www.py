@@ -1,29 +1,18 @@
 """Differential: `rediacc_ci.build.build_www` against its twin
 `.ci/scripts/build/build-www.sh`.
 
-NEITHER SIDE TAKES A ROOT OVERRIDE, so both are COPIED into a throwaway fixture
-root and run from there: the twin resolves the root from `common.sh`'s
+NEITHER SIDE TAKES A ROOT OVERRIDE, so both are COPIED into a throwaway fixture root and run from there: the twin resolves the root from `common.sh`'s
 `${BASH_SOURCE[0]}` and the port from `__file__` (deliberately NOT
-`paths.repo_root()`, see the port's docstring). Running in this checkout would
-also mean the real `packages/www/dist` decides the branch, which is the shape of
-green that proves only that a directory existed.
+`paths.repo_root()`, see the port's docstring). Running in this checkout would also mean the real `packages/www/dist` decides the branch, which is the shape of green that proves only that a directory existed.
 
-`npm` IS NEVER REAL, and the PATH is REPLACED rather than prepended. That is not
-a formality here: `npm run build:www` in this checkout is an Astro build of the
-marketing site, several minutes and several gigabytes, and a scratch PATH with
-the caller's own appended still resolves the real binary --
-`test_the_scratch_path_cannot_reach_a_real_npm` asserts it cannot.
+`npm` IS NEVER REAL, and the PATH is REPLACED rather than prepended. That is not a formality here: `npm run build:www` in this checkout is an Astro build of the marketing site, several minutes and several gigabytes, and a scratch PATH with the caller's own appended still resolves the real binary -- `test_the_scratch_path_cannot_reach_a_real_npm` asserts it cannot.
 
-`rediacc_ci` IS VENDORED INTO THE FIXTURE rather than reached through an
-absolute `PYTHONPATH`. Two reasons: it proves the port needs only the six
-modules listed in `VENDORED`, and `scripts/lib/shadow-gate.ts --record` refuses
-any command string naming an absolute path outside the recorded tree, so the
+`rediacc_ci` IS VENDORED INTO THE FIXTURE rather than reached through an absolute `PYTHONPATH`. Two reasons: it proves the port needs only the six modules listed in `VENDORED`, and `scripts/lib/shadow-gate.ts --record` refuses any command string naming an absolute path outside the recorded tree, so the
 K=5 ledger needs this shape anyway.
 
 `$0` IS MASKED TO `<SELF>` and nothing else is. bash names the script it was
 invoked with in its `command not found` line and `sys.argv[0]` ends `.py`; two
-files cannot share one name. Everything else is compared byte-for-byte on both
-streams SEPARATELY, plus the fake's call log.
+files cannot share one name. Everything else is compared byte-for-byte on both streams SEPARATELY, plus the fake's call log.
 
 K=5 LEDGER: `.ci/shadow/w7p6-build-www.observations.jsonl`.
 """
@@ -153,10 +142,7 @@ def _run(root: pathlib.Path, side: str, *, drop_npm: bool = False, cwd: str | No
 def run_both(root: pathlib.Path, **kw):
     """Both sides from the SAME starting state.
 
-    `packages/www` is snapshotted and restored between them, because the fake
-    npm can CREATE the dist directory: without the reset the twin's run would
-    leave it behind and the port would take a different branch and "agree" for
-    the wrong reason.
+    `packages/www` is snapshotted and restored between them, because the fake npm can CREATE the dist directory: without the reset the twin's run would leave it behind and the port would take a different branch and "agree" for the wrong reason.
     """
     made = root / "packages"
     snapshot = root / ".packages-snapshot"
@@ -210,9 +196,7 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
 
 def test_the_scratch_path_cannot_reach_a_real_npm(tmp_path) -> None:
     """A PREPENDED PATH would still resolve the real npm, and the real
-    `npm run build:www` is a multi-minute Astro build of this repository. So the
-    fixture REPLACES PATH, and this asserts the replacement holds in both
-    directions: the fake is reachable, and dropping it leaves nothing behind it.
+    `npm run build:www` is a multi-minute Astro build of this repository. So the fixture REPLACES PATH, and this asserts the replacement holds in both directions: the fake is reachable, and dropping it leaves nothing behind it.
     """
     root = fixture(tmp_path)
     sealed = scratch_bin(root)
@@ -242,10 +226,7 @@ def test_a_complete_build_prints_three_lines_and_exits_zero(tmp_path) -> None:
 
 def test_a_missing_dist_directory_refuses_with_the_generic_sentence(tmp_path) -> None:
     """DEFECT 1, driven. `require_dir "packages/www/dist" "www build output"`
-    passes a label that `common.sh:161-167` reads `$1` only, so the label never
-    reaches a terminal and the operator is told nothing about WHICH build
-    produced nothing. The assertion is on the label's ABSENCE, so it fires the
-    day the twin is repaired rather than quietly agreeing with a fixed twin.
+    passes a label that `common.sh:161-167` reads `$1` only, so the label never reaches a terminal and the operator is told nothing about WHICH build produced nothing. The assertion is on the label's ABSENCE, so it fires the day the twin is repaired rather than quietly agreeing with a fixed twin.
     """
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(root)
@@ -283,10 +264,7 @@ def test_a_failing_npm_is_reported_as_a_failed_build(tmp_path) -> None:
 
 def test_defect_npms_exit_code_is_flattened_to_one(tmp_path) -> None:
     """DEFECT 2. npm exiting 3 -- or 137, an OOM kill -- makes this script exit
-    1, so the workflow step cannot tell an infrastructure failure from a
-    compilation failure. `buildx-push-web.sh` one file over does the opposite
-    and lets docker's status through, which is what makes this a defect rather
-    than a house rule. A port that "fixed" it would diverge here.
+    1, so the workflow step cannot tell an infrastructure failure from a compilation failure. `buildx-push-web.sh` one file over does the opposite and lets docker's status through, which is what makes this a defect rather than a house rule. A port that "fixed" it would diverge here.
     """
     for npm_rc in ("3", "137"):
         root = fixture(tmp_path / npm_rc)
@@ -297,8 +275,7 @@ def test_defect_npms_exit_code_is_flattened_to_one(tmp_path) -> None:
 
 def test_defect_the_green_tick_precedes_every_verification(tmp_path) -> None:
     """DEFECT 3. `✓ www build completed` is printed on npm's exit code alone, so
-    a run that produced an empty dist prints a success line and THEN refuses.
-    Pinned by ORDER, which is the only way it is visible.
+    a run that produced an empty dist prints a success line and THEN refuses. Pinned by ORDER, which is the only way it is visible.
     """
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(root)
@@ -330,10 +307,7 @@ def test_a_missing_npm_reads_as_a_failed_build_with_bashs_line_above_it(tmp_path
 
 def test_both_sides_cd_to_the_repo_root_whatever_the_caller_did(tmp_path) -> None:
     """The `cd` is observable: every later path is relative, so a side that
-    skipped it would refuse with the same sentence for a completely different
-    reason. Driven from a directory that is NOT the fixture root and that holds
-    a decoy `packages/www/dist/index.html` -- a side reading paths relative to
-    the CALLER would find the decoy and exit 0.
+    skipped it would refuse with the same sentence for a completely different reason. Driven from a directory that is NOT the fixture root and that holds a decoy `packages/www/dist/index.html` -- a side reading paths relative to the CALLER would find the decoy and exit 0.
     """
     root = fixture(tmp_path)
     decoy = tmp_path / "elsewhere"
@@ -347,8 +321,7 @@ def test_both_sides_cd_to_the_repo_root_whatever_the_caller_did(tmp_path) -> Non
 
 def test_npms_own_two_streams_are_inherited_unmerged(tmp_path) -> None:
     """A build log is the caller's, not this script's. The stream a line arrives
-    on is part of the contract -- the 2026-09-06 emit-advisory incident was a
-    stream SWAP -- so the fake writes to both and each is compared separately.
+    on is part of the contract -- the 2026-09-06 emit-advisory incident was a stream SWAP -- so the fake writes to both and each is compared separately.
     """
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(
@@ -365,9 +338,7 @@ def test_npms_own_two_streams_are_inherited_unmerged(tmp_path) -> None:
 
 def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> None:
     """The one assertion made against the REAL tree rather than a fixture. Both
-    answers come from a file's own location three levels up, but from DIFFERENT
-    files, so a directory move that touched one and not the other would go
-    unnoticed until a build ran in the wrong place.
+    answers come from a file's own location three levels up, but from DIFFERENT files, so a directory move that touched one and not the other would go unnoticed until a build ran in the wrong place.
     """
     proc = subprocess.run(
         [BASH, "-c", 'source "$1" && get_repo_root', "bash", str(ROOT / COMMON_REL)],
@@ -386,11 +357,7 @@ def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> N
 def test_a_planted_defect_is_caught(tmp_path) -> None:
     """A gate that has never been seen to fail is not a gate.
 
-    The plant is the smallest realistic one: the two output checks swapped, so
-    the port asks for the FILE before the DIRECTORY. Both orders exit 1 with an
-    identical call log on a tree with neither, and only the message text tells
-    them apart -- which is exactly the assertion a comparator that only checked
-    exit codes would miss.
+    The plant is the smallest realistic one: the two output checks swapped, so the port asks for the FILE before the DIRECTORY. Both orders exit 1 with an identical call log on a tree with neither, and only the message text tells them apart -- which is exactly the assertion a comparator that only checked exit codes would miss.
     """
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(

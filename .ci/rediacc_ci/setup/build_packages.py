@@ -1,44 +1,27 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/setup/build-packages.sh`.
 
-Thirty-five lines: wipe the TypeScript build cache, run `npm run
-build:packages`, then look at whether `packages/shared/dist` came back. The
-whole file is four steps and one of them does not do what its name suggests,
-which is the reason this docstring is longer than the script.
+Thirty-five lines: wipe the TypeScript build cache, run `npm run build:packages`, then look at whether `packages/shared/dist` came back. The whole file is four steps and one of them does not do what its name suggests, which is the reason this docstring is longer than the script.
 
 -----------------------------------------------------------------------------
 WHY THE CACHE IS WIPED FIRST, IN THE TWIN'S OWN WORDS
 -----------------------------------------------------------------------------
-`build-packages.sh:15-17`: "Clean stale TypeScript build cache to prevent module
-resolution issues. This is necessary because tsbuildinfo files can cause
-incremental builds to skip emitting files when paths change or when switching
-between branches."
+`build-packages.sh:15-17`: "Clean stale TypeScript build cache to prevent module resolution issues. This is necessary because tsbuildinfo files can cause incremental builds to skip emitting files when paths change or when switching between branches."
 
-That is the entire justification for a `rm -rf` in a setup script, and it is
-load-bearing: `tsc --build` decides what to emit by comparing timestamps
-recorded in `*.tsbuildinfo`, so after a branch switch that moves a path it can
-conclude everything is up to date and emit nothing. The build then "succeeds"
-and `dist/` holds the previous branch's output. Deleting `dist` AND the
+That is the entire justification for a `rm -rf` in a setup script, and it is load-bearing: `tsc --build` decides what to emit by comparing timestamps recorded in `*.tsbuildinfo`, so after a branch switch that moves a path it can conclude everything is up to date and emit nothing. The build then "succeeds" and `dist/` holds the previous branch's output. Deleting `dist` AND the
 tsbuildinfo files together is what makes the following build unconditional.
 
 -----------------------------------------------------------------------------
 THE VERIFICATION IS A WARNING, NOT A CHECK. REPRODUCED, AND REPORTED
 -----------------------------------------------------------------------------
-`build-packages.sh:29-35` loops over a one-element list of expected outputs and,
-when the directory is absent, prints
+`build-packages.sh:29-35` loops over a one-element list of expected outputs and, when the directory is absent, prints
 
     ⚠ Package directory packages/shared/dist not found (may be expected)
 
-and carries on to exit 0. Put that next to the `rm -rf` eleven lines above it
-and the shape is complete: the script DELETES `packages/shared/dist`, runs a
-build, finds the directory gone, calls that "may be expected", and reports
-success. A build that silently emitted nothing -- which is exactly the failure
-the tsbuildinfo wipe exists to prevent -- exits 0 here with a warning nobody
-greps for. The one anti-vacuity opportunity in the file is spent on a `log_warn`.
+and carries on to exit 0. Put that next to the `rm -rf` eleven lines above it and the shape is complete: the script DELETES `packages/shared/dist`, runs a build, finds the directory gone, calls that "may be expected", and reports success. A build that silently emitted nothing -- which is exactly the failure the tsbuildinfo wipe exists to prevent -- exits 0 here with a warning
+nobody greps for. The one anti-vacuity opportunity in the file is spent on a `log_warn`.
 
-Reproduced byte for byte, including the parenthetical. Fixing a twin is a
-cutover-box decision and a port that quietly hardened this would stop being
-evidence about the original.
+Reproduced byte for byte, including the parenthetical. Fixing a twin is a cutover-box decision and a port that quietly hardened this would stop being evidence about the original.
 
 TWO SMALLER FACTS, ALSO REPRODUCED:
 
@@ -56,8 +39,7 @@ TWO SMALLER FACTS, ALSO REPRODUCED:
 -----------------------------------------------------------------------------
 THE GLOB, WHICH IS THE ONE PLACE A TRANSCRIPTION COULD GO WRONG
 -----------------------------------------------------------------------------
-`rm -rf packages/shared/dist packages/shared/*.tsbuildinfo` is expanded by bash
-before `rm` ever runs, and bash has no `nullglob` here, so:
+`rm -rf packages/shared/dist packages/shared/*.tsbuildinfo` is expanded by bash before `rm` ever runs, and bash has no `nullglob` here, so:
 
   * With matches, `rm` receives the expanded, sorted list.
   * With NO matches, `rm` receives the pattern LITERALLY -- `packages/shared/
@@ -66,15 +48,11 @@ before `rm` ever runs, and bash has no `nullglob` here, so:
   * A leading dot is not matched by `*` in either bash or `glob`, so a file
     literally named `.tsbuildinfo` survives both implementations.
 
-This port globs in Python and removes what it finds, which reproduces all three
-cases: the empty match removes nothing, exactly as `rm -f` on a nonexistent
-literal removes nothing.
+This port globs in Python and removes what it finds, which reproduces all three cases: the empty match removes nothing, exactly as `rm -f` on a nonexistent literal removes nothing.
 
 `rm -rf` ALSO REMOVES A NON-DIRECTORY. If `packages/shared/dist` is a regular
 file or a symlink, `rm -rf` deletes it without complaint; `shutil.rmtree` would
-raise `NotADirectoryError`. `remove_path` below branches on that, because "dist
-is a stale symlink into another worktree" is a real state in a repo that uses
-git worktrees and a port that crashed on it would be worse than the twin.
+raise `NotADirectoryError`. `remove_path` below branches on that, because "dist is a stale symlink into another worktree" is a real state in a repo that uses git worktrees and a port that crashed on it would be worse than the twin.
 
 STREAMS ARE INHERITED FOR npm, NEVER CAPTURED. `npm run build:packages` is a
 `tsc` build that prints its diagnostics as it goes; capturing them would hold
@@ -117,11 +95,7 @@ def remove_path(path: str) -> None:
         symlink, is unlinked. `rm -rf` does not care what it is.
       * A path that does not exist is a silent no-op, which is what `-f` buys.
 
-    `os.path.islink` is tested BEFORE `os.path.isdir`, because `isdir` follows
-    symlinks: a symlink pointing at a directory would otherwise be handed to
-    `rmtree`, which refuses it with `NotADirectoryError` on some platforms and,
-    worse, could be read as an instruction to delete the TARGET. `rm -rf` on a
-    symlink removes the link and never touches what it points at.
+    `os.path.islink` is tested BEFORE `os.path.isdir`, because `isdir` follows symlinks: a symlink pointing at a directory would otherwise be handed to `rmtree`, which refuses it with `NotADirectoryError` on some platforms and, worse, could be read as an instruction to delete the TARGET. `rm -rf` on a symlink removes the link and never touches what it points at.
     """
     if os.path.islink(path) or os.path.isfile(path):
         os.unlink(path)
@@ -133,15 +107,9 @@ def remove_path(path: str) -> None:
 def clean_targets(root: pathlib.Path | None = None) -> list[str]:
     """Every path the twin's `rm -rf` would actually act on, in its order.
 
-    A PURE FUNCTION, separate from the removal, so the differential can assert
-    WHICH paths a run would delete without deleting anything -- and so the glob
-    semantics above are testable rather than described. Relative paths, because
-    the twin's are relative to the repo root it has just `cd`ed into.
+    A PURE FUNCTION, separate from the removal, so the differential can assert WHICH paths a run would delete without deleting anything -- and so the glob semantics above are testable rather than described. Relative paths, because the twin's are relative to the repo root it has just `cd`ed into.
 
-    The literal `dist` path is always first and is returned even when it does not
-    exist: `rm -rf` is handed it unconditionally, and a caller counting targets
-    should see the same list bash built, not the subset that happened to be
-    present.
+    The literal `dist` path is always first and is returned even when it does not exist: `rm -rf` is handed it unconditionally, and a caller counting targets should see the same list bash built, not the subset that happened to be present.
     """
     base = pathlib.Path.cwd() if root is None else pathlib.Path(root)
     matches = sorted(glob.glob(str(base / TSBUILDINFO_GLOB)))

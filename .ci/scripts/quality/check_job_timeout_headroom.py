@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """A long-running CI job must keep real headroom under its own timeout-minutes.
 
-WHY THIS EXISTS. On 2026-08-07 `Validate Promotion` hit `timeout-minutes: 30`
-at 30m13s and the 0804-1 release did not ship. The chain is worth stating,
-because no part of it says the word "timeout":
+WHY THIS EXISTS. On 2026-08-07 `Validate Promotion` hit `timeout-minutes: 30` at 30m13s and the 0804-1 release did not ship. The chain is worth stating, because no part of it says the word "timeout":
 
     job exceeds timeout-minutes
       -> GitHub marks its conclusion `cancelled` (NOT `failure`)
@@ -12,36 +10,19 @@ because no part of it says the word "timeout":
       -> finalize never dispatches cd-v2.yml
       -> NO RELEASE RUN IS EVER CREATED
 
-The job log's only clue is `The operation was canceled.` The fix was to raise
-the number by hand, and by itself a raised number protects nothing: the job had
-already timed out once on 2026-07-28, and the ceiling was approached silently
+The job log's only clue is `The operation was canceled.` The fix was to raise the number by hand, and by itself a raised number protects nothing: the job had already timed out once on 2026-07-28, and the ceiling was approached silently
 for weeks -- 21m57s, 27m20s, CANCELLED 31m03s, 28m35s, 24m09s, 24m56s, 24m01s,
 CANCELLED 30m51s. Nothing was watching the MARGIN, only pass/fail.
 
-WHAT IT CHECKS. For every job named in job-timeout-baseline.json, the workflow's
-declared `timeout-minutes` must exceed the observed worst case by MIN_HEADROOM.
-It fails when a timeout is lowered, when a job silently loses its
-`timeout-minutes`, when a baseline job is renamed out of the workflow, and --
-after a `--refresh` -- when real durations have crept toward the ceiling.
+WHAT IT CHECKS. For every job named in job-timeout-baseline.json, the workflow's declared `timeout-minutes` must exceed the observed worst case by MIN_HEADROOM. It fails when a timeout is lowered, when a job silently loses its `timeout-minutes`, when a baseline job is renamed out of the workflow, and -- after a `--refresh` -- when real durations have crept toward the ceiling.
 
-WHY A COMMITTED BASELINE INSTEAD OF A LIVE QUERY. `npm run ci` must work
-offline and deterministically, so the gate reads committed numbers only. The
-network lives in `--refresh`, which rewrites the baseline from the Actions API.
-That split is deliberate: a gate that needs a token is a gate that silently
-degrades to "passed" on the machine that lacks one.
+WHY A COMMITTED BASELINE INSTEAD OF A LIVE QUERY. `npm run ci` must work offline and deterministically, so the gate reads committed numbers only. The network lives in `--refresh`, which rewrites the baseline from the Actions API. That split is deliberate: a gate that needs a token is a gate that silently degrades to "passed" on the machine that lacks one.
 
-WHAT IT DOES NOT DO. It does not predict duration, and it cannot: promotion
-cost scales with the `edge` channel, which grows with every release. It only
-asserts that the margin between measured reality and the declared ceiling has
+WHAT IT DOES NOT DO. It does not predict duration, and it cannot: promotion cost scales with the `edge` channel, which grows with every release. It only asserts that the margin between measured reality and the declared ceiling has
 not closed. Catching the creep still requires refreshing the baseline; the
 `stale baseline` check below is what stops that from being forgotten quietly.
 
----- gate ----
-step: CI job timeout headroom
-needs: none
-id: check:ci-timeout-headroom
-selftest: true
----- end gate ----
+---- gate ---- step: CI job timeout headroom needs: none id: check:ci-timeout-headroom selftest: true ---- end gate ----
 """
 
 import argparse
@@ -73,17 +54,10 @@ class WorkflowUnreadableError(Exception):
 def job_timeouts(root):
     """Map a job's display `name:` to its `timeout-minutes`, across ALL workflows.
 
-    EVERY workflow file, not just ci.yml, because a caller job that `uses:` a
-    reusable workflow cannot carry `timeout-minutes` at all -- GitHub rejects it
-    there, and the real ceiling lives on the job inside the called file. Reading
-    only ci.yml made this gate accuse `Stage Artifacts` of having lost its
-    timeout when the truth was worse and different: it never had one anywhere,
-    in either file. A checker that cannot see where the answer lives will
-    confidently give the wrong reason.
+    EVERY workflow file, not just ci.yml, because a caller job that `uses:` a reusable workflow cannot carry `timeout-minutes` at all -- GitHub rejects it there, and the real ceiling lives on the job inside the called file. Reading only ci.yml made this gate accuse `Stage Artifacts` of having lost its timeout when the truth was worse and different: it never had one anywhere, in
+    either file. A checker that cannot see where the answer lives will confidently give the wrong reason.
 
-    Deliberately regex-based rather than yaml.safe_load: the shape being read is
-    two fixed keys at one indentation level, and this keeps the gate free of a
-    PyYAML dependency. A parse that finds nothing raises rather than returning
+    Deliberately regex-based rather than yaml.safe_load: the shape being read is two fixed keys at one indentation level, and this keeps the gate free of a PyYAML dependency. A parse that finds nothing raises rather than returning
     {} -- an empty map would make every downstream comparison vacuous.
     """
     found = {}
@@ -147,11 +121,7 @@ def verdicts(baseline_jobs, timeouts):
 def controls(timeouts):
     """Prove the detector can fire, in BOTH directions, before any real read.
 
-    A one-directional control is satisfiable by a broken checker: one that always
-    complains passes the positive control, one that never complains passes the
-    negative. Refusing a verdict when the instrument cannot be demonstrated is
-    the whole point -- this gate exists because something ran for weeks while
-    reporting nothing.
+    A one-directional control is satisfiable by a broken checker: one that always complains passes the positive control, one that never complains passes the negative. Refusing a verdict when the instrument cannot be demonstrated is the whole point -- this gate exists because something ran for weeks while reporting nothing.
     """
     probe_job, probe_limit = next(iter(sorted(timeouts.items())))
     tight = {probe_job: {"observed_max_seconds": probe_limit * 60}}  # ratio 1.0

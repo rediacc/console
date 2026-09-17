@@ -13,25 +13,12 @@ case it has and comparing exit codes alone would compare almost nothing:
 
 HOW THE EXPORTED SET IS COMPARED. The twin is sourced by a throwaway bash shell
 that then dumps `env -0`; the port's `inject()` is called and its mapping is
-dumped the same way. Only the four names the twin exports are compared, plus the
-FACT that nothing else changed -- a port that exported a fifth name would pass a
-four-name comparison. `_exports_twin` starts from a fixed environment so the
-diff is against a known baseline rather than against whatever the test runner
-happened to inherit.
+dumped the same way. Only the four names the twin exports are compared, plus the FACT that nothing else changed -- a port that exported a fifth name would pass a four-name comparison. `_exports_twin` starts from a fixed environment so the diff is against a known baseline rather than against whatever the test runner happened to inherit.
 
-WHY THE RESOLVER IS A FIXTURE AND NOT THE REAL ONE. The twin resolves
-`resolve-version.sh` relative to its OWN directory, so a copy of the twin in a
-fixture finds the fixture's copy. That is the seam: `resolve-version.sh` here is
-a recording stub whose exit code and stdout are baked into its text, which makes
-the four fallback branches (fails / prints nothing / missing / not executable)
-reachable without inventing git history. The port derives the same path from its
-own `__file__`, so the fixture copy of the port finds the same stub -- asserted
-by `test_the_resolver_stub_is_actually_reached`, without which every case below
-could be "two programs that both fell back to 0.0.0-dev".
+WHY THE RESOLVER IS A FIXTURE AND NOT THE REAL ONE. The twin resolves `resolve-version.sh` relative to its OWN directory, so a copy of the twin in a fixture finds the fixture's copy. That is the seam: `resolve-version.sh` here is a recording stub whose exit code and stdout are baked into its text, which makes the four fallback branches (fails / prints nothing / missing / not
+executable) reachable without inventing git history. The port derives the same path from its own `__file__`, so the fixture copy of the port finds the same stub -- asserted by `test_the_resolver_stub_is_actually_reached`, without which every case below could be "two programs that both fell back to 0.0.0-dev".
 
-TWO REAL DEFECTS IN THE TWIN ARE PINNED HERE, not fixed:
-`test_a_flag_swallowed_as_a_version_is_a_twin_defect` and
-`test_sourcing_the_twin_leaks_set_euo_pipefail_into_the_caller`. Both are
+TWO REAL DEFECTS IN THE TWIN ARE PINNED HERE, not fixed: `test_a_flag_swallowed_as_a_version_is_a_twin_defect` and `test_sourcing_the_twin_leaks_set_euo_pipefail_into_the_caller`. Both are
 reported to the campaign; the repair is a cutover-box decision.
 """
 
@@ -95,15 +82,9 @@ def _fixture(
 ) -> pathlib.Path:
     """A tree holding COPIES of both subjects plus one resolver stub.
 
-    Copies, because each subject finds the resolver relative to its own location
-    (`BASH_SOURCE`/`__file__`). Driving the tracked files would consult the real
-    `resolve-version.sh` and the real git tags, and the fallback branches would
-    be unreachable.
+    Copies, because each subject finds the resolver relative to its own location (`BASH_SOURCE`/`__file__`). Driving the tracked files would consult the real `resolve-version.sh` and the real git tags, and the fallback branches would be unreachable.
 
-    `.resolve()` on the root: bash's `cd X && pwd` reports the LOGICAL path while
-    `pathlib.resolve()` follows symlinks. Nothing here prints the root, but the
-    two subjects must agree on WHICH resolver they found, and an unresolved root
-    on a host whose tmpdir is a symlink makes that a coin toss.
+    `.resolve()` on the root: bash's `cd X && pwd` reports the LOGICAL path while `pathlib.resolve()` follows symlinks. Nothing here prints the root, but the two subjects must agree on WHICH resolver they found, and an unresolved root on a host whose tmpdir is a symlink makes that a coin toss.
     """
     root = where.resolve() / "tree"
     (root / ".ci" / "scripts" / "version").mkdir(parents=True)
@@ -157,8 +138,7 @@ def _cli_port(root, argv, env_extra):
 def _exports_twin(root, argv, env_extra):
     """Source the twin in a throwaway shell and read the environment back.
 
-    THREE THINGS HERE ARE LOAD-BEARING, and the first two were each a wrong
-    first draft:
+    THREE THINGS HERE ARE LOAD-BEARING, and the first two were each a wrong first draft:
 
       * THE DUMP GOES TO A FILE, not to stdout. `--print` writes the version to
         stdout first, so a marker printed afterwards on the same stream is glued
@@ -337,8 +317,7 @@ def test_the_resolver_stub_is_actually_reached(tmp_path):
 
 def test_an_override_short_circuits_the_resolver(tmp_path):
     """CONTROL for the case above, in the other direction: with `--version` or
-    `$VERSION` set, the resolver must NOT be consulted. A port that always
-    resolved would pass every comparison in this file while spawning a git
+    `$VERSION` set, the resolver must NOT be consulted. A port that always resolved would pass every comparison in this file while spawning a git
     process on the release path for a version it was handed."""
     for argv, env_extra in ((("--version", "9.9.9"), {}), (("--print",), {"VERSION": "7.7.7"})):
         for subject, runner in ((TWIN_REL, _cli_twin), (PORT_REL, _cli_port)):
@@ -354,16 +333,10 @@ def test_an_override_short_circuits_the_resolver(tmp_path):
 def test_a_flag_swallowed_as_a_version_is_a_twin_defect(tmp_path):
     """A REAL DEFECT IN THE TWIN, pinned in BOTH implementations.
 
-    `--version` consumes the next word unconditionally, so
-    `--version --strict --print` sets the version to the literal "--strict",
-    never enables strict mode, prints `--strict` and exits 0. The one guard this
-    file exists to provide is switched off in silence -- and the way a caller
-    reaches it is an unquoted `$NEXT_VERSION` that expanded to nothing, which
-    DROPS the argument rather than passing "" and so sails past the twin's own
-    `--version was given an empty value` check.
+    `--version` consumes the next word unconditionally, so `--version --strict --print` sets the version to the literal "--strict", never enables strict mode, prints `--strict` and exits 0. The one guard this file exists to provide is switched off in silence -- and the way a caller reaches it is an unquoted `$NEXT_VERSION` that expanded to nothing, which DROPS the argument rather
+    than passing "" and so sails past the twin's own `--version was given an empty value` check.
 
-    Reproduced rather than repaired: a port that rejected it would fail
-    differently from the script it claims to be equivalent to. Reported.
+    Reproduced rather than repaired: a port that rejected it would fail differently from the script it claims to be equivalent to. Reported.
     """
     for subject, runner in ((TWIN_REL, _cli_twin), (PORT_REL, _cli_port)):
         root = _fixture(tmp_path / ("s-%s" % subject.name))
@@ -376,17 +349,11 @@ def test_a_flag_swallowed_as_a_version_is_a_twin_defect(tmp_path):
 def test_sourcing_the_twin_leaks_set_euo_pipefail_into_the_caller(tmp_path):
     """A SECOND REAL DEFECT IN THE TWIN, and one the port cannot have.
 
-    inject-env.sh's own header says "All logic is wrapped in a function so
-    `set -euo pipefail` stays scoped to this script and does not leak into the
-    caller shell". That is false in bash: `set` options are SHELL-GLOBAL, not
+    inject-env.sh's own header says "All logic is wrapped in a function so `set -euo pipefail` stays scoped to this script and does not leak into the caller shell". That is false in bash: `set` options are SHELL-GLOBAL, not
     function-scoped, so sourcing the file turns errexit, nounset and pipefail on
     in whatever shell sourced it and leaves them on.
 
-    Latent rather than active today -- both production sourcing callers
-    (build-cli-executables.sh:18, build-cli-musl.sh:14) already set the same
-    three at the top -- so this is recorded, not repaired. The port hands back a
-    mapping and has no shell options to leak, which is why the observable does
-    not appear in the comparison above.
+    Latent rather than active today -- both production sourcing callers (build-cli-executables.sh:18, build-cli-musl.sh:14) already set the same three at the top -- so this is recorded, not repaired. The port hands back a mapping and has no shell options to leak, which is why the observable does not appear in the comparison above.
     """
     root = _fixture(tmp_path / "leak")
     script = "set +euo pipefail; . '%s' --print >/dev/null; set -o" % (root / TWIN_REL)

@@ -15,62 +15,40 @@ Leak test for `rdc.sh`'s dev path. Two layers:
     carry `REDIACC_CONFIG=dev` and none of the sentinels, and the seeded
     `dev.json` must have the fixture's accountServer.
 
-REGISTERED CI GATE: `check:ci-rdc-sh-env`, step "rdc.sh env tests" in
-`.github/workflows/ci-quality.yml`, job `quality-static`.
+REGISTERED CI GATE: `check:ci-rdc-sh-env`, step "rdc.sh env tests" in `.github/workflows/ci-quality.yml`, job `quality-static`.
 
-WHAT MOVES AND WHAT DOES NOT. The HARNESS moves to Python: the greps, the
-fixture tree, the two shims, the tally and the exit code. The SUBJECT stays
-bash and is still driven as bash -- layer 2 runs the real `rdc.sh` under
-`bash`, because a Python reimplementation of the wrapper would be a second
-instrument certifying itself.
+WHAT MOVES AND WHAT DOES NOT. The HARNESS moves to Python: the greps, the fixture tree, the two shims, the tally and the exit code. The SUBJECT stays bash and is still driven as bash -- layer 2 runs the real `rdc.sh` under `bash`, because a Python reimplementation of the wrapper would be a second instrument certifying itself.
 
 PORT NOTES, each one driven before it was written down.
 
-THE OUTPUT IS BYTE-IDENTICAL, ANSI escapes and U+2713/U+2717 glyphs included.
-This is a registered gate whose stdout a human reads in a CI log, so the
+THE OUTPUT IS BYTE-IDENTICAL, ANSI escapes and U+2713/U+2717 glyphs included. This is a registered gate whose stdout a human reads in a CI log, so the
 `\\033[0;32m` / `\\033[0;31m` pairs are emitted literally rather than through
 any formatting helper, and every message is copied verbatim from the twin.
 
-THE "node not found" BRANCH OF THE TWIN IS DEAD CODE, and this port reproduces
-the death rather than the branch. `test-rdc-sh-env.sh:93` reads
+THE "node not found" BRANCH OF THE TWIN IS DEAD CODE, and this port reproduces the death rather than the branch. `test-rdc-sh-env.sh:93` reads
 `REAL_NODE="$(command -v node)"` under `set -euo pipefail`; an assignment whose
-value is a command substitution takes that substitution's exit status, so when
-`node` is absent bash exits 1 right there and the `if [[ -z "$REAL_NODE" ]]`
-guard on :94-97 never runs. Driven:
+value is a command substitution takes that substitution's exit status, so when `node` is absent bash exits 1 right there and the `if [[ -z "$REAL_NODE" ]]` guard on :94-97 never runs. Driven:
 `bash -c 'set -euo pipefail; X="$(command -v nope)"; echo REACHED'` prints
 nothing and exits 1. So `_real_node()` below raises `SilentExitError`, which
 `main` turns into a bare rc=1 with NOTHING on either stream -- exactly what the
-twin does, and deliberately NOT the friendlier message the twin's own author
-intended. (The house rule is that a missing tool should fail loudly with the
+twin does, and deliberately NOT the friendlier message the twin's own author intended. (The house rule is that a missing tool should fail loudly with the
 fix in the message; that fix belongs in the twin, which is not this file's to
 edit, and forging the message here would make the port disagree with its twin.)
 
-`grep -q ... && pass ...` DOES NOT ABORT WHEN THE GREP FAILS, even under
-`set -e`, because a command that is not the last in an `&&` list is exempt and
-the list's own failure does not trip the option. Driven:
+`grep -q ... && pass ...` DOES NOT ABORT WHEN THE GREP FAILS, even under `set -e`, because a command that is not the last in an `&&` list is exempt and the list's own failure does not trip the option. Driven:
 `bash -c 'set -euo pipefail; if true; then false && echo x; fi; echo AFTER'`
 prints `AFTER`. So :156's second `REDIACC_CONFIG=dev` check simply prints no
 PASS line when it fails; it is not a silent early exit. Ported as a plain `if`.
 
-THE 1d PASS LINE IS UNCONDITIONAL, and that is the twin's behaviour, not a bug
-this port tidied. `test-rdc-sh-env.sh:78-84` runs the dead-surface loop, each
-iteration able to call `fail`, and then calls `pass` on :84 regardless. A run
-that finds `RDC_BENCH` still referenced therefore prints BOTH the failure and
-"no removed token/mode surface". Reproduced.
+THE 1d PASS LINE IS UNCONDITIONAL, and that is the twin's behaviour, not a bug this port tidied. `test-rdc-sh-env.sh:78-84` runs the dead-surface loop, each iteration able to call `fail`, and then calls `pass` on :84 regardless. A run that finds `RDC_BENCH` still referenced therefore prints BOTH the failure and "no removed token/mode surface". Reproduced.
 
 THE EXPORT SET IS SORTED IN BYTE ORDER. The twin pipes through `sort -u`, whose
 collation follows the locale; this repo runs under `LANG=C.UTF-8` where that is
-byte order, and all three allowlisted names are pure ASCII with the underscore
-never adjacent to a decision. `sorted()` is therefore exact here, and
-`test_security_rdc_sh_env_check.py` pins it by running the real `sort -u`
-against the real `rdc.sh` rather than asserting the equivalence from the
-manual.
+byte order, and all three allowlisted names are pure ASCII with the underscore never adjacent to a decision. `sorted()` is therefore exact here, and `test_security_rdc_sh_env_check.py` pins it by running the real `sort -u` against the real `rdc.sh` rather than asserting the equivalence from the manual.
 
-THE ONE THING THIS PORT CANNOT KEEP is the shell's own `mktemp -d` name: both
-sides make their own fixture directory. Nothing in the twin's output quotes one
+THE ONE THING THIS PORT CANNOT KEEP is the shell's own `mktemp -d` name: both sides make their own fixture directory. Nothing in the twin's output quotes one
 on the green path, which is why the differential can compare bytes; the single
-red path that can (`cat "$FIX/run.err"`) is normalized in the differential and
-masked by the shadow-gate ledger's own `<tmp>` rule.
+red path that can (`cat "$FIX/run.err"`) is normalized in the differential and masked by the shadow-gate ledger's own `<tmp>` rule.
 
 Exit: 0 when no check failed, 1 otherwise.
 """
@@ -195,9 +173,7 @@ def sources_account_env(text: str) -> bool:
 def exported_names(text: str) -> str:
     """`grep -oE ... | awk '{print $2}' | sort -u | tr '\\n' ' ' | sed 's/ $//'`.
 
-    The awk step takes field 2 of the MATCHED TEXT, which is always the variable
-    name whether or not the line was indented, because `grep -o` prints only the
-    match and the leading whitespace is not a field.
+    The awk step takes field 2 of the MATCHED TEXT, which is always the variable name whether or not the line was indented, because `grep -o` prints only the match and the leading whitespace is not a field.
     """
     names = {m.group(1) for line in text.split("\n") if (m := EXPORT_RE.search(line))}
     return " ".join(sorted(names))
@@ -316,11 +292,7 @@ def run_dev_path(fix: pathlib.Path, fix_root: pathlib.Path) -> int:
 def _json_field(config: pathlib.Path, expression: str) -> str:
     """The twin's `python3 -c ... || echo PARSE_ERR`, run in-process.
 
-    The twin redirects the child's stderr to `/dev/null` here
-    (`test-rdc-sh-env.sh:172`), so nothing of CPython's traceback is
-    observable and reading the JSON in-process is exact. Its sibling
-    `test-install-sh-config.sh:98` does NOT redirect, which is why THAT port
-    shells out instead.
+    The twin redirects the child's stderr to `/dev/null` here (`test-rdc-sh-env.sh:172`), so nothing of CPython's traceback is observable and reading the JSON in-process is exact. Its sibling `test-install-sh-config.sh:98` does NOT redirect, which is why THAT port shells out instead.
     """
     try:
         with config.open(encoding="utf-8") as handle:
@@ -333,9 +305,7 @@ def _json_field(config: pathlib.Path, expression: str) -> str:
 def expression_value(account: dict[str, object], expression: str) -> str:
     """The two accessor spellings the twin uses, kept apart as the twin does.
 
-    `['accountServer']` RAISES on a config with no such key (PARSE_ERR), while
-    `.get('e2ePublicKey','')` returns the empty string. That asymmetry is the
-    twin's (`test-rdc-sh-env.sh:172-173`) and is preserved.
+    `['accountServer']` RAISES on a config with no such key (PARSE_ERR), while `.get('e2ePublicKey','')` returns the empty string. That asymmetry is the twin's (`test-rdc-sh-env.sh:172-173`) and is preserved.
     """
     if expression == "accountServer":
         return str(account["accountServer"])

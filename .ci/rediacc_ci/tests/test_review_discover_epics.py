@@ -1,32 +1,18 @@
 """Differential: `rediacc_ci.review.discover_epics` against its twin
 `.ci/scripts/review/discover-epics.sh`.
 
-A DISPOSABLE LOCAL GIT REPO, same strategy as `test_review_epic_context.py`
-and `test_pr_sync_epic_block.py`, and here it is not merely convenient: the
-subject resolves its snapshot root through `git rev-parse --show-toplevel`, so
-a fixture that is not a git repository would silently fall back to `.` and
-BOTH sides would then read the same wrong place and agree. Every case below
+A DISPOSABLE LOCAL GIT REPO, same strategy as `test_review_epic_context.py` and `test_pr_sync_epic_block.py`, and here it is not merely convenient: the subject resolves its snapshot root through `git rev-parse --show-toplevel`, so a fixture that is not a git repository would silently fall back to `.` and BOTH sides would then read the same wrong place and agree. Every case below
 runs with cwd inside a real fixture repo carrying a real `agent/pr/<branch>.md`.
 
-WHY `--dry-run` HAS NO EQUIVALENT HERE: this script writes nothing outside
-`$GITHUB_OUTPUT`, and with that variable unset it writes to stdout. Both are
-driven -- `test_github_output_file_receives_the_assignment` points it at a
-real file and compares the FILE, because a port that emitted the assignment to
-stdout in that case would still look identical on the human line.
+WHY `--dry-run` HAS NO EQUIVALENT HERE: this script writes nothing outside `$GITHUB_OUTPUT`, and with that variable unset it writes to stdout. Both are driven -- `test_github_output_file_receives_the_assignment` points it at a real file and compares the FILE, because a port that emitted the assignment to stdout in that case would still look identical on the human line.
 
 THE ONE LINE THAT MATTERS MOST is the empty case: a matrix over `[]` does not
 run the job at all, so `epics=[""]` (one flat pass) is what the twin emits and
 what `test_planted_defect_is_caught` plants against.
 
 K=5 LEDGER: `.ci/shadow/w7p6-discover-epics.observations.jsonl` -- five
-distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct
-trees". Recorded against a disposable scratch git repo built OUTSIDE this
-checkout (this tree is dirty and `shadow-gate --record` refuses a dirty tree),
-holding copies of the twin, `common.sh` and the `rediacc_ci` package plus a
-per-tree `agent/pr/<branch>.md`. The five trees vary the snapshot: one epic,
-two epics with a slashed branch, a snapshot with no trailer, PR_HEAD_REF
-unset, and the anchored-parse fixture. `--finding-re .` is passed because
-this script's output lines carry no severity marker.
+distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded against a disposable scratch git repo built OUTSIDE this checkout (this tree is dirty and `shadow-gate --record` refuses a dirty tree), holding copies of the twin, `common.sh` and the `rediacc_ci` package plus a per-tree `agent/pr/<branch>.md`. The five trees vary the snapshot: one epic, two
+epics with a slashed branch, a snapshot with no trailer, PR_HEAD_REF unset, and the anchored-parse fixture. `--finding-re .` is passed because this script's output lines carry no severity marker.
 """
 
 from __future__ import annotations
@@ -264,8 +250,7 @@ def test_worklist_publish_root_override_is_honoured(tmp_path: pathlib.Path) -> N
 
 def test_missing_jq_refuses_on_both_sides(tmp_path: pathlib.Path) -> None:
     """`require_cmd jq` is the twin's FIRST statement, so a machine without jq
-    refuses before it ever looks at PR_HEAD_REF. The port keeps the check even
-    though it never shells out to jq -- see its docstring. The seam is a PATH
+    refuses before it ever looks at PR_HEAD_REF. The port keeps the check even though it never shells out to jq -- see its docstring. The seam is a PATH
     carrying every other binary the two need and nothing named jq; the port is
     invoked by absolute interpreter path so it can still start."""
     repo = _repo(tmp_path)
@@ -280,10 +265,7 @@ def _run_with_socket_stdout(
 ) -> tuple[int, str, str]:
     """Run one side with a UNIX SOCKET as fd 1, and read what reached it.
 
-    A socket, not a pipe, because that is the case that broke: Node's
-    `child_process.spawnSync` gives its child a socketpair for stdout, so every
-    Node harness in this repo -- `scripts/lib/shadow-gate.ts` included -- runs
-    the subject this way.
+    A socket, not a pipe, because that is the case that broke: Node's `child_process.spawnSync` gives its child a socketpair for stdout, so every Node harness in this repo -- `scripts/lib/shadow-gate.ts` included -- runs the subject this way.
     """
     runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
     child_end, parent_end = socket.socketpair()
@@ -318,8 +300,7 @@ def test_defect_fixed_stdout_as_a_socket_no_longer_loses_the_assignment(
     `>>"${GITHUB_OUTPUT:-/dev/stdout}"`. Opening `/dev/stdout` fails with ENXIO
     ("No such device or address") when fd 1 is a UNIX socket, so with
     GITHUB_OUTPUT unset the twin printed its human line, LOST the `epics=`
-    line -- the only thing the workflow reads -- and exited 1. Measured before
-    the fix:
+    line -- the only thing the workflow reads -- and exited 1. Measured before the fix:
 
         twin rc=1 stdout='no epics declared for 0906-1; ...\n'
              stderr='discover-epics.sh: line 36: /dev/stdout: No such device
@@ -327,8 +308,7 @@ def test_defect_fixed_stdout_as_a_socket_no_longer_loses_the_assignment(
         port rc=0 stdout='no epics declared ...\nepics=[""]\n'
 
     GITHUB_OUTPUT is always set in Actions, so the live matrix never hit it;
-    every local run and every Node-harness run did, including the shadow-gate
-    recording this port's own ledger, which is how it was found. Both sides
+    every local run and every Node-harness run did, including the shadow-gate recording this port's own ledger, which is how it was found. Both sides
     are asserted here, so a revert of either turns this red."""
     repo = _repo(tmp_path)
     _snapshot(repo, "0906-1", "`PR-TASK: ab12cd34`\n")
@@ -355,9 +335,7 @@ def test_defect_fixed_socket_stdout_on_the_empty_case_too(tmp_path: pathlib.Path
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the one line the twin's header calls the whole
-    reason the script exists: `[""]` for the no-epics case. `[]` is the
-    plausible-looking "correct" JSON, and it makes the review matrix expand to
-    zero jobs -- a PR with no epics would get NO review at all. Driven red,
+    reason the script exists: `[""]` for the no-epics case. `[]` is the plausible-looking "correct" JSON, and it makes the review matrix expand to zero jobs -- a PR with no epics would get NO review at all. Driven red,
     then the source is restored byte-identical and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace("_emit('epics=[\"\"]\\n', env)", "_emit('epics=[]\\n', env)")

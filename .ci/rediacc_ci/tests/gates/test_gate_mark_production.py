@@ -2,22 +2,13 @@
 
 The production marker must refuse to lie about what is live.
 
-WHY THIS EXISTS. `production` is a moving tag and `--latest` is the badge a human
-reads as "what is in production". Both are claims about reality, so the script that
-writes them has exactly one job beyond writing: refusing when it cannot confirm the
-claim.
+WHY THIS EXISTS. `production` is a moving tag and `--latest` is the badge a human reads as "what is in production". Both are claims about reality, so the script that writes them has exactly one job beyond writing: refusing when it cannot confirm the claim.
 
-The failure this guards is not "it wrote the wrong sha". It is the softer one this
-repo keeps paying for: a probe that could not run being read as a pass. `gh`
-returning 403, or the network dropping, must NOT mark a version as production --
-"could not tell" is a failure, exactly as in assert-edge-tag-exists.sh.
+The failure this guards is not "it wrote the wrong sha". It is the softer one this repo keeps paying for: a probe that could not run being read as a pass. `gh` returning 403, or the network dropping, must NOT mark a version as production -- "could not tell" is a failure, exactly as in assert-edge-tag-exists.sh.
 
-HERMETIC: `gh` is shimmed, so this never touches GitHub and cannot move a real tag.
-A gate that needs the network is a gate that gets skipped on somebody else's outage.
+HERMETIC: `gh` is shimmed, so this never touches GitHub and cannot move a real tag. A gate that needs the network is a gate that gets skipped on somebody else's outage.
 
-WHAT THIS CANNOT SEE: it does not prove promote-stable.yml actually RUNS the script,
-nor that it runs AFTER endpoint verification. That wiring is
-check-ci-workflow-invariants.sh's kind of subject, not this file's.
+WHAT THIS CANNOT SEE: it does not prove promote-stable.yml actually RUNS the script, nor that it runs AFTER endpoint verification. That wiring is check-ci-workflow-invariants.sh's kind of subject, not this file's.
 """
 
 import os
@@ -42,8 +33,7 @@ def make_gh(workdir: pathlib.Path, mode: str) -> pathlib.Path:
     """A `gh` whose RELEASE VIEW behaves per `mode`; everything else succeeds
     quietly so only the property under test can decide the outcome.
 
-    `.object.sha` is asked twice: once on the ref (always succeeds here,
-    already jq-filtered to the bare sha), once on the tag object itself when
+    `.object.sha` is asked twice: once on the ref (always succeeds here, already jq-filtered to the bare sha), once on the tag object itself when
     `.object.type` was "tag" (the deref, which `deref-fails` breaks)."""
     bindir = workdir / ("bin-" + mode)
     bindir.mkdir(parents=True, exist_ok=True)

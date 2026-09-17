@@ -1,14 +1,9 @@
 """`rediacc_ci.quality.go_deps` against the shell text-handling it replaces.
 
 WHAT THE SHADOW LEDGER ALREADY PROVES:
-`.ci/shadow/w7p2-go-deps.observations.jsonl` drives both implementations end to
-end over five distinct committed trees, with an outdated minor dep, a probe that
-exits non-zero, a low-effort BLOCKER, an entry with no BLOCKER, and a two-module
-tree carrying every kind at once (minor, major, blocked, too-fresh, indirect and
-an unparseable timestamp).
+`.ci/shadow/w7p2-go-deps.observations.jsonl` drives both implementations end to end over five distinct committed trees, with an outdated minor dep, a probe that exits non-zero, a low-effort BLOCKER, an entry with no BLOCKER, and a two-module tree carrying every kind at once (minor, major, blocked, too-fresh, indirect and an unparseable timestamp).
 
-WHAT THE LEDGER CANNOT ISOLATE is the three pieces of shell text handling that
-decide what any of that MEANS, and each of them is quiet when it goes wrong:
+WHAT THE LEDGER CANNOT ISOLATE is the three pieces of shell text handling that decide what any of that MEANS, and each of them is quiet when it goes wrong:
 
   * `get_major`, a four-stage pipeline ending in `grep -o '^[0-9]*' || echo 0`.
     Get it wrong in one direction and every major update is demanded as a minor
@@ -57,13 +52,8 @@ JQ_RECORDS = (
 def _fresh_logger():
     """Rebind the module logger to whatever stream this test runs under.
 
-    `rediacc_ci.log` caches ONE default Logger bound to `sys.stderr` at first
-    use, which is right for a gate and wrong under pytest's `capsys`: the
-    capture fixture swaps `sys.stderr` per test and closes the previous one, so
-    a logger cached by an EARLIER test writes into a closed file and every later
-    test dies with `ValueError: I/O operation on closed file`. That failure
-    names the logger rather than the test that poisoned it, which is why this is
-    an autouse fixture and not a line in the two tests that use capsys.
+    `rediacc_ci.log` caches ONE default Logger bound to `sys.stderr` at first use, which is right for a gate and wrong under pytest's `capsys`: the capture fixture swaps `sys.stderr` per test and closes the previous one, so a logger cached by an EARLIER test writes into a closed file and every later test dies with `ValueError: I/O operation on closed file`. That failure names the
+    logger rather than the test that poisoned it, which is why this is an autouse fixture and not a line in the two tests that use capsys.
     """
     log.reset()
     yield
@@ -81,13 +71,8 @@ def _bash(script: str, *args: str) -> str:
 def _bash_major(version: str) -> int:
     """The twin's answer, with its ONE coercion made explicit.
 
-    `get_major` returns the EMPTY STRING for a non-numeric version, because its
-    trailing `|| echo "0"` is dead code: `grep -o '^[0-9]*'` matches a
-    zero-length string and exits 0 while printing nothing. The twin survives it
-    because its only consumer is `[[ a -gt b ]]`, where bash reads an empty
-    operand as 0, so that coercion is applied HERE and nowhere else. Writing
-    `int(out or 0)` inline would hide the fact that the two implementations
-    differ in what they RETURN and agree only in what they COMPARE.
+    `get_major` returns the EMPTY STRING for a non-numeric version, because its trailing `|| echo "0"` is dead code: `grep -o '^[0-9]*'` matches a zero-length string and exits 0 while printing nothing. The twin survives it because its only consumer is `[[ a -gt b ]]`, where bash reads an empty operand as 0, so that coercion is applied HERE and nowhere else. Writing `int(out or 0)`
+    inline would hide the fact that the two implementations differ in what they RETURN and agree only in what they COMPARE.
     """
     out = _bash('%s\nget_major "$1"' % GET_MAJOR, version).strip()
     return int(out) if out else 0
@@ -184,10 +169,7 @@ def test_slurp_reads_back_to_back_objects_with_no_separator() -> None:
 def test_slurp_raises_on_garbage_rather_than_returning_empty() -> None:
     """A PARSE FAILURE MUST NOT LOOK LIKE A CLEAN TREE.
 
-    This is the 2026-07-27 defect in miniature: the old pipeline sent both
-    commands' errors to /dev/null and `|| true`d the result, so an unreadable
-    stream produced zero records, which is byte-identical to "nothing is
-    outdated". The caller turns this exception into a `__PROBE_FAILED__`
+    This is the 2026-07-27 defect in miniature: the old pipeline sent both commands' errors to /dev/null and `|| true`d the result, so an unreadable stream produced zero records, which is byte-identical to "nothing is outdated". The caller turns this exception into a `__PROBE_FAILED__`
     sentinel; returning `[]` here would put the defect straight back.
     """
     for bad in ("{oops", "[1,2", "not json at all"):
@@ -218,9 +200,7 @@ def test_go_dirs_finds_only_directories_carrying_a_go_mod(tmp_path: pathlib.Path
 def test_go_dirs_on_a_tree_with_no_private_directory(tmp_path: pathlib.Path) -> None:
     """THE TWIN'S VACUITY HOLE, pinned here as it is pinned in the selftest.
 
-    An empty list makes `main` print "No Go submodules found to check" and exit
-    0, having probed nothing. That is the twin's verdict, reproduced on purpose,
-    and it is reported as a defect rather than fixed inside a port.
+    An empty list makes `main` print "No Go submodules found to check" and exit 0, having probed nothing. That is the twin's verdict, reproduced on purpose, and it is reported as a defect rather than fixed inside a port.
     """
     assert go_deps.go_dirs(tmp_path) == []
 
@@ -264,8 +244,7 @@ def test_module_record_projection_matches_the_gates_own_json_helper() -> None:
     """A guard on the test's own fixture builder, not on the gate.
 
     `_module_json` is what the selftest plants with; if it stopped producing an
-    `Update` block, every plant below would fire against a module the gate is
-    not even meant to report.
+    `Update` block, every plant below would fire against a module the gate is not even meant to report.
     """
     record = json.loads(go_deps._module_json("a", "v1", "v2", "2024-01-01T00:00:00Z"))
     assert record["Update"]["Version"] == "v2"

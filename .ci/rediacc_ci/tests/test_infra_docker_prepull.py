@@ -1,11 +1,7 @@
 """Differential: `rediacc_ci.infra.docker_prepull` against its twin
 `.ci/scripts/infra/docker-prepull.sh`.
 
-A RECORDING FAKE `docker` ON A PREPENDED PATH, and it is not a convenience: the
-subject's entire job is `docker pull`, so a case that reached the real binary
-would pull whatever ref the argument named, over the network, into the
-developer's daemon -- and the retry cases would then take 90 seconds each while
-doing it. Three independent things keep the real one out of reach:
+A RECORDING FAKE `docker` ON A PREPENDED PATH, and it is not a convenience: the subject's entire job is `docker pull`, so a case that reached the real binary would pull whatever ref the argument named, over the network, into the developer's daemon -- and the retry cases would then take 90 seconds each while doing it. Three independent things keep the real one out of reach:
 
   1. the stub directory is FIRST on PATH and `shutil.which("docker", path=...)`
      is asserted to resolve to the fake, in `test_the_fake_docker_is_the_docker`
@@ -20,26 +16,15 @@ doing it. Three independent things keep the real one out of reach:
      that difference would then show up as a divergence in the thing under
      test rather than in the fixture.
 
-`sleep` IS FAKED THE SAME WAY, AND THAT IS WHAT MAKES THE RETRY CASES CHEAP.
-Both implementations resolve `sleep` through PATH -- the port execs it rather
-than calling `time.sleep`, for exactly this reason -- so one stub nulls the
-30s+60s backoff on BOTH sides and the full three-attempt path costs
-milliseconds. The stub still RECORDS the durations it was asked for, into the
-same log as the pulls, so the schedule and the interleaving are compared rather
-than merely skipped.
+`sleep` IS FAKED THE SAME WAY, AND THAT IS WHAT MAKES THE RETRY CASES CHEAP. Both implementations resolve `sleep` through PATH -- the port execs it rather than calling `time.sleep`, for exactly this reason -- so one stub nulls the 30s+60s backoff on BOTH sides and the full three-attempt path costs milliseconds. The stub still RECORDS the durations it was asked for, into the same
+log as the pulls, so the schedule and the interleaving are compared rather than merely skipped.
 
-THE CALL LOG IS THE PRIMARY ARTIFACT. Which argv reached docker, in which
-order, with the sleeps interleaved, is invisible in stdout: a port that pulled
+THE CALL LOG IS THE PRIMARY ARTIFACT. Which argv reached docker, in which order, with the sleeps interleaved, is invisible in stdout: a port that pulled
 with the wrong `--platform`, or retried twice instead of three times, or slept
-before the first attempt, prints the same lines as one that did not. Every case
-compares the log.
+before the first attempt, prints the same lines as one that did not. Every case compares the log.
 
-ONE NAMED DIVERGENCE, and it is the only one in this file: the no-arguments
-usage line interpolates `$0`, which is the path the caller typed, so the twin
-names the `.sh` and the port names the `.py`.
-`test_no_arguments_is_refused_with_the_usage_line` asserts everything else
-about that case byte for byte and asserts the two usage lines differ ONLY in
-that path, rather than papering over it.
+ONE NAMED DIVERGENCE, and it is the only one in this file: the no-arguments usage line interpolates `$0`, which is the path the caller typed, so the twin names the `.sh` and the port names the `.py`. `test_no_arguments_is_refused_with_the_usage_line` asserts everything else about that case byte for byte and asserts the two usage lines differ ONLY in that path, rather than papering
+over it.
 
 K=5 LEDGER: `.ci/shadow/w7p6-docker-prepull.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
@@ -104,16 +89,10 @@ sys.exit(0)
 def _stub_bin(base: pathlib.Path, *, with_docker: bool = True) -> str:
     """A directory holding the fakes, prepended to the real PATH.
 
-    PREPENDED rather than curated down to a symlink farm: the twin sources
-    `common.sh`, which reaches for `dirname` at source time, and `mktemp`,
-    `tr` and `uname` live behind other helpers there. The safety property is
-    therefore RESOLUTION ORDER, and it is asserted rather than assumed.
+    PREPENDED rather than curated down to a symlink farm: the twin sources `common.sh`, which reaches for `dirname` at source time, and `mktemp`, `tr` and `uname` live behind other helpers there. The safety property is therefore RESOLUTION ORDER, and it is asserted rather than assumed.
 
     `with_docker=False` IS THE ONE CASE THAT CANNOT PREPEND, because the real
-    PATH holds a real docker on any host that can build anything here.
-    That case gets a CURATED path instead: the stub directory plus a symlink to
-    `dirname`, which is the only external the twin needs before `require_cmd`
-    speaks.
+    PATH holds a real docker on any host that can build anything here. That case gets a CURATED path instead: the stub directory plus a symlink to `dirname`, which is the only external the twin needs before `require_cmd` speaks.
     """
     stub = base / "bin"
     stub.mkdir(exist_ok=True)

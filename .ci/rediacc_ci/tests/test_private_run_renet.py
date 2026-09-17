@@ -1,42 +1,24 @@
 """Differential: `.ci/rediacc_ci/private/run_renet.py` against its twin
 `.ci/scripts/private/run-renet.sh`, the registered gate `check:ci-renet`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-THE REAL `private/renet/.ci/ci.sh` IS NEVER INVOKED. It is the submodule's whole
-CI: govulncheck, golangci-lint, deadcode and `go test ./...` under root. A suite
-that reached it would take many minutes, would need a Go toolchain and root, and
-would SKIP on a checkout without the submodule -- and a skip here is exactly the
-failure `common.sh`'s CI arm exists to prevent. The fixture supplies its own
-recording `ci.sh`, which appends its cwd, its argv AND the `GOTOOLCHAIN` it
-inherited to a log and exits with a canned status.
+THE REAL `private/renet/.ci/ci.sh` IS NEVER INVOKED. It is the submodule's whole CI: govulncheck, golangci-lint, deadcode and `go test ./...` under root. A suite that reached it would take many minutes, would need a Go toolchain and root, and would SKIP on a checkout without the submodule -- and a skip here is exactly the failure `common.sh`'s CI arm exists to prevent. The fixture
+supplies its own recording `ci.sh`, which appends its cwd, its argv AND the `GOTOOLCHAIN` it inherited to a log and exits with a canned status.
 
-WHAT IS COMPARED, AND WHY `GOTOOLCHAIN` IS ONE OF THE FOUR. Every case compares
-the exit code, stdout, stderr, and the CALL LOG. That log carries the exported
-`GOTOOLCHAIN` because the export is the only thing this script does that a
-downstream tool can see and no stream can show: `export
+WHAT IS COMPARED, AND WHY `GOTOOLCHAIN` IS ONE OF THE FOUR. Every case compares the exit code, stdout, stderr, and the CALL LOG. That log carries the exported `GOTOOLCHAIN` because the export is the only thing this script does that a downstream tool can see and no stream can show: `export
 GOTOOLCHAIN="${GOTOOLCHAIN:-auto}"` is what keeps `private/renet/go.mod`'s
-`toolchain` directive the single source of truth, and the twin's own comment
-records the incident where a hard pin had already diverged from it. A port that
+`toolchain` directive the single source of truth, and the twin's own comment records the incident where a hard pin had already diverged from it. A port that
 set it in a per-call `env=` dict instead of exporting would pass a stdout-only
 comparison and would stop covering `ci.sh`'s own children.
 
-NO `cd` HAPPENS IN EITHER SUBJECT, so the recorded cwd is the CALLER's, and the
-cases below are driven from a neutral directory that is neither the fixture root
-nor this checkout. That is what makes the absence of a `cd` observable.
+NO `cd` HAPPENS IN EITHER SUBJECT, so the recorded cwd is the CALLER's, and the cases below are driven from a neutral directory that is neither the fixture root nor this checkout. That is what makes the absence of a `cd` observable.
 
-THE THREE ARMS OF THE SUBMODULE GUARD ARE ALL DRIVEN. Present, absent-under-CI
-(three errors, exit 1) and absent-locally (one warning, exit 0). The middle one
-is the arm that stops this gate from reporting success while checking nothing,
-and `test_the_ci_arm_is_the_reason_the_guard_exists` fails if it ever stops
-exiting non-zero.
+THE THREE ARMS OF THE SUBMODULE GUARD ARE ALL DRIVEN. Present, absent-under-CI (three errors, exit 1) and absent-locally (one warning, exit 0). The middle one is the arm that stops this gate from reporting success while checking nothing, and `test_the_ci_arm_is_the_reason_the_guard_exists` fails if it ever stops exiting non-zero.
 
 THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
 the file it is running; the port composes the same prefix from `sys.argv[0]` and
-its own live frame. Those can never be equal, so `_mask` collapses exactly that
-prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
+its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
 """
 
 import pathlib
@@ -102,9 +84,7 @@ def _mask(text: str, root: pathlib.Path, tmp: pathlib.Path) -> str:
 def _fixture(tmp_path: pathlib.Path, *, marker: str = "script", rc: int = 0) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    `marker` is the shape of `private/renet/.ci/ci.sh`, and there are four
-    because the guard tests EXISTENCE (`-e`) while the invocation needs an
-    executable file:
+    `marker` is the shape of `private/renet/.ci/ci.sh`, and there are four because the guard tests EXISTENCE (`-e`) while the invocation needs an executable file:
 
       "script"  a working recording fake
       "none"    absent, so the guard decides
@@ -283,10 +263,7 @@ def test_the_recording_stage_is_actually_reached(tmp_path):
 def test_the_ci_arm_is_the_reason_the_guard_exists(tmp_path):
     """A missing submodule under CI must be FATAL on both sides.
 
-    `common.sh` spells out why: this gate carries govulncheck, deadcode and
-    golangci-lint, and an exit 0 here would report all three as passing while
-    checking nothing. This is the single assertion in the file whose failure
-    would mean the gate had become vacuous.
+    `common.sh` spells out why: this gate carries govulncheck, deadcode and golangci-lint, and an exit 0 here would report all three as passing while checking nothing. This is the single assertion in the file whose failure would mean the gate had become vacuous.
     """
     root = _fixture(tmp_path, marker="none")
     binder = _binder(tmp_path)
@@ -303,10 +280,7 @@ def test_the_ci_arm_is_the_reason_the_guard_exists(tmp_path):
 
 def test_the_local_arm_is_a_silent_pass_and_that_is_the_hole(tmp_path):
     """THE COMPLEMENT, and a REAL HOLE IN THE LOCAL GATE, pinned rather than
-    fixed. `npm run check:ci-renet` on a checkout without the submodule prints
-    one warning and exits 0, so the gate reports success having run nothing.
-    That is `common.sh`'s deliberate choice (a fresh clone without `--recursive`
-    stays workable) and closing it is a cutover-box decision, not a port's.
+    fixed. `npm run check:ci-renet` on a checkout without the submodule prints one warning and exits 0, so the gate reports success having run nothing. That is `common.sh`'s deliberate choice (a fresh clone without `--recursive` stays workable) and closing it is a cutover-box decision, not a port's.
     """
     root = _fixture(tmp_path, marker="none")
     binder = _binder(tmp_path)
@@ -331,8 +305,7 @@ def test_the_stage_runs_when_the_submodule_is_there(tmp_path):
 
 def test_a_preset_gotoolchain_is_not_overwritten(tmp_path):
     """`${GOTOOLCHAIN:-auto}` keeps an explicit value and replaces an EMPTY one.
-    Both halves matter: a port using `os.environ.get("GOTOOLCHAIN", "auto")`
-    would pass the first and fail the second, and the difference only shows up
+    Both halves matter: a port using `os.environ.get("GOTOOLCHAIN", "auto")` would pass the first and fail the second, and the difference only shows up
     in the environment the stage inherits."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)

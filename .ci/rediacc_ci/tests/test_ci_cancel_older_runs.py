@@ -1,40 +1,23 @@
 """`rediacc_ci.ci.cancel_older_runs` against its bash twin.
 
-THE FAKE `gh` IS RECORDING, AND THE CALL LOG IS THE POINT. This script's only
-effect on the world is the sequence of `gh api` calls it makes: the run lookup,
-the in-progress listing with its four query parameters, and one POST per older
-run to `force-cancel` and then to `cancel`. A differential that compared only
-the log lines would pass a port that cancelled the WRONG run, or that hit the
-endpoints in the other order. The fake appends its exact argv to `$FAKE_LOG`,
-each side writes into its own, and every case asserts the two are identical.
+THE FAKE `gh` IS RECORDING, AND THE CALL LOG IS THE POINT. This script's only effect on the world is the sequence of `gh api` calls it makes: the run lookup, the in-progress listing with its four query parameters, and one POST per older run to `force-cancel` and then to `cancel`. A differential that compared only the log lines would pass a port that cancelled the WRONG run, or that
+hit the endpoints in the other order. The fake appends its exact argv to `$FAKE_LOG`, each side writes into its own, and every case asserts the two are identical.
 
 LOOP CASES LEAVE THROUGH THE CLEAN DOOR, NOT THROUGH THE TIMEOUT, AND THAT WAS
-LEARNED THE HARD WAY. The twin's loop has two exits: "no older CI runs in
-progress" and the timeout. Driving a cancellation round with `--timeout 1
---poll-interval 1` looks like it gives exactly one round -- iteration one sees
+LEARNED THE HARD WAY. The twin's loop has two exits: "no older CI runs in progress" and the timeout. Driving a cancellation round with `--timeout 1 --poll-interval 1` looks like it gives exactly one round -- iteration one sees
 elapsed 0, cancels, sleeps, iteration two sees elapsed >= 1 and gives up -- but
 `START_TIME=$(date +%s)` and the loop's `$(date +%s)` are two separate reads of
-a whole-second clock, so if a second boundary falls between them the FIRST
-iteration already sees elapsed 1 and the script gives up having done nothing.
-That is a real property of the twin (reproduced by the port, since it reads the
-same clock the same way) and it made a shadow-gate row record
-MISMATCH_FINDINGS purely on which side of a second the two runs landed.
+a whole-second clock, so if a second boundary falls between them the FIRST iteration already sees elapsed 1 and the script gives up having done nothing. That is a real property of the twin (reproduced by the port, since it reads the same clock the same way) and it made a shadow-gate row record MISMATCH_FINDINGS purely on which side of a second the two runs landed.
 
 So every loop case here sets `FAKE_LIST_THEN_EMPTY=1` and a generous timeout:
-the first listing returns the fixture, every later one returns an empty array,
-and the loop leaves through the clean door after exactly one round. The timeout
-arm is exercised separately with `--timeout 0`, which is the one value that
-cannot race.
+the first listing returns the fixture, every later one returns an empty array, and the loop leaves through the clean door after exactly one round. The timeout arm is exercised separately with `--timeout 0`, which is the one value that cannot race.
 
-WHAT IS NORMALISED. Two arms print bash's own arithmetic diagnostic, which
-begins `<program>: line <N>:`. The program NAME necessarily differs between a
+WHAT IS NORMALISED. Two arms print bash's own arithmetic diagnostic, which begins `<program>: line <N>:`. The program NAME necessarily differs between a
 `.sh` and a module file; `strip_prog` replaces that one token and the line
-NUMBER is compared, because a drifting line number is what this pinning exists
-to catch.
+NUMBER is compared, because a drifting line number is what this pinning exists to catch.
 
 The K=5 ledger is `.ci/shadow/w7p6-cancel-older-runs.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-cancel-older-runs --assert
---k 5`).
+(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-cancel-older-runs --assert --k 5`).
 """
 
 from __future__ import annotations
@@ -137,9 +120,7 @@ def make_fake_gh(tmp_path: pathlib.Path) -> pathlib.Path:
 def restricted_bin(tmp_path: pathlib.Path, *, drop: str) -> pathlib.Path:
     """A PATH directory with everything either side needs EXCEPT `drop`.
 
-    `gh` really is installed at /usr/bin/gh here, so the only honest way to
-    reach the twin's missing-tool arm is a PATH that does not contain /usr/bin
-    at all. `dirname` and `uname` are in the list because common.sh runs both
+    `gh` really is installed at /usr/bin/gh here, so the only honest way to reach the twin's missing-tool arm is a PATH that does not contain /usr/bin at all. `dirname` and `uname` are in the list because common.sh runs both
     while it is being SOURCED and would otherwise fail for an unrelated reason.
     """
     bindir = tmp_path / ("nobin-%s" % drop)
@@ -306,8 +287,7 @@ def test_quirk_1_is_reachable_from_a_gh_warning_beside_a_perfectly_good_body(
     """This is the SHAPE that makes QUIRK 1 a live hazard rather than a curiosity.
 
     `RUN_INFO=$(gh api ... 2>&1)` merges gh's stderr into the body, so one
-    deprecation notice on stderr turns a valid response into a jq parse error
-    and takes the step down with exit 5.
+    deprecation notice on stderr turns a valid response into a jq parse error and takes the step down with exit 5.
     """
     old, new, calls = run_both(
         tmp_path, env_extra={"FAKE_RUN_STDERR": "gh: a deprecation notice\n"}
@@ -323,9 +303,7 @@ def test_quirk_1_is_reachable_from_a_gh_warning_beside_a_perfectly_good_body(
 def test_the_same_warning_is_harmless_on_the_listing_call(tmp_path: pathlib.Path) -> None:
     """The negative control: `2>/dev/null` on the listing, `2>&1` on the lookup.
 
-    Identical noise, identical fake, and this one is green -- which is what
-    proves the exit 5 above belongs to the MERGE at the twin's line 57 and not
-    to the fake writing on stderr at all.
+    Identical noise, identical fake, and this one is green -- which is what proves the exit 5 above belongs to the MERGE at the twin's line 57 and not to the fake writing on stderr at all.
     """
     old, new, calls = run_both(
         tmp_path, env_extra={"FAKE_LIST_STDERR": "gh: a deprecation notice\n"}
@@ -374,8 +352,7 @@ def test_no_older_runs_is_the_clean_exit(tmp_path: pathlib.Path) -> None:
 def test_the_filter_excludes_this_run_and_anything_newer(tmp_path: pathlib.Path) -> None:
     """Three candidates, one match. Both halves of the jq `select` are exercised.
 
-    id 9 is THIS run (excluded by id even though it is older), id 7 was created
-    after this one (excluded by timestamp), id 5 is the only older other run.
+    id 9 is THIS run (excluded by id even though it is older), id 7 was created after this one (excluded by timestamp), id 5 is the only older other run.
     """
     listing = json.dumps(
         {
@@ -408,8 +385,7 @@ def test_the_filter_excludes_this_run_and_anything_newer(tmp_path: pathlib.Path)
 def test_quirk_3_the_api_response_body_leaks_onto_stdout(tmp_path: pathlib.Path) -> None:
     """`gh api -X POST ... 2>/dev/null` redirects stderr ONLY.
 
-    So GitHub's response body lands on the script's stdout, once per cancelled
-    run. A caller piping this step's stdout gets JSON it never asked for.
+    So GitHub's response body lands on the script's stdout, once per cancelled run. A caller piping this step's stdout gets JSON it never asked for.
     """
     listing = json.dumps(
         {"workflow_runs": [{"id": 5, "run_number": 50, "created_at": "2025-01-01T00:00:00Z"}]}
@@ -545,8 +521,7 @@ def test_quirk_2_a_numeric_prefix_timeout_disables_the_timeout_entirely(
 
     Driven with no older runs so the loop can still exit through its other
     door; with an older run always present the twin runs until something else
-    kills it (measured: `timeout 4` returned 124). The observable half here is
-    that the diagnostic is printed and the script CONTINUES past it.
+    kills it (measured: `timeout 4` returned 124). The observable half here is that the diagnostic is printed and the script CONTINUES past it.
     """
     old, new, calls = run_both(tmp_path, "--timeout", "1abc")
     assert old[0] == 0
@@ -598,8 +573,7 @@ def test_the_arithmetic_line_number_is_still_line_92() -> None:
 def test_the_jq_programs_are_the_twins() -> None:
     """The three filters are copies. Re-read the twin instead of restating them.
 
-    The first is interpolated with the run id and the timestamp in both files,
-    so it is rendered with the twin's variable spellings and must then appear
+    The first is interpolated with the run id and the timestamp in both files, so it is rendered with the twin's variable spellings and must then appear
     verbatim. A port that widened the `select` -- dropping the `.id !=` half,
     say -- would cancel the run it is running inside.
     """
@@ -617,13 +591,9 @@ def test_a_missing_gh_reads_as_a_pass_because_the_twin_has_no_require_cmd(
     """The missing-tool arm, and it is GREEN. Pinned in both directions.
 
     Every other script in this batch guards with `require_cmd gh`; this one does
-    not, so `gh: command not found` is captured by the `2>&1` on line 57 INTO the
-    run body and reported as "Failed to fetch current run info", exit 0. A CI
-    runner without the GitHub CLI would therefore cancel nothing and say nothing
-    that reads as a failure.
+    not, so `gh: command not found` is captured by the `2>&1` on line 57 INTO the run body and reported as "Failed to fetch current run info", exit 0. A CI runner without the GitHub CLI would therefore cancel nothing and say nothing that reads as a failure.
 
-    The port raised `FileNotFoundError` and exited 1 here until `not_found` was
-    written, which is the divergence this case exists to keep out.
+    The port raised `FileNotFoundError` and exited 1 here until `not_found` was written, which is the divergence this case exists to keep out.
     """
     old, new, calls = run_both(tmp_path, drop_from_path="gh")
     assert old[0] == 0, "the twin's missing-tool arm changed; re-read the docstring"

@@ -1,32 +1,19 @@
 """A fan-out gate driver must let each subject declare its timeout, and must
 turn a timeout into a VERDICT rather than a traceback.
 
-THE DEFECT THIS EXISTS TO PREVENT FROM RETURNING, measured 2026-09-07.
-`test_twin_parity.py` discovers its subjects by glob -- 98 ported modules and
+THE DEFECT THIS EXISTS TO PREVENT FROM RETURNING, measured 2026-09-07. `test_twin_parity.py` discovers its subjects by glob -- 98 ported modules and
 climbing -- and drove every one of them under a hardcoded `timeout=600`, in two
 places. `subprocess.run(timeout=)` RAISES, and nothing caught it, so a subject
-slower than the literal produced a `TimeoutExpired` traceback instead of a
-verdict about the subject. The visible cost was not a red gate. It was a whole
+slower than the literal produced a `TimeoutExpired` traceback instead of a verdict about the subject. The visible cost was not a red gate. It was a whole
 class of subject silently becoming UNPORTABLE: `test-claude-hooks.sh` runs 2 229
-offline cases in 13m31s, hit the wall, and was about to be recorded as a
-permanent "standing drop" on the strength of it -- which is how a fixable
-constraint turns into folklore that each later batch rediscovers and re-drops.
+offline cases in 13m31s, hit the wall, and was about to be recorded as a permanent "standing drop" on the strength of it -- which is how a fixable constraint turns into folklore that each later batch rediscovers and re-drops.
 
 WHY THE OBVIOUS GATE IS THE WRONG ONE, and it was proposed. "Every
 `subprocess.run` with a `timeout=` must have a `try/except TimeoutExpired`"
-covers 196 call sites in this tree, and it is wrong at nearly all of them: a
-one-shot fixture (`bash -c 'echo x'`, `git --version`, one assert script) that
-blows a 120-second limit IS hung, and a traceback is the loudest, most accurate
-rendering of that. A gate demanding a handler there buys nothing and would be
-suppressed within a day, which is worse than no gate because a suppressed gate
-still looks like coverage. So this narrows to the property that actually failed:
-a driver running a subject set IT DOES NOT CONTROL.
+covers 196 call sites in this tree, and it is wrong at nearly all of them: a one-shot fixture (`bash -c 'echo x'`, `git --version`, one assert script) that blows a 120-second limit IS hung, and a traceback is the loudest, most accurate rendering of that. A gate demanding a handler there buys nothing and would be suppressed within a day, which is worse than no gate because a
+suppressed gate still looks like coverage. So this narrows to the property that actually failed: a driver running a subject set IT DOES NOT CONTROL.
 
-THE CLASS, stated so membership is checkable rather than asserted. A module here
-is a FAN-OUT DRIVER when it discovers its subjects at import time (a `glob` at
-module scope) and then runs them through a subprocess. Its timeouts are then a
-promise about files nobody has measured -- every future port, not just today's
-98 -- and only two things make that promise keepable:
+THE CLASS, stated so membership is checkable rather than asserted. A module here is a FAN-OUT DRIVER when it discovers its subjects at import time (a `glob` at module scope) and then runs them through a subprocess. Its timeouts are then a promise about files nobody has measured -- every future port, not just today's 98 -- and only two things make that promise keepable:
 
   RULE A  the timeout is DERIVED, never a bare literal, so a subject can declare
           what it costs.
@@ -34,21 +21,14 @@ promise about files nobody has measured -- every future port, not just today's
           TimeoutExpired`, or the one function wrapping it is itself only ever
           called from inside one.
 
-Rule B is deliberately ONE HOP and no further. The real shape it must accept is
-`test_twin_parity.run_port`, where the `subprocess.run` is in a helper and the
+Rule B is deliberately ONE HOP and no further. The real shape it must accept is `test_twin_parity.run_port`, where the `subprocess.run` is in a helper and the
 `try` is at the helper's call site; a rule that only looked inside the function
-would flag the very code that fixed the bug. Chasing further than one hop needs
-a call graph this does not have, and that is a BLIND SPOT stated rather than
-papered over: a subject-runner buried two helpers deep would pass here.
+would flag the very code that fixed the bug. Chasing further than one hop needs a call graph this does not have, and that is a BLIND SPOT stated rather than papered over: a subject-runner buried two helpers deep would pass here.
 
-ANTI-VACUITY, both halves. An empty member set fails, because the day the glob
-stops matching is the day this silently guards nothing. And the analyser itself
-is exercised against synthetic sources that violate each rule, so a green here
-means the predicates can still discriminate -- not merely that nobody tripped
-them. The controls are in-memory strings, never a mutation of a tracked file.
+ANTI-VACUITY, both halves. An empty member set fails, because the day the glob stops matching is the day this silently guards nothing. And the analyser itself is exercised against synthetic sources that violate each rule, so a green here means the predicates can still discriminate -- not merely that nobody tripped them. The controls are in-memory strings, never a mutation of a
+tracked file.
 
-NO `BASH_TWIN`: this is a new gate, not a port of a bash one, so `test_twin_parity`
-correctly leaves it alone.
+NO `BASH_TWIN`: this is a new gate, not a port of a bash one, so `test_twin_parity` correctly leaves it alone.
 """
 
 from __future__ import annotations
@@ -110,9 +90,7 @@ def _catches_timeout(handler: ast.ExceptHandler) -> bool:
 def _inside_guarded_try(node: ast.AST) -> bool:
     """Is `node` lexically inside a `try` whose handler catches a timeout?
 
-    The BODY is what a `try` protects, so a call sitting in the handler or the
-    `finally` of such a statement does not count -- checking `try` ancestry
-    alone would admit exactly that.
+    The BODY is what a `try` protects, so a call sitting in the handler or the `finally` of such a statement does not count -- checking `try` ancestry alone would admit exactly that.
     """
     child = node
     for parent in _ancestors(node):
@@ -136,9 +114,7 @@ def _enclosing_function(node: ast.AST) -> ast.FunctionDef | None:
 def _all_call_sites_guarded(tree: ast.AST, func_name: str) -> bool:
     """Every call to `func_name` in this module is inside a guarded `try`.
 
-    ALL, not any, and at least one: a helper reached from one guarded site and
-    one bare site is unguarded in practice, and a helper nothing calls proves
-    nothing at all.
+    ALL, not any, and at least one: a helper reached from one guarded site and one bare site is unguarded in practice, and a helper nothing calls proves nothing at all.
     """
     sites = [
         n
@@ -193,18 +169,11 @@ def _module_level_discovered_names(tree: ast.Module) -> set[str]:
 def is_fanout_driver(source: str) -> bool:
     """Does this module DISCOVER its subjects at IMPORT TIME rather than list them?
 
-    IMPORT TIME IS THE WHOLE DISCRIMINATOR, and the looser reading cost a false
-    positive on the first run of this gate. `test_gate_media_docs.py` globs
-    `.ci/media/*.sh` and runs subprocesses with literal timeouts, so "has a glob
-    and runs a subject" flagged it -- wrongly. Its globs are inside test bodies
+    IMPORT TIME IS THE WHOLE DISCRIMINATOR, and the looser reading cost a false positive on the first run of this gate. `test_gate_media_docs.py` globs `.ci/media/*.sh` and runs subprocesses with literal timeouts, so "has a glob and runs a subject" flagged it -- wrongly. Its globs are inside test bodies
     and produce DATA (which media modules exist, for a coverage assertion); the
-    things it actually runs are fixed module-level constants whose cost its
-    author measured. Nothing there can grow behind the author's back, which is
-    the only reason a literal timeout is ever a problem.
+    things it actually runs are fixed module-level constants whose cost its author measured. Nothing there can grow behind the author's back, which is the only reason a literal timeout is ever a problem.
 
-    So the rule is: a module-level name bound from a glob, referenced elsewhere
-    in the module, in a module that runs a subject with a timeout. A hand-written
-    tuple of subjects is out of class for the same reason.
+    So the rule is: a module-level name bound from a glob, referenced elsewhere in the module, in a module that runs a subject with a timeout. A hand-written tuple of subjects is out of class for the same reason.
     """
     try:
         tree = ast.parse(source)

@@ -1,12 +1,7 @@
 """`rediacc_ci.quality.silent_failure_patterns` against the twin's awk program.
 
-WHY A DIFFERENTIAL. This gate's whole behaviour is five awk regexes and one
-skip-the-next-line state machine, and two independent bugs in exactly that layer
-kept it matching NOTHING for months (a repo root resolved to `.ci`, and `-v`
-escape processing that turned the guard pattern into an ERE with empty
-alternations). A table of expected strings would be a table of what the PORT
-does, asserted against itself. Running the real awk and comparing is the only
-form that can fail for the right reason.
+WHY A DIFFERENTIAL. This gate's whole behaviour is five awk regexes and one skip-the-next-line state machine, and two independent bugs in exactly that layer kept it matching NOTHING for months (a repo root resolved to `.ci`, and `-v` escape processing that turned the guard pattern into an ERE with empty alternations). A table of expected strings would be a table of what the PORT
+does, asserted against itself. Running the real awk and comparing is the only form that can fail for the right reason.
 
 The whole gate is covered by `.ci/shadow/w7p2-silent-failures.observations.jsonl`
 over five distinct trees; this file covers the scanner in isolation.
@@ -113,10 +108,6 @@ def test_prefilter_matches_grep(tmp_path: pathlib.Path, line: str) -> None:
 def test_the_inherited_missing_floor_is_pinned(tmp_path: pathlib.Path) -> None:
     """A corpus that collapsed to zero files yields NO findings, and that is a defect.
 
-    The twin has no anti-vacuity floor: `find` matching nothing produces "No
-    unguarded pipefail-risk pipelines found" and exit 0. The port preserves that
-    because a port that changes the verdict is not a port. This assertion pins
-    the CURRENT answer so the day the twin grows a floor, this file goes red and
-    names the module that has to follow it.
+    The twin has no anti-vacuity floor: `find` matching nothing produces "No unguarded pipefail-risk pipelines found" and exit 0. The port preserves that because a port that changes the verdict is not a port. This assertion pins the CURRENT answer so the day the twin grows a floor, this file goes red and names the module that has to follow it.
     """
     assert mod.collect(tmp_path) == []

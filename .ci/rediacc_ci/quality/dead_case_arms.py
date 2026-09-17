@@ -51,54 +51,32 @@ THE COMMENT-STRIPPING RULE IS THE WHOLE GATE, and the twin says why:
     pattern in prose would vaccinate the whole tree against detecting that
     pattern, so the gate would grow quieter the better anything was commented.
 
-THE MEDIA ROOT IS A SCAN ROOT AND NOT A CODE ROOT, and the asymmetry is
-deliberate: "a directory that vouches for its own keys cannot be scanned. That
+THE MEDIA ROOT IS A SCAN ROOT AND NOT A CODE ROOT, and the asymmetry is deliberate: "a directory that vouches for its own keys cannot be scanned. That
 is this gate's founding lesson in a second costume: `cores=` survived because
 the only occurrences were in the file describing it. A media module globbing for
 `frames=` while being the only emitter of `frames=` would rule itself live by
 exactly the same mechanism."
 
-THE COUNT LEAVES THE SCANNER AS A VALUE, NOT AS AN EXIT STATUS, and the twin
-records the reason: "It used to come back as the exit status, which a shell
-takes mod 256: exactly 256 dead arms would have returned 0 and read as a clean
-tree, and the control that proves this gate works compares that same status
-against zero." The port returns a LIST, which cannot wrap at all.
+THE COUNT LEAVES THE SCANNER AS A VALUE, NOT AS AN EXIT STATUS, and the twin records the reason: "It used to come back as the exit status, which a shell takes mod 256: exactly 256 dead arms would have returned 0 and read as a clean tree, and the control that proves this gate works compares that same status against zero." The port returns a LIST, which cannot wrap at all.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`grep` ON THIS HOST IS ugrep 7.8.4, AND IT SKIPS BINARY FILES SILENTLY. Measured
-2026-09-06: a shell file carrying a NUL byte, whose line 2 matches the case-arm
-pattern, produces NO output and exit 1 from `grep -rnE`. GNU grep would print
-`Binary file X matches` instead. The port reproduces ugrep by skipping any file
+`grep` ON THIS HOST IS ugrep 7.8.4, AND IT SKIPS BINARY FILES SILENTLY. Measured 2026-09-06: a shell file carrying a NUL byte, whose line 2 matches the case-arm pattern, produces NO output and exit 1 from `grep -rnE`. GNU grep would print `Binary file X matches` instead. The port reproduces ugrep by skipping any file
 containing a NUL byte, which is the behaviour the differential compares against;
-under GNU grep the twin would emit a mangled `Binary file ...` line that the
-scanner would then try to split on colons. Reported as a portability defect in
-the twin rather than repaired.
+under GNU grep the twin would emit a mangled `Binary file ...` line that the scanner would then try to split on colons. Reported as a portability defect in the twin rather than repaired.
 
-THE SCANNER READS THE WHOLE grep LINE, PREFIX INCLUDED. `printf '%s' "$line" |
-grep -oE '"[^"]*"'` runs over `path:lineno:content`, so a quoted segment in the
+THE SCANNER READS THE WHOLE grep LINE, PREFIX INCLUDED. `printf '%s' "$line" | grep -oE '"[^"]*"'` runs over `path:lineno:content`, so a quoted segment in the
 PATH would contribute keys. No such path exists; the behaviour is carried
-because narrowing it to the content would change which keys a future path could
-produce.
+because narrowing it to the content would change which keys a future path could produce.
 
-FINDING ORDER IS TRAVERSAL ORDER AND IS NOT SORTED. `grep -r` emits in the order
-its directory walk produces, which is readdir order and therefore filesystem
-state rather than repository content. The port uses `os.walk`, which is also
-readdir order, and the two need not agree. That is fine and deliberate:
-`scripts/lib/shadow-gate.ts` compares findings as an unordered MULTISET, so a
-different order is the same verdict, and imposing a sort here would hide a real
-change in enumeration that the twin would show.
+FINDING ORDER IS TRAVERSAL ORDER AND IS NOT SORTED. `grep -r` emits in the order its directory walk produces, which is readdir order and therefore filesystem state rather than repository content. The port uses `os.walk`, which is also readdir order, and the two need not agree. That is fine and deliberate: `scripts/lib/shadow-gate.ts` compares findings as an unordered MULTISET, so a
+different order is the same verdict, and imposing a sort here would hide a real change in enumeration that the twin would show.
 
-SYMLINKS ARE NOT FOLLOWED, on both sides. `grep -r` (as opposed to `-R`) does
-not descend through a directory symlink, and `os.walk` agrees by default. A
-symlinked FILE inside a scanned tree is skipped too, which matches `-r`.
+SYMLINKS ARE NOT FOLLOWED, on both sides. `grep -r` (as opposed to `-R`) does not descend through a directory symlink, and `os.walk` agrees by default. A symlinked FILE inside a scanned tree is skipped too, which matches `-r`.
 
-EVERY LOOP VARIABLE THAT WAS AN OUT-PARAMETER IS NOW A RETURN VALUE. `scan()`
-returns its findings as a list of message strings rather than logging them and
-setting a global, so the two control scans no longer need `2>/dev/null` to stay
-quiet and cannot accidentally print into a caller's output.
+EVERY LOOP VARIABLE THAT WAS AN OUT-PARAMETER IS NOW A RETURN VALUE. `scan()` returns its findings as a list of message strings rather than logging them and setting a global, so the two control scans no longer need `2>/dev/null` to stay quiet and cannot accidentally print into a caller's output.
 """
 
 import os
@@ -159,11 +137,7 @@ def _walk_files(root: pathlib.Path, exclude_dir: str | None = None):
       * a file containing a NUL byte is skipped, because ugrep treats it as
         binary and reports nothing at all; see the port notes
 
-    A FOURTH EXCLUSION IS NOT grep's, and is named separately so it is not read as
-    one: `paths.walk_tree` also prunes `.git`, `node_modules` and
-    `.claude/worktrees`. The last is a peer session's sibling checkout of this
-    repository, git-excluded and therefore invisible to CI, which a raw `os.walk`
-    happily descended into and scanned as if it were source.
+    A FOURTH EXCLUSION IS NOT grep's, and is named separately so it is not read as one: `paths.walk_tree` also prunes `.git`, `node_modules` and `.claude/worktrees`. The last is a peer session's sibling checkout of this repository, git-excluded and therefore invisible to CI, which a raw `os.walk` happily descended into and scanned as if it were source.
     """
     if root.is_file():
         candidates = [root]
@@ -191,10 +165,7 @@ def _walk_files(root: pathlib.Path, exclude_dir: str | None = None):
 def extract_case_keys(dirs: list[str], base: pathlib.Path) -> list[str]:
     """`grep -rnE '<case arm>' <dirs> | grep -vE '<comment hit>'`.
 
-    Returns `path:lineno:content` strings with the path spelled exactly as the
-    argument was, because that spelling is what lands in the finding text: a
-    relative root gives relative paths and an absolute root gives absolute ones,
-    on both sides.
+    Returns `path:lineno:content` strings with the path spelled exactly as the argument was, because that spelling is what lands in the finding text: a relative root gives relative paths and an absolute root gives absolute ones, on both sides.
     """
     out: list[str] = []
     for spec in dirs:
@@ -222,10 +193,7 @@ def key_is_live(key: str, code_dirs: list[str], base: pathlib.Path) -> bool:
 
         grep -rhE --exclude-dir=test "${key}=" $CODE_DIRS | grep -qvE '^\s*(#|//|\*)'
 
-    ONE non-comment hit anywhere is enough, which is deliberately generous: this
-    gate deletes nothing, but a false POSITIVE tells an author their assertion is
-    dead when it is not, and that costs more than a missed dead arm. Over-count
-    life on purpose.
+    ONE non-comment hit anywhere is enough, which is deliberately generous: this gate deletes nothing, but a false POSITIVE tells an author their assertion is dead when it is not, and that costs more than a missed dead arm. Over-count life on purpose.
     """
     needle = re.compile(re.escape(key) + "=")
     for spec in code_dirs:
@@ -241,8 +209,7 @@ def key_is_live(key: str, code_dirs: list[str], base: pathlib.Path) -> bool:
 def keys_in(hit: str) -> list[str]:
     """Every `ident=` key inside a quoted segment of one grep hit, sorted unique.
 
-    Two chained `grep -o`s in the twin: quoted segments first, then identifier
-    tokens inside them. Run over the WHOLE line including the `path:lineno:`
+    Two chained `grep -o`s in the twin: quoted segments first, then identifier tokens inside them. Run over the WHOLE line including the `path:lineno:`
     prefix; see the port notes.
     """
     keys: set[str] = set()
@@ -257,9 +224,7 @@ def scan(
 ) -> list[str]:
     """Every dead-arm finding, as the message the twin logs. Empty means clean.
 
-    RETURNS A LIST, NEVER A COUNT AND NEVER AN EXIT STATUS. See the module
-    docstring: the twin's earlier shape returned the count as the status, which
-    a shell takes mod 256, so exactly 256 dead arms read as a clean tree.
+    RETURNS A LIST, NEVER A COUNT AND NEVER AN EXIT STATUS. See the module docstring: the twin's earlier shape returned the count as the status, which a shell takes mod 256, so exactly 256 dead arms read as a clean tree.
     """
     findings: list[str] = []
     for hit in extract_case_keys(dirs, base):
@@ -284,11 +249,7 @@ def scan(
 def media_shell_files(media_dirs: list[str], base: pathlib.Path) -> int:
     """`for _f in "$_d"/*.sh` -- TOP LEVEL ONLY, not a recursive count.
 
-    COUNTED WITHOUT A PIPELINE in the twin, and the reason is carried:
-    "`find ... | wc -l` is what check:ci-silent-failures forbids here: under
-    `set -eo pipefail` a find that exits non-zero takes the whole script down
-    mid-count, and the number it was computing is the one thing standing between
-    a collapsed glob and a green report."
+    COUNTED WITHOUT A PIPELINE in the twin, and the reason is carried: "`find ... | wc -l` is what check:ci-silent-failures forbids here: under `set -eo pipefail` a find that exits non-zero takes the whole script down mid-count, and the number it was computing is the one thing standing between a collapsed glob and a green report."
     """
     total = 0
     for spec in media_dirs:
@@ -306,9 +267,7 @@ def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 on a control failure, a vacuous root, or a
     dead arm.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin documents itself
-    as taking no arguments ("Usage: check-dead-case-arms.sh") and ignores any it
-    is given.
+    `--selftest` is intercepted BEFORE any real scan. The twin documents itself as taking no arguments ("Usage: check-dead-case-arms.sh") and ignores any it is given.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -409,11 +368,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Plant a dead arm, prove it fires; make it live, prove it stops.
 
-    BOTH DIRECTIONS FOR EVERY RULE. This gate is a LIVENESS question, and a
-    liveness check has exactly two ways to be useless: it can call everything
-    dead (a blanket refusal, which the twin's media-live control exists to
-    forbid) or everything live (which is what a missing comment-stripping rule
-    produces, and is the 2026-08-05 self-vaccination).
+    BOTH DIRECTIONS FOR EVERY RULE. This gate is a LIVENESS question, and a liveness check has exactly two ways to be useless: it can call everything dead (a blanket refusal, which the twin's media-live control exists to forbid) or everything live (which is what a missing comment-stripping rule produces, and is the 2026-08-05 self-vaccination).
     """
     ctl = Controls("dead-case-arms", floor=24, verbose=True)
 

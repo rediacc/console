@@ -1,15 +1,10 @@
 """`rediacc_ci.proxies.ops_host_check` against its bash twin
-`.ci/scripts/test/proxies/proxy-ops-host-check.sh` (gate
-`check:ci-proxy-ops-host-check`, `package.json:389`).
+`.ci/scripts/test/proxies/proxy-ops-host-check.sh` (gate `check:ci-proxy-ops-host-check`, `package.json:389`).
 
 Sibling of `test_proxies_linux_packages.py`; see that file for why the two
 invocations are compared byte for byte rather than as a finding set.
 
-ONE CASE DRIVES THE REAL 213 MB renet binary. The rest point the twin's own
-`RENET_BINARY` override (`:144`) at a two-line shim that prints a canned
-report, which is the only way to drive a malformed one: the Go type
-`Checks []HostCheckResult` (`private/renet/cmd/renet/ops_host.go:29`) cannot
-emit anything else.
+ONE CASE DRIVES THE REAL 213 MB renet binary. The rest point the twin's own `RENET_BINARY` override (`:144`) at a two-line shim that prints a canned report, which is the only way to drive a malformed one: the Go type `Checks []HostCheckResult` (`private/renet/cmd/renet/ops_host.go:29`) cannot emit anything else.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-ops-host-check.observations.jsonl` (9 rows,
 9 distinct trees, 9 distinct finding sets), re-recorded on 2026-09-10 after the
@@ -285,12 +280,8 @@ def test_a_missing_jq_is_77_not_a_verdict(tmp_path: pathlib.Path) -> None:
 def test_a_checks_array_of_non_objects_is_now_a_named_refusal(tmp_path: pathlib.Path) -> None:
     """MUST FIRE. `:101`'s `2>/dev/null` used to turn jq's abort into silence.
 
-    Every rule about name/value/status/hint evaporated on exactly the input it
-    exists to catch, and the gate said the contract was satisfied (exit 0).
-    Now jq's status is read, its diagnostic is kept, and the refusal names what
-    was NOT asserted. Live paths today: zero, because `ops_host.go:29` declares
-    `Checks []HostCheckResult`. Override-reachable paths: one, `RENET_BINARY`,
-    and this test drives it.
+    Every rule about name/value/status/hint evaporated on exactly the input it exists to catch, and the gate said the contract was satisfied (exit 0). Now jq's status is read, its diagnostic is kept, and the refusal names what was NOT asserted. Live paths today: zero, because `ops_host.go:29` declares `Checks []HostCheckResult`. Override-reachable paths: one, `RENET_BINARY`, and
+    this test drives it.
     """
     fixture = build_fixture(
         tmp_path,
@@ -314,10 +305,7 @@ def test_a_checks_array_of_non_objects_is_now_a_named_refusal(tmp_path: pathlib.
 def test_checks_as_a_string_is_now_a_named_refusal(tmp_path: pathlib.Path) -> None:
     """MUST FIRE. jq's `length` of a 4-character string is 4, so the empty rule misses.
 
-    Nothing else in the validator objected to `"checks":"nope"` before the fix:
-    `to_entries` on a string aborted the program and the abort was discarded.
-    The refusal now carries `to_entries`' OWN wording, which differs from the
-    `.[]` wording the tally block emits three times just below it.
+    Nothing else in the validator objected to `"checks":"nope"` before the fix: `to_entries` on a string aborted the program and the abort was discarded. The refusal now carries `to_entries`' OWN wording, which differs from the `.[]` wording the tally block emits three times just below it.
     """
     fixture = build_fixture(
         tmp_path,
@@ -335,10 +323,7 @@ def test_checks_as_a_string_is_now_a_named_refusal(tmp_path: pathlib.Path) -> No
 def test_a_null_entry_is_still_read_field_by_field(tmp_path: pathlib.Path) -> None:
     """MUST NOT FIRE. jq's `null.name` is null, not an error, so no abort happens.
 
-    This is the direction that would be quietly lost by "fixing" the hole with
-    a blanket type guard: `checks:[null]` is reachable from a Go `json.Marshal`
-    of a nil element, it must still be reported field by field, and it must NOT
-    collapse into the one-line refusal.
+    This is the direction that would be quietly lost by "fixing" the hole with a blanket type guard: `checks:[null]` is reachable from a Go `json.Marshal` of a nil element, it must still be reported field by field, and it must NOT collapse into the one-line refusal.
     """
     fixture = build_fixture(
         tmp_path,
@@ -370,10 +355,7 @@ def test_a_non_object_document_emits_jqs_own_diagnostics(tmp_path: pathlib.Path)
 def test_a_two_document_stream_is_the_one_named_divergence(tmp_path: pathlib.Path) -> None:
     """jq reads a STREAM of values; `json.loads` reads exactly one.
 
-    Unreachable from a Go `json.Marshal`, which emits one document. Both sides
-    still go RED, so no green escapes -- but the bytes differ, and this pins
-    the twin's half so a future reader does not mistake the port for the
-    authority.
+    Unreachable from a Go `json.Marshal`, which emits one document. Both sides still go RED, so no green escapes -- but the bytes differ, and this pins the twin's half so a future reader does not mistake the port for the authority.
     """
     doc = json.dumps({"platform": "linux", "backend": "kvm", "checks": [{"name": "a"}]})
     fixture = build_fixture(tmp_path, report=f"{doc} {doc}")
@@ -394,9 +376,7 @@ def test_a_two_document_stream_is_the_one_named_divergence(tmp_path: pathlib.Pat
 def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
     """The plant RE-OPENS the hole on the port side only.
 
-    Swallowing the `_JqError` is exactly the shape the twin carried until
-    2026-09-10, so this is the regression a future edit is most likely to
-    reintroduce: the port would go back to exit 0 while the twin reds.
+    Swallowing the `_JqError` is exactly the shape the twin carried until 2026-09-10, so this is the regression a future edit is most likely to reintroduce: the port would go back to exit 0 while the twin reds.
     """
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     marker = "    except _JqError as exc:\n        findings.append(\n"
@@ -501,8 +481,7 @@ def test_want_platform_for_covers_every_arm_including_the_empty_one() -> None:
 def test_the_renet_report_type_is_still_a_slice_of_structs() -> None:
     """The measurement behind "live paths today: zero" in the module docstring.
 
-    If this ever reads something else, the hole above stops being latent and
-    the finding needs re-triaging rather than re-reading.
+    If this ever reads something else, the hole above stops being latent and the finding needs re-triaging rather than re-reading.
     """
     src = ROOT / "private" / "renet" / "cmd" / "renet" / "ops_host.go"
     if not src.is_file():

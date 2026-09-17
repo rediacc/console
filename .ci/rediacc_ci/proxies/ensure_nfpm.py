@@ -1,59 +1,40 @@
 """Port of `.ci/scripts/test/proxies/proxy-ensure-nfpm.sh`.
 
-Local proxy for `.ci/scripts/build/ensure-nfpm.sh`, wired as the registered gate
-`check:ci-proxy-ensure-nfpm` (`package.json:392`,
-`scripts/ci-runner/manifest.ts:7496-7499`). See the twin's header for what it
-guards in CI and why it builds a THROWAWAY fixture root instead of running in
-this checkout: the warm `.ci/cache/bin/nfpm` here would take the early-exit
-branch and the download and checksum would never be reached.
+Local proxy for `.ci/scripts/build/ensure-nfpm.sh`, wired as the registered gate `check:ci-proxy-ensure-nfpm` (`package.json:392`, `scripts/ci-runner/manifest.ts:7496-7499`). See the twin's header for what it guards in CI and why it builds a THROWAWAY fixture root instead of running in this checkout: the warm `.ci/cache/bin/nfpm` here would take the early-exit branch and the
+download and checksum would never be reached.
 
-The SUBJECT stays bash and is run as bash, exactly as the twin runs it. Only the
-proxy is ported, same division as `rediacc_ci.proxies.docker_prepull`. A Python
+The SUBJECT stays bash and is run as bash, exactly as the twin runs it. Only the proxy is ported, same division as `rediacc_ci.proxies.docker_prepull`. A Python
 port of the subject also exists at `rediacc_ci.build.ensure_nfpm`; this proxy
 does NOT point at it, because the thing under test is what CI executes.
 
 -----------------------------------------------------------------------------
 A REAL DEFECT IN THE TWIN, REPRODUCED RATHER THAN FIXED
 -----------------------------------------------------------------------------
-`proxy-ensure-nfpm.sh:33` is `set -uo pipefail` -- no `-e`. But `:92-95`,
-`:133-136` and `:158-160` wrap each subject run in `set +e` / `set -e`, and
-`set -e` TURNS ERREXIT ON rather than restoring the previous state. Measured
-directly on this host:
+`proxy-ensure-nfpm.sh:33` is `set -uo pipefail` -- no `-e`. But `:92-95`, `:133-136` and `:158-160` wrap each subject run in `set +e` / `set -e`, and `set -e` TURNS ERREXIT ON rather than restoring the previous state. Measured directly on this host:
 
     $ bash -c 'set -uo pipefail; echo "$-"; set +e; :; set -e; echo "$-"'
     huBc
     ehuBc
 
-So from `:95` onward the script runs under errexit it never asked for, and there
-is exactly one place that matters. `:113` is
+So from `:95` onward the script runs under errexit it never asked for, and there is exactly one place that matters. `:113` is
 
     GOT_VERSION="$("$PRINTED_DIR/nfpm" --version 2>&1 | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+' | head -1)"
 
-and under `pipefail` a `grep` that matches nothing makes the whole pipeline
-non-zero, which under errexit kills the script. Measured:
+and under `pipefail` a `grep` that matches nothing makes the whole pipeline non-zero, which under errexit kills the script. Measured:
 
     $ bash -c 'set -uo pipefail; set +e; :; set -e;
                X="$(echo hi | grep -oE "[0-9]+" | head -1)"; echo REACHED'
     (no output, exit 1)
 
-BLAST RADIUS: the day `nfpm --version` stops printing an `N.N.N` token -- a
-banner change, a `--version` that goes to stdout as JSON -- this REGISTERED gate
-exits 1 having printed four PASS lines, no FAIL line and no explanation. That is
-indistinguishable from the gate crashing, and it is the version-drift check
-itself that disappears. It is NOT reachable today (nfpm 2.45.0 prints
-`version: 2.45.0`), which is why it is documented and pinned rather than fixed:
-`_version_or_die` reproduces the abort, and
-`test_proxies_ensure_nfpm.py::test_a_version_with_no_semver_token_kills_both_
-sides` drives it with a shimmed nfpm on both sides.
+BLAST RADIUS: the day `nfpm --version` stops printing an `N.N.N` token -- a banner change, a `--version` that goes to stdout as JSON -- this REGISTERED gate exits 1 having printed four PASS lines, no FAIL line and no explanation. That is indistinguishable from the gate crashing, and it is the version-drift check itself that disappears. It is NOT reachable today (nfpm 2.45.0 prints
+`version: 2.45.0`), which is why it is documented and pinned rather than fixed: `_version_or_die` reproduces the abort, and `test_proxies_ensure_nfpm.py::test_a_version_with_no_semver_token_kills_both_ sides` drives it with a shimmed nfpm on both sides.
 
 -----------------------------------------------------------------------------
 THE PIN IS READ WITH BOTH STREAMS DISCARDED HERE, unlike in the subject
 -----------------------------------------------------------------------------
 `:59-63` is `$( source "$ROOT/.ci/config/constants.sh" >/dev/null 2>&1; printf
 '%s' "${NFPM_VERSION:-}" )`. A constants.sh that refuses (missing
-`.devcontainer/toolchain.env`) therefore says NOTHING here, and the proxy's own
-"could not read NFPM_VERSION" message is the only diagnostic. The subject
-inherits both streams instead. Reproduced as written, in both places.
+`.devcontainer/toolchain.env`) therefore says NOTHING here, and the proxy's own "could not read NFPM_VERSION" message is the only diagnostic. The subject inherits both streams instead. Reproduced as written, in both places.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-ensure-nfpm.observations.jsonl`.
 """
@@ -87,10 +68,7 @@ def _proxy_root() -> pathlib.Path:
 
     The twin resolves it from its own location under
     `.ci/scripts/test/proxies/`; this module sits at `.ci/rediacc_ci/proxies/`,
-    which is `parents[3]` rather than four `..` from a deeper directory.
-    `rediacc_ci.paths.repo_root()` is not used, for the reason
-    `rediacc_ci.infra.ci_start_elite._console_root` states: it honours
-    $REDIACC_CI_ROOT and the twin has no such override.
+    which is `parents[3]` rather than four `..` from a deeper directory. `rediacc_ci.paths.repo_root()` is not used, for the reason `rediacc_ci.infra.ci_start_elite._console_root` states: it honours $REDIACC_CI_ROOT and the twin has no such override.
     """
     return pathlib.Path(__file__).resolve().parents[3]
 
@@ -111,9 +89,7 @@ def read_pin(constants: pathlib.Path) -> str:
 def clean_path(path: str) -> str:
     """`:83-87`. Drop the directory holding `nfpm` from PATH, if there is one.
 
-    `tr ':' '\\n' | grep -vxF "$NFPM_HOME" | paste -sd: -` removes EVERY entry
-    equal to that directory, not just the first, and joins the rest with `:`.
-    A PATH with no nfpm on it is returned unchanged, which is the `if` at :84.
+    `tr ':' '\\n' | grep -vxF "$NFPM_HOME" | paste -sd: -` removes EVERY entry equal to that directory, not just the first, and joins the rest with `:`. A PATH with no nfpm on it is returned unchanged, which is the `if` at :84.
     """
     found = shutil.which("nfpm", path=path)
     if found is None:
@@ -178,10 +154,7 @@ def run() -> int:
 def _version_or_die(binary: pathlib.Path) -> str:
     """`:113`, INCLUDING the errexit abort. See the module docstring.
 
-    The twin runs this line under an errexit it acquired from `set -e` at `:95`,
-    so a `--version` with no `N.N.N` token in it does not yield an empty string:
-    it ENDS THE SCRIPT with exit 1 and nothing more on either stream. Raising
-    SystemExit(1) here is that, not a stylistic choice.
+    The twin runs this line under an errexit it acquired from `set -e` at `:95`, so a `--version` with no `N.N.N` token in it does not yield an empty string: it ENDS THE SCRIPT with exit 1 and nothing more on either stream. Raising SystemExit(1) here is that, not a stylistic choice.
     """
     proc = subprocess.run(
         [str(binary), "--version"],

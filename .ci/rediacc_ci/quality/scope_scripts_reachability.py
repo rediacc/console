@@ -104,61 +104,34 @@ THE DISPATCH HALF HAD NO FLOOR AND NEEDED ONE MOST:
 DEFECT FOUND WHILE PORTING, REPRODUCED RATHER THAN FIXED.
 -----------------------------------------------------------------------------
 
-THE DISPATCH-HALF ANTI-VACUITY REFUSAL CALLS A FUNCTION THAT DOES NOT EXIST. The
-twin never sources `.ci/scripts/lib/common.sh` -- it assigns its own RED/GREEN/NC
--- yet the branch added to close the hole above opens with
+THE DISPATCH-HALF ANTI-VACUITY REFUSAL CALLS A FUNCTION THAT DOES NOT EXIST. The twin never sources `.ci/scripts/lib/common.sh` -- it assigns its own RED/GREEN/NC -- yet the branch added to close the hole above opens with
 
     log_fail "the dispatch scan found 0 scripts/ reference(s) across ..."
 
-`log_fail` is defined in `.ci/scripts/test/lib/test-helpers.sh` and in four test
-scripts, in NONE of the libraries this gate loads. Under `set -euo pipefail` an
-unknown command exits 127 immediately, so the three explanatory `echo` lines and
-the `exit 1` beneath it never run: the refusal prints
-`...: line N: log_fail: command not found` and exits 127.
+`log_fail` is defined in `.ci/scripts/test/lib/test-helpers.sh` and in four test scripts, in NONE of the libraries this gate loads. Under `set -euo pipefail` an unknown command exits 127 immediately, so the three explanatory `echo` lines and the `exit 1` beneath it never run: the refusal prints `...: line N: log_fail: command not found` and exits 127.
 
 THIS IS THE SAME DEFECT, IN THE SAME SHAPE, AS ONE ALREADY RECORDED IN THIS TREE.
-`.ci/scripts/test/run-all.sh:215-219` says of check-pool-writer-safety.sh: "the
-anti-vacuity refusal that exists for exactly that case called a log_fail() that
-does not exist, so the gate exited 127 rather than refusing. Two failures had to
-be repaired before this one line became visible." That gate was given its own
+`.ci/scripts/test/run-all.sh:215-219` says of check-pool-writer-safety.sh: "the anti-vacuity refusal that exists for exactly that case called a log_fail() that does not exist, so the gate exited 127 rather than refusing. Two failures had to be repaired before this one line became visible." That gate was given its own
 `log_fail` at check-pool-writer-safety.sh:76; this one was not.
 
-The port reproduces the 127 and the diagnostic's shape, because invariant 5 says
-the twin is not edited in the change that ports it and the differential rules on
-behaviour. See `dispatch_floor_refusal` for exactly how far the reproduction goes
-and where it stops.
+The port reproduces the 127 and the diagnostic's shape, because invariant 5 says the twin is not edited in the change that ports it and the differential rules on behaviour. See `dispatch_floor_refusal` for exactly how far the reproduction goes and where it stops.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-WHICH grep RUNS THIS GATE, because getting that wrong invalidates every probe.
-A script resolves `grep` to `/usr/bin/grep`, GNU grep 3.12. An interactive Claude
-Code shell resolves it to a FUNCTION wrapping a bundled ugrep 7.8.4 with
+WHICH grep RUNS THIS GATE, because getting that wrong invalidates every probe. A script resolves `grep` to `/usr/bin/grep`, GNU grep 3.12. An interactive Claude Code shell resolves it to a FUNCTION wrapping a bundled ugrep 7.8.4 with
 `-G --ignore-files --hidden -I --exclude-dir=.git ...`. Measured 2026-09-06, the
-same pipeline over `.github/workflows` yields 231 references under the wrapper and
-226 under the real grep, and the five-reference gap is the `\x27` defect above.
-Under the wrapper, `-P` on `[^A-Za-z0-9_./-]` additionally exits 2 with "range out
-of order in character class" (it appends `\n` to the class, making the trailing
+same pipeline over `.github/workflows` yields 231 references under the wrapper and 226 under the real grep, and the five-reference gap is the `\x27` defect above. Under the wrapper, `-P` on `[^A-Za-z0-9_./-]` additionally exits 2 with "range out of order in character class" (it appends `\n` to the class, making the trailing
 `-` a range start) while `-E` matches; under GNU grep both flags agree. So: probe
 with `/usr/bin/grep`, or from inside a script, and treat any grep measurement
 taken at an interactive prompt as being about a different program.
 
-THE FIVE-STAGE PIPELINE IS FIVE STAGES HERE TOO. Each `grep`/`sed` in
-`extract_refs` narrows differently and the ORDER is observable: the output-statement
-filter runs on the WHOLE LINE, before the command-position match, so a line that
-both invokes and logs is dropped entirely. Collapsing the stages into one regex
-would change that.
+THE FIVE-STAGE PIPELINE IS FIVE STAGES HERE TOO. Each `grep`/`sed` in `extract_refs` narrows differently and the ORDER is observable: the output-statement filter runs on the WHOLE LINE, before the command-position match, so a line that both invokes and logs is dropped entirely. Collapsing the stages into one regex would change that.
 
-`node` IS SHELLED OUT TO, exactly as the twin does it. `classify()` lives in
-`.ci/scripts/ci/scope-map.cjs`, whose rule ORDER is semantics (first match wins,
-per driver contract section 3). Re-deriving it in Python would produce a gate that
-agrees with itself about a file it no longer reads.
+`node` IS SHELLED OUT TO, exactly as the twin does it. `classify()` lives in `.ci/scripts/ci/scope-map.cjs`, whose rule ORDER is semantics (first match wins, per driver contract section 3). Re-deriving it in Python would produce a gate that agrees with itself about a file it no longer reads.
 
-A MISSING `node` IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE, not a stack trace:
-`classify_mode` returns the twin's literal `"ERROR"` string, which is not `"full"`
-and therefore reports every path as a violation -- the same conservative direction
-the twin takes.
+A MISSING `node` IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE, not a stack trace: `classify_mode` returns the twin's literal `"ERROR"` string, which is not `"full"` and therefore reports every path as a violation -- the same conservative direction the twin takes.
 """
 
 import os
@@ -241,22 +214,12 @@ DISPATCH_FLOOR = 1
 def walk_text(root: pathlib.Path):
     """Every file `grep -r` would read under `root`, as text.
 
-    Reproduces GNU grep 3.12 (`/usr/bin/grep`, which is what a SCRIPT resolves
-    `grep` to on this host) as measured 2026-09-06: `-r` does not descend a
-    directory symlink, a file symlink found in the tree is skipped, and a file
-    containing a NUL byte contributes NOTHING TO STDOUT -- with `-o` GNU grep
-    prints no matching text for a binary file, only the diagnostic
-    `grep: <path>: binary file matches`, and that goes to STDERR, which every
-    caller of these extractors sends to /dev/null.
+    Reproduces GNU grep 3.12 (`/usr/bin/grep`, which is what a SCRIPT resolves `grep` to on this host) as measured 2026-09-06: `-r` does not descend a directory symlink, a file symlink found in the tree is skipped, and a file containing a NUL byte contributes NOTHING TO STDOUT -- with `-o` GNU grep prints no matching text for a binary file, only the diagnostic `grep: <path>: binary
+    file matches`, and that goes to STDERR, which every caller of these extractors sends to /dev/null.
 
-    THE grep IN AN INTERACTIVE CLAUDE CODE SHELL IS NOT THIS grep, and measuring
-    against it produced a wrong model twice while this port was written. That
-    shell defines `grep` as a FUNCTION wrapping a bundled ugrep 7.8.4 with
+    THE grep IN AN INTERACTIVE CLAUDE CODE SHELL IS NOT THIS grep, and measuring against it produced a wrong model twice while this port was written. That shell defines `grep` as a FUNCTION wrapping a bundled ugrep 7.8.4 with
     `-G --ignore-files --hidden -I --exclude-dir=.git ...`; a script sees
-    `/usr/bin/grep`, GNU grep 3.12. The two differ on `\x27` (see _LEAD above),
-    on how a binary file is reported, and on which files are searched at all.
-    Probe with `/usr/bin/grep` explicitly, or from inside a script file, when the
-    question is what a gate does.
+    `/usr/bin/grep`, GNU grep 3.12. The two differ on `\x27` (see _LEAD above), on how a binary file is reported, and on which files are searched at all. Probe with `/usr/bin/grep` explicitly, or from inside a script file, when the question is what a gate does.
     """
     if root.is_file() and not root.is_symlink():
         candidates = [root]
@@ -281,10 +244,7 @@ def walk_text(root: pathlib.Path):
 def _refs(lines, line_re, command_re, path_re) -> list[str]:
     """The five-stage pipeline, in the twin's order.
 
-    THE ORDER IS OBSERVABLE. The output-statement filter runs on the WHOLE line
-    before command position is considered, so a line that both invokes a script
-    and logs about one is dropped entirely. That is a known imprecision of the
-    twin and it is carried, because narrowing it changes which paths get judged.
+    THE ORDER IS OBSERVABLE. The output-statement filter runs on the WHOLE line before command position is considered, so a line that both invokes a script and logs about one is dropped entirely. That is a known imprecision of the twin and it is carried, because narrowing it changes which paths get judged.
     """
     out: set[str] = set()
     for line in lines:
@@ -317,9 +277,7 @@ def extract_refs(target: pathlib.Path) -> list[str]:
 def extract_ci_refs(target: pathlib.Path) -> list[str]:
     """`.ci/scripts/` paths INVOKED under `target`.
 
-    "`.ci/scripts/**` is currently ALL harness (scope-map.cjs's `ci-harness`), so
-    every reference below classifies `full` today and this scan is green. It
-    exists for the day someone narrows part of `.ci/`."
+    "`.ci/scripts/**` is currently ALL harness (scope-map.cjs's `ci-harness`), so every reference below classifies `full` today and this scan is green. It exists for the day someone narrows part of `.ci/`."
     """
     return _refs(
         (line for text in walk_text(target) for line in text.split("\n")),
@@ -333,9 +291,7 @@ def ci_invoked_runsh_subcommands(root: pathlib.Path) -> list[str]:
     """`./run.sh <sub>` names a WORKFLOW actually invokes.
 
     "run.sh dispatches many subcommands; only the ones a WORKFLOW actually invokes
-    are reachable from a gated job. `./run.sh drill ...` appears in ct-tests.yml,
-    `./run.sh worktree` does not, so scripts/dev/worktree.sh is legitimately
-    narrowable even though run.sh names it."
+    are reachable from a gated job. `./run.sh drill ...` appears in ct-tests.yml, `./run.sh worktree` does not, so scripts/dev/worktree.sh is legitimately narrowable even though run.sh names it."
     """
     out: set[str] = set()
     for text in walk_text(root / ".github" / "workflows"):
@@ -350,8 +306,7 @@ def ci_invoked_runsh_subcommands(root: pathlib.Path) -> list[str]:
 def dispatch_targets(text: str, subcommand: str) -> list[str]:
     """`scripts/` paths under the nearest preceding TOP-LEVEL label `subcommand`.
 
-    NOT A WINDOW AND NOT A BLOCK SCAN. See the module docstring for what each of
-    those two earlier shapes missed and mis-attributed.
+    NOT A WINDOW AND NOT A BLOCK SCAN. See the module docstring for what each of those two earlier shapes missed and mis-attributed.
     """
     out: set[str] = set()
     current = ""
@@ -368,10 +323,7 @@ def dispatch_targets(text: str, subcommand: str) -> list[str]:
 def classify_mode(root: pathlib.Path, path: str) -> str:
     """`scope-map.cjs`'s verdict for one path, or the twin's literal "ERROR".
 
-    SHELLED OUT TO node ON PURPOSE. The rule ORDER inside scope-map.cjs is
-    semantics (first match wins), and a Python re-derivation would be a second
-    copy that drifts silently. "ERROR" is not "full", so a node that cannot run
-    makes every path a violation, which is the conservative direction.
+    SHELLED OUT TO node ON PURPOSE. The rule ORDER inside scope-map.cjs is semantics (first match wins), and a Python re-derivation would be a second copy that drifts silently. "ERROR" is not "full", so a node that cannot run makes every path a violation, which is the conservative direction.
     """
     script = (
         'const {classify} = require(process.argv[1] + "/.ci/scripts/ci/scope-map.cjs");\n'
@@ -395,19 +347,10 @@ def classify_mode(root: pathlib.Path, path: str) -> str:
 def dispatch_floor_refusal() -> int:
     """The twin's dispatch-half refusal, defect and all. Returns 127.
 
-    THIS REPRODUCES A BUG. `log_fail` is undefined in the twin, so bash exits 127
-    at that line and the three explanatory `echo`s below it never run. See the
-    module docstring for the identical, already-recorded instance in
-    check-pool-writer-safety.sh.
+    THIS REPRODUCES A BUG. `log_fail` is undefined in the twin, so bash exits 127 at that line and the three explanatory `echo`s below it never run. See the module docstring for the identical, already-recorded instance in check-pool-writer-safety.sh.
 
-    HOW FAR THE REPRODUCTION GOES, stated so nobody reads more into it. bash's
-    diagnostic is `<script as invoked>: line <n>: log_fail: command not found`,
-    and both halves of that prefix belong to bash, not to the gate: the path is
-    whatever argv[0] was, and the line number is the twin's. The port emits the
-    canonical relative path and finds the line number by reading the twin, which
-    is exact when the gate is invoked the way CI invokes it and merely
-    approximate when it is invoked by absolute path. The STATUS, which is what a
-    caller acts on, is exact either way.
+    HOW FAR THE REPRODUCTION GOES, stated so nobody reads more into it. bash's diagnostic is `<script as invoked>: line <n>: log_fail: command not found`, and both halves of that prefix belong to bash, not to the gate: the path is whatever argv[0] was, and the line number is the twin's. The port emits the canonical relative path and finds the line number by reading the twin, which
+    is exact when the gate is invoked the way CI invokes it and merely approximate when it is invoked by absolute path. The STATUS, which is what a caller acts on, is exact either way.
     """
     lineno = 0
     twin = paths.repo_root() / TWIN_REL
@@ -603,8 +546,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions on the extractor, the attribution and the floors.
 
-    THE FLOOR IS DERIVED from the case corpus, so a case that stops running turns
-    the suite red rather than quietly shortening it.
+    THE FLOOR IS DERIVED from the case corpus, so a case that stops running turns the suite red rather than quietly shortening it.
     """
     # (label, one line of a scanned file, expected root refs)
     root_cases = [

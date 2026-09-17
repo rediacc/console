@@ -2,9 +2,7 @@
 
 META-GATE: a validator that PASSES when given nothing is broken by definition.
 
-WHY THIS EXISTS. This repo accumulated about twelve quality gates that were green
-because they could not fail. Two root patterns, both reproducible by simply
-removing the input:
+WHY THIS EXISTS. This repo accumulated about twelve quality gates that were green because they could not fail. Two root patterns, both reproducible by simply removing the input:
 
   1. Dead path constant. The tree a gate walked was deleted (PR #513 removed
      packages/web, packages/desktop, packages/e2e). The glob returned zero files,
@@ -15,35 +13,19 @@ removing the input:
      environment where DIR is gitignored -- e.g. the R2-hosted tutorial audio
      tree, whose per-file check has never once executed in CI.
 
-Both collapse to one testable property: point the validator at an EMPTY tree and
-it must exit NON-ZERO, complaining that its input is missing. If it exits 0, it
-is asserting nothing and its green run in CI means nothing.
+Both collapse to one testable property: point the validator at an EMPTY tree and it must exit NON-ZERO, complaining that its input is missing. If it exits 0, it is asserting nothing and its green run in CI means nothing.
 
-REGISTRY POLICY. The registry below is explicit and hand-verified, NOT
-auto-discovered. Auto-discovery would sweep in generators, one-shot scripts and
-validators whose input genuinely is optional, producing exactly the kind of noise
-that gets a gate suppressed. Add a validator here only after confirming by hand
-that "no input" is a real failure for it rather than a legitimate no-op.
+REGISTRY POLICY. The registry below is explicit and hand-verified, NOT auto-discovered. Auto-discovery would sweep in generators, one-shot scripts and validators whose input genuinely is optional, producing exactly the kind of noise that gets a gate suppressed. Add a validator here only after confirming by hand that "no input" is a real failure for it rather than a legitimate
+no-op.
 
-TWO REGISTRIES ARE TWO ANSWERS TO ONE QUESTION, so this port does not simply
-carry a second copy and hope. `test_the_registry_agrees_with_the_twins` parses
-the twin's array and requires the SETS to be equal. Without it the two lists
-would drift silently -- each side judging its own -- and a validator dropped from
-one would still look covered because the other still names it. That control is
-the port's, not the twin's, and it exists because the port created the hazard.
+TWO REGISTRIES ARE TWO ANSWERS TO ONE QUESTION, so this port does not simply carry a second copy and hope. `test_the_registry_agrees_with_the_twins` parses the twin's array and requires the SETS to be equal. Without it the two lists would drift silently -- each side judging its own -- and a validator dropped from one would still look covered because the other still names it. That
+control is the port's, not the twin's, and it exists because the port created the hazard.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `gates.lock.json` records
-`mutex: ["tree:repo"]` for `gate-test:gate-anti-vacuity`: three cases PLANT a file
-inside `scripts/` or `.ci/scripts/` and remove it again, and every registry case
-copies `scripts/`, `.ci/scripts/` and `.ci/rediacc_ci/` while another gate may be
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `gates.lock.json` records `mutex: ["tree:repo"]` for `gate-test:gate-anti-vacuity`: three cases PLANT a file inside `scripts/` or `.ci/scripts/` and remove it again, and every registry case copies `scripts/`, `.ci/scripts/` and `.ci/rediacc_ci/` while another gate may be
 walking them. `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured
 only because this module declares no `XDIST_GROUP` of its own.
 
-THE PLANTED FIXTURES ARE PID-KEYED for the reason `run-all.sh` records about the
-`.gate-paths-exist` pair: this schedule serialises the writer tests WITHIN one
-battery, but two batteries (two sessions in one tree) collide on a fixed fixture
-name, each cleanup deleting the other's file, which reads as "the detector is
-broken" rather than as a collision.
+THE PLANTED FIXTURES ARE PID-KEYED for the reason `run-all.sh` records about the `.gate-paths-exist` pair: this schedule serialises the writer tests WITHIN one battery, but two batteries (two sessions in one tree) collide on a fixed fixture name, each cleanup deleting the other's file, which reads as "the detector is broken" rather than as a collision.
 """
 
 import os
@@ -188,26 +170,14 @@ REGISTRY: tuple[tuple[str, str], ...] = (
 
 def run_against_empty_tree(script: str) -> harness.RunResult:
     """Execute `script` with the tooling trees copied into an otherwise empty
-    directory, so every `__dirname/../packages/...` and `__dirname/../private/...`
-    lookup resolves to nothing.
+    directory, so every `__dirname/../packages/...` and `__dirname/../private/...` lookup resolves to nothing.
 
-    COPYING (rather than deleting the real trees) is what makes this safe to run
-    against a working tree holding other sessions' uncommitted work.
+    COPYING (rather than deleting the real trees) is what makes this safe to run against a working tree holding other sessions' uncommitted work.
 
-    `.ci/scripts` IS IN THE COPY LIST, and it is not a convenience: without it the
-    harness could only ever test `scripts/*.ts`, which excluded about thirty shell
-    gates -- and the worst real instance of a vacuous gate lived in one of them
-    (`.ci/scripts/private/run-renet.sh` used to exit 0, silently taking
-    govulncheck, deadcode and golangci-lint with it).
+    `.ci/scripts` IS IN THE COPY LIST, and it is not a convenience: without it the harness could only ever test `scripts/*.ts`, which excluded about thirty shell gates -- and the worst real instance of a vacuous gate lived in one of them (`.ci/scripts/private/run-renet.sh` used to exit 0, silently taking govulncheck, deadcode and golangci-lint with it).
 
-    `.ci/rediacc_ci` IS ALSO IN IT, and that one is load-bearing in a subtler way.
-    The CI programs are moving into that Python package, so gates start with
-    `import rediacc_ci`. Copy only `scripts/` and `config/` and every one of them
-    dies in here with `ModuleNotFoundError` -- which arrives as a NON-ZERO EXIT
-    AND A MESSAGE ABOUT A MISSING INPUT, i.e. indistinguishable from the gate
-    correctly rejecting an empty tree. This harness would then report every such
-    gate as healthy while testing nothing about it.
-    `test_fixture_can_import_package` is the control that keeps that line honest.
+    `.ci/rediacc_ci` IS ALSO IN IT, and that one is load-bearing in a subtler way. The CI programs are moving into that Python package, so gates start with `import rediacc_ci`. Copy only `scripts/` and `config/` and every one of them dies in here with `ModuleNotFoundError` -- which arrives as a NON-ZERO EXIT AND A MESSAGE ABOUT A MISSING INPUT, i.e. indistinguishable from the gate
+    correctly rejecting an empty tree. This harness would then report every such gate as healthy while testing nothing about it. `test_fixture_can_import_package` is the control that keeps that line honest.
 
     `CI=true` on purpose: a gate is being judged on what it does IN CI, and some
     deliberately soften to a warning locally.
@@ -247,8 +217,7 @@ def run_against_empty_tree(script: str) -> harness.RunResult:
 def registry_verdict(script: str, needle: str) -> str | None:
     """None when `script` correctly rejects an empty tree, else why not.
 
-    A SEPARATE FUNCTION so `test_harness_catches_a_vacuous_validator` can drive
-    the identical code path against a planted validator instead of a lookalike.
+    A SEPARATE FUNCTION so `test_harness_catches_a_vacuous_validator` can drive the identical code path against a planted validator instead of a lookalike.
     """
     result = run_against_empty_tree(script)
     if result.rc == 0:
@@ -268,10 +237,7 @@ def registry_verdict(script: str, needle: str) -> str | None:
 def registry_path(script: str) -> pathlib.Path:
     """Where a registry entry's file lives.
 
-    `.sh` and `.py` are repo-root-relative. A `.ts` lives under `scripts/gates/` OR
-    `scripts/`, and BOTH are tried in step with the twin: W9 P2 moved 125 gate bodies
-    into `scripts/gates/` on 2026-09-09 while this resolver hard-coded the old home, so
-    every moved validator read as a stale registry entry -- a staleness check reporting
+    `.sh` and `.py` are repo-root-relative. A `.ts` lives under `scripts/gates/` OR `scripts/`, and BOTH are tried in step with the twin: W9 P2 moved 125 gate bodies into `scripts/gates/` on 2026-09-09 while this resolver hard-coded the old home, so every moved validator read as a stale registry entry -- a staleness check reporting
     staleness it had caused itself. Trying both is not a weakening; an entry present in
     NEITHER still resolves to the `scripts/` path and fails, which is the real finding.
     """
@@ -304,18 +270,11 @@ def test_fixture_can_import_package(gate):
     of its own.
 
     `import rediacc_ci` must work INSIDE the fixture; if it does not, a gate that
-    uses the package fails here for a reason that has nothing to do with what the
-    gate asserts, and that failure looks exactly like the empty-tree rejection
-    this file is built to observe.
+    uses the package fails here for a reason that has nothing to do with what the gate asserts, and that failure looks exactly like the empty-tree rejection this file is built to observe.
 
-    RED-THEN-GREEN, run in that order rather than assumed: delete the
-    `rediacc_ci` leg of the copy list in `run_against_empty_tree` and this case
-    goes red with `ModuleNotFoundError: No module named 'rediacc_ci'`.
+    RED-THEN-GREEN, run in that order rather than assumed: delete the `rediacc_ci` leg of the copy list in `run_against_empty_tree` and this case goes red with `ModuleNotFoundError: No module named 'rediacc_ci'`.
 
-    The probe is planted under `.ci/scripts/` specifically because that is a
-    directory the fixture copies -- a probe outside the copy list could not be run
-    in there at all. And it must resolve to the fixture's OWN copy of the package
-    rather than the repo's, or the case would stay green with the copy-list leg
+    The probe is planted under `.ci/scripts/` specifically because that is a directory the fixture copies -- a probe outside the copy list could not be run in there at all. And it must resolve to the fixture's OWN copy of the package rather than the repo's, or the case would stay green with the copy-list leg
     deleted; hence the last assertion.
     """
     probe_rel = ".ci/scripts/.rediacc-ci-import-probe.%d.py" % os.getpid()
@@ -353,21 +312,14 @@ def test_fixture_can_import_package(gate):
 def test_fetch_retry_reads_every_file_type(gate):
     """PER-FILE-TYPE BLINDNESS: absence of matches is indistinguishable from success.
 
-    `check:ci-fetch-retry` shipped 2026-09-01 reusing `run_blocks` from
-    `check_dockerfile_mirror_resilience.py` -- a parser for Dockerfile RUN
-    instructions -- over a corpus that is mostly shell. Measured: 25 blocks for the
-    Dockerfile, ZERO for any `.sh`. It printed "551 file(s) scanned" and reported
-    the tree clean while four real unretried fetches sat in `.devcontainer` shell
-    scripts inside its own corpus. Every one of its ten controls passed, because
-    they all fed it Dockerfile text.
+    `check:ci-fetch-retry` shipped 2026-09-01 reusing `run_blocks` from `check_dockerfile_mirror_resilience.py` -- a parser for Dockerfile RUN instructions -- over a corpus that is mostly shell. Measured: 25 blocks for the Dockerfile, ZERO for any `.sh`. It printed "551 file(s) scanned" and reported the tree clean while four real unretried fetches sat in `.devcontainer` shell
+    scripts inside its own corpus. Every one of its ten controls passed, because they all fed it Dockerfile text.
 
-    NOT the same claim as the REGISTRY check: that one proves a validator fails on
-    an EMPTY tree, this proves it can SEE each kind of file it claims to read.
+    NOT the same claim as the REGISTRY check: that one proves a validator fails on an EMPTY tree, this proves it can SEE each kind of file it claims to read.
 
     DRIVEN THROUGH THE PARSER, not through a planted file. The gate's corpus comes
     from `git ls-files`, deliberately, so a fixture written to disk is invisible
-    and a plant-based version of this control passes vacuously. That was the first
-    cut, and it failed here rather than in CI.
+    and a plant-based version of this control passes vacuously. That was the first cut, and it failed here rather than in CI.
     """
     python3 = harness.require_tool("python3", "install python3")
     program = (
@@ -397,14 +349,9 @@ def test_fetch_retry_reads_every_file_type(gate):
 def test_sharedselftestcases_can_fail(gate):
     """THE SHARED CONTROL PROVIDER, proved capable of going false.
 
-    `scripts/lib/shrink-only-baseline.ts` exports `sharedSelftestCases()`, and NINE
-    gates run its cases as their own controls. Nothing proved those cases can go
-    false: if the provider ever returned an all-passing set -- a refactor that
-    stubs `baselineAdditions`, a short-circuit -- all nine gates would keep
-    printing PASS while asserting nothing, at once.
+    `scripts/lib/shrink-only-baseline.ts` exports `sharedSelftestCases()`, and NINE gates run its cases as their own controls. Nothing proved those cases can go false: if the provider ever returned an all-passing set -- a refactor that stubs `baselineAdditions`, a short-circuit -- all nine gates would keep printing PASS while asserting nothing, at once.
 
-    THE PLANT IS ON THE FUNCTION THE CASES ARE COMPUTED FROM, not on the cases: a
-    provider that hardcoded `ok: true` would survive any assertion about its shape.
+    THE PLANT IS ON THE FUNCTION THE CASES ARE COMPUTED FROM, not on the cases: a provider that hardcoded `ok: true` would survive any assertion about its shape.
     """
     npx = harness.require_tool("npx", "install node; tsx is resolved through npx")
     guard = ROOT / "scripts" / "lib" / "shrink-only-baseline.ts"
@@ -461,18 +408,10 @@ def test_sharedselftestcases_can_fail(gate):
 def test_runcontrols_can_fail(gate):
     """THE SHARED-HARNESS META-CONTROL.
 
-    `scripts/lib/controls.ts` `runControls()` is the one loop 35 gates are being
-    moved onto, which makes it a shared point of failure: if it ever passes
-    silently, every gate on it goes blind AT ONCE. So the harness must be proved
-    capable of failing before anything depends on it, and that proof lives here
-    rather than in the harness's own selftest, where a broken harness would be
+    `scripts/lib/controls.ts` `runControls()` is the one loop 35 gates are being moved onto, which makes it a shared point of failure: if it ever passes silently, every gate on it goes blind AT ONCE. So the harness must be proved capable of failing before anything depends on it, and that proof lives here rather than in the harness's own selftest, where a broken harness would be
     grading itself.
 
-    Three assertions, because two of them are the ways this could go quietly
-    wrong: a failing case must return non-zero, an all-passing set must return
-    zero (or the "proof" is satisfied by a function that always fails), and an
-    EMPTY set must return non-zero (a case-builder that silently returns [] would
-    otherwise get a clean 0).
+    Three assertions, because two of them are the ways this could go quietly wrong: a failing case must return non-zero, an all-passing set must return zero (or the "proof" is satisfied by a function that always fails), and an EMPTY set must return non-zero (a case-builder that silently returns [] would otherwise get a clean 0).
     """
     npx = harness.require_tool("npx", "install node; tsx is resolved through npx")
     fixture = ROOT / "scripts" / (".controls-harness-fixture.%d.ts" % os.getpid())
@@ -514,9 +453,7 @@ def test_runcontrols_can_fail(gate):
 def test_harness_catches_a_vacuous_validator(gate):
     """CONTROL: prove this file can FAIL.
 
-    A synthetic validator that ignores its input and exits 0 -- the exact shape of
-    the bugs being policed -- must be reported. Without this, a harness that
-    silently never asserts would look identical to a clean run.
+    A synthetic validator that ignores its input and exits 0 -- the exact shape of the bugs being policed -- must be reported. Without this, a harness that silently never asserts would look identical to a clean run.
     """
     name = ".gate-anti-vacuity-fixture.%d.ts" % os.getpid()
     fixture = ROOT / "scripts" / name
@@ -585,10 +522,7 @@ def test_validator_rejects_empty_tree(gate):
 def test_the_registry_agrees_with_the_twins(gate):
     """ADDED BY THE PORT, because the port is what created the hazard.
 
-    Two hand-maintained registries are two answers to one question, and the
-    expensive half is that both look right: a validator dropped from one still
-    looks covered because the other names it. Set equality, both directions, with
-    the difference printed rather than a count.
+    Two hand-maintained registries are two answers to one question, and the expensive half is that both look right: a validator dropped from one still looks covered because the other names it. Set equality, both directions, with the difference printed rather than a count.
     """
     theirs = twin_registry()
     if not theirs:

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/assert-channel-for-event.sh` (65 lines).
 
-Asserts the resolved R2 staging CHANNEL matches the GitHub event type. The
-twin's own header carries the contract and the history (finding G, the
+Asserts the resolved R2 staging CHANNEL matches the GitHub event type. The twin's own header carries the contract and the history (finding G, the
 dryrun-<sha> fallthrough, ~5 GB of orphan R2 bytes per schedule trigger); none
 of it is restated here.
 
@@ -12,24 +11,18 @@ LIVE CALLER, not repointed: `.github/workflows/ci.yml:295`
 gate; this module is its verified-equivalent alternative, and the cutover is a
 separate, later, driver-only step.
 
-Ledger: `.ci/shadow/w7p6-assert-channel-for-event.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-channel-for-event
---assert --k 5`).
+Ledger: `.ci/shadow/w7p6-assert-channel-for-event.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-channel-for-event --assert --k 5`).
 
 -----------------------------------------------------------------------------
 THE `*)` ARM FAILS OPEN, AND THAT IS REPRODUCED RATHER THAN REPAIRED
 -----------------------------------------------------------------------------
-An event name the `case` does not know -- a typo, or a genuinely new trigger
-such as `pull_request_target` -- WARNS and returns 0 with any channel at all:
+An event name the `case` does not know -- a typo, or a genuinely new trigger such as `pull_request_target` -- WARNS and returns 0 with any channel at all:
 
     $ .ci/scripts/ci/assert-channel-for-event.sh pull_request_target dryrun-abc
     (warn) Unknown event: pull_request_target (channel: 'dryrun-abc') ...
     exit 0
 
-That is the twin's documented behaviour (its `workflow_dispatch` arm exists
-precisely because `*)` accepts), and `docs/ci-overhaul/02-v1-economics.md:92`
-already names it as a thing to harden. Changing it here would make the port
-non-equivalent, so it is carried verbatim and reported instead.
+That is the twin's documented behaviour (its `workflow_dispatch` arm exists precisely because `*)` accepts), and `docs/ci-overhaul/02-v1-economics.md:92` already names it as a thing to harden. Changing it here would make the port non-equivalent, so it is carried verbatim and reported instead.
 
 -----------------------------------------------------------------------------
 TWO SPELLING DIFFERENCES, BOTH PINNED BY THE DIFFERENTIAL

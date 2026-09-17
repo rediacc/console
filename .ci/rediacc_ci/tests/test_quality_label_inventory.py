@@ -1,31 +1,14 @@
 """`rediacc_ci.quality.label_inventory` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-label-inventory.sh` over a
-specimen with stdout and stderr captured SEPARATELY, and its bytes are compared
-against the port's. Same recipe as the committed ledger,
-`.ci/shadow/w7p2-label-inventory.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-label-inventory.sh` over a specimen with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-label-inventory.observations.jsonl`.
 
-EVERY CASE USES THE INJECTION SEAMS, so no case touches the network. That is the
-twin's own design (`LABEL_INVENTORY_LIVE_FILE`, `LABEL_INVENTORY_PROBE_FILE`,
-`LABEL_INVENTORY_LIVE_JSON_FILE`), and the PROBE seam is separate from the LIST
-seam on purpose: "the whole point of the re-read is that it can disagree with the
-list."
+EVERY CASE USES THE INJECTION SEAMS, so no case touches the network. That is the twin's own design (`LABEL_INVENTORY_LIVE_FILE`, `LABEL_INVENTORY_PROBE_FILE`, `LABEL_INVENTORY_LIVE_JSON_FILE`), and the PROBE seam is separate from the LIST seam on purpose: "the whole point of the re-read is that it can disagree with the list."
 
-BOTH DIRECTIONS, EVERYWHERE. This gate reconciles two directions and then checks a
-third property, so a port can be wrong in six ways. The corpus carries a clean
-reconciliation (must be silent), a declared-but-absent label, a live-but-undeclared
-label, both at once, a collapsed declaration parse, an over-cap description at the
-boundary on BOTH sides of it, an EMPTY live list (a failed read, never a clean
-tree), an EMPTY declaration file (the case the twin's missing `|| true` made
-unreachable until 96355d3b5 on 2026-09-06), a stale-list rescue by re-read, a real
-field drift, and an UNREADABLE drift comparison.
+BOTH DIRECTIONS, EVERYWHERE. This gate reconciles two directions and then checks a third property, so a port can be wrong in six ways. The corpus carries a clean reconciliation (must be silent), a declared-but-absent label, a live-but-undeclared label, both at once, a collapsed declaration parse, an over-cap description at the boundary on BOTH sides of it, an EMPTY live list (a
+failed read, never a clean tree), an EMPTY declaration file (the case the twin's missing `|| true` made unreachable until 96355d3b5 on 2026-09-06), a stale-list rescue by re-read, a real field drift, and an UNREADABLE drift comparison.
 
-THE LAST ONE IS THE SUBTLE ONE. `|| true` around the drift comparison would make a
-CRASHED comparator indistinguishable from "the labels agree" -- empty output either
-way. check-swallowed-failures.sh caught exactly that shape at the shell level
-(1eac336b) and the twin's embedded python carries the same warning one level down.
-The port expresses it as an exception type rather than an exit code, and this file
-asserts that the exception is what happens.
+THE LAST ONE IS THE SUBTLE ONE. `|| true` around the drift comparison would make a CRASHED comparator indistinguishable from "the labels agree" -- empty output either way. check-swallowed-failures.sh caught exactly that shape at the shell level (1eac336b) and the twin's embedded python carries the same warning one level down. The port expresses it as an exception type rather than
+an exit code, and this file asserts that the exception is what happens.
 """
 
 import json
@@ -58,9 +41,7 @@ def declarations(*labels: str) -> str:
 def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
     """A specimen with both implementations, the allowlist's two creator files, and `files`.
 
-    THE CREATOR FILES ARE NOT OPTIONAL. The allowlist is self-expiring: it verifies
-    that each named creator still exists AND still mentions its label, so a fixture
-    without them fails for a reason that has nothing to do with the case.
+    THE CREATOR FILES ARE NOT OPTIONAL. The allowlist is self-expiring: it verifies that each named creator still exists AND still mentions its label, so a fixture without them fails for a reason that has nothing to do with the case.
     """
     src = pathlib.Path(diff.repo())
     root = tmp_path / "fixture"
@@ -266,9 +247,7 @@ def test_differential(tmp_path, files, env, want_exit):
 def test_an_unreadable_drift_raises_rather_than_returning_nothing():
     """The swallowed-failure distinction, at the function that owns it.
 
-    "the comparison ran and found nothing" and "the comparison never ran" must not
-    be the same value. An empty list for malformed JSON would make a crashed
-    comparator report "names, descriptions and colours all agree".
+    "the comparison ran and found nothing" and "the comparison never ran" must not be the same value. An empty list for malformed JSON would make a crashed comparator report "names, descriptions and colours all agree".
     """
     with pytest.raises(gate.DriftUnreadableError):
         gate.drift("{", "- name: a\n")
@@ -295,9 +274,7 @@ def test_the_probe_has_three_outcomes(tmp_path):
 def test_the_allowlist_is_short_and_every_entry_names_a_creator():
     """A stale exemption is a permanent hole, so both halves are verifiable.
 
-    The entries are also PRINTED on every run (`log_info`), which is the house rule
-    about quiet exemptions: a forgiven label that never appears in the output is a
-    debt nobody can see.
+    The entries are also PRINTED on every run (`log_info`), which is the house rule about quiet exemptions: a forgiven label that never appears in the output is a debt nobody can see.
     """
     assert len(gate.CREATE_ON_DEMAND) == 3
     for entry in gate.CREATE_ON_DEMAND:
@@ -310,8 +287,7 @@ def test_the_allowlist_is_short_and_every_entry_names_a_creator():
 def test_the_declaration_reader_keeps_the_twins_unquoting_order():
     """A bug carried on purpose, because fixing it changes which names reconcile.
 
-    The trailing-whitespace strip runs AFTER the unquote, so `- name: "x"  ` keeps
-    its quotes: the `^"(.*)"$` anchor fails while the spaces are still there.
+    The trailing-whitespace strip runs AFTER the unquote, so `- name: "x" ` keeps its quotes: the `^"(.*)"$` anchor fails while the spaces are still there.
     """
     assert gate.declared_labels('- name: "alpha"\n') == ["alpha"]
     assert gate.declared_labels("- name: 'alpha'\n") == ["alpha"]

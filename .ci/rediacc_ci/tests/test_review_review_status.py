@@ -1,10 +1,7 @@
 """Differential: `rediacc_ci.review.review_status` against its twin
 `.ci/scripts/review/review-status.sh`.
 
-THIS SCRIPT WRITES TO GITHUB, so the fake `gh` is not a convenience. Its
-success path POSTs or PATCHes a check-run against whatever repository and SHA
-the environment names, and a required check-run posted on a real head is a
-merge decision. Three independent things keep the real binary out of reach:
+THIS SCRIPT WRITES TO GITHUB, so the fake `gh` is not a convenience. Its success path POSTs or PATCHes a check-run against whatever repository and SHA the environment names, and a required check-run posted on a real head is a merge decision. Three independent things keep the real binary out of reach:
 
   1. the stub directory is FIRST on PATH and `shutil.which("gh", path=...)` is
      asserted to resolve to the fake, in `test_the_fake_gh_is_the_gh`;
@@ -12,13 +9,9 @@ merge decision. Three independent things keep the real binary out of reach:
   3. `GH_TOKEN` is a fixture string and `GH_CONFIG_DIR` points into the temp
      tree, so a leaked real `gh` would fail auth instead of writing.
 
-THE ROUTING FAKE APPLIES THE CALLER'S OWN `--jq`, which is the design the bash
-gate test `.ci/scripts/test/gates/test-review-status.sh:57` already uses and the
-reason this file can compare two implementations that ask for the same data
-DIFFERENTLY. The twin filters server-side (`gh api ... --jq '.[] | select(...)'`)
+THE ROUTING FAKE APPLIES THE CALLER'S OWN `--jq`, which is the design the bash gate test `.ci/scripts/test/gates/test-review-status.sh:57` already uses and the reason this file can compare two implementations that ask for the same data DIFFERENTLY. The twin filters server-side (`gh api ... --jq '.[] | select(...)'`)
 while `core.review_budget` fetches the page and filters in Python; the fake
-serves the same fixture to both and runs real jq when asked, so the ANSWERS are
-comparable even though the command lines are not.
+serves the same fixture to both and runs real jq when asked, so the ANSWERS are comparable even though the command lines are not.
 
 WHAT IS COMPARED, ON EVERY CASE:
   * exit code, stdout and stderr, byte for byte;
@@ -31,10 +24,7 @@ WHAT IS COMPARED, ON EVERY CASE:
     comparison would be satisfied by a port that logged the right sentence and
     posted the wrong conclusion.
 
-BOTH DEADLOCK ARMS ARE DRIVEN, and they are the reason this file is long:
-`test_a_capped_pr_passes_with_a_warning_rather_than_becoming_unmergeable` and
-`test_an_exhausted_head_passes_with_a_warning_too`. `common.sh:623-632` records
-what the missing guard cost on PR #553.
+BOTH DEADLOCK ARMS ARE DRIVEN, and they are the reason this file is long: `test_a_capped_pr_passes_with_a_warning_rather_than_becoming_unmergeable` and `test_an_exhausted_head_passes_with_a_warning_too`. `common.sh:623-632` records what the missing guard cost on PR #553.
 
 K=5 LEDGER: `.ci/shadow/w7p6-review-status.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
@@ -228,11 +218,7 @@ class World:
     def compare(self, *filenames: str) -> None:
         """The compare fixture in the API's own shape.
 
-        `--jq '[.files[]?.filename]'` is applied to it by the fake, so a
-        fixture shaped as a bare list makes jq fail and every case silently
-        exercises the compare-failed arm instead of the one it names. That
-        happened once while this file was being written, which is why this
-        helper exists rather than a raw `write("compare", [...])`.
+        `--jq '[.files[]?.filename]'` is applied to it by the fake, so a fixture shaped as a bare list makes jq fail and every case silently exercises the compare-failed arm instead of the one it names. That happened once while this file was being written, which is why this helper exists rather than a raw `write("compare", [...])`.
         """
         self.write("compare", {"files": [{"filename": name} for name in filenames]})
 
@@ -829,8 +815,7 @@ def test_the_last_sha_in_a_multi_line_marker_body_wins() -> None:
 
 def test_a_capped_pr_passes_with_a_warning_rather_than_becoming_unmergeable() -> None:
     """THE #553 GUARD. Three posted reports against a 140-line diff is the
-    smallest tier's cap, so the pipeline will never review this head again and
-    the marker can never advance. Failing here would make the PR permanently
+    smallest tier's cap, so the pipeline will never review this head again and the marker can never advance. Failing here would make the PR permanently
     unmergeable through no fault of its author."""
 
     def build(world: World) -> None:

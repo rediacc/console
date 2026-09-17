@@ -1,25 +1,13 @@
 """`rediacc_ci.quality.profiler_coverage` against the awk and grep it replaces.
 
 WHAT THE SHADOW LEDGER ALREADY PROVES:
-`.ci/shadow/w7p2-profiler-coverage.observations.jsonl` drives both
-implementations end to end over five distinct committed trees: unprofiled Linux
-jobs, a stale allowlist entry, a malformed reference with a bad interval and a
-label mismatch, the fail-closed classification of an unknown label and an
-unresolvable expression, and a low-effort BLOCKER.
+`.ci/shadow/w7p2-profiler-coverage.observations.jsonl` drives both implementations end to end over five distinct committed trees: unprofiled Linux jobs, a stale allowlist entry, a malformed reference with a bad interval and a label mismatch, the fail-closed classification of an unknown label and an unresolvable expression, and a low-effort BLOCKER.
 
-WHAT THE LEDGER CANNOT ISOLATE is the EIGHT EXTRACTORS, and they are the whole
-gate. Each is a small awk state machine whose failure mode is silence: an
-extractor that stops matching under-reports coverage, and under-reported
-coverage reads exactly like a clean tree. The twin knows this, which is why it
-self-tests every extractor against a planted sample before it looks at the real
+WHAT THE LEDGER CANNOT ISOLATE is the EIGHT EXTRACTORS, and they are the whole gate. Each is a small awk state machine whose failure mode is silence: an extractor that stops matching under-reports coverage, and under-reported coverage reads exactly like a clean tree. The twin knows this, which is why it self-tests every extractor against a planted sample before it looks at the real
 tree; this file does the other half, comparing the PORT against the TWIN over
 the repository's own workflows.
 
-THE TWIN'S TEXT IS READ AT TEST TIME, not copied here. Each awk program is
-pulled out of `.ci/scripts/quality/check-profiler-coverage.sh` by name and run
-under bash, so this comparison cannot drift away from the file it is about. A
-copy would be a third implementation, and a third implementation is what this
-whole workstream exists to remove.
+THE TWIN'S TEXT IS READ AT TEST TIME, not copied here. Each awk program is pulled out of `.ci/scripts/quality/check-profiler-coverage.sh` by name and run under bash, so this comparison cannot drift away from the file it is about. A copy would be a third implementation, and a third implementation is what this whole workstream exists to remove.
 """
 
 import pathlib
@@ -40,9 +28,7 @@ ACTION_REF = "./.github/actions/profiler"
 def _fresh_logger():
     """`rediacc_ci.log` caches one Logger bound to `sys.stderr` at first use.
 
-    pytest's capture fixtures swap and close that stream per test, so a logger
-    cached by an earlier test writes into a closed file and every later test
-    dies naming the logger rather than the test that poisoned it.
+    pytest's capture fixtures swap and close that stream per test, so a logger cached by an earlier test writes into a closed file and every later test dies naming the logger rather than the test that poisoned it.
     """
     log.reset()
     yield
@@ -52,8 +38,7 @@ def _fresh_logger():
 def _twin_function(name: str) -> str:
     """The named shell function, verbatim, out of the twin.
 
-    A range extraction rather than a hand copy: the whole point is that the
-    comparison is against the file as it stands today.
+    A range extraction rather than a hand copy: the whole point is that the comparison is against the file as it stands today.
     """
     text = TWIN.read_text(encoding="utf-8")
     start = re.search(r"^%s\(\) \{$" % re.escape(name), text, re.MULTILINE)
@@ -90,9 +75,7 @@ def _write(tmp: pathlib.Path, name: str, body: str) -> str:
 def _corpus() -> list[pathlib.Path]:
     """Every real workflow file, which is the corpus both sides must agree on.
 
-    A ZERO-LENGTH CORPUS IS A FAILING TEST, not a skipped one: every case below
-    would pass vacuously over an empty list, which is the exact shape this
-    gate's own floors exist to refuse.
+    A ZERO-LENGTH CORPUS IS A FAILING TEST, not a skipped one: every case below would pass vacuously over an empty list, which is the exact shape this gate's own floors exist to refuse.
     """
     found = sorted(p for p in WORKFLOWS.iterdir() if p.is_file() and p.suffix in (".yml", ".yaml"))
     assert len(found) >= 10, "the workflow corpus collapsed to %d file(s)" % len(found)
@@ -235,9 +218,7 @@ def test_covering_uses_rejects_a_longer_path(tmp_path: pathlib.Path) -> None:
 def test_is_linux_label_classifies_unknown_as_unknown_not_as_not_linux() -> None:
     """The direction that decides whether a hole is silent.
 
-    An unknown label must cost an allowlist line, never be waved through as
-    "not Linux". `NOT_LINUX` and `UNKNOWN` are different answers for that
-    reason, and collapsing them is a one-character change nobody would notice.
+    An unknown label must cost an allowlist line, never be waved through as "not Linux". `NOT_LINUX` and `UNKNOWN` are different answers for that reason, and collapsing them is a one-character change nobody would notice.
     """
     assert pc.is_linux_label("ubuntu-slim") == pc.LINUX
     assert pc.is_linux_label("macos-14") == pc.NOT_LINUX

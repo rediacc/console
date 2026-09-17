@@ -1,8 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-autopilot-harness.sh`.
 
-Tests for the Wave C autopilot harness (`.ci/scripts/autopilot/`), the deterministic
-write path that runs AFTER the model exits (docs/ci-overhaul/03-v2-autonomy.md). The
-two invariants under test:
+Tests for the Wave C autopilot harness (`.ci/scripts/autopilot/`), the deterministic write path that runs AFTER the model exits (docs/ci-overhaul/03-v2-autonomy.md). The two invariants under test:
 
   1. THE MODEL NEVER HOLDS A WRITE TOKEN. Every write flows through
      `validate-handoff.cjs` -> `exfil-tripwire.cjs` -> `autopilot-push.sh`, and every
@@ -14,28 +12,18 @@ two invariants under test:
 House doctrine throughout: controls in BOTH directions. Every rejection class is
 asserted by its pinned diagnostic AND paired with the passing control; the tripwire
 must FIRE on a planted exfiltration shape AND stay quiet on a legitimate fix; the
-restore assert must go red WITHOUT restore and green with it. A validator proven only
-on valid input proves nothing.
+restore assert must go red WITHOUT restore and green with it. A validator proven only on valid input proves nothing.
 
 TWO THINGS THE PORT CHANGES, both forced by pytest and both in the safe direction.
 
-FIRST, THE SCRATCH CHECKOUT IS PER-CASE. The twin builds ONE `$REPO` at file scope and
-sixteen handoff cases take turns dirtying and restoring it, each ending with a
-`make_clean` that asserts the reset worked. That assertion exists precisely because the
-sharing is a hazard, and under `-n 8 --dist loadgroup` the hazard becomes a race rather
-than an ordering bug. Each case here builds its own checkout in `tmp_path`. The
-`make_clean` control is KEPT anyway, because it also proves the case's own mutation was
-real.
+FIRST, THE SCRATCH CHECKOUT IS PER-CASE. The twin builds ONE `$REPO` at file scope and sixteen handoff cases take turns dirtying and restoring it, each ending with a `make_clean` that asserts the reset worked. That assertion exists precisely because the sharing is a hazard, and under `-n 8 --dist loadgroup` the hazard becomes a race rather than an ordering bug. Each case here
+builds its own checkout in `tmp_path`. The `make_clean` control is KEPT anyway, because it also proves the case's own mutation was real.
 
-SECOND, THE AUTOPILOT ENVIRONMENT IS NEUTRALISED EXPLICITLY. The twin opens with
-`unset AUTOPILOT_*` so a developer's shell cannot arm a stage flag by accident.
-`harness.run` OVERLAYS `os.environ` rather than replacing it, so the port sets every one
-of those names to the empty string on every invocation instead. That is equivalent for
+SECOND, THE AUTOPILOT ENVIRONMENT IS NEUTRALISED EXPLICITLY. The twin opens with `unset AUTOPILOT_*` so a developer's shell cannot arm a stage flag by accident. `harness.run` OVERLAYS `os.environ` rather than replacing it, so the port sets every one of those names to the empty string on every invocation instead. That is equivalent for
 these subjects and checked rather than assumed: each reads its flag as `${VAR:-}` and
 compares against the literal `true`, so empty and unset are the same value to them.
 
-The submodule cases keep the twin's hermeticity notes verbatim in code: every git call
-states its own branch and its own identity, because inheriting `init.defaultBranch`
+The submodule cases keep the twin's hermeticity notes verbatim in code: every git call states its own branch and its own identity, because inheriting `init.defaultBranch`
 from a developer's `~/.gitconfig` is what once made this suite pass on a laptop and die
 in CI with `fatal: You are on a branch yet to be born`.
 """
@@ -294,9 +282,7 @@ def test_handoff_valid_control(gate, tmp_path):
 
 def test_handoff_in_root_is_not_undeclared_dirty(gate, tmp_path):
     """The CI shape every earlier fixture missed: the model writes handoff.json INTO the
-    workspace root, so git reports it dirty, and it can never be declared in files[]
-    (declaring it would commit the round's own control channel). Live regression: canary
-    attempt 6 (run 31327079213) had the first valid model handoff refused as
+    workspace root, so git reports it dirty, and it can never be declared in files[] (declaring it would commit the round's own control channel). Live regression: canary attempt 6 (run 31327079213) had the first valid model handoff refused as
     undeclared-dirty over the handoff file itself."""
     c = make_checkout(gate, tmp_path)
     c.make_dirty()
@@ -1301,9 +1287,7 @@ class SubFixture:
         """`run_sub_push`. The two stage flags are passed EXPLICITLY, never defaulted.
 
         The twin spells this `${SUB_FLAG-true}` rather than `${SUB_FLAG:-true}` because
-        an explicitly EMPTY flag is the absent-means-off case under test and `:-` would
-        substitute `true` and quietly run the OPPOSITE test. Named keyword arguments
-        remove the hazard rather than restating it.
+        an explicitly EMPTY flag is the absent-means-off case under test and `:-` would substitute `true` and quietly run the OPPOSITE test. Named keyword arguments remove the hazard rather than restating it.
         """
         result = harness.run(
             [
@@ -1681,8 +1665,7 @@ def test_push_submodule_refuses_a_foreign_branch(gate, tmp_path):
 
 def test_push_submodule_adoption_needs_resolvable_main(gate, tmp_path):
     """The ancestry half of the adoption check needs $REMOTE/main. When it is unresolvable
-    even after a fetch, the guard must REFUSE rather than fall through to the identity
-    check alone: a committer email is the forgeable half, and "both required" has to mean
+    even after a fetch, the guard must REFUSE rather than fall through to the identity check alone: a committer email is the forgeable half, and "both required" has to mean
     both. (Review observation on a2559c9: the old code swallowed the rev-parse failure.)"""
     require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-nomain", "fix-branch")
@@ -1728,11 +1711,8 @@ def test_push_submodule_uninitialized_never_writes_the_parent(gate, tmp_path):
     """The live gap this guards: the model job checks out the PR head with NO
     `submodules:` input, so a real round finds these directories empty.
 
-    WHAT THIS DOES AND DOES NOT PROVE. It proves the OUTCOME (refused, and nothing
-    flattened into the parent). It does NOT exercise the submodule-not-initialized guard
-    in autopilot-push.sh: an uninitialized submodule makes the parent report nothing
-    dirty at that path, so the round dies earlier at path-not-dirty. That guard is
-    documented at its own site as unreachable-today defence in depth, rather than counted
+    WHAT THIS DOES AND DOES NOT PROVE. It proves the OUTCOME (refused, and nothing flattened into the parent). It does NOT exercise the submodule-not-initialized guard in autopilot-push.sh: an uninitialized submodule makes the parent report nothing dirty at that path, so the round dies earlier at path-not-dirty. That guard is documented at its own site as unreachable-today defence
+    in depth, rather than counted
     here as a control it is not."""
     require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-uninit", "fix-branch")
@@ -1834,13 +1814,11 @@ def mk_dispatch_event(
     max_rounds: str = "",
 ) -> pathlib.Path:
     """The dispatch path's SYNTHESIZED payload: the same workflow_run shape plus the
-    `autopilot_dispatch` key the real payload never carries. Its presence is what makes a
-    round dispatch-armed.
+    `autopilot_dispatch` key the real payload never carries. Its presence is what makes a round dispatch-armed.
 
     Every field is passed EXPLICITLY. The twin spells this `${n-default}` rather than
     `${n:-default}` because an explicitly EMPTY pr_input is the case under test (a
-    dispatch with no PR number arms nothing) and `:-` would silently substitute the
-    default and test the opposite.
+    dispatch with no PR number arms nothing) and `:-` would silently substitute the default and test the opposite.
     """
     mk_event(path, conclusion)
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -3554,8 +3532,7 @@ def test_resolve_model_args_effort_sources(gate):
 def first_diff_fence(text: str) -> str:
     """`grep -m1 'diff$'`: the first line ENDING in `diff`.
 
-    Compared EXACTLY by the caller, never by substring, because '````diff' contains
-    '```diff' and a contains-check could never tell the two apart.
+    Compared EXACTLY by the caller, never by substring, because '````diff' contains '```diff' and a contains-check could never tell the two apart.
     """
     for line in text.splitlines():
         if line.endswith("diff"):

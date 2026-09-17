@@ -1,19 +1,9 @@
 r"""check:ci-secret-supply -- where every declared-secret name's value actually
 comes from, and the truncation spec for `private/account/.env`.
 
-THE QUESTION NO GATE ASKED. `check:ci-env-manifest` classifies every environment
-name by shard, and its `secret` shard means "supplied by the Bitwarden vault or
-by a GitHub Actions secret". `check:ci-bws-map` asserts that every MAPPED secret
-is requested by some workflow and every requested one is mapped. Between them
-sits a set nobody looked at: the names the manifest DECLARES vault-supplied that
-no vault holds. Measured 2026-09-09, the day this landed: 26 of 84. That is a RECEIPT with a
-date on it, not an acceptance -- every number in the output is derived on the
-run that prints it, so a reader watches them move instead of trusting this line.
-Each one is a name whose supply is unstated, and "unstated" has covered four
-genuinely different things here -- a token the runner mints per job, an SDK
-spelling exported from a name the vault DOES hold, a value generated inside the
-run that consumes it, and a real credential that lives only in one developer's
-`private/account/.env`. The last kind is the one this box exists for.
+THE QUESTION NO GATE ASKED. `check:ci-env-manifest` classifies every environment name by shard, and its `secret` shard means "supplied by the Bitwarden vault or by a GitHub Actions secret". `check:ci-bws-map` asserts that every MAPPED secret is requested by some workflow and every requested one is mapped. Between them sits a set nobody looked at: the names the manifest DECLARES
+vault-supplied that no vault holds. Measured 2026-09-09, the day this landed: 26 of 84. That is a RECEIPT with a date on it, not an acceptance -- every number in the output is derived on the run that prints it, so a reader watches them move instead of trusting this line. Each one is a name whose supply is unstated, and "unstated" has covered four genuinely different things here --
+a token the runner mints per job, an SDK spelling exported from a name the vault DOES hold, a value generated inside the run that consumes it, and a real credential that lives only in one developer's `private/account/.env`. The last kind is the one this box exists for.
 
 THE TWO HALVES, AND WHY THEY ARE ONE GATE.
 
@@ -44,30 +34,15 @@ THE HALVES CHECK EACH OTHER, WHICH IS WHY THEY SHARE A FILE AND A GATE:
     routed there is one commit from being public.
   * `stays` is refused for anything but the one `bootstrap-irreducible` name.
 
-So the dotenv table cannot be filled in with wishes, even though the file it
-describes is invisible to CI.
+So the dotenv table cannot be filled in with wishes, even though the file it describes is invisible to CI.
 
-WHAT IS RUNNABLE TODAY AND WHAT IS NOT, stated up front because the seeding is
-blocked and a gate that pretends otherwise is worse than no gate. The `dev-shared`
-project DOES NOT EXIST. Verified against the live vault on 2026-09-09: `bws`
-2.1.0 has six verbs and no service-account verb, `bw` 2026.8.0 exposes only org
-item moves, and the organization holds exactly ONE project, `ci-shared`, with all
-58 secrets. Only the web vault can create a project, so the seeding is
-`door:operator-only`.
+WHAT IS RUNNABLE TODAY AND WHAT IS NOT, stated up front because the seeding is blocked and a gate that pretends otherwise is worse than no gate. The `dev-shared` project DOES NOT EXIST. Verified against the live vault on 2026-09-09: `bws` 2.1.0 has six verbs and no service-account verb, `bw` 2026.8.0 exposes only org item moves, and the organization holds exactly ONE project,
+`ci-shared`, with all 58 secrets. Only the web vault can create a project, so the seeding is `door:operator-only`.
 
-THIS GATE DOES NOT WAIT FOR THAT. It is red-or-green today, on the tree as it is,
-because what it checks is the AGREEMENT between the recorded state and the
-derived state -- not the presence of the project. And it starts enforcing the
-seeded state with no edit to itself: a seeded name lands in
-`.ci/config/bws-secret-map.json` at the next refresh, leaves the derived residue,
-and its entry reds as RESOLVED with instructions to drain it. The blocked names
-are PRINTED BY NAME on every run, the way the landmark gate prints its two
-exempt pages, so the debt cannot go quiet while it waits.
+THIS GATE DOES NOT WAIT FOR THAT. It is red-or-green today, on the tree as it is, because what it checks is the AGREEMENT between the recorded state and the derived state -- not the presence of the project. And it starts enforcing the seeded state with no edit to itself: a seeded name lands in `.ci/config/bws-secret-map.json` at the next refresh, leaves the derived residue, and its
+entry reds as RESOLVED with instructions to drain it. The blocked names are PRINTED BY NAME on every run, the way the landmark gate prints its two exempt pages, so the debt cannot go quiet while it waits.
 
-THE LOCAL ARM, AND THE HONEST STATEMENT OF ITS LIMIT. `private/account/.env` is
-gitignored and `private/account` is a submodule the `quality-static` lane does
-not even check out, so in CI this file cannot exist. Two rules follow, and both
-are in the code rather than in this paragraph:
+THE LOCAL ARM, AND THE HONEST STATEMENT OF ITS LIMIT. `private/account/.env` is gitignored and `private/account` is a submodule the `quality-static` lane does not even check out, so in CI this file cannot exist. Two rules follow, and both are in the code rather than in this paragraph:
 
   * the VERDICT never comes from the local arm. Every clause above is tracked.
   * when the file is absent the run prints `LOCAL ARM SKIPPED` with the path and
@@ -75,19 +50,13 @@ are in the code rather than in this paragraph:
     run, which is the whole of the "unknown is not fine" rule applied to an arm
     whose subject is legitimately absent half the time.
 
-When the file IS present -- on a developer machine, which is where the truncation
-actually happens -- the arm asserts set equality between the names it assigns and
+When the file IS present -- on a developer machine, which is where the truncation actually happens -- the arm asserts set equality between the names it assigns and
 the `dotenv.names` table. A name assigned locally with no destination reds; a
-destination for a name the file no longer assigns reds as DRAINED. That second
-direction is the one that keeps the truncation moving instead of accumulating a
-table of names nobody has looked at since.
+destination for a name the file no longer assigns reds as DRAINED. That second direction is the one that keeps the truncation moving instead of accumulating a table of names nobody has looked at since.
 
-NAMES ONLY, NEVER VALUES, and it is enforced by shape rather than by care: the
-only thing this module extracts from `.env` is the text to the LEFT of the first
+NAMES ONLY, NEVER VALUES, and it is enforced by shape rather than by care: the only thing this module extracts from `.env` is the text to the LEFT of the first
 `=`. `.ci/lib/bws-env.sh:16-18` states the same rule for the fetch helper and the
-reason applies here with more force, because a gate's output is a log surface and
-this repository is public. The one opaque identifier this file does carry is the
-`ci-shared` project UUID, which `.ci/config/bws-secret-map.json` already holds in
+reason applies here with more force, because a gate's output is a log surface and this repository is public. The one opaque identifier this file does carry is the `ci-shared` project UUID, which `.ci/config/bws-secret-map.json` already holds in
 the clear; it is pinned so that a map regenerated against a DIFFERENT project
 reds instead of silently reshaping the residue.
 
@@ -110,23 +79,12 @@ ANTI-VACUITY, and none of it is `n > 0` on a number that is supposed to fall.
 
 EVERY REASON IS LIVENESS-CHECKED, which is the `BLOCKER` convention applied to a
 file that carries no suppressions. Each residue entry names an `evidence` path;
-the gate requires that path to be TRACKED and to still mention the name. A
-deleted file reds, and so does a file that stopped talking about the name -- the
-reason has to keep being true, not merely have been true once. THE EVIDENCE IS A
-PATH AND NEVER A LINE NUMBER, for the reason this repo's baselines are keyed on
-text: a line number churns the moment a paragraph moves above it, and a citation
-that churns gets "fixed" wholesale, which is how a stale claim gets re-blessed.
+the gate requires that path to be TRACKED and to still mention the name. A deleted file reds, and so does a file that stopped talking about the name -- the reason has to keep being true, not merely have been true once. THE EVIDENCE IS A PATH AND NEVER A LINE NUMBER, for the reason this repo's baselines are keyed on text: a line number churns the moment a paragraph moves above it,
+and a citation that churns gets "fixed" wholesale, which is how a stale claim gets re-blessed.
 
-WHY `.ci/config/` AND NOT `.ci/policy/`, re-applying clause 1 of
-`.ci/policy/README.md` section 1 rather than re-deriving it. A policy file is a
-DECISION: a set of entries someone chose to EXEMPT, each carrying a BLOCKER
-reason that stops a gate firing. This file exempts nothing. Nothing in it
+WHY `.ci/config/` AND NOT `.ci/policy/`, re-applying clause 1 of `.ci/policy/README.md` section 1 rather than re-deriving it. A policy file is a DECISION: a set of entries someone chose to EXEMPT, each carrying a BLOCKER reason that stops a gate firing. This file exempts nothing. Nothing in it
 suppresses a finding anywhere in the estate; deleting it makes this gate refuse,
-not pass. Its residue half is DERIVED wholesale from two other tracked files and
-then annotated, exactly as `language-policy-baseline.json` and
-`tracked-credentials-baseline.json` are, and it sits beside them. There is also
-the hard mechanical reason W8 P6 records: `.ci/policy/` is under four-way set
-equality (`check:ci-policy-inventory`), so a file landing there without matching
+not pass. Its residue half is DERIVED wholesale from two other tracked files and then annotated, exactly as `language-policy-baseline.json` and `tracked-credentials-baseline.json` are, and it sits beside them. There is also the hard mechanical reason W8 P6 records: `.ci/policy/` is under four-way set equality (`check:ci-policy-inventory`), so a file landing there without matching
 edits to two `POLICY_FILES` tuples and the README reds on arrival.
 
 WHAT THIS GATE DOES NOT CLAIM, so nobody reads more into a green than is there:
@@ -210,9 +168,7 @@ def dotenv_names(text: str) -> set[str]:
     """The names an env file ASSIGNS. Values are not captured, ever.
 
     A comment line is not an assignment: `# FOO=bar` has a `#` before the name
-    and the anchored pattern rejects it, which matters because a commented-out
-    credential is exactly what a half-finished truncation leaves behind and
-    counting it would report the drain as incomplete forever.
+    and the anchored pattern rejects it, which matters because a commented-out credential is exactly what a half-finished truncation leaves behind and counting it would report the drain as incomplete forever.
     """
     return set(ASSIGN_RE.findall(text))
 
@@ -227,8 +183,7 @@ def tracked_files(root: pathlib.Path) -> set[str]:
 
     `git ls-files` and not a directory walk, for the reason `paths.py` answers
     from a tracked path set: an untracked file is one machine's opinion, and an
-    evidence citation that resolves only on the author's laptop is not a
-    citation.
+    evidence citation that resolves only on the author's laptop is not a citation.
     """
     out = subprocess.run(
         ["git", "-C", str(root), "ls-files", "-z"],
@@ -255,14 +210,9 @@ def tracked_files(root: pathlib.Path) -> set[str]:
 def evaluate_residue(spec, residue: set[str], vault: set[str]) -> list[str]:
     """Set equality with the derived residue, in both directions, plus the kinds.
 
-    NEW is `residue \\ spec`: a name the manifest calls vault-supplied, that no
-    vault holds, and that nothing here explains. It is ALSO what happens when
-    someone deletes an entry, which is why deleting one cannot buy a green.
+    NEW is `residue \\ spec`: a name the manifest calls vault-supplied, that no vault holds, and that nothing here explains. It is ALSO what happens when someone deletes an entry, which is why deleting one cannot buy a green.
 
-    RESOLVED is `spec \\ residue`: an entry whose name is no longer in the
-    residue. That is the SUCCESS shape -- it is what a completed seeding looks
-    like from here -- and it is also what a pre-banked entry looks like, so it
-    reds either way and the message names both readings.
+    RESOLVED is `spec \\ residue`: an entry whose name is no longer in the residue. That is the SUCCESS shape -- it is what a completed seeding looks like from here -- and it is also what a pre-banked entry looks like, so it reds either way and the message names both readings.
     """
     entries = spec["residue"]
     kinds = spec["kinds"]
@@ -347,9 +297,7 @@ def evaluate_residue(spec, residue: set[str], vault: set[str]) -> list[str]:
 def evaluate_evidence(spec, tracked: set[str], read_text) -> list[str]:
     """Liveness for every citation: the path is tracked, and still names the name.
 
-    This is the `BLOCKER` convention's liveness half applied to a file that
-    suppresses nothing. A reason that has stopped being true is worse than no
-    reason, because it reads as having been checked.
+    This is the `BLOCKER` convention's liveness half applied to a file that suppresses nothing. A reason that has stopped being true is worse than no reason, because it reads as having been checked.
     """
     findings = []
     for name in sorted(spec["residue"]):
@@ -377,9 +325,7 @@ def evaluate_evidence(spec, tracked: set[str], read_text) -> list[str]:
 def evaluate_dotenv(spec, vault: set[str], shard: set[str]) -> list[str]:
     """The destination table's TRACKED claims. Runs with or without the .env.
 
-    Every clause here is a statement about `bws-secret-map.json` or about the
-    env manifest, so the table is enforced in CI even though the file it
-    describes cannot exist there.
+    Every clause here is a statement about `bws-secret-map.json` or about the env manifest, so the table is enforced in CI even though the file it describes cannot exist there.
     """
     names = spec["dotenv"]["names"]
     dests = spec["dotenv"]["destinations"]
@@ -589,8 +535,7 @@ def report(spec, stats) -> None:
 
     "251 gates, 2 workflow scopes, 8 exempt" lets a reader notice when a number
     collapses; "OK" does not. The blocked names are printed IN FULL rather than
-    counted, for the same reason the landmark gate prints its two exempt pages
-    every run.
+    counted, for the same reason the landmark gate prints its two exempt pages every run.
     """
     log.info(
         "  %d name(s) in the `%s` shard, %d in %s, so %d unstated; %d kind(s) used of "

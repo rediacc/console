@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
 """check:ci-plan-record -- a compacted plan must PROVE what it claims.
 
-WHY THIS GATE EXISTS. `wl_planrec.py` lets a finished `agent/PLAN-*.md` shrink
-into a record that keeps its own path, so the 2,539 existing citations of those
-paths still resolve and the housekeeping clock stops demanding a deletion the
-operator forbids. That trade only works if the record's pointers are real. A
-record whose blob does not exist is strictly WORSE than the deleted plan it
-replaced: the plan at least announced its own absence, while a record announces
-a recovery command that silently returns nothing.
+WHY THIS GATE EXISTS. `wl_planrec.py` lets a finished `agent/PLAN-*.md` shrink into a record that keeps its own path, so the 2,539 existing citations of those paths still resolve and the housekeeping clock stops demanding a deletion the operator forbids. That trade only works if the record's pointers are real. A record whose blob does not exist is strictly WORSE than the deleted
+plan it replaced: the plan at least announced its own absence, while a record announces a recovery command that silently returns nothing.
 
-So every claim a record makes is re-derived here from git and from the committed
-box ledger, and none of it is believed.
+So every claim a record makes is re-derived here from git and from the committed box ledger, and none of it is believed.
 
 WHAT IS ASSERTED, one rule per planted control in `--selftest`:
 
@@ -53,18 +47,10 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
 
 THE ADVISORY CENSUS (W12 P3.5), AND WHY IT REFUSES NOTHING. R1..R9 are the rules
 this gate ENFORCES; the file's docstring has promised R1..R10 since it was
-written, and the missing rungs are named in "WHAT IS DELIBERATELY NOT
-ASSERTED" below rather than in the list above -- they are rules that were
-considered and declined. Turning one on is a one-way door: the day it blocks, it
-blocks every open branch at once, and nobody knows today how many records it
-would refuse.
+written, and the missing rungs are named in "WHAT IS DELIBERATELY NOT ASSERTED" below rather than in the list above -- they are rules that were considered and declined. Turning one on is a one-way door: the day it blocks, it blocks every open branch at once, and nobody knows today how many records it would refuse.
 
-So it is MEASURED first. Every real-tree run appends one row to
-`agent/census-plan-record.jsonl` recording what each CANDIDATE rule WOULD have
-refused, per record, with a UTC timestamp. After two weeks of rows,
-`--census-report` answers "has the window elapsed, and what would have been
-refused across it" from the rows alone -- not from anyone's memory of how the
-tree looked. The candidates:
+So it is MEASURED first. Every real-tree run appends one row to `agent/census-plan-record.jsonl` recording what each CANDIDATE rule WOULD have refused, per record, with a UTC timestamp. After two weeks of rows, `--census-report` answers "has the window elapsed, and what would have been refused across it" from the rows alone -- not from anyone's memory of how the tree looked. The
+candidates:
 
   C9   HISTORY APPEND-ONLY. The `## History` bullets in the most recent
        COMMITTED version of this record must be a PREFIX of the ones on disk.
@@ -92,8 +78,7 @@ TWO PROPERTIES OF THE CENSUS, and they are not the same property.
     trusted twice. Any of those failing is exit 2, the same code a failed
     `--selftest` uses, because it is the same kind of failure.
 
-WHAT IS DELIBERATELY NOT ASSERTED, stated so a green is not read as more than it
-is.
+WHAT IS DELIBERATELY NOT ASSERTED, stated so a green is not read as more than it is.
 
   * Nothing here judges whether `## Why` is TRUE or `## Lessons` is useful. A
     record can pass every rule above and still be a bad summary of a good plan.
@@ -116,14 +101,9 @@ is.
     copy of a plan nobody can now judge, and the machinery must not be able to
     manufacture one unattended. `--park` is the escape while the work is live.
 
-WHY THIS GATE IS HAND-REGISTERED, and it must stay that way. It needs
-`fetch-depth: 0` (R1's ancestor test and R4's ledger walk both read history) AND
-the PR head ref. Exactly one lane provides both: `quality-branch`. That lane has
-no `- id: setup` step, and the driver contract's invariant 11 records what a
-generated region there does -- every emitted step carries
+WHY THIS GATE IS HAND-REGISTERED, and it must stay that way. It needs `fetch-depth: 0` (R1's ancestor test and R4's ledger walk both read history) AND the PR head ref. Exactly one lane provides both: `quality-branch`. That lane has no `- id: setup` step, and the driver contract's invariant 11 records what a generated region there does -- every emitted step carries
 `if: steps.setup.outcome == 'success'`, which in a lane with no such step is
-false, so every gate SKIPS while the job reports green. So this gate carries no
-`---- gate ----` header and its workflow step is written by hand.
+false, so every gate SKIPS while the job reports green. So this gate carries no `---- gate ----` header and its workflow step is written by hand.
 
 Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
 """
@@ -233,9 +213,7 @@ HEADER_XREF_ARITY = {"Supersedes": (1, None), "Extends": (1, 1), "Related": (0, 
 def header_xref_block(text, key):
     """The full value of `<key>:` in the header window, continuation lines and all.
 
-    Returns "" when the key is absent. The block ends at a blank line, at another
-    `Word:` header field, or at a `#` heading -- the three things that reliably
-    end a value in this grammar.
+    Returns "" when the key is absent. The block ends at a blank line, at another `Word:` header field, or at a `#` heading -- the three things that reliably end a value in this grammar.
     """
     lines = (text or "").splitlines()[: R.HEADER_LINES]
     out, taking = [], False
@@ -286,10 +264,7 @@ def header_xref_problems(root, rel, text):
 def _git_raw(root, *args):
     """`_git` without the `.strip()`.
 
-    C9 compares a committed blob against the bytes on disk, and `_git`'s strip
-    removes the trailing newline from one side only -- which would make EVERY
-    record look modified and hand the census a baseline it never uses. The strip
-    is right for `rev-parse` and wrong for `show`, so both exist.
+    C9 compares a committed blob against the bytes on disk, and `_git`'s strip removes the trailing newline from one side only -- which would make EVERY record look modified and hand the census a baseline it never uses. The strip is right for `rev-parse` and wrong for `show`, so both exist.
     """
     r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=False)
     return r.stdout if r.returncode == 0 else ""
@@ -316,9 +291,7 @@ def ledger_at(root, commit):
 def problems_for(root, rel, text, current_ledger):
     """[str] -- every rule this one record breaks. Empty means it holds.
 
-    `current_ledger` is passed in rather than read per record: R4's second
-    direction consults it once per box, and re-reading a 40 KB JSON file for each
-    of them is how a gate over 81 plans becomes the slowest step in its lane.
+    `current_ledger` is passed in rather than read per record: R4's second direction consults it once per box, and re-reading a 40 KB JSON file for each of them is how a gate over 81 plans becomes the slowest step in its lane.
     """
     rec = R.parse(text)
     if rec is None:
@@ -471,17 +444,11 @@ def index_problems(root, rows, census="", update=False):
     with nothing compacted must not be forced to carry a generated table that
     says nothing -- that is the committed-lie shape `agent/README.md:11` names.
 
-    W12 P1.7: `census` IS THE SECOND HALF OF THE SAME FILE, and it is checked by
-    the same equality for the same reason. `wl_planindex` renders a `## Plan
+    W12 P1.7: `census` IS THE SECOND HALF OF THE SAME FILE, and it is checked by the same equality for the same reason. `wl_planindex` renders a `## Plan
     census` section that SessionStart reads INSTEAD of opening all 83 plans; the
-    hook's own freshness check is `stat` only (path set plus byte size), so a plan
-    edited to the same length is invisible to it. This byte-equality against a
-    full re-read is the half that catches that, which is the only reason the hook
-    is allowed to trust the file at all.
+    hook's own freshness check is `stat` only (path set plus byte size), so a plan edited to the same length is invisible to it. This byte-equality against a full re-read is the half that catches that, which is the only reason the hook is allowed to trust the file at all.
 
-    It defaults to "" so the R8 controls below, which run in a fixture whose plan
-    set is not the one being censused, keep comparing exactly what they always
-    compared. Only the real-tree call site at the bottom passes a census.
+    It defaults to "" so the R8 controls below, which run in a fixture whose plan set is not the one being censused, keep comparing exactly what they always compared. Only the real-tree call site at the bottom passes a census.
     """
     want = R.render_index(rows) + census
     path = pathlib.Path(root) / R.INDEX_REL
@@ -532,19 +499,11 @@ def _prior_record_text(root, rel, current):
     """The newest COMMITTED version of `rel` that parses as a record and differs
     from the bytes on disk, or "".
 
-    NOT `HEAD~1` and not the merge-base, and both alternatives were measured
-    before this one was chosen. The merge-base yields ZERO comparable pairs on
-    this branch today: all 32 records were compacted after it, so at the base
-    every one of them is still a plain plan and C9 would have had nothing to say
+    NOT `HEAD~1` and not the merge-base, and both alternatives were measured before this one was chosen. The merge-base yields ZERO comparable pairs on this branch today: all 32 records were compacted after it, so at the base every one of them is still a plain plan and C9 would have had nothing to say
     while looking exactly as green as a clean corpus. `HEAD~1` is wrong the other
     way -- a record untouched for twenty commits has no diff there either.
 
-    "The previous version that was already a record" is the comparison the
-    append-only convention actually makes, and it is topology-independent: it
-    answers the same on a branch, on main, and in a working tree with
-    uncommitted edits (the identity skip below is what covers that last case --
-    when nothing is modified, HEAD's own blob IS the bytes on disk and is
-    stepped over).
+    "The previous version that was already a record" is the comparison the append-only convention actually makes, and it is topology-independent: it answers the same on a branch, on main, and in a working tree with uncommitted edits (the identity skip below is what covers that last case -- when nothing is modified, HEAD's own blob IS the bytes on disk and is stepped over).
     """
     # A SEARCH BOUND, NOT A FLOOR (driver contract section 6 governs floors, and this is not one). Exhausting it yields SILENCE, which is a false negative in an advisory census rather than a false red -- the safe direction. It is 100 rather than a handful because of the revive path: a record revived back into a plan, edited for a week and re-compacted has every one of those plan
     # commits sitting between the two record versions, and a tight cap would stop before reaching the baseline exactly when C9 has the most to say.
@@ -624,9 +583,7 @@ def census_row(root, recs):
     """One row of the census: what the candidates would refuse across the WHOLE
     corpus, right now.
 
-    `recs` is the gate's own `[(rel, status, lines)]` enumeration. The statuses
-    and the file bytes are RE-READ here rather than taken from the verdict loop,
-    so the two counts `census_append` compares are genuinely two readings.
+    `recs` is the gate's own `[(rel, status, lines)]` enumeration. The statuses and the file bytes are RE-READ here rather than taken from the verdict loop, so the two counts `census_append` compares are genuinely two readings.
     """
     flagged = {cid: [] for cid in CANDIDATES}
     by_status = {}
@@ -659,8 +616,7 @@ def census_row(root, recs):
 
 def census_rows(path):
     """Every well-formed row in one census file. A truncated last line is skipped
-    rather than fatal: the file is appended to by concurrent runs in a shared
-    checkout, and losing a verdict over a half-written byte would be the wrong
+    rather than fatal: the file is appended to by concurrent runs in a shared checkout, and losing a verdict over a half-written byte would be the wrong
     trade for a log whose whole job is to keep accumulating."""
     out = []
     try:
@@ -687,22 +643,11 @@ CENSUS_PAYLOAD_KEYS = ("commit", "plans_examined", "records_examined", "by_statu
 def census_is_same_day_repeat(last, row):
     """True when `row` observes exactly what `last` observed, ON THE SAME UTC DAY.
 
-    WHY THE FILE IS NOT APPENDED TO ON EVERY SINGLE RUN, stated where the
-    deviation is rather than in a report nobody re-reads. The census file is
-    TRACKED, and three things in this repo react to a modified tracked file:
-    `.ci/scripts/test/run-all.sh`'s clean-tree guard fails the whole gate battery
-    on one, `wl_git.py`'s `dirt_verdict` counts it as uncommitted real work and
-    blocks the stop hook's rebase path, and nothing anywhere caps the size of an
-    append-only file. A row per invocation would put a permanently-dirty file in
-    a shared checkout and grow without bound, and the operator would learn to
-    `git checkout` it -- which is how the two-week window quietly gets reset.
+    WHY THE FILE IS NOT APPENDED TO ON EVERY SINGLE RUN, stated where the deviation is rather than in a report nobody re-reads. The census file is TRACKED, and three things in this repo react to a modified tracked file: `.ci/scripts/test/run-all.sh`'s clean-tree guard fails the whole gate battery on one, `wl_git.py`'s `dirt_verdict` counts it as uncommitted real work and blocks the
+    stop hook's rebase path, and nothing anywhere caps the size of an append-only file. A row per invocation would put a permanently-dirty file in a shared checkout and grow without bound, and the operator would learn to `git checkout` it -- which is how the two-week window quietly gets reset.
 
-    THE COLLAPSE IS PER UTC DAY, NOT PER PAYLOAD, and that boundary is the load-
-    bearing part. Collapsing on the payload alone would let a tree that does not
-    change for a fortnight record ONE row, and `--census-report` would then
-    compute a span of zero days over a window that really had elapsed. A day
-    boundary always breaks the tie, so the file gains at least one row for every
-    day the gate ran, which is exactly what the span is derived from.
+    THE COLLAPSE IS PER UTC DAY, NOT PER PAYLOAD, and that boundary is the load- bearing part. Collapsing on the payload alone would let a tree that does not change for a fortnight record ONE row, and `--census-report` would then compute a span of zero days over a window that really had elapsed. A day boundary always breaks the tie, so the file gains at least one row for every day
+    the gate ran, which is exactly what the span is derived from.
     """
     if not last:
         return False
@@ -714,8 +659,7 @@ def census_is_same_day_repeat(last, row):
 def census_append(root, row, expect_plans, expect_records):
     """Record `row`, then READ IT BACK. (ok, message).
 
-    THE FLOORS ARE SET-BASED, and there are four, because an advisory check has
-    no verdict of its own to notice when it stops working:
+    THE FLOORS ARE SET-BASED, and there are four, because an advisory check has no verdict of its own to notice when it stops working:
 
       1. The census's own plan and record counts must EQUAL the verdict loop's.
          Two readings of the corpus, not one number trusted twice. A glob that
@@ -811,10 +755,7 @@ def census_report(root, out=sys.stdout, err=sys.stderr):
     """Answer, FROM THE ROWS ALONE: has the two-week window elapsed, and what
     would have been refused across it. 0 green, 1 when there is nothing to read.
 
-    The elapsed span is derived from the recorded `ts` values, which is the whole
-    reason a timestamp is on every row. Nothing here consults the clock for
-    anything but "now", and nothing consults anyone's memory of when the census
-    started.
+    The elapsed span is derived from the recorded `ts` values, which is the whole reason a timestamp is on every row. Nothing here consults the clock for anything but "now", and nothing consults anyone's memory of when the census started.
     """
     files = sorted((pathlib.Path(root) / "agent").glob(CENSUS_GLOB))
     rows = []
@@ -896,11 +837,7 @@ def build_fixture(td):
     """A tiny repo carrying one plan, one ledger commit, and a `main` to be an
     ancestor of. Returns (root, rel, record_text).
 
-    BUILT BY CONSTRUCTION, not by substituting into a copy of the real tree.
-    `check-control-vacuity.sh` exempts construction for exactly this reason: a
-    fixture assembled from known-bad parts cannot fail to contain the defect,
-    whereas a substitution can silently miss and leave a control that proves the
-    clean case twice.
+    BUILT BY CONSTRUCTION, not by substituting into a copy of the real tree. `check-control-vacuity.sh` exempts construction for exactly this reason: a fixture assembled from known-bad parts cannot fail to contain the defect, whereas a substitution can silently miss and leave a control that proves the clean case twice.
     """
     root = pathlib.Path(td) / "repo"
     (root / "agent").mkdir(parents=True)
@@ -975,8 +912,7 @@ def build_fixture(td):
 
 def selftest():
     """Plant ONE defect per rule, require the matching finding, and require the
-    clean record to stay SILENT. The silent case is not a formality: "every
-    fixture reds" is a check that cannot pass, and it is the shape a gate takes
+    clean record to stay SILENT. The silent case is not a formality: "every fixture reds" is a check that cannot pass, and it is the shape a gate takes
     on when a refactor breaks its parser."""
     bad = 0
 

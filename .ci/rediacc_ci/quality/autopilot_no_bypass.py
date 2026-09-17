@@ -40,44 +40,23 @@ The twin's header, carried whole because the trap it records is the whole design
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE RULESET IS FOUND BY SHAPE, NOT BY A PINNED ID, and the twin says why in one
-line kept at the call site: "ids change when a ruleset is recreated, and a gate
-pointing at a deleted id would 404 rather than protect."
+THE RULESET IS FOUND BY SHAPE, NOT BY A PINNED ID, and the twin says why in one line kept at the call site: "ids change when a ruleset is recreated, and a gate pointing at a deleted id would 404 rather than protect."
 
-`jq` IS STILL PROBED EVEN THOUGH THIS PORT DOES NOT USE IT. That is a deliberate
-choice and it is the kind that goes wrong silently if it is not written down.
+`jq` IS STILL PROBED EVEN THOUGH THIS PORT DOES NOT USE IT. That is a deliberate choice and it is the kind that goes wrong silently if it is not written down.
 The twin runs `require_cmd jq` and refuses without it; this module parses the
-same payloads with `json.loads`. Dropping the probe would mean the port RUNS in
-an environment where its twin REFUSES, so the two would disagree about the only
-machine where the question is interesting, and the differential would have
-nothing to say about it. The probe is therefore carried, with the twin's exact
-message, and it is the FIRST thing W7 phase 5 should delete when the twin dies:
-at that point it is a dependency on a tool nothing calls.
+same payloads with `json.loads`. Dropping the probe would mean the port RUNS in an environment where its twin REFUSES, so the two would disagree about the only machine where the question is interesting, and the differential would have nothing to say about it. The probe is therefore carried, with the twin's exact message, and it is the FIRST thing W7 phase 5 should delete when the
+twin dies: at that point it is a dependency on a tool nothing calls.
 
-AN UNPARSEABLE RULESET LIST IS THE ONE DELIBERATE DIVERGENCE, and it is a twin
-DEFECT rather than a design. The twin pipes the payload into
-`jq -r '.[] | select(...)'` inside a `set -e` assignment, so a body that is not
-a JSON array kills the whole gate with jq's own diagnostic on stderr and jq's
-exit status (5) as the gate's. Nothing in the gate's vocabulary appears, and a
-reader sees what looks like a broken runner. This port refuses with its own
-message and exit 1 instead. Reported rather than reproduced, because reproducing
-it would mean forging another program's error text, and no ledger row exercises
-it.
+AN UNPARSEABLE RULESET LIST IS THE ONE DELIBERATE DIVERGENCE, and it is a twin DEFECT rather than a design. The twin pipes the payload into `jq -r '.[] | select(...)'` inside a `set -e` assignment, so a body that is not a JSON array kills the whole gate with jq's own diagnostic on stderr and jq's exit status (5) as the gate's. Nothing in the gate's vocabulary appears, and a reader
+sees what looks like a broken runner. This port refuses with its own message and exit 1 instead. Reported rather than reproduced, because reproducing it would mean forging another program's error text, and no ledger row exercises it.
 
-`jq -r '.name'` PRINTS THE FOUR CHARACTERS `null` FOR A MISSING NAME, not an
-empty string, and the twin interpolates that into two messages. The port carries
-the same spelling: a ruleset with no name reports `(null)`, which is what a
-reader of the twin's output has always seen.
+`jq -r '.name'` PRINTS THE FOUR CHARACTERS `null` FOR A MISSING NAME, not an empty string, and the twin interpolates that into two messages. The port carries the same spelling: a ruleset with no name reports `(null)`, which is what a reader of the twin's output has always seen.
 
 `${actors:-none}` IS BASH'S EMPTY-OR-UNSET DEFAULT and it is what makes the
-success line read `bypass actors are [none]` rather than `[]`. Carried, because
-a green line that changed shape is the one thing a reader scanning a CI log
-would notice, and it would look like the gate had changed its mind.
+success line read `bypass actors are [none]` rather than `[]`. Carried, because a green line that changed shape is the one thing a reader scanning a CI log would notice, and it would look like the gate had changed its mind.
 
 THE LOOP DOES NOT STOP AT THE FIRST BAD RULESET. The twin sets `rc=1` and
-`continue`s three separate times, so a repository with two active branch rulesets
-reports on both. A port that returned early would hide the second, and the
-difference is invisible in the one-ruleset case this repository actually has.
+`continue`s three separate times, so a repository with two active branch rulesets reports on both. A port that returned early would hide the second, and the difference is invisible in the one-ruleset case this repository actually has.
 """
 
 import json
@@ -102,11 +81,7 @@ REQUIRED_COMMANDS = ("gh", "jq")
 class RulesetPayloadError(ValueError):
     """The ruleset list came back as something that cannot be iterated.
 
-    A NAMED type rather than a bare ValueError, and it subclasses ValueError so
-    the caller's single `except ValueError` still covers both this and
-    `json.JSONDecodeError`. Both are the same event from the gate's point of
-    view: the body GitHub returned is not the array the query needs, which is
-    the shape a 404 error object arrives in.
+    A NAMED type rather than a bare ValueError, and it subclasses ValueError so the caller's single `except ValueError` still covers both this and `json.JSONDecodeError`. Both are the same event from the gate's point of view: the body GitHub returned is not the array the query needs, which is the shape a 404 error object arrives in.
     """
 
 
@@ -125,10 +100,7 @@ def require_cmd(name: str) -> bool:
 def gh_api(path: str) -> tuple[int, str]:
     """`gh api <path> 2>/dev/null`. Returns (exit status, stdout).
 
-    STDERR IS DISCARDED, matching the twin's `2>/dev/null` on both calls. That is
-    not tidiness: the twin decides purely on the exit status, and a gh failure
-    that printed a rate-limit notice into this gate's stderr would be read by the
-    comparator as a finding neither implementation meant to report.
+    STDERR IS DISCARDED, matching the twin's `2>/dev/null` on both calls. That is not tidiness: the twin decides purely on the exit status, and a gh failure that printed a rate-limit notice into this gate's stderr would be read by the comparator as a finding neither implementation meant to report.
     """
     try:
         proc = subprocess.run(
@@ -147,13 +119,9 @@ def gh_api(path: str) -> tuple[int, str]:
 def active_branch_ruleset_ids(payload: str) -> list[str]:
     """The twin's `jq -r '.[] | select(.target == "branch" and .enforcement == "active") | .id'`.
 
-    Ids come back as STRINGS because that is what `jq -r` writes and what the
-    twin then interpolates into a URL. `json.loads` gives integers, so they are
-    stringified here rather than at three call sites.
+    Ids come back as STRINGS because that is what `jq -r` writes and what the twin then interpolates into a URL. `json.loads` gives integers, so they are stringified here rather than at three call sites.
 
-    Raises ValueError when the payload is not a JSON array. See the port notes:
-    the twin dies with jq's diagnostic in that case, and this is the one place
-    the port deliberately behaves better.
+    Raises ValueError when the payload is not a JSON array. See the port notes: the twin dies with jq's diagnostic in that case, and this is the one place the port deliberately behaves better.
     """
     parsed = json.loads(payload)
     if not isinstance(parsed, list):
@@ -170,8 +138,7 @@ def active_branch_ruleset_ids(payload: str) -> list[str]:
 def _jq_string(value: object) -> str:
     """What `jq -r` writes for a scalar. `null` is the literal four characters.
 
-    This is the difference between the port's output and the twin's for a
-    ruleset with no name, and it is the sort of thing that reads as a port bug
+    This is the difference between the port's output and the twin's for a ruleset with no name, and it is the sort of thing that reads as a port bug
     for anyone comparing two CI logs.
     """
     if value is None:
@@ -187,10 +154,7 @@ def bypass_hit(ruleset: dict, app_id: str) -> str:
     r"""The twin's hit query, including its `"\(.actor_type)/\(.bypass_mode)"` shape.
 
     `(.actor_id|tostring) == $id` is a STRING comparison in the twin, so an
-    actor_id of 12345 matches the environment variable "12345". Comparing
-    integers here would work today and would break the moment GitHub returns an
-    id this repository stores as a string, which is exactly the class of change
-    nobody would notice until the gate stopped matching.
+    actor_id of 12345 matches the environment variable "12345". Comparing integers here would work today and would break the moment GitHub returns an id this repository stores as a string, which is exactly the class of change nobody would notice until the gate stopped matching.
     """
     lines = []
     for actor in ruleset.get("bypass_actors") or []:
@@ -216,8 +180,7 @@ def actor_summary(ruleset: dict) -> str:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 when the App holds no bypass, 1 on anything else.
 
-    `--selftest` is intercepted BEFORE any network call, so the controls run on
-    a machine with no token at all.
+    `--selftest` is intercepted BEFORE any network call, so the controls run on a machine with no token at all.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -339,9 +302,7 @@ UNAUTHENTICATED_KEYS = (
 def selftest() -> int:
     """Both directions for every query, with no network and no token.
 
-    The whole gate is three JSON queries and a presence test, so the controls
-    below drive those four things directly. A control suite that only planted a
-    bypass would pass against a query hard-wired to "yes".
+    The whole gate is three JSON queries and a presence test, so the controls below drive those four things directly. A control suite that only planted a bypass would pass against a query hard-wired to "yes".
     """
     ctl = Controls("autopilot-no-bypass", floor=18, verbose=True)
 

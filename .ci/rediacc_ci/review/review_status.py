@@ -2,15 +2,8 @@
 """Port of `.ci/scripts/review/review-status.sh`, the "Review Complete"
 check-run reporter.
 
-THE SHAPE OF THE THING FIRST, because nothing else here makes sense without it.
-This is not a CI job and must never become one. Console CI's old `Review Gate`
-ran on `pull_request` -- BEFORE the review it is named after can have happened
--- and asserted nothing about WHICH commit was reviewed. The assertion cannot
-move into CI either, because the review only starts once CI is green, so a CI
-job that waits for the review deadlocks the pipeline that produces it. The
-verdict is therefore posted as an INDEPENDENT check-run from a workflow no CI
-job references. That acyclicity is the property to preserve: never add a
-`needs:` or a `wait-for` on `Review Complete` anywhere inside Console CI.
+THE SHAPE OF THE THING FIRST, because nothing else here makes sense without it. This is not a CI job and must never become one. Console CI's old `Review Gate` ran on `pull_request` -- BEFORE the review it is named after can have happened -- and asserted nothing about WHICH commit was reviewed. The assertion cannot move into CI either, because the review only starts once CI is
+green, so a CI job that waits for the review deadlocks the pipeline that produces it. The verdict is therefore posted as an INDEPENDENT check-run from a workflow no CI job references. That acyclicity is the property to preserve: never add a `needs:` or a `wait-for` on `Review Complete` anywhere inside Console CI.
 
 TWO ASSERTIONS, and the second one is three subprocesses:
 
@@ -24,33 +17,19 @@ when the review budget is exhausted and the marker is stale; `neutral` for a
 draft; `failure` for a stale head, a failed triggering review run, or a failing
 hygiene script.
 
-THE EXIT CODE IS NOT THE VERDICT. The script exits 0 after posting a `failure`
-conclusion, because the verdict lives in the check-run and a red JOB would be a
-second, confusing signal on the same head. A non-zero exit always means the
-REPORTER broke.
+THE EXIT CODE IS NOT THE VERDICT. The script exits 0 after posting a `failure` conclusion, because the verdict lives in the check-run and a red JOB would be a second, confusing signal on the same head. A non-zero exit always means the REPORTER broke.
 
 -----------------------------------------------------------------------------
 THE DEADLOCK GUARD IS THE REASON THIS FILE IS DELICATE
 -----------------------------------------------------------------------------
-Once a PR reaches its review cap the gate script refuses to review again, so
-the marker can NEVER advance to the current head. Failing here would make the
-PR permanently unmergeable through no fault of its author. That is not a
-hypothetical: `common.sh:623-632` records PR #553 (2026-08-07) reading 3/3 in
-the gate and 0/3 here at the same moment, green, ready, thread-clean and
-unmergeable. So there are TWO passing-with-a-warning arms -- the PR-wide cap,
-and the per-head attempt ceiling one level down -- and both are driven in the
-differential.
+Once a PR reaches its review cap the gate script refuses to review again, so the marker can NEVER advance to the current head. Failing here would make the PR permanently unmergeable through no fault of its author. That is not a hypothetical: `common.sh:623-632` records PR #553 (2026-08-07) reading 3/3 in the gate and 0/3 here at the same moment, green, ready, thread-clean and
+unmergeable. So there are TWO passing-with-a-warning arms -- the PR-wide cap, and the per-head attempt ceiling one level down -- and both are driven in the differential.
 
 -----------------------------------------------------------------------------
 THE BUDGET COMES FROM `core.review_budget`, NOT FROM A SECOND COPY
 -----------------------------------------------------------------------------
-`review_spend_total`, `review_cap_for`, `review_attempt_states`,
-`review_head_is_exhausted` and `pr_diff_loc` are the review-budget half of
-`common.sh`, already ported at `core.review_budget`, whose own docstring names
-THIS script as one of its two live callers and quotes the reason they live in
-one place: "the two disagreeing about the cap resurrects exactly the deadlock
-review-status.sh was written to prevent. One table, one function, both callers."
-Re-transliterating them here would be that second copy.
+`review_spend_total`, `review_cap_for`, `review_attempt_states`, `review_head_is_exhausted` and `pr_diff_loc` are the review-budget half of `common.sh`, already ported at `core.review_budget`, whose own docstring names THIS script as one of its two live callers and quotes the reason they live in one place: "the two disagreeing about the cap resurrects exactly the deadlock
+review-status.sh was written to prevent. One table, one function, both callers." Re-transliterating them here would be that second copy.
 
 TWO DIFFERENCES THE REUSE BUYS, both named rather than hidden:
 
@@ -70,11 +49,7 @@ TWO DIFFERENCES THE REUSE BUYS, both named rather than hidden:
 -----------------------------------------------------------------------------
 `jq` BUILDS THE CHECK-RUN PAYLOAD, and that is not laziness
 -----------------------------------------------------------------------------
-`jq -n --arg ...` is what produces the bytes that go up to GitHub, including
-jq's own two-space indentation and key order, and `jq 'del(.head_sha)'` is what
-strips the one field a PATCH rejects. Those bytes are the product. They are
-handed to the same jq here, so a differential can compare the payload byte for
-byte -- which it does, on every case that writes.
+`jq -n --arg ...` is what produces the bytes that go up to GitHub, including jq's own two-space indentation and key order, and `jq 'del(.head_sha)'` is what strips the one field a PATCH rejects. Those bytes are the product. They are handed to the same jq here, so a differential can compare the payload byte for byte -- which it does, on every case that writes.
 
 `--arg` ALSO KEEPS MODEL- AND USER-AUTHORED TEXT OUT OF THE SHELL. The summary
 carries hygiene-script output verbatim; nothing is interpolated into a command
@@ -83,42 +58,22 @@ line on either side.
 -----------------------------------------------------------------------------
 THE CONSTANTS ARE READ OUT OF `claude-review-gate.sh`, NOT COPIED
 -----------------------------------------------------------------------------
-Two files disagreeing about `MARKER_PREFIX` makes this check silently unable to
-find any marker -- every head then reads as unreviewed. A parse failure is
-FATAL rather than defaulted, and the `ATTEMPT_PREFIX` failure message spells
-out the consequence (the cap reads lower here than in the gate and the deadlock
-guard cannot fire, the #553 mode). `parse_prefix` is the twin's `sed` program
-as a regex, driven against real `sed` in the differential rather than assumed
-equivalent.
+Two files disagreeing about `MARKER_PREFIX` makes this check silently unable to find any marker -- every head then reads as unreviewed. A parse failure is FATAL rather than defaulted, and the `ATTEMPT_PREFIX` failure message spells out the consequence (the cap reads lower here than in the gate and the deadlock guard cannot fire, the #553 mode). `parse_prefix` is the twin's `sed`
+program as a regex, driven against real `sed` in the differential rather than assumed equivalent.
 
 -----------------------------------------------------------------------------
 WHERE THE DEFAULT PATHS COME FROM, since this file moved
 -----------------------------------------------------------------------------
-The twin defaults `HYGIENE_DIR` to `$SCRIPT_DIR/../quality` and `GATE_SCRIPT`
-to `$SCRIPT_DIR/claude-review-gate.sh`, both relative to `.ci/scripts/review/`.
-This module lives in `.ci/rediacc_ci/review/`, where the same expressions would
-resolve to `.ci/rediacc_ci/quality` -- the Python package, not the directory of
-executables the twin runs. `twin_script_dir()` therefore names the TWIN's
-directory explicitly, so both sides reach the same two real paths. The two test
-seams (`REVIEW_STATUS_HYGIENE_DIR`, `REVIEW_STATUS_GATE_SCRIPT`) are unchanged.
+The twin defaults `HYGIENE_DIR` to `$SCRIPT_DIR/../quality` and `GATE_SCRIPT` to `$SCRIPT_DIR/claude-review-gate.sh`, both relative to `.ci/scripts/review/`. This module lives in `.ci/rediacc_ci/review/`, where the same expressions would resolve to `.ci/rediacc_ci/quality` -- the Python package, not the directory of executables the twin runs. `twin_script_dir()` therefore names the
+TWIN's directory explicitly, so both sides reach the same two real paths. The two test seams (`REVIEW_STATUS_HYGIENE_DIR`, `REVIEW_STATUS_GATE_SCRIPT`) are unchanged.
 
-THE HYGIENE SCRIPTS ARE THE `.py` PORTS, and the twin says why: W7 P4 cut them
-over on 2026-09-08, so CI invokes `check_<name>.py` and a pipeline still running
-the `.sh` would be proving a file CI no longer uses. Each is executed DIRECTLY,
-not through `bash`, so the shebang picks the interpreter.
+THE HYGIENE SCRIPTS ARE THE `.py` PORTS, and the twin says why: W7 P4 cut them over on 2026-09-08, so CI invokes `check_<name>.py` and a pipeline still running the `.sh` would be proving a file CI no longer uses. Each is executed DIRECTLY, not through `bash`, so the shebang picks the interpreter.
 
 -----------------------------------------------------------------------------
 ONE HAZARD, REPORTED RATHER THAN REPAIRED
 -----------------------------------------------------------------------------
-The `workflow_run` arm requires `WR_RUN_ID` but the other four events require
-only `PR_NUMBER`, and `PR_NUMBER` is used verbatim in an API path. A
-non-numeric `PR_NUMBER` therefore reaches `gh api repos/<repo>/pulls/<junk>`
-and dies with gh's own 404 message and gh's exit code, after `require_var` has
-already passed -- there is no numeric validation anywhere. Nothing is
-interpolated into a shell on either side, so this is a bad-input path with a
-confusing diagnostic rather than a security hole, and tightening it changes a
-live workflow step's contract. Pinned by
-`test_a_non_numeric_pr_number_reaches_the_api_unvalidated`.
+The `workflow_run` arm requires `WR_RUN_ID` but the other four events require only `PR_NUMBER`, and `PR_NUMBER` is used verbatim in an API path. A non-numeric `PR_NUMBER` therefore reaches `gh api repos/<repo>/pulls/<junk>` and dies with gh's own 404 message and gh's exit code, after `require_var` has already passed -- there is no numeric validation anywhere. Nothing is
+interpolated into a shell on either side, so this is a bad-input path with a confusing diagnostic rather than a security hole, and tightening it changes a live workflow step's contract. Pinned by `test_a_non_numeric_pr_number_reaches_the_api_unvalidated`.
 
 Exit: 0 whatever the conclusion, including `failure`; non-zero only when the
 reporter itself could not do its job.
@@ -186,8 +141,7 @@ FOOTER = (
 class ReporterError(Exception):
     """The reporter itself broke: a message already logged, and an exit code.
 
-    Distinct from a `failure` CONCLUSION, which is a healthy run reporting an
-    unhealthy PR and exits 0.
+    Distinct from a `failure` CONCLUSION, which is a healthy run reporting an unhealthy PR and exits 0.
     """
 
     def __init__(self, code: int = 1) -> None:
@@ -216,8 +170,7 @@ def _gh(args: list[str], *, quiet: bool = False) -> tuple[int, bytes]:
     """One `gh` call, no retry, stdout captured.
 
     `quiet` is the twin's `2>/dev/null` on the calls that are allowed to fail;
-    everywhere else gh's stderr is INHERITED, which is how a caller learns what
-    404'd on the paths that end the run.
+    everywhere else gh's stderr is INHERITED, which is how a caller learns what 404'd on the paths that end the run.
     """
     try:
         proc = subprocess.run(
@@ -245,16 +198,11 @@ def _jq(args: list[str], stdin: bytes | None = None) -> tuple[int, bytes]:
 def last_marker_sha(repo: str, pr: str, prefix: str) -> str:
     """The NEWEST reviewed-SHA marker on the PR, or "".
 
-    Same shape as `claude-review-gate.sh`'s reader: the marker BODY is
-    multi-line, so the SHA is extracted from EVERY line and the last is taken --
-    never `tail` first.
+    Same shape as `claude-review-gate.sh`'s reader: the marker BODY is multi-line, so the SHA is extracted from EVERY line and the last is taken -- never `tail` first.
 
-    `2>/dev/null ... || true`: a `gh` failure is indistinguishable from "no
-    marker", and the currency assertion then fails CLOSED, which is the right
+    `2>/dev/null ... || true`: a `gh` failure is indistinguishable from "no marker", and the currency assertion then fails CLOSED, which is the right
     direction here. That swallow is the twin's and is preserved; note it is the
-    only one in this file, and unlike the budget's (which was fixed on
-    2026-09-10 because it moved the CAP NUMERATOR) this one can only make the
-    check stricter.
+    only one in this file, and unlike the budget's (which was fixed on 2026-09-10 because it moved the CAP NUMERATOR) this one can only make the check stricter.
     """
     code, body = _gh(
         ["api", "repos/%s/issues/%s/comments" % (repo, pr), "--paginate"],
@@ -285,9 +233,7 @@ def last_marker_sha(repo: str, pr: str, prefix: str) -> str:
 def submodule_paths(cwd: str | None = None) -> list[str]:
     """`git config -f .gitmodules --get-regexp '^submodule\\..*\\.path$' | awk '{print $2}'`.
 
-    Reads `.gitmodules` in the CURRENT DIRECTORY, which is the twin's behaviour
-    and the reason a run from the wrong cwd sees no submodules and treats a
-    pointer bump as a real change. `|| true`: no `.gitmodules` is not an error.
+    Reads `.gitmodules` in the CURRENT DIRECTORY, which is the twin's behaviour and the reason a run from the wrong cwd sees no submodules and treats a pointer bump as a real change. `|| true`: no `.gitmodules` is not an error.
     """
     try:
         proc = subprocess.run(
@@ -313,12 +259,7 @@ def submodule_paths(cwd: str | None = None) -> list[str]:
 def non_gitlink_count(files: list[str], subs: list[str]) -> int:
     """The twin's jq: how many changed files are NOT a submodule path.
 
-    `[.[] | select(. as $f | $subs | index($f) | not)] | length`. `index`
-    answers 0 for the FIRST submodule, and `0 | not` is FALSE in jq (0 is
-    truthy), so the first submodule is treated exactly like the rest. That is
-    the one place a hand-rolled reimplementation of this filter goes wrong, so
-    the equivalence is driven against real jq in the differential rather than
-    argued here.
+    `[.[] | select(. as $f | $subs | index($f) | not)] | length`. `index` answers 0 for the FIRST submodule, and `0 | not` is FALSE in jq (0 is truthy), so the first submodule is treated exactly like the rest. That is the one place a hand-rolled reimplementation of this filter goes wrong, so the equivalence is driven against real jq in the differential rather than argued here.
     """
     wanted = set(subs)
     return sum(1 for name in files if name not in wanted)
@@ -362,11 +303,9 @@ def post_check(
 ) -> None:
     """Upsert the named check-run on the PR's CURRENT head.
 
-    UPSERT rather than always-POST because these events fire on every comment,
-    and a fresh check-run per keystroke buries the PR's checks list.
+    UPSERT rather than always-POST because these events fire on every comment, and a fresh check-run per keystroke buries the PR's checks list.
 
-    `head_sha` is not a PATCH field and sending it on an update is rejected, so
-    the update path pipes the payload through `jq 'del(.head_sha)'` first.
+    `head_sha` is not a PATCH field and sending it on an update is rejected, so the update path pipes the payload through `jq 'del(.head_sha)'` first.
     """
     rc, payload = check_payload(check_name, head_sha, conclusion, title, summary)
     if rc != 0:
@@ -426,13 +365,8 @@ def _gh_input(args: list[str], payload: bytes) -> tuple[int, bytes]:
 def artifact_pr(repo: str, run_id: str) -> str:
     """The `review-target` artifact's PR number, or "" when there is none.
 
-    ABSENT IS SILENT, PRESENT IS BINDING, and the twin's comment records why at
-    length: a push to main runs this chain and legitimately has no PR, writes no
-    artifact and exits 0. An artifact that EXISTS but cannot be honoured is a
-    REPORTER failure and must be loud -- that is the case that used to be
-    indistinguishable from the main-push case, back when this arm read
-    `workflow_run.head_sha` (which GitHub stamps with the DEFAULT BRANCH tip, so
-    it had never resolved a PR since it was written).
+    ABSENT IS SILENT, PRESENT IS BINDING, and the twin's comment records why at length: a push to main runs this chain and legitimately has no PR, writes no artifact and exits 0. An artifact that EXISTS but cannot be honoured is a REPORTER failure and must be loud -- that is the case that used to be indistinguishable from the main-push case, back when this arm read
+    `workflow_run.head_sha` (which GitHub stamps with the DEFAULT BRANCH tip, so it had never resolved a PR since it was written).
     """
     probe_args = [
         "api",
@@ -493,11 +427,7 @@ def artifact_pr(repo: str, run_id: str) -> str:
 def _read_member_digits(zip_path: str) -> str:
     """The twin's inline `python3 -c` reader, plus its `| tr -dc '0-9'`.
 
-    Every exception is swallowed and yields the empty string, which the caller
-    then reports as "present but carries no PR number" -- so a corrupt zip and
-    an empty member are the same, loud, outcome. This is the one place the port
-    reimplements rather than spawns, because the twin's program IS python3 and
-    this is the identical code in-process.
+    Every exception is swallowed and yields the empty string, which the caller then reports as "present but carries no PR number" -- so a corrupt zip and an empty member are the same, loud, outcome. This is the one place the port reimplements rather than spawns, because the twin's program IS python3 and this is the identical code in-process.
     """
     try:
         with zipfile.ZipFile(zip_path) as archive:
@@ -606,13 +536,9 @@ def _currency(repo: str, head_sha: str, last_sha: str) -> tuple[bool, str]:
 def _hygiene(hygiene_dir: pathlib.Path, pr: str, repo: str, failures: list[str]) -> None:
     """ASSERTION 2, and its anti-vacuity guard.
 
-    A wrong `HYGIENE_DIR` would silently reduce this check to the currency
-    assertion alone and STILL REPORT SUCCESS, so a missing or non-executable
-    script is a fatal reporter failure rather than a skipped check.
+    A wrong `HYGIENE_DIR` would silently reduce this check to the currency assertion alone and STILL REPORT SUCCESS, so a missing or non-executable script is a fatal reporter failure rather than a skipped check.
 
-    Each script's combined output is captured, its last 20 lines go into the
-    failure text, and the WHOLE of it is echoed to stdout either way -- so a
-    passing hygiene run is still readable in the workflow log.
+    Each script's combined output is captured, its last 20 lines go into the failure text, and the WHOLE of it is echoed to stdout either way -- so a passing hygiene run is still readable in the workflow log.
     """
     for script in HYGIENE_SCRIPTS:
         path = hygiene_dir / script

@@ -1,34 +1,17 @@
 """Port of `.ci/scripts/test/gates/test-autopilot-workflow-invariants.sh`.
 
-Tests `.ci/scripts/security/check-autopilot-workflow-invariants.sh`, the static
-gate over `.github/workflows/autopilot.yml` -- the workflow that hands a model a
-shell over PR-authored code.
+Tests `.ci/scripts/security/check-autopilot-workflow-invariants.sh`, the static gate over `.github/workflows/autopilot.yml` -- the workflow that hands a model a shell over PR-authored code.
 
-THE METHOD IS THE POINT, and it is carried over unchanged. A static grep that has
-never been shown to FAIL is indistinguishable from `true` (this repo shipped
-exactly that shape in a `--selftest` nothing invoked). So every invariant is proven
-in both directions: the REAL workflow passes, and a MUTATED copy of the real
-workflow with that one invariant broken must exit 1 with the pinned diagnostic.
-Mutating the LIVE file rather than a frozen fixture keeps the proofs from rotting
-as the workflow evolves: if the workflow's shape drifts so far that a mutation
-stops landing, `assert_mutated` fails loudly instead of the test silently testing
-nothing.
+THE METHOD IS THE POINT, and it is carried over unchanged. A static grep that has never been shown to FAIL is indistinguishable from `true` (this repo shipped exactly that shape in a `--selftest` nothing invoked). So every invariant is proven in both directions: the REAL workflow passes, and a MUTATED copy of the real workflow with that one invariant broken must exit 1 with the
+pinned diagnostic. Mutating the LIVE file rather than a frozen fixture keeps the proofs from rotting as the workflow evolves: if the workflow's shape drifts so far that a mutation stops landing, `assert_mutated` fails loudly instead of the test silently testing nothing.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Every case reads
-`.github/workflows/autopilot.yml` off the working tree and the first case drives
-the subject at it in place. A battery step rewriting the workflow mid-read is a
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Every case reads `.github/workflows/autopilot.yml` off the working tree and the first case drives the subject at it in place. A battery step rewriting the workflow mid-read is a
 divergence that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
 the serialisation, and it is honoured only because this module declares no
 `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
-WHAT IS REIMPLEMENTED, AND WHAT IS NOT. The SUBJECT is never reimplemented: every
-verdict below comes from the real `bash check-autopilot-workflow-invariants.sh`.
-What is reimplemented is the twin's MUTATION toolkit -- `perl -pe`, `perl -0pe`,
-`sed` and `grep -v` -- as the four line helpers below. Their perl semantics are
-reproduced deliberately and are documented on each helper, because a mutation that
-lands in the wrong place is a control that fires for the wrong reason. Every
-mutation is still checked against the real file by `assert_mutated`, which is the
-thing that catches a helper whose semantics drifted.
+WHAT IS REIMPLEMENTED, AND WHAT IS NOT. The SUBJECT is never reimplemented: every verdict below comes from the real `bash check-autopilot-workflow-invariants.sh`. What is reimplemented is the twin's MUTATION toolkit -- `perl -pe`, `perl -0pe`, `sed` and `grep -v` -- as the four line helpers below. Their perl semantics are reproduced deliberately and are documented on each helper,
+because a mutation that lands in the wrong place is a control that fires for the wrong reason. Every mutation is still checked against the real file by `assert_mutated`, which is the thing that catches a helper whose semantics drifted.
 """
 
 import os
@@ -63,10 +46,7 @@ def require_gate(gate) -> str:
 def real_source(gate) -> str:
     """The real workflow's text, refused when empty.
 
-    ANTI-VACUITY. Every case below derives its fixture from this string. An empty
-    or truncated workflow would make the mutations no-ops, `assert_mutated` would
-    fire with a confusing message, and a reader would hunt the mutation instead of
-    the corpus. Refusing here names the real problem.
+    ANTI-VACUITY. Every case below derives its fixture from this string. An empty or truncated workflow would make the mutations no-ops, `assert_mutated` would fire with a confusing message, and a reader would hunt the mutation instead of the corpus. Refusing here names the real problem.
     """
     require_gate(gate)
     source = REAL.read_text(encoding="utf-8")
@@ -82,10 +62,7 @@ def run_gate(gate, workflow_file) -> harness.RunResult:
     """`run_gate` from the twin: the real subject, WORKFLOW_FILE pointed at
     `workflow_file`, stdout and stderr kept APART.
 
-    The twin captures the two streams into separate files and asserts on `err()`,
-    because `common.sh`'s `log_error`/`log_info` write to stderr. Merging them here
-    would hide a diagnostic that moved to the wrong stream, which is a real defect
-    in a gate whose whole output is diagnostics.
+    The twin captures the two streams into separate files and asserts on `err()`, because `common.sh`'s `log_error`/`log_info` write to stderr. Merging them here would hide a diagnostic that moved to the wrong stream, which is a real defect in a gate whose whole output is diagnostics.
     """
     bash = require_gate(gate)
     return harness.run(
@@ -126,10 +103,7 @@ def _keeplines(text: str) -> list[str]:
 def _matches(line: str, pattern: str) -> bool:
     """`perl -pe '... if /^X$/'` against `$_`.
 
-    Perl's `$_` carries the trailing newline and its `$` matches BEFORE that
-    newline, so stripping one trailing newline and asking for a full match is the
-    same predicate. Doing it any other way is how an anchored mutation quietly
-    stops landing.
+    Perl's `$_` carries the trailing newline and its `$` matches BEFORE that newline, so stripping one trailing newline and asking for a full match is the same predicate. Doing it any other way is how an anchored mutation quietly stops landing.
     """
     return re.fullmatch(pattern, line.rstrip("\n")) is not None
 
@@ -161,10 +135,7 @@ def append_after(text: str, pattern: str, addition: str, nth: int | None = None)
 def insert_before(text: str, pattern: str, addition: str) -> str:
     """`perl -pe 'print "..." if /pattern/'`.
 
-    `print` emits BEFORE the implicit print of `$_`, so the added text lands above
-    the matched line. Getting this backwards would insert a token-minting step
-    AFTER the model step, which is the position the invariant permits, and the
-    control would not fire.
+    `print` emits BEFORE the implicit print of `$_`, so the added text lands above the matched line. Getting this backwards would insert a token-minting step AFTER the model step, which is the position the invariant permits, and the control would not fire.
     """
     out: list[str] = []
     for line in _keeplines(text):
@@ -193,9 +164,7 @@ def substitute_once(text: str, pattern: str, repl: str) -> str:
 def substitute_each_line(text: str, pattern: str, repl: str) -> str:
     """`perl -pe 's/a/b/'` and `sed 's/a/b/'`: first hit PER LINE, every line.
 
-    Note what `sed 's/^ *"Edit",$//'` does and does not do: it empties the line, it
-    does not delete it. Deleting it would shift every following line and could
-    change what an indentation-sensitive parser sees, so the difference matters.
+    Note what `sed 's/^ *"Edit",$//'` does and does not do: it empties the line, it does not delete it. Deleting it would shift every following line and could change what an indentation-sensitive parser sees, so the difference matters.
     """
     out: list[str] = []
     for line in _keeplines(text):
@@ -379,9 +348,7 @@ def test_cancel_in_progress_armed_fails(gate):
 def test_model_without_state_guard_fails(gate):
     """The model job's `if:` must require AUTOPILOT_ALLOW_STATE.
 
-    Strip ONLY that clause: the state-write step further down still mentions the
-    flag, so a checker that grepped the whole file would pass this mutation --
-    which is exactly the substitute this invariant must refuse.
+    Strip ONLY that clause: the state-write step further down still mentions the flag, so a checker that grepped the whole file would pass this mutation -- which is exactly the substitute this invariant must refuse.
     """
     source = real_source(gate)
     mutated = re.sub(
@@ -414,12 +381,9 @@ def test_model_without_state_guard_fails(gate):
 def test_model_round_file_tools_required(gate):
     """The model round's permission allowlist must include the file tools.
 
-    The handoff contract requires the model to edit files and write handoff.json,
-    and an allowlist denies everything unlisted. Live proof: runs
-    31321211521/31326053280 burned 41 turns with 21 denials on an allowlist that
+    The handoff contract requires the model to edit files and write handoff.json, and an allowlist denies everything unlisted. Live proof: runs 31321211521/31326053280 burned 41 turns with 21 denials on an allowlist that
     simply omitted Edit/Write. Strip ONLY "Edit"; every other permission entry
-    survives, so a checker that merely counts entries or greps the file for the
-    word Edit (it appears in prose comments) would pass this mutation.
+    survives, so a checker that merely counts entries or greps the file for the word Edit (it appears in prose comments) would pass this mutation.
     """
     source = real_source(gate)
     mutated = substitute_each_line(source, r'^                  "Edit",$', "")
@@ -453,9 +417,7 @@ def test_unparsed_model_if_fails_closed(gate):
 
 def test_submodule_checkout_before_model_fails(gate):
     """S6 makes submodule PUSHES possible after the model exits. The tempting
-    follow-on is to let the model EDIT submodules by adding `submodules:` to its
-    checkout -- but the four submodules are private, so that fetch needs a
-    credential, and a credential before the model step is the one thing this design
+    follow-on is to let the model EDIT submodules by adding `submodules:` to its checkout -- but the four submodules are private, so that fetch needs a credential, and a credential before the model step is the one thing this design
     exists to prevent."""
     source = real_source(gate)
     with harness.temp_dir() as work:
@@ -504,12 +466,8 @@ def test_submodule_checkout_before_model_fails(gate):
 def test_the_mutated_corpus_is_non_trivial(gate):
     """ADDED BY THE PORT: print the shape, so a collapse is visible.
 
-    Every case above mutates a copy of one file. If that file shrank to a stub the
-    mutations would stop landing and `assert_mutated` would fire -- but the reader
-    would be told "the mutation produced an identical file", which points at the
-    mutation rather than at the corpus. This states the corpus size directly, and
-    refuses a workflow with no jobs at all rather than letting an empty scan read
-    as a clean one.
+    Every case above mutates a copy of one file. If that file shrank to a stub the mutations would stop landing and `assert_mutated` would fire -- but the reader would be told "the mutation produced an identical file", which points at the mutation rather than at the corpus. This states the corpus size directly, and refuses a workflow with no jobs at all rather than letting an empty
+    scan read as a clean one.
     """
     source = real_source(gate)
     lines = source.count("\n")

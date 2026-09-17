@@ -1,13 +1,8 @@
 """Differential: `rediacc_ci.autopilot.submodule_prs` against its twin
 `.ci/scripts/autopilot/submodule-prs.sh`.
 
-THE FAKE `gh` IS A SAFETY CONTROL, NOT A CONVENIENCE, and this subject is the
-one in the wave where that sentence is literal: its success path is `gh pr
-create`, which OPENS A PULL REQUEST, and `gh pr edit --body-file`, which
-REPLACES a pull request's body. GitHub restores neither. `--repo` comes straight
-off the command line. So a case that reached the real binary would open real PRs
-in whatever repository the fixture named and overwrite a real body with a
-fixture. Four things stop that, and the first is asserted rather than assumed:
+THE FAKE `gh` IS A SAFETY CONTROL, NOT A CONVENIENCE, and this subject is the one in the wave where that sentence is literal: its success path is `gh pr create`, which OPENS A PULL REQUEST, and `gh pr edit --body-file`, which REPLACES a pull request's body. GitHub restores neither. `--repo` comes straight off the command line. So a case that reached the real binary would open real
+PRs in whatever repository the fixture named and overwrite a real body with a fixture. Four things stop that, and the first is asserted rather than assumed:
 
   1. the stub directory is FIRST on PATH, and `test_the_fake_gh_is_the_gh`
      resolves `gh` through that PATH and fails if anything else wins;
@@ -17,19 +12,11 @@ fixture. Four things stop that, and the first is asserted rather than assumed:
   4. the fake RECORDS every argv, so a case that somehow produced no call log
      would fail rather than pass quietly.
 
-THE CALL LOG AND THE BODY FILES ARE THE ARTIFACT. Everything this script does is
-a `gh` call: which repository, which head branch, what title, and -- the part
-that matters most -- the exact body bytes it would put on the console PR. Both
-sides' `--body-file` arguments point into their own `mktemp -d`, so the fake
-normalises the path to `<work>/<name>` and copies the CONTENT out for
-comparison. A port that logged the right sentences and posted the wrong body
-would sail through a stdout-only comparison.
+THE CALL LOG AND THE BODY FILES ARE THE ARTIFACT. Everything this script does is a `gh` call: which repository, which head branch, what title, and -- the part that matters most -- the exact body bytes it would put on the console PR. Both sides' `--body-file` arguments point into their own `mktemp -d`, so the fake normalises the path to `<work>/<name>` and copies the CONTENT out for
+comparison. A port that logged the right sentences and posted the wrong body would sail through a stdout-only comparison.
 
 TWO PRESERVED DEFECTS ARE PINNED BY NAME:
-`test_an_unterminated_block_swallows_the_rest` (a BEGIN marker with no END makes
-the rebuild drop everything after it, losing operator text) and
-`test_a_dry_run_rebuilds_onto_an_empty_body` (a dry run never reads the live
-body, so what it prints is not what the round would post). Both are defect
+`test_an_unterminated_block_swallows_the_rest` (a BEGIN marker with no END makes the rebuild drop everything after it, losing operator text) and `test_a_dry_run_rebuilds_onto_an_empty_body` (a dry run never reads the live body, so what it prints is not what the round would post). Both are defect
 reports in test form; if either twin behaviour is repaired, the test goes red
 and the repair gets noticed here.
 
@@ -366,9 +353,7 @@ def test_an_unmapped_path_refuses_to_guess() -> None:
 
 def test_a_dry_run_rebuilds_onto_an_empty_body() -> None:
     """PRESERVED DEFECT, and the reason a dry run is not a preview: it never
-    reads the live PR body, so the block it prints sits on nothing. The TWO
-    blank lines at the top are real output and both are accounted for: an empty
-    body still gives awk one (empty) line, and the block's own `printf '\\n%s\\n'`
+    reads the live PR body, so the block it prints sits on nothing. The TWO blank lines at the top are real output and both are accounted for: an empty body still gives awk one (empty) line, and the block's own `printf '\\n%s\\n'`
     adds the second."""
     exit_code, stdout, stderr, calls, _ = _sides(
         "dry-run",
@@ -459,16 +444,11 @@ def test_a_non_integer_count_wipes_the_block_and_exits_0() -> None:
 
     jq's `length` on a NUMBER is its absolute value, so `"submodules": 3.5`
     produces the count `3.5`. Bash's `for ((i = 0; i < 3.5; i++))` is an
-    arithmetic syntax error that `set -e` does NOT catch: the diagnostic prints,
-    the loop body never runs, and the script CONTINUES. It then PATCHes the
-    console PR body with an EMPTY `**Submodule PRs**` block -- destroying any
-    links a previous round put there, which reds the required Submodule Branches
-    gate on a complaint no later round can fix by editing code -- and exits 0
-    saying "linked 3.5 submodule PR(s)".
+    arithmetic syntax error that `set -e` does NOT catch: the diagnostic prints, the loop body never runs, and the script CONTINUES. It then PATCHes the console PR body with an EMPTY `**Submodule PRs**` block -- destroying any links a previous round put there, which reds the required Submodule Branches gate on a complaint no later round can fix by editing code -- and exits 0 saying
+    "linked 3.5 submodule PR(s)".
 
     Driven against the twin directly before this test was written; the port
-    matches it deliberately. Exit code, gh calls and the posted body are compared
-    exactly, the bash diagnostic by shape (it carries the twin's path and line).
+    matches it deliberately. Exit code, gh calls and the posted body are compared exactly, the bash diagnostic by shape (it carries the twin's path and line).
     """
     exit_code, _, stderr, calls, bodies = _sides(
         "float-count",

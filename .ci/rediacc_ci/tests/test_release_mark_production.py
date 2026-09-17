@@ -1,32 +1,19 @@
 """Differential: `rediacc_ci.release.mark_production` against its twin
 `.ci/scripts/release/mark-production.sh`.
 
-A RECORDING FAKE `gh` ON PATH, the seam
-`test_housekeeping_cleanup_github_deployments.py` established this wave.
-Nothing here reaches GitHub, and the real `gh` is never on the PATH handed to
-either side. That matters more here than anywhere else in this box: the real
-script MOVES the `production` tag and re-points the "Latest release" badge on
-whatever repository `$GITHUB_REPOSITORY` names, and this machine has a logged-in
+A RECORDING FAKE `gh` ON PATH, the seam `test_housekeeping_cleanup_github_deployments.py` established this wave. Nothing here reaches GitHub, and the real `gh` is never on the PATH handed to either side. That matters more here than anywhere else in this box: the real script MOVES the `production` tag and re-points the "Latest release" badge on whatever repository
+`$GITHUB_REPOSITORY` names, and this machine has a logged-in
 `gh`. Every case pins `GITHUB_REPOSITORY=acme/widget` as well, so even a leak
 would not name the real repository.
 
-THE CALL LOG IS COMPARED, NOT JUST THE STREAMS. The observable effect of this
-script is four possible mutations (`PATCH` a ref, `POST` a ref, `release edit
---latest`, and nothing at all), and two implementations can print identical
-text while making different requests. The dereference step is the sharpest
-example: a port that skipped it would print the same two lines and point
+THE CALL LOG IS COMPARED, NOT JUST THE STREAMS. The observable effect of this script is four possible mutations (`PATCH` a ref, `POST` a ref, `release edit --latest`, and nothing at all), and two implementations can print identical text while making different requests. The dereference step is the sharpest example: a port that skipped it would print the same two lines and point
 `production` at a tag ANNOTATION instead of a commit.
 
 BOTH LOGGING WORLDS ARE DRIVEN. `source common.sh 2>/dev/null || { ... }` gives
-the script a second, private logger whose `log_info` writes to STDOUT with no
-glyph. `test_the_fallback_logger_world_...` copies each subject into a fixture
-tree that has no `.ci/scripts/lib/`, which is the only way to reach that branch,
-and compares the streams there too.
+the script a second, private logger whose `log_info` writes to STDOUT with no glyph. `test_the_fallback_logger_world_...` copies each subject into a fixture tree that has no `.ci/scripts/lib/`, which is the only way to reach that branch, and compares the streams there too.
 
 THE ONE DELIBERATE DIVERGENCE IS ASSERTED, NOT HIDDEN.
-`test_divergence_common_sh_interprets_backslash_escapes_in_gh_error_text` drives
-a `gh` failure whose text contains a literal backslash-n and asserts that the
-twin (via `echo -e`) renders a newline while the port renders two characters.
+`test_divergence_common_sh_interprets_backslash_escapes_in_gh_error_text` drives a `gh` failure whose text contains a literal backslash-n and asserts that the twin (via `echo -e`) renders a newline while the port renders two characters.
 `rediacc_ci.log`'s module docstring already rules on this class; this pins it on
 the one script in the box that interpolates API text into a log message.
 """
@@ -358,8 +345,7 @@ def test_a_failed_mutation_kills_the_run_before_the_moved_line(
     tmp_path: pathlib.Path,
 ) -> None:
     """`set -e` on an unguarded `gh api --method PATCH`: the script exits with
-    gh's own status, gh's stderr reaches the caller because only stdout was
-    redirected, and neither the "moved" line nor the `--latest` edit happens.
+    gh's own status, gh's stderr reaches the caller because only stdout was redirected, and neither the "moved" line nor the `--latest` edit happens.
     A port that reported success here would leave the badge lying."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["v1.3.1"], FAKE_GH_MUTATE_RC="6")
     assert old.returncode == 6
@@ -425,9 +411,7 @@ def test_a_failed_dereference_is_its_own_message(tmp_path: pathlib.Path) -> None
 def _fixture_tree(tmp_path: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
     """Both subjects, copied into a tree with NO `.ci/scripts/lib/common.sh`.
 
-    Each keeps its own depth from the root it derives (`../../..` for the twin's
-    `.ci/scripts/release/`, `parents[3]` for the port's `.ci/rediacc_ci/release/`),
-    so both compute the same missing library path.
+    Each keeps its own depth from the root it derives (`../../..` for the twin's `.ci/scripts/release/`, `parents[3]` for the port's `.ci/rediacc_ci/release/`), so both compute the same missing library path.
     """
     fix = tmp_path / "fixture"
     twin_dir = fix / ".ci" / "scripts" / "release"
@@ -447,8 +431,7 @@ def test_the_fallback_logger_world_puts_info_on_stdout_without_a_glyph(
 ) -> None:
     """THE BRANCH THAT ONLY EXISTS WHEN common.sh IS MISSING. `source ... ||
     { log_info() { echo "$*"; }; ... }` moves every info line to STDOUT and
-    drops the glyph, and `log_error` keeps stderr but loses its `✗`. A port
-    that implemented only the library path would be byte-identical in CI and
+    drops the glyph, and `log_error` keeps stderr but loses its `✗`. A port that implemented only the library path would be byte-identical in CI and
     wrong on exactly the machine the fallback was written for."""
     twin_copy, port_copy = _fixture_tree(tmp_path)
     old, old_calls = _run(twin_copy, tmp_path, ["v1.3.1"])
@@ -479,12 +462,8 @@ def test_divergence_common_sh_interprets_backslash_escapes_in_gh_error_text(
     tmp_path: pathlib.Path,
 ) -> None:
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. common.sh's loggers use `echo -e`, which interprets
-    backslash escapes IN THE MESSAGE, and this script interpolates gh's own
-    output into that message. `rediacc_ci.log` formats the message as data (see
-    its module docstring), so the twin turns a literal backslash-n in an API
-    error into a newline and the port keeps the two characters. The FALLBACK
-    world uses a bare `echo` and does NOT interpret, which is asserted here too:
+    "FIXED" BY ACCIDENT. common.sh's loggers use `echo -e`, which interprets backslash escapes IN THE MESSAGE, and this script interpolates gh's own output into that message. `rediacc_ci.log` formats the message as data (see its module docstring), so the twin turns a literal backslash-n in an API error into a newline and the port keeps the two characters. The FALLBACK world uses a
+    bare `echo` and does NOT interpret, which is asserted here too:
     the divergence belongs to common.sh, not to the script."""
     err = "HTTP 500: boom\\nline two\n"
     old, new, _old_calls, _new_calls = run_both(

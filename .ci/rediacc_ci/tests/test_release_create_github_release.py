@@ -1,11 +1,7 @@
 """Differential: `rediacc_ci.release.create_github_release` against its twin
 `.ci/scripts/release/create-github-release.sh`.
 
-THIS SCRIPT PUBLISHES. Its twin's own header says so: `gh release create` makes
-a real, public GitHub Release and uploads every asset to it. `gh` IS installed
-and authenticated on this machine, so the fake is not a convenience, it is the
-only thing standing between this test file and a published release. Three
-independent guards, in order of how much they are trusted:
+THIS SCRIPT PUBLISHES. Its twin's own header says so: `gh release create` makes a real, public GitHub Release and uploads every asset to it. `gh` IS installed and authenticated on this machine, so the fake is not a convenience, it is the only thing standing between this test file and a published release. Three independent guards, in order of how much they are trusted:
 
   1. A recording fake `gh` FIRST on a scratch PATH.
   2. `test_the_fake_gh_shadows_the_real_one`, which resolves the name through
@@ -14,26 +10,15 @@ independent guards, in order of how much they are trusted:
   3. `GH_CONFIG_DIR` and `GH_TOKEN` pointed at scratch values, so even a leak
      through some path none of the above covers hits an unauthenticated client.
 
-BOTH SIDES RUN IN A THROWAWAY TREE for a second reason: the twin `cd`s to
-`get_repo_root`, which has no override, and would otherwise glob THIS
-checkout's `dist/`. Each case builds one console tree per side at the real
-relative depths and plants the asset fixture inside it.
+BOTH SIDES RUN IN A THROWAWAY TREE for a second reason: the twin `cd`s to `get_repo_root`, which has no override, and would otherwise glob THIS checkout's `dist/`. Each case builds one console tree per side at the real relative depths and plants the asset fixture inside it.
 
-THE ARGV IS THE COMPARISON, not the stdout. Everything this script decides ends
-up in one `gh` invocation: the tag, the title, the target sha, the repo and the
-asset list IN ORDER. stdout is whatever `gh` prints. So the call log is asserted
-element by element, and the ordering case below is the one that matters most --
-see `test_glob_order_is_bytewise_not_a_directory_walk`.
+THE ARGV IS THE COMPARISON, not the stdout. Everything this script decides ends up in one `gh` invocation: the tag, the title, the target sha, the repo and the asset list IN ORDER. stdout is whatever `gh` prints. So the call log is asserted element by element, and the ordering case below is the one that matters most -- see `test_glob_order_is_bytewise_not_a_directory_walk`.
 
 THE ORDERING CASE, spelled out because it is the one place a plausible port is
 wrong. `shopt -s globstar; dist/cli/**/*` sorts each pattern's matches
-bytewise, so with `dist/cli/v1/a.bin`, `dist/cli/v1-x` and `dist/cli/v1.y`
-present, bash emits `v1`, `v1-x`, `v1.y`, `v1/a.bin`: `-` (0x2D) and `.` (0x2E)
-both sort BELOW `/` (0x2F). A directory walk emitting each directory's children
-immediately after the directory would give `v1`, `v1/a.bin`, `v1-x`, `v1.y`.
+bytewise, so with `dist/cli/v1/a.bin`, `dist/cli/v1-x` and `dist/cli/v1.y` present, bash emits `v1`, `v1-x`, `v1.y`, `v1/a.bin`: `-` (0x2D) and `.` (0x2E) both sort BELOW `/` (0x2F). A directory walk emitting each directory's children immediately after the directory would give `v1`, `v1/a.bin`, `v1-x`, `v1.y`.
 Both orders are defensible; only one matches. `LC_ALL=C` is pinned on both
-sides, because bash sorts glob results with `strcoll` and the port sorts by
-codepoint, which is the same thing only in the C locale.
+sides, because bash sorts glob results with `strcoll` and the port sorts by codepoint, which is the same thing only in the C locale.
 """
 
 from __future__ import annotations
@@ -92,8 +77,7 @@ def _stub_path(tmp_path: pathlib.Path, side: str) -> str:
 def _fixture(tmp_path: pathlib.Path, side: str, assets: tuple[str, ...]) -> pathlib.Path:
     """One throwaway console tree, with `assets` planted under it.
 
-    A trailing `/` in an entry makes a DIRECTORY and nothing else, which is how
-    the empty-directory and directories-are-not-assets cases are expressed.
+    A trailing `/` in an entry makes a DIRECTORY and nothing else, which is how the empty-directory and directories-are-not-assets cases are expressed.
     """
     root = tmp_path / ("tree-%s" % side)
     for rel in (
@@ -297,16 +281,8 @@ def test_the_asset_paths_are_relative_to_the_repo_root(tmp_path: pathlib.Path) -
 def test_cli_assets_come_before_packages_assets(tmp_path: pathlib.Path) -> None:
     """`dist/cli/zzz.bin` precedes `dist/packages/aaa.deb`, not the other way.
 
-    AND THIS CASE CANNOT SEPARATE THE TWO SORT STRATEGIES, which is worth
-    recording because it looks as though it does. A plant that replaced the
-    per-pattern sort with a sort of the UNION left every case in this file
-    green: `dist/cli` and `dist/packages` are disjoint prefixes and `c` < `p`,
-    so for THESE two patterns the union sort and the concatenation of two
-    per-pattern sorts are the same list, necessarily. What this case pins is
-    that the two groups appear in the twin's order at all -- worth pinning, just
-    not the thing the earlier wording claimed.
-    `test_release_assets_sorts_each_pattern_separately` is the case that
-    actually discriminates, and the plant does fire there.
+    AND THIS CASE CANNOT SEPARATE THE TWO SORT STRATEGIES, which is worth recording because it looks as though it does. A plant that replaced the per-pattern sort with a sort of the UNION left every case in this file green: `dist/cli` and `dist/packages` are disjoint prefixes and `c` < `p`, so for THESE two patterns the union sort and the concatenation of two per-pattern sorts are
+    the same list, necessarily. What this case pins is that the two groups appear in the twin's order at all -- worth pinning, just not the thing the earlier wording claimed. `test_release_assets_sorts_each_pattern_separately` is the case that actually discriminates, and the plant does fire there.
     """
     old, new = run_both(tmp_path, assets=("dist/cli/zzz.bin", "dist/packages/aaa.deb"))
     assert _assets_of(old[3][0]) == ["dist/cli/zzz.bin", "dist/packages/aaa.deb"]
@@ -316,12 +292,9 @@ def test_cli_assets_come_before_packages_assets(tmp_path: pathlib.Path) -> None:
 def test_release_assets_sorts_each_pattern_separately(tmp_path: pathlib.Path, monkeypatch) -> None:
     """Each pattern's matches are sorted ALONE, then concatenated.
 
-    Driven through the exported helper with the two patterns REVERSED, because
-    that is the only arrangement in which the two strategies disagree: with
-    `dist/packages/**/*` first, per-pattern sorting yields packages then cli,
+    Driven through the exported helper with the two patterns REVERSED, because that is the only arrangement in which the two strategies disagree: with `dist/packages/**/*` first, per-pattern sorting yields packages then cli,
     while sorting the union yields cli then packages. The live `ASSET_PATTERNS`
-    cannot show the difference (see the case above), so without this one a port
-    that sorted the union would be indistinguishable and the twin's
+    cannot show the difference (see the case above), so without this one a port that sorted the union would be indistinguishable and the twin's
     `assets=(A B)` array semantics would be unpinned.
     """
     root = _fixture(tmp_path, "sortorder", ("dist/cli/zzz.bin", "dist/packages/aaa.deb"))
@@ -430,8 +403,7 @@ def test_the_version_is_v_prefixed_exactly_once(tmp_path: pathlib.Path) -> None:
 def test_missing_gh_refuses_identically(tmp_path: pathlib.Path) -> None:
     """`require_cmd gh` runs FIRST, before VERSION is even read.
 
-    Byte-identical including the `✗ ` marker: `common.sh:log_error` on one side
-    and `rediacc_ci.log.error` on the other agree on this message.
+    Byte-identical including the `✗ ` marker: `common.sh:log_error` on one side and `rediacc_ci.log.error` on the other agree on this message.
     """
     old, new = run_both(tmp_path, assets=("dist/cli/rdc",), stub_gh=False)
     assert old[0] == 1

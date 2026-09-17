@@ -1,24 +1,16 @@
 """Differential: `rediacc_ci.housekeeping.retry_failed_runs` against its twin
 `.ci/scripts/housekeeping/retry-failed-runs.sh`.
 
-A RECORDING FAKE `gh` ON A PATH WITH NO REAL `gh` ON IT. The live effect of
-this script is `POST .../rerun-failed-jobs` against `rediacc/console`, and this
+A RECORDING FAKE `gh` ON A PATH WITH NO REAL `gh` ON IT. The live effect of this script is `POST .../rerun-failed-jobs` against `rediacc/console`, and this
 machine has a logged-in `gh`, so every case also pins `RETRY_REPO=acme/widget`:
 a leak past the fake would still not name the real repository.
 
-THE CALL LOG IS COMPARED, NOT JUST THE STREAMS, because "retried 1" and
-"retried 1 against a different run id" print the same line.
+THE CALL LOG IS COMPARED, NOT JUST THE STREAMS, because "retried 1" and "retried 1 against a different run id" print the same line.
 
 BOTH LOGGING WORLDS ARE DRIVEN. `source common.sh 2>/dev/null || { ... }` gives
-this script a second logger whose `log_info` and `log_step` write to STDOUT with
-their own prefixes, and the fallback is not a cosmetic variant: on a fresh
-clone every summary line moves stream. `test_the_fallback_logger_world_*` copies
-each subject into a tree with no `.ci/scripts/lib/` and compares there too.
+this script a second logger whose `log_info` and `log_step` write to STDOUT with their own prefixes, and the fallback is not a cosmetic variant: on a fresh clone every summary line moves stream. `test_the_fallback_logger_world_*` copies each subject into a tree with no `.ci/scripts/lib/` and compares there too.
 
-TIME IS PINNED BY CONSTRUCTION, not by freezing a clock. Fixtures compute
-`created_at` relative to the real now, well inside or well outside the age
-window, so the one-second skew between the twin's `date -u +%s` and the port's
-`time.time()` can never decide a case.
+TIME IS PINNED BY CONSTRUCTION, not by freezing a clock. Fixtures compute `created_at` relative to the real now, well inside or well outside the age window, so the one-second skew between the twin's `date -u +%s` and the port's `time.time()` can never decide a case.
 """
 
 from __future__ import annotations
@@ -246,8 +238,7 @@ def test_unreadable_branch_tips_skip_rather_than_retry_on_incomplete_data(
     tmp_path: pathlib.Path,
 ) -> None:
     """FAIL CLOSED, AND EXIT 0 WHILE DOING IT. Without the branch tips a
-    superseded run cannot be told from a current one, and reviving a superseded
-    pipeline is the expensive mistake. It is not an error either, so the job
+    superseded run cannot be told from a current one, and reviving a superseded pipeline is the expensive mistake. It is not an error either, so the job
     stays green and tomorrow tries again."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, [], FAKE_GH_HEADS="", FAKE_GH_BRANCHES_RC="1"
@@ -419,8 +410,7 @@ def test_dry_run_posts_nothing_and_prints_eight_characters_of_the_head(
 
 def test_only_argv_one_spelled_exactly_dry_run_is_a_dry_run(tmp_path: pathlib.Path) -> None:
     """`[[ "${1:-}" == "--dry-run" ]]` and nothing else. `-n` is a LIVE run, and
-    so is `--dry-run` in second position. Reproduced rather than improved: this
-    script POSTs, and a caller who believes an unrecognised flag was honoured is
+    so is `--dry-run` in second position. Reproduced rather than improved: this script POSTs, and a caller who believes an unrecognised flag was honoured is
     the person this pins the behaviour for."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -486,8 +476,7 @@ def test_the_repo_is_read_from_the_environment_and_reaches_every_url(
 
 def test_an_unreadable_runs_listing_yields_no_candidates(tmp_path: pathlib.Path) -> None:
     """`|| echo '[]'`: a failed listing becomes an empty one, which prints the
-    same zero summary a genuinely clean night prints. That is a real weakness of
-    the twin and it is reproduced rather than repaired -- the branch-tip lookup
+    same zero summary a genuinely clean night prints. That is a real weakness of the twin and it is reproduced rather than repaired -- the branch-tip lookup
     above is the one that fails closed, and this one does not."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -578,9 +567,7 @@ def _bash_read_fields(line: str) -> list[str]:
 
 def test_read_fields_collapses_runs_of_tabs() -> None:
     """THE FIELD-SHIFTING HAZARD, PINNED IN BOTH DIRECTIONS. Tab is an IFS
-    WHITESPACE character, so a null `.name` does not leave an empty field, it
-    shifts every later field left by one and the workflow PATH is read as the
-    name. Every case is checked against real bash so the claim is measured, not
+    WHITESPACE character, so a null `.name` does not leave an empty field, it shifts every later field left by one and the workflow PATH is read as the name. Every case is checked against real bash so the claim is measured, not
     asserted."""
     cases = [
         "1\tCI\t.github/workflows/ci.yml\tabc\t1\t2026-01-01T00:00:00Z",
@@ -617,19 +604,11 @@ def test_divergence_a_null_workflow_name_shifts_the_fields_and_only_bash_complai
 ) -> None:
     """THE HAZARD, DRIVEN END TO END, AND THE ONE DELIBERATE DIVERGENCE WITH IT.
 
-    A run with a null `.name` collapses to five tab-separated fields, so every
-    later field shifts left: the workflow PATH is read as the name, the head sha
-    as the path, the ATTEMPT NUMBER as the head, and the TIMESTAMP as the
-    attempt. Both implementations then reach the same verdict -- dead head, not
-    retried -- and the six counters, the exit code and the gh call log all
-    agree.
+    A run with a null `.name` collapses to five tab-separated fields, so every later field shifts left: the workflow PATH is read as the name, the head sha as the path, the ATTEMPT NUMBER as the head, and the TIMESTAMP as the attempt. Both implementations then reach the same verdict -- dead head, not retried -- and the six counters, the exit code and the gh call log all agree.
 
-    What does NOT agree is one line. `[[ "2026-09-13T.." -ge 3 ]]` makes bash
-    write `value too great for base (error token is "09")` to stderr and
+    What does NOT agree is one line. `[[ "2026-09-13T.." -ge 3 ]]` makes bash write `value too great for base (error token is "09")` to stderr and
     evaluate FALSE; the port reads the field as 0 and reaches the same FALSE
-    without a diagnostic. `_as_int` names this in its docstring. It is asserted
-    in BOTH directions here so nobody later "fixes" either side, and the
-    ledger deliberately does not record this scenario.
+    without a diagnostic. `_as_int` names this in its docstring. It is asserted in BOTH directions here so nobody later "fixes" either side, and the ledger deliberately does not record this scenario.
     """
     record = a_run(1, path=WATCHDOG)
     record["name"] = None
@@ -652,8 +631,7 @@ def test_divergence_a_null_workflow_name_shifts_the_fields_and_only_bash_complai
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the watchdog exclusion -- the filter that removes
-    63 of 64 measured candidates and whose absence looks like a busy night
-    rather than a bug. Driven red, then the source is confirmed byte-identical
+    63 of 64 measured candidates and whose absence looks like a busy night rather than a bug. Driven red, then the source is confirmed byte-identical
     and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

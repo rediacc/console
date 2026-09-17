@@ -1,24 +1,16 @@
 """`.claude/hooks/stop/wl_proc.py` is the Stop hook's one door to the bounded runner.
 
-WHY THE HOOKS NEEDED ONE AT ALL. Eight call sites across four `wl_*` modules launch a
-command that FORKS -- `npm run <gate>`, `npx tsx`, and six `claude -p` invocations --
+WHY THE HOOKS NEEDED ONE AT ALL. Eight call sites across four `wl_*` modules launch a command that FORKS -- `npm run <gate>`, `npx tsx`, and six `claude -p` invocations --
 and every one used `subprocess.run(capture_output=True, timeout=N)`. That combination
-bounds nothing when the child has children: on timeout `run` kills the direct child and
-then blocks in `communicate()` on pipe write ends a GRANDCHILD still holds.
+bounds nothing when the child has children: on timeout `run` kills the direct child and then blocks in `communicate()` on pipe write ends a GRANDCHILD still holds.
 
-AND IT MATTERS MORE IN A HOOK THAN IN A GATE. These run inside the Stop hook, so a block
-there is not a slow gate -- it is a worktree in which no session can stop, including
-sessions with nothing to do with the command that hung.
+AND IT MATTERS MORE IN A HOOK THAN IN A GATE. These run inside the Stop hook, so a block there is not a slow gate -- it is a worktree in which no session can stop, including sessions with nothing to do with the command that hung.
 
-WHAT THIS FILE PROVES, and it is the property rather than the plumbing: a child that
-spawns a grandchild holding the capture pipes is killed WITH its grandchild, in bounded
-time, and what the child managed to say still comes back. The last part is not a detail:
-partial output is usually the only evidence of why something hung, and the naive fix
-(kill the child, give up on the pipes) throws it away.
+WHAT THIS FILE PROVES, and it is the property rather than the plumbing: a child that spawns a grandchild holding the capture pipes is killed WITH its grandchild, in bounded time, and what the child managed to say still comes back. The last part is not a detail: partial output is usually the only evidence of why something hung, and the naive fix (kill the child, give up on the
+pipes) throws it away.
 
 NOT A GATE-TEST PORT. There is no bash twin for `wl_proc.py`; it is new. This is a plain
-unit test in the plain test tree, which is also why it can be added without putting
-`test_twin_parity.py` into disagreement.
+unit test in the plain test tree, which is also why it can be added without putting `test_twin_parity.py` into disagreement.
 """
 
 import importlib.util

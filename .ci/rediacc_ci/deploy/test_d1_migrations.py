@@ -1,38 +1,25 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/test-d1-migrations.sh`.
 
-Validates that the account D1 migrations apply cleanly against a CLONE of every
-regional production database, edge clones first. A migration that works on an
-empty schema can still fail on real data (a NOT NULL added to a populated
-column, a unique index over existing duplicates), and cloning is what surfaces
-that before a release touches production. Every clone is ephemeral and deleted
+Validates that the account D1 migrations apply cleanly against a CLONE of every regional production database, edge clones first. A migration that works on an empty schema can still fail on real data (a NOT NULL added to a populated column, a unique index over existing duplicates), and cloning is what surfaces that before a release touches production. Every clone is ephemeral and
+deleted
 by an EXIT trap, including on failure; no worker is deployed and no public URL
 is created.
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) is the only tool
-that carries a credential, so the differential
-(`.ci/rediacc_ci/tests/test_deploy_test_d1_migrations.py`) puts a RECORDING FAKE
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) is the only tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_test_d1_migrations.py`) puts a RECORDING FAKE
 for it on a scratch PATH with an on-disk D1 state file, and drives both sides
-through it. `.ci/shadow/w7p5a-status.json` records this path as blocked only for
-the "one real run" clause and says in as many words that the mocked parity
-ledger is a separate, achievable piece of work. This is that piece.
+through it. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS THE PRIMARY EVIDENCE. What the run PRINTS is `::group::`
 directives and one `log_info` line; the observable effect is the ordered set of
-`npx wrangler d1` invocations, one clone-d1.sh invocation per region, and the
-bytes of the generated `wrangler-migration-test.toml`.
+`npx wrangler d1` invocations, one clone-d1.sh invocation per region, and the bytes of the generated `wrangler-migration-test.toml`.
 
 -----------------------------------------------------------------------------
 `clone-d1.sh`, `jq` AND `sed` ARE CALLED, NOT REIMPLEMENTED
 -----------------------------------------------------------------------------
-`clone-d1.sh` is invoked as the bash script the twin invokes, for the reason
-`upload_repos_to_r2.py` gives: agreement with the live twin includes that
-script's exact bytes, and it has its own export/import/verify behaviour that a
-second implementation would have to track. Its port, if it gets one, is a
-different box.
+`clone-d1.sh` is invoked as the bash script the twin invokes, for the reason `upload_repos_to_r2.py` gives: agreement with the live twin includes that script's exact bytes, and it has its own export/import/verify behaviour that a second implementation would have to track. Its port, if it gets one, is a different box.
 
-`jq` reads `regions.json` and `sed` strips wrangler's banner, both for the
-reasons `deploy/deploy_www.py` sets out at length for the same two programs.
+`jq` reads `regions.json` and `sed` strips wrangler's banner, both for the reasons `deploy/deploy_www.py` sets out at length for the same two programs.
 
 -----------------------------------------------------------------------------
 FOUR FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FOUR ARE REPRODUCED
@@ -67,37 +54,24 @@ FOUR FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FOUR ARE REPRODUCED
      cannot promote anything, but it does leave a tracked-looking file in the
      tree for the next step to trip over.
 
-None is repaired here. This wave's acceptance rule is agreement with the live
-twin.
+None is repaired here. This wave's acceptance rule is agreement with the live twin.
 
 -----------------------------------------------------------------------------
 THE CLEANUP TRAP RUNS ON EVERY EXIT AFTER IT IS INSTALLED, AND ONLY THEN
 -----------------------------------------------------------------------------
 `trap cleanup EXIT` is installed AFTER `require_cmd` and after the two
 `${VAR:?}` guards, so a run that refuses for a missing tool or a missing
-credential prints no `::group::Cleanup` block at all. After that point every
-exit, including the `set -e` ones, prints the block and attempts a delete for
-every name appended so far. The trap does NOT change the exit status: it ends
+credential prints no `::group::Cleanup` block at all. After that point every exit, including the `set -e` ones, prints the block and attempts a delete for every name appended so far. The trap does NOT change the exit status: it ends
 with `echo`, not with `exit`.
 
-A DELETE THAT FAILS IS REPORTED AS FAILED, which the twin's own comment records
-as a repair: the old form swallowed stderr, ignored the status and printed
-`Deleted $db` unconditionally, so a clone left behind in the Cloudflare account
-announced itself as cleaned up.
+A DELETE THAT FAILS IS REPORTED AS FAILED, which the twin's own comment records as a repair: the old form swallowed stderr, ignored the status and printed `Deleted $db` unconditionally, so a clone left behind in the Cloudflare account announced itself as cleaned up.
 
 -----------------------------------------------------------------------------
 TWO `${VAR:?msg}` GUARDS, ONE DIVERGENCE
 -----------------------------------------------------------------------------
-bash's own refusal names the bash FILE and a bash LINE NUMBER before the twin's
-message. This port prints the `VAR: msg` half, on the same stream, with the same
-exit status 1. Identical ruling to `deploy/promote_r2_to_stable.py` and
-`deploy/delete_r2_channel.py`. The ORDER is kept: `require_cmd jq`, then
-`require_cmd npx`, then the two variables.
+bash's own refusal names the bash FILE and a bash LINE NUMBER before the twin's message. This port prints the `VAR: msg` half, on the same stream, with the same exit status 1. Identical ruling to `deploy/promote_r2_to_stable.py` and `deploy/delete_r2_channel.py`. The ORDER is kept: `require_cmd jq`, then `require_cmd npx`, then the two variables.
 
-A SECOND, SMALLER DIVERGENCE: a `cd workers/www` that cannot happen is bash's
-own `cd: ...: No such file or directory` with the script's path and a line
-number. This port prints its own sentence, on the same stream, with the same
-exit status 1.
+A SECOND, SMALLER DIVERGENCE: a `cd workers/www` that cannot happen is bash's own `cd: ...: No such file or directory` with the script's path and a line number. This port prints its own sentence, on the same stream, with the same exit status 1.
 
 K=5 LEDGER: `.ci/shadow/w7p6-test-d1-migrations.observations.jsonl`.
 """
@@ -198,10 +172,7 @@ class MissingEnvError(Exception):
 class BashExitError(Exception):
     """`set -e` ending the run on a command the twin does not guard.
 
-    Every `npx wrangler` in the per-region loop, the UUID pipeline under
-    `pipefail`, `clone-d1.sh`, both `cd`s and the guard's own `exit 1` are
-    unguarded, so the failing program's own stderr is the only explanation the
-    caller gets and its status becomes the script's.
+    Every `npx wrangler` in the per-region loop, the UUID pipeline under `pipefail`, `clone-d1.sh`, both `cd`s and the guard's own `exit 1` are unguarded, so the failing program's own stderr is the only explanation the caller gets and its status becomes the script's.
     """
 
     def __init__(self, code: int) -> None:
@@ -212,10 +183,7 @@ class BashExitError(Exception):
 def repo_root() -> str:
     """`get_repo_root` (common.sh:205-210), from this file's own location.
 
-    `.ci/rediacc_ci/deploy/<this>` is three directories under the root, which is
-    the same arithmetic `common.sh` does from `.ci/scripts/lib`. Delegated to
-    `common.repo_root()` so `$REDIACC_CI_ROOT` steers a harness the same way it
-    steers every other module in the package.
+    `.ci/rediacc_ci/deploy/<this>` is three directories under the root, which is the same arithmetic `common.sh` does from `.ci/scripts/lib`. Delegated to `common.repo_root()` so `$REDIACC_CI_ROOT` steers a harness the same way it steers every other module in the package.
     """
     return str(common.repo_root())
 
@@ -223,8 +191,7 @@ def repo_root() -> str:
 def region_id(source_db: str) -> str:
     """`${SOURCE_DB#account-db-}` then `${REGION_ID#edge-account-db-}` (twin :90-91).
 
-    THE ORDER IS LOAD-BEARING AND IS ALSO WHY BOTH WORK. `edge-account-db-eu`
-    does not start with `account-db-`, so the first strip is a no-op and the
+    THE ORDER IS LOAD-BEARING AND IS ALSO WHY BOTH WORK. `edge-account-db-eu` does not start with `account-db-`, so the first strip is a no-op and the
     second one does the work; `account-db-eu` is the mirror image. A single
     combined pattern would have to be written carefully to get both.
     """
@@ -270,10 +237,7 @@ def read_names(text: str) -> list[str]:
 def jq_names(program: str, cwd: str) -> str:
     """`jq -r '<program>' regions.json`, with STDERR INHERITED.
 
-    ITS EXIT STATUS IS UNOBSERVABLE IN THE TWIN, because the caller is a PROCESS
-    SUBSTITUTION feeding a `while read` loop. Neither `set -e` nor `pipefail`
-    reaches inside one, so a missing `regions.json` yields jq's complaint on
-    stderr and an empty list here. That is fact 1 in the module docstring, and
+    ITS EXIT STATUS IS UNOBSERVABLE IN THE TWIN, because the caller is a PROCESS SUBSTITUTION feeding a `while read` loop. Neither `set -e` nor `pipefail` reaches inside one, so a missing `regions.json` yields jq's complaint on stderr and an empty list here. That is fact 1 in the module docstring, and
     it is reproduced rather than repaired: `check=False`, status discarded.
     """
     sys.stdout.flush()
@@ -305,8 +269,7 @@ def delete_argv(db_name: str) -> list[str]:
 def migrations_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 migrations apply "$DB_NAME" --remote --config ...` (twin :130).
 
-    The `--config` value is the BASENAME, not the path the file was written to,
-    because the twin has `cd workers/www` first.
+    The `--config` value is the BASENAME, not the path the file was written to, because the twin has `cd workers/www` first.
     """
     return [
         "npx",
@@ -335,17 +298,11 @@ def require_env() -> None:
     """The two guards, in the twin's order.
 
     Raises on the FIRST missing or empty one, because `: "${VAR:?}"` ends the
-    shell there and the later guard never runs. `:?` is an UNSET-OR-EMPTY test,
-    so an exported empty string refuses exactly as an absent one does.
+    shell there and the later guard never runs. `:?` is an UNSET-OR-EMPTY test, so an exported empty string refuses exactly as an absent one does.
 
-    EACH NAME IS READ FROM `os.environ` WITH A LITERAL KEY, and the repetition
-    is deliberate rather than sloppy. `check:ci-python-env-registry` derives a
-    module's declared inputs by walking the AST for `os.environ[...]` and
+    EACH NAME IS READ FROM `os.environ` WITH A LITERAL KEY, and the repetition is deliberate rather than sloppy. `check:ci-python-env-registry` derives a module's declared inputs by walking the AST for `os.environ[...]` and
     `os.environ.get(...)`; a loop over `REQUIRED_ENV` reading through a dict
-    parameter is invisible to that walk, so both variables would be inputs
-    nobody declared. `REQUIRED_ENV` stays as the table a reader checks against
-    the twin, and the two reads below are what the scanner can see. Asserted by
-    `test_the_guard_table_and_the_literal_reads_cannot_drift`.
+    parameter is invisible to that walk, so both variables would be inputs nobody declared. `REQUIRED_ENV` stays as the table a reader checks against the twin, and the two reads below are what the scanner can see. Asserted by `test_the_guard_table_and_the_literal_reads_cannot_drift`.
     """
     if not os.environ.get("CLOUDFLARE_API_TOKEN", ""):
         raise MissingEnvError(*REQUIRED_ENV[0])
@@ -367,11 +324,7 @@ def _run(argv: list[str], **kwargs) -> int:
 def get_d1_uuid(db_name: str) -> str:
     """`npx ... | sed -n ... | jq -r '.uuid // empty'` (twin :105-107).
 
-    A PIPELINE UNDER `pipefail`, ASSIGNED TO A VARIABLE, so unlike
-    `deploy-www.sh`'s `get_d1_uuid` there is no `|| true` anywhere: a non-zero
-    exit from ANY of the three stages fails the assignment and `set -e` ends the
-    run. That is fact 3, and it is why this returns a status alongside the text
-    rather than swallowing one.
+    A PIPELINE UNDER `pipefail`, ASSIGNED TO A VARIABLE, so unlike `deploy-www.sh`'s `get_d1_uuid` there is no `|| true` anywhere: a non-zero exit from ANY of the three stages fails the assignment and `set -e` ends the run. That is fact 3, and it is why this returns a status alongside the text rather than swallowing one.
 
     `2>/dev/null` IS ON `npx` ONLY. sed's and jq's stderr are inherited.
     """
@@ -408,9 +361,7 @@ def get_d1_uuid(db_name: str) -> str:
 def cleanup(cleanup_dbs: list[str]) -> None:
     """The EXIT trap (twin :63-85). STDOUT, and it never changes the status.
 
-    `>/dev/null 2>&1` ON THE DELETE, so a failing wrangler explains nothing here
-    and the `::warning::` is the entire record. That is the twin's shape: the
-    trap must not mask the real failure that triggered it.
+    `>/dev/null 2>&1` ON THE DELETE, so a failing wrangler explains nothing here and the `::warning::` is the entire record. That is the twin's shape: the trap must not mask the real failure that triggered it.
     """
     print("::group::Cleanup: deleting test databases")
     for db in cleanup_dbs:
@@ -429,9 +380,7 @@ def cleanup(cleanup_dbs: list[str]) -> None:
 def _chdir(target: str) -> None:
     """`cd <target>` under `set -e`.
 
-    THE DIVERGENCE: bash prints `<script>: line N: cd: <target>: <reason>`. This
-    prints the same three facts in its own sentence, on the same stream, with
-    the same exit status 1.
+    THE DIVERGENCE: bash prints `<script>: line N: cd: <target>: <reason>`. This prints the same three facts in its own sentence, on the same stream, with the same exit status 1.
     """
     try:
         os.chdir(target)

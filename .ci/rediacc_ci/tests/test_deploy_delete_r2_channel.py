@@ -1,24 +1,13 @@
 """Differential: `rediacc_ci.deploy.delete_r2_channel` against its twin
 `.ci/scripts/deploy/delete-r2-channel.sh`.
 
-A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches R2: the fake logs
-its exact argv and answers from the environment, and every case pins a fixture
-bucket, endpoint and credential, so even a bypassed fake would not name a real
-bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the
-"one real run" clause and says in as many words that the mocked parity ledger is
-a separate, achievable piece of work. This is that piece.
+A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches R2: the fake logs its exact argv and answers from the environment, and every case pins a fixture bucket, endpoint and credential, so even a bypassed fake would not name a real bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked
+parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS THE EVIDENCE HERE, MORE THAN THE STREAMS, and the fake is built
-to make that true rather than to hide it: its stdout line is CONSTANT, not
-derived from the prefix it was handed. So a port that deleted
-`s3://bucket/cli/pr-1_promoted/` instead of `s3://bucket/cli/pr-1-promoted/`
-would produce identical stdout, identical stderr and an identical exit code, and
-only the recorded argv catches it. `test_planted_defect_is_caught` plants exactly
-that and shows all three agreeing while the log does not.
+THE CALL LOG IS THE EVIDENCE HERE, MORE THAN THE STREAMS, and the fake is built to make that true rather than to hide it: its stdout line is CONSTANT, not derived from the prefix it was handed. So a port that deleted `s3://bucket/cli/pr-1_promoted/` instead of `s3://bucket/cli/pr-1-promoted/` would produce identical stdout, identical stderr and an identical exit code, and only the
+recorded argv catches it. `test_planted_defect_is_caught` plants exactly that and shows all three agreeing while the log does not.
 
-THE VACUITY DEFECT IS PINNED. `test_defect_a_refused_delete_reads_as_deleted`
-drives an `aws` that fails every call and asserts the twin still prints
-"deleted from R2" and exits 0. Reproduced because agreement with the live twin
+THE VACUITY DEFECT IS PINNED. `test_defect_a_refused_delete_reads_as_deleted` drives an `aws` that fails every call and asserts the twin still prints "deleted from R2" and exits 0. Reproduced because agreement with the live twin
 is the deliverable; repaired, the test goes red and names the port that must
 follow.
 """
@@ -239,9 +228,7 @@ def test_aws_stderr_is_discarded(tmp_path: pathlib.Path) -> None:
 
 def test_defect_a_refused_delete_reads_as_deleted(tmp_path: pathlib.Path) -> None:
     """THE VACUITY DEFECT, PINNED. Every one of the twelve deletes is refused, and
-    the run is indistinguishable from a clean-up that worked: same two log lines,
-    same exit 0. The header justifies `|| true` with "a channel that was never
-    created is not an error", which is true and does not distinguish that case
+    the run is indistinguishable from a clean-up that worked: same two log lines, same exit 0. The header justifies `|| true` with "a channel that was never created is not an error", which is true and does not distinguish that case
     from a credential that stopped working.
 
     Reproduced because agreement with the live twin is the deliverable;
@@ -365,11 +352,7 @@ def test_divergence_common_sh_interprets_backslash_escapes_in_the_channel(
     tmp_path: pathlib.Path,
 ) -> None:
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. Both log lines interpolate `$CHANNEL`, which comes from
-    the environment, and common.sh logs through `echo -e`. A channel name holding
-    a literal backslash-n therefore renders as a newline through the twin and as
-    two characters here, while the `aws` argv stays identical on both sides
-    because that path is data rather than a format string.
+    "FIXED" BY ACCIDENT. Both log lines interpolate `$CHANNEL`, which comes from the environment, and common.sh logs through `echo -e`. A channel name holding a literal backslash-n therefore renders as a newline through the twin and as two characters here, while the `aws` argv stays identical on both sides because that path is data rather than a format string.
     `rediacc_ci.log` formats the message as data on purpose (see its docstring)."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], CHANNEL="pr\\n1")
     assert old.returncode == new.returncode == 0
@@ -415,9 +398,7 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the `-promoted` suffix -- the one character whose
-    loss leaves the promotion-simulation artifacts in the bucket forever while
-    both streams and the exit code stay IDENTICAL. Driven red, then the source is
-    confirmed byte-identical and green.
+    loss leaves the promotion-simulation artifacts in the bucket forever while both streams and the exit code stay IDENTICAL. Driven red, then the source is confirmed byte-identical and green.
     """
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('PROMOTED_SUFFIX = "-promoted"', 'PROMOTED_SUFFIX = "_promoted"', 1)

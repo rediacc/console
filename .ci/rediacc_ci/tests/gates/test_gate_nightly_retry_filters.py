@@ -2,12 +2,8 @@
 
 The nightly retry's FILTERS are the whole feature, so they are what this tests.
 
-Measured baseline, three days of rediacc/console runs: 589 success, 230 skipped,
-117 cancelled, 64 failure -- and 63 of the 64 are watchdog-monitor.yml failing BY
-DESIGN (it cancels the run it monitors, then core.setFailed()s to signal that).
-Exactly ONE genuine failure. A sweeper without these filters retries 63
-deliberate failures, and if it also accepted `cancelled` it would revive 117
-superseded pipelines.
+Measured baseline, three days of rediacc/console runs: 589 success, 230 skipped, 117 cancelled, 64 failure -- and 63 of the 64 are watchdog-monitor.yml failing BY DESIGN (it cancels the run it monitors, then core.setFailed()s to signal that). Exactly ONE genuine failure. A sweeper without these filters retries 63 deliberate failures, and if it also accepted `cancelled` it would
+revive 117 superseded pipelines.
 
 So every assertion below is a MEASURED false positive, not a hypothetical:
   - cancelled is the superseded shape (117 of them)
@@ -15,13 +11,9 @@ So every assertion below is a MEASURED false positive, not a hypothetical:
   - a dead head is superseded by another route
   - an attempt-capped run is not going to be fixed by a fourth rerun
 
-HERMETIC: `gh` is shimmed inside `tmp_path` and put on PATH for the subprocess
-only. A gate that needs GitHub up is a gate that gets skipped during exactly the
-outage that produces retryable failures.
+HERMETIC: `gh` is shimmed inside `tmp_path` and put on PATH for the subprocess only. A gate that needs GitHub up is a gate that gets skipped during exactly the outage that produces retryable failures.
 
-WHAT THIS CANNOT SEE: it drives the script's decisions, not GitHub's rerun
-semantics. It cannot prove `rerun-failed-jobs` does the right thing, and it
-cannot prove a retried workflow is idempotent -- that is a review question.
+WHAT THIS CANNOT SEE: it drives the script's decisions, not GitHub's rerun semantics. It cannot prove `rerun-failed-jobs` does the right thing, and it cannot prove a retried workflow is idempotent -- that is a review question.
 """
 
 import datetime
@@ -259,11 +251,7 @@ def test_summary_always_reports(gate, tmp_path):
 def test_control_removing_the_watchdog_filter_is_caught(gate, tmp_path):
     """CONTROL: without the path filter, the watchdog IS retried.
 
-    A real BEHAVIOURAL control, not a file-differs check. The override is
-    inserted immediately after the genuine `is_excluded` definition -- appending
-    it at the end of the file would define it AFTER the loop already ran, so the
-    mutant would behave identically and the control would pass against unmutated
-    behaviour. That is the vacuity this repo's control-vacuity gate exists to
+    A real BEHAVIOURAL control, not a file-differs check. The override is inserted immediately after the genuine `is_excluded` definition -- appending it at the end of the file would define it AFTER the loop already ran, so the mutant would behave identically and the control would pass against unmutated behaviour. That is the vacuity this repo's control-vacuity gate exists to
     catch, and it is easy to write by accident.
     """
     fx = Fixture(gate, tmp_path)

@@ -1,10 +1,7 @@
 """Differential: `rediacc_ci.release.advance_contract_floor` against its twin
 `.ci/scripts/release/advance-contract-floor.sh`.
 
-A FIXTURE ROOT, NOT THIS CHECKOUT, AND THAT IS NOT OPTIONAL. On an advance the
-twin runs `git add`, `git commit` and `git push origin HEAD:main` in whatever
-`get_repo_root` resolves to -- and `get_repo_root` derives from COMMON.SH's own
-location, so running the twin out of this tree would target this tree. Every
+A FIXTURE ROOT, NOT THIS CHECKOUT, AND THAT IS NOT OPTIONAL. On an advance the twin runs `git add`, `git commit` and `git push origin HEAD:main` in whatever `get_repo_root` resolves to -- and `get_repo_root` derives from COMMON.SH's own location, so running the twin out of this tree would target this tree. Every
 case therefore copies both subjects into a temporary root whose layout gives the
 two the SAME answer:
 
@@ -15,14 +12,9 @@ two the SAME answer:
 and nothing reaches a git remote; the assertions are on the recorded argv, the
 streams, the exit code and the bytes left in the floor file.
 
-THE FLOOR FILE IS RESET BETWEEN THE TWO SIDES. The twin MUTATES it on an
-advance, so running the port afterwards against the twin's output would compare
-an advance to a no-op and call it a divergence. `run_both` restores the input
-state before the second side, and asserts the two sides left identical bytes
-behind -- which is the only place the write itself is observable.
+THE FLOOR FILE IS RESET BETWEEN THE TWO SIDES. The twin MUTATES it on an advance, so running the port afterwards against the twin's output would compare an advance to a no-op and call it a divergence. `run_both` restores the input state before the second side, and asserts the two sides left identical bytes behind -- which is the only place the write itself is observable.
 
-BOTH DEFECTS ARE PINNED. `test_defect_a_failed_aws_probe_is_reported_as_an_empty_bucket`
-drives an `aws` that exits 255 and asserts the twin says "no cli sentinels on
+BOTH DEFECTS ARE PINNED. `test_defect_a_failed_aws_probe_is_reported_as_an_empty_bucket` drives an `aws` that exits 255 and asserts the twin says "no cli sentinels on
 R2" and exits 0; `test_defect_the_floor_file_is_written_before_git_runs` drives
 a failing `git` and asserts the tree is left modified. Reproduced because the
 acceptance rule for this wave is agreement with the live twin; if either is
@@ -364,8 +356,7 @@ def test_defect_a_failed_aws_probe_is_reported_as_an_empty_bucket(
 
         ::notice::no cli sentinels on R2; skipping ratchet advance
 
-    and exit 0 -- on the script whose entire reason for existing is to defend a
-    high-water mark against a scrub. Reproduced because agreement with the live
+    and exit 0 -- on the script whose entire reason for existing is to defend a high-water mark against a scrub. Reproduced because agreement with the live
     twin is the deliverable; repaired, this test goes red and names the port
     that must follow.
     """
@@ -385,8 +376,7 @@ def test_defect_a_failed_aws_probe_is_reported_as_an_empty_bucket(
 
 def test_defect_the_floor_file_is_written_before_git_runs(tmp_path: pathlib.Path) -> None:
     """THE HALF-APPLIED-RATCHET DEFECT, PINNED. The write happens first and
-    every git call is unguarded under `set -e`, so a refused commit exits with
-    git's status having ALREADY modified the tree. Only the leftover bytes show
+    every git call is unguarded under `set -e`, so a refused commit exits with git's status having ALREADY modified the tree. Only the leftover bytes show
     it, which is why `run_both` compares the floor file at all."""
     old, new, old_calls, new_calls, floor = run_both(
         tmp_path,
@@ -466,8 +456,7 @@ def test_an_empty_variable_is_refused_like_an_unset_one(tmp_path: pathlib.Path) 
 def test_the_fixture_root_is_not_this_checkout(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY ON THE HARNESS ITSELF. Every case above asserts on a floor
     file and on git calls; if either subject resolved its root back to this
-    checkout, those assertions would be about the real tree and the twin would
-    have run `git push origin HEAD:main` against it. Both subjects are asked
+    checkout, those assertions would be about the real tree and the twin would have run `git push origin HEAD:main` against it. Both subjects are asked
     where they think the root is, out of band."""
     fix = _fixture(tmp_path, "v1.0.0\n")
     twin_copy = fix / ".ci" / "scripts" / "release" / TWIN.name
@@ -550,11 +539,7 @@ def test_decide_is_the_ratchet_rule() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the monotonicity test itself -- the one line
-    whose removal turns a ratchet into a follower. The mutant advances the floor
-    DOWNWARD to an older observation, which is exactly the scrub this file
-    exists to survive, and it does it while printing a perfectly plausible
-    ::notice:: line. Driven red, then the source is confirmed byte-identical and
-    green.
+    whose removal turns a ratchet into a follower. The mutant advances the floor DOWNWARD to an older observation, which is exactly the scrub this file exists to survive, and it does it while printing a perfectly plausible ::notice:: line. Driven red, then the source is confirmed byte-identical and green.
     """
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

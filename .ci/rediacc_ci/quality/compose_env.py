@@ -3,23 +3,14 @@
 Ported from `.ci/scripts/quality/check-compose-env.sh`, which is not deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-THE BUG CLASS, from the twin's header. This "prevents silent failures when env
-vars are added to docker-compose.yml but not exported in ci-env.sh (or its .env
-/ GITHUB_ENV blocks). This catches the class of bugs where a new variable works
-on first docker compose invocation (same shell) but breaks on subsequent
-invocations (new shell) because the variable isn't persisted."
+THE BUG CLASS, from the twin's header. This "prevents silent failures when env vars are added to docker-compose.yml but not exported in ci-env.sh (or its .env / GITHUB_ENV blocks). This catches the class of bugs where a new variable works on first docker compose invocation (same shell) but breaks on subsequent invocations (new shell) because the variable isn't persisted."
 
-That is the whole subtlety, and it is worth restating in the port because it
-explains why the gate reads a heredoc rather than an `export`: a variable that
-is exported in ci-env.sh is present for the rest of THAT shell and gone in the
-next workflow step. Only the `<<ENVBLOCK` block, which is written to the `.env`
-file and to `$GITHUB_ENV`, survives a step boundary. A gate that grepped for
-`export` would pass the exact configuration this one exists to catch.
+That is the whole subtlety, and it is worth restating in the port because it explains why the gate reads a heredoc rather than an `export`: a variable that is exported in ci-env.sh is present for the rest of THAT shell and gone in the next workflow step. Only the `<<ENVBLOCK` block, which is written to the `.env` file and to `$GITHUB_ENV`, survives a step boundary. A gate that
+grepped for `export` would pass the exact configuration this one exists to catch.
 
 WHAT COUNTS AS SAFE. A reference with a NON-EMPTY default, `${ENABLE_HTTPS:-false}`,
 needs no persistence: "Vars with non-empty defaults (e.g., ${ENABLE_HTTPS:-false})
-are safe even if not in ci-env.sh -- they won't cause failures or container
-recreation."
+are safe even if not in ci-env.sh -- they won't cause failures or container recreation."
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -33,11 +24,7 @@ ANYWAY. The twin extracts safe defaults with
 and the middle filter is meant to drop `${VAR:-}`, an EMPTY default, which is
 not safe. It can never fire: `[^}]+` requires at least one non-`}` character
 before the closing brace, so `${VAR:-}` never matches the first pattern in the
-first place and never reaches the filter. The filter is reproduced here as a
-predicate over the same matched text rather than dropped, for the reason
-`www_build_token.py` gives for its own dead filter: removing a line a port
-judged useless is how the next reader comes to believe the original never tried.
-It is reported as a finding instead of silently repaired.
+first place and never reaches the filter. The filter is reproduced here as a predicate over the same matched text rather than dropped, for the reason `www_build_token.py` gives for its own dead filter: removing a line a port judged useless is how the next reader comes to believe the original never tried. It is reported as a finding instead of silently repaired.
 
 AND IT IS DORMANT RATHER THAN WRONG, WHICH WAS MEASURED, NOT ASSUMED. Planting a
 control for the shadow differential on 2026-09-06 by loosening `[^}]+` to
@@ -45,44 +32,22 @@ control for the shadow differential on 2026-09-06 by loosening `[^}]+` to
 `${EMPTY_DEFAULTED:-}`, the "dead" filter then dropped it exactly as written,
 and both sides agreed. Only removing BOTH made the port blind (verdict
 NEW_SIDE_TRUE, the finding `docker-compose references ${EMPTY_DEFAULTED} (no
-safe default)` lost). So the filter is the only thing standing behind that `+`,
-and a reader who deletes "the dead line" has removed the guard rather than dead
-code. `selftest` pins both halves of that observation.
+safe default)` lost). So the filter is the only thing standing behind that `+`, and a reader who deletes "the dead line" has removed the guard rather than dead code. `selftest` pins both halves of that observation.
 
 THE NESTED-DEFAULT CASE IS REAL AND SURPRISING. `${FOO:-${BAR}}` matches the
 first pattern as `${FOO:-${BAR}` and the final `grep -oP '(?<=\\$\\{)[A-Z0-9_]+'`
-then extracts BOTH `FOO` and `BAR`, so an inner variable used only as a default
-is recorded as having a safe default itself. That is the twin's behaviour, it is
-reproduced exactly, and it is why the extraction runs over the MATCHED TEXT
-rather than over the variable name the outer pattern captured.
+then extracts BOTH `FOO` and `BAR`, so an inner variable used only as a default is recorded as having a safe default itself. That is the twin's behaviour, it is reproduced exactly, and it is why the extraction runs over the MATCHED TEXT rather than over the variable name the outer pattern captured.
 
-THE sed RANGE IS NOT A REGION SEARCH. `sed -n '/<<ENVBLOCK/,/^ENVBLOCK/p'` is a
-line RANGE: it starts at the first line containing `<<ENVBLOCK`, and looks for
-the terminator starting at the NEXT line, so a line matching both never closes
-its own range. It also RESTARTS: a second `<<ENVBLOCK` later in the file opens a
-second range. And an unterminated range runs to end of file. All three are
-reproduced by an explicit state machine rather than by a regex over the whole
-text, because a regex would get the restart and the off-by-one both wrong and
-neither wrongness would be visible on today's ci-env.sh.
+THE sed RANGE IS NOT A REGION SEARCH. `sed -n '/<<ENVBLOCK/,/^ENVBLOCK/p'` is a line RANGE: it starts at the first line containing `<<ENVBLOCK`, and looks for the terminator starting at the NEXT line, so a line matching both never closes its own range. It also RESTARTS: a second `<<ENVBLOCK` later in the file opens a second range. And an unterminated range runs to end of file. All
+three are reproduced by an explicit state machine rather than by a regex over the whole text, because a regex would get the restart and the off-by-one both wrong and neither wrongness would be visible on today's ci-env.sh.
 
-A MISSING ci-env.sh IS NOT A REFUSAL, and that is the twin's behaviour rather
-than a choice made here. `sed` fails, its complaint goes to stderr because a
-process substitution inherits the script's stderr, the loop reads nothing, and
-every non-defaulted compose var is then reported as unpersisted. The gate goes
-red, loudly, for a reason that is one line away from the true one. The port
-prints the same complaint so a reader gets the same clue.
+A MISSING ci-env.sh IS NOT A REFUSAL, and that is the twin's behaviour rather than a choice made here. `sed` fails, its complaint goes to stderr because a process substitution inherits the script's stderr, the loop reads nothing, and every non-defaulted compose var is then reported as unpersisted. The gate goes red, loudly, for a reason that is one line away from the true one. The
+port prints the same complaint so a reader gets the same clue.
 
-BOTH `\\u2014` CHARACTERS THE TWIN EMITS ARE WRITTEN AS ESCAPES HERE. The twin's
-"No env var references found in compose files \\u2014 check parse logic" carries an
-em dash, which the house rule forbids in authored text while the differential
-requires the port to emit the same bytes. The escape satisfies both. The em dash
-in the twin is a finding reported rather than repaired, because editing the twin
-is what invariant 5 forbids.
+BOTH `\\u2014` CHARACTERS THE TWIN EMITS ARE WRITTEN AS ESCAPES HERE. The twin's "No env var references found in compose files \\u2014 check parse logic" carries an em dash, which the house rule forbids in authored text while the differential requires the port to emit the same bytes. The escape satisfies both. The em dash in the twin is a finding reported rather than repaired,
+because editing the twin is what invariant 5 forbids.
 
-THE ANTI-VACUITY REFUSAL IS ALREADY THERE, and it is the reason this gate is
-worth porting carefully: zero compose vars is a FAILURE, not a pass, and the
-success line prints the count so a reader can see the day it collapses. Both are
-carried unchanged.
+THE ANTI-VACUITY REFUSAL IS ALREADY THERE, and it is the reason this gate is worth porting carefully: zero compose vars is a FAILURE, not a pass, and the success line prints the count so a reader can see the day it collapses. Both are carried unchanged.
 """
 
 import os
@@ -129,11 +94,7 @@ PARSE_LOGIC_ERROR = "No env var references found in compose files \u2014 check p
 def compose_files(compose_dir: pathlib.Path) -> list[pathlib.Path]:
     """`<dir>/docker-compose*.yml`, byte-sorted, as bash expands it.
 
-    An EMPTY result is returned as an empty list rather than as the literal
-    pattern, and here that is faithful rather than a divergence: the twin passes
-    the unexpanded pattern to `grep`, whose complaint is swallowed by
-    `2>/dev/null` and which then produces no output. Empty list, same outcome,
-    and the caller's refusal is what turns it into a verdict.
+    An EMPTY result is returned as an empty list rather than as the literal pattern, and here that is faithful rather than a divergence: the twin passes the unexpanded pattern to `grep`, whose complaint is swallowed by `2>/dev/null` and which then produces no output. Empty list, same outcome, and the caller's refusal is what turns it into a verdict.
     """
     if not compose_dir.is_dir():
         return []
@@ -176,8 +137,7 @@ def envblock_lines(text: str) -> list[str]:
     """`sed -n '/<<ENVBLOCK/,/^ENVBLOCK/p'` over `text`.
 
     An explicit state machine; see the port notes for the three sed behaviours a
-    regex would get wrong (the start line never closes its own range, ranges
-    restart, an unterminated range runs to EOF).
+    regex would get wrong (the start line never closes its own range, ranges restart, an unterminated range runs to EOF).
     """
     out: list[str] = []
     inside = False
@@ -196,9 +156,7 @@ def envblock_lines(text: str) -> list[str]:
 def persisted_vars(ci_env: pathlib.Path) -> list[str]:
     """Every `VAR=` assigned inside the ENVBLOCK heredoc, sorted and unique.
 
-    A missing file yields an empty list AND the complaint sed would have made,
-    on stderr, because that complaint is the only thing that tells a reader why
-    every variable suddenly looks unpersisted.
+    A missing file yields an empty list AND the complaint sed would have made, on stderr, because that complaint is the only thing that tells a reader why every variable suddenly looks unpersisted.
     """
     if not ci_env.is_file():
         print("sed: can't read %s: No such file or directory" % ci_env, file=sys.stderr)

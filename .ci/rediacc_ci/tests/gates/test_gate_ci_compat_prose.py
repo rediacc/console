@@ -1,46 +1,27 @@
 """Port of `.ci/scripts/test/gates/test-ci-compat-prose.sh`.
 
-`.ci/scripts/security/check-commands.sh` must not read its own documentation as
-code.
+`.ci/scripts/security/check-commands.sh` must not read its own documentation as code.
 
-WHY THIS EXISTS. Three detectors in this repo have flagged text that merely
-RESEMBLED the construct they forbid, all within one wave (2026-08-26):
-check-toolchain-pins.sh A6 read an `echo` line PRINTING the shellcheck directive
+WHY THIS EXISTS. Three detectors in this repo have flagged text that merely RESEMBLED the construct they forbid, all within one wave (2026-08-26): check-toolchain-pins.sh A6 read an `echo` line PRINTING the shellcheck directive
 as an INVOCATION of shellcheck; check-control-vacuity.sh read `sed 's/^/  /'`,
 which indents a message for display, as a control built by pattern substitution;
 and then it read a COMMENT about a substitution as the substitution itself.
 
-check-commands.sh already skips comments and therefore did NOT make that mistake,
-but NOTHING PROVED the skip works, so deleting it would go unnoticed until a
-comment somewhere started failing CI. A detector that can flag its own
-documentation cannot be satisfied except by deleting the explanation, which is
-how a repo loses the record of why a rule exists.
+check-commands.sh already skips comments and therefore did NOT make that mistake, but NOTHING PROVED the skip works, so deleting it would go unnoticed until a comment somewhere started failing CI. A detector that can flag its own documentation cannot be satisfied except by deleting the explanation, which is how a repo loses the record of why a rule exists.
 
-The REAL script is driven against a constructed tree rather than its regexes
-being re-checked here: a copy of the predicate would pass while the shipped one
-rotted.
+The REAL script is driven against a constructed tree rather than its regexes being re-checked here: a copy of the predicate would pass while the shipped one rotted.
 
-WHAT THIS CANNOT SEE: only the comment/code distinction for one representative
-banned command. It does not enumerate every entry in DISALLOWED.
+WHAT THIS CANNOT SEE: only the comment/code distinction for one representative banned command. It does not enumerate every entry in DISALLOWED.
 
-THE BANNED TOKENS LIVE IN VARIABLES, and that is not squeamishness. Writing them
-in command position inside this file's own probe strings made check-commands.sh
-flag the GATE ITSELF: the token at the start of a probe line, and the other one
-after the `|` of an alternation, which its pattern reads as a pipeline. A gate
-that tests the comment/code distinction cannot be written in a way that trips it.
-An assignment is not command position, so this form is invisible to the scanner
+THE BANNED TOKENS LIVE IN VARIABLES, and that is not squeamishness. Writing them in command position inside this file's own probe strings made check-commands.sh flag the GATE ITSELF: the token at the start of a probe line, and the other one after the `|` of an alternation, which its pattern reads as a pipeline. A gate that tests the comment/code distinction cannot be written in a
+way that trips it. An assignment is not command position, so this form is invisible to the scanner
 while still exercising the real thing. The same care applies here, which is why
 the two names below are built as constants and interpolated.
 
 WHAT THE PORT REIMPLEMENTS. The twin's live-tree case uses
 `grep -rlE '^[[:space:]]*#.*\\b(seq|mapfile)\\b' | wc -l`; this walks the same two
-directories in Python with the equivalent regex. The two agree because the
-pattern is anchored the same way (line start, optional whitespace, a `#`, then
-the word on word boundaries) and both count FILES rather than matches. Python's
-`re` is used rather than shelling out to grep on purpose: the house note about
-ugrep's silent false zeros on an alternated anchor applies to exactly this shape,
-and a count of 0 here would trip the twin's own anti-vacuity floor rather than
-passing, but only on the bash side.
+directories in Python with the equivalent regex. The two agree because the pattern is anchored the same way (line start, optional whitespace, a `#`, then the word on word boundaries) and both count FILES rather than matches. Python's `re` is used rather than shelling out to grep on purpose: the house note about ugrep's silent false zeros on an alternated anchor applies to exactly
+this shape, and a count of 0 here would trip the twin's own anti-vacuity floor rather than passing, but only on the bash side.
 
 NO `xdist_group`. Every case builds its own `mktemp -d` root and runs the gate
 with `cwd=` rather than chdir'ing this process; nothing global moves.
@@ -69,9 +50,7 @@ SKIP_ANCHOR = "# Skip if it's in a comment"
 def build_root(gate, work: pathlib.Path, probe: str) -> pathlib.Path:
     """A throwaway repo root whose ONLY shell script is the probe.
 
-    The gate derives its root from its own path and scans `.ci` + `scripts`, so
-    this exercises the shipped enumeration and the shipped skip logic rather than
-    a re-implementation of either.
+    The gate derives its root from its own path and scans `.ci` + `scripts`, so this exercises the shipped enumeration and the shipped skip logic rather than a re-implementation of either.
     """
     if not SUT.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(SUT))

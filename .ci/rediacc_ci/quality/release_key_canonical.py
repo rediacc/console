@@ -2,8 +2,7 @@
 
 Ported from `.ci/scripts/quality/check-release-key-canonical.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live until a
-differential ledger row exists over K distinct trees. Its gate header registers
-it as step "Release key canonical", needs none, lane quality-security.
+differential ledger row exists over K distinct trees. Its gate header registers it as step "Release key canonical", needs none, lane quality-security.
 
 WHY THIS EXISTS, carried whole from the twin, dated incident included:
 
@@ -19,102 +18,53 @@ WHY THIS EXISTS, carried whole from the twin, dated incident included:
     base64 lines into one over-long line. gpg tolerates that; Go's armor decoder
     does not.
 
-WHAT THIS GATE CAN AND CANNOT DO, said plainly so its green is not read as more
-than it is. It CANNOT check the real RELEASE_GPG_PRIVATE_KEY: that value is a
-secret, quality jobs do not have it and must not, and a gate that needs a
-credential to run is a gate that gets skipped. So it checks the thing that IS
-checkable offline -- that the canonicaliser the build depends on still repairs the
-defect shape -- using a key generated here and thrown away. If the stored value is
-welded again tomorrow, the BUILD repairs it and this gate proves the repair still
-works.
+WHAT THIS GATE CAN AND CANNOT DO, said plainly so its green is not read as more than it is. It CANNOT check the real RELEASE_GPG_PRIVATE_KEY: that value is a secret, quality jobs do not have it and must not, and a gate that needs a credential to run is a gate that gets skipped. So it checks the thing that IS checkable offline -- that the canonicaliser the build depends on still
+repairs the defect shape -- using a key generated here and thrown away. If the stored value is welded again tomorrow, the BUILD repairs it and this gate proves the repair still works.
 
-THE PROXY FOR "Go would reject it", and why it is honest. This runs without Go, so
-it cannot invoke openpgp.ReadArmoredKeyRing. It asserts the structural signature
-instead: RFC 4880 armor wraps base64 at 64 columns, the weld produces one line far
-longer, and that over-long line is precisely what differs between the block gpg
-accepts and the block Go rejects. The causal link was measured
-against x/crypto v0.56.0 on 2026-09-05 -- welded REJECT, newline-joined ACCEPT.
+THE PROXY FOR "Go would reject it", and why it is honest. This runs without Go, so it cannot invoke openpgp.ReadArmoredKeyRing. It asserts the structural signature instead: RFC 4880 armor wraps base64 at 64 columns, the weld produces one line far longer, and that over-long line is precisely what differs between the block gpg accepts and the block Go rejects. The causal link was
+measured against x/crypto v0.56.0 on 2026-09-05 -- welded REJECT, newline-joined ACCEPT.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TALLY IS TRANSLITERATED, NOT REPLACED BY `rediacc_ci.controls.Controls`. The
-twin sources `.ci/scripts/lib/gate-controls.sh`, whose header records why that
-file exists: "Extracted 2026-09-06 after check:ci-shape-duplication caught the
-same ~5 lines at three copies (check-release-key-canonical,
-check-release-signing-coverage, check-staging-tag-guard) and was right to". The
-twin's own line for it is "One copy of the tally, shared. check:ci-shape-duplication
-caught this body at three copies and the extraction converted only ONE of them,
-which took the count to two and made the gate quiet at its own threshold of three.
-Doing a third of the work is how a gate gets silenced instead of satisfied."
+THE TALLY IS TRANSLITERATED, NOT REPLACED BY `rediacc_ci.controls.Controls`. The twin sources `.ci/scripts/lib/gate-controls.sh`, whose header records why that file exists: "Extracted 2026-09-06 after check:ci-shape-duplication caught the same ~5 lines at three copies (check-release-key-canonical, check-release-signing-coverage, check-staging-tag-guard) and was right to". The
+twin's own line for it is "One copy of the tally, shared. check:ci-shape-duplication caught this body at three copies and the extraction converted only ONE of them, which took the count to two and made the gate quiet at its own threshold of three. Doing a third of the work is how a gate gets silenced instead of satisfied."
 
 `Controls` prints `FAIL  <label>: got <got!r>, wanted <want!r>`; gate-controls.sh
-prints `  FAIL  <label> (got '<got>' want '<want>')`. Both are findings to
-`scripts/lib/shadow-gate.ts` and their TEXT differs, so a port using `Controls`
+prints ` FAIL <label> (got '<got>' want '<want>')`. Both are findings to `scripts/lib/shadow-gate.ts` and their TEXT differs, so a port using `Controls`
 for the gate's own output would disagree with the twin on every failing control
-and the differential would read MISMATCH_FINDINGS for a port behaving correctly.
-`Controls` is used only for `--selftest`, where nothing compares text. This is the
-SECOND port to make that call (`rediacc_ci.quality.staging_tag_guard` was the
-first) and the duplication is real: the right home is a shared
-`rediacc_ci.gate_controls` byte-compatible with the bash file. It is not created
-here because this change owns three files per subject and none of them is a new
-shared module, and because `.ci/rediacc_ci/core/` is off limits to this writer.
+and the differential would read MISMATCH_FINDINGS for a port behaving correctly. `Controls` is used only for `--selftest`, where nothing compares text. This is the SECOND port to make that call (`rediacc_ci.quality.staging_tag_guard` was the first) and the duplication is real: the right home is a shared `rediacc_ci.gate_controls` byte-compatible with the bash file. It is not
+created here because this change owns three files per subject and none of them is a new shared module, and because `.ci/rediacc_ci/core/` is off limits to this writer.
 
-THE FLOOR MESSAGE IS A REFUSAL TO THE COMPARATOR, and that shapes what a
-differential can be recorded over. `gate_finish`'s short-battery line contains
-"the battery is not being executed as written", which `scripts/lib/shadow-gate.ts`
-matches as a REFUSAL and which suspends the comparison entirely. So do the three
-early exits: "nothing here was verified" (no gpg) and "so NOTHING was verified"
-(key generation failed). Those states are real and are ported faithfully, but no
-ledger row can be recorded over them -- a refusal is not a verdict, and pretending
-otherwise is exactly the vacuity the comparator refuses.
+THE FLOOR MESSAGE IS A REFUSAL TO THE COMPARATOR, and that shapes what a differential can be recorded over. `gate_finish`'s short-battery line contains "the battery is not being executed as written", which `scripts/lib/shadow-gate.ts` matches as a REFUSAL and which suspends the comparison entirely. So do the three early exits: "nothing here was verified" (no gpg) and "so NOTHING
+was verified" (key generation failed). Those states are real and are ported faithfully, but no ledger row can be recorded over them -- a refusal is not a verdict, and pretending otherwise is exactly the vacuity the comparator refuses.
 
 gpg IS DRIVEN, NEVER REIMPLEMENTED. Every control here is a claim about what gpg
 and the canonicaliser do to real bytes; a Python OpenPGP library would answer a
-different question and would make the gate certify itself. `python-gnupg` is not
-imported and no key parsing happens in this module.
+different question and would make the gate certify itself. `python-gnupg` is not imported and no key parsing happens in this module.
 
-THE `awk` WELDER IS TRANSLITERATED WITH ITS `getline`, and the `NR>3` is the part
-worth stating: `gpg --armor --export-secret-keys` emits the BEGIN line, a blank
-line, then base64, so the first weldable pair is lines 4 and 5. A rewrite that
-welded "the first two body lines" would produce a different fixture and a
-different control. The `/^-----/` rule fires only on a line the main loop reads,
-NOT on a line pulled in by `getline`, which is why the footer can in principle be
-welded onto the last body line and why `done` is set on the first weld.
+THE `awk` WELDER IS TRANSLITERATED WITH ITS `getline`, and the `NR>3` is the part worth stating: `gpg --armor --export-secret-keys` emits the BEGIN line, a blank line, then base64, so the first weldable pair is lines 4 and 5. A rewrite that welded "the first two body lines" would produce a different fixture and a different control. The `/^-----/` rule fires only on a line the main
+loop reads, NOT on a line pulled in by `getline`, which is why the footer can in principle be welded onto the last body line and why `done` is set on the first weld.
 
-TWO `grep -c` CONTROLS COUNT LINES IN build-linux-pkg.sh, and the twin's comment
-on the first is the reason it is a pipeline rather than one grep: "Count CODE, not
-prose: the same idiom appears in the comment that explains it, and a naive grep -c
-reads 2 and fails on a correct file."
+TWO `grep -c` CONTROLS COUNT LINES IN build-linux-pkg.sh, and the twin's comment on the first is the reason it is a pipeline rather than one grep: "Count CODE, not prose: the same idiom appears in the comment that explains it, and a naive grep -c reads 2 and fails on a correct file."
 
-THE TWO ARE ASYMMETRIC WHEN THE FILE IS ABSENT, and reproducing that asymmetry is
-the reason they are two functions rather than one. Measured on this host (ugrep
-7.8.4, 2026-09-06):
+THE TWO ARE ASYMMETRIC WHEN THE FILE IS ABSENT, and reproducing that asymmetry is the reason they are two functions rather than one. Measured on this host (ugrep 7.8.4, 2026-09-06):
 
     grep -v '^\\s*#' missing.sh 2>/dev/null | grep -c '...'   ->  prints "0"
     grep -c '...' missing.sh                                  ->  prints NOTHING
 
 The pipeline's second grep reads an EMPTY STDIN and dutifully counts zero; the
-direct grep never opens a stream and writes only a warning to stderr, so the
-twin's `$(...)` captures the empty string. The gate therefore reports
-`(got '0' want '1')` for the guard control and `(got '' want '1')` for the call
-control over the SAME missing file, and both of those strings are compared
-findings. A port that returned 0 for both would disagree on one line of a real
+direct grep never opens a stream and writes only a warning to stderr, so the twin's `$(...)` captures the empty string. The gate therefore reports `(got '0' want '1')` for the guard control and `(got '' want '1')` for the call control over the SAME missing file, and both of those strings are compared findings. A port that returned 0 for both would disagree on one line of a real
 recorded row. `guard_count_field` returns a number always; `call_count_field`
 returns "" for an absent file.
 
-ONE RESIDUAL DIVERGENCE, named rather than hidden: grep's own
-`ugrep: warning: <path>: No such file or directory` lands on the twin's stderr and
-this port writes nothing there. `scripts/lib/shadow-gate.ts` classifies that line
-as CHATTER (it carries no severity marker and its `.sh:` is not followed by a line
-number), and chatter is recorded but never compared, so it cannot change a
+ONE RESIDUAL DIVERGENCE, named rather than hidden: grep's own `ugrep: warning: <path>: No such file or directory` lands on the twin's stderr and this port writes nothing there. `scripts/lib/shadow-gate.ts` classifies that line as CHATTER (it carries no severity marker and its `.sh:` is not followed by a line number), and chatter is recorded but never compared, so it cannot change a
 verdict. It is still a difference in the bytes a human diffs.
 
 `grep -c '|| canon_rc=\\$?'` IS A BRE WITH AN ESCAPED DOLLAR, i.e. the literal
 text `|| canon_rc=$?`. Matched with `in` rather than a compiled pattern, because
-turning a fixed string into a regex is how `$?` would quietly become an anchor
-plus a quantifier the day someone reformatted the line.
+turning a fixed string into a regex is how `$?` would quietly become an anchor plus a quantifier the day someone reformatted the line.
 
 `grep -v '^\\s*#'` DROPS COMMENT LINES ONLY. A trailing comment on a line of code
 is not removed, so `foo || canon_rc=$?  # note` still counts. That is the twin's
@@ -167,8 +117,7 @@ PROTECTED_LITERAL = "BEGIN PGP PRIVATE KEY BLOCK"
 class _GateTally:
     """`.ci/scripts/lib/gate-controls.sh`, transliterated byte for byte.
 
-    Not `rediacc_ci.controls.Controls`: see the port notes. These strings are the
-    gate's OUTPUT CONTRACT and the shadow differential compares them.
+    Not `rediacc_ci.controls.Controls`: see the port notes. These strings are the gate's OUTPUT CONTRACT and the shadow differential compares them.
     """
 
     def __init__(self) -> None:
@@ -206,10 +155,7 @@ class _GateTally:
 def default_root() -> str:
     """`${RELEASE_KEY_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}`.
 
-    Reproduced rather than delegated to `rediacc_ci.paths.repo_root()`, which
-    answers with the package's own location outside a work tree where this
-    answers with the current directory. The two disagree exactly where a harness
-    would notice, so the twin's rung order is kept.
+    Reproduced rather than delegated to `rediacc_ci.paths.repo_root()`, which answers with the package's own location outside a work tree where this answers with the current directory. The two disagree exactly where a harness would notice, so the twin's rung order is kept.
     """
     override = os.environ.get(ROOT_ENV)
     if override:
@@ -228,9 +174,7 @@ def default_root() -> str:
 def longest_body_line(text: str) -> int:
     """`grep -v -- '-----' | awk '{ ... } END { print m+0 }'`.
 
-    The longest line of the armor BODY, header and footer excluded. `grep -v`
-    drops every line CONTAINING five dashes anywhere, not only the delimiters,
-    and an empty result is 0 rather than blank, which is what `m+0` is for.
+    The longest line of the armor BODY, header and footer excluded. `grep -v` drops every line CONTAINING five dashes anywhere, not only the delimiters, and an empty result is 0 rather than blank, which is what `m+0` is for.
     """
     lengths = [len(line) for line in text.split("\n") if "-----" not in line]
     return max(lengths) if lengths else 0
@@ -239,8 +183,7 @@ def longest_body_line(text: str) -> int:
 def weld(text: str) -> str:
     """The twin's awk welder: join the first weldable body pair, losing one break.
 
-    THE DEFECT SHAPE, exactly as `part1 + part2` produces it when part1 carries no
-    trailing newline. Content identical, one line break gone. `NR>3` and the
+    THE DEFECT SHAPE, exactly as `part1 + part2` produces it when part1 carries no trailing newline. Content identical, one line break gone. `NR>3` and the
     `getline` are transliterated; see the port notes for why the line number
     matters.
     """
@@ -275,8 +218,7 @@ def weld(text: str) -> str:
 def literal_count(text: str, needle: str) -> int:
     """`grep -c '<needle>'` -- MATCHING LINES, not occurrences.
 
-    Two hits on one line count once. That is grep's contract and the difference
-    is invisible until a line grows a second mention.
+    Two hits on one line count once. That is grep's contract and the difference is invisible until a line grows a second mention.
     """
     return sum(1 for line in text.split("\n") if needle in line)
 
@@ -284,8 +226,7 @@ def literal_count(text: str, needle: str) -> int:
 def guard_count(text: str) -> int:
     """`grep -v '^\\s*#' | grep -c '|| canon_rc=$?'` -- COUNT CODE, NOT PROSE.
 
-    The twin's comment: "the same idiom appears in the comment that explains it,
-    and a naive grep -c reads 2 and fails on a correct file."
+    The twin's comment: "the same idiom appears in the comment that explains it, and a naive grep -c reads 2 and fails on a correct file."
     """
     return sum(
         1 for line in text.split("\n") if not COMMENT_LINE_RE.match(line) and GUARD_LITERAL in line
@@ -295,8 +236,7 @@ def guard_count(text: str) -> int:
 def guard_count_field(path: pathlib.Path) -> str:
     """The guard control's `got`, as the twin's PIPELINE produces it.
 
-    ALWAYS A NUMBER, missing file included: the second grep reads an empty stdin
-    and counts zero. See the port notes for the measurement.
+    ALWAYS A NUMBER, missing file included: the second grep reads an empty stdin and counts zero. See the port notes for the measurement.
     """
     return str(guard_count(_read(path)))
 
@@ -304,8 +244,7 @@ def guard_count_field(path: pathlib.Path) -> str:
 def call_count_field(path: pathlib.Path) -> str:
     """The call control's `got`, as the twin's DIRECT grep produces it.
 
-    EMPTY for a missing file, because grep never opens a stream and writes only a
-    warning to stderr. This is the half of the asymmetry a port loses by being
+    EMPTY for a missing file, because grep never opens a stream and writes only a warning to stderr. This is the half of the asymmetry a port loses by being
     tidy; see the port notes.
     """
     if not path.is_file():
@@ -348,8 +287,7 @@ def _first_fpr(colons: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 when every control holds, 1 otherwise.
 
-    `--selftest` is intercepted BEFORE any real scan, which is the addition the
-    twin does not have. The twin takes no arguments, so no caller passes it.
+    `--selftest` is intercepted BEFORE any real scan, which is the addition the twin does not have. The twin takes no arguments, so no caller passes it.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":

@@ -1,22 +1,11 @@
 """`rediacc_ci.core.secrets`: the redactor, and the promise that nothing echoes.
 
-THE PROPERTY THIS SUITE IS REALLY ABOUT is a negative one -- "the value does not
-appear in the output" -- and a negative is the easiest kind of assertion to
-satisfy vacuously. `assert secret not in out` passes when `out` is empty, when
-the function raised and was swallowed, and when the fixture's secret was never
-put into the input in the first place. So every leak case here is paired with a
-POSITIVE control that proves the value was genuinely in play: the names are
-still legible, the surrounding text survived, or the same call masked something
+THE PROPERTY THIS SUITE IS REALLY ABOUT is a negative one -- "the value does not appear in the output" -- and a negative is the easiest kind of assertion to satisfy vacuously. `assert secret not in out` passes when `out` is empty, when the function raised and was swallowed, and when the fixture's secret was never put into the input in the first place. So every leak case here is
+paired with a POSITIVE control that proves the value was genuinely in play: the names are still legible, the surrounding text survived, or the same call masked something
 else.
 
-THE NAME CLASSIFIER IS TESTED AGAINST A CORPUS, NOT A TABLE. `looks_secret` is a
-heuristic, and a table of expectations written next to it only records what its
-author believed twice. `rdc.sh:240-248` is an INDEPENDENT ruling: written for a
-different reason, by someone solving a different problem, it names four
-variables it refuses to let into a process and two it extracts by hand. Those
-six names are harvested from the file at run time and the classifier has to
-agree with all of them. `.ci/config/bws-secret-map.json` supplies the second,
-wider corpus.
+THE NAME CLASSIFIER IS TESTED AGAINST A CORPUS, NOT A TABLE. `looks_secret` is a heuristic, and a table of expectations written next to it only records what its author believed twice. `rdc.sh:240-248` is an INDEPENDENT ruling: written for a different reason, by someone solving a different problem, it names four variables it refuses to let into a process and two it extracts by hand.
+Those six names are harvested from the file at run time and the classifier has to agree with all of them. `.ci/config/bws-secret-map.json` supplies the second, wider corpus.
 """
 
 import hashlib
@@ -40,8 +29,7 @@ FAKE_OPAQUE = "0.deadbeef-1111-2222-3333-444455556666.aaaaBBBBccccDDDD:eeeeFFFF"
 def test_redact_masks_every_occurrence_and_keeps_the_rest() -> None:
     """The leak assertion and its positive control, in one case.
 
-    `FAKE_KEY not in out` alone would pass on an empty string, so the same case
-    asserts the surrounding words survived and the mask count matches.
+    `FAKE_KEY not in out` alone would pass on an empty string, so the same case asserts the surrounding words survived and the mask count matches.
     """
     text = "before %s middle %s after" % (FAKE_KEY, FAKE_KEY)
     out = secrets.redact(text, [FAKE_KEY])
@@ -60,9 +48,7 @@ def test_control_redact_leaves_text_that_holds_no_secret_alone() -> None:
 def test_redact_skips_an_empty_value_but_still_masks_a_real_one() -> None:
     """Both directions of the empty-value guard, in the SAME call.
 
-    An empty needle matches at every position, so a redactor without this guard
-    returns a mask between every pair of characters. The non-empty value in the
-    same call is what proves the guard did not simply disable the function.
+    An empty needle matches at every position, so a redactor without this guard returns a mask between every pair of characters. The non-empty value in the same call is what proves the guard did not simply disable the function.
     """
     out = secrets.redact("keep %s" % FAKE_OPAQUE, ["", None, FAKE_OPAQUE])
     assert out == "keep %s" % secrets.MASK
@@ -72,9 +58,7 @@ def test_redact_skips_an_empty_value_but_still_masks_a_real_one() -> None:
 def test_redact_masks_the_longest_value_first_leaving_no_fragment() -> None:
     """The ordering bug, asserted as the fragment it produces.
 
-    With "abc" applied before "abcdef", the text "abcdef" becomes "***def" -- a
-    string that LOOKS redacted while carrying half the longer secret. The
-    fragment is named in the assertion so a regression reads as itself.
+    With "abc" applied before "abcdef", the text "abcdef" becomes "***def" -- a string that LOOKS redacted while carrying half the longer secret. The fragment is named in the assertion so a regression reads as itself.
     """
     out = secrets.redact("abcdef", ["abc", "abcdef"])
     assert out == secrets.MASK
@@ -90,8 +74,7 @@ def test_redact_is_idempotent() -> None:
 def test_redact_masks_a_value_that_arrives_with_trailing_whitespace() -> None:
     """An env-file value and a command's stdout differ by a newline routinely.
 
-    The control is the second assertion: the stripped form must mask the padded
-    occurrence too, or the pair only proves one direction.
+    The control is the second assertion: the stripped form must mask the padded occurrence too, or the pair only proves one direction.
     """
     padded = FAKE_OPAQUE + "\n"
     assert FAKE_OPAQUE not in secrets.redact("log: %s here" % FAKE_OPAQUE, [padded])
@@ -131,9 +114,7 @@ def test_redact_env_masks_only_the_secret_named_variables() -> None:
 def _rdc_sh_rulings() -> tuple[set[str], set[str]]:
     """The four names rdc.sh refuses to source, and the two it extracts.
 
-    Harvested from the file so the corpus tracks the file. The caller asserts
-    both sets are non-empty, which is what turns a broken harvest into a red
-    instead of a vacuous pass.
+    Harvested from the file so the corpus tracks the file. The caller asserts both sets are non-empty, which is what turns a broken harvest into a red instead of a vacuous pass.
     """
     text = paths.from_root("rdc.sh").read_text(encoding="utf-8")
     start = text.index("by grep. NEVER")
@@ -169,15 +150,9 @@ def _bws_names() -> set[str]:
 def test_looks_secret_splits_the_bitwarden_corpus_in_both_directions() -> None:
     """The wider corpus, and the point is that it SPLITS.
 
-    `.ci/config/bws-secret-map.json` is not a list of secrets -- it is a list of
-    values kept in Bitwarden, and it deliberately holds public halves too
-    (`..._PUBLIC_KEY`, `..._ENDPOINT`, `..._USERNAME`). So a classifier that
-    answered True for everything would be as wrong as one that answered False,
-    and both subsets being non-empty is the assertion that catches either.
+    `.ci/config/bws-secret-map.json` is not a list of secrets -- it is a list of values kept in Bitwarden, and it deliberately holds public halves too (`..._PUBLIC_KEY`, `..._ENDPOINT`, `..._USERNAME`). So a classifier that answered True for everything would be as wrong as one that answered False, and both subsets being non-empty is the assertion that catches either.
 
-    The suffix families below are derived from the corpus, not typed: each is
-    filtered out of the live name list, and each filter must be non-empty before
-    its members are checked.
+    The suffix families below are derived from the corpus, not typed: each is filtered out of the live name list, and each filter must be non-empty before its members are checked.
     """
     names = _bws_names()
     assert names, "the bitwarden corpus is empty"
@@ -221,8 +196,7 @@ def test_looks_secret_on_the_shapes_a_substring_matcher_gets_wrong(
 ) -> None:
     """A table only for the adversarial cases; the bulk lives in the corpora.
 
-    Every row here is a pair with its own opposite somewhere in the table, so
-    the parametrisation cannot pass by always answering one way.
+    Every row here is a pair with its own opposite somewhere in the table, so the parametrisation cannot pass by always answering one way.
     """
     assert secrets.looks_secret(name) is expected
 
@@ -292,8 +266,7 @@ def test_fingerprint_of_nothing_is_empty_not_a_conspicuous_constant() -> None:
 def test_fingerprint_matches_the_shell_sha256_it_has_to_interoperate_with() -> None:
     """A differential, because the corpus this must match was computed in bash.
 
-    `scripts/dev/bws-map-refresh.py:67` and `.ci/config/bws-token-expiry.json`
-    already carry digests of this exact shape. Recomputing the digest in Python
+    `scripts/dev/bws-map-refresh.py:67` and `.ci/config/bws-token-expiry.json` already carry digests of this exact shape. Recomputing the digest in Python
     here would only prove the function calls hashlib; `sha256sum` is an
     independent implementation.
     """
@@ -331,9 +304,7 @@ def test_redact_verb_masks_from_stdin_using_the_environment() -> None:
 def test_redact_verb_treats_its_argument_as_a_name_and_never_as_a_value() -> None:
     """The design assertion: argv is world-readable, so it carries no values.
 
-    Passing the secret itself as an argument must NOT mask it, because the
-    argument is a variable name. A future convenience verb that accepted a value
-    would fail here, which is the point.
+    Passing the secret itself as an argument must NOT mask it, because the argument is a variable name. A future convenience verb that accepted a value would fail here, which is the point.
     """
     rc, out, err = _module(
         "printf '%%s\\n' 'jwt=%s' | python3 -m rediacc_ci.core.secrets redact %s"
@@ -392,9 +363,7 @@ def test_the_verbs_refuse_rather_than_guess() -> None:
 def test_an_env_file_can_be_reported_on_without_any_value_escaping(tmp_path) -> None:
     """End to end: read a .env, say what is in it, leak nothing.
 
-    This is the shape `.ci/lib/account.sh` needs and cannot express today. The
-    controls are the name assertions -- a report that said nothing at all would
-    also leak nothing.
+    This is the shape `.ci/lib/account.sh` needs and cannot express today. The controls are the name assertions -- a report that said nothing at all would also leak nothing.
     """
     path = tmp_path / "dotenv"
     path.write_text(
@@ -424,9 +393,7 @@ def test_an_env_file_can_be_reported_on_without_any_value_escaping(tmp_path) -> 
 def test_no_public_helper_here_hands_back_a_value() -> None:
     """The module's stated interface rule, asserted rather than reviewed.
 
-    `rediacc_ci.core.env` has exactly one value-returning helper and its name
-    says so. This module must have none at all, and a new one added without
-    thinking fails here.
+    `rediacc_ci.core.env` has exactly one value-returning helper and its name says so. This module must have none at all, and a new one added without thinking fails here.
     """
     public = {name for name in dir(secrets) if not name.startswith("_")}
     assert not {name for name in public if "value" in name.lower()}
@@ -436,10 +403,7 @@ def test_no_public_helper_here_hands_back_a_value() -> None:
 def test_the_module_never_writes_a_value_anywhere_it_prints() -> None:
     """A source-level control over the promise the docstring makes.
 
-    Not a substitute for the behavioural cases above -- it is the backstop for
-    the case they cannot cover, a NEW print statement added later. Every `print`
-    in the module is checked to be printing a name, a line built by `report`, a
-    digest or a usage string, never a bare value expression.
+    Not a substitute for the behavioural cases above -- it is the backstop for the case they cannot cover, a NEW print statement added later. Every `print` in the module is checked to be printing a name, a line built by `report`, a digest or a usage string, never a bare value expression.
     """
     source = paths.from_root(".ci/rediacc_ci/core/secrets.py").read_text(encoding="utf-8")
     prints = re.findall(r"^\s*(?:print|sys\.stdout\.write)\((.*)$", source, re.MULTILINE)

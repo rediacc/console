@@ -1,66 +1,35 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/profiler/panel.sh`.
 
-Turn a sampler TSV into the job's summary panel and decide whether a degenerate
-profile is a warning or a failure. The aggregation itself stays in
-`.ci/scripts/ci/profiler/report.awk` and is INVOKED here exactly as the twin
-invokes it: awk is the one text tool guaranteed present on a 1-vCPU runner, the
-twin's own header says so, and reimplementing 439 lines of mawk-dialect
-aggregation in Python would replace the thing under test with a second
-instrument rather than port the wrapper around it.
+Turn a sampler TSV into the job's summary panel and decide whether a degenerate profile is a warning or a failure. The aggregation itself stays in `.ci/scripts/ci/profiler/report.awk` and is INVOKED here exactly as the twin invokes it: awk is the one text tool guaranteed present on a 1-vCPU runner, the twin's own header says so, and reimplementing 439 lines of mawk-dialect
+aggregation in Python would replace the thing under test with a second instrument rather than port the wrapper around it.
 
-Everything policy-shaped lives here: the missing-profile panel, the 900 kB
-trim, the single `::notice` machine row, and the strict/non-strict split
-between `::error::` and `::warning::`.
+Everything policy-shaped lives here: the missing-profile panel, the 900 kB trim, the single `::notice` machine row, and the strict/non-strict split between `::error::` and `::warning::`.
 
-Required env: `PROFILER_SAMPLE_FILE`.
-Optional env: `PROFILER_STRICT`, `PROFILER_WALL_S`, `PROFILER_TITLE`,
-`PROFILER_NOTE`, `PROFILER_DECLARED_S`, `PROFILER_HARD_S`,
-`PROFILER_MAX_PANEL_BYTES`, `GITHUB_JOB`, `GITHUB_STEP_SUMMARY`.
+Required env: `PROFILER_SAMPLE_FILE`. Optional env: `PROFILER_STRICT`, `PROFILER_WALL_S`, `PROFILER_TITLE`, `PROFILER_NOTE`, `PROFILER_DECLARED_S`, `PROFILER_HARD_S`, `PROFILER_MAX_PANEL_BYTES`, `GITHUB_JOB`, `GITHUB_STEP_SUMMARY`.
 
 Exit: 0 clean or non-strict, 1 findings under strict, 2 usage error.
 
-PORT NOTES -- the quirks below are REPRODUCED, not repaired. The acceptance for
-this port is agreement with the twin, and each of these is a place where the
-obvious Python would have disagreed.
+PORT NOTES -- the quirks below are REPRODUCED, not repaired. The acceptance for this port is agreement with the twin, and each of these is a place where the obvious Python would have disagreed.
 
 `${VAR:-default}` TREATS EMPTY AS UNSET. `PROFILER_STRICT=` (exported empty) is
 `false`, not `""`, and `GITHUB_STEP_SUMMARY=` is `/dev/stdout`. Plain
-`os.environ.get(name, default)` returns the empty string in both cases and would
-have sent the panel to a file named `""`. `_env` below is the `:-` operator, and
+`os.environ.get(name, default)` returns the empty string in both cases and would have sent the panel to a file named `""`. `_env` below is the `:-` operator, and
 `_plus` is `${TITLE:+: $TITLE}`.
 
-THE SUMMARY IS A PATH THE TWIN OPENS IN APPEND MODE, including when that path
-is `/dev/stdout`. So this port opens it the same way rather than writing through
-`sys.stdout`: `>>` sets `O_APPEND`, which is what keeps the panel and the
-annotations that follow it in order on one fd. `sys.stdout` is flushed either
-side of every summary write, because Python fully buffers a pipe while a second
-open file description does not, and out-of-order output would be a port defect
-invisible on a terminal.
+THE SUMMARY IS A PATH THE TWIN OPENS IN APPEND MODE, including when that path is `/dev/stdout`. So this port opens it the same way rather than writing through `sys.stdout`: `>>` sets `O_APPEND`, which is what keeps the panel and the annotations that follow it in order on one fd. `sys.stdout` is flushed either side of every summary write, because Python fully buffers a pipe while a
+second open file description does not, and out-of-order output would be a port defect invisible on a terminal.
 
 THE MESSAGE TEXT STILL SAYS `panel.sh:`. Two of the three refusals name the
 script in their own text; changing them to `profiler_panel.py:` would change
-which strings a log scraper (or this port's differential) sees, so the twin's
-wording is kept verbatim until the cutover renames both sides at once.
+which strings a log scraper (or this port's differential) sees, so the twin's wording is kept verbatim until the cutover renames both sides at once.
 
 `while IFS= read -r line` DROPS AN UNTERMINATED FINAL LINE. `read` returns
-non-zero at EOF, so the loop body never runs for a last line with no `\n`, and
-that finding is silently not annotated. `_read_lines` reproduces it by keeping
-only newline-terminated records. Unreachable in production -- `report.awk`
-writes findings with `print`, which always terminates -- and reproduced anyway,
-because "the port emits one more annotation than the twin" is exactly the class
-of drift a differential exists to catch.
+non-zero at EOF, so the loop body never runs for a last line with no `\n`, and that finding is silently not annotated. `_read_lines` reproduces it by keeping only newline-terminated records. Unreachable in production -- `report.awk` writes findings with `print`, which always terminates -- and reproduced anyway, because "the port emits one more annotation than the twin" is exactly
+the class of drift a differential exists to catch.
 
-ONE NAMED, DELIBERATELY-NOT-REPRODUCED DIVERGENCE. With a non-numeric
-`PROFILER_MAX_PANEL_BYTES`, the twin's `[ "$SIZE" -gt "$MAX_PANEL_BYTES" ]`
-makes bash print `<path>: line 154: [: <value>: integer expected` on stderr
-(measured, not quoted from memory) and evaluate FALSE (an `if` condition is
-exempt from `set -e`). This port
-matches the observable decision -- no trim -- and does not forge a bash
-diagnostic carrying the twin's own path and line number. Pinned by
-`test_non_numeric_budget_is_a_bash_diagnostic_only` in the differential, which
-asserts the twin still emits it, so the divergence stays a recorded fact rather
-than a silent one.
+ONE NAMED, DELIBERATELY-NOT-REPRODUCED DIVERGENCE. With a non-numeric `PROFILER_MAX_PANEL_BYTES`, the twin's `[ "$SIZE" -gt "$MAX_PANEL_BYTES" ]` makes bash print `<path>: line 154: [: <value>: integer expected` on stderr (measured, not quoted from memory) and evaluate FALSE (an `if` condition is exempt from `set -e`). This port matches the observable decision -- no trim -- and
+does not forge a bash diagnostic carrying the twin's own path and line number. Pinned by `test_non_numeric_budget_is_a_bash_diagnostic_only` in the differential, which asserts the twin still emits it, so the divergence stays a recorded fact rather than a silent one.
 """
 
 from __future__ import annotations

@@ -1,20 +1,13 @@
 """Port of `.ci/scripts/test/proxies/proxy-rdc-update.sh`.
 
-Local proxy for the CI job that drives `rdc update` end to end, wired as the
-registered gate `check:ci-proxy-rdc-update` (`package.json:386`). CI runs
-`.ci/scripts/test/test-rdc-update.sh all` in the update-flow job of
+Local proxy for the CI job that drives `rdc update` end to end, wired as the registered gate `check:ci-proxy-rdc-update` (`package.json:386`). CI runs `.ci/scripts/test/test-rdc-update.sh all` in the update-flow job of
 `.github/workflows/ct-update-flow.yml` against a REAL SEA binary; that workflow
-is outside the parity surface, so nothing in `npm run ci` has ever touched the
-updater.
+is outside the parity surface, so nothing in `npm run ci` has ever touched the updater.
 
 The SUBJECT stays bash and is run as bash. Only the proxy is ported.
 
-THE EXEMPTION IS BY NAME AND PRINTED EVERY RUN, preserved exactly. `happy` and
-`rollback` need genuine SEA packaging (the CLI refuses a plain node bundle with
-"Cannot update: not running as a packaged binary"), so with `RDC_BINARY` unset
-the run is five scenarios and the two are NAMED in yellow on every single run
-rather than quietly dropped. Setting `RDC_BINARY` removes the exemption by
-itself.
+THE EXEMPTION IS BY NAME AND PRINTED EVERY RUN, preserved exactly. `happy` and `rollback` need genuine SEA packaging (the CLI refuses a plain node bundle with "Cannot update: not running as a packaged binary"), so with `RDC_BINARY` unset the run is five scenarios and the two are NAMED in yellow on every single run rather than quietly dropped. Setting `RDC_BINARY` removes the
+exemption by itself.
 
 -----------------------------------------------------------------------------
 TWO PLACES WHERE THE TWIN'S BYTES ARE NOT WHAT A READER EXPECTS
@@ -39,11 +32,7 @@ TWO PLACES WHERE THE TWIN'S BYTES ARE NOT WHAT A READER EXPECTS
 -----------------------------------------------------------------------------
 `sort` VERSUS `sorted()`, AND WHY IT IS SAFE HERE
 -----------------------------------------------------------------------------
-`:73` and `:75` both end in `sort`, whose collation depends on the caller's
-locale, while `sorted()` is always byte order. The two agree for every name
-the subject declares today (`[a-z0-9-]+` only, and no pair differs only by a
-hyphen), and `parse_declared` is exported so the differential can drive the
-comparison instead of this comment being the argument. A name outside that
+`:73` and `:75` both end in `sort`, whose collation depends on the caller's locale, while `sorted()` is always byte order. The two agree for every name the subject declares today (`[a-z0-9-]+` only, and no pair differs only by a hyphen), and `parse_declared` is exported so the differential can drive the comparison instead of this comment being the argument. A name outside that
 class cannot appear anyway: `:73`'s own grep would not match it, which is the
 ZERO-scenarios refusal at `:76-81`.
 

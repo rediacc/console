@@ -1,11 +1,7 @@
 """Reading a `KEY=value` file without `source`.
 
-PORTED FROM THE SIX BASH SITES THAT READ ONE TODAY, not from a single function.
-`docs/ci-overhaul/08-driver-contract.md:64` names this module as the home of
-`env_file_load`, and the name is aspirational: there is no `env_file_load` in
-`.ci/lib/local-common.sh` or anywhere else in the tree. The operation exists,
-six times, in two mutually incompatible spellings. Consolidating them is the
-whole job, so all six are listed here rather than in a commit message:
+PORTED FROM THE SIX BASH SITES THAT READ ONE TODAY, not from a single function. `docs/ci-overhaul/08-driver-contract.md:64` names this module as the home of `env_file_load`, and the name is aspirational: there is no `env_file_load` in `.ci/lib/local-common.sh` or anywhere else in the tree. The operation exists, six times, in two mutually incompatible spellings. Consolidating them
+is the whole job, so all six are listed here rather than in a commit message:
 
     .ci/lib/account.sh:437-440        set -a; source "$ACCOUNT_DIR/.env"; set +a
     .ci/lib/account.sh:790-793        the same three lines again, for E2E
@@ -17,8 +13,7 @@ whole job, so all six are listed here rather than in a commit message:
 --------------------------------------------------------------------------
 WHY THIS PARSES AND NEVER EXECUTES
 --------------------------------------------------------------------------
-`rdc.sh:240-245` is the receipt, and it is worth quoting because it is the one
-comment in the tree that states the threat model:
+`rdc.sh:240-245` is the receipt, and it is worth quoting because it is the one comment in the tree that states the threat model:
 
     Read EXACTLY two values from the dev gateway's env file, by grep. NEVER
     `source` it (not even with `set -a`): private/account/.env also holds
@@ -26,12 +21,8 @@ comment in the tree that states the threat model:
     and ACCOUNT_SERVER_API_KEY, and sourcing would leak every one of those
     secrets into the CLI process environment.
 
-`source` is not a parser. It is a shell executing a file, so it also runs
-command substitutions, honours `$(...)`, and exports EVERY key including the
-four above into a process that needs two of them. `.ci/scripts/test/
-test-rdc-sh-env.sh` is a standing gate over exactly that rule for `rdc.sh`, and
-this module is how the other five sites get to obey it too: nothing here
-executes the file, and a caller asks for the names it wants.
+`source` is not a parser. It is a shell executing a file, so it also runs command substitutions, honours `$(...)`, and exports EVERY key including the four above into a process that needs two of them. `.ci/scripts/test/ test-rdc-sh-env.sh` is a standing gate over exactly that rule for `rdc.sh`, and this module is how the other five sites get to obey it too: nothing here executes
+the file, and a caller asks for the names it wants.
 
 --------------------------------------------------------------------------
 WHY THE SHELL WINS OVER THE FILE
@@ -39,43 +30,24 @@ WHY THE SHELL WINS OVER THE FILE
 This INVERTS `set -a; source`, which lets the file overwrite the shell, and the
 inversion is deliberate rather than incidental.
 
-`.ci/lib/account.sh:432-440` is the case this was written from, and the
-specifics were WRONG until 2026-09-09: `account_allocate_ports` computes
-GATEWAY_PORT into the shell four lines before `source .env`, but GATEWAY_PORT is
-not a key the file has ever carried (measured against the live
-`private/account/.env`, and against the template at `.ci/lib/account.sh:206-250`
-that writes it). What the file DOES carry, and therefore did overwrite, is
-`PORT`, `ROOT_EMAIL`, `REDIACC_ACCOUNT_SERVER` and `WEBAUTHN_ORIGIN`. The
+`.ci/lib/account.sh:432-440` is the case this was written from, and the specifics were WRONG until 2026-09-09: `account_allocate_ports` computes GATEWAY_PORT into the shell four lines before `source .env`, but GATEWAY_PORT is not a key the file has ever carried (measured against the live `private/account/.env`, and against the template at `.ci/lib/account.sh:206-250` that writes
+it). What the file DOES carry, and therefore did overwrite, is `PORT`, `ROOT_EMAIL`, `REDIACC_ACCOUNT_SERVER` and `WEBAUTHN_ORIGIN`. The
 argument is unchanged and the fix is the same; only the example was fiction, and
-a fiction in the paragraph explaining WHY is the kind that gets quoted onward.
-Every override this repo ships arrives
-through the environment -- a workflow `env:` block, a `GITHUB_ENV` append, a
+a fiction in the paragraph explaining WHY is the kind that gets quoted onward. Every override this repo ships arrives through the environment -- a workflow `env:` block, a `GITHUB_ENV` append, a
 developer typing `PORT=4900 ./run.sh` -- and file-wins silently discards all of
-them in favour of a value written to disk months earlier. An override that is
-ignored without a word is worse than one that is refused.
+them in favour of a value written to disk months earlier. An override that is ignored without a word is worse than one that is refused.
 
-So: a key already carried by the environment keeps its value, and the file
-supplies only what the environment does not have.
+So: a key already carried by the environment keeps its value, and the file supplies only what the environment does not have.
 
-AN EMPTY ENVIRONMENT VALUE DOES NOT WIN. `.ci/lib/bws-env.sh:100-104` already
-ruled on this, in its own words: "An empty value is treated as ABSENT on
-purpose: zod strips an unknown key and sm-action exports \"\" without
-complaint, so a blank ships a broken feature that still returns 200." The same
-reasoning applies here, and applying it in the same way keeps the two answers
+AN EMPTY ENVIRONMENT VALUE DOES NOT WIN. `.ci/lib/bws-env.sh:100-104` already ruled on this, in its own words: "An empty value is treated as ABSENT on purpose: zod strips an unknown key and sm-action exports \"\" without complaint, so a blank ships a broken feature that still returns 200." The same reasoning applies here, and applying it in the same way keeps the two answers
 from drifting.
 
 --------------------------------------------------------------------------
 MISSING IS NORMAL, UNREADABLE IS A DEFECT
 --------------------------------------------------------------------------
-`.ci/scripts/lib/toolchain.sh:29-32` conflates them: `[[ -r "$f" ]]` fails
-identically for an absent file and for one whose mode is 0000, and reports
-"pins file missing or unreadable". That is fine for a pins file which must
-exist. It is wrong for `.env`, because `.ci/lib/account.sh:311-313` treats
-absence as a NORMAL state meaning "generate it".
+`.ci/scripts/lib/toolchain.sh:29-32` conflates them: `[[ -r "$f" ]]` fails identically for an absent file and for one whose mode is 0000, and reports "pins file missing or unreadable". That is fine for a pins file which must exist. It is wrong for `.env`, because `.ci/lib/account.sh:311-313` treats absence as a NORMAL state meaning "generate it".
 
-Conflating the two turns a permissions defect into "no keys configured", which
-is a diagnosis that sends the reader to the wrong file. So absence returns an
-empty mapping and unreadability raises `EnvFileError`.
+Conflating the two turns a permissions defect into "no keys configured", which is a diagnosis that sends the reader to the wrong file. So absence returns an empty mapping and unreadability raises `EnvFileError`.
 
 --------------------------------------------------------------------------
 THE TWO PLACES THIS DELIBERATELY DIVERGES FROM `source`
@@ -97,17 +69,10 @@ THE TWO PLACES THIS DELIBERATELY DIVERGES FROM `source`
    test_core_env.py caught the difference.) Nobody depends on that; a human who
    types it means the value.
 
-Everything else follows `source`: the LAST assignment of a key wins (which is
-what `rdc.sh:247` spells `tail -1`), single quotes are literal, and inside
-double quotes a backslash is special only before `$`, a backtick, `"` or
-another backslash.
+Everything else follows `source`: the LAST assignment of a key wins (which is what `rdc.sh:247` spells `tail -1`), single quotes are literal, and inside double quotes a backslash is special only before `$`, a backtick, `"` or another backslash.
 
-CRLF IS HANDLED BECAUSE IT HAS ALREADY BITTEN. `.ci/lib/local-common.sh:815`
-ends its extraction with `tr -d 'CR'` -- a carriage return that would otherwise
-ride on the end of the public key and make every signature check fail with a
-value that LOOKS right in a log. Here it costs no code at all: see `_lines` for
-why `str.splitlines()` is the whole answer, and for the dead guard that was
-written before that was checked.
+CRLF IS HANDLED BECAUSE IT HAS ALREADY BITTEN. `.ci/lib/local-common.sh:815` ends its extraction with `tr -d 'CR'` -- a carriage return that would otherwise ride on the end of the public key and make every signature check fail with a value that LOOKS right in a log. Here it costs no code at all: see `_lines` for why `str.splitlines()` is the whole answer, and for the dead guard
+that was written before that was checked.
 
 --------------------------------------------------------------------------
 COMMAND-LINE ENTRY POINT (what a bash caller invokes)
@@ -123,9 +88,7 @@ COMMAND-LINE ENTRY POINT (what a bash caller invokes)
         shell-quoted `export K=V` lines for `eval`. With names, only those;
         with none, every key the environment does not already carry.
 
-`export` prints values, which is unavoidable for a shim whose job is to put
-them into a shell. Prefer the name-list form for the reason rdc.sh:240 gives,
-and never run it under `set -x`.
+`export` prints values, which is unavoidable for a shim whose job is to put them into a shell. Prefer the name-list form for the reason rdc.sh:240 gives, and never run it under `set -x`.
 """
 
 from __future__ import annotations
@@ -161,9 +124,7 @@ class EnvFileError(RuntimeError):
 def parse(text: str) -> dict[str, str]:
     """Every assignment in `text`, last-wins, values unquoted.
 
-    Pure: no filesystem, no environment. The differential against bash lives on
-    this function, because a comparison that also has to build a file is a
-    comparison that can fail for a reason that is not the parser.
+    Pure: no filesystem, no environment. The differential against bash lives on this function, because a comparison that also has to build a file is a comparison that can fail for a reason that is not the parser.
     """
     pairs: dict[str, str] = {}
     for _lineno, key, raw in _assignments(text):
@@ -174,8 +135,7 @@ def parse(text: str) -> dict[str, str]:
 def skipped(text: str) -> list[tuple[int, str]]:
     """The 1-based lines that are neither blank, comment, nor an assignment.
 
-    Exposed rather than swallowed. A line silently dropped is how a typo in a
-    key name becomes an absence nobody can see, and `source` at least fails
+    Exposed rather than swallowed. A line silently dropped is how a typo in a key name becomes an absence nobody can see, and `source` at least fails
     loudly on it. Callers that want the loud behaviour check this and refuse;
     callers that want the tolerant one ignore it. Both are honest.
     """
@@ -219,10 +179,7 @@ def env_file_load(
 ) -> dict[str, str]:
     """The EFFECTIVE value of every key the file names. The shell wins.
 
-    The returned mapping is keyed by the FILE's keys only -- it is not a merged
-    copy of the environment -- so a caller can see exactly what the file has to
-    say and what the environment overrode, without the other few hundred
-    variables in the way.
+    The returned mapping is keyed by the FILE's keys only -- it is not a merged copy of the environment -- so a caller can see exactly what the file has to say and what the environment overrode, without the other few hundred variables in the way.
     """
     env = os.environ if environ is None else environ
     pairs = read_pairs(path, missing_ok=missing_ok)
@@ -237,8 +194,7 @@ def overridden(
 ) -> list[str]:
     """Sorted names where the environment won and the file's value was not used.
 
-    Names, never values: this is the thing a caller prints when it wants the
-    reader to understand why the file on disk is not what took effect.
+    Names, never values: this is the thing a caller prints when it wants the reader to understand why the file on disk is not what took effect.
     """
     env = os.environ if environ is None else environ
     pairs = read_pairs(path, missing_ok=missing_ok)
@@ -257,9 +213,7 @@ def apply(
     Returns the sorted names ASSIGNED. This is the `set -a; source` replacement,
     minus the execution and minus the file-wins precedence.
 
-    `names` restricts it to the keys the caller asked for, which is the
-    rdc.sh:246-248 posture generalised: a process that needs two values does not
-    have to take forty-nine.
+    `names` restricts it to the keys the caller asked for, which is the rdc.sh:246-248 posture generalised: a process that needs two values does not have to take forty-nine.
     """
     env = os.environ if environ is None else environ
     pairs = read_pairs(path, missing_ok=missing_ok)
@@ -283,9 +237,7 @@ def unredacted_value(
 ) -> str | None:
     """THE VALUE of one key, or None. Named so the call site cannot pretend.
 
-    Every other function here hands back names, counts or a mapping a caller
-    chose to build. This one hands back a secret if the key names one, so it
-    says so in its own name -- the same rule `rediacc_ci.core.secrets` states
+    Every other function here hands back names, counts or a mapping a caller chose to build. This one hands back a secret if the key names one, so it says so in its own name -- the same rule `rediacc_ci.core.secrets` states
     for itself, applied to the one function in this module that needs it.
     """
     return env_file_load(path, environ, missing_ok=missing_ok).get(key)
@@ -294,8 +246,7 @@ def unredacted_value(
 def keys(path: pathlib.Path | str, *, missing_ok: bool = True) -> list[str]:
     """The key names in FILE ORDER, deduplicated to the last occurrence.
 
-    File order rather than sorted, because the order is how a human reads the
-    file, and `keys` is what a diagnostic prints.
+    File order rather than sorted, because the order is how a human reads the file, and `keys` is what a diagnostic prints.
     """
     return list(read_pairs(path, missing_ok=missing_ok))
 
@@ -306,21 +257,12 @@ def keys(path: pathlib.Path | str, *, missing_ok: bool = True) -> list[str]:
 def _lines(text: str) -> list[tuple[int, str]]:
     """1-based lines, CRLF and BOM removed.
 
-    `str.splitlines()` IS THE CRLF HANDLING, on its own. It treats a CR, an LF
-    and a CRLF as one boundary each and returns none of them, so a line from a
-    Windows-written file arrives with no carriage return on it and there is
-    nothing left to strip.
+    `str.splitlines()` IS THE CRLF HANDLING, on its own. It treats a CR, an LF and a CRLF as one boundary each and returns none of them, so a line from a Windows-written file arrives with no carriage return on it and there is nothing left to strip.
 
-    That is worth stating because the first draft did not believe it and added
-    `raw.rstrip("CR")` here as well. The line was DEAD: planting a defect that
-    deleted it left all 36 cases in test_core_env.py green, including two
-    written specifically to catch it. A guard that cannot fail is the shape this
-    repository hunts, so it is gone rather than kept for comfort, and this
-    paragraph is what stops it being re-added.
+    That is worth stating because the first draft did not believe it and added `raw.rstrip("CR")` here as well. The line was DEAD: planting a defect that deleted it left all 36 cases in test_core_env.py green, including two written specifically to catch it. A guard that cannot fail is the shape this repository hunts, so it is gone rather than kept for comfort, and this paragraph is
+    what stops it being re-added.
 
-    See `.ci/lib/local-common.sh:815` for what a surviving CR costs and why the
-    bash had to say `tr -d` at all: a carriage return riding on the end of a
-    public key, which looks right in a log and fails every signature check. The
+    See `.ci/lib/local-common.sh:815` for what a surviving CR costs and why the bash had to say `tr -d` at all: a carriage return riding on the end of a public key, which looks right in a log and fails every signature check. The
     bash was reading with `sed -n`, which has no notion of a CRLF file; this
     reads with a function that does.
     """
@@ -347,11 +289,7 @@ def _assignments(text: str) -> list[tuple[int, str, str]]:
 def _unquote(raw: str) -> str:
     """Strip one layer of matching quotes and apply bash's escape rules.
 
-    An UNTERMINATED quote is taken literally rather than raising. `source` would
-    refuse the whole file, and refusing forty-eight good keys over one bad line
-    is the wrong trade for a loader whose absence-of-answer already has a
-    meaning. The line is still visible: it parsed as an assignment, so its value
-    simply starts with a quote character, which is what a reader sees.
+    An UNTERMINATED quote is taken literally rather than raising. `source` would refuse the whole file, and refusing forty-eight good keys over one bad line is the wrong trade for a loader whose absence-of-answer already has a meaning. The line is still visible: it parsed as an assignment, so its value simply starts with a quote character, which is what a reader sees.
     """
     value = raw.strip()
     if len(value) >= 2 and value[0] == value[-1]:

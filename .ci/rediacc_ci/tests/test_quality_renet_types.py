@@ -1,23 +1,16 @@
 """`rediacc_ci.quality.renet_types` against the shell it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The whole verdict of
-this gate rests on one four-token shell function:
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The whole verdict of this gate rests on one four-token shell function:
 
     diff -q <(grep -v '_VERSION = ' "$1") <(grep -v '_VERSION = ' "$2") >/dev/null 2>&1
 
-and every interesting property of it is an accident of how those tools compose.
-`grep -v` on a MISSING file writes to the script's stderr even though the diff
-is redirected, and returns nothing, so the comparison says "differ" and the file
-lands on the stale list. `diff` ignores a missing trailing newline in the sense
-that matters here only because the greps have already re-emitted the content.
+and every interesting property of it is an accident of how those tools compose. `grep -v` on a MISSING file writes to the script's stderr even though the diff is redirected, and returns nothing, so the comparison says "differ" and the file lands on the stale list. `diff` ignores a missing trailing newline in the sense that matters here only because the greps have already re-emitted
+the content.
 The marker `_VERSION = ` is a SUBSTRING with a mandatory space on each side of
 the equals sign, not an anchor, so `A_VERSION=1` is compared and
 `  const X_VERSION = 1` is not. None of that is inferable; it is measured below.
 
-They are NOT the whole gate: the whole gate is what the committed shadow ledger
-`.ci/shadow/w7p2-renet-types.observations.jsonl` compares over five distinct
-trees, against a minimal Go stand-in for `renet functions generate-types`. This
-file covers the seams that ledger cannot isolate.
+They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-renet-types.observations.jsonl` compares over five distinct trees, against a minimal Go stand-in for `renet functions generate-types`. This file covers the seams that ledger cannot isolate.
 """
 
 import pathlib
@@ -90,8 +83,7 @@ def test_the_compare_table_exercises_both_directions() -> None:
 def test_the_missing_file_error_matches_greps_wording(tmp_path: pathlib.Path) -> None:
     """The leak, byte for byte, because it is the port's job to leak the same.
 
-    `2>/dev/null` on the enclosing `diff` does NOT cover a process substitution,
-    which is easy to assume and wrong. Measured here rather than reasoned.
+    `2>/dev/null` on the enclosing `diff` does NOT cover a process substitution, which is easy to assume and wrong. Measured here rather than reasoned.
     """
     missing = tmp_path / "gone.ts"
     (tmp_path / "b.ts").write_text("x\n", encoding="utf-8")
@@ -109,9 +101,7 @@ def test_require_submodule_skips_locally_and_fails_under_ci(
 ) -> None:
     """All three rungs, against the real bash function sourced from common.sh.
 
-    The CI rung is the one that must not be lost: common.sh's own comment says a
-    gate that silently skips is worse than no gate at all, and names the three
-    scanners that would report success while checking nothing.
+    The CI rung is the one that must not be lost: common.sh's own comment says a gate that silently skips is worse than no gate at all, and names the three scanners that would report success while checking nothing.
     """
     marker = tmp_path / "go.mod"
 
@@ -153,10 +143,7 @@ def test_require_submodule_skips_locally_and_fails_under_ci(
 def test_the_compared_file_list_is_the_gate() -> None:
     """Six entries, and license-tiers is one of them.
 
-    The list is asserted rather than trusted because the twin's own comment
-    records what its absence cost: license-tiers.generated.ts was generated into
-    TEMP_DIR and silently ignored until it was added, which would have let it go
-    stale forever while the gate reported "up-to-date".
+    The list is asserted rather than trusted because the twin's own comment records what its absence cost: license-tiers.generated.ts was generated into TEMP_DIR and silently ignored until it was added, which would have let it go stale forever while the gate reported "up-to-date".
     """
     assert len(rt.FILES) == 6
     assert "license-tiers.generated.ts" in rt.FILES
@@ -166,8 +153,7 @@ def test_the_compared_file_list_is_the_gate() -> None:
 def test_the_list_still_matches_the_bash_twins_array() -> None:
     """Drift between the two copies is invisible until a file goes stale.
 
-    Read out of the twin rather than transcribed, so the assertion cannot be
-    satisfied by editing this file.
+    Read out of the twin rather than transcribed, so the assertion cannot be satisfied by editing this file.
     """
     twin = paths.repo_root() / ".ci/scripts/quality/check-renet-types.sh"
     text = twin.read_text(encoding="utf-8")

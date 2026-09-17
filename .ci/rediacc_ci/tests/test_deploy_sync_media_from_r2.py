@@ -1,35 +1,20 @@
 """Differential: `rediacc_ci.deploy.sync_media_from_r2` against its twin
 `.ci/scripts/deploy/sync-media-from-r2.sh`.
 
-A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches Cloudflare R2:
-the fake logs its exact argv, answers from the environment, and the only real
-credential name in the file is an environment KEY, never a value.
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one
-real run" clause and says in as many words that the mocked parity ledger is a
+A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches Cloudflare R2: the fake logs its exact argv, answers from the environment, and the only real credential name in the file is an environment KEY, never a value. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
 separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS COMPARED AS WELL AS THE TWO STREAMS, and for this script it is
-the more important half. Everything the program prints is three `Restoring ...`
+THE CALL LOG IS COMPARED AS WELL AS THE TWO STREAMS, and for this script it is the more important half. Everything the program prints is three `Restoring ...`
 lines plus one closing line, none of it derived from what actually moved; the
 whole observable effect is which prefixes were synced, into which directories,
 with which flags. A port that dropped `--no-progress`, reordered the three legs
-or pointed one at the wrong prefix would print identical output and exit 0.
-`test_planted_defect_is_caught` plants exactly that.
+or pointed one at the wrong prefix would print identical output and exit 0. `test_planted_defect_is_caught` plants exactly that.
 
-EVERY RUN HAPPENS IN A COPIED TREE UNDER `tmp_path`, NEVER IN THE CHECKOUT, and
-that is a correctness requirement rather than tidiness. Both implementations
-derive `REPO_ROOT` from their OWN location (`<file>/../../..`), and the script's
-one on-disk side effect is `mkdir -p` under `packages/www/public/assets/`. Run
+EVERY RUN HAPPENS IN A COPIED TREE UNDER `tmp_path`, NEVER IN THE CHECKOUT, and that is a correctness requirement rather than tidiness. Both implementations derive `REPO_ROOT` from their OWN location (`<file>/../../..`), and the script's one on-disk side effect is `mkdir -p` under `packages/www/public/assets/`. Run
 from the real checkout it would create directories in a tree several other
-sessions are working in, and the skip/no-skip behaviour of the upload twin could
-not be exercised at all. Copying the eight files each side needs into `tmp_path`
-makes `REPO_ROOT` the fixture, gives every test its own filesystem state, and
-removes any need for a machine-wide lock: `tmp_path` is unique per test, so two
-concurrent runs of this file in one checkout cannot collide.
+sessions are working in, and the skip/no-skip behaviour of the upload twin could not be exercised at all. Copying the eight files each side needs into `tmp_path` makes `REPO_ROOT` the fixture, gives every test its own filesystem state, and removes any need for a machine-wide lock: `tmp_path` is unique per test, so two concurrent runs of this file in one checkout cannot collide.
 
-BOTH SIDES ARE RE-RUN FROM THE SAME STARTING STATE. `restore_dir` creates
-directories, so the second side would otherwise see a tree the first side built.
-`run_both` rebuilds `packages/` before each side.
+BOTH SIDES ARE RE-RUN FROM THE SAME STARTING STATE. `restore_dir` creates directories, so the second side would otherwise see a tree the first side built. `run_both` rebuilds `packages/` before each side.
 """
 
 from __future__ import annotations
@@ -129,11 +114,7 @@ def _bin(tree: pathlib.Path, *, drop: str = "") -> str:
 def _tree(tmp_path: pathlib.Path) -> pathlib.Path:
     """A miniature checkout whose root is `tmp_path/tree`.
 
-    Both implementations resolve `REPO_ROOT` three directories up from
-    themselves, so placing them at `.ci/scripts/deploy/` and
-    `.ci/rediacc_ci/deploy/` inside this directory makes `tmp_path/tree` the
-    repository root for both, with no environment variable involved and no
-    difference from how they resolve it in the real checkout.
+    Both implementations resolve `REPO_ROOT` three directories up from themselves, so placing them at `.ci/scripts/deploy/` and `.ci/rediacc_ci/deploy/` inside this directory makes `tmp_path/tree` the repository root for both, with no environment variable involved and no difference from how they resolve it in the real checkout.
     """
     tree = tmp_path / "tree"
     if tree.exists():
@@ -245,8 +226,7 @@ def _call(tree: pathlib.Path, remote_prefix: str, local_relative: str, *flags: s
 
 def test_the_default_run_restores_three_prefixes_in_order(tmp_path: pathlib.Path) -> None:
     """THE WHOLE CONTRACT, PINNED AGAINST LITERAL BYTES rather than against the
-    port's own helpers, so a change in both would still be caught. Three calls,
-    in the twin's order, each with the endpoint and `--no-progress` and nothing
+    port's own helpers, so a change in both would still be caught. Three calls, in the twin's order, each with the endpoint and `--no-progress` and nothing
     else."""
     old, new, old_calls, new_calls = run_both(tmp_path, [])
     tree = _tree(tmp_path)
@@ -385,8 +365,7 @@ def test_missing_aws_is_refused_after_the_access_key_and_before_the_secret(
     tmp_path: pathlib.Path,
 ) -> None:
     """THE ORDER OF THE REFUSALS IS THE CONTRACT. Driven with the secret ALSO
-    unset, so the only thing that decides which message appears is the order:
-    `require_cmd aws` sits above the `export`, and a port that validated
+    unset, so the only thing that decides which message appears is the order: `require_cmd aws` sits above the `export`, and a port that validated
     credentials first would report the wrong problem on a fresh machine."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -403,10 +382,7 @@ def test_missing_aws_is_refused_after_the_access_key_and_before_the_secret(
 def test_defect_require_var_checks_only_its_first_argument(tmp_path: pathlib.Path) -> None:
     """THE DEFECT, PINNED. The twin passes THREE names to `require_var` and
     `common.sh:131-137` reads `local var_name="$1"`, so two documented-as-required
-    credentials are never checked. `set -u` catches them only when UNSET, so an
-    EXPORTED-EMPTY secret and an EXPORTED-EMPTY endpoint sail straight through:
-    `aws` is handed `--endpoint-url` followed by the empty string, the run prints
-    `Restore complete.` and exits 0.
+    credentials are never checked. `set -u` catches them only when UNSET, so an EXPORTED-EMPTY secret and an EXPORTED-EMPTY endpoint sail straight through: `aws` is handed `--endpoint-url` followed by the empty string, the run prints `Restore complete.` and exits 0.
 
     Reproduced because agreement with the live twin is the deliverable;
     repaired, this test goes red and names the port that must follow.
@@ -430,10 +406,7 @@ def test_defect_require_var_checks_only_its_first_argument(tmp_path: pathlib.Pat
 
 def test_divergence_set_u_names_the_bash_file_and_line(tmp_path: pathlib.Path) -> None:
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. An UNSET secret is caught by `set -u`, not by the
-    script, so bash's own message names the bash FILE and a bash LINE NUMBER.
-    The port carries the `NAME: unbound variable` half, on the same stream, with
-    the same exit status. Same ruling as `deploy/promote_r2_to_stable.py` makes
+    "FIXED" BY ACCIDENT. An UNSET secret is caught by `set -u`, not by the script, so bash's own message names the bash FILE and a bash LINE NUMBER. The port carries the `NAME: unbound variable` half, on the same stream, with the same exit status. Same ruling as `deploy/promote_r2_to_stable.py` makes
     for its `${VAR:?msg}` guards."""
     tree = _tree(tmp_path)
     _layout(tree, ())
@@ -498,13 +471,10 @@ def test_a_failing_aws_ends_the_run_with_its_status_and_no_further_legs(
 
 def test_defect_dry_run_still_creates_the_local_directories(tmp_path: pathlib.Path) -> None:
     """THE DEFECT, PINNED. `mkdir -p "$local_dir"` sits above the `aws` call in
-    `restore_dir` and is not conditioned on `DRY_RUN`, so the flag documented as
-    "download nothing" writes three directories into the working copy. Harmless
-    in a git sense and still a write from a read-only flag.
+    `restore_dir` and is not conditioned on `DRY_RUN`, so the flag documented as "download nothing" writes three directories into the working copy. Harmless in a git sense and still a write from a read-only flag.
 
     `run_both` already asserts the two sides leave the SAME directories behind;
-    this names what those directories are, so the shared assertion cannot pass
-    by both sides creating nothing.
+    this names what those directories are, so the shared assertion cannot pass by both sides creating nothing.
     """
     tree = _tree(tmp_path)
     _layout(tree, ())
@@ -525,9 +495,7 @@ def test_defect_dry_run_still_creates_the_local_directories(tmp_path: pathlib.Pa
 
 def test_a_failing_mkdir_stops_before_the_step_line(tmp_path: pathlib.Path) -> None:
     """`mkdir` IS THE REAL BINARY ON BOTH SIDES, which is why its bytes agree.
-    A regular file where `tutorials/video/` belongs makes `mkdir -p` fail, and
-    because it runs ABOVE `log_step` the caller learns the run died without ever
-    learning which prefix it died on. `os.makedirs` would print a traceback and
+    A regular file where `tutorials/video/` belongs makes `mkdir -p` fail, and because it runs ABOVE `log_step` the caller learns the run died without ever learning which prefix it died on. `os.makedirs` would print a traceback and
     a different status here."""
     tree = _tree(tmp_path)
     _layout(tree, ())
@@ -598,11 +566,7 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on `--no-progress` -- a flag whose absence changes
-    NOTHING a reader can see through this harness (the fake aws prints the same
-    line either way, the exit code is 0 either way, and the call COUNT is
-    unchanged) while changing what the real `aws` writes to the terminal on
-    every one of the three legs. Driven red, then the source is confirmed
-    byte-identical and green.
+    NOTHING a reader can see through this harness (the fake aws prints the same line either way, the exit code is 0 either way, and the call COUNT is unchanged) while changing what the real `aws` writes to the terminal on every one of the three legs. Driven red, then the source is confirmed byte-identical and green.
     """
     original = (ROOT / PORT_REL).read_text(encoding="utf-8")
     mutated = original.replace(

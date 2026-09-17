@@ -1,10 +1,6 @@
 """`rediacc_ci.ci.dispatch_release` against its bash twin.
 
-BOTH SIDES ARE DRIVEN THROUGH ONE RECORDING FAKE `gh` on a scratch PATH. The
-twin never runs `gh` in a way a test could safely let reach GitHub -- the
-decide path is a real API read and the dispatch path STARTS A RELEASE -- so the
-fake is not a convenience, it is the only way this differential can exist. It
-logs its own argv as `call: gh ...` on stderr and answers from three
+BOTH SIDES ARE DRIVEN THROUGH ONE RECORDING FAKE `gh` on a scratch PATH. The twin never runs `gh` in a way a test could safely let reach GitHub -- the decide path is a real API read and the dispatch path STARTS A RELEASE -- so the fake is not a convenience, it is the only way this differential can exist. It logs its own argv as `call: gh ...` on stderr and answers from three
 environment variables:
 
     FAKE_GH_STDOUT       the `gh api` body, on stdout
@@ -14,24 +10,16 @@ environment variables:
     FAKE_GH_RUN_RC       the `gh workflow run` exit status
     FAKE_GH_ECHO         `stderr` (default), `dispatch`, or `none`
 
-THE TWO SUBCOMMANDS ANSWER SEPARATELY, and that is not tidiness. A fake that
-echoed one body for both would feed the PR table back through
-`gh workflow run`, and a fake that logged its call line for both would feed the
-LOG LINE into the PR table -- which is Defect A, and which turns every decide
+THE TWO SUBCOMMANDS ANSWER SEPARATELY, and that is not tidiness. A fake that echoed one body for both would feed the PR table back through `gh workflow run`, and a fake that logged its call line for both would feed the LOG LINE into the PR table -- which is Defect A, and which turns every decide
 case into a measurement of the fake. `FAKE_GH_ECHO=dispatch` logs only the
 uncaptured `gh workflow run` call, which is the mode the ledger uses; `none`
 logs nothing; `stderr` logs both, and exactly one case wants that, to prove the
 pollution is real rather than assumed.
 
-The `call:` line is also what makes a shadow-gate ledger possible for this
-pair. `shadow-gate.ts` classifies `→ ` and `✓ ` as CHATTER before any
-`--finding-re` is consulted, and this script reports almost entirely through
-`log_info`, so no message-text regex could ever produce a finding. The ledger
-is recorded with `--finding-re '^(call: |decision: |DRY-RUN: )'`.
+The `call:` line is also what makes a shadow-gate ledger possible for this pair. `shadow-gate.ts` classifies `→ ` and `✓ ` as CHATTER before any `--finding-re` is consulted, and this script reports almost entirely through `log_info`, so no message-text regex could ever produce a finding. The ledger is recorded with `--finding-re '^(call: |decision: |DRY-RUN: )'`.
 
 The K=5 ledger is `.ci/shadow/w7p6-dispatch-release.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-release --assert
---k 5`).
+(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-release --assert --k 5`).
 """
 
 from __future__ import annotations
@@ -225,9 +213,7 @@ def test_defect_a_a_succeeding_lookups_stderr_becomes_a_phantom_pr(
 ) -> None:
     """One benign diagnostic flips skip into release, on BOTH sides.
 
-    This is the case the `2>&1` capture makes possible, and it is asserted
-    against the twin as well as the port so that the port is not "fixed" into
-    disagreeing with the thing it replaces.
+    This is the case the `2>&1` capture makes possible, and it is asserted against the twin as well as the port so that the port is not "fixed" into disagreeing with the thing it replaces.
     """
     assert port.STDERR_IS_DATA is True
     control = assert_identical(

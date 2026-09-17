@@ -1,23 +1,13 @@
 """`rediacc_ci.gitx` against raw git, and against the six traps it exists to close.
 
-THERE IS NO SINGLE BASH ORIGINAL to run beside this one, and that is itself the
-finding: `.ci/scripts/lib/` and `.ci/lib/` contain no git helper at all. The 36
-functions in `common.sh` include exactly ONE line that shells out to git
-(`common.sh:582`). So the differential here is against RAW GIT -- the same
-commands the 23 `ls-files` sites, 22 branch sites, 21 dirt sites and 7 ancestry
-sites run inline -- and against the specific WRONG spellings this module refuses.
+THERE IS NO SINGLE BASH ORIGINAL to run beside this one, and that is itself the finding: `.ci/scripts/lib/` and `.ci/lib/` contain no git helper at all. The 36 functions in `common.sh` include exactly ONE line that shells out to git (`common.sh:582`). So the differential here is against RAW GIT -- the same commands the 23 `ls-files` sites, 22 branch sites, 21 dirt sites and 7
+ancestry sites run inline -- and against the specific WRONG spellings this module refuses.
 
 EVERY TRAP CASE IS ASSERTED IN BOTH DIRECTIONS. It is not enough to show that
 `gitx.branch()` returns None on a detached HEAD; the case also runs
-`rev-parse --abbrev-ref HEAD` and asserts it prints the literal "HEAD" and exits
-0, because that is the behaviour 13 call sites in this tree depend on not
-happening. If a future git changes it, this file says so instead of the trap
-quietly evaporating and taking the reason for the module with it.
+`rev-parse --abbrev-ref HEAD` and asserts it prints the literal "HEAD" and exits 0, because that is the behaviour 13 call sites in this tree depend on not happening. If a future git changes it, this file says so instead of the trap quietly evaporating and taking the reason for the module with it.
 
-THE FIXTURES ARE REAL REPOSITORIES, built per test in a tmpdir with the ambient
-git configuration switched off. A fixture that inherited the developer's
-`~/.gitconfig` would pick up their `init.defaultBranch`, their commit template
-and their gpg signing, and would then pass or fail per machine.
+THE FIXTURES ARE REAL REPOSITORIES, built per test in a tmpdir with the ambient git configuration switched off. A fixture that inherited the developer's `~/.gitconfig` would pick up their `init.defaultBranch`, their commit template and their gpg signing, and would then pass or fail per machine.
 """
 
 import os
@@ -96,11 +86,7 @@ def test_branch_matches_the_two_honest_spellings(repo):
 def test_detached_head_prints_the_literal_head_string_from_abbrev_ref(repo):
     """THE TRAP ITSELF, measured rather than remembered.
 
-    `rev-parse --abbrev-ref HEAD` exits 0 and prints "HEAD", so every
-    `|| echo unknown` fallback written after it is dead code -- four of them in
-    `scripts/dev/worktree.sh` alone. `.ci/lib/devbox.sh:151-156` records the cost:
-    that string sanitises to `head.localhost`, one traefik router name shared by
-    every detached worktree on the machine.
+    `rev-parse --abbrev-ref HEAD` exits 0 and prints "HEAD", so every `|| echo unknown` fallback written after it is dead code -- four of them in `scripts/dev/worktree.sh` alone. `.ci/lib/devbox.sh:151-156` records the cost: that string sanitises to `head.localhost`, one traefik router name shared by every detached worktree on the machine.
     """
     sh("git checkout -q --detach HEAD", repo)
 
@@ -137,9 +123,7 @@ def test_branch_from_ci_does_not_silently_fall_through_to_git(repo):
 def test_ls_files_equals_raw_git_on_the_real_repository():
     """SET EQUALITY over the whole tracked corpus, against the command it replaces.
 
-    Run against the real repository rather than a fixture, so the comparison is
-    over thousands of paths in every shape this tree actually contains -- spaces,
-    unicode, deep nesting -- rather than over three files someone thought of.
+    Run against the real repository rather than a fixture, so the comparison is over thousands of paths in every shape this tree actually contains -- spaces, unicode, deep nesting -- rather than over three files someone thought of.
     """
     root = diff.repo()
     _, out, _ = diff.bash_streams("git ls-files -z", cwd=root)
@@ -161,9 +145,7 @@ def test_ls_files_with_a_pathspec_equals_raw_git():
 def test_ls_files_still_lists_a_file_deleted_from_disk(repo):
     """TRAP 1, the direction that CRASHES consumers.
 
-    `rm` without `git rm` leaves the path in the index. Only two of 23 call sites
-    in this tree filter for it, and `check-shell-declared-commands.ts` crashed on
-    exactly this on 2026-09-06.
+    `rm` without `git rm` leaves the path in the index. Only two of 23 call sites in this tree filter for it, and `check-shell-declared-commands.ts` crashed on exactly this on 2026-09-06.
     """
     (repo / "tracked.txt").unlink()
 
@@ -207,9 +189,7 @@ def test_recurse_submodules_with_untracked_is_refused_with_a_sentence(repo):
 def test_double_star_slash_silently_skips_files_at_the_top_level(repo):
     """THE MEASUREMENT FROM check-go-tool-path.sh:96-102, reproduced.
 
-    `a/*.sh` reaches every depth because git's default `*` crosses `/`.
-    `a/**/*.sh` requires at least one intermediate directory and drops
-    `a/top.sh`. The narrower spelling looks more thorough and is not.
+    `a/*.sh` reaches every depth because git's default `*` crosses `/`. `a/**/*.sh` requires at least one intermediate directory and drops `a/top.sh`. The narrower spelling looks more thorough and is not.
     """
     (repo / "a" / "deep").mkdir(parents=True)
     (repo / "a" / "top.sh").write_text("#!/bin/sh\n")
@@ -277,9 +257,7 @@ def test_an_untracked_only_tree_is_dirty_to_status_and_clean_to_diff(repo):
 def test_status_entries_stay_in_phase_across_a_rename(repo):
     """`git status -z` emits an EXTRA field after a rename: the origin path.
 
-    A naive split is one field out of phase for every entry after the first
-    rename, and then reports half a filename as a status code. Two files are
-    renamed here so a parser that skips one extra field but not two still fails.
+    A naive split is one field out of phase for every entry after the first rename, and then reports half a filename as a status code. Two files are renamed here so a parser that skips one extra field but not two still fails.
     """
     (repo / "second.txt").write_text("two\n")
     sh("git add -A && git commit -q -m second", repo)
@@ -324,8 +302,7 @@ def test_is_ancestor_agrees_with_raw_git_in_both_directions(repo):
 def test_an_unknown_ref_is_none_and_raw_git_exits_128(repo):
     """THE WHOLE POINT OF THE TRI-STATE.
 
-    All seven shell sites in this tree collapse this into False, so a shallow
-    clone reports "this commit is not on main" and the gate acts on it.
+    All seven shell sites in this tree collapse this into False, so a shallow clone reports "this commit is not on main" and the gate acts on it.
     """
     rc, _out, _err = sh("git merge-base --is-ancestor HEAD refs/heads/never-existed", repo)
     assert rc not in (0, 1), "the blind case must be distinguishable by exit code (got %d)" % rc
@@ -349,8 +326,7 @@ def test_count_commits_is_none_rather_than_zero_when_the_probe_fails(repo):
 def test_submodules_match_the_git_config_enumeration_on_the_real_repo():
     """Differential against `git config -f .gitmodules --get-regexp`.
 
-    That is the spelling used by `detect-pointer-bump.sh:170`,
-    `claude-review-gate.sh:882` and `review-status.sh:321`.
+    That is the spelling used by `detect-pointer-bump.sh:170`, `claude-review-gate.sh:882` and `review-status.sh:321`.
     """
     root = diff.repo()
     _, out, _ = diff.bash_streams(
@@ -365,12 +341,8 @@ def test_submodules_match_the_git_config_enumeration_on_the_real_repo():
 def test_the_three_hardcoded_submodule_lists_still_agree_with_gitmodules():
     """THE DRIFT DETECTOR the tree does not have.
 
-    `check-submodule-branches.sh:418`, `.ci/scripts/ci/scope-map.cjs:123` and
-    `.ci/scripts/ci/greenlight.cjs:270` each carry their own copy of the four
-    paths. They agree today, and two files already record that as a live defect
-    rather than a state of grace. This is the case that goes red on the day one
-    of them stops agreeing -- which is the day a fifth submodule is added, when
-    the shell gate goes blind to it silently.
+    `check-submodule-branches.sh:418`, `.ci/scripts/ci/scope-map.cjs:123` and `.ci/scripts/ci/greenlight.cjs:270` each carry their own copy of the four paths. They agree today, and two files already record that as a live defect rather than a state of grace. This is the case that goes red on the day one of them stops agreeing -- which is the day a fifth submodule is added, when the
+    shell gate goes blind to it silently.
     """
     root = pathlib.Path(diff.repo())
     declared = {s.path for s in gitx.submodules(root)}
@@ -448,8 +420,7 @@ def test_a_worktree_git_file_still_counts_as_a_repository(tmp_path):
 def test_file_modes_report_what_git_recorded_not_what_is_on_disk(repo):
     """The 2026-08-28 defect: two files passed locally and failed in CI.
 
-    CI lints a fresh checkout, so what it sees is the recorded mode. A file
-    chmod +x AFTER `git add` is 755 on disk and 644 in the index.
+    CI lints a fresh checkout, so what it sees is the recorded mode. A file chmod +x AFTER `git add` is 755 on disk and 644 in the index.
     """
     target = repo / "tracked.txt"
     target.chmod(0o755)

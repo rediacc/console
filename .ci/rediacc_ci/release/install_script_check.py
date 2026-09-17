@@ -12,57 +12,32 @@ Covers:
   - bin layout structure (no versions/ dir, staged-update cleared)
   - channel resolution (env > rediacc.json::account.updateChannel > 'stable')
 
-REGISTERED CI GATE: `test:install-script`, step "Install-script tests" in
-`.github/workflows/ci-quality.yml`, job `quality-static`. The twin carries its
-own `---- gate ----` header because it IS the gate's run target.
+REGISTERED CI GATE: `test:install-script`, step "Install-script tests" in `.github/workflows/ci-quality.yml`, job `quality-static`. The twin carries its own `---- gate ----` header because it IS the gate's run target.
 
-WHAT MOVES AND WHAT DOES NOT. Only the HARNESS moves: the fresh HOMEs, the
-no-jq PATH shim, the assertions, the PASS/FAIL lines and the exit code. The
-SUBJECT stays bash -- every case still sources the real `install.sh` in a real
-`bash` and calls the real function -- because a Python reimplementation of the
-installer would be a second instrument certifying itself.
+WHAT MOVES AND WHAT DOES NOT. Only the HARNESS moves: the fresh HOMEs, the no-jq PATH shim, the assertions, the PASS/FAIL lines and the exit code. The SUBJECT stays bash -- every case still sources the real `install.sh` in a real `bash` and calls the real function -- because a Python reimplementation of the installer would be a second instrument certifying itself.
 
 PORT NOTES, each driven before being written down.
 
-**THE TWIN'S OWN COLOUR CONSTANTS ARE DEAD, AND THIS PORT REPRODUCES THE DEATH
-RATHER THAN THE INTENT.** `test-install-script.sh:26-33` sets
-`RED`/`GREEN`/`NC` to ANSI escapes and uses them in `log_pass`/`log_fail`, but
-every one of those calls happens AFTER a `source "$INSTALL_SH"`, and
-`install.sh:62-72` reassigns the SAME THREE NAMES -- to the same escapes when
-`[ -t 1 ]`, and to EMPTY STRINGS otherwise. Driven both ways: piped to a file
+**THE TWIN'S OWN COLOUR CONSTANTS ARE DEAD, AND THIS PORT REPRODUCES THE DEATH RATHER THAN THE INTENT.** `test-install-script.sh:26-33` sets `RED`/`GREEN`/`NC` to ANSI escapes and uses them in `log_pass`/`log_fail`, but every one of those calls happens AFTER a `source "$INSTALL_SH"`, and `install.sh:62-72` reassigns the SAME THREE NAMES -- to the same escapes when `[ -t 1 ]`, and
+to EMPTY STRINGS otherwise. Driven both ways: piped to a file
 the twin's output is a plain `PASS: ...`; run under a pty it is
 `\\033[0;32mPASS:\\033[0m ...`. So the observable rule is install.sh's, not the
-twin's, and this port asks `os.isatty(1)` at the same moment. Cosmetic only (a
-CI log is never a tty, so CI has always seen the uncoloured form), which is why
-it is reproduced and reported rather than fixed in a file this box does not
-own.
+twin's, and this port asks `os.isatty(1)` at the same moment. Cosmetic only (a CI log is never a tty, so CI has always seen the uncoloured form), which is why it is reproduced and reported rather than fixed in a file this box does not own.
 
-ONE `bash` PER CASE, NOT ONE FOR THE WHOLE RUN, and the state that leaks in the
-twin was checked rather than assumed. The twin sources `install.sh` into ONE
-persistent shell fourteen times, so a variable install.sh sets survives into the
+ONE `bash` PER CASE, NOT ONE FOR THE WHOLE RUN, and the state that leaks in the twin was checked rather than assumed. The twin sources `install.sh` into ONE persistent shell fourteen times, so a variable install.sh sets survives into the
 next case; the only one that does is `REDIACC_CHANNEL`, assigned at
-`install.sh:44` when a config carries `updateChannel`. It is set by
-`test_channel_inherits_from_config` and the very next case
-(`test_channel_env_overrides_config`) opens by assigning it explicitly, so the
-leak is unobservable. Every other case either unsets it or never reads it.
+`install.sh:44` when a config carries `updateChannel`. It is set by `test_channel_inherits_from_config` and the very next case (`test_channel_env_overrides_config`) opens by assigning it explicitly, so the leak is unobservable. Every other case either unsets it or never reads it.
 
 `set -euo pipefail` IS INHERITED BY EVERY SOURCE in the twin, so each snippet
 below sets it too; `install.sh`'s `${VAR:-}` defaults exist precisely because of
 `-u` and a port that dropped it would exercise different code.
 
 `local p; p="$(command -v "$t")" && ln -sf ...` DOES NOT ABORT under `set -e`
-when the tool is absent, because the assignment is not the last command of the
-`&&` list. So the no-jq shim is built best-effort and a missing `uuidgen` (this
-sandbox has none) simply leaves that name unshimmed. Reproduced with
-`shutil.which() is None -> skip`.
+when the tool is absent, because the assignment is not the last command of the `&&` list. So the no-jq shim is built best-effort and a missing `uuidgen` (this sandbox has none) simply leaves that name unshimmed. Reproduced with `shutil.which() is None -> skip`.
 
-THE `mktemp` NAMES ARE THE ONE THING THIS PORT CANNOT KEEP, and unlike its two
-sibling ports this twin DOES quote them: the two `cleanup_legacy_state` failure
-messages embed `$HOME`, which is a `mktemp -d` path. Those lines are normalized
-in the differential and masked to `<tmp>` by the shadow-gate ledger's own rule.
+THE `mktemp` NAMES ARE THE ONE THING THIS PORT CANNOT KEEP, and unlike its two sibling ports this twin DOES quote them: the two `cleanup_legacy_state` failure messages embed `$HOME`, which is a `mktemp -d` path. Those lines are normalized in the differential and masked to `<tmp>` by the shadow-gate ledger's own rule.
 
-Exit: 0 when all fourteen cases pass, 1 at the first that does not (the twin's
-`log_fail` is an immediate `exit 1`).
+Exit: 0 when all fourteen cases pass, 1 at the first that does not (the twin's `log_fail` is an immediate `exit 1`).
 """
 
 from __future__ import annotations
@@ -132,8 +107,7 @@ class CaseFailedError(Exception):
 def colours() -> tuple[str, str, str]:
     """RED, GREEN, NC as `install.sh:62-72` sets them: only on a tty.
 
-    Asked at every call rather than cached, because the twin re-evaluates
-    `[ -t 1 ]` on every `source` and a caller may have redirected in between.
+    Asked at every call rather than cached, because the twin re-evaluates `[ -t 1 ]` on every `source` and a caller may have redirected in between.
     """
     try:
         tty = os.isatty(sys.stdout.fileno())

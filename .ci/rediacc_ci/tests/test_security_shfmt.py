@@ -157,9 +157,7 @@ def _env(fx: pathlib.Path, side: str, log: pathlib.Path, **extra: str) -> dict[s
     """REPLACES the caller's environment; see `differential.BASE_ENV`.
 
     `SHFMT_MIN_FILES=4` by default: the fixture holds exactly four `.sh` files
-    across `.ci`, `.claude` and `scripts` once the two copied infrastructure
-    scripts and `constants.sh` are counted, and the real floor of 200 would
-    refuse every case before it started.
+    across `.ci`, `.claude` and `scripts` once the two copied infrastructure scripts and `constants.sh` are counted, and the real floor of 200 would refuse every case before it started.
     """
     env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")
     env["FAKE_LOG"] = str(log)
@@ -176,9 +174,7 @@ def run_both(
 ) -> tuple:
     """Both implementations, same fixture. Returns results AND call logs.
 
-    `fake_tool` puts a recording `shfmt` at the pin on PATH so the argv is
-    observable. Otherwise both sides reach the REAL pinned binary through the
-    same `toolchain_acquire`, which is the shared code path a cutover would use.
+    `fake_tool` puts a recording `shfmt` at the pin on PATH so the argv is observable. Otherwise both sides reach the REAL pinned binary through the same `toolchain_acquire`, which is the shared code path a cutover would use.
     """
     results = []
     logs = []
@@ -241,13 +237,9 @@ def split_call(line: str) -> tuple[list[str], list[str]]:
 def assert_logs(old_log: list[str], new_log: list[str]) -> None:
     """Same invocations, same flags in order, same file SET per invocation.
 
-    THE SORT IS SCOPED AS TIGHTLY AS IT CAN BE. A single-file invocation is
-    compared with no sorting at all, so the only thing this ever forgives is the
-    relative order of two files inside one scope, which is `find`'s to decide.
+    THE SORT IS SCOPED AS TIGHTLY AS IT CAN BE. A single-file invocation is compared with no sorting at all, so the only thing this ever forgives is the relative order of two files inside one scope, which is `find`'s to decide.
 
-    Non-shfmt lines (the `curl` fake's) are compared BYTE FOR BYTE first: there
-    is no ordering question in an acquisition, and forgiving one there would be
-    forgiveness this file has no reason to extend.
+    Non-shfmt lines (the `curl` fake's) are compared BYTE FOR BYTE first: there is no ordering question in an acquisition, and forgiving one there would be forgiveness this file has no reason to extend.
     """
     old_other = [line for line in old_log if not line.startswith("FAKECALL shfmt ")]
     new_other = [line for line in new_log if not line.startswith("FAKECALL shfmt ")]
@@ -320,14 +312,8 @@ def real_scope_hashes() -> dict[str, str]:
 def _warm_shfmt_once() -> None:
     """Warm the shared shfmt cache ONCE per worker, before any case in this file.
 
-    IT WAS NOT ENOUGH TO WARM ONLY `_run_real`. The fixture cases share the same
-    on-disk cache (`_env` sets CI_TEMP only for the scratch-cache case), so the
-    ordering artifact is not a property of the real-tree path -- it is a property
-    of whichever case reaches a COLD cache first. Under `--dist loadgroup` that
-    is a different case on a different worker from run to run, which is why
-    `test_a_dirty_file_in_claude_reports_the_same_diff` failed in CI job
-    104583449222 while the real-tree case, already warmed by `_run_real`, passed.
-    Warming inside one code path fixed one case and left its siblings racing.
+    IT WAS NOT ENOUGH TO WARM ONLY `_run_real`. The fixture cases share the same on-disk cache (`_env` sets CI_TEMP only for the scratch-cache case), so the ordering artifact is not a property of the real-tree path -- it is a property of whichever case reaches a COLD cache first. Under `--dist loadgroup` that is a different case on a different worker from run to run, which is why
+    `test_a_dirty_file_in_claude_reports_the_same_diff` failed in CI job 104583449222 while the real-tree case, already warmed by `_run_real`, passed. Warming inside one code path fixed one case and left its siblings racing.
 
     Session-scoped and autouse, so it runs before the first case in this module
     on each worker; the cache is shared on disk, so the first worker pays and the
@@ -339,24 +325,16 @@ def _warm_shfmt_once() -> None:
 def _warm_shfmt() -> None:
     """Acquire shfmt into the cache the SUBJECTS use, before either is measured.
 
-    WITHOUT THIS THE REAL-TREE CASE MEASURES RUN ORDER. `_run_real` runs the twin
-    first and the port second into a cache they SHARE
+    WITHOUT THIS THE REAL-TREE CASE MEASURES RUN ORDER. `_run_real` runs the twin first and the port second into a cache they SHARE
     (`${CI_TEMP:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}}/rediacc-toolchain/shfmt-<v>`,
     toolchain.sh:258). Whoever runs first pays for acquisition and says so on
     stderr; the second finds it cached and is silent.
 
-    That stayed invisible while acquisition simply FAILED in this lane -- both
-    sides returned exit 77 and agreed about it. `b3a53cb06` made a failed
-    `go install` fall back to the download, so acquisition now SUCCEEDS, and the
-    twin started emitting `toolchain: go install shfmt@v3.13.1 failed` (its
-    first, honest attempt) where the port, running second into a warm cache,
+    That stayed invisible while acquisition simply FAILED in this lane -- both sides returned exit 77 and agreed about it. `b3a53cb06` made a failed `go install` fall back to the download, so acquisition now SUCCEEDS, and the twin started emitting `toolchain: go install shfmt@v3.13.1 failed` (its first, honest attempt) where the port, running second into a warm cache,
     emitted nothing. Measured in run 35009582358: `assert '' == 'toolchain: g...
-    13.1 failed\n'`. Fixing acquisition PROMOTED an ordering artifact that had
-    been hidden behind a shared failure -- errors stack.
+    13.1 failed\n'`. Fixing acquisition PROMOTED an ordering artifact that had been hidden behind a shared failure -- errors stack.
 
-    Warmed by running a SUBJECT under the same env rather than by calling the
-    library in-process, because the cache path depends on the environment and an
-    in-process call would resolve it against pytest's rather than the subjects'.
+    Warmed by running a SUBJECT under the same env rather than by calling the library in-process, because the cache path depends on the environment and an in-process call would resolve it against pytest's rather than the subjects'.
     """
     env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")
     env["PYTHONPATH"] = str(ROOT / ".ci")
@@ -408,12 +386,8 @@ def test_the_real_repository_agrees_on_every_channel_but_block_order() -> None:
 def _real_run_is_non_trivial(old: tuple, blocks: list[str]) -> bool:
     """The anti-vacuity assertion for the case above, spelled out.
 
-    A green over a tree with no formatting findings would compare two empty
-    block lists and prove nothing about ordering, batching or diff rendering.
-    The tree normally carries several sessions' work and is rarely clean, but
-    "rarely" is not "never", so the two shapes are separated here: with findings
-    the block count must be real, and without them the prologue must show all
-    four scopes ran, which is the only other thing there is to check.
+    A green over a tree with no formatting findings would compare two empty block lists and prove nothing about ordering, batching or diff rendering. The tree normally carries several sessions' work and is rarely clean, but "rarely" is not "never", so the two shapes are separated here: with findings the block count must be real, and without them the prologue must show all four
+    scopes ran, which is the only other thing there is to check.
     """
     if blocks:
         assert len(blocks) >= 2, "only %d diff block(s); ordering is untested" % len(blocks)
@@ -429,10 +403,7 @@ def _real_run_is_non_trivial(old: tuple, blocks: list[str]) -> bool:
 def test_the_twins_order_is_the_ambient_finds_and_the_ports_is_sorted() -> None:
     """ATTRIBUTION, not a shrug. The residual difference belongs to `find`.
 
-    Derives the ambient `find`'s order independently, then shows the twin's diff
-    blocks follow it and the port's follow byte order. If a future host runs a
-    `find` whose order IS sorted, both claims still hold and the two block
-    sequences become equal, which is the outcome this case would happily record.
+    Derives the ambient `find`'s order independently, then shows the twin's diff blocks follow it and the port's follow byte order. If a future host runs a `find` whose order IS sorted, both claims still hold and the two block sequences become equal, which is the outcome this case would happily record.
     """
     old, new = _run_real()
     _pro, old_blocks = diff_blocks(old[1])
@@ -541,8 +512,7 @@ def test_the_first_failing_scope_aborts_the_rest(fixture: pathlib.Path) -> None:
     """THE DEFECT, asserted rather than mentioned: three scopes go unchecked.
 
     A dirty file in `.claude` AND a dirty file in `scripts/docker`; only the
-    first is ever reported, and a reader who fixes it learns about the second on
-    the next run.
+    first is ever reported, and a reader who fixes it learns about the second on the next run.
     """
     _write(fixture / ".claude" / "two.sh", DIRTY_SH)
     _write(fixture / "scripts" / "docker" / "four.sh", DIRTY_SH)
@@ -596,9 +566,7 @@ def test_colour_is_on_off_a_tty_because_this_twin_never_tests_one(
 ) -> None:
     """NOT a tty test: `if [[ "${CI:-}" == "true" ]]` and nothing else.
 
-    Both directions, and the point is that a developer redirecting this gate's
-    stdout to a file GETS escape sequences. Reproduced, and asserted so that
-    "fixing" one side without the other reds here.
+    Both directions, and the point is that a developer redirecting this gate's stdout to a file GETS escape sequences. Reproduced, and asserted so that "fixing" one side without the other reds here.
     """
     old, new, _ol, _nl = run_both(fixture, fake_tool=True)
     assert differential.escape_bytes(old[1]) > 0, "the twin stopped colouring off a tty"

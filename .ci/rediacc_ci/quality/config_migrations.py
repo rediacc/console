@@ -18,18 +18,13 @@ THE TWIN'S OWN HEADER, carried over because the list of catches IS the gate:
 
   Exit codes: 0 = OK, 1 = problem detected
 
-And the twin's note on WHERE the two halves live, which is the fact a reader
-needs before the paths below make sense: "The schema and its migrations live in
-packages/shared so the CLI and the executor consume one definition. The fixtures
-stay with the CLI, which is the only consumer that loads a config file from
-disk."
+And the twin's note on WHERE the two halves live, which is the fact a reader needs before the paths below make sense: "The schema and its migrations live in packages/shared so the CLI and the executor consume one definition. The fixtures stay with the CLI, which is the only consumer that loads a config file from disk."
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE "Could not parse CURRENT_SCHEMA_VERSION" ERROR IS DEAD CODE, and this is the
-finding that matters most in this file. The twin writes:
+THE "Could not parse CURRENT_SCHEMA_VERSION" ERROR IS DEAD CODE, and this is the finding that matters most in this file. The twin writes:
 
     CURRENT=$(grep -oE 'CURRENT_SCHEMA_VERSION = [0-9]+' "$RUNNER" | grep -oE '[0-9]+$')
     if [[ -z "$CURRENT" ]]; then
@@ -37,10 +32,7 @@ finding that matters most in this file. The twin writes:
         exit 1
     fi
 
-Under `set -euo pipefail` an ASSIGNMENT takes the exit status of its command
-substitution, so when the runner carries no such constant both greps exit 1,
-pipefail propagates it, and errexit kills the script AT THE ASSIGNMENT. The
-`if` beneath it can never run. Measured in this tree:
+Under `set -euo pipefail` an ASSIGNMENT takes the exit status of its command substitution, so when the runner carries no such constant both greps exit 1, pipefail propagates it, and errexit kills the script AT THE ASSIGNMENT. The `if` beneath it can never run. Measured in this tree:
 
     set -euo pipefail
     echo "before" >&2
@@ -48,11 +40,8 @@ pipefail propagates it, and errexit kills the script AT THE ASSIGNMENT. The
     if [[ -z "$CURRENT" ]]; then echo "REACHED THE -z BRANCH" >&2; exit 1; fi
     -> prints only "before", rc=1
 
-So a runner whose constant was renamed produces EXIT 1 WITH NO EXPLANATION: the
-step goes red having printed one `log_step` line and nothing else, which is
-precisely the invisible-failure shape `check-battery-clean-tree.sh` exists to
-gate against. Reproduced exactly -- `main` returns 1 without printing the message
--- because printing it would be a finding the twin never emits, and reported.
+So a runner whose constant was renamed produces EXIT 1 WITH NO EXPLANATION: the step goes red having printed one `log_step` line and nothing else, which is precisely the invisible-failure shape `check-battery-clean-tree.sh` exists to gate against. Reproduced exactly -- `main` returns 1 without printing the message -- because printing it would be a finding the twin never emits, and
+reported.
 
 THE MULTI-DECLARATION CASE IS THE ONE SHAPE THE TWO SIDES' STDERR DIFFERS ON, and
 it is stated here rather than discovered later. Two `CURRENT_SCHEMA_VERSION = N`
@@ -63,41 +52,24 @@ with its own interpreter diagnostic and CONTINUES:
     5: arithmetic syntax error in expression (error token is "5")
     survived, rc=0
 
-The port skips the coverage loop for the same input and prints nothing. The
-diagnostic carries a script path and a line number that no port could reproduce,
-and `scripts/lib/shadow-gate.ts` classifies it as CHATTER rather than a finding,
-so the two sides still agree on the verdict and on the finding set. The shape is
-also unreachable in valid TypeScript, where a duplicate `const` does not compile.
-Named as a divergence rather than hidden.
+The port skips the coverage loop for the same input and prints nothing. The diagnostic carries a script path and a line number that no port could reproduce, and `scripts/lib/shadow-gate.ts` classifies it as CHATTER rather than a finding, so the two sides still agree on the verdict and on the finding set. The shape is also unreachable in valid TypeScript, where a duplicate `const`
+does not compile. Named as a divergence rather than hidden.
 
 `grep -oE '[0-9]+$'` TAKES THE TRAILING DIGITS OF THE FIRST GREP'S OUTPUT, not of
 the source line, so `CURRENT_SCHEMA_VERSION = 4;` yields `4` and not `4;`. The
-two-stage pipeline is reproduced as two stages for that reason: a single regex
-over the file would have to re-derive the anchoring by hand.
+two-stage pipeline is reproduced as two stages for that reason: a single regex over the file would have to re-derive the anchoring by hand.
 
 THE TEMPORARY TSX SCRIPT IS WRITTEN INTO THE REPOSITORY, NOT INTO A TEMPDIR.
-`$REPO_ROOT/packages/cli/.config-migrations-check.tmp.ts` exists for the duration
-of the run, which makes the working tree DIRTY while the gate is executing. A
-`trap ... EXIT` removes it, so the window is short, but any concurrent
-clean-tree check sees it and the file survives a `kill -9`. Carried unchanged --
-the path is what the generated script's relative `src/__tests__/fixtures/config`
-is resolved against -- and reported.
+`$REPO_ROOT/packages/cli/.config-migrations-check.tmp.ts` exists for the duration of the run, which makes the working tree DIRTY while the gate is executing. A `trap ... EXIT` removes it, so the window is short, but any concurrent clean-tree check sees it and the file survives a `kill -9`. Carried unchanged -- the path is what the generated script's relative
+`src/__tests__/fixtures/config` is resolved against -- and reported.
 
 `2>&1` MERGES THE ROUND-TRIP'S STREAMS. `result=$(cd ... && npx ... 2>&1)` is the
-merge this repo warns about everywhere else, and here it is load-bearing: the tsx
-script prints its PASS lines on stdout and its FAIL lines on stderr, and the twin
-re-emits every captured line through ONE logger chosen by the exit code. So a
-PASS line from a partially failing run is re-printed as a `log_error`. Preserved,
-because splitting the streams would change which lines carry which marker, and
-the marker is what the differential compares.
+merge this repo warns about everywhere else, and here it is load-bearing: the tsx script prints its PASS lines on stdout and its FAIL lines on stderr, and the twin re-emits every captured line through ONE logger chosen by the exit code. So a PASS line from a partially failing run is re-printed as a `log_error`. Preserved, because splitting the streams would change which lines carry
+which marker, and the marker is what the differential compares.
 
 A MISSING FIXTURES DIRECTORY, AND AN EMPTY ONE, ARE WARNINGS AND NOT FAILURES.
-`log_warn ... (skipping round-trip)` then carry on to the exit-0 path. That is a
-vacuity hole in the twin: delete every fixture and the gate reports success
-having round-tripped nothing. It is preserved because closing it would change the
-verdict, and reported. Note that the warning is still VISIBLE -- `log_warn` emits
-a `⚠` line that the comparator classifies as a finding -- so the debt is not
-silent, which is the only thing that makes carrying it defensible.
+`log_warn ... (skipping round-trip)` then carry on to the exit-0 path. That is a vacuity hole in the twin: delete every fixture and the gate reports success having round-tripped nothing. It is preserved because closing it would change the verdict, and reported. Note that the warning is still VISIBLE -- `log_warn` emits a `⚠` line that the comparator classifies as a finding -- so
+the debt is not silent, which is the only thing that makes carrying it defensible.
 
 `npx --no-install` IS DELIBERATE ON BOTH SIDES. It refuses to reach the network
 for a missing `tsx` and fails loudly instead, which is what turns "the toolchain
@@ -180,15 +152,11 @@ void main();
 def parse_current_version(text: str) -> str | None:
     """`grep -oE 'CURRENT_SCHEMA_VERSION = [0-9]+' | grep -oE '[0-9]+$'`.
 
-    Returns the version STRING, or None when the constant is absent -- which the
-    twin turns into a silent exit 1, not into the error message written beneath
-    it. See the port notes.
+    Returns the version STRING, or None when the constant is absent -- which the twin turns into a silent exit 1, not into the error message written beneath it. See the port notes.
 
-    A LIST WOULD BE MORE HONEST AND WOULD BE WRONG. `$(...)` joins multiple
-    matches with newlines and the twin then feeds that whole string to bash
+    A LIST WOULD BE MORE HONEST AND WOULD BE WRONG. `$(...)` joins multiple matches with newlines and the twin then feeds that whole string to bash
     arithmetic, so the multi-match case is not "the first one wins"; it is an
-    arithmetic error. `current_versions` below exposes the list for the caller
-    that has to decide.
+    arithmetic error. `current_versions` below exposes the list for the caller that has to decide.
     """
     versions = current_versions(text)
     if len(versions) != 1:
@@ -199,10 +167,7 @@ def parse_current_version(text: str) -> str | None:
 def current_versions(text: str) -> list[str]:
     """Every `CURRENT_SCHEMA_VERSION = N` in source order, as the digits alone.
 
-    Separated from `parse_current_version` so the multi-declaration case is
-    VISIBLE to a caller rather than silently collapsing to the first match, which
-    is what a naive `re.search(...).group()` would do and is not what the shell
-    does.
+    Separated from `parse_current_version` so the multi-declaration case is VISIBLE to a caller rather than silently collapsing to the first match, which is what a naive `re.search(...).group()` would do and is not what the shell does.
     """
     matches = (TRAILING_DIGITS_RE.search(m.group(0)) for m in VERSION_RE.finditer(text))
     return [m.group(0) for m in matches if m]
@@ -211,9 +176,7 @@ def current_versions(text: str) -> list[str]:
 def missing_migrations(migrations_dir: pathlib.Path, current: int) -> list[int]:
     """Every `v` in [1, current) with no `v<v>-to-v<v+1>.ts` beside it.
 
-    Returns the version numbers rather than the filenames, because the caller
-    prints BOTH the missing name and the directory it should go in and would
-    otherwise have to take the name apart again.
+    Returns the version numbers rather than the filenames, because the caller prints BOTH the missing name and the directory it should go in and would otherwise have to take the name apart again.
     """
     return [
         v
@@ -226,8 +189,7 @@ def fixture_files(fixtures_dir: pathlib.Path) -> list[str]:
     """`find <dir> -maxdepth 1 -name 'v*-sample.json' | sort`, as full paths.
 
     Sorted by BYTES, not by locale: the differential harness pins LC_ALL=C so
-    `sort` is byte order, and encoding the key makes that explicit rather than
-    true by accident on an ASCII-only corpus.
+    `sort` is byte order, and encoding the key makes that explicit rather than true by accident on an ASCII-only corpus.
     """
     if not fixtures_dir.is_dir():
         return []
@@ -238,8 +200,7 @@ def fixture_files(fixtures_dir: pathlib.Path) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 OK, 1 problem detected.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments
-    at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -342,15 +303,9 @@ def _seed(root: pathlib.Path, current: int, migrations: tuple[int, ...]) -> None
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will
-    happily flag a correct tree, and the mirrors below are the half that proves
-    it does not.
+    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct tree, and the mirrors below are the half that proves it does not.
 
-    THE ROUND-TRIP IS NOT DRIVEN HERE. It needs `npx`, `tsx` and a built
-    `@rediacc/shared`, none of which a self-test may depend on: a control that
-    cannot run on a fresh checkout is a control that gets deleted. The fixtures
-    directory is left absent or empty in every case below, which takes the two
-    WARNING paths, and the round-trip proper is covered by the committed ledger
+    THE ROUND-TRIP IS NOT DRIVEN HERE. It needs `npx`, `tsx` and a built `@rediacc/shared`, none of which a self-test may depend on: a control that cannot run on a fresh checkout is a control that gets deleted. The fixtures directory is left absent or empty in every case below, which takes the two WARNING paths, and the round-trip proper is covered by the committed ledger
     `.ci/shadow/w7p2-config-migrations.observations.jsonl` against a stubbed npx.
     """
     ctl = Controls("config-migrations", floor=24, verbose=True)

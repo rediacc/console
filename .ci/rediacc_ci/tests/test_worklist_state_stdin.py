@@ -1,27 +1,15 @@
 """`worklist.py --state` must not block on a stdin nobody writes to.
 
-WHAT HAPPENED. On 2026-09-08 a `--state` call sat for EIGHTY-ONE MINUTES with its
-OS process alive and its output stream empty, and was killed by hand. Its stdin
-was inherited from a backgrounded tool invocation: a pipe whose write end stays
-open and is never written to. The verb guarded only `sys.stdin.isatty()`, which
-catches an interactive terminal and nothing else, and then called a plain
-`sys.stdin.read()`.
+WHAT HAPPENED. On 2026-09-08 a `--state` call sat for EIGHTY-ONE MINUTES with its OS process alive and its output stream empty, and was killed by hand. Its stdin was inherited from a backgrounded tool invocation: a pipe whose write end stays open and is never written to. The verb guarded only `sys.stdin.isatty()`, which catches an interactive terminal and nothing else, and then
+called a plain `sys.stdin.read()`.
 
-WHY IT MATTERS MORE THAN A SLOW COMMAND. `--state` writes the compaction-recovery
-document. A session that cannot write it has no way to hand itself over, and the
-stop machinery reports the hung worker as VERIFIED ALIVE -- correctly, because it
-is -- so nothing anywhere says the command will never finish.
+WHY IT MATTERS MORE THAN A SLOW COMMAND. `--state` writes the compaction-recovery document. A session that cannot write it has no way to hand itself over, and the stop machinery reports the hung worker as VERIFIED ALIVE -- correctly, because it is -- so nothing anywhere says the command will never finish.
 
-THE LESSON WAS ALREADY IN THE FILE. `_read_event`, twenty lines above the verb,
-carries a docstring saying a process that hangs is worse than one that fails,
-because it stalls the session instead of failing it, and it takes a deadline for
-exactly that reason. This is the same property for the document reader.
+THE LESSON WAS ALREADY IN THE FILE. `_read_event`, twenty lines above the verb, carries a docstring saying a process that hangs is worse than one that fails, because it stalls the session instead of failing it, and it takes a deadline for exactly that reason. This is the same property for the document reader.
 
-NOT A GATE-TEST PORT, deliberately. The two harnesses that would otherwise host
-this (`test_gate_stop_hook_stdin.py`, `test_gate_worklist_hooks.py`) are ports
+NOT A GATE-TEST PORT, deliberately. The two harnesses that would otherwise host this (`test_gate_stop_hook_stdin.py`, `test_gate_worklist_hooks.py`) are ports
 with bash twins under twin parity, so a case added to one side only would put the
-differential in disagreement. This is a unit property of a CLI reader and belongs
-in the plain test tree.
+differential in disagreement. This is a unit property of a CLI reader and belongs in the plain test tree.
 """
 
 import importlib.util

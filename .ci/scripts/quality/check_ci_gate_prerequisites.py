@@ -1,66 +1,32 @@
 #!/usr/bin/env python3
 """A workflow step that needs a resource must have it set up EARLIER in its job.
 
-WHY THIS EXISTS. Run 33125687081 on 0827-1: `Quality / Code` died with
-`sh: 1: tsx: not found`, exit 127, on check:ci-gate-manifest. The watchdog then
-cancelled seven sibling jobs, so one missing dependency presented as most of CI
-going red while those seven reported no verdict at all.
+WHY THIS EXISTS. Run 33125687081 on 0827-1: `Quality / Code` died with `sh: 1: tsx: not found`, exit 127, on check:ci-gate-manifest. The watchdog then cancelled seven sibling jobs, so one missing dependency presented as most of CI going red while those seven reported no verdict at all.
 
-The job did `actions/checkout` and nothing else, which was correct for years:
-every step in it was a shell script needing no node. Two tsx gates were added to
-it and nothing noticed that the job could not run them.
+The job did `actions/checkout` and nothing else, which was correct for years: every step in it was a shell script needing no node. Two tsx gates were added to it and nothing noticed that the job could not run them.
 
-WHY NO EXISTING GATE CATCHES IT. Every developer tree already has node_modules,
-so both gates pass locally and in the lane. The dependency only fails where the
-tree is built from scratch, which is the one place nobody watches interactively.
+WHY NO EXISTING GATE CATCHES IT. Every developer tree already has node_modules, so both gates pass locally and in the lane. The dependency only fails where the tree is built from scratch, which is the one place nobody watches interactively.
 check:ci-parity proves a gate is WIRED into a workflow; it says nothing about
-whether the job it landed in can execute it. That is the gap: wired and runnable
-are different claims, and only the first was checked.
+whether the job it landed in can execute it. That is the gap: wired and runnable are different claims, and only the first was checked.
 
 This is the mirror image of the GOPATH/bin defect fixed two commits earlier --
 there a script installed a tool it could not then find; here a job was handed a
-tool it never installed. Both are invisible in the environment where they are
-written and fatal in the one where they run.
+tool it never installed. Both are invisible in the environment where they are written and fatal in the one where they run.
 
-A SECOND, DIFFERENT INSTANCE OF THE SAME CLASS surfaced 2026-08-30: run
-33[...] (Quality/Packages -> "Tutorial player release gate") died with
-"agent-browser is not installed or not accessible in PATH". The gate had been
-tested only on a devbox that already carries agent-browser globally, and this
-was its first run in CI ever -- ci-quality.yml never installed one. The node
-check above would have stayed silent: agent-browser is not node, npx, or tsx,
-and the missing resource was a separate CLI tool, not a missing dependency
-tree. Rather than write a second, parallel script for "does the agent-browser
-CLI have a setup step before its gate", this file generalises: it now tracks a
-LIST of resources, each with its own "does this step need it" / "does this
-step provide it" pair, and asks the identical order question for each one.
+A SECOND, DIFFERENT INSTANCE OF THE SAME CLASS surfaced 2026-08-30: run 33[...] (Quality/Packages -> "Tutorial player release gate") died with "agent-browser is not installed or not accessible in PATH". The gate had been tested only on a devbox that already carries agent-browser globally, and this was its first run in CI ever -- ci-quality.yml never installed one. The node check
+above would have stayed silent: agent-browser is not node, npx, or tsx, and the missing resource was a separate CLI tool, not a missing dependency tree. Rather than write a second, parallel script for "does the agent-browser CLI have a setup step before its gate", this file generalises: it now tracks a LIST of resources, each with its own "does this step need it" / "does this step
+provide it" pair, and asks the identical order question for each one.
 
-WHAT IT CHECKS. For every job in every workflow, steps IN ORDER, per tracked
-RESOURCE. A step needs a resource when its `run` invokes it directly, or names
-an `npm run <key>` whose package.json script does. A step PROVIDES a resource
-via the setup mechanism that resource declares. A needing step with no
-providing step before it in the same job is the finding.
+WHAT IT CHECKS. For every job in every workflow, steps IN ORDER, per tracked RESOURCE. A step needs a resource when its `run` invokes it directly, or names an `npm run <key>` whose package.json script does. A step PROVIDES a resource via the setup mechanism that resource declares. A needing step with no providing step before it in the same job is the finding.
 
-ORDER IS THE POINT, not mere presence: a setup step placed after the gate it
-serves looks correct in a diff and fails identically at runtime.
+ORDER IS THE POINT, not mere presence: a setup step placed after the gate it serves looks correct in a diff and fails identically at runtime.
 
-WHAT THIS DOES NOT CLAIM. This is not "every gate's dependencies are
-verified" -- it tracks the resources named in RESOURCES below, chosen because
-each one has already caused a real CI red once. Adding a new externally-
-acquired tool to a gate should mean adding a resource entry here, the same way
-adding a pinned binary means adding a row to check-toolchain-pins.sh's
-registry. A fully general "infer any tool any script might need" scanner is
+WHAT THIS DOES NOT CLAIM. This is not "every gate's dependencies are verified" -- it tracks the resources named in RESOURCES below, chosen because each one has already caused a real CI red once. Adding a new externally- acquired tool to a gate should mean adding a resource entry here, the same way adding a pinned binary means adding a row to check-toolchain-pins.sh's registry. A
+fully general "infer any tool any script might need" scanner is
 not this gate's job; toolchain.sh and check-toolchain-pins.sh already own the
-pinned-binary half of that problem (ruff/go/shfmt/shellcheck/actionlint), and
-this owns the "job never set the resource up at all" half for anything else.
+pinned-binary half of that problem (ruff/go/shfmt/shellcheck/actionlint), and this owns the "job never set the resource up at all" half for anything else.
 
----- gate ----
-id: check:ci-gate-prerequisites
-step: Gate prerequisites
-emit: false
-blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
-needs: none
-lane: quality-code
----- end gate ----
+---- gate ---- id: check:ci-gate-prerequisites step: Gate prerequisites emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none lane: quality-code ---- end gate ----
 """
 
 from __future__ import annotations
@@ -96,14 +62,8 @@ def _workspace_scripts() -> dict[str, dict[str, str]]:
 
     `npm run <key>` alone resolves against the root scripts. `npm run <key>
     -w <name>` (or `--workspace=<name>` / `--workspace <name>`) resolves
-    against that workspace's OWN package.json -- required for
-    `check:test:tutorial-player`: its root script is `npm run
-    test:tutorial-player -w @rediacc/www`, and `test:tutorial-player` is
-    declared only in packages/www/package.json, not root's. Resolving one
-    hop and stopping there (the ORIGINAL cut of this function) silently
-    treated that whole chain as "resolves to nothing", which is exactly the
-    control failure this comment documents: the planted 2026-08-30 defect
-    control could not fire until this existed.
+    against that workspace's OWN package.json -- required for `check:test:tutorial-player`: its root script is `npm run test:tutorial-player -w @rediacc/www`, and `test:tutorial-player` is declared only in packages/www/package.json, not root's. Resolving one hop and stopping there (the ORIGINAL cut of this function) silently treated that whole chain as "resolves to nothing", which
+    is exactly the control failure this comment documents: the planted 2026-08-30 defect control could not fire until this existed.
     """
     root_pkg = _load_package_json(ROOT / "package.json")
     table: dict[str, dict[str, str]] = {"": root_pkg.get("scripts", {})}
@@ -129,27 +89,14 @@ def _needs_via_run_pattern(
     run_pattern: re.Pattern[str], file_pattern: re.Pattern[str] | None = None
 ) -> Callable[[str, int], bool]:
     """Build a `needs(run)` predicate that resolves `npm run <key> [-w <ws>]`
-    through the right workspace's package.json, then one more hop into the
-    resolved script FILE's own source if the command hands off to one.
+    through the right workspace's package.json, then one more hop into the resolved script FILE's own source if the command hands off to one.
 
-    TWO PATTERNS ON PURPOSE. `run_pattern` matches shell COMMAND text and must
-    stay anchored to command position (`echo agent-browser` in a run: block is
-    prose, not an invocation -- the exact mention-vs-target shape
-    check-toolchain-pins.sh's A6 rule already paid for). `file_pattern` matches
-    arbitrary FILE SOURCE once resolution reaches one (a JS string literal
-    argument to execFileSync is not at "command position" in any shell sense),
-    so it is deliberately the looser of the two -- a stray comment mentioning
-    the tool costs one over-suggested install step, which is a fix a reader
+    TWO PATTERNS ON PURPOSE. `run_pattern` matches shell COMMAND text and must stay anchored to command position (`echo agent-browser` in a run: block is prose, not an invocation -- the exact mention-vs-target shape check-toolchain-pins.sh's A6 rule already paid for). `file_pattern` matches arbitrary FILE SOURCE once resolution reaches one (a JS string literal argument to
+    execFileSync is not at "command position" in any shell sense), so it is deliberately the looser of the two -- a stray comment mentioning the tool costs one over-suggested install step, which is a fix a reader
     dismisses at a glance; a missed real invocation is the defect class this
-    whole file exists to catch. Defaults to `run_pattern` when a resource's
-    shell and file shapes are close enough not to need the split (node's
-    npx/tsx/node keywords do not appear as bare comment prose the way a tool
-    name like "agent-browser" does).
+    whole file exists to catch. Defaults to `run_pattern` when a resource's shell and file shapes are close enough not to need the split (node's npx/tsx/node keywords do not appear as bare comment prose the way a tool name like "agent-browser" does).
 
-    Shared by every resource below so this resolution path -- workflow step
-    text -> package.json script -> script file content -- is identical for
-    node, agent-browser, or anything added later, rather than reinvented per
-    resource.
+    Shared by every resource below so this resolution path -- workflow step text -> package.json script -> script file content -- is identical for node, agent-browser, or anything added later, rather than reinvented per resource.
     """
     file_re = file_pattern or run_pattern
 

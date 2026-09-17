@@ -1,13 +1,9 @@
 """Differential: `rediacc_ci.autopilot.post_escalation` against its twin
 `.ci/scripts/autopilot/post-escalation.sh`.
 
-A RECORDING FAKE `gh` ON A PREPENDED PATH, and the fake is the only thing
-between this file and a real comment on a real pull request. This script's
-success path is `api --method POST repos/<repo>/issues/<pr>/comments`, and a
+A RECORDING FAKE `gh` ON A PREPENDED PATH, and the fake is the only thing between this file and a real comment on a real pull request. This script's success path is `api --method POST repos/<repo>/issues/<pr>/comments`, and a
 case that reached the real binary would post an escalation onto whatever PR the
-argument named and then LABEL it, latching a loop nobody armed. Three
-independent things stop that, because one would be a claim rather than a
-control:
+argument named and then LABEL it, latching a loop nobody armed. Three independent things stop that, because one would be a claim rather than a control:
 
   1. the stub directory is FIRST on PATH and `shutil.which("gh", path=...)` is
      asserted to resolve to the fake, in `test_the_fake_gh_is_the_gh` -- a
@@ -16,19 +12,12 @@ control:
   3. `GH_TOKEN` is a fixture string and `GH_CONFIG_DIR` points into the temp
      tree, so a leaked real `gh` would fail auth instead of writing.
 
-THE CALL LOG AND THE BODY BYTES ARE PRIMARY ARTIFACTS. Which endpoint, in which
-ORDER, and what bytes went up are all invisible in stdout, and the order is the
-latch: the comment must be posted before the label, so a failed comment leaves
-the loop unlatched and the next round retries. A stdout-only comparison would be
-satisfied by a port that logged the right sentence and labelled without
-commenting. So every case compares the recorded `gh` argv AND the bytes of the
+THE CALL LOG AND THE BODY BYTES ARE PRIMARY ARTIFACTS. Which endpoint, in which ORDER, and what bytes went up are all invisible in stdout, and the order is the latch: the comment must be posted before the label, so a failed comment leaves the loop unlatched and the next round retries. A stdout-only comparison would be satisfied by a port that logged the right sentence and labelled
+without commenting. So every case compares the recorded `gh` argv AND the bytes of the
 file behind `-F body=@...`, and the fake rewrites that path to `<work>/body.md`
 because the two sides' mktemp directories legitimately differ.
 
-BOTH PRESERVED DEFECTS ARE PINNED BY NAME rather than described in prose:
-`test_a_mistyped_verdict_path_is_silent` and
-`test_a_bare_failure_token_names_itself`. If either twin behaviour is ever
-repaired, the test goes red and the repair gets noticed here first.
+BOTH PRESERVED DEFECTS ARE PINNED BY NAME rather than described in prose: `test_a_mistyped_verdict_path_is_silent` and `test_a_bare_failure_token_names_itself`. If either twin behaviour is ever repaired, the test goes red and the repair gets noticed here first.
 
 K=5 LEDGER: `.ci/shadow/w7p6-post-escalation.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
@@ -87,10 +76,7 @@ REPO = "acme/widget"
 def _stub_bin(base: pathlib.Path) -> str:
     """A directory holding the fake `gh`, prepended to the real PATH.
 
-    PREPENDED rather than curated down to a symlink farm, because both subjects
-    reach for a long tail of coreutils through `common.sh` (dirname, uname, tr,
-    mktemp) plus jq, grep and awk. The safety property is therefore RESOLUTION
-    ORDER, and it is asserted rather than assumed -- see `test_the_fake_gh_is_the_gh`.
+    PREPENDED rather than curated down to a symlink farm, because both subjects reach for a long tail of coreutils through `common.sh` (dirname, uname, tr, mktemp) plus jq, grep and awk. The safety property is therefore RESOLUTION ORDER, and it is asserted rather than assumed -- see `test_the_fake_gh_is_the_gh`.
     """
     stub = base / "bin"
     stub.mkdir(exist_ok=True)
@@ -203,11 +189,9 @@ def test_no_label_posts_the_comment_and_leaves_the_labels_alone() -> None:
 
 def test_a_failed_comment_never_latches_the_loop() -> None:
     """THE MOST IMPORTANT REFUSAL IN THE FILE. `gh_retry` fails, `set -e` ends
-    the run, and the label write is never reached -- so the next round retries
-    instead of the campaign stopping silently behind a wordless label.
+    the run, and the label write is never reached -- so the next round retries instead of the campaign stopping silently behind a wordless label.
 
-    SLOW ON PURPOSE (9 seconds per side): the retry sleeps are 3s then 6s, and a
-    port that dropped them would stop being a retry past a rate limit.
+    SLOW ON PURPOSE (9 seconds per side): the retry sleeps are 3s then 6s, and a port that dropped them would stop being a retry past a rate limit.
     """
     exit_code, _, stderr, calls, _ = _sides(
         "comment-fails",
@@ -262,8 +246,7 @@ def test_the_verdict_wins_over_the_reason_flag() -> None:
 
 def test_a_mistyped_verdict_path_is_silent() -> None:
     """PRESERVED DEFECT. `--verdict` is `[[ -n && -s ]]`-checked, never
-    `require_file`-checked, so a path that does not exist falls through to
-    `--reason` and the model's own words go quietly missing. If this ever starts
+    `require_file`-checked, so a path that does not exist falls through to `--reason` and the model's own words go quietly missing. If this ever starts
     refusing, this test goes red first."""
     exit_code, _, stderr, _, body = _sides(
         "mistyped-verdict",

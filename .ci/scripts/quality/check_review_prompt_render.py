@@ -1,40 +1,23 @@
 #!/usr/bin/env python3
 """The review prompt must survive the text it substitutes into itself.
 
-WHY THIS EXISTS, and it is the i18n lesson exactly. On 2026-08-31 the FIRST epic-scoped
-Claude Review of PR #583 (run 33445357414, job 99663191041) died before it began:
+WHY THIS EXISTS, and it is the i18n lesson exactly. On 2026-08-31 the FIRST epic-scoped Claude Review of PR #583 (run 33445357414, job 99663191041) died before it began:
 
     sed: -e expression #6, char 77: unterminated `s' command
     ##[error]Matching delimiter not found 'CLAUDE_REVIEW_PROMPT_EOF'
 
 Expression #6 is {{EPIC_SCOPE}}, and `epic_scope` is a SEVEN-LINE paragraph the gate script
-authors itself. A `s` command's replacement may not contain a raw newline: the first one
-ends the expression and the rest is parsed as more sed script. sed exited non-zero, which
-truncated the heredoc being written to $GITHUB_OUTPUT, and the whole review never ran.
+authors itself. A `s` command's replacement may not contain a raw newline: the first one ends the expression and the rest is parsed as more sed script. sed exited non-zero, which truncated the heredoc being written to $GITHUB_OUTPUT, and the whole review never ran.
 
-THE COST WAS NOT ONE RED RUN. `Review Complete` is a REQUIRED check, and the reviewer is
-checked out at a hardcoded `ref: main` (claude-review-reusable.yml:165-169, asserted at
-:177). So main's broken copy could not review anything, the required check could never
-post, and every PR was unmergeable without an operator bypass -- including the PR carrying
-the fix. Breaking that loop cost a one-time protection bypass on 2026-09-02.
+THE COST WAS NOT ONE RED RUN. `Review Complete` is a REQUIRED check, and the reviewer is checked out at a hardcoded `ref: main` (claude-review-reusable.yml:165-169, asserted at :177). So main's broken copy could not review anything, the required check could never post, and every PR was unmergeable without an operator bypass -- including the PR carrying the fix. Breaking that loop
+cost a one-time protection bypass on 2026-09-02.
 
-WHY NO EXISTING GATE CAUGHT IT, checked before writing this one. `check-rubric-calibration`
-hashes the PROMPT TEXT of the judged rubrics against a manifest -- it proves the wording did
-not drift and says nothing about whether the substitution RENDERS. Nothing else executes
-emit_prompt at all. The defect was invisible by construction, which is this gate's whole
-reason to exist.
+WHY NO EXISTING GATE CAUGHT IT, checked before writing this one. `check-rubric-calibration` hashes the PROMPT TEXT of the judged rubrics against a manifest -- it proves the wording did not drift and says nothing about whether the substitution RENDERS. Nothing else executes emit_prompt at all. The defect was invisible by construction, which is this gate's whole reason to exist.
 
-WHAT IT CHECKS. Not the wording, and not that a particular escape helper exists by name:
-those are implementation. It checks the BEHAVIOUR that failed -- that substituting a value
-containing a newline, a `|`, an `&` and a backslash still produces a rendered prompt with
-no placeholder left behind. A future refactor that drops the escaping fails here even if it
-spells the helper differently or drops it entirely.
+WHAT IT CHECKS. Not the wording, and not that a particular escape helper exists by name: those are implementation. It checks the BEHAVIOUR that failed -- that substituting a value containing a newline, a `|`, an `&` and a backslash still produces a rendered prompt with no placeholder left behind. A future refactor that drops the escaping fails here even if it spells the helper
+differently or drops it entirely.
 
----- gate ----
-step: Review prompt render
-needs: none
-lane: quality-code
----- end gate ----
+---- gate ---- step: Review prompt render needs: none lane: quality-code ---- end gate ----
 """
 
 import os
@@ -63,8 +46,7 @@ PLACEHOLDERS = ("{{REPO}}", "{{PR_NUMBER}}", "{{HEAD_SHA}}", "{{EPIC_SCOPE}}")
 def extract(func_name, src):
     """The named shell function's source, or "" when it is absent.
 
-    Absence is not an error here: the gate asserts BEHAVIOUR, and a rewrite that renames or
-    inlines the helper should pass on its merits rather than fail on a missing symbol.
+    Absence is not an error here: the gate asserts BEHAVIOUR, and a rewrite that renames or inlines the helper should pass on its merits rather than fail on a missing symbol.
     """
     m = re.search(r"^%s\(\)\s*\{\n(.*?)^\}" % re.escape(func_name), src, re.DOTALL | re.MULTILINE)
     return m.group(1) if m else ""
@@ -73,8 +55,7 @@ def extract(func_name, src):
 def render(escaper_body, scope):
     """Substitute `scope` into a template the way the gate script does; "" on failure.
 
-    Runs the REAL shell rather than reimplementing sed's quoting rules in Python. A
-    reimplementation would be a second thing to drift, and drift is the defect class.
+    Runs the REAL shell rather than reimplementing sed's quoting rules in Python. A reimplementation would be a second thing to drift, and drift is the defect class.
     """
     helper = (
         "sed_replacement() {\n%s\n}\n" % escaper_body

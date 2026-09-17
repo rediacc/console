@@ -1,28 +1,16 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/autopilot/review-payload.sh`.
 
-Builds the review payload the model is allowed to see out of the raw review
-threads the gate fetched. PURE: one JSON file in, one JSON object out, no
-network, no git, no env. The twin's header says the purity is the point, and it
-is right: this file decides WHOSE TEXT REACHES THE MODEL, and a security
-decision that cannot be exercised offline is one nobody has tested.
+Builds the review payload the model is allowed to see out of the raw review threads the gate fetched. PURE: one JSON file in, one JSON object out, no network, no git, no env. The twin's header says the purity is the point, and it is right: this file decides WHOSE TEXT REACHES THE MODEL, and a security decision that cannot be exercised offline is one nobody has tested.
 
-THE FILTER IS ON THE ROOT COMMENT'S AUTHOR, AND ONLY THE ROOT'S. A thread is
-STARTED by whoever raised the finding, and on a public repository anyone can
-REPLY into it. So a thread whose root author does not match is dropped whole,
-and a matching thread keeps every comment including replies, deliberately, as
-data. The port changes neither half. `select_threads` below is the whole
+THE FILTER IS ON THE ROOT COMMENT'S AUTHOR, AND ONLY THE ROOT'S. A thread is STARTED by whoever raised the finding, and on a public repository anyone can REPLY into it. So a thread whose root author does not match is dropped whole, and a matching thread keeps every comment including replies, deliberately, as data. The port changes neither half. `select_threads` below is the whole
 control, exported so a test can drive it without a subprocess.
 
 NO `jq` SUBPROCESS, UNLIKE `update_state.py`. This module's twin runs exactly
 one jq program and its result is the product; reproducing it in Python is the
-port. `update_state.py` shells out because its jq calls sit in the middle of a
-pipeline whose failure text is load-bearing. Here the failure text is
-reproduced by hand instead, which is the harder half of this file and is
-documented under THE JQ ERROR SURFACE below.
+port. `update_state.py` shells out because its jq calls sit in the middle of a pipeline whose failure text is load-bearing. Here the failure text is reproduced by hand instead, which is the harder half of this file and is documented under THE JQ ERROR SURFACE below.
 
-THREE jq BEHAVIOURS A NAIVE PYTHON PORT GETS WRONG, all three found by driving
-jq 1.8.1 rather than by reading its manual:
+THREE jq BEHAVIOURS A NAIVE PYTHON PORT GETS WRONG, all three found by driving jq 1.8.1 rather than by reading its manual:
 
   1. `0 == false` IS FALSE IN jq AND TRUE IN PYTHON. The select is
      `(.isResolved // false) == false`, so a thread carrying `"isResolved": 0`
@@ -44,28 +32,18 @@ jq 1.8.1 rather than by reading its manual:
 THE BYTE CAP SHEDS OLDEST-FIRST, and the twin's `reduce range(0; length)` is
 reproduced as a bounded loop rather than a `while`: it runs at most `length`
 times, so it CAN end with zero threads and `dropped == length`. A `while
-over_cap` loop would be the same thing here only by accident, and a bounded
-loop is what the twin actually wrote.
+over_cap` loop would be the same thing here only by accident, and a bounded loop is what the twin actually wrote.
 
-THE JQ ERROR SURFACE, REPRODUCED RATHER THAN SWALLOWED. Every element of the
-threads array is reached with `.field` accessors that RAISE in jq when the
-value underneath is the wrong type, and under `set -euo pipefail` that takes
-the twin down with jq's own exit code (5, measured -- not 2) and jq's own
-message on stderr. `_index` and `_contains` below raise `JqError` carrying the
+THE JQ ERROR SURFACE, REPRODUCED RATHER THAN SWALLOWED. Every element of the threads array is reached with `.field` accessors that RAISE in jq when the value underneath is the wrong type, and under `set -euo pipefail` that takes the twin down with jq's own exit code (5, measured -- not 2) and jq's own message on stderr. `_index` and `_contains` below raise `JqError` carrying the
 transliterated text, and `main` prints it in jq's frame:
 
     jq: error (at <file>:<n>): Cannot index number with string "isResolved"
 
-`<n>` is the newline count of the input file, which is what jq reports for a
-whole-file value in both the single-line (`:0`) and multi-line cases measured.
-The differential asserts that against real jq rather than trusting the rule.
+`<n>` is the newline count of the input file, which is what jq reports for a whole-file value in both the single-line (`:0`) and multi-line cases measured. The differential asserts that against real jq rather than trusting the rule.
 
-A `null` ELEMENT IS NOT AN ERROR, which is the one place the accessors have to
-be careful: `null.isResolved` is `null` in jq, not a type error, so a null
-entry flows through the select and is dropped later by the author filter.
+A `null` ELEMENT IS NOT AN ERROR, which is the one place the accessors have to be careful: `null.isResolved` is `null` in jq, not a type error, so a null entry flows through the select and is dropped later by the author filter.
 
-Exit: 0 built (a payload with zero threads is a valid payload), 2 usage or
-parse error, 5 a jq type error inside the filter.
+Exit: 0 built (a payload with zero threads is a valid payload), 2 usage or parse error, 5 a jq type error inside the filter.
 
 K=5 LEDGER: `.ci/shadow/w7p6-review-payload.observations.jsonl`.
 """
@@ -157,11 +135,9 @@ JQ_ERRBUF = 15
 def _dump_trunc(value: Any) -> str:
     """`jv_dump_string_trunc`: the value as jq quotes it inside an error.
 
-    Sliced on BYTES, because jq's is a `strncpy` into a byte buffer. The one
-    place this can still differ is a multi-byte character straddling the cut,
+    Sliced on BYTES, because jq's is a `strncpy` into a byte buffer. The one place this can still differ is a multi-byte character straddling the cut,
     where jq emits the partial bytes and this emits U+FFFD; that is an error
-    message about an already-malformed fixture, and it is named here rather
-    than papered over.
+    message about an already-malformed fixture, and it is named here rather than papered over.
     """
     raw = compact(value).encode("utf-8")
     if len(raw) >= JQ_ERRBUF:
@@ -200,11 +176,7 @@ def _is_false(value: Any) -> bool:
 def compact(value: Any) -> str:
     """jq's `tojson`: no spaces, no ASCII escaping, and U+007F escaped.
 
-    The DEL substitution is a post-pass over the encoded text on purpose. A DEL
-    byte can only have come out of a string's contents (no JSON syntax
-    character is DEL), so rewriting it in the finished text cannot corrupt
-    structure, and doing it here keeps one encoder rather than a custom
-    `json.JSONEncoder` subclass that would have to re-implement escaping.
+    The DEL substitution is a post-pass over the encoded text on purpose. A DEL byte can only have come out of a string's contents (no JSON syntax character is DEL), so rewriting it in the finished text cannot corrupt structure, and doing it here keeps one encoder rather than a custom `json.JSONEncoder` subclass that would have to re-implement escaping.
     """
     return json.dumps(value, separators=(",", ":"), ensure_ascii=False).replace("\x7f", "\\u007f")
 
@@ -279,12 +251,9 @@ def build_payload(data: list[Any], author_filter: str, max_bytes: int) -> dict[s
 def jq_error_line(raw: bytes) -> int:
     """The `(at <file>:<n>)` offset jq prints for a whole-file value.
 
-    MEASURED, not assumed: a one-line fixture with no trailing newline reports
-    `:0` and a four-line fixture reports `:4`, i.e. the newline count of the
-    text jq has consumed, which for a single top-level value read in one buffer
+    MEASURED, not assumed: a one-line fixture with no trailing newline reports `:0` and a four-line fixture reports `:4`, i.e. the newline count of the text jq has consumed, which for a single top-level value read in one buffer
     is the whole file. The differential pins this against real jq; a file large
-    enough to be read in several buffers is outside what this script is ever
-    handed (its input is one gate's thread fetch).
+    enough to be read in several buffers is outside what this script is ever handed (its input is one gate's thread fetch).
     """
     return raw.count(b"\n")
 
@@ -293,13 +262,10 @@ def load_threads(raw: bytes) -> Any:
     """`jq -e 'type == "array"'`, as a decode plus a parse plus a type test.
 
     DECODED WITH `errors="replace"`, matching jq: measured, jq 1.8.1 accepts a
-    fixture carrying a lone `\\xff` and substitutes U+FFFD rather than refusing
-    the file. A port that raised `UnicodeDecodeError` here would turn a payload
-    the twin builds into a usage refusal.
+    fixture carrying a lone `\\xff` and substitutes U+FFFD rather than refusing the file. A port that raised `UnicodeDecodeError` here would turn a payload the twin builds into a usage refusal.
 
     PARSING ONLY. The `type == "array"` half of `jq -e` is the caller's, so the
-    two failures the twin reports with ONE message (a parse error and a
-    well-formed non-array) reach that one message by two paths without this
+    two failures the twin reports with ONE message (a parse error and a well-formed non-array) reach that one message by two paths without this
     function having to invent an exception for the second.
     """
     return json.loads(raw.decode("utf-8", "replace"))

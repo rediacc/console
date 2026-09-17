@@ -4,14 +4,10 @@ Ported from `.ci/scripts/quality/check-go-deps.sh`, which is NOT deleted; see
 `rediacc_ci.quality.__init__` for why both copies live until W7 phase 5.
 
 -----------------------------------------------------------------------------
-THE TWIN'S ARCHAEOLOGY, CARRIED. Everything down to PORT NOTES is the bash
-file's own prose, transliterated rather than summarised.
+THE TWIN'S ARCHAEOLOGY, CARRIED. Everything down to PORT NOTES is the bash file's own prose, transliterated rather than summarised.
 -----------------------------------------------------------------------------
 
-WHY THIS MATTERS. `govulncheck` only catches registered CVEs. A package can be
-multiple minor versions behind (with a security fix in between) before the vuln
-is registered. This check enforces freshness proactively, catching stale deps
-before they become a security issue.
+WHY THIS MATTERS. `govulncheck` only catches registered CVEs. A package can be multiple minor versions behind (with a security fix in between) before the vuln is registered. This check enforces freshness proactively, catching stale deps before they become a security issue.
 
 Usage:
   python3 -m rediacc_ci.quality.go_deps
@@ -20,10 +16,7 @@ Exit codes:
   0 - All direct Go deps are up-to-date (or blocked/major only)
   1 - Outdated minor/patch deps found
 
-THE BLOCKLIST is loaded through the shared BLOCKER-aware parser, and the gate
-fails loudly if any entry lacks a substantive `# BLOCKER: <reason>` annotation.
-The three libraries the twin sources carry their own BLOCKER lines, which are
-the reason each is there and are carried here:
+THE BLOCKLIST is loaded through the shared BLOCKER-aware parser, and the gate fails loudly if any entry lacks a substantive `# BLOCKER: <reason>` annotation. The three libraries the twin sources carry their own BLOCKER lines, which are the reason each is there and are carried here:
 
   * `blocker-validator.sh` -- shared BLOCKER parser plus quality validator, used
     by every suppression gate.
@@ -32,37 +25,20 @@ the reason each is there and are carried here:
   * `release-age.sh` -- shared daily-batch freshness rule; defers just-published
     module updates like the npm gates.
 
-A FAILED PROBE IS NOT "NOTHING IS OUTDATED". The module probe used to read
-`go list ... 2>/dev/null | jq ... 2>/dev/null || true`, so any failure of either
-command produced an empty result set, which is byte-identical to a clean tree:
-the gate printed "All Go direct dependencies are up-to-date" and exited 0.
-Observed 2026-07-27: a local run reported all-clean while CI failed on the same
+A FAILED PROBE IS NOT "NOTHING IS OUTDATED". The module probe used to read `go list ... 2>/dev/null | jq ... 2>/dev/null || true`, so any failure of either command produced an empty result set, which is byte-identical to a clean tree: the gate printed "All Go direct dependencies are up-to-date" and exited 0. Observed 2026-07-27: a local run reported all-clean while CI failed on the
+same
 commit, because `go list` was exiting 1 (go.mod requires go >= 1.25 and the
-toolchain on PATH was 1.24). The gate was not disagreeing with CI, it was
-silently reporting nothing at all.
+toolchain on PATH was 1.24). The gate was not disagreeing with CI, it was silently reporting nothing at all.
 
-So the probe's exit status is now load-bearing, and a failure is reported to the
-caller through a SENTINEL LINE rather than swallowed. In the twin the sentinel
-(not a bare `exit 1`) is required because the probe runs inside a process
-substitution, where an exit would be invisible to the caller. That constraint is
-gone in Python and the sentinel is kept anyway: it is the wire format the
-aggregation loop parses, and changing it would change what the gate prints.
+So the probe's exit status is now load-bearing, and a failure is reported to the caller through a SENTINEL LINE rather than swallowed. In the twin the sentinel (not a bare `exit 1`) is required because the probe runs inside a process substitution, where an exit would be invisible to the caller. That constraint is gone in Python and the sentinel is kept anyway: it is the wire format
+the aggregation loop parses, and changing it would change what the gate prints.
 
-AN EMPTY MODULE LIST means the probe returned nothing usable. `go list -m` on a
-real module always emits at least the main module, so zero is broken, not clean.
+AN EMPTY MODULE LIST means the probe returned nothing usable. `go list -m` on a real module always emits at least the main module, so zero is broken, not clean.
 
-THE FRESHNESS DEFERRAL holds a just-published update until the next UTC day
-after it ages 24h. An unparseable timestamp used to vanish into `|| echo ""`.
-The direction is safe (no deferral is applied, so the module is still reported
-as outdated and the gate stays red rather than going quiet), but silence still
-hides a real breakage: if the upstream timestamp format ever changed, EVERY
-module would silently lose its minimum-release-age deferral and the gate would
-start demanding bumps it should be holding back. So it warns on stderr, which
-does not disturb the machine-readable records the probe writes to stdout.
+THE FRESHNESS DEFERRAL holds a just-published update until the next UTC day after it ages 24h. An unparseable timestamp used to vanish into `|| echo ""`. The direction is safe (no deferral is applied, so the module is still reported as outdated and the gate stays red rather than going quiet), but silence still hides a real breakage: if the upstream timestamp format ever changed,
+EVERY module would silently lose its minimum-release-age deferral and the gate would start demanding bumps it should be holding back. So it warns on stderr, which does not disturb the machine-readable records the probe writes to stdout.
 
-A PROBE THAT COULD NOT RUN IS A HARD FAILURE, checked BEFORE the all-good path.
-Reporting "up-to-date" on the strength of a command that errored is the exact
-defect that guard replaces. One broken submodule still lets the others be
+A PROBE THAT COULD NOT RUN IS A HARD FAILURE, checked BEFORE the all-good path. Reporting "up-to-date" on the strength of a command that errored is the exact defect that guard replaces. One broken submodule still lets the others be
 checked, and the run then fails loudly at the end; it is never treated as
 up-to-date.
 
@@ -72,74 +48,38 @@ PORT NOTES.
 
 ZERO GO SUBMODULES EXITS 0, AND THAT IS THE TWIN'S BEHAVIOUR, NOT A CHOICE MADE
 HERE. `log_info "No Go submodules found to check"; exit 0` is a vacuity hole: a
-`private/` that lost its submodules, or a checkout where `git submodule update
---init` was never run, reports a clean bill of health having probed nothing.
-This port reproduces it EXACTLY, because a port that fixes a bug changes the
-verdict and the differential would rule MISMATCH on the tree that proves the fix
-right. It is reported as a defect in the twin, and whoever retires the twin owns
-the fix. The `--selftest` below pins the current behaviour with a control that
-NAMES it as a hole, so the day it is closed the control fails and says why.
+`private/` that lost its submodules, or a checkout where `git submodule update --init` was never run, reports a clean bill of health having probed nothing. This port reproduces it EXACTLY, because a port that fixes a bug changes the verdict and the differential would rule MISMATCH on the tree that proves the fix right. It is reported as a defect in the twin, and whoever retires the
+twin owns the fix. The `--selftest` below pins the current behaviour with a control that NAMES it as a hole, so the day it is closed the control fails and says why.
 
-`jq` BECOMES `json`, IN TWO PLACES, AND THE ERROR PATH IS KEPT. The twin runs
-`jq -rs 'length'` and then `jq -rs '.[] | select(...) | "..."'`, and reports a
-failure of the second as `__PROBE_FAILED__ jq failed to parse go-list output`.
-Python parses the same concatenated JSON stream itself, and a stream it cannot
-read produces the same sentinel with the same prefix, so the aggregation and the
-message a developer reads are unchanged. `-s` (slurp) over a stream of
+`jq` BECOMES `json`, IN TWO PLACES, AND THE ERROR PATH IS KEPT. The twin runs `jq -rs 'length'` and then `jq -rs '.[] | select(...) | "..."'`, and reports a failure of the second as `__PROBE_FAILED__ jq failed to parse go-list output`. Python parses the same concatenated JSON stream itself, and a stream it cannot read produces the same sentinel with the same prefix, so the
+aggregation and the message a developer reads are unchanged. `-s` (slurp) over a stream of
 back-to-back objects is what `go list -json` emits; the reader below implements
 exactly that and nothing more general.
 
-THE TIMESTAMP IS STILL PARSED BY `date -u -d`, DELIBERATELY. Python's
-`datetime.fromisoformat` accepts a different set of strings from GNU date, and
-this value comes from `go list`'s `.Update.Time`, i.e. from a tool this repo
-does not control. A port that parsed it differently would defer a module the
-twin demands, or demand one the twin defers, on some future Go release and
-nowhere in any fixture. Shelling out keeps ONE parser. It also keeps the twin's
-GNU-only dependency, which is worth stating out loud rather than discovering on
-macOS: `date -u -d` is not BSD date, and this gate has always been that way.
+THE TIMESTAMP IS STILL PARSED BY `date -u -d`, DELIBERATELY. Python's `datetime.fromisoformat` accepts a different set of strings from GNU date, and this value comes from `go list`'s `.Update.Time`, i.e. from a tool this repo does not control. A port that parsed it differently would defer a module the twin demands, or demand one the twin defers, on some future Go release and
+nowhere in any fixture. Shelling out keeps ONE parser. It also keeps the twin's GNU-only dependency, which is worth stating out loud rather than discovering on macOS: `date -u -d` is not BSD date, and this gate has always been that way.
 
-THE FRESHNESS RULE IS STILL `scripts/lib/release-age.ts`. The bash `release-age.sh`
-is a SHIM, not an implementation -- the rule collapsed into the TypeScript on
-2026-09-06 -- so the faithful port of a shim is another shim, not a third copy of
-the rule. The three-rung runner ladder is carried with it, including the measured
-timings that decided the order (`node --experimental-strip-types` 0.11 s,
-`node_modules/.bin/tsx` 0.55 s, `npx tsx` 0.98 s, warm, 2026-09-06) and the
-PROOF before adoption: the fast path is accepted only if a real query answers
+THE FRESHNESS RULE IS STILL `scripts/lib/release-age.ts`. The bash `release-age.sh` is a SHIM, not an implementation -- the rule collapsed into the TypeScript on 2026-09-06 -- so the faithful port of a shim is another shim, not a third copy of the rule. The three-rung runner ladder is carried with it, including the measured timings that decided the order (`node
+--experimental-strip-types` 0.11 s, `node_modules/.bin/tsx` 0.55 s, `npx tsx` 0.98 s, warm, 2026-09-06) and the PROOF before adoption: the fast path is accepted only if a real query answers
 with an integer, so a future Node that renames or drops the flag falls through to
-tsx instead of poisoning every verdict. That matters because the fail-closed
-policy turns an unreachable delegate into "deferred", and a freshness gate stuck
-on "deferred" is a gate that has gone quiet.
+tsx instead of poisoning every verdict. That matters because the fail-closed policy turns an unreachable delegate into "deferred", and a freshness gate stuck on "deferred" is a gate that has gone quiet.
 
-THE 86400-SECOND FALLBACK IS THE CALLER'S POLICY AND STAYS ON THIS SIDE. The
-TypeScript `getMinReleaseAgeMs()` returns 0 (deferral disabled) when `.npmrc`
+THE 86400-SECOND FALLBACK IS THE CALLER'S POLICY AND STAYS ON THIS SIDE. The TypeScript `getMinReleaseAgeMs()` returns 0 (deferral disabled) when `.npmrc`
 carries no key; the bash shim has always fallen back to 24h. The divergence is
-preserved here rather than silently resolved in either direction. Unreachable
-today in any case: `check-npmrc.sh` gates the key's presence.
+preserved here rather than silently resolved in either direction. Unreachable today in any case: `check-npmrc.sh` gates the key's presence.
 
 THE MEMO CACHES SURVIVE, and the reason the twin spells them as globals written
 by `__..._ensure_*` helpers does not: a bash caller writing `x=$(f)` runs `f` in
-a SUBSHELL, so every cache line `f` wrote is discarded when the subshell exits.
-Written the obvious way, that file would have spawned the delegate on every call
-and the memo would have been decorative. Python has no such trap, so the caches
+a SUBSHELL, so every cache line `f` wrote is discarded when the subshell exits. Written the obvious way, that file would have spawned the delegate on every call and the memo would have been decorative. Python has no such trap, so the caches
 here are plain dictionaries; the constraint is written down because its
 disappearance is invisible in the result.
 
-`emit_advisory` IS REPRODUCED, NOT IMPORTED. The twin's age check reaches
-`emit-advisory.sh`, whose contract is eight optional associative arrays keyed by
-advisory id plus the `::error::` / `::warning::` Actions form. This gate
-populates NONE of those arrays, so the only shape it can produce is
-`<id> (<name>)` on the error stream followed by `  Fix:` and `  Action:` on
+`emit_advisory` IS REPRODUCED, NOT IMPORTED. The twin's age check reaches `emit-advisory.sh`, whose contract is eight optional associative arrays keyed by advisory id plus the `::error::` / `::warning::` Actions form. This gate populates NONE of those arrays, so the only shape it can produce is `<id> (<name>)` on the error stream followed by ` Fix:` and ` Action:` on
 stdout. That narrow shape is what is implemented here; a general port of
 `emit_advisory` belongs with `audit.sh`, its other caller.
 
-THE STREAM SPLIT IS THE TWIN'S AND IT IS ODD ON PURPOSE. `ci_error` writes the
-header to STDERR (through common.sh's `log_error`) while the `  Fix:` and
-`  Action:` continuation lines go to STDOUT via a bare `echo`. That is exactly
-what `emit-advisory.sh` does, and the 2026-09-06 deference rule in that file
-exists because an earlier version clobbered common.sh's TTY-gated logger and
-flipped `log_info` / `log_warn` / `log_success` from stderr to stdout, leaking
-colour escapes into anything that piped a gate's stdout for data. The split is
-reproduced rather than tidied.
+THE STREAM SPLIT IS THE TWIN'S AND IT IS ODD ON PURPOSE. `ci_error` writes the header to STDERR (through common.sh's `log_error`) while the ` Fix:` and ` Action:` continuation lines go to STDOUT via a bare `echo`. That is exactly what `emit-advisory.sh` does, and the 2026-09-06 deference rule in that file exists because an earlier version clobbered common.sh's TTY-gated logger and
+flipped `log_info` / `log_warn` / `log_success` from stderr to stdout, leaking colour escapes into anything that piped a gate's stdout for data. The split is reproduced rather than tidied.
 
 THE BASH `read` FIELD SPLIT IS REPRODUCED, WART AND ALL. The aggregation loop is
 `IFS=' ' read -r path current latest kind`, so a sentinel line
@@ -147,12 +87,9 @@ THE BASH `read` FIELD SPLIT IS REPRODUCED, WART AND ALL. The aggregation loop is
 path=`__PROBE_FAILED__`, current=`go-list`, latest=`exit=2` and kind=the whole
 remaining text, which the report then prints as `  <name>: go-list exit=2 ...`.
 That is not a data structure anyone designed; it is what the gate prints today,
-so `_read_fields` below implements bash's rule (leading and trailing delimiter
-runs stripped, the LAST variable takes the remainder verbatim) rather than
-`str.split()`, which would re-join the remainder with single spaces.
+so `_read_fields` below implements bash's rule (leading and trailing delimiter runs stripped, the LAST variable takes the remainder verbatim) rather than `str.split()`, which would re-join the remainder with single spaces.
 
-EXIT CODES ARE UNCHANGED: 0 and 1 only. The twin has no setup-error code, and 77
-is reserved by the W7 contract for cannot-run.
+EXIT CODES ARE UNCHANGED: 0 and 1 only. The twin has no setup-error code, and 77 is reserved by the W7 contract for cannot-run.
 """
 
 import datetime as dt
@@ -230,10 +167,7 @@ def ci_warn(message: str) -> None:
 def emit_advisory(level: str, ident: str, name: str, fix_hint: str, action_hint: str = "") -> None:
     """`emit_advisory <level> <id> <name> <fix> [action]`, narrow form.
 
-    None of the eight `ADV_*` arrays is populated by this gate, so severity,
-    GHSA, title, url, range, patched version and description are all empty and
-    every branch that reads them is skipped. The header is therefore exactly
-    `<id> (<name>)`, and the two hint lines follow on STDOUT.
+    None of the eight `ADV_*` arrays is populated by this gate, so severity, GHSA, title, url, range, patched version and description are all empty and every branch that reads them is skipped. The header is therefore exactly `<id> (<name>)`, and the two hint lines follow on STDOUT.
     """
     header = ident
     if name:
@@ -253,15 +187,9 @@ def check_entry_age(
 ) -> bool:
     """`check_entry_age`: emit the advisory, return True when it is an ERROR.
 
-    THE EXIT CODE IS THE RETURN VALUE, and only `error` counts. A warn returns
-    success exactly as the bash did, so a caller aggregating returns does not
-    start failing on reminders.
+    THE EXIT CODE IS THE RETURN VALUE, and only `error` counts. A warn returns success exactly as the bash did, so a caller aggregating returns does not start failing on reminders.
 
-    A VERDICT THE SHIM CANNOT READ IS NOT A PASS. The bash reads a TAB-separated
-    line back from `rediacc_ci.core.age` and treats an unknown level as a
-    failure, because anything other than the three known levels means the
-    contract moved underneath it. Here the object is the contract, so the same
-    refusal is expressed as an explicit else-branch rather than a parse.
+    A VERDICT THE SHIM CANNOT READ IS NOT A PASS. The bash reads a TAB-separated line back from `rediacc_ci.core.age` and treats an unknown level as a failure, because anything other than the three known levels means the contract moved underneath it. Here the object is the contract, so the same refusal is expressed as an explicit else-branch rather than a parse.
     """
     display = name or ident
     warn_days = int(os.environ.get(AGE_WARN_ENV) or AGE_WARN_DAYS_DEFAULT)
@@ -285,10 +213,7 @@ def check_entry_age(
 class ReleaseAge:
     """The freshness delegate, with the twin's two memo caches.
 
-    ONE INSTANCE PER RUN, held by `main`, because the twin's caches are shell
-    globals that live for the length of the process. A module-level singleton
-    would outlive a `--selftest` case and let one control's answer leak into the
-    next one's, which is the shape of a control that cannot fail.
+    ONE INSTANCE PER RUN, held by `main`, because the twin's caches are shell globals that live for the length of the process. A module-level singleton would outlive a `--selftest` case and let one control's answer leak into the next one's, which is the shape of a control that cannot fail.
     """
 
     def __init__(self, root: pathlib.Path) -> None:
@@ -305,8 +230,7 @@ class ReleaseAge:
         """The three-rung ladder, resolved ONCE, with the fast path PROVEN.
 
         All three execute the SAME file, so they cannot answer differently; only
-        the loader varies. The probe runs a real query and accepts the runner
-        only if it answers with an integer.
+        the loader varies. The probe runs a real query and accepts the runner only if it answers with an integer.
         """
         if self._runner is not None:
             return self._runner
@@ -357,11 +281,7 @@ class ReleaseAge:
     def eligible_epoch(self, publish_epoch: int, window: int) -> int | None:
         """The epoch at which the release becomes actionable, or None.
 
-        THE DELEGATE COULD NOT ANSWER is said out loud on stderr rather than
-        answered with an invented number: a silent fallback here would make every
-        version look eligible (or every one deferred, depending on the sentinel
-        chosen), and a freshness gate that quietly stops deferring is exactly the
-        shape this repo keeps getting caught by.
+        THE DELEGATE COULD NOT ANSWER is said out loud on stderr rather than answered with an invented number: a silent fallback here would make every version look eligible (or every one deferred, depending on the sentinel chosen), and a freshness gate that quietly stops deferring is exactly the shape this repo keeps getting caught by.
         """
         key = (publish_epoch, window)
         if key in self._eligible:
@@ -380,10 +300,7 @@ class ReleaseAge:
     def is_deferred(self, publish_epoch: str, now: int | None = None) -> bool:
         """True when `now < eligibleAt`. FAIL-CLOSED on anything unusable.
 
-        An empty or unparseable publish epoch is DEFERRED, because a lookup
-        hiccup must never turn into a false "must upgrade" gate failure. The same
-        rule covers a delegate that cannot run, which `eligible_epoch` has
-        already reported loudly on stderr.
+        An empty or unparseable publish epoch is DEFERRED, because a lookup hiccup must never turn into a false "must upgrade" gate failure. The same rule covers a delegate that cannot run, which `eligible_epoch` has already reported loudly on stderr.
         """
         if not publish_epoch or not re.fullmatch(r"[0-9]+", publish_epoch):
             return True
@@ -404,21 +321,13 @@ def get_major(version: str) -> int:
     `v`; `cut -d. -f1` takes everything before the first dot, or the whole string
     when there is none.
 
-    THE TWIN'S `|| echo "0"` IS DEAD CODE, measured rather than assumed. The
-    pipeline ends in `grep -o '^[0-9]*'`, and `^[0-9]*` MATCHES a zero-length
-    string at the start of any input, so GNU grep exits 0 while printing
-    nothing:
+    THE TWIN'S `|| echo "0"` IS DEAD CODE, measured rather than assumed. The pipeline ends in `grep -o '^[0-9]*'`, and `^[0-9]*` MATCHES a zero-length string at the start of any input, so GNU grep exits 0 while printing nothing:
 
         $ echo latest | grep -o '^[0-9]*' ; echo $?
         0
 
-    The fallback therefore never runs, and `get_major vlatest` returns the EMPTY
-    STRING rather than "0". The twin survives that because its only consumer is
-    `[[ "$lat_major" -gt "$cur_major" ]]`, where bash arithmetic coerces an
-    empty operand to 0. This function returns the integer 0 for the same inputs,
-    which is the same comparison with the coercion made explicit. The dead
-    fallback is reported as a finding against the twin, never fixed inside a
-    port.
+    The fallback therefore never runs, and `get_major vlatest` returns the EMPTY STRING rather than "0". The twin survives that because its only consumer is `[[ "$lat_major" -gt "$cur_major" ]]`, where bash arithmetic coerces an empty operand to 0. This function returns the integer 0 for the same inputs, which is the same comparison with the coercion made explicit. The dead
+    fallback is reported as a finding against the twin, never fixed inside a port.
     """
     stripped = version.removeprefix("v")
     head = stripped.split(".")[0]
@@ -429,11 +338,7 @@ def get_major(version: str) -> int:
 def _read_fields(line: str, count: int) -> list[str]:
     """`IFS=' ' read -r a b c d` on one line, as a list of `count` strings.
 
-    Leading and trailing space runs are stripped, interior runs split, and the
-    LAST variable takes the remainder VERBATIM (interior spacing preserved).
-    Missing fields are the empty string, which is what `read` leaves them as.
-    `str.split()` would collapse the remainder's spacing and `str.split(" ")`
-    would produce empty fields for a run, so neither is the same rule.
+    Leading and trailing space runs are stripped, interior runs split, and the LAST variable takes the remainder VERBATIM (interior spacing preserved). Missing fields are the empty string, which is what `read` leaves them as. `str.split()` would collapse the remainder's spacing and `str.split(" ")` would produce empty fields for a run, so neither is the same rule.
     """
     rest = line.strip(" ")
     out: list[str] = []
@@ -451,8 +356,7 @@ def _read_fields(line: str, count: int) -> list[str]:
 def slurp_json(raw: str) -> list[dict]:
     """`jq -s` over a stream of back-to-back JSON objects.
 
-    `go list -json` emits objects one after another with no separator and no
-    enclosing array, which is exactly what `-s` (slurp) is for. `raw_decode` in
+    `go list -json` emits objects one after another with no separator and no enclosing array, which is exactly what `-s` (slurp) is for. `raw_decode` in
     a loop is the same rule and nothing more general; anything it cannot read
     raises, and the caller turns that into the twin's parse-failure sentinel.
     """
@@ -474,8 +378,7 @@ def parse_date(value: str) -> str | None:
     """`date -u -d "<value>" +%s`, or None when GNU date refuses it.
 
     Shelled out on purpose; see the PORT NOTES. The value comes from `go list`,
-    a tool this repo does not control, and two parsers would disagree about some
-    future format on nobody's fixture.
+    a tool this repo does not control, and two parsers would disagree about some future format on nobody's fixture.
     """
     try:
         proc = subprocess.run(
@@ -498,9 +401,7 @@ def check_go_dir(
 ) -> list[str]:
     """One Go module directory. Returns `MODULE CURRENT LATEST TYPE` lines.
 
-    TYPE is `major`, `minor`, `blocked` or `toofresh`, or the whole line is a
-    `__PROBE_FAILED__` sentinel. Warnings go to stderr, which does not disturb
-    the machine-readable records this function returns.
+    TYPE is `major`, `minor`, `blocked` or `toofresh`, or the whole line is a `__PROBE_FAILED__` sentinel. Warnings go to stderr, which does not disturb the machine-readable records this function returns.
     """
     try:
         proc = subprocess.run(
@@ -569,10 +470,7 @@ def check_go_dir(
 def go_dirs(root: pathlib.Path) -> list[str]:
     """`for dir in "$REPO_ROOT/private"/*/` with a `go.mod` in it.
 
-    The glob is SORTED by the shell, so the report's order is alphabetical, and
-    a directory without `go.mod` is skipped rather than probed. A missing
-    `private/` makes the glob match nothing at all, which is the vacuity hole
-    named in the PORT NOTES.
+    The glob is SORTED by the shell, so the report's order is alphabetical, and a directory without `go.mod` is skipped rather than probed. A missing `private/` makes the glob match nothing at all, which is the vacuity hole named in the PORT NOTES.
     """
     private = root / "private"
     if not private.is_dir():

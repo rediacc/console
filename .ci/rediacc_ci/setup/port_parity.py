@@ -1,22 +1,14 @@
 #!/usr/bin/env python3
 """Does the Python `setup` still do what the bash `setup` did, in what order?
 
-WHY A GATE AND NOT JUST THE LEDGER. `.ci/shadow/e1-setup.observations.jsonl`
-records that the two implementations AGREED over five distinct trees. That is a
-statement about five frozen snapshots and nothing at all about tomorrow's tree.
-The differential cannot be re-run in CI either: `scripts/lib/shadow-gate.ts`
-refuses to record on a dirty tree by design, both sides take about twelve
-seconds, and after the flip there is no bash side left to drive. So the ledger is
-the EVIDENCE and this is the STANDING CHECK, and they answer different questions.
+WHY A GATE AND NOT JUST THE LEDGER. `.ci/shadow/e1-setup.observations.jsonl` records that the two implementations AGREED over five distinct trees. That is a statement about five frozen snapshots and nothing at all about tomorrow's tree. The differential cannot be re-run in CI either: `scripts/lib/shadow-gate.ts` refuses to record on a dirty tree by design, both sides take about
+twelve seconds, and after the flip there is no bash side left to drive. So the ledger is the EVIDENCE and this is the STANDING CHECK, and they answer different questions.
 
 -----------------------------------------------------------------------------
 THE FIVE ASSERTIONS, AND WHY EACH IS TRUE IN EVERY STATE OF THE MIGRATION
 -----------------------------------------------------------------------------
-This gate is written across the cutover, deliberately. `.ci/scripts/test/gates/
-test-run-sh.sh:315-327` is the cautionary tale: it required `n_legacy > 0` before
-believing any assertion, which is a floor the migration exists to breach, so the
-gate guarding the port would have gone red at the moment the port succeeded.
-Every clause below therefore holds before the flip, after it, and during it.
+This gate is written across the cutover, deliberately. `.ci/scripts/test/gates/ test-run-sh.sh:315-327` is the cautionary tale: it required `n_legacy > 0` before believing any assertion, which is a floor the migration exists to breach, so the gate guarding the port would have gone red at the moment the port succeeded. Every clause below therefore holds before the flip, after it,
+and during it.
 
   A1  `phases.PHASE_KEYS` and the order of the same keys inside
       `machine.run_setup`'s SOURCE agree, in both directions and in order.
@@ -57,17 +49,9 @@ Four refusals, each returning 77 rather than a verdict:
     in which this gate knows nothing about the port at all. Either alone is a
     legitimate state of the migration; neither is not.
 
-That last one is the clause worth reading twice. A2 and A3 skip when the bash is
-gone and A5 stands in for them, so a run with no bash AND no ledger would have
-skipped its way to a green while checking one thing.
+That last one is the clause worth reading twice. A2 and A3 skip when the bash is gone and A5 stands in for them, so a run with no bash AND no ledger would have skipped its way to a green while checking one thing.
 
----- gate ----
-id: check:ci-setup-port-parity
-step: Setup port parity
-needs: none
-selftest: true
-why: the shadow ledger proves the bash and Python setup agreed over five frozen trees and says nothing about tomorrow's, so the phase order has to be re-derived from both implementations on every run
----- end gate ----
+---- gate ---- id: check:ci-setup-port-parity step: Setup port parity needs: none selftest: true why: the shadow ledger proves the bash and Python setup agreed over five frozen trees and says nothing about tomorrow's, so the phase order has to be re-derived from both implementations on every run ---- end gate ----
 """
 
 from __future__ import annotations
@@ -135,11 +119,7 @@ class Shape:
 def run_setup_order(source: str, keys: tuple[str, ...]) -> list[str]:
     """The phase keys inside `run_setup`'s body, in source order, first hit wins.
 
-    COMMENTS ARE STRIPPED FIRST, and that is load-bearing rather than tidy:
-    `run_setup`'s comments name `setup_go_toolchain`, `ensure_deps` and
-    `devbox_up` in prose, in an order that is not the call order. Judging the
-    prose instead of the code is the exact defect
-    `.ci/rediacc_ci/quality/setup_idempotency.py:127` records for its own check G.
+    COMMENTS ARE STRIPPED FIRST, and that is load-bearing rather than tidy: `run_setup`'s comments name `setup_go_toolchain`, `ensure_deps` and `devbox_up` in prose, in an order that is not the call order. Judging the prose instead of the code is the exact defect `.ci/rediacc_ci/quality/setup_idempotency.py:127` records for its own check G.
     """
     body = phases.function_body_python(source, "run_setup")
     if not body:
@@ -156,16 +136,13 @@ def run_setup_order(source: str, keys: tuple[str, ...]) -> list[str]:
 def _mentions(line: str, key: str) -> bool:
     """Does this line of Python invoke the phase named `key`?
 
-    THE THREE SPELLINGS ARE ENUMERATED, not guessed at with a substring match.
-    `run_setup` reaches a phase in exactly three ways and each looks different:
+    THE THREE SPELLINGS ARE ENUMERATED, not guessed at with a substring match. `run_setup` reaches a phase in exactly three ways and each looks different:
 
         host.go_toolchain(ctx)                    a ported function
         bridge.call("ensure_deps", ...)           a bridged bash function
         ctx.run([... "init-submodules.sh" ...])   an inline command
 
-    A bare `key in line` would also match the string inside an error MESSAGE,
-    which is how a phase that is only ever apologised for reads as a phase that
-    runs.
+    A bare `key in line` would also match the string inside an error MESSAGE, which is how a phase that is only ever apologised for reads as a phase that runs.
     """
     ported = PORTED_AS.get(key)
     if ported and re.search(r"\bhost\.%s\(" % re.escape(ported), line):
@@ -205,14 +182,11 @@ def is_shell(path: pathlib.Path) -> bool:
 def bash_uncalled(root: pathlib.Path, names: list[str]) -> list[str]:
     """Which of `names` no tracked SHELL file calls. Definition sites do not count.
 
-    THE DEFINITION IS NOT A CALL, which is the whole trick of this check and the
-    reason `grep -c` on the name alone would answer "2 occurrences, so it is
+    THE DEFINITION IS NOT A CALL, which is the whole trick of this check and the reason `grep -c` on the name alone would answer "2 occurrences, so it is
     used" for a function nothing runs. A line matching `^<name>() {` is skipped;
     so is a line that is only a comment.
 
-    WRONG IN THE SAFE DIRECTION, and the direction is chosen. A bare mention
-    inside a live shell file counts as a call, so a name discussed in a shell
-    COMMENT that does not start at column zero would read as live. That
+    WRONG IN THE SAFE DIRECTION, and the direction is chosen. A bare mention inside a live shell file counts as a call, so a name discussed in a shell COMMENT that does not start at column zero would read as live. That
     over-counts life, which costs a stale row in `DEFINED_BUT_UNCALLED`; the
     other direction would report a live function as dead and invite its deletion.
     """
@@ -243,10 +217,7 @@ def bash_uncalled(root: pathlib.Path, names: list[str]) -> list[str]:
 def ledger_trees(root: pathlib.Path) -> tuple[int, str]:
     """(distinct EQUIVALENT clean tree ids, why it is short). "" when it is not.
 
-    READ HERE RATHER THAN SHELLED OUT TO `shadow-gate --assert`, for one reason:
-    that command needs `npx tsx`, and a Python gate that cannot reach a verdict
-    without a node toolchain is a gate that reports "cannot run" on exactly the
-    bare machine `setup` exists to fix.
+    READ HERE RATHER THAN SHELLED OUT TO `shadow-gate --assert`, for one reason: that command needs `npx tsx`, and a Python gate that cannot reach a verdict without a node toolchain is a gate that reports "cannot run" on exactly the bare machine `setup` exists to fix.
     """
     path = root / LEDGER
     if not path.is_file():
@@ -365,10 +336,7 @@ def _read(path: pathlib.Path) -> str:
 def _compare(label: str, want: list[str], got: list[str]) -> list[str]:
     """Set equality BOTH WAYS, then order. Three findings, never folded into one.
 
-    ORDER IS CHECKED SEPARATELY AND LAST, because the three failures need three
-    different actions: a missing phase is a phase that stopped running, an extra
-    one is a phase nobody declared, and a reordering is neither. Folding them
-    into "the lists differ" is how a reviewer reads a swap as a typo.
+    ORDER IS CHECKED SEPARATELY AND LAST, because the three failures need three different actions: a missing phase is a phase that stopped running, an extra one is a phase nobody declared, and a reordering is neither. Folding them into "the lists differ" is how a reviewer reads a swap as a typo.
     """
     findings: list[str] = []
     missing = [k for k in want if k not in got]

@@ -1,24 +1,11 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/cf-purge-urls.sh`.
 
-Purges a list of URLs from one Cloudflare zone's edge cache, in batches of 30,
-after a release upload. The twin's own header explains why it exists and why it
-is best-effort: the real defence against a stale `releases.rediacc.com` object
-is the zone-level Cache Rule in `.ci/docs/r2-setup.md`, and this purge is depth
-behind it.
+Purges a list of URLs from one Cloudflare zone's edge cache, in batches of 30, after a release upload. The twin's own header explains why it exists and why it is best-effort: the real defence against a stale `releases.rediacc.com` object is the zone-level Cache Rule in `.ci/docs/r2-setup.md`, and this purge is depth behind it.
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `curl` is the only external tool that
-carries a credential, and the differential
-(`.ci/rediacc_ci/tests/test_deploy_cf_purge_urls.py`) puts a RECORDING FAKE
-`curl` on a scratch PATH that logs its exact argv and answers from a fixture.
-Both sides are driven through the same fake, so the request shape is compared as
-well as the two streams.
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `curl` is the only external tool that carries a credential, and the differential (`.ci/rediacc_ci/tests/test_deploy_cf_purge_urls.py`) puts a RECORDING FAKE `curl` on a scratch PATH that logs its exact argv and answers from a fixture. Both sides are driven through the same fake, so the request shape is compared as well as the two streams.
 
-`jq` IS CALLED, NOT REIMPLEMENTED, for the same measured reason
-`housekeeping/cleanup_cf_preview.py` gives: the twin's jq pipelines are
-unguarded, so jq's own diagnostics and jq's own exit status ARE the script's
-behaviour on a body that is not what it assumed. Driven 2026-09-13 against the
-fake:
+`jq` IS CALLED, NOT REIMPLEMENTED, for the same measured reason `housekeeping/cleanup_cf_preview.py` gives: the twin's jq pipelines are unguarded, so jq's own diagnostics and jq's own exit status ARE the script's behaviour on a body that is not what it assumed. Driven 2026-09-13 against the fake:
 
   * AN HTML ERROR PAGE kills the run: `jq: parse error: Invalid numeric literal
     at line 2, column 0` on stderr, exit 5, straight through `set -e` on the
@@ -29,10 +16,7 @@ fake:
 
 A `json.loads` port would pass every happy-path case and differ on both.
 
-THE HEADER'S "ALWAYS EXITS 0" CLAIM IS NOT TRUE, AND THE PORT REPRODUCES THE
-UNTRUTH RATHER THAN REPAIRING IT. Lines 21-28 of the twin promise the script
-"always exits 0 even on credential/auth/API failures". Two paths break that
-promise, both driven 2026-09-13:
+THE HEADER'S "ALWAYS EXITS 0" CLAIM IS NOT TRUE, AND THE PORT REPRODUCES THE UNTRUTH RATHER THAN REPAIRING IT. Lines 21-28 of the twin promise the script "always exits 0 even on credential/auth/API failures". Two paths break that promise, both driven 2026-09-13:
 
   * A TRANSPORT FAILURE. `RESPONSE=$(curl -sS ...)` is an assignment, so a curl
     that cannot resolve the host fails the assignment and `set -e` ends the run
@@ -40,8 +24,7 @@ promise, both driven 2026-09-13:
     saying a purge was skipped.
   * A NON-JSON BODY. Exit 5, as above.
 
-`ALWAYS_EXITS_ZERO_IS_FALSE` names it so a test can assert it by name. Both are
-reproduced because the acceptance rule for this wave is agreement with the live
+`ALWAYS_EXITS_ZERO_IS_FALSE` names it so a test can assert it by name. Both are reproduced because the acceptance rule for this wave is agreement with the live
 twin; repairing either is a cutover-box decision, not this one's.
 
 TWO DIVERGENCES, BOTH IN TEXT THAT ONLY A HUMAN READS:
@@ -121,10 +104,7 @@ there.
 class BashExitError(Exception):
     """`set -e` firing on a failed assignment or pipeline.
 
-    The twin has no handler for either: the command fails, the shell ends the
-    run, and whatever the failing program already wrote to stderr is the only
-    explanation. Modelled as an exception so each call site reads like the
-    unguarded assignment it is porting.
+    The twin has no handler for either: the command fails, the shell ends the run, and whatever the failing program already wrote to stderr is the only explanation. Modelled as an exception so each call site reads like the unguarded assignment it is porting.
     """
 
     def __init__(self, code: int) -> None:
@@ -147,8 +127,7 @@ def parse_argv(argv: list[str]) -> tuple[str, list[str]]:
       * EVERYTHING ELSE is a URL, including a token starting with `-`. There is
         no unknown-flag refusal, so `--dry-run` would be purged as a URL.
 
-    Raises `BashExitError(1)` for a trailing `--zone`, which is bash's own `set -u`
-    refusal on `"$2"` (divergence 1).
+    Raises `BashExitError(1)` for a trailing `--zone`, which is bash's own `set -u` refusal on `"$2"` (divergence 1).
     """
     zone = ""
     urls: list[str] = []
@@ -195,10 +174,7 @@ def stdin_urls(text: str) -> list[str]:
 def auth_headers(env: dict[str, str]) -> list[str] | None:
     """`AUTH_HEADERS` (:72-81). None means no usable credential.
 
-    ORDER IS OBSERVABLE: a token wins over a global key even when both are set,
-    and the global key needs BOTH halves. The header ORDER within each arm is
-    the twin's too (`X-Auth-Email` before `X-Auth-Key`), because the fake curl
-    records argv and a reordered pair is a different request.
+    ORDER IS OBSERVABLE: a token wins over a global key even when both are set, and the global key needs BOTH halves. The header ORDER within each arm is the twin's too (`X-Auth-Email` before `X-Auth-Key`), because the fake curl records argv and a reordered pair is a different request.
     """
     bearer = env.get("CLOUDFLARE_API_TOKEN", "")
     if bearer:
@@ -213,8 +189,7 @@ def auth_headers(env: dict[str, str]) -> list[str] | None:
 def curl_argv(zone: str, headers: list[str], payload: str) -> list[str]:
     """The one request (:90-94), as an argv, so a test can pin its shape.
 
-    `-sS`: silent except for errors, which is why a transport failure still puts
-    curl's own message on stderr before `set -e` ends the run.
+    `-sS`: silent except for errors, which is why a transport failure still puts curl's own message on stderr before `set -e` ends the run.
     """
     return [
         "curl",
@@ -238,8 +213,7 @@ def batches(urls: list[str], size: int = BATCH_SIZE) -> list[list[str]]:
 def _jq(args: list[str], stdin_text: str) -> tuple[int, str]:
     """One `jq` run with its stderr INHERITED, as every twin pipeline leaves it.
 
-    jq's diagnostics are the only explanation a workflow log gets when a body is
-    not JSON, so they are not captured here either.
+    jq's diagnostics are the only explanation a workflow log gets when a body is not JSON, so they are not captured here either.
     """
     proc = subprocess.run(
         ["jq", *args],
@@ -254,8 +228,7 @@ def _jq(args: list[str], stdin_text: str) -> tuple[int, str]:
 def payload_for(batch: list[str]) -> str:
     """`printf '%s\\n' "${BATCH[@]}" | jq -R . | jq -sc '{files: .}'` (:89).
 
-    `jq -R .` makes each LINE a JSON string, `jq -sc` slurps them into one array.
-    Under `pipefail` the pipeline's status is the last command to fail, and the
+    `jq -R .` makes each LINE a JSON string, `jq -sc` slurps them into one array. Under `pipefail` the pipeline's status is the last command to fail, and the
     assignment then feeds `set -e`; that is why this raises rather than returns.
     """
     printed = "".join(url + "\n" for url in batch)

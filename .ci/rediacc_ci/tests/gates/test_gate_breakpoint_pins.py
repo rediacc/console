@@ -1,8 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-breakpoint-pins.sh`.
 
-Static analysis of breakpoint's third-party tool pins. Downloads NOTHING: a gate that
-hits the network to prove a checksum is a gate that goes red on somebody else's outage,
-and it would then get skipped.
+Static analysis of breakpoint's third-party tool pins. Downloads NOTHING: a gate that hits the network to prove a checksum is a gate that goes red on somebody else's outage, and it would then get skipped.
 
 WHAT WENT WRONG BEFORE, which is what each case below re-checks:
 
@@ -18,18 +16,10 @@ WHAT WENT WRONG BEFORE, which is what each case below re-checks:
   actually ran was whatever the distro happened to ship. A pin bypassed on the common
   path is not a pin, and nothing failed to say so.
 
-THE VERIFY-BEFORE-USE CASE IS THE LOAD-BEARING ONE. `sha256sum -c` after the
-chmod/extract it is supposed to guard proves nothing at all, and the two orderings look
-identical in review. Comparing LINE NUMBERS is a mechanical check that survives someone
-"simplifying" the installer later.
+THE VERIFY-BEFORE-USE CASE IS THE LOAD-BEARING ONE. `sha256sum -c` after the chmod/extract it is supposed to guard proves nothing at all, and the two orderings look identical in review. Comparing LINE NUMBERS is a mechanical check that survives someone "simplifying" the installer later.
 
-WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md`
-records six `test-breakpoint-*.sh` subjects as unportable by any agent under the
-standard brief and NOT on merit, because plant-verifying one means temporarily writing
-under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The
-brief's two ways out are to hand one batch owner that path explicitly or to exclude
-them in the derivation with the reason recorded, and it adds "Do not silently drop them
-a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
+WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md` records six `test-breakpoint-*.sh` subjects as unportable by any agent under the standard brief and NOT on merit, because plant-verifying one means temporarily writing under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The brief's two ways out are to hand one batch owner
+that path explicitly or to exclude them in the derivation with the reason recorded, and it adds "Do not silently drop them a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
 
 NO `xdist_group`. Every case only READS tracked files; nothing is written, no port is
 bound, no module global is mutated.
@@ -67,8 +57,7 @@ def lines_of(path) -> list[str]:
 def code_of(path) -> str:
     """The file with WHOLE-LINE comments stripped.
 
-    Every "what not to do" example in these installers lives in a comment, so a scan for
-    banned constructs has to look at code only or it fails on its own documentation.
+    Every "what not to do" example in these installers lives in a comment, so a scan for banned constructs has to look at code only or it fails on its own documentation.
     """
     return "\n".join(line for line in lines_of(path) if not COMMENT.match(line))
 
@@ -76,8 +65,7 @@ def code_of(path) -> str:
 def last_line_matching(path, pattern) -> int | None:
     """Line number (1-based) of the LAST match, or None.
 
-    LAST, not first: `install-cloudflared.sh` verifies twice -- once to decide an
-    existing binary is intact, once on the fresh download. Taking the first match would
+    LAST, not first: `install-cloudflared.sh` verifies twice -- once to decide an existing binary is intact, once on the fresh download. Taking the first match would
     let someone add a decorative early check and move the real one after the chmod
     without this gate noticing.
     """
@@ -227,8 +215,7 @@ def test_no_unpinned_download_urls(gate):
 
 def test_tmate_has_no_apt_fallback(gate):
     """THE regression this file exists for. An apt path here is not a harmless
-    convenience: apt SUCCEEDS on every Ubuntu runner, so its mere presence makes the
-    pinned, verified path dead code on the common path while the file still reads as if
+    convenience: apt SUCCEEDS on every Ubuntu runner, so its mere presence makes the pinned, verified path dead code on the common path while the file still reads as if
     it pins something."""
     hits = [line for line in code_of(INSTALL_TMATE).splitlines() if APT.search(line)]
     gate.assert_eq(

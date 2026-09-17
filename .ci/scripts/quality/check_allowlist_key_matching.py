@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """check:ci-allowlist-key-matching -- an allowlist key must be matched by EQUALITY.
 
-WHY THIS EXISTS. .ci/config/docker-npm-pin-exclusions.json is keyed `<path>:<line>` and
-was once consumed with `if k in line`. private/account/Dockerfile carries a bare
+WHY THIS EXISTS. .ci/config/docker-npm-pin-exclusions.json is keyed `<path>:<line>` and was once consumed with `if k in line`. private/account/Dockerfile carries a bare
 `npm install` on line 67 and `npm install --omit=dev && \\` on line 91, so the SHORT key
 claimed the LONG key's line, the long entry matched nothing, and the dead-entry report
 named the correct key as the one to delete. The fix was to match with `==`.
 
 THE INVARIANT THIS GATES is the matcher, not the key shape. A first draft of this gate
 refused configs where one key is a prefix of another; run against the tree it flagged
-those two npm-install keys, which are both live, both correct, and harmless under
-equality. That gate would have made a correct config carry an exemption for a
+those two npm-install keys, which are both live, both correct, and harmless under equality. That gate would have made a correct config carry an exemption for a
 non-problem. Key shapes are the SYMPTOM; `in` is the DEFECT.
 
 THE RULE. In a script that loads a config under .ci/config/, a key drawn from that config
@@ -19,10 +17,7 @@ or build the full key and look it up.
 
 Usage: check_allowlist_key_matching.py [--selftest]
 
----- gate ----
-step: Allowlist key matching
-needs: none
-why: docker-npm-pin-exclusions.json was matched with `k in line`, so the bare
+---- gate ---- step: Allowlist key matching needs: none why: docker-npm-pin-exclusions.json was matched with `k in line`, so the bare
      `npm install` key claimed the `npm install --omit=dev` line and the correct
      entry was reported as dead scaffolding
 ---- end gate ----
@@ -60,8 +55,7 @@ TS_SUBSTRING = re.compile(
 def ts_substring_matches(src: str) -> list[str]:
     """`<textish>.includes(<keyish>)` in a file that reads an allowlist.
 
-    Deliberately name-driven, exactly like the Python arm, and stated as a blind spot
-    rather than hidden: `.includes(` is far too common in TypeScript to flag on its own.
+    Deliberately name-driven, exactly like the Python arm, and stated as a blind spot rather than hidden: `.includes(` is far too common in TypeScript to flag on its own.
     """
     out: list[str] = []
     for i, line in enumerate(src.split("\n"), 1):

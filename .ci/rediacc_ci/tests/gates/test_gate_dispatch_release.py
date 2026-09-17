@@ -1,32 +1,19 @@
 """Port of `.ci/scripts/test/gates/test-dispatch-release.sh`.
 
-Both-ways test for `.ci/scripts/ci/dispatch-release.sh`, the step that decides whether
-a merge to main earns a release at all.
+Both-ways test for `.ci/scripts/ci/dispatch-release.sh`, the step that decides whether a merge to main earns a release at all.
 
-WHY THIS CLASS NEEDS A GATE. The decision is invisible when it is wrong in the
-direction that matters. A release that should not have happened is noticed
+WHY THIS CLASS NEEDS A GATE. The decision is invisible when it is wrong in the direction that matters. A release that should not have happened is noticed
 immediately, because a tag appears; a release that was silently WITHHELD looks like
-nothing at all, and stays looking like nothing until somebody wonders why the version
-stream stopped. So the fail-open paths are tested as carefully as the skip: an API
-failure, an unresolvable commit and a mixed PR set must all end in a dispatch, and
-each of those is asserted here rather than reasoned about.
+nothing at all, and stays looking like nothing until somebody wonders why the version stream stopped. So the fail-open paths are tested as carefully as the skip: an API failure, an unresolvable commit and a mixed PR set must all end in a dispatch, and each of those is asserted here rather than reasoned about.
 
 THE DISPATCH IS NEVER REAL. `DISPATCH_RELEASE_DRY_RUN=1` is the seam, and the fake
-`gh` deliberately does NOT route `gh workflow run`: a bug that reached the real
-dispatch fails loudly with "unrouted call" instead of being quietly served.
+`gh` deliberately does NOT route `gh workflow run`: a bug that reached the real dispatch fails loudly with "unrouted call" instead of being quietly served.
 
-THE TWO ci.yml PREDICATES ARE PURE FUNCTIONS TAKING JOB TEXT, which is the whole
-reason a control is possible. `ordering_violations` and `polarity_violations` are run
-against the REAL `finalize-release-sentinel` job AND against synthetic blocks carrying
-the exact defect, and the synthetic ones must be reported. A predicate that has never
-been shown to fire proves nothing. Both are module-level so the controls exercise the
-same code path the real assertion does.
+THE TWO ci.yml PREDICATES ARE PURE FUNCTIONS TAKING JOB TEXT, which is the whole reason a control is possible. `ordering_violations` and `polarity_violations` are run against the REAL `finalize-release-sentinel` job AND against synthetic blocks carrying the exact defect, and the synthetic ones must be reported. A predicate that has never been shown to fire proves nothing. Both are
+module-level so the controls exercise the same code path the real assertion does.
 
 THE PORT'S ONE STRUCTURAL CHANGE. The twin's fixtures are built with `jq -nc`; here
-they are `json.dumps`, which removes `jq` from the fixture-BUILDING path. The fake
-`gh` still shells out to `jq` to apply the caller's own `--jq`, so the real extraction
-expression in the subject is still evaluated by the real tool, which is the half that
-matters.
+they are `json.dumps`, which removes `jq` from the fixture-BUILDING path. The fake `gh` still shells out to `jq` to apply the caller's own `--jq`, so the real extraction expression in the subject is still evaluated by the real tool, which is the half that matters.
 """
 
 import json

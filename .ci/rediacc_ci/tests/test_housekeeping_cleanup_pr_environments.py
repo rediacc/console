@@ -1,31 +1,17 @@
 """Differential: `rediacc_ci.housekeeping.cleanup_pr_environments` against its
 twin `.ci/scripts/housekeeping/cleanup-pr-environments.sh`.
 
-A RECORDING FAKE `gh` ON PATH, the seam its already-ported sibling
-`test_housekeeping_cleanup_github_deployments.py` established. Nothing here
-reaches the network, and the real `gh` is never on the PATH handed to either
-side. That is not tidiness: this script DELETES GitHub environment objects,
-which GitHub cannot restore, and its `--repo` comes straight from the command
-line, so a case that leaked the real binary would delete real environments from
-whatever repository the argument named.
+A RECORDING FAKE `gh` ON PATH, the seam its already-ported sibling `test_housekeeping_cleanup_github_deployments.py` established. Nothing here reaches the network, and the real `gh` is never on the PATH handed to either side. That is not tidiness: this script DELETES GitHub environment objects, which GitHub cannot restore, and its `--repo` comes straight from the command line, so a
+case that leaked the real binary would delete real environments from whatever repository the argument named.
 
-THE CALL LOG IS THE PRIMARY ARTIFACT. The script writes nothing to stdout, and
-its whole observable effect is the sequence of `gh` invocations, so every case
-compares the recorded sequences as well as both streams and the exit code. A
-port that printed the right messages while calling `gh api -X DELETE` on
-`edge` would pass a stdout-only comparison.
+THE CALL LOG IS THE PRIMARY ARTIFACT. The script writes nothing to stdout, and its whole observable effect is the sequence of `gh` invocations, so every case compares the recorded sequences as well as both streams and the exit code. A port that printed the right messages while calling `gh api -X DELETE` on `edge` would pass a stdout-only comparison.
 
-ONE CASE PINS A DEFECT rather than a requirement, and says so in its name:
-`test_defect_no_pr_environments_exits_1_in_silence`. The twin's "No pr-N
-environments found" branch is unreachable because `grep`'s exit 1 reaches the
-`set -e` that sourcing common.sh switched back on. It is described in the
+ONE CASE PINS A DEFECT rather than a requirement, and says so in its name: `test_defect_no_pr_environments_exits_1_in_silence`. The twin's "No pr-N environments found" branch is unreachable because `grep`'s exit 1 reaches the `set -e` that sourcing common.sh switched back on. It is described in the
 port's module docstring; if the twin is ever fixed, that test goes red, which
 is the point.
 
 K=5 LEDGER: `.ci/shadow/w7p6-cleanup-pr-environments.observations.jsonl` --
-five distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct
-trees". Recorded in a disposable scratch repo outside this checkout (`--record`
-refuses a dirty tree) with the same fake `gh` on PATH, one scenario per tree.
+five distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (`--record` refuses a dirty tree) with the same fake `gh` on PATH, one scenario per tree.
 """
 
 from __future__ import annotations
@@ -200,8 +186,7 @@ def test_defect_no_pr_environments_exits_1_in_silence(tmp_path: pathlib.Path) ->
     """PINNING A DEFECT, NOT A REQUIREMENT. The listing holds `edge`, `stable`
     and `production-eu`; nothing matches `^pr-[0-9]+$`; `grep` exits 1;
     `pipefail` hands that to the assignment; and the `-e` that sourcing
-    common.sh switched back on kills the script before its own "No pr-N
-    environments found" branch can run. The operator sees one step line and a
+    common.sh switched back on kills the script before its own "No pr-N environments found" branch can run. The operator sees one step line and a
     bare exit 1 where the correct answer is a green no-op."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -226,8 +211,7 @@ def test_a_failing_listing_that_still_matched_reports_ghs_own_code(
     tmp_path: pathlib.Path,
 ) -> None:
     """`pipefail` returns the RIGHTMOST non-zero status. gh fails with 7 while
-    still printing a usable name, `grep` and `sort` succeed, so the pipeline is
-    7 and `set -e` exits with it -- after the environments it did see have been
+    still printing a usable name, `grep` and `sort` succeed, so the pipeline is 7 and `set -e` exits with it -- after the environments it did see have been
     processed? No: the assignment fails, so nothing is processed at all."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--repo", "acme/widget"], FAKE_GH_ENVS="pr-5", FAKE_GH_LIST_RC="7"
@@ -241,8 +225,7 @@ def test_only_pr_names_are_touched_and_the_sort_tie_break_matches(
     tmp_path: pathlib.Path,
 ) -> None:
     """REFUSAL 1 plus the `sort -t- -k2 -n` order. `edge` and `production-eu`
-    are never named in any call, and `pr-2`, `pr-010`, `pr-10` come out in that
-    order: the numeric keys of `010` and `10` tie at 10, and GNU sort's
+    are never named in any call, and `pr-2`, `pr-010`, `pr-10` come out in that order: the numeric keys of `010` and `10` tie at 10, and GNU sort's
     last-resort byte comparison of the whole line puts `pr-010` first."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -402,9 +385,7 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on refusal 1 -- the filter that keeps `edge` and
-    `production-eu` out of the DELETE loop. The mutant drops the regex test, so
-    the MESSAGES still look plausible and only the CALL LOG shows that
-    `production-eu` was deleted, which is why every case here compares it.
+    `production-eu` out of the DELETE loop. The mutant drops the regex test, so the MESSAGES still look plausible and only the CALL LOG shows that `production-eu` was deleted, which is why every case here compares it.
     Driven red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

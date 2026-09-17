@@ -3,14 +3,9 @@
 
 THE SECURITY BOUNDARY OF THE AUTOPILOT (03-v2-autonomy.md section 0). The model
 never holds a write token; this script, run AFTER the model exits, is the only
-path from a handoff file to a commit and a push. Review any change to this file,
-or to this port, as a change to the security boundary itself.
+path from a handoff file to a commit and a push. Review any change to this file, or to this port, as a change to the security boundary itself.
 
-Its whole job is REFUSING pushes it should not make, so the interesting surface
-is not the happy path -- it is the twenty-odd refusal branches below, each of
-which is a thing that has to stay refused. Every one is enumerated in
-`test_autopilot_push.py` with a case that drives it, because an incomplete port
-here is a security regression rather than a missed edge case.
+Its whole job is REFUSING pushes it should not make, so the interesting surface is not the happy path -- it is the twenty-odd refusal branches below, each of which is a thing that has to stay refused. Every one is enumerated in `test_autopilot_push.py` with a case that drives it, because an incomplete port here is a security regression rather than a missed edge case.
 
 -----------------------------------------------------------------------------
 THE FOUR PHASES, AND WHY THE SPLIT IS THE DESIGN
@@ -22,44 +17,28 @@ THE FOUR PHASES, AND WHY THE SPLIT IS THE DESIGN
   phase 4  If an orphan adoption moved a submodule SHA, re-stage the pointers
            and re-run phase 2's validation VERBATIM.
 
-There is no transaction across four git remotes, but there is an order that
-makes the common failure -- a validation refusal -- leave ZERO remote writes. A
-console-side refusal used to arrive after the submodules had already been
-pushed, leaving branches and PRs on renet/account/elite referring to a console
-commit that was never made. Phase 4 re-runs the REAL check rather than reasoning
-that an adopted SHA "cannot matter", which is why `stage_and_validate_console`
-is a function on both sides.
+There is no transaction across four git remotes, but there is an order that makes the common failure -- a validation refusal -- leave ZERO remote writes. A console-side refusal used to arrive after the submodules had already been pushed, leaving branches and PRs on renet/account/elite referring to a console commit that was never made. Phase 4 re-runs the REAL check rather than
+reasoning that an adopted SHA "cannot matter", which is why `stage_and_validate_console` is a function on both sides.
 
 -----------------------------------------------------------------------------
 WHAT MUST NEVER BE STAGED WHOLESALE
 -----------------------------------------------------------------------------
-Staging is per validated path only: `git add -- <one path>` in a loop, never
-`-A`, never `--all`, never a bare dot. A harness test sweeps this directory for
-the banned forms, and the port keeps the same shape so the same sweep reads it
-the same way. The staged set is then proved EQUAL to the declared set with
-`diff -u`, in both directions, because a pathspec that expands is the same bug
-here as in console.
+Staging is per validated path only: `git add -- <one path>` in a loop, never `-A`, never `--all`, never a bare dot. A harness test sweeps this directory for the banned forms, and the port keeps the same shape so the same sweep reads it the same way. The staged set is then proved EQUAL to the declared set with `diff -u`, in both directions, because a pathspec that expands is the
+same bug here as in console.
 
 -----------------------------------------------------------------------------
 THE THREE OUTCOMES ARE ALL FIRST-CLASS
 -----------------------------------------------------------------------------
 `push` stages and commits; `escalate` and `no-change` are ROUND RESULTS, not
-failures -- the handoff was valid, the model reached a legitimate conclusion,
-and the script exits 0 having staged nothing. Exiting 1 on them (as the twin did
-until 2026-08-09) made every escalating round paint the job red, which fired the
-generic failure latch and LOST the model's reason. `--verdict-out` is published
-BEFORE any outcome branching, so the post-boundary steps see the same validated
-object on every accepted round.
+failures -- the handoff was valid, the model reached a legitimate conclusion, and the script exits 0 having staged nothing. Exiting 1 on them (as the twin did until 2026-08-09) made every escalating round paint the job red, which fired the generic failure latch and LOST the model's reason. `--verdict-out` is published BEFORE any outcome branching, so the post-boundary steps see the
+same validated object on every accepted round.
 
 -----------------------------------------------------------------------------
 WHAT IS SPAWNED RATHER THAN REIMPLEMENTED, AND THIS LIST IS THE POINT
 -----------------------------------------------------------------------------
-`git`, `node validate-handoff.cjs`, `node exfil-tripwire.cjs`, `jq` and `diff`
-are all spawned exactly as the twin spawns them, with the same argv. Two of
+`git`, `node validate-handoff.cjs`, `node exfil-tripwire.cjs`, `jq` and `diff` are all spawned exactly as the twin spawns them, with the same argv. Two of
 those are the actual security controls; re-implementing either would create a
-SECOND validator whose disagreements with the first are the hole. `diff -u` is
-spawned too, because its output goes to fd 2 and is the operator's evidence for
-a staged-set mismatch.
+SECOND validator whose disagreements with the first are the hole. `diff -u` is spawned too, because its output goes to fd 2 and is the operator's evidence for a staged-set mismatch.
 
   `git ls-files -s` + `awk '{print $1}'` IS REPRODUCED AS A FIELD SPLIT, and the
   vacuous case is handled the way the twin's comment says: an unstaged submodule
@@ -69,22 +48,15 @@ a staged-set mismatch.
 -----------------------------------------------------------------------------
 `set -e` DOES NOT REACH INTO `$( )`, and this port depends on knowing it
 -----------------------------------------------------------------------------
-`inherit_errexit` is OFF (verified, bash 5.3.9), so a failing command inside a
-command substitution does NOT end the twin -- only the ASSIGNMENT's own status
+`inherit_errexit` is OFF (verified, bash 5.3.9), so a failing command inside a command substitution does NOT end the twin -- only the ASSIGNMENT's own status
 does. That is why `sub_top="$(git ... || true)"` yields an empty string on an
-uninitialized submodule instead of dying, and why the `--base-head "$(git
-rev-parse HEAD)"` argument can arrive empty and be refused by the validator
-rather than crashing the harness. Both are reproduced.
+uninitialized submodule instead of dying, and why the `--base-head "$(git rev-parse HEAD)"` argument can arrive empty and be refused by the validator rather than crashing the harness. Both are reproduced.
 
 -----------------------------------------------------------------------------
 ONE UNREACHABLE ARM, NAMED SO NOBODY DELETES IT AS DEAD CODE
 -----------------------------------------------------------------------------
-`submodule-missing` (the `[[ ! -d "$subdir" ]]` test) cannot fire today, and the
-twin says so at length: both routes to an absent submodule are stopped earlier.
-It stays because the outcome it prevents -- submodule content committed into
-console as ordinary files -- is severe and the check costs one comparison. The
-port keeps it, and the differential drives it by handing the validator a
-`--root` in which the directory has been removed between validation and staging.
+`submodule-missing` (the `[[ ! -d "$subdir" ]]` test) cannot fire today, and the twin says so at length: both routes to an absent submodule are stopped earlier. It stays because the outcome it prevents -- submodule content committed into console as ordinary files -- is severe and the check costs one comparison. The port keeps it, and the differential drives it by handing the
+validator a `--root` in which the directory has been removed between validation and staging.
 
   AND `rev-parse --git-dir` WOULD BE THE WRONG QUESTION. Git walks UP, so inside
   an uninitialized submodule it answers with the PARENT's git dir; every command
@@ -97,12 +69,8 @@ port keeps it, and the differential drives it by handing the validator a
 -----------------------------------------------------------------------------
 ONE DIVERGENCE, ON AN ARM THE VALIDATOR MAKES UNREACHABLE
 -----------------------------------------------------------------------------
-`sub_count` comes from `jq -r '(.submodules // []) | length'` over a verdict this
-script produced three lines earlier with `validate-handoff.cjs`, whose schema
-pins `submodules` to an array. So unlike `submodule_prs.py` -- whose `--verdict`
-arrives from OUTSIDE and which therefore reproduces bash's arithmetic-error walk-on
-in full -- there is no path here by which the count is not a non-negative
-integer. The port refuses a non-integer with `verdict-count-unusable` and exit 1
+`sub_count` comes from `jq -r '(.submodules // []) | length'` over a verdict this script produced three lines earlier with `validate-handoff.cjs`, whose schema pins `submodules` to an array. So unlike `submodule_prs.py` -- whose `--verdict` arrives from OUTSIDE and which therefore reproduces bash's arithmetic-error walk-on in full -- there is no path here by which the count is not
+a non-negative integer. The port refuses a non-integer with `verdict-count-unusable` and exit 1
 instead of reproducing `for ((i = 0; i < 3.5; i++))`'s syntax error. Named here
 because it is a difference, and it fails CLOSED.
 
@@ -159,9 +127,7 @@ class _Exit(Exception):  # noqa: N818
     """One `exit N` from anywhere in the twin, including inside a function.
 
     Bash's `exit` inside a shell function ends the whole script; a Python
-    `return` from a helper does not, and the two staging functions here are
-    called from three places. Modelling it as an exception keeps the control
-    flow the twin's rather than threading a status back through every caller.
+    `return` from a helper does not, and the two staging functions here are called from three places. Modelling it as an exception keeps the control flow the twin's rather than threading a status back through every caller.
     """
 
     def __init__(self, code: int) -> None:
@@ -174,11 +140,7 @@ def script_dir() -> pathlib.Path:
     controls live.
 
     From THIS file's location, matching `dirname "${BASH_SOURCE[0]}"` and
-    computed BEFORE the `cd "$ROOT"`, exactly as the twin computes it.
-    `rediacc_ci.paths.repo_root()` is deliberately not used: it honours
-    `$REDIACC_CI_ROOT` and the twin honours nothing, and a boundary script that
-    could be pointed at a different validator by an environment variable would
-    not be a boundary.
+    computed BEFORE the `cd "$ROOT"`, exactly as the twin computes it. `rediacc_ci.paths.repo_root()` is deliberately not used: it honours `$REDIACC_CI_ROOT` and the twin honours nothing, and a boundary script that could be pointed at a different validator by an environment variable would not be a boundary.
     """
     return pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "autopilot"
 
@@ -225,8 +187,7 @@ def _jq_capture_or_exit(program: str, path: str) -> str:
 def _jq_to_file(args: list[str], target: str) -> None:
     """`jq -r ... >"$target"` under `set -e`.
 
-    The target holds whatever jq produced BEFORE it failed, because that is what
-    a shell redirection does: the file is open and being written as jq runs.
+    The target holds whatever jq produced BEFORE it failed, because that is what a shell redirection does: the file is open and being written as jq runs.
     """
     with open(target, "wb") as handle:
         proc = _run(["jq", *args], stdout=handle)
@@ -237,11 +198,7 @@ def _jq_to_file(args: list[str], target: str) -> None:
 def read_lines(path: str) -> list[str]:
     """`while IFS= read -r f; do ... done <"$file"`.
 
-    A FINAL UNTERMINATED LINE IS DROPPED, which is `read`'s rule: it returns
-    non-zero at EOF and the loop body does not run for it. Every file read this
-    way here is written by `jq -r`, which always terminates its last line, so the
-    quirk is unreachable -- reproduced anyway, because the day something else
-    writes one of these files is the day it matters.
+    A FINAL UNTERMINATED LINE IS DROPPED, which is `read`'s rule: it returns non-zero at EOF and the loop body does not run for it. Every file read this way here is written by `jq -r`, which always terminates its last line, so the quirk is unreachable -- reproduced anyway, because the day something else writes one of these files is the day it matters.
     """
     with open(path, "rb") as handle:
         data = handle.read()
@@ -251,14 +208,9 @@ def read_lines(path: str) -> list[str]:
 def submodule_toplevel_matches(root: str, sub: str) -> tuple[bool, str]:
     """Is `<root>/<sub>` ITS OWN git checkout? (ok, the toplevel git reported).
 
-    `git -C <dir> rev-parse --show-toplevel` and a PHYSICAL path comparison
-    (`cd ... && pwd -P`, i.e. symlinks resolved on both sides). `--git-dir` would
-    be the wrong question: git walks UP, so inside an uninitialized submodule it
-    answers with the PARENT's git dir and every command after that runs against
-    console one directory down. See the module docstring.
+    `git -C <dir> rev-parse --show-toplevel` and a PHYSICAL path comparison (`cd ... && pwd -P`, i.e. symlinks resolved on both sides). `--git-dir` would be the wrong question: git walks UP, so inside an uninitialized submodule it answers with the PARENT's git dir and every command after that runs against console one directory down. See the module docstring.
 
-    Exported so the differential can drive it against a real uninitialized
-    directory without having to reach the staging code behind it.
+    Exported so the differential can drive it against a real uninitialized directory without having to reach the staging code behind it.
     """
     subdir = os.path.join(root, sub)
     _, top = _capture(["git", "-C", subdir, "rev-parse", "--show-toplevel"], quiet=True)
@@ -275,9 +227,7 @@ def tripwire_argv(script_directory: pathlib.Path, diff_path: str, failed_jobs: s
     """`node exfil-tripwire.cjs --diff <f> ${FAILED_JOBS:+--failed-jobs "$F"}`.
 
     The `${x:+word}` expansion is unquoted BUT the inner `"$FAILED_JOBS"` keeps
-    its quotes, so a path with a space is ONE argument, not two (driven against
-    bash 5.3.9). An empty value contributes nothing at all -- not an empty
-    argument -- which is why the flag cannot arrive with a blank value.
+    its quotes, so a path with a space is ONE argument, not two (driven against bash 5.3.9). An empty value contributes nothing at all -- not an empty argument -- which is why the flag cannot arrive with a blank value.
     """
     argv = ["node", str(script_directory / "exfil-tripwire.cjs"), "--diff", diff_path]
     if failed_jobs:
@@ -349,9 +299,7 @@ class Push:
         """Capture the tree's real status, hand it to the validator, publish the
         verdict, and return the outcome.
 
-        THE STATUS CAPTURE IS TAKEN HERE, BY THE HARNESS, so the validator judges
-        REALITY rather than anything the model asserted about it. Passing it as a
-        file is what keeps the validator pure and offline-testable.
+        THE STATUS CAPTURE IS TAKEN HERE, BY THE HARNESS, so the validator judges REALITY rather than anything the model asserted about it. Passing it as a file is what keeps the validator pure and offline-testable.
         """
         with open(self.w("status.z"), "wb") as handle:
             proc = _run(["git", "status", "--porcelain=v1", "-z"], stdout=handle)
@@ -654,22 +602,13 @@ class Push:
     def adopt_or_refuse(self, sub: str, subdir: str, sha: str, base: str) -> None:
         """Handle a non-fast-forward on a submodule branch.
 
-        THE ORPHAN CASE IS OURS TO CLEAN UP. A previous round can leave a
-        submodule branch pushed while its console half never landed (the old
-        ordering did exactly this, and a cancelled run can still do it). The next
-        round then builds on the recorded pointer and its push is rejected as
-        non-fast-forward BY A COMMIT THIS SYSTEM WROTE. Refusing there strands
-        the campaign on a branch only a human can unpick, so the harness rebuilds
-        its work on top of the orphan instead -- but only when the orphan is
+        THE ORPHAN CASE IS OURS TO CLEAN UP. A previous round can leave a submodule branch pushed while its console half never landed (the old ordering did exactly this, and a cancelled run can still do it). The next round then builds on the recorded pointer and its push is rejected as non-fast-forward BY A COMMIT THIS SYSTEM WROTE. Refusing there strands the campaign on a branch
+        only a human can unpick, so the harness rebuilds its work on top of the orphan instead -- but only when the orphan is
         PROVABLY OURS.
 
-        "Ours" is two independent facts, BOTH REQUIRED: the tip's committer email
-        is the autopilot identity, and the tip shares its merge-base with
-        origin/main with the base we branched from. The first says the autopilot
+        "Ours" is two independent facts, BOTH REQUIRED: the tip's committer email is the autopilot identity, and the tip shares its merge-base with origin/main with the base we branched from. The first says the autopilot
         wrote it; the second says it is a continuation of this line of work
-        rather than an unrelated branch that happens to sit at the same name. A
-        tip failing either is somebody else's work and the round stops rather
-        than rewriting it.
+        rather than an unrelated branch that happens to sit at the same name. A tip failing either is somebody else's work and the round stops rather than rewriting it.
         """
         log.warn(
             "submodule '%s': push rejected as non-fast-forward; inspecting the remote tip "

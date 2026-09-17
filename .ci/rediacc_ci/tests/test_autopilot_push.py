@@ -1,8 +1,7 @@
 """Differential: `rediacc_ci.autopilot.autopilot_push` against its twin
 `.ci/scripts/autopilot/autopilot-push.sh`.
 
-THIS IS THE SECURITY BOUNDARY'S TEST, so the first thing it establishes is that
-nothing here can reach a real remote or the real checkout.
+THIS IS THE SECURITY BOUNDARY'S TEST, so the first thing it establishes is that nothing here can reach a real remote or the real checkout.
 
 -----------------------------------------------------------------------------
 THE SANDBOX, AND WHY IT IS A SHIM RATHER THAN A PROMISE
@@ -20,33 +19,19 @@ Every subject runs with a curated PATH whose FIRST entry holds two fakes:
          git.
 
 So the safety property is not "we were careful with the arguments"; it is a
-control that fires. `test_the_shim_refuses_the_real_checkout` aims the shim at
-`/home/developer/console` and asserts exit 97, and
-`test_the_shim_refuses_a_remote_outside_the_sandbox` points a push at
-`https://github.com/...` and asserts the same. Both are PLANTS: if either stops
-firing, every case in this file has been running unguarded.
-`test_the_fakes_win_the_path_lookup` asserts the resolution order itself, so a
-stub that stopped winning would be caught too.
+control that fires. `test_the_shim_refuses_the_real_checkout` aims the shim at `/home/developer/console` and asserts exit 97, and `test_the_shim_refuses_a_remote_outside_the_sandbox` points a push at `https://github.com/...` and asserts the same. Both are PLANTS: if either stops firing, every case in this file has been running unguarded. `test_the_fakes_win_the_path_lookup` asserts
+the resolution order itself, so a stub that stopped winning would be caught too.
 
-THE GIT CALL LOG IS A PRIMARY ARTIFACT. Which repository, in which order, with
-which arguments -- staging one path at a time versus `-A`, pushing an explicit
-SHA versus a branch name, whether a refusal happened BEFORE or AFTER a remote
-write -- is almost entirely invisible in stdout. Every case therefore compares
-the recorded git argv sequence as well as exit code, stdout and stderr.
+THE GIT CALL LOG IS A PRIMARY ARTIFACT. Which repository, in which order, with which arguments -- staging one path at a time versus `-A`, pushing an explicit SHA versus a branch name, whether a refusal happened BEFORE or AFTER a remote write -- is almost entirely invisible in stdout. Every case therefore compares the recorded git argv sequence as well as exit code, stdout and
+stderr.
 
-COMMIT SHAs ARE COMPARED, and that is deliberate. `GIT_AUTHOR_DATE` and
-`GIT_COMMITTER_DATE` are pinned, the fixture is built identically on both sides,
-and the committer identity comes from the same flags -- so the SHA the script
-prints on stdout is a function of the tree, the message and the identity. Two
-sides printing the same SHA have committed the same bytes under the same name.
+COMMIT SHAs ARE COMPARED, and that is deliberate. `GIT_AUTHOR_DATE` and `GIT_COMMITTER_DATE` are pinned, the fixture is built identically on both sides, and the committer identity comes from the same flags -- so the SHA the script prints on stdout is a function of the tree, the message and the identity. Two sides printing the same SHA have committed the same bytes under the same
+name.
 
 -----------------------------------------------------------------------------
 EVERY REFUSAL BRANCH, AND WHICH ONES CANNOT BE REACHED
 -----------------------------------------------------------------------------
-The twin is twenty-odd refusals and three success paths. Each reachable refusal
-has a case below. FIVE ARE UNREACHABLE THROUGH THE CLI and are marked as such
-rather than quietly skipped, because "no test" and "cannot happen" look the same
-in a test file and only one of them is acceptable:
+The twin is twenty-odd refusals and three success paths. Each reachable refusal has a case below. FIVE ARE UNREACHABLE THROUGH THE CLI and are marked as such rather than quietly skipped, because "no test" and "cannot happen" look the same in a test file and only one of them is acceptable:
 
   outcome-unknown              the validator's schema pins the enum
   stage-flag-disabled (subs)   the validator refuses submodules[] with the flag off
@@ -60,13 +45,8 @@ in a test file and only one of them is acceptable:
   submodule-pointer-rollback   a commit made on top of HEAD is a descendant of
                                HEAD by construction
 
-`test_the_unreachable_refusals_are_unreachable_for_the_same_reason` drives the
-gate that stops each one and asserts BOTH sides stop there, which is the honest
-differential for a branch neither side can enter. The `submodule-not-initialized`
-predicate is additionally driven directly through the exported
-`submodule_toplevel_matches`, against a real directory that is not its own
-checkout -- the case whose failure mode is committing submodule content into
-console as ordinary files.
+`test_the_unreachable_refusals_are_unreachable_for_the_same_reason` drives the gate that stops each one and asserts BOTH sides stop there, which is the honest differential for a branch neither side can enter. The `submodule-not-initialized` predicate is additionally driven directly through the exported `submodule_toplevel_matches`, against a real directory that is not its own
+checkout -- the case whose failure mode is committing submodule content into console as ordinary files.
 
 K=5 LEDGER: `.ci/shadow/w7p6-autopilot-push.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
@@ -167,10 +147,7 @@ sys.exit(1)
 def _stub_bin(sandbox: pathlib.Path) -> str:
     """The curated PATH: the two fakes FIRST, then the real one.
 
-    PREPENDED rather than reduced to a symlink farm, because both subjects reach
-    node, jq, diff, sort and a long tail of coreutils through `common.sh`. The
-    safety property is therefore RESOLUTION ORDER plus the shim's own refusals,
-    and all three are asserted rather than assumed.
+    PREPENDED rather than reduced to a symlink farm, because both subjects reach node, jq, diff, sort and a long tail of coreutils through `common.sh`. The safety property is therefore RESOLUTION ORDER plus the shim's own refusals, and all three are asserted rather than assumed.
     """
     stub = sandbox / "stubbin"
     stub.mkdir(exist_ok=True)
@@ -217,10 +194,7 @@ def build(
 ) -> pathlib.Path:
     """One console checkout, optionally with a `private/renet` submodule.
 
-    The submodule gitlink is written with `update-index --cacheinfo` rather than
-    `git submodule add`, which keeps the fixture free of `protocol.file.allow`
-    and leaves the submodule as a plain nested checkout -- exactly the shape
-    `rev-parse --show-toplevel` is asked about in the twin.
+    The submodule gitlink is written with `update-index --cacheinfo` rather than `git submodule add`, which keeps the fixture free of `protocol.file.allow` and leaves the submodule as a plain nested checkout -- exactly the shape `rev-parse --show-toplevel` is asked about in the twin.
     """
     console = sandbox / "console"
     if submodule:
@@ -702,18 +676,12 @@ def test_the_verdict_can_be_written_to_a_fifo() -> None:
     """`--verdict-out /dev/stdout` is what a workflow step passes when it wants
     the verdict in the run log, and `cat A >B` does not care that B is a pipe.
 
-    THIS CAUGHT A REAL DIVERGENCE while porting: `shutil.copyfile` raises
-    `SpecialFileError` on a fifo, so the port died where the twin wrote. Pinned
-    so the plain open-and-write cannot be "tidied" back into a copyfile.
+    THIS CAUGHT A REAL DIVERGENCE while porting: `shutil.copyfile` raises `SpecialFileError` on a fifo, so the port died where the twin wrote. Pinned so the plain open-and-write cannot be "tidied" back into a copyfile.
 
-    ONE HARNESS NOTE, so a reader who sees this fail elsewhere does not go
-    hunting the port. Under `subprocess.PIPE` (here) the reopen succeeds on both
+    ONE HARNESS NOTE, so a reader who sees this fail elsewhere does not go hunting the port. Under `subprocess.PIPE` (here) the reopen succeeds on both
     sides; under NODE's spawnSync it does not, because libuv backs a stdio pipe
     with a socketpair and reopening a socket through `/proc/self/fd` is ENXIO.
-    The shadow-gate ledger scenario therefore writes the verdict to a real file
-    and `cat`s it, and the two sides differ there only in the WORDING of the
-    refusal -- bash names its own line number, which no port can honestly
-    reproduce. `test_an_unwritable_verdict_out_stops_the_round` pins the part
+    The shadow-gate ledger scenario therefore writes the verdict to a real file and `cat`s it, and the two sides differ there only in the WORDING of the refusal -- bash names its own line number, which no port can honestly reproduce. `test_an_unwritable_verdict_out_stops_the_round` pins the part
     that matters (exit 1, nothing staged); the live workflow passes
     `$RUNNER_TEMP/verdict.json`, so the diverging wording is off the real
     path."""
@@ -780,9 +748,7 @@ def test_the_happy_path_commits_and_pushes_one_explicit_sha() -> None:
 
 def test_a_pathspec_that_expands_is_refused_before_the_commit() -> None:
     """STAGED-SET EQUALITY, and the case it exists for. An UNTRACKED DIRECTORY is
-    reported by `git status` as `dir/`, which the validator accepts as a declared
-    path -- and `git add -- dir/` then stages its two FILES. The staged set is
-    therefore not the declared set, and the round stops with the unified diff on
+    reported by `git status` as `dir/`, which the validator accepts as a declared path -- and `git add -- dir/` then stages its two FILES. The staged set is therefore not the declared set, and the round stops with the unified diff on
     fd 2 as the evidence."""
 
     def scenario(sandbox):
@@ -893,8 +859,7 @@ SUB_ENV = {"AUTOPILOT_ALLOW_SUBMODULES": "true"}
 
 def test_submodules_are_committed_then_pushed_before_console() -> None:
     """THE ORDER IS THE DESIGN. The submodule push must precede the console push,
-    so the pointer console publishes always names a commit that already exists on
-    the remote. The reverse order publishes a console commit pointing at a SHA
+    so the pointer console publishes always names a commit that already exists on the remote. The reverse order publishes a console commit pointing at a SHA
     nobody else can fetch."""
     code, stdout, stderr, git_calls, _ = _sides("sub-push", _sub_scenario, base_argv, env=SUB_ENV)
     assert code == 0, stderr
@@ -1052,8 +1017,7 @@ def _orphan(sandbox: pathlib.Path, *, email: str, with_main: bool, conflicting: 
     """Put a commit on the submodule remote's `work` branch, so this round's push
     is rejected as a non-fast-forward.
 
-    Built in a SEPARATE clone so the round's own submodule checkout is untouched,
-    which is the real shape: the orphan was left by a PREVIOUS round.
+    Built in a SEPARATE clone so the round's own submodule checkout is untouched, which is the real shape: the orphan was left by a PREVIOUS round.
     """
     console = build(sandbox, submodule=True)
     bare = sandbox / "renet.git"
@@ -1155,8 +1119,7 @@ def test_an_orphan_that_does_not_apply_cleanly_stops_for_a_human() -> None:
 
 def test_a_provable_orphan_is_adopted_and_the_console_check_is_re_run() -> None:
     """PHASE 4. The adoption moved the submodule SHA, so the gitlink console
-    staged in phase 2 now names a commit that is no longer the branch tip.
-    Re-stage and re-run the SAME validation rather than patching the index and
+    staged in phase 2 now names a commit that is no longer the branch tip. Re-stage and re-run the SAME validation rather than patching the index and
     trusting it -- which is why `gitlink verified` appears TWICE."""
 
     def scenario(sandbox):
@@ -1277,9 +1240,7 @@ def test_the_unreachable_refusals_are_unreachable_for_the_same_reason() -> None:
 
 def test_the_toplevel_predicate_is_driven_directly() -> None:
     """`submodule-not-initialized`'s PREDICATE, whose failure mode is committing
-    submodule content into console as ordinary files. Unreachable from the CLI
-    (case 2 above), so it is driven here against three shapes: a real nested
-    checkout, a plain directory inside a parent repo, and an absent path.
+    submodule content into console as ordinary files. Unreachable from the CLI (case 2 above), so it is driven here against three shapes: a real nested checkout, a plain directory inside a parent repo, and an absent path.
 
     `--git-dir` WOULD ANSWER YES FOR THE SECOND ONE, which is the whole reason
     the twin compares toplevels instead."""

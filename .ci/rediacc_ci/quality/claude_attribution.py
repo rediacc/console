@@ -11,8 +11,7 @@ The twin's header:
     Usage:
       GITHUB_TOKEN=xxx PR_NUMBER=123 ./check-claude-attribution.sh
 
-And the paragraph that is the whole reason the five API calls are shaped the way
-they are, carried verbatim:
+And the paragraph that is the whole reason the five API calls are shaped the way they are, carried verbatim:
 
     FAIL CLOSED throughout. Every one of these five calls used to end in
     `|| echo ""`, so a rate limit or an expired token produced an empty PR body
@@ -27,8 +26,7 @@ they are, carried verbatim:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`gh_retry` IS REPRODUCED HERE RATHER THAN IMPORTED, including its sleeps. It is
-`.ci/scripts/lib/common.sh:434-470`, and its own header records why it exists:
+`gh_retry` IS REPRODUCED HERE RATHER THAN IMPORTED, including its sleeps. It is `.ci/scripts/lib/common.sh:434-470`, and its own header records why it exists:
 
     WHY THIS EXISTS. Nine call sites across the review, attribution and
     submodule-branch gates were spelled `X=$(gh api ... 2>/dev/null || echo "[]")`.
@@ -41,36 +39,19 @@ PORT NOTES.
     legitimate (a PR with an empty body), so JSON validation is opt-in. The exit
     status is always checked, because that is the part that was being thrown away.
 
-The retry SCHEDULE is part of the behaviour and is carried: three attempts,
-`sleep $((attempt * 3))` between them, a `log_warn` naming the attempt number,
-and a final `log_error` carrying the last exit status plus gh's stderr indented
-by four. A port that dropped the sleeps would be faster and would stop being a
-retry, since the failure it is retrying past is a rate limit.
+The retry SCHEDULE is part of the behaviour and is carried: three attempts, `sleep $((attempt * 3))` between them, a `log_warn` naming the attempt number, and a final `log_error` carrying the last exit status plus gh's stderr indented by four. A port that dropped the sleeps would be faster and would stop being a retry, since the failure it is retrying past is a rate limit.
 
 THE PATTERN IS AN ERE AND IS TRANSLATED CHARACTER-CLASS BY CHARACTER-CLASS.
-`[[:space:]]` is POSIX's six whitespace characters, not Python's `\\s`, which
-also matches several Unicode separators. The difference would show on a PR body
-containing a non-breaking space next to the co-author trailer, and the two
-implementations would then disagree about a real PR. The twin's own note is kept
+`[[:space:]]` is POSIX's six whitespace characters, not Python's `\\s`, which also matches several Unicode separators. The difference would show on a PR body containing a non-breaking space next to the co-author trailer, and the two implementations would then disagree about a real PR. The twin's own note is kept
 with the pattern: "We specifically match attribution markers, not general
 mentions of Claude as a tool."
 
-THE VERDICT LINES ARE PLAIN `echo` ON STDOUT, WITH NO SEVERITY MARKER, and that
-is why the differential for this pair is recorded with a `--finding-re`. Nothing
-in the gate's report uses `log_error`, so a comparator that only knows the
-repository's severity glyphs would score two disagreeing runs as "both empty".
-The regex is stored on every ledger row, so the rows can be re-run.
+THE VERDICT LINES ARE PLAIN `echo` ON STDOUT, WITH NO SEVERITY MARKER, and that is why the differential for this pair is recorded with a `--finding-re`. Nothing in the gate's report uses `log_error`, so a comparator that only knows the repository's severity glyphs would score two disagreeing runs as "both empty". The regex is stored on every ledger row, so the rows can be re-run.
 
 THE EMPTY-COMMIT-LIST REFUSAL IS THE ONE ARM THAT SPEAKS THE REPOSITORY'S
-VOCABULARY: it prints `  ERROR: the commit list ... came back empty.` and a
-second indented line. Carried exactly, on stderr, because that pair is what a
-reader greps for when a merge-blocking gate reds without naming a commit.
+VOCABULARY: it prints ` ERROR: the commit list ... came back empty.` and a second indented line. Carried exactly, on stderr, because that pair is what a reader greps for when a merge-blocking gate reds without naming a commit.
 
-THE PATTERN'S LITERALS ARE ASSEMBLED FROM NAMED PARTS, and that is not
-obfuscation. `.claude/hooks/pre-bash/block-commit-meta.sh` refuses any command
-whose text carries the trailer this gate exists to find, so a heredoc containing
-it cannot be written from a shell at all. The parts are named once, next to each
-other, so the pattern is still readable as one thing.
+THE PATTERN'S LITERALS ARE ASSEMBLED FROM NAMED PARTS, and that is not obfuscation. `.claude/hooks/pre-bash/block-commit-meta.sh` refuses any command whose text carries the trailer this gate exists to find, so a heredoc containing it cannot be written from a shell at all. The parts are named once, next to each other, so the pattern is still readable as one thing.
 """
 
 import json
@@ -114,13 +95,9 @@ def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
     """`gh_retry <what> -- <gh args...>`. Returns (ok, stdout).
 
     Exit status is ALWAYS checked; the output may be anything, because
-    `gh api --jq` emits plain text and an empty result can be legitimate. On
-    failure the caller must refuse, not substitute a default: that substitution
-    is the defect this helper exists to end.
+    `gh api --jq` emits plain text and an empty result can be legitimate. On failure the caller must refuse, not substitute a default: that substitution is the defect this helper exists to end.
 
-    Trailing newlines are stripped because the twin captures this through
-    `$( )`, and every downstream test in the gate is written against the
-    stripped value.
+    Trailing newlines are stripped because the twin captures this through `$( )`, and every downstream test in the gate is written against the stripped value.
     """
     rc = 0
     stderr = ""
@@ -153,11 +130,7 @@ def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
 def fixture_token() -> str:
     """A NON-SECRET stand-in, so the "is a token present?" branch can be driven.
 
-    A function rather than a constant, and that is not a dodge of the linter's
-    concern: the rule objects to a credential-shaped literal sitting at an
-    assignment to a credential-named target, and the honest answer is that this
-    value is not a credential at all. Naming it here says so once, where a
-    reader looking for a leaked token will find it.
+    A function rather than a constant, and that is not a dodge of the linter's concern: the rule objects to a credential-shaped literal sitting at an assignment to a credential-named target, and the honest answer is that this value is not a credential at all. Naming it here says so once, where a reader looking for a leaked token will find it.
     """
     return "not-a-real-token"
 
@@ -183,9 +156,7 @@ def probe_failed() -> int:
 def first_match(text: str) -> str:
     """`echo "$X" | grep -iE "$CLAUDE_PATTERN" | head -1`: the first MATCHING LINE.
 
-    A LINE, not the matched substring. The twin interpolates it whole into the
-    issue text, so a port that reported only the matched fragment would produce
-    a different message for the same PR.
+    A LINE, not the matched substring. The twin interpolates it whole into the issue text, so a port that reported only the matched fragment would produce a different message for the same PR.
     """
     for line in text.split("\n"):
         if CLAUDE_PATTERN.search(line):
@@ -215,10 +186,7 @@ COMMIT_PROJECTION = (
 def parse_rows(payload: str) -> list[dict]:
     """One compact JSON object per line. Unparseable lines are DROPPED, not raised.
 
-    Dropping matches the twin, whose `jq -r '.sha' <<<"$ROW"` fails on a
-    malformed row and leaves the fields empty rather than aborting the loop. Both
-    implementations therefore under-report identically instead of one crashing,
-    which is the property the differential needs.
+    Dropping matches the twin, whose `jq -r '.sha' <<<"$ROW"` fails on a malformed row and leaves the fields empty rather than aborting the loop. Both implementations therefore under-report identically instead of one crashing, which is the property the differential needs.
     """
     out: list[dict] = []
     for line in payload.split("\n"):
@@ -239,9 +207,7 @@ def read_count(payload: str) -> int:
 
     Separate from `split_commits` deliberately. That one mirrors the twin's word
     splitting because it feeds the loop; this one mirrors the twin's `grep -c .`
-    because it feeds the refusal. They agree on a list of SHAs and would stop
-    agreeing on anything else, which is the same coupling both implementations
-    have and therefore the same one they would break on.
+    because it feeds the refusal. They agree on a list of SHAs and would stop agreeing on anything else, which is the same coupling both implementations have and therefore the same one they would break on.
     """
     return len([line for line in payload.split("\n") if line != ""])
 
@@ -427,9 +393,7 @@ MUST_NOT_MATCH = (
 def selftest() -> int:
     """Both directions for the pattern, the author check, and the two parsers.
 
-    A gate with only positive controls would flag every PR that mentions the
-    assistant, which is exactly the over-broad direction the twin's own note
-    warns about.
+    A gate with only positive controls would flag every PR that mentions the assistant, which is exactly the over-broad direction the twin's own note warns about.
     """
     ctl = Controls("claude-attribution", floor=20, verbose=True)
 

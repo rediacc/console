@@ -1,18 +1,9 @@
 """`rediacc_ci.release.check_edge_manifest` against its bash twin.
 
-THE FAKE `curl`, NOT A FAKE URL. The twin's manifest URL
-(`https://releases.rediacc.com/cli/edge/manifest.json`) is a hardcoded
-literal with no override hook -- unlike `wait-for-preview-worker.sh`, there is
-no env var to redirect it at a fixture. So both sides get a fake `curl`
-placed FIRST on PATH (prepended, not replacing PATH outright: `jq` and `bash`
-still need to resolve normally, and only `curl` is the thing under test).
-Written in Python with an absolute interpreter path, same reasoning as
-`test_core_ghx.py`'s `fake_bin`: a shebang script depending on PATH to find
-its own interpreter defeats the point of controlling PATH in the first place.
+THE FAKE `curl`, NOT A FAKE URL. The twin's manifest URL (`https://releases.rediacc.com/cli/edge/manifest.json`) is a hardcoded literal with no override hook -- unlike `wait-for-preview-worker.sh`, there is no env var to redirect it at a fixture. So both sides get a fake `curl` placed FIRST on PATH (prepended, not replacing PATH outright: `jq` and `bash` still need to resolve
+normally, and only `curl` is the thing under test). Written in Python with an absolute interpreter path, same reasoning as `test_core_ghx.py`'s `fake_bin`: a shebang script depending on PATH to find its own interpreter defeats the point of controlling PATH in the first place.
 
-`GITHUB_OUTPUT` is a real temp file, never `/dev/stdout`: reopening it under
-`subprocess.run` fails with ENXIO when fd 1 is a pipe (documented in every
-sibling test file and rediscovered painfully earlier in this box).
+`GITHUB_OUTPUT` is a real temp file, never `/dev/stdout`: reopening it under `subprocess.run` fails with ENXIO when fd 1 is a pipe (documented in every sibling test file and rediscovered painfully earlier in this box).
 """
 
 from __future__ import annotations

@@ -1,18 +1,9 @@
 """`rediacc_ci.ci.generate_tag` against its bash twin.
 
-WHAT IS FAKED AND WHAT IS NOT, because this twin is the one of the three whose
-external tools are SAFE. `git` here is only ever `rev-parse`, and
-`resolve-version.sh` only ever `git tag -l` -- reads, all of them, so the real
-binaries are used against DISPOSABLE FIXTURE REPOSITORIES built under
-`tmp_path`. Nothing in this file writes to `/home/developer/console`'s git
-data, creates a tag, or reaches a network. `assert_scratch` re-derives
-`--show-toplevel` for every fixture and refuses if it ever resolves to the
-checkout.
+WHAT IS FAKED AND WHAT IS NOT, because this twin is the one of the three whose external tools are SAFE. `git` here is only ever `rev-parse`, and `resolve-version.sh` only ever `git tag -l` -- reads, all of them, so the real binaries are used against DISPOSABLE FIXTURE REPOSITORIES built under `tmp_path`. Nothing in this file writes to `/home/developer/console`'s git data, creates a
+tag, or reaches a network. `assert_scratch` re-derives `--show-toplevel` for every fixture and refuses if it ever resolves to the checkout.
 
-The two cases that do run against the real repository -- `--self` and
-`--closure` -- are read-only `git rev-parse` calls, and they are the only way
-to prove the port agrees with the twin on the REAL closure content rather than
-on a fixture's.
+The two cases that do run against the real repository -- `--self` and `--closure` -- are read-only `git rev-parse` calls, and they are the only way to prove the port agrees with the twin on the REAL closure content rather than on a fixture's.
 
 TWO NORMALISATIONS, AND ONLY TWO.
 
@@ -28,10 +19,7 @@ TWO NORMALISATIONS, AND ONLY TWO.
      other. Every other mode is deterministic and compared byte for byte.
 
 The K=5 ledger is `.ci/shadow/w7p6-generate-tag.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-generate-tag --assert --k 5`).
-Its `--finding-re` matches the tag shapes on stdout, because the twin's whole
-success report is `✓ ` lines that `shadow-gate.ts` classifies as CHATTER before
-any regex is consulted.
+(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-generate-tag --assert --k 5`). Its `--finding-re` matches the tag shapes on stdout, because the twin's whole success report is `✓ ` lines that `shadow-gate.ts` classifies as CHATTER before any regex is consulted.
 """
 
 from __future__ import annotations
@@ -77,10 +65,7 @@ GIT_FLAGS = [
 def assert_scratch(path: pathlib.Path) -> pathlib.Path:
     """Refuse to touch anything that is not a disposable fixture.
 
-    Asked of every fixture before it is written to, because a mistyped path in
-    a `git -C` is the one mistake in this file that could not be undone. The
-    guard compares the resolved toplevel, not the string, so a symlinked
-    tmpdir cannot slip past it.
+    Asked of every fixture before it is written to, because a mistyped path in a `git -C` is the one mistake in this file that could not be undone. The guard compares the resolved toplevel, not the string, so a symlinked tmpdir cannot slip past it.
     """
     resolved = path.resolve()
     assert str(resolved) != diff.repo(), "refusing to operate on the checkout"
@@ -155,9 +140,7 @@ def assert_identical(
 def strip_program(text: str) -> str:
     """Replace the program's own path with `<prog>` on the four lines carrying it.
 
-    Exactly those four and nothing else: the `Usage:` line and the three
-    `Examples:` lines. Every other line of the help block is compared byte for
-    byte, so a reworded option description still reds.
+    Exactly those four and nothing else: the `Usage:` line and the three `Examples:` lines. Every other line of the help block is compared byte for byte, so a reworded option description still reds.
     """
     out = []
     for line in text.split("\n"):

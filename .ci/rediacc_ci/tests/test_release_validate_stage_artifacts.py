@@ -3,14 +3,9 @@
 Sibling of `test_deploy_resolve_account_deploy_config.py`; see that file for
 why `/dev/stdout` is not used as `$GITHUB_OUTPUT`/`$GITHUB_STEP_SUMMARY`. The
 K=5 ledger is `.ci/shadow/w7p5a-validate-stage-artifacts.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-validate-stage-artifacts
---assert --k 5` -> "equivalence holds over 5 distinct trees").
+(`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-validate-stage-artifacts --assert --k 5` -> "equivalence holds over 5 distinct trees").
 
-EVERY CASE HERE RUNS AGAINST AN ISOLATED `dist/` FIXTURE, never against this
-checkout's own `dist/` (which does not exist in a fresh checkout, and must
-not be created as a side effect of running a test suite). This needs BOTH
-sides pointed at the fixture root, and the two mechanisms differ because the
-two sides resolve "repo root" differently:
+EVERY CASE HERE RUNS AGAINST AN ISOLATED `dist/` FIXTURE, never against this checkout's own `dist/` (which does not exist in a fresh checkout, and must not be created as a side effect of running a test suite). This needs BOTH sides pointed at the fixture root, and the two mechanisms differ because the two sides resolve "repo root" differently:
 
   * The bash twin's `get_repo_root()` derives the root from `common.sh`'s OWN
     file location (`${BASH_SOURCE[0]}`), so the fixture must carry a REAL
@@ -21,11 +16,7 @@ two sides resolve "repo root" differently:
     `$REDIACC_CI_ROOT` -- so the new side just sets that env var to the
     fixture root, no file copying needed.
 
-`du` PRODUCES REAL, HOST-DEPENDENT BYTES (block-size rounding), so the
-pages-bundle-size assertions check for a non-"N/A" value rather than an exact
-string, and the exact-string cases below only ever exercise the "no
-dist/pages" (`N/A`) path, which both sides compute without touching `du` at
-all.
+`du` PRODUCES REAL, HOST-DEPENDENT BYTES (block-size rounding), so the pages-bundle-size assertions check for a non-"N/A" value rather than an exact string, and the exact-string cases below only ever exercise the "no dist/pages" (`N/A`) path, which both sides compute without touching `du` at all.
 """
 
 from __future__ import annotations
@@ -141,8 +132,7 @@ def test_full_dist_with_channel_passes(tmp_path: pathlib.Path) -> None:
 
 def test_missing_event_name_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> None:
     """`$GITHUB_STEP_SUMMARY`/`$GITHUB_OUTPUT` are always supplied by
-    `run_both` (both point at real temp files), so the first genuinely-missing
-    required var is `EVENT_NAME`. Wording is not byte-identical here: bash's
+    `run_both` (both point at real temp files), so the first genuinely-missing required var is `EVENT_NAME`. Wording is not byte-identical here: bash's
     own `${VAR:?msg}` diagnostic (line-numbered) differs from the port's, same
     as every other twin in this box."""
     root = tmp_path / "fixture"

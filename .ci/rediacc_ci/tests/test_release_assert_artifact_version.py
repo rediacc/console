@@ -1,34 +1,17 @@
 """`rediacc_ci.release.assert_artifact_version` against its bash twin.
 
-`gh` IS FAKED ON PATH FOR BOTH SIDES, never called for real: the twin runs
-`gh run download <id> --repo <owner/repo> --name cli-manifest --dir
-/tmp/cd-artifact-check` with `2>/dev/null`, and there is no fixture hook
-anywhere in it. Putting one fake `gh` in front of both implementations is the
-only way to drive the four artifact states (download refused, downloaded but
-empty, downloaded with a bad manifest, downloaded with a good one) and is the
-same technique `test_release_verify_artifact_attestation.py` uses.
+`gh` IS FAKED ON PATH FOR BOTH SIDES, never called for real: the twin runs `gh run download <id> --repo <owner/repo> --name cli-manifest --dir /tmp/cd-artifact-check` with `2>/dev/null`, and there is no fixture hook anywhere in it. Putting one fake `gh` in front of both implementations is the only way to drive the four artifact states (download refused, downloaded but empty,
+downloaded with a bad manifest, downloaded with a good one) and is the same technique `test_release_verify_artifact_attestation.py` uses.
 
-`jq` IS THE REAL ONE ON BOTH SIDES, on purpose. The port shells out to it
-rather than reimplementing `.version // empty`, because on malformed input jq's
-exit code IS the script's exit code (`set -e` through a command substitution)
-and no `::error::` line is printed at all. Those two paths -- a parse error and
-a top-level array -- are the ones a hand-written JSON reader would silently
-give a different code to, so they get their own cases below.
+`jq` IS THE REAL ONE ON BOTH SIDES, on purpose. The port shells out to it rather than reimplementing `.version // empty`, because on malformed input jq's exit code IS the script's exit code (`set -e` through a command substitution) and no `::error::` line is printed at all. Those two paths -- a parse error and a top-level array -- are the ones a hand-written JSON reader would
+silently give a different code to, so they get their own cases below.
 
-THE DOWNLOAD DIRECTORY IS A FIXED `/tmp/cd-artifact-check` IN BOTH
-IMPLEMENTATIONS, so the two sides of one case, and successive cases, share it.
-The fake `gh` therefore CLEARS it on every invocation before writing, which is
-what keeps case N+1 from reading case N's leftovers. That the twin itself never
+THE DOWNLOAD DIRECTORY IS A FIXED `/tmp/cd-artifact-check` IN BOTH IMPLEMENTATIONS, so the two sides of one case, and successive cases, share it. The fake `gh` therefore CLEARS it on every invocation before writing, which is what keeps case N+1 from reading case N's leftovers. That the twin itself never
 clears it is a real hazard in the twin, reported rather than corrected here;
-see the port's docstring. `XDIST_GROUP` below is the other half of the same
-fact: under `--dist loadgroup` this module must not be spread across workers,
-because the contested resource is a path on the host rather than anything a
-registry can see.
+see the port's docstring. `XDIST_GROUP` below is the other half of the same fact: under `--dist loadgroup` this module must not be spread across workers, because the contested resource is a path on the host rather than anything a registry can see.
 
 K=5 LEDGER: `.ci/shadow/w7p6-assert-artifact-version.observations.jsonl`,
-recorded against a disposable scratch git repo built OUTSIDE this checkout
-(this repo's working tree is not clean and `shadow-gate.ts --record` refuses a
-dirty tree).
+recorded against a disposable scratch git repo built OUTSIDE this checkout (this repo's working tree is not clean and `shadow-gate.ts --record` refuses a dirty tree).
 """
 
 from __future__ import annotations
@@ -72,9 +55,7 @@ exit 0
 def _bin_without(tmp_path: pathlib.Path, drop: str) -> str:
     """A PATH directory holding every tool both sides need EXCEPT `drop`.
 
-    An empty PATH is not usable here: `differential.bash_streams` resolves
-    `bash` through the environment it is handed, so emptying PATH breaks the
-    harness rather than the subject, and the test then proves nothing about the
+    An empty PATH is not usable here: `differential.bash_streams` resolves `bash` through the environment it is handed, so emptying PATH breaks the harness rather than the subject, and the test then proves nothing about the
     missing-tool branch."""
     d = tmp_path / ("bin-no-%s" % drop)
     d.mkdir(exist_ok=True)
@@ -298,8 +279,7 @@ def test_malformed_json_propagates_jqs_own_exit_code_and_message(
     tmp_path: pathlib.Path,
 ) -> None:
     """No `::error::` line at all on this path: jq's stderr and jq's exit code
-    are the entire output, because the command substitution fails under
-    `set -e`. Whatever that code is for the installed jq, both sides must
+    are the entire output, because the command substitution fails under `set -e`. Whatever that code is for the installed jq, both sides must
     report the SAME one -- which is the argument for shelling out."""
     old, new = run_both(tmp_path, _ok_env(FAKE_GH_MANIFEST="{not json"))
     assert old[0] != 0
@@ -354,9 +334,7 @@ def test_missing_github_repository_refuses_reworded(tmp_path: pathlib.Path) -> N
 
 def test_missing_gh_binary_refuses_identically(tmp_path: pathlib.Path) -> None:
     """`require_cmd gh` runs BEFORE any variable check, and its message is a
-    `log_error` string rather than a bash diagnostic, so this one IS
-    byte-identical. A gate that exits 0 because its tool is not installed is the
-    failure this repo names first, so the missing-tool branch gets a real
+    `log_error` string rather than a bash diagnostic, so this one IS byte-identical. A gate that exits 0 because its tool is not installed is the failure this repo names first, so the missing-tool branch gets a real
     probe rather than a comment."""
     nogh = _bin_without(tmp_path, "gh")
     env = _ok_env()
@@ -372,8 +350,7 @@ def test_missing_gh_binary_refuses_identically(tmp_path: pathlib.Path) -> None:
 
 def test_missing_jq_binary_refuses_identically(tmp_path: pathlib.Path) -> None:
     """`require_cmd jq` is carried into the port even though the port could
-    parse JSON itself, because dropping the probe would make the port SUCCEED on
-    a host where the twin refuses. It shells out to jq anyway (see the module
+    parse JSON itself, because dropping the probe would make the port SUCCEED on a host where the twin refuses. It shells out to jq anyway (see the module
     docstring), so the dependency is real on both sides, not ceremonial."""
     nojq = _bin_without(tmp_path, "jq")
     env = _ok_env()

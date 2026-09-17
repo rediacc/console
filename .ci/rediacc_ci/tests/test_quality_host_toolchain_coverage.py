@@ -1,19 +1,10 @@
 """`rediacc_ci.quality.host_toolchain_coverage` against the pipelines it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Both extractors are
-five-stage shell pipelines -- `grep -oE | sed -E | tr | sed | sort -u` -- and
-three of those stages have edges a "sensible" rewrite loses: `grep -o` prints the
-MATCH rather than the line (which is why the `$` anchor in the following sed
-always fires), `tr ' '` splits on a space and on nothing else, and `sort -u`
-de-duplicates as well as ordering. A table of expected strings would be a table
-of what the port does, asserted against itself.
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Both extractors are five-stage shell pipelines -- `grep -oE | sed -E | tr | sed | sort -u` -- and three of those stages have edges a "sensible" rewrite loses: `grep -o` prints the MATCH rather than the line (which is why the `$` anchor in the following sed always fires), `tr ' '` splits on a space and on nothing else, and
+`sort -u` de-duplicates as well as ordering. A table of expected strings would be a table of what the port does, asserted against itself.
 
-The bash fragments below are lifted from
-`.ci/scripts/quality/check-host-toolchain-coverage.sh` lines 57-69 with the
-parameters substituted, and nothing else changed. They are NOT the whole gate:
-the whole gate is what the committed shadow ledger
-`.ci/shadow/w7p2-hosttoolchain.observations.jsonl` compares over five distinct
-trees. This file covers the seams that ledger cannot isolate.
+The bash fragments below are lifted from `.ci/scripts/quality/check-host-toolchain-coverage.sh` lines 57-69 with the parameters substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-hosttoolchain.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot
+isolate.
 """
 
 import pathlib
@@ -104,10 +95,7 @@ def test_set_difference_matches_comm(
 ) -> None:
     """`comm -23 <(sorted gated) <(sorted covered)`, run for real.
 
-    `comm` is the stage a port most easily gets backwards: `-23` suppresses
-    columns 2 and 3, leaving lines UNIQUE TO THE FIRST FILE. A port that
-    computed the other direction would report the guard's superset members as
-    findings and would look like a much stricter gate.
+    `comm` is the stage a port most easily gets backwards: `-23` suppresses columns 2 and 3, leaving lines UNIQUE TO THE FIRST FILE. A port that computed the other direction would report the guard's superset members as findings and would look like a much stricter gate.
     """
     (tmp_path / "g").write_text("".join(t + "\n" for t in sorted(gated)), encoding="utf-8")
     (tmp_path / "c").write_text("".join(t + "\n" for t in sorted(covered)), encoding="utf-8")
@@ -122,8 +110,7 @@ def test_the_multi_line_array_blind_spot_is_a_refusal_not_a_pass(tmp_path: pathl
     A `NPX_TOOLS=(` array written one tool per line is invisible to the
     extractor. That could have made the gate report full coverage over a guard
     it could not read; instead the empty result trips the "arrays moved or were
-    renamed" branch and the gate refuses. Both halves are asserted, because the
-    second is the only reason the first is survivable.
+    renamed" branch and the gate refuses. Both halves are asserted, because the second is the only reason the first is survivable.
     """
     guard = "NPX_TOOLS=(\n  ruff\n)\nBARE_TOOLS=(ruff)\n"
     assert htc.extract_array(guard, "NPX_TOOLS") == []

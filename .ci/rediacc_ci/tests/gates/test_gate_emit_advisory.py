@@ -2,17 +2,11 @@
 
 `.ci/scripts/lib/emit-advisory.sh`, in two halves that ask different questions.
 
-THE SHAPE OF THE ANNOTATIONS. CI mode emits a `::error::` / `::warning::` prefix,
-non-CI mode emits coloured ANSI with the glyphs, and continuation lines fire only
+THE SHAPE OF THE ANNOTATIONS. CI mode emits a `::error::` / `::warning::` prefix, non-CI mode emits coloured ANSI with the glyphs, and continuation lines fire only
 for the hints actually supplied.
 
-THE STREAM AND ARGUMENT REGRESSIONS, found 2026-09-06. emit-advisory.sh used to
-assign RED/GREEN/YELLOW/NC and define `log_error` / `log_success` / `log_warn` /
-`log_info` UNCONDITIONALLY. Four gates (check-profiler-coverage.sh,
-check-swallowed-failures.sh, check-ci-job-aggregation.sh, check-go-deps.sh)
-source common.sh first and then reach this library TRANSITIVELY through
-blocker-validator.sh:26, so the later definitions won and silently replaced
-common.sh's TTY-gated logger. Two symptoms:
+THE STREAM AND ARGUMENT REGRESSIONS, found 2026-09-06. emit-advisory.sh used to assign RED/GREEN/YELLOW/NC and define `log_error` / `log_success` / `log_warn` / `log_info` UNCONDITIONALLY. Four gates (check-profiler-coverage.sh, check-swallowed-failures.sh, check-ci-job-aggregation.sh, check-go-deps.sh) source common.sh first and then reach this library TRANSITIVELY through
+blocker-validator.sh:26, so the later definitions won and silently replaced common.sh's TTY-gated logger. Two symptoms:
 
   * log_info / log_warn / log_success moved from stderr to STDOUT, so a gate a
     caller pipes for data got colour escapes mixed into that pipe.
@@ -21,22 +15,15 @@ common.sh's TTY-gated logger. Two symptoms:
 WHICH IS WHY THE LAST THREE CASES SPLIT THE STREAMS AND THE FIRST FOUR DO NOT,
 and that difference is deliberate rather than sloppy. The defect is a stream
 SWAP; the `2>&1` the first four cases use merges the two streams back together
-and would hide it completely. The first four are about rendered text and merging
-is correct for them. `RunResult` keeps `.out`, `.err` and `.combined` apart
-precisely so a port can make that choice per case instead of once per file.
+and would hide it completely. The first four are about rendered text and merging is correct for them. `RunResult` keeps `.out`, `.err` and `.combined` apart precisely so a port can make that choice per case instead of once per file.
 
-Sibling note carried over: check-pool-writer-safety.sh sources only common.sh and
-never reaches blocker-validator.sh, which is why it was never affected. If it
-ever grows a blocker-validator source, these cases are what keep it honest.
+Sibling note carried over: check-pool-writer-safety.sh sources only common.sh and never reaches blocker-validator.sh, which is why it was never affected. If it ever grows a blocker-validator source, these cases are what keep it honest.
 
 WHAT THE PORT REIMPLEMENTS. The twin counts escape bytes with
 `tr -cd '\\033' < out | wc -c`; this counts `\\x1b` in the captured stdout
-string. The two agree because both count ESC OCCURRENCES rather than lines, and
-the harness captures the child's raw bytes as text without rewriting them.
+string. The two agree because both count ESC OCCURRENCES rather than lines, and the harness captures the child's raw bytes as text without rewriting them.
 
-`env -u CI` IS LOAD-BEARING in the split-stream cases, not tidiness: it puts
-emit-advisory.sh in its colours-on branch, and neither stream is a tty, which is
-exactly the condition common.sh gates its own colours on. The two libraries
+`env -u CI` IS LOAD-BEARING in the split-stream cases, not tidiness: it puts emit-advisory.sh in its colours-on branch, and neither stream is a tty, which is exactly the condition common.sh gates its own colours on. The two libraries
 disagree there if the fix regresses. The harness's `env_replace=True` is how that
 is spelled, with the caller passing the whole environment it wants.
 

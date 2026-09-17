@@ -1,32 +1,17 @@
 """Differential: `rediacc_ci.version.bump` against its twin
 `.ci/scripts/version/bump.sh`.
 
-REAL FILES, NOT STUBS, and that is the whole design of this differential. The
-deliverable of this script IS a mutated `package.json`, so every case builds a
-throwaway console tree per side with real manifests in it, runs the subject, and
-compares the resulting BYTES and the resulting FILE MODE. A stub could not show
-the root manifest being written when only the CLI one should be, nor jq's
-formatting drifting, nor the 0600 that `mktemp` + `mv` leaves behind.
+REAL FILES, NOT STUBS, and that is the whole design of this differential. The deliverable of this script IS a mutated `package.json`, so every case builds a throwaway console tree per side with real manifests in it, runs the subject, and compares the resulting BYTES and the resulting FILE MODE. A stub could not show the root manifest being written when only the CLI one should be,
+nor jq's formatting drifting, nor the 0600 that `mktemp` + `mv` leaves behind.
 
 TWO MANIFESTS, AND THE ASYMMETRY IS THE SUBJECT. `package.json` at the root is
 READ for the current version and never written; `packages/cli/package.json` is
-the only entry in `VERSION_FILES_JSON` and the only file written.
-`test_the_root_manifest_is_read_and_never_written` pins both halves, because a
-port that wrote both would pass every other case here.
+the only entry in `VERSION_FILES_JSON` and the only file written. `test_the_root_manifest_is_read_and_never_written` pins both halves, because a port that wrote both would pass every other case here.
 
-THE TWIN IS BROKEN FOR `--auto` AND `--patch` ON THIS REPOSITORY, and
-`test_the_live_defect_*` drives it rather than describing it: the placeholder
-version `0.0.0-dev` makes `$((patch + 1))` evaluate `0 - dev` under `set -u`.
-`test_minor_and_major_survive_the_placeholder_by_luck` drives the other half,
-which is the worse one: the same input yields a clean, plausible version for
-the two flags that never touch the patch field. Reproduced rather than
-repaired, on this box's contract.
+THE TWIN IS BROKEN FOR `--auto` AND `--patch` ON THIS REPOSITORY, and `test_the_live_defect_*` drives it rather than describing it: the placeholder version `0.0.0-dev` makes `$((patch + 1))` evaluate `0 - dev` under `set -u`. `test_minor_and_major_survive_the_placeholder_by_luck` drives the other half, which is the worse one: the same input yields a clean, plausible version for the
+two flags that never touch the patch field. Reproduced rather than repaired, on this box's contract.
 
-ONE CLASS OF DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS. bash's own
-runtime diagnostics and `$0` name the RUNNING program, so `--help`, the
-no-arguments usage line and the unbound-variable death cannot be byte-identical
-across a `.sh` and a `.py`. Each is checked for identical structure, identical
-exit code, and a difference confined to the script path.
+ONE CLASS OF DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS. bash's own runtime diagnostics and `$0` name the RUNNING program, so `--help`, the no-arguments usage line and the unbound-variable death cannot be byte-identical across a `.sh` and a `.py`. Each is checked for identical structure, identical exit code, and a difference confined to the script path.
 """
 
 from __future__ import annotations
@@ -328,8 +313,7 @@ def test_the_root_manifest_is_read_and_never_written(tmp_path: pathlib.Path) -> 
 
 def test_the_manifests_key_order_and_formatting_survive(tmp_path: pathlib.Path) -> None:
     """`jq '.version = $v'` EDITS, it does not rebuild: `name` still precedes
-    `version`, the nested objects keep their shape, and the file keeps its
-    trailing newline. A port that used Python's json.dump would pass every
+    `version`, the nested objects keep their shape, and the file keeps its trailing newline. A port that used Python's json.dump would pass every
     version assertion here and fail this one."""
     old, new = run_both(tmp_path, ["--version", "1.2.3"])
     text = old[1][CLI_MANIFEST][0]
@@ -430,11 +414,9 @@ def test_the_live_defect_every_bump_flag_dies_on_the_0_0_0_dev_placeholder(
 ) -> None:
     """THE DEFECT THIS PORT INHERITED, DRIVEN RATHER THAN DESCRIBED.
 
-    Every package.json in this repository carries `0.0.0-dev`, because the
-    version source of truth is git tags. `increment_patch` splits that into
+    Every package.json in this repository carries `0.0.0-dev`, because the version source of truth is git tags. `increment_patch` splits that into
     `0`, `0`, `0-dev` and asks bash for `$((0-dev + 1))`; `dev` is not a
-    variable and `set -u` kills the run. So `--auto` and `--patch` are broken
-    on a clean checkout of this repo today.
+    variable and `set -u` kills the run. So `--auto` and `--patch` are broken on a clean checkout of this repo today.
 
     The exit code, the preceding "Current version" line and the message shape
     agree; the script path and line number are each side's own, which is the
@@ -461,12 +443,8 @@ def test_the_live_defect_every_bump_flag_dies_on_the_0_0_0_dev_placeholder(
 def test_minor_and_major_survive_the_placeholder_by_luck(tmp_path: pathlib.Path) -> None:
     """THE OTHER HALF OF THE DEFECT, AND THE PART THAT MAKES IT DANGEROUS.
 
-    `--minor` and `--major` on `0.0.0-dev` do NOT die: they only evaluate the
-    major and minor fields, which are plain `0`, and the `-dev` suffix rides
-    along in a field neither of them touches. So the same broken input produces
-    a hard failure for two flags and a clean, plausible-looking version for two
-    others, with nothing in the output hinting that the current version was
-    never a semver at all.
+    `--minor` and `--major` on `0.0.0-dev` do NOT die: they only evaluate the major and minor fields, which are plain `0`, and the `-dev` suffix rides along in a field neither of them touches. So the same broken input produces a hard failure for two flags and a clean, plausible-looking version for two others, with nothing in the output hinting that the current version was never a
+    semver at all.
     """
     for flag, expected in (("--minor", "0.1.0"), ("--major", "1.0.0")):
         sub = tmp_path / ("ok" + flag.strip("-"))
@@ -565,8 +543,7 @@ def _bash_arith(value: str) -> tuple[int, str]:
 
 def test_bash_arith_matches_bash_on_every_value_a_manifest_can_hold() -> None:
     """BOTH DIRECTIONS. The values that WORK must produce the same number, and
-    the values that DIE must die -- a helper with only the happy half would let
-    `0.0.0-dev` through as `0.0.1` and nobody would notice until a tag was cut.
+    the values that DIE must die -- a helper with only the happy half would let `0.0.0-dev` through as `0.0.1` and nobody would notice until a tag was cut.
     """
     for value, expected in (("29", 30), ("0", 1), ("", 1), ("010", 9), ("0x10", 17), ("7", 8)):
         rc, text = _bash_arith(value)
@@ -599,9 +576,7 @@ def test_pure_helpers() -> None:
 def test_constants_have_not_drifted() -> None:
     """The two things the twin gets from constants.sh, re-read from the file.
 
-    A LIVE PARSE WOULD FOLLOW A CHANGE SILENTLY, and the subject of this script
-    is exactly WHICH files get written, so a red test is the answer that gets
-    read.
+    A LIVE PARSE WOULD FOLLOW A CHANGE SILENTLY, and the subject of this script is exactly WHICH files get written, so a red test is the answer that gets read.
     """
     text = CONSTANTS.read_text(encoding="utf-8")
     match = re.search(r"readonly VERSION_FILES_JSON=\(\n(.*?)\n\)", text, re.DOTALL)
@@ -613,9 +588,7 @@ def test_constants_have_not_drifted() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the ONE thing this script exists to do: the
-    mutant writes the ROOT manifest instead of the CLI one. Every stream is
-    byte-identical, the exit code is 0 on both sides, and the only evidence is
-    the file tree. Driven red, then the source is confirmed byte-identical and
+    mutant writes the ROOT manifest instead of the CLI one. Every stream is byte-identical, the exit code is 0 on both sides, and the only evidence is the file tree. Driven red, then the source is confirmed byte-identical and
     green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

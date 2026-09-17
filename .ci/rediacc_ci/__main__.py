@@ -1,42 +1,23 @@
 """`python3 -m rediacc_ci` -- this package's command line, and the router's other half.
 
-WHAT THIS IS FOR. `./run.sh` is a router with three destinations (the media entry
-point, this package, the legacy bash body). Its Python arm is one line:
+WHAT THIS IS FOR. `./run.sh` is a router with three destinations (the media entry point, this package, the legacy bash body). Its Python arm is one line:
 
     PYTHONPATH="$ROOT_DIR/.ci" exec python3 -m rediacc_ci "$@"
 
-so `run.sh` hands this file the WHOLE argv, verb included, and every ported verb
-arrives here. Until this file existed that arm named a module that was not on
-disk: `run.sh` said so out loud in its own header rather than letting the first
-port discover it as a ModuleNotFoundError.
+so `run.sh` hands this file the WHOLE argv, verb included, and every ported verb arrives here. Until this file existed that arm named a module that was not on disk: `run.sh` said so out loud in its own header rather than letting the first port discover it as a ModuleNotFoundError.
 
-THE TABLE IS EMPTY TODAY, AND THAT IS THE HONEST STATE. Not one top-level
-`./run.sh` verb is served by Python yet: `.ci/legacy/run-legacy.sh` still owns all
-of them, and `.ci/rediacc_ci/setup/tools.py` is the install TABLE plus its audit
-gate, not the `setup` verb. Registering a name here that the legacy dispatcher
-also serves would create exactly the overlap the whole split exists to prevent --
-the port looks like it works while the code it replaced is what actually ran --
-so `VERBS` stays empty until a verb genuinely moves, in the same change that
-deletes its legacy arm and adds it to `PORTED_VERBS`.
+THE TABLE IS EMPTY TODAY, AND THAT IS THE HONEST STATE. Not one top-level `./run.sh` verb is served by Python yet: `.ci/legacy/run-legacy.sh` still owns all of them, and `.ci/rediacc_ci/setup/tools.py` is the install TABLE plus its audit gate, not the `setup` verb. Registering a name here that the legacy dispatcher also serves would create exactly the overlap the whole split exists
+to prevent -- the port looks like it works while the code it replaced is what actually ran -- so `VERBS` stays empty until a verb genuinely moves, in the same change that deletes its legacy arm and adds it to `PORTED_VERBS`.
 
-An empty CLI is therefore not a stub: `--help`, the no-verb path and the
-unknown-verb path are the parts a person meets first, they are the parts a stub
-would fake, and they are real here and tested against the real command.
+An empty CLI is therefore not a stub: `--help`, the no-verb path and the unknown-verb path are the parts a person meets first, they are the parts a stub would fake, and they are real here and tested against the real command.
 
 WHY A TABLE AND NOT A CHAIN OF `if verb == ...`. The verb set has to be
-INTROSPECTABLE. `--help` derives its listing from the table rather than from a
-second hand-maintained string (the legacy body's three inventories -- arms,
-`show_help`, per-verb `Usage:` -- disagreed with each other for months, which is
-what .ci/scripts/test/gates/test-run-sh.sh section 6 now refuses), and the next
+INTROSPECTABLE. `--help` derives its listing from the table rather than from a second hand-maintained string (the legacy body's three inventories -- arms, `show_help`, per-verb `Usage:` -- disagreed with each other for months, which is what .ci/scripts/test/gates/test-run-sh.sh section 6 now refuses), and the next
 workstream's boxes read the set programmatically. `names()` is the accessor; a
 dispatch written as control flow has no such thing.
 
-THE HANDLER IS RESOLVED LAZILY, by dotted name, at the moment its verb is
-dispatched. `rediacc_ci/__init__.py` refuses to re-export its submodules for a
-stated reason -- it is imported by a vacuity fixture whose whole point is that
-most of the tree is absent -- and a table that imported every handler at module
-scope would undo that decision one row at a time. `--help` therefore imports
-nothing at all.
+THE HANDLER IS RESOLVED LAZILY, by dotted name, at the moment its verb is dispatched. `rediacc_ci/__init__.py` refuses to re-export its submodules for a stated reason -- it is imported by a vacuity fixture whose whole point is that most of the tree is absent -- and a table that imported every handler at module scope would undo that decision one row at a time. `--help` therefore
+imports nothing at all.
 """
 
 import dataclasses
@@ -54,10 +35,7 @@ EXIT_USAGE = 2
 class Verb:
     """One top-level verb served by this package.
 
-    `module` and `entry` are STRINGS, not a callable: a callable in the table
-    would be imported when the table is built, which is what the lazy-resolution
-    paragraph in the module docstring exists to avoid. `entry` names a function
-    taking the verb's remaining argv and returning an exit code.
+    `module` and `entry` are STRINGS, not a callable: a callable in the table would be imported when the table is built, which is what the lazy-resolution paragraph in the module docstring exists to avoid. `entry` names a function taking the verb's remaining argv and returning an exit code.
     """
 
     name: str
@@ -110,11 +88,7 @@ def format_help(table: tuple[Verb, ...] | None = None) -> str:
 def _resolve(verb: Verb):
     """Import `verb.module` and return its `verb.entry` callable.
 
-    Both failure modes are a BROKEN REGISTRATION rather than user error, so they
-    raise with the row's own fields in the message: the traceback that follows
-    names this file and the module that would not load, which is what a person
-    fixing the table needs. Catching them here and printing a tidy line would
-    hide the import error underneath it.
+    Both failure modes are a BROKEN REGISTRATION rather than user error, so they raise with the row's own fields in the message: the traceback that follows names this file and the module that would not load, which is what a person fixing the table needs. Catching them here and printing a tidy line would hide the import error underneath it.
     """
     module = importlib.import_module(verb.module)
     return getattr(module, verb.entry)
@@ -123,10 +97,7 @@ def _resolve(verb: Verb):
 def main(argv: list[str], table: tuple[Verb, ...] | None = None) -> int:
     """Dispatch `argv` (verb first, exactly as run.sh forwards it).
 
-    `table` is a test seam and nothing else: the real table is empty today, so
-    every dispatch case would otherwise be untestable, and a seam that injects
-    the real production code path is a better answer than a fake verb registered
-    to make the tests pass.
+    `table` is a test seam and nothing else: the real table is empty today, so every dispatch case would otherwise be untestable, and a seam that injects the real production code path is a better answer than a fake verb registered to make the tests pass.
     """
     registry = VERBS if table is None else table
 

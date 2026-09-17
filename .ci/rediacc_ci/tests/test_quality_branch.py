@@ -1,10 +1,6 @@
 """`rediacc_ci.quality.branch` against the shell it reproduces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-branch.observations.jsonl` drives the whole gate over five
-distinct trees: one commit behind, three behind, eight behind, behind AND
-conflicting, and unrelated histories. What a ledger row cannot isolate is the
-three pieces that decide whether the gate is even answering the question:
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-branch.observations.jsonl` drives the whole gate over five distinct trees: one commit behind, three behind, eight behind, behind AND conflicting, and unrelated histories. What a ledger row cannot isolate is the three pieces that decide whether the gate is even answering the question:
 
   * the fetch REFSPEC, which the twin spells out because a bare
     `git fetch origin <branch>` does not promise to write
@@ -13,8 +9,7 @@ three pieces that decide whether the gate is even answering the question:
   * the printed recipe, sixteen lines of instructions a human is expected to
     follow, which is the entire value of the gate exiting 1 rather than rebasing.
 
-The recipe is compared against the TWIN'S OWN TEXT rather than against a copy
-kept here, so a line deleted from either side is a red instead of a slow drift.
+The recipe is compared against the TWIN'S OWN TEXT rather than against a copy kept here, so a line deleted from either side is a red instead of a slow drift.
 """
 
 import pathlib
@@ -61,9 +56,7 @@ def test_indent_preserves_an_already_indented_line() -> None:
 def test_the_refspec_is_the_explicit_form_the_twin_carries() -> None:
     """The literal appears in the twin, so a change there reds here.
 
-    This is the line the twin's longest comment defends. A port that shortened
-    it would still pass every fixture in the ledger, because those fixtures use
-    a remote whose default refspec happens to cover the branch.
+    This is the line the twin's longest comment defends. A port that shortened it would still pass every fixture in the ledger, because those fixtures use a remote whose default refspec happens to cover the branch.
     """
     body = TWIN.read_text(encoding="utf-8")
     assert '"+refs/heads/${BASE_BRANCH}:refs/remotes/origin/${BASE_BRANCH}"' in body
@@ -74,10 +67,7 @@ def test_the_refspec_is_the_explicit_form_the_twin_carries() -> None:
 def test_every_fixed_recipe_line_still_exists_in_the_twin() -> None:
     """Byte-for-byte, for every recipe line the twin does not interpolate into.
 
-    Both directions matter and only one of them is cheap: a line the port
-    invented would not be in the twin (caught here), and a line the port dropped
-    is caught by the ledger, where the whole block is stdout the comparator
-    counts as chatter but the gate's exit code depends on.
+    Both directions matter and only one of them is cheap: a line the port invented would not be in the twin (caught here), and a line the port dropped is caught by the ledger, where the whole block is stdout the comparator counts as chatter but the gate's exit code depends on.
     """
     body = TWIN.read_text(encoding="utf-8")
     fixed = [
@@ -93,8 +83,7 @@ def test_every_fixed_recipe_line_still_exists_in_the_twin() -> None:
 def test_the_head_branch_suffix_is_bashs_plus_expansion() -> None:
     """`${HEAD_BRANCH:+ (branch: X)}` prints nothing at all when unset.
 
-    Compared against bash rather than asserted from memory, because `:+` and
-    `:-` are one character apart and mean opposite things.
+    Compared against bash rather than asserted from memory, because `:+` and `:-` are one character apart and mean opposite things.
     """
     for head, want in (("feat-1", "REBASE LOCALLY (branch: feat-1)"), ("", "REBASE LOCALLY")):
         code, out, _err = diff.bash_streams(
@@ -109,8 +98,7 @@ def test_the_head_branch_suffix_is_bashs_plus_expansion() -> None:
 def test_merge_tree_three_arms_are_distinguishable(tmp_path: pathlib.Path) -> None:
     """0 clean, 1 conflicts, 128 unknown. The gate branches on exactly this.
 
-    Reported as unknown rather than as clean is the load-bearing half: a probe
-    that could not run must never read as "a plain rebase should apply cleanly".
+    Reported as unknown rather than as clean is the load-bearing half: a probe that could not run must never read as "a plain rebase should apply cleanly".
     """
     clean = B._fixture(tmp_path / "clean", behind=1, conflict=False)
     clash = B._fixture(tmp_path / "clash", behind=1, conflict=True)

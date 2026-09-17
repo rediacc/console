@@ -1,9 +1,6 @@
 """Port of `.claude/lib/standing-orders-brief.sh` (120 lines).
 
-The live-state brief printed by the `/standing-orders` slash command: who I am,
-my open worklist slice, the ownership split against peer sessions, whether my
-`[>]` leases are believable, what peers are waiting on, and the durable context
-under `agent/`.
+The live-state brief printed by the `/standing-orders` slash command: who I am, my open worklist slice, the ownership split against peer sessions, whether my `[>]` leases are believable, what peers are waiting on, and the durable context under `agent/`.
 
 LIVE CALLER OF THE TWIN, not repointed by this port:
   * `.claude/commands/standing-orders.md:10` -- the `!`bash
@@ -16,61 +13,34 @@ LIVE CALLER OF THE TWIN, not repointed by this port:
 READ-ONLY BY CONSTRUCTION, on both sides. Nothing here writes to the worklist
 store; `worklist.py` is invoked only with `--list` and `--poll`.
 
-EVERY PATH IS RELATIVE TO THE PROCESS'S CURRENT DIRECTORY, deliberately. The
-twin uses `.claude/hooks/stop/worklist.py`, `agent/...` and a bare `pwd`, so it
-reports on whatever checkout it is run from. `paths.repo_root()` is NOT used:
-that resolver honours $REDIACC_CI_ROOT and would make the port describe a
-different tree from the twin when the two are compared side by side.
+EVERY PATH IS RELATIVE TO THE PROCESS'S CURRENT DIRECTORY, deliberately. The twin uses `.claude/hooks/stop/worklist.py`, `agent/...` and a bare `pwd`, so it reports on whatever checkout it is run from. `paths.repo_root()` is NOT used: that resolver honours $REDIACC_CI_ROOT and would make the port describe a different tree from the twin when the two are compared side by side.
 
 PORT NOTES, each driven before it was written down.
 
 *** A REAL DEFECT IN THE TWIN, REPRODUCED RATHER THAN FIXED ***
 `standing-orders-brief.sh:21` is `ME="${CLAUDE_CODE_SESSION_ID:0:8}"` under
-`set -u` (:18). When the variable is entirely UNSET -- not empty, UNSET -- the
-substring expansion is an unbound-variable error, and a non-interactive bash
-EXITS on it. So the friendly guard on :27-31, whose whole purpose is to explain
-that case, is DEAD CODE for it: it is reachable only when the variable is set to
-the empty string. Driven, twice:
+`set -u` (:18). When the variable is entirely UNSET -- not empty, UNSET -- the substring expansion is an unbound-variable error, and a non-interactive bash EXITS on it. So the friendly guard on :27-31, whose whole purpose is to explain that case, is DEAD CODE for it: it is reachable only when the variable is set to the empty string. Driven, twice:
   `bash -c 'set -uo pipefail; X="${NOPE:0:8}"; echo REACHED'`
       -> `bash: NOPE: unbound variable`, nothing on stdout
   `env -u CLAUDE_CODE_SESSION_ID bash .claude/lib/standing-orders-brief.sh`
       -> `line 21: CLAUDE_CODE_SESSION_ID: unbound variable`, rc=1
-This port exits 1 for the unset case, prints a one-line diagnostic naming the
-same variable, and does NOT forge bash's `line 21:` prefix -- a hard-coded line
-number in a port goes stale the first time the twin gains a comment.
-`test_review_standing_orders_brief.py` pins both halves.
+This port exits 1 for the unset case, prints a one-line diagnostic naming the same variable, and does NOT forge bash's `line 21:` prefix -- a hard-coded line number in a port goes stale the first time the twin gains a comment. `test_review_standing_orders_brief.py` pins both halves.
 
-*** A SECOND, COSMETIC DEFECT, ALSO REPRODUCED ***
-`:70` harvests worker ids with `grep -o 'worker:[A-Za-z0-9._-]*'` over the
-worklist's own output. That output contains the ADVICE string
-`... or re-lease: --lease <me> <id> +60 worker:<bg-id>`, whose `<` is outside
-the character class, so the match is the bare token `worker:` with an EMPTY id.
-The brief then reports a phantom lease with no name. Observed live in this
-checkout on 2026-09-10: the section listed `worker:` above the one real
-`worker:ace7d3b020df07b32`. Reproduced exactly, including the empty id's
+*** A SECOND, COSMETIC DEFECT, ALSO REPRODUCED *** `:70` harvests worker ids with `grep -o 'worker:[A-Za-z0-9._-]*'` over the worklist's own output. That output contains the ADVICE string `... or re-lease: --lease <me> <id> +60 worker:<bg-id>`, whose `<` is outside the character class, so the match is the bare token `worker:` with an EMPTY id. The brief then reports a phantom lease
+with no name. Observed live in this checkout on 2026-09-10: the section listed `worker:` above the one real `worker:ace7d3b020df07b32`. Reproduced exactly, including the empty id's
 `${tasks_dir}/.output` probe path.
 
 `stat | cut || echo MISSING` IS SAVED BY `pipefail`, AND ONLY BY IT. `:107` is
 `state_age=$(stat -c %y ... 2>/dev/null | cut -d. -f1 || echo 'MISSING')`. The
-`||` binds to the PIPELINE, and `cut` on empty input succeeds, so without
-`set -o pipefail` (:18) the fallback would never fire and `state_age` would be
-the empty string -- which would also disarm the anti-vacuity check on :116 that
-tests it against the literal `MISSING`. Driven both ways:
+`||` binds to the PIPELINE, and `cut` on empty input succeeds, so without `set -o pipefail` (:18) the fallback would never fire and `state_age` would be the empty string -- which would also disarm the anti-vacuity check on :116 that tests it against the literal `MISSING`. Driven both ways:
   `bash -c 'set -uo pipefail; v=$(stat -c %y /nope 2>/dev/null | cut -d. -f1 || echo MISSING); echo "[$v]"'` -> `[MISSING]`
   `bash -c 'set -u;           v=$(stat -c %y /nope 2>/dev/null | cut -d. -f1 || echo MISSING); echo "[$v]"'` -> `[]`
-The port implements the pipefail-correct behaviour, which is what the twin does
-today, and `test_state_age_missing_is_really_reported` pins it.
+The port implements the pipefail-correct behaviour, which is what the twin does today, and `test_state_age_missing_is_really_reported` pins it.
 
 `sort -u` IS SHELLED OUT TO, NOT REIMPLEMENTED. `sorted()` is byte order;
-`sort -u` follows the collation of whatever locale the operator's terminal is
-in, and glibc's en_US.UTF-8 does not order `.`/`_`/`-` at the primary level.
-Worker ids are lowercase hex today so the two agree, but a port that quietly
-depended on that would diverge the first time an id carried a separator. One
-subprocess buys exactness.
+`sort -u` follows the collation of whatever locale the operator's terminal is in, and glibc's en_US.UTF-8 does not order `.`/`_`/`-` at the primary level. Worker ids are lowercase hex today so the two agree, but a port that quietly depended on that would diverge the first time an id carried a separator. One subprocess buys exactness.
 
-`head -60` / `head -30` ARE LINE TRUNCATIONS, not byte ones, and the twin merges
-stderr into stdout BEFORE the pipe (`2>&1 | head`), so a worklist traceback is
-part of what gets truncated. Reproduced with a combined capture.
+`head -60` / `head -30` ARE LINE TRUNCATIONS, not byte ones, and the twin merges stderr into stdout BEFORE the pipe (`2>&1 | head`), so a worklist traceback is part of what gets truncated. Reproduced with a combined capture.
 
 Exit: 0 always on the reachable paths, 1 for the unset-session-id death above.
 """

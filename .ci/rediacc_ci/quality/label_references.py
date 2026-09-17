@@ -29,29 +29,18 @@ WHY THIS EXISTS, in the twin's own words, because the failure was silent:
     total distinct labels found catches a broken sweep the self-tests cannot (for
     example a bad SCAN_DIRS path).
 
-THE SELF-EXCLUSION IS NOT A CONVENIENCE, and the twin explains the one thing that
-makes it safe: "This script and its test carry PLANTED sample lines (the self-test
-below and the test's fixtures): instrument fixtures, not label references. Both
-are excluded by basename, which cannot affect the self-test because its sample
-files are named sample.txt."
+THE SELF-EXCLUSION IS NOT A CONVENIENCE, and the twin explains the one thing that makes it safe: "This script and its test carry PLANTED sample lines (the self-test below and the test's fixtures): instrument fixtures, not label references. Both are excluded by basename, which cannot affect the self-test because its sample files are named sample.txt."
 
-THE ARCHAEOLOGY THAT GETS TIDIED OUT, AND MUST NOT BE. The twin was FIXED at
-commit 96355d3b5 on 2026-09-06, and the fix is one `|| true` that looks like
-noise:
+THE ARCHAEOLOGY THAT GETS TIDIED OUT, AND MUST NOT BE. The twin was FIXED at commit 96355d3b5 on 2026-09-06, and the fix is one `|| true` that looks like noise:
 
     `|| true` IS LOAD-BEARING: grep exits 1 on a file that declares no labels and
     `set -e` then killed this script silently, before anything could say so.
     Reproduced 2026-09-06 with LABEL_REFS_LABELS_FILE pointed at an empty file.
 
-That is the whole shape of the class: a bare `grep` in a command substitution
-under `set -e` kills the program AT THE ASSIGNMENT, so the handler written for the
-empty case never runs. The Python port cannot reproduce the defect (an empty
-`findall` is an empty list, not a fatal status), which is exactly why the note has
-to survive as prose: a reader who deletes it from the twin deletes the reason the
-twin can report anything about an empty labels file.
+That is the whole shape of the class: a bare `grep` in a command substitution under `set -e` kills the program AT THE ASSIGNMENT, so the handler written for the empty case never runs. The Python port cannot reproduce the defect (an empty `findall` is an empty list, not a fatal status), which is exactly why the note has to survive as prose: a reader who deletes it from the twin
+deletes the reason the twin can report anything about an empty labels file.
 
-A SECOND `|| true`, in the site listing, for the same reason and a different
-consequence, also carried:
+A SECOND `|| true`, in the site listing, for the same reason and a different consequence, also carried:
 
     `|| true` because this runs under `set -o pipefail` and grep exits 1 on
     no-match: without it, a label whose site list came up empty would KILL the
@@ -62,54 +51,32 @@ consequence, also carried:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE PATTERNS ARE PARALLEL LISTS, NOT A DICT, and the twin says why: "They are kept
-as parallel arrays because bash 4 associative arrays lose ordering and the
-self-test error should name the pattern that died." Python dicts preserve
+THE PATTERNS ARE PARALLEL LISTS, NOT A DICT, and the twin says why: "They are kept as parallel arrays because bash 4 associative arrays lose ordering and the self-test error should name the pattern that died." Python dicts preserve
 insertion order, so one ordered mapping expresses both halves; the ORDER is still
-the observable part, because the self-test reports the FIRST pattern that fails
-and stops.
+the observable part, because the self-test reports the FIRST pattern that fails and stops.
 
-THE grep THAT RUNS THIS GATE IS GNU grep 3.12 AT `/usr/bin/grep`, which is what a
-SCRIPT resolves `grep` to on this host. Measured 2026-09-06 with a two-file
-specimen: `-r` does not descend a directory symlink, and a file containing a NUL
-byte contributes NOTHING TO STDOUT -- with `-o` GNU grep prints no matching text
+THE grep THAT RUNS THIS GATE IS GNU grep 3.12 AT `/usr/bin/grep`, which is what a SCRIPT resolves `grep` to on this host. Measured 2026-09-06 with a two-file specimen: `-r` does not descend a directory symlink, and a file containing a NUL byte contributes NOTHING TO STDOUT -- with `-o` GNU grep prints no matching text
 for it, only `grep: <path>: binary file matches` on STDERR, which every extractor
-here sends to /dev/null. Both are reproduced, so the corpus the port sweeps is the
-corpus the twin sweeps.
+here sends to /dev/null. Both are reproduced, so the corpus the port sweeps is the corpus the twin sweeps.
 
 AN INTERACTIVE CLAUDE CODE SHELL DEFINES `grep` AS A FUNCTION wrapping a bundled
 ugrep 7.8.4 with `-G --ignore-files --hidden -I --exclude-dir=.git ...`. A probe
-run at the prompt therefore measures a DIFFERENT PROGRAM than the gate runs, and
-the two disagree on `\x27`, on binary reporting and on which files are searched.
-Probe with `/usr/bin/grep`, or from inside a script file.
+run at the prompt therefore measures a DIFFERENT PROGRAM than the gate runs, and the two disagree on `\x27`, on binary reporting and on which files are searched. Probe with `/usr/bin/grep`, or from inside a script file.
 
-`-h` MEANS THE FILENAME IS NOT PART OF THE MATCH, which matters for the
-`js-labels-array` pattern: that one greps whole LINES and then pulls quoted tokens
-out of them, so a filename containing a quoted segment would contribute labels if
-`-h` were dropped. The port reproduces `-h` by matching against line text only.
+`-h` MEANS THE FILENAME IS NOT PART OF THE MATCH, which matters for the `js-labels-array` pattern: that one greps whole LINES and then pulls quoted tokens out of them, so a filename containing a quoted segment would contribute labels if `-h` were dropped. The port reproduces `-h` by matching against line text only.
 
 THE FILTERS RUN IN THE TWIN'S ORDER: blank lines first, then anything containing
 `$`, `{` or `}`. Reordering them would not change the result today and would
 change it the day a pattern starts emitting a value that is blank AND templated.
 
-SITES ARE A DISPLAY-ONLY GREP AND ARE MATCHED AS A BASIC REGULAR EXPRESSION, not
-as a literal. A label containing `.` therefore matches any character in that
-position, which over-reports sites and under-reports nothing. Carried, because the
-value is only ever printed. The site grep also carries NO `--exclude`, unlike the
-ten extraction greps, so an instrument file can be listed as a site for a label it
+SITES ARE A DISPLAY-ONLY GREP AND ARE MATCHED AS A BASIC REGULAR EXPRESSION, not as a literal. A label containing `.` therefore matches any character in that position, which over-reports sites and under-reports nothing. Carried, because the value is only ever printed. The site grep also carries NO `--exclude`, unlike the ten extraction greps, so an instrument file can be listed as
+a site for a label it
 does not contribute; that asymmetry is the twin's and is reproduced.
 
 SITE ORDER IS FILESYSTEM STATE, NOT REPOSITORY CONTENT, AND THE TWO SIDES NEED NOT
-AGREE ON IT. `grep -rl` emits in the order its directory walk produces and
-`os.walk` does the same, and the two orders are NOT the same walk: measured
-2026-09-06 over one directory of four files, ugrep 7.8.4 returned
-bravo, mike, zeta, alpha and `os.walk` returned bravo, mike, alpha, zeta. So a
-finding naming TWO OR MORE sites can differ between the implementations in the
-order of that one bracketed list, while naming the same set. This is not fixable
-by sorting: sorting would guarantee a difference wherever the twin's readdir order
-is not sorted, which is most of the time. It is stated here because it is the one
-place this port is not byte-deterministic against its twin, and because the
-differential specimens are therefore built with exactly one site per finding.
+AGREE ON IT. `grep -rl` emits in the order its directory walk produces and `os.walk` does the same, and the two orders are NOT the same walk: measured 2026-09-06 over one directory of four files, ugrep 7.8.4 returned bravo, mike, zeta, alpha and `os.walk` returned bravo, mike, alpha, zeta. So a finding naming TWO OR MORE sites can differ between the implementations in the order of
+that one bracketed list, while naming the same set. This is not fixable by sorting: sorting would guarantee a difference wherever the twin's readdir order is not sorted, which is most of the time. It is stated here because it is the one place this port is not byte-deterministic against its twin, and because the differential specimens are therefore built with exactly one site per
+finding.
 """
 
 import os
@@ -225,11 +192,7 @@ def split_dirs(value: str) -> list[str]:
 def walk_text(root: pathlib.Path, *, apply_excludes: bool = True):
     """Every file `grep -r` would read under `root`, as (path, text).
 
-    THREE BEHAVIOURS REPRODUCED, each measured against ugrep 7.8.4 on 2026-09-06:
-    a directory symlink is not descended, a file symlink is skipped, and a file
-    containing a NUL byte produces NOTHING AT ALL (ugrep does not even print
-    `Binary file X matches`). The last one is the surprising half, and a port that
-    decoded binary files anyway would find labels the twin cannot see.
+    THREE BEHAVIOURS REPRODUCED, each measured against ugrep 7.8.4 on 2026-09-06: a directory symlink is not descended, a file symlink is skipped, and a file containing a NUL byte produces NOTHING AT ALL (ugrep does not even print `Binary file X matches`). The last one is the surprising half, and a port that decoded binary files anyway would find labels the twin cannot see.
     """
     if root.is_file() and not root.is_symlink():
         candidates = [root]
@@ -282,8 +245,7 @@ def _capture(spec: dict, hit: str) -> str:
 
     THREE SHAPES, and they are not interchangeable. A capture group replaces the
     whole matched text with group 1; a `strip` pattern deletes a prefix; and
-    `unquote` removes every quote character (`s/'//g`), which is what the
-    `js-labels-array` pattern does after pulling quoted tokens off a line.
+    `unquote` removes every quote character (`s/'//g`), which is what the `js-labels-array` pattern does after pulling quoted tokens off a line.
     """
     if spec.get("unquote"):
         return hit.replace("'", "")
@@ -298,10 +260,7 @@ def _capture(spec: dict, hit: str) -> str:
 def declared_labels(text: str) -> list[str]:
     """`grep -E '^- name:' | sed ...`, one label per line.
 
-    RETURNS AN EMPTY LIST FOR AN EMPTY FILE rather than raising, which is the
-    behaviour the twin only acquired at 96355d3b5. See the module docstring: the
-    missing `|| true` killed the script at the assignment and the floor below it
-    could never fire.
+    RETURNS AN EMPTY LIST FOR AN EMPTY FILE rather than raising, which is the behaviour the twin only acquired at 96355d3b5. See the module docstring: the missing `|| true` killed the script at the assignment and the floor below it could never fire.
     """
     out: list[str] = []
     for line in text.split("\n"):
@@ -316,8 +275,7 @@ def sites_for(label: str, scan_dirs: list[str], base: pathlib.Path) -> str:
 
     DISPLAY ONLY. The label is used as a BASIC regular expression by the twin, so
     a `.` in it matches any character; that over-reports sites and is carried
-    rather than corrected, because narrowing it would change printed text for no
-    gain in what the gate rules on.
+    rather than corrected, because narrowing it would change printed text for no gain in what the gate rules on.
     """
     needle = re.compile(label)
     found: list[str] = []
@@ -432,13 +390,9 @@ def selftest() -> int:
 
     THE TWIN HAS ONLY THE POSITIVE HALF. Its inline self-test proves each pattern
     can match its planted sample; nothing proves a pattern does not match
-    everything. A pattern degraded to `[A-Za-z0-9._:-]+` would pass all ten of the
-    twin's checks and then report every identifier in the tree as an undeclared
-    label. So each pattern here is also run against a decoy line that names
-    `selftest-label` in a shape it does not consume.
+    everything. A pattern degraded to `[A-Za-z0-9._:-]+` would pass all ten of the twin's checks and then report every identifier in the tree as an undeclared label. So each pattern here is also run against a decoy line that names `selftest-label` in a shape it does not consume.
 
-    THE FLOOR IS DERIVED from the pattern registry, so adding a consumption shape
-    without a sample turns this red rather than quietly shrinking the suite.
+    THE FLOOR IS DERIVED from the pattern registry, so adding a consumption shape without a sample turns this red rather than quietly shrinking the suite.
     """
     decoy = "a bare mention of %s in prose, and nothing that consumes it" % SELFTEST_LABEL
     floor = 2 * len(PATTERNS) + 6

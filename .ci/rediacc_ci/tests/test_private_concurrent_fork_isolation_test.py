@@ -1,88 +1,51 @@
 """Differential: `.ci/rediacc_ci/private/concurrent_fork_isolation_test.py`
 against its twin `.ci/scripts/private/concurrent-fork-isolation-test.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
 -----------------------------------------------------------------------------
 NOTHING REAL IS EVER INVOKED, AND THE VM IS NOT THE OBSTACLE PEOPLE EXPECT
 -----------------------------------------------------------------------------
-The twin drives a worker VM: `rdc machine setup`, `rdc repo create/fork/up`, a
-CRIU checkpoint, and eight `ssh` payloads that read `ss`, `bpftool` and
-per-repository docker sockets. None of that runs here, and skipping it costs
-less than it looks like it should, because EVERY FACT THE SCRIPT ACTS ON
+The twin drives a worker VM: `rdc machine setup`, `rdc repo create/fork/up`, a CRIU checkpoint, and eight `ssh` payloads that read `ss`, `bpftool` and per-repository docker sockets. None of that runs here, and skipping it costs less than it looks like it should, because EVERY FACT THE SCRIPT ACTS ON
 ARRIVES AS A CHILD PROCESS'S STDOUT. The VM decides what those strings ARE; it
-decides nothing about what the script DOES with them. So `ssh`, `rdc`, `sleep`
-and `whoami` are canned recording fakes, `cat`, `sort`, `head`, `tail`, `grep`,
-`tee` and `rm` are recording PASSTHROUGHS to the real tools (so a pipeline still
-behaves like a pipeline), and `mktemp` is a deterministic fake, because a random
-`tmp.XXXXXXXX` would put two different absolute paths into two subjects' call
-logs and read as a divergence.
+decides nothing about what the script DOES with them. So `ssh`, `rdc`, `sleep` and `whoami` are canned recording fakes, `cat`, `sort`, `head`, `tail`, `grep`, `tee` and `rm` are recording PASSTHROUGHS to the real tools (so a pipeline still behaves like a pipeline), and `mktemp` is a deterministic fake, because a random `tmp.XXXXXXXX` would put two different absolute paths into two
+subjects' call logs and read as a divergence.
 
-WHAT THIS DELIBERATELY DOES NOT PROVE: that a real `ss -Hltnp4` prints what the
-fixture prints, or that CRIU restores anything. Neither subject can prove that
-without hardware, and the twin exists to be run by hand against hardware.
+WHAT THIS DELIBERATELY DOES NOT PROVE: that a real `ss -Hltnp4` prints what the fixture prints, or that CRIU restores anything. Neither subject can prove that without hardware, and the twin exists to be run by hand against hardware.
 
 -----------------------------------------------------------------------------
 WHAT IS COMPARED, AND WHY THE CALL LOG IS THE MOST IMPORTANT OF THE FOUR
 -----------------------------------------------------------------------------
-Exit code, stdout, stderr, and the CALL LOG of every external, plus the exact
-bytes of the two sidecar files as the `rdc repo sync upload` fake received them.
-The call log carries what no stream can: that the compose file was written by a
-real `cat` through a real redirection rather than by `pathlib.write_text`, that
-`sort -u` and `head -1` are separate processes, that the checkpoint fork is
-taken with `--tag cpchild --checkpoint` in that order, and that the wait loop
-sleeps thirty times.
+Exit code, stdout, stderr, and the CALL LOG of every external, plus the exact bytes of the two sidecar files as the `rdc repo sync upload` fake received them. The call log carries what no stream can: that the compose file was written by a real `cat` through a real redirection rather than by `pathlib.write_text`, that `sort -u` and `head -1` are separate processes, that the
+checkpoint fork is taken with `--tag cpchild --checkpoint` in that order, and that the wait loop sleeps thirty times.
 
 -----------------------------------------------------------------------------
 THE ONE NORMALISATION, AND THE EVIDENCE THAT IT IS NOT HIDING A DIVERGENCE
 -----------------------------------------------------------------------------
-THE RIGHT-HAND MEMBER OF A PIPELINE HAS NO POSITION IN THIS LOG. A shell forks
-both members before either reaches `exec`, so which one appends its line first
-is a scheduling outcome. Measured 2026-09-14 on the TWIN ALONE, one fixture,
-twelve consecutive runs: `grep` before `tail` seven times, `tail` before `grep`
-five times. Under a loaded machine (`pytest -n 8`) `head` was observed drifting
-TWO slots, past a command that causally precedes its own pipeline. And
-`sort -u` is worse than merely racy: the twin runs it inside a PROCESS
-SUBSTITUTION (`done < <(printf ... | sort -u)`), which the shell never waits for
-at all, so its line may land arbitrarily late.
+THE RIGHT-HAND MEMBER OF A PIPELINE HAS NO POSITION IN THIS LOG. A shell forks both members before either reaches `exec`, so which one appends its line first is a scheduling outcome. Measured 2026-09-14 on the TWIN ALONE, one fixture, twelve consecutive runs: `grep` before `tail` seven times, `tail` before `grep` five times. Under a loaded machine (`pytest -n 8`) `head` was
+observed drifting TWO slots, past a command that causally precedes its own pipeline. And `sort -u` is worse than merely racy: the twin runs it inside a PROCESS SUBSTITUTION (`done < <(printf ... | sort -u)`), which the shell never waits for at all, so its line may land arbitrarily late.
 
-So the call log is split rather than reordered. `_split_drifting` removes every
-record produced by one of the FOUR right-hand tools -- `sort`, `head`, `tail`,
-`tee`, none of which this script invokes in any other position -- and returns
-them SORTED, as a multiset. The remaining forty-one records of a passing run keep their exact order
-and are compared as a sequence, which is the whole of the phase ordering.
+So the call log is split rather than reordered. `_split_drifting` removes every record produced by one of the FOUR right-hand tools -- `sort`, `head`, `tail`, `tee`, none of which this script invokes in any other position -- and returns them SORTED, as a multiset. The remaining forty-one records of a passing run keep their exact order and are compared as a sequence, which is the
+whole of the phase ordering.
 
-The LEFT-hand members (`ssh`, `rdc`, `grep`) stay in the ordered list on
-purpose: a shell waits for a pipeline before starting the next command, so a
-left member's line is bounded on both sides by the commands around the pipeline.
-Only its position relative to its own partner is free, and its partner is the
-thing that was removed.
+The LEFT-hand members (`ssh`, `rdc`, `grep`) stay in the ordered list on purpose: a shell waits for a pipeline before starting the next command, so a left member's line is bounded on both sides by the commands around the pipeline. Only its position relative to its own partner is free, and its partner is the thing that was removed.
 
-`test_the_drift_split_removes_only_the_four_right_hand_tools` pins that the
-split is not a general sort, and the anti-vacuity test asserts the drifting
-multiset by count and argv so nothing is merely discarded.
+`test_the_drift_split_removes_only_the_four_right_hand_tools` pins that the split is not a general sort, and the anti-vacuity test asserts the drifting multiset by count and argv so nothing is merely discarded.
 
 -----------------------------------------------------------------------------
 THE ONE KNOWN DIVERGENCE, ASSERTED RATHER THAN HIDDEN
 -----------------------------------------------------------------------------
 `common.sh` logs with `echo -e`, which INTERPRETS backslash escapes in the
 message; `rediacc_ci.log` formats the message as data. Nine of the twin's
-messages interpolate remote output, so a bind address containing `\\t` prints
-differently on the two sides. That is a pre-existing, deliberate ruling of this
-tree (`rediacc_ci/log.py`, "A SECOND DIVERGENCE, and this one is a bug being
-dropped rather than a decision"), and
-`test_backslashes_in_remote_output_are_the_one_known_divergence` asserts BOTH
-sides of it so nobody "fixes" the Python to match a bug.
+messages interpolate remote output, so a bind address containing `\\t` prints differently on the two sides. That is a pre-existing, deliberate ruling of this tree (`rediacc_ci/log.py`, "A SECOND DIVERGENCE, and this one is a bug being dropped rather than a decision"), and `test_backslashes_in_remote_output_are_the_one_known_divergence` asserts BOTH sides of it so nobody "fixes" the
+Python to match a bug.
 
 -----------------------------------------------------------------------------
 THE ONE MASK
 -----------------------------------------------------------------------------
 Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming the file it is
 running; the port composes the same prefix from `sys.argv[0]` and its own live
-frame. Those can never be equal, so `_mask` collapses exactly that prefix on
-both sides. `test_the_mask_does_not_hide_the_message` pins it.
+frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
 """
 
 import json
@@ -252,11 +215,7 @@ def _records(raw: str) -> list[str]:
 def _split_drifting(records: list[str]) -> tuple[list[str], list[str]]:
     """Separate the ordered spine from the four unordered right-hand members.
 
-    Deliberately NOT a global sort and NOT a whole-log multiset: the order of
-    everything that is not concurrent is exactly what this differential exists
-    to compare, and sorting it would throw away the phase ordering along with
-    the race. The removed records are returned sorted so they can still be
-    compared for presence and argv.
+    Deliberately NOT a global sort and NOT a whole-log multiset: the order of everything that is not concurrent is exactly what this differential exists to compare, and sorting it would throw away the phase ordering along with the race. The removed records are returned sorted so they can still be compared for presence and argv.
     """
     ordered = [r for r in records if r.split("\t")[0] not in DRIFTING_TOOLS]
     drifting = sorted(r for r in records if r.split("\t")[0] in DRIFTING_TOOLS)
@@ -266,9 +225,7 @@ def _split_drifting(records: list[str]) -> tuple[list[str], list[str]]:
 def _fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because the twin sources `common.sh` through `$BASH_SOURCE/../lib`
-    and would otherwise reach the tracked one, and because a subject run out of
-    the real checkout could touch it.
+    Copies, because the twin sources `common.sh` through `$BASH_SOURCE/../lib` and would otherwise reach the tracked one, and because a subject run out of the real checkout could touch it.
     """
     root = tmp_path.resolve() / "tree"
     (root / ".ci" / "scripts" / "private").mkdir(parents=True, exist_ok=True)
@@ -289,9 +246,7 @@ def _binder(
 ) -> str:
     """The COMPLETE PATH for one case: named real tools, plus the twelve fakes.
 
-    `absent` names fakes to LEAVE OUT, which is how every `command not found`
-    arm is driven. Each exclusion is asserted, because a probe that cannot fire
-    is indistinguishable from a subject that cannot fail.
+    `absent` names fakes to LEAVE OUT, which is how every `command not found` arm is driven. Each exclusion is asserted, because a probe that cannot fire is indistinguishable from a subject that cannot fail.
     """
     merged = json.loads(json.dumps(HEALTHY_RULES))
     for name, extra in (rules or {}).items():
@@ -367,8 +322,7 @@ def _run(
 ) -> dict[str, object]:
     """Drive one subject from a NEUTRAL cwd and collect all five observables.
 
-    The fakes' state file and call log are removed FIRST, so the second subject
-    sees the same canned sequence as the first rather than continuing it.
+    The fakes' state file and call log are removed FIRST, so the second subject sees the same canned sequence as the first rather than continuing it.
     """
     cwd = tmp_path.resolve() / "elsewhere"
     cwd.mkdir(exist_ok=True)
@@ -695,8 +649,7 @@ def test_port_and_twin_agree(tmp_path, binder_kw, run_kw):
 
 def test_every_external_is_reached_in_order_on_the_passing_run(tmp_path):
     """ANTI-VACUITY, and the strongest claim in the file. Every comparison above
-    is worthless if the run never orchestrated anything, and a port that printed
-    the same twenty-four log lines while spawning nothing would satisfy a
+    is worthless if the run never orchestrated anything, and a port that printed the same twenty-four log lines while spawning nothing would satisfy a
     stdout-only comparison exactly."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
@@ -746,8 +699,7 @@ def test_the_two_sidecar_files_reach_the_upload_byte_for_byte(tmp_path):
     `count=$$i` come from a QUOTED heredoc and must arrive UNEXPANDED: the
     doubled `$$` is compose's own escape, and a port that let a shell or an
     f-string touch them would upload `count=<pid>` and the checkpoint phase
-    would compare two numbers that never existed. The twin `rm -rf`s the
-    directory on the line after the upload, so the fake snapshot is the only
+    would compare two numbers that never existed. The twin `rm -rf`s the directory on the line after the upload, so the fake snapshot is the only
     place either subject's bytes can be read."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
@@ -787,9 +739,7 @@ def test_the_double_tick_is_a_defect_pinned_rather_than_repaired(tmp_path):
 
 def test_the_wait_loop_burns_all_thirty_sleeps_when_the_counter_never_moves(tmp_path):
     """A SECOND DEFECT IN THE TWIN, PINNED. `sleep 2` comes AFTER the `&& break`,
-    so a counter that never reaches 15 does thirty readings and THIRTY sleeps:
-    the thirtieth waits two seconds after the last reading the loop will ever
-    take. Thirty `sleep 2` calls is the shape, and a port that broke out early
+    so a counter that never reaches 15 does thirty readings and THIRTY sleeps: the thirtieth waits two seconds after the last reading the loop will ever take. Thirty `sleep 2` calls is the shape, and a port that broke out early
     would be friendlier and would not be the same script."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, rules=_ssh_rule("docker-aaa.sock", {"out": "1\n"}))
@@ -849,9 +799,7 @@ def test_the_cleanup_trap_runs_on_every_path_including_the_early_aborts(tmp_path
 
 def test_the_unbound_array_abort_runs_no_cleanup_whatsoever(tmp_path):
     """THE ONE PATH WITH NO TRAP. `${WORKER_IDS[0]}` is read on line 36 and
-    `trap cleanup EXIT` is installed on line 67, so a whitespace-only
-    `VM_WORKERS` dies before any handler exists. A port that installed its
-    `finally` around the whole of `main` would run six `rdc` calls the twin
+    `trap cleanup EXIT` is installed on line 67, so a whitespace-only `VM_WORKERS` dies before any handler exists. A port that installed its `finally` around the whole of `main` would run six `rdc` calls the twin
     never runs."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
@@ -868,13 +816,9 @@ def test_backslashes_in_remote_output_are_the_one_known_divergence(tmp_path):
 
     `common.sh` logs with `echo -e`, which interprets backslash escapes IN THE
     MESSAGE; `rediacc_ci.log` formats the message as data. That decision is
-    recorded in `rediacc_ci/log.py` and pinned by `tests/test_log.py`. Nine of
-    this script's messages interpolate remote output, so the difference is
-    reachable here, and it is asserted from BOTH sides: the twin turns the `\\t`
-    into a tab, the port keeps the two characters.
+    recorded in `rediacc_ci/log.py` and pinned by `tests/test_log.py`. Nine of this script's messages interpolate remote output, so the difference is reachable here, and it is asserted from BOTH sides: the twin turns the `\\t` into a tab, the port keeps the two characters.
 
-    Nothing else in the file drives a backslash, which is why the parametrized
-    cases above can compare stderr byte for byte.
+    Nothing else in the file drives a backslash, which is why the parametrized cases above can compare stderr byte for byte.
     """
     root = _fixture(tmp_path)
     binder = _binder(
@@ -893,16 +837,9 @@ def test_backslashes_in_remote_output_are_the_one_known_divergence(tmp_path):
 
 def test_the_drift_is_real_and_the_split_survives_repetition(tmp_path):
     """A CONTROL ON THE NORMALISATION. `_split_drifting` exists because a shell
-    does not fix the order in which two members of one pipeline reach their
-    `exec`. If that were untrue the split would be discarding four records for
-    nothing, so both halves are re-derived here rather than trusted: the twin is
-    run repeatedly on one fixture, the ordered spine must be IDENTICAL every
-    time, and the port must match it.
+    does not fix the order in which two members of one pipeline reach their `exec`. If that were untrue the split would be discarding four records for nothing, so both halves are re-derived here rather than trusted: the twin is run repeatedly on one fixture, the ordered spine must be IDENTICAL every time, and the port must match it.
 
-    The instability itself was measured 2026-09-14: on the raw log, `grep`
-    before `tail` seven times and `tail` before `grep` five times out of twelve,
-    and under `pytest -n 8` a `head` line landed two slots ahead of a command
-    that causally precedes its own pipeline.
+    The instability itself was measured 2026-09-14: on the raw log, `grep` before `tail` seven times and `tail` before `grep` five times out of twelve, and under `pytest -n 8` a `head` line landed two slots ahead of a command that causally precedes its own pipeline.
     """
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, rules=_rdc_rule("--debug", {"out": "nothing restored\n"}))

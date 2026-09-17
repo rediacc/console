@@ -1,26 +1,14 @@
 """Port of `.ci/scripts/review/epic-context.sh`.
 
-Hands a reviewer one epic's context in a single read: the worklist snapshot's
-own section for that epic, any `agent/PLAN-*.md` files it references (first 40
-lines each), and the commits in this branch carrying its `PR-TASK:` trailer
+Hands a reviewer one epic's context in a single read: the worklist snapshot's own section for that epic, any `agent/PLAN-*.md` files it references (first 40 lines each), and the commits in this branch carrying its `PR-TASK:` trailer
 with the files they touched. Read-only, never touches the network -- everything
-printed comes from the checkout, matching the twin's own stated reason: a
-review action budgeted in turns cannot afford a failure that costs one to
-diagnose.
+printed comes from the checkout, matching the twin's own stated reason: a review action budgeted in turns cannot afford a failure that costs one to diagnose.
 
 TWO EXTRACTORS, BOTH REPRODUCED WITH THEIR QUIRKS RATHER THAN CLEANED UP,
-because the acceptance test for this port is agreement with the twin, not an
-improved twin. `_epic_section` mirrors the AWK that builds the printed body:
+because the acceptance test for this port is agreement with the twin, not an improved twin. `_epic_section` mirrors the AWK that builds the printed body:
 a `### ` heading line is never printed directly, only staged into `pending`;
-it is emitted (heading, then a blank line) IMMEDIATELY BEFORE EACH LINE THAT
-MATCHES THE TRAILER, not once per section. A section with two matching
-trailer lines (two worklist items under one epic heading) prints that heading
-TWICE, once before each -- confirmed against the real `awk` before writing
-this, not inferred from reading it. That is almost certainly not what a human
-skimming the source would expect the script to do, and it is exactly what it
-does, so the port does it too. `_epic_lines` (feeding the PLAN reference scan)
-is the simpler of the two: no staging, the trailer line itself and everything
-after it prints once, headings reset the section and are never printed.
+it is emitted (heading, then a blank line) IMMEDIATELY BEFORE EACH LINE THAT MATCHES THE TRAILER, not once per section. A section with two matching trailer lines (two worklist items under one epic heading) prints that heading TWICE, once before each -- confirmed against the real `awk` before writing this, not inferred from reading it. That is almost certainly not what a human
+skimming the source would expect the script to do, and it is exactly what it does, so the port does it too. `_epic_lines` (feeding the PLAN reference scan) is the simpler of the two: no staging, the trailer line itself and everything after it prints once, headings reset the section and are never printed.
 """
 
 from __future__ import annotations

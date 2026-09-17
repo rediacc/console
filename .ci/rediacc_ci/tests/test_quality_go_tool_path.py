@@ -1,19 +1,9 @@
 """`rediacc_ci.quality.go_tool_path` against the shell pipeline it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The interesting half of
-this gate is three greps whose behaviour on the awkward inputs is decided by
-POSIX character classes and by the ORDER of the pipe stages, not by anything a
-reader could infer. In particular the numbering grep runs AFTER a comment filter,
-so its numbers do not count file lines -- a table of expected strings would be a
-table of what the port does, asserted against itself. Running the real pipeline
-under bash and comparing is the only form of this test that can fail for the
-right reason.
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The interesting half of this gate is three greps whose behaviour on the awkward inputs is decided by POSIX character classes and by the ORDER of the pipe stages, not by anything a reader could infer. In particular the numbering grep runs AFTER a comment filter, so its numbers do not count file lines -- a table of expected
+strings would be a table of what the port does, asserted against itself. Running the real pipeline under bash and comparing is the only form of this test that can fail for the right reason.
 
-The bash fragments below are lifted from `.ci/scripts/quality/check-go-tool-path.sh`
-lines 75-92 with `$GO_TOOLS` substituted, and nothing else changed. They are NOT
-the whole gate: the whole gate is what the committed shadow ledger
-`.ci/shadow/w7p2-gotoolpath.observations.jsonl` compares over five distinct
-trees. This file covers the seams that ledger cannot isolate.
+The bash fragments below are lifted from `.ci/scripts/quality/check-go-tool-path.sh` lines 75-92 with `$GO_TOOLS` substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-gotoolpath.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate.
 """
 
 import pathlib
@@ -100,10 +90,7 @@ def test_bare_invocation_pipeline_matches_bash(body: str, tmp_path: pathlib.Path
 def test_the_numbering_counts_the_filtered_stream_not_the_file(tmp_path: pathlib.Path) -> None:
     """A DEFECT IN THE TWIN, PINNED SO A "FIX" IS A VISIBLE DECISION.
 
-    The comment filter runs BEFORE the numbering grep, so a shebang and a header
-    comment are removed and every reported number is short by that many lines.
-    Measured while recording the shadow ledger: a plant whose bad line sat on
-    file line 5 was reported as `4:`.
+    The comment filter runs BEFORE the numbering grep, so a shebang and a header comment are removed and every reported number is short by that many lines. Measured while recording the shadow ledger: a plant whose bad line sat on file line 5 was reported as `4:`.
     """
     body = "#!/usr/bin/env bash\ngo install x\na=$(goimports -l .)\nb=$(gotestsum ./...)\n"
     hits = gtp.bare_invocations(body)
@@ -128,9 +115,7 @@ def test_scan_file_head_3_truncates_and_still_prints_the_fix(tmp_path: pathlib.P
 def test_an_unreadable_file_is_not_a_finding(tmp_path: pathlib.Path) -> None:
     """`cat "$f" 2>/dev/null || return 0`. Both directions matter here.
 
-    A path in the index but deleted from disk is an ordinary state in this repo,
-    and turning it into a finding would red the gate for a reason that has
-    nothing to do with go tools.
+    A path in the index but deleted from disk is an ordinary state in this repo, and turning it into a finding would red the gate for a reason that has nothing to do with go tools.
     """
     assert gtp.scan_file(tmp_path / "absent.sh", "absent.sh") == []
 
@@ -138,9 +123,7 @@ def test_an_unreadable_file_is_not_a_finding(tmp_path: pathlib.Path) -> None:
 def test_the_floor_is_computed_from_git_not_from_disk(tmp_path: pathlib.Path) -> None:
     """UNTRACKED FILES MUST NOT PROP THE COUNT UP.
 
-    The twin's own comment: "Verified against the tracked list, not the
-    filesystem, so a stray untracked file cannot prop the number up." A port that
-    walked the directory instead would pass the floor on a tree CI would refuse.
+    The twin's own comment: "Verified against the tracked list, not the filesystem, so a stray untracked file cannot prop the number up." A port that walked the directory instead would pass the floor on a tree CI would refuse.
     """
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, capture_output=True)
     (tmp_path / ".ci").mkdir()
@@ -154,9 +137,7 @@ def test_the_floor_is_computed_from_git_not_from_disk(tmp_path: pathlib.Path) ->
 def test_the_pathspec_reaches_files_directly_under_dot_ci(tmp_path: pathlib.Path) -> None:
     """`.ci/*.sh` MUST match `.ci/bootstrap.sh`, and `.ci/**/*.sh` must not.
 
-    Measured 2026-09-06 in the twin's header: the two spellings return the same
-    453 tracked files and only the second drops bootstrap.sh. This asserts the
-    fact rather than the prose, because the prose is what a tidy-up ignores.
+    Measured 2026-09-06 in the twin's header: the two spellings return the same 453 tracked files and only the second drops bootstrap.sh. This asserts the fact rather than the prose, because the prose is what a tidy-up ignores.
     """
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, capture_output=True)
     (tmp_path / ".ci").mkdir()

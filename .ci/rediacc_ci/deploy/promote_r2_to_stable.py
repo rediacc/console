@@ -1,66 +1,38 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/promote-r2-to-stable.sh`.
 
-The soak-gated promotion: copies every R2 release channel from `edge/` to
-`stable/` with a two-phase, metadata-last upload. Driven by `promote-stable.yml`
-after the 7-day soak. The hotfix lane that skips the soak is a different,
-single-phase script, ported beside this one as
-`rediacc_ci.deploy.promote_r2_to_stable_hotfix`.
+The soak-gated promotion: copies every R2 release channel from `edge/` to `stable/` with a two-phase, metadata-last upload. Driven by `promote-stable.yml` after the 7-day soak. The hotfix lane that skips the soak is a different, single-phase script, ported beside this one as `rediacc_ci.deploy.promote_r2_to_stable_hotfix`.
 
-WHY TWO PHASES, carried over from the twin's header because it is the reason
-this file exists rather than a second copy of the hotfix: a package manager
-decides "there is a new version" from METADATA and then fetches the bytes that
-metadata names. Uploading everything at once lets a client see the new-version
-signal minutes before the binaries land, which surfaces as 404s and "Mirror sync
+WHY TWO PHASES, carried over from the twin's header because it is the reason this file exists rather than a second copy of the hotfix: a package manager decides "there is a new version" from METADATA and then fetches the bytes that metadata names. Uploading everything at once lets a client see the new-version signal minutes before the binaries land, which surfaces as 404s and
+"Mirror sync
 in progress?". Phase 1 uploads bytes; phase 2 uploads metadata, and within phase
-2 the signing/hashing metadata goes AFTER the metadata it hashes, so a
-Release/InRelease hash can never disagree with the bytes on R2.
+2 the signing/hashing metadata goes AFTER the metadata it hashes, so a Release/InRelease hash can never disagree with the bytes on R2.
 
 -----------------------------------------------------------------------------
 THE SIBLING SHARES REAL LOGIC WITH THIS FILE AND IT IS DELIBERATELY NOT
 FACTORED OUT
 -----------------------------------------------------------------------------
-The full argument is in `promote_r2_to_stable_hotfix.py`'s docstring and is not
-repeated here. The short form: the two BASH twins share nothing but
-`common.sh`'s `require_cmd` and `sed_in_place`, there is no promote-specific
-bash library and `release-state-validator.sh` is reached by neither, so a shared
-Python helper would have no bash counterpart and would let an edit to one twin
-silently change the other's port. The four near-identical blocks are the
-download leg, the `VACUOUS:` floor, the `find`-driven purge loop and the closing
-purge pipeline. Collapsing them belongs to the cutover box that deletes both
-bash files.
+The full argument is in `promote_r2_to_stable_hotfix.py`'s docstring and is not repeated here. The short form: the two BASH twins share nothing but `common.sh`'s `require_cmd` and `sed_in_place`, there is no promote-specific bash library and `release-state-validator.sh` is reached by neither, so a shared Python helper would have no bash counterpart and would let an edit to one twin
+silently change the other's port. The four near-identical blocks are the download leg, the `VACUOUS:` floor, the `find`-driven purge loop and the closing purge pipeline. Collapsing them belongs to the cutover box that deletes both bash files.
 
 -----------------------------------------------------------------------------
 NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST
 -----------------------------------------------------------------------------
-`aws` and (through `cf-purge-urls.sh`) `curl` are the two external tools that
-carry a credential, so the differential
-(`.ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py`) puts RECORDING
-FAKES for both on a scratch PATH, with an on-disk fixture standing in for the
-bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the
-"one real run" clause and says in as many words that the mocked parity ledger is
-a separate, achievable piece of work. This is that piece.
+`aws` and (through `cf-purge-urls.sh`) `curl` are the two external tools that carry a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py`) puts RECORDING FAKES for both on a scratch PATH, with an on-disk fixture standing in for the bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says
+in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS THE PRIMARY EVIDENCE FOR THIS SCRIPT, more than for most.
-Everything it prints is five `Promoting ...` lines plus one closing line, none
+THE CALL LOG IS THE PRIMARY EVIDENCE FOR THIS SCRIPT, more than for most. Everything it prints is five `Promoting ...` lines plus one closing line, none
 of which is derived from what moved; the ENTIRE observable effect is the twelve
-`aws` invocations and the exclude/include lists they carry. Two implementations
-can print identical stdout while uploading `Release*` before `Packages*`, which
-is precisely the ordering the twin's design is about.
+`aws` invocations and the exclude/include lists they carry. Two implementations can print identical stdout while uploading `Release*` before `Packages*`, which is precisely the ordering the twin's design is about.
 
 -----------------------------------------------------------------------------
 `find` AND `sed` ARE CALLED, NOT REIMPLEMENTED
 -----------------------------------------------------------------------------
-`find` because ITS ORDER IS THE PURGE ORDER and it is DIRECTORY order, not
-sorted order (measured on the fixture 2026-09-13: `rdc-linux-x64, manifest.json,
-latest.json, install.sh, install.ps1` under `cli/`). `sed`, through
-`core.common.sed_in_place`, because the substitutions are regex with `|`
-delimiters. `cf-purge-urls.sh` is invoked as the bash script the twin invokes,
+`find` because ITS ORDER IS THE PURGE ORDER and it is DIRECTORY order, not sorted order (measured on the fixture 2026-09-13: `rdc-linux-x64, manifest.json, latest.json, install.sh, install.ps1` under `cli/`). `sed`, through `core.common.sed_in_place`, because the substitutions are regex with `|` delimiters. `cf-purge-urls.sh` is invoked as the bash script the twin invokes,
 for the reason `upload_repos_to_r2.py` gives: agreement with the live twin
 includes that script's exact bytes.
 
-`$EP` IS UNQUOTED IN THE TWIN, so bash word-splits it into `--endpoint-url` and
-the endpoint. `endpoint_args` reproduces the split rather than hard-coding two
+`$EP` IS UNQUOTED IN THE TWIN, so bash word-splits it into `--endpoint-url` and the endpoint. `endpoint_args` reproduces the split rather than hard-coding two
 elements; pathname expansion on that same unquoted word is not reproduced and is
 unreachable for an https URL. Same ruling and same wording as the sibling.
 
@@ -97,34 +69,22 @@ FOUR FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FOUR ARE REPRODUCED
      line for line: a stale `old-0.0.1.apk` left in `/tmp/promote-apk` reached
      `apk/stable/`, exit 0, no warning. `STALE_TMP_IS_PROMOTED` names it.
 
-None is repaired here. This wave's acceptance rule is agreement with the live
-twin, and changing what the release promotion uploads is a cutover-box decision
-rather than a port's.
+None is repaired here. This wave's acceptance rule is agreement with the live twin, and changing what the release promotion uploads is a cutover-box decision rather than a port's.
 
 -----------------------------------------------------------------------------
 `[[ -f "$f" ]] && sed_in_place ...` DOES NOT END THE RUN WHEN THE FILE IS
 ABSENT, AND THAT WAS VERIFIED RATHER THAN ASSUMED
 -----------------------------------------------------------------------------
-Two of the three per-directory rewrites are written as AND-lists rather than as
-`if`. Under `set -e` a command that FAILS before the final `&&` is exempt, so a
-`rpm/edge/` with no `rediacc.repo` skips the rewrite and carries on. Driven
-2026-09-13 with all three files removed from the fixture: exit 0, five
-directories promoted. Worth stating because the opposite reading is plausible
+Two of the three per-directory rewrites are written as AND-lists rather than as `if`. Under `set -e` a command that FAILS before the final `&&` is exempt, so a `rpm/edge/` with no `rediacc.repo` skips the rewrite and carries on. Driven 2026-09-13 with all three files removed from the fixture: exit 0, five directories promoted. Worth stating because the opposite reading is plausible
 and would have made this port refuse a channel the twin publishes.
 
 -----------------------------------------------------------------------------
 FOUR `${VAR:?msg}` GUARDS, ONE DIVERGENCE
 -----------------------------------------------------------------------------
-bash's own refusal names the bash FILE and a bash LINE NUMBER and then the
-twin's message, which already begins with the script name. This port prints the
-`VAR: msg` half, on the same stream, with the same exit status 1. Identical
-ruling to `deploy/delete_r2_channel.py`, `deploy/upload_repos_to_r2.py` and the
-sibling. The ORDER is kept, and `require_cmd aws` runs BEFORE all four.
+bash's own refusal names the bash FILE and a bash LINE NUMBER and then the twin's message, which already begins with the script name. This port prints the `VAR: msg` half, on the same stream, with the same exit status 1. Identical ruling to `deploy/delete_r2_channel.py`, `deploy/upload_repos_to_r2.py` and the sibling. The ORDER is kept, and `require_cmd aws` runs BEFORE all four.
 
 `EDGE_VERSION` IS THE ODD ONE OUT: it is `EDGE_VERSION="${EDGE_VERSION:?...}"`,
-an assignment rather than a bare `:`, and it is used only in the closing log
-line. A port that treated it as optional would print `edge v -> stable` on a run
-the twin refuses outright.
+an assignment rather than a bare `:`, and it is used only in the closing log line. A port that treated it as optional would print `edge v -> stable` on a run the twin refuses outright.
 
 K=5 LEDGER: `.ci/shadow/w7p6-promote-r2-to-stable.observations.jsonl`.
 """
@@ -303,9 +263,7 @@ class MissingEnvError(Exception):
 class BashExitError(Exception):
     """`set -e` ending the run on a command the twin does not guard.
 
-    Every `aws s3 cp`/`sync`, every `sed`, the floor's own `exit 1` and the final
-    purge pipeline are all unguarded, so the failing program's own stderr is the
-    only explanation the caller gets and its status becomes the script's.
+    Every `aws s3 cp`/`sync`, every `sed`, the floor's own `exit 1` and the final purge pipeline are all unguarded, so the failing program's own stderr is the only explanation the caller gets and its status becomes the script's.
     """
 
     def __init__(self, code: int) -> None:
@@ -317,10 +275,7 @@ def script_dir() -> str:
     """`SCRIPT_DIR` (twin :56), by location rather than by cwd.
 
     The twin resolves `.ci/scripts/deploy` from its own `BASH_SOURCE`; this file
-    sits at `.ci/rediacc_ci/deploy/`, three directories under the same root, so
-    the arithmetic is identical and neither side depends on the caller's cwd.
-    `abspath`, NOT `realpath`: bash's `cd` is logical, so a checkout reached
-    through a symlink keeps the symlinked spelling on both sides.
+    sits at `.ci/rediacc_ci/deploy/`, three directories under the same root, so the arithmetic is identical and neither side depends on the caller's cwd. `abspath`, NOT `realpath`: bash's `cd` is logical, so a checkout reached through a symlink keeps the symlinked spelling on both sides.
     """
     here = os.path.dirname(os.path.abspath(__file__))
     root = os.path.abspath(os.path.join(here, "..", "..", ".."))
@@ -330,17 +285,12 @@ def script_dir() -> str:
 def environment() -> dict[str, str]:
     """Every variable this module reads, ONE `os.environ.get` PER NAME.
 
-    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE.
-    `check:ci-python-env-registry` derives a module's declared inputs by walking
+    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE. `check:ci-python-env-registry` derives a module's declared inputs by walking
     its AST for literal `os.environ` subscripts and `.get` calls; a read that
-    goes through a materialised copy or a local alias is INVISIBLE to it, and the
-    module then reports zero inputs while depending on five. Measured 2026-09-13
-    against the gate's own `derive`: with `dict(os.environ)` here this file
-    contributed only `CLOUDFLARE_ZONE_ID`, the one name read at its own call
+    goes through a materialised copy or a local alias is INVISIBLE to it, and the module then reports zero inputs while depending on five. Measured 2026-09-13 against the gate's own `derive`: with `dict(os.environ)` here this file contributed only `CLOUDFLARE_ZONE_ID`, the one name read at its own call
     site; with this function it contributes all five.
 
-    `require_env` still takes a dict, so the guard logic stays a pure helper the
-    differential can drive without an environment.
+    `require_env` still takes a dict, so the guard logic stays a pure helper the differential can drive without an environment.
     """
     return {
         "AWS_ACCESS_KEY_ID": os.environ.get("AWS_ACCESS_KEY_ID", ""),
@@ -390,10 +340,7 @@ def sync_argv(dir_name: str, tmp: str, endpoint: str, filters: tuple[str, ...]) 
     """One `aws s3 sync <tmp>/ s3://<bucket>/<dir>/stable/ ...` (twin :108-158).
 
     Phase 1 passes `META_EXCLUDES`; each phase-2 arm passes its own fragment.
-    The two are the SAME call shape with a different filter tail, which is why
-    they share a builder here even though the twin writes them out separately:
-    the difference between the phases is entirely the tail, and a reader
-    comparing the call log should see that.
+    The two are the SAME call shape with a different filter tail, which is why they share a builder here even though the twin writes them out separately: the difference between the phases is entirely the tail, and a reader comparing the call log should see that.
     """
     return [
         "aws",
@@ -412,10 +359,7 @@ def sync_argv(dir_name: str, tmp: str, endpoint: str, filters: tuple[str, ...]) 
 def purge_argv(zone: str) -> list[str]:
     """`"$SCRIPT_DIR/cf-purge-urls.sh" --zone "${CLOUDFLARE_ZONE_ID:-}"` (twin :180).
 
-    `:-` and not `:?`, so an UNSET zone becomes an EMPTY ARGUMENT rather than a
-    refusal here. cf-purge-urls.sh then refuses on its own account, and under
-    `pipefail` that status is this script's, AFTER the promotion has already
-    happened. That is the twin's stated design, not an oversight.
+    `:-` and not `:?`, so an UNSET zone becomes an EMPTY ARGUMENT rather than a refusal here. cf-purge-urls.sh then refuses on its own account, and under `pipefail` that status is this script's, AFTER the promotion has already happened. That is the twin's stated design, not an oversight.
     """
     return [os.path.join(script_dir(), os.path.basename(PURGE_SCRIPT_RELATIVE)), "--zone", zone]
 
@@ -432,8 +376,7 @@ def channel_url(dir_name: str, relative: str) -> str:
 def strip_prefix(path: str, prefix: str) -> str:
     """`${f#"$TMP"/}`: remove it only when it is there, leave the rest alone.
 
-    The `"$TMP"` is QUOTED inside the expansion, so it is a literal prefix and
-    not a pattern.
+    The `"$TMP"` is QUOTED inside the expansion, so it is a literal prefix and not a pattern.
     """
     return path.removeprefix(prefix)
 
@@ -441,8 +384,7 @@ def strip_prefix(path: str, prefix: str) -> str:
 def read_lines(text: str) -> list[str]:
     """`while IFS= read -r f; do ... done < <(find ...)`.
 
-    A FINAL LINE WITH NO NEWLINE IS DROPPED, because `read` stores it and then
-    returns non-zero at EOF so the loop body never runs for it.
+    A FINAL LINE WITH NO NEWLINE IS DROPPED, because `read` stores it and then returns non-zero at EOF so the loop body never runs for it.
     """
     if not text:
         return []
@@ -456,9 +398,7 @@ def _flush() -> None:
 
     NOT HOUSEKEEPING, A REAL DIVERGENCE THIS REPAIRS. bash `echo` writes through
     immediately; Python block-buffers stdout when it is a pipe and flushes at
-    exit, so without this the `Promoting ...` lines land after the purge
-    script's output instead of before it, on the same stream, with
-    byte-identical content in a different order.
+    exit, so without this the `Promoting ...` lines land after the purge script's output instead of before it, on the same stream, with byte-identical content in a different order.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -477,12 +417,9 @@ def _find_files(directory: str) -> tuple[str, int]:
     :166) and once into the URL loop (twin :167), and this returns both answers
     from ONE run. Safe in the direction that matters: two runs can only disagree
     if the directory changes between them, and if it did, the twin would report
-    a count that does not match the URLs it then builds. On the path where the
-    count is 0 the twin exits before its second `find`, so the ONE find here
-    also matches how many times find's own stderr is emitted.
+    a count that does not match the URLs it then builds. On the path where the count is 0 the twin exits before its second `find`, so the ONE find here also matches how many times find's own stderr is emitted.
 
-    The count is NEWLINES, which is what `wc -l` counts. find's status is
-    DISCARDED, exactly as `|| true` discards it.
+    The count is NEWLINES, which is what `wc -l` counts. find's status is DISCARDED, exactly as `|| true` discards it.
     """
     _flush()
     proc = subprocess.run(
@@ -561,8 +498,7 @@ def _purge(urls: list[str], zone: str) -> None:
     """`printf '%s\\n' "${PURGE_URLS[@]}" | cf-purge-urls.sh --zone <zone>` (twin :178-181).
 
     Guarded by `${#PURGE_URLS[@]} -gt 0` in the twin, which is why an empty list
-    makes no call at all rather than a call with empty stdin. Under `pipefail`
-    the pipeline's status is the purge script's, since `printf` cannot fail here.
+    makes no call at all rather than a call with empty stdin. Under `pipefail` the pipeline's status is the purge script's, since `printf` cannot fail here.
     """
     payload = "".join(url + "\n" for url in urls)
     argv = purge_argv(zone)

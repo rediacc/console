@@ -3,25 +3,15 @@
 
 THE REAL SCRIPT PUSHES TO ghcr.io. `--push` is unconditional and there is no
 dry-run branch, so one real invocation is a registry write; every case here runs
-against a RECORDING FAKE `docker` on a PATH that REPLACES the caller's rather
-than prepending to it, and `test_the_scratch_path_cannot_reach_a_real_docker`
-asserts the real binary is unreachable before anything is driven. A prepended
-PATH is not good enough: it still resolves whatever the developer has installed.
+against a RECORDING FAKE `docker` on a PATH that REPLACES the caller's rather than prepending to it, and `test_the_scratch_path_cannot_reach_a_real_docker` asserts the real binary is unreachable before anything is driven. A prepended PATH is not good enough: it still resolves whatever the developer has installed.
 
-THE CALL LOG IS THE EVIDENCE. The fake prints nothing that depends on its
-arguments, so a port that swapped two `--build-arg` values, dropped `--push`, or
-built the wrong `--target` would produce identical stdout, identical stderr and
-an identical exit code. `test_a_planted_defect_is_caught_only_by_the_call_log`
-plants exactly that and asserts the three streams agree while the log does not.
+THE CALL LOG IS THE EVIDENCE. The fake prints nothing that depends on its arguments, so a port that swapped two `--build-arg` values, dropped `--push`, or built the wrong `--target` would produce identical stdout, identical stderr and an identical exit code. `test_a_planted_defect_is_caught_only_by_the_call_log` plants exactly that and asserts the three streams agree while the log
+does not.
 
-`rediacc_ci` IS VENDORED INTO THE FIXTURE rather than reached through an
-absolute `PYTHONPATH`, both because it proves the port's dependency set and
-because `scripts/lib/shadow-gate.ts --record` refuses a command string naming an
-absolute path outside the recorded tree.
+`rediacc_ci` IS VENDORED INTO THE FIXTURE rather than reached through an absolute `PYTHONPATH`, both because it proves the port's dependency set and because `scripts/lib/shadow-gate.ts --record` refuses a command string naming an absolute path outside the recorded tree.
 
 `$0` IS MASKED TO `<SELF>`: bash names the script in its five `${VAR:?...}`
-refusals and `sys.argv[0]` ends `.py`. Nothing else is masked, and both streams
-are compared SEPARATELY.
+refusals and `sys.argv[0]` ends `.py`. Nothing else is masked, and both streams are compared SEPARATELY.
 
 K=5 LEDGER: `.ci/shadow/w7p6-buildx-push-web.observations.jsonl`.
 """
@@ -218,8 +208,7 @@ def _argv_line(calls: str) -> list[str]:
 
 def test_the_scratch_path_cannot_reach_a_real_docker(tmp_path) -> None:
     """One real run of this script is a push to ghcr.io, so the seal on the
-    PATH is load-bearing rather than tidy. Asserted in both directions: the fake
-    is reachable, and removing it leaves nothing behind it.
+    PATH is load-bearing rather than tidy. Asserted in both directions: the fake is reachable, and removing it leaves nothing behind it.
     """
     root = fixture(tmp_path)
     sealed = scratch_bin(root)
@@ -277,8 +266,7 @@ def test_arm64_differs_only_in_the_platform_and_the_tag_suffix(tmp_path) -> None
 
 def test_the_ported_argv_builder_matches_what_the_twin_actually_ran(tmp_path) -> None:
     """`build_argv` is exported so the order can be asserted directly rather
-    than inferred from output, and this pins it against the BASH side's
-    recorded argv rather than against itself.
+    than inferred from output, and this pins it against the BASH side's recorded argv rather than against itself.
     """
     root = fixture(tmp_path)
     old, _old_calls = _run(root, "old")
@@ -311,8 +299,7 @@ def test_the_public_key_is_forwarded_when_it_is_set(tmp_path) -> None:
 def test_a_missing_docker_refuses_before_any_variable_is_read(tmp_path) -> None:
     """`require_cmd docker` (:26) runs BEFORE the five expansions, so a machine
     with no docker hears about docker even when every variable is also missing.
-    Driven with the environment emptied, which is the case that would report a
-    variable if the order were reversed.
+    Driven with the environment emptied, which is the case that would report a variable if the order were reversed.
     """
     root = fixture(tmp_path)
     empty = dict.fromkeys(FULL_ENV)
@@ -356,8 +343,7 @@ def test_an_empty_variable_refuses_exactly_as_an_unset_one_does(tmp_path) -> Non
 
 def test_with_nothing_set_the_first_expansion_is_the_one_reported(tmp_path) -> None:
     """ORDER IS OBSERVABLE: five missing variables produce ONE sentence, and it
-    is PLATFORM's. A port that validated in any other order would exit 1 with a
-    different message, which no exit-code comparison would catch.
+    is PLATFORM's. A port that validated in any other order would exit 1 with a different message, which no exit-code comparison would catch.
     """
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(root, env_overrides=dict.fromkeys(FULL_ENV))
@@ -411,8 +397,7 @@ def test_defect_platform_is_never_validated_only_split(tmp_path) -> None:
 def test_defect_the_optional_build_arg_is_always_passed(tmp_path) -> None:
     """DEFECT 3. The twin's header calls `ACCOUNT_ED25519_PUBLIC_KEY` optional;
     `--build-arg "ACCOUNT_ED25519_PUBLIC_KEY=${...:-}"` (:41) passes it as a
-    DEFINED-BUT-EMPTY build arg whether or not it has a value, so a Dockerfile
-    cannot tell unset from empty. Driven both ways.
+    DEFINED-BUT-EMPTY build arg whether or not it has a value, so a Dockerfile cannot tell unset from empty. Driven both ways.
     """
     root = fixture(tmp_path)
     for value in (None, ""):
@@ -428,10 +413,7 @@ def test_defect_the_optional_build_arg_is_always_passed(tmp_path) -> None:
 
 def test_defect_the_build_context_is_the_callers_directory(tmp_path) -> None:
     """DEFECT 1. `--file Dockerfile` and the trailing `.` are relative and the
-    script never `cd`s -- unlike BOTH neighbours in the same directory, which
-    open with `cd "$(get_repo_root)"`. Driven from a scratch directory holding a
-    DIFFERENT one-line Dockerfile: the run succeeds, pushes under the production
-    tag, and the fake records the decoy as its working directory.
+    script never `cd`s -- unlike BOTH neighbours in the same directory, which open with `cd "$(get_repo_root)"`. Driven from a scratch directory holding a DIFFERENT one-line Dockerfile: the run succeeds, pushes under the production tag, and the fake records the decoy as its working directory.
     """
     root = fixture(tmp_path)
     decoy = tmp_path / "elsewhere"
@@ -468,9 +450,7 @@ def test_arch_of_matches_the_shells_own_parameter_expansion() -> None:
 def test_a_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     """A gate that has never been seen to fail is not a gate.
 
-    The plant drops `--push`, which is the single most consequential argument in
-    the file: without it the build succeeds locally and nothing reaches the
-    registry, while the script still prints `✓ Pushed ...` and exits 0. All
+    The plant drops `--push`, which is the single most consequential argument in the file: without it the build succeeds locally and nothing reaches the registry, while the script still prints `✓ Pushed ...` and exits 0. All
     three streams agree; only the recorded argv disagrees, which is why the log
     is compared at all.
     """

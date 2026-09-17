@@ -1,27 +1,17 @@
 """Port of `.ci/scripts/test/gates/test-age-check.sh`.
 
-Unit tests for `.ci/scripts/lib/age-check.sh`, the library that decides whether a
-suppression entry has outlived its re-review window.
+Unit tests for `.ci/scripts/lib/age-check.sh`, the library that decides whether a suppression entry has outlived its re-review window.
 
-WHY THE PORT STILL GOES THROUGH BASH. The subject is a bash library today, and it
-is a DELEGATING SHIM over `rediacc_ci.core.age`. A port that imported the Python
-core directly would be testing the half that is already Python and would go green
-on a tree where the shim had stopped loading, stopped passing `$AGE_WARN_DAYS`, or
-stopped translating the verdict line. The twin's whole subject is that seam, so
+WHY THE PORT STILL GOES THROUGH BASH. The subject is a bash library today, and it is a DELEGATING SHIM over `rediacc_ci.core.age`. A port that imported the Python core directly would be testing the half that is already Python and would go green on a tree where the shim had stopped loading, stopped passing `$AGE_WARN_DAYS`, or stopped translating the verdict line. The twin's whole
+subject is that seam, so
 every case here drives `bash -c 'source age-check.sh; <call>'` exactly as the twin
 does, and the Python core is exercised THROUGH it.
 
-WHY EACH CALL IS ITS OWN `bash -c`, the same argument `test_gate_verify_version`
-makes: the twin sources the library once into its own shell and every case shares
-that state. A Python port has no shell to source into, so the library is re-sourced
-per call. Slower, and strictly more honest -- no case can leave a variable behind
+WHY EACH CALL IS ITS OWN `bash -c`, the same argument `test_gate_verify_version` makes: the twin sources the library once into its own shell and every case shares that state. A Python port has no shell to source into, so the library is re-sourced per call. Slower, and strictly more honest -- no case can leave a variable behind
 for the next one, which matters here because the library marks
 `AGE_WARN_DAYS` / `AGE_FAIL_DAYS` `readonly`.
 
-THE GIT FIXTURES ARE REAL REPOSITORIES WITH BACKDATED COMMITS, unchanged from the
-twin, because the subject reads `git log -S`. A fixture that is not a repository
-makes every case answer 0 for the same reason a broken one would, which is the
-"the control did not fire" shape rather than a finding.
+THE GIT FIXTURES ARE REAL REPOSITORIES WITH BACKDATED COMMITS, unchanged from the twin, because the subject reads `git log -S`. A fixture that is not a repository makes every case answer 0 for the same reason a broken one would, which is the "the control did not fire" shape rather than a finding.
 """
 
 import os
@@ -50,15 +40,9 @@ def source_and_run(
 ):
     """`source age-check.sh` then run `snippet`, in a fresh shell, at `cwd`.
 
-    A missing subject is a LOUD failure and never a skip: the twin's `source`
-    would abort the whole file, and a port that quietly reported nothing would be
-    the vacuous green this directory refuses.
+    A missing subject is a LOUD failure and never a skip: the twin's `source` would abort the whole file, and a port that quietly reported nothing would be the vacuous green this directory refuses.
 
-    `env_replace` IS FORWARDED because an OVERLAY CANNOT UNSET A VARIABLE.
-    `harness.run` builds `dict(os.environ)` and then `.update(env)`, so handing
-    it a dict with a name left OUT changes nothing at all -- the ambient value
-    survives. That is only invisible on a host where the name was already unset.
-    See the `CI` case in test_age_truncated_history_cannot_verify.
+    `env_replace` IS FORWARDED because an OVERLAY CANNOT UNSET A VARIABLE. `harness.run` builds `dict(os.environ)` and then `.update(env)`, so handing it a dict with a name left OUT changes nothing at all -- the ambient value survives. That is only invisible on a host where the name was already unset. See the `CI` case in test_age_truncated_history_cannot_verify.
     """
     if not LIB.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(LIB))
@@ -109,9 +93,7 @@ def make_fixture(gate, directory: pathlib.Path, age_days: int, content: str) -> 
 def make_shallow_pair(gate, directory: pathlib.Path, age_days: int, content: str) -> None:
     """The twin's `make_shallow_pair`: one origin, one depth-1 clone, one full clone.
 
-    The SECOND, recent commit is load-bearing. `--depth 1` cuts above whichever
-    commit is newest, so without it the graft would land on the very commit that
-    introduced the line and the shallow clone would still see it.
+    The SECOND, recent commit is load-bearing. `--depth 1` cuts above whichever commit is newest, so without it the graft would land on the very commit that introduced the line and the shallow clone would still see it.
     """
     origin = directory / "origin"
     make_fixture(gate, origin, age_days, content)
@@ -170,10 +152,7 @@ def test_age_untracked_file_returns_zero(gate, tmp_path):
 
 def test_age_truncated_history_cannot_verify(gate, tmp_path):
     """A TRUNCATED history reports the graft's date, not the line's, so an old
-    suppression looks new. Measured on the real repo before this was fixed: the
-    github.com/docker/docker entry in .go-deps-upgrade-blocklist read 195 days on
-    a full clone and 2 days on a truncated one, with AGE_WARN_DAYS at 180. The
-    gate whose job is expiring stale suppressions expired nothing, in green.
+    suppression looks new. Measured on the real repo before this was fixed: the github.com/docker/docker entry in .go-deps-upgrade-blocklist read 195 days on a full clone and 2 days on a truncated one, with AGE_WARN_DAYS at 180. The gate whose job is expiring stale suppressions expired nothing, in green.
     """
     make_shallow_pair(gate, tmp_path, 400, "ENTRY_OLD")
 

@@ -1,21 +1,14 @@
 """`rediacc_ci.proxies.go_unit` against its bash twin
-`.ci/scripts/test/proxies/proxy-go-unit.sh` (gate `check:ci-proxy-go-unit`,
-`package.json:388`).
+`.ci/scripts/test/proxies/proxy-go-unit.sh` (gate `check:ci-proxy-go-unit`, `package.json:388`).
 
 Sibling of `test_proxies_linux_packages.py`; see that file for why the two
 invocations are compared byte for byte rather than as a finding set.
 
-ONE CASE DRIVES THE REAL `private/renet` (57 packages, ~12 s per side with a
-warm build cache -- was 60 before the fifth exclusion alternative). The rest
-use a SYNTHETIC module with no external dependencies, because the real one is
-947 MB and because the interesting branches -- an empty candidate set, an
-exclusion that swallows everything, a package excluded on nothing but a
+ONE CASE DRIVES THE REAL `private/renet` (57 packages, ~12 s per side with a warm build cache -- was 60 before the fifth exclusion alternative). The rest use a SYNTHETIC module with no external dependencies, because the real one is 947 MB and because the interesting branches -- an empty candidate set, an exclusion that swallows everything, a package excluded on nothing but a
 `testutil.` mention -- cannot be produced by asking the real tree nicely.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-go-unit.observations.jsonl`, re-recorded
-2026-09-10 after the fifth (`Getuid`) exclusion alternative landed -- a real
-gap this time, not only a documentation fix: `pkg/storage` (and the
-`os.Getuid()`-gated `pkg/repository`, `pkg/filesystem`) used to sit in the
+2026-09-10 after the fifth (`Getuid`) exclusion alternative landed -- a real gap this time, not only a documentation fix: `pkg/storage` (and the `os.Getuid()`-gated `pkg/repository`, `pkg/filesystem`) used to sit in the
 non-root subset and hard-fail under `CI=true`.
 """
 
@@ -272,15 +265,8 @@ def test_the_derived_subset_prints_its_whole_shape(tmp_path: pathlib.Path) -> No
 def test_a_testutil_only_package_is_excluded_by_both_sides(tmp_path: pathlib.Path) -> None:
     """The DELIBERATE breadth of `:100`, driven rather than argued.
 
-    `pkg/tu` has no `Geteuid` and no `RequireRoot` -- only the string
-    `testutil.` -- and the fourth alternative of the exclusion grep drops it
-    anyway. Documented as intended rather than as debt since 2026-09-10: a
-    per-symbol rule could only be a hand-typed allowlist, which goes stale in
-    the direction that runs LUKS and loop-device tests unprivileged on a
-    workstation. Over-exclusion is visible (the names are printed every run),
-    under-exclusion is a hazard. On the real tree it removes NOTHING extra,
-    which `test_the_fourth_alternative_removes_nothing_extra_on_the_real_tree`
-    measures rather than asserts in prose.
+    `pkg/tu` has no `Geteuid` and no `RequireRoot` -- only the string `testutil.` -- and the fourth alternative of the exclusion grep drops it anyway. Documented as intended rather than as debt since 2026-09-10: a per-symbol rule could only be a hand-typed allowlist, which goes stale in the direction that runs LUKS and loop-device tests unprivileged on a workstation. Over-exclusion
+    is visible (the names are printed every run), under-exclusion is a hazard. On the real tree it removes NOTHING extra, which `test_the_fourth_alternative_removes_nothing_extra_on_the_real_tree` measures rather than asserts in prose.
     """
     with_tu = build_fixture(tmp_path / "with", files={**PLAIN, **TU})
     old_w, new_w = run_both(with_tu)
@@ -362,9 +348,7 @@ def test_a_go_list_that_produces_nothing_is_77_not_a_finding(tmp_path: pathlib.P
 def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
     """The plant narrows the exclusion regex to the two privileged markers.
 
-    That is the change a well-meaning reader would make after seeing the
-    over-exclusion documented above, and it is exactly what must NOT happen in
-    a port: `pkg/tu` re-enters the subset on the new side only.
+    That is the change a well-meaning reader would make after seeing the over-exclusion documented above, and it is exactly what must NOT happen in a port: `pkg/tu` re-enters the subset on the new side only.
     """
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(
@@ -425,10 +409,7 @@ def test_subset_of_strips_the_cwd_prefix_and_honours_the_exclusion() -> None:
 def test_the_documented_predicate_matches_the_grep_character_for_character() -> None:
     """The anti-drift guard for the fix of 2026-09-10.
 
-    The twin's header described a NARROWER predicate than its own grep for as
-    long as anyone had read it, and a comment cannot go red on its own. So the
-    pattern is read out of the grep, the header must quote it verbatim, and
-    `EXCLUDE_RE` must equal it. Three places, one string.
+    The twin's header described a NARROWER predicate than its own grep for as long as anyone had read it, and a comment cannot go red on its own. So the pattern is read out of the grep, the header must quote it verbatim, and `EXCLUDE_RE` must equal it. Three places, one string.
     """
     text = TWIN.read_text(encoding="utf-8")
     grep_lines = [ln for ln in text.splitlines() if ln.startswith("EXCLUDED_DIRS=")]
@@ -449,11 +430,7 @@ def test_the_documented_predicate_matches_the_grep_character_for_character() -> 
 def test_the_fourth_alternative_removes_nothing_extra_on_the_real_tree() -> None:
     r"""The measurement behind "blast radius: ZERO packages", re-run every time.
 
-    `testutil\.` is the broad alternative. Today every directory it matches is
-    already matched by `Geteuid|RequireRoot|requireRoot`, so the breadth costs
-    no local coverage at all. If that stops being true, the cost stops being
-    hypothetical and the trade-off in the twin's header needs re-arguing, so
-    this reds rather than the sentence quietly going stale.
+    `testutil\.` is the broad alternative. Today every directory it matches is already matched by `Geteuid|RequireRoot|requireRoot`, so the breadth costs no local coverage at all. If that stops being true, the cost stops being hypothetical and the trade-off in the twin's header needs re-arguing, so this reds rather than the sentence quietly going stale.
     """
     renet = ROOT / "private" / "renet"
     if not (renet / "pkg").is_dir():
@@ -495,8 +472,7 @@ def test_the_fourth_alternative_removes_nothing_extra_on_the_real_tree() -> None
 def test_the_real_trees_excluded_dirs_carry_no_regex_metacharacters() -> None:
     """`:83` is `grep -qx "$rel"`, not `-qxF`, so a metacharacter would diverge.
 
-    This is the measurement that licenses `_is_excluded` using plain equality.
-    Skipped when the submodule is absent rather than asserted vacuously.
+    This is the measurement that licenses `_is_excluded` using plain equality. Skipped when the submodule is absent rather than asserted vacuously.
     """
     renet = ROOT / "private" / "renet"
     if not (renet / "pkg").is_dir():

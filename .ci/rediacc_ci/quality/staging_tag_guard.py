@@ -2,8 +2,7 @@
 
 Ported from `.ci/scripts/quality/check-staging-tag-guard.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live until a
-differential ledger row exists over K distinct trees. Its gate header registers
-it as step "Staging tag guard", needs none, lane quality-security.
+differential ledger row exists over K distinct trees. Its gate header registers it as step "Staging tag guard", needs none, lane quality-security.
 
 WHY THIS EXISTS, carried whole from the twin, dated incident included:
 
@@ -29,56 +28,31 @@ WHY THIS EXISTS, carried whole from the twin, dated incident included:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TALLY IS REPRODUCED, NOT REPLACED BY `rediacc_ci.controls.Controls`, and
-this is the one decision in the file worth arguing about. The twin sources
-`.ci/scripts/lib/gate-controls.sh`, whose own header records why that file
-exists: "Extracted 2026-09-06 after check:ci-shape-duplication caught the same ~5
-lines at three copies (check-release-key-canonical, check-release-signing-coverage,
-check-staging-tag-guard) and was right to". The twin's line for it is "One copy of
-the tally, shared: check:ci-shape-duplication caught three."
+THE TALLY IS REPRODUCED, NOT REPLACED BY `rediacc_ci.controls.Controls`, and this is the one decision in the file worth arguing about. The twin sources `.ci/scripts/lib/gate-controls.sh`, whose own header records why that file exists: "Extracted 2026-09-06 after check:ci-shape-duplication caught the same ~5 lines at three copies (check-release-key-canonical,
+check-release-signing-coverage, check-staging-tag-guard) and was right to". The twin's line for it is "One copy of the tally, shared: check:ci-shape-duplication caught three."
 
 `Controls` prints `FAIL  <label>: got <got!r>, wanted <want!r>`; gate-controls.sh
-prints `  FAIL  <label> (got '<got>' want '<want>')`. Both are findings to
-`scripts/lib/shadow-gate.ts` and their TEXT differs, so a port using `Controls`
+prints ` FAIL <label> (got '<got>' want '<want>')`. Both are findings to `scripts/lib/shadow-gate.ts` and their TEXT differs, so a port using `Controls`
 for the gate's own output would disagree with the twin on every failing control
-and the differential would read MISMATCH_FINDINGS for a port that is behaving
-correctly. The tally below is therefore a faithful transliteration of the bash
-one, and `Controls` is used only for `--selftest`, where nothing compares text.
+and the differential would read MISMATCH_FINDINGS for a port that is behaving correctly. The tally below is therefore a faithful transliteration of the bash one, and `Controls` is used only for `--selftest`, where nothing compares text.
 
-That leaves a real duplication -- gate-controls.sh in bash and `_GateTally` here
--- and the right home for it is a shared `rediacc_ci.gate_controls`, byte-compatible
+That leaves a real duplication -- gate-controls.sh in bash and `_GateTally` here -- and the right home for it is a shared `rediacc_ci.gate_controls`, byte-compatible
 with the bash file, so the next port of a gate-controls consumer (there are three)
 does not make a third copy. That module is not created here because this change
 owns four files and none of them is a new shared module; it is named so the next
 writer does not have to rediscover it.
 
-THE ENVIRONMENT SEAMS ARE THE TWIN'S, UNCHANGED. `STAGING_GUARD_ROOT` and
-`STAGING_GUARD_TARGET` keep their names so one harness drives either
-implementation with one pair of variables. The twin's default for ROOT is
-`git rev-parse --show-toplevel 2>/dev/null || echo .`, which is NOT
-`rediacc_ci.paths.repo_root()`: it falls back to the CURRENT DIRECTORY outside a
-work tree, where `repo_root()` would answer with the package's own location. The
-twin's fallback is reproduced exactly, because a gate that silently judges a
-different tree than the operator is standing in is the failure the seam exists to
-avoid.
+THE ENVIRONMENT SEAMS ARE THE TWIN'S, UNCHANGED. `STAGING_GUARD_ROOT` and `STAGING_GUARD_TARGET` keep their names so one harness drives either implementation with one pair of variables. The twin's default for ROOT is `git rev-parse --show-toplevel 2>/dev/null || echo .`, which is NOT `rediacc_ci.paths.repo_root()`: it falls back to the CURRENT DIRECTORY outside a work tree, where
+`repo_root()` would answer with the package's own location. The twin's fallback is reproduced exactly, because a gate that silently judges a different tree than the operator is standing in is the failure the seam exists to avoid.
 
-`set -uo pipefail` AND NOT `set -e`. The twin deliberately omits `-e`: every
-control must run even after one fails, or a single early failure hides the rest
-and the tally reports 1 of 1 instead of 1 of 3. Nothing here short-circuits either.
+`set -uo pipefail` AND NOT `set -e`. The twin deliberately omits `-e`: every control must run even after one fails, or a single early failure hides the rest and the tally reports 1 of 1 instead of 1 of 3. Nothing here short-circuits either.
 
-THE REGEXES ARE ERE, TRANSLITERATED, NOT REWRITTEN. `[[:space:]]` becomes an
-explicit class rather than `\\s`, because Python's `\\s` also matches unicode
-separators and the two would disagree on a file containing one. `\\^staging-` is
-an ESCAPED caret: a literal `^staging-` anywhere in the line, which is what
+THE REGEXES ARE ERE, TRANSLITERATED, NOT REWRITTEN. `[[:space:]]` becomes an explicit class rather than `\\s`, because Python's `\\s` also matches unicode separators and the two would disagree on a file containing one. `\\^staging-` is an ESCAPED caret: a literal `^staging-` anywhere in the line, which is what
 matches the `=~ ^staging-` in the subject.
 
-`grep -c` COUNTS LINES, NOT MATCHES, and the twin compares that count against the
-string "1". Two lines carrying `^staging-` therefore FAIL the rail control. That
-strictness is carried across: a second copy of the rail means the guard was
-edited, and this gate is exactly the reader that should look.
+`grep -c` COUNTS LINES, NOT MATCHES, and the twin compares that count against the string "1". Two lines carrying `^staging-` therefore FAIL the rail control. That strictness is carried across: a second copy of the rail means the guard was edited, and this gate is exactly the reader that should look.
 
-TWO PLACES A PATHOLOGICAL PATH SPLITS THE TWO IMPLEMENTATIONS, both measured on
-2026-09-06 by running the pair over generated trees rather than by reading them.
+TWO PLACES A PATHOLOGICAL PATH SPLITS THE TWO IMPLEMENTATIONS, both measured on 2026-09-06 by running the pair over generated trees rather than by reading them.
 `${hit%%:*}` and `for f in $call_files` are the two lines involved, and neither
 implementation is right about either case; what differs is how wrong they get.
 
@@ -105,10 +79,7 @@ implementation is right about either case; what differs is how wrong they get.
      path occurs in this repository today; both are recorded so the next reader
      of a shadow mismatch over such a tree knows which side to believe.
 
-WHAT NEITHER IMPLEMENTATION CAN SEE: whether the guard's regex is CORRECT, and
-whether a caller computes its tag at runtime from something that only sometimes
-starts with `staging-`. A literal or a pre-check is the evidence available in the
-file, and that is all this rules on.
+WHAT NEITHER IMPLEMENTATION CAN SEE: whether the guard's regex is CORRECT, and whether a caller computes its tag at runtime from something that only sometimes starts with `staging-`. A literal or a pre-check is the evidence available in the file, and that is all this rules on.
 """
 
 import os
@@ -159,9 +130,7 @@ MIN_CONTROLS = 3
 class _GateTally:
     """`.ci/scripts/lib/gate-controls.sh`, transliterated byte for byte.
 
-    Not `rediacc_ci.controls.Controls`: see the port notes. The strings below are
-    the gate's OUTPUT CONTRACT and `scripts/lib/shadow-gate.ts` compares them
-    against the bash twin's, so a nicer wording here is a false mismatch there.
+    Not `rediacc_ci.controls.Controls`: see the port notes. The strings below are the gate's OUTPUT CONTRACT and `scripts/lib/shadow-gate.ts` compares them against the bash twin's, so a nicer wording here is a false mismatch there.
     """
 
     def __init__(self) -> None:
@@ -199,9 +168,7 @@ class _GateTally:
 def default_root() -> str:
     """`$(git rev-parse --show-toplevel 2>/dev/null || echo .)`.
 
-    Reproduced rather than delegated to `rediacc_ci.paths.repo_root()`, which
-    answers with the package's own location outside a work tree where this
-    answers with the current directory. See the port notes.
+    Reproduced rather than delegated to `rediacc_ci.paths.repo_root()`, which answers with the package's own location outside a work tree where this answers with the current directory. See the port notes.
     """
     completed = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
@@ -219,9 +186,7 @@ def grep_hits(root: pathlib.Path) -> tuple[list[str], int]:
 
     Returns (hits, files_read). Each hit is `<abs path>:<lineno>:<line>`, which
     is the shape the twin's `${hit%%:*}` splits on. `files_read` is the
-    anti-vacuity evidence the twin does not collect: it refuses when no CALL SITE
-    is found, which cannot distinguish "the callers were fixed" from "the scan
-    read nothing at all".
+    anti-vacuity evidence the twin does not collect: it refuses when no CALL SITE is found, which cannot distinguish "the callers were fixed" from "the scan read nothing at all".
     """
     hits: list[str] = []
     files_read = 0
@@ -257,9 +222,7 @@ def grep_hits(root: pathlib.Path) -> tuple[list[str], int]:
 def executing_calls(hits: list[str], target: pathlib.Path) -> tuple[list[str], int]:
     """The twin's two filter greps plus its dedupe loop.
 
-    Returns (files in first-seen order, number of hits). The TARGET is skipped:
-    `cleanup-staging.sh` mentioning its own name in its usage header is not a
-    caller of itself.
+    Returns (files in first-seen order, number of hits). The TARGET is skipped: `cleanup-staging.sh` mentioning its own name in its usage header is not a caller of itself.
     """
     files: list[str] = []
     n_calls = 0

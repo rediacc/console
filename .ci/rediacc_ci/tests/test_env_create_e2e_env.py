@@ -2,26 +2,13 @@
 
 THE FILE IS THE SUBJECT, NOT THE MESSAGES. This program prints three lines, all
 progress, all on stderr; its product is the `.env` file. So `run_both` returns
-the generated FILE alongside the two streams and the exit code, and every case
-compares all four. A differential here that only read stdout and stderr would
-pass while the port wrote a completely different file, which is the exact shape
-of blindness `scripts/lib/shadow-gate.ts` was built to refuse.
+the generated FILE alongside the two streams and the exit code, and every case compares all four. A differential here that only read stdout and stderr would pass while the port wrote a completely different file, which is the exact shape of blindness `scripts/lib/shadow-gate.ts` was built to refuse.
 
-EVERY CASE WRITES INTO `tmp_path`, NEVER INTO THE CHECKOUT, and one case makes
-that non-negotiable: `--output` with no value resolves to the literal string
-`true` and creates a file with that name in the CURRENT DIRECTORY (Defect C in
-the port's docstring). Driving it from the repository root leaves an untracked
-`true` behind, which is what happened while this port was being written.
-`assert_is_scratch` re-derives the working directory before the two sides run,
-so a bug in a fixture cannot point a writing differential at the real tree.
+EVERY CASE WRITES INTO `tmp_path`, NEVER INTO THE CHECKOUT, and one case makes that non-negotiable: `--output` with no value resolves to the literal string `true` and creates a file with that name in the CURRENT DIRECTORY (Defect C in the port's docstring). Driving it from the repository root leaves an untracked `true` behind, which is what happened while this port was being
+written. `assert_is_scratch` re-derives the working directory before the two sides run, so a bug in a fixture cannot point a writing differential at the real tree.
 
-WHAT IS NORMALISED, AND WHAT DELIBERATELY IS NOT. Two things differ between the
-sides by construction: the OUTPUT PATH (each side writes its own file, so the
-two must not collide) and the PROGRAM NAME inside bash's own `<prog>: line <N>:`
-diagnostics. Both are replaced by placeholders. The LINE NUMBERS are compared,
-and `test_the_pinned_twin_line_numbers_still_point_at_the_right_lines`
-re-derives them from the twin, because a drifting line number is precisely the
-silent divergence pinning exists to catch.
+WHAT IS NORMALISED, AND WHAT DELIBERATELY IS NOT. Two things differ between the sides by construction: the OUTPUT PATH (each side writes its own file, so the two must not collide) and the PROGRAM NAME inside bash's own `<prog>: line <N>:` diagnostics. Both are replaced by placeholders. The LINE NUMBERS are compared, and
+`test_the_pinned_twin_line_numbers_still_point_at_the_right_lines` re-derives them from the twin, because a drifting line number is precisely the silent divergence pinning exists to catch.
 
 The K=5 ledger is `.ci/shadow/w7p6-create-e2e-env.observations.jsonl`
 (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-create-e2e-env --assert --k 5`).
@@ -88,9 +75,7 @@ def run_both(
 ) -> tuple[Run, Run]:
     """Drive both implementations. `{out}` in `args` becomes each side's own path.
 
-    The two sides get DIFFERENT output paths on purpose: a shared path would let
-    the second run overwrite the first and every file comparison would pass by
-    accident, comparing one file with itself.
+    The two sides get DIFFERENT output paths on purpose: a shared path would let the second run overwrite the first and every file comparison would pass by accident, comparing one file with itself.
     """
     cwd = workdir if workdir is not None else tmp_path / "cwd"
     cwd.mkdir(parents=True, exist_ok=True)
@@ -213,9 +198,7 @@ def test_documented_flag_combinations_agree(
 def test_the_generated_file_is_actually_compared(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY. Two different flag sets must produce two different files.
 
-    Without this, every `assert_equivalent` above could be comparing None with
-    None, or one constant template with itself, and would stay green with the
-    port's whole body deleted.
+    Without this, every `assert_equivalent` above could be comparing None with None, or one constant template with itself, and would stay green with the port's whole body deleted.
     """
     default_old, _ = run_both(tmp_path, ("--output", "{out}"))
     ceph_old, _ = run_both(tmp_path, ("--ceph", "--output", "{out}"))
@@ -420,15 +403,11 @@ def test_the_documented_divergence_on_an_unsupported_operator_is_real(
 ) -> None:
     """PINNED GAP, not an oversight. See the port docstring's divergence section.
 
-    `1<<13` is a bash shift, which `_arith` does not implement, and 2x8192 plus
-    the bridge crosses the 14848 MB ceiling. So this is the WORST case the gap
-    can produce: the twin evaluates the shift and REFUSES the topology (exit 1),
+    `1<<13` is a bash shift, which `_arith` does not implement, and 2x8192 plus the bridge crosses the 14848 MB ceiling. So this is the WORST case the gap can produce: the twin evaluates the shift and REFUSES the topology (exit 1),
     while the port scores the value as an arithmetic error, skips the budget
     exactly as Defect A skips it, and exits 0 having written the file.
 
-    Asserted in both directions rather than glossed, so a future reader who
-    narrows the gap finds a red test telling them to update the port docstring,
-    and a reader who does not is told precisely what it costs.
+    Asserted in both directions rather than glossed, so a future reader who narrows the gap finds a red test telling them to update the port docstring, and a reader who does not is told precisely what it costs.
     """
     old, new = run_both(tmp_path, ("--output", "{out}", "--vm-ram-worker", "1<<13"))
     assert old.code == 1, "bash evaluates the shift and refuses 17408 MB"

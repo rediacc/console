@@ -87,10 +87,7 @@ FLOORS = {
 class Deck:
     """A deterministic sampler. NOT `random`, and not only because of a lint rule.
 
-    A corpus that is re-sampled by `random.Random` is reproducible only for as
-    long as CPython's Mersenne stream and `random.sample`'s internals stay put.
-    This is nine lines of arithmetic that will produce the same corpus on every
-    interpreter forever, which is the actual property a frozen differential
+    A corpus that is re-sampled by `random.Random` is reproducible only for as long as CPython's Mersenne stream and `random.sample`'s internals stay put. This is nine lines of arithmetic that will produce the same corpus on every interpreter forever, which is the actual property a frozen differential
     needs. The constants are the Numerical Recipes LCG; nothing here is
     cryptographic and nothing here pretends to be.
     """
@@ -137,8 +134,7 @@ def _bash(function: str, args: list[str], **env: str) -> tuple[int, str, str]:
     `set -uo pipefail` and NOT `-e`, matching how every real caller invokes
     these: `rsv_assert_bijection ... || rc=$?` at check-release-state.sh:50 and
     `out="$(...)" || rc=$?` at test-release-state-consistency.sh:40. Adding `-e`
-    here would make the harness abort where the callers keep going, which is a
-    difference in the TEST rather than in the thing under test.
+    here would make the harness abort where the callers keep going, which is a difference in the TEST rather than in the thing under test.
     """
     script = "set -uo pipefail\nsource %s\n%s %s\n" % (
         _q(str(_twin())),
@@ -159,10 +155,7 @@ def _joined(lines: list[str]) -> str:
 def _bijection_cases() -> list[tuple[str, str, str, str | None]]:
     """A deterministic sample of (cli, tags, in_flight, override).
 
-    SEEDED, not random-per-run. A differential that samples a different corpus
-    on every run is a differential that can pass today and fail tomorrow for a
-    reason nobody can reproduce, and the first thing anyone does with that is
-    re-run it until it is green.
+    SEEDED, not random-per-run. A differential that samples a different corpus on every run is a differential that can pass today and fail tomorrow for a reason nobody can reproduce, and the first thing anyone does with that is re-run it until it is green.
     """
     rng = Deck(20260910)
     cases: list[tuple[str, str, str, str | None]] = []
@@ -193,9 +186,7 @@ def test_bijection_matches_the_twin(
     """`rsv_assert_bijection` and `assert_bijection` agree on stdout AND rc.
 
     THE RATCHET IS PINNED AWAY ON BOTH SIDES with `RSV_FLOOR_FILE=/dev/null`, so
-    the case is deciding what it says it is deciding. Without that the repo's
-    own `.ci/config/release-contract-floor.txt` supplies a floor to every case
-    and the `observed` half of the function is never exercised alone.
+    the case is deciding what it says it is deciding. Without that the repo's own `.ci/config/release-contract-floor.txt` supplies a floor to every case and the `observed` half of the function is never exercised alone.
     """
     env = {"RSV_FLOOR_FILE": "/dev/null"}
     if override is not None:
@@ -208,8 +199,7 @@ def test_bijection_matches_the_twin(
 def test_the_bijection_corpus_is_not_trivial() -> None:
     """ANTI-VACUITY. The cases above must produce BOTH verdicts and real drift.
 
-    A corpus that only ever produced `OK` would pass the differential while
-    proving nothing about the half of the function that finds things.
+    A corpus that only ever produced `OK` would pass the differential while proving nothing about the half of the function that finds things.
     """
     verdicts = set()
     drift_lines = 0
@@ -304,9 +294,7 @@ def test_pre_contract_floor_matches_the_twin(
 ) -> None:
     """`rsv_pre_contract_floor` and its port agree, including the empty answer.
 
-    The twin ALWAYS prints a trailing newline (`printf '%s\\n'`), even for an
-    empty floor, so the comparison appends one rather than stripping it: a port
-    that returned `None` instead of `""` would otherwise look equal here.
+    The twin ALWAYS prints a trailing newline (`printf '%s\\n'`), even for an empty floor, so the comparison appends one rather than stripping it: a port that returned `None` instead of `""` would otherwise look equal here.
     """
     if FLOORS[floor_name] == "":
         floor_file = "/dev/null"
@@ -351,16 +339,9 @@ def test_a_planted_defect_makes_the_differential_fail(
 ) -> None:
     """A MUTATED COPY must disagree with the twin on at least one live case.
 
-    THE REAL FILE IS NEVER TOUCHED. The mutation is applied to a copy of the
-    whole package under `tmp_path`, run in a child interpreter whose sys.path
-    points at that copy, and the real file's sha256 is re-asserted at the end of
-    the test. A control that edits the thing it is controlling has, at best,
-    proved that it can break the build.
+    THE REAL FILE IS NEVER TOUCHED. The mutation is applied to a copy of the whole package under `tmp_path`, run in a child interpreter whose sys.path points at that copy, and the real file's sha256 is re-asserted at the end of the test. A control that edits the thing it is controlling has, at best, proved that it can break the build.
 
-    THE ASSERTION IS THAT IT FAILS, and specifically that it fails on a case the
-    UNMUTATED module passes. "The mutant disagrees with the twin" would also be
-    satisfied by a mutant that crashes on every input, which proves nothing
-    about the comparison being sensitive to the RIGHT thing.
+    THE ASSERTION IS THAT IT FAILS, and specifically that it fails on a case the UNMUTATED module passes. "The mutant disagrees with the twin" would also be satisfied by a mutant that crashes on every input, which proves nothing about the comparison being sensitive to the RIGHT thing.
     """
     real = paths.from_root(PORT)
     before = hashlib.sha256(real.read_bytes()).hexdigest()
@@ -452,8 +433,7 @@ def test_a_planted_defect_makes_the_differential_fail(
 def test_probe_is_not_an_int() -> None:
     """In shell 0 is TRUE and in Python 0 is FALSE. See the module docstring.
 
-    `if sentinel_exists(...)` under an `IntEnum` would read correctly and mean
-    the opposite of `if rsv_sentinel_exists ...`, in the direction that proceeds
+    `if sentinel_exists(...)` under an `IntEnum` would read correctly and mean the opposite of `if rsv_sentinel_exists ...`, in the direction that proceeds
     with an upload over a sealed release.
     """
     assert not issubclass(rsv.Probe, int)
@@ -485,10 +465,7 @@ def test_sentinel_exists_only_calls_404_an_absence(
 ) -> None:
     """An unanswered question is not a `no`. The twin's rule at :221-222.
 
-    The classifier is the same case-insensitive `404|Not Found|NoSuchKey` grep
-    the twin runs over the CAPTURED STDERR, and the reason it is a text match
-    and not an exit-code table is that the aws CLI returns 254 for both a 404
-    and an auth failure.
+    The classifier is the same case-insensitive `404|Not Found|NoSuchKey` grep the twin runs over the CAPTURED STDERR, and the reason it is a text match and not an exit-code table is that the aws CLI returns 254 for both a 404 and an auth failure.
     """
 
     def fake(argv: list[str], **_kwargs: object) -> subprocess.CompletedProcess:
@@ -524,9 +501,7 @@ def test_binary_count_never_fabricates_a_zero(
 ) -> None:
     """None, not 0, when the count could not be obtained. The twin's :161-166.
 
-    0 is precisely the value callers act on: it is the "sealed-but-empty" signal
-    that `write-release-sentinel.sh` and `upload-to-r2.sh` use to REFUSE a
-    release, so an unreachable bucket returning 0 would refuse a healthy one.
+    0 is precisely the value callers act on: it is the "sealed-but-empty" signal that `write-release-sentinel.sh` and `upload-to-r2.sh` use to REFUSE a release, so an unreachable bucket returning 0 would refuse a healthy one.
     """
 
     def fake(argv: list[str], **_kwargs: object) -> subprocess.CompletedProcess:
@@ -569,9 +544,7 @@ def test_list_sentinels_parses_the_tab_packed_key_list(
 ) -> None:
     """`--output text` packs the array onto ONE tab-joined line; `tr` splits it.
 
-    Without the tab split there are no records at all and the function returns
-    an empty list, which is indistinguishable from an empty bucket. That is the
-    vacuity this case exists to keep out.
+    Without the tab split there are no records at all and the function returns an empty list, which is indistinguishable from an empty bucket. That is the vacuity this case exists to keep out.
     """
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "x")
     keys = (
@@ -595,10 +568,7 @@ def test_list_sentinels_parses_the_tab_packed_key_list(
 def test_get_sentinel_payload_fails_open_exactly_as_the_twin_does() -> None:
     """`|| true` plus `2>/dev/null`: an unreachable bucket yields "".
 
-    PINNED, NOT FIXED. `write-release-sentinel.sh:140` uses this for a readback
-    VERIFICATION, so a torn network read there reads as "the sentinel I just
-    wrote is not there". Changing it here would make the port disagree with the
-    twin about a release-path decision.
+    PINNED, NOT FIXED. `write-release-sentinel.sh:140` uses this for a readback VERIFICATION, so a torn network read there reads as "the sentinel I just wrote is not there". Changing it here would make the port disagree with the twin about a release-path decision.
     """
     text = _twin().read_text(encoding="utf-8")
     body = text.split("rsv_get_sentinel_payload() {", 1)[1].split("\n}", 1)[0]
@@ -612,9 +582,7 @@ def test_get_sentinel_payload_fails_open_exactly_as_the_twin_does() -> None:
 def test_defect_1_the_twin_still_calls_an_undefined_log_error() -> None:
     """`log_error` at 4 sites, defined nowhere, and the file sources nothing.
 
-    RED WHEN THE TWIN IS FIXED, which is the point of a pin. Whoever adds the
-    `source common.sh` (or defines a fallback) deletes this case in the same
-    change and the finding closes with evidence rather than by being forgotten.
+    RED WHEN THE TWIN IS FIXED, which is the point of a pin. Whoever adds the `source common.sh` (or defines a fallback) deletes this case in the same change and the finding closes with evidence rather than by being forgotten.
     """
     text = _twin().read_text(encoding="utf-8")
     calls = [m.start() for m in re.finditer(r"^\s*log_error ", text, re.MULTILINE)]
@@ -628,8 +596,7 @@ def test_defect_1_the_twin_still_calls_an_undefined_log_error() -> None:
 def test_defect_1_is_live_when_the_library_is_sourced_alone() -> None:
     """Driven, not asserted from the source text. `command not found`, rc 127.
 
-    The `rm -f "$err"` on the line after never runs either, so the failure also
-    leaks the `mktemp` file the function created.
+    The `rm -f "$err"` on the line after never runs either, so the failure also leaks the `mktemp` file the function created.
     """
     script = (
         "set -euo pipefail\n"
@@ -650,8 +617,7 @@ def test_defect_1_is_live_when_the_library_is_sourced_alone() -> None:
 def test_defect_2_only_one_probe_still_conflates_empty_with_unreachable() -> None:
     """Three siblings grew a third state; `rsv_list_sentinels` never did.
 
-    Pinned as a COUNT so that fixing the fourth one, or regressing one of the
-    three, both show up here.
+    Pinned as a COUNT so that fixing the fourth one, or regressing one of the three, both show up here.
     """
     text = _twin().read_text(encoding="utf-8")
     tri_state = [
@@ -671,8 +637,7 @@ def test_defect_2_only_one_probe_still_conflates_empty_with_unreachable() -> Non
 def test_defect_2_the_ratchet_is_what_keeps_that_from_being_green() -> None:
     """With the probe dead and the ratchet present, the gate must still go RED.
 
-    This is the load-bearing half of the finding. If it ever passes with rc 0,
-    the BLOCKER gate has become a gate that can be satisfied by an outage.
+    This is the load-bearing half of the finding. If it ever passes with rc 0, the BLOCKER gate has become a gate that can be satisfied by an outage.
     """
     ratchet = paths.from_root(".ci/config/release-contract-floor.txt")
     assert ratchet.is_file(), "the ratchet file is gone; DEFECT 2 is now LIVE"
@@ -707,9 +672,7 @@ def test_defect_3_the_inner_function_leaks_into_the_global_shell() -> None:
 def test_the_bash_4_precondition_is_still_in_the_twin() -> None:
     """The port has no counterpart, so the twin's guard must not vanish quietly.
 
-    A Python dict is a dict on every interpreter this repo supports. The guard
-    exists because `declare -A` fails SILENTLY on bash 3.2 and turns a healthy
-    release state into a red that names nothing.
+    A Python dict is a dict on every interpreter this repo supports. The guard exists because `declare -A` fails SILENTLY on bash 3.2 and turns a healthy release state into a red that names nothing.
     """
     text = _twin().read_text(encoding="utf-8")
     assert 'if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 ]]; then' in text
@@ -722,9 +685,7 @@ def test_the_bash_4_precondition_is_still_in_the_twin() -> None:
 def test_the_known_duplicate_still_exists_and_still_lacks_the_probes() -> None:
     """`quality/release_state.py` holds the assertion half and NOT the probes.
 
-    If it grows one of the four probe functions, the two files have started
-    drifting toward each other rather than collapsing, and this case says so
-    before there are two implementations of a release-path decision.
+    If it grows one of the four probe functions, the two files have started drifting toward each other rather than collapsing, and this case says so before there are two implementations of a release-path decision.
     """
     other = paths.from_root(".ci/rediacc_ci/quality/release_state.py")
     text = other.read_text(encoding="utf-8")

@@ -1,30 +1,14 @@
 """Port of `.ci/scripts/test/gates/test-blocker-validator.sh`.
 
-Unit tests for `.ci/scripts/lib/blocker-validator.sh`: the parser that reads a
-`BLOCKER:`-annotated suppression list, and the quality rule that decides whether a
-stated reason is a reason at all.
+Unit tests for `.ci/scripts/lib/blocker-validator.sh`: the parser that reads a `BLOCKER:`-annotated suppression list, and the quality rule that decides whether a stated reason is a reason at all.
 
-WHY THE SUBJECT CANNOT BE REACHED WITHOUT BASH, and why that is not a shortcoming
-of the port. `parse_blockered_list` takes two NAMEREF arguments -- the caller
-declares `ALLOWED` and `BLOCKER` as associative arrays and passes their NAMES, and
-the function writes through `declare -n`. There is no stdout form of that result
-and no file it lands in. So the only honest way to observe it is from inside a
-bash process, which is exactly what every case below does: a snippet that sources
-the real library, calls the real function, and PRINTS what landed in the arrays.
-Re-implementing the parser in Python to avoid the subprocess would be testing a
-copy.
+WHY THE SUBJECT CANNOT BE REACHED WITHOUT BASH, and why that is not a shortcoming of the port. `parse_blockered_list` takes two NAMEREF arguments -- the caller declares `ALLOWED` and `BLOCKER` as associative arrays and passes their NAMES, and the function writes through `declare -n`. There is no stdout form of that result and no file it lands in. So the only honest way to observe
+it is from inside a bash process, which is exactly what every case below does: a snippet that sources the real library, calls the real function, and PRINTS what landed in the arrays. Re-implementing the parser in Python to avoid the subprocess would be testing a copy.
 
-`LOW_EFFORT_BLOCKER_PATTERNS` is READ OUT OF THE LIBRARY at runtime rather than
-retyped here. That keeps `test_validate_rejects_every_low_effort_phrase` a
-CORPUS-DERIVED floor: adding a banned phrase to the library adds a case here on
-its own, and a library whose array emptied would fail the anti-vacuity refusal
-below instead of passing over nothing.
+`LOW_EFFORT_BLOCKER_PATTERNS` is READ OUT OF THE LIBRARY at runtime rather than retyped here. That keeps `test_validate_rejects_every_low_effort_phrase` a CORPUS-DERIVED floor: adding a banned phrase to the library adds a case here on its own, and a library whose array emptied would fail the anti-vacuity refusal below instead of passing over nothing.
 
-WHY `test_validate_accepts_all_current_audit_entries` READS THE REAL POLICY FILES.
-It is the one case that is not fixture-driven, and deliberately: it asserts that
-every BLOCKER reason SHIPPING TODAY still passes the rule, which is what stops a
-tightened `BLOCKER_MIN_LENGTH` or a new banned phrase from reddening a gate
-somewhere else in the estate. It only READS them, so it declares no `tree:` claim.
+WHY `test_validate_accepts_all_current_audit_entries` READS THE REAL POLICY FILES. It is the one case that is not fixture-driven, and deliberately: it asserts that every BLOCKER reason SHIPPING TODAY still passes the rule, which is what stops a tightened `BLOCKER_MIN_LENGTH` or a new banned phrase from reddening a gate somewhere else in the estate. It only READS them, so it
+declares no `tree:` claim.
 """
 
 import os
@@ -59,10 +43,7 @@ def bash_lib(gate, snippet: str) -> harness.RunResult:
 def parse(gate, list_path) -> tuple[dict[str, str], dict[str, str]]:
     """(ALLOWED, BLOCKER) as Python dicts, produced BY the real bash parser.
 
-    The two arrays are printed with a NUL-free but unambiguous separator and read
-    back here. `declare -p` would have been shorter and is not used on purpose: it
-    would need re-parsing bash's own quoting, and a subtly wrong unquoter is a
-    second implementation of the thing under test.
+    The two arrays are printed with a NUL-free but unambiguous separator and read back here. `declare -p` would have been shorter and is not used on purpose: it would need re-parsing bash's own quoting, and a subtly wrong unquoter is a second implementation of the thing under test.
     """
     snippet = (
         "declare -A ALLOWED=() BLOCKER=()\n"
@@ -197,8 +178,7 @@ def test_validate_accepts_substantive_reason(gate):
 
 def test_validate_rejects_deferral_phrasing(gate):
     """Routine-deferral phrasing is substring-matched, so it is rejected even when
-    the reason is long and not an exact low-effort phrase. This is the guardrail
-    against blocklisting installable routine bumps "to keep this merge focused".
+    the reason is long and not an exact low-effort phrase. This is the guardrail against blocklisting installable routine bumps "to keep this merge focused".
     """
     kick = (
         (
@@ -234,8 +214,7 @@ def test_validate_rejects_deferral_phrasing(gate):
 
 def test_validate_accepts_all_current_audit_entries(gate):
     """Sanity check: every BLOCKER reason in the currently-shipped allowlists must
-    pass the quality gate. This catches regressions in BLOCKER_MIN_LENGTH or new
-    banned phrases that collide with legitimate reasons.
+    pass the quality gate. This catches regressions in BLOCKER_MIN_LENGTH or new banned phrases that collide with legitimate reasons.
     """
     checked = 0
     seen_files = 0

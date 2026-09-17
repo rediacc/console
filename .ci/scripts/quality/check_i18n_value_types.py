@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """Every locale value must have the same TYPE as its English counterpart.
 
-WHY THIS EXISTS. On 2026-08-06 eight locales were found carrying
-`"ref": "[1]"` where en.json holds `"ref": 1` -- a citation INDEX that had been
-replaced by its own rendered marker, 18 keys per locale, 144 values. Where the
-index was 0 it had become `""`, because 0 is falsy and something in the pipeline
-did `value || ''`.
+WHY THIS EXISTS. On 2026-08-06 eight locales were found carrying `"ref": "[1]"` where en.json holds `"ref": 1` -- a citation INDEX that had been replaced by its own rendered marker, 18 keys per locale, 144 values. Where the index was 0 it had become `""`, because 0 is falsy and something in the pipeline did `value || ''`.
 
 It was live in production. packages/www/src/components/solution-pages/
 SPProblem.astro guards with `callout.ref && callout.ref > 0`; for a string
@@ -13,26 +9,16 @@ SPProblem.astro guards with `callout.ref && callout.ref > 0`; for a string
 for NOBODY in those eight languages across six solution pages, while English
 rendered them normally.
 
-NOTHING CAUGHT IT, and that is the point of this file. The placeholder,
-cross-locale and locale-source gates all passed, because each compares TEXT.
-i18n/no-empty-translations would have caught exactly one of the 144 -- and it
-could not, because it was one of five rules reading `node.body?.members` on an
-AST that puts `members` on the Object node, so it iterated an empty list and
+NOTHING CAUGHT IT, and that is the point of this file. The placeholder, cross-locale and locale-source gates all passed, because each compares TEXT. i18n/no-empty-translations would have caught exactly one of the 144 -- and it could not, because it was one of five rules reading `node.body?.members` on an AST that puts `members` on the Object node, so it iterated an empty list and
 could never report at all.
 
-A type check is cheap, has no false-positive surface worth speaking of (a value
-is a string or it is not), and catches the whole class rather than the instance.
+A type check is cheap, has no false-positive surface worth speaking of (a value is a string or it is not), and catches the whole class rather than the instance.
 
 Run modes:
     check_i18n_value_types.py            the gate
     check_i18n_value_types.py --selftest controls only
 
----- gate ----
-step: i18n value types match English
-needs: none
-selftest: true
-lane: quality-content
----- end gate ----
+---- gate ---- step: i18n value types match English needs: none selftest: true lane: quality-content ---- end gate ----
 """
 
 import argparse
@@ -60,9 +46,7 @@ def flatten(node, path, out):
 def compare(en_doc, loc_doc):
     """[(key, english value, locale value)] where the TYPES disagree.
 
-    Keys absent from the locale are NOT a finding here: missing translations are
-    a different defect with its own gate, and folding them in would make this
-    check fire on every partially-translated file and get switched off.
+    Keys absent from the locale are NOT a finding here: missing translations are a different defect with its own gate, and folding them in would make this check fire on every partially-translated file and get switched off.
     """
     en_flat, loc_flat = {}, {}
     flatten(en_doc, [], en_flat)

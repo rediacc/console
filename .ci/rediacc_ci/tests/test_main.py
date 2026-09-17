@@ -1,27 +1,12 @@
 """`python3 -m rediacc_ci` -- the package CLI, driven as a real command.
 
-WHY THESE CASES RUN A PROCESS RATHER THAN CALLING `main()`. Three of the four
-things this CLI promises are STREAM facts: help goes to stdout and exits 0, the
-no-verb path writes stderr and exits non-zero, and neither of them is a
-traceback. A combined capture cannot tell those apart -- a program printing its
-usage error on stdout looks identical -- and this repository has been bitten by
-exactly that shape more than once. So every case here reads stdout and stderr
-SEPARATELY, from a real `python3 -m rediacc_ci`.
+WHY THESE CASES RUN A PROCESS RATHER THAN CALLING `main()`. Three of the four things this CLI promises are STREAM facts: help goes to stdout and exits 0, the no-verb path writes stderr and exits non-zero, and neither of them is a traceback. A combined capture cannot tell those apart -- a program printing its usage error on stdout looks identical -- and this repository has been
+bitten by exactly that shape more than once. So every case here reads stdout and stderr SEPARATELY, from a real `python3 -m rediacc_ci`.
 
-WHY THERE IS A FIXTURE PACKAGE. `rediacc_ci.__main__.VERBS` is empty and must
-stay empty until a verb genuinely moves off bash (see the module docstring), so
-there is no registered verb to dispatch and the argument-passthrough contract --
-the one thing a future port depends on and cannot easily re-derive -- would be
-untested. `_fixture` therefore builds a throwaway package around a COPY of the
-real `__main__.py` with one probe verb planted in place of the empty tuple. The
-copy is the production file byte for byte apart from that line, and the planting
-is asserted to have happened, so a fixture that stopped registering anything
-fails rather than passing on nothing.
+WHY THERE IS A FIXTURE PACKAGE. `rediacc_ci.__main__.VERBS` is empty and must stay empty until a verb genuinely moves off bash (see the module docstring), so there is no registered verb to dispatch and the argument-passthrough contract -- the one thing a future port depends on and cannot easily re-derive -- would be untested. `_fixture` therefore builds a throwaway package around a
+COPY of the real `__main__.py` with one probe verb planted in place of the empty tuple. The copy is the production file byte for byte apart from that line, and the planting is asserted to have happened, so a fixture that stopped registering anything fails rather than passing on nothing.
 
-THE CONTROLS PLANT DEFECTS IN THAT SAME COPY. `test_control_*` below break the
-passthrough slice and the help stream and require the corresponding assertion to
-notice. An assertion nobody has seen fail is not yet evidence of anything, and
-these two are the ones whose failure mode is silence.
+THE CONTROLS PLANT DEFECTS IN THAT SAME COPY. `test_control_*` below break the passthrough slice and the help stream and require the corresponding assertion to notice. An assertion nobody has seen fail is not yet evidence of anything, and these two are the ones whose failure mode is silence.
 """
 
 import json
@@ -92,8 +77,7 @@ def _fixture(tmp_path, *, main_source: str | None = None) -> pathlib.Path:
 def _run(args, *, root: pathlib.Path | None = None, cwd=None):
     """`python3 -m rediacc_ci <args>`; returns (rc, stdout, stderr) separately.
 
-    A list argv, so nothing here depends on shell quoting -- the bash spelling
-    gets its own case below, which is where quoting is the thing under test.
+    A list argv, so nothing here depends on shell quoting -- the bash spelling gets its own case below, which is where quoting is the thing under test.
     """
     pythonpath = str(paths.ci_dir()) if root is None else str(root)
     env = diff.env_for(PYTHONPATH=pythonpath, PYTHONDONTWRITEBYTECODE="1")
@@ -211,9 +195,7 @@ def test_the_separator_is_optional_and_only_the_first_one_is_eaten(tmp_path) -> 
 def test_the_shell_spelling_delivers_the_same_list(tmp_path) -> None:
     """The run.sh path: a real bash command line, quotes and all.
 
-    `run.sh` forwards `"$@"`, so the argv this program sees is whatever bash
-    built. A case that only ever calls `subprocess` with a list would pass while
-    the quoted element was being re-split somewhere in between.
+    `run.sh` forwards `"$@"`, so the argv this program sees is whatever bash built. A case that only ever calls `subprocess` with a list would pass while the quoted element was being re-split somewhere in between.
     """
     root = _fixture(tmp_path)
     script = "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=%s python3 -m rediacc_ci probe -- --flag %s" % (
@@ -228,9 +210,7 @@ def test_the_shell_spelling_delivers_the_same_list(tmp_path) -> None:
 def test_the_handler_is_resolved_lazily_by_dotted_name(capsys) -> None:
     """A row pointing at a REAL module in this package dispatches to it.
 
-    `rediacc_ci.core.ports derive-slot` is a genuine argv handler with a
-    deterministic answer, so this exercises resolution against production code
-    rather than against another fixture.
+    `rediacc_ci.core.ports derive-slot` is a genuine argv handler with a deterministic answer, so this exercises resolution against production code rather than against another fixture.
     """
     row = cli.Verb("ports", "port helpers", "rediacc_ci.core.ports")
     rc = cli.main(["ports", "derive-slot", "a-key"], table=(row,))
@@ -253,8 +233,7 @@ def test_a_handler_returning_a_non_code_is_refused(capsys) -> None:
 def test_a_broken_registration_raises_rather_than_reporting_a_typo() -> None:
     """An unimportable module is the table's bug, not the user's.
 
-    Reported as a usage error it would read as "unknown verb" and send whoever
-    typed it looking for a spelling mistake that does not exist.
+    Reported as a usage error it would read as "unknown verb" and send whoever typed it looking for a spelling mistake that does not exist.
     """
     row = cli.Verb("ghost", "points nowhere", "rediacc_ci.no_such_module")
     with pytest.raises(ImportError):

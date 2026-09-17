@@ -1,14 +1,10 @@
 """`rediacc_ci.proxies.rdc_update` against its bash twin
-`.ci/scripts/test/proxies/proxy-rdc-update.sh` (gate `check:ci-proxy-rdc-update`,
-`package.json:386`).
+`.ci/scripts/test/proxies/proxy-rdc-update.sh` (gate `check:ci-proxy-rdc-update`, `package.json:386`).
 
 Sibling of `test_proxies_linux_packages.py`; see that file for why the two
 invocations are compared byte for byte rather than as a finding set.
 
-ONE CASE DRIVES THE REAL SUBJECT (five scenarios, a Python fixture server per
-scenario, ~7 s on this host). The rest use a stub subject with the same
-dispatch SHAPE, which is the only way to drive the drift and zero-scenario
-branches: the real dispatch cannot be asked to grow an eighth arm.
+ONE CASE DRIVES THE REAL SUBJECT (five scenarios, a Python fixture server per scenario, ~7 s on this host). The rest use a stub subject with the same dispatch SHAPE, which is the only way to drive the drift and zero-scenario branches: the real dispatch cannot be asked to grow an eighth arm.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-rdc-update.observations.jsonl` (5 rows, 5
 distinct trees, 5 distinct finding sets).
@@ -235,9 +231,7 @@ def test_the_stub_dispatch_is_read_and_the_partition_holds(tmp_path: pathlib.Pat
 def test_scenario_drift_message_keeps_the_trailing_space(tmp_path: pathlib.Path) -> None:
     """`:85` pipes through `tr '\\n' ' '`, and `$( )` strips only NEWLINES.
 
-    So the trailing space `tr` produced survives into the message. A port
-    written with `" ".join(...)` would differ by two bytes on the one path
-    nobody runs, which is exactly the kind of divergence a differential is for.
+    So the trailing space `tr` produced survives into the message. A port written with `" ".join(...)` would differ by two bytes on the one path nobody runs, which is exactly the kind of divergence a differential is for.
     """
     subject = STUB_SUBJECT % ("",)
     subject = subject.replace(
@@ -298,10 +292,7 @@ def test_a_scenario_that_asserts_nothing_is_reported(tmp_path: pathlib.Path) -> 
 def test_pass_lines_on_stderr_are_not_counted_on_either_side(tmp_path: pathlib.Path) -> None:
     """`:119` reads the STDOUT FILE alone, unlike the linux-packages proxy.
 
-    A subject that moved its `PASS:` lines to stderr therefore reports "at
-    least one asserted nothing" while every scenario really passed. That is
-    the RIGHT direction to fail -- loud, red, and it names the shape -- so it
-    is reproduced as written rather than widened to both streams.
+    A subject that moved its `PASS:` lines to stderr therefore reports "at least one asserted nothing" while every scenario really passed. That is the RIGHT direction to fail -- loud, red, and it names the shape -- so it is reproduced as written rather than widened to both streams.
     """
     fixture = build_fixture(tmp_path, subject=STUB_SUBJECT % (">&2",))
     old, new = run_both(fixture)

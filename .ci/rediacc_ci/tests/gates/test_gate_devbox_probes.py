@@ -2,25 +2,14 @@
 
 Controls for `devbox_exec` and the three usability probes in `.ci/lib/devbox.sh`.
 
-WHY THESE MATTER MORE THAN MOST. All three failure modes present IDENTICALLY: a
-gate that exits 0 having read nothing. An empty bind mount (macOS outside Docker
-Desktop's sharing list, WSL2 via Desktop integration) auto-creates the directory,
-so the path EXISTS and the tree is empty. A root exec makes git refuse the
-worktree, so `git ls-files` returns nothing. A read-only mount lets reads succeed
-and writes fail late. In each case the honest-looking answer is a green.
+WHY THESE MATTER MORE THAN MOST. All three failure modes present IDENTICALLY: a gate that exits 0 having read nothing. An empty bind mount (macOS outside Docker Desktop's sharing list, WSL2 via Desktop integration) auto-creates the directory, so the path EXISTS and the tree is empty. A root exec makes git refuse the worktree, so `git ls-files` returns nothing. A read-only mount
+lets reads succeed and writes fail late. In each case the honest-looking answer is a green.
 
-So each probe is asserted in BOTH directions against fixtures built by
-CONSTRUCTION -- fake `docker` binaries in a temp directory, never the real daemon
--- which also keeps this hermetic and runnable where no devbox exists.
+So each probe is asserted in BOTH directions against fixtures built by CONSTRUCTION -- fake `docker` binaries in a temp directory, never the real daemon -- which also keeps this hermetic and runnable where no devbox exists.
 
-THE PROBE BODIES ARE LIFTED FROM THE REAL LIBRARY, unchanged from the twin, so
-this cannot drift into testing a copy. An extraction that comes back short is a
-refusal here, not a quieter suite.
+THE PROBE BODIES ARE LIFTED FROM THE REAL LIBRARY, unchanged from the twin, so this cannot drift into testing a copy. An extraction that comes back short is a refusal here, not a quieter suite.
 
-THE TWIN USES THE `ok`/`no` TALLY, so the port does too: `gate.ok()` prints the
-same uncoloured `PASS:` line and, unlike `log_fail`, does not stop the file at
-the first bad probe. Six probe outcomes and two source properties, eight controls,
-which is what the twin's `tally_finish` counts.
+THE TWIN USES THE `ok`/`no` TALLY, so the port does too: `gate.ok()` prints the same uncoloured `PASS:` line and, unlike `log_fail`, does not stop the file at the first bad probe. Six probe outcomes and two source properties, eight controls, which is what the twin's `tally_finish` counts.
 """
 
 import re
@@ -148,8 +137,7 @@ def test_exec_shape(gate):
 
 def test_the_extraction_covers_every_named_probe(gate):
     """PORT-ONLY ANTI-VACUITY. Every case above runs against extracted text, and
-    an extraction that silently returned less would make each probe pass by not
-    being defined -- `bash` reports command-not-found as 127, which is non-zero,
+    an extraction that silently returned less would make each probe pass by not being defined -- `bash` reports command-not-found as 127, which is non-zero,
     so the REFUSAL cases would all still look correct."""
     body = extract(gate)
     for name in WANTED:

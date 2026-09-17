@@ -2,14 +2,8 @@
 
 `check:ci-doc-region-parity`, proved in both directions against a REAL fixture tree.
 
-WHY A FIXTURE AND NOT THE LIVE TREE. `test-docs-gen.sh` case A runs the generator
-against the checkout itself and requires a green. That couples a gate test to whether
-some other session has regenerated the docs after adding a gate, and it was RED on
-the branch where the twin was written: the manifest had grown and CLAUDE.md still
-quoted the old totals. A control that cannot run until the tree is tidy is a control
-that gets skipped. So every case here runs against a fixture built from the
-repository's own files, where this test owns every byte and can perturb them without
-touching anything a person is working in.
+WHY A FIXTURE AND NOT THE LIVE TREE. `test-docs-gen.sh` case A runs the generator against the checkout itself and requires a green. That couples a gate test to whether some other session has regenerated the docs after adding a gate, and it was RED on the branch where the twin was written: the manifest had grown and CLAUDE.md still quoted the old totals. A control that cannot run
+until the tree is tidy is a control that gets skipped. So every case here runs against a fixture built from the repository's own files, where this test owns every byte and can perturb them without touching anything a person is working in.
 
 WHAT EACH CASE PROVES, in the twin's order and under the twin's letters:
 
@@ -33,12 +27,8 @@ WHAT EACH CASE PROVES, in the twin's order and under the twin's letters:
   I. `--selftest` is green and still carries its planted controls BY NAME. Asserting
      the exit code alone keeps passing after someone deletes the controls.
 
-A FLAT TWIN, so the parity floor is its runtime `PASS:` count. Measured 2026-09-07:
-NINE, and the measurement needs one caveat that will otherwise waste somebody's
-afternoon. `grep -c '^PASS:'` on that twin's output prints ZERO, because
-`test-helpers.sh` writes the colour escape BEFORE the word, so no line literally
-starts with `PASS:`. The parity driver strips ANSI first and then counts, which gives
-nine. This module records one control per lettered case, nine in total.
+A FLAT TWIN, so the parity floor is its runtime `PASS:` count. Measured 2026-09-07: NINE, and the measurement needs one caveat that will otherwise waste somebody's afternoon. `grep -c '^PASS:'` on that twin's output prints ZERO, because `test-helpers.sh` writes the colour escape BEFORE the word, so no line literally starts with `PASS:`. The parity driver strips ANSI first and then
+counts, which gives nine. This module records one control per lettered case, nine in total.
 
 THE FIXTURE'S CONTENTS ARE DERIVED, NOT TYPED, AND THAT IS THE POINT.
 
@@ -101,14 +91,9 @@ WHERE THIS REIMPLEMENTS git, tar, grep, cut AND python, AND WHY THE ANSWERS AGRE
   `raise SystemExit(...)` as a `log_fail`: a perturbation that could not find its
   anchor must be a red naming the anchor, never a silently skipped case.
 
-`npx tsx`, `node` AND `git` ARE ALL REQUIRED, and each absence is a loud failure
-carrying the fix. A case that could not run has not been checked.
+`npx tsx`, `node` AND `git` ARE ALL REQUIRED, and each absence is a loud failure carrying the fix. A case that could not run has not been checked.
 
-NO `xdist_group`. The fixture, its git index and every perturbed copy live under
-pytest's own `tmp_path`. The generator is run from the FIXTURE's copy of
-`gen-docs.ts` so that `--write` can only ever reach the fixture: gen-docs roots itself
-at its own parent directory, which is what makes the copy a containment boundary
-rather than a convention.
+NO `xdist_group`. The fixture, its git index and every perturbed copy live under pytest's own `tmp_path`. The generator is run from the FIXTURE's copy of `gen-docs.ts` so that `--write` can only ever reach the fixture: gen-docs roots itself at its own parent directory, which is what makes the copy a containment boundary rather than a convention.
 """
 
 import pathlib
@@ -177,10 +162,7 @@ def read_text(path: pathlib.Path) -> str:
 def resolve_import(importer: pathlib.Path, spec: str) -> pathlib.Path | None:
     """`./lib/doc-providers.js` -> `scripts/lib/doc-providers.ts`, on disk or nothing.
 
-    NodeNext spells a TypeScript import with the `.js` extension it will have after a
-    build, so the literal in the source names a file that does not exist. Every shape
-    this repository actually writes is tried, and a specifier that answers to none of
-    them is reported by the caller rather than dropped.
+    NodeNext spells a TypeScript import with the `.js` extension it will have after a build, so the literal in the source names a file that does not exist. Every shape this repository actually writes is tried, and a specifier that answers to none of them is reported by the caller rather than dropped.
     """
     base = importer.parent / spec
     candidates = [base]
@@ -198,12 +180,8 @@ def resolve_import(importer: pathlib.Path, spec: str) -> pathlib.Path | None:
 def import_closure(gate) -> list[pathlib.Path]:
     """Every module the generator pulls in, transitively, as absolute paths.
 
-    THE SHORT-WALK FAILURE IS THE ONE TO GUARD. If `IMPORT_RE` stopped matching, this
-    would return the entry alone, `derive_pathspecs` would see one file's literals, the
-    fixture would be built from a fraction of what the providers read, and the whole
-    file would red with a node stack trace pointing at the generator. So an unresolvable
-    specifier is a named failure, and a closure of one is refused outright: the generator
-    has imported its providers from a sibling module since the day it was written.
+    THE SHORT-WALK FAILURE IS THE ONE TO GUARD. If `IMPORT_RE` stopped matching, this would return the entry alone, `derive_pathspecs` would see one file's literals, the fixture would be built from a fraction of what the providers read, and the whole file would red with a node stack trace pointing at the generator. So an unresolvable specifier is a named failure, and a closure of
+    one is refused outright: the generator has imported its providers from a sibling module since the day it was written.
     """
     entry = ROOT / GEN_ENTRY
     if not entry.is_file():
@@ -285,13 +263,8 @@ def derive_pathspecs(gate) -> tuple[list[pathlib.Path], list[str]]:
 def explain_fixture_gap(gate, fixture: pathlib.Path, result: harness.RunResult) -> None:
     """Name the inputs the fixture LACKS, when the generator failed inside it.
 
-    A stale fixture and a broken gate look identical from the outside: both are a
-    non-zero exit out of `run_fixgen`. They are not the same defect and they are not
-    fixed by the same person, so this reads the failure text for paths that exist in the
-    REPOSITORY and do not exist in the FIXTURE and prints them by name. Two shapes are
-    recognised, which is every shape the generator produces today: node's own ENOENT,
-    which names the path ABSOLUTE inside the fixture, and `readSeam`'s refusal in
-    scripts/lib/doc-providers.ts, which names it REPO-RELATIVE.
+    A stale fixture and a broken gate look identical from the outside: both are a non-zero exit out of `run_fixgen`. They are not the same defect and they are not fixed by the same person, so this reads the failure text for paths that exist in the REPOSITORY and do not exist in the FIXTURE and prints them by name. Two shapes are recognised, which is every shape the generator
+    produces today: node's own ENOENT, which names the path ABSOLUTE inside the fixture, and `readSeam`'s refusal in scripts/lib/doc-providers.ts, which names it REPO-RELATIVE.
 
     Silent when there is no gap, because then the failure really is about the gate.
     """
@@ -331,11 +304,7 @@ def explain_fixture_gap(gate, fixture: pathlib.Path, result: harness.RunResult) 
 def copy_tracked(gate, fixture: pathlib.Path, pathspecs: list[str]) -> int:
     """The twin's `git ls-files -z | tar | tar`, as an enumerate-and-copy.
 
-    Built from the repository's own TRACKED files, because the providers read real
-    shapes: a gates lock they refuse when it is malformed, the hook wiring in
-    `.claude/settings.json`, files carrying `BLOCKER:`, and a `.ci` subtree.
-    Hand-rolled stand-ins would drift from those shapes and the test would then be
-    proving something about the stand-ins.
+    Built from the repository's own TRACKED files, because the providers read real shapes: a gates lock they refuse when it is malformed, the hook wiring in `.claude/settings.json`, files carrying `BLOCKER:`, and a `.ci` subtree. Hand-rolled stand-ins would drift from those shapes and the test would then be proving something about the stand-ins.
     """
     listing = harness.run(
         [git(gate), "-C", str(ROOT), "ls-files", "-z", "--", *pathspecs],
@@ -395,8 +364,7 @@ def run_gate(gate, *argv: str) -> harness.RunResult:
 def run_fixgen(gate, fixture: pathlib.Path, *argv: str) -> harness.RunResult:
     """The FIXTURE's COPY of the generator, so `--write` can only reach the fixture.
 
-    gen-docs roots itself at its own parent directory (scripts/gen-docs.ts:74), which
-    is what makes running the copy a containment boundary and not a convention.
+    gen-docs roots itself at its own parent directory (scripts/gen-docs.ts:74), which is what makes running the copy a containment boundary and not a convention.
     """
     return harness.run(
         [npx(gate), "tsx", str(fixture / "scripts" / "gen-docs.ts"), *argv],
@@ -408,14 +376,9 @@ def run_fixgen(gate, fixture: pathlib.Path, *argv: str) -> harness.RunResult:
 def build_fixture(gate, tmp_path: pathlib.Path):
     """(fixture root, document path, provider ids, pristine document bytes, shape).
 
-    Cases A through I in the twin share ONE fixture and restore the document between
-    perturbations. They are separate pytest functions here, so each rebuilds -- which
-    costs a few seconds and buys the property the twin's `cp "$WORK/doc.orig"` lines
-    are working to fake: no case can inherit another's damage.
+    Cases A through I in the twin share ONE fixture and restore the document between perturbations. They are separate pytest functions here, so each rebuilds -- which costs a few seconds and buys the property the twin's `cp "$WORK/doc.orig"` lines are working to fake: no case can inherit another's damage.
 
-    `shape` is the derivation's own numbers, printed by case A so a reader can see the
-    fixture was non-trivial. A collapse from four figures to two is the failure this
-    whole file has spent a day on, and "OK" would not show it.
+    `shape` is the derivation's own numbers, printed by case A so a reader can see the fixture was non-trivial. A collapse from four figures to two is the failure this whole file has spent a day on, and "OK" would not show it.
     """
     fixture = tmp_path / "fixture"
     fixture.mkdir(parents=True, exist_ok=True)
@@ -503,8 +466,7 @@ def build_fixture(gate, tmp_path: pathlib.Path):
 def first_data_row(gate, document: pathlib.Path) -> tuple[list[str], int]:
     """(lines, index of the first DATA row of the first generated table).
 
-    Found BY SHAPE rather than by content so this survives every rewording of every
-    provider: the line after a `|---|` separator.
+    Found BY SHAPE rather than by content so this survives every rewording of every provider: the line after a `|---|` separator.
     """
     lines = document.read_text(encoding="utf-8").split("\n")
     for index, line in enumerate(lines):

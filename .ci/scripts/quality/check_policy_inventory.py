@@ -1,45 +1,25 @@
 #!/usr/bin/env python3
 """check:ci-policy-inventory -- the `.ci/policy/` contract, in four directions plus the prose.
 
-THE DRIFT THIS EXISTS FOR ALREADY HAPPENED, one day after the move that created
-the directory. `.language-policy-allowlist` landed on 2026-09-07 with
-`check:ci-language-policy`: sixteen dotfiles were on disk, `POLICY_FILES` in
-`scripts/lib/policy-paths.ts` held fifteen names, and the new gate reached its
-allowlist through a hardcoded `ROOT / ".ci" / "policy" / ...` join that bypassed
-the seam entirely. Nothing was red for a day. Every gate that touched a policy
-file kept working, because a reader that hardcodes the path does not need the
-list to know about it -- which is exactly why the list going stale is invisible
-without this gate.
+THE DRIFT THIS EXISTS FOR ALREADY HAPPENED, one day after the move that created the directory. `.language-policy-allowlist` landed on 2026-09-07 with `check:ci-language-policy`: sixteen dotfiles were on disk, `POLICY_FILES` in `scripts/lib/policy-paths.ts` held fifteen names, and the new gate reached its allowlist through a hardcoded `ROOT / ".ci" / "policy" / ...` join that
+bypassed the seam entirely. Nothing was red for a day. Every gate that touched a policy file kept working, because a reader that hardcodes the path does not need the list to know about it -- which is exactly why the list going stale is invisible without this gate.
 
-THE CONTROL THAT PROVES IT IS THE GATE FOR THAT DEFECT was run at authoring time
-against the tree where it happened, worktree-free:
+THE CONTROL THAT PROVES IT IS THE GATE FOR THAT DEFECT was run at authoring time against the tree where it happened, worktree-free:
 
     GIT_INDEX_FILE=/tmp/hist.idx git read-tree 19c45c78e
     GIT_INDEX_FILE=/tmp/hist.idx git checkout-index -a --prefix="$scratch/"
     cp .ci/rediacc_ci/policy_paths.py "$scratch/.ci/rediacc_ci/"
 
-`git archive` CANNOT be used for this, which is worth recording because it is the
-obvious first try: `.gitattributes:55` sets `* export-ignore` with a single
-`LICENSE -export-ignore` beneath it, so an archive of any commit in this
-repository contains exactly one file. A detached `GIT_INDEX_FILE` plus
-`checkout-index --prefix` writes the whole tree without touching the worktree or
+`git archive` CANNOT be used for this, which is worth recording because it is the obvious first try: `.gitattributes:55` sets `* export-ignore` with a single `LICENSE -export-ignore` beneath it, so an archive of any commit in this repository contains exactly one file. A detached `GIT_INDEX_FILE` plus `checkout-index --prefix` writes the whole tree without touching the worktree or
 the real index, which is what the two lines above do.
     POLICY_INVENTORY_ROOT="$scratch" .ci/scripts/quality/check_policy_inventory.py
 
-and it reported exit 1 naming exactly one policy file, `.language-policy-allowlist`,
-in the inventory directions. The Python twin is COPIED IN because it is the
+and it reported exit 1 naming exactly one policy file, `.language-policy-allowlist`, in the inventory directions. The Python twin is COPIED IN because it is the
 instrument being added, not part of the tree under judgement; the inventory
-question it answers there is about the directory and the TypeScript list, which
-are the two things that had actually drifted.
+question it answers there is about the directory and the TypeScript list, which are the two things that had actually drifted.
 
-WHY THE SAME CONTROL IS NOT BAKED INTO `selftest()`. It would need
-`git archive <sha>`, and CI clones this repository shallow everywhere except the
-`quality-i18n` lane (see the manifest note on `check:ci-plan-housekeeping`). A
-control that cannot run in CI is a control that reports nothing there, so the
-baked-in version below reconstructs the same SHAPE from a synthetic fixture --
-one more file on disk than the TypeScript list knows about -- and the historical
-run stays here in prose, with its command, as the evidence that the shape is the
-real one.
+WHY THE SAME CONTROL IS NOT BAKED INTO `selftest()`. It would need `git archive <sha>`, and CI clones this repository shallow everywhere except the `quality-i18n` lane (see the manifest note on `check:ci-plan-housekeeping`). A control that cannot run in CI is a control that reports nothing there, so the baked-in version below reconstructs the same SHAPE from a synthetic fixture --
+one more file on disk than the TypeScript list knows about -- and the historical run stays here in prose, with its command, as the evidence that the shape is the real one.
 
 THE FOUR DIRECTIONS, and each is a different failure:
 
@@ -56,11 +36,7 @@ THE FOUR DIRECTIONS, and each is a different failure:
      the path is a reader the next move will leave behind, and it is invisible
      to directions 1-3 because it needs no list entry to work.
 
-PLUS THE PROSE, which is direction 4 pointed at comments rather than code
-(W4 P4c). Two rules, and the first one was written because a comment in
-`scripts/gates/check-suppression-liveness.ts` still said "Today POLICY_DIR is '' and
-this is a provable no-op" for two days after `b80552370` made POLICY_DIR
-`.ci/policy`. A comment that states a value is a claim a reader will act on:
+PLUS THE PROSE, which is direction 4 pointed at comments rather than code (W4 P4c). Two rules, and the first one was written because a comment in `scripts/gates/check-suppression-liveness.ts` still said "Today POLICY_DIR is '' and this is a provable no-op" for two days after `b80552370` made POLICY_DIR `.ci/policy`. A comment that states a value is a claim a reader will act on:
 
   5. No comment may assert a POLICY_DIR value differing from the one in
      `scripts/lib/policy-paths.ts`, which is the ORACLE here and is read out of
@@ -73,29 +49,18 @@ this is a provable no-op" for two days after `b80552370` made POLICY_DIR
      DOCSTRING: the first draft of this paragraph spelled the name out and the
      gate reported itself, correctly.
 
-PAST TENSE IS NOT AN ASSERTION, and rule 5 has to know the difference or it
-becomes a machine for deleting the repository's own record of what went wrong.
-`.claude/hooks/pre-bash/block-pathspecless-git-commit.sh:27` says HEAD "still
+PAST TENSE IS NOT AN ASSERTION, and rule 5 has to know the difference or it becomes a machine for deleting the repository's own record of what went wrong. `.claude/hooks/pre-bash/block-pathspecless-git-commit.sh:27` says HEAD "still
 read `const POLICY_DIR = '';`" while describing the half-landed state of
 2026-09-06. That sentence is true, is load-bearing history, and must not be a
 finding; `_PAST_MARKERS` is what keeps it out, and the control below drives that
 exact line.
 
-ANTI-VACUITY, REFUSED PER CORPUS. Four separate refusals, not one: an empty
-directory listing, an empty TypeScript list, an empty Python list and an empty
-file corpus each exit 1 with their own message. A populated half does not excuse
-an empty half -- the whole point of a three-way equality is that any two of them
-agreeing proves nothing about the third. The success line prints every count, so
-a collapse is visible rather than silent.
+ANTI-VACUITY, REFUSED PER CORPUS. Four separate refusals, not one: an empty directory listing, an empty TypeScript list, an empty Python list and an empty file corpus each exit 1 with their own message. A populated half does not excuse an empty half -- the whole point of a three-way equality is that any two of them agreeing proves nothing about the third. The success line prints
+every count, so a collapse is visible rather than silent.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
 
----- gate ----
-step: Policy inventory
-needs: none
-lane: quality-static
-selftest: true
-why: the `.ci/policy/` directory, the TypeScript POLICY_FILES and the Python
+---- gate ---- step: Policy inventory needs: none lane: quality-static selftest: true why: the `.ci/policy/` directory, the TypeScript POLICY_FILES and the Python
      POLICY_FILES must be one set; a file in the directory that is in neither
      list is a live suppression nobody is counting, and a name with no file
      reads to every consumer as "nothing is suppressed"
@@ -186,9 +151,7 @@ class RefusalError(Exception):
 def repo_root() -> pathlib.Path:
     """The tree under judgement. Resolved at CALL time so a control can point it elsewhere.
 
-    A module-level constant would make every refusal below untestable, which is
-    the shape this repo keeps getting caught by: an anti-vacuity arm nothing can
-    reach is an arm nobody has seen fail.
+    A module-level constant would make every refusal below untestable, which is the shape this repo keeps getting caught by: an anti-vacuity arm nothing can reach is an arm nobody has seen fail.
     """
     override = os.environ.get(ROOT_ENV)
     if override:
@@ -226,9 +189,7 @@ def ts_names(root: pathlib.Path) -> list[str]:
 def py_policy_dir(root: pathlib.Path) -> str:
     """POLICY_DIR out of the Python seam, parsed rather than imported.
 
-    PARSED ON PURPOSE. Importing would answer for the instrument's own copy, and
-    the question is about the tree being judged -- which for a fixture, or for a
-    historical tree, is a different file.
+    PARSED ON PURPOSE. Importing would answer for the instrument's own copy, and the question is about the tree being judged -- which for a fixture, or for a historical tree, is a different file.
     """
     value = _py_constant(root, "POLICY_DIR")
     if not isinstance(value, str):
@@ -282,19 +243,12 @@ def _read(path: pathlib.Path) -> str:
 def source_files(root: pathlib.Path) -> tuple[list[str], str]:
     """(repo-relative paths, how they were enumerated).
 
-    `git ls-files` when the root is a checkout, a filtered walk otherwise. The
-    enumerator is RETURNED rather than hidden because a silent fallback that
+    `git ls-files` when the root is a checkout, a filtered walk otherwise. The enumerator is RETURNED rather than hidden because a silent fallback that
     changes the corpus is the same class of defect as a silent exemption; the
     success line prints which one ran.
 
-    UNTRACKED FILES ARE IN SCOPE, and in this repository that is not a detail.
-    The house rule is that work stays UNCOMMITTED until the operator asks, so a
-    new gate and its readers live untracked for days. A tracked-only corpus
-    cannot see them, which means the one moment a hardcoded join is easiest to
-    fix -- while its author is still holding it -- is exactly the moment this
-    gate would have been blind. Measured while writing this gate: its own file
-    was invisible to it, and the two findings it should have reported against
-    its own docstring only appeared when the corpus was widened.
+    UNTRACKED FILES ARE IN SCOPE, and in this repository that is not a detail. The house rule is that work stays UNCOMMITTED until the operator asks, so a new gate and its readers live untracked for days. A tracked-only corpus cannot see them, which means the one moment a hardcoded join is easiest to fix -- while its author is still holding it -- is exactly the moment this gate
+    would have been blind. Measured while writing this gate: its own file was invisible to it, and the two findings it should have reported against its own docstring only appeared when the corpus was widened.
     """
     try:
         seen: set[str] = set()
@@ -332,18 +286,10 @@ def source_files(root: pathlib.Path) -> tuple[list[str], str]:
 def mentions_policy(source: str, names: frozenset[str], policy_dir: str) -> bool:
     """Could this file hold a finding at all?
 
-    EXACT, NOT A HEURISTIC, and that distinction is the whole licence for it.
-    Every predicate in this gate needs one of three literals present in the text
-    before it can match anything: a policy NAME (both join shapes and the
-    citation rule), the string `POLICY_DIR` (the claim rule), or the policy
-    DIRECTORY. A file containing none of them cannot produce a finding, so
-    skipping it changes no verdict -- it only stops the gate from AST-parsing and
-    tokenising 2300 files to prove they say nothing.
+    EXACT, NOT A HEURISTIC, and that distinction is the whole licence for it. Every predicate in this gate needs one of three literals present in the text before it can match anything: a policy NAME (both join shapes and the citation rule), the string `POLICY_DIR` (the claim rule), or the policy DIRECTORY. A file containing none of them cannot produce a finding, so skipping it
+    changes no verdict -- it only stops the gate from AST-parsing and tokenising 2300 files to prove they say nothing.
 
-    Measured on this tree 2026-09-08: 2381 files enumerated, 77 candidates,
-    13.9s -> 2.0s. The count of candidates is PRINTED, because a pre-filter that
-    silently matched nothing would make every direction below vacuous, which is
-    why `scan()` refuses on zero rather than reporting agreement.
+    Measured on this tree 2026-09-08: 2381 files enumerated, 77 candidates, 13.9s -> 2.0s. The count of candidates is PRINTED, because a pre-filter that silently matched nothing would make every direction below vacuous, which is why `scan()` refuses on zero rather than reporting agreement.
     """
     if "POLICY_DIR" in source or policy_dir in source:
         return True
@@ -368,12 +314,8 @@ def python_join_sites(source: str, names: frozenset[str], policy_dir: str) -> li
       * a string constant that IS a bare policy NAME and is an operand of a `/`
         path expression or an argument to `os.path.join` / `Path`.
 
-    A bare name on its own is NOT a finding, and that is the important
-    exclusion: `policy_path(".audit-allowlist")` is a name handed TO the seam,
-    which is the shape this gate wants everywhere. A name embedded in a longer
-    sentence is not a finding either -- `"... held in .ci/policy/.audit-allowlist"`
-    is a message printed at a human, and rewriting it through the seam would
-    change what the reader is told, not where the file is read from.
+    A bare name on its own is NOT a finding, and that is the important exclusion: `policy_path(".audit-allowlist")` is a name handed TO the seam, which is the shape this gate wants everywhere. A name embedded in a longer sentence is not a finding either -- `"... held in .ci/policy/.audit-allowlist"` is a message printed at a human, and rewriting it through the seam would change
+    what the reader is told, not where the file is read from.
     """
     tree = ast.parse(source)
     docstrings = set()
@@ -429,10 +371,7 @@ def _opens_a_comment(rel: str, line: str, i: int) -> bool:
 def _strip_comment(rel: str, line: str) -> str:
     """The CODE half of one line: everything before an out-of-string comment marker.
 
-    THE JOIN SCAN MUST NOT RULE ON PROSE, and a shell comment reading
-    `# see .ci/policy/.audit-allowlist` is a bare word that looks exactly like a
-    path in argument position. Quote state is tracked rather than assumed
-    because `"http://x"` is not a comment and `# "` does not open a string.
+    THE JOIN SCAN MUST NOT RULE ON PROSE, and a shell comment reading `# see .ci/policy/.audit-allowlist` is a bare word that looks exactly like a path in argument position. Quote state is tracked rather than assumed because `"http://x"` is not a comment and `# "` does not open a string.
     """
     stripped = line.lstrip()
     # No shell arm here: a `#` at column 0 or after whitespace is already caught by the loop below, and a mutant that deleted an early return for it changed nothing measurable, so the line is not carried. The C-style arm IS needed: a jsdoc continuation ` * text` carries no `//` for the loop to find.
@@ -459,19 +398,10 @@ def _strip_comment(rel: str, line: str) -> str:
 def _quoted_spans(text: str):
     """(first line, content, is_quoted) for every quoted string and every gap between them.
 
-    OVER THE WHOLE FILE, NOT LINE BY LINE, and that is not a refinement. The
-    first version worked a line at a time, so a line INSIDE a multi-line
-    template literal carried no quote character of its own and was read as bare
-    code: the help text in `scripts/gates/check-actions.ts:382` and
-    `scripts/gates/check-deps.ts:678` ("Actions can be blocklisted in
-    .ci/policy/.actions-upgrade-blocklist to prevent...") became two joins that
-    are not joins. A span that spans lines contains whitespace, which is exactly
-    what the caller uses to tell a path from a sentence, so tracking the state
-    across lines is what makes the discriminator mean what it says.
+    OVER THE WHOLE FILE, NOT LINE BY LINE, and that is not a refinement. The first version worked a line at a time, so a line INSIDE a multi-line template literal carried no quote character of its own and was read as bare code: the help text in `scripts/gates/check-actions.ts:382` and `scripts/gates/check-deps.ts:678` ("Actions can be blocklisted in
+    .ci/policy/.actions-upgrade-blocklist to prevent...") became two joins that are not joins. A span that spans lines contains whitespace, which is exactly what the caller uses to tell a path from a sentence, so tracking the state across lines is what makes the discriminator mean what it says.
 
-    Comments are already gone by the time this runs, which matters: an
-    apostrophe in `# the gate's own list` would otherwise open a string that
-    never closes and swallow the rest of the file.
+    Comments are already gone by the time this runs, which matters: an apostrophe in `# the gate's own list` would otherwise open a string that never closes and swallow the rest of the file.
     """
     out = []
     quote = ""
@@ -506,9 +436,7 @@ def _is_path_token(token: str, names: frozenset[str], policy_dir: str) -> str | 
     """The policy name this token builds a path to, or None.
 
     A token is a JOIN when, after an optional `${VAR:-` wrapper and an optional
-    directory prefix, it IS `<policy_dir>/<name>` and nothing else. Everything
-    that survives to here has already been proven free of whitespace, which is
-    what separates a path from a sentence that happens to contain one.
+    directory prefix, it IS `<policy_dir>/<name>` and nothing else. Everything that survives to here has already been proven free of whitespace, which is what separates a path from a sentence that happens to contain one.
     """
     t = token.strip().strip(",;)]}")
     t = re.sub(r"^\$\{[A-Za-z_][A-Za-z0-9_]*(?::?[-=])", "", t)
@@ -527,15 +455,10 @@ def text_join_sites(
 
     THE DISCRIMINATOR IS WHITESPACE INSIDE THE QUOTES, and it is the whole
     predicate. A quoted string whose content is a bare path is a JOIN; a quoted
-    string containing a sentence is a MESSAGE printed at a human, and there are
-    nineteen of those in `audit.sh` alone plus two multi-line help texts under
-    `scripts/`. Flagging them would train the next reader to route
-    human-readable text through a path helper, which helps nobody and buries the
-    real joins in noise. Outside quotes the same rule applies word by word,
-    which is what catches `[[ -f .ci/policy/.x ]]`.
+    string containing a sentence is a MESSAGE printed at a human, and there are nineteen of those in `audit.sh` alone plus two multi-line help texts under `scripts/`. Flagging them would train the next reader to route human-readable text through a path helper, which helps nobody and buries the real joins in noise. Outside quotes the same rule applies word by word, which is what
+    catches `[[ -f .ci/policy/.x ]]`.
 
-    Comments are stripped first: prose is directions 5 and 6's subject, judged
-    by a different predicate that knows about tense.
+    Comments are stripped first: prose is directions 5 and 6's subject, judged by a different predicate that knows about tense.
     """
     stripped = "\n".join(_strip_comment(rel, line) for line in source.splitlines())
     if policy_dir not in stripped:
@@ -564,11 +487,7 @@ def text_join_sites(
 def _strip_marker(text: str) -> str:
     """One comment line with its `#`, `//` or ` * ` removed.
 
-    THE MARKER IS PUNCTUATION, NOT PROSE, and leaving it in breaks the one
-    predicate that reads across a line break: a block joined verbatim reads
-    "still # read", so the past-tense lookbehind for "still read" misses, and the
-    gate reports a sentence that is plainly in the past tense. Found by this gate
-    against its own docstring.
+    THE MARKER IS PUNCTUATION, NOT PROSE, and leaving it in breaks the one predicate that reads across a line break: a block joined verbatim reads "still # read", so the past-tense lookbehind for "still read" misses, and the gate reports a sentence that is plainly in the past tense. Found by this gate against its own docstring.
     """
     return re.sub(r"^\s*(?:#+|//+|/\*+|\*+)\s?", "", text)
 
@@ -576,20 +495,12 @@ def _strip_marker(text: str) -> str:
 def comment_blocks(rel: str, source: str) -> list[tuple[int, str, int]]:
     """(first line, text, line count) for every CONTIGUOUS run of comment lines.
 
-    BLOCKS, NOT LINES, and this is the correction that a real run forced. The
-    first version of this gate yielded one line at a time, so the tense marker
-    in `.claude/hooks/pre-bash/block-pathspecless-git-commit.sh` -- "policy-paths.ts
-    still read" -- sat on the line ABOVE the value it qualifies, out of the
-    lookbehind window, and the gate reported the repository's own historical
-    record as a stale claim. The unit-level control passed throughout, because
-    it handed the predicate both lines as one string, which is the shape a
+    BLOCKS, NOT LINES, and this is the correction that a real run forced. The first version of this gate yielded one line at a time, so the tense marker in `.claude/hooks/pre-bash/block-pathspecless-git-commit.sh` -- "policy-paths.ts still read" -- sat on the line ABOVE the value it qualifies, out of the lookbehind window, and the gate reported the repository's own historical
+    record as a stale claim. The unit-level control passed throughout, because it handed the predicate both lines as one string, which is the shape a
     per-line extractor never produces. Prose is a paragraph; judging it a line
     at a time asks a question no author was answering.
 
-    Python is TOKENIZED rather than pattern-matched, because a `#` inside a
-    string is not a comment and this gate must not rule on one. Docstrings are
-    comments here: they are the prose that carries most of this repository's
-    reasoning, and the stale claim this rule exists for lived in one.
+    Python is TOKENIZED rather than pattern-matched, because a `#` inside a string is not a comment and this gate must not rule on one. Docstrings are comments here: they are the prose that carries most of this repository's reasoning, and the stale claim this rule exists for lived in one.
     """
     out: list[tuple[int, str, int]] = []
     if rel.endswith(".py"):
@@ -693,11 +604,7 @@ def prose_findings(
 ) -> tuple[list[str], int]:
     """(findings, comment lines swept) for one file. THE COMPOSITION THE CONTROLS DRIVE.
 
-    Controls call this rather than the three helpers above, deliberately. The
-    false positive that shipped in the first draft was invisible to helper-level
-    controls: every helper was correct, and the DEFECT WAS IN THE COMPOSITION --
-    a per-line extractor feeding a predicate that needs a paragraph. A control
-    that never runs the composition cannot see that class at all.
+    Controls call this rather than the three helpers above, deliberately. The false positive that shipped in the first draft was invisible to helper-level controls: every helper was correct, and the DEFECT WAS IN THE COMPOSITION -- a per-line extractor feeding a predicate that needs a paragraph. A control that never runs the composition cannot see that class at all.
     """
     findings: list[str] = []
     swept = 0
@@ -725,8 +632,7 @@ def refusal_findings(
 ) -> tuple[list[str], int]:
     """The three clauses `REFUSED_RECORD` fails on, re-derived. Returns (findings, blockers).
 
-    The count comes back so the success line can print it. A zero that is never
-    printed is indistinguishable from a check that did not run.
+    The count comes back so the success line can print it. A zero that is never printed is indistinguishable from a check that did not run.
     """
     findings: list[str] = []
     target = root / REFUSED_FILE

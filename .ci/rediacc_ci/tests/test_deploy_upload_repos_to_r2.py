@@ -1,35 +1,18 @@
 """Differential: `rediacc_ci.deploy.upload_repos_to_r2` against its twin
 `.ci/scripts/deploy/upload-repos-to-r2.sh`.
 
-RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO.
-Nothing here reaches R2 or Cloudflare, and nothing here reads or writes the real
-checkout: every case builds a throwaway tree holding the twin, the port, the
-purge script it calls and a `dist/` of its own, then runs both sides against it.
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one
-real run" clause and says in as many words that the mocked parity ledger is a
-separate, achievable piece of work. This is that piece.
+RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare, and nothing here reads or writes the real checkout: every case builds a throwaway tree holding the twin, the port, the purge script it calls and a `dist/` of its own, then runs both sides against it. `.ci/shadow/w7p5a-status.json` records this path as blocked only
+for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-WHY THE FIXTURE HAS TO BE A WHOLE TREE AND NOT A tmp_path WITH A `dist/` IN IT.
-The twin's second act is `cd "$(get_repo_root)"`, which resolves
-`.ci/scripts/lib/../../..` from `common.sh`'s own location, NOT from the caller's
-cwd. Run the real twin from a fixture directory and it would walk back to this
-checkout and read the real `dist/`. The port derives its root the same way, from
-`.ci/rediacc_ci/deploy/../../..`, so the copy in the fixture is what makes both
-sides answer the fixture. `test_the_root_comes_from_the_script_location_not_cwd`
-drives both from a subdirectory to prove that is what is happening.
+WHY THE FIXTURE HAS TO BE A WHOLE TREE AND NOT A tmp_path WITH A `dist/` IN IT. The twin's second act is `cd "$(get_repo_root)"`, which resolves `.ci/scripts/lib/../../..` from `common.sh`'s own location, NOT from the caller's cwd. Run the real twin from a fixture directory and it would walk back to this checkout and read the real `dist/`. The port derives its root the same way,
+from `.ci/rediacc_ci/deploy/../../..`, so the copy in the fixture is what makes both sides answer the fixture. `test_the_root_comes_from_the_script_location_not_cwd` drives both from a subdirectory to prove that is what is happening.
 
-THREE THINGS ARE COMPARED, NOT ONE. The streams and the exit code, as everywhere
-in this campaign, plus THE CALL LOG: the observable effect of this program is a
-set of `aws s3` calls and one Cloudflare purge, and two implementations can print
-the same `Repos uploaded to R2 channel: edge` while syncing different prefixes,
-enumerating files in a different ORDER, or uploading an install script that still
-points at the wrong channel. The `aws` fake therefore logs the CONTENT of every
-`cp` source as well as its argv.
+THREE THINGS ARE COMPARED, NOT ONE. The streams and the exit code, as everywhere in this campaign, plus THE CALL LOG: the observable effect of this program is a set of `aws s3` calls and one Cloudflare purge, and two implementations can print the same `Repos uploaded to R2 channel: edge` while syncing different prefixes, enumerating files in a different ORDER, or uploading an
+install script that still points at the wrong channel. The `aws` fake therefore logs the CONTENT of every `cp` source as well as its argv.
 
 THE TEMPORARY PATH IS MASKED IN THE CALL LOG AND NOWHERE ELSE. `mktemp` cannot
 return the same name twice, so the two sides' `aws s3 cp` argv differ in exactly
-that one field by construction. `_mask` replaces it and leaves everything else
-byte-exact, which is the narrowest mask that lets the comparison run.
+that one field by construction. `_mask` replaces it and leaves everything else byte-exact, which is the narrowest mask that lets the comparison run.
 """
 
 from __future__ import annotations
@@ -146,9 +129,7 @@ def _bin(root: pathlib.Path, *, drop: str = "", aws_body: str = FAKE_AWS) -> str
 def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathlib.Path:
     """A throwaway repository holding both implementations and a `dist/`.
 
-    BOTH SIDES ARE COPIED IN rather than invoked from this checkout, because each
-    resolves the repository root from its own location. A test that ran the real
-    files would drive them against the real tree.
+    BOTH SIDES ARE COPIED IN rather than invoked from this checkout, because each resolves the repository root from its own location. A test that ran the real files would drive them against the real tree.
     """
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
@@ -213,11 +194,7 @@ def _run(
 
 def run_both(tmp_path: pathlib.Path, tree: dict[str, str] | None = None, **kw):
     """BOTH SIDES RUN AGAINST ONE TREE, and that is a correctness requirement
-    rather than a saving. The URL list this script builds is `find`'s order,
-    which is DIRECTORY order: two trees holding the same five files can enumerate
-    them differently, and the comparison would then report a divergence that is
-    the fixture's and not the port's. Measured on the first run of this file,
-    where `dists/stable/Packages.gz` came out before `InRelease` in one tree.
+    rather than a saving. The URL list this script builds is `find`'s order, which is DIRECTORY order: two trees holding the same five files can enumerate them differently, and the comparison would then report a divergence that is the fixture's and not the port's. Measured on the first run of this file, where `dists/stable/Packages.gz` came out before `InRelease` in one tree.
     Neither side writes into `dist/`, and the two call logs have different names.
     """
     root = fixture(tmp_path, tree)
@@ -229,8 +206,7 @@ def run_both(tmp_path: pathlib.Path, tree: dict[str, str] | None = None, **kw):
 def find_urls(root: pathlib.Path, channel: str = "edge") -> list[str]:
     """The purge URLs THIS tree must produce, in `find`'s own order.
 
-    Derived by running the same `find` the twin runs, so the expectation is the
-    filesystem's answer rather than a second implementation of the port's walk.
+    Derived by running the same `find` the twin runs, so the expectation is the filesystem's answer rather than a second implementation of the port's walk.
     """
     urls: list[str] = []
     for fmt in port.FORMATS:
@@ -275,12 +251,9 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
 
 def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
     """THE HAPPY PATH, PINNED AGAINST LITERAL BYTES. Two syncs (the two formats
-    that exist), two rewritten install scripts with their CONTENT, and one purge
-    carrying all five URLs.
+    that exist), two rewritten install scripts with their CONTENT, and one purge carrying all five URLs.
 
-    THE FIVE URLS ARE ASSERTED AS A SET HERE and as an ORDER in the next test,
-    because their order is the filesystem's rather than this file's: hard-coding
-    it would pin the fixture's directory layout, which is not the subject.
+    THE FIVE URLS ARE ASSERTED AS A SET HERE and as an ORDER in the next test, because their order is the filesystem's rather than this file's: hard-coding it would pin the fixture's directory layout, which is not the subject.
     """
     root = fixture(tmp_path)
     old, old_calls = _run(root, "old")
@@ -330,11 +303,7 @@ def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
 
 def test_the_purge_list_is_finds_order_not_sorted_order(tmp_path: pathlib.Path) -> None:
     """WHY THE PORT SHELLS OUT TO `find`. The twin appends one URL per line of
-    `find -type f`, which is DIRECTORY order, and this fixture's directory order
-    is not sorted order: measured here, `dists/stable/Packages.gz` comes out
-    before `InRelease`, which `sorted()` would reverse. The expectation is
-    computed by running the same `find`, so it is the filesystem's answer rather
-    than a second implementation of the walk. Nothing on either stream would
+    `find -type f`, which is DIRECTORY order, and this fixture's directory order is not sorted order: measured here, `dists/stable/Packages.gz` comes out before `InRelease`, which `sorted()` would reverse. The expectation is computed by running the same `find`, so it is the filesystem's answer rather than a second implementation of the walk. Nothing on either stream would
     show a port that reordered this."""
     root = fixture(tmp_path)
     expected = find_urls(root)
@@ -408,13 +377,9 @@ def test_defect_an_entirely_empty_dist_reports_a_successful_upload(
     tmp_path: pathlib.Path,
 ) -> None:
     """VACUITY FACT 2, PINNED. With no `dist/repos/*` and no install script, every
-    loop body is skipped, nothing is uploaded, nothing is purged, and the script
-    prints `Repos uploaded to R2 channel: edge` and exits 0. The per-directory
-    guard above cannot see it, because its subject is one directory rather than
-    the upload as a whole.
+    loop body is skipped, nothing is uploaded, nothing is purged, and the script prints `Repos uploaded to R2 channel: edge` and exits 0. The per-directory guard above cannot see it, because its subject is one directory rather than the upload as a whole.
 
-    Reproduced rather than repaired: agreement with the live twin is this wave's
-    deliverable, and the fix is a cutover-box decision. If it is ever repaired,
+    Reproduced rather than repaired: agreement with the live twin is this wave's deliverable, and the fix is a cutover-box decision. If it is ever repaired,
     this test goes red and names the port that must follow."""
     old, new, old_calls, new_calls = run_both(tmp_path, tree={})
     assert old.returncode == 0
@@ -439,9 +404,7 @@ def test_divergence_each_of_the_five_guards_is_bashs_own_unbound_variable(
     tmp_path: pathlib.Path,
 ) -> None:
     """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS FOR ALL FIVE GUARDS. bash
-    prints its own FILE and LINE NUMBER before the twin's message, and the twin's
-    message already begins with the script name. The port prints the
-    `VAR: message` half. Same stream, same status 1, no call from either side,
+    prints its own FILE and LINE NUMBER before the twin's message, and the twin's message already begins with the script name. The port prints the `VAR: message` half. Same stream, same status 1, no call from either side,
     and the ORDER of the guards is identical: the first missing one wins."""
     for index, (name, message) in enumerate(port.REQUIRED_ENV):
         case = tmp_path / f"guard-{name}"
@@ -562,11 +525,7 @@ def test_the_root_comes_from_the_script_location_not_cwd(tmp_path: pathlib.Path)
 
 def test_the_r2_credentials_are_bridged_into_the_aws_names(tmp_path: pathlib.Path) -> None:
     """`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION=auto`
-    are EXPORTED for the child, not passed as arguments. Asserted through a fake
-    that reports the three variables it was HANDED, because a port that set them
-    on itself without exporting would look identical from the outside, and the
-    twin's sibling `delete-r2-channel.sh` records that a missing R2 -> AWS bridge
-    surfaces as an unhelpful credentials error rather than as a missing
+    are EXPORTED for the child, not passed as arguments. Asserted through a fake that reports the three variables it was HANDED, because a port that set them on itself without exporting would look identical from the outside, and the twin's sibling `delete-r2-channel.sh` records that a missing R2 -> AWS bridge surfaces as an unhelpful credentials error rather than as a missing
     variable."""
     reporter = (
         "#!/usr/bin/python3\n"
@@ -659,10 +618,7 @@ def test_the_skip_values_are_the_twins_case_arms() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the CACHE-CONTROL header, which is the one field
-    whose loss caused the incident this script's header is written about: an
-    `immutable` policy let CF serve a previous run's body under a URL the new
-    APKINDEX points at, and apt-get reported `BAD signature`. Nothing on either
-    stream carries it, both exits are 0, and only the call log sees it. Driven
+    whose loss caused the incident this script's header is written about: an `immutable` policy let CF serve a previous run's body under a URL the new APKINDEX points at, and apt-get reported `BAD signature`. Nothing on either stream carries it, both exits are 0, and only the call log sees it. Driven
     red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('CC_MUTABLE = "no-cache"', 'CC_MUTABLE = "immutable"', 1)

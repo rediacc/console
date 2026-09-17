@@ -3,8 +3,7 @@
 Ported from `.ci/scripts/quality/check-editorconfig.sh`, which is NOT deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the
-list IS the gate:
+WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the list IS the gate:
 
     Checks:
       1. All tracked text files end with a final newline
@@ -17,12 +16,8 @@ list IS the gate:
 
 THE TEXT-EXTENSION LIST AND WHY CHECK 4 CANNOT FALSE-POSITIVE, in the twin's
 own words: "Extensions that must always be text; a NUL byte inside one is
-corruption, not content -- e.g. a literal NUL typed in a shell/TS source file
-where a `\\0` escape sequence was meant (check-ci-parity.ts:163, found
-2026-08-01). A real binary asset (png, woff, so, ...) never matches this list,
-which is what makes check 4 unable to false-positive on legitimate binaries:
-only a file `file --mime-encoding` calls binary AND whose extension says it must
-be text gets flagged, and normal binary assets never have such extensions."
+corruption, not content -- e.g. a literal NUL typed in a shell/TS source file where a `\\0` escape sequence was meant (check-ci-parity.ts:163, found 2026-08-01). A real binary asset (png, woff, so, ...) never matches this list, which is what makes check 4 unable to false-positive on legitimate binaries: only a file `file --mime-encoding` calls binary AND whose extension says it
+must be text gets flagged, and normal binary assets never have such extensions."
 
 THE TWO CONTROLS THE TWIN RUNS BEFORE IT SCANS ANYTHING, both carried:
 
@@ -39,58 +34,36 @@ THE TWO CONTROLS THE TWIN RUNS BEFORE IT SCANS ANYTHING, both carried:
      .ci/scripts/test/gates/test-watchdog-binary-exec-guard.sh (us-ascii). A gate
      whose coverage depends on filenames is exactly the kind that goes quiet."
 
-THE BATCHING, and why it is not an optimisation to be "cleaned up": "The previous
-shape was a while-read loop that spawned `file`, `tail`, `head|od|grep` and
-`grep -P` PER FILE. Measured on this repo: 6,595 tracked files at ~87ms of
+THE BATCHING, and why it is not an optimisation to be "cleaned up": "The previous shape was a while-read loop that spawned `file`, `tail`, `head|od|grep` and `grep -P` PER FILE. Measured on this repo: 6,595 tracked files at ~87ms of
 process spawns each = ~573s, i.e. the gate looked hung and could not finish
 inside a 10-minute local run. Nothing was wrong with the checks; the cost was
-fork/exec." And: "`file` is still the ONLY binary oracle, called with the same
-flags, so its heuristics cannot drift -- it is just invoked in batches via xargs
-instead of once per path."
+fork/exec." And: "`file` is still the ONLY binary oracle, called with the same flags, so its heuristics cannot drift -- it is just invoked in batches via xargs instead of once per path."
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TWIN'S SCANNING PASS IS ALREADY PYTHON, and that is the happiest part of
-this port: `check-editorconfig.sh:112-168` is a heredoc'd `python3 -` program.
-Its four rules, its symlink comment and its `.hash` skip are carried here as
-code rather than re-derived, so the byte-exact half of this gate is the same
-program with the heredoc removed.
+THE TWIN'S SCANNING PASS IS ALREADY PYTHON, and that is the happiest part of this port: `check-editorconfig.sh:112-168` is a heredoc'd `python3 -` program. Its four rules, its symlink comment and its `.hash` skip are carried here as code rather than re-derived, so the byte-exact half of this gate is the same program with the heredoc removed.
 
-THE `--recurse-submodules` DEFECT IS PORTED, NOT FIXED. The twin enumerates with
-`git ls-files -z --recurse-submodules` while its manifest lane checks out WITHOUT
-submodules, so in that lane the flag adds nothing and the gate silently narrows
+THE `--recurse-submodules` DEFECT IS PORTED, NOT FIXED. The twin enumerates with `git ls-files -z --recurse-submodules` while its manifest lane checks out WITHOUT submodules, so in that lane the flag adds nothing and the gate silently narrows
 to the superproject. That mismatch is a KNOWN, REPORTED defect; a port that
-quietly dropped the flag or quietly added a submodule check would change the
-corpus and therefore the verdict, and the differential would have nothing to
-compare. It is carried as-is and named here so nobody has to rediscover it.
+quietly dropped the flag or quietly added a submodule check would change the corpus and therefore the verdict, and the differential would have nothing to compare. It is carried as-is and named here so nobody has to rediscover it.
 
 `require_cmd python3` IS SATISFIED BY CONSTRUCTION and has no counterpart below.
 The twin needs the probe because it shells out to a `python3` that may not exist;
-this module IS that python3. There is no branch to port, and inventing one would
-be a check that cannot fail.
+this module IS that python3. There is no branch to port, and inventing one would be a check that cannot fail.
 
-A MISSING `file` STILL FAILS THROUGH THE NUL CONTROL, deliberately with the
-twin's own message rather than a clearer one. `file --mime-encoding X 2>/dev/null`
+A MISSING `file` STILL FAILS THROUGH THE NUL CONTROL, deliberately with the twin's own message rather than a clearer one. `file --mime-encoding X 2>/dev/null`
 with no `file` on PATH produces nothing, the `grep -q binary` fails, and the twin
 reports "NUL-byte control did not fire ... The detection logic is broken; do not
-trust this gate." That message is wrong about the cause and right about the
-verdict, and the port emits the same bytes because a better message here is a
-finding the differential would score as a mismatch. Reported as a twin defect
-instead of repaired.
+trust this gate." That message is wrong about the cause and right about the verdict, and the port emits the same bytes because a better message here is a finding the differential would score as a mismatch. Reported as a twin defect instead of repaired.
 
-`file` PADS THE FILENAME COLUMN when it is given more than one path, so a batch
-prints `a.sh:       us-ascii` while a single file prints `a.sh: binary`. The
-awk classifier strips `: [^:]*$` and is immune to the padding, which is why
-batching changes performance and not results. Reproduced rather than assumed:
-`tests/test_quality_editorconfig.py` compares the port's classifier against the
+`file` PADS THE FILENAME COLUMN when it is given more than one path, so a batch prints `a.sh: us-ascii` while a single file prints `a.sh: binary`. The awk classifier strips `: [^:]*$` and is immune to the padding, which is why batching changes performance and not results. Reproduced rather than assumed: `tests/test_quality_editorconfig.py` compares the port's classifier against the
 real awk on padded and unpadded input.
 
 THE ARRAYS ARE REPORTED IN CORPUS ORDER, not sorted. `git ls-files` already
 emits sorted paths, so the four lists come out sorted anyway; the port does not
-add a sort, because a sort would hide a future change in enumeration order that
-the twin would show.
+add a sort, because a sort would hide a future change in enumeration order that the twin would show.
 """
 
 import os
@@ -123,12 +96,8 @@ def classify_binary(lines: list[str]) -> list[str]:
 
         awk -F': ' '$NF ~ /binary/ { sub(/: [^:]*$/, "", $0); print }'
 
-    TWO SEPARATE OPERATIONS THAT LOOK LIKE ONE. The TEST is on the last ": "
-    separated field, and the STRIP is a regex substitution on the whole line.
-    Collapsing them into "split on the last colon" would classify a path
-    containing ": " differently, and it is the asymmetry that makes the control
-    in the twin's header meaningful: a path holding the word "binary" is not a
-    binary file, because the word has to be in the ENCODING field.
+    TWO SEPARATE OPERATIONS THAT LOOK LIKE ONE. The TEST is on the last ": " separated field, and the STRIP is a regex substitution on the whole line. Collapsing them into "split on the last colon" would classify a path containing ": " differently, and it is the asymmetry that makes the control in the twin's header meaningful: a path holding the word "binary" is not a binary file,
+    because the word has to be in the ENCODING field.
     """
     out: list[str] = []
     for line in lines:
@@ -144,9 +113,7 @@ def classify_binary(lines: list[str]) -> list[str]:
 def mime_encodings(root: pathlib.Path, rel_paths: list[str]) -> list[str]:
     """`file --mime-encoding -- <paths>`, in batches. Raw output lines.
 
-    stderr is DISCARDED, matching the twin's `2>/dev/null`, and a non-zero exit
-    is ignored, matching its `|| true`. `file` reports an unreadable path on
-    stderr and carries on, so a broken symlink does not take the gate down.
+    stderr is DISCARDED, matching the twin's `2>/dev/null`, and a non-zero exit is ignored, matching its `|| true`. `file` reports an unreadable path on stderr and carries on, so a broken symlink does not take the gate down.
     """
     if not rel_paths:
         return []
@@ -172,10 +139,7 @@ def mime_encodings(root: pathlib.Path, rel_paths: list[str]) -> list[str]:
 def tracked_files(root: pathlib.Path) -> list[str]:
     """`git ls-files -z --recurse-submodules`, as a list of repo-relative paths.
 
-    THE SUBMODULE FLAG IS THE REPORTED DEFECT. See the port notes: the manifest
-    lane checks out without submodules, so this flag buys nothing there. It is
-    carried because removing it would change the corpus, and a port that changes
-    the corpus is not a port.
+    THE SUBMODULE FLAG IS THE REPORTED DEFECT. See the port notes: the manifest lane checks out without submodules, so this flag buys nothing there. It is carried because removing it would change the corpus, and a port that changes the corpus is not a port.
     """
     proc = subprocess.run(
         ["git", "ls-files", "-z", "--recurse-submodules"],
@@ -190,9 +154,7 @@ def tracked_files(root: pathlib.Path) -> list[str]:
 def scan(root: pathlib.Path, paths_list: list[str], binary: set[str]) -> list[tuple[str, str]]:
     """The byte-exact pass. Returns (kind, path) for every finding, in order.
 
-    This is `check-editorconfig.sh:113-167` with the heredoc removed. Its
-    comments are the twin's, not new ones, and they are kept at the lines they
-    describe.
+    This is `check-editorconfig.sh:113-167` with the heredoc removed. Its comments are the twin's, not new ones, and they are kept at the lines they describe.
     """
     text_ext = re.compile(TEXT_EXTENSIONS_RE)
     findings: list[tuple[str, str]] = []
@@ -257,9 +219,7 @@ NUL_ADVICE = (
 def nul_control(tmpdir: pathlib.Path) -> bool:
     """Plant a NUL in a synthetic `.ts` and require it to read as binary+NUL.
 
-    Both halves are required, matching the twin's `&&`: `file` must call it
-    binary AND the bytes must contain a NUL. Either alone would pass while the
-    other detector was broken.
+    Both halves are required, matching the twin's `&&`: `file` must call it binary AND the bytes must contain a NUL. Either alone would pass while the other detector was broken.
     """
     target = tmpdir / "control.ts"
     target.write_bytes(b"const x = 1;\x00\nconst y = 2;\n")
@@ -280,8 +240,7 @@ def nul_control(tmpdir: pathlib.Path) -> bool:
 def classifier_control() -> str | None:
     """Prove the classifier keys on the encoding, not the path. None means OK.
 
-    Returns the twin's message for whichever half failed, so the caller prints
-    one string and the two failure modes stay distinguishable in the output.
+    Returns the twin's message for whichever half failed, so the caller prints one string and the two failure modes stay distinguishable in the output.
     """
     if classify_binary(["some-binary-name.sh: us-ascii"]):
         return (
@@ -299,9 +258,7 @@ def classifier_control() -> str | None:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 on a control failure or any violation.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin documents itself
-    as taking no arguments ("Usage: check-editorconfig.sh") and ignores any it
-    is given, so nothing observable changes for a real caller.
+    `--selftest` is intercepted BEFORE any real scan. The twin documents itself as taking no arguments ("Usage: check-editorconfig.sh") and ignores any it is given, so nothing observable changes for a real caller.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -369,10 +326,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Plant each violation, prove it is found; plant its mirror, prove it is not.
 
-    BOTH DIRECTIONS FOR EVERY CHECK. Three of the four rules are exemptions
-    (binary, `.hash`, symlink), and an exemption that widened by one line would
-    make the gate quiet while every control that only plants defects stayed
-    green.
+    BOTH DIRECTIONS FOR EVERY CHECK. Three of the four rules are exemptions (binary, `.hash`, symlink), and an exemption that widened by one line would make the gate quiet while every control that only plants defects stayed green.
     """
     ctl = Controls("editorconfig", floor=22, verbose=True)
 

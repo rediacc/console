@@ -3,8 +3,7 @@ r"""Control-first gates must prove their plant actually landed.
 Ported from `.ci/scripts/quality/check-control-vacuity.sh`, which is NOT deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the
-argument IS the gate:
+WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the argument IS the gate:
 
     Gate: a control-first gate that PLANTS its defect by pattern substitution must
     prove the plant landed before trusting the control.
@@ -29,8 +28,7 @@ argument IS the gate:
     Control-first itself: the control below strips a real gate's guard and requires
     this check to catch it.
 
-THE THREE EXCLUSIONS INSIDE `builds_by_substitution`, all carried, because each
-one was paid for by a false positive:
+THE THREE EXCLUSIONS INSIDE `builds_by_substitution`, all carried, because each one was paid for by a false positive:
 
   * A PREFIX substitution CANNOT go vacuous. `s/^/.../` has an EMPTY needle
     anchored at line start: it always matches, so it can never silently produce
@@ -49,54 +47,31 @@ one was paid for by a false positive:
     `s///` appears on the line. "Missing the third mis-exempted the two gates
     that motivated this check."
 
-THE SCOPE IS STATED, NOT LEFT TO THE GLOB, and the twin's reason is carried with
-it: "This check parses BASH, so its enumeration is `check-*.sh` and every
-`check_*.py` gate is outside it. That is a real limit, and on 2026-08-28 it was
-invisible: a reader saw a green with no hint that 21 sibling gates had not been
-looked at. Measured the same day, which is why this is a printed COUNT and not
-new parsing: of the 21 Python gates, ZERO build a control mutant by
-substitution." So the number of unscanned gates is part of the green line.
+THE SCOPE IS STATED, NOT LEFT TO THE GLOB, and the twin's reason is carried with it: "This check parses BASH, so its enumeration is `check-*.sh` and every `check_*.py` gate is outside it. That is a real limit, and on 2026-08-28 it was invisible: a reader saw a green with no hint that 21 sibling gates had not been looked at. Measured the same day, which is why this is a printed
+COUNT and not new parsing: of the 21 Python gates, ZERO build a control mutant by substitution." So the number of unscanned gates is part of the green line.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`[[:punct:]]` IS NOT THE SAME SET IN EVERY grep, MEASURED 2026-09-06 ON THIS
-HOST. `grep` here is ugrep 7.8.4, whose `[[:punct:]]` is the Unicode PUNCTUATION
+`[[:punct:]]` IS NOT THE SAME SET IN EVERY grep, MEASURED 2026-09-06 ON THIS HOST. `grep` here is ugrep 7.8.4, whose `[[:punct:]]` is the Unicode PUNCTUATION
 categories and therefore EXCLUDES the nine ASCII symbols `$ + < = > ^ ` | ~`,
-which GNU grep and POSIX both include. Verified by running
-`grep -oE '[[:punct:]]'` over the printable ASCII range: ugrep returned
+which GNU grep and POSIX both include. Verified by running `grep -oE '[[:punct:]]'` over the printable ASCII range: ugrep returned
 `!"#%&'()*,-./:;?@[\]_{}` and nothing else.
 
-The port uses the WIDER, POSIX set. The difference is unobservable on every
-shape actually in use, because the character the pattern requires immediately
-before the `s` is the quote opening a sed expression (`sed 's/`, `sed "s/`), and
-a quote is punctuation under both readings. A file containing `sed $s/` would be
+The port uses the WIDER, POSIX set. The difference is unobservable on every shape actually in use, because the character the pattern requires immediately before the `s` is the quote opening a sed expression (`sed 's/`, `sed "s/`), and a quote is punctuation under both readings. A file containing `sed $s/` would be
 flagged by the port and not by ugrep; no such file exists, and
-`tests/test_quality_control_vacuity.py` compares the port against the LIVE grep
-pipeline file by file across the whole gate directory so a future one would show
-up as a failing test rather than as a silent divergence.
+`tests/test_quality_control_vacuity.py` compares the port against the LIVE grep pipeline file by file across the whole gate directory so a future one would show up as a failing test rather than as a silent divergence.
 
-COLOUR IS DECIDED ON A DIFFERENT STREAM. The twin sets RED/GREEN on
-`[ -t 1 ]` -- stdout -- and then writes its coloured `✗` lines to STDERR. That is
-the 11-file variant `rediacc_ci.log`'s docstring documents as a bug: redirect one
-stream and not the other and the colour lands in the wrong place. `log.error`
-tests the stream it writes to. Under the differential neither stream is a
+COLOUR IS DECIDED ON A DIFFERENT STREAM. The twin sets RED/GREEN on `[ -t 1 ]` -- stdout -- and then writes its coloured `✗` lines to STDERR. That is the 11-file variant `rediacc_ci.log`'s docstring documents as a bug: redirect one stream and not the other and the colour lands in the wrong place. `log.error` tests the stream it writes to. Under the differential neither stream is a
 terminal, so both produce the same bytes; on a developer's terminal with stdout
-redirected the twin emits escapes into a pipe and the port does not. Reported as
-a twin defect, not repaired in the twin.
+redirected the twin emits escapes into a pipe and the port does not. Reported as a twin defect, not repaired in the twin.
 
-THE BANNER AND THE GREEN LINE ARE STDOUT, the findings are stderr, and the split
-is the twin's. `echo` for the two summary lines, `>&2` for every `fail`. Carried
-exactly, because `scripts/lib/shadow-gate.ts` reads both streams and a moved
-line changes the chatter/finding split.
+THE BANNER AND THE GREEN LINE ARE STDOUT, the findings are stderr, and the split is the twin's. `echo` for the two summary lines, `>&2` for every `fail`. Carried exactly, because `scripts/lib/shadow-gate.ts` reads both streams and a moved line changes the chatter/finding split.
 
-`sed '/.../,+2d'` IS A RANGE, NOT A PER-LINE DELETE. It removes the matching
-line and the two after it, then RESUMES looking for a new start. A port that
-deleted only matching lines would leave the two lines after the guard behind and
+`sed '/.../,+2d'` IS A RANGE, NOT A PER-LINE DELETE. It removes the matching line and the two after it, then RESUMES looking for a new start. A port that deleted only matching lines would leave the two lines after the guard behind and
 the control's stripped copy would still carry them; a port that stopped after the
-first range would miss a second guard. Both are wrong in the same direction:
-they make the control easier to pass.
+first range would miss a second guard. Both are wrong in the same direction: they make the control easier to pass.
 """
 
 import glob
@@ -113,10 +88,7 @@ from rediacc_ci.controls import Controls
 def _joined(*rows: str) -> str:
     """`"\n".join(rows)` behind a call. The rows stay one per line.
 
-    A helper rather than a literal join because ruff's FLY002 rewrites a join
-    over a LITERAL list into an f-string, and a ten-line shell fixture written
-    as one f-string is unreadable. Passing the rows as arguments keeps the
-    fixture legible and gives the linter nothing static to fold.
+    A helper rather than a literal join because ruff's FLY002 rewrites a join over a LITERAL list into an f-string, and a ten-line shell fixture written as one f-string is unreadable. Passing the rows as arguments keeps the fixture legible and gives the linter nothing static to fold.
     """
     return "\n".join(rows)
 
@@ -181,11 +153,7 @@ def has_control(lines: list[str]) -> bool:
 def builds_by_substitution(lines: list[str]) -> bool:
     """Does it build its control input by PATTERN SUBSTITUTION, the fragile kind?
 
-    THREE STAGES, IN ORDER, because each one is a `grep` in a pipeline and the
-    order decides the answer. Stripping comments AFTER testing for a
-    substitution would flag a file for a construct that exists only in the prose
-    explaining why it is avoided, which is the 2026-08-26 false positive on
-    check-shell-size.sh.
+    THREE STAGES, IN ORDER, because each one is a `grep` in a pipeline and the order decides the answer. Stripping comments AFTER testing for a substitution would flag a file for a construct that exists only in the prose explaining why it is avoided, which is the 2026-08-26 false positive on check-shell-size.sh.
     """
     kept = [line for line in lines if not COMMENT_LINE.search(line)]
     kept = [line for line in kept if not PREFIX_SED.search(line)]
@@ -202,8 +170,7 @@ def proves_plant_landed(lines: list[str]) -> bool:
 def strip_guard(lines: list[str]) -> list[str]:
     """`sed '/<guard>/,+2d'`: delete the guard line and the two after it.
 
-    A RANGE, and it can start again. See the port notes for why the two obvious
-    simplifications both make the control easier to pass.
+    A RANGE, and it can start again. See the port notes for why the two obvious simplifications both make the control easier to pass.
     """
     out: list[str] = []
     remaining = 0
@@ -221,8 +188,7 @@ def strip_guard(lines: list[str]) -> list[str]:
 class Failures:
     """The `fails` counter and the `fail()` that increments it.
 
-    An object rather than a module global so `selftest` can drive several scans
-    in one process without a previous case's count leaking into the next.
+    An object rather than a module global so `selftest` can drive several scans in one process without a previous case's count leaking into the next.
     """
 
     def __init__(self) -> None:
@@ -236,8 +202,7 @@ class Failures:
 def self_prose_control() -> str | None:
     """Prove the detector reads CODE and not its own documentation. None is OK.
 
-    Both directions, exactly as the twin runs them: a comment ABOUT a
-    substitution must not register, and a real substitution in code must.
+    Both directions, exactly as the twin runs them: a comment ABOUT a substitution must not register, and a real substitution in code must.
     """
     with tempfile.TemporaryDirectory() as tmp:
         probe = pathlib.Path(tmp) / "probe.sh"
@@ -259,8 +224,7 @@ def audit(gate_dir: pathlib.Path, failures: Failures) -> tuple[int, int]:
     """Walk `check-*.sh` and rule on each. Returns (checked, exempt).
 
     SORTED, matching bash's glob expansion under LC_ALL=C. The order is not the
-    verdict, but it is the output, and a reader diffing the two implementations'
-    stderr side by side is the cheapest review this port will ever get.
+    verdict, but it is the output, and a reader diffing the two implementations' stderr side by side is the cheapest review this port will ever get.
     """
     checked = 0
     exempt = 0
@@ -306,8 +270,7 @@ def audit(gate_dir: pathlib.Path, failures: Failures) -> tuple[int, int]:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 on any failure.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no
-    arguments and ignores any it is given, so no caller can be passing it.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments and ignores any it is given, so no caller can be passing it.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -395,11 +358,7 @@ _CONSTRUCTED = 'printf "%s\\n" "$known_bad" >>"$TMP/broken.sh"'
 def selftest() -> int:
     """Plant each shape, prove it is classified; plant its mirror, prove it is not.
 
-    BOTH DIRECTIONS FOR EVERY RULE. This gate's whole value is a DISTINCTION
-    (substitution versus construction, code versus comment, prefix versus
-    needle), and a distinction has two sides. A suite with only positive plants
-    would be satisfied by a detector that answered "yes" to everything, which is
-    the same gate as one that answered "no".
+    BOTH DIRECTIONS FOR EVERY RULE. This gate's whole value is a DISTINCTION (substitution versus construction, code versus comment, prefix versus needle), and a distinction has two sides. A suite with only positive plants would be satisfied by a detector that answered "yes" to everything, which is the same gate as one that answered "no".
     """
     ctl = Controls("control-vacuity", floor=24, verbose=True)
 

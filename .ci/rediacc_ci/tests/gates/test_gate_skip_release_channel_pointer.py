@@ -1,49 +1,26 @@
 """Port of `.ci/scripts/test/gates/test-skip-release-channel-pointer.sh`.
 
-Gate: on a `bump-none` merge the R2 uploaders must write NOTHING on a release
-channel, and must keep writing everything the moment the signal is absent.
+Gate: on a `bump-none` merge the R2 uploaders must write NOTHING on a release channel, and must keep writing everything the moment the signal is absent.
 
-WHAT IS DRIVEN. `.ci/scripts/deploy/upload-to-r2.sh` is driven where it lives, in
-the real tree, because it takes every path it needs as an argument.
-`.ci/scripts/deploy/upload-repos-to-r2.sh` derives its root from `common.sh`'s own
-`BASH_SOURCE` and then `cd`s to it, so it is driven from a BYTE-IDENTICAL copy
-inside a sandbox whose `.ci/scripts/lib`, `.ci/config` and `.devcontainer` are
-SYMLINKS to the real ones. The copy is `cmp`-checked against the original on
-every run: the sandbox exists to relocate a repo root, not to re-implement a
-script.
+WHAT IS DRIVEN. `.ci/scripts/deploy/upload-to-r2.sh` is driven where it lives, in the real tree, because it takes every path it needs as an argument. `.ci/scripts/deploy/upload-repos-to-r2.sh` derives its root from `common.sh`'s own `BASH_SOURCE` and then `cd`s to it, so it is driven from a BYTE-IDENTICAL copy inside a sandbox whose `.ci/scripts/lib`, `.ci/config` and
+`.devcontainer` are SYMLINKS to the real ones. The copy is `cmp`-checked against the original on every run: the sandbox exists to relocate a repo root, not to re-implement a script.
 
-THE MUTANTS ARE ASSEMBLED BY CONSTRUCTION, head-up-to-anchor plus a replacement
-block written literally in this file plus tail-after-anchor. No pattern
-substitution of any live source line, so a reworded guard cannot silently produce
-an identical "mutant". Three refusals guard the assembly and all three are the
-twin's: the anchors must be found, the anchor must be GONE from the output, and
-the output must differ from its source.
+THE MUTANTS ARE ASSEMBLED BY CONSTRUCTION, head-up-to-anchor plus a replacement block written literally in this file plus tail-after-anchor. No pattern substitution of any live source line, so a reworded guard cannot silently produce an identical "mutant". Three refusals guard the assembly and all three are the twin's: the anchors must be found, the anchor must be GONE from the
+output, and the output must differ from its source.
 
-THE LIVENESS PROBE IS THE PART WORTH READING. A mutant that dies during startup
-(a missing sandbox file, a bad splice) exits non-zero for a reason unrelated to
-its plant, and every control below would read that as "the defect was detected".
-The twin records that this actually happened once, when `.devcontainer` was not
-linked into the sandbox and `constants.sh` hard-failed. So each mutant is proven
-to LOAD and reach a check that sits ABOVE the spliced region before anything it
-says is trusted.
+THE LIVENESS PROBE IS THE PART WORTH READING. A mutant that dies during startup (a missing sandbox file, a bad splice) exits non-zero for a reason unrelated to its plant, and every control below would read that as "the defect was detected". The twin records that this actually happened once, when `.devcontainer` was not linked into the sandbox and `constants.sh` hard-failed. So each
+mutant is proven to LOAD and reach a check that sits ABOVE the spliced region before anything it says is trusted.
 
-WHERE THIS REIMPLEMENTS grep, wc AND cmp, AND WHY THE ANSWERS AGREE. The anchor
-line numbers come from `grep -n ... | head -1 | cut -d: -f1` in the twin and from
+WHERE THIS REIMPLEMENTS grep, wc AND cmp, AND WHY THE ANSWERS AGREE. The anchor line numbers come from `grep -n ... | head -1 | cut -d: -f1` in the twin and from
 enumerating lines here; both take the FIRST line carrying the anchor. `wc -l` on
-the recorder log counts newline-terminated lines and the fake writes exactly one
-`printf '%s\\n'` per call, so counting `splitlines()` is the same number.
+the recorder log counts newline-terminated lines and the fake writes exactly one `printf '%s\\n'` per call, so counting `splitlines()` is the same number.
 `cmp -s` is a byte comparison, which is what `read_bytes() ==` is.
 
-THE TWIN IS FLAT (it declares no `test_*` functions), so `test_twin_parity.py`
-compares this module's control count against the twin's runtime `PASS:` count:
-six properties, six controls and one shape line, thirteen each side.
+THE TWIN IS FLAT (it declares no `test_*` functions), so `test_twin_parity.py` compares this module's control count against the twin's runtime `PASS:` count: six properties, six controls and one shape line, thirteen each side.
 
-NO `xdist_group`. The sandbox is module-scoped and built under pytest's own
-`tmp_path_factory`, which is per-worker, so two workers get two sandboxes and two
+NO `xdist_group`. The sandbox is module-scoped and built under pytest's own `tmp_path_factory`, which is per-worker, so two workers get two sandboxes and two
 recorders; within a worker pytest never runs two tests at once, so the single
-recorder log is written and read serially. Nothing outside the sandbox is
-written: the real `upload-to-r2.sh` is EXECUTED but never modified, and its
-mutants are assembled into the sandbox.
+recorder log is written and read serially. Nothing outside the sandbox is written: the real `upload-to-r2.sh` is EXECUTED but never modified, and its mutants are assembled into the sandbox.
 """
 
 import os
@@ -241,8 +218,7 @@ class Sandbox:
         """`env -u NAME ... KEY=VALUE ... <argv>`, with stdin closed.
 
         The `env` BINARY rather than `harness.run(env=...)`: the overlay can set
-        a variable but cannot UNSET one, and an inherited `SKIP_RELEASE` would
-        silence exactly the cases this file exists to see.
+        a variable but cannot UNSET one, and an inherited `SKIP_RELEASE` would silence exactly the cases this file exists to see.
         """
         command = [self.env_binary]
         for name in unset:

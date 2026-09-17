@@ -3,17 +3,10 @@ classified by WHO SUPPLIES THE VALUE and WHO MAY READ IT.
 
 THE NUMBER IS NOT THE ACCEPTANCE, AND THAT IS THE WHOLE DESIGN. The plan box that
 asked for this file carried a union of 1,014 names; its own design annotation
-re-measured 745, then 721 over tracked files and 777 over everything on disk, and
-not one of the five component counts reproduced. The 56-name swing was entirely
-gitignored `.env` files, one of them a single developer's `.env.pre-rename.bak`.
-A manifest whose size depends on whether a stray backup is present is not a
-manifest, so no count is written down anywhere in this module or in
-`.ci/config/env-manifest.json`. Every number in the output below is derived on
-the run that prints it.
+re-measured 745, then 721 over tracked files and 777 over everything on disk, and not one of the five component counts reproduced. The 56-name swing was entirely gitignored `.env` files, one of them a single developer's `.env.pre-rename.bak`. A manifest whose size depends on whether a stray backup is present is not a manifest, so no count is written down anywhere in this module or
+in `.ci/config/env-manifest.json`. Every number in the output below is derived on the run that prints it.
 
-THE CORPUS IS TRACKED FILES ONLY, for the same reason `paths.py` answers from a
-tracked path set: an untracked file is one machine's opinion, and a gate whose
-verdict changes when you `cp` something into the tree is not measuring the tree.
+THE CORPUS IS TRACKED FILES ONLY, for the same reason `paths.py` answers from a tracked path set: an untracked file is one machine's opinion, and a gate whose verdict changes when you `cp` something into the tree is not measuring the tree.
 
 THE FIVE SOURCE READERS, and what each one is:
 
@@ -31,43 +24,26 @@ THE FIVE SOURCE READERS, and what each one is:
   vault        the NAMES in `.ci/config/bws-secret-map.json`. Names only. No
                value of any kind is read, printed, or stored by this gate.
 
-WHY THE `os-environ` READER PARSES INSTEAD OF GREPPING, measured 2026-09-09. A
-regex for `os.environ.get("LITERAL")` misses every read that goes through a
-module-level constant, and this repository has 55 of them -- `PROFILER_COVERAGE_*`
-(8), `LABEL_INVENTORY_*` (5), `PLAN_HK_*` (4), and, most pointedly,
-`REDIACC_CI_ROOT` itself, the ONE fixture-pointing seam `paths.py` exists to
-declare. A manifest of environment seams that omitted the canonical environment
-seam would have been the funniest possible way to fail, and the regex form omits
-it because `paths.py:74` writes `os.environ.get(ROOT_ENV)`. So the reader walks
+WHY THE `os-environ` READER PARSES INSTEAD OF GREPPING, measured 2026-09-09. A regex for `os.environ.get("LITERAL")` misses every read that goes through a module-level constant, and this repository has 55 of them -- `PROFILER_COVERAGE_*` (8), `LABEL_INVENTORY_*` (5), `PLAN_HK_*` (4), and, most pointedly, `REDIACC_CI_ROOT` itself, the ONE fixture-pointing seam `paths.py` exists to
+declare. A manifest of environment seams that omitted the canonical environment seam would have been the funniest possible way to fail, and the regex form omits it because `paths.py:74` writes `os.environ.get(ROOT_ENV)`. So the reader walks
 the AST, binds module-level `NAME = "literal"` assignments, and resolves them at
-the call. The regex still runs and its result is UNIONED in: over-collecting a
-name costs one manifest line, under-collecting one is a hole.
+the call. The regex still runs and its result is UNIONED in: over-collecting a name costs one manifest line, under-collecting one is a hole.
 
 BASH `${VAR}` IS EXCLUDED, as the box directs. Including it pushes the union past
-3,000 and the additions are dominated by loop variables. THE PRICE IS REAL AND IS
-NOT HIDDEN: see the `RDC_BENCH` note in the manifest, a name three documents call
-deleted that two shell files still read.
+3,000 and the additions are dominated by loop variables. THE PRICE IS REAL AND IS NOT HIDDEN: see the `RDC_BENCH` note in the manifest, a name three documents call deleted that two shell files still read.
 
-WHAT THE GATE ASSERTS -- four set-arithmetic clauses over `sources` (derived
-above) and `shards` (the union of the manifest's eight lists):
+WHAT THE GATE ASSERTS -- four set-arithmetic clauses over `sources` (derived above) and `shards` (the union of the manifest's eight lists):
 
   1. sources \ shards == {}      every name the tree uses is classified
   2. shards \ sources == tombstones
   3. the seven LIVE shards are pairwise disjoint, and none repeats a name
   4. tombstones & sources == {}  a dead name has not come back
 
-Clause 2 is the one that keeps the manifest honest in the OTHER direction, and it
-is why tombstones are the eighth shard rather than a separate file. Read together
+Clause 2 is the one that keeps the manifest honest in the OTHER direction, and it is why tombstones are the eighth shard rather than a separate file. Read together
 with clause 4 it says: every live-shard entry must still be a real read, so a
-variable that goes away RED-LIGHTS its stale manifest line instead of sitting
-there looking like coverage. "Tombstones enforced" then falls out of the same
-arithmetic as "zero unclassified" -- there is no second mechanism to keep in sync.
+variable that goes away RED-LIGHTS its stale manifest line instead of sitting there looking like coverage. "Tombstones enforced" then falls out of the same arithmetic as "zero unclassified" -- there is no second mechanism to keep in sync.
 
-ANTI-VACUITY, AND WHY IT IS NOT `n > 0`. A per-source count floor is the obvious
-guard against a reader that silently stops matching, and it is the wrong shape: a
-clause like `env_file_names > 0` becomes a false red the day the last `.env`
-example is deleted, which is a legitimate terminal state. Two clauses that are
-true in EVERY state replace it:
+ANTI-VACUITY, AND WHY IT IS NOT `n > 0`. A per-source count floor is the obvious guard against a reader that silently stops matching, and it is the wrong shape: a clause like `env_file_names > 0` becomes a false red the day the last `.env` example is deleted, which is a legitimate terminal state. Two clauses that are true in EVERY state replace it:
 
   * every reader is proven on its own FIXTURE, in both directions, in the
     selftest -- it must find a planted name and must not find one in prose. A
@@ -76,27 +52,15 @@ true in EVERY state replace it:
     naming that reader, because "there are no Python files in this repository"
     is not a pass, it is an instrument that has lost the tree.
 
-and the run then PRINTS the per-source name counts and file counts, so a
-collapse from 253 to 3 is visible to a reader even while both clauses hold.
+and the run then PRINTS the per-source name counts and file counts, so a collapse from 253 to 3 is visible to a reader even while both clauses hold.
 
-TOMBSTONE PROOF SITES. A file whose job is to name dead variables necessarily
-mentions them, and `packages/cli/src/__tests__/env-tombstones.test.ts` is exactly
-that file: left in the corpus it resurrects four names into `sources` and breaks
-clause 4 by existing. The suppression is per (path, NAME) pair, never per file,
-and it is liveness-checked in both directions -- the pair must still be found by
-a reader at that path (a dangling entry fails), and the name must be in the
-tombstone shard (so the mechanism cannot be used to hide a live variable). Both
-are printed every run.
+TOMBSTONE PROOF SITES. A file whose job is to name dead variables necessarily mentions them, and `packages/cli/src/__tests__/env-tombstones.test.ts` is exactly that file: left in the corpus it resurrects four names into `sources` and breaks clause 4 by existing. The suppression is per (path, NAME) pair, never per file, and it is liveness-checked in both directions -- the pair must
+still be found by a reader at that path (a dangling entry fails), and the name must be in the tombstone shard (so the mechanism cannot be used to hide a live variable). Both are printed every run.
 
 WHAT THIS GATE DOES NOT SEE, stated so that its green is not read as a claim it
 cannot make. Bash `${VAR}`, as above. And a JS/TS `process.env[expr]` where
-`expr` is not a literal: 19 such sites exist today, and every one that resolves
-to a constant resolves to a name already in the manifest (`REDIACC_TOKEN` via
-`SUBSCRIPTION_TOKEN_ENV`, `REDIACC_ALLOW_CONFIG_EDIT` via
-`OVERRIDE_VAR_CONFIG_EDIT`, the four `AGENT_ENV_VARS`), the rest being loop
-variables. The count is printed every run rather than asserted, because the
-honest assertion -- "no unresolvable dynamic read" -- is false today and could
-only be made true with a baseline.
+`expr` is not a literal: 19 such sites exist today, and every one that resolves to a constant resolves to a name already in the manifest (`REDIACC_TOKEN` via `SUBSCRIPTION_TOKEN_ENV`, `REDIACC_ALLOW_CONFIG_EDIT` via `OVERRIDE_VAR_CONFIG_EDIT`, the four `AGENT_ENV_VARS`), the rest being loop variables. The count is printed every run rather than asserted, because the honest assertion
+-- "no unresolvable dynamic read" -- is false today and could only be made true with a baseline.
 """
 
 from __future__ import annotations
@@ -256,8 +220,7 @@ def _environ_arg(node: ast.AST) -> ast.expr | None:
 def names_from_py(text: str) -> set[str]:
     """`os.environ` reads, INCLUDING one level of module-level constant indirection.
 
-    THIS PARSES RATHER THAN GREPS, and the choice was measured on the tree
-    (2026-09-09) rather than assumed. Against a regex for the literal call forms:
+    THIS PARSES RATHER THAN GREPS, and the choice was measured on the tree (2026-09-09) rather than assumed. Against a regex for the literal call forms:
 
       the AST finds 55 names the regex CANNOT     every read through a constant,
                                                   `os.environ.get(ROOT_ENV)` among
@@ -272,14 +235,9 @@ def names_from_py(text: str) -> set[str]:
                                                   one is a read. WORKLIST_LIMIT
                                                   appears NOWHERE in `.claude/`.
 
-    So the regex is not a safety net, it is eight false positives -- and four of
-    them live in a file a concurrent writer is editing, which would have coupled
-    this manifest to another gate's fixture names. Dropped.
+    So the regex is not a safety net, it is eight false positives -- and four of them live in a file a concurrent writer is editing, which would have coupled this manifest to another gate's fixture names. Dropped.
 
-    A file that does not parse RAISES. It is not silently skipped and it is not
-    quietly regexed: `derive_sources` turns the raise into a finding, because a
-    Python file this reader cannot read is a hole in the corpus and "unknown"
-    is not "fine".
+    A file that does not parse RAISES. It is not silently skipped and it is not quietly regexed: `derive_sources` turns the raise into a finding, because a Python file this reader cannot read is a hole in the corpus and "unknown" is not "fine".
     """
     tree = ast.parse(text)
     consts: dict[str, str] = {}
@@ -402,8 +360,7 @@ def derive_sources(root, files=None, suppress=None):
     """Return (names, per_source_names, per_source_files, dynamic_js).
 
     `suppress` is {relpath: {NAME}} -- the tombstone proof sites. A suppressed
-    pair is removed from the SOURCE set but its hit is recorded, so the caller
-    can prove the entry is still live rather than dangling.
+    pair is removed from the SOURCE set but its hit is recorded, so the caller can prove the entry is still live rather than dangling.
     """
     files = tracked_files(root) if files is None else files
     suppress = suppress or {}
@@ -446,9 +403,7 @@ def derive_sources(root, files=None, suppress=None):
 def load_manifest(root: pathlib.Path, override: pathlib.Path | None = None) -> dict:
     """The manifest to compare against: the tracked one, or a test-only override.
 
-    The refusal names the path it actually looked at rather than `MANIFEST_REL`,
-    so an override pointed at the wrong file says so instead of accusing the
-    tracked manifest of being missing.
+    The refusal names the path it actually looked at rather than `MANIFEST_REL`, so an override pointed at the wrong file says so instead of accusing the tracked manifest of being missing.
     """
     path = override or root / MANIFEST_REL
     shown = str(override) if override else MANIFEST_REL
@@ -482,9 +437,7 @@ def shard_lists(manifest: dict) -> dict[str, list[str]]:
 def clause_report(sources: set[str], lists: dict[str, list[str]]) -> list[str]:
     """The four clauses as ARITHMETIC, printed whether they hold or not.
 
-    A verdict line says "the clauses hold". These lines say what was compared,
-    which is what lets a reader notice that one side collapsed to nothing while
-    the equality stayed technically true.
+    A verdict line says "the clauses hold". These lines say what was compared, which is what lets a reader notice that one side collapsed to nothing while the equality stayed technically true.
     """
     sets = {s: set(v) for s, v in lists.items()}
     shards = set()
@@ -591,10 +544,7 @@ def proof_site_findings(suppress, seen, lists):
 def collision_findings(manifest, root, lists):
     """A name dead in one scope and alive in another must name its authority.
 
-    THE MATCH IS WORD-BOUNDED, and it was a plain substring until a plant refused
-    to fire. Repointing DEBUG's authority at a file that has nothing to do with it
-    still passed, because `REDIACC_DEBUG` contains `DEBUG` -- so any file mentioning
-    the REPLACEMENT would have satisfied the check for the retired name. The plant
+    THE MATCH IS WORD-BOUNDED, and it was a plain substring until a plant refused to fire. Repointing DEBUG's authority at a file that has nothing to do with it still passed, because `REDIACC_DEBUG` contains `DEBUG` -- so any file mentioning the REPLACEMENT would have satisfied the check for the retired name. The plant
     was the only thing that said so; the selftest agreed with the bug, because its
     fixtures used names that are not substrings of anything.
     """

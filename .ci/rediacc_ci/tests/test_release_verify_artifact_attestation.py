@@ -1,19 +1,11 @@
 """`rediacc_ci.release.verify_artifact_attestation` against its bash twin.
 
-A SCRATCH TREE, NOT THE REAL REPO ROOT. Both the twin's `get_repo_root()`
-(three directories up from `common.sh`'s own location) and this port's `_ROOT`
-(three up from its own `__file__`) derive the repo root from WHERE THE CODE
-LIVES, not from an env var or cwd -- so proving this port against a
-controlled `dist/cli`/`dist/packages` means copying both implementations,
-plus `common.sh`, into a `tmp_path` scratch tree that plays the role of the
-repo root for the duration of one test. This is the same shape the ledger's
-recording script uses (a disposable tree elsewhere), applied per test case
-instead of per session.
+A SCRATCH TREE, NOT THE REAL REPO ROOT. Both the twin's `get_repo_root()` (three directories up from `common.sh`'s own location) and this port's `_ROOT` (three up from its own `__file__`) derive the repo root from WHERE THE CODE LIVES, not from an env var or cwd -- so proving this port against a controlled `dist/cli`/`dist/packages` means copying both implementations, plus
+`common.sh`, into a `tmp_path` scratch tree that plays the role of the repo root for the duration of one test. This is the same shape the ledger's recording script uses (a disposable tree elsewhere), applied per test case instead of per session.
 
 `gh attestation verify` is faked on PATH; it is asked for `2>&1`-merged
 output in the twin (`verify_output="$(... 2>&1)"`), so the fake here writes
-everything to ONE stream (stderr) to avoid asserting an interleaving order
-this differential does not otherwise pin down.
+everything to ONE stream (stderr) to avoid asserting an interleaving order this differential does not otherwise pin down.
 """
 
 from __future__ import annotations

@@ -2,27 +2,15 @@ r"""check:ci-hook-cross-os -- every platform-sensitive operation in the hook
 package sits inside a declared seam, and the declaration is COMPLETE.
 
 WHAT WAS ALREADY TRUE, MEASURED 2026-09-09 BEFORE ANY OF THIS WAS WRITTEN.
-`.claude/rediacc_hooks/` is 65 Python files, and exactly ONE of them handles a
-platform difference: `proc.py`, whose `REDIACC_PROC_BACKEND` seam chooses
-between reading `/proc` and shelling out to `ps`. `dispatch.py` has zero
-platform handling, which an AST walk confirms rather than a grep -- the grep
-answer is 1 and it is a `sys.platform` inside a DOCSTRING.
+`.claude/rediacc_hooks/` is 65 Python files, and exactly ONE of them handles a platform difference: `proc.py`, whose `REDIACC_PROC_BACKEND` seam chooses between reading `/proc` and shelling out to `ps`. `dispatch.py` has zero platform handling, which an AST walk confirms rather than a grep -- the grep answer is 1 and it is a `sys.platform` inside a DOCSTRING.
 
-So this gate is not fixing a spread of ad-hoc platform code. There is none. It
-is making the ABSENCE checkable, which is the only version of that claim that
-survives the next commit. A seam that is complete today and unguarded is a seam
-that is complete until somebody reads `/proc` in a guard, and that guard will
-work perfectly for every reviewer, because every reviewer is on Linux.
+So this gate is not fixing a spread of ad-hoc platform code. There is none. It is making the ABSENCE checkable, which is the only version of that claim that survives the next commit. A seam that is complete today and unguarded is a seam that is complete until somebody reads `/proc` in a guard, and that guard will work perfectly for every reviewer, because every reviewer is on
+Linux.
 
-THE PLATFORM SET IS NAMED, because "cross-OS" without one is unfalsifiable.
-Linux and macOS. Windows reaches this tree only through WSL -- `run.ps1` is a
-`wsl.exe --cd` launcher by the program's own arbitration -- so a construct that
-works on Linux and macOS and not on native Windows is NOT a finding here. That
-decision is why `fcntl`, `os.killpg` and `signal.SIGKILL` are absent from the
+THE PLATFORM SET IS NAMED, because "cross-OS" without one is unfalsifiable. Linux and macOS. Windows reaches this tree only through WSL -- `run.ps1` is a `wsl.exe --cd` launcher by the program's own arbitration -- so a construct that works on Linux and macOS and not on native Windows is NOT a finding here. That decision is why `fcntl`, `os.killpg` and `signal.SIGKILL` are absent
+from the
 class list below despite being the first things a Windows-shaped scanner would
-report: all three behave identically on macOS, and reporting them would produce
-five findings a reader can do nothing useful about, which is how a gate teaches
-people to skim it.
+report: all three behave identically on macOS, and reporting them would produce five findings a reader can do nothing useful about, which is how a gate teaches people to skim it.
 
 THE FOUR CLASSES, each with the Linux/macOS divergence that puts it here:
 
@@ -46,11 +34,7 @@ THE FOUR CLASSES, each with the Linux/macOS divergence that puts it here:
 
 AST, NOT grep, AND THAT IS THE WHOLE DIFFERENCE BETWEEN THIS AND A NOISE
 MACHINE. A textual sweep for `pgrep` over this package returns 15 hits; every
-one of them is prose or a pattern a guard MATCHES AGAINST in somebody else's
-command line. `block_self_matching_pgrep.py` is named after the string. The AST
-walk sees a string constant used as `subprocess.run(["pgrep", ...])` and does
-not see the same characters inside a regex, which takes the same corpus from 15
-findings to one.
+one of them is prose or a pattern a guard MATCHES AGAINST in somebody else's command line. `block_self_matching_pgrep.py` is named after the string. The AST walk sees a string constant used as `subprocess.run(["pgrep", ...])` and does not see the same characters inside a regex, which takes the same corpus from 15 findings to one.
 
 BOTH DIRECTIONS, AND THE SECOND ONE IS THE HALF THAT DECAYS.
 
@@ -63,14 +47,11 @@ BOTH DIRECTIONS, AND THE SECOND ONE IS THE HALF THAT DECAYS.
 
 AND THE SEAM ITSELF IS CHECKED, not just its scope. Each declaration names an
 environment variable; that name must appear in the seam module's own source, and
-the module must accept at least two backend values. A declaration whose env
-override does not exist is a claim about a seam that is not there.
+the module must accept at least two backend values. A declaration whose env override does not exist is a claim about a seam that is not there.
 
 ANTI-VACUITY, FIVE REFUSALS. Zero Python files in the scan root; a scan root
 that does not exist; zero declared scopes; a seam module that is missing; and a
-corpus that parsed to zero AST nodes. Every one exits 1. The success line prints
-the file count, the finding count per class and the scope table, so a collapse is
-visible rather than silent.
+corpus that parsed to zero AST nodes. Every one exits 1. The success line prints the file count, the finding count per class and the scope table, so a collapse is visible rather than silent.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
 
@@ -131,9 +112,7 @@ SUBPROCESS_CALLS = frozenset({"run", "Popen", "check_output", "call", "check_cal
 class Scope:
     """One declared home for platform-sensitive operations.
 
-    `files` is a tuple of repo-relative paths, matched exactly. Not a glob: a
-    glob widens itself as the tree grows, and the whole point of this
-    declaration is that widening it is a decision somebody makes on purpose.
+    `files` is a tuple of repo-relative paths, matched exactly. Not a glob: a glob widens itself as the tree grows, and the whole point of this declaration is that widening it is a decision somebody makes on purpose.
     """
 
     def __init__(self, name, files, classes, env, why):
@@ -150,10 +129,7 @@ class Scope:
 class Finding:
     """A platform-sensitive operation, keyed on its TEXT and never its line.
 
-    The line number is carried for the message and is deliberately absent from
-    `key`. A finding that moves because a paragraph was added above it is the
-    same finding, and a set keyed on line numbers churns until somebody
-    regenerates it wholesale, which is how a fresh finding gets absorbed.
+    The line number is carried for the message and is deliberately absent from `key`. A finding that moves because a paragraph was added above it is the same finding, and a set keyed on line numbers churns until somebody regenerates it wholesale, which is how a fresh finding gets absorbed.
     """
 
     def __init__(self, rel, line, kind, detail):
@@ -209,9 +185,7 @@ class RefusalError(Exception):
 def _subprocess_argv0(node):
     """The literal argv[0] of a `subprocess.*` call, or None.
 
-    Only the list-literal form is decidable. A command built at runtime is not,
-    and guessing at it would be the false-positive direction on a gate whose
-    findings ask a human to write a seam.
+    Only the list-literal form is decidable. A command built at runtime is not, and guessing at it would be the false-positive direction on a gate whose findings ask a human to write a seam.
     """
     func = node.func
     if not isinstance(func, ast.Attribute) or func.attr not in SUBPROCESS_CALLS:
@@ -232,9 +206,7 @@ def _subprocess_argv0(node):
 def scan_source(rel, source):
     """Every platform-sensitive operation in one file's AST.
 
-    A SyntaxError is raised, not swallowed. A file this cannot parse is a file
-    it cannot judge, and a scanner that skips those quietly reports a clean tree
-    the day somebody adds a construct it does not understand.
+    A SyntaxError is raised, not swallowed. A file this cannot parse is a file it cannot judge, and a scanner that skips those quietly reports a clean tree the day somebody adds a construct it does not understand.
     """
     tree = ast.parse(source, filename=rel)
     out = []

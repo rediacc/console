@@ -2,84 +2,56 @@
 
 PORTED FROM the loading and comparison half of `.ci/scripts/lib/toolchain.sh`.
 That file still exists and keeps its function names and its acquisition half; what
-moves here is the part every OTHER reader of the pins already reimplements --
-`.ci/config/constants.sh`, `.ci/bootstrap.sh`, `.ci/lib/setup.sh` and
-`.github/workflows/*` each open `.devcontainer/toolchain.env` in their own way,
-and only one of them refuses when a pin is missing.
+moves here is the part every OTHER reader of the pins already reimplements -- `.ci/config/constants.sh`, `.ci/bootstrap.sh`, `.ci/lib/setup.sh` and `.github/workflows/*` each open `.devcontainer/toolchain.env` in their own way, and only one of them refuses when a pin is missing.
 
 --------------------------------------------------------------------------
 WHERE THE PINS FILE IS, AND WHY THAT IS NOT `.ci/config/`
 --------------------------------------------------------------------------
-`<root>/.devcontainer/toolchain.env`, resolved through `rediacc_ci.paths` rather
-than counted in `..` hops. The pins file's own header states the reason it lives
-there and not beside the other config: the devcontainer image build context IS
-`.devcontainer/` (.github/workflows/ci-build-docker.yml:558, .ci/lib/devbox.sh:263),
-`COPY` cannot reach outside a build context, and widening the context to the repo
-root would upload the whole tree plus submodules on every image build. So the
-path is a decision, and this module reads it rather than guessing at one.
+`<root>/.devcontainer/toolchain.env`, resolved through `rediacc_ci.paths` rather than counted in `..` hops. The pins file's own header states the reason it lives there and not beside the other config: the devcontainer image build context IS `.devcontainer/` (.github/workflows/ci-build-docker.yml:558, .ci/lib/devbox.sh:263), `COPY` cannot reach outside a build context, and widening
+the context to the repo root would upload the whole tree plus submodules on every image build. So the path is a decision, and this module reads it rather than guessing at one.
 
 `toolchain_pins_file` in the bash computes the same path with
 `cd "$(dirname "${BASH_SOURCE[0]}")/../../.."`. The two are asserted equal by
-`test_core_toolchain.py`, so a file move that updates one and not the other is a
-red rather than two readers of two different files.
+`test_core_toolchain.py`, so a file move that updates one and not the other is a red rather than two readers of two different files.
 
 --------------------------------------------------------------------------
 WHY A MISSING OR EMPTY PIN RAISES, AND NEVER DEFAULTS
 --------------------------------------------------------------------------
-This is the whole reason the module is more than a two-line parser, so it is
-argued rather than asserted.
+This is the whole reason the module is more than a two-line parser, so it is argued rather than asserted.
 
-`toolchain_pin_for` used to return "" WITH EXIT CODE 0 when the pins had not been
-loaded, and that empty string travelled into a download URL. The receipt is in the
-bash, measured 2026-08-26 on a fresh shell:
+`toolchain_pin_for` used to return "" WITH EXIT CODE 0 when the pins had not been loaded, and that empty string travelled into a download URL. The receipt is in the bash, measured 2026-08-26 on a fresh shell:
 
     .../releases/download/v/shellcheck-v.linux.aarch64.tar.xz  -> curl 404
 
-The 404 names GitHub, not the missing pin, so the debugging starts in the wrong
-place. `toolchain_check` and `toolchain_acquire` each grew their own
-`[[ -n "$pin" ]]` guard afterwards, and the asymmetry between them -- one entry
-point refusing while the other interpolated -- is recorded in
-`.ci/scripts/lib/toolchain.sh:452-457` as the defect that let it happen.
+The 404 names GitHub, not the missing pin, so the debugging starts in the wrong place. `toolchain_check` and `toolchain_acquire` each grew their own `[[ -n "$pin" ]]` guard afterwards, and the asymmetry between them -- one entry point refusing while the other interpolated -- is recorded in `.ci/scripts/lib/toolchain.sh:452-457` as the defect that let it happen.
 
 `.ci/config/constants.sh` reaches the same conclusion in the other direction and
 spells it in bash: `readonly NODE_VERSION_MIN="${NODE_VERSION_MIN:?NODE_VERSION_MIN
 not sourced from toolchain.env}"` (constants.sh:58, and the same `:?` form at :44
-and :234). `:?` is bash's "fail loudly rather than default", and it is there
-because the key it guards REPLACED a composed default: constants.sh used to build
+and :234). `:?` is bash's "fail loudly rather than default", and it is there because the key it guards REPLACED a composed default: constants.sh used to build
 the floor as `"${NODE_VERSION}.0.0"`, a defensible-looking line that silently
 yielded 22.0.0 while both manifests said >=22.13.0. The looser of two floors was
-the one every shell path enforced, and a machine on Node 22.4 passed
-`./run.sh setup` and then failed inside npm.
+the one every shell path enforced, and a machine on Node 22.4 passed `./run.sh setup` and then failed inside npm.
 
 So: `pin()` raises `PinError` on an absent key, on an empty value, and on a pins
 file that parses to no pairs at all. There is no `default=` parameter, on purpose
--- a default is how the 22.0.0 floor happened, and adding one here would let it
-happen again in Python.
+-- a default is how the 22.0.0 floor happened, and adding one here would let it happen again in Python.
 
 --------------------------------------------------------------------------
 WHY THE COMPARISON IS FIELD-WISE INTEGER AND NOT A STRING COMPARE
 --------------------------------------------------------------------------
     "22.13.0" < "22.9.0"     is TRUE as strings, and FALSE as versions
 
-One character decides it: '1' sorts before '9'. Every floor check in this repo is
-exactly this shape -- `check_node_version` compares the running Node against
+One character decides it: '1' sorts before '9'. Every floor check in this repo is exactly this shape -- `check_node_version` compares the running Node against
 NODE_VERSION_MIN=22.13.0 -- so a string compare would wave through the very
-release the floor was raised to exclude, and would do it silently, in the
-direction that reads as a pass.
+release the floor was raised to exclude, and would do it silently, in the direction that reads as a pass.
 
-The bash gets this right today by delegating to `sort -V`
-(.ci/lib/local-common.sh:429, .ci/lib/setup.sh:57 and :351), which is GNU
-coreutils and is a subprocess per comparison. `compare()` here is checked against
-`sort -V` on a corpus in the tests, so the port is proven equivalent rather than
-merely plausible, and `test_core_toolchain.py` additionally proves the corpus is
-one a string compare FAILS -- a differential nobody can pass by accident.
+The bash gets this right today by delegating to `sort -V` (.ci/lib/local-common.sh:429, .ci/lib/setup.sh:57 and :351), which is GNU coreutils and is a subprocess per comparison. `compare()` here is checked against `sort -V` on a corpus in the tests, so the port is proven equivalent rather than merely plausible, and `test_core_toolchain.py` additionally proves the corpus is one a
+string compare FAILS -- a differential nobody can pass by accident.
 
-Shorter is not smaller: `22` and `22.0.0` compare equal, because the missing
-fields are zeros and not "unknown". That matters for NODE_VERSION, which is a
-BARE MAJOR (`22`) while every other pin in the file is a full version.
+Shorter is not smaller: `22` and `22.0.0` compare equal, because the missing fields are zeros and not "unknown". That matters for NODE_VERSION, which is a BARE MAJOR (`22`) while every other pin in the file is a full version.
 `same_major()` exists for exactly that key, mirroring the `${actual%%.*}` branch
-at toolchain.sh:147-151 rather than making every caller remember which pins are
-majors.
+at toolchain.sh:147-151 rather than making every caller remember which pins are majors.
 
 --------------------------------------------------------------------------
 COMMAND-LINE ENTRY POINT (what a bash caller can reach)
@@ -191,20 +163,14 @@ NUMERIC_RUN_RE = re.compile(r"^[0-9]+(?:\.[0-9]+)*")
 class PinError(RuntimeError):
     """A pin is absent, empty, or the pins file could not be read.
 
-    A distinct type rather than a bare RuntimeError for the same reason
-    `paths.RootError` is one: a caller must be able to tell "your pins are
-    broken" from any other failure without matching a message string, and the
-    gate controls assert on the type.
+    A distinct type rather than a bare RuntimeError for the same reason `paths.RootError` is one: a caller must be able to tell "your pins are broken" from any other failure without matching a message string, and the gate controls assert on the type.
     """
 
 
 class VersionError(ValueError):
     """A string that has to be a version is not one.
 
-    Raised rather than returning an empty tuple, because an empty tuple compares
-    equal to another empty tuple and two unparseable versions would then be
-    "the same version" -- vacuity inside the comparison this module exists to
-    make trustworthy.
+    Raised rather than returning an empty tuple, because an empty tuple compares equal to another empty tuple and two unparseable versions would then be "the same version" -- vacuity inside the comparison this module exists to make trustworthy.
     """
 
 
@@ -229,9 +195,7 @@ def load_pins(path: pathlib.Path | str | None = None) -> dict[str, str]:
 
     Comment and blank lines are skipped, exactly as `grep -E '^[A-Z]...'` skips
     them. Nothing here validates that a VALUE is well formed; assertion A3 of
-    `.ci/scripts/quality/check-toolchain-pins.sh` owns that rule and owns its
-    "at least 5 keys" floor, and duplicating either here would be a second place
-    to update the day it changes.
+    `.ci/scripts/quality/check-toolchain-pins.sh` owns that rule and owns its "at least 5 keys" floor, and duplicating either here would be a second place to update the day it changes.
     """
     target = pins_file() if path is None else pathlib.Path(path)
     try:
@@ -312,10 +276,7 @@ def node_floor(pins: dict[str, str] | None = None) -> str:
     """NODE_VERSION_MIN -- the oldest release this repo runs on. Raises PinError.
 
     Nothing installs this number; every consumer compares against it
-    (rdc.sh:123 and :161, run.sh's toolchain step, `.ci/lib/setup.sh`'s
-    install-or-skip decision, and engines.node in two manifests). It is
-    therefore the single most likely value to be compared as a string by
-    accident, which is what `compare()` below is for.
+    (rdc.sh:123 and :161, run.sh's toolchain step, `.ci/lib/setup.sh`'s install-or-skip decision, and engines.node in two manifests). It is therefore the single most likely value to be compared as a string by accident, which is what `compare()` below is for.
     """
     return pin(NODE_FLOOR_KEY, pins)
 
@@ -323,13 +284,9 @@ def node_floor(pins: dict[str, str] | None = None) -> str:
 def normalize_version(text: str) -> str:
     """The dotted-numeric run out of a version string. Raises VersionError.
 
-    The same pipeline as toolchain.sh:88-93 -- strip a leading `v`, then a
-    leading `go`, then keep the leading dotted-numeric run -- so `v22.23.2`,
-    `go1.26.6` and a bare `3.13.1` all normalise, and a `--version` line that
-    printed no number at all raises instead of yielding "".
+    The same pipeline as toolchain.sh:88-93 -- strip a leading `v`, then a leading `go`, then keep the leading dotted-numeric run -- so `v22.23.2`, `go1.26.6` and a bare `3.13.1` all normalise, and a `--version` line that printed no number at all raises instead of yielding "".
 
-    THE EMPTY CASE IS THE ONE THAT MATTERS. The bash comment above its own probe
-    table says it: "a normaliser that silently yields '' would make a comparison
+    THE EMPTY CASE IS THE ONE THAT MATTERS. The bash comment above its own probe table says it: "a normaliser that silently yields '' would make a comparison
     of ''=='' pass -- vacuity inside the very check meant to prevent it."
     """
     # NO `.strip()`, AND THAT IS A CORRECTION rather than an omission. This line
@@ -360,9 +317,7 @@ def normalize_version(text: str) -> str:
 def parse_version(text: str) -> tuple[int, ...]:
     """A version as a tuple of INTEGERS. Raises VersionError.
 
-    Integers, not strings, and that single word is the whole defect this module
-    guards: as strings "13" sorts before "9", so 22.13.0 reads as older than
-    22.9.0 and a floor of 22.13.0 admits the release it was raised to exclude.
+    Integers, not strings, and that single word is the whole defect this module guards: as strings "13" sorts before "9", so 22.13.0 reads as older than 22.9.0 and a floor of 22.13.0 admits the release it was raised to exclude.
     """
     return tuple(int(field) for field in normalize_version(text).split("."))
 
@@ -371,9 +326,7 @@ def compare(left: str, right: str) -> int:
     """-1, 0 or 1, comparing field by field. Raises VersionError on either side.
 
     Missing trailing fields are ZEROS and not "unknown", so `22` == `22.0.0` and
-    `22` < `22.13.0`. That is what `sort -V` does, and it is what NODE_VERSION
-    (a bare major) needs from every caller that compares it against a full
-    version.
+    `22` < `22.13.0`. That is what `sort -V` does, and it is what NODE_VERSION (a bare major) needs from every caller that compares it against a full version.
     """
     for a, b in zip_longest(parse_version(left), parse_version(right), fillvalue=0):
         if a != b:
@@ -384,8 +337,7 @@ def compare(left: str, right: str) -> int:
 def at_least(have: str, want: str) -> bool:
     """`have >= want`. The predicate shape of `sort -V -C`, without coreutils.
 
-    `printf '%s\\n%s\\n' "$min" "$cur" | sort -V -C` is how the four bash callers
-    ask this today (.ci/lib/local-common.sh:429, .ci/lib/setup.sh:57 and :351).
+    `printf '%s\\n%s\\n' "$min" "$cur" | sort -V -C` is how the four bash callers ask this today (.ci/lib/local-common.sh:429, .ci/lib/setup.sh:57 and :351).
     It is correct and it is a subprocess and a GNU dependency per question; this
     is neither, and the tests run both over a corpus to prove they agree.
     """
@@ -503,9 +455,7 @@ SHELLCHECK_ARCH = {
 class ToolError(RuntimeError):
     """A tool this library has no arm for. The bash's `*) return 2 ;;`.
 
-    Distinct from `PinError`, because "I have never heard of this tool" and
-    "this tool's pin is missing" want different fixes and the twin gives them
-    different exit codes at `toolchain_check:130-137`.
+    Distinct from `PinError`, because "I have never heard of this tool" and "this tool's pin is missing" want different fixes and the twin gives them different exit codes at `toolchain_check:130-137`.
     """
 
 
@@ -513,11 +463,7 @@ class ToolError(RuntimeError):
 class CheckResult:
     """What `toolchain_check` answers with: a binary, a reason, and an rc.
 
-    THREE FIELDS AND NOT A bool, because the twin's answer is genuinely three
-    things and the callers use all of them: `.ci/scripts/security/shfmt.sh:48`
-    wants the PATH, `.ci/legacy/run-legacy.sh:406` re-runs it purely to print the
-    REASON, and `toolchain_report:199` wants only the rc. Collapsing any two of
-    them would push the reconstruction into every caller.
+    THREE FIELDS AND NOT A bool, because the twin's answer is genuinely three things and the callers use all of them: `.ci/scripts/security/shfmt.sh:48` wants the PATH, `.ci/legacy/run-legacy.sh:406` re-runs it purely to print the REASON, and `toolchain_report:199` wants only the rc. Collapsing any two of them would push the reconstruction into every caller.
     """
 
     tool: str
@@ -566,12 +512,8 @@ def os_name(system: str | None = None) -> str:
     upstreams use in their asset names; the callers uppercase it to build the
     checksum variable name.
 
-    THE OS IS DERIVED AND NOT ASSUMED, and the twin's comment says why in the
-    one sentence worth carrying over: both download URLs used to hard-code
-    `linux` while deriving only the arch from `uname -m`, so on an arm64 Mac the
-    ARM64 checksum matched, a LINUX binary downloaded, verified, got `chmod +x`,
-    and failed much later with "cannot execute binary file" from a gate that had
-    no idea it had installed another operating system's tool.
+    THE OS IS DERIVED AND NOT ASSUMED, and the twin's comment says why in the one sentence worth carrying over: both download URLs used to hard-code `linux` while deriving only the arch from `uname -m`, so on an arm64 Mac the ARM64 checksum matched, a LINUX binary downloaded, verified, got `chmod +x`, and failed much later with "cannot execute binary file" from a gate that had no
+    idea it had installed another operating system's tool.
     """
     value = platform.system() if system is None else system
     if value == "Linux":
@@ -586,13 +528,9 @@ def os_name(system: str | None = None) -> str:
 def sha256_of(path: pathlib.Path | str) -> str:
     """The sha256 of a file, as lowercase hex.
 
-    THIS IS THE WHOLE ARGUMENT FOR THE PORT IN ONE FUNCTION. The twin needs
-    `_toolchain_sha256sum` (:282-291) only because bash has no hash function, and
+    THIS IS THE WHOLE ARGUMENT FOR THE PORT IN ONE FUNCTION. The twin needs `_toolchain_sha256sum` (:282-291) only because bash has no hash function, and
     that shim was the THIRD copy of itself in this repository; the twin's own
-    comment at :274-277 records the second one dying when `.ci/lib/find-port.sh`
-    started delegating to `rediacc_ci.core.ports`. `hashlib` has no macOS branch
-    to write and no verifier that can be absent, so DEFECT 2 above cannot exist
-    here.
+    comment at :274-277 records the second one dying when `.ci/lib/find-port.sh` started delegating to `rediacc_ci.core.ports`. `hashlib` has no macOS branch to write and no verifier that can be absent, so DEFECT 2 above cannot exist here.
     """
     digest = hashlib.sha256()
     with open(path, "rb") as handle:
@@ -605,8 +543,7 @@ def constants_file(root: pathlib.Path | None = None) -> pathlib.Path:
     """`<root>/.ci/config/constants.sh`, where the SHA256 pins live.
 
     The twin computes the same path from `${BASH_SOURCE[0]}/../../..` at :251.
-    A test asserts the two agree, so a file move that updates one and not the
-    other is a red rather than two readers of two different files.
+    A test asserts the two agree, so a file move that updates one and not the other is a red rather than two readers of two different files.
     """
     return paths.ci_dir(root) / "config" / "constants.sh"
 
@@ -617,18 +554,12 @@ def checksums(
 ) -> dict[str, str]:
     """The SHFMT_/SHELLCHECK_ SHA256 pins. `_toolchain_need_checksums` (:248-255).
 
-    THE SHORT-CIRCUIT IS REPRODUCED, INCLUDING ITS ODD SHAPE. The bash returns
-    early when EITHER `SHELLCHECK_SHA256_LINUX_X86_64` or
-    `SHFMT_SHA256_LINUX_AMD64` is already set, and in that case never reads
-    constants.sh at all. So exporting one family's linux key suppresses the file
-    read for BOTH families, and the other family then resolves only from the
-    environment. That is observable, a caller could depend on it, and it is not
-    this module's to change.
+    THE SHORT-CIRCUIT IS REPRODUCED, INCLUDING ITS ODD SHAPE. The bash returns early when EITHER `SHELLCHECK_SHA256_LINUX_X86_64` or `SHFMT_SHA256_LINUX_AMD64` is already set, and in that case never reads constants.sh at all. So exporting one family's linux key suppresses the file read for BOTH families, and the other family then resolves only from the environment. That is
+    observable, a caller could depend on it, and it is not this module's to change.
 
     When the file IS read, the FILE WINS over an inherited environment value,
     because `readonly NAME="..."` in a fresh shell overwrites a plain variable
-    of the same name. Reproducing that ordering is the difference between a
-    stale exported hash being used and being ignored.
+    of the same name. Reproducing that ordering is the difference between a stale exported hash being used and being ignored.
     """
     table = os.environ if env is None else env
     from_env = {key: value for key, value in table.items() if SHA_KEY_RE.match(key) and value}
@@ -654,12 +585,9 @@ def checksums(
 def _probe_argv(tool: str, binary: str) -> list[str]:
     """The exact argv the twin runs for one tool. Raises ToolError.
 
-    `$bin` IS UNQUOTED FOR ruff, uv AND pytest in the bash (:76, :84, :85) and
-    quoted for the rest, so those three accept a MULTI-WORD runner such as
-    `uv tool run pytest`, which is how pytest exists at all on a host with no
+    `$bin` IS UNQUOTED FOR ruff, uv AND pytest in the bash (:76, :84, :85) and quoted for the rest, so those three accept a MULTI-WORD runner such as `uv tool run pytest`, which is how pytest exists at all on a host with no
     pip. `shlex.split` is the faithful spelling of that word splitting; the
-    quoted tools take the string whole, so a path with a space still works for
-    them and still breaks for the other three, exactly as it does today.
+    quoted tools take the string whole, so a path with a space still works for them and still breaks for the other three, exactly as it does today.
     """
     if tool in ("ruff", "uv", "pytest"):
         words = shlex.split(binary)
@@ -673,8 +601,7 @@ def _probe_argv(tool: str, binary: str) -> list[str]:
 def _probe_extract(tool: str, out: str) -> str:
     """The awk/head half of `toolchain_probe_version` (:73-87).
 
-    Each arm reproduces one shell pipeline, and they are genuinely different
-    because every tool prints its version differently:
+    Each arm reproduces one shell pipeline, and they are genuinely different because every tool prints its version differently:
 
         shfmt       `head -1`                v3.13.1
         shellcheck  `awk -F': *' '/^version:/ {print $2}'` over a banner
@@ -723,10 +650,7 @@ def _probe_extract(tool: str, out: str) -> str:
 def _probe_numeric(text: str) -> str:
     """`${out#v}`, `${out#go}`, then `grep -oE '^[0-9]+(\\.[0-9]+)*'` (:89-91).
 
-    PER LINE, because `grep -o` is. The prefix strips are NOT per line: they are
-    parameter expansions over the whole string, so only the very first character
-    run can lose a `v` or a `go`. That asymmetry is real and is why this is not
-    just `normalize_version` in a loop.
+    PER LINE, because `grep -o` is. The prefix strips are NOT per line: they are parameter expansions over the whole string, so only the very first character run can lose a `v` or a `go`. That asymmetry is real and is why this is not just `normalize_version` in a loop.
     """
     raw = text
     for prefix in VERSION_PREFIXES:
@@ -738,18 +662,11 @@ def _probe_numeric(text: str) -> str:
 def probe_version(tool: str, binary: str | None = None, *, timeout: int = 60) -> str | None:
     """The version a binary reports, or None when it would not say. Raises ToolError.
 
-    `toolchain_probe_version` (:71-94). `2>/dev/null` on every arm, so a tool
-    that prints its version to stderr reads as absent, and a tool that fails
-    outright reads as absent too. None rather than "" for the same reason the
-    twin returns 1: "a normaliser that silently yields '' would make a
+    `toolchain_probe_version` (:71-94). `2>/dev/null` on every arm, so a tool that prints its version to stderr reads as absent, and a tool that fails outright reads as absent too. None rather than "" for the same reason the twin returns 1: "a normaliser that silently yields '' would make a
     comparison of ''=='' pass -- vacuity inside the very check meant to prevent
     it" (:54-57).
 
-    THE ONE DELIBERATE DIVERGENCE: a 60s timeout the twin does not have. A
-    `--version` that never returns hangs the bash forever, and a gate that hangs
-    is worse than a gate that refuses, because CI reports nothing for the whole
-    job timeout. The timeout lands in the same branch as a crash, so a hung tool
-    reads as "would not say" rather than as a pass. Unreachable with any of the
+    THE ONE DELIBERATE DIVERGENCE: a 60s timeout the twin does not have. A `--version` that never returns hangs the bash forever, and a gate that hangs is worse than a gate that refuses, because CI reports nothing for the whole job timeout. The timeout lands in the same branch as a crash, so a hung tool reads as "would not say" rather than as a pass. Unreachable with any of the
     eight real tools; it is here for the ninth.
     """
     argv = _probe_argv(tool, tool if binary is None else binary)
@@ -774,14 +691,9 @@ def probe_version(tool: str, binary: str | None = None, *, timeout: int = 60) ->
 def check(tool: str, *, pins: dict[str, str] | None = None, path: str | None = None) -> CheckResult:
     """Is the pinned version of `tool` on PATH? `toolchain_check` (:128-157).
 
-    Returns the binary to use and rc 0 when it is, and an explanation with rc 1
-    or 2 when it is not. DELIBERATELY DOES NOT INSTALL: acquisition differs per
-    tool and per lane, and a library that shells out to a package manager as a
-    side effect of a version check is a library nobody trusts (:124-127).
+    Returns the binary to use and rc 0 when it is, and an explanation with rc 1 or 2 when it is not. DELIBERATELY DOES NOT INSTALL: acquisition differs per tool and per lane, and a library that shells out to a package manager as a side effect of a version check is a library nobody trusts (:124-127).
 
-    The messages are the twin's, character for character, because
-    `.ci/legacy/run-legacy.sh:406` pipes them to the user through `sed 's/^/    /'`
-    and a reworded refusal would change what an operator reads.
+    The messages are the twin's, character for character, because `.ci/legacy/run-legacy.sh:406` pipes them to the user through `sed 's/^/ /'` and a reworded refusal would change what an operator reads.
 
     rc 2 is "you asked something I have no answer for" (unknown tool, or an
     empty pin); rc 1 is "the answer is no".
@@ -862,18 +774,13 @@ def report(
 
     THE FUNCTION'S rc IS CORRECT IN BOTH IMPLEMENTATIONS. What is broken is the
     twin's SCRIPT DISPATCH, which throws that rc away; see DEFECT 1 at the top
-    of this section. The port keeps the function honest and makes its CLI honour
-    it, so `python3 -m rediacc_ci.core.toolchain verify` exits 1 where
-    `toolchain.sh --verify` exits 0.
+    of this section. The port keeps the function honest and makes its CLI honour it, so `python3 -m rediacc_ci.core.toolchain verify` exits 1 where `toolchain.sh --verify` exits 0.
 
     `env` IS THREADED THROUGH TO `lane()`, and the omission was a real CI-only
     divergence. `lane()` and `cache_dir()` have always taken an env; this one
-    read `os.environ` unconditionally, so the differential handed the TWIN a
-    controlled `diff.env_for()` (no `GITHUB_ACTIONS`, hence `lane: host`) while
-    the port read the ambient environment. On a developer machine both say
+    read `os.environ` unconditionally, so the differential handed the TWIN a controlled `diff.env_for()` (no `GITHUB_ACTIONS`, hence `lane: host`) while the port read the ambient environment. On a developer machine both say
     `host` and the test passes; the first time it ran inside real GitHub Actions
-    -- 2026-09-15, the first run in this wave that let `quality-security` finish
-    -- the twin said `host`, the port said `ci`, and four cases failed on a
+    -- 2026-09-15, the first run in this wave that let `quality-security` finish -- the twin said `host`, the port said `ci`, and four cases failed on a
     one-line diff. Reproducible anywhere with `GITHUB_ACTIONS=true pytest`.
     """
     table = load_pins() if pins is None else pins
@@ -952,10 +859,7 @@ def download_shfmt(
 ) -> tuple[str | None, list[str]]:
     """(the installed path or None, the messages). `_toolchain_download_shfmt` (:314-353).
 
-    THE CHECKSUM VARIABLE IS KEYED BY OS AS WELL AS ARCH, because the URL is.
-    The refusal names the CONSTANT to add rather than the arch, which is the
-    difference between a message a reader can act on and one they have to
-    decode.
+    THE CHECKSUM VARIABLE IS KEYED BY OS AS WELL AS ARCH, because the URL is. The refusal names the CONSTANT to add rather than the arch, which is the difference between a message a reader can act on and one they have to decode.
     """
     messages: list[str] = []
     try:
@@ -1005,12 +909,10 @@ def acquire_shfmt(want: str, *, env: dict[str, str] | None = None) -> tuple[str 
 
     NO GO? DOWNLOAD THE RELEASE BINARY. The CI Static lane is a bare checkout
     with no Go toolchain, so a Go-only acquisition simply cannot run there, and
-    the unpinned `curl webi.sh/shfmt | sh` this replaced is what used to cover
-    that lane.
+    the unpinned `curl webi.sh/shfmt | sh` this replaced is what used to cover that lane.
 
     `GOTOOLCHAIN=local` on the install: without it a tool's own `go` directive
-    can drag in a different toolchain and 404 on a runner with no network to
-    fetch it.
+    can drag in a different toolchain and 404 on a runner with no network to fetch it.
     """
     cache = cache_dir(env) / ("shfmt-%s" % want)
     binary = cache / "shfmt"
@@ -1050,16 +952,12 @@ def acquire_shellcheck(
 ) -> tuple[str | None, list[str]]:
     """`_toolchain_acquire_shellcheck` (:382-440). Checksummed `.tar.xz` download.
 
-    xz IS A PRECONDITION, and this repo depends on it nowhere else. shellcheck
-    publishes its Linux builds only as `.tar.xz` and the CI Static lane runs on
-    a deliberately slim image, so "tar: unrecognized option J" is a plausible
-    failure whose text names neither xz nor shellcheck. The twin probes for the
+    xz IS A PRECONDITION, and this repo depends on it nowhere else. shellcheck publishes its Linux builds only as `.tar.xz` and the CI Static lane runs on a deliberately slim image, so "tar: unrecognized option J" is a plausible failure whose text names neither xz nor shellcheck. The twin probes for the
     binary and says so instead; this port keeps that probe rather than reaching
     for Python's `lzma`, because a port that succeeds where the twin refuses is
     a port whose differential can never be clean.
 
-    VERIFY BEFORE EXTRACTING: an unverified archive is arbitrary content, and
-    extraction is the point at which that starts to matter.
+    VERIFY BEFORE EXTRACTING: an unverified archive is arbitrary content, and extraction is the point at which that starts to matter.
     """
     cache = cache_dir(env) / ("shellcheck-%s" % want)
     binary = cache / "shellcheck"
@@ -1140,23 +1038,16 @@ def acquire(
 ) -> tuple[str | None, list[str]]:
     """(a binary that IS the pin, the messages). `toolchain_acquire` (:444-466).
 
-    A PATH BINARY AT THE PIN WINS FIRST, and its failure messages are SWALLOWED
-    (`toolchain_check "$tool" 2>/dev/null` at :446) because "not installed yet"
-    is the normal case here, not a finding.
+    A PATH BINARY AT THE PIN WINS FIRST, and its failure messages are SWALLOWED (`toolchain_check "$tool" 2>/dev/null` at :446) because "not installed yet" is the normal case here, not a finding.
 
     THE EMPTY-PIN GUARD IS DUPLICATED FROM `check`, and the twin says why at
     :451-457: its absence here was the asymmetry that let an empty pin reach a
     download URL and 404 against GitHub rather than naming the missing pin.
 
-    THE DEFAULT ARM re-runs `check` and hands back its rc without its binary
-    (`toolchain_check "$tool" >/dev/null` at :462). That looks like a dropped
+    THE DEFAULT ARM re-runs `check` and hands back its rc without its binary (`toolchain_check "$tool" >/dev/null` at :462). That looks like a dropped
     return value and is harmless: the arm is reachable only when the FIRST
-    `check` already failed, so the rc is always non-zero and there is no path on
-    which a caller receives success with an empty string. Verified live on
-    2026-09-10 for `go` and `ruff`, both of which returned their real path
-    through the first branch instead. The port returns the messages from that
-    second call, which is what the twin's un-redirected `>/dev/null` leaves on
-    stderr for the user.
+    `check` already failed, so the rc is always non-zero and there is no path on which a caller receives success with an empty string. Verified live on 2026-09-10 for `go` and `ruff`, both of which returned their real path through the first branch instead. The port returns the messages from that second call, which is what the twin's un-redirected `>/dev/null` leaves on stderr for
+    the user.
     """
     first = check(tool, pins=pins)
     if first.ok:

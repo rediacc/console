@@ -1,31 +1,16 @@
 """`rediacc_ci.quality.review_turn_capacity` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-review-turn-capacity.sh`
-over a git fixture with stdout and stderr captured SEPARATELY, and its bytes are
-compared against the port's. Same recipe as the committed ledger,
-`.ci/shadow/w7p2-review-turn-capacity.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-review-turn-capacity.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-review-turn-capacity.observations.jsonl`.
 
-THE SUBJECT IS A BASH FUNCTION, so every case below writes a whole
-`claude-review-gate.sh` into the specimen. That is the gate's own design: it
-extracts `emit_review_turns()` BY ANCHOR from the real file and runs it, "so a
-rename or rewrite breaks THIS gate loudly instead of silently leaving it testing
-a stale copy pasted in here". A test that fed it a Python re-derivation of the
+THE SUBJECT IS A BASH FUNCTION, so every case below writes a whole `claude-review-gate.sh` into the specimen. That is the gate's own design: it extracts `emit_review_turns()` BY ANCHOR from the real file and runs it, "so a rename or rewrite breaks THIS gate loudly instead of silently leaving it testing a stale copy pasted in here". A test that fed it a Python re-derivation of the
 budget would be testing the test.
 
-THE CORPUS IS BOTH DIRECTIONS FOR ALL FIVE PROPERTIES, and the negative case is
-the load-bearing one: a healthy continuous budget must be SILENT. Without it, a
-gate that reported every budget as starving would pass every positive case here
-and would be switched off within a day of landing.
+THE CORPUS IS BOTH DIRECTIONS FOR ALL FIVE PROPERTIES, and the negative case is the load-bearing one: a healthy continuous budget must be SILENT. Without it, a gate that reported every budget as starving would pass every positive case here and would be switched off within a day of landing.
 
 THE FOUR REFUSALS ARE CASES TOO. A missing file, a renamed function, an
 extraction that finds no `review_turns=` assignment, and a mutant that cannot be
-planted are four DIFFERENT messages in the twin, and collapsing any two of them
-would send a reader to the wrong file. The missing-file case is asserted here
-rather than in the ledger, because `scripts/lib/shadow-gate.ts` classifies its
-message as a REFUSAL (its `CANNOT READ` vocabulary matches "a function it cannot
-read") and therefore suspends the comparison instead of ruling on it. That is the
-comparator working as designed, and it is exactly why the case belongs in a test
-that CAN rule on it.
+planted are four DIFFERENT messages in the twin, and collapsing any two of them would send a reader to the wrong file. The missing-file case is asserted here rather than in the ledger, because `scripts/lib/shadow-gate.ts` classifies its message as a REFUSAL (its `CANNOT READ` vocabulary matches "a function it cannot read") and therefore suspends the comparison instead of ruling on
+it. That is the comparator working as designed, and it is exactly why the case belongs in a test that CAN rule on it.
 """
 
 import pathlib
@@ -58,9 +43,7 @@ emit_review_turns() {
 def build(tmp_path: pathlib.Path, source: str | None) -> pathlib.Path:
     """A specimen holding BOTH implementations and one `claude-review-gate.sh`.
 
-    `None` means the subject file is ABSENT, which is a distinct refusal from a
-    renamed function: one says "I cannot read it", the other "I read it and the
-    anchor is gone".
+    `None` means the subject file is ABSENT, which is a distinct refusal from a renamed function: one says "I cannot read it", the other "I read it and the anchor is gone".
     """
     src = pathlib.Path(diff.repo())
     root = tmp_path / "fixture"
@@ -160,10 +143,7 @@ def test_differential(tmp_path, source, want_exit):
 def test_the_four_refusals_say_four_different_things(tmp_path):
     """A refusal that cannot be told from its neighbour sends readers to the wrong file.
 
-    Collapsing "not found", "could not extract", "never assigns review_turns" and
-    "could not plant its defect" into one message would be a behaviour change that
-    no byte-equality case above would catch on its own, because each case only
-    compares one message against itself.
+    Collapsing "not found", "could not extract", "never assigns review_turns" and "could not plant its defect" into one message would be a behaviour change that no byte-equality case above would catch on its own, because each case only compares one message against itself.
     """
     messages = set()
     for source in (
@@ -184,9 +164,7 @@ def test_the_four_refusals_say_four_different_things(tmp_path):
 def test_the_measured_facts_are_not_tunable():
     """2802 lines and 50 turns are facts about PR #553, not knobs.
 
-    A port that "cleaned these up" into a parameter would let a future edit lower
-    the regression bar back under the diff that starved, which is the exact hole
-    property 5 exists to close.
+    A port that "cleaned these up" into a parameter would let a future edit lower the regression bar back under the diff that starved, which is the exact hole property 5 exists to close.
     """
     assert gate.STARVED_LINES == 2802
     assert gate.STARVED_TURNS == 50

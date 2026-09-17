@@ -1,45 +1,27 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/env/create-e2e-env.sh` (175 lines).
 
-Write the `.env` file the E2E integration harness reads: VM network base and
-offset, control-node and worker and Ceph VM ids, per-role RAM, image name,
-bridge timeout, renet binary path, and three optional extras. The twin's header
+Write the `.env` file the E2E integration harness reads: VM network base and offset, control-node and worker and Ceph VM ids, per-role RAM, image name, bridge timeout, renet binary path, and three optional extras. The twin's header
 owns the flag catalogue and the topology advice; it is not restated here.
 
 LIVE CALLER, NOT REPOINTED. The bash twin stays the live implementation; this
-module is its verified-equivalent alternative, and the cutover is a separate,
-later, driver-only step.
+module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
-Ledger: `.ci/shadow/w7p6-create-e2e-env.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-create-e2e-env --assert --k 5`).
-Differential: `.ci/rediacc_ci/tests/test_env_create_e2e_env.py`.
+Ledger: `.ci/shadow/w7p6-create-e2e-env.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-create-e2e-env --assert --k 5`). Differential: `.ci/rediacc_ci/tests/test_env_create_e2e_env.py`.
 
-THE PRODUCT IS THE FILE, NOT THE STREAMS. Everything this program prints goes
-to stderr through `common.sh`'s logger, and `shadow-gate.ts` classifies a line
-starting with a step or info glyph as CHATTER before any `--finding-re` sees
-it. So a ledger row driven off the messages alone can only ever read
-`VACUOUS_BOTH_EMPTY`. Both the pytest differential and the ledger therefore
-compare the GENERATED FILE byte for byte, and the ledger's finding lines are
-the file's own contents echoed with a distinctive prefix.
+THE PRODUCT IS THE FILE, NOT THE STREAMS. Everything this program prints goes to stderr through `common.sh`'s logger, and `shadow-gate.ts` classifies a line starting with a step or info glyph as CHATTER before any `--finding-re` sees it. So a ledger row driven off the messages alone can only ever read `VACUOUS_BOTH_EMPTY`. Both the pytest differential and the ledger therefore
+compare the GENERATED FILE byte for byte, and the ledger's finding lines are the file's own contents echoed with a distinctive prefix.
 
-WHAT THIS SHELLS OUT TO, AND THE ONE THING IT DOES NOT. The twin runs no
-network, renet or VM command: `--renet-path` defaults to a STRING built from
-the repository root, and nothing probes the binary or asks `command -v` for it.
-The only external command is `mkdir -p`, and this port keeps it as a
-subprocess rather than calling `os.makedirs`, because the failure text belongs
-to coreutils and not to the script. On this host `mkdir` is uutils coreutils
-0.8.0, which prints `mkdir: Not a directory` where GNU prints
+WHAT THIS SHELLS OUT TO, AND THE ONE THING IT DOES NOT. The twin runs no network, renet or VM command: `--renet-path` defaults to a STRING built from the repository root, and nothing probes the binary or asks `command -v` for it. The only external command is `mkdir -p`, and this port keeps it as a subprocess rather than calling `os.makedirs`, because the failure text belongs to
+coreutils and not to the script. On this host `mkdir` is uutils coreutils 0.8.0, which prints `mkdir: Not a directory` where GNU prints
 `mkdir: cannot create directory 'X': Not a directory`; reimplementing the
-message would pin one vendor's spelling into a Python file and break the
-differential the day the host's coreutils changes.
+message would pin one vendor's spelling into a Python file and break the differential the day the host's coreutils changes.
 
 -----------------------------------------------------------------------------
 DEFECT A -- A ZERO-PADDED RAM VALUE SILENTLY SKIPS THE WHOLE RAM BUDGET CHECK
 -----------------------------------------------------------------------------
 `assert_ram_budget` computes its total with `local total=$((bridge_ram +
-worker_count * worker_ram + ceph_count * ceph_ram))` (twin :116). Bash reads a
-leading-zero integer as OCTAL, so `08` and `09` are not integers at all, and
-the arithmetic expansion fails. Two things then happen, both bad:
+worker_count * worker_ram + ceph_count * ceph_ram))` (twin :116). Bash reads a leading-zero integer as OCTAL, so `08` and `09` are not integers at all, and the arithmetic expansion fails. Two things then happen, both bad:
 
   1. `local` is a builtin whose own exit status is 0, so `set -e` never sees
      the failure. The function is abandoned at :116, which means the budget log
@@ -53,10 +35,7 @@ Driven 2026-09-14 in the checkout:
     -> Creating E2E test environment: /tmp/b.env
     (exit 0, file written, VM_RAM_WORKER=08)
 
-The 14.5 GB ceiling exists so a topology that cannot fit a 16 GB runner is
-refused BEFORE the VMs are booted. A zero-padded value defeats it completely:
-`--vm-ram-worker 08192 --vm-workers "11 12 13 14"` writes the file and exits 0.
-Every other arithmetic error class behaves the same way (`1 2`, `(`, `4096)`,
+The 14.5 GB ceiling exists so a topology that cannot fit a 16 GB runner is refused BEFORE the VMs are booted. A zero-padded value defeats it completely: `--vm-ram-worker 08192 --vm-workers "11 12 13 14"` writes the file and exits 0. Every other arithmetic error class behaves the same way (`1 2`, `(`, `4096)`,
 `1;ls`, and a value naming a set-but-non-numeric variable such as `HOME`), so
 this is the general shape and not one bad digit: A MALFORMED INPUT IS SCORED AS
 A CLEAN CHECK. Reproduced here exactly, including the skip; not repaired.
@@ -67,9 +46,7 @@ DIRECTORY
 -----------------------------------------------------------------------------
 Twin :111-114 counts nodes with `echo $VM_WORKERS | wc -w`, unquoted, carrying
 `# shellcheck disable=SC2086`. That directive silences SC2086, which covers
-BOTH word splitting (wanted here) and globbing (not wanted). So a value
-containing `*`, `?` or `[` is expanded against the CURRENT WORKING DIRECTORY
-and the RAM budget then depends on how many files happen to sit there:
+BOTH word splitting (wanted here) and globbing (not wanted). So a value containing `*`, `?` or `[` is expanded against the CURRENT WORKING DIRECTORY and the RAM budget then depends on how many files happen to sit there:
 
     $ mkdir -p /tmp/g && cd /tmp/g && touch f1 f2 f3 f4 f5
     $ bash .ci/scripts/env/create-e2e-env.sh --output /tmp/g.env --vm-workers '*'
@@ -84,10 +61,7 @@ the artifact disagree. Reproduced (`_pathname_expand`); not repaired.
 -----------------------------------------------------------------------------
 DEFECT C -- `--output` WITH NO VALUE CREATES A FILE CALLED `true`
 -----------------------------------------------------------------------------
-`common.sh`'s `parse_args` turns a flag with no following value into the STRING
-`true` (common.sh:341-344), and the only validation here is
-`[[ -z "$OUTPUT" ]]` (twin :100). So a caller who writes `--output` and forgets
-the path gets a file named `true` in the current directory and exit 0:
+`common.sh`'s `parse_args` turns a flag with no following value into the STRING `true` (common.sh:341-344), and the only validation here is `[[ -z "$OUTPUT" ]]` (twin :100). So a caller who writes `--output` and forgets the path gets a file named `true` in the current directory and exit 0:
 
     $ cd /home/developer/console && bash .ci/scripts/env/create-e2e-env.sh --output
     -> Creating E2E test environment: true
@@ -102,32 +76,17 @@ DEFECT D -- EVERY `ARG_*` NAME IS AN UNDOCUMENTED ENVIRONMENT VARIABLE
 `parse_args` assigns shell variables named `ARG_<FLAG>`, and the script reads
 them with `${ARG_OUTPUT:-}`. A shell variable and an exported environment
 variable are the same namespace, so `ARG_OUTPUT=/tmp/x.env` in the environment
-works exactly like `--output /tmp/x.env`, with no flag at all (driven). This
-port reproduces it -- `_shell_var` falls through to `os.environ` -- because a
-differential that did not would diverge the first time a caller's environment
-happened to carry one of these 14 names.
+works exactly like `--output /tmp/x.env`, with no flag at all (driven). This port reproduces it -- `_shell_var` falls through to `os.environ` -- because a differential that did not would diverge the first time a caller's environment happened to carry one of these 14 names.
 
 -----------------------------------------------------------------------------
 THE ONE PLACE THIS PORT KNOWINGLY DIVERGES
 -----------------------------------------------------------------------------
-`arithmetic()`, over the `_Arith` parser below, implements bash's integer
-CONSTANT grammar exactly (decimal, leading zero octal, `0x` hex, `base#digits`,
-and the "value too great for base" error that Defect A rides on) plus
-`+ - * / % **`, parentheses, unary `+`/`-`, and recursive variable lookup with
-`set -u` semantics for an unset name. It does NOT implement bash's comparison,
+`arithmetic()`, over the `_Arith` parser below, implements bash's integer CONSTANT grammar exactly (decimal, leading zero octal, `0x` hex, `base#digits`, and the "value too great for base" error that Defect A rides on) plus `+ - * / % **`, parentheses, unary `+`/`-`, and recursive variable lookup with `set -u` semantics for an unset name. It does NOT implement bash's comparison,
 bitwise, shift, logical, ternary, comma or assignment operators; a value using
 one of those gets an `arithmetic syntax error` instead of bash's answer.
 
-The cost is bounded and stated rather than hidden: those inputs are values of
-`--vm-ram-worker` / `--vm-ram-ceph`, which are RAM figures in megabytes, and in
-every one of them the twin ALSO reaches Defect A's skip-or-compute fork. So the
-divergence usually changes only the diagnostic text. It changes the EXIT CODE
-when the expression's value would cross the 14848 MB ceiling, because then the
-twin refuses the topology and the port skips the check: `--vm-ram-worker '1<<13'`
-is the shortest such input, and
-`test_env_create_e2e_env.py::test_the_documented_divergence_on_an_unsupported_operator_is_real`
-drives exactly it and asserts BOTH sides of the disagreement, so nobody
-discovers this by accident.
+The cost is bounded and stated rather than hidden: those inputs are values of `--vm-ram-worker` / `--vm-ram-ceph`, which are RAM figures in megabytes, and in every one of them the twin ALSO reaches Defect A's skip-or-compute fork. So the divergence usually changes only the diagnostic text. It changes the EXIT CODE when the expression's value would cross the 14848 MB ceiling,
+because then the twin refuses the topology and the port skips the check: `--vm-ram-worker '1<<13'` is the shortest such input, and `test_env_create_e2e_env.py::test_the_documented_divergence_on_an_unsupported_operator_is_real` drives exactly it and asserts BOTH sides of the disagreement, so nobody discovers this by accident.
 
 A SECOND, SMALLER ONE: colour. `common.sh:18` enables colour when stderr is a
 tty and `NO_COLOR` is unset, ignoring `CI`; `rediacc_ci.log` also disables it
@@ -225,8 +184,7 @@ def dirname(path: str) -> str:
     """POSIX `dirname`, NOT `os.path.dirname`, and the difference is observable.
 
     `os.path.dirname("a/")` is `"a"`; coreutils `dirname a/` is `"."`. Since the
-    result is handed straight to `mkdir -p`, the two answers create different
-    directories, and `--output out/` is not an exotic input.
+    result is handed straight to `mkdir -p`, the two answers create different directories, and `--output out/` is not an exotic input.
 
     Driven against `/usr/bin/dirname` over a table in the differential test.
     """
@@ -268,10 +226,7 @@ _ECHO_ESCAPE_TOKEN = re.compile(r"\\(0[0-7]{0,3}|x[0-9A-Fa-f]{1,2}|.)")
 def _pathname_expand(word: str) -> list[str]:
     """One word after splitting, expanded against the cwd. DEFECT B lives here.
 
-    Bash keeps the word literally when the pattern matches nothing (nullglob is
-    off), and skips dotfiles, both of which `glob.glob` already does. The order
-    of the matches differs from bash's collation and does not matter: the only
-    consumer counts them.
+    Bash keeps the word literally when the pattern matches nothing (nullglob is off), and skips dotfiles, both of which `glob.glob` already does. The order of the matches differs from bash's collation and does not matter: the only consumer counts them.
     """
     if not any(char in word for char in _GLOB_METACHARACTERS):
         return [word]
@@ -305,10 +260,7 @@ def _echo_e(text: str) -> str:
 def word_count(value: str) -> int:
     """`echo $VALUE | wc -w`, reproduced in four steps, in bash's order.
 
-    Split on IFS, pathname-expand each word (DEFECT B), let `echo` eat its
-    leading option words, then count whitespace-separated tokens in what it
-    printed. Step three is not academic: `--vm-workers '-n'` prints nothing and
-    counts ZERO workers, and `--vm-workers '-e 11 12'` counts two (both driven).
+    Split on IFS, pathname-expand each word (DEFECT B), let `echo` eat its leading option words, then count whitespace-separated tokens in what it printed. Step three is not academic: `--vm-workers '-n'` prints nothing and counts ZERO workers, and `--vm-workers '-e 11 12'` counts two (both driven).
     """
     argv: list[str] = []
     for word in value.split():
@@ -335,10 +287,7 @@ def word_count(value: str) -> int:
 class ArithError(Exception):
     """An arithmetic failure the twin's `local total=$((...))` SWALLOWS.
 
-    Carries the EXPRESSION as well as the reason because bash prints the
-    innermost expression it was evaluating, not the outermost: with
-    `--vm-ram-worker 08` the message names `08`, not the whole budget
-    expression the `08` was substituted into.
+    Carries the EXPRESSION as well as the reason because bash prints the innermost expression it was evaluating, not the outermost: with `--vm-ram-worker 08` the message names `08`, not the whole budget expression the `08` was substituted into.
     """
 
     def __init__(self, expression: str, reason: str) -> None:
@@ -350,8 +299,7 @@ class ArithError(Exception):
 class UnboundVariableError(Exception):
     """`set -u` firing inside the arithmetic. FATAL, unlike ArithError.
 
-    The asymmetry is bash's: an arithmetic error makes one command fail (and
-    `local` hides even that), while an unset variable under `set -u` exits the
+    The asymmetry is bash's: an arithmetic error makes one command fail (and `local` hides even that), while an unset variable under `set -u` exits the
     shell outright. `--vm-ram-worker abc` exits 1; `--vm-ram-worker 08` exits 0.
     """
 
@@ -564,10 +512,7 @@ def arithmetic(text: str, scope: dict[str, str]) -> int:
 def _shell_var(args: dict[str, str], name: str) -> str:
     """The value of shell variable `name` where the twin reads it.
 
-    `parse_args` writes into the SAME namespace the environment seeded, so a
-    flag overwrites an inherited value and an absent flag leaves it in place.
-    The environment is read at THIS call site rather than through a captured
-    `dict(os.environ)` alias, deliberately.
+    `parse_args` writes into the SAME namespace the environment seeded, so a flag overwrites an inherited value and an absent flag leaves it in place. The environment is read at THIS call site rather than through a captured `dict(os.environ)` alias, deliberately.
     """
     if name in args:
         return args[name]
@@ -579,13 +524,9 @@ def shell_namespace(args: dict[str, str], scope: dict[str, str]) -> dict[str, st
 
     NOT an environment ALIAS, and the distinction matters. Nothing here reads a
     configuration value out of this dict; every setting is read from
-    `os.environ` at its own call site in `settings()`. This models bash's single
-    variable NAMESPACE, which is the thing `--vm-ram-worker HOME` reaches: the
-    inherited environment, then `parse_args`' `ARG_*` assignments, then the
-    script's own globals, each layer shadowing the last exactly as bash does.
+    `os.environ` at its own call site in `settings()`. This models bash's single variable NAMESPACE, which is the thing `--vm-ram-worker HOME` reaches: the inherited environment, then `parse_args`' `ARG_*` assignments, then the script's own globals, each layer shadowing the last exactly as bash does.
 
-    The five colour names and `SCRIPT_DIR` are in scope in the twin too
-    (common.sh:18-32, twin :38). The colours are given their non-tty values,
+    The five colour names and `SCRIPT_DIR` are in scope in the twin too (common.sh:18-32, twin :38). The colours are given their non-tty values,
     which is every run this differential makes; on a tty the twin would hold an
     escape sequence there and `--vm-ram-worker RED` would fail differently.
     """
@@ -654,8 +595,7 @@ def assert_ram_budget(scope: dict[str, str], namespace: dict[str, str], prog: st
 def _bash_diagnostic(prog: str, line: int, message: str) -> None:
     """`<prog>: line <N>: <message>`, bash's own shape, on stderr.
 
-    Reproduced rather than reworded because the differential compares bytes and
-    because these lines are the ONLY evidence a caller gets that Defect A fired.
+    Reproduced rather than reworded because the differential compares bytes and because these lines are the ONLY evidence a caller gets that Defect A fired.
     """
     sys.stderr.write("%s: line %d: %s\n" % (prog, line, message))
     sys.stderr.flush()

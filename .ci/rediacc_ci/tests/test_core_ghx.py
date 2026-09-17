@@ -1,23 +1,13 @@
 """`rediacc_ci.core.ghx` against fake `gh` binaries, in both directions.
 
-WHY FAKES AND NOT THE REAL `gh`. The module's whole subject is what happens when
-a call does NOT succeed, and the failures worth testing -- an expired token, a
-rate limit, a binary that is not installed -- cannot be produced on demand
-against the real service, and must never be produced by WRITING to it. So every
+WHY FAKES AND NOT THE REAL `gh`. The module's whole subject is what happens when a call does NOT succeed, and the failures worth testing -- an expired token, a rate limit, a binary that is not installed -- cannot be produced on demand against the real service, and must never be produced by WRITING to it. So every
 case here puts a `gh` of this file's own making first on PATH and drives the
-module against it. The one thing that costs is fidelity, and the answer to that
-is the frozen block below: every stderr string a case asserts on was captured
+module against it. The one thing that costs is fidelity, and the answer to that is the frozen block below: every stderr string a case asserts on was captured
 from the real `gh` 2.98.0 on 2026-09-06, and the capture command is written
 beside it so the next reader can re-take the measurement rather than trust it.
 
-EVERY CASE FIRES IN BOTH DIRECTIONS. It is not enough to show that
-`pr_head_refs()` raises when `gh` fails. Each load-bearing assertion is factored
-into a `_assert_*` helper that two tests call: one with the module as written,
-and one with a DEFECT PLANTED into the module -- `pr_list` replaced by the
-`|| echo "[]"` behaviour the module exists to refuse -- which must make the same
-assertion fail. A test that cannot fail is the thing this repository refuses
-most consistently, and the planted-defect controls are how that is shown here
-rather than asserted in a comment.
+EVERY CASE FIRES IN BOTH DIRECTIONS. It is not enough to show that `pr_head_refs()` raises when `gh` fails. Each load-bearing assertion is factored into a `_assert_*` helper that two tests call: one with the module as written, and one with a DEFECT PLANTED into the module -- `pr_list` replaced by the `|| echo "[]"` behaviour the module exists to refuse -- which must make the same
+assertion fail. A test that cannot fail is the thing this repository refuses most consistently, and the planted-defect controls are how that is shown here rather than asserted in a comment.
 """
 
 import json
@@ -80,11 +70,7 @@ HTML_BODY = "<!DOCTYPE html>\n<html><head><title>404 Not Found</title></head></h
 def fake_bin(tmp_path, monkeypatch):
     """A factory that puts an executable of our own making on PATH, alone.
 
-    PATH IS REPLACED, NOT PREPENDED. Prepending leaves the real `gh` reachable,
-    and a case that meant to test "gh is absent" would then quietly test the real
-    binary instead -- which is the ambient-dependency failure `differential`'s own
-    docstring warns about. Replacing also makes the absent case a one-liner: a
-    directory with no `gh` in it.
+    PATH IS REPLACED, NOT PREPENDED. Prepending leaves the real `gh` reachable, and a case that meant to test "gh is absent" would then quietly test the real binary instead -- which is the ambient-dependency failure `differential`'s own docstring warns about. Replacing also makes the absent case a one-liner: a directory with no `gh` in it.
     """
     bindir = tmp_path / "bin"
     bindir.mkdir()
@@ -93,18 +79,11 @@ def fake_bin(tmp_path, monkeypatch):
     def make(name: str, *, stdout: str = "", stderr: str = "", rc: int = 0) -> pathlib.Path:
         """A fake that prints fixed bytes and exits with a fixed code.
 
-        WRITTEN IN PYTHON, NOT SH, AND THE REASON IS THE FIXTURE ITSELF. PATH is
-        replaced by a directory holding only this fake, so a `#!/bin/sh` script
-        whose body says `cat` cannot find `cat` -- and the failure is silent in
-        the worst possible way: the fake exits 0 having printed NOTHING, which is
-        exactly the empty-answer symptom every case here is trying to tell apart
+        WRITTEN IN PYTHON, NOT SH, AND THE REASON IS THE FIXTURE ITSELF. PATH is replaced by a directory holding only this fake, so a `#!/bin/sh` script whose body says `cat` cannot find `cat` -- and the failure is silent in the worst possible way: the fake exits 0 having printed NOTHING, which is exactly the empty-answer symptom every case here is trying to tell apart
         from a real one. Measured while writing this file: the sh version printed
-        "cat: not found" on stderr and the suite read it as a successful empty
-        list. The shebang here is an absolute interpreter path, so the fake needs
-        nothing from PATH at all.
+        "cat: not found" on stderr and the suite read it as a successful empty list. The shebang here is an absolute interpreter path, so the fake needs nothing from PATH at all.
 
-        The payloads go through FILES rather than through the script text, so a
-        payload containing a quote cannot silently change the script.
+        The payloads go through FILES rather than through the script text, so a payload containing a quote cannot silently change the script.
         """
         out_file = tmp_path / ("%s.out" % name)
         err_file = tmp_path / ("%s.err" % name)
@@ -181,9 +160,7 @@ def test_an_empty_path_really_does_hide_the_binary():
 def test_the_measured_constants_match_the_module():
     """The exit code the module branches on is the one that was measured.
 
-    Pinned as its own case because AUTH_FAILED_RC is the single fact in this
-    module that cannot be derived from anything in the repository: it came from
-    running the real binary, and if it is wrong the misclassification is silent.
+    Pinned as its own case because AUTH_FAILED_RC is the single fact in this module that cannot be derived from anything in the repository: it came from running the real binary, and if it is wrong the misclassification is silent.
     """
     assert ghx.AUTH_FAILED_RC == MEASURED_UNAUTH_RC
     assert ghx.NOT_INSTALLED_RC == proc.SPAWN_FAILED_RC
@@ -215,8 +192,7 @@ def test_a_genuinely_empty_list_is_an_empty_list(fake_bin):
 
 def test_control_planting_the_or_echo_defect_makes_the_failure_case_fail(fake_bin, monkeypatch):
     """THE PLANTED DEFECT. `pr_list` is replaced by exactly the behaviour the
-    module refuses -- `gh api ... || echo "[]"` -- and the assertion above must
-    stop holding. Without this control the raise-assertion could be passing for
+    module refuses -- `gh api ... || echo "[]"` -- and the assertion above must stop holding. Without this control the raise-assertion could be passing for
     some unrelated reason and nobody would know."""
     fake_bin("gh", rc=MEASURED_UNAUTH_RC, stderr=MEASURED_UNAUTH_STDERR)
     monkeypatch.setattr(ghx, "pr_list", lambda **_kwargs: [])
@@ -260,8 +236,7 @@ def dual_fake_gh(tmp_path, monkeypatch):
 
     Needed because the guard's pipeline and this module ask the same question
     with different output shapes, and the point of the case is that ONE fake
-    answers both -- so the comparison is between the two CONSUMERS, not between
-    two differently-rigged binaries.
+    answers both -- so the comparison is between the two CONSUMERS, not between two differently-rigged binaries.
     """
     bindir = tmp_path / "bin"
     bindir.mkdir(exist_ok=True)
@@ -303,10 +278,7 @@ def _run_guard_pipeline(bindir: pathlib.Path, day: str) -> tuple[int, str, str]:
 def test_the_guard_pipeline_cannot_tell_an_outage_from_an_empty_day(dual_fake_gh):
     """THE CONTROL FOR THE WHOLE MODULE, and the 2026-08-26 duplicate reproduced.
 
-    The same pipeline is run twice: once against a `gh` that succeeded and had
-    nothing to report, once against a `gh` that failed to authenticate. Both must
-    produce byte-identical output and exit 0, which is why the caller adding one
-    to nothing picked a name that was already taken.
+    The same pipeline is run twice: once against a `gh` that succeeded and had nothing to report, once against a `gh` that failed to authenticate. Both must produce byte-identical output and exit 0, which is why the caller adding one to nothing picked a name that was already taken.
     """
     dual_fake_gh([])
     empty_rc, empty_out, _ = _run_guard_pipeline(dual_fake_gh.bindir, "0826")
@@ -342,9 +314,7 @@ def test_a_suffixed_ref_is_not_read_as_an_index(fake_bin):
     """`0826-1-fixup` is somebody else's mistake and must not collapse onto 1.
 
     A prefix match would report {1} for a day whose only ref is the suffixed one,
-    and `next_branch_name` would then hand back 0826-2 while 0826-1 is free --
-    which is the same class of wrong answer, in the harmless direction today and
-    the harmful one as soon as the numbers line up differently.
+    and `next_branch_name` would then hand back 0826-2 while 0826-1 is free -- which is the same class of wrong answer, in the harmless direction today and the harmful one as soon as the numbers line up differently.
     """
     fake_bin("gh", stdout=_rows("0826-1-fixup", "0826-2x", "0826-03"))
     # "0826-03" IS all digits and is index 3; the two non-numeric tails are not.
@@ -374,8 +344,7 @@ def test_stdout_raises_on_a_failed_call_and_stdout_raw_does_not():
 def test_every_accessor_routes_through_the_raising_property():
     """A second path to the bytes would be a second place to forget the check.
 
-    Set-based rather than a list of method names typed by hand: every public
-    zero-argument accessor on GhResult is called, and each one must refuse.
+    Set-based rather than a list of method names typed by hand: every public zero-argument accessor on GhResult is called, and each one must refuse.
     """
     result = ghx.GhResult(["gh", "x"], 1, "[]", "boom")
     # Derived, not typed: everything public that is neither a stored field nor one of the three deliberate non-output accessors. A new output accessor added later joins this set automatically and must obey the same rule.
@@ -448,8 +417,7 @@ def test_a_timeout_is_its_own_classification():
 def test_every_classification_has_an_error_class():
     """Set-based: no failure string may fall through to a bare GhError silently.
 
-    FAILURE_FAILED and FAILURE_TIMED_OUT deliberately map to the base class, and
-    naming them here is what makes that a decision rather than an omission.
+    FAILURE_FAILED and FAILURE_TIMED_OUT deliberately map to the base class, and naming them here is what makes that a decision rather than an omission.
     """
     all_failures = {
         ghx.FAILURE_NOT_INSTALLED,
@@ -557,8 +525,7 @@ def test_secret_value_always_raises_and_says_why():
 def test_there_is_no_other_way_to_ask_for_a_secret_value():
     """Set-based: the module's public surface offers names, and no getter.
 
-    Derived from `__all__` rather than typed out, so a future function called
-    `read_secret` or `get_secret_value` fails this the day it is added.
+    Derived from `__all__` rather than typed out, so a future function called `read_secret` or `get_secret_value` fails this the day it is added.
     """
     # Exception CLASSES are excluded by shape, not by name: SecretValueUnavailableError is part of the refusal, not a way around it. Anything else callable whose name mentions a secret is a getter until proven otherwise.
     getters = set()
@@ -722,10 +689,7 @@ def test_no_em_dashes_in_the_module_or_this_file():
 def test_the_module_documents_every_incident_it_claims_to_close():
     """Corpus-derived: the file:line references in the docstring must resolve.
 
-    A docstring that cites `common.sh:392-397` is making a checkable claim, and
-    an unchecked citation rots into a confident lie the moment a file moves.
-    Only the path is verified here, not the line contents: pinning contents would
-    make an unrelated edit to those files red this suite.
+    A docstring that cites `common.sh:392-397` is making a checkable claim, and an unchecked citation rots into a confident lie the moment a file moves. Only the path is verified here, not the line contents: pinning contents would make an unrelated edit to those files red this suite.
     """
     text = (paths.repo_root() / ".ci/rediacc_ci/core/ghx.py").read_text(encoding="utf-8")
     cited = {

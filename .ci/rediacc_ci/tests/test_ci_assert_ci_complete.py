@@ -1,17 +1,11 @@
 """`rediacc_ci.ci.assert_ci_complete` against its bash twin.
 
-The twin reads ONLY `RESULT_*` env vars plus `POINTER_BUMP_ONLY`, so both sides
-are driven directly under `diff.env_for(...)`, which REPLACES the environment
-rather than extending it. That replacement is what makes the `<unset>` cases
-meaningful: a `RESULT_TESTS` leaking in from the developer's shell would turn
-the most important assertions in this file green for the wrong reason.
+The twin reads ONLY `RESULT_*` env vars plus `POINTER_BUMP_ONLY`, so both sides are driven directly under `diff.env_for(...)`, which REPLACES the environment rather than extending it. That replacement is what makes the `<unset>` cases meaningful: a `RESULT_TESTS` leaking in from the developer's shell would turn the most important assertions in this file green for the wrong reason.
 
-Every case compares stdout, stderr and the exit code byte-for-byte. Nothing is
-normalised, because this script never prints its own name.
+Every case compares stdout, stderr and the exit code byte-for-byte. Nothing is normalised, because this script never prints its own name.
 
 The K=5 ledger is `.ci/shadow/w7p6-assert-ci-complete.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-ci-complete --assert
---k 5`).
+(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-ci-complete --assert --k 5`).
 """
 
 from __future__ import annotations
@@ -58,9 +52,7 @@ def test_all_success_passes() -> None:
 def test_the_tier_arrays_still_match_the_twins() -> None:
     """The two arrays are a COPY, so drift is a real risk. Re-read the twin.
 
-    Parsed out of the bash rather than hard-coded a second time here: a test
-    that restated the lists would agree with the port and with itself while
-    both drifted from the file CI actually runs.
+    Parsed out of the bash rather than hard-coded a second time here: a test that restated the lists would agree with the port and with itself while both drifted from the file CI actually runs.
     """
     with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
         text = fh.read()
@@ -152,13 +144,9 @@ def test_pointer_bump_drops_run_sh_tests_from_both_tiers() -> None:
     """A REAL HOLE IN THE TWIN, pinned rather than repaired.
 
     `POINTER_BUMP_ONLY=true` replaces the hard tier with `(INITIALIZE)` and
-    appends only the three build jobs to soft, so `RUN_SH_TESTS` is judged by
-    nothing at all. `ci.yml:532-538` gates `run-sh-tests` on `is_bot` only, so
-    the job really runs on a pointer-bump PR and a genuine failure of the
-    hermetic entry-point suite reads as green.
+    appends only the three build jobs to soft, so `RUN_SH_TESTS` is judged by nothing at all. `ci.yml:532-538` gates `run-sh-tests` on `is_bot` only, so the job really runs on a pointer-bump PR and a genuine failure of the hermetic entry-point suite reads as green.
 
-    Both sides must agree, including on the defect, or the port is not a port.
-    Fixing the twin is a cutover-box decision and is reported, not done here.
+    Both sides must agree, including on the defect, or the port is not a port. Fixing the twin is a cutover-box decision and is reported, not done here.
     """
     for verdict in ("failure", "cancelled", "skipped", ""):
         env = all_green()

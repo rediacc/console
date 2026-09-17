@@ -50,32 +50,18 @@ THE FAIL-CLOSED RULE, twice, because it was broken twice:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`gh_json` IS REIMPLEMENTED, NOT SHELLED OUT TO, and the three properties that make
-it worth having are each reproduced: the exit status is checked, the body must
-PARSE as JSON, and it retries twice with `sleep attempt*3` between attempts. The
-retry messages are `log_warn` and the final failure is `log_error` followed by the
-child's stderr indented four spaces, which is what `common.sh:_gh_probe` prints and
-therefore what any caller reading this gate's output already expects.
+`gh_json` IS REIMPLEMENTED, NOT SHELLED OUT TO, and the three properties that make it worth having are each reproduced: the exit status is checked, the body must PARSE as JSON, and it retries twice with `sleep attempt*3` between attempts. The retry messages are `log_warn` and the final failure is `log_error` followed by the child's stderr indented four spaces, which is what
+`common.sh:_gh_probe` prints and therefore what any caller reading this gate's output already expects.
 
-THE SLEEPS ARE REAL. A retry loop with the sleeps removed would be a different
-program under a rate limit, and the point of the retries is to outlast a blip. The
-cost is that a fixture exercising the failure path takes nine seconds on both
-sides, which is why the committed ledger has no such row and the pytest that does
-is marked as the slow one.
+THE SLEEPS ARE REAL. A retry loop with the sleeps removed would be a different program under a rate limit, and the point of the retries is to outlast a blip. The cost is that a fixture exercising the failure path takes nine seconds on both sides, which is why the committed ledger has no such row and the pytest that does is marked as the slow one.
 
-jq IS REIMPLEMENTED IN PYTHON, and three of its behaviours are load-bearing here:
-`//` yields its right side when the left is null OR false (so `.line // "N/A"`
+jq IS REIMPLEMENTED IN PYTHON, and three of its behaviours are load-bearing here: `//` yields its right side when the left is null OR false (so `.line // "N/A"`
 covers a null line but would also cover a `false`, which cannot occur);
 `group_by` SORTS its groups by key, so the reviewers named in the failure block
 come out in login order rather than in reply order; and `sort_by` is stable, so
-two reviews with the same `submitted_at` keep their input order and `last` picks
-the later of them. A port that used a Python `set` or an unsorted `groupby` would
-print the same reviewers in a different order and diverge.
+two reviews with the same `submitted_at` keep their input order and `last` picks the later of them. A port that used a Python `set` or an unsorted `groupby` would print the same reviewers in a different order and diverge.
 
-THE RE-WRAP IS PRESERVED. The twin rebuilds the paginated node list into the
-original single-response shape "so every consumer below is unchanged". The port
-has no such consumer, but the SHAPE is what the failure messages are phrased
-against, so the intermediate is kept as a named value rather than optimised away.
+THE RE-WRAP IS PRESERVED. The twin rebuilds the paginated node list into the original single-response shape "so every consumer below is unchanged". The port has no such consumer, but the SHAPE is what the failure messages are phrased against, so the intermediate is kept as a named value rather than optimised away.
 """
 
 import io
@@ -134,8 +120,7 @@ def gh_json(what: str, argv: list[str], *, sleeper=time.sleep, binary: str = "gh
 
     Returns the body, or None after three failed attempts. `sleeper` is injectable
     so a test can exercise the retry ladder without waiting nine seconds; the
-    DEFAULT sleeps, because a retry loop that does not wait is a different program
-    under a rate limit.
+    DEFAULT sleeps, because a retry loop that does not wait is a different program under a rate limit.
     """
     attempt = 1
     rc = 0
@@ -182,9 +167,7 @@ def gh_json(what: str, argv: list[str], *, sleeper=time.sleep, binary: str = "gh
 def unresolved(nodes: list[dict]) -> list[dict]:
     """`select(.isResolved == false and .isOutdated == false)`.
 
-    AN OUTDATED THREAD IS EXCLUDED ON PURPOSE: it points at a line that no longer
-    exists in the diff, so demanding it be resolved is demanding an action on code
-    that is gone.
+    AN OUTDATED THREAD IS EXCLUDED ON PURPOSE: it points at a line that no longer exists in the diff, so demanding it be resolved is demanding an action on code that is gone.
     """
     return [
         node
@@ -196,10 +179,7 @@ def unresolved(nodes: list[dict]) -> list[dict]:
 def latest_per_reviewer(reviews: list[dict]) -> list[dict]:
     """`group_by(.user.login) | .[] | sort_by(.submitted_at) | last`.
 
-    GROUPS COME OUT IN LOGIN ORDER, because jq's `group_by` sorts by key, and the
-    failure block prints them in that order. `sort_by` is stable, so two reviews
-    sharing a `submitted_at` keep their input order and `last` picks the later of
-    the two.
+    GROUPS COME OUT IN LOGIN ORDER, because jq's `group_by` sorts by key, and the failure block prints them in that order. `sort_by` is stable, so two reviews sharing a `submitted_at` keep their input order and `last` picks the later of the two.
     """
     groups: dict[str, list[dict]] = {}
     for review in reviews:
@@ -220,8 +200,7 @@ def changes_requested(reviews: list[dict]) -> list[dict]:
 def thread_lines(threads: list[dict]) -> list[str]:
     """The `jq -r` block that renders one unresolved thread.
 
-    Reproduces the concatenation exactly, including the trailing `...` and the
-    empty line the final `"\\n"` produces, because the differential compares text.
+    Reproduces the concatenation exactly, including the trailing `...` and the empty line the final `"\\n"` produces, because the differential compares text.
     """
     out: list[str] = []
     for thread in threads:
@@ -242,9 +221,7 @@ def thread_lines(threads: list[dict]) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 when every thread is resolved and nobody blocks, 1 otherwise.
 
-    FAILING CLOSED IS THE DEFAULT EVERYWHERE. Every read that cannot complete
-    exits 1 with a message naming what could not be determined, because this gate
-    blocks a merge and an unreadable probe must block it too.
+    FAILING CLOSED IS THE DEFAULT EVERYWHERE. Every read that cannot complete exits 1 with a message naming what could not be determined, because this gate blocks a merge and an unreadable probe must block it too.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -421,8 +398,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions on every selector, plus the retry ladder without waiting.
 
-    THE FLOOR IS DERIVED from the case corpus, so a case that stops running turns
-    the suite red rather than quietly shortening it.
+    THE FLOOR IS DERIVED from the case corpus, so a case that stops running turns the suite red rather than quietly shortening it.
     """
     threads = [
         {"isResolved": False, "isOutdated": False, "path": "a.ts", "line": 3},

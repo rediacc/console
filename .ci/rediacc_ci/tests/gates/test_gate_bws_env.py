@@ -1,22 +1,12 @@
 """Port of `.ci/scripts/test/gates/test-bws-env.sh`.
 
-Both-ways test for `.ci/lib/bws-env.sh`, the shared Bitwarden fetcher local
-scripts use instead of reading `private/account/.env`.
+Both-ways test for `.ci/lib/bws-env.sh`, the shared Bitwarden fetcher local scripts use instead of reading `private/account/.env`.
 
-WHY THIS CLASS NEEDS A TEST. Every failure mode of a credential fetcher is quiet
-by nature: an empty value exports cleanly, a missing token looks like a network
-blip, and a silent fallback to a local file makes a broken fetch work on the
-author's machine and nowhere else. So the cases here are mostly REFUSALS, and
-each is planted rather than described.
+WHY THIS CLASS NEEDS A TEST. Every failure mode of a credential fetcher is quiet by nature: an empty value exports cleanly, a missing token looks like a network blip, and a silent fallback to a local file makes a broken fetch work on the author's machine and nowhere else. So the cases here are mostly REFUSALS, and each is planted rather than described.
 
-`bws` is faked on PATH. The real binary is never invoked and no live store is
-touched -- the fake is the point, not a limitation: it lets the empty-value and
-missing-name cases be tested at all, which a live store cannot do on demand.
+`bws` is faked on PATH. The real binary is never invoked and no live store is touched -- the fake is the point, not a limitation: it lets the empty-value and missing-name cases be tested at all, which a live store cannot do on demand.
 
-THE FAKE ASSERTS ITS OWN CALLER. `bws 2.1.0` wraps `--output json` in truecolor
-escapes unless `--color no` is passed, and no JSON parser survives that. A fake
-that ignored the flag would let a regression in the caller go unnoticed, so this
-one exits 3 with a message naming the omission.
+THE FAKE ASSERTS ITS OWN CALLER. `bws 2.1.0` wraps `--output json` in truecolor escapes unless `--color no` is passed, and no JSON parser survives that. A fake that ignored the flag would let a regression in the caller go unnoticed, so this one exits 3 with a message naming the omission.
 
 WHY THE HELPER IS SOURCED IN A SUBPROCESS. `bws_env_load` EXPORTS into the shell
 that sourced it; that is its entire purpose. A Python port cannot be that shell,
@@ -70,9 +60,7 @@ def run_load(gate, directory, *names: str, no_token: bool = False) -> str:
 
     `no_token=True` is the missing-bootstrap-credential case, spelled as a FLAG
     rather than as `token=None`. A parameter literally named `token` carrying a
-    string default is an S107 finding here, and the honest fix is that the two
-    modes are a mode, not a value: nothing in this file ever needs a token that
-    is not the fixture's.
+    string default is an S107 finding here, and the honest fix is that the two modes are a mode, not a value: nothing in this file ever needs a token that is not the fixture's.
     """
     if not HELPER.is_file():
         gate.log_fail("subject under test is missing: %s" % HELPER)
@@ -167,12 +155,8 @@ def test_never_falls_back_to_env(gate, tmp_path):
 def test_the_fake_bws_is_load_bearing(gate, tmp_path):
     """PORT-ONLY, and it is the control the twin implies without asserting.
 
-    Every case above rests on a fake `bws` that REFUSES a caller which drops
-    `--color no`. If the subject stopped passing that flag, `bws 2.1.0` would
-    wrap `--output json` in truecolor escapes and no JSON parser would survive
-    it -- so the flag is a real property, not tidiness. This asserts both halves:
-    the subject still passes it, and the fake really does reject a caller that
-    does not, which is what makes every green above mean something.
+    Every case above rests on a fake `bws` that REFUSES a caller which drops `--color no`. If the subject stopped passing that flag, `bws 2.1.0` would wrap `--output json` in truecolor escapes and no JSON parser would survive it -- so the flag is a real property, not tidiness. This asserts both halves: the subject still passes it, and the fake really does reject a caller that does
+    not, which is what makes every green above mean something.
     """
     gate.assert_contains(
         HELPER.read_text(encoding="utf-8"),

@@ -4,8 +4,7 @@ Ported from `.ci/scripts/quality/check-greenlight-closures.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side
 until a committed differential ledger says otherwise.
 
-WHY THE TWIN EXISTS, AND IT IS NOT THE OBVIOUS REASON. Carried over from its
-header, because the archaeology is the half of a gate that cannot be recovered
+WHY THE TWIN EXISTS, AND IT IS NOT THE OBVIOUS REASON. Carried over from its header, because the archaeology is the half of a gate that cannot be recovered
 from the code:
 
   greenlight decides whether a previous green run still covers this one by
@@ -43,51 +42,36 @@ THE CLOSURE LIST COMES FROM NODE, AND IT HAS TO. `.ci/scripts/ci/greenlight.cjs`
 is a CommonJS program whose `CLOSURES` object is built by executing JavaScript;
 there is no data file to read. So both implementations shell out to `node -e`
 with the same three-line extractor, and a port that "simplified" this into a
-regex over the .cjs source would silently miss any path the file computes rather
-than writes as a literal. The extractor is carried verbatim.
+regex over the .cjs source would silently miss any path the file computes rather than writes as a literal. The extractor is carried verbatim.
 
 WHAT HAPPENS WHEN NODE IS ABSENT, and this is a defect being preserved. The twin
 writes `paths="$(node -e '...')" || return 2`, so a missing node makes `scan`
 return 2. But the main path calls it as `out="$(scan)" || { ...; exit 1; }`,
-which cannot distinguish 2 from 1: the header comment promises "exit 1 on any
-offender, 2 on setup error" and the setup error exits 1 anyway. The operator
-then reads "greenlight closure paths (see above)" with nothing above it. The
-port keeps the exit code identical, because the verdict is what a port must
-preserve, and ADDS one unmarked diagnostic line naming the missing binary and
-the fix. An unmarked, unindented line is chatter to
-`scripts/lib/shadow-gate.ts`, so it cannot change the compared finding set --
-which is exactly why it is safe to add and why it is not a finding.
+which cannot distinguish 2 from 1: the header comment promises "exit 1 on any offender, 2 on setup error" and the setup error exits 1 anyway. The operator then reads "greenlight closure paths (see above)" with nothing above it. The port keeps the exit code identical, because the verdict is what a port must preserve, and ADDS one unmarked diagnostic line naming the missing binary
+and the fix. An unmarked, unindented line is chatter to `scripts/lib/shadow-gate.ts`, so it cannot change the compared finding set -- which is exactly why it is safe to add and why it is not a finding.
 
-`(see above)` IS A LIE IN BOTH IMPLEMENTATIONS. `scan`'s offender lines are
-captured into `$out` by the command substitution, so they are printed AFTER the
-header that points at them, not above it. Preserved, because moving them changes
-the output a human diff is read against, and reported.
+`(see above)` IS A LIE IN BOTH IMPLEMENTATIONS. `scan`'s offender lines are captured into `$out` by the command substitution, so they are printed AFTER the header that points at them, not above it. Preserved, because moving them changes the output a human diff is read against, and reported.
 
-THE `-e` TEST FOLLOWS SYMLINKS, so a closure path that is a symlink to a deleted
-target reads as ON DISK and is then judged only on tracked-ness. That is the
+THE `-e` TEST FOLLOWS SYMLINKS, so a closure path that is a symlink to a deleted target reads as ON DISK and is then judged only on tracked-ness. That is the
 twin's behaviour and it is left alone; `Path.exists()` follows symlinks too, so
 the two agree by construction rather than by care.
 
-ONE `git ls-files` PER PATH, NOT ONE BATCHED CALL. The obvious optimisation --
-read the whole index once and test membership in Python -- changes the answer
+ONE `git ls-files` PER PATH, NOT ONE BATCHED CALL. The obvious optimisation -- read the whole index once and test membership in Python -- changes the answer
 for a closure path that names a DIRECTORY. `git ls-files --error-unmatch --
 <dir>` succeeds when the directory contains tracked files, because the pathspec
 matched something; a set-membership test on file paths would report the
-directory as untracked. Eighteen closures name `.github/actions/bws-secrets`,
-which is a directory, so this is the shape of the very incident the gate exists
+directory as untracked. Eighteen closures name `.github/actions/bws-secrets`, which is a directory, so this is the shape of the very incident the gate exists
 for.
 
 THE COLOUR IS DECIDED BY `CI` ALONE in the twin -- `if [[ "${CI:-}" == "true" ]];
 then RED="" ...` -- with no tty test and no NO_COLOR test, which is the 9-file
-variant `rediacc_ci.log`'s docstring measures. So a developer piping this gate
-into `less` gets escape sequences. The port uses the house logger, which tests
+variant `rediacc_ci.log`'s docstring measures. So a developer piping this gate into `less` gets escape sequences. The port uses the house logger, which tests
 the stream it writes to and honours NO_COLOR. Reported, not reproduced; ANSI is
 stripped before the differential compares, so no verdict moves.
 
 THE ANTI-VACUITY BRANCH IS THE ONE TO PROTECT. `[[ $n -gt 0 ]] || { echo "  no
 closure paths found -- this check is blind"; return 1; }` is what stops an empty
-closure set from reading as success, and it is carried with its wording intact
-because the wording is what stops the next reader from deleting it.
+closure set from reading as success, and it is carried with its wording intact because the wording is what stops the next reader from deleting it.
 """
 
 import os
@@ -118,9 +102,7 @@ PATHS_ENV_VAR = "GL_CLOSURE_PATHS"
 class ScanError(RuntimeError):
     """The closure list could not be obtained at all. The twin's `return 2`.
 
-    A distinct type rather than a magic number so the caller can tell "this gate
-    found offenders" from "this gate could not run", which is the distinction the
-    twin's own header promises and its main path then loses.
+    A distinct type rather than a magic number so the caller can tell "this gate found offenders" from "this gate could not run", which is the distinction the twin's own header promises and its main path then loses.
     """
 
 
@@ -171,14 +153,9 @@ def is_tracked(root: pathlib.Path, rel: str) -> bool:
 def scan(root: pathlib.Path, path_list: list[str]) -> tuple[int, list[str], int]:
     """Judge `path_list` against `root`. Returns (exit code, lines, count).
 
-    `lines` are the offender lines the twin echoes, in the twin's order and with
-    the twin's two-space indent, because that indent is what makes
-    `scripts/lib/shadow-gate.ts` fold them into the finding above. The count is
-    what the success message interpolates.
+    `lines` are the offender lines the twin echoes, in the twin's order and with the twin's two-space indent, because that indent is what makes `scripts/lib/shadow-gate.ts` fold them into the finding above. The count is what the success message interpolates.
 
-    ZERO PATHS IS A FAILURE, NEVER A PASS. A closure set that shrank to nothing
-    would otherwise read as "every declared path is fine", which is true and
-    worthless.
+    ZERO PATHS IS A FAILURE, NEVER A PASS. A closure set that shrank to nothing would otherwise read as "every declared path is fine", which is true and worthless.
     """
     lines: list[str] = []
     bad = 0
@@ -208,13 +185,9 @@ def scan(root: pathlib.Path, path_list: list[str]) -> tuple[int, list[str], int]
 def control() -> str | None:
     """Both directions, planted against a throwaway repository. None means green.
 
-    A missing path and an untracked path must EACH be reported, and a clean pair
-    must be silent. Without the silent case a checker that reported everything
-    would pass its own controls, which is the failure mode this whole function
-    exists to refuse.
+    A missing path and an untracked path must EACH be reported, and a clean pair must be silent. Without the silent case a checker that reported everything would pass its own controls, which is the failure mode this whole function exists to refuse.
 
-    Returns the twin's own "CONTROL FAILED: ..." string so main can print it on
-    the same stream the twin does.
+    Returns the twin's own "CONTROL FAILED: ..." string so main can print it on the same stream the twin does.
     """
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
@@ -260,9 +233,7 @@ def control() -> str | None:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 offender, 2 control failure.
 
-    `--selftest` is intercepted BEFORE any real scan. `--scan` is the twin's own
-    internal re-entry point, kept by name and honouring the same two environment
-    seams, so a caller that drives the bash form can drive this one unchanged.
+    `--selftest` is intercepted BEFORE any real scan. `--scan` is the twin's own internal re-entry point, kept by name and honouring the same two environment seams, so a caller that drives the bash form can drive this one unchanged.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -339,10 +310,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. The mirrors -- a tracked file, a tracked
-    DIRECTORY, a clean list -- are the half that proves this gate does not simply
-    report everything, and the directory case is the one the batched-lookup
-    optimisation would break.
+    BOTH DIRECTIONS FOR EVERY CONTROL. The mirrors -- a tracked file, a tracked DIRECTORY, a clean list -- are the half that proves this gate does not simply report everything, and the directory case is the one the batched-lookup optimisation would break.
     """
     ctl = Controls("greenlight-closures", floor=20, verbose=True)
 

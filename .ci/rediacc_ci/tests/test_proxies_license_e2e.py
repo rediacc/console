@@ -1,21 +1,9 @@
 """`rediacc_ci.proxies.license_e2e` against its bash twin
-`.ci/scripts/test/proxies/proxy-license-e2e.sh`, already wired as the registered
-gate `check:ci-proxy-license-e2e` (`package.json:387`,
-`scripts/ci-runner/manifest.ts:7435-7444`, `kind: 'local-only'` since CI runs
-the identical subject at `.github/workflows/ct-tests.yml:1848`, a workflow
-outside `paritySurface()`). The bash proxy is what the gate calls, unchanged
-by this port -- same as every other proxy in this package, only the shim is
-ported here, not the call site.
+`.ci/scripts/test/proxies/proxy-license-e2e.sh`, already wired as the registered gate `check:ci-proxy-license-e2e` (`package.json:387`, `scripts/ci-runner/manifest.ts:7435-7444`, `kind: 'local-only'` since CI runs the identical subject at `.github/workflows/ct-tests.yml:1848`, a workflow outside `paritySurface()`). The bash proxy is what the gate calls, unchanged by this port --
+same as every other proxy in this package, only the shim is ported here, not the call site.
 
-UNLIKE EVERY OTHER PROXY IN THIS PACKAGE, there is no synthetic fixture here:
-both sides run the REAL subject, which installs license fixtures under
-`/var/lib/rediacc/license` via `sudo -n` and takes ~16-40s. Only ONE test
-drives it (`test_real_tree_agrees_byte_for_byte`), same discipline as
-`test_proxies_ensure_nfpm.py`'s single network-touching case -- running the
-real battery twice per CI run is already the cost this proxy accepts, and a
-second real invocation buys nothing a fixture-driven test cannot check more
-cheaply. The counting logic (`_count`) is covered separately, against
-synthetic text, with no subprocess at all.
+UNLIKE EVERY OTHER PROXY IN THIS PACKAGE, there is no synthetic fixture here: both sides run the REAL subject, which installs license fixtures under `/var/lib/rediacc/license` via `sudo -n` and takes ~16-40s. Only ONE test drives it (`test_real_tree_agrees_byte_for_byte`), same discipline as `test_proxies_ensure_nfpm.py`'s single network-touching case -- running the real battery
+twice per CI run is already the cost this proxy accepts, and a second real invocation buys nothing a fixture-driven test cannot check more cheaply. The counting logic (`_count`) is covered separately, against synthetic text, with no subprocess at all.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-license-e2e.observations.jsonl`, recorded
 against a disposable scratch git repo built OUTSIDE this checkout (this

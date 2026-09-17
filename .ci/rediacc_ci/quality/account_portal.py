@@ -1,8 +1,7 @@
 r"""The account portal must typecheck and build.
 
 Ported from `.ci/scripts/quality/check-account-portal.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live and for the phase-5
-decision that retires the twin.
+see `rediacc_ci.quality.__init__` for why both copies live and for the phase-5 decision that retires the twin.
 
 THE TWIN'S OWN HEADER, carried over:
 
@@ -15,8 +14,7 @@ THE TWIN'S OWN HEADER, carried over:
     0 - All checks pass
     1 - Check failed
 
-AND ITS ONE PIECE OF ARCHAEOLOGY, which is the reason phase 3b exists at all and
-is carried verbatim because a summary of it would lose the mechanism:
+AND ITS ONE PIECE OF ARCHAEOLOGY, which is the reason phase 3b exists at all and is carried verbatim because a summary of it would lose the mechanism:
 
   Phase 3b: TypeScript typecheck (e2e). NOTHING checked this until 2026-08-15,
   and the cost was a TS2352 sitting on a branch unseen: the backup wave made
@@ -34,72 +32,36 @@ is carried verbatim because a summary of it would lose the mechanism:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THIS GATE IS AN ORCHESTRATOR, NOT A SCANNER. Every verdict it reaches comes from
-the exit status of an external tool: `npm ci`, `npx tsc` three times, `npx
-biome`, `npm run build:account-onboarding`, `npx vite build`, and one `-f` test
-on the artifact those produce. The port therefore runs the SAME argv vectors in
-the SAME working directories and in the SAME order. There is nothing here to
-re-implement, and anything that looked like an improvement would be a different
-gate.
+THIS GATE IS AN ORCHESTRATOR, NOT A SCANNER. Every verdict it reaches comes from the exit status of an external tool: `npm ci`, `npx tsc` three times, `npx biome`, `npm run build:account-onboarding`, `npx vite build`, and one `-f` test on the artifact those produce. The port therefore runs the SAME argv vectors in the SAME working directories and in the SAME order. There is nothing
+here to re-implement, and anything that looked like an improvement would be a different gate.
 
-THE CHILDREN INHERIT BOTH STREAMS. `npx tsc` writes its diagnostics straight to
-the caller's stdout and stderr in the twin, and those diagnostics ARE the
-finding a developer acts on. `subprocess.run` is called without `capture_output`
-so the same bytes reach the same places. `sys.stdout` and `sys.stderr` are
-flushed before every spawn, because Python block-buffers a redirected stdout and
-a gate whose own message arrives AFTER the child's output is a gate whose log
-reads backwards.
+THE CHILDREN INHERIT BOTH STREAMS. `npx tsc` writes its diagnostics straight to the caller's stdout and stderr in the twin, and those diagnostics ARE the finding a developer acts on. `subprocess.run` is called without `capture_output` so the same bytes reach the same places. `sys.stdout` and `sys.stderr` are flushed before every spawn, because Python block-buffers a redirected
+stdout and a gate whose own message arrives AFTER the child's output is a gate whose log reads backwards.
 
 `cd` IS NOT A PROCESS-WIDE CHDIR HERE. The twin walks between three directories
 with bare `cd`s; the port passes `cwd=` per call instead. Same effect, and it
-removes the class of bug where an early `return` leaves the process somewhere
-unexpected -- which matters more in a library that a test imports than in a
-script that exits.
+removes the class of bug where an early `return` leaves the process somewhere unexpected -- which matters more in a library that a test imports than in a script that exits.
 
-THE ONE SHAPE THE TWO SIDES' STDERR DIFFERS ON, stated rather than discovered
-later: a MISSING directory. `cd "$WEB_DIR"` under `set -e` prints bash's own
-`check-account-portal.sh: line 39: cd: /path: No such file or directory` and
-exits, while the port raises no such message and returns 1 at the same point.
-`scripts/lib/shadow-gate.ts` classifies that bash diagnostic as CHATTER -- it
-carries no severity marker and does not match the grep-style finding shape -- so
-the FINDING SET and the EXIT CODE still agree, which is what equivalence is
-measured on. The message also names a script path and a line number that no port
-could reproduce. Named here so it is a decision and not a surprise.
+THE ONE SHAPE THE TWO SIDES' STDERR DIFFERS ON, stated rather than discovered later: a MISSING directory. `cd "$WEB_DIR"` under `set -e` prints bash's own `check-account-portal.sh: line 39: cd: /path: No such file or directory` and exits, while the port raises no such message and returns 1 at the same point. `scripts/lib/shadow-gate.ts` classifies that bash diagnostic as CHATTER --
+it carries no severity marker and does not match the grep-style finding shape -- so the FINDING SET and the EXIT CODE still agree, which is what equivalence is measured on. The message also names a script path and a line number that no port could reproduce. Named here so it is a decision and not a surprise.
 
-PHASE 1 IS AN INSTALL, NOT A CHECK, and it is the only phase that MUTATES the
-tree. `npm ci --ignore-scripts` runs whenever `private/account/web/node_modules`
-is absent, and there is no `log_error` around it: under `set -e` a failing `npm
-ci` kills the script with npm's own output and no gate message at all. Carried
+PHASE 1 IS AN INSTALL, NOT A CHECK, and it is the only phase that MUTATES the tree. `npm ci --ignore-scripts` runs whenever `private/account/web/node_modules` is absent, and there is no `log_error` around it: under `set -e` a failing `npm ci` kills the script with npm's own output and no gate message at all. Carried
 unchanged; a reader who sees this step go red is reading npm's diagnostics, not
 this gate's.
 
 `--ignore-scripts` IS NOT DECORATION. `.npmrc` sets `ignore-scripts=true`
-repo-wide (see `rediacc_ci.quality.npmrc`), and this call states it again at the
-call site so a future `.npmrc` edit cannot silently re-enable lifecycle scripts
+repo-wide (see `rediacc_ci.quality.npmrc`), and this call states it again at the call site so a future `.npmrc` edit cannot silently re-enable lifecycle scripts
 for this one install.
 
-PHASE 4 IS A WARNING AND NOTHING ELSE. `npx biome check private/account/web/src/`
-failing produces `log_warn "Frontend lint issues found (non-blocking)"` and the
+PHASE 4 IS A WARNING AND NOTHING ELSE. `npx biome check private/account/web/src/` failing produces `log_warn "Frontend lint issues found (non-blocking)"` and the
 script continues; the twin says "(if biome is available)" in its section
-comment, and BIOME NOT BEING INSTALLED IS INDISTINGUISHABLE FROM LINT FINDINGS
-because both are a non-zero exit. So the phase can be permanently satisfied by a
-missing tool while reporting the same single line either way. Carried, because
-distinguishing them would change the verdict, and reported.
+comment, and BIOME NOT BEING INSTALLED IS INDISTINGUISHABLE FROM LINT FINDINGS because both are a non-zero exit. So the phase can be permanently satisfied by a missing tool while reporting the same single line either way. Carried, because distinguishing them would change the verdict, and reported.
 
-PHASE 7 IS THE ANTI-VACUITY CHECK, and it is the reason this gate is not merely
-a chain of exit codes. `vite build` can exit 0 having written nothing useful, so
-the artifact is tested for directly: `workers/account/dist/account/index.html`
-must exist. Note what it does NOT do -- it never checks the file is non-empty, or
-newer than the sources, so a stale artifact from a previous run satisfies it.
-Carried, and reported.
+PHASE 7 IS THE ANTI-VACUITY CHECK, and it is the reason this gate is not merely a chain of exit codes. `vite build` can exit 0 having written nothing useful, so the artifact is tested for directly: `workers/account/dist/account/index.html` must exist. Note what it does NOT do -- it never checks the file is non-empty, or newer than the sources, so a stale artifact from a previous
+run satisfies it. Carried, and reported.
 
-NEITHER SIDE PROBES FOR `npm` OR `npx`. A host without them produces a
-`command not found` from bash and a `FileNotFoundError` from Python. The port
-catches that and returns the same exit code at the same point rather than
-raising a traceback, which is the only place it deliberately behaves better than
-the twin without changing the verdict: a traceback and a `command not found` are
-both non-zero with no findings, and a traceback is the one that reads as a bug in
-the gate.
+NEITHER SIDE PROBES FOR `npm` OR `npx`. A host without them produces a `command not found` from bash and a `FileNotFoundError` from Python. The port catches that and returns the same exit code at the same point rather than raising a traceback, which is the only place it deliberately behaves better than the twin without changing the verdict: a traceback and a `command not found` are
+both non-zero with no findings, and a traceback is the one that reads as a bug in the gate.
 """
 
 import os
@@ -131,18 +93,13 @@ VITE_BUILD = ["npx", "vite", "build"]
 def run(argv: list[str], cwd: pathlib.Path) -> int:
     """Run one external command with both streams INHERITED. Returns its status.
 
-    THE FLUSH BEFORE THE SPAWN IS NOT OPTIONAL. Python block-buffers a redirected
-    stdout, so without it this gate's own `log_step` line lands after the child's
-    output in a CI log and the reader sees the phases in the wrong order.
+    THE FLUSH BEFORE THE SPAWN IS NOT OPTIONAL. Python block-buffers a redirected stdout, so without it this gate's own `log_step` line lands after the child's output in a CI log and the reader sees the phases in the wrong order.
 
     A MISSING BINARY RETURNS 127 rather than raising. That is bash's own status
     for `command not found`, so the two implementations agree on the exit code
-    and on the empty finding set, and a reader gets a status instead of a
-    traceback that reads as a defect in the gate. See the port notes.
+    and on the empty finding set, and a reader gets a status instead of a traceback that reads as a defect in the gate. See the port notes.
 
-    A MISSING `cwd` RETURNS 1 for the same reason: bash's `cd` failure exits
-    non-zero having printed a diagnostic no port can reproduce, and the finding
-    sets agree either way.
+    A MISSING `cwd` RETURNS 1 for the same reason: bash's `cd` failure exits non-zero having printed a diagnostic no port can reproduce, and the finding sets agree either way.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -167,13 +124,9 @@ def run(argv: list[str], cwd: pathlib.Path) -> int:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 all checks pass, 1 a check failed.
 
-    Seven phases, in the twin's order, each one returning immediately on
-    failure. Written as one function rather than seven, because the ORDER is the
-    gate: phase 6 must not run when phase 5 failed, and a caller assembling
-    seven independent results could get that wrong.
+    Seven phases, in the twin's order, each one returning immediately on failure. Written as one function rather than seven, because the ORDER is the gate: phase 6 must not run when phase 5 failed, and a caller assembling seven independent results could get that wrong.
 
-    `--selftest` is intercepted BEFORE any of them. The twin takes no arguments
-    at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any of them. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -293,8 +246,7 @@ def seed_tree(root: pathlib.Path, *, node_modules: bool = True, output: bool = T
 
     `node_modules=False` takes phase 1's install branch, which is the only phase
     that mutates anything. `output=False` takes phase 7's refusal, which is the
-    anti-vacuity check and the only phase that looks at an artifact rather than
-    at an exit code.
+    anti-vacuity check and the only phase that looks at an artifact rather than at an exit code.
     """
     (root / WEB_REL / "src").mkdir(parents=True, exist_ok=True)
     (root / ACCOUNT_REL / "e2e").mkdir(parents=True, exist_ok=True)
@@ -310,12 +262,8 @@ def seed_tree(root: pathlib.Path, *, node_modules: bool = True, output: bool = T
 def selftest() -> int:
     """Plant each failure, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. Seven phases means seven ways to fail and
-    exactly one way to pass, so a suite of only plants would be green against a
-    gate that refused everything. The CONTROL below -- every tool succeeding and
-    the artifact present -- is asserted FIRST, and re-asserted after the
-    warning-only plant, because a plant that fires against an already-failing
-    fixture proves nothing.
+    BOTH DIRECTIONS FOR EVERY CONTROL. Seven phases means seven ways to fail and exactly one way to pass, so a suite of only plants would be green against a gate that refused everything. The CONTROL below -- every tool succeeding and the artifact present -- is asserted FIRST, and re-asserted after the warning-only plant, because a plant that fires against an already-failing fixture
+    proves nothing.
     """
     ctl = Controls("account-portal", floor=20, verbose=True)
 

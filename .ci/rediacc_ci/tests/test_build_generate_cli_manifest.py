@@ -1,30 +1,16 @@
 """Differential: `rediacc_ci.build.generate_cli_manifest` against its twin
 `.ci/scripts/build/generate-cli-manifest.sh`.
 
-THE FIXTURE SHAPE follows `test_build_build_pages.py`: both sides are copied
-into a throwaway root, PATH is REPLACED rather than prepended, `rediacc_ci` is
-vendored so no absolute path outside the fixture reaches a command string, and
-`$0` is masked to `<SELF>` and nothing else is.
+THE FIXTURE SHAPE follows `test_build_build_pages.py`: both sides are copied into a throwaway root, PATH is REPLACED rather than prepended, `rediacc_ci` is vendored so no absolute path outside the fixture reaches a command string, and `$0` is masked to `<SELF>` and nothing else is.
 
-FOUR TOOLS ARE RECORDED. `jq`, `awk` and `mkdir` are wrappers that append their
-own argv to a log and then `exec` the real binary, so the work really happens
-AND the argv each side built is comparable. `date` is different: it is recorded
-and FROZEN, printing a fixed timestamp instead of `exec`-ing, because
-`releaseDate` is the one field in the manifest that two processes started a
-second apart disagree about. Freezing it lets every case compare the manifest
-BYTE FOR BYTE rather than field by field with one field excused.
+FOUR TOOLS ARE RECORDED. `jq`, `awk` and `mkdir` are wrappers that append their own argv to a log and then `exec` the real binary, so the work really happens AND the argv each side built is comparable. `date` is different: it is recorded and FROZEN, printing a fixed timestamp instead of `exec`-ing, because `releaseDate` is the one field in the manifest that two processes started a
+second apart disagree about. Freezing it lets every case compare the manifest BYTE FOR BYTE rather than field by field with one field excused.
 
-`dirname` is a plain symlink and deliberately NOT recorded. The twin spawns it
-three times (`:16` for `SCRIPT_DIR`, `common.sh:207` for `get_repo_root`, and
-`:136` for the output directory) where the port spawns it once, because Python
+`dirname` is a plain symlink and deliberately NOT recorded. The twin spawns it three times (`:16` for `SCRIPT_DIR`, `common.sh:207` for `get_repo_root`, and `:136` for the output directory) where the port spawns it once, because Python
 resolves its own path in-process; recording it would manufacture a divergence
-out of that. `test_a_failing_dirname_does_not_stop_either_side` and
-`test_the_twin_cannot_start_without_dirname_and_the_port_can` cover the `:136`
-call and that plumbing divergence on their own.
+out of that. `test_a_failing_dirname_does_not_stop_either_side` and `test_the_twin_cannot_start_without_dirname_and_the_port_can` cover the `:136` call and that plumbing divergence on their own.
 
-THE MANIFEST IS PART OF THE COMPARISON, not just the log. `_state` hashes every
-file either side produced, so a port that printed the same nine lines while
-writing a different manifest fails.
+THE MANIFEST IS PART OF THE COMPARISON, not just the log. `_state` hashes every file either side produced, so a port that printed the same nine lines while writing a different manifest fails.
 
 K=5 LEDGER: `.ci/shadow/w7p6-generate-cli-manifest.observations.jsonl`.
 """
@@ -443,9 +429,7 @@ def test_defect_3_an_explicit_relative_input_follows_the_caller_not_the_root(
     tmp_path,
 ) -> None:
     """The other half of defect 3. There is no `cd "$(get_repo_root)"` here,
-    unlike every sibling in `.ci/scripts/build/`, so `--input in` means
-    `$PWD/in`. Driven from a cwd holding a DIFFERENT `in/`, both sides read the
-    caller's and neither reads the repo's.
+    unlike every sibling in `.ci/scripts/build/`, so `--input in` means `$PWD/in`. Driven from a cwd holding a DIFFERENT `in/`, both sides read the caller's and neither reads the repo's.
     """
     root = default_fixture(tmp_path)
     elsewhere = tmp_path / "elsewhere"
@@ -695,8 +679,7 @@ def test_a_checksum_file_with_leading_whitespace_still_yields_the_first_field(
 
 def test_defect_5_the_file_header_never_mentions_the_channel_flag() -> None:
     """`:5-12` documents four flags; `--channel` decides the download URL and is
-    what `cd-stage.yml:171` passes. Asserted against the twin on disk so the
-    docstring's defect 5 goes red the day someone fixes the header.
+    what `cd-stage.yml:171` passes. Asserted against the twin on disk so the docstring's defect 5 goes red the day someone fixes the header.
     """
     header = (ROOT / TWIN_REL).read_text(encoding="utf-8").split("set -euo pipefail")[0]
     assert "--version VERSION" in header
@@ -723,8 +706,7 @@ def test_a_missing_jq_is_a_named_refusal_after_three_log_lines(tmp_path) -> None
 
 def test_a_missing_awk_stops_at_127_rather_than_skipping_the_binary(tmp_path) -> None:
     """The reason `awk` is spawned rather than reimplemented. `SHA256="$(awk ...)"`
-    is an assignment, so `set -e` takes the substitution's status: the run STOPS
-    at 127 instead of quietly recording a manifest with no binaries.
+    is an assignment, so `set -e` takes the substitution's status: the run STOPS at 127 instead of quietly recording a manifest with no binaries.
     """
     root = default_fixture(tmp_path)
     old_t, new_t = run_both(
@@ -776,14 +758,10 @@ def test_a_missing_mkdir_stops_after_every_binary_is_added(tmp_path) -> None:
 def test_a_failing_dirname_does_not_stop_either_side(tmp_path) -> None:
     """THE CONTROL FOR `capture_lax`, and the reason it exists.
 
-    `mkdir -p "$(dirname "$OUTPUT_PATH")"` at `:136` is a substitution used as
-    an ARGUMENT, not as the command, so `set -e` does NOT take its status: the
-    only status that counts is `mkdir`'s. A port that used the strict helper
-    here would stop where the twin carries on.
+    `mkdir -p "$(dirname "$OUTPUT_PATH")"` at `:136` is a substitution used as an ARGUMENT, not as the command, so `set -e` does NOT take its status: the only status that counts is `mkdir`'s. A port that used the strict helper here would stop where the twin carries on.
 
     Reaching that question needs a `dirname` that ANSWERS and then exits 1;
-    removing `dirname` outright cannot reach it (see the next test). Both sides
-    are driven with exactly that fake and must complete normally.
+    removing `dirname` outright cannot reach it (see the next test). Both sides are driven with exactly that fake and must complete normally.
     """
     root = default_fixture(tmp_path)
     old_t, new_t = run_both(
@@ -803,19 +781,11 @@ def test_the_twin_cannot_start_without_dirname_and_the_port_can(tmp_path) -> Non
 
     The twin resolves its own `SCRIPT_DIR` at `:16` with
     `cd "$(dirname "${BASH_SOURCE[0]}")"`, so a PATH without `dirname` kills it
-    before line 17 and exit 1. The port resolves its own path in-process and gets
-    all the way to `:136`, where its one real `dirname` call is missing and
-    `mkdir -p ''` then fails -- exit 1 as well, but for a different reason and
-    after doing all the work.
+    before line 17 and exit 1. The port resolves its own path in-process and gets all the way to `:136`, where its one real `dirname` call is missing and `mkdir -p ''` then fails -- exit 1 as well, but for a different reason and after doing all the work.
 
-    This is shell plumbing, not ported logic, which is why `dirname` is a plain
-    unrecorded symlink in the fixture. Recorded here so nobody discovers it as a
-    surprise.
+    This is shell plumbing, not ported logic, which is why `dirname` is a plain unrecorded symlink in the fixture. Recorded here so nobody discovers it as a surprise.
 
-    HOW FAR THE TWIN GETS IS BASH-VERSION-DEPENDENT, and this case used to
-    hard-code the 5.3 answer (`ends with "line 16: cd: null directory"`). The
-    difference is BEHAVIOURAL, not just wording, and it was worth measuring
-    rather than guessing:
+    HOW FAR THE TWIN GETS IS BASH-VERSION-DEPENDENT, and this case used to hard-code the 5.3 answer (`ends with "line 16: cd: null directory"`). The difference is BEHAVIOURAL, not just wording, and it was worth measuring rather than guessing:
 
         bash 5.3  `cd ""` FAILS and says `cd: null directory`, so `set -e` kills
                   the script AT line 16 and line 17 never runs.
@@ -823,11 +793,7 @@ def test_the_twin_cannot_start_without_dirname_and_the_port_can(tmp_path) -> Non
                   so the script survives line 16 and dies one line later, unable
                   to source `../lib/common.sh` from the wrong directory.
 
-    Both versions still die in the twin's own plumbing before any manifest work
-    happens, which is the property this case actually exists to pin, so that is
-    asserted unconditionally and only the tail is asked of the running bash.
-    Hard-coding the 5.3 tail made this pass on every machine in this tree and
-    fail in CI run 34970782616.
+    Both versions still die in the twin's own plumbing before any manifest work happens, which is the property this case actually exists to pin, so that is asserted unconditionally and only the tail is asked of the running bash. Hard-coding the 5.3 tail made this pass on every machine in this tree and fail in CI run 34970782616.
     """
     root = default_fixture(tmp_path)
     args = ("--version", "1.2.3", "--input", "in", "--output", "out/manifest.json")
@@ -867,10 +833,7 @@ def test_a_planted_defect_is_caught(tmp_path) -> None:
     """A gate that has never been seen to fail is not a gate.
 
     The plant relaxes the length check from `!= 64` to `< 8`, which is what a
-    reader "being lenient about hash formats" would write. It is invisible on
-    every valid checksum and visible on exactly one case: the truncated hash,
-    which the twin discards with a warning and the plant enshrines in the
-    manifest.
+    reader "being lenient about hash formats" would write. It is invisible on every valid checksum and visible on exactly one case: the truncated hash, which the twin discards with a warning and the plant enshrines in the manifest.
     """
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(

@@ -5,91 +5,47 @@ deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side
 until a committed differential ledger says otherwise.
 
 -----------------------------------------------------------------------------
-THE TWIN'S HEADER, CARRIED ACROSS. Every date and every named file below is the
-original's, not a paraphrase of it.
+THE TWIN'S HEADER, CARRIED ACROSS. Every date and every named file below is the original's, not a paraphrase of it.
 -----------------------------------------------------------------------------
 
-WHY THIS EXISTS. On 2026-08-05 a `git add -A` swept two runtime files into a
-commit: `.claude/hooks/stop/.sessions` and `.claude/hooks/stop/.waiter-aaaaaaaa`.
-They were removed by hand and added to .gitignore, and nothing whatsoever
-prevented their return -- every existing gate was blind to them by
+WHY THIS EXISTS. On 2026-08-05 a `git add -A` swept two runtime files into a commit: `.claude/hooks/stop/.sessions` and `.claude/hooks/stop/.waiter-aaaaaaaa`. They were removed by hand and added to .gitignore, and nothing whatsoever prevented their return -- every existing gate was blind to them by
 construction. These files have no static markers in source; they exist only
 while a session runs, so no linter, type-check or dead-code scan can see them.
 The only observable that distinguishes the defect is `git ls-files`.
 
-WHY A TRACKED SIDECAR IS WORSE THAN UNTIDY. The PostToolUse nudge reads a
-`.waiter-<prefix>` heartbeat to decide whether a session is listening for peer
-messages. A committed heartbeat tells every fresh clone that a waiter is
-already running when none is, so the nudge goes quiet and the session is
-silently deaf -- the exact failure the waiter was built to remove. A committed
-`.sessions` brief describes a session that no longer exists, and a committed
-`.requests` would replay other sessions' questions into a clone as if new.
+WHY A TRACKED SIDECAR IS WORSE THAN UNTIDY. The PostToolUse nudge reads a `.waiter-<prefix>` heartbeat to decide whether a session is listening for peer messages. A committed heartbeat tells every fresh clone that a waiter is already running when none is, so the nudge goes quiet and the session is silently deaf -- the exact failure the waiter was built to remove. A committed
+`.sessions` brief describes a session that no longer exists, and a committed `.requests` would replay other sessions' questions into a clone as if new.
 
-THE PATTERN LIST IS DERIVED, NOT COPIED. wl_store.py's module docstring is the
-single source for the sidecar family. Hard-coding the list here would let the
-two drift, and a gate that checks a stale list is the vacuity this repo keeps
-paying for. If that docstring is reworded so the list cannot be parsed, this
-gate FAILS rather than silently checking nothing.
+THE PATTERN LIST IS DERIVED, NOT COPIED. wl_store.py's module docstring is the single source for the sidecar family. Hard-coding the list here would let the two drift, and a gate that checks a stale list is the vacuity this repo keeps paying for. If that docstring is reworded so the list cannot be parsed, this gate FAILS rather than silently checking nothing.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TWIN SHELLS OUT TO PYTHON ALREADY, and that is the single most important
-fact about this port. Its pattern parser is a `python3 - "$STORE" <<'PY'`
-heredoc running a `re.search(r"The sidecars \\((.*?)\\)", src, re.S)` and a
-`re.split(r"[,\\s]+", ...)`. Those two expressions are carried here VERBATIM,
-because rewriting them into "cleaner" Python would change which tokens the gate
-derives and therefore which paths it globs. The non-greedy `(.*?)` stopping at
-the FIRST closing paren is behaviour, not an accident: the docstring's list ends
+THE TWIN SHELLS OUT TO PYTHON ALREADY, and that is the single most important fact about this port. Its pattern parser is a `python3 - "$STORE" <<'PY'` heredoc running a `re.search(r"The sidecars \\((.*?)\\)", src, re.S)` and a `re.split(r"[,\\s]+", ...)`. Those two expressions are carried here VERBATIM, because rewriting them into "cleaner" Python would change which tokens the gate
+derives and therefore which paths it globs. The non-greedy `(.*?)` stopping at the FIRST closing paren is behaviour, not an accident: the docstring's list ends
 with `.resprofile.*)` and any later paren in the file must not be reached.
 
-`re.S` (DOTALL) is what lets the list span five physical lines. Without it the
-match would stop at the first newline and the gate would derive four patterns
-instead of twenty-one, which is the collapsed-corpus failure this gate is
-supposed to be immune to.
+`re.S` (DOTALL) is what lets the list span five physical lines. Without it the match would stop at the first newline and the gate would derive four patterns instead of twenty-one, which is the collapsed-corpus failure this gate is supposed to be immune to.
 
-THE CONTROL IS A GLOB SELF-MATCH, and it looks tautological because in bash it
-very nearly is. The twin builds `$HOOK_DIR/$pat` and tests it against the
+THE CONTROL IS A GLOB SELF-MATCH, and it looks tautological because in bash it very nearly is. The twin builds `$HOOK_DIR/$pat` and tests it against the
 UNQUOTED right-hand side of `[[ ... == ... ]]`, which is pattern matching: a
-pattern is asked whether it matches the literal text it was built from. What it
-actually proves is that the pattern survived word splitting and carries no
-character the matcher chokes on -- a pattern list mangled into `.reggate-` and
-`*` as two tokens, or a `[` with no `]`, fails it. `fnmatch.fnmatchcase` is the
-closest Python equivalent: same `*`/`?`/`[...]` grammar, no case folding, no
-special treatment of a leading dot or of `/`. `pathlib.PurePath.match` would
-have been wrong here, because it anchors on path components and would not
-compare the whole string.
+pattern is asked whether it matches the literal text it was built from. What it actually proves is that the pattern survived word splitting and carries no character the matcher chokes on -- a pattern list mangled into `.reggate-` and `*` as two tokens, or a `[` with no `]`, fails it. `fnmatch.fnmatchcase` is the closest Python equivalent: same `*`/`?`/`[...]` grammar, no case
+folding, no special treatment of a leading dot or of `/`. `pathlib.PurePath.match` would have been wrong here, because it anchors on path components and would not compare the whole string.
 
-THE EXIT STATUS OF `git ls-files` IS LOAD-BEARING, and the twin says so at
-length: `2>/dev/null || true` there would make a FAILED enumeration -- no repo,
-a broken index, a bad pathspec -- read exactly like "no sidecars are tracked",
-so the gate would report a clean tree precisely when it could not look. The
-twin captures `2>&1` into the same variable and prints it back with
-`git said: ...`, so stderr is DATA on this path rather than a stream to
+THE EXIT STATUS OF `git ls-files` IS LOAD-BEARING, and the twin says so at length: `2>/dev/null || true` there would make a FAILED enumeration -- no repo, a broken index, a bad pathspec -- read exactly like "no sidecars are tracked", so the gate would report a clean tree precisely when it could not look. The twin captures `2>&1` into the same variable and prints it back with `git
+said: ...`, so stderr is DATA on this path rather than a stream to
 discard. `subprocess.run(..., stderr=STDOUT)` reproduces that exactly.
 
-STREAMS, AND WHY `log.error` IS THE WRONG TOOL HERE. This gate is the one in
-the batch that sources NO logger at all: every line it emits is a bare
-`echo ... >&2`, with the `✗` TYPED INTO the first string of each block and the
-continuation lines carrying no glyph, plus deliberate blank `echo >&2` lines
-between the header, the path list and the advice. Routing those through
-`log.error` would prefix a `✗` onto lines the twin leaves bare and would drop
-the blanks, which changes the shape a reader sees and, more sharply, changes
-which lines `scripts/lib/shadow-gate.ts` counts as findings: a blank line ends a
-continuation block, and an unmarked indented line after one is chatter. A port
-that "improved" the streams here would be non-equivalent to its twin while
+STREAMS, AND WHY `log.error` IS THE WRONG TOOL HERE. This gate is the one in the batch that sources NO logger at all: every line it emits is a bare `echo ... >&2`, with the `✗` TYPED INTO the first string of each block and the continuation lines carrying no glyph, plus deliberate blank `echo >&2` lines between the header, the path list and the advice. Routing those through
+`log.error` would prefix a `✗` onto lines the twin leaves bare and would drop the blanks, which changes the shape a reader sees and, more sharply, changes which lines `scripts/lib/shadow-gate.ts` counts as findings: a blank line ends a continuation block, and an unmarked indented line after one is chatter. A port that "improved" the streams here would be non-equivalent to its twin
+while
 looking tidier. So every message goes through `print(..., file=sys.stderr)` and
 the blanks are preserved exactly.
 
-The final success line is a bare `echo` on STDOUT in the twin, printing the
-derived pattern COUNT. It is data a reader is meant to see collapse, so it stays
-on stdout through `print()`.
+The final success line is a bare `echo` on STDOUT in the twin, printing the derived pattern COUNT. It is data a reader is meant to see collapse, so it stays on stdout through `print()`.
 
-WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it globs only under
-`.claude/hooks/stop`. A sidecar written anywhere else, or one whose name does
-not appear in wl_store.py's docstring, is invisible. Widening it would change
-the verdict, so it is preserved and stated instead.
+WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it globs only under `.claude/hooks/stop`. A sidecar written anywhere else, or one whose name does not appear in wl_store.py's docstring, is invisible. Widening it would change the verdict, so it is preserved and stated instead.
 """
 
 import fnmatch
@@ -119,12 +75,8 @@ TOKEN_SPLIT_RE = re.compile(r"[,\s]+")
 def parse_patterns(source: str) -> list[str]:
     """The sidecar globs named in wl_store.py's docstring, in document order.
 
-    Returns [] both when the "The sidecars (" phrase is absent and when the
-    parenthesised list contains no token starting with a dot. The twin collapses
-    those two cases too -- its heredoc `sys.exit(0)`s on no match and prints
-    nothing, and the caller tests only for an empty string -- so they are one
-    outcome here as well rather than two, and the caller reports the same
-    refusal for both.
+    Returns [] both when the "The sidecars (" phrase is absent and when the parenthesised list contains no token starting with a dot. The twin collapses those two cases too -- its heredoc `sys.exit(0)`s on no match and prints nothing, and the caller tests only for an empty string -- so they are one outcome here as well rather than two, and the caller reports the same refusal for
+    both.
     """
     match = SIDECAR_LIST_RE.search(source)
     if not match:
@@ -141,14 +93,10 @@ def parse_patterns(source: str) -> list[str]:
 def control_fires(patterns: list[str]) -> bool:
     """Prove the matcher can FIRE before trusting it to pass.
 
-    A gate whose matcher is broken reports a clean tree exactly like a clean
-    tree does, which is how a check that cannot fail survives for months. Feed
-    it a synthetic path built from its own pattern list and require a match.
+    A gate whose matcher is broken reports a clean tree exactly like a clean tree does, which is how a check that cannot fail survives for months. Feed it a synthetic path built from its own pattern list and require a match.
 
     The twin sets `control_hit=1` if ANY pattern self-matches, not all of them,
-    so an OR is the faithful reading. Stated because an AND looks stronger and
-    would be a different gate: one pattern carrying an unbalanced `[` would then
-    fail the whole control rather than being the single dud it is.
+    so an OR is the faithful reading. Stated because an AND looks stronger and would be a different gate: one pattern carrying an unbalanced `[` would then fail the whole control rather than being the single dud it is.
     """
     for pattern in patterns:
         if not pattern:
@@ -162,9 +110,7 @@ def control_fires(patterns: list[str]) -> bool:
 def ls_files(pathspec: str, root) -> tuple[int, str]:
     """`git ls-files -- <pathspec>` with stderr FOLDED INTO the output.
 
-    Returns (exit status, combined text). The fold is the twin's `2>&1`: on the
-    failure path the text is printed back to the reader as `git said: ...`, so
-    it is data, not a stream to be discarded. Keeping the status is the whole
+    Returns (exit status, combined text). The fold is the twin's `2>&1`: on the failure path the text is printed back to the reader as `git said: ...`, so it is data, not a stream to be discarded. Keeping the status is the whole
     point of the function; see the module docstring.
     """
     proc = subprocess.run(
@@ -181,10 +127,7 @@ def ls_files(pathspec: str, root) -> tuple[int, str]:
 def err(message: str) -> None:
     """One line on stderr, with NO glyph and no colour.
 
-    Named rather than inlined so the deviation from `rediacc_ci.log` is visible
-    at every call site: this gate's twin sources no logger, and matching its
-    bytes matters more than matching the package's house style. See the module
-    docstring, "STREAMS, AND WHY `log.error` IS THE WRONG TOOL HERE".
+    Named rather than inlined so the deviation from `rediacc_ci.log` is visible at every call site: this gate's twin sources no logger, and matching its bytes matters more than matching the package's house style. See the module docstring, "STREAMS, AND WHY `log.error` IS THE WRONG TOOL HERE".
     """
     print(message, file=sys.stderr)
 
@@ -267,10 +210,7 @@ keep their v5-v9 formats and names.
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will
-    happily flag a correct tree, so every plant below has a mirror that must
-    stay GREEN, and the parser is exercised on the shapes that would silently
-    shrink the pattern list rather than break it.
+    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct tree, so every plant below has a mirror that must stay GREEN, and the parser is exercised on the shapes that would silently shrink the pattern list rather than break it.
     """
     ctl = Controls("tracked-sidecars", floor=16, verbose=True)
 

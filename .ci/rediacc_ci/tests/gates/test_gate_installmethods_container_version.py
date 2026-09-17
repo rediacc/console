@@ -2,33 +2,19 @@
 
 The container version fence in `.ci/scripts/test/test-install-methods.sh`.
 
-WHY THIS CLASS NEEDS A GATE. On 2026-08-07 a release published CLI binaries
-built as 1.2.16 under the label 1.2.17. `verify_version()` was one hole (pinned
-by test-verify-version.sh). The other, larger one: SEVEN of the eleven install
-methods -- apt, dnf, apk, pacman, npm, linuxbrew, quick -- never compared a
-version at all. Each ended its `docker run ... set -e` heredoc with a bare
+WHY THIS CLASS NEEDS A GATE. On 2026-08-07 a release published CLI binaries built as 1.2.16 under the label 1.2.17. `verify_version()` was one hole (pinned by test-verify-version.sh). The other, larger one: SEVEN of the eleven install methods -- apt, dnf, apk, pacman, npm, linuxbrew, quick -- never compared a version at all. Each ended its `docker run ... set -e` heredoc with a
+bare
 `${PKG_BINARY_NAME} --version` whose output was never captured and never
-compared. `$VERSION` was referenced ZERO times inside any of those functions, so
-the only assertion was "the installed binary exits 0" -- which a mislabelled
-binary does.
+compared. `$VERSION` was referenced ZERO times inside any of those functions, so the only assertion was "the installed binary exits 0" -- which a mislabelled binary does.
 
-The fix moves the comparison HOST-side, through verify_version, and fences the
-container's version output between markers so the transcript's own mentions of
-the version (apt-get, npm and brew all print it while installing) cannot satisfy
-the check. Both properties are asserted in both directions: a checker that always
-failed would satisfy every negative case, one that always passed would satisfy
-every positive one, and neither would be a check.
+The fix moves the comparison HOST-side, through verify_version, and fences the container's version output between markers so the transcript's own mentions of the version (apt-get, npm and brew all print it while installing) cannot satisfy the check. Both properties are asserted in both directions: a checker that always failed would satisfy every negative case, one that always
+passed would satisfy every positive one, and neither would be a check.
 
-WHY THE PORT STILL RUNS BASH. The subject's real implementations are shell
-functions, and the twin lifts them out with awk and `eval`s them rather than
-sourcing the script (which would run its argument parsing). Reimplementing
-`run_container_version_test` in Python would test the PORT's idea of the fence
-instead of the subject's, which is the one thing a port must not do. So the
+WHY THE PORT STILL RUNS BASH. The subject's real implementations are shell functions, and the twin lifts them out with awk and `eval`s them rather than sourcing the script (which would run its argument parsing). Reimplementing `run_container_version_test` in Python would test the PORT's idea of the fence instead of the subject's, which is the one thing a port must not do. So the
 Python side builds the same extraction prelude and drives the REAL functions;
 what moves into Python is the case structure and the assertions.
 
-ARGUMENT ORDER. The twin calls `assert_eq "0" "$(check ...)"`, i.e. EXPECTED
-first, which is the inverse of `assert_eq`'s own contract (actual first). Same
+ARGUMENT ORDER. The twin calls `assert_eq "0" "$(check ...)"`, i.e. EXPECTED first, which is the inverse of `assert_eq`'s own contract (actual first). Same
 verdict, inverted diagnostic; it is one of 67 such sites across six twins. The
 port uses the contract's order, so a failure here reads the right way round.
 """
@@ -61,8 +47,7 @@ FENCED_METHODS = (
 def prelude(gate, tmp_path: pathlib.Path) -> pathlib.Path:
     """A sourceable file carrying the subject's REAL fence functions.
 
-    `log_info`/`log_warn`/`log_error` are stubbed to no-ops because the
-    functions under test call them and their output is not what is being judged.
+    `log_info`/`log_warn`/`log_error` are stubbed to no-ops because the functions under test call them and their output is not what is being judged.
     """
     fence_lines = [ln for ln in SUBJECT.text(gate).splitlines() if FENCE_RE.fullmatch(ln)]
     if not fence_lines:

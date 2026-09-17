@@ -1,14 +1,9 @@
 """`rediacc_ci.quality.workflows` against the greps and awk programs it replaces.
 
-WHY A DIFFERENTIAL. Four of the five banned patterns are handed to `grep -n` as
-BASIC regular expressions, and one of them -- `script:[[:space:]]*|` -- depends
-on `|` being LITERAL in BRE. Read as ERE it would match every line. Two of the
-structural rules are awk state machines whose indentation arithmetic is
-1-based and spaces-only. Running the real tools and comparing is the only form
-of this test that can fail for the right reason.
+WHY A DIFFERENTIAL. Four of the five banned patterns are handed to `grep -n` as BASIC regular expressions, and one of them -- `script:[[:space:]]*|` -- depends on `|` being LITERAL in BRE. Read as ERE it would match every line. Two of the structural rules are awk state machines whose indentation arithmetic is 1-based and spaces-only. Running the real tools and comparing is the only
+form of this test that can fail for the right reason.
 
-The whole gate is covered by `.ci/shadow/w7p2-workflows.observations.jsonl` over
-five distinct trees.
+The whole gate is covered by `.ci/shadow/w7p2-workflows.observations.jsonl` over five distinct trees.
 """
 
 import pathlib
@@ -198,10 +193,7 @@ _TWIN_SLURP_AWK = r"""
 def test_the_uses_anchor_blind_spot_is_pinned() -> None:
     """`^\\s+uses:\\s` misses the `- uses:` YAML list form.
 
-    That is the twin's behaviour: `uses:` must follow WHITESPACE, so a step with
-    no `name:` has its pin unchecked. Widening the pattern would be a verdict
-    change on any tree carrying that spelling, so the port keeps it and this
-    assertion is the record.
+    That is the twin's behaviour: `uses:` must follow WHITESPACE, so a step with no `name:` has its pin unchecked. Widening the pattern would be a verdict change on any tree carrying that spelling, so the port keeps it and this assertion is the record.
     """
     assert mod.USES_RE.search("        uses: actions/checkout@v4")
     assert not mod.USES_RE.search("      - uses: actions/checkout@v4")

@@ -1,7 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-actions-release-age.sh`.
 
-Test for the release-age deferral and the anti-vacuity guard in
-`scripts/gates/check-actions.ts`.
+Test for the release-age deferral and the anti-vacuity guard in `scripts/gates/check-actions.ts`.
 
 TWO DEFECTS THIS COVERS.
 
@@ -17,25 +16,14 @@ TWO DEFECTS THIS COVERS.
    Fourteen unknown means fourteen UNCHECKED, so it reported freshness it had
    verified for nothing, and an offline run would have done that indefinitely.
 
-WHY THIS TEST IS OFFLINE. Its first version drove the real gate four times, which
-needed a GitHub token, spent ~56 API calls per run, and FAILED in CI's quality-gate
-harness where no token exists. Worse, when the anonymous limit tripped it passed for
-the wrong reason: it read "nothing fresh upstream" from output that actually said
-"nothing could be checked", which is the very defect it exists to catch. Pure logic
-gets tested purely.
+WHY THIS TEST IS OFFLINE. Its first version drove the real gate four times, which needed a GitHub token, spent ~56 API calls per run, and FAILED in CI's quality-gate harness where no token exists. Worse, when the anonymous limit tripped it passed for the wrong reason: it read "nothing fresh upstream" from output that actually said "nothing could be checked", which is the very
+defect it exists to catch. Pure logic gets tested purely.
 
-WHY NOT IMPORT check-actions.ts DIRECTLY. It invokes checkActions() at module scope,
-so importing it would run the gate. Adding a main-module guard to make it importable
-was rejected deliberately: a guard that is subtly wrong makes `npm run check:actions`
-exit 0 while doing nothing, which is a far worse vacuous pass than the one being
-fixed. The deferral logic is exercised through the shared lib it delegates to, and
-the wiring is pinned against the source.
+WHY NOT IMPORT check-actions.ts DIRECTLY. It invokes checkActions() at module scope, so importing it would run the gate. Adding a main-module guard to make it importable was rejected deliberately: a guard that is subtly wrong makes `npm run check:actions` exit 0 while doing nothing, which is a far worse vacuous pass than the one being fixed. The deferral logic is exercised through
+the shared lib it delegates to, and the wiring is pinned against the source.
 
-WHAT THE PORT CHANGES. The twin spawns one `npx tsx --eval` per window question,
-three times, at roughly a second each. The port asks all three in ONE process and
-reads the answers back as JSON, so the behavioural cases still drive the REAL
-`isWithinFreshnessWindow` -- not a Python re-implementation of it -- at a third of
-the process cost. The source-pinning cases are unchanged: they read the file.
+WHAT THE PORT CHANGES. The twin spawns one `npx tsx --eval` per window question, three times, at roughly a second each. The port asks all three in ONE process and reads the answers back as JSON, so the behavioural cases still drive the REAL `isWithinFreshnessWindow` -- not a Python re-implementation of it -- at a third of the process cost. The source-pinning cases are unchanged:
+they read the file.
 """
 
 import json
@@ -83,8 +71,7 @@ def gate_source(gate) -> str:
 def windows(gate) -> dict[str, str]:
     """Every question asked of the REAL shared helper, in one tsx process.
 
-    This is behaviour and not a re-implementation: the same module
-    `check-actions.ts` imports is the one answering.
+    This is behaviour and not a re-implementation: the same module `check-actions.ts` imports is the one answering.
     """
     if "value" in _ANSWERS:
         return _ANSWERS["value"]
@@ -117,8 +104,7 @@ def windows(gate) -> dict[str, str]:
 
 def test_the_shared_lib_is_what_the_gate_uses(gate):
     """Anti-vacuity for this file: every behavioural assertion below drives the
-    shared lib, so if the gate stopped delegating to it they would all pass while
-    proving nothing about the gate.
+    shared lib, so if the gate stopped delegating to it they would all pass while proving nothing about the gate.
     """
     src = gate_source(gate)
     gate.assert_contains(
@@ -146,8 +132,7 @@ def test_a_fresh_release_is_deferred(gate):
 
 def test_an_aged_release_is_eligible(gate):
     """THE CONTROL. Same helper, same shape, older release: it must come back
-    eligible. Without this the deferral could be a mute button and every other
-    assertion here would still pass.
+    eligible. Without this the deferral could be a mute button and every other assertion here would still pass.
     """
     gate.assert_eq(
         windows(gate)["aged"], "eligible", "a release well past the window must still be demanded"
@@ -157,8 +142,7 @@ def test_an_aged_release_is_eligible(gate):
 
 def test_a_zero_window_defers_nothing(gate):
     """The second control: with the feature disabled, even a release published this
-    instant is eligible. Proves the deferral is driven by the window rather than by
-    something incidental.
+    instant is eligible. Proves the deferral is driven by the window rather than by something incidental.
     """
     gate.assert_eq(
         windows(gate)["zero-window"], "eligible", "a zero window disables deferral entirely"
@@ -168,8 +152,7 @@ def test_a_zero_window_defers_nothing(gate):
 
 def test_null_policy_is_fail_closed(gate):
     """A lookup hiccup must never manufacture a "you must upgrade now" failure.
-    Pinned against the source: the lib deliberately leaves null-handling to the
-    caller, and this gate's choice is the fail-closed one.
+    Pinned against the source: the lib deliberately leaves null-handling to the caller, and this gate's choice is the fail-closed one.
     """
     src = gate_source(gate)
     gate.assert_contains(src, "if (!publishedAt) return true", "a missing publish date defers")

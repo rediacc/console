@@ -1,29 +1,16 @@
 """Differential: `rediacc_ci.build.build_linux_pkg` against its twin
 `.ci/scripts/build/build-linux-pkg.sh`.
 
-WHAT IS COMPARED, per case and never folded: stdout, stderr, exit code, the
-FAKE-BINARY CALL LOG, the env `nfpm` was handed, and every file left under the
-output directory.
+WHAT IS COMPARED, per case and never folded: stdout, stderr, exit code, the FAKE-BINARY CALL LOG, the env `nfpm` was handed, and every file left under the output directory.
 
-WHY THE ENV DUMP IS PART OF THE COMPARISON. This script's real output is a
-`.deb`, and everything that decides what is INSIDE it -- the package name, the
-maintainer, the version, the arch, the absolute binary path, the signing key
-file -- reaches nfpm as ENVIRONMENT, because `.ci/config/nfpm.yaml` is a
-template over those variables. A port that logged all six `✓` lines correctly
+WHY THE ENV DUMP IS PART OF THE COMPARISON. This script's real output is a `.deb`, and everything that decides what is INSIDE it -- the package name, the maintainer, the version, the arch, the absolute binary path, the signing key file -- reaches nfpm as ENVIRONMENT, because `.ci/config/nfpm.yaml` is a template over those variables. A port that logged all six `✓` lines correctly
 and exported `NFPM_ARCH=x64` instead of `amd64` would be byte-identical on both
-streams and would ship an unusable package. The fake `nfpm` therefore writes the
-variables it was given to `$FAKE_ENV_DUMP`, and `_agree` compares them.
+streams and would ship an unusable package. The fake `nfpm` therefore writes the variables it was given to `$FAKE_ENV_DUMP`, and `_agree` compares them.
 
-THE BUILD DIRECTORY IS MASKED, AND IT HAS TO BE. `mktemp -d` and
-`tempfile.mkdtemp()` both invent a random name, and that name appears in three
-different argv (`nfpm --target`, the canonicaliser's key path, `gpg --show-keys`).
-Comparing it would be comparing two random strings. The masking is done INSIDE
-the fakes rather than in this file, so the shadow-gate ledger -- which has no
-masking hook of its own -- gets the identical normalisation. `$TMPDIR` is
-pointed at a fixture directory so the fakes can recognise what to mask.
+THE BUILD DIRECTORY IS MASKED, AND IT HAS TO BE. `mktemp -d` and `tempfile.mkdtemp()` both invent a random name, and that name appears in three different argv (`nfpm --target`, the canonicaliser's key path, `gpg --show-keys`). Comparing it would be comparing two random strings. The masking is done INSIDE the fakes rather than in this file, so the shadow-gate ledger -- which has no
+masking hook of its own -- gets the identical normalisation. `$TMPDIR` is pointed at a fixture directory so the fakes can recognise what to mask.
 
-RECORDED TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. The fake `gpg`'s stdout IS the
-colon-format key listing the script parses.
+RECORDED TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. The fake `gpg`'s stdout IS the colon-format key listing the script parses.
 
 THE PATH IS REPLACED, NOT PREPENDED. `test_the_scratch_path_is_sealed` asserts
 there is no reachable real `nfpm` or `gpg` before anything is driven; a real
@@ -425,10 +412,7 @@ def test_the_absent_tools_are_absent_in_the_env_that_is_actually_driven(tmp_path
 
     `shutil.which(path=...)` asks about a STRING. This asks the child process,
     through the very `env=` dict `_run` builds, whether it can reach a real
-    `nfpm`, `gpg` or `docker` -- which is the thing that would quietly turn a
-    signing test into a real `gpg --import` against a developer's keyring. It
-    also proves PATH was REPLACED rather than prepended, by asserting the
-    machine's own PATH entries are gone.
+    `nfpm`, `gpg` or `docker` -- which is the thing that would quietly turn a signing test into a real `gpg --import` against a developer's keyring. It also proves PATH was REPLACED rather than prepended, by asserting the machine's own PATH entries are gone.
     """
     root = fixture(tmp_path)
     proc, _, _ = _run(root, "old", args=("--help",))
@@ -655,10 +639,7 @@ def test_an_output_directory_blocked_by_a_file_fails_the_way_mkdir_does(tmp_path
     """`mkdir -p` under `set -e`, at BOTH of its call sites.
 
     The twin runs the real `mkdir`; a port using `Path.mkdir` exits 1 as well but
-    prints a PYTHON TRACEBACK where the twin prints one `mkdir:` line, which is
-    the difference between a diagnosable release failure and a scary one. Driven
-    on the dry-run site (`:148`) too, because that one runs BEFORE any validation
-    and would otherwise never be reached in this file.
+    prints a PYTHON TRACEBACK where the twin prints one `mkdir:` line, which is the difference between a diagnosable release failure and a scary one. Driven on the dry-run site (`:148`) too, because that one runs BEFORE any validation and would otherwise never be reached in this file.
     """
     root = fixture(tmp_path)
     for extra in ((), ("--dry-run",)):
@@ -674,8 +655,7 @@ def test_an_output_directory_blocked_by_a_file_fails_the_way_mkdir_does(tmp_path
 
 def test_a_binary_with_no_directory_part_still_becomes_absolute(tmp_path) -> None:
     """`$(dirname "rdc")` is `.`, not the empty string, and `$(cd . && pwd)` is
-    the CWD. `os.path.dirname` returns `""` there, which `os.path.abspath` would
-    also resolve to the CWD -- but only because the port spells the `or "."`
+    the CWD. `os.path.dirname` returns `""` there, which `os.path.abspath` would also resolve to the CWD -- but only because the port spells the `or "."`
     out. Untested, this is a one-character difference from a path of `/rdc`."""
     root = fixture(tmp_path)
     (root / "rdc").write_text("BINARY\n", encoding="utf-8")
@@ -854,11 +834,7 @@ def test_defect_3_a_failing_find_dies_silently(tmp_path) -> None:
     """`BUILT_PKG=$(find ... | head -1)` at `:277-279`, the same
     assignment-of-a-pipeline shape as DEFECT 2 and just as live.
 
-    `find` exits 1 whenever it cannot read something it was told to walk, `head`
-    exits 0, so `pipefail` hands the assignment find's 1 and `set -e` ends the
-    build. Nothing is printed: not `log_error`, not "nfpm produced no output
-    file". The package nfpm just wrote is left in a temp directory the EXIT trap
-    then deletes, and the release engineer gets a bare exit 1.
+    `find` exits 1 whenever it cannot read something it was told to walk, `head` exits 0, so `pipefail` hands the assignment find's 1 and `set -e` ends the build. Nothing is printed: not `log_error`, not "nfpm produced no output file". The package nfpm just wrote is left in a temp directory the EXIT trap then deletes, and the release engineer gets a bare exit 1.
     """
     root = fixture(tmp_path)
     old_t, new_t = run_both(
@@ -976,8 +952,7 @@ def test_a_key_with_no_fingerprint_row_refuses_as_unreadable(tmp_path) -> None:
 
 def test_defect_2_an_unreadable_published_key_dies_silently(tmp_path) -> None:
     """`want_fpr=$(gpg ... | awk ...)` under `pipefail`: gpg's exit 2 becomes the
-    assignment's status and `set -e` ends the script with NOTHING on either
-    stream. The `<unreadable>` fallback written for exactly this case is
+    assignment's status and `set -e` ends the script with NOTHING on either stream. The `<unreadable>` fallback written for exactly this case is
     unreachable, and a release engineer sees a bare exit 2."""
     root = fixture(tmp_path, public_key="BADKEY\n")
     old_t, new_t = run_both(root, args=(*DEB, "--format", "deb"), env_overrides=_signed())
@@ -1125,15 +1100,11 @@ def test_a_gpg_key_is_ignored_for_apk_and_an_rsa_key_for_deb(tmp_path) -> None:
 def test_a_key_that_is_exactly_dash_n_writes_a_zero_byte_key_file(tmp_path) -> None:
     """`echo "$RELEASE_GPG_PRIVATE_KEY" >"$GPG_KEY_FILE"` at `:187`.
 
-    bash's BUILTIN `echo` parses a leading `-n`/`-e`/`-E` as OPTIONS, so a secret
-    whose entire value is `-n` writes an EMPTY key file and the build then walks
+    bash's BUILTIN `echo` parses a leading `-n`/`-e`/`-E` as OPTIONS, so a secret whose entire value is `-n` writes an EMPTY key file and the build then walks
     into the unreadable-key path with no hint of why. Driven: `v=-n; echo "$v"
     >f` leaves `wc -c` = 0 on bash 5.3.9.
 
-    Real armor is NOT affected -- `-----BEGIN PGP PRIVATE KEY BLOCK-----` is not
-    an option string, so the leading dashes are harmless -- and the other half of
-    this test pins that, because "a key starts with dashes" is exactly the wrong
-    lesson to draw from the first half.
+    Real armor is NOT affected -- `-----BEGIN PGP PRIVATE KEY BLOCK-----` is not an option string, so the leading dashes are harmless -- and the other half of this test pins that, because "a key starts with dashes" is exactly the wrong lesson to draw from the first half.
     """
     root = fixture(tmp_path)
     old_t, new_t = run_both(
@@ -1164,17 +1135,10 @@ def test_the_logger_escape_divergence_is_pinned_not_accidental(tmp_path) -> None
     """THE ONE PLACE THE TWO SIDES DELIBERATELY DISAGREE, asserted as a
     DISAGREEMENT so nobody later reads a green suite as proof they match.
 
-    `common.sh:35` logs with `echo -e`, which INTERPRETS backslash escapes in the
-    message: `--binary 'a\\tb'` makes the twin print a real tab. `rediacc_ci.log`
-    formats the message as data, and `log.py`'s own docstring records that as a
-    bug being dropped rather than a decision being made, pinned by
-    `test_log.py`. Changing it here would mean forking the one logger the whole
-    campaign shares, so it is DOCUMENTED instead -- and documented means
-    executed, not commented.
+    `common.sh:35` logs with `echo -e`, which INTERPRETS backslash escapes in the message: `--binary 'a\\tb'` makes the twin print a real tab. `rediacc_ci.log` formats the message as data, and `log.py`'s own docstring records that as a bug being dropped rather than a decision being made, pinned by `test_log.py`. Changing it here would mean forking the one logger the whole campaign
+    shares, so it is DOCUMENTED instead -- and documented means executed, not commented.
 
-    Unreachable in production: this script's only caller passes a fixed binary
-    path and a version read off a git tag. That is why it is a note and not a
-    defect.
+    Unreachable in production: this script's only caller passes a fixed binary path and a version read off a git tag. That is why it is a note and not a defect.
     """
     root = fixture(tmp_path)
     args = (

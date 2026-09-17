@@ -1,20 +1,13 @@
 """Differential: `rediacc_ci.deploy.clone_d1` against its twin
 `.ci/scripts/deploy/clone-d1.sh`.
 
-RECORDING FAKES FOR `npx` AND `sqlite3` ON A SCRATCH PATH, INSIDE A FIXTURE
-REPO. Those two are the only programs in this script that can reach anything
+RECORDING FAKES FOR `npx` AND `sqlite3` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Those two are the only programs in this script that can reach anything
 outside the machine or open a database; every other tool it uses (`grep`, `sed`,
-`wc`, `du`, `cut`, `jq`, `mktemp`, `rm`, `cat`) is the real binary symlinked into
-the same scratch directory, because both sides call the same one and that is the
-point of calling them at all.
+`wc`, `du`, `cut`, `jq`, `mktemp`, `rm`, `cat`) is the real binary symlinked into the same scratch directory, because both sides call the same one and that is the point of calling them at all.
 
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one
-real run" clause and says in as many words that the mocked parity ledger is a
-separate, achievable piece of work. This is that piece: no Cloudflare
-credential, no D1 database, nothing that leaves this host.
+`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece: no Cloudflare credential, no D1 database, nothing that leaves this host.
 
-THREE KINDS OF EVIDENCE, and the last two are what a stdout comparison alone
-would miss:
+THREE KINDS OF EVIDENCE, and the last two are what a stdout comparison alone would miss:
 
   1. THE STREAMS, separately, byte for byte.
   2. THE CALL LOG: which wrangler subcommands ran, in what order, with which
@@ -24,11 +17,7 @@ would miss:
      script exists to produce, and it is assembled by two `sed` programs whose
      output nothing else reports.
 
-THE ONE MASKED THING is `mktemp -d`'s random suffix, which cannot be equal
-between two runs of the SAME implementation. The mask is deliberately narrow
-(ten alphanumerics after `/tmp/tmp.`, stopping at the word boundary) so the
-`/export.sql` and `/import.sql` tails, and any other `/tmp` path either side
-might invent, are still compared verbatim.
+THE ONE MASKED THING is `mktemp -d`'s random suffix, which cannot be equal between two runs of the SAME implementation. The mask is deliberately narrow (ten alphanumerics after `/tmp/tmp.`, stopping at the word boundary) so the `/export.sql` and `/import.sql` tails, and any other `/tmp` path either side might invent, are still compared verbatim.
 """
 
 from __future__ import annotations
@@ -231,8 +220,7 @@ def fixture(tmp_path: pathlib.Path, *, sanitize_sql: bool = False) -> pathlib.Pa
     """A throwaway repository holding the twin and `common.sh`.
 
     `sanitize_sql=True` RECREATES the file deleted in April, which is the only
-    way to see what the `--sanitize` path would do if it worked. It is not
-    written into the real tree by anything here.
+    way to see what the `--sanitize` path would do if it worked. It is not written into the real tree by anything here.
     """
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
@@ -371,8 +359,7 @@ def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
 
 def test_the_five_step_narration_is_byte_identical_on_stderr(tmp_path) -> None:
     """Every line here is the twin's own literal string through `common.sh`'s
-    logger, so the glyphs are part of the comparison: `→` for a step and `✓` for
-    information, both on stderr, both uncoloured because neither side has a
+    logger, so the glyphs are part of the comparison: `→` for a step and `✓` for information, both on stderr, both uncoloured because neither side has a
     tty."""
     _root, old, new = run_both(tmp_path)
     _agree(old, new, "narration")
@@ -390,11 +377,9 @@ def test_the_five_step_narration_is_byte_identical_on_stderr(tmp_path) -> None:
 
 def test_the_presigned_url_is_redacted_from_both_streams(tmp_path) -> None:
     """The export's log holds a pre-signed R2 URL valid for one hour, and it
-    arrives on BOTH of wrangler's streams because the twin merges them into one
-    file. Neither line may reach the job log.
+    arrives on BOTH of wrangler's streams because the twin merges them into one file. Neither line may reach the job log.
 
-    THE CONTROL IS IN THE SAME TEST: the fake's third line, which is neither the
-    URL nor the validity notice, MUST survive. A redaction that ate everything
+    THE CONTROL IS IN THE SAME TEST: the fake's third line, which is neither the URL nor the validity notice, MUST survive. A redaction that ate everything
     would satisfy the first half alone."""
     _root, old, new = run_both(tmp_path)
     _agree(old, new, "redaction")
@@ -487,8 +472,7 @@ def test_a_missing_credential_refuses_before_anything_runs(tmp_path) -> None:
 
 def test_the_wrangler_config_flag_is_word_split_into_two_arguments(tmp_path) -> None:
     """The two `# shellcheck disable=SC2086` lines exist for this: an EMPTY
-    value must contribute no argument at all, and a set one must arrive as two.
-    Both directions are checked, because a port that always passed `--config`
+    value must contribute no argument at all, and a set one must arrive as two. Both directions are checked, because a port that always passed `--config`
     with an empty value would satisfy the second alone."""
     _root, old, new = run_both(
         tmp_path,
@@ -531,8 +515,7 @@ def test_three_failures_exhaust_the_retries_and_exit_with_wranglers_status(
     tmp_path,
 ) -> None:
     """A database that genuinely cannot be exported still fails, three times
-    over, with the attempt count and wrangler's own output in the message. And
-    the REDACTION STILL APPLIES on the failure path, which is the case the
+    over, with the attempt count and wrangler's own output in the message. And the REDACTION STILL APPLIES on the failure path, which is the case the
     twin's header says the old `| grep -v` form killed silently."""
     _root, old, new = run_both(tmp_path, FAKE_EXPORT_FAIL_UNTIL="3")
     _agree(old, new, "retry-exhausted")
@@ -586,8 +569,7 @@ def test_defect_a_the_sanitize_path_cannot_work_because_its_sql_file_is_gone(
     tmp_path,
 ) -> None:
     """`sanitize-d1.sql` was deleted on 2026-04-06 (commit 57b61098c) and the
-    only caller that passes `--sanitize` is `edge-clone-d1.yml`. The run dies
-    where the file is opened: AFTER the export, BEFORE the import, so it fails
+    only caller that passes `--sanitize` is `edge-clone-d1.yml`. The run dies where the file is opened: AFTER the export, BEFORE the import, so it fails
     closed and no unsanitised data reaches the target."""
     assert port.THE_SANITIZE_PATH_CANNOT_WORK
     assert not (ROOT / ".ci" / "scripts" / "deploy" / "sanitize-d1.sql").exists(), (
@@ -826,8 +808,7 @@ def test_the_bash_diagnostic_normaliser_keeps_the_path_and_the_reason() -> None:
 
 def test_the_port_declares_the_environment_it_reads() -> None:
     """`CLOUDFLARE_API_TOKEN` is reached through `common.require_var`, which
-    reads `os.environ` inside `rediacc_ci.core.common` where the env-registry
-    scanner already sees it. This module therefore owes no registry entry of its
+    reads `os.environ` inside `rediacc_ci.core.common` where the env-registry scanner already sees it. This module therefore owes no registry entry of its
     own, and this assertion is what will notice the day it does."""
     body = PORT_FILE.read_text(encoding="utf-8").split('"""', 2)[2]
     assert "os.environ" not in body

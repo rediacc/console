@@ -1,32 +1,15 @@
 """`rediacc_ci.core.bws_env` against the live `.ci/lib/bws-env.sh`.
 
-NO REAL STORE IS EVER TOUCHED. `bws` is faked on PATH, exactly as
-`.ci/scripts/test/gates/test-bws-env.sh` fakes it and for the same reason its
-header gives: the fake is the point, not a limitation, because an empty stored
-value and a missing name cannot be produced on demand against a live store. The
-fake also REFUSES if the caller omits `--color no`, so a port that dropped the
-flag fails here rather than in production against a bws that wraps its JSON in
-truecolor escapes.
+NO REAL STORE IS EVER TOUCHED. `bws` is faked on PATH, exactly as `.ci/scripts/test/gates/test-bws-env.sh` fakes it and for the same reason its header gives: the fake is the point, not a limitation, because an empty stored value and a missing name cannot be produced on demand against a live store. The fake also REFUSES if the caller omits `--color no`, so a port that dropped the
+flag fails here rather than in production against a bws that wraps its JSON in truecolor escapes.
 
-THE PATH IS SCRUBBED ON BOTH SIDES, AND THAT IS NOT DECORATION. A real `bws`
-exists on this machine at `~/.local/bin/bws`. The first run of this differential
-compared a bash side that found the REAL binary through `command -v` against a
-Python side pinned to a fake path, and reported a stderr difference that looked
-like a port defect. It was an asymmetric harness. Every case below builds the
-environment ONCE and hands the identical mapping to both sides.
+THE PATH IS SCRUBBED ON BOTH SIDES, AND THAT IS NOT DECORATION. A real `bws` exists on this machine at `~/.local/bin/bws`. The first run of this differential compared a bash side that found the REAL binary through `command -v` against a Python side pinned to a fake path, and reported a stderr difference that looked like a port defect. It was an asymmetric harness. Every case below
+builds the environment ONCE and hands the identical mapping to both sides.
 
-VALUES ARE NEVER COMPARED, NAMES ARE. Both drivers print the sorted NAMES that
-ended up resolved, which is the same assertion `test-bws-env.sh:72` makes from
-the other side ("NEVER prints a value"). A differential that compared values
-would have to put them on a stream to compare them, and this repository is
-public.
+VALUES ARE NEVER COMPARED, NAMES ARE. Both drivers print the sorted NAMES that ended up resolved, which is the same assertion `test-bws-env.sh:72` makes from the other side ("NEVER prints a value"). A differential that compared values would have to put them on a stream to compare them, and this repository is public.
 
-THE ONE DELIBERATE DIVERGENCE IS PINNED, NOT PAPERED OVER. See
-`test_unparseable_listing_is_the_one_deliberate_divergence`: the twin leaks a
-Python traceback per name and then MISATTRIBUTES the failure to the store. The
-port refuses once and names the tool. Both behaviours are asserted, so a future
-reader cannot mistake the divergence for drift, and the ledger deliberately does
-not carry that case.
+THE ONE DELIBERATE DIVERGENCE IS PINNED, NOT PAPERED OVER. See `test_unparseable_listing_is_the_one_deliberate_divergence`: the twin leaks a Python traceback per name and then MISATTRIBUTES the failure to the store. The port refuses once and names the tool. Both behaviours are asserted, so a future reader cannot mistake the divergence for drift, and the ledger deliberately does not
+carry that case.
 """
 
 import json
@@ -96,8 +79,7 @@ def fixture(root, listing: str, *, with_bws: bool = True, bws_body: str | None =
 def env_for(root, with_token: bool = True) -> dict:
     """ONE mapping, handed to BOTH sides. See the header.
 
-    PATH puts the fixture's bin FIRST and then only the system directories, so
-    the real `bws` on this machine is unreachable from either implementation.
+    PATH puts the fixture's bin FIRST and then only the system directories, so the real `bws` on this machine is unreachable from either implementation.
     """
     overrides = {
         "PATH": "%s:/usr/local/bin:/usr/bin:/bin" % (root / "bin"),
@@ -198,22 +180,15 @@ def test_the_fake_bws_refuses_without_color_no(tmp_path) -> None:
 def test_unparseable_listing_is_the_one_deliberate_divergence(tmp_path) -> None:
     """A DEFECT IN THE TWIN, reproduced here and NOT reproduced in the port.
 
-    `bws` exiting 0 with output that is not JSON is exactly what `--color no`
-    exists to prevent, so it is the live failure mode if bws ever changes its
-    escaping again. The twin's per-name `python3 -c` then dies, its command
-    substitution fails, and the name is filed as `absent or empty in the store`:
+    `bws` exiting 0 with output that is not JSON is exactly what `--color no` exists to prevent, so it is the live failure mode if bws ever changes its escaping again. The twin's per-name `python3 -c` then dies, its command substitution fails, and the name is filed as `absent or empty in the store`:
 
       * 36 lines of Python TRACEBACK on stderr, two full copies, one per name
       * `bws-env: 2 name(s) absent or empty in the store: ALPHA_TOKEN BETA_TOKEN`
       * `bws-env: exported 0 secret(s)`
 
-    All of which sends the reader to Bitwarden to look for two secrets that are
-    sitting there perfectly. The port refuses ONCE with the twin's own
-    `bws secret list failed` wording, which names the tool.
+    All of which sends the reader to Bitwarden to look for two secrets that are sitting there perfectly. The port refuses ONCE with the twin's own `bws secret list failed` wording, which names the tool.
 
-    BOTH SIDES ARE ASSERTED so this is a pinned decision and not drift, and the
-    shadow ledger deliberately omits this case: a ledger row is a claim of
-    EQUIVALENCE and there is none to claim here.
+    BOTH SIDES ARE ASSERTED so this is a pinned decision and not drift, and the shadow ledger deliberately omits this case: a ledger row is a claim of EQUIVALENCE and there is none to claim here.
     """
     root = fixture(tmp_path / "garbage", "not json at all")
     old, new = run_both([], env_for(root))
@@ -268,10 +243,7 @@ def test_mapped_names_are_sorted(tmp_path) -> None:
 def test_the_module_exposes_no_verb_that_prints_a_value() -> None:
     """The rule at `.ci/lib/bws-env.sh:16-18`, enforced against the port's OWN API.
 
-    An `export` verb is the obvious next feature and it is the one thing this
-    module must not grow without an owner saying so. The check is on the USAGE
-    text and the verb table rather than on a grep of the source, because that is
-    what a caller can actually reach.
+    An `export` verb is the obvious next feature and it is the one thing this module must not grow without an owner saying so. The check is on the USAGE text and the verb table rather than on a grep of the source, because that is what a caller can actually reach.
     """
     assert "export" not in bws_env.USAGE.split("There is deliberately")[0]
     assert bws_env.main(["export"]) == 2

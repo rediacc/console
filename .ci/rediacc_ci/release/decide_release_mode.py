@@ -1,10 +1,6 @@
 """Port of `.ci/scripts/release/decide-release-mode.sh`.
 
-Decides which of three mutually exclusive release modes `cd-v2.yml` runs in
-(`workers_only`, `retry`, `patch`) and emits the step outputs the rest of that
-workflow gates on. Pure computation, same shape as
-`rediacc_ci.deploy.resolve_account_deploy_config`: no network, no subprocess,
-one file write to `$GITHUB_OUTPUT` plus `::notice::` lines to stdout.
+Decides which of three mutually exclusive release modes `cd-v2.yml` runs in (`workers_only`, `retry`, `patch`) and emits the step outputs the rest of that workflow gates on. Pure computation, same shape as `rediacc_ci.deploy.resolve_account_deploy_config`: no network, no subprocess, one file write to `$GITHUB_OUTPUT` plus `::notice::` lines to stdout.
 
 REWORDED, NOT BYTE-IDENTICAL, same reasoning as the deploy sibling: the bash
 twin's `${VAR:?msg}` diagnostic carries a bash line number that is not worth

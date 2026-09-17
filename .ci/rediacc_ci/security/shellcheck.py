@@ -5,15 +5,10 @@ W7P6 wave 28. The bash twin stays the LIVE registered gate
 (`check:ci-shell-lint`, step "Shell lint"); this module is its
 VERIFIED-EQUIVALENT ALTERNATIVE, proved on both streams by
 `.ci/rediacc_ci/tests/test_security_shellcheck.py` and by the K=5 shadow ledger
-`.ci/shadow/w7p6-shellcheck.observations.jsonl`. Nothing is repointed at this
-file. Cutover is a separate, later, driver-only step.
+`.ci/shadow/w7p6-shellcheck.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
-WHAT IT DOES. Acquires shellcheck AT THE PIN through `rediacc_ci.core.toolchain`,
-enumerates EVERY tracked and untracked `*.sh` from git (not from a list of
-roots), drops the ones deleted in the working tree, refuses an empty list, runs
-`shellcheck -e SC1090 -e SC1091 -e SC2034 -S warning` over them in batches of
-40, and then greps `.ci/scripts/build` for four bash-4-only constructs that
-would break the macOS runners (bash 3.2, GPLv3).
+WHAT IT DOES. Acquires shellcheck AT THE PIN through `rediacc_ci.core.toolchain`, enumerates EVERY tracked and untracked `*.sh` from git (not from a list of roots), drops the ones deleted in the working tree, refuses an empty list, runs `shellcheck -e SC1090 -e SC1091 -e SC2034 -S warning` over them in batches of 40, and then greps `.ci/scripts/build` for four bash-4-only
+constructs that would break the macOS runners (bash 3.2, GPLv3).
 
 REAL RUNS OR STUBS: BOTH.
 
@@ -84,34 +79,25 @@ TWO DEFECTS IN THE TWIN, REPRODUCED NOT REPAIRED, AND ONE NAMED DIVERGENCE.
      asserts they disagree, so the day such a path appears the difference is
      already written down.
 
-THE ONE NAMED ORDERING DIVERGENCE, and it is confined to the bash-4 block. The
-main file list comes from `git ls-files` through `sort -u`, which is fully
-deterministic, so the 620-file invocation is byte-identical. The four
-`grep -rn ... .ci/scripts/build` probes are NOT: `grep -r`'s traversal order is
-unspecified, and this host does not even have GNU grep --
+THE ONE NAMED ORDERING DIVERGENCE, and it is confined to the bash-4 block. The main file list comes from `git ls-files` through `sort -u`, which is fully deterministic, so the 620-file invocation is byte-identical. The four `grep -rn ... .ci/scripts/build` probes are NOT: `grep -r`'s traversal order is unspecified, and this host does not even have GNU grep --
 
     $ grep --version | head -1
     ugrep 7.8.4 ...
     $ find --version | head -1
     bfs 4.1.1
 
--- so this port walks `.ci/scripts/build` in BYTE order and says so. The block
-produces no output at all on the real tree (checked 2026-09-14: zero matches for
-all four patterns), and every fixture case that exercises it uses a single file,
-so the divergence is named rather than papered over.
+-- so this port walks `.ci/scripts/build` in BYTE order and says so. The block produces no output at all on the real tree (checked 2026-09-14: zero matches for all four patterns), and every fixture case that exercises it uses a single file, so the divergence is named rather than papered over.
 
 `require_cmd` / `require_var` ARE NOT CALLED HERE, so the multi-argument
 `require_cmd` defect (`common.sh:141-148` binds `local cmd="$1"` and ignores the
-rest) does not apply. Checked, and recorded so the next reader does not repeat
-the check.
+rest) does not apply. Checked, and recorded so the next reader does not repeat the check.
 
 WHY NOT `rediacc_ci.log`: identical to the reason in `shfmt.py`. This twin does
 not source `common.sh`; it defines its own `error: `/`info: `/`success: ` logger
 whose colour rule is `CI != true` with no tty test and whose `info`/`success`
 land on STDOUT.
 
-ONE MORE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours
-`$REDIACC_CI_ROOT` and the twin's `SCRIPT_DIR/../../..` does not.
+ONE MORE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin's `SCRIPT_DIR/../../..` does not.
 """
 
 from __future__ import annotations
@@ -150,9 +136,7 @@ NC = "\033[0m"
 def colours() -> tuple[str, str, str]:
     """`if [[ "${CI:-}" == "true" ]]` (:28-32). NO tty test, deliberately.
 
-    Read straight from `os.environ` at the call site rather than through a
-    captured `env` dict: an alias is how a gate ends up reading a snapshot taken
-    before the value it cares about was set.
+    Read straight from `os.environ` at the call site rather than through a captured `env` dict: an alias is how a gate ends up reading a snapshot taken before the value it cares about was set.
     """
     if os.environ.get("CI", "") == "true":
         return "", "", ""
@@ -195,16 +179,10 @@ _ECHO_E_SIMPLE = {
 def echo_e(text: str) -> str:
     """What `echo -e "$text"` WRITES, trailing newline included. Defect 1.
 
-    Present as a real unescaper rather than as a `"\\n".join(...)` shortcut
-    because the mangling is the POINT: the twin's report is assembled with
-    literal backslash-n separators and then unfolded together with whatever
-    backslashes the matched SOURCE LINES happened to contain. Only a real
-    unescaper reproduces that, and only reproducing it keeps the differential
-    honest about a defect this port is not allowed to fix.
+    Present as a real unescaper rather than as a `"\\n".join(...)` shortcut because the mangling is the POINT: the twin's report is assembled with literal backslash-n separators and then unfolded together with whatever backslashes the matched SOURCE LINES happened to contain. Only a real unescaper reproduces that, and only reproducing it keeps the differential honest about a defect
+    this port is not allowed to fix.
 
-    `\\c` STOPS OUTPUT DEAD, dropping everything after it AND the trailing
-    newline. That is bash's behaviour and the worst of the set: a single `\\c`
-    anywhere in a matched source line silently deletes every finding below it.
+    `\\c` STOPS OUTPUT DEAD, dropping everything after it AND the trailing newline. That is bash's behaviour and the worst of the set: a single `\\c` anywhere in a matched source line silently deletes every finding below it.
     """
     out: list[str] = []
     i = 0
@@ -247,20 +225,12 @@ def echo_e(text: str) -> str:
 def shell_files() -> list[str]:
     """`git ls-files '*.sh'` plus the untracked ones, `awk NF | sort -u`.
 
-    THE UNTRACKED HALF IS NOT DECORATION. `git ls-files` alone made this gate
-    blind to any `.sh` a session had written but not yet committed, which is
-    exactly when it is most useful: three new gate tests were invisible here
-    until commit. `--others --exclude-standard` adds them while still honouring
-    .gitignore, so node_modules and build output stay out.
+    THE UNTRACKED HALF IS NOT DECORATION. `git ls-files` alone made this gate blind to any `.sh` a session had written but not yet committed, which is exactly when it is most useful: three new gate tests were invisible here until commit. `--others --exclude-standard` adds them while still honouring .gitignore, so node_modules and build output stay out.
 
     `gitx.ls_files(untracked=True)` issues ONE `git ls-files -z --cached --others
-    --exclude-standard` and returns the union sorted and deduplicated, which is
-    the same set the twin's two invocations plus `sort -u` produce. TWO
-    DIFFERENCES, both named: `-z` means a non-ASCII path arrives raw here and
-    OCTAL-QUOTED in the twin (`core.quotePath`), and Python sorts by code point
+    --exclude-standard` and returns the union sorted and deduplicated, which is the same set the twin's two invocations plus `sort -u` produce. TWO DIFFERENCES, both named: `-z` means a non-ASCII path arrives raw here and OCTAL-QUOTED in the twin (`core.quotePath`), and Python sorts by code point
     where `sort -u` under `LC_ALL=C` sorts by byte. Every one of this tree's 620
-    paths is ASCII, so the two agree today and would not agree over a path that
-    is not.
+    paths is ASCII, so the two agree today and would not agree over a path that is not.
     """
     return gitx.ls_files("*.sh", untracked=True)
 
@@ -268,9 +238,7 @@ def shell_files() -> list[str]:
 def missing_files(files: list[str]) -> list[str]:
     """The ones `[ -e "$f" ]` says are gone. Order PRESERVED from `files`.
 
-    A tracked file deleted in the working tree (`rm` without `git rm`) stays in
-    `git ls-files` and makes shellcheck die on
-    "openBinaryFile: does not exist", which reads as a lint finding. `-e`
+    A tracked file deleted in the working tree (`rm` without `git rm`) stays in `git ls-files` and makes shellcheck die on "openBinaryFile: does not exist", which reads as a lint finding. `-e`
     FOLLOWS SYMLINKS, so a dangling symlink counts as missing here too;
     `os.path.exists` answers the same way.
     """
@@ -288,11 +256,7 @@ def batches(files: list[str], size: int = BATCH) -> list[list[str]]:
 def build_scripts() -> list[str]:
     """`--include="*.sh"` under `.ci/scripts/build`, recursive, in BYTE order.
 
-    RELATIVE to the current directory, because `main` has already reproduced the
-    twin's `cd "$ROOT_DIR"` and the twin's `grep -rn ... .ci/scripts/build` names
-    the directory relatively. The relative spelling reaches the report: every
-    finding line is `<path>:<lineno>:<line>`, and an absolute `<path>` there
-    would be a different report.
+    RELATIVE to the current directory, because `main` has already reproduced the twin's `cd "$ROOT_DIR"` and the twin's `grep -rn ... .ci/scripts/build` names the directory relatively. The relative spelling reaches the report: every finding line is `<path>:<lineno>:<line>`, and an absolute `<path>` there would be a different report.
 
     Byte order rather than the ambient `grep -r`'s traversal order; see the
     module docstring for why that is a decision and not an accident.
@@ -320,8 +284,7 @@ def build_scripts() -> list[str]:
 def grep_lines(files: list[str], matcher) -> str:
     """`grep -rn <pattern>` output: `path:lineno:line`, newline-joined, no tail.
 
-    Empty when nothing matches, which is what the twin's `|| true` leaves in
-    `$MATCHES` and what its `[[ -n "$MATCHES" ]]` tests.
+    Empty when nothing matches, which is what the twin's `|| true` leaves in `$MATCHES` and what its `[[ -n "$MATCHES" ]]` tests.
     """
     hits: list[str] = []
     for path in files:
@@ -346,8 +309,7 @@ _PIPE_AMP = re.compile(r"[^#]*\|&")
 def bash4_issues() -> str:
     """`$BASH4_ISSUES`, with the twin's LITERAL `\\n` separators still in it.
 
-    Returned unexpanded on purpose: `main` hands it to `echo_e`, exactly as the
-    twin hands it to `echo -e`, and the expansion is where defect 1 happens.
+    Returned unexpanded on purpose: `main` hands it to `echo_e`, exactly as the twin hands it to `echo -e`, and the expansion is where defect 1 happens.
     """
     files = build_scripts()
     out = ""

@@ -1,12 +1,8 @@
 """Differential: `rediacc_ci.security.ci_workflow_invariants` against its twin
 `.ci/scripts/security/check-ci-workflow-invariants.sh`.
 
-THE COMPARISON IS BYTE FOR BYTE ON BOTH STREAMS, with exactly one exemption
-(the traceback case, which names a different file on each side and says so in
-its own docstring). That standard is affordable because 103 of the twin's 224
-lines were ALREADY Python inside a `python3 - <<'PY'` heredoc (`:66-168`), so anything short
-of byte equality would be a transcription error rather than a legitimate
-rewrite.
+THE COMPARISON IS BYTE FOR BYTE ON BOTH STREAMS, with exactly one exemption (the traceback case, which names a different file on each side and says so in its own docstring). That standard is affordable because 103 of the twin's 224 lines were ALREADY Python inside a `python3 - <<'PY'` heredoc (`:66-168`), so anything short of byte equality would be a transcription error rather than
+a legitimate rewrite.
 
 NO FAKES, AND THAT IS A MEASURED CLAIM RATHER THAN AN ASSUMPTION. The twin
 shells out to exactly one binary, `python3`, and only to run the heredoc; there
@@ -16,13 +12,9 @@ is no `yq`, no `jq`, no `gh`, no network.
         .ci/scripts/security/check-ci-workflow-invariants.sh
     (no output)
 
-So every case here drives both sides over a FIXTURE workflow through
-`$WORKFLOW_FILE`, the seam the twin already exposes for its own gate test, and
-one case drives both over the real `.github/workflows/ci.yml`.
+So every case here drives both sides over a FIXTURE workflow through `$WORKFLOW_FILE`, the seam the twin already exposes for its own gate test, and one case drives both over the real `.github/workflows/ci.yml`.
 
-WHY A BASELINE-GREEN FIXTURE EXISTS. Without it a case asserting exit 1 proves
-nothing, because the fixture might have been red for a reason the case did not
-plant. `test_the_baseline_fixture_is_green` is the control every other fixture
+WHY A BASELINE-GREEN FIXTURE EXISTS. Without it a case asserting exit 1 proves nothing, because the fixture might have been red for a reason the case did not plant. `test_the_baseline_fixture_is_green` is the control every other fixture
 case leans on.
 
 K=5 LEDGER: `.ci/shadow/w7p6-check-ci-workflow-invariants.observations.jsonl`.
@@ -149,10 +141,7 @@ def write(tmp_path: pathlib.Path, body: str, name: str = "wf.yml") -> pathlib.Pa
 def _env(**extra: str) -> dict[str, str]:
     """REPLACES the caller's environment; see `differential.BASE_ENV`.
 
-    `PYTHONPATH` is set for BOTH sides even though only the port needs it, so
-    the two children differ in nothing except which program they run.
-    `REDIACC_CI_ROOT` is deliberately absent: it is the one seam the port has
-    and the twin does not.
+    `PYTHONPATH` is set for BOTH sides even though only the port needs it, so the two children differ in nothing except which program they run. `REDIACC_CI_ROOT` is deliberately absent: it is the one seam the port has and the twin does not.
     """
     env = differential.env_for(
         PYTHONPATH=str(ROOT / ".ci"),
@@ -188,11 +177,7 @@ def assert_same(old: tuple, new: tuple) -> None:
 def _path_without_python(tmp_path: pathlib.Path) -> pathlib.Path:
     """A scratch bin holding every tool on PATH EXCEPT any python interpreter.
 
-    Built by mirroring rather than by naming the handful of tools the twin
-    needs, because that list is not stable: the first version of this case
-    symlinked only `dirname` and the twin then died on `uname`, which
-    `common.sh:64` calls at SOURCE time. A mirror cannot go stale that way, and
-    the thing under test -- "python3 is not resolvable" -- is stated once.
+    Built by mirroring rather than by naming the handful of tools the twin needs, because that list is not stable: the first version of this case symlinked only `dirname` and the twin then died on `uname`, which `common.sh:64` calls at SOURCE time. A mirror cannot go stale that way, and the thing under test -- "python3 is not resolvable" -- is stated once.
     """
     bindir = tmp_path / "nopython-bin"
     bindir.mkdir()
@@ -227,10 +212,7 @@ def assert_red(old: tuple, token: str) -> None:
 def test_the_real_repository_agrees() -> None:
     """The clean-tree case, over the real `.github/workflows/ci.yml`.
 
-    Kept alongside the fixtures because the real file is the only input where
-    the `stagers`, `initialize`, `validate-install`, `validate-promote` and
-    `finalize-release-sentinel` jobs all exist at once with their real `if:`
-    text, and because a fixture cannot notice a rename landing in ci.yml.
+    Kept alongside the fixtures because the real file is the only input where the `stagers`, `initialize`, `validate-install`, `validate-promote` and `finalize-release-sentinel` jobs all exist at once with their real `if:` text, and because a fixture cannot notice a rename landing in ci.yml.
     """
     results = []
     for argv in (["bash", str(TWIN)], ["python3", str(PORT)]):
@@ -254,9 +236,7 @@ def test_the_real_repository_agrees() -> None:
 def test_an_unset_workflow_file_falls_back_to_the_real_default() -> None:
     """`${WORKFLOW_FILE:-...}`, exercised with the variable EXPORTED EMPTY.
 
-    An empty value must fall back, not resolve to `<root>` -- which is what
-    `os.environ.get(name, default)` would have done, and is the trap this case
-    exists to hold shut.
+    An empty value must fall back, not resolve to `<root>` -- which is what `os.environ.get(name, default)` would have done, and is the trap this case exists to hold shut.
     """
     results = []
     for argv in (["bash", str(TWIN)], ["python3", str(PORT)]):
@@ -295,8 +275,7 @@ def test_a_channel_docker_tag_job_without_the_guard(tmp_path: pathlib.Path) -> N
 def test_a_double_quoted_guard_is_accepted(tmp_path: pathlib.Path) -> None:
     """`cond.replace('"', "'")`: the same condition written with double quotes.
 
-    The POSITIVE control's twin. Without it the acceptance branch is never
-    exercised and a port that accepted nothing would still pass every red case.
+    The POSITIVE control's twin. Without it the acceptance branch is never exercised and a port that accepted nothing would still pass every red case.
     """
     body = BASELINE.replace(
         "if: needs.initialize.outputs.channel != ''",
@@ -411,9 +390,7 @@ def test_the_sentinel_deciding_a_second_time(tmp_path: pathlib.Path) -> None:
 def test_an_unparseable_workflow_is_never_green(tmp_path: pathlib.Path) -> None:
     """A SETUP exit 2 from the heredoc, which bash then reports as exit 1.
 
-    Both the `SETUP: ... does not parse as YAML: ...` line (from PyYAML, so the
-    two sides quote the same message) and the `(exit 2)` in the INVARIANT-FAIL
-    line have to match, which is what pins the twin's 2-becomes-1 translation.
+    Both the `SETUP: ... does not parse as YAML: ...` line (from PyYAML, so the two sides quote the same message) and the `(exit 2)` in the INVARIANT-FAIL line have to match, which is what pins the twin's 2-becomes-1 translation.
     """
     old, new = run_both(write(tmp_path, "jobs:\n  a: [unclosed\n"))
     assert_red(old, "analysis of")
@@ -427,10 +404,7 @@ def test_a_scalar_document_crashes_the_analysis_on_both_sides(tmp_path: pathlib.
 
     `(doc or {}).get("jobs")` on a string raises AttributeError. The twin's
     heredoc prints a traceback naming `<stdin>` and exits 1; the port prints one
-    naming its own file. Exit code and stdout are still compared byte for byte,
-    and the stderr is compared with the traceback elided -- so the
-    INVARIANT-FAIL line, its `(exit 1)` and their ORDER relative to the
-    traceback are all still asserted.
+    naming its own file. Exit code and stdout are still compared byte for byte, and the stderr is compared with the traceback elided -- so the INVARIANT-FAIL line, its `(exit 1)` and their ORDER relative to the traceback are all still asserted.
     """
     old, new = run_both(write(tmp_path, "just a string\n"))
     assert_red(old, "analysis of")
@@ -448,11 +422,7 @@ def test_a_scalar_document_crashes_the_analysis_on_both_sides(tmp_path: pathlib.
 def test_missing_python3_is_a_setup_error(tmp_path: pathlib.Path) -> None:
     """Exit 2, the only exit-2 path either side has.
 
-    Driven with a PATH holding `dirname` and nothing else -- `dirname` because
-    the twin resolves its own directory with it before it reaches the probe, and
-    nothing else because the probe is `command -v python3`. Both children are
-    started by absolute path so removing python3 from PATH does not remove the
-    ability to RUN the port.
+    Driven with a PATH holding `dirname` and nothing else -- `dirname` because the twin resolves its own directory with it before it reaches the probe, and nothing else because the probe is `command -v python3`. Both children are started by absolute path so removing python3 from PATH does not remove the ability to RUN the port.
     """
     bindir = _path_without_python(tmp_path)
     workflow = write(tmp_path, BASELINE)
@@ -473,8 +443,7 @@ def test_missing_python3_is_a_setup_error(tmp_path: pathlib.Path) -> None:
 def test_colour_is_emitted_when_stderr_is_a_terminal(tmp_path: pathlib.Path) -> None:
     """`[[ -t 2 ]] && [[ -z "${NO_COLOR:-}" ]]` in common.sh:18, the branch a human sees.
 
-    Off a tty both sides print plain text, so every other case in this file
-    proves only the uncoloured half. `CI` is left UNSET: `rediacc_ci.log` also
+    Off a tty both sides print plain text, so every other case in this file proves only the uncoloured half. `CI` is left UNSET: `rediacc_ci.log` also
     disables colour on `CI=true` and common.sh does not, which is `log.py`'s
     documented deliberate divergence and is not this gate's subject.
     """
@@ -493,11 +462,7 @@ def test_colour_is_emitted_when_stderr_is_a_terminal(tmp_path: pathlib.Path) -> 
 def test_the_literal_document_matches_the_baseline_yaml(tmp_path: pathlib.Path) -> None:
     """CONFORMANT and BASELINE are two spellings of one document; prove it.
 
-    Parsed by the SYSTEM python3 in a subprocess, because that is the
-    interpreter that has PyYAML and is also the one both implementations run
-    under. Without this the literal is a second source of truth that drifts the
-    first time BASELINE is edited, and every helper test above it would keep
-    passing while asserting things about a document nothing else uses.
+    Parsed by the SYSTEM python3 in a subprocess, because that is the interpreter that has PyYAML and is also the one both implementations run under. Without this the literal is a second source of truth that drifts the first time BASELINE is edited, and every helper test above it would keep passing while asserting things about a document nothing else uses.
     """
     program = (
         "import io,json,sys,yaml;"
@@ -517,11 +482,7 @@ def test_the_literal_document_matches_the_baseline_yaml(tmp_path: pathlib.Path) 
 def test_analyse_reports_nothing_for_a_conformant_document() -> None:
     """The NEGATIVE direction: a gate with only positive controls flags everything.
 
-    The document is a LITERAL dict rather than `yaml.safe_load(BASELINE)`,
-    because PyYAML is importable by the system `python3` that runs both
-    implementations and is NOT importable by the uv-managed interpreter that
-    runs pytest. A test that imported it would be a test that skipped, and a
-    skipped test reads exactly like a passing one in the summary.
+    The document is a LITERAL dict rather than `yaml.safe_load(BASELINE)`, because PyYAML is importable by the system `python3` that runs both implementations and is NOT importable by the uv-managed interpreter that runs pytest. A test that imported it would be a test that skipped, and a skipped test reads exactly like a passing one in the summary.
     """
     assert ci_workflow_invariants.analyse(CONFORMANT) == []
 
@@ -529,8 +490,7 @@ def test_analyse_reports_nothing_for_a_conformant_document() -> None:
 def test_analyse_names_every_kind_it_can_emit() -> None:
     """`KINDS` must stay the real vocabulary, or the constant is decoration.
 
-    Derived from the module's own translation table rather than restated, so a
-    kind added to `analyse` with no `message_for` arm is caught here.
+    Derived from the module's own translation table rather than restated, so a kind added to `analyse` with no `message_for` arm is caught here.
     """
     for kind in ci_workflow_invariants.KINDS:
         assert ci_workflow_invariants.message_for(kind, "j", "/w.yml") is not None, (
@@ -553,9 +513,7 @@ def test_analyse_fires_on_a_missing_guard() -> None:
 def test_analyse_orders_its_findings_the_way_the_twin_prints_them() -> None:
     """Order is observable: the twin logs one line per finding, in stream order.
 
-    `ungated` precedes `no-candidates` precedes the skip-release family, which
-    is the heredoc's own print order, and a port that collected findings into a
-    set or sorted them would still satisfy every membership assertion above.
+    `ungated` precedes `no-candidates` precedes the skip-release family, which is the heredoc's own print order, and a port that collected findings into a set or sorted them would still satisfy every membership assertion above.
     """
     doc = json.loads(json.dumps(CONFORMANT))
     del doc["jobs"]["channel-consumer"]["if"]

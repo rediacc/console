@@ -1,14 +1,9 @@
 """Port of `.ci/scripts/test/proxies/proxy-linux-packages.sh`.
 
-Local proxy for the CI job "Tests + Infra / Linux Packages", wired as the
-registered gate `check:ci-proxy-linux-packages` (`package.json:385`,
-`scripts/ci-runner/manifest.ts`). See the twin's header for why `--dry-run` is
-the right reduction: phases 1 and 4 still do the REAL work (nfpm really builds
-all four package formats, build-pkg-repo.sh really generates APT/RPM/APK/Arch
+Local proxy for the CI job "Tests + Infra / Linux Packages", wired as the registered gate `check:ci-proxy-linux-packages` (`package.json:385`, `scripts/ci-runner/manifest.ts`). See the twin's header for why `--dry-run` is the right reduction: phases 1 and 4 still do the REAL work (nfpm really builds all four package formats, build-pkg-repo.sh really generates APT/RPM/APK/Arch
 metadata) and only the container-install and full-APT-flow phases become stubs.
 
-The SUBJECT stays bash and is run as bash, exactly as the twin runs it. Only the
-proxy is ported, same division as `rediacc_ci.proxies.docker_prepull`.
+The SUBJECT stays bash and is run as bash, exactly as the twin runs it. Only the proxy is ported, same division as `rediacc_ci.proxies.docker_prepull`.
 
 -----------------------------------------------------------------------------
 THE ANTI-VACUITY CHECK USED TO FAIL *OPEN*. FIXED 2026-09-10, IN BOTH TWINS
@@ -18,16 +13,10 @@ THE ANTI-VACUITY CHECK USED TO FAIL *OPEN*. FIXED 2026-09-10, IN BOTH TWINS
     REAL=$((EXPECTED_TESTS - $(printf '%s\\n' "$BOTH" |
             grep -B1 -F -- "$DRY_MARKER" | grep -cE 'TEST: ' || true)))
 
-so the count of "really executed" subtests is EXPECTED minus the number of
-`TEST: ` banners that sit immediately above a `[DRY-RUN] Would` line. Both the
-banner text and the stub text are LITERALS matched out of the subject's
+so the count of "really executed" subtests is EXPECTED minus the number of `TEST: ` banners that sit immediately above a `[DRY-RUN] Would` line. Both the banner text and the stub text are LITERALS matched out of the subject's
 RUNTIME OUTPUT.
 
-THE DEFECT THAT WAS: an absent marker has two causes -- nothing was stubbed,
-or the string was renamed out from under this check -- and the output cannot
-tell them apart. Read from the output alone, a rename (`[DRY-RUN] Would` to
-`[dry-run] skipping`, say) turned the subtraction into `21 - 0`, and this
-REGISTERED gate printed
+THE DEFECT THAT WAS: an absent marker has two causes -- nothing was stubbed, or the string was renamed out from under this check -- and the output cannot tell them apart. Read from the output alone, a rename (`[DRY-RUN] Would` to `[dry-run] skipping`, say) turned the subtraction into `21 - 0`, and this REGISTERED gate printed
 
     PASS: 21 of 21 subtests really executed ...; 0 are dry-run stubs, 0 stub
     lines, 21 TEST banners
@@ -35,34 +24,17 @@ REGISTERED gate printed
 which is the strongest possible claim, made at the exact moment the evidence
 for it disappeared, and it exited 0.
 
-THE FIX, and it is the same corroboration `EXPECTED_TESTS` already had: the
-marker is looked up in the SUBJECT'S SOURCE before the subtraction is trusted
-(`:125-130`, `marker_sites` here). Zero sites in the source is a LOUD refusal
-naming the marker, the file, what was expected and what was found -- never a
-pass -- and the surviving PASS line now prints the corroborated site count
-beside the runtime numbers, so a reader sees the shape rather than a verdict.
-An absent marker WITH sites still present in the source stays a legitimate
-"everything ran for real", which is the direction that must not become a red.
+THE FIX, and it is the same corroboration `EXPECTED_TESTS` already had: the marker is looked up in the SUBJECT'S SOURCE before the subtraction is trusted (`:125-130`, `marker_sites` here). Zero sites in the source is a LOUD refusal naming the marker, the file, what was expected and what was found -- never a pass -- and the surviving PASS line now prints the corroborated site count
+beside the runtime numbers, so a reader sees the shape rather than a verdict. An absent marker WITH sites still present in the source stays a legitimate "everything ran for real", which is the direction that must not become a red.
 
-BLAST RADIUS BEFORE THE FIX: one gate, one line, and only on a rename of a
-string that lives in one file, so ZERO real packages were affected -- measured
-before and after, `grep -cF '[DRY-RUN] Would'
-.ci/scripts/test/test-linux-packages.sh` is 7 both times and the live run
-still reports `10 of 21`. This was robustness against a future rename, not a
-live false green. Pinned in BOTH directions by
-`test_proxies_linux_packages.py::test_a_renamed_dry_run_marker_is_now_a_loud_
-refusal` (must fire) and `::test_a_present_marker_with_no_stub_lines_is_not_a_
-refusal` (must NOT fire).
+BLAST RADIUS BEFORE THE FIX: one gate, one line, and only on a rename of a string that lives in one file, so ZERO real packages were affected -- measured before and after, `grep -cF '[DRY-RUN] Would' .ci/scripts/test/test-linux-packages.sh` is 7 both times and the live run still reports `10 of 21`. This was robustness against a future rename, not a live false green. Pinned in BOTH
+directions by `test_proxies_linux_packages.py::test_a_renamed_dry_run_marker_is_now_a_loud_ refusal` (must fire) and `::test_a_present_marker_with_no_stub_lines_is_not_a_ refusal` (must NOT fire).
 
 -----------------------------------------------------------------------------
 nfpm IS RESOLVED BEFORE THE PREFLIGHT, AND THAT ORDER IS LOAD-BEARING
 -----------------------------------------------------------------------------
-`:46-49` runs `ensure-nfpm.sh` when nfpm is not already on PATH and prepends
-what it printed, so a host with a warm `.ci/cache/bin/nfpm` (this one) reports
-one clear cannot-run instead of dying inside phase 1 with a bare "command not
-found". Both streams of that call are discarded and a failure is swallowed by
-`|| true`, so a broken ensure-nfpm.sh says nothing here and surfaces only as
-the `nfpm is not on PATH` requirement. Reproduced as written.
+`:46-49` runs `ensure-nfpm.sh` when nfpm is not already on PATH and prepends what it printed, so a host with a warm `.ci/cache/bin/nfpm` (this one) reports one clear cannot-run instead of dying inside phase 1 with a bare "command not found". Both streams of that call are discarded and a failure is swallowed by `|| true`, so a broken ensure-nfpm.sh says nothing here and surfaces
+only as the `nfpm is not on PATH` requirement. Reproduced as written.
 
 The prepend mutates `os.environ["PATH"]` rather than a local copy, because the
 bash `export PATH=` is seen by BOTH `command -v nfpm` in the preflight and the
@@ -99,9 +71,7 @@ DRY_STUB = "[DRY-RUN] Would"
 def _proxy_root() -> pathlib.Path:
     """`ROOT_DIR="$PROXY_DIR/../../../.."` (:29-30).
 
-    Resolved from this file's own location, not `paths.repo_root()`, for the
-    reason `rediacc_ci.proxies.ensure_nfpm._proxy_root` states: `repo_root()`
-    honours $REDIACC_CI_ROOT and the twin has no such override.
+    Resolved from this file's own location, not `paths.repo_root()`, for the reason `rediacc_ci.proxies.ensure_nfpm._proxy_root` states: `repo_root()` honours $REDIACC_CI_ROOT and the twin has no such override.
     """
     return pathlib.Path(__file__).resolve().parents[3]
 
@@ -109,8 +79,7 @@ def _proxy_root() -> pathlib.Path:
 def expected_tests(subject_text: str) -> int:
     """`EXPECTED_TESTS=$(grep -cE '^run_test "' "$SUBJECT")` (:60).
 
-    grep -c counts LINES with at least one match, never matches, so a line
-    carrying two call sites counts once. Exported for the selftest.
+    grep -c counts LINES with at least one match, never matches, so a line carrying two call sites counts once. Exported for the selftest.
     """
     return sum(1 for line in subject_text.splitlines() if RUN_TEST_RE.search(line))
 
@@ -118,11 +87,7 @@ def expected_tests(subject_text: str) -> int:
 def marker_sites(subject_text: str) -> int:
     """`MARKER_SITES=$(grep -cF -- "$DRY_MARKER" "$SUBJECT" || true)` (:126).
 
-    The corroboration that makes the subtraction below mean anything: the stub
-    marker must still EXIST in the subject for its absence from the output to
-    read as "nothing was stubbed" rather than "it was renamed". `grep -c`
-    counts LINES, so two call sites on one line count once, which is the
-    twin's answer and therefore this one's. Exported for the selftest.
+    The corroboration that makes the subtraction below mean anything: the stub marker must still EXIST in the subject for its absence from the output to read as "nothing was stubbed" rather than "it was renamed". `grep -c` counts LINES, so two call sites on one line count once, which is the twin's answer and therefore this one's. Exported for the selftest.
     """
     return sum(1 for line in subject_text.split("\n") if DRY_STUB in line)
 
@@ -139,10 +104,7 @@ def results_line(both: str) -> str:
 def count_lines(both: str, needle: str) -> int:
     """`printf '%s\\n' "$BOTH" | grep -c <needle>`.
 
-    `printf '%s\\n'` appends exactly one newline to a value whose own trailing
-    newlines the `$( )` already stripped, so the line set is
-    `both.split("\\n")` -- an EMPTY `both` is therefore ONE empty line, not
-    zero lines. It matches nothing here either way, but the shape is the twin's.
+    `printf '%s\\n'` appends exactly one newline to a value whose own trailing newlines the `$( )` already stripped, so the line set is `both.split("\\n")` -- an EMPTY `both` is therefore ONE empty line, not zero lines. It matches nothing here either way, but the shape is the twin's.
     """
     return sum(1 for line in both.split("\n") if needle in line)
 
@@ -150,11 +112,7 @@ def count_lines(both: str, needle: str) -> int:
 def banners_above_stubs(both: str) -> int:
     """The inner half of `:132`: `grep -B1 -F -- "$DRY_MARKER" | grep -cE 'TEST: '`.
 
-    `-B1` emits each matching line plus at most one preceding line that has not
-    already been emitted, and `--` group separators between non-adjacent runs.
-    The separators carry no `TEST: ` so they cannot change the count, and a line
-    already emitted as a match is never re-emitted as context, so the emitted
-    SET is what matters and is what this computes.
+    `-B1` emits each matching line plus at most one preceding line that has not already been emitted, and `--` group separators between non-adjacent runs. The separators carry no `TEST: ` so they cannot change the count, and a line already emitted as a match is never re-emitted as context, so the emitted SET is what matters and is what this computes.
     """
     lines = both.split("\n")
     emitted: set[int] = set()

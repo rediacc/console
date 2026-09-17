@@ -1,10 +1,6 @@
 """`rediacc_ci.release.check_existing_release` against its bash twin.
 
-TWO EXTERNAL CALLS, TWO DIFFERENT FIXTURE STRATEGIES. `git fetch`/`git tag -l`
-run against a REAL git remote -- a disposable local bare repo this test
-creates and points `origin` at, never GitHub -- so both sides exercise the
-real git binary end to end. `gh release view` is faked on PATH (PREPENDED,
-same reasoning as the `curl` fakes in the manifest siblings: `git` must keep
+TWO EXTERNAL CALLS, TWO DIFFERENT FIXTURE STRATEGIES. `git fetch`/`git tag -l` run against a REAL git remote -- a disposable local bare repo this test creates and points `origin` at, never GitHub -- so both sides exercise the real git binary end to end. `gh release view` is faked on PATH (PREPENDED, same reasoning as the `curl` fakes in the manifest siblings: `git` must keep
 resolving normally).
 """
 

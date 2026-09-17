@@ -1,14 +1,9 @@
 """`rediacc_ci.core.ports` against the bash it replaced, and against its callers.
 
-THE TWIN IS FROZEN IN THIS FILE, and that needs saying out loud because it looks
-like duplication. `.ci/lib/find-port.sh` stopped containing an implementation in
-W7 phase 1 and is DELETED outright as of W7P5-b, so running "the bash original"
-against the port cannot mean sourcing that file any more. `FROZEN_DERIVE_SLOT`
-below is the pre-port body, copied verbatim out of the commit that preceded the
-port, and it is the thing the differential runs. A frozen twin keeps working
+THE TWIN IS FROZEN IN THIS FILE, and that needs saying out loud because it looks like duplication. `.ci/lib/find-port.sh` stopped containing an implementation in W7 phase 1 and is DELETED outright as of W7P5-b, so running "the bash original" against the port cannot mean sourcing that file any more. `FROZEN_DERIVE_SLOT` below is the pre-port body, copied verbatim out of the commit
+that preceded the port, and it is the thing the differential runs. A frozen twin keeps working
 after the shim lands AND after it is deleted, which a live one does not; the
-cost is that it can rot, and the answer to that is that its output is pinned by
-every case here.
+cost is that it can rot, and the answer to that is that its output is pinned by every case here.
 
 WHAT THE CASES ACTUALLY GUARD.
 
@@ -101,8 +96,7 @@ PORTS_MODULE = ["python3", "-m", "rediacc_ci.core.ports"]
 def _ports_cmd(*args: str) -> str:
     """`python3 -m rediacc_ci.core.ports <args>` as a bash command string.
 
-    PYTHONPATH is left to the caller's env (`diff.env_for`), because pointing it
-    at a mutated COPY of the package is the control two cases below depend on.
+    PYTHONPATH is left to the caller's env (`diff.env_for`), because pointing it at a mutated COPY of the package is the control two cases below depend on.
     """
     return " ".join(PORTS_MODULE + [_q(a) for a in args])
 
@@ -139,10 +133,7 @@ def test_derive_slot_matches_the_frozen_bash(key: str, slots: int) -> None:
 def test_derive_slot_is_stable_across_processes() -> None:
     """Five runs, one answer.
 
-    Not a tautology about a pure function: the value has to survive being
-    computed in a FRESH interpreter, because that is how every caller computes
-    it, and Python's `hash()` -- the obvious wrong implementation -- is salted
-    per process and would pass an in-process comparison while failing this.
+    Not a tautology about a pure function: the value has to survive being computed in a FRESH interpreter, because that is how every caller computes it, and Python's `hash()` -- the obvious wrong implementation -- is salted per process and would pass an in-process comparison while failing this.
     """
     samples = {
         diff.bash_streams(
@@ -227,10 +218,7 @@ def test_find_port_block_refuses_a_range_smaller_than_one_block() -> None:
 def test_find_consecutive_free_matches_the_two_stage_bash() -> None:
     """The replaced algorithm and the replacement agree on the awkward case.
 
-    The fixture occupies a port and the one two above it, so the FIRST free port
-    has no run of three after it and the old code's fallback loop is the branch
-    that produces the answer. On the easy case both are trivially right, which
-    is why the easy case is not the one asserted.
+    The fixture occupies a port and the one two above it, so the FIRST free port has no run of three after it and the old code's fallback loop is the branch that produces the answer. On the easy case both are trivially right, which is why the easy case is not the one asserted.
     """
     base = _free_range_base(4)
     socks = []
@@ -264,14 +252,10 @@ def test_find_consecutive_free_matches_the_two_stage_bash() -> None:
 def test_the_module_fails_closed_when_the_package_is_unreachable(tmp_path) -> None:
     """Invoked with no package on the path, this must REFUSE, not fall back.
 
-    A bash fallback would be a second implementation of the value that decides
-    which port a bookmark resolves to, and two implementations drift. There is
-    no bash implementation left anywhere -- `find-port.sh` is deleted -- so the
-    contract is now the interpreter's own: a non-zero exit and an EMPTY stdout,
+    A bash fallback would be a second implementation of the value that decides which port a bookmark resolves to, and two implementations drift. There is no bash implementation left anywhere -- `find-port.sh` is deleted -- so the contract is now the interpreter's own: a non-zero exit and an EMPTY stdout,
     which is what every caller's `port=$(...) || { ... }` reads as failure.
 
-    Empty stdout is the half that matters. A refusal that printed something
-    would be indistinguishable from a plausible wrong number.
+    Empty stdout is the half that matters. A refusal that printed something would be indistinguishable from a plausible wrong number.
     """
     rc, out, err = diff.bash_streams(
         _ports_cmd("derive-slot", "/home/x/console", "100"),
@@ -295,8 +279,7 @@ def test_control_the_same_command_works_against_the_real_package() -> None:
 def _broken_package_root(tmp_path) -> str:
     """A COPY of the package whose slot digest is randomised per call.
 
-    Copied rather than edited in place, twice over: this suite must never write
-    into the tree it is checking, and other sessions share this checkout.
+    Copied rather than edited in place, twice over: this suite must never write into the tree it is checking, and other sessions share this checkout.
     """
     root = tmp_path / "broken-root"
     (root / ".ci").mkdir(parents=True)
@@ -316,8 +299,7 @@ def _broken_package_root(tmp_path) -> str:
 def _devbox_slot(root: str | None) -> tuple[int, str]:
     """(rc, container name) from `source devbox.sh; devbox_container_name`.
 
-    The name ends in the SLOT, so a devbox that stopped reaching the package
-    shows up here as a name that does not move when the package is broken.
+    The name ends in the SLOT, so a devbox that stopped reaching the package shows up here as a name that does not move when the package is broken.
     """
     lib = str(paths.from_root(DEVBOX_LIB))
     env = diff.env_for() if root is None else diff.env_for(REDIACC_CI_ROOT=root)
@@ -328,11 +310,7 @@ def _devbox_slot(root: str | None) -> tuple[int, str]:
 def test_devbox_delegation_is_real_not_a_reimplementation(tmp_path) -> None:
     """Break the PYTHON and `.ci/lib/devbox.sh` must break with it.
 
-    This used to assert that a shim was a shim. `find-port.sh` is gone (W7P5-b),
-    so the same claim now points at the caller that inherited its job, and it is
-    MORE load-bearing there than it was on the shim: deleting a shim is only
-    safe while its callers reach the module for real, and a caller that quietly
-    grew a local copy of the digest is exactly the regression this catches.
+    This used to assert that a shim was a shim. `find-port.sh` is gone (W7P5-b), so the same claim now points at the caller that inherited its job, and it is MORE load-bearing there than it was on the shim: deleting a shim is only safe while its callers reach the module for real, and a caller that quietly grew a local copy of the digest is exactly the regression this catches.
 
     `.ci/rediacc_ci/quality/setup_idempotency.py` check C makes the neighbouring
     assertion against the gate; this one is here so the package's own suite sees
@@ -348,11 +326,7 @@ def test_devbox_delegation_is_real_not_a_reimplementation(tmp_path) -> None:
 def test_control_devbox_is_stable_against_the_real_package() -> None:
     """CONTROL for the case above, and it is not a formality.
 
-    `len(seen) > 1` is satisfied by any devbox.sh that varies, INCLUDING one
-    that has stopped working and is emitting a different error each run. This
-    half pins the other direction: against the real package the answer is one
-    value, non-empty, and the slot in it is the one the module computes for the
-    same key. Together they say "it delegates", which neither says alone.
+    `len(seen) > 1` is satisfied by any devbox.sh that varies, INCLUDING one that has stopped working and is emitting a different error each run. This half pins the other direction: against the real package the answer is one value, non-empty, and the slot in it is the one the module computes for the same key. Together they say "it delegates", which neither says alone.
     """
     seen = {_devbox_slot(None) for _ in range(6)}
     assert len(seen) == 1, "devbox.sh is not deterministic against the real package: %r" % seen

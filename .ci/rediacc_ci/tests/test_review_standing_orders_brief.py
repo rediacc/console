@@ -1,33 +1,21 @@
 """Differential: `rediacc_ci.review.standing_orders_brief` against its twin
 `.claude/lib/standing-orders-brief.sh`.
 
-THE SEAM IS THE CURRENT DIRECTORY, not the subject's own location. Both sides
-read `.claude/hooks/stop/worklist.py`, `agent/...` and a bare `pwd` relative to
-wherever they are RUN, so neither has to be copied into the fixture: each case
-builds a tree, runs the real tracked twin and the real tracked port with `cwd`
-set to it, and compares. That is a stronger comparison than a copy would be --
-it is the tracked bytes on both sides.
+THE SEAM IS THE CURRENT DIRECTORY, not the subject's own location. Both sides read `.claude/hooks/stop/worklist.py`, `agent/...` and a bare `pwd` relative to wherever they are RUN, so neither has to be copied into the fixture: each case builds a tree, runs the real tracked twin and the real tracked port with `cwd` set to it, and compares. That is a stronger comparison than a copy
+would be -- it is the tracked bytes on both sides.
 
 THE WORKLIST IS A CANNED STAND-IN, AND THAT IS THE POINT. The subject here is
 the BRIEF, not `worklist.py`; the real store is append-only and shared with
-other live sessions, so driving it would make this suite depend on what a peer
-did thirty seconds ago. Each case writes a scripted `.claude/hooks/stop/
-worklist.py` into the fixture that answers `--list`/`--poll` from a table.
-`test_the_real_worklist_answers_the_same_three_verbs` is the anti-vacuity
-control on that substitution: it drives the REAL tracked `worklist.py` with the
-brief's own three argument vectors and asserts each one is answered, so the
-stand-in cannot be standing in for something that no longer exists.
+other live sessions, so driving it would make this suite depend on what a peer did thirty seconds ago. Each case writes a scripted `.claude/hooks/stop/ worklist.py` into the fixture that answers `--list`/`--poll` from a table. `test_the_real_worklist_answers_the_same_three_verbs` is the anti-vacuity control on that substitution: it drives the REAL tracked `worklist.py` with the
+brief's own three argument vectors and asserts each one is answered, so the stand-in cannot be standing in for something that no longer exists.
 
 BYTE EQUALITY ON THE REAL TREE, driven before any fixture was written:
 `CLAUDE_CODE_SESSION_ID=<id> bash .claude/lib/standing-orders-brief.sh` and
-`python3 .ci/rediacc_ci/review/standing_orders_brief.py` produced IDENTICAL
-merged output in this checkout on 2026-09-10.
+`python3 .ci/rediacc_ci/review/standing_orders_brief.py` produced IDENTICAL merged output in this checkout on 2026-09-10.
 
 TWO THINGS ARE NORMALIZED, and both have a control. The `at <ts>` stamp comes
 from `date -u` / `datetime.now`, which advance between the two runs; and
-`last grew <n>m ago` is derived from the wall clock the same way. Nothing else
-is masked -- sizes, counts, branch names, paths and every line of prose are
-compared verbatim.
+`last grew <n>m ago` is derived from the wall clock the same way. Nothing else is masked -- sizes, counts, branch names, paths and every line of prose are compared verbatim.
 
 K=5 LEDGER: `.ci/shadow/w7p6-standing-orders-brief.observations.jsonl`.
 """
@@ -305,8 +293,7 @@ def test_the_phantom_worker_token_is_reproduced() -> None:
 def test_unset_session_id_is_a_named_divergence() -> None:
     """THE FIRST PINNED DEFECT, and the one place the two sides differ on purpose.
 
-    With CLAUDE_CODE_SESSION_ID entirely UNSET, `set -u` kills the twin at :21
-    before the friendly guard on :27-31 can run. Both sides exit 1 and print
+    With CLAUDE_CODE_SESSION_ID entirely UNSET, `set -u` kills the twin at :21 before the friendly guard on :27-31 can run. Both sides exit 1 and print
     nothing on stdout; the port names the variable in its own words and does NOT
     forge bash's `line 21:` prefix.
     """
@@ -398,8 +385,7 @@ def test_the_real_worklist_answers_the_same_three_verbs() -> None:
 def test_planted_defect_is_caught_by_this_differential() -> None:
     """ "Fix" the phantom-worker regex in a COPY of the port.
 
-    Requiring at least one id character is exactly the change a reader would
-    make on sight, and it is a real divergence from the twin. The mutation is
+    Requiring at least one id character is exactly the change a reader would make on sight, and it is a real divergence from the twin. The mutation is
     written to a throwaway file; the tracked port is never touched.
     """
     source = PORT.read_text(encoding="utf-8")

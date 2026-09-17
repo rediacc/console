@@ -1,20 +1,14 @@
 """Differential: `rediacc_ci.review.epic_context` against its twin
 `.ci/scripts/review/epic-context.sh`.
 
-A disposable local git repo (never GitHub -- `git log`/`git show` need no
-remote), on the `test_version_resolve_version.py` strategy: real commits, a
-real `origin/main` ref built as a plain local branch (nothing here needs an
-actual remote, only something `git rev-parse --verify` resolves), and a
-worklist snapshot file the twin reads by convention
+A disposable local git repo (never GitHub -- `git log`/`git show` need no remote), on the `test_version_resolve_version.py` strategy: real commits, a real `origin/main` ref built as a plain local branch (nothing here needs an actual remote, only something `git rev-parse --verify` resolves), and a worklist snapshot file the twin reads by convention
 (`agent/pr/<branch-with-slashes-as-dashes>.md`).
 
-THE DUPLICATE-HEADING CASE (`test_two_items_under_one_heading_duplicates_it`)
-is the one worth explaining before it looks like a bug in the port: a heading
+THE DUPLICATE-HEADING CASE (`test_two_items_under_one_heading_duplicates_it`) is the one worth explaining before it looks like a bug in the port: a heading
 with two worklist items that both carry the epic's trailer prints TWICE in the
 twin, once staged immediately before each trailer line. Confirmed against real
 `awk` while writing the port (see that module's docstring); the differential
-exists to keep it that way on purpose, not to quietly "fix" it into printing
-once.
+exists to keep it that way on purpose, not to quietly "fix" it into printing once.
 
 K=5 LEDGER: `.ci/shadow/w7p6-epic-context.observations.jsonl`.
 """

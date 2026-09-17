@@ -2,19 +2,12 @@
 
 WHY THIS FILE EXISTS SEPARATELY FROM THE PORTS. The ported gate tests are evidence
 about their subjects; they are evidence about the harness only by accident, and only
-in the directions they happen to exercise. `assert_not_contains` is used by four
-ports and NONE of them ever supplies a haystack that does contain the needle, so a
-version of it that never fired would pass every one of them. A helper with only
-positive controls will happily flag, or fail to flag, the whole tree.
+in the directions they happen to exercise. `assert_not_contains` is used by four ports and NONE of them ever supplies a haystack that does contain the needle, so a version of it that never fired would pass every one of them. A helper with only positive controls will happily flag, or fail to flag, the whole tree.
 
-So each helper is driven twice: once with an input that must be accepted, once with
-an input that must be REFUSED. The refusals are checked with `pytest.raises` rather
-than through the harness's own comparison, which keeps the failure direction from
-being decided by the very method under test.
+So each helper is driven twice: once with an input that must be accepted, once with an input that must be REFUSED. The refusals are checked with `pytest.raises` rather than through the harness's own comparison, which keeps the failure direction from being decided by the very method under test.
 
 THE SUBJECT IS AN INNER `Harness`; the outer `gate` fixture is the instrument. Two
-instances, so a control recorded on the subject cannot satisfy the instrument's own
-anti-vacuity floor and vice versa.
+instances, so a control recorded on the subject cannot satisfy the instrument's own anti-vacuity floor and vice versa.
 """
 
 import json
@@ -281,9 +274,7 @@ def test_run_replaces_the_environment_only_when_asked(gate):
     """`env_replace=True` is the `env -i` case, and it must be BOTH ways.
 
     A version that always replaced would drop PATH from every other caller; a
-    version that never replaced would silently inherit the `RESULT_*` variables a
-    real CI run exports, which is exactly what `test_gate_ci_complete_tiers`
-    relies on NOT happening.
+    version that never replaced would silently inherit the `RESULT_*` variables a real CI run exports, which is exactly what `test_gate_ci_complete_tiers` relies on NOT happening.
     """
     os.environ["GATE_HARNESS_PROBE"] = "inherited"
     try:
@@ -305,9 +296,7 @@ def test_run_replaces_the_environment_only_when_asked(gate):
 def test_require_tool_both_directions(gate):
     """A tool that IS there returns its path; one that is not RAISES with the fix.
 
-    The negative half is the point: a probe that returned None on a missing binary
-    would hand `None` to subprocess and the failure would arrive as a TypeError in
-    a case about something else entirely.
+    The negative half is the point: a probe that returned None on a missing binary would hand `None` to subprocess and the failure would arrive as a TypeError in a case about something else entirely.
     """
     found = harness.require_tool("bash", "install bash")
     gate.assert_contains(found, "bash", "a present tool resolves to a path naming it")
@@ -339,10 +328,7 @@ def test_require_python_module_both_directions(gate):
 def test_a_signal_is_named_rather_than_left_as_a_number(gate):
     """`got 143` sends the reader hunting a branch that does not exist.
 
-    THE ESTATE'S MOST-USED DIAGNOSTIC. `assert_exit_code` is called from gate
-    tests on both sides, so an unnamed signal here is an unnamed signal
-    everywhere. Three encodings must all resolve: `subprocess`'s negative
-    returncode, a shell's 128+n, and an ordinary status that is neither.
+    THE ESTATE'S MOST-USED DIAGNOSTIC. `assert_exit_code` is called from gate tests on both sides, so an unnamed signal here is an unnamed signal everywhere. Three encodings must all resolve: `subprocess`'s negative returncode, a shell's 128+n, and an ordinary status that is neither.
     """
     gate.assert_eq(harness.describe_exit(0), "0", "a clean exit is left alone")
     gate.assert_eq(harness.describe_exit(1), "1", "and so is an ordinary failure")

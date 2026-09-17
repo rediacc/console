@@ -1,16 +1,10 @@
 """Differential: `rediacc_ci.build.build_renet` against its twin
 `.ci/scripts/build/build-renet.sh`.
 
-ONE REAL RUN EXECUTES `private/renet/build.sh embed_assets` (which compiles CRIU
-and rsync from source inside Docker), CREATES A CONTAINER FROM
-`rediacc/renet:latest`, AND CROSS-COMPILES SIX GO BINARIES. Every case here runs
-against recording fakes on a PATH that REPLACES the caller's rather than
-prepending to it, inside a fixture tree, and
-`test_the_scratch_path_cannot_reach_a_real_docker_go_or_zstd` asserts the seal
-before anything is driven.
+ONE REAL RUN EXECUTES `private/renet/build.sh embed_assets` (which compiles CRIU and rsync from source inside Docker), CREATES A CONTAINER FROM `rediacc/renet:latest`, AND CROSS-COMPILES SIX GO BINARIES. Every case here runs against recording fakes on a PATH that REPLACES the caller's rather than prepending to it, inside a fixture tree, and
+`test_the_scratch_path_cannot_reach_a_real_docker_go_or_zstd` asserts the seal before anything is driven.
 
-NOT THE OTHER `build-renet.sh`. `.ci/scripts/infra/build-renet.sh` shares this
-basename, builds one binary for the local machine, and is a different script
+NOT THE OTHER `build-renet.sh`. `.ci/scripts/infra/build-renet.sh` shares this basename, builds one binary for the local machine, and is a different script
 with a different differential (`test_infra_build_renet.py`). The ledger names
 are `w7p6-build-renet` for that one and `w7p6-build-renet-full` for this one.
 
@@ -28,16 +22,11 @@ FOUR KINDS OF EVIDENCE ARE COMPARED, because no one of them is sufficient:
 
 `ls -la` TIMESTAMPS ARE MASKED, AND ONLY THEY. The two sides run seconds apart,
 so `ls` prints a different mtime for otherwise identical files; the mask
-replaces the `<Mon> <day> <HH:MM>` field and leaves mode, link count, owner,
-group, size and name alone. `test_the_ls_mask_hides_only_the_timestamp` pins
-that in both directions. The only other mask is `$0`.
+replaces the `<Mon> <day> <HH:MM>` field and leaves mode, link count, owner, group, size and name alone. `test_the_ls_mask_hides_only_the_timestamp` pins that in both directions. The only other mask is `$0`.
 
-RECORDING FAKES WRITE TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. This script's stdout
-IS an artifact (the `ls` listing and the checksum file), and a fake that logged
-to stdout would corrupt the very output under comparison. The `FAKEBIN ` prefix
+RECORDING FAKES WRITE TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. This script's stdout IS an artifact (the `ls` listing and the checksum file), and a fake that logged to stdout would corrupt the very output under comparison. The `FAKEBIN ` prefix
 is also what the K=5 ledger scopes `--finding-re` to, because `shadow-gate.ts`
-classifies every line starting `-> ` or `ok ` as CHATTER before any message
-regex runs, and this script reports almost entirely through those.
+classifies every line starting `-> ` or `ok ` as CHATTER before any message regex runs, and this script reports almost entirely through those.
 
 K=5 LEDGER: `.ci/shadow/w7p6-build-renet-full.observations.jsonl`.
 """
@@ -381,9 +370,7 @@ TRACKED_TREES = ("private/bin", "private/elsewhere", "private/renet/pkg/embed/as
 def _artifacts(root: pathlib.Path) -> dict[str, str]:
     """Every produced file as `<octal mode> <content>`.
 
-    THE MODE IS PART OF THE ARTIFACT. `chmod +x` at `:172` is the only
-    difference between a usable native binary and one the runtime image copies
-    and cannot execute, and it appears in no stream and in no call log.
+    THE MODE IS PART OF THE ARTIFACT. `chmod +x` at `:172` is the only difference between a usable native binary and one the runtime image copies and cannot execute, and it appears in no stream and in no call log.
     """
     out: dict[str, str] = {}
     for rel in TRACKED_TREES:
@@ -693,13 +680,9 @@ def test_the_stripped_verdict_reports_both_ways(tmp_path) -> None:
 
 def test_a_file_that_errors_is_trusted_as_stripped_under_pipefail(tmp_path) -> None:
     """`set -o pipefail` makes `file | grep -q` non-zero whenever EITHER side is,
-    so a `file` that printed "not stripped" and then exited 3 takes the SAME arm
-    as one that found nothing. The twin reports the binary as stripped while the
-    only tool that looked at it said the opposite.
+    so a `file` that printed "not stripped" and then exited 3 takes the SAME arm as one that found nothing. The twin reports the binary as stripped while the only tool that looked at it said the opposite.
 
-    This is the control that a port collapsing the pipeline to "does the text
-    contain it" would pass without: it is the only case in this suite where the
-    text and the exit status disagree.
+    This is the control that a port collapsing the pipeline to "does the text contain it" would pass without: it is the only case in this suite where the text and the exit status disagree.
     """
     root = fixture(tmp_path)
     old_t, new_t = run_both(
@@ -720,14 +703,8 @@ def test_a_missing_grep_or_head_changes_the_twins_verdict_too(tmp_path) -> None:
     """`file` is only the LEFT half of two pipelines, and under `pipefail` the
     right half's absence is just as load-bearing.
 
-    Without `grep` the pipeline is 127 and every binary is reported stripped,
-    INCLUDING the one whose `file` output says otherwise. Without `head` the
-    windows description is empty even though `file` answered. A port that read
-    `file`'s text directly instead of running the pipeline would disagree on
-    both, and this is the control that says so: it was written after a ledger
-    fixture with a broken `grep` symlink produced four
-    `line 242: grep: command not found` lines on the twin's side and none on
-    the port's.
+    Without `grep` the pipeline is 127 and every binary is reported stripped, INCLUDING the one whose `file` output says otherwise. Without `head` the windows description is empty even though `file` answered. A port that read `file`'s text directly instead of running the pipeline would disagree on both, and this is the control that says so: it was written after a ledger fixture
+    with a broken `grep` symlink produced four `line 242: grep: command not found` lines on the twin's side and none on the port's.
     """
     root = fixture(tmp_path)
     old_t, new_t = run_both(
@@ -750,9 +727,7 @@ def test_a_missing_grep_or_head_changes_the_twins_verdict_too(tmp_path) -> None:
 
 def test_the_staged_class_search_takes_base_before_cluster(tmp_path) -> None:
     """`:161` searches `base` then `cluster` and BREAKS on the first hit, so an
-    asset staged under both classes must come out of `base`. Nothing in the
-    lockfile forbids that overlap, and with only one copy per asset the order is
-    unobservable, which is why this case stages a deliberate duplicate with
+    asset staged under both classes must come out of `base`. Nothing in the lockfile forbids that overlap, and with only one copy per asset the order is unobservable, which is why this case stages a deliberate duplicate with
     different content."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, env_overrides={"FAKE_STAGE_DUP": "criu-linux-amd64"})
@@ -934,8 +909,7 @@ def test_defect_an_output_parent_that_does_not_exist_dies_silently(tmp_path) -> 
 def test_defect_a_malformed_lockfile_makes_the_completeness_check_vacuous(tmp_path) -> None:
     """DEFECT 3. `jq` runs in a PROCESS SUBSTITUTION, so its failure is
     invisible to `set -e`; the asset array stays empty and the "fail fast" loop
-    whose comment says a missing asset "must break HERE" runs zero times. The
-    build then ships exactly the incomplete artifact that check exists to
+    whose comment says a missing asset "must break HERE" runs zero times. The build then ships exactly the incomplete artifact that check exists to
     prevent, with exit 0."""
     root = fixture(tmp_path, lockfile="{ this is not json\n")
     old_t, new_t = run_both(root)
@@ -1040,8 +1014,7 @@ def test_bash_glob_reproduces_both_of_the_shell_behaviours(tmp_path) -> None:
 
 def test_a_planted_defect_is_caught(tmp_path) -> None:
     """The proof that this differential can fail. Dropping the `chmod +x` is
-    invisible in every stream and in the exit code, and it is the difference
-    between a runtime image that works and one whose entrypoint cannot execute
+    invisible in every stream and in the exit code, and it is the difference between a runtime image that works and one whose entrypoint cannot execute
     the criu it just copied. Only the artifact MODE sees it."""
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(

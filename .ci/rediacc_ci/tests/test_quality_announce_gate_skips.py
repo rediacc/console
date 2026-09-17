@@ -1,27 +1,14 @@
 """`rediacc_ci.quality.announce_gate_skips` against its bash twin.
 
-BYTE-IDENTICAL ON EVERY PATH BUT ONE, and the exception is named in the port's
-docstring: the `$# -lt 2` usage line interpolates `$0`, which is the program
-path the shell was handed, and a module invoked as `python3 -m ...` cannot have
-the same one. `_mask_program` replaces that single token on both sides so the
-rest of the line is still compared byte for byte rather than being dropped from
-the comparison altogether.
+BYTE-IDENTICAL ON EVERY PATH BUT ONE, and the exception is named in the port's docstring: the `$# -lt 2` usage line interpolates `$0`, which is the program path the shell was handed, and a module invoked as `python3 -m ...` cannot have the same one. `_mask_program` replaces that single token on both sides so the rest of the line is still compared byte for byte rather than being
+dropped from the comparison altogether.
 
-THE STEP SUMMARY IS COMPARED AS A FILE, not inferred from stdout. It is the
-only output a human reads on a GitHub run summary page, it is APPENDED rather
-than written, and nothing on stdout would reveal a port that wrote the header
-and forgot the bullet list. Each side gets its own file for the same reason
-`test_signal_create_complete.py` gives each side its own output directory.
+THE STEP SUMMARY IS COMPARED AS A FILE, not inferred from stdout. It is the only output a human reads on a GitHub run summary page, it is APPENDED rather than written, and nothing on stdout would reveal a port that wrote the header and forgot the bullet list. Each side gets its own file for the same reason `test_signal_create_complete.py` gives each side its own output directory.
 
-BOTH DIRECTIONS ARE COVERED, which for this script means the two REFUSALS as
-much as the two working modes: an unrecognised `GATE_SKIP_MODE` must exit 2
-(it is the only place a typo'd mode string is ever reported, since the step
-`if:` treats it as "run" silently), and fewer than two arguments must exit 2
-because an announcer with nothing to announce is a miswired announcer.
+BOTH DIRECTIONS ARE COVERED, which for this script means the two REFUSALS as much as the two working modes: an unrecognised `GATE_SKIP_MODE` must exit 2 (it is the only place a typo'd mode string is ever reported, since the step `if:` treats it as "run" silently), and fewer than two arguments must exit 2 because an announcer with nothing to announce is a miswired announcer.
 
 K=5 LEDGER: `.ci/shadow/w7p6-announce-gate-skips.observations.jsonl`, recorded
-against a disposable scratch git repo built OUTSIDE this checkout (this repo's
-working tree is not clean and `shadow-gate.ts --record` refuses a dirty tree).
+against a disposable scratch git repo built OUTSIDE this checkout (this repo's working tree is not clean and `shadow-gate.ts --record` refuses a dirty tree).
 """
 
 from __future__ import annotations
@@ -239,9 +226,7 @@ def test_the_usage_refusal_outranks_an_unknown_mode() -> None:
 
 def test_gate_names_with_spaces_join_the_way_dollar_star_does() -> None:
     """`$*` joins with the first character of IFS, a plain space, and the twin
-    never re-quotes the elements. A gate name that itself contains a space is
-    therefore indistinguishable from two gates in the printed line, on BOTH
-    sides -- reproduced rather than corrected, because the announcement text is
+    never re-quotes the elements. A gate name that itself contains a space is therefore indistinguishable from two gates in the printed line, on BOTH sides -- reproduced rather than corrected, because the announcement text is
     what the bash gate test greps."""
     old, new = run_both(["lbl", "a b", "c"], mode="skip")
     assert old[0] == 0

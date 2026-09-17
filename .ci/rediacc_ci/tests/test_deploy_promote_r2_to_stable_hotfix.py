@@ -1,37 +1,17 @@
 """Differential: `rediacc_ci.deploy.promote_r2_to_stable_hotfix` against its twin
 `.ci/scripts/deploy/promote-r2-to-stable-hotfix.sh`.
 
-RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO.
-Nothing here reaches R2 or Cloudflare: the `aws` fake serves an on-disk
-directory standing in for the bucket, logs its exact argv, and logs the CONTENT
+RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare: the `aws` fake serves an on-disk directory standing in for the bucket, logs its exact argv, and logs the CONTENT
 of every uploaded file; the `curl` fake answers cf-purge-urls.sh from a
-constant. Every case pins a fixture endpoint, bucket and credential.
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one
-real run" clause and says in as many words that the mocked parity ledger is a
-separate, achievable piece of work. This is that piece.
+constant. Every case pins a fixture endpoint, bucket and credential. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS THE PRIMARY EVIDENCE. This script prints five `Promoting ...`
-lines and one closing line, none of which is derived from what actually moved,
-so two implementations can agree on every printed byte while copying different
-prefixes. The content log is load-bearing too: the channel-pointer files are
-REWRITTEN on the way past, and a port that skipped the rewrite would print the
-same six lines while publishing an install script that still installs `edge`.
+THE CALL LOG IS THE PRIMARY EVIDENCE. This script prints five `Promoting ...` lines and one closing line, none of which is derived from what actually moved, so two implementations can agree on every printed byte while copying different prefixes. The content log is load-bearing too: the channel-pointer files are REWRITTEN on the way past, and a port that skipped the rewrite would
+print the same six lines while publishing an install script that still installs `edge`.
 
-WHAT THE `aws` FAKE MODELS AND WHAT IT DOES NOT. It is a model of the AWS CLI,
-not the AWS CLI, and this file says so rather than letting a reader assume
-otherwise. `aws` IS NOT INSTALLED IN THIS SANDBOX (`command -v aws` is empty),
-so nothing here can be checked against the real tool. What the differential
-proves is INDEPENDENT of the model's fidelity: both implementations are driven
-through the SAME fake, so the argv comparison, the exit code and the two streams
-are real evidence about the port. The modelled parts -- which local files a
-recursive copy moves, and the include/exclude semantics -- exist only to make
-the vacuity floor and the purge list realistic, and any statement about which
-files reached `stable/` is a statement about the model.
+WHAT THE `aws` FAKE MODELS AND WHAT IT DOES NOT. It is a model of the AWS CLI, not the AWS CLI, and this file says so rather than letting a reader assume otherwise. `aws` IS NOT INSTALLED IN THIS SANDBOX (`command -v aws` is empty), so nothing here can be checked against the real tool. What the differential proves is INDEPENDENT of the model's fidelity: both implementations are
+driven through the SAME fake, so the argv comparison, the exit code and the two streams are real evidence about the port. The modelled parts -- which local files a recursive copy moves, and the include/exclude semantics -- exist only to make the vacuity floor and the purge list realistic, and any statement about which files reached `stable/` is a statement about the model.
 
-`/tmp/promote-<dir>`, `/tmp/config` AND `/tmp/script` ARE FIXED PATHS IN THE
-TWIN, so these cases cannot be given a private temporary directory: they clean
-those exact seven paths before every side of every case, and the module carries
-an `xdist_group` so the two promote differentials land on the SAME xdist worker
+`/tmp/promote-<dir>`, `/tmp/config` AND `/tmp/script` ARE FIXED PATHS IN THE TWIN, so these cases cannot be given a private temporary directory: they clean those exact seven paths before every side of every case, and the module carries an `xdist_group` so the two promote differentials land on the SAME xdist worker
 and cannot run concurrently. Both facts are the twin's, not the test's; see
 `STALE_TMP_IS_PROMOTED` in the port's docstring.
 """
@@ -238,10 +218,7 @@ PATH_MINIMUM = ("jq", "uname", "dirname", "basename", "tr", "find", "wc", "sed",
 def _clean_fixed_tmp() -> None:
     """Remove the seven paths the twin hard-codes.
 
-    NOT TIDINESS. A leftover `/tmp/promote-apk` is promoted to `stable/` by the
-    next run (`STALE_TMP_IS_PROMOTED`), so without this a failed case would
-    silently change the meaning of every case after it, and the second side of a
-    comparison would start from a different state than the first.
+    NOT TIDINESS. A leftover `/tmp/promote-apk` is promoted to `stable/` by the next run (`STALE_TMP_IS_PROMOTED`), so without this a failed case would silently change the meaning of every case after it, and the second side of a comparison would start from a different state than the first.
     """
     for path in FIXED_TMP_PATHS:
         if os.path.isdir(path):
@@ -275,9 +252,7 @@ def _bin(root: pathlib.Path, *, drop: str = "", aws_body: str = FAKE_AWS) -> str
 def fixture(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None) -> pathlib.Path:
     """A throwaway repository holding both implementations, plus a bucket.
 
-    BOTH SIDES ARE COPIED IN rather than invoked from this checkout, because each
-    resolves `cf-purge-urls.sh` from its own location. A test that ran the real
-    files would drive them against the real tree.
+    BOTH SIDES ARE COPIED IN rather than invoked from this checkout, because each resolves `cf-purge-urls.sh` from its own location. A test that ran the real files would drive them against the real tree.
     """
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
@@ -348,10 +323,7 @@ def _run(
 def run_both(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None, **kw):
     """BOTH SIDES RUN AGAINST ONE FIXTURE REPO but SEPARATE bucket copies.
 
-    Separate buckets because this script MUTATES what it reads: the rewrite loops
-    download `cli/stable/install.sh` back out after the recursive copy overwrote
-    it, so a shared bucket would hand the second side a body the first side had
-    already rewritten and the comparison would be of two different inputs.
+    Separate buckets because this script MUTATES what it reads: the rewrite loops download `cli/stable/install.sh` back out after the recursive copy overwrote it, so a shared bucket would hand the second side a body the first side had already rewritten and the comparison would be of two different inputs.
     """
     root = fixture(tmp_path, bucket)
     old, old_calls = _run(root, "old", **kw)
@@ -362,8 +334,7 @@ def run_both(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None, **kw)
 def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> None:
     """THE THREE STREAMS ARE COMPARED SEPARATELY, plus the call log.
 
-    Never `2>&1`: a message moving between stdout and stderr is invisible once
-    the two are merged, and that is the defect class these files exist for.
+    Never `2>&1`: a message moving between stdout and stderr is invisible once the two are merged, and that is the defect class these files exist for.
     """
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}\n"
@@ -436,10 +407,7 @@ def test_a_nested_file_keeps_its_directories_in_the_purge_url(tmp_path) -> None:
 def test_defect_purge_list_contains_duplicates(tmp_path) -> None:
     """FOUR URLS ARE POSTED TWICE on the ordinary path.
 
-    Each channel-pointer file is appended once by the `find` loop (the recursive
-    copy carried it) and once by the rewrite loop that follows. Cloudflare
-    batches at 30, so a duplicate is a slot spent twice. Reproduced, not
-    repaired.
+    Each channel-pointer file is appended once by the `find` loop (the recursive copy carried it) and once by the rewrite loop that follows. Cloudflare batches at 30, so a duplicate is a slot spent twice. Reproduced, not repaired.
     """
     assert port.PURGE_LIST_CONTAINS_DUPLICATES is True
 
@@ -460,10 +428,7 @@ def test_defect_purge_list_contains_duplicates(tmp_path) -> None:
 def test_defect_stale_tmp_is_promoted(tmp_path) -> None:
     """A LEFTOVER `/tmp/promote-apk` REACHES `apk/stable/` ON THE NEXT RUN.
 
-    `rm -rf "$TMP"` is the last statement of the loop body, so an early exit
-    leaves the directory behind and the following run copies INTO it and then
-    uploads the whole thing. Driven here by planting the leftover directly, which
-    is the state a cancelled workflow or a failed `aws` leaves.
+    `rm -rf "$TMP"` is the last statement of the loop body, so an early exit leaves the directory behind and the following run copies INTO it and then uploads the whole thing. Driven here by planting the leftover directly, which is the state a cancelled workflow or a failed `aws` leaves.
     """
     assert port.STALE_TMP_IS_PROMOTED is True
 
@@ -484,11 +449,7 @@ def test_defect_stale_tmp_is_promoted(tmp_path) -> None:
 def test_defect_the_vacuity_floor_runs_after_the_upload(tmp_path) -> None:
     """THE FLOOR NEEDS A LEFTOVER EMPTY DIRECTORY TO BE REACHABLE AT ALL.
 
-    Order is download, upload, then count. With `cli/edge/` empty the download
-    creates nothing, so it is the UPLOAD that fails first and the floor's own
-    sentence never prints. The floor fires only when `$TMP` exists and is empty,
-    which the previous test shows is a real state. Both halves are driven and
-    both agree.
+    Order is download, upload, then count. With `cli/edge/` empty the download creates nothing, so it is the UPLOAD that fails first and the floor's own sentence never prints. The floor fires only when `$TMP` exists and is empty, which the previous test shows is a real state. Both halves are driven and both agree.
     """
     assert port.VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD is True
 
@@ -592,9 +553,7 @@ def test_an_aws_failure_mid_run_stops_with_awss_status(tmp_path) -> None:
 def test_an_unset_zone_becomes_an_empty_argument_and_the_purge_refuses(tmp_path) -> None:
     """`--zone "${CLOUDFLARE_ZONE_ID:-}"` and NOT `:?`.
 
-    The promotion has already happened by then, which the twin's header says is
-    deliberate. The refusal is cf-purge-urls.sh's own, and under `pipefail` its
-    status becomes this script's, AFTER the success line.
+    The promotion has already happened by then, which the twin's header says is deliberate. The refusal is cf-purge-urls.sh's own, and under `pipefail` its status becomes this script's, AFTER the success line.
     """
     _root, old, new, old_calls, new_calls = run_both(tmp_path, drop_env=("CLOUDFLARE_ZONE_ID",))
     _agree(old, new, "no-zone", old_calls, new_calls)
@@ -618,10 +577,7 @@ def test_no_cloudflare_credential_warns_and_still_exits_zero(tmp_path) -> None:
 def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     """PROVE THE DIFFERENTIAL CAN FIRE, and prove WHICH assertion fires.
 
-    The plant drops `--cache-control no-cache` from the channel upload, which is
-    the mistake the twin's whole Cache-Control paragraph exists to prevent: a
-    cached body under a reused filename breaks APKINDEX and Release signatures.
-    Every printed byte and the exit code are unchanged by it.
+    The plant drops `--cache-control no-cache` from the channel upload, which is the mistake the twin's whole Cache-Control paragraph exists to prevent: a cached body under a reused filename breaks APKINDEX and Release signatures. Every printed byte and the exit code are unchanged by it.
     """
     root = fixture(tmp_path)
     target = root / ".ci" / "rediacc_ci" / "deploy" / PORT_FILE.name
@@ -704,12 +660,8 @@ def test_the_purge_script_is_still_the_bash_one_and_still_exists() -> None:
 def test_every_variable_is_read_with_a_literal_os_environ_get() -> None:
     """THE DIRECT-READ DISCIPLINE, ASSERTED RATHER THAN REMEMBERED.
 
-    `check:ci-python-env-registry` derives a module's inputs from its AST, and a
-    read routed through `dict(os.environ)` or a local alias is invisible to it:
-    the module then declares nothing while depending on four variables. This
-    pins the shape the gate can actually see, in both directions -- every name
-    `environment()` returns must appear as a literal `os.environ.get("NAME"` in
-    the source, and there must be no extra ones.
+    `check:ci-python-env-registry` derives a module's inputs from its AST, and a read routed through `dict(os.environ)` or a local alias is invisible to it: the module then declares nothing while depending on four variables. This pins the shape the gate can actually see, in both directions -- every name `environment()` returns must appear as a literal `os.environ.get("NAME"` in the
+    source, and there must be no extra ones.
     """
     source = PORT_FILE.read_text(encoding="utf-8")
     names = set(port.environment())

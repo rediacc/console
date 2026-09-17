@@ -2,9 +2,7 @@
 
 Ported from `.ci/scripts/quality/check-no-app-admin-perm.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live until a
-differential ledger row exists over K distinct trees. Its gate header registers
-it as step "App admin permission", id `check:ci-app-admin-perm`, lane
-quality-code.
+differential ledger row exists over K distinct trees. Its gate header registers it as step "App admin permission", id `check:ci-app-admin-perm`, lane quality-code.
 
 WHY THIS EXISTS, carried from the twin because the rationale IS the gate:
 
@@ -31,45 +29,23 @@ WHY THIS EXISTS, carried from the twin because the rationale IS the gate:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE OUTPUT SHAPE IS `grep -rn`, AND IT IS REPRODUCED RATHER THAN IMPROVED.
-`<path>:<lineno>:<line>` with the directory argument's trailing slash collapsed,
-because that is what the twin prints and because `scripts/lib/shadow-gate.ts`
-recognises exactly that shape as a finding (`PATH_LINE`) with no marker on it.
-A port that printed `path (line N)` would have every one of its findings
-reclassified as chatter and would compare EQUIVALENT to the twin while agreeing
-about nothing.
+THE OUTPUT SHAPE IS `grep -rn`, AND IT IS REPRODUCED RATHER THAN IMPROVED. `<path>:<lineno>:<line>` with the directory argument's trailing slash collapsed, because that is what the twin prints and because `scripts/lib/shadow-gate.ts` recognises exactly that shape as a finding (`PATH_LINE`) with no marker on it. A port that printed `path (line N)` would have every one of its
+findings reclassified as chatter and would compare EQUIVALENT to the twin while agreeing about nothing.
 
-ORDER IS NOT PRESERVED, AND DOES NOT NEED TO BE. GNU grep walks with fts in
-readdir order, so `.github/workflows/sub/y.yml` can precede
-`.github/workflows/x.yml` (measured 2026-09-06 on GNU grep 3.12). This module
-walks sorted, which is stable across machines. The shadow comparator compares a
-MULTISET, so a different order is not a different finding set, and a stable
-order is worth more to a human diffing two runs than fidelity to readdir.
+ORDER IS NOT PRESERVED, AND DOES NOT NEED TO BE. GNU grep walks with fts in readdir order, so `.github/workflows/sub/y.yml` can precede `.github/workflows/x.yml` (measured 2026-09-06 on GNU grep 3.12). This module walks sorted, which is stable across machines. The shadow comparator compares a MULTISET, so a different order is not a different finding set, and a stable order is worth
+more to a human diffing two runs than fidelity to readdir.
 
-THE NEEDLE IS A LITERAL SUBSTRING, exactly as `grep "permission-administration"`
-is: no regex, no word boundary, case-sensitive. `permission-administration:` and
-`# permission-administration` both hit, and the comment case is a HIT on purpose
--- a commented-out request is one uncomment away from being a real one, and this
-gate is about what the file says, not about what YAML currently parses.
+THE NEEDLE IS A LITERAL SUBSTRING, exactly as `grep "permission-administration"` is: no regex, no word boundary, case-sensitive. `permission-administration:` and `# permission-administration` both hit, and the comment case is a HIT on purpose -- a commented-out request is one uncomment away from being a real one, and this gate is about what the file says, not about what YAML
+currently parses.
 
-BINARY FILES. GNU grep prints `Binary file <path> matches` and suppresses the
-line for a file containing a NUL byte. Reproduced, because a workflow directory
-that acquires one should make the two implementations say the same thing rather
-than one of them dumping a control-character line into a CI log.
+BINARY FILES. GNU grep prints `Binary file <path> matches` and suppresses the line for a file containing a NUL byte. Reproduced, because a workflow directory that acquires one should make the two implementations say the same thing rather than one of them dumping a control-character line into a CI log.
 
-THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the
-one archaeology token this file would otherwise drop. `log_step`, `log_error`,
-`log_info` and `get_repo_root` are the gate's only dependency on the shared bash
-library, which is what makes the twin cheap to retire.
+THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the one archaeology token this file would otherwise drop. `log_step`, `log_error`, `log_info` and `get_repo_root` are the gate's only dependency on the shared bash library, which is what makes the twin cheap to retire.
 
 THE ONE PLACE THIS IS DELIBERATELY STRONGER, and it is the failure this whole
 programme is named after. `if grep -rn ... 2>/dev/null; then` cannot distinguish
-"no workflow requests the permission" from "there are no workflows". Rename
-`.github/workflows`, move the tree, run the gate from a fixture that copied the
-gate but not its subject, and grep exits 2 into a suppressed stderr while the
-twin prints its green line. This port counts the files it read and REFUSES when
-that count is zero, so its green always carries evidence that it saw the tree.
-The count is printed on the success line for the same reason.
+"no workflow requests the permission" from "there are no workflows". Rename `.github/workflows`, move the tree, run the gate from a fixture that copied the gate but not its subject, and grep exits 2 into a suppressed stderr while the twin prints its green line. This port counts the files it read and REFUSES when that count is zero, so its green always carries evidence that it saw
+the tree. The count is printed on the success line for the same reason.
 """
 
 import os
@@ -92,10 +68,7 @@ NEEDLE = "permission-administration"
 def scan(root: pathlib.Path) -> tuple[list[str], int]:
     """Every `grep -rn` hit under the scan dirs, and how many files were read.
 
-    Returns (lines, files_read). The second value is the anti-vacuity evidence:
-    a gate that read no files has proved nothing, and the twin cannot tell the
-    difference. Pure and importable, so a test can assert the exact byte shape of
-    a finding without a subprocess.
+    Returns (lines, files_read). The second value is the anti-vacuity evidence: a gate that read no files has proved nothing, and the twin cannot tell the difference. Pure and importable, so a test can assert the exact byte shape of a finding without a subprocess.
     """
     hits: list[str] = []
     files_read = 0
@@ -177,9 +150,7 @@ def _tree(base: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
 def selftest() -> int:
     """Plant a defect in BOTH directions and require the gate to notice.
 
-    Built by CONSTRUCTION in a tempdir, never by mutating `.github/`: a control
-    built by in-place substitution has to additionally prove the plant landed,
-    and the cheaper answer is to not build controls that way.
+    Built by CONSTRUCTION in a tempdir, never by mutating `.github/`: a control built by in-place substitution has to additionally prove the plant landed, and the cheaper answer is to not build controls that way.
     """
     # floor=14 rather than 0: the floor is the only thing that catches a selftest
     # whose cases stopped executing, and a default of zero is a floor that cannot fail. See rediacc_ci.controls for the five drifted copies that taught it.

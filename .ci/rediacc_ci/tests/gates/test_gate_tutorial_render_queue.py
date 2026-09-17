@@ -1,35 +1,20 @@
 """Port of `.ci/scripts/test/gates/test-tutorial-render-queue.sh`.
 
-Tests `packages/www/scripts/list-tutorial-render-pairs.js`, the ONE readiness
-predicate for "which (tutorial, language) pairs still need rendering". Everything
-downstream trusts it: `run.sh`'s `www tutorials media` and `www tutorials watch`
-render exactly what it emits, so a predicate that silently answers "nothing"
-produces a green run that rendered nothing, and one that over-reports burns hours
-of CPU re-rendering finished work.
+Tests `packages/www/scripts/list-tutorial-render-pairs.js`, the ONE readiness predicate for "which (tutorial, language) pairs still need rendering". Everything downstream trusts it: `run.sh`'s `www tutorials media` and `www tutorials watch` render exactly what it emits, so a predicate that silently answers "nothing" produces a green run that rendered nothing, and one that
+over-reports burns hours of CPU re-rendering finished work.
 
-WHAT IS CHECKED HERE VERSUS IN `--selftest`, carried over from the twin. The
-predicate ships its own staleness cases (mp4 missing, timeline newer, mp4 newer,
-wrong provider, audio dir absent) and this file does NOT duplicate them. It checks
-what a self-test cannot honestly check about itself: the empty-tree refusal against
-a REAL empty tree, that `--selftest` is wired into the npm gate AND propagates its
-exit code, and that the self-test carries controls.
+WHAT IS CHECKED HERE VERSUS IN `--selftest`, carried over from the twin. The predicate ships its own staleness cases (mp4 missing, timeline newer, mp4 newer, wrong provider, audio dir absent) and this file does NOT duplicate them. It checks what a self-test cannot honestly check about itself: the empty-tree refusal against a REAL empty tree, that `--selftest` is wired into the npm
+gate AND propagates its exit code, and that the self-test carries controls.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases read the working tree
-in place -- the predicate file itself, `package.json`'s script table, and
-`scripts/ci-runner/manifest.ts` -- and `--selftest` runs the real shipped predicate
-out of `packages/www/scripts/`. A battery step rewriting any of those mid-read is
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases read the working tree in place -- the predicate file itself, `package.json`'s script table, and `scripts/ci-runner/manifest.ts` -- and `--selftest` runs the real shipped predicate out of `packages/www/scripts/`. A battery step rewriting any of those mid-read is
 the flake that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
 the serialisation, and it is honoured only because this module declares no
 `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, which
 refuses the combination.
 
-TWO CASES ARE REIMPLEMENTED RATHER THAN SHELLED OUT, and both are reads, not
-verdicts. The twin asks node to print `package.json`'s script value
-(`node -e "...require(package.json).scripts[...]"`) and greps `manifest.ts` for a
+TWO CASES ARE REIMPLEMENTED RATHER THAN SHELLED OUT, and both are reads, not verdicts. The twin asks node to print `package.json`'s script value (`node -e "...require(package.json).scripts[...]"`) and greps `manifest.ts` for a
 literal; this reads the same two files with `json.loads` and a substring search.
-The strings asserted on are byte-identical to the twin's, so a drift in either file
-reds both sides. Nothing about the SUBJECT is reimplemented: every predicate
-invocation below is the real `node <predicate>`.
+The strings asserted on are byte-identical to the twin's, so a drift in either file reds both sides. Nothing about the SUBJECT is reimplemented: every predicate invocation below is the real `node <predicate>`.
 """
 
 import json
@@ -54,11 +39,7 @@ PACKAGE_JSON = paths.from_root("package.json")
 def node(gate) -> str:
     """`node`, probed by name with the remedy in the message.
 
-    The twin invokes `node` bare and would arrive as `node: command not found`
-    inside a command substitution, which `set -euo pipefail` turns into a bare
-    non-zero. Probing first names the missing binary and what to do about it.
-    `check:ci-pytest` runs in `quality-security`, which DOES set the workspace up,
-    so an absent node here is a real finding about the lane and never a skip.
+    The twin invokes `node` bare and would arrive as `node: command not found` inside a command substitution, which `set -euo pipefail` turns into a bare non-zero. Probing first names the missing binary and what to do about it. `check:ci-pytest` runs in `quality-security`, which DOES set the workspace up, so an absent node here is a real finding about the lane and never a skip.
     """
     if not PREDICATE.is_file():
         gate.log_fail("predicate missing at %s -- the gate cannot be meaningful" % PREDICATE_REL)
@@ -86,8 +67,7 @@ def test_predicate_exists(gate):
 def test_empty_tree_refuses(gate):
     """An empty tree must REFUSE, not answer "0 pairs".
 
-    "0 pairs" is indistinguishable from "everything is rendered", and that is the
-    reading that makes a broken checkout look green.
+    "0 pairs" is indistinguishable from "everything is rendered", and that is the reading that makes a broken checkout look green.
     """
     with harness.temp_dir() as tmp:
         result = run_predicate(gate, "--root", os.fspath(tmp))
@@ -170,9 +150,7 @@ def test_gate_runs_the_selftest(gate):
 def test_gate_is_in_the_gate_manifest(gate):
     """The gate must be in the local gate set, or nothing runs it.
 
-    The twin's note is worth keeping: this used to read package.json's `ci` value
-    and look for the key in it, which stopped working the moment `scripts.ci`
-    became `tsx scripts/ci-runner/run.ts`. The manifest is the gate set now.
+    The twin's note is worth keeping: this used to read package.json's `ci` value and look for the key in it, which stopped working the moment `scripts.ci` became `tsx scripts/ci-runner/run.ts`. The manifest is the gate set now.
     """
     if not MANIFEST.is_file():
         gate.log_fail("no gate manifest at %s, so this assertion would be vacuous" % MANIFEST_REL)
@@ -209,12 +187,8 @@ def test_the_manifest_and_script_table_are_not_empty(gate):
     """ADDED BY THE PORT: the anti-vacuity claim the two file-reading cases above
     leave implicit.
 
-    Both of them answer by SEARCHING a file. A file that had been truncated, or a
-    manifest whose entries moved elsewhere, would make the searches above answer
-    "not found" and read as a wiring regression -- or, if the assertions were ever
-    softened, answer nothing at all. Printing the shape makes a collapse visible:
-    a reader can see the numbers were non-trivial rather than taking "OK" on
-    faith.
+    Both of them answer by SEARCHING a file. A file that had been truncated, or a manifest whose entries moved elsewhere, would make the searches above answer "not found" and read as a wiring regression -- or, if the assertions were ever softened, answer nothing at all. Printing the shape makes a collapse visible: a reader can see the numbers were non-trivial rather than taking
+    "OK" on faith.
     """
     scripts = json.loads(PACKAGE_JSON.read_text(encoding="utf-8")).get("scripts") or {}
     manifest_ids = MANIFEST.read_text(encoding="utf-8").count("id: '")

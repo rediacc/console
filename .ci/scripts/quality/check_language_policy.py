@@ -1,44 +1,24 @@
 #!/usr/bin/env python3
 """check:ci-language-policy -- the bash surface under .ci and .claude may only shrink.
 
-WHY THIS EXISTS. docs/ci-overhaul/04-decisions.md ruling 7 (2026-09-06) settled one
-language per folder: Python in `.ci` and `.claude`, TypeScript in `scripts/`,
+WHY THIS EXISTS. docs/ci-overhaul/04-decisions.md ruling 7 (2026-09-06) settled one language per folder: Python in `.ci` and `.claude`, TypeScript in `scripts/`,
 JavaScript in `eslint-rules/`, and bash only as an allowlisted shim carrying a
-BLOCKER reason. Until this file, NOTHING ENFORCED THAT. An audit on 2026-09-07 ran
-`grep -rin 'language.policy'` across every tracked .ts/.py/.sh/.json and found no
-gate, no baseline, no allowlist and no POLICY_FILES slot. Two plan boxes were
-already written against a gate that did not exist: W1 P6 flips this policy strict
-("no baseline file at all, only allowlisted bash remains") and W10 P5 hands the
-BLOCKER strings to W1, which owns the gate. Neither had anything to act on.
+BLOCKER reason. Until this file, NOTHING ENFORCED THAT. An audit on 2026-09-07 ran `grep -rin 'language.policy'` across every tracked .ts/.py/.sh/.json and found no gate, no baseline, no allowlist and no POLICY_FILES slot. Two plan boxes were already written against a gate that did not exist: W1 P6 flips this policy strict ("no baseline file at all, only allowlisted bash remains")
+and W10 P5 hands the BLOCKER strings to W1, which owns the gate. Neither had anything to act on.
 
-WHAT IT IS TODAY: ADVISORY AND SHRINK-ONLY, NOT A CLEAN-TREE DEMAND. Measured
-2026-09-07, 520 tracked bash files under the covered trees are NOT exempt. A gate
-demanding zero would red the entire tree on the day it landed, and a gate that reds
-everything gets suppressed within a day -- which is the precise failure mode
-docs/agent-reference/suppressions.md exists to prevent. So the existing 520 are
-frozen as a SET and the only thing refused is GROWTH. The port then drains the set,
-and W1 P6 deletes the baseline file, at which point this same gate is strict with no
-code change (see STRICT MODE below).
+WHAT IT IS TODAY: ADVISORY AND SHRINK-ONLY, NOT A CLEAN-TREE DEMAND. Measured 2026-09-07, 520 tracked bash files under the covered trees are NOT exempt. A gate demanding zero would red the entire tree on the day it landed, and a gate that reds everything gets suppressed within a day -- which is the precise failure mode docs/agent-reference/suppressions.md exists to prevent. So the
+existing 520 are frozen as a SET and the only thing refused is GROWTH. The port then drains the set, and W1 P6 deletes the baseline file, at which point this same gate is strict with no code change (see STRICT MODE below).
 
-THE FLOOR IS A SET, NEVER A COUNT, and that is a programme requirement rather than a
-preference: "floors must be set-based or corpus-derived, never hand-typed counts".
-A count lets through the one change that matters most here -- delete one bash file
-and add another in the same commit, and the total is unchanged while the surface has
+THE FLOOR IS A SET, NEVER A COUNT, and that is a programme requirement rather than a preference: "floors must be set-based or corpus-derived, never hand-typed counts". A count lets through the one change that matters most here -- delete one bash file and add another in the same commit, and the total is unchanged while the surface has
 grown a file nobody decided on. Composition is the claim; sizes are not that claim.
-The same reasoning is why `--write-baseline` refuses a reseed that would ABSORB a new
-path even when the total shrinks: see scripts/lib/shrink-only-baseline.ts, the
-TypeScript twin of the guard reimplemented below, whose header records a real drain
-that printed `2,189 -> 2,160` while quietly enshrining a violation created that hour.
+The same reasoning is why `--write-baseline` refuses a reseed that would ABSORB a new path even when the total shrinks: see scripts/lib/shrink-only-baseline.ts, the TypeScript twin of the guard reimplemented below, whose header records a real drain that printed `2,189 -> 2,160` while quietly enshrining a violation created that hour.
 
 STRICT MODE, which is W1 P6 and needs no edit here. A MISSING baseline file is not
 "no debt recorded"; it is the strict state. Every non-exempt bash file is then a
-finding. That direction is deliberate and it is also the safe one: deleting the
-baseline to escape the gate makes the gate louder, not quieter.
+finding. That direction is deliberate and it is also the safe one: deleting the baseline to escape the gate makes the gate louder, not quieter.
 
 WHERE THE TWO DATA FILES LIVE, AND WHY THEY ARE NOT IN THE SAME PLACE.
-`.ci/policy/README.md` gives a four-clause predicate for what belongs in
-`.ci/policy/`, and the two files land on opposite sides of clause 1 ("it is a
-DECISION, not data") and clause 2 ("it is BLOCKER-gated"):
+`.ci/policy/README.md` gives a four-clause predicate for what belongs in `.ci/policy/`, and the two files land on opposite sides of clause 1 ("it is a DECISION, not data") and clause 2 ("it is BLOCKER-gated"):
 
   * `.ci/policy/.language-policy-allowlist` PASSES all four. Every entry is a
     decision that a file stays bash forever, each carries a BLOCKER reason, this
@@ -51,40 +31,20 @@ DECISION, not data") and clause 2 ("it is BLOCKER-gated"):
     `.ci/config/tracked-credentials-baseline.json`), which is where a shrink-only
     baseline belongs here.
 
-Putting the baseline in `.ci/policy/` would have looked tidier and would have made
-520 unreviewed paths indistinguishable from three reviewed exemptions.
+Putting the baseline in `.ci/policy/` would have looked tidier and would have made 520 unreviewed paths indistinguishable from three reviewed exemptions.
 
-WHAT COUNTS AS BASH, and why it is not just `*.sh`. A rule keyed on the extension is
-evaded by dropping the extension, so a shebang naming bash/sh/zsh counts too.
-Measured 2026-09-07 that widening adds 4 files to the corpus (three tutorial
-Rediaccfiles and .ci/breakpoint/breakpoint.conf) and ZERO to the non-exempt set, so
-it costs nothing today and closes the hole before somebody finds it.
+WHAT COUNTS AS BASH, and why it is not just `*.sh`. A rule keyed on the extension is evaded by dropping the extension, so a shebang naming bash/sh/zsh counts too. Measured 2026-09-07 that widening adds 4 files to the corpus (three tutorial Rediaccfiles and .ci/breakpoint/breakpoint.conf) and ZERO to the non-exempt set, so it costs nothing today and closes the hole before somebody
+finds it.
 
-THIS GATE'S OWN TEST IS IN THE BASELINE, and that is worth stating rather than
-hoping nobody notices. `.ci/scripts/test/gates/test-language-policy.sh` is bash, in a
-tree this gate says should be Python, and it was written on the same day. It is there
-because the battery that runs gate tests in CI discovers `test-*.sh` by glob
-(.ci/scripts/test/run-all.sh:89 and .ci/rediacc_ci/battery.py), so a Python gate test
-would not run in CI at all -- and a test that does not run is worth less than one
-written in the wrong language. It drains when the battery's port finishes, like every
-other entry, and it is deliberately NOT allowlisted: an allowlist entry would claim it
-stays bash forever, which is not true.
+THIS GATE'S OWN TEST IS IN THE BASELINE, and that is worth stating rather than hoping nobody notices. `.ci/scripts/test/gates/test-language-policy.sh` is bash, in a tree this gate says should be Python, and it was written on the same day. It is there because the battery that runs gate tests in CI discovers `test-*.sh` by glob (.ci/scripts/test/run-all.sh:89 and
+.ci/rediacc_ci/battery.py), so a Python gate test would not run in CI at all -- and a test that does not run is worth less than one written in the wrong language. It drains when the battery's port finishes, like every other entry, and it is deliberately NOT allowlisted: an allowlist entry would claim it stays bash forever, which is not true.
 
-THE BLOCKER VALIDATOR IS CALLED, NOT REIMPLEMENTED. The rule "a BLOCKER reason must
-be substantive" already has three implementations in this tree and
-`.ci/scripts/test/gates/test-blocker-golden-corpus.sh` exists to hold them to one
-behaviour while they collapse into one. A fourth, in a fourth language, would make
-that collapse harder for no gain, so this gate shells out to the canonical
-`.ci/scripts/lib/blocker-validator.sh` and prints what it says.
+THE BLOCKER VALIDATOR IS CALLED, NOT REIMPLEMENTED. The rule "a BLOCKER reason must be substantive" already has three implementations in this tree and `.ci/scripts/test/gates/test-blocker-golden-corpus.sh` exists to hold them to one behaviour while they collapse into one. A fourth, in a fourth language, would make that collapse harder for no gain, so this gate shells out to the
+canonical `.ci/scripts/lib/blocker-validator.sh` and prints what it says.
 
-Exit 0 clean, 1 on a finding or a vacuous corpus, 2 on a failed control, 77 when the
-gate CANNOT RUN (no git, no bash, no validator). 77 is never a verdict.
+Exit 0 clean, 1 on a finding or a vacuous corpus, 2 on a failed control, 77 when the gate CANNOT RUN (no git, no bash, no validator). 77 is never a verdict.
 
----- gate ----
-step: Language policy
-needs: none
-lane: quality-static
-selftest: true
+---- gate ---- step: Language policy needs: none lane: quality-static selftest: true
 why: ruling 7 makes .ci and .claude Python; the bash surface there may shrink, never grow
 ---- end gate ----
 """
@@ -157,12 +117,8 @@ class CannotRun(Exception):  # noqa: N818
 def git(args: list[str]) -> subprocess.CompletedProcess[bytes]:
     """Run git, turning "git is not installed" into a CANNOT RUN rather than a crash.
 
-    EVERY git call in this file goes through here, the selftest's own fixture included.
-    That is not tidiness: the fixture called subprocess.run directly for one revision,
-    and on a machine with no git the gate answered with a 25-line Python traceback and
-    exit 1 -- which reads as a real finding, or as flake, and in neither case tells the
-    reader to install git. Caught 2026-09-07 by the gate test's missing-toolchain case,
-    which is the only reason it is not still there.
+    EVERY git call in this file goes through here, the selftest's own fixture included. That is not tidiness: the fixture called subprocess.run directly for one revision, and on a machine with no git the gate answered with a 25-line Python traceback and exit 1 -- which reads as a real finding, or as flake, and in neither case tells the reader to install git. Caught 2026-09-07 by
+    the gate test's missing-toolchain case, which is the only reason it is not still there.
     """
     try:
         return subprocess.run(["git", *args], capture_output=True, check=False)
@@ -176,9 +132,7 @@ def git(args: list[str]) -> subprocess.CompletedProcess[bytes]:
 def _looks_like_bash(path: pathlib.Path) -> bool:
     """Read the first line and decide whether it names a shell.
 
-    Deliberately generous about WHICH shell: `sh`, `bash` and `zsh` are all bash in
-    the sense ruling 7 means (a shell script in a tree that is meant to be Python),
-    and a gate that argued about dialects would be arguing about the wrong thing.
+    Deliberately generous about WHICH shell: `sh`, `bash` and `zsh` are all bash in the sense ruling 7 means (a shell script in a tree that is meant to be Python), and a gate that argued about dialects would be arguing about the wrong thing.
     """
     try:
         with path.open("rb") as handle:
@@ -204,12 +158,9 @@ def is_bash(root: pathlib.Path, rel: str) -> bool:
 def tracked_files(root: pathlib.Path) -> list[str]:
     """Every tracked path under the covered roots, in git's own words.
 
-    `git ls-files` and not a filesystem walk, because the policy is about what the
-    repository SHIPS. An untracked scratch script is not a language-policy problem,
-    and counting one would make the gate red on a colleague's working tree.
+    `git ls-files` and not a filesystem walk, because the policy is about what the repository SHIPS. An untracked scratch script is not a language-policy problem, and counting one would make the gate red on a colleague's working tree.
 
-    NOT `--recurse-submodules`: ruling 7 is about `.ci` and `.claude`, which are in
-    this repository. A submodule has its own CI and its own rules.
+    NOT `--recurse-submodules`: ruling 7 is about `.ci` and `.claude`, which are in this repository. A submodule has its own CI and its own rules.
     """
     proc = git(["-C", str(root), "ls-files", "-z", "--", *COVERED_ROOTS])
     if proc.returncode != 0:
@@ -232,8 +183,7 @@ def effective_lines(root: pathlib.Path, rel: str) -> int:
 
     The shebang, blank lines, comments and a bare `set -euo pipefail` are not the
     program; a shim that is one line of work plus five lines of preamble is still a
-    one-line shim. This is the oracle behind a `shim:` allowlist entry, so it errs
-    toward counting MORE: anything it is unsure about is a line.
+    one-line shim. This is the oracle behind a `shim:` allowlist entry, so it errs toward counting MORE: anything it is unsure about is a line.
     """
     try:
         text = (root / rel).read_text(encoding="utf-8", errors="replace")
@@ -256,12 +206,8 @@ def effective_lines(root: pathlib.Path, rel: str) -> int:
 def parse_allowlist(text: str) -> tuple[list[tuple[str, str, str]], list[str]]:
     """Parse the BLOCKER-gated allowlist into (kind, value, reason) triples.
 
-    THE GROUPING IS NOT REIMPLEMENTED HERE ANY MORE. It used to be, on the
-    argument that the bash reader returns through a nameref into an associative
-    array with no useful subprocess encoding. That argument expired when the
-    grammar moved into `rediacc_ci.core.allowlist`, which is Python, importable,
-    and proved byte-compatible with both shared readers over a frozen corpus of
-    every real list in this tree.
+    THE GROUPING IS NOT REIMPLEMENTED HERE ANY MORE. It used to be, on the argument that the bash reader returns through a nameref into an associative array with no useful subprocess encoding. That argument expired when the grammar moved into `rediacc_ci.core.allowlist`, which is Python, importable, and proved byte-compatible with both shared readers over a frozen corpus of every
+    real list in this tree.
 
     THREE THINGS THE LOCAL COPY GOT WRONG, none of which had fired:
 
@@ -275,10 +221,7 @@ def parse_allowlist(text: str) -> tuple[list[tuple[str, str, str]], list[str]]:
       * it had no inline `entry  # BLOCKER: reason` branch, so an entry written in
         the documented inline form parsed with an empty reason.
 
-    What stays here is the part that IS this gate's: the `tree:`/`shim:` shape,
-    and naming a malformed entry rather than dropping it. A dropped entry is an
-    exemption that stops exempting, which surfaces as a mystery finding about a
-    file nobody touched.
+    What stays here is the part that IS this gate's: the `tree:`/`shim:` shape, and naming a malformed entry rather than dropping it. A dropped entry is an exemption that stops exempting, which surfaces as a mystery finding about a file nobody touched.
     """
     entries: list[tuple[str, str, str]] = []
     problems: list[str] = []
@@ -306,12 +249,8 @@ def parse_allowlist(text: str) -> tuple[list[tuple[str, str, str]], list[str]]:
 def blocker_quality_problem(entry: str, reason: str) -> str | None:
     """Ask the CANONICAL validator whether this reason is substantive.
 
-    Shelled out on purpose. `.ci/scripts/lib/blocker-validator.sh` holds the
-    30-character floor and the banned-phrase list, its TypeScript twin holds the same
-    rule, and .ci/scripts/test/gates/test-blocker-golden-corpus.sh exists to keep them
-    agreeing while they collapse into one implementation. A fourth copy, in Python,
-    would be one more thing for that collapse to reconcile and one more place for the
-    banned list to lose a phrase without anything breaking.
+    Shelled out on purpose. `.ci/scripts/lib/blocker-validator.sh` holds the 30-character floor and the banned-phrase list, its TypeScript twin holds the same rule, and .ci/scripts/test/gates/test-blocker-golden-corpus.sh exists to keep them agreeing while they collapse into one implementation. A fourth copy, in Python, would be one more thing for that collapse to reconcile and one
+    more place for the banned list to lose a phrase without anything breaking.
     """
     if not reason:
         return (
@@ -374,22 +313,11 @@ def dead_entries(
 ) -> list[str]:
     """Allowlist entries that suppress nothing, which is how a list outlives its reasons.
 
-    IN-GATE LIVENESS, on the `.runner-advice-allowlist` and
-    `syncpack-source-exclusions.json` precedent recorded in
-    docs/agent-reference/suppressions.md: the oracle (does this entry still cover a
-    real bash file?) IS the comparison the gate already performs, so a separate probe
-    in scripts/gates/check-suppression-liveness.ts would be a second implementation of the
-    same question.
+    IN-GATE LIVENESS, on the `.runner-advice-allowlist` and `syncpack-source-exclusions.json` precedent recorded in docs/agent-reference/suppressions.md: the oracle (does this entry still cover a real bash file?) IS the comparison the gate already performs, so a separate probe in scripts/gates/check-suppression-liveness.ts would be a second implementation of the same question.
 
-    The `shim:` oracle has a second half that matters more than the first. An entry
-    whose file still exists but has GROWN past one line is dead in the way that
-    counts: "it is a one-line shim" was the entire justification, and it stopped
-    being true without the file ever being deleted.
+    The `shim:` oracle has a second half that matters more than the first. An entry whose file still exists but has GROWN past one line is dead in the way that counts: "it is a one-line shim" was the entire justification, and it stopped being true without the file ever being deleted.
 
-    The `file:` oracle has a second half too, pointing the OTHER way: an entry whose
-    file SHRANK to one line is refused and told to become a `shim:`, because at that
-    point the stronger oracle applies and declining it is a choice to be watched less
-    closely.
+    The `file:` oracle has a second half too, pointing the OTHER way: an entry whose file SHRANK to one line is refused and told to become a `shim:`, because at that point the stronger oracle applies and declining it is a choice to be watched less closely.
     """
     problems: list[str] = []
     for kind, value, _ in entries:
@@ -551,9 +479,7 @@ def write_baseline(current: list[str], *, first_seed: bool) -> int:
 def selftest() -> int:
     """Both directions on every rule. A gate proven only to fire will flag the tree.
 
-    The floor is what catches a battery that stopped executing: a file whose controls
-    silently vanish otherwise prints nothing and exits 0, which reads exactly like a
-    clean run. `rediacc_ci.controls.Controls` is used rather than a hand-rolled tally
+    The floor is what catches a battery that stopped executing: a file whose controls silently vanish otherwise prints nothing and exits 0, which reads exactly like a clean run. `rediacc_ci.controls.Controls` is used rather than a hand-rolled tally
     for that reason and because five copies of the hand-rolled one had already drifted
     (see .ci/rediacc_ci/controls.py's header).
     """

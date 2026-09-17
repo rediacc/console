@@ -1,16 +1,9 @@
 """Differential: `rediacc_ci.autopilot.linked_sub_prs` against its twin
 `.ci/scripts/autopilot/linked-sub-prs.sh`.
 
-BYTES, NOT TEXT, on both streams. The subject reads a PR body, which is
-whatever GitHub stored, and one of the cases below feeds it a NUL byte on
-purpose to exercise GNU grep's binary suppression. A comparison that decoded
-would fail on the input rather than on the difference it is looking for.
+BYTES, NOT TEXT, on both streams. The subject reads a PR body, which is whatever GitHub stored, and one of the cases below feeds it a NUL byte on purpose to exercise GNU grep's binary suppression. A comparison that decoded would fail on the input rather than on the difference it is looking for.
 
-EVERY CASE RUNS BOTH SIDES OVER A FRESH COPY OF THE FIXTURE, in the same
-directory, with `--body` given as a RELATIVE path. The relative spelling is
-load-bearing for one case: grep's binary diagnostic names the path exactly as
-it was given, so an absolute path in the test would compare two absolute paths
-and never notice a port that rebuilt the string.
+EVERY CASE RUNS BOTH SIDES OVER A FRESH COPY OF THE FIXTURE, in the same directory, with `--body` given as a RELATIVE path. The relative spelling is load-bearing for one case: grep's binary diagnostic names the path exactly as it was given, so an absolute path in the test would compare two absolute paths and never notice a port that rebuilt the string.
 
 WHAT IS COMPARED BY SHAPE RATHER THAN BYTE, and why each one has to be:
 
@@ -27,9 +20,7 @@ every number it saw would pass every positive case here; `test_the_allowlist_
 is_the_boundary` and `test_near_miss_spellings_are_not_links` are what stop it.
 
 K=5 LEDGER: `.ci/shadow/w7p6-linked-sub-prs.observations.jsonl`, recorded in a
-disposable scratch git repository outside this checkout, since
-`shadow-gate.ts --record` refuses a dirty tree and this checkout is never
-clean.
+disposable scratch git repository outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean.
 """
 
 from __future__ import annotations
@@ -93,9 +84,7 @@ def _sides(
 ) -> tuple[int, bytes, bytes]:
     """Run both sides over their own copy of the fixture and compare.
 
-    A FRESH DIRECTORY PER SIDE even though this subject writes nothing: the
-    cheapest way to be sure it stays that way is never to give the second side
-    the first side's leftovers.
+    A FRESH DIRECTORY PER SIDE even though this subject writes nothing: the cheapest way to be sure it stays that way is never to give the second side the first side's leftovers.
     """
     with tempfile.TemporaryDirectory() as td:
         results = []
@@ -202,9 +191,7 @@ def test_numeric_dedup_keeps_the_first_of_an_equal_run() -> None:
 def test_a_nul_byte_makes_the_body_binary() -> None:
     """GNU grep suppresses every match, says so on stderr, and exits 0.
 
-    Reproduced rather than smoothed over: the result is an EMPTY link list,
-    which is indistinguishable from a body with no links unless the diagnostic
-    survives.
+    Reproduced rather than smoothed over: the result is an EMPTY link list, which is indistinguishable from a body with no links unless the diagnostic survives.
     """
     body = b"rediacc/renet#12\x00rediacc/account#13\n"
     exit_code, stdout, stderr = _sides("binary", ["--body", "body.md"], body=body)
@@ -285,11 +272,7 @@ def test_divergence_a_flag_that_is_not_a_shell_identifier() -> None:
     """`parse_args` QUIRK 3. Exit 2 on both; the twin's text carries common.sh's
     own path and line number, so only the shape is compared.
 
-    THE FLAG HAS TO CARRY A CHARACTER THE PREFIX CANNOT RESCUE. `--1bad` looks
-    like the obvious specimen and is not one: the key becomes `ARG_1BAD`, which
-    starts with a letter and is a perfectly good shell identifier, so both
-    sides parse it happily and exit 0. Driven, and it cost this case its first
-    run. `--a.b` is the real thing: `ARG_A.B` cannot be a variable name.
+    THE FLAG HAS TO CARRY A CHARACTER THE PREFIX CANNOT RESCUE. `--1bad` looks like the obvious specimen and is not one: the key becomes `ARG_1BAD`, which starts with a letter and is a perfectly good shell identifier, so both sides parse it happily and exit 0. Driven, and it cost this case its first run. `--a.b` is the real thing: `ARG_A.B` cannot be a variable name.
     """
     with tempfile.TemporaryDirectory() as td:
         seen = []

@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
 """An e2e assertion must not compare an uppercase literal against lowercased output.
 
-WHY THIS EXISTS. `TestHelpers.getCombinedOutput()` returns
-`(result.stdout + result.stderr).toLowerCase()`. Any matcher fed from it that
-expects a capital letter can NEVER match, whatever the machine did. That is not
-a flaky test, it is a test with a dead arm: it reports the product broken while
-the product is fine, and no amount of re-running changes it.
+WHY THIS EXISTS. `TestHelpers.getCombinedOutput()` returns `(result.stdout + result.stderr).toLowerCase()`. Any matcher fed from it that expects a capital letter can NEVER match, whatever the machine did. That is not a flaky test, it is a test with a dead arm: it reports the product broken while the product is fine, and no amount of re-running changes it.
 
-WHAT IT COST. Four of these shipped in one wave and each one burned a full CI
-round on a matrix of five distros:
+WHAT IT COST. Four of these shipped in one wave and each one burned a full CI round on a matrix of five distros:
     /No such file|total 0/    the "No such file" arm was dead; an absent
                               anchor directory -- the CORRECT outcome -- read
                               as a failure
@@ -18,31 +13,18 @@ round on a matrix of five distros:
                               quoted the timestamp back correctly and the
                               assertion failed anyway
 
-WHY A GATE RATHER THAN A SWEEP, which is the whole point. The first three were
-found by a hand-written grep that reported the population as "exactly 3". It was
-wrong: the grep only examined the FIRST matcher after each getCombinedOutput()
-call, so the ordinary idiom
+WHY A GATE RATHER THAN A SWEEP, which is the whole point. The first three were found by a hand-written grep that reported the population as "exactly 3". It was wrong: the grep only examined the FIRST matcher after each getCombinedOutput() call, so the ordinary idiom
 
     const text = runner.getCombinedOutput(result);
     expect(text).toContain('...');     <- seen
     expect(text).toContain('...');     <- invisible
 
-hid every assertion after the first, and the fourth instance was found by CI
-instead. A confident wrong number from a hand sweep is exactly the failure this
-repo keeps paying for, so the sweep is an instrument now.
+hid every assertion after the first, and the fourth instance was found by CI instead. A confident wrong number from a hand sweep is exactly the failure this repo keeps paying for, so the sweep is an instrument now.
 
-WHAT IT DOES NOT COVER, stated plainly. It resolves subjects one hop: an inline
-getCombinedOutput() call, or a local const bound directly to one. A subject
-passed through a helper, or reassigned, is not tracked. It also cannot know that
+WHAT IT DOES NOT COVER, stated plainly. It resolves subjects one hop: an inline getCombinedOutput() call, or a local const bound directly to one. A subject passed through a helper, or reassigned, is not tracked. It also cannot know that
 some OTHER helper lowercases; it is specifically about this one.
 
----- gate ----
-step: E2E case-blind assertions
-needs: none
-id: check:ci-e2e-case-blind
-selftest: true
-lane: quality-content
----- end gate ----
+---- gate ---- step: E2E case-blind assertions needs: none id: check:ci-e2e-case-blind selftest: true lane: quality-content ---- end gate ----
 """
 
 import pathlib
@@ -69,11 +51,7 @@ BIND = re.compile(r"(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*[^;]*getCombine
 def uppercase_in_literal(expected: str) -> bool:
     """True when the EXPECTED value carries a capital that can never be matched.
 
-    Only string literals and case-SENSITIVE regex bodies count. An identifier is
-    not inspected (its value is unknown here), a regex carrying /i is fine by
-    construction, and escapes like \\D are character classes rather than letters
-    -- treating those as findings made the first draft cry wolf on four healthy
-    assertions.
+    Only string literals and case-SENSITIVE regex bodies count. An identifier is not inspected (its value is unknown here), a regex carrying /i is fine by construction, and escapes like \\D are character classes rather than letters -- treating those as findings made the first draft cry wolf on four healthy assertions.
     """
     for lit in re.findall(r"'([^']*)'|\"([^\"]*)\"|`([^`]*)`", expected):
         if re.search(r"[A-Z]", "".join(lit)):

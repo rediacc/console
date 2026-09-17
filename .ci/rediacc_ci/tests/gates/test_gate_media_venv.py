@@ -18,22 +18,14 @@ TWO KINDS OF ASSERTION, and they answer different questions.
   refilled BY NAME, so python3, ffmpeg, sox, apt-get, sudo, pip, docker, node and the
   network are absent unless the case says otherwise.
 
-cuda.sh IS SOURCED ALONGSIDE venv.sh in every case, and that is not tidiness:
-`install_generative_python_deps` calls `install_flash_attn_if_supported`, which lives
-in cuda.sh. The cross-module edge is real, so it is exercised rather than stubbed
-away -- if it broke, the pip case would die with "command not found".
+cuda.sh IS SOURCED ALONGSIDE venv.sh in every case, and that is not tidiness: `install_generative_python_deps` calls `install_flash_attn_if_supported`, which lives in cuda.sh. The cross-module edge is real, so it is exercised rather than stubbed away -- if it broke, the pip case would die with "command not found".
 
 `+uname` IS REQUIRED IN EVERY SPEC. `.ci/scripts/lib/common.sh` runs
 `CI_OS="$(detect_os)"` at SOURCE time and `detect_os` shells out to `uname`, so a
-spec without it carries a stray "uname: command not found" on stderr in a case whose
-assertions have nothing to do with it.
+spec without it carries a stray "uname: command not found" on stderr in a case whose assertions have nothing to do with it.
 
-NO `xdist_group`, for the reasons written out in `test_gate_media_cuda.py`:
-`fake_bin` mutates PATH on THIS process and restores it in a `finally`, so two of
-these in one worker are fine and two in two workers are independent processes.
-Nothing is bound, every case takes its own `mktemp -d`, and `MEDIA_MODULE_DIR` is a
-per-call ARGUMENT here rather than the environment variable it is in bash, which
-removes the one module-global the twin does mutate.
+NO `xdist_group`, for the reasons written out in `test_gate_media_cuda.py`: `fake_bin` mutates PATH on THIS process and restores it in a `finally`, so two of these in one worker are fine and two in two workers are independent processes. Nothing is bound, every case takes its own `mktemp -d`, and `MEDIA_MODULE_DIR` is a per-call ARGUMENT here rather than the environment variable it
+is in bash, which removes the one module-global the twin does mutate.
 """
 
 import shutil
@@ -67,8 +59,7 @@ def test_every_moved_function_is_solely_owned_by_this_module(gate):
 def test_the_ownership_assertion_can_fail(gate):
     """CONTROL. An assertion nobody has watched fail is one nobody has checked.
 
-    "Nothing defines it, so nothing else defines it either" is the specific way this
-    one could go quiet -- the same vacuity the byte-identity helper it replaced was
+    "Nothing defines it, so nothing else defines it either" is the specific way this one could go quiet -- the same vacuity the byte-identity helper it replaced was
     built around. The shared control drives all four arms; see `media_verify.py` for
     what they are and why the fourth, a MISSING origin, was the one nothing covered.
     """

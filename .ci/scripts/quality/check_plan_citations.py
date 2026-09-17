@@ -3,12 +3,8 @@
 
 WHY THIS GATE EXISTS, and it has a measurement rather than an opinion.
 
-`agent/` is where this repo keeps the reasoning behind its own machinery, and the
-value of a plan or a record is entirely in the pointers it carries: a file:line,
-a gate id, another plan, a commit or a blob. Measured 2026-09-06 while designing
-W12: of 71 commit-shaped tokens already cited across those files, **37 no longer
-resolve**. More than half of the durable pointers this tree relies on are dead,
-and nothing reported it -- not one of them.
+`agent/` is where this repo keeps the reasoning behind its own machinery, and the value of a plan or a record is entirely in the pointers it carries: a file:line, a gate id, another plan, a commit or a blob. Measured 2026-09-06 while designing W12: of 71 commit-shaped tokens already cited across those files, **37 no longer resolve**. More than half of the durable pointers this tree
+relies on are dead, and nothing reported it -- not one of them.
 
 The cure is NOT a sweep of the 37. A sweep fixes a day; this gate fixes the
 slope. It judges ONLY the lines a change ADDS, so:
@@ -17,11 +13,7 @@ slope. It judges ONLY the lines a change ADDS, so:
   * a change that adds a NEW dead pointer is red at the moment it is cheapest to
     fix, which is while the author still knows what they meant.
 
-WHAT IS ASSERTED. Every citation on an added line resolves, using
-`wl_planrec.resolve` and NOTHING ELSE. There is deliberately no second copy of
-any resolver here: `citation_state`'s path regex alone carries five separately
-paid-for extension rounds (dotfiles, .astro, .mdx, .cast, leading dots), and a
-fresh regex in this file would re-open every one of them. Five kinds:
+WHAT IS ASSERTED. Every citation on an added line resolves, using `wl_planrec.resolve` and NOTHING ELSE. There is deliberately no second copy of any resolver here: `citation_state`'s path regex alone carries five separately paid-for extension rounds (dotfiles, .astro, .mdx, .cast, leading dots), and a fresh regex in this file would re-open every one of them. Five kinds:
 
   fileline   `path/to/file.ext:123` -- the file exists and has that many lines.
   plan       `agent/PLAN-x.md` -- on disk (a COMPACTED record still is, which is
@@ -49,8 +41,7 @@ WHAT IS DELIBERATELY NOT ASSERTED, so a green is not read as more than it is:
     decision with a much larger blast radius, and it should be made on its own
     evidence rather than as a side effect of this gate.
 
-THE ANTI-VACUITY HALVES, both of them, because "no findings" and "read nothing"
-look identical from the outside:
+THE ANTI-VACUITY HALVES, both of them, because "no findings" and "read nothing" look identical from the outside:
 
   1. THE CONTROL. `selftest()` runs the real extractor and the real resolvers
      over four tokens that CANNOT resolve and four that MUST, against this
@@ -64,20 +55,12 @@ look identical from the outside:
      corpus-derived rather than a hand-typed count, per the driver contract's
      floor policy: it is "the corpus must not be silent", not "there must be N".
 
-WHY IT READS THE WORKING TREE, not just HEAD. `git diff <base> -- agent` with no
-`...` compares the base commit to the WORKING TREE, so it judges uncommitted work
-too. This program's normal deliverable is an uncommitted tree, and a gate that
-could only see committed lines would be green on exactly the state it is meant to
-police. In CI on a pull request the working tree is the head commit, so the same
-code path answers the same question.
+WHY IT READS THE WORKING TREE, not just HEAD. `git diff <base> -- agent` with no `...` compares the base commit to the WORKING TREE, so it judges uncommitted work too. This program's normal deliverable is an uncommitted tree, and a gate that could only see committed lines would be green on exactly the state it is meant to police. In CI on a pull request the working tree is the head
+commit, so the same code path answers the same question.
 
 Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
 
----- gate ----
-step: Plan citations
-needs: none
-lane: quality-branch
----- end gate ----
+---- gate ---- step: Plan citations needs: none lane: quality-branch ---- end gate ----
 """
 
 from __future__ import annotations
@@ -234,11 +217,7 @@ def _git(*args) -> str:
 def base_ref() -> str | None:
     """The commit this branch diverged from, or None.
 
-    The same resolution order `check_plan_boxes.base_ref` uses, and for the same
-    reason: CI hands us a branch NAME on a pull_request event and nothing at all
-    on a push, so the merge-base is computed rather than assumed. Diffing against
-    the tip of main would attribute every commit main gained since the branch
-    started to this branch, and every stale citation in them with it.
+    The same resolution order `check_plan_boxes.base_ref` uses, and for the same reason: CI hands us a branch NAME on a pull_request event and nothing at all on a push, so the merge-base is computed rather than assumed. Diffing against the tip of main would attribute every commit main gained since the branch started to this branch, and every stale citation in them with it.
     """
     cand = os.environ.get("PLAN_CITATIONS_BASE") or ""
     if not cand:
@@ -259,8 +238,7 @@ HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 def added_lines(base):
     """[(rel, lineno, text)] for every line this branch ADDS under the scope.
 
-    Line numbers are the NEW file's, tracked through the hunk headers, because a
-    finding a reader cannot open is a finding they will not act on.
+    Line numbers are the NEW file's, tracked through the hunk headers, because a finding a reader cannot open is a finding they will not act on.
     """
     out = []
     raw = _git("diff", "--unified=0", "--no-color", base, "--", SCOPE_DIR)
@@ -288,10 +266,7 @@ def added_lines(base):
 def fenced_lines(root, rel):
     """The set of 1-based line numbers inside a fenced code block in `rel`.
 
-    Read from the NEW file rather than inferred from the diff, because a hunk
-    carries no fence context: an added line in the middle of a block looks
-    exactly like an added line in prose. `PFID.FENCE_RE` is the same fence test
-    `plan_tasks` uses, so "inside a fence" means here what it means everywhere
+    Read from the NEW file rather than inferred from the diff, because a hunk carries no fence context: an added line in the middle of a block looks exactly like an added line in prose. `PFID.FENCE_RE` is the same fence test `plan_tasks` uses, so "inside a fence" means here what it means everywhere
     else in this repo.
     """
     try:
@@ -312,10 +287,7 @@ def fenced_lines(root, rel):
 def citations(text):
     """[(kind, token)] for every pointer on one line, in resolve()'s kinds.
 
-    THE ORDER MATTERS and it is the order `wl_planrec.launder` uses: file:line
-    first, because a path fragment inspected as hex would be rewritten out from
-    under the citation resolver. Plans before gates before objects for the same
-    reason -- each later shape is a superset of characters the earlier one owns.
+    THE ORDER MATTERS and it is the order `wl_planrec.launder` uses: file:line first, because a path fragment inspected as hex would be rewritten out from under the citation resolver. Plans before gates before objects for the same reason -- each later shape is a superset of characters the earlier one owns.
     """
     out, spans = [], []
 
@@ -360,9 +332,7 @@ _SHAPE_FINGERPRINTS: dict[str, frozenset[str]] = {}
 def shape_fingerprints(root=None):
     """Every fingerprint `check:ci-shape-duplication` has recorded, seeded or accepted.
 
-    Read from the seed rather than pattern-matched, so a hex token only stops being an
-    object citation when the duplication corpus really carries it. A missing or malformed
-    seed yields the EMPTY set, which fails safe: every hex token stays judged as an object.
+    Read from the seed rather than pattern-matched, so a hex token only stops being an object citation when the duplication corpus really carries it. A missing or malformed seed yields the EMPTY set, which fails safe: every hex token stays judged as an object.
     """
     root = ROOT if root is None else root
     key = str(root)
@@ -380,9 +350,7 @@ def shape_fingerprints(root=None):
 def submodule_paths(root):
     """The submodule prefixes declared in `.gitmodules`, or ().
 
-    Read from the file rather than hardcoded, because the set changes and a
-    hardcoded list would go stale in exactly the direction that produces false
-    findings: a submodule added later would not be recognised.
+    Read from the file rather than hardcoded, because the set changes and a hardcoded list would go stale in exactly the direction that produces false findings: a submodule added later would not be recognised.
     """
     out = []
     for ln in _git("config", "-f", ".gitmodules", "--get-regexp", r"\.path$").split("\n"):
@@ -395,31 +363,18 @@ def submodule_paths(root):
 def commit_is_reachable(root, token) -> bool:
     """Is `token` a commit REACHABLE FROM HEAD, not merely present in this clone?
 
-    PRESENCE IS THE WRONG QUESTION FOR A COMMIT, and asking it has now cost two CI
-    rounds. A rewrite -- `filter-branch`, a rebase, `gh pr merge --rebase` --
-    leaves the pre-rewrite commits sitting in the object database, reachable from
-    reflogs and `refs/original`. `git cat-file -t` happily answers `commit` for
-    every one of them on the machine that did the rewrite, and a FRESH CLONE has
-    none of them. So a citation to an orphan passes locally and fails in CI,
-    which is the worst of both: green where it is cheap to fix, red where it is
-    expensive.
+    PRESENCE IS THE WRONG QUESTION FOR A COMMIT, and asking it has now cost two CI rounds. A rewrite -- `filter-branch`, a rebase, `gh pr merge --rebase` -- leaves the pre-rewrite commits sitting in the object database, reachable from reflogs and `refs/original`. `git cat-file -t` happily answers `commit` for every one of them on the machine that did the rewrite, and a FRESH CLONE
+    has none of them. So a citation to an orphan passes locally and fails in CI, which is the worst of both: green where it is cheap to fix, red where it is expensive.
 
-    Round 43 of this wave recorded exactly this after the operator-authorised
-    history rewrite -- 149 stale shas all resolved locally while not one was an
-    ancestor of HEAD -- and named `git merge-base --is-ancestor` as the honest
+    Round 43 of this wave recorded exactly this after the operator-authorised history rewrite -- 149 stale shas all resolved locally while not one was an ancestor of HEAD -- and named `git merge-base --is-ancestor` as the honest
     test. It was written down and not wired in; measured 2026-09-15, six orphaned
-    citations in agent/PLAN-b2-emit-matrix.md passed this gate locally and reddened
-    `Quality / Branch` in CI.
+    citations in agent/PLAN-b2-emit-matrix.md passed this gate locally and reddened `Quality / Branch` in CI.
 
-    ONLY COMMITS GET THIS TEST, and the asymmetry is the design rather than an
-    exception. A blob or tree is CONTENT-addressed: it is an ancestor of nothing,
-    `--is-ancestor` is meaningless for it, and demanding reachability would flag
-    every correctly-cited blob. That is also precisely why this gate's own advice
+    ONLY COMMITS GET THIS TEST, and the asymmetry is the design rather than an exception. A blob or tree is CONTENT-addressed: it is an ancestor of nothing, `--is-ancestor` is meaningless for it, and demanding reachability would flag every correctly-cited blob. That is also precisely why this gate's own advice
     for a rewritten commit is "cite the blob id instead" -- a blob survives the
     rewrite the commit does not.
 
-    SAFE ON THIS REPOSITORY'S CI because `quality-branch` checks out with
-    `fetch-depth: 0` (full COMMIT history) and `filter: blob:none` (blobs lazily
+    SAFE ON THIS REPOSITORY'S CI because `quality-branch` checks out with `fetch-depth: 0` (full COMMIT history) and `filter: blob:none` (blobs lazily
     fetched). Ancestry needs commits, which are all present; it never needs a
     blob.
     """
@@ -437,12 +392,8 @@ def commit_is_reachable(root, token) -> bool:
 def unresolved(root, kind, token):
     """(bad, why) -- False means the pointer lands somewhere real.
 
-    `object` is the one kind with THREE acceptable answers, so it is asked up
-    to three times. Demanding a blob would flag every legitimate commit,
-    demanding a commit would flag every blob, and a record is entitled to
-    carry any of the three -- a `tree` is rare (a citation into a `git
-    filter-branch`/rewrite control naming a tree id directly) but a real,
-    correctly-cited object that neither `blob` nor `commit` resolves.
+    `object` is the one kind with THREE acceptable answers, so it is asked up to three times. Demanding a blob would flag every legitimate commit, demanding a commit would flag every blob, and a record is entitled to carry any of the three -- a `tree` is rare (a citation into a `git filter-branch`/rewrite control naming a tree id directly) but a real, correctly-cited object that
+    neither `blob` nor `commit` resolves.
 
     A COMMIT MUST ALSO BE REACHABLE FROM HEAD; a blob or tree need only exist.
     See `commit_is_reachable` for why the two differ.
@@ -494,24 +445,12 @@ def absent_submodules(root):
 
     WHY THIS EXISTS. `quality-branch` -- the lane that runs this gate -- checks out
     with no `submodules:` key, which is GitHub Actions' default of false. So in CI
-    `private/renet/**` is an empty directory, and every `private/renet/pkg/...:NNN`
-    citation in the corpus resolved to "does not exist": 22 findings on the first
-    real run, every one of them a correct pointer into code the lane had chosen not
-    to fetch.
+    `private/renet/**` is an empty directory, and every `private/renet/pkg/...:NNN` citation in the corpus resolved to "does not exist": 22 findings on the first real run, every one of them a correct pointer into code the lane had chosen not to fetch.
 
-    That direction of wrongness is the expensive one. A false POSITIVE here asks a
-    reader to DELETE a citation that is perfectly good, and the gate's own advice
-    block tells them how ("a file:line that moved needs re-reading"). Follow it and
-    you lose the pointer permanently.
+    That direction of wrongness is the expensive one. A false POSITIVE here asks a reader to DELETE a citation that is perfectly good, and the gate's own advice block tells them how ("a file:line that moved needs re-reading"). Follow it and you lose the pointer permanently.
 
-    SCOPED TO THIS GATE ON PURPOSE, and this is the part not to "simplify" later.
-    The obvious fix is to teach `citation_state()` about submodules, and that would
-    be wrong: it is shared with the stop hook's own claim-verification
-    (`worklist.py`, `wl_planrec.py`, `test-completion-evidence.py`), where a session
-    DOES have the submodule checked out, so "I cannot verify this" must stay a
-    refusal rather than become a skip. Widening the shared resolver would teach the
-    anti-hallucination check to wave through exactly the claims it exists to catch.
-    So the filter lives here, in the caller, and the resolver keeps failing closed.
+    SCOPED TO THIS GATE ON PURPOSE, and this is the part not to "simplify" later. The obvious fix is to teach `citation_state()` about submodules, and that would be wrong: it is shared with the stop hook's own claim-verification (`worklist.py`, `wl_planrec.py`, `test-completion-evidence.py`), where a session DOES have the submodule checked out, so "I cannot verify this" must stay a
+    refusal rather than become a skip. Widening the shared resolver would teach the anti-hallucination check to wave through exactly the claims it exists to catch. So the filter lives here, in the caller, and the resolver keeps failing closed.
     """
     # `-f <root>/.gitmodules`, NOT the bare relative name. `_git` anchors every call to the module-level ROOT, so a bare `.gitmodules` reads the real repo's
     # while the `root / path` below reads the caller's -- the two agree in
@@ -556,9 +495,7 @@ def problems_for(root, rows, skip_prefixes=()):
 def corpus_citations(root):
     """(files, citations) over the whole tracked corpus. The parser-blind floor.
 
-    Counted with the SAME extractor the diff uses, which is the only way the
-    count means anything: a floor computed by a second, healthier parser would
-    stay comfortably above zero while the real one saw nothing.
+    Counted with the SAME extractor the diff uses, which is the only way the count means anything: a floor computed by a second, healthier parser would stay comfortably above zero while the real one saw nothing.
     """
     listing = _git("ls-files", "--", SCOPE_DIR).split("\n")
     files = [f for f in listing if in_scope(f.strip())]

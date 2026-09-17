@@ -2,35 +2,22 @@
 
 Behavioural test for `.ci/scripts/quality/check-label-inventory.sh`.
 
-WHAT IT GUARDS. The gate reconciles `.github/labels.yml` against the labels that
-actually exist on the repo, in BOTH directions, and the direction that bit was
-declared-but-absent: `rollback` was declared and referenced and did not exist, and
-`promote-stable.yml` searches `label:rollback`. A GitHub search for a nonexistent
-label returns zero PRs rather than an error, so the promotion block never fired.
-Nothing said so. That is the class this gate catches.
+WHAT IT GUARDS. The gate reconciles `.github/labels.yml` against the labels that actually exist on the repo, in BOTH directions, and the direction that bit was declared-but-absent: `rollback` was declared and referenced and did not exist, and `promote-stable.yml` searches `label:rollback`. A GitHub search for a nonexistent label returns zero PRs rather than an error, so the
+promotion block never fired. Nothing said so. That is the class this gate catches.
 
-Every case carries its control: a firing direction is only meaningful next to the
-matching clean case, and a refusal is only meaningful next to a read that succeeds.
+Every case carries its control: a firing direction is only meaningful next to the matching clean case, and a refusal is only meaningful next to a read that succeeds.
 
-NO NETWORK. The live list is injected through `LABEL_INVENTORY_LIVE_FILE`, which is
-also how the real-tree case below drives the REAL gate over the REAL
-`.github/labels.yml`.
+NO NETWORK. The live list is injected through `LABEL_INVENTORY_LIVE_FILE`, which is also how the real-tree case below drives the REAL gate over the REAL `.github/labels.yml`.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases read the working tree
-directly: the two real-tree cases derive their live list from `.github/labels.yml`
-and drive the subject at it in place (real parse, real floor, real allowlist
-verification against the real `report-nightly-status.cjs`), and the malformed-JSON
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases read the working tree directly: the two real-tree cases derive their live list from `.github/labels.yml` and drive the subject at it in place (real parse, real floor, real allowlist verification against the real `report-nightly-status.cjs`), and the malformed-JSON
 case copies the subject itself. A battery step rewriting either mid-read is a
 divergence that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
 the serialisation, and it is honoured only because this module declares no
 `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
-THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from the real
-`bash check-label-inventory.sh`. The one piece of the twin rewritten in Python is
-the mutant construction in `test_malformed_live_json_fails_closed`, which the twin
+THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from the real `bash check-label-inventory.sh`. The one piece of the twin rewritten in Python is the mutant construction in `test_malformed_live_json_fails_closed`, which the twin
 already writes in Python via a heredoc; the three anchors and their
-count-exactly-one assertions are carried over verbatim, because a mutation that
-lands somewhere else is a control that fires for the wrong reason.
+count-exactly-one assertions are carried over verbatim, because a mutation that lands somewhere else is a control that fires for the wrong reason.
 """
 
 import os
@@ -62,9 +49,7 @@ def require_gate(gate) -> str:
 def run_gate(gate, labels_file, live_file, **extra: str) -> harness.RunResult:
     """`run_gate` from the twin: merged streams, env scoped to this call.
 
-    The twin captures `2>&1` into `LAST_OUT` and asserts on the merged text, so the
-    callers below read `.combined` for the same reason. Env is passed per call so
-    one case cannot leak a seam into the next -- which is exactly what the twin's
+    The twin captures `2>&1` into `LAST_OUT` and asserts on the merged text, so the callers below read `.combined` for the same reason. Env is passed per call so one case cannot leak a seam into the next -- which is exactly what the twin's
     inline `VAR=... bash "$GATE"` form buys it.
     """
     bash = require_gate(gate)
@@ -88,12 +73,9 @@ def write_labels(path, *names: str) -> None:
 def real_declared_names(gate) -> list[str]:
     """The real `.github/labels.yml` names, DERIVED and never hand-copied.
 
-    `grep -E '^- name:' | sed -E 's/^- name:[[:space:]]*//'` in the twin. A
-    hardcoded list here would be a second source of truth that rots the next time a
-    label is added.
+    `grep -E '^- name:' | sed -E 's/^- name:[[:space:]]*//'` in the twin. A hardcoded list here would be a second source of truth that rots the next time a label is added.
 
-    ANTI-VACUITY: zero names is a FAILURE. Every real-tree assertion below is a
-    claim about this list, and an empty one would make them all vacuously true.
+    ANTI-VACUITY: zero names is a FAILURE. Every real-tree assertion below is a claim about this list, and an empty one would make them all vacuously true.
     """
     if not REAL_LABELS.is_file():
         gate.log_fail(
@@ -217,9 +199,7 @@ def test_a_stale_allowlist_entry_is_refused(gate):
     """The exemption must self-expire. If `nightly-red` stops being declared, the
     allowlist entry is a permanent hole pointing at nothing.
 
-    The verification is scoped to the real declaration file (a fixture tree
-    legitimately has no `nightly-red`), so the flag is driven on explicitly here
-    rather than left to the scoping heuristic.
+    The verification is scoped to the real declaration file (a fixture tree legitimately has no `nightly-red`), so the flag is driven on explicitly here rather than left to the scoping heuristic.
     """
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five")
@@ -274,10 +254,7 @@ def test_a_stale_list_read_is_re_verified_before_accusing(gate):
 
     Observed on a real full run: the gate accused `no-auto-retry` of not existing
     while it existed and `watchdog-monitor.cjs` was reading it. Someone was mid-way
-    through delete-and-recreate on it, and the paginated list came back one short.
-    Wrong-by-one clears the empty-list guard and then fires this gate's loudest
-    message, the one about rollback and silent fail-open -- and a gate that cries
-    wolf that hard on a race gets ignored.
+    through delete-and-recreate on it, and the paginated list came back one short. Wrong-by-one clears the empty-list guard and then fires this gate's loudest message, the one about rollback and silent fail-open -- and a gate that cries wolf that hard on a race gets ignored.
     """
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "racy")
@@ -330,8 +307,7 @@ def test_a_genuinely_absent_label_still_fires_after_re_verification(gate):
 
 def test_re_verification_does_not_touch_the_undeclared_direction(gate):
     """An EXTRA name cannot be a partial-read artifact -- a stale read loses entries,
-    it does not invent them -- so direction (b) must fire whatever the probe says. A
-    probe set that "confirms" the stowaway must not silence it, which is the mistake
+    it does not invent them -- so direction (b) must fire whatever the probe says. A probe set that "confirms" the stowaway must not silence it, which is the mistake
     a symmetric implementation would make."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five")
@@ -352,8 +328,7 @@ def test_re_verification_does_not_touch_the_undeclared_direction(gate):
 
 def test_injected_mode_without_a_probe_seam_still_reports(gate):
     """The offline seam must keep working. With no probe file and no API to re-read,
-    the injected list stands as its own authority: the probe reports "could not", and
-    the finding is REPORTED rather than dropped. Failing the other way would make
+    the injected list stands as its own authority: the probe reports "could not", and the finding is REPORTED rather than dropped. Failing the other way would make
     every offline run of this gate vacuously green."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "ghost-label")
@@ -366,10 +341,7 @@ def test_injected_mode_without_a_probe_seam_still_reports(gate):
 
 def test_indented_fields_are_never_mistaken_for_names(gate):
     """`.github/labels.yml` carries `color:`, `description:` and `guide:` under each
-    entry. The name extraction anchors on `^- name:`, so an indented field cannot be
-    picked up -- but "it currently passes" is not the same as "it cannot". If a field
-    value ever leaked in, the gate would report a phantom label (`false`, a hex
-    colour) as declared-but-absent, and the fix would be hunting a label that was
+    entry. The name extraction anchors on `^- name:`, so an indented field cannot be picked up -- but "it currently passes" is not the same as "it cannot". If a field value ever leaked in, the gate would report a phantom label (`false`, a hex colour) as declared-but-absent, and the fix would be hunting a label that was
     never a label."""
     with harness.temp_dir() as d:
         (d / "labels.yml").write_text(
@@ -410,9 +382,7 @@ def test_indented_fields_are_never_mistaken_for_names(gate):
 def test_real_tree_reconciles_against_an_injected_live_list(gate):
     """THE REAL-TREE CASE, and the one the manifest BLOCKER points at.
 
-    The gate runs seam-free over the REAL `.github/labels.yml` -- real parse, real
-    floor, real allowlist verification against the real `report-nightly-status.cjs`
-    -- with the live list injected so no network is touched. The live GitHub read
+    The gate runs seam-free over the REAL `.github/labels.yml` -- real parse, real floor, real allowlist verification against the real `report-nightly-status.cjs` -- with the live list injected so no network is touched. The live GitHub read
     itself cannot run in the quality lane (no label-read token there); it runs on
     `npm run check:ci-label-inventory`.
     """
@@ -471,10 +441,7 @@ def test_malformed_live_json_fails_closed(gate):
 
     `LIVE_JSON` feeds a python heredoc that used to swallow a JSON decode failure
     with a bare `sys.exit(0)`. The outer bash captures that exit code as `drift_rc`,
-    so a truncated/malformed API response (a real risk: `gh api ... --paginate ||
-    echo ""` can leave partial stdout on a mid-stream failure) read as "the
-    comparison ran and found nothing" -- the exact swallowed-failure class 1eac336b
-    already fixed once at the shell `|| true` level, one layer down.
+    so a truncated/malformed API response (a real risk: `gh api ... --paginate || echo ""` can leave partial stdout on a mid-stream failure) read as "the comparison ran and found nothing" -- the exact swallowed-failure class 1eac336b already fixed once at the shell `|| true` level, one layer down.
     """
     bash = require_gate(gate)
     names = real_declared_names(gate)
@@ -525,8 +492,7 @@ def test_malformed_live_json_fails_closed(gate):
 def _mutate_subject(gate) -> str:
     """The twin's python heredoc, verbatim in intent and in its three anchors.
 
-    Each anchor must appear EXACTLY ONCE. An ambiguous anchor would patch the wrong
-    occurrence and the control would prove nothing, so the count is asserted rather
+    Each anchor must appear EXACTLY ONCE. An ambiguous anchor would patch the wrong occurrence and the control would prove nothing, so the count is asserted rather
     than assumed -- which is what the twin's `assert src.count(needle) == 1` does.
     """
     repo_root = os.fspath(paths.repo_root())
@@ -563,10 +529,7 @@ def test_the_real_declaration_file_is_non_trivial(gate):
     """ADDED BY THE PORT: print the shape of the real corpus, so a collapse is
     visible rather than silent.
 
-    `real_declared_names` already REFUSES an empty parse, which is the anti-vacuity
-    half. This case states the number out loud on every run, because "the real gate
-    reconciled" says nothing about how many labels it reconciled, and a declaration
-    file that quietly shrank to the gate's floor of five would still read as green.
+    `real_declared_names` already REFUSES an empty parse, which is the anti-vacuity half. This case states the number out loud on every run, because "the real gate reconciled" says nothing about how many labels it reconciled, and a declaration file that quietly shrank to the gate's floor of five would still read as green.
     """
     names = real_declared_names(gate)
     floor = 5

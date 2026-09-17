@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/dispatch-release.sh` (191 lines).
 
-Decides whether the merged commit that triggered this CI run earns a cd-v2
-release, and dispatches it. The twin's own 67-line header carries the contract
-(the `bump-none` rule, why the HEAD commit and not the release range, why every
+Decides whether the merged commit that triggered this CI run earns a cd-v2 release, and dispatches it. The twin's own 67-line header carries the contract (the `bump-none` rule, why the HEAD commit and not the release range, why every
 failure path FAILS OPEN, and why the decision and the dispatch are separable);
 none of it is restated here.
 
-LIVE CALLERS, not repointed. `.github/workflows/ci.yml` runs the bash twin in
-two steps of `finalize-release-sentinel`, `--decide-only` before the sentinel is
+LIVE CALLERS, not repointed. `.github/workflows/ci.yml` runs the bash twin in two steps of `finalize-release-sentinel`, `--decide-only` before the sentinel is
 sealed and `--dispatch-only` after. The bash twin stays the registered gate;
-this module is its verified-equivalent alternative, and the cutover is a
-separate, later, driver-only step.
+this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
-Ledger: `.ci/shadow/w7p6-dispatch-release.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-release --assert
---k 5`).
+Ledger: `.ci/shadow/w7p6-dispatch-release.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-release --assert --k 5`).
 
 -----------------------------------------------------------------------------
 DEFECT A, REPRODUCED RATHER THAN REPAIRED: `2>&1` MAKES gh's STDERR INTO DATA
@@ -24,10 +18,7 @@ The twin captures the PR lookup with
 
     rows=$(gh api ".../pulls" --jq '...' 2>&1 </dev/null)
 
-so any line `gh` writes to stderr WHILE SUCCEEDING becomes a row of the PR
-table. Each such line is then parsed as `<number> <labels>`, and since it
-carries no `bump-none` it lands in `keep_prs`. Driven, with a fake `gh` that
-prints one deprecation notice on stderr and the real table on stdout:
+so any line `gh` writes to stderr WHILE SUCCEEDING becomes a row of the PR table. Each such line is then parsed as `<number> <labels>`, and since it carries no `bump-none` it lands in `keep_prs`. Driven, with a fake `gh` that prints one deprecation notice on stderr and the real table on stdout:
 
     $ FAKE_GH_STDOUT='570 bump-none' \\
       FAKE_GH_STDERR='Warning: your gh version is out of date' \\
@@ -38,12 +29,8 @@ prints one deprecation notice on stderr and the real table on stdout:
       contains abcdef1 and is not; releasing.
     decision: release
 
-Without the stderr line the same call prints `decision: skip`. So one benign
-diagnostic on a SUCCEEDING lookup invents a phantom PR, flips the verdict, and
-names that phantom in a notice a human is expected to believe. It errs in the
-release direction, which is the twin's stated preference, but the reasoning
-printed for it is false. `STDERR_IS_DATA` names it so a test can assert it by
-name. Reported, not fixed: repairing it is a cutover-box decision.
+Without the stderr line the same call prints `decision: skip`. So one benign diagnostic on a SUCCEEDING lookup invents a phantom PR, flips the verdict, and names that phantom in a notice a human is expected to believe. It errs in the release direction, which is the twin's stated preference, but the reasoning printed for it is false. `STDERR_IS_DATA` names it so a test can assert it
+by name. Reported, not fixed: repairing it is a cutover-box decision.
 
 -----------------------------------------------------------------------------
 DEFECT B: THE `keep_prs` TRAILING SPACE IS TRIMMED IN THREE MESSAGES AND NOT
@@ -51,8 +38,7 @@ IN THE FOURTH
 -----------------------------------------------------------------------------
 `${skip_prs% }` and `${keep_prs% }` strip the accumulator's trailing space
 everywhere except the final `log_info`, which uses `${keep_prs:-no PR}` and
-therefore prints `dispatching cd-v2 for abcdef1 (#571 )`. Cosmetic, carried
-verbatim, and pinned by the differential so nobody "tidies" one side only.
+therefore prints `dispatching cd-v2 for abcdef1 (#571 )`. Cosmetic, carried verbatim, and pinned by the differential so nobody "tidies" one side only.
 
 -----------------------------------------------------------------------------
 DIVERGENCES, BOTH IN TEXT ONLY A HUMAN READS
@@ -71,9 +57,7 @@ DIVERGENCES, BOTH IN TEXT ONLY A HUMAN READS
     and `set -e` turns that into exit 1, with bash naming its own line. This
     port prints `<path>: <strerror>` and returns 1. Same stream, same exit.
 
-Exit: 0 whether it dispatched or skipped, 1 on a missing required variable,
-2 on an unrecognised argument. Anything else is `gh workflow run`'s own status
-propagated by `set -e`.
+Exit: 0 whether it dispatched or skipped, 1 on a missing required variable, 2 on an unrecognised argument. Anything else is `gh workflow run`'s own status propagated by `set -e`.
 """
 
 from __future__ import annotations
@@ -115,8 +99,7 @@ def pulls_url(repository: str, sha: str) -> str:
     """`repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls` (twin :119).
 
     `commits/{sha}/pulls` and not `pulls?q=`: it follows REBASED commits, which
-    this repo needs because it rebase-merges and the PR number is therefore
-    absent from the commit message.
+    this repo needs because it rebase-merges and the PR number is therefore absent from the commit message.
     """
     return "repos/%s/commits/%s/pulls" % (repository, sha)
 
@@ -131,8 +114,7 @@ def parse_row(row: str) -> tuple[str, str]:
 
     `pr_num="${row%% *}"` is text up to the FIRST space, and
     `labels="${row#"$pr_num"}"; labels="${labels# }"` is the rest with exactly
-    ONE leading space removed -- so a row whose label field itself begins with
-    a space keeps the second one, and that is reproduced.
+    ONE leading space removed -- so a row whose label field itself begins with a space keeps the second one, and that is reproduced.
     """
     pr_num = row.split(" ", 1)[0]
     labels = row[len(pr_num) :].removeprefix(" ")
@@ -142,10 +124,7 @@ def parse_row(row: str) -> tuple[str, str]:
 def has_skip_label(labels: str) -> bool:
     """`grep -qx "$SKIP_LABEL" <<<"${labels//,/$'\\n'}"` (twin :138).
 
-    An EXACT whole-line match after commas become newlines, so `no-bump-none`
-    and `bump-none-really` do not count and neither does an empty label field.
-    `bump-none` holds no regex metacharacter, so grep's BRE and this equality
-    agree on every input.
+    An EXACT whole-line match after commas become newlines, so `no-bump-none` and `bump-none-really` do not count and neither does an empty label field. `bump-none` holds no regex metacharacter, so grep's BRE and this equality agree on every input.
     """
     return any(label == SKIP_LABEL for label in labels.split(","))
 
@@ -153,15 +132,11 @@ def has_skip_label(labels: str) -> bool:
 def run_gh_pulls(repository: str, sha: str) -> tuple[int, str]:
     """The lookup, with stderr MERGED into stdout exactly as the twin merges it.
 
-    Returns `(exit status, captured text)`. The merge is Defect A and is the
-    whole reason this function does not take a `capture_stderr` argument: an
-    option here would be an invitation to fix the twin's behaviour by accident.
+    Returns `(exit status, captured text)`. The merge is Defect A and is the whole reason this function does not take a `capture_stderr` argument: an option here would be an invitation to fix the twin's behaviour by accident.
 
-    `</dev/null` is reproduced too. Without it `gh` can consume the caller's
-    stdin, and the twin's callers are workflow steps whose stdin is the job's.
+    `</dev/null` is reproduced too. Without it `gh` can consume the caller's stdin, and the twin's callers are workflow steps whose stdin is the job's.
 
-    Trailing newlines are stripped because `$(...)` strips them, and the
-    all-whitespace test below would otherwise never fire.
+    Trailing newlines are stripped because `$(...)` strips them, and the all-whitespace test below would otherwise never fire.
     """
     try:
         proc = subprocess.run(

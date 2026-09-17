@@ -1,18 +1,11 @@
 """Port of `.ci/scripts/test/gates/test-breakpoint-drift.sh`.
 
-Gate test for `check-breakpoint-drift.sh`, the integrity oracle for the vendored
-`.ci/breakpoint/` folder.
+Gate test for `check-breakpoint-drift.sh`, the integrity oracle for the vendored `.ci/breakpoint/` folder.
 
-WHY THIS FILE MATTERS MORE THAN A USUAL GATE TEST. The drift gate is the ONLY thing
-making the folder safe to copy into other repositories. Everything else in the design
-leans on it: the "one vendorable folder" promise, the refusal to let downstream
-regenerate the manifest, the accept-list escape hatch. If it silently stops detecting
-something, a vendored copy becomes a private fork that upstream can never fix and the
-next re-vendor destroys without trace -- and nothing anywhere would report a problem.
+WHY THIS FILE MATTERS MORE THAN A USUAL GATE TEST. The drift gate is the ONLY thing making the folder safe to copy into other repositories. Everything else in the design leans on it: the "one vendorable folder" promise, the refusal to let downstream regenerate the manifest, the accept-list escape hatch. If it silently stops detecting something, a vendored copy becomes a private
+fork that upstream can never fix and the next re-vendor destroys without trace -- and nothing anywhere would report a problem.
 
-So every one of its failure modes gets a NEGATIVE case here: the gate is made to fail on
-purpose, and the assertion is that it failed AND said why. A gate that has only ever
-been observed to pass has not been verified.
+So every one of its failure modes gets a NEGATIVE case here: the gate is made to fail on purpose, and the assertion is that it failed AND said why. A gate that has only ever been observed to pass has not been verified.
 
 Two real defects this file would have caught, both found by hand instead:
 
@@ -25,17 +18,10 @@ Two real defects this file would have caught, both found by hand instead:
     script and forgot `--write`" freshness check.
 
 `env_replace=True` IS THE TWIN'S `env -i`, on every invocation and deliberately: it
-strips `GITHUB_REPOSITORY` and anything else that could make the gate behave differently
-here than in a vendored checkout. A case that passes only because of the ambient
-environment is not evidence about the vendored case.
+strips `GITHUB_REPOSITORY` and anything else that could make the gate behave differently here than in a vendored checkout. A case that passes only because of the ambient environment is not evidence about the vendored case.
 
-WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md`
-records six `test-breakpoint-*.sh` subjects as unportable by any agent under the
-standard brief and NOT on merit, because plant-verifying one means temporarily writing
-under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The
-brief's two ways out are to hand one batch owner that path explicitly or to exclude
-them in the derivation with the reason recorded, and it adds "Do not silently drop them
-a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
+WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md` records six `test-breakpoint-*.sh` subjects as unportable by any agent under the standard brief and NOT on merit, because plant-verifying one means temporarily writing under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The brief's two ways out are to hand one batch owner
+that path explicitly or to exclude them in the derivation with the reason recorded, and it adds "Do not silently drop them a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
 
 NO `xdist_group`. Every case builds its own `cp -r` copy of the folder inside its own
 `mktemp -d` and runs the gate there; the real tree is only ever READ.
@@ -196,13 +182,9 @@ def test_write_refused_downstream(gate):
 
 def test_write_regenerates_in_console(gate):
     """Regression test for a live defect: the slug came from a sed expression using
-    `([^/]+?)(\\.git)?$`, and sed has no lazy quantifiers, so `[^/]+` swallowed
-    `console.git` and the `(\\.git)?` group matched empty. `bp_current_repo` returned
-    `rediacc/console.git`, which never equals `rediacc/console` -- so `--write` refused
-    inside the canonical repo and the accept list was the only way onward.
+    `([^/]+?)(\\.git)?$`, and sed has no lazy quantifiers, so `[^/]+` swallowed `console.git` and the `(\\.git)?` group matched empty. `bp_current_repo` returned `rediacc/console.git`, which never equals `rediacc/console` -- so `--write` refused inside the canonical repo and the accept list was the only way onward.
 
-    Both remote-URL forms are exercised, since HTTPS clones carry the suffix and SSH
-    clones may not.
+    Both remote-URL forms are exercised, since HTTPS clones carry the suffix and SSH clones may not.
     """
     for url in (
         "https://github.com/rediacc/console.git",

@@ -1,28 +1,15 @@
 """Port of `.ci/scripts/test/gates/test-language-policy.sh`.
 
-Subject: `.ci/scripts/quality/check_language_policy.py` (RULING 7). Its claim, and
-therefore what has to be proven in BOTH directions: the set of tracked bash files
-under `.ci` and `.claude` may lose members and may never gain one, exemptions are
-named with a `BLOCKER:` reason and die when they stop suppressing anything, and a
-green produced by an enumeration that saw nothing is refused rather than printed.
+Subject: `.ci/scripts/quality/check_language_policy.py` (RULING 7). Its claim, and therefore what has to be proven in BOTH directions: the set of tracked bash files under `.ci` and `.claude` may lose members and may never gain one, exemptions are named with a `BLOCKER:` reason and die when they stop suppressing anything, and a green produced by an enumeration that saw nothing is
+refused rather than printed.
 
-HOW IT IS DRIVEN. Every case but the last builds a throwaway git repository and
-points the subject at it through `LANGUAGE_POLICY_ROOT` / `_BASELINE` /
-`_ALLOWLIST`, so no tracked baseline, allowlist or script is touched. `git
-ls-files` IS the subject's corpus, which is why the fixture has to be a real
-repository with a real index rather than a directory of files: a fixture that
+HOW IT IS DRIVEN. Every case but the last builds a throwaway git repository and points the subject at it through `LANGUAGE_POLICY_ROOT` / `_BASELINE` / `_ALLOWLIST`, so no tracked baseline, allowlist or script is touched. `git ls-files` IS the subject's corpus, which is why the fixture has to be a real repository with a real index rather than a directory of files: a fixture that
 merely looks like a tree exercises a code path the subject does not have.
 
-THE LAST CASE IS SEAM-FREE, against the real repository, because every seam above
-it is a chance for the subject to be correct about a fixture and wrong about the
-tree it ships with. That case is also why this module opts in to the real-tree
-group: `gates.lock.json` records `reads: ["tree:repo"]` for
-`gate-test:language-policy`, and `real_tree_admission` refuses a twin in that set
+THE LAST CASE IS SEAM-FREE, against the real repository, because every seam above it is a chance for the subject to be correct about a fixture and wrong about the tree it ships with. That case is also why this module opts in to the real-tree group: `gates.lock.json` records `reads: ["tree:repo"]` for `gate-test:language-policy`, and `real_tree_admission` refuses a twin in that set
 that does not declare `REAL_TREE_TWIN`.
 
-EVERY FIRE CASE HAS ITS CONTROL: the same fixture with one thing changed and the
-opposite verdict asserted. A gate that cannot be made to fire is not a gate, and
-a gate that fires on everything is not one either.
+EVERY FIRE CASE HAS ITS CONTROL: the same fixture with one thing changed and the opposite verdict asserted. A gate that cannot be made to fire is not a gate, and a gate that fires on everything is not one either.
 """
 
 import pathlib
@@ -79,9 +66,7 @@ def git(*args: str) -> harness.RunResult:
 def fixture(directory: pathlib.Path) -> None:
     """A real git repository holding a small `.ci` / `.claude` tree.
 
-    Five bash files: three that must be judged, two under an exempt tree. Plus a
-    `.py` file, which must NOT be judged -- without it a matcher that returned
-    true for everything would pass every case below.
+    Five bash files: three that must be judged, two under an exempt tree. Plus a `.py` file, which must NOT be judged -- without it a matcher that returned true for everything would pass every case below.
     """
     for sub in (".ci/scripts", ".ci/media", ".claude/hooks"):
         (directory / sub).mkdir(parents=True, exist_ok=True)
@@ -114,8 +99,7 @@ def fixture(directory: pathlib.Path) -> None:
 def run_gate(root: pathlib.Path, *args: str) -> harness.RunResult:
     """The subject, pointed at a fixture through its three seams.
 
-    The streams stay APART here and the callers read `.combined`, mirroring the
-    twin's `2>&1`: those assertions are about which message appeared. The one
+    The streams stay APART here and the callers read `.combined`, mirroring the twin's `2>&1`: those assertions are about which message appeared. The one
     case that reads them apart is `test_real_tree_seam_free`, which is where the
     twin makes that claim too.
     """
@@ -340,8 +324,7 @@ def test_missing_blocker_is_refused(gate):
 
 def test_low_effort_blocker_is_refused(gate):
     """This is also the control that the CANONICAL validator is really consulted.
-    "tbd" is on `.ci/scripts/lib/blocker-validator.sh`'s banned-phrase list and
-    nowhere in the subject's own source, so a passing verdict here would mean the
+    "tbd" is on `.ci/scripts/lib/blocker-validator.sh`'s banned-phrase list and nowhere in the subject's own source, so a passing verdict here would mean the
     subprocess never ran."""
     with harness.temp_dir() as d:
         fixture(d)
@@ -410,18 +393,11 @@ def test_shim_entry_that_grew_is_refused(gate):
 
 def test_file_entry_exempts_a_multiline_file(gate):
     """THE THIRD KIND (W7P6, 2026-09-09). Added because `tree:` and `shim:` between
-    them could not spell `.ci/bootstrap.sh`: 395 permanently-bash lines alone in
-    `.ci/`, where the only two available spellings were `tree:.ci/` (which exempts
-    the entire port backlog) and moving the file to fit the grammar.
+    them could not spell `.ci/bootstrap.sh`: 395 permanently-bash lines alone in `.ci/`, where the only two available spellings were `tree:.ci/` (which exempts the entire port backlog) and moving the file to fit the grammar.
 
-    A CASE THE TWIN DOES NOT HAVE. `test_twin_parity` compares case SETS in one
-    direction only -- the port must hold every case the twin declares, and may add
-    its own -- so the twin stays green while the subject grows a kind it does not
-    know about. This case is the reason the addition is not invisible.
+    A CASE THE TWIN DOES NOT HAVE. `test_twin_parity` compares case SETS in one direction only -- the port must hold every case the twin declares, and may add its own -- so the twin stays green while the subject grows a kind it does not know about. This case is the reason the addition is not invisible.
 
-    BOTH DIRECTIONS, and the negative is the one that matters: `file:` has no line
-    oracle, so it is strictly weaker than `shim:`, and a gate that let an author
-    pick it over `shim:` would retire the check that notices a shim becoming a
+    BOTH DIRECTIONS, and the negative is the one that matters: `file:` has no line oracle, so it is strictly weaker than `shim:`, and a gate that let an author pick it over `shim:` would retire the check that notices a shim becoming a
     program. Pointing it at a ONE-line body must be refused BY NAME."""
     with harness.temp_dir() as d:
         fixture(d)
@@ -519,9 +495,7 @@ def test_missing_git_is_cannot_run_not_a_verdict(gate):
     """A missing toolchain must be 77 with the cause named, never a pass, never a
     red, and never a traceback.
 
-    THE PATH IS EMPTIED RATHER THAN THE BINARY HIDDEN, so the interpreter has to
-    be named absolutely: `python3` resolved through the doctored PATH would fail
-    to launch and the case would pass on the wrong exit code.
+    THE PATH IS EMPTIED RATHER THAN THE BINARY HIDDEN, so the interpreter has to be named absolutely: `python3` resolved through the doctored PATH would fail to launch and the case would pass on the wrong exit code.
     """
     with harness.temp_dir() as d:
         fixture(d)
@@ -550,20 +524,12 @@ def test_missing_git_is_cannot_run_not_a_verdict(gate):
 def test_selftest_can_fail(gate):
     """THE CONTROL ON THE CONTROLS.
 
-    A selftest that cannot go red is decoration, and this gate refuses its own
-    verdict when the controls fail (exit 2), so that refusal has to be
-    demonstrated rather than assumed. Built by CONSTRUCTION: the copy has one
+    A selftest that cannot go red is decoration, and this gate refuses its own verdict when the controls fail (exit 2), so that refusal has to be demonstrated rather than assumed. Built by CONSTRUCTION: the copy has one
     function body replaced wholesale, not a pattern substituted, so the mutation
     cannot silently fail to apply.
 
-    THE COPY IS HANDED THE ENTRY-POINT DIRECTORY ON `PYTHONPATH`, and that is a
-    fix rather than convenience. 73bd8f7ec routed 81 gate entry points through
-    `import _cipath`, a side-effect module that lives BESIDE them and is found
-    only because a path invocation puts the script's own directory on
-    `sys.path[0]`. A copy in a temp dir has a different `sys.path[0]`, so the
-    mutant dies with `ModuleNotFoundError: No module named '_cipath'` before
-    reaching a single assertion -- a control failing for a reason that has
-    nothing to do with what it controls.
+    THE COPY IS HANDED THE ENTRY-POINT DIRECTORY ON `PYTHONPATH`, and that is a fix rather than convenience. 73bd8f7ec routed 81 gate entry points through `import _cipath`, a side-effect module that lives BESIDE them and is found only because a path invocation puts the script's own directory on `sys.path[0]`. A copy in a temp dir has a different `sys.path[0]`, so the mutant dies
+    with `ModuleNotFoundError: No module named '_cipath'` before reaching a single assertion -- a control failing for a reason that has nothing to do with what it controls.
     """
     with harness.temp_dir() as d:
         fixture(d)
@@ -609,9 +575,7 @@ def test_real_tree_seam_free(gate):
     """NO SEAMS. Every case above could be right about a fixture and wrong about
     the repository this gate ships with.
 
-    THE STREAMS ARE READ APART HERE, which is the one place the twin makes that
-    claim: a gate whose progress text lands on stderr is invisible until
-    something parses it, and a merged read cannot see the difference.
+    THE STREAMS ARE READ APART HERE, which is the one place the twin makes that claim: a gate whose progress text lands on stderr is invisible until something parses it, and a merged read cannot see the difference.
     """
     result = harness.run([python3(), str(GATE)], cwd=ROOT, timeout=600)
     gate.assert_exit_code(0, result.rc, "the real tree must be green: %s" % result.err)
@@ -623,9 +587,7 @@ def test_real_tree_seam_free(gate):
 
 def test_the_three_seams_still_exist_in_the_subject(gate):
     """ADDED BY THE PORT. Twenty-two of the twenty-three cases point the subject
-    at a fixture through `LANGUAGE_POLICY_ROOT`, `_BASELINE` and `_ALLOWLIST`. If
-    a seam were renamed the subject would silently judge the REAL tree instead,
-    and most of those cases expect a non-zero exit -- so several would keep
+    at a fixture through `LANGUAGE_POLICY_ROOT`, `_BASELINE` and `_ALLOWLIST`. If a seam were renamed the subject would silently judge the REAL tree instead, and most of those cases expect a non-zero exit -- so several would keep
     passing while asserting something about the wrong corpus."""
     source = GATE.read_text(encoding="utf-8")
     for seam in (
@@ -643,16 +605,10 @@ def test_the_three_seams_still_exist_in_the_subject(gate):
 def test_this_port_is_not_a_shrink_only_offender(gate):
     """THE SELF-SCANNING CONTROL, which the twin does not need and this port does.
 
-    The twin is a `.sh` file, and `gate-test:shrink-only-composition` enumerates
-    only `.ts`, `.js` and `.py`, so the twin is invisible to that gate for free.
-    This module is a `.py` file that talks about the drain flag constantly, and it
-    is invisible only because `DRAIN_FLAG` is split -- something a later editor
-    would undo without connecting the two. So this reds BY NAME the moment the
-    contiguous literal reappears in this file's bytes.
+    The twin is a `.sh` file, and `gate-test:shrink-only-composition` enumerates only `.ts`, `.js` and `.py`, so the twin is invisible to that gate for free. This module is a `.py` file that talks about the drain flag constantly, and it is invisible only because `DRAIN_FLAG` is split -- something a later editor would undo without connecting the two. So this reds BY NAME the moment
+    the contiguous literal reappears in this file's bytes.
 
-    Measured 2026-09-09: with the flag written out, this file appeared on that
-    gate's offender list as ".ci/rediacc_ci/tests/gates/test_gate_language_policy.py
-    offers ... and consumes neither a shared guard nor the ported one".
+    Measured 2026-09-09: with the flag written out, this file appeared on that gate's offender list as ".ci/rediacc_ci/tests/gates/test_gate_language_policy.py offers ... and consumes neither a shared guard nor the ported one".
     """
     own = pathlib.Path(__file__).read_text(encoding="utf-8")
     if DRAIN_FLAG in own:

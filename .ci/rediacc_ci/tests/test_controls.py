@@ -2,21 +2,12 @@
 
 THE THING BEING TESTED IS ITSELF A TEST HARNESS, so the usual asymmetry applies
 with force: a harness that reported PASS unconditionally would satisfy every
-"this passes" assertion in a suite written carelessly. Every case below is
-therefore paired against its opposite, and the FAILURE direction is asserted
-first wherever the two are written together.
+"this passes" assertion in a suite written carelessly. Every case below is therefore paired against its opposite, and the FAILURE direction is asserted first wherever the two are written together.
 
-THE OUTPUT STRINGS ARE PART OF THE CONTRACT, not incidental formatting.
-`.claude/hooks/test-hooks.sh` runs these programs and reads what they print, and
-the five files being migrated all print the same four shapes today. A migration
-that changed a message would be a silent behaviour change in the harness, so the
-exact bytes are asserted here rather than left to review.
+THE OUTPUT STRINGS ARE PART OF THE CONTRACT, not incidental formatting. `.claude/hooks/test-hooks.sh` runs these programs and reads what they print, and the five files being migrated all print the same four shapes today. A migration that changed a message would be a silent behaviour change in the harness, so the exact bytes are asserted here rather than left to review.
 
-WHY THE FLOOR GETS THE MOST CASES. Three of the five files carry no floor at all,
-and the floor is the only thing that catches a suite whose controls stopped
-executing -- a `sys.exit` slipped into the middle, an exception swallowed by an
-outer try, a fixture that stopped producing rows. All of those end with a small
-count, zero failures, and exit 0, which reads as green everywhere it is reported.
+WHY THE FLOOR GETS THE MOST CASES. Three of the five files carry no floor at all, and the floor is the only thing that catches a suite whose controls stopped executing -- a `sys.exit` slipped into the middle, an exception swallowed by an outer try, a fixture that stopped producing rows. All of those end with a small count, zero failures, and exit 0, which reads as green everywhere
+it is reported.
 """
 
 import pytest
@@ -78,9 +69,7 @@ def test_truthy_and_falsy_are_one_sided():
 def test_falsy_says_what_it_wanted(capsys):
     """The message the `control(..., bool(x), False)` workaround cannot produce.
 
-    Squeezing a one-sided assertion through the two-sided one reports
-    "got False, wanted False" on failure, which is a contradiction printed at a
-    human who then has to read the test to find out what happened.
+    Squeezing a one-sided assertion through the two-sided one reports "got False, wanted False" on failure, which is a contradiction printed at a human who then has to read the test to find out what happened.
     """
     c = Controls("message", floor=0)
     c.falsy("a truthy value", "surprise")
@@ -111,9 +100,7 @@ def test_raises_fails_when_nothing_is_raised():
 def test_raises_lets_an_unexpected_exception_through():
     """A DIFFERENT exception is a bug in the test, not a finding.
 
-    Catching it here would turn "the code under test broke in a new way" into a
-    tidy one-line FAIL, which is exactly the information a traceback carries and
-    a label does not.
+    Catching it here would turn "the code under test broke in a new way" into a tidy one-line FAIL, which is exactly the information a traceback carries and a label does not.
     """
     c = Controls("raises", floor=0)
 
@@ -155,9 +142,7 @@ def test_the_floor_is_satisfied_by_enough_controls():
 def test_a_short_suite_with_no_failures_is_still_red():
     """THE FAILURE THE FLOOR EXISTS FOR.
 
-    Zero failures and a small count is precisely what a suite whose controls
-    stopped executing looks like, and it is indistinguishable from a green run
-    by every other measure.
+    Zero failures and a small count is precisely what a suite whose controls stopped executing looks like, and it is indistinguishable from a green run by every other measure.
     """
     c = Controls("silent", floor=10)
     assert c.failures == []
@@ -304,11 +289,9 @@ def test_plant_refuses_a_needle_that_is_not_there():
 
 def test_plant_refuses_replacing_a_string_with_itself():
     """ITS OWN REFUSAL, distinct from the missing-needle one, because it is a
-    different author mistake: a typo, not a drifted fixture. This is the case
-    that catches the real one found in the tree on 2026-09-08 --
+    different author mistake: a typo, not a drifted fixture. This is the case that catches the real one found in the tree on 2026-09-08 --
     `_FIXTURE_HEALTHY.replace("max_turns=140", "max_turns=140")` in
-    `rediacc_ci/quality/review_turn_capacity.py`, a dead leg chained ahead of a
-    live substitution inside the port of the very gate `control_vacuity` uses as
+    `rediacc_ci/quality/review_turn_capacity.py`, a dead leg chained ahead of a live substitution inside the port of the very gate `control_vacuity` uses as
     its own control."""
     with pytest.raises(VacuousPlantError) as exc:
         plant("max_turns=140 here", "max_turns=140", "max_turns=140")
@@ -323,8 +306,7 @@ def test_plant_refuses_replacing_a_string_with_itself():
 
 def test_plant_refuses_a_count_that_replaces_nothing():
     """`count=0` is the ONE way to reach the byte-identical arm: the needle is
-    present and differs from its replacement, yet nothing is substituted. Found
-    by planting -- deleting that arm left the suite green until this case
+    present and differs from its replacement, yet nothing is substituted. Found by planting -- deleting that arm left the suite green until this case
     existed, which meant the branch was asserted by nothing."""
     with pytest.raises(VacuousPlantError) as exc:
         plant("aa", "a", "b", 0)

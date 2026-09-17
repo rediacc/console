@@ -1,14 +1,9 @@
 """Port of `.ci/scripts/test/gates/test-shadow-gate.sh`.
 
-The shadow comparator (`scripts/lib/shadow-gate.ts`) proves ports equivalent, so the
-question this file exists to answer is who proves the comparator.
+The shadow comparator (`scripts/lib/shadow-gate.ts`) proves ports equivalent, so the question this file exists to answer is who proves the comparator.
 
-WHY THAT IS THE WHOLE POINT. A comparator that cannot report a mismatch is worse than
-no comparator, because it does not merely fail to help -- it LAUNDERS every port that
-follows it. Seventy-four bash quality gates and 131 gate tests are scheduled to move
-behind this thing. If it says EQUIVALENT unconditionally, all 205 of those moves
-acquire a green artifact and nobody looks again. The failure would be silent, would
-look like success, and would be discovered as a missing gate months later.
+WHY THAT IS THE WHOLE POINT. A comparator that cannot report a mismatch is worse than no comparator, because it does not merely fail to help -- it LAUNDERS every port that follows it. Seventy-four bash quality gates and 131 gate tests are scheduled to move behind this thing. If it says EQUIVALENT unconditionally, all 205 of those moves acquire a green artifact and nobody looks
+again. The failure would be silent, would look like success, and would be discovered as a missing gate months later.
 
 So this asserts in BOTH directions, and neither is optional:
 
@@ -22,24 +17,12 @@ So this asserts in BOTH directions, and neither is optional:
                  load-bearing line each in a COPY of the module and require the copy's
                  selftest to go red.
 
-THE PILOT PAIR IS REAL, NOT A FIXTURE. `.ci/scripts/lib/blocker-validator.sh` and
-`scripts/lib/blocker-validator.ts` are two live implementations of one rule.
-`.ci/breakpoint/lib/breakpoint-blocker.sh` is a third, DELIBERATELY a subset, and its
-five recorded divergences are used here as a divergence nobody planted. The corpus is
-lifted verbatim from `test-blocker-golden-corpus.sh`.
+THE PILOT PAIR IS REAL, NOT A FIXTURE. `.ci/scripts/lib/blocker-validator.sh` and `scripts/lib/blocker-validator.ts` are two live implementations of one rule. `.ci/breakpoint/lib/breakpoint-blocker.sh` is a third, DELIBERATELY a subset, and its five recorded divergences are used here as a divergence nobody planted. The corpus is lifted verbatim from `test-blocker-golden-corpus.sh`.
 
-NOTHING HERE WRITES TO THE TRACKED TREE. Every fixture, every mutated copy and every
-ledger lives under pytest's own `tmp_path`. `.ci/breakpoint/**` is READ and never
-written, which matters because invariant 8 forbids any sweep from touching it: the
-vendored subset is an INPUT to the divergence case, not a subject of it.
+NOTHING HERE WRITES TO THE TRACKED TREE. Every fixture, every mutated copy and every ledger lives under pytest's own `tmp_path`. `.ci/breakpoint/**` is READ and never written, which matters because invariant 8 forbids any sweep from touching it: the vendored subset is an INPUT to the divergence case, not a subject of it.
 
-WHY EACH CASE REBUILDS ITS FIXTURES. The twin builds the corpus and the two gate
-wrappers ONCE at the bottom of the file and every case shares them. Here each case
-builds its own under `tmp_path`, which costs a few `sed`-equivalents and buys the
-property the twin gets only by never mutating them: no case can inherit another's
-state. The `setup_k_repo` cases already needed it -- the twin's own comment records
-that reusing one path left an uncommitted file behind and made every later recording
-refuse for the previous test's reason.
+WHY EACH CASE REBUILDS ITS FIXTURES. The twin builds the corpus and the two gate wrappers ONCE at the bottom of the file and every case shares them. Here each case builds its own under `tmp_path`, which costs a few `sed`-equivalents and buys the property the twin gets only by never mutating them: no case can inherit another's state. The `setup_k_repo` cases already needed it -- the
+twin's own comment records that reusing one path left an uncommitted file behind and made every later recording refuse for the previous test's reason.
 
 WHERE THIS REIMPLEMENTS sed, grep, awk, sort, wc AND cmp, AND WHY THE ANSWERS AGREE.
 
@@ -66,15 +49,9 @@ WHERE THIS REIMPLEMENTS sed, grep, awk, sort, wc AND cmp, AND WHY THE ANSWERS AG
 
   `grep -c .` counts NON-EMPTY lines, not bytes and not all lines.
 
-THE STREAMS ARE KEPT APART. The twin says why and it is worth repeating: a stream
-swap is a class of defect this repo has actually shipped, and `2>&1` is how a test
-stops being able to see it. Every case below reads `.out` or `.err`, never
-`.combined`, in the same places the twin reads `$SG_OUT` or `$SG_ERR`.
+THE STREAMS ARE KEPT APART. The twin says why and it is worth repeating: a stream swap is a class of defect this repo has actually shipped, and `2>&1` is how a test stops being able to see it. Every case below reads `.out` or `.err`, never `.combined`, in the same places the twin reads `$SG_OUT` or `$SG_ERR`.
 
-`node_modules/.bin/tsx` IS USED RATHER THAN `npx`, and that is not a preference: npx
-re-resolves the package on every call and prints an unrelated "Unknown project config
-minimum-release-age" warning on STDERR, which would land in output this file asserts
-on. Its absence is a loud failure naming `npm install`.
+`node_modules/.bin/tsx` IS USED RATHER THAN `npx`, and that is not a preference: npx re-resolves the package on every call and prints an unrelated "Unknown project config minimum-release-age" warning on STDERR, which would land in output this file asserts on. Its absence is a loud failure naming `npm install`.
 
 NO `xdist_group`. Every fixture, mutant and ledger repository is under `tmp_path`;
 the only writes outside it are none.
@@ -537,9 +514,7 @@ def tgit(repo: pathlib.Path, *argv: str) -> harness.RunResult:
 def setup_k_repo(gate, tmp_path: pathlib.Path, name: str) -> tuple[pathlib.Path, pathlib.Path]:
     """(a fresh git fixture repo, the tiny gate to copy into it).
 
-    A FRESH directory per caller. The twin's first version reused one path and the
-    dirty-tree case left an uncommitted file behind, so the next case re-inited over
-    it and every recording was refused for the previous test's reason.
+    A FRESH directory per caller. The twin's first version reused one path and the dirty-tree case left an uncommitted file behind, so the next case re-inited over it and every recording was refused for the previous test's reason.
     """
     require(gate)
     tiny = tmp_path / "tiny-gate.sh"
@@ -555,9 +530,7 @@ def record_tree(gate, repo: pathlib.Path, tiny: pathlib.Path, ids: str, message:
 
     THE TOY GATE IS COPIED INTO THE FIXTURE AND COMMITTED WITH IT, rather than invoked
     from outside. Both sides must live INSIDE the tree being recorded, because the tree
-    id is the content of both implementations: a row recorded with either side outside
-    it attests to code that tree never held. The comparator refuses that outright as of
-    2026-09-06, so the old spelling exited 3 here -- correctly.
+    id is the content of both implementations: a row recorded with either side outside it attests to code that tree never held. The comparator refuses that outright as of 2026-09-06, so the old spelling exited 3 here -- correctly.
     """
     (repo / "fixture.txt").write_text(ids + "\n", encoding="utf-8")
     shutil.copy2(tiny, repo / "tiny-gate.sh")

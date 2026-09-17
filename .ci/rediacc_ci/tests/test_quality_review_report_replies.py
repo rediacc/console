@@ -1,27 +1,13 @@
 """`rediacc_ci.quality.review_report_replies` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-review-report-replies.sh`
-over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY,
-and its bytes are compared against the port's. Same recipe as the committed ledger,
-`.ci/shadow/w7p2-review-report-replies.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-review-report-replies.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-review-report-replies.observations.jsonl`.
 
-THE FOUR REPLY CLAUSES ARE EACH A CASE, and clause (a) is the one that decides
-whether this gate can fire at all: the pipeline posts several comments in a row
-under one identity, and on PR #551 the reviewed-SHA marker landed FOUR SECONDS
-after the report and is long enough to clear every substance test. Without the
-different-author rule the review answers itself on every PR.
+THE FOUR REPLY CLAUSES ARE EACH A CASE, and clause (a) is the one that decides whether this gate can fire at all: the pipeline posts several comments in a row under one identity, and on PR #551 the reviewed-SHA marker landed FOUR SECONDS after the report and is long enough to clear every substance test. Without the different-author rule the review answers itself on every PR.
 
-THE 2026-08-05 SHAPE IS A CASE TOO. A report whose body is a bare wrap-up
-("Posted the review. Summary of what I did:") carries neither the findings fence
-nor a `### Review` heading, and the twin used to AND those in. It found no report
-and exited 0 while an 8141-char verdict sat unanswered. Keyed on the producer
-constant alone, it fires.
+THE 2026-08-05 SHAPE IS A CASE TOO. A report whose body is a bare wrap-up ("Posted the review. Summary of what I did:") carries neither the findings fence nor a `### Review` heading, and the twin used to AND those in. It found no report and exited 0 while an 8141-char verdict sat unanswered. Keyed on the producer constant alone, it fires.
 
-THE PER-EPIC FAN-OUT IS ALSO HERE, driven from a snapshot at `agent/pr/<branch>.md`.
-It is a BOUNDED SELF-INVOCATION on both sides -- the twin re-executes `"$0"` with
-`REVIEW_EPIC_PREFIX` set, the port re-enters `main()` with the same variable -- so
-the case proves the recursion terminates and that one unanswered epic out of two
-fails the whole run while the answered one prints its OK line.
+THE PER-EPIC FAN-OUT IS ALSO HERE, driven from a snapshot at `agent/pr/<branch>.md`. It is a BOUNDED SELF-INVOCATION on both sides -- the twin re-executes `"$0"` with `REVIEW_EPIC_PREFIX` set, the port re-enters `main()` with the same variable -- so the case proves the recursion terminates and that one unanswered epic out of two fails the whole run while the answered one prints its
+OK line.
 """
 
 import json
@@ -219,9 +205,7 @@ def test_differential(tmp_path, comments, snapshot, want_exit):
 def test_the_fan_out_runs_every_epic_and_names_the_unanswered_ones(tmp_path):
     """The summary block only exists in the fan-out path, so it needs its own case.
 
-    Gating only the newest report across all epics "would enforce the LAST epic's
-    reply and silently excuse every other, which is worse than not gating: the
-    unanswered ones look cleared."
+    Gating only the newest report across all epics "would enforce the LAST epic's reply and silently excuse every other, which is worse than not gating: the unanswered ones look cleared."
     """
     root = build(
         tmp_path,
@@ -251,8 +235,7 @@ def test_the_two_shared_constants_match_the_sibling_gate():
     """One reply must clear BOTH gates, so these cannot drift.
 
     `test-review-status.sh` parses both bash files and fails if they disagree; this
-    asserts the same thing across the two ports, which is the half that gate cannot
-    see.
+    asserts the same thing across the two ports, which is the half that gate cannot see.
     """
     assert gate.SUMMARY_MIN_CHARS == sibling.SUMMARY_MIN_CHARS == 30
     assert gate.SUMMARY_LONGFORM_CHARS == sibling.SUMMARY_LONGFORM_CHARS == 200
@@ -261,8 +244,7 @@ def test_the_two_shared_constants_match_the_sibling_gate():
 def test_the_low_effort_default_differs_from_the_siblings():
     """Same function name, different default, on purpose.
 
-    30 here (a reply to a whole report), 10 there (a reply to one inline thread). A
-    port that unified them would silently tighten one gate or loosen the other.
+    30 here (a reply to a whole report), 10 there (a reply to one inline thread). A port that unified them would silently tighten one gate or loosen the other.
     """
     assert gate.is_low_effort_reply("x" * 15) is True
     assert sibling.is_low_effort_reply("x" * 15) is False

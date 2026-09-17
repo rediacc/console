@@ -7,20 +7,11 @@ PATH is REPLACED rather than prepended; `rediacc_ci` is vendored so no absolute
 path outside the fixture appears in any command; `$0` is masked to `<SELF>` and
 nothing else is.
 
-WHAT THIS FILE ADDS is that the subject's whole output surface is FILESYSTEM,
-not text. `build-pages.sh` prints eleven chatter lines on a successful run and
-says nothing about what it copied, so a port that assembled a different package
-would agree on every byte of stderr. Every case therefore compares the RESULTING
-TREE as well: `_state` walks the fixture and hashes every file the run produced,
-and `_agree` fails when the two trees differ even by one path.
+WHAT THIS FILE ADDS is that the subject's whole output surface is FILESYSTEM, not text. `build-pages.sh` prints eleven chatter lines on a successful run and says nothing about what it copied, so a port that assembled a different package would agree on every byte of stderr. Every case therefore compares the RESULTING TREE as well: `_state` walks the fixture and hashes every file the
+run produced, and `_agree` fails when the two trees differ even by one path.
 
-THE THREE FILESYSTEM TOOLS ARE RECORDED, NOT REPLACED. `rm`, `mkdir` and `cp`
-are wrappers that append their own argv to a log and then `exec` the real
-binary, so the copies really happen AND the argv each side built is comparable.
-`dirname` and `uname` are plain symlinks and deliberately NOT recorded: the twin
-spawns them from `get_repo_root` and from sourcing `common.sh`, which is shell
-plumbing rather than ported logic, and recording them would manufacture a
-divergence out of the fact that Python resolves its own path in-process.
+THE THREE FILESYSTEM TOOLS ARE RECORDED, NOT REPLACED. `rm`, `mkdir` and `cp` are wrappers that append their own argv to a log and then `exec` the real binary, so the copies really happen AND the argv each side built is comparable. `dirname` and `uname` are plain symlinks and deliberately NOT recorded: the twin spawns them from `get_repo_root` and from sourcing `common.sh`, which
+is shell plumbing rather than ported logic, and recording them would manufacture a divergence out of the fact that Python resolves its own path in-process.
 
 K=5 LEDGER: `.ci/shadow/w7p6-build-pages.observations.jsonl`.
 """
@@ -93,8 +84,7 @@ def fixture(
     """A throwaway repo root holding both sides and a build to assemble.
 
     `www=None` / `json_dist=None` means the dist directory is not created at all;
-    an empty dict means it is created and left EMPTY, which is a different case
-    (defect 4) and the one the twin reports as `cp: cannot stat`.
+    an empty dict means it is created and left EMPTY, which is a different case (defect 4) and the one the twin reports as `cp: cannot stat`.
     """
     root = tmp_path / "repo"
     for rel in (TWIN_REL, PORT_REL, COMMON_REL, *VENDORED):
@@ -404,9 +394,7 @@ def test_defect_1_the_default_output_deletes_the_manifest_it_then_looks_for(
     tmp_path,
 ) -> None:
     """`rm -rf dist` at `:43` runs BEFORE the `-f dist/cli-manifest/manifest.json`
-    test at `:58`, and the default output directory IS `dist`. So with no
-    `--output` the CLI-manifest block can never fire, the run exits 0, and the
-    summary still advertises `/cli`.
+    test at `:58`, and the default output directory IS `dist`. So with no `--output` the CLI-manifest block can never fire, the run exits 0, and the summary still advertises `/cli`.
     """
     root = default_fixture(tmp_path, manifest='{"version":"1.2.3"}')
     old_t, new_t = run_both(root)
@@ -448,8 +436,7 @@ def test_defect_4_a_dotfile_only_build_is_indistinguishable_from_an_empty_one(
     tmp_path,
 ) -> None:
     """`*` does not match a leading dot, and `nullglob` is not set, so a `dist/`
-    holding only `.nojekyll` produces the SAME `cannot stat` as an empty one and
-    the dotfile is never copied.
+    holding only `.nojekyll` produces the SAME `cannot stat` as an empty one and the dotfile is never copied.
     """
     root = default_fixture(tmp_path, www={".nojekyll": ""})
     old_t, new_t = run_both(root, args=("--output", "out"))
@@ -519,8 +506,7 @@ def test_defect_6_a_missing_worker_directory_fails_after_the_package_is_built(
 
 def test_both_sides_cd_to_the_repo_root_whatever_the_caller_did(tmp_path) -> None:
     """Driven from a directory holding a DECOY `packages/www/dist/index.html`
-    and no json build: a side reading paths relative to the caller would refuse
-    on json rather than assembling the fixture's real build.
+    and no json build: a side reading paths relative to the caller would refuse on json rather than assembling the fixture's real build.
     """
     root = default_fixture(tmp_path)
     decoy = tmp_path / "elsewhere"
@@ -571,20 +557,13 @@ def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> N
 
 def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> None:
     """Every mention of `dist/cli-manifest/` in the repository is a CONSUMER.
-    The producer (`generate-cli-manifest.sh`) writes `dist/cli/manifest.json`,
-    so the block is dead under every `--output`.
+    The producer (`generate-cli-manifest.sh`) writes `dist/cli/manifest.json`, so the block is dead under every `--output`.
 
-    Asserted against the real tree rather than a fixture, because the claim is
-    about the tree. If a producer is ever added this test goes red and the
-    docstring's defect 2 has to be rewritten, which is the intent.
+    Asserted against the real tree rather than a fixture, because the claim is about the tree. If a producer is ever added this test goes red and the docstring's defect 2 has to be rewritten, which is the intent.
 
-    The expected set is THREE files, not one. It was written as `[TWIN_REL]` and
-    was therefore red from the commit that introduced it (`7c926bd63`): the port
-    reproduces the twin's dead read, as the campaign requires, and this file
-    names the path in its own `git grep` argument, so it matches itself. Counting
+    The expected set is THREE files, not one. It was written as `[TWIN_REL]` and was therefore red from the commit that introduced it (`7c926bd63`): the port reproduces the twin's dead read, as the campaign requires, and this file names the path in its own `git grep` argument, so it matches itself. Counting
     mentions is a PROXY for "nothing writes this path"; the proxy has to know
-    about the non-producers that the proxy itself created, or it only ever
-    reports its own existence.
+    about the non-producers that the proxy itself created, or it only ever reports its own existence.
     """
     self_rel = str(pathlib.Path(__file__).resolve().relative_to(ROOT))
     found = subprocess.run(
@@ -603,11 +582,7 @@ def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> N
 def test_a_planted_defect_is_caught(tmp_path) -> None:
     """A gate that has never been seen to fail is not a gate.
 
-    The plant makes `bash_glob` fall back to `[]` instead of the literal pattern
-    on no match, which is what `nullglob` would do and what a reader "cleaning
-    up" the port would reach for. It is invisible on every case with a non-empty
-    build and visible on exactly one: the empty `dist/`, where the twin hands
-    `cp` the unexpanded pattern and fails, and the plant hands `cp` only the
+    The plant makes `bash_glob` fall back to `[]` instead of the literal pattern on no match, which is what `nullglob` would do and what a reader "cleaning up" the port would reach for. It is invisible on every case with a non-empty build and visible on exactly one: the empty `dist/`, where the twin hands `cp` the unexpanded pattern and fails, and the plant hands `cp` only the
     destination and fails DIFFERENTLY.
     """
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")

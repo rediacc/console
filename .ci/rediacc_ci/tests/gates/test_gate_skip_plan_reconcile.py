@@ -1,46 +1,23 @@
 """Port of `.ci/scripts/test/gates/test-skip-plan-reconcile.sh`.
 
-Unit test for the attested skip-plan reconciler,
-`.ci/scripts/ci/skip-plan-reconcile.cjs` (Wave B edge cases 25-32, section E).
+Unit test for the attested skip-plan reconciler, `.ci/scripts/ci/skip-plan-reconcile.cjs` (Wave B edge cases 25-32, section E).
 
-WHAT THIS GUARDS. `ci-complete` sees only caller-level scalars, and for a reusable
-caller that scalar reads `success` when every inner job succeeded OR self-skipped.
-Per-inner-job conclusions are not exposed to sibling jobs by any expression, so an
-inner job silently skipping while its siblings pass (the invisible cell) is
-undetectable at caller level. The reconciler closes that hole by checking the attested
-plan against the Jobs API at leaf level. Until it provably hard-fails on a planted
+WHAT THIS GUARDS. `ci-complete` sees only caller-level scalars, and for a reusable caller that scalar reads `success` when every inner job succeeded OR self-skipped. Per-inner-job conclusions are not exposed to sibling jobs by any expression, so an inner job silently skipping while its siblings pass (the invisible cell) is undetectable at caller level. The reconciler closes that
+hole by checking the attested plan against the Jobs API at leaf level. Until it provably hard-fails on a planted
 mismatch, the scope engine's vector must never gate a real job; this file is that proof.
 
-THE PLAN IS THE ALLOWLIST. Run 30307775327 (healthy) had ELEVEN skipped inner jobs
-against zero failures, all legitimate: cached-vs-uncached variants, unexpanded matrix
+THE PLAN IS THE ALLOWLIST. Run 30307775327 (healthy) had ELEVEN skipped inner jobs against zero failures, all legitimate: cached-vs-uncached variants, unexpanded matrix
 legs, one push-gated job. That exact shape is a fixture here and must NOT fire; only
 jobs the plan marked `run` may.
 
-PRE-EXISTING SKIPS ARE THE SECOND HALF. ci.yml skipped whole columns long before the
-scope engine existed: `full_suite` is false on every push-to-main, `pointer_bump_only`
-cuts the entire expensive pipeline on a submodule-pointer PR, `is_bot` cuts the staging
-chain. Against an unannotated plan a pointer bump reports SEVENTEEN failures on a run
-where nothing went wrong, which is why the gate could not be wired. The cases below pin
-the exemption AND its edges, each as a pair: a fixture where the new logic must FIRE
-and a twin where it must stay SILENT.
+PRE-EXISTING SKIPS ARE THE SECOND HALF. ci.yml skipped whole columns long before the scope engine existed: `full_suite` is false on every push-to-main, `pointer_bump_only` cuts the entire expensive pipeline on a submodule-pointer PR, `is_bot` cuts the staging chain. Against an unannotated plan a pointer bump reports SEVENTEEN failures on a run where nothing went wrong, which is why
+the gate could not be wired. The cases below pin the exemption AND its edges, each as a pair: a fixture where the new logic must FIRE and a twin where it must stay SILENT.
 
-THE FIXTURE OBLIGATION IS REAL, not a footnote. The plan is generated from
-`JOB_SURFACES`, so adding a key there without adding its leaf to `HEALTHY_JOBS` makes
-the healthy fixture fail as planned-job-missing. That is the gate working: a planned
-job with no observed leaf IS a defect in a real run, so the fix is always to add the
-leaf, never to loosen the check.
+THE FIXTURE OBLIGATION IS REAL, not a footnote. The plan is generated from `JOB_SURFACES`, so adding a key there without adding its leaf to `HEALTHY_JOBS` makes the healthy fixture fail as planned-job-missing. That is the gate working: a planned job with no observed leaf IS a defect in a real run, so the fix is always to add the leaf, never to loosen the check.
 
-WHAT THE PORT CHANGES, and it is the one thing the twin itself argues for. The twin
-builds every fixture in ONE `$WORK` directory at file scope, and several cases consume
-a derived fixture an EARLIER case wrote: `test_annotation_must_agree_with_the_conditions`
-reads `jobs-unit-skipped.json` from case 25 and `plan-pointer-bump.json` from the
-pointer-bump case. The twin already names that hazard in its own comment ("a case that
-only passes when a sibling ran first is a case that fails the day somebody reorders the
-list, and it would fail looking like a real find") and fixes it in exactly one place.
-Under pytest the hazard is worse, because `-n 8 --dist loadgroup` can run the cases in
-different workers, so every case here builds the fixtures it needs into its OWN
-`tmp_path`. Same fixtures, same mutations, no ordering dependence and no shared
-directory.
+WHAT THE PORT CHANGES, and it is the one thing the twin itself argues for. The twin builds every fixture in ONE `$WORK` directory at file scope, and several cases consume a derived fixture an EARLIER case wrote: `test_annotation_must_agree_with_the_conditions` reads `jobs-unit-skipped.json` from case 25 and `plan-pointer-bump.json` from the pointer-bump case. The twin already names
+that hazard in its own comment ("a case that only passes when a sibling ran first is a case that fails the day somebody reorders the list, and it would fail looking like a real find") and fixes it in exactly one place. Under pytest the hazard is worse, because `-n 8 --dist loadgroup` can run the cases in different workers, so every case here builds the fixtures it needs into its
+OWN `tmp_path`. Same fixtures, same mutations, no ordering dependence and no shared directory.
 """
 
 import json
@@ -138,8 +115,7 @@ def healthy_jobs() -> list[dict]:
 def find(jobs: list[dict], name: str) -> dict:
     """The twin's `data.jobs.find(...)`, but REFUSING a miss.
 
-    `Array.prototype.find` returns undefined and the twin's mutation then throws, which
-    is loud enough there. Here a silent None would set an attribute on nothing and the
+    `Array.prototype.find` returns undefined and the twin's mutation then throws, which is loud enough there. Here a silent None would set an attribute on nothing and the
     case would run against an UNMUTATED fixture, which is the shape that fails open.
     """
     for job in jobs:
@@ -208,8 +184,7 @@ class World:
 
     def annotate(self, source: pathlib.Path, name: str, conditions: dict) -> pathlib.Path:
         """Run a plan through the REAL `annotatePlan`, the same entry point
-        `scope-shadow.sh` calls. Going through the production writer rather than
-        hand-writing the annotation is what makes these cases test the shipped writer
+        `scope-shadow.sh` calls. Going through the production writer rather than hand-writing the annotation is what makes these cases test the shipped writer
         instead of a paraphrase of it."""
         target = self.root / name
         node_eval(
@@ -299,12 +274,9 @@ def test_mandatory_invisible_cell_hard_fails(gate, tmp_path):
 
 def test_planned_run_but_cancelled_is_named(gate, tmp_path):
     """A CANCELLED JOB DID NOT RUN, and reconcile used to record it as having run: the
-    branch complained only on `skipped`, so `cancelled` took the silent path under a
-    comment that said "any non-skipped conclusion counts as 'it ran'".
+    branch complained only on `skipped`, so `cancelled` took the silent path under a comment that said "any non-skipped conclusion counts as 'it ran'".
 
-    Both real shapes produce it. The watchdog force-cancels siblings when one job fails,
-    and a job over its own timeout-minutes reports `cancelled` too: Quality / Code did
-    exactly that at 15m19s on 2026-09-03 with 52 of 92 steps executed, and no message
+    Both real shapes produce it. The watchdog force-cancels siblings when one job fails, and a job over its own timeout-minutes reports `cancelled` too: Quality / Code did exactly that at 15m19s on 2026-09-03 with 52 of 92 steps executed, and no message
     anywhere said "timeout"."""
     world = make_world(gate, tmp_path)
     jobs = healthy_jobs()
@@ -480,8 +452,7 @@ def test_run_id_mismatch_is_tamper(gate, tmp_path):
 
 def test_naming_trap_uses_explicit_table(gate, tmp_path):
     """Edge case 31: ci.yml's `update-flow-test` is a CALLER display-named
-    `Tests + Infra / Update Flow` whose real leaf is three segments deep, while
-    `package-tests` is a PLAIN job named `Tests + Infra / Linux Packages`, NOT inside
+    `Tests + Infra / Update Flow` whose real leaf is three segments deep, while `package-tests` is a PLAIN job named `Tests + Infra / Linux Packages`, NOT inside
     ct-tests.yml. The name shape lies in both directions."""
     world = make_world(gate, tmp_path)
     names = node_eval(
@@ -567,10 +538,7 @@ def test_flat_job_never_blames_a_lookalike_caller(gate, tmp_path):
     """Edge case 33: caller-derivation must not fire for a FLAT job whose display name
     merely shares a prefix with a reusable caller.
 
-    `package-tests` is a plain top-level job named "Tests + Infra / Linux Packages"
-    (ci.yml:572-573). The `tests` reusable caller's own display name is exactly
-    "Tests + Infra" (ci.yml:673-674). Splitting the expected name on ' / ' regardless
-    would derive 'Tests + Infra' and then blame that unrelated job, converting a real
+    `package-tests` is a plain top-level job named "Tests + Infra / Linux Packages" (ci.yml:572-573). The `tests` reusable caller's own display name is exactly "Tests + Infra" (ci.yml:673-674). Splitting the expected name on ' / ' regardless would derive 'Tests + Infra' and then blame that unrelated job, converting a real
     case-27 rename or DAG break into a bogus case-25 caller-skip."""
     world = make_world(gate, tmp_path)
     jobs = [j for j in healthy_jobs() if j["name"] != "Tests + Infra / Linux Packages"]
@@ -797,8 +765,7 @@ def test_pointer_bump_exempts_every_key(gate, tmp_path):
 
 def test_full_suite_exempts_seventeen_but_never_install_methods(gate, tmp_path):
     """The condition sets are NOT interchangeable. `validate-install` (ci.yml:1081-1083)
-    hangs off `stage-artifacts`, which carries no full_suite clause (ci.yml:658), so the
-    install matrix genuinely DOES run on push-to-main. Exempting it under full_suite
+    hangs off `stage-artifacts`, which carries no full_suite clause (ci.yml:658), so the install matrix genuinely DOES run on push-to-main. Exempting it under full_suite
     would excuse a real skip for ever."""
     world = make_world(gate, tmp_path)
     push_plan = world.annotate(
@@ -935,8 +902,7 @@ def test_exemption_needs_a_real_boolean(gate, tmp_path):
 
 def test_annotation_must_agree_with_the_conditions(gate, tmp_path):
     """Anti-tamper. The exemption is DERIVED from `plan.conditions`; the per-job field is
-    only ever cross-checked. A hand-edited artifact claiming an exemption its own
-    conditions do not support must not buy a free pass on the one check that can see an
+    only ever cross-checked. A hand-edited artifact claiming an exemption its own conditions do not support must not buy a free pass on the one check that can see an
     invisible cell."""
     world = make_world(gate, tmp_path)
     jobs = healthy_jobs()
@@ -1005,8 +971,7 @@ def test_annotation_must_agree_with_the_conditions(gate, tmp_path):
 
 def test_strict_mode_is_the_module_default(gate, tmp_path):
     """The two consumers want opposite things. The GATE must not red a pointer-bump run;
-    the BASELINE READER (scope-engine's attestPlan) must not accept that run as proof,
-    because it validated nothing. Same plan, same jobs, opposite verdict, decided by the
+    the BASELINE READER (scope-engine's attestPlan) must not accept that run as proof, because it validated nothing. Same plan, same jobs, opposite verdict, decided by the
     flag alone."""
     world = make_world(gate, tmp_path)
     pb_jobs = world.write_jobs("jobs-pointer-bump.json", pointer_bump_jobs())

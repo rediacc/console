@@ -1,36 +1,18 @@
 """Differential: `rediacc_ci.deploy.deploy_account` against its twin
 `.ci/scripts/deploy/deploy-account.sh`.
 
-RECORDING FAKE `npx` AND `npm` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT.
-Nothing here reaches Cloudflare and nothing installs anything: the fakes log
-their exact argv, their cwd, and the value of `CLOUDFLARE_API_TOKEN` they were
-handed. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the
-"one real run" clause and says in as many words that the mocked parity ledger is
-a separate, achievable piece of work. This is that piece.
+RECORDING FAKE `npx` AND `npm` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT. Nothing here reaches Cloudflare and nothing installs anything: the fakes log their exact argv, their cwd, and the value of `CLOUDFLARE_API_TOKEN` they were handed. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
+ledger is a separate, achievable piece of work. This is that piece.
 
-HOW THE TWO SIDES ARE MADE TO AGREE ABOUT THE REPO ROOT, since they answer the
-question differently and a differential that let them answer it differently
-would be comparing two trees. The twin's `get_repo_root` is
+HOW THE TWO SIDES ARE MADE TO AGREE ABOUT THE REPO ROOT, since they answer the question differently and a differential that let them answer it differently would be comparing two trees. The twin's `get_repo_root` is
 `${BASH_SOURCE[0]}/../../..` from `common.sh`, so a COPY of `common.sh` and a
-COPY of the script inside `tmp_path` resolve to the fixture. The port's
-`common.repo_root()` delegates to `paths.repo_root()`, which honours
-`$REDIACC_CI_ROOT`, so the port is the REAL file under test and the variable
-points it at the same fixture. `test_the_copied_twin_is_the_real_twin` asserts
-the copy is byte-identical, so the differential cannot drift onto a stale twin,
-and `test_the_twin_ignores_the_root_override` asserts the variable is not
-secretly steering the bash side as well.
+COPY of the script inside `tmp_path` resolve to the fixture. The port's `common.repo_root()` delegates to `paths.repo_root()`, which honours `$REDIACC_CI_ROOT`, so the port is the REAL file under test and the variable points it at the same fixture. `test_the_copied_twin_is_the_real_twin` asserts the copy is byte-identical, so the differential cannot drift onto a stale twin, and
+`test_the_twin_ignores_the_root_override` asserts the variable is not secretly steering the bash side as well.
 
-THE HAPPY PATH SAYS PLENTY, so the streams carry real evidence here, unlike the
-`set-www-worker-secrets` sibling. What the streams CANNOT show is which database
-got migrated with which config and which token reached the child, so every case
-that gets that far compares the recorded call log too.
+THE HAPPY PATH SAYS PLENTY, so the streams carry real evidence here, unlike the `set-www-worker-secrets` sibling. What the streams CANNOT show is which database got migrated with which config and which token reached the child, so every case that gets that far compares the recorded call log too.
 
-TWO DEFECTS IN THE TWIN ARE PINNED, NOT FIXED. A `database_name` that is the
-first match but not in the expected shape (a comment, or a line with a trailing
-quoted comment) is passed through by `sed` UNCHANGED and becomes the database
-name, and the "Could not read database_name" guard at :51-54 never fires. Both
-are driven here in both directions: the port must produce the same wrong answer,
-because a `tomllib` port would produce a different one and that is not a port.
+TWO DEFECTS IN THE TWIN ARE PINNED, NOT FIXED. A `database_name` that is the first match but not in the expected shape (a comment, or a line with a trailing quoted comment) is passed through by `sed` UNCHANGED and becomes the database name, and the "Could not read database_name" guard at :51-54 never fires. Both are driven here in both directions: the port must produce the same
+wrong answer, because a `tomllib` port would produce a different one and that is not a port.
 """
 
 from __future__ import annotations
@@ -222,8 +204,7 @@ def test_the_copied_twin_is_the_real_twin(tmp_path: pathlib.Path) -> None:
 
 def test_the_twin_ignores_the_root_override(tmp_path: pathlib.Path) -> None:
     """$REDIACC_CI_ROOT STEERS ONLY THE PORT, and the two must still land on the
-    same tree. Pointed at a decoy, the bash side keeps resolving from its own
-    location, so a differential that relied on the variable for both would be
+    same tree. Pointed at a decoy, the bash side keeps resolving from its own location, so a differential that relied on the variable for both would be
     comparing nothing."""
     root = _fixture_root(tmp_path)
     decoy = tmp_path / "decoy"
@@ -436,8 +417,7 @@ def test_a_config_with_no_database_name_refuses(tmp_path: pathlib.Path) -> None:
 
 def test_a_comment_becomes_the_database_name(tmp_path: pathlib.Path) -> None:
     """DEFECT, REPRODUCED NOT FIXED. `sed` is a substitution: a first match that
-    does not fit the pattern is passed through UNCHANGED, so the guard sees a
-    non-empty string and `wrangler d1 migrations apply` is handed a sentence.
+    does not fit the pattern is passed through UNCHANGED, so the guard sees a non-empty string and `wrangler d1 migrations apply` is handed a sentence.
 
     A `tomllib` port would refuse here, or find `real-db`. Either would be a
     different program, which is why this is asserted rather than repaired."""

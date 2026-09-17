@@ -3,30 +3,19 @@
 Ported from `.ci/scripts/quality/check-go-module-sync.sh`, which is not deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHAT BROKE, carried from the twin's header because the incident is the gate.
-`.ci/scripts/private/license-mint/` is its own module and pulls renet in through
+WHAT BROKE, carried from the twin's header because the incident is the gate. `.ci/scripts/private/license-mint/` is its own module and pulls renet in through
 `replace github.com/rediacc/renet => ../../../../private/renet`, so renet's
-dependency graph is part of its own. Bumping renet's `go.mod`
-(logrus v1.10.0 -> v1.10.1) left license-mint still pinning v1.10.0 as indirect,
-and `go build` then refuses with:
+dependency graph is part of its own. Bumping renet's `go.mod` (logrus v1.10.0 -> v1.10.1) left license-mint still pinning v1.10.0 as indirect, and `go build` then refuses with:
 
     go: updates to go.mod needed; to update it:
             go mod tidy
 
-WHY IT NEEDS A GATE RATHER THAN CARE. Nothing surfaced this until
-`Tests + Infra / License Enforcement`, roughly 25 minutes into CI and well past
-every quality lane, on run 32462755535. The signal is also misleading at first
-read: the job announces "Building license-mint" and then prints a wall of
-`go: downloading ...` lines including the OLD version, so it looks like a
-network step rather than a lockstep violation. The coupling is invisible from
-renet's side, where the bump looks complete and self-contained.
+WHY IT NEEDS A GATE RATHER THAN CARE. Nothing surfaced this until `Tests + Infra / License Enforcement`, roughly 25 minutes into CI and well past every quality lane, on run 32462755535. The signal is also misleading at first read: the job announces "Building license-mint" and then prints a wall of `go: downloading ...` lines including the OLD version, so it looks like a network
+step rather than a lockstep violation. The coupling is invisible from renet's side, where the bump looks complete and self-contained.
 
-It is DISCOVERED, not hardcoded: any future module that replaces renet is
-covered the day it is added, and a zero-module result is a failure rather than
-a pass, because a discovery gate that finds nothing has verified nothing.
+It is DISCOVERED, not hardcoded: any future module that replaces renet is covered the day it is added, and a zero-module result is a failure rather than a pass, because a discovery gate that finds nothing has verified nothing.
 
-`go mod tidy -diff` reports what tidying WOULD change and exits non-zero without
-writing, so this never mutates the tree it checks.
+`go mod tidy -diff` reports what tidying WOULD change and exits non-zero without writing, so this never mutates the tree it checks.
 
 Exit 0 clean, 1 violation, 2 setup error.
 
@@ -34,26 +23,16 @@ Exit 0 clean, 1 violation, 2 setup error.
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-EXIT 2 IS KEPT, NOT RENUMBERED TO 77. The W7 contract reserves 77 for
-cannot-run, and "go is not installed" is exactly that. The twin answers 2, its
-own header documents 2, and a port that changes an exit code is not a port: the
-differential compares exit codes and would rule MISMATCH_EXIT on the very case
-this gate is most likely to hit on a developer laptop. The renumbering is a
-decision for whoever retires the twin, in the change that retires it, and it is
-named here so the choice is visible rather than forgotten.
+EXIT 2 IS KEPT, NOT RENUMBERED TO 77. The W7 contract reserves 77 for cannot-run, and "go is not installed" is exactly that. The twin answers 2, its own header documents 2, and a port that changes an exit code is not a port: the differential compares exit codes and would rule MISMATCH_EXIT on the very case this gate is most likely to hit on a developer laptop. The renumbering is a
+decision for whoever retires the twin, in the change that retires it, and it is named here so the choice is visible rather than forgotten.
 
 GOTOOLCHAIN IS DELIBERATELY NOT FORCED, and the twin says why: "renet's go.mod
 requires >= 1.25.0 and a machine whose local toolchain is older (1.24.0 was
 observed) would fail with 'go.mod requires go >= 1.25.0' and read as a
-module-sync defect, which it is not." The port therefore passes the ambient
-environment through untouched and sets no Go variables at all.
+module-sync defect, which it is not." The port therefore passes the ambient environment through untouched and sets no Go variables at all.
 
-THE `mapfile` NOTE SURVIVES EVEN THOUGH PYTHON HAS NO mapfile. The twin uses a
-`while read` loop rather than `mapfile` because "check-commands.sh refuses
-mapfile because ubuntu-slim and other minimal CI images may not provide bash
-4+". That constraint shaped the twin's shape and is invisible in the result, so
-it is written down here: the list comprehension below is not a simplification
-anyone chose, it is the constraint disappearing.
+THE `mapfile` NOTE SURVIVES EVEN THOUGH PYTHON HAS NO mapfile. The twin uses a `while read` loop rather than `mapfile` because "check-commands.sh refuses mapfile because ubuntu-slim and other minimal CI images may not provide bash 4+". That constraint shaped the twin's shape and is invisible in the result, so it is written down here: the list comprehension below is not a
+simplification anyone chose, it is the constraint disappearing.
 
 DISCOVERY IS `grep -rln ... --include=go.mod .`, AND FOUR OF ITS PROPERTIES ARE
 BEHAVIOUR RATHER THAN INCIDENT:
@@ -69,33 +48,17 @@ BEHAVIOUR RATHER THAN INCIDENT:
     passed down to `os.walk` explicitly, because a default that happens to match
     is one refactor away from not matching.
 
-THIS GATE IS WHY `paths.walk_tree` EXISTS, so the divergence from the twin is
-deliberate and is the point rather than an oversight. On 2026-09-13 a peer
-session's stale checkout at `.claude/worktrees/agent-afc2194d0118609f2/` carried
-a copy of `.ci/scripts/private/license-mint`, and this discovery returned it as a
-SECOND module. Its `replace ../../../../private/renet` cannot resolve from the
-nested location, so `go mod tidy -diff` failed there and the gate went red over a
-file that is not in the repository: `git ls-files` cannot see `.claude/worktrees`
-(`.git/info/exclude:11`) and neither can any CI checkout. The twin's
-`grep -rln ... .` still has this bug. Fixing it here and not there means the two
-can disagree on a tree that has a peer worktree open, which is exactly the tree
-the shadow ledger refuses to record from (it demands a clean checkout), and is
-worth far less than a gate whose verdict does not depend on who else is working.
+THIS GATE IS WHY `paths.walk_tree` EXISTS, so the divergence from the twin is deliberate and is the point rather than an oversight. On 2026-09-13 a peer session's stale checkout at `.claude/worktrees/agent-afc2194d0118609f2/` carried a copy of `.ci/scripts/private/license-mint`, and this discovery returned it as a SECOND module. Its `replace ../../../../private/renet` cannot
+resolve from the nested location, so `go mod tidy -diff` failed there and the gate went red over a file that is not in the repository: `git ls-files` cannot see `.claude/worktrees` (`.git/info/exclude:11`) and neither can any CI checkout. The twin's `grep -rln ... .` still has this bug. Fixing it here and not there means the two can disagree on a tree that has a peer worktree open,
+which is exactly the tree the shadow ledger refuses to record from (it demands a clean checkout), and is worth far less than a gate whose verdict does not depend on who else is working.
   * `grep -v node_modules` is a SUBSTRING test on the whole path, not a path
     component test, so a directory named `my_node_modules_backup` is excluded
     too. Carried as `in`, not as a component check.
 
-THE `go mod tidy -diff` OUTPUT IS CAPTURED MERGED, `2>&1`, and that is the
-twin's contract rather than laziness. Go writes its diff and its errors to
-different streams depending on the failure, and the twin prints the first 20
-lines of the combined blob under the finding. `rediacc_ci.proc.run` refuses to
-merge streams (for the 2026-09-06 stream-swap reason in
-`.ci/scripts/lib/emit-advisory.sh:22-52`), so this module reaches for
-`subprocess` directly rather than quietly weakening the shared helper.
+THE `go mod tidy -diff` OUTPUT IS CAPTURED MERGED, `2>&1`, and that is the twin's contract rather than laziness. Go writes its diff and its errors to different streams depending on the failure, and the twin prints the first 20 lines of the combined blob under the finding. `rediacc_ci.proc.run` refuses to merge streams (for the 2026-09-06 stream-swap reason in
+`.ci/scripts/lib/emit-advisory.sh:22-52`), so this module reaches for `subprocess` directly rather than quietly weakening the shared helper.
 
-`head -20` IS A TRUNCATION, NOT A SUMMARY, and it is preserved: a module with 40
-lines of diff shows 20 of them on both sides. Dropping the truncation would make
-the port noisier than its twin on exactly the tree where the gate fires.
+`head -20` IS A TRUNCATION, NOT A SUMMARY, and it is preserved: a module with 40 lines of diff shows 20 of them on both sides. Dropping the truncation would make the port noisier than its twin on exactly the tree where the gate fires.
 """
 
 import os
@@ -260,10 +223,7 @@ def _build_module(base: pathlib.Path, name: str, gomod: str) -> pathlib.Path:
 def selftest() -> int:
     """Plant an out-of-sync module, prove it reds; tidy it, prove it greens.
 
-    THE go-DEPENDENT HALF IS NOT SKIPPED WHEN go IS ABSENT. Skipping would let
-    the suite report green having exercised only the discovery, which is the
-    "unknown folded into fine" shape the anti-vacuity contract refuses. A
-    missing toolchain is recorded as a FAILED control naming the fix.
+    THE go-DEPENDENT HALF IS NOT SKIPPED WHEN go IS ABSENT. Skipping would let the suite report green having exercised only the discovery, which is the "unknown folded into fine" shape the anti-vacuity contract refuses. A missing toolchain is recorded as a FAILED control naming the fix.
     """
     ctl = Controls("go-module-sync", floor=12, verbose=True)
 

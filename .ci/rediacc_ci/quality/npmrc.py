@@ -3,8 +3,7 @@
 Ported from `.ci/scripts/quality/check-npmrc.sh`, which is not deleted; see
 `rediacc_ci.quality.__init__` for why both copies live.
 
-WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the
-list IS the gate and a summary of it would be a different gate:
+WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the list IS the gate and a summary of it would be a different gate:
 
   Forbidden  -- settings that hide dependency problems
       legacy-peer-deps : silently ignores peer dependency conflicts
@@ -14,22 +13,14 @@ list IS the gate and a summary of it would be a different gate:
       allow-git=none                : rejects git+/github:/tarball deps (PackageGate)
       minimum-release-age=1440      : 24h cooldown (Axios-style smash-and-grab)
 
-The live `.npmrc` header expands each of those: `ignore-scripts` blocks every
-lifecycle script at install time and the natives are rebuilt by an explicit
+The live `.npmrc` header expands each of those: `ignore-scripts` blocks every lifecycle script at install time and the natives are rebuilt by an explicit
 `npm rebuild` afterwards; `allow-git=none` defends against PackageGate-style
 git-dep RCE (Koi Security, Jan 2026) where a hijacked `.npmrc` inside a git
 dependency redirects the git binary; `minimum-release-age=1440` is a 24h
-freshness window motivated by smash-and-grab supply-chain attacks (the Axios
-1.14.1 RAT, live roughly 4h, March 2026), read by this repo's own dependency
-gates and NOT by npm, whose real key is `min-release-age` in DAYS.
+freshness window motivated by smash-and-grab supply-chain attacks (the Axios 1.14.1 RAT, live roughly 4h, March 2026), read by this repo's own dependency gates and NOT by npm, whose real key is `min-release-age` in DAYS.
 
-THE GATE HEADER CARRIES A BLOCKER, and it is about WIRING rather than about
-.npmrc, so it stays with the bash file rather than moving here: the step "runs
-before this lane's `- id: setup` step, so its hand-written step carries no
-`steps.setup.outcome` guard. Emitting it into the region would move it below
-that guard and skip it whenever setup fails." That reason is still true, and it
-is the reason `emit: false` sits in the twin's gate block. A port does not
-inherit a registration, so nothing here re-states it as a live suppression.
+THE GATE HEADER CARRIES A BLOCKER, and it is about WIRING rather than about .npmrc, so it stays with the bash file rather than moving here: the step "runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails." That reason is still true, and
+it is the reason `emit: false` sits in the twin's gate block. A port does not inherit a registration, so nothing here re-states it as a live suppression.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -37,26 +28,18 @@ PORT NOTES.
 
 THE REQUIRED-KEY ORDER IS BASH'S HASH ORDER, MEASURED, NOT INVENTED. The twin
 iterates `"${!required[@]}"` over an associative array, and bash returns those
-keys in the order its hash table happens to hold them, which on GNU bash 5.3.9
-is `allow-git`, `minimum-release-age`, `ignore-scripts` -- NOT the order they
-are written in the literal. `REQUIRED` below is a tuple in that measured order.
+keys in the order its hash table happens to hold them, which on GNU bash 5.3.9 is `allow-git`, `minimum-release-age`, `ignore-scripts` -- NOT the order they are written in the literal. `REQUIRED` below is a tuple in that measured order.
 
-Why bother, when `scripts/lib/shadow-gate.ts` compares findings as an unordered
-multiset and would score either order EQUIVALENT: because a human diffing the
-two implementations' stderr side by side is the cheapest review this port will
-ever get, and an ordering difference is the kind of noise that makes a reviewer
-stop reading. It costs one tuple and a comment.
+Why bother, when `scripts/lib/shadow-gate.ts` compares findings as an unordered multiset and would score either order EQUIVALENT: because a human diffing the two implementations' stderr side by side is the cheapest review this port will ever get, and an ordering difference is the kind of noise that makes a reviewer stop reading. It costs one tuple and a comment.
 
-THE VALUE PIPELINE IS FOUR SHELL STAGES AND IS REPRODUCED STAGE BY STAGE, since
-each one has an edge that a "sensible" rewrite loses:
+THE VALUE PIPELINE IS FOUR SHELL STAGES AND IS REPRODUCED STAGE BY STAGE, since each one has an edge that a "sensible" rewrite loses:
 
     grep -E "^[[:space:]]*KEY[[:space:]]*="   every matching line, CASE SENSITIVE
     tail -n1                                  the LAST wins, so a later line overrides
     sed -E "s/^...=[[:space:]]*//; s/[[:space:]]*#.*//"   strip key, then a trailing comment
     tr -d '[:space:]'                         delete ALL remaining whitespace, inner included
 
-The twin's own comment explains stage three: "Strip optional trailing comments
-(everything from the first # onward) before trimming whitespace so a line like
+The twin's own comment explains stage three: "Strip optional trailing comments (everything from the first # onward) before trimming whitespace so a line like
 'ignore-scripts=true # hardening' parses cleanly to 'true' instead of
 'true#hardening'."
 
@@ -67,23 +50,15 @@ TWO CONSEQUENCES WORTH NAMING because they look like bugs and are behaviour:
     A port that distinguished them would emit a finding the twin never emits.
   * `ignore-scripts=#x` also reduces to empty and is therefore MISSING.
 
-CASE SENSITIVITY DIFFERS BETWEEN THE TWO HALVES OF THIS GATE, and that is the
-twin's behaviour, not a slip in the port: the forbidden scan is `grep -qiE`
+CASE SENSITIVITY DIFFERS BETWEEN THE TWO HALVES OF THIS GATE, and that is the twin's behaviour, not a slip in the port: the forbidden scan is `grep -qiE`
 (case INsensitive, so `Force=true` is caught) and the required scan is `grep -E`
 (case sensitive, so `Ignore-Scripts=true` does NOT satisfy `ignore-scripts`).
-npm's own config keys are case sensitive, so the required half is right and the
-forbidden half is merely generous. Both are carried unchanged.
+npm's own config keys are case sensitive, so the required half is right and the forbidden half is merely generous. Both are carried unchanged.
 
 `[[:space:]]` IS NOT `\\s`. POSIX space is exactly [ \\t\\n\\v\\f\\r]; Python's
-`\\s` on a str pattern additionally matches U+00A0, U+2028 and friends, so a
-`.npmrc` line indented with a non-breaking space would be seen by the port and
-not by grep. The character class is written out rather than abbreviated.
+`\\s` on a str pattern additionally matches U+00A0, U+2028 and friends, so a `.npmrc` line indented with a non-breaking space would be seen by the port and not by grep. The character class is written out rather than abbreviated.
 
-WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it reads the repo-root
-`.npmrc` only. A per-workspace `.npmrc`, a `~/.npmrc`, or an `NPM_CONFIG_*`
-environment variable overrides these settings at install time and this gate
-never looks. That is a real blind spot in the twin and it is preserved rather
-than quietly widened, because widening it would change the verdict.
+WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it reads the repo-root `.npmrc` only. A per-workspace `.npmrc`, a `~/.npmrc`, or an `NPM_CONFIG_*` environment variable overrides these settings at install time and this gate never looks. That is a real blind spot in the twin and it is preserved rather than quietly widened, because widening it would change the verdict.
 """
 
 import os
@@ -120,10 +95,7 @@ RATIONALE_LINE = "See /workspace/console/.npmrc header for the rationale behind 
 def forbidden_matches(text: str) -> list[tuple[int, str]]:
     """Every `legacy-peer-deps=` / `force=` line, as (1-based line number, text).
 
-    This is `grep -niE` over the file: the number and the line, with no filename
-    prefix because grep is given exactly one file argument. The twin prints this
-    list verbatim under a "Problematic lines:" header, so the shape is the
-    output contract and not an internal detail.
+    This is `grep -niE` over the file: the number and the line, with no filename prefix because grep is given exactly one file argument. The twin prints this list verbatim under a "Problematic lines:" header, so the shape is the output contract and not an internal detail.
     """
     out: list[tuple[int, str]] = []
     for index, line in enumerate(text.split("\n"), start=1):
@@ -138,8 +110,7 @@ def forbidden_matches(text: str) -> list[tuple[int, str]]:
 def setting_value(text: str, key: str) -> str:
     """The effective value of `key`, through the twin's four-stage pipeline.
 
-    Returns "" for both "no such line" and "the line reduces to nothing", which
-    the twin treats identically as MISSING. See the port notes.
+    Returns "" for both "no such line" and "the line reduces to nothing", which the twin treats identically as MISSING. See the port notes.
     """
     pattern = re.compile(r"^%s*%s%s*=" % (SPACE, re.escape(key), SPACE))
     matches = [line for line in text.split("\n") if pattern.match(line)]
@@ -158,9 +129,7 @@ def setting_value(text: str, key: str) -> str:
 def audit(text: str) -> list[str]:
     """The required-settings findings for `.npmrc` content. Empty means clean.
 
-    Returned as a list rather than printed so a test can assert on the decision
-    without capturing a stream, which is the whole reason the ports expose their
-    helpers (see `rediacc_ci.quality.__init__`).
+    Returned as a list rather than printed so a test can assert on the decision without capturing a stream, which is the whole reason the ports expose their helpers (see `rediacc_ci.quality.__init__`).
     """
     findings: list[str] = []
     for key, expected in REQUIRED:
@@ -175,9 +144,7 @@ def audit(text: str) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 violation.
 
-    `--selftest` is intercepted BEFORE any real scan, which is the addition the
-    twin does not have. The twin takes no arguments at all, so no caller can be
-    passing this string today.
+    `--selftest` is intercepted BEFORE any real scan, which is the addition the twin does not have. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -231,10 +198,7 @@ _CLEAN = "ignore-scripts=true\nallow-git=none\nminimum-release-age=1440\n"
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will
-    happily flag a correct file, and the mirrors below (a trailing comment, a
-    later line overriding an earlier one, exactly the three required keys) are
-    the half that proves it does not.
+    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct file, and the mirrors below (a trailing comment, a later line overriding an earlier one, exactly the three required keys) are the half that proves it does not.
     """
     ctl = Controls("npmrc", floor=18, verbose=True)
 

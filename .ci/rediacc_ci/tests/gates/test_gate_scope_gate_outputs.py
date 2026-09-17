@@ -1,47 +1,26 @@
 """Port of `.ci/scripts/test/gates/test-scope-gate-outputs.sh`.
 
-The scope gate's OUTPUT CONTRACT, driven end to end through the real
-`.ci/scripts/ci/scope-shadow.sh`.
+The scope gate's OUTPUT CONTRACT, driven end to end through the real `.ci/scripts/ci/scope-shadow.sh`.
 
 WHAT THIS GUARDS. Since 2026-07-31 that script no longer observes, it DECIDES:
 ci.yml reads its `run_<key>=false` outputs and skips jobs on them. The safety
-property is entirely in the encoding, and it is one sentence: a false line is the
-ONLY thing that can shrink a run, so every failure path must emit zero of them.
-That property is invisible to code reading, because every one of its failure paths
-is an error path -- an engine that crashed, a plan that could not be written, an
-operator override -- and error paths are exactly what unit tests over pure
-functions never reach. So this drives the actual script, with a PATH-shimmed `gh`
-and a real git repository, and reads the bytes it appends to `$GITHUB_OUTPUT`.
+property is entirely in the encoding, and it is one sentence: a false line is the ONLY thing that can shrink a run, so every failure path must emit zero of them. That property is invisible to code reading, because every one of its failure paths is an error path -- an engine that crashed, a plan that could not be written, an operator override -- and error paths are exactly what unit
+tests over pure functions never reach. So this drives the actual script, with a PATH-shimmed `gh` and a real git repository, and reads the bytes it appends to `$GITHUB_OUTPUT`.
 
-THE FIXTURE IS A WHOLE REPO, and it has to be. `scope-engine.cjs` resolves its repo
-root from its own `__dirname` (`path.resolve(__dirname, '../../..')`), so pointing
-the engine somewhere safe means copying `.ci/scripts/ci` into a fixture tree and
-running the copy: git history, branch shape and merge parents then all belong to
-the test. A symlink would NOT work, because node resolves a symlinked module to its
-real path and `__dirname` would land back on this repository.
+THE FIXTURE IS A WHOLE REPO, and it has to be. `scope-engine.cjs` resolves its repo root from its own `__dirname` (`path.resolve(__dirname, '../../..')`), so pointing the engine somewhere safe means copying `.ci/scripts/ci` into a fixture tree and running the copy: git history, branch shape and merge parents then all belong to the test. A symlink would NOT work, because node
+resolves a symlinked module to its real path and `__dirname` would land back on this repository.
 
-EVERY CASE CARRIES ITS CONTROL. An emitter that writes nothing at all passes cases
-(b), (c) and (d) trivially, so case (a) pins the exact set of false lines a reduced
-plan must produce, and cases (b) and (d) re-run the SAME fixture with the defect
-removed and require the lines to come back.
+EVERY CASE CARRIES ITS CONTROL. An emitter that writes nothing at all passes cases (b), (c) and (d) trivially, so case (a) pins the exact set of false lines a reduced plan must produce, and cases (b) and (d) re-run the SAME fixture with the defect removed and require the lines to come back.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `build_fixture` reads the real
-`.ci/scripts/ci` tree wholesale and every case runs against that copy, so a battery
-step rewriting `scope-shadow.sh`, `scope-map.cjs` or `skip-plan-reconcile.cjs`
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `build_fixture` reads the real `.ci/scripts/ci` tree wholesale and every case runs against that copy, so a battery step rewriting `scope-shadow.sh`, `scope-map.cjs` or `skip-plan-reconcile.cjs`
 mid-copy is a divergence that would be blamed on this port. `REAL_TREE_TWIN = True`
 buys the serialisation, and it is honoured only because this module declares no
 `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
-THE SUBJECT DOES NOT SELF-SCAN. `scope-shadow.sh` classifies a git delta inside the
-fixture repository and never walks `.ci` looking for samples, so no fixture string
-in this file needs the `%s` template treatment `test_gate_label_references.py` owes
-its own self-scanning subject. Checked before any fixture was written, not assumed.
+THE SUBJECT DOES NOT SELF-SCAN. `scope-shadow.sh` classifies a git delta inside the fixture repository and never walks `.ci` looking for samples, so no fixture string in this file needs the `%s` template treatment `test_gate_label_references.py` owes its own self-scanning subject. Checked before any fixture was written, not assumed.
 
-THE FIXTURE IS BUILT ONCE PER MODULE, where the twin builds it once per process.
-Same shape: eight cases against one repository, each writing into its own
-`out-<name>` directory. A function-scoped build would re-run `git init`, four
-commits, a merge and two `node -e` calls eight times for no additional coverage.
-All eight land on one xdist worker because the module is in `REAL_TREE_GROUP`.
+THE FIXTURE IS BUILT ONCE PER MODULE, where the twin builds it once per process. Same shape: eight cases against one repository, each writing into its own `out-<name>` directory. A function-scoped build would re-run `git init`, four commits, a merge and two `node -e` calls eight times for no additional coverage. All eight land on one xdist worker because the module is in
+`REAL_TREE_GROUP`.
 
 TWO PORT-SPECIFIC NOTES ON THE ORDERING ASSERTION, both about the same trap.
 
@@ -58,12 +37,8 @@ TWO PORT-SPECIFIC NOTES ON THE ORDERING ASSERTION, both about the same trap.
     are byte-order sorts over the SAME strings rather than two sorts that merely
     agree today.
 
-ADDED BY THE PORT: `test_the_fixture_carries_a_real_engine`. Anti-vacuity on the
-fixture itself. Every case below is a statement about a COPY of `.ci/scripts/ci`,
-so a copy that silently landed empty or lost `scope-shadow.sh` would make each
-`run_gate` fail for a reason that has nothing to do with the output contract. The
-added case prints how many files the copy carries and names the three the other
-cases execute.
+ADDED BY THE PORT: `test_the_fixture_carries_a_real_engine`. Anti-vacuity on the fixture itself. Every case below is a statement about a COPY of `.ci/scripts/ci`, so a copy that silently landed empty or lost `scope-shadow.sh` would make each `run_gate` fail for a reason that has nothing to do with the output contract. The added case prints how many files the copy carries and names
+the three the other cases execute.
 """
 
 import json
@@ -130,9 +105,7 @@ WORKFLOW_CONTRACT_KEYS = (
 def require_tools() -> tuple[str, str]:
     """`git` and `node`, or a LOUD refusal carrying the fix.
 
-    A missing binary is a FAILURE and never a skip: a case that could not run has
-    not been checked, and unchecked folded into fine is the shape this directory
-    refuses.
+    A missing binary is a FAILURE and never a skip: a case that could not run has not been checked, and unchecked folded into fine is the shape this directory refuses.
     """
     git = harness.require_tool("git", "install git; the fixture IS a real repository")
     node = harness.require_tool(
@@ -153,18 +126,13 @@ class FixtureError(harness.GateAssertionError):
 class Fixture:
     """`build_fixture` from the twin, as an object so `run_gate` can be a method.
 
-    A repository whose branch shape makes a REDUCED round the correct answer, plus
-    the three `gh` responses the baseline walk needs.
+    A repository whose branch shape makes a REDUCED round the correct answer, plus the three `gh` responses the baseline walk needs.
 
         main:  B ------------------- M
         pr:     \\-- C1 --- C2 ------/
 
-    The engine walks first-parent from head (C2) fenced at M^1 (B), so C1 is the
-    only candidate. C1's run is green and carries an attested FULL plan, which makes
-    it a usable baseline, and the NET delta C1..C2 touches docs plus packages/www
-    only. Of the 18 job surfaces exactly one (`unit`) consumes www, so the correct
-    plan runs `unit` and skips the other seventeen. That asymmetry is the point: an
-    emitter that skips everything, or nothing, fails.
+    The engine walks first-parent from head (C2) fenced at M^1 (B), so C1 is the only candidate. C1's run is green and carries an attested FULL plan, which makes it a usable baseline, and the NET delta C1..C2 touches docs plus packages/www only. Of the 18 job surfaces exactly one (`unit`) consumes www, so the correct plan runs `unit` and skips the other seventeen. That asymmetry is
+    the point: an emitter that skips everything, or nothing, fails.
     """
 
     def __init__(self, work: pathlib.Path) -> None:
@@ -338,11 +306,9 @@ exit 1
         the real surface table rather than listed by hand.
 
         Sorted AFTER the `run_<k>=false` suffix is applied, so this side and the
-        Python sort in the case below are byte-order sorts over the SAME strings
-        rather than two sorts that merely agree today. Sorting the bare keys first
+        Python sort in the case below are byte-order sorts over the SAME strings rather than two sorts that merely agree today. Sorting the bare keys first
         is not equivalent in general: `=` is 0x3D, below `_` (0x5F) and letters but
-        ABOVE the digits, so a future key pair like `foo` / `foo0bar` would
-        transpose between the two forms.
+        ABOVE the digits, so a future key pair like `foo` / `foo0bar` would transpose between the two forms.
         """
         text = self._node_eval(
             """
@@ -394,8 +360,7 @@ process.stdout.write(Object.keys(JOB_SURFACES).map((k) => `run_${k}`).join("\\n"
 
         The twin passes extra environment as `env "$@" bash scope-shadow.sh`, so a
         token is either `NAME=value` or `-u NAME`. Those two shapes become the `env`
-        and `unset` arguments here rather than being parsed back out of a string,
-        which is the one place a port can silently drop a seam.
+        and `unset` arguments here rather than being parsed back out of a string, which is the one place a port can silently drop a seam.
         """
         outdir = self.out_dir(name)
         outfile = outdir / "github-output"
@@ -469,11 +434,8 @@ def fixture(tmp_path_factory):
 def test_the_fixture_carries_a_real_engine(gate, fixture):
     """ADDED BY THE PORT. Anti-vacuity on the fixture rather than on the subject.
 
-    Every case below is a statement about a COPY of `.ci/scripts/ci`. A copy that
-    landed empty, or lost `scope-shadow.sh`, would make each `run_gate` fail as
-    "no such file" -- red, but saying nothing about the output contract, and
-    sending the reader to look at the emitter. Discovering zero files here is a
-    FAILURE, and the count is PRINTED so a collapse is visible rather than silent.
+    Every case below is a statement about a COPY of `.ci/scripts/ci`. A copy that landed empty, or lost `scope-shadow.sh`, would make each `run_gate` fail as "no such file" -- red, but saying nothing about the output contract, and sending the reader to look at the emitter. Discovering zero files here is a FAILURE, and the count is PRINTED so a collapse is visible rather than
+    silent.
     """
     count = fixture.engine_file_count()
     if count == 0:
@@ -493,8 +455,7 @@ def test_the_fixture_carries_a_real_engine(gate, fixture):
 
 def test_emitted_names_match_the_workflow_contract(gate, fixture):
     """The emitter can only ever produce `run_<key>` for a key in scope-map's
-    JOB_SURFACES, so comparing that table to the literal list above is the whole
-    contract: same 18 names, same spelling. A key added to scope-map without a
+    JOB_SURFACES, so comparing that table to the literal list above is the whole contract: same 18 names, same spelling. A key added to scope-map without a
     matching ci.yml output would be emitted and dropped on the floor; a key renamed
     in ci.yml without scope-map would be read as empty forever, which reads as "run
     it" and is safe but silently free of any saving at all."""
@@ -554,11 +515,7 @@ def test_reduced_plan_emits_exactly_the_out_of_scope_keys(gate, fixture):
 
 def test_quiet_wire_values_do_not_trip_the_kill_switch(gate, fixture):
     """THE EXACT STRINGS ci.yml PRODUCES ON AN ORDINARY PR. `vars.FULL_CI` is the
-    EMPTY STRING when the repository variable is unset, and the label check
-    `contains(...)` renders the literal 'false', never an empty value. Both must
-    read as "not forced". Comparing against 'true' rather than testing for
-    non-emptiness is what makes that work, and this case exists so nobody can later
-    relax it to `[[ -n "$FORCE_FULL_CI" ]]` and make every PR full while the engine
+    EMPTY STRING when the repository variable is unset, and the label check `contains(...)` renders the literal 'false', never an empty value. Both must read as "not forced". Comparing against 'true' rather than testing for non-emptiness is what makes that work, and this case exists so nobody can later relax it to `[[ -n "$FORCE_FULL_CI" ]]` and make every PR full while the engine
     looks perfectly healthy."""
     run = fixture.run_gate("quietwire", env={"FORCE_FULL_CI": "", "FULL_CI_LABEL": "false"})
     gate.assert_exit_code(0, run.rc, "the gate must always exit 0")
@@ -579,8 +536,7 @@ def test_quiet_wire_values_do_not_trip_the_kill_switch(gate, fixture):
 
 def test_the_deciding_plan_is_the_baseline_plan(gate, fixture):
     """The reduction above can only come from `--resolve-baseline`: the merge-base
-    classify over B..C2 also touches docs/a.md, and would classify identically here,
-    so the two are told apart by WHICH artifact plan.json was built from. plan.json
+    classify over B..C2 also touches docs/a.md, and would classify identically here, so the two are told apart by WHICH artifact plan.json was built from. plan.json
     carries the baseline walk's own fields; a plan.json written from
     scope-classify.json cannot have them."""
     run = fixture.run_gate("deciding")

@@ -1,33 +1,16 @@
 """The gate test for `check:ci-hook-cross-os`, which has no bash twin.
 
-NEW GATE, NOT A PORT. What is tested here and not in the selftest is the gate as
-a PROCESS against the REAL hook package: 65 files, the real `proc.py` seam, the
-real declaration. The selftest runs against a three-file fixture, which proves
-the predicate and proves nothing about whether the declaration matches the tree.
+NEW GATE, NOT A PORT. What is tested here and not in the selftest is the gate as a PROCESS against the REAL hook package: 65 files, the real `proc.py` seam, the real declaration. The selftest runs against a three-file fixture, which proves the predicate and proves nothing about whether the declaration matches the tree.
 
-THE PLANT ADDS A FILE TO THE REAL SCAN ROOT rather than editing one, and the
-first draft did the opposite. It appended a dead function to the hook package's
-operator-invoked pytest runner, which the plan records as wired to nothing, and
-that broke a DIFFERENT gate permanently rather than for the seconds of the
-plant. `check:ci-dead-python` exempts that runner BY NAME with a BLOCKER reason
-and checks the exemption in BOTH directions, so the moment this file NAMED it,
-the runner acquired a `mentioned` route and the gate correctly reported that the
-exemption had stopped being true.
+THE PLANT ADDS A FILE TO THE REAL SCAN ROOT rather than editing one, and the first draft did the opposite. It appended a dead function to the hook package's operator-invoked pytest runner, which the plan records as wired to nothing, and that broke a DIFFERENT gate permanently rather than for the seconds of the plant. `check:ci-dead-python` exempts that runner BY NAME with a BLOCKER
+reason and checks the exemption in BOTH directions, so the moment this file NAMED it, the runner acquired a `mentioned` route and the gate correctly reported that the exemption had stopped being true.
 
-THE RUNNER'S FILENAME IS NOT SPELLED ANYWHERE IN THIS FILE, and that is not
-squeamishness. The `mentioned` route is a path-SUFFIX match over the text of
-anything already reached, so writing the name even in a comment is what confers
-it. Deleting the plant and leaving the sentence behind fixed nothing, and that
-is how the second half of this paragraph came to exist. A test that gives its
-plant target a false life signal corrupts the dead-code census in order to prove
-something about a scanner.
+THE RUNNER'S FILENAME IS NOT SPELLED ANYWHERE IN THIS FILE, and that is not squeamishness. The `mentioned` route is a path-SUFFIX match over the text of anything already reached, so writing the name even in a comment is what confers it. Deleting the plant and leaving the sentence behind fixed nothing, and that is how the second half of this paragraph came to exist. A test that
+gives its plant target a false life signal corrupts the dead-code census in order to prove something about a scanner.
 
 Creating and removing a file is also the more realistic defect. Nobody adds a
 `/proc` read to a file that has been there for months; somebody adds a new
-guard. The scan root is walked with `rglob`, not `git ls-files`, so a file that
-exists for the length of one case is in the corpus for exactly that case. It is
-removed in a `finally`, and a later case asks `git status` whether anything was
-left behind.
+guard. The scan root is walked with `rglob`, not `git ls-files`, so a file that exists for the length of one case is in the corpus for exactly that case. It is removed in a `finally`, and a later case asks `git status` whether anything was left behind.
 """
 
 import contextlib

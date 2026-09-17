@@ -1,24 +1,10 @@
 r"""Python files no execution route reaches.
 
-Go has `deadcode`, TypeScript has knip, and bash has `scripts/gates/check-dead-bash.ts`.
-Python had nothing, across 592 tracked `.py` files, which is now the largest body
-of code in this repository and the one the tooling transformation is actively
-growing: every workstream that ports a bash gate ADDS a Python file, and W7's
-shadow protocol deliberately lands the new side BEFORE the old side is deleted.
-A port that shadowed green and was then forgotten is invisible to every other
-instrument in the tree, because nothing is broken by it: the bash twin is still
-registered, still runs, still passes.
+Go has `deadcode`, TypeScript has knip, and bash has `scripts/gates/check-dead-bash.ts`. Python had nothing, across 592 tracked `.py` files, which is now the largest body of code in this repository and the one the tooling transformation is actively growing: every workstream that ports a bash gate ADDS a Python file, and W7's shadow protocol deliberately lands the new side BEFORE
+the old side is deleted. A port that shadowed green and was then forgotten is invisible to every other instrument in the tree, because nothing is broken by it: the bash twin is still registered, still runs, still passes.
 
-WHAT MAKES THIS DIFFERENT FROM THE BASH GATE, and it is not the language.
-`check-dead-bash.ts` asks "is this basename mentioned by any other tracked file",
-which for bash is adequate because a shell script is only ever reached by being
-NAMED. Python is reached four other ways -- imported, collected by pytest,
-loaded by a package glob, re-executed by a forwarder -- and it is also MENTIONED
-constantly in prose that reaches nothing: this repository's `agent/` directory
-alone names hundreds of Python paths in plans and briefs. Applying the bash
-predicate to Python would therefore admit every dead file that any plan ever
-discussed. So prose is NOT an admission route here, and the routes that are ones
-are enumerated rather than inferred.
+WHAT MAKES THIS DIFFERENT FROM THE BASH GATE, and it is not the language. `check-dead-bash.ts` asks "is this basename mentioned by any other tracked file", which for bash is adequate because a shell script is only ever reached by being NAMED. Python is reached four other ways -- imported, collected by pytest, loaded by a package glob, re-executed by a forwarder -- and it is also
+MENTIONED constantly in prose that reaches nothing: this repository's `agent/` directory alone names hundreds of Python paths in plans and briefs. Applying the bash predicate to Python would therefore admit every dead file that any plan ever discussed. So prose is NOT an admission route here, and the routes that are ones are enumerated rather than inferred.
 
 THE ROUTES, and each is a different way a file actually executes:
 
@@ -46,15 +32,10 @@ THE ROUTES, and each is a different way a file actually executes:
              by path, a test harness that runs a script under a relative name:
              all real, none of them imports.
 
-WHICH DIRECTION TO BE WRONG IN. A false POSITIVE here asks a human to delete
-live code, so every route above is deliberately generous: a path-SUFFIX match
-counts, a mention in a comment counts, and a mention inside a dead-but-not-yet-
-reported file counts if that file is itself reached. The cost of that generosity
-is stated in the shape line, which prints how many files each route carries, so
-a reader can see when a route starts carrying implausibly many.
+WHICH DIRECTION TO BE WRONG IN. A false POSITIVE here asks a human to delete live code, so every route above is deliberately generous: a path-SUFFIX match counts, a mention in a comment counts, and a mention inside a dead-but-not-yet- reported file counts if that file is itself reached. The cost of that generosity is stated in the shape line, which prints how many files each route
+carries, so a reader can see when a route starts carrying implausibly many.
 
-WHICH ROUTES ARE LOAD-BEARING TODAY, measured by ablation on 2026-09-08 rather
-than assumed, because a route nobody needs is a route nobody notices breaking:
+WHICH ROUTES ARE LOAD-BEARING TODAY, measured by ablation on 2026-09-08 rather than assumed, because a route nobody needs is a route nobody notices breaking:
 
   glob    removing it changes NO verdict. All 44 guards are also mentioned by
           `scripts/data/hook-inventory-baseline.json` and `.claude/settings.json`,
@@ -73,19 +54,10 @@ than assumed, because a route nobody needs is a route nobody notices breaking:
   manual  load-bearing, exactly once: `.claude/rediacc_hooks/run_tests.py` has no
           other route at all.
 
-ANTI-VACUITY. There are 11 refusals, all of them the same shape: the gate would
-rather say "I cannot see my subject" than emit a green nobody can act on. Zero
-Python files, zero referrers, a missing `pyproject.toml`, one that is not TOML,
-an empty `testpaths` or `python_files`, a missing wiring file, zero files
-admitted by `wired`, zero collected by `pytest`, a shadow ledger whose records
-will not parse, a shadow directory that yields zero records at all, and a
-declared glob root that no longer exists.
+ANTI-VACUITY. There are 11 refusals, all of them the same shape: the gate would rather say "I cannot see my subject" than emit a green nobody can act on. Zero Python files, zero referrers, a missing `pyproject.toml`, one that is not TOML, an empty `testpaths` or `python_files`, a missing wiring file, zero files admitted by `wired`, zero collected by `pytest`, a shadow ledger whose
+records will not parse, a shadow directory that yields zero records at all, and a declared glob root that no longer exists.
 
-THAT NUMBER IS CHECKED, not typed and left. A control parses this module's own
-AST, counts the `RefusalError` raise sites and compares them against the digit in
-the paragraph above, because the first draft said "nine" while the code had
-eleven. A docstring that miscounts its own refusals is how a reader concludes a
-condition is covered when it is not.
+THAT NUMBER IS CHECKED, not typed and left. A control parses this module's own AST, counts the `RefusalError` raise sites and compares them against the digit in the paragraph above, because the first draft said "nine" while the code had eleven. A docstring that miscounts its own refusals is how a reader concludes a condition is covered when it is not.
 """
 
 from __future__ import annotations
@@ -212,11 +184,7 @@ class Report:
 def tracked_files(root: pathlib.Path) -> list[str]:
     """Every file in the working tree: tracked PLUS untracked-but-not-ignored.
 
-    `--others --exclude-standard` is load-bearing and is the same argument
-    `check-dead-bash.ts` makes for it. A brand-new file is untracked, and this
-    gate is a whole-tree reachability scan: with plain `ls-files` the commit
-    that ADDS the caller for a new module reports that module as dead, which is
-    the shape of ordinary work.
+    `--others --exclude-standard` is load-bearing and is the same argument `check-dead-bash.ts` makes for it. A brand-new file is untracked, and this gate is a whole-tree reachability scan: with plain `ls-files` the commit that ADDS the caller for a new module reports that module as dead, which is the shape of ordinary work.
     """
     out = subprocess.run(
         ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
@@ -243,9 +211,7 @@ def is_prose(rel: str) -> bool:
 def pytest_config(root: pathlib.Path) -> tuple[list[str], list[str]]:
     """`testpaths` and `python_files`, READ rather than restated.
 
-    Typed into this file they would be a second copy of pytest's own answer, and
-    the copy that goes stale is always the one nothing runs. `check_pytest` makes
-    the same argument about the collection floor.
+    Typed into this file they would be a second copy of pytest's own answer, and the copy that goes stale is always the one nothing runs. `check_pytest` makes the same argument about the collection floor.
     """
     cfg = root / "pyproject.toml"
     if not cfg.is_file():
@@ -293,11 +259,7 @@ def shadow_admissions(
 ) -> tuple[dict[str, str], dict[str, str], int]:
     """(admitted, expired, records): the new side of every EQUIVALENT shadow record.
 
-    ADMITTED means the twin named on the old side is still on disk. EXPIRED means
-    it is not, and that is the finding this route exists to produce: the shadow
-    protocol lands the port first and deletes the twin later, so the window
-    between them is exactly when a forgotten port stops being run by anything and
-    nothing else in the tree notices.
+    ADMITTED means the twin named on the old side is still on disk. EXPIRED means it is not, and that is the finding this route exists to produce: the shadow protocol lands the port first and deletes the twin later, so the window between them is exactly when a forgotten port stops being run by anything and nothing else in the tree notices.
     """
     admitted: dict[str, str] = {}
     expired: dict[str, str] = {}
@@ -362,16 +324,10 @@ def suffix_index(paths: list[str]) -> dict[str, list[str]]:
 def mentioned_paths(text: str, index: dict[str, list[str]]) -> set[str]:
     r"""Corpus paths a body of text names, by full path or by path-suffix.
 
-    A bare basename admits every corpus file with that name, which over-admits on
-    purpose: two `worklist.py` exist, one a forwarder for the other, and a
-    predicate that resolved the ambiguity by guessing would guess wrong in the
-    direction that deletes live code.
+    A bare basename admits every corpus file with that name, which over-admits on purpose: two `worklist.py` exist, one a forwarder for the other, and a predicate that resolved the ambiguity by guessing would guess wrong in the direction that deletes live code.
 
-    WRITTEN AS A LITERAL SEARCH AND A BACKWARD WALK, not as one regex, and the
-    difference is 19 seconds against 1. The obvious spelling, `[\w.\-/]*[\w-]\.py`,
-    starts a match attempt at EVERY character of every file, and this corpus holds
-    23 MiB of generated site search indexes. `str.find` is a memory scan and the
-    backward walk runs once per real occurrence. Measured on the whole tree: 19.3s
+    WRITTEN AS A LITERAL SEARCH AND A BACKWARD WALK, not as one regex, and the difference is 19 seconds against 1. The obvious spelling, `[\w.\-/]*[\w-]\.py`, starts a match attempt at EVERY character of every file, and this corpus holds 23 MiB of generated site search indexes. `str.find` is a memory scan and the backward walk runs once per real occurrence. Measured on the whole
+    tree: 19.3s
     for the regex against 1.0s for this, and a control pins the two spellings to
     the same answer on every file so the speed-up cannot quietly narrow the route.
     """
@@ -396,10 +352,7 @@ def mentioned_paths(text: str, index: dict[str, list[str]]) -> set[str]:
 def import_targets(source: str, importer: str, pyset: frozenset[str]) -> set[str]:
     """Corpus paths the imports in `source` resolve to.
 
-    Both `import a.b` and `from a.b import c` are followed, and the `c` of the
-    second is tried as a module too, because `from rediacc_ci.quality import
-    dead_python` names a FILE while `from x import y` naming a symbol resolves to
-    nothing and costs one dictionary lookup.
+    Both `import a.b` and `from a.b import c` are followed, and the `c` of the second is tried as a module too, because `from rediacc_ci.quality import dead_python` names a FILE while `from x import y` naming a symbol resolves to nothing and costs one dictionary lookup.
     """
     try:
         tree = ast.parse(source)
@@ -659,9 +612,7 @@ def _write(root: pathlib.Path, rel: str, body: str) -> None:
 def _fixture(tmp: pathlib.Path, extra: dict[str, str] | None = None) -> pathlib.Path:
     """A minimal tree with one of every required input, and nothing dead in it.
 
-    THE CLEAN FIXTURE MUST BE GREEN FIRST. A control that only ever plants is a
-    control that cannot tell a working detector from one that flags everything,
-    and this gate's false positives cost deletions of live code.
+    THE CLEAN FIXTURE MUST BE GREEN FIRST. A control that only ever plants is a control that cannot tell a working detector from one that flags everything, and this gate's false positives cost deletions of live code.
     """
     root = tmp
     _write(root, "pyproject.toml", _FIXTURE_PYPROJECT)

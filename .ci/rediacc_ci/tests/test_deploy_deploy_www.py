@@ -3,28 +3,15 @@
 
 A RECORDING FAKE FOR `npx`/`npm` ON A SCRATCH PATH, INSIDE A FIXTURE REPO.
 Nothing here reaches Cloudflare; every case pins a fixture token, account and
-D1 state file, and the fake `npx` is a MODEL of `wrangler d1` rather than
-wrangler. `.ci/shadow/w7p5a-status.json` records this path as blocked only for
-the "one real run" clause and says in as many words that the mocked parity
-ledger is a separate, achievable piece of work. This is that piece.
+D1 state file, and the fake `npx` is a MODEL of `wrangler d1` rather than wrangler. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE. Everything the script
-prints goes through `log_step`/`log_info`, which any classifier reads as
+THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE. Everything the script prints goes through `log_step`/`log_info`, which any classifier reads as
 progress; the observable effect of a run is the ordered list of `npx wrangler`
-subcommands and the exact bytes of the `wrangler.preview.toml` the preview lane
-generates. The fake records both: every invocation as a `call: ` line in
-`$FAKE_CALL_LOG`, and the bytes of any `--config` file the deploy step is
-handed into `$FAKE_CONFIG_DUMP`.
+subcommands and the exact bytes of the `wrangler.preview.toml` the preview lane generates. The fake records both: every invocation as a `call: ` line in `$FAKE_CALL_LOG`, and the bytes of any `--config` file the deploy step is handed into `$FAKE_CONFIG_DUMP`.
 
-BOTH SIDES GET THEIR OWN D1 STATE FILE, because a run MUTATES it (a preview
-deploy deletes and recreates a database). Sharing one would make the second side
-read what the first side wrote, which is a different scenario rather than the
-same one.
+BOTH SIDES GET THEIR OWN D1 STATE FILE, because a run MUTATES it (a preview deploy deletes and recreates a database). Sharing one would make the second side read what the first side wrote, which is a different scenario rather than the same one.
 
-`$REDIACC_CI_ROOT` STEERS ONLY THE PORT, and the twin resolves its root from the
-COPIED `common.sh`'s own location, so the two arrive at the same fixture from
-opposite directions. `test_the_two_root_resolutions_agree` pins that, including
-the half that matters: the twin does not read the variable at all.
+`$REDIACC_CI_ROOT` STEERS ONLY THE PORT, and the twin resolves its root from the COPIED `common.sh`'s own location, so the two arrive at the same fixture from opposite directions. `test_the_two_root_resolutions_agree` pins that, including the half that matters: the twin does not read the variable at all.
 """
 
 from __future__ import annotations
@@ -346,9 +333,7 @@ def test_the_generated_toml_carries_the_twins_em_dash_and_backticks(tmp_path) ->
 
     Both halves matter. The backticks around `trailingSlash: 'never'` are `\\``
     in the twin's UNQUOTED heredoc; a port that left the backslashes in would
-    emit a different file that no test comparing only the two ports would catch,
-    because both sides would be equally wrong. Here the twin IS one of the two
-    sides, so the comparison is against bash's own expansion.
+    emit a different file that no test comparing only the two ports would catch, because both sides would be equally wrong. Here the twin IS one of the two sides, so the comparison is against bash's own expansion.
     """
     _root, old, new = run_both(tmp_path, "--name", "pr-1")
     _agree(old, new, "preview-toml-bytes")
@@ -410,8 +395,7 @@ def test_the_generated_config_is_removed_on_success_and_kept_on_failure(tmp_path
 def test_fact_a_valueless_name_deploys_a_worker_called_true(tmp_path) -> None:
     """`parse_args` STORES THE STRING `true` FOR A FLAG WITH NO VALUE.
 
-    Nothing validates the shape, so the run mints `account-db-pr-true` and
-    deploys a worker literally named `true`. Reproduced, not repaired.
+    Nothing validates the shape, so the run mints `account-db-pr-true` and deploys a worker literally named `true`. Reproduced, not repaired.
     """
     assert port.A_VALUELESS_NAME_DEPLOYS_A_WORKER_CALLED_TRUE is True
 
@@ -442,8 +426,7 @@ def test_fact_the_production_database_guard_cannot_fire() -> None:
     """THE REFUSAL AT twin :69-72 IS UNREACHABLE, and both halves are asserted.
 
     The guard itself works (`is_protected` says yes to both names); no output
-    `db_name_for` can produce ever reaches it, because the template carries a
-    literal `-pr-` for every input including the empty string.
+    `db_name_for` can produce ever reaches it, because the template carries a literal `-pr-` for every input including the empty string.
     """
     assert port.PRODUCTION_GUARD_IS_UNREACHABLE is True
     assert port.is_protected("account-db") is True
@@ -507,10 +490,7 @@ def test_a_missing_jq_refuses_after_the_variables(tmp_path) -> None:
 def test_a_failed_uuid_lookup_after_create_is_the_one_self_refusal(tmp_path) -> None:
     """THE ONLY PLACE THIS SCRIPT REFUSES ON ITS OWN ACCOUNT.
 
-    `FAKE_D1_CREATE_IS_INVISIBLE` makes `d1 create` report success without
-    registering the database, which is what a create that silently did not take
-    would look like. The second `get_d1_uuid` then answers empty and the run
-    stops before writing any config.
+    `FAKE_D1_CREATE_IS_INVISIBLE` makes `d1 create` report success without registering the database, which is what a create that silently did not take would look like. The second `get_d1_uuid` then answers empty and the run stops before writing any config.
     """
     _root, old, new = run_both(tmp_path, "--name", "pr-5", FAKE_D1_CREATE_IS_INVISIBLE="1")
     _agree(old, new, "invisible-create")
@@ -553,8 +533,7 @@ def test_a_flag_that_is_not_an_identifier_exits_two_on_both_sides(tmp_path) -> N
 
     `printf -v` refuses `ARG_FOO.BAR`, returns 2, and `set -e` takes the whole
     script down. bash's message names `common.sh` and a line number; the port
-    prefixes the twin's own name. The EXIT CODE and the STREAM agree, which is
-    the part a caller can observe.
+    prefixes the twin's own name. The EXIT CODE and the STREAM agree, which is the part a caller can observe.
     """
     root = fixture(tmp_path)
     old_proc, old_calls, _ = _run(root, "old", "--foo.bar=x")
@@ -575,11 +554,7 @@ def test_a_flag_that_is_not_an_identifier_exits_two_on_both_sides(tmp_path) -> N
 def test_the_two_root_resolutions_agree(tmp_path) -> None:
     """$REDIACC_CI_ROOT STEERS ONLY THE PORT.
 
-    The twin resolves the root from the copied `common.sh`'s own location and
-    reads no such variable, so the fact that both sides land on the same fixture
-    is a real agreement rather than a shared configuration. Pinned by pointing
-    the variable at a DECOY and watching the port follow it while the twin does
-    not.
+    The twin resolves the root from the copied `common.sh`'s own location and reads no such variable, so the fact that both sides land on the same fixture is a real agreement rather than a shared configuration. Pinned by pointing the variable at a DECOY and watching the port follow it while the twin does not.
     """
     assert "REDIACC_CI_ROOT" not in TWIN.read_text(encoding="utf-8")
     assert "REDIACC_CI_ROOT" not in COMMON.read_text(encoding="utf-8")
@@ -599,11 +574,7 @@ def test_the_two_root_resolutions_agree(tmp_path) -> None:
 def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     """PROVE THE DIFFERENTIAL CAN FIRE, and prove WHICH assertion fires.
 
-    The plant drops `--location eeur` from the create, which is invisible in
-    every printed byte: the twin and the port would both log
-    `Creating D1 database ...` and both exit 0. Only the call log sees it, and a
-    preview database minted in the wrong region is exactly the class of defect
-    this ledger exists to rule out.
+    The plant drops `--location eeur` from the create, which is invisible in every printed byte: the twin and the port would both log `Creating D1 database ...` and both exit 0. Only the call log sees it, and a preview database minted in the wrong region is exactly the class of defect this ledger exists to rule out.
     """
     root = fixture(tmp_path)
     old_proc, old_calls, _ = _run(root, "old", "--name", "pr-3")
@@ -693,15 +664,9 @@ def test_the_generated_toml_ends_with_exactly_one_newline() -> None:
 def test_both_credentials_are_read_with_literal_keys() -> None:
     """THE ENV-REGISTRY SCANNER MUST BE ABLE TO SEE BOTH INPUTS.
 
-    `common.require_var` does the refusing, and the read that makes the refusal
-    happen lives inside `core.common`, where an AST walk of THIS module cannot
-    see it. So `main` reads both names with literal keys as well. A future edit
-    that folds those two reads away leaves `CLOUDFLARE_ACCOUNT_ID` an undeclared
-    input, and this is what says so.
+    `common.require_var` does the refusing, and the read that makes the refusal happen lives inside `core.common`, where an AST walk of THIS module cannot see it. So `main` reads both names with literal keys as well. A future edit that folds those two reads away leaves `CLOUDFLARE_ACCOUNT_ID` an undeclared input, and this is what says so.
 
-    THE ORDER IS ASSERTED TOO, because a dict literal is what preserves it and
-    `test_a_missing_jq_refuses_after_the_variables` depends on the token being
-    named first.
+    THE ORDER IS ASSERTED TOO, because a dict literal is what preserves it and `test_a_missing_jq_refuses_after_the_variables` depends on the token being named first.
     """
     source = inspect.getsource(port.main)
     for name in ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"):

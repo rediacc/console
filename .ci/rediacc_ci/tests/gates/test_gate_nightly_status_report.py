@@ -1,22 +1,14 @@
 """Port of `.ci/scripts/test/gates/test-nightly-status-report.sh`.
 
-WHAT BROKE, kept from the twin because it is the reason the module exists.
-Nothing reported the nightly's verdict anywhere. A scheduled run that fails at
-01:00 UTC notifies nobody, appears in no PR, and blocks nothing, and the nightly
-is the ONLY suite validating main, because ci.yml sets
+WHAT BROKE, kept from the twin because it is the reason the module exists. Nothing reported the nightly's verdict anywhere. A scheduled run that fails at 01:00 UTC notifies nobody, appears in no PR, and blocks nothing, and the nightly is the ONLY suite validating main, because ci.yml sets
 `full_suite: github.event_name != 'push'`. Measured 2026-07-27: twelve
 consecutive red nights, zero successes, back to 2026-07-16, unnoticed.
 
-WHY BEHAVIOURAL. The claims worth testing are about API CALLS ("opens exactly
-one issue", "comments instead of opening a second", "closes on green"), so this
-drives the real module with a mocked GitHub client and asserts on the call
-trace. A pure-function test would only cover isGreen.
+WHY BEHAVIOURAL. The claims worth testing are about API CALLS ("opens exactly one issue", "comments instead of opening a second", "closes on green"), so this drives the real module with a mocked GitHub client and asserts on the call trace. A pure-function test would only cover isGreen.
 
-THE NODE HARNESS IS THE TWIN'S, BYTE FOR BYTE. It is a CommonJS file that the
-twin heredocs into its scratch directory and this module writes from a string
+THE NODE HARNESS IS THE TWIN'S, BYTE FOR BYTE. It is a CommonJS file that the twin heredocs into its scratch directory and this module writes from a string
 literal; nothing about it was translated, because translating the mock would
-change what the subject is driven with and the two sides would then be
-comparing different runs. The only Python here is the argv marshalling and the
+change what the subject is driven with and the two sides would then be comparing different runs. The only Python here is the argv marshalling and the
 assertions, which is exactly the seam the twin implements in `sed -n 's/^TRACE=//p'`
 and this implements with `str.startswith`. They agree because the harness emits
 one `TRACE=` line and at most one `BODY=` line, both on their own line and both
@@ -25,10 +17,7 @@ form takes the remainder of the first matching line, which is the same string
 while there is one match, and the harness JSON-encodes the body onto ONE line
 precisely so that stays true.
 
-NO `xdist_group`. Every case writes only into pytest's own `tmp_path`, reads
-`.ci/scripts/ci/report-nightly-status.cjs` and `.github/workflows/nightly-status.yml`
-without writing either, binds no port and mutates no module global. Two copies
-of this file running at once would not collide.
+NO `xdist_group`. Every case writes only into pytest's own `tmp_path`, reads `.ci/scripts/ci/report-nightly-status.cjs` and `.github/workflows/nightly-status.yml` without writing either, binds no port and mutates no module global. Two copies of this file running at once would not collide.
 """
 
 import json

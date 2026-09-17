@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/deploy-proxy.sh`.
 
-Builds the CLI bundle the executor container image ships, then deploys the proxy
-Worker and that container image to Cloudflare. MANUAL ONLY: the twin's header
-says why in four lines, and the reason is not caution about the tooling -- the
-executor is the component that holds customers' config keys in memory and the
-only thing allowed to open SSH to their machines, so a human stays in the loop
-until it has run in front of real traffic. CI drives the `--dry-run` path.
+Builds the CLI bundle the executor container image ships, then deploys the proxy Worker and that container image to Cloudflare. MANUAL ONLY: the twin's header says why in four lines, and the reason is not caution about the tooling -- the executor is the component that holds customers' config keys in memory and the only thing allowed to open SSH to their machines, so a human stays
+in the loop until it has run in front of real traffic. CI drives the `--dry-run` path.
 
-IT IS THE ODD ONE OUT OF THE THREE DEPLOY SCRIPTS, in four ways that all matter
-to a caller:
+IT IS THE ODD ONE OUT OF THE THREE DEPLOY SCRIPTS, in four ways that all matter to a caller:
 
   * IT BUILDS FIRST, AND THE BUILD IS TWO `npm run build --workspace` RUNS FROM
     THE REPO ROOT (:32-34), before it has looked at the worker directory at all.
@@ -22,14 +17,9 @@ to a caller:
   * IT PASSES NO `--config` TO WRANGLER. The other two name their config file;
     this one relies on wrangler's own discovery from cwd.
 
-NOTHING HERE REACHES CLOUDFLARE, AND NOTHING BUILDS, IN A TEST. `npm` and `npx`
-are the only external tools, so the differential
-(`.ci/rediacc_ci/tests/test_deploy_deploy_proxy.py`) puts RECORDING FAKES for
+NOTHING HERE REACHES CLOUDFLARE, AND NOTHING BUILDS, IN A TEST. `npm` and `npx` are the only external tools, so the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_proxy.py`) puts RECORDING FAKES for
 both on a scratch PATH and points both sides at a fixture repo root; the fake
-`npm` is what stops the real `@rediacc/shared` and `@rediacc/cli` builds from
-running. `.ci/shadow/w7p5a-status.json` records this path as blocked only for
-the "one real run" clause and says in as many words that the mocked parity
-ledger is separate, achievable work. This is that piece.
+`npm` is what stops the real `@rediacc/shared` and `@rediacc/cli` builds from running. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is separate, achievable work. This is that piece.
 
 TWO DIVERGENCES IN TEXT NOBODY PARSES, both bash's own diagnostics:
 
@@ -133,11 +123,7 @@ def deploy_argv() -> list[str]:
 def cd_failed(worker_dir: pathlib.Path, reason: str) -> str:
     """Bash's own `cd` diagnostic (:36), minus its path-and-line prefix.
 
-    The REASON comes from the operating system rather than from a literal,
-    because bash's does too: a `workers/proxy` that is a regular file reads
-    "Not a directory", one without `+x` on a parent reads "Permission denied",
-    and only an absent one reads "No such file or directory". `os.strerror`
-    produces the same three strings from the same three errnos.
+    The REASON comes from the operating system rather than from a literal, because bash's does too: a `workers/proxy` that is a regular file reads "Not a directory", one without `+x` on a parent reads "Permission denied", and only an absent one reads "No such file or directory". `os.strerror` produces the same three strings from the same three errnos.
     """
     return "cd: %s: %s" % (worker_dir, reason)
 

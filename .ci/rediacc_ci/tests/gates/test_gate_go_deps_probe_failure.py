@@ -6,25 +6,19 @@ WHAT BROKE. The gate gathered its data with
 
     go list -u -m -json all 2>/dev/null | jq ... 2>/dev/null || true
 
-so ANY failure of either command produced an empty result set, which is
-byte-identical to a clean tree. The gate then printed "All Go direct dependencies
+so ANY failure of either command produced an empty result set, which is byte-identical to a clean tree. The gate then printed "All Go direct dependencies
 are up-to-date" and exited 0. It was not reporting that deps were fine; it was
 reporting nothing at all, in the voice of success.
 
-Observed 2026-07-27: a local `npm run ci` reported all-clean while CI failed on
-the SAME commit for an outdated csi-spec. The gate was not disagreeing with CI --
+Observed 2026-07-27: a local `npm run ci` reported all-clean while CI failed on the SAME commit for an outdated csi-spec. The gate was not disagreeing with CI --
 `go list` was exiting 1 locally (go.mod requires go >= 1.25, the toolchain on
 PATH was 1.24) and the failure was being swallowed.
 
-WHY A PATH SHIM. Reproducing the original required a specific broken toolchain on
-the machine. A fake `go` on PATH reproduces every failure mode deterministically
-and on any runner, including the one a real toolchain cannot easily produce
-(valid-but-empty output).
+WHY A PATH SHIM. Reproducing the original required a specific broken toolchain on the machine. A fake `go` on PATH reproduces every failure mode deterministically and on any runner, including the one a real toolchain cannot easily produce (valid-but-empty output).
 
 WHAT THE PORT REIMPLEMENTS, AND WHY THE TWO AGREE. The twin builds its fixture
 with `mkdir -p` / `cp` and installs its shim by writing a heredoc; this does the
-same with `pathlib` and `shutil`, file for file, including the two copies that
-are load-bearing and were each added after a silent-pass was found:
+same with `pathlib` and `shutil`, file for file, including the two copies that are load-bearing and were each added after a silent-pass was found:
 
   * `scripts/lib/release-age.ts`. `release-age.sh` stopped being self-contained
     on 2026-09-06 and is now a SHIM over that TypeScript module, so copying only
@@ -39,13 +33,9 @@ are load-bearing and were each added after a silent-pass was found:
     pure Python and reads no fixture state, so borrowing the real one changes
     nothing under test.
 
-STREAMS ARE MERGED HERE ON PURPOSE, and it is one of the few ports where that is
-right rather than lazy: the twin redirects `>"$FIXTURE/out.txt" 2>&1` and asserts
-over the merged text, because the thing being asserted is that go's STDERR
-reaches the operator at all. Splitting them would change what is claimed.
+STREAMS ARE MERGED HERE ON PURPOSE, and it is one of the few ports where that is right rather than lazy: the twin redirects `>"$FIXTURE/out.txt" 2>&1` and asserts over the merged text, because the thing being asserted is that go's STDERR reaches the operator at all. Splitting them would change what is claimed.
 
-NO `xdist_group`. Every case runs inside its own temporary fixture tree, PATH is
-set per-subprocess rather than on this process, and nothing module-global moves.
+NO `xdist_group`. Every case runs inside its own temporary fixture tree, PATH is set per-subprocess rather than on this process, and nothing module-global moves.
 """
 
 import os

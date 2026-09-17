@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/check-rerun-attempt.sh` (48 lines).
 
-The dumb, deterministic backstop under the AI-driven watchdog: read the run's
-current attempt and refuse to rerun at or past the cap. The twin's header owns
-why the exported name is `WATCHDOG_SKIP_RERUN` (it is the CONSUMER's spelling,
-read by `watchdog-monitor.cjs`), and that is not restated here.
+The dumb, deterministic backstop under the AI-driven watchdog: read the run's current attempt and refuse to rerun at or past the cap. The twin's header owns why the exported name is `WATCHDOG_SKIP_RERUN` (it is the CONSUMER's spelling, read by `watchdog-monitor.cjs`), and that is not restated here.
 
 LIVE CALLER, not repointed. The bash twin stays the registered gate; this module
-is its verified-equivalent alternative, and the cutover is a separate, later,
-driver-only step.
+is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
-Ledger: `.ci/shadow/w7p6-check-rerun-attempt.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-check-rerun-attempt --assert
---k 5`).
+Ledger: `.ci/shadow/w7p6-check-rerun-attempt.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-check-rerun-attempt --assert --k 5`).
 
 -----------------------------------------------------------------------------
 DEFECT A -- THE TWIN EXITS 1 ON ITS OWN HAPPY PATH WHEN `GITHUB_ENV` IS UNSET
@@ -21,11 +15,8 @@ Its last line is
 
     [[ -n "${GITHUB_ENV:-}" ]] && echo "WATCHDOG_SKIP_RERUN=${SKIP}" >>"$GITHUB_ENV"
 
-`GITHUB_ENV` is documented in the twin's own header as OPTIONAL. When it is
-unset the `[[ -n ]]` is false, the `&&` list therefore has status 1, and it is
-the LAST command in the script, so the SCRIPT's status is 1. `set -e` is not
-what does this -- a test on the left of `&&` is exempt -- the script simply ends
-on a false command. Driven 2026-09-14 with a fake `gh` returning attempt 1:
+`GITHUB_ENV` is documented in the twin's own header as OPTIONAL. When it is unset the `[[ -n ]]` is false, the `&&` list therefore has status 1, and it is the LAST command in the script, so the SCRIPT's status is 1. `set -e` is not what does this -- a test on the left of `&&` is exempt -- the script simply ends on a false command. Driven 2026-09-14 with a fake `gh` returning
+attempt 1:
 
     $ RUN_ID=5 GH_REPO=a/b bash .ci/scripts/ci/check-rerun-attempt.sh
     ::group::Fetching run details
@@ -39,42 +30,31 @@ on a false command. Driven 2026-09-14 with a fake `gh` returning attempt 1:
     ... same five lines ...
     rc=0
 
-So the script reports "rerun is allowed" and then fails, and the only thing
-separating the two is whether the caller happened to set an OPTIONAL variable.
+So the script reports "rerun is allowed" and then fails, and the only thing separating the two is whether the caller happened to set an OPTIONAL variable.
 In the workflow `GITHUB_ENV` is always set, which is why nothing has noticed;
-anybody running it by hand, or from a composite action that clears the
-environment, gets a failure with no failing message. REPRODUCED verbatim, not
-repaired: `.ci/scripts/ci/` is not this writer's to change.
+anybody running it by hand, or from a composite action that clears the environment, gets a failure with no failing message. REPRODUCED verbatim, not repaired: `.ci/scripts/ci/` is not this writer's to change.
 
 -----------------------------------------------------------------------------
 DEFECT B -- AN UNPARSEABLE ATTEMPT FAILS OPEN, WHICH IS THE WRONG DIRECTION
 -----------------------------------------------------------------------------
 `ATTEMPT="$(gh api ... --jq '.run_attempt')"` is never checked for shape, and
-`[[ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]]` is bash arithmetic. An EMPTY attempt --
-which is what an empty body, or a `--jq` filter that selected nothing, yields --
-evaluates as 0:
+`[[ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]]` is bash arithmetic. An EMPTY attempt -- which is what an empty body, or a `--jq` filter that selected nothing, yields -- evaluates as 0:
 
     $ FAKE_ATTEMPT= RUN_ID=5 GH_REPO=a/b GITHUB_ENV=/tmp/e \\
         bash .ci/scripts/ci/check-rerun-attempt.sh
     (info) Run attempt  < max 2 - rerun is allowed
     rc=0 ; /tmp/e contains WATCHDOG_SKIP_RERUN=false
 
-The whole point of the file is to be a cap that cannot be talked out of, and the
-"I could not read the attempt" case is folded into "the cap is not reached". The
-neighbouring shape fails CLOSED for an unrelated reason: `.run_attempt` missing
+The whole point of the file is to be a cap that cannot be talked out of, and the "I could not read the attempt" case is folded into "the cap is not reached". The neighbouring shape fails CLOSED for an unrelated reason: `.run_attempt` missing
 from the JSON makes `jq -r` print the four letters `null`, which bash arithmetic
-reads as a VARIABLE NAME, and `set -u` then kills the script at the twin's line
-40 with `null: unbound variable`, exit 1. Two malformed inputs, two opposite
-answers, neither of them a sentence anybody can act on. Both reproduced.
+reads as a VARIABLE NAME, and `set -u` then kills the script at the twin's line 40 with `null: unbound variable`, exit 1. Two malformed inputs, two opposite answers, neither of them a sentence anybody can act on. Both reproduced.
 
 -----------------------------------------------------------------------------
 WHY THE BASH DIAGNOSTICS ARE REPRODUCED CHARACTER BY CHARACTER
 -----------------------------------------------------------------------------
 Three of this script's five exits are bash's own messages rather than the
 script's: `${RUN_ID:?...}`, `${GH_REPO:?...}` and the `null` arithmetic above.
-They carry `<program>: line <N>:`, so the port carries the twin's line numbers
-as named constants and `test_the_pinned_line_numbers_still_point_at_the_twins
-_lines` re-derives all three from the twin on every run. The program NAME
+They carry `<program>: line <N>:`, so the port carries the twin's line numbers as named constants and `test_the_pinned_line_numbers_still_point_at_the_twins _lines` re-derives all three from the twin on every run. The program NAME
 necessarily differs (`.sh` there, the module path here); the differential
 normalises exactly that one token and compares the rest byte-for-byte.
 """
@@ -116,13 +96,9 @@ class BashArithError(Exception):
 def bash_ge(left_word: str, right_word: str) -> bool:
     """`[[ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]]`, with bash's arithmetic rules.
 
-    Empty is 0 (DEFECT B's fail-open arm). A decimal is itself. A bare
-    identifier is an unset variable and therefore fatal under `set -u`
-    (DEFECT B's fail-closed arm, which is how `null` behaves). Anything else --
-    `1abc`, `0x10` -- is an arithmetic syntax error in the twin, `[[ ]]` answers
+    Empty is 0 (DEFECT B's fail-open arm). A decimal is itself. A bare identifier is an unset variable and therefore fatal under `set -u` (DEFECT B's fail-closed arm, which is how `null` behaves). Anything else -- `1abc`, `0x10` -- is an arithmetic syntax error in the twin, `[[ ]]` answers
     false, and the script continues; that arm is not reachable from `gh --jq`
-    output and is deliberately mapped onto the same false answer rather than
-    given a second synthetic message.
+    output and is deliberately mapped onto the same false answer rather than given a second synthetic message.
     """
     values = []
     for word in (left_word.strip(), right_word.strip()):
@@ -156,10 +132,7 @@ def require_env(name: str, message: str, line: int) -> str:
 def gh_run_attempt(repo: str, run_id: str) -> str:
     """`gh api "repos/<repo>/actions/runs/<id>" --jq '.run_attempt'`.
 
-    STDERR IS NOT REDIRECTED by the twin, so it is inherited here. A non-zero
-    status is fatal under `set -e`, and -- this is the observable part --
-    `::endgroup::` is therefore NEVER printed on that path, leaving the GitHub
-    log with an unclosed group. Reproduced by raising before the print.
+    STDERR IS NOT REDIRECTED by the twin, so it is inherited here. A non-zero status is fatal under `set -e`, and -- this is the observable part -- `::endgroup::` is therefore NEVER printed on that path, leaving the GitHub log with an unclosed group. Reproduced by raising before the print.
     """
     proc = subprocess.run(
         ["gh", "api", "repos/%s/actions/runs/%s" % (repo, run_id), "--jq", ".run_attempt"],

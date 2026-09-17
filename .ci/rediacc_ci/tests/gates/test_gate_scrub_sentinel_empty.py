@@ -1,42 +1,22 @@
 """Port of `.ci/scripts/test/gates/test-scrub-sentinel-empty.sh`.
 
-Subject: `scripts/dev/scrub-sentinel.sh`. Regression test for its empty-prefix
-hang.
+Subject: `scripts/dev/scrub-sentinel.sh`. Regression test for its empty-prefix hang.
 
 Before commit 27e9a49ab the dry-run plan loop called `aws s3 ls --recursive`
 inside `count="$(... | wc -l)"`. `aws s3 ls` returns exit 1 when the prefix is
 empty, and `set -eo pipefail` made the whole script abort right after `count=0`
-was assigned -- silently, with the operator seeing only the "sentinel: absent"
-line and no exit message. This pins the fix: a dry-run against a guaranteed-empty
-version must print the cli plan AND exit 0, regardless of whether the underlying
-R2 list call succeeds.
+was assigned -- silently, with the operator seeing only the "sentinel: absent" line and no exit message. This pins the fix: a dry-run against a guaranteed-empty version must print the cli plan AND exit 0, regardless of whether the underlying R2 list call succeeds.
 
 THE TOOL-ABSENT BRANCH IS TRANSCRIBED, NOT IMPROVED, AND THAT IS DELIBERATE.
-`harness.require_tool` would refuse loudly on a machine with no `aws`, which is
-this directory's standing rule and is the RIGHT rule for a case that could
-otherwise be checked. It is the wrong rule HERE for one reason: the twin does not
-refuse, it reports NOT VERIFIED and exits 0, and `test_twin_parity.py` compares
-VERDICTS. A port that refused where the twin passes would diverge on every
-developer machine without `aws` and the divergence would say nothing about the
-subject.
+`harness.require_tool` would refuse loudly on a machine with no `aws`, which is this directory's standing rule and is the RIGHT rule for a case that could otherwise be checked. It is the wrong rule HERE for one reason: the twin does not refuse, it reports NOT VERIFIED and exits 0, and `test_twin_parity.py` compares VERDICTS. A port that refused where the twin passes would diverge
+on every developer machine without `aws` and the divergence would say nothing about the subject.
 
-So the branch is copied exactly, including the half that matters most: under
-`CI` a missing `aws` is a FAILURE, because a missing tool there is a broken lane
-and a suite that quietly passes over it is the gate-that-cannot-fail shape this
-repo keeps paying for. Locally it is announced as NOT VERIFIED rather than
-skipped silently, which is what keeps the absence visible.
+So the branch is copied exactly, including the half that matters most: under `CI` a missing `aws` is a FAILURE, because a missing tool there is a broken lane and a suite that quietly passes over it is the gate-that-cannot-fail shape this repo keeps paying for. Locally it is announced as NOT VERIFIED rather than skipped silently, which is what keeps the absence visible.
 
-MEASURED 2026-08-27 by the twin, and reproduced here 2026-09-09: without `aws`,
-`scrub-sentinel.sh` exits 1 with `Required command 'aws' is not available` on
-stderr and prints nothing on stdout, and the suite reported "dry-run must succeed
-even with bad credentials: expected 0, got 1" -- indistinguishable from the
-pipefail bug coming back. Saying WHICH one it is is the whole point of the branch.
+MEASURED 2026-08-27 by the twin, and reproduced here 2026-09-09: without `aws`, `scrub-sentinel.sh` exits 1 with `Required command 'aws' is not available` on stderr and prints nothing on stdout, and the suite reported "dry-run must succeed even with bad credentials: expected 0, got 1" -- indistinguishable from the pipefail bug coming back. Saying WHICH one it is is the whole point
+of the branch.
 
-NOT A REAL-TREE TWIN. `gate-test:scrub-sentinel-empty` carries no `tree:` claim in
-`gates.lock.json`, so `REAL_TREE_TWIN` is deliberately NOT set: `real_tree_admission`
-refuses an over-claim, because an opt-in that costs nothing to declare stops
-meaning anything. The subject is executed read-only against an unreachable
-endpoint and writes nothing.
+NOT A REAL-TREE TWIN. `gate-test:scrub-sentinel-empty` carries no `tree:` claim in `gates.lock.json`, so `REAL_TREE_TWIN` is deliberately NOT set: `real_tree_admission` refuses an over-claim, because an opt-in that costs nothing to declare stops meaning anything. The subject is executed read-only against an unreachable endpoint and writes nothing.
 """
 
 import os
@@ -102,9 +82,7 @@ def test_dry_run_completes_with_no_credentials(gate):
     """No R2 credentials means `aws s3api list-objects-v2` errors, the helper
     returns 0, and the dry-run plan emits "objects: 0" for the cli product.
 
-    CRITICALLY: the script must reach the "dry-run: pass --execute" final line. If
-    pipefail kills it after the count assignment there is no exit message, and
-    that silence is the whole bug.
+    CRITICALLY: the script must reach the "dry-run: pass --execute" final line. If pipefail kills it after the count assignment there is no exit message, and that silence is the whole bug.
     """
     if not tool_gate(gate):
         return
@@ -135,16 +113,10 @@ def test_dry_run_emits_zero_object_count(gate):
 def test_the_tool_branch_is_announced_and_not_a_silent_skip(gate):
     """ADDED BY THE PORT, and it is the case that keeps the branch above honest.
 
-    Both real cases return early when `aws` is absent, which is exactly the shape
-    a reader should distrust: two functions that assert nothing and a green run.
-    The refusal that makes it legitimate is the CI half, and nothing else here
-    exercises it. This drives `tool_gate`'s decision table directly -- present,
-    absent-locally, absent-in-CI -- so the branch cannot silently become
+    Both real cases return early when `aws` is absent, which is exactly the shape a reader should distrust: two functions that assert nothing and a green run. The refusal that makes it legitimate is the CI half, and nothing else here exercises it. This drives `tool_gate`'s decision table directly -- present, absent-locally, absent-in-CI -- so the branch cannot silently become
     "absent is always fine".
 
-    The CI arm is driven by SETTING the variable rather than by reading whatever
-    the environment happens to hold, because on a developer machine `CI` is unset
-    and the arm that must never pass would never be reached.
+    The CI arm is driven by SETTING the variable rather than by reading whatever the environment happens to hold, because on a developer machine `CI` is unset and the arm that must never pass would never be reached.
     """
     gate.assert_eq(SUBJECT.is_file(), True, "the subject must exist even when the cases cannot run")
     previous = os.environ.get("CI")

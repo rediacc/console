@@ -3,8 +3,7 @@ r"""The newest automated review REPORT (an issue comment) must have been answere
 Ported from `.ci/scripts/quality/check-review-report-replies.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHY THERE ARE TWO GATES ON ONE SURFACE, in the twin's own words, because this is
-the paragraph that stops someone deleting one of them:
+WHY THERE ARE TWO GATES ON ONE SURFACE, in the twin's own words, because this is the paragraph that stops someone deleting one of them:
 
     The Claude review pipeline posts on two surfaces:
       1. Inline code comments (pulls/comments)  -> gated by check-review-comments.sh
@@ -36,8 +35,7 @@ the paragraph that stops someone deleting one of them:
     against one fixture and asserts exactly that, because the moment they disagree
     this stops being coverage and starts being a tax.
 
-THE BUG THIS FILE CARRIED UNTIL 2026-08-05, verbatim, because it is the reason the
-matcher is keyed the way it is:
+THE BUG THIS FILE CARRIED UNTIL 2026-08-05, verbatim, because it is the reason the matcher is keyed the way it is:
 
     The report was matched by the "**Claude finished" header AND-ed with "carries
     the findings fence or a '### Review' heading". That second clause is a guess
@@ -78,8 +76,7 @@ THE PER-EPIC FAN-OUT, and why it is a self-invocation rather than a loop:
     A PR with no epics (no snapshot, or a snapshot declaring none) takes the flat
     path unchanged, which is every PR that predates this feature.
 
-THE GRAPHQL FALLBACK IS A SECOND INSTRUMENT, NOT A SOFTER VERDICT, and its
-archaeology is the most easily-deleted paragraph in the file:
+THE GRAPHQL FALLBACK IS A SECOND INSTRUMENT, NOT A SOFTER VERDICT, and its archaeology is the most easily-deleted paragraph in the file:
 
     It keeps this gate RUNNABLE while the REST API is degraded, and a gate that
     cannot run does not judge a merge, it blocks every one of them.
@@ -104,8 +101,7 @@ archaeology is the most easily-deleted paragraph in the file:
     above any real PR here, and an under-read can only HIDE a reply, i.e. fail
     closed, never invent one.
 
-WHAT COUNTS AS A REPLY, all four clauses, because clause (a) is the one that makes
-the gate able to fire at all:
+WHAT COUNTS AS A REPLY, all four clauses, because clause (a) is the one that makes the gate able to fire at all:
 
     (a) a DIFFERENT author from the reporter. Load-bearing: the pipeline posts
         several comments in a row under one identity (on #551 the reviewed-SHA
@@ -127,31 +123,18 @@ the gate able to fire at all:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TWO CONSTANTS MUST MATCH THEIR TWINS IN `review_comments.py`, and the twin says
-why: "THESE TWO MUST MATCH check-review-comments.sh's variables of the same names.
+THE TWO CONSTANTS MUST MATCH THEIR TWINS IN `review_comments.py`, and the twin says why: "THESE TWO MUST MATCH check-review-comments.sh's variables of the same names.
 That is what makes one reply clear both gates; test-review-status.sh parses both
-files and fails if they drift apart." They are therefore duplicated here rather
-than imported, exactly as the bash pair duplicates them, and both ports assert the
-agreement in their own tests.
+files and fails if they drift apart." They are therefore duplicated here rather than imported, exactly as the bash pair duplicates them, and both ports assert the agreement in their own tests.
 
 THE SELF-INVOCATION BECOMES A RECURSIVE `main()` CALL, not a subprocess. The twin
 re-executes `"$0" "$@"` with `REVIEW_EPIC_PREFIX` set; the port sets the same
-variable in `os.environ` and calls `main` again. The recursion is bounded by the
-same condition -- the variable being set is what stops the fan-out -- so it is one
-level deep on both sides, and the printed output is identical because it is the
-same code path.
+variable in `os.environ` and calls `main` again. The recursion is bounded by the same condition -- the variable being set is what stops the fan-out -- so it is one level deep on both sides, and the printed output is identical because it is the same code path.
 
-`review_epic_ids` IS REIMPLEMENTED, INCLUDING ITS ROOT ANCHOR. The twin's helper
-resolves `agent/pr/<branch-with-slashes-dashed>.md` against the REPOSITORY ROOT and
-its comment says why: "It used to be a bare relative path, so the answer depended on
-the caller's CWD: a gate invoked from a subdirectory saw no epics and silently took
-the flat path, which looks exactly like a PR that declares none."
-`WORKLIST_PUBLISH_ROOT` overrides the root, and that override is honoured here too.
+`review_epic_ids` IS REIMPLEMENTED, INCLUDING ITS ROOT ANCHOR. The twin's helper resolves `agent/pr/<branch-with-slashes-dashed>.md` against the REPOSITORY ROOT and its comment says why: "It used to be a bare relative path, so the answer depended on the caller's CWD: a gate invoked from a subdirectory saw no epics and silently took the flat path, which looks exactly like a PR that
+declares none." `WORKLIST_PUBLISH_ROOT` overrides the root, and that override is honoured here too.
 
-jq's `contains()` IS A SUBSTRING TEST on strings, which is why `github-actions`
-matches `github-actions[bot]`. A port using equality would be blind to the REST
-spelling, and one using `startswith` would be blind to nothing today and to a
-future prefix change tomorrow. Substring, as written.
+jq's `contains()` IS A SUBSTRING TEST on strings, which is why `github-actions` matches `github-actions[bot]`. A port using equality would be blind to the REST spelling, and one using `startswith` would be blind to nothing today and to a future prefix change tomorrow. Substring, as written.
 """
 
 import json
@@ -227,11 +210,9 @@ GQL = (
 def is_low_effort_reply(reply: str, min_chars: int = SUMMARY_MIN_CHARS) -> bool:
     """True when the reply is a stock acknowledgement or too short.
 
-    THE DEFAULT FLOOR HERE IS 30, NOT 10. `check-review-comments.sh`'s function of
-    the same name defaults to 10, because a reply to ONE inline thread is allowed
+    THE DEFAULT FLOOR HERE IS 30, NOT 10. `check-review-comments.sh`'s function of the same name defaults to 10, because a reply to ONE inline thread is allowed
     to be short; a reply to a whole review report is not. Two functions with one
-    name and different defaults is exactly the kind of thing a port collapses by
-    accident, so the difference is stated at both ends.
+    name and different defaults is exactly the kind of thing a port collapses by accident, so the difference is stated at both ends.
     """
     normalized = TRAILING_PUNCT.sub("", reply.lower().strip())
     if normalized in LOW_EFFORT_PATTERNS:
@@ -242,9 +223,7 @@ def is_low_effort_reply(reply: str, min_chars: int = SUMMARY_MIN_CHARS) -> bool:
 def review_epic_ids(branch: str, root: str) -> list[str]:
     """The epic ids declared for `branch`, from `<root>/agent/pr/<branch>.md`.
 
-    ANCHORED TO THE REPOSITORY ROOT, never to the caller's directory. A bare
-    relative path made this return nothing when the gate ran from a subdirectory,
-    which looks exactly like a PR that declares no epics.
+    ANCHORED TO THE REPOSITORY ROOT, never to the caller's directory. A bare relative path made this return nothing when the gate ran from a subdirectory, which looks exactly like a PR that declares no epics.
     """
     if not branch:
         return []
@@ -264,9 +243,7 @@ def review_epic_ids(branch: str, root: str) -> list[str]:
 def newest_report(comments: list[dict], prefix: str) -> dict | None:
     """The newest github-actions comment whose body starts with `prefix`.
 
-    NOTHING ELSE IS AND-ED ON, and the module docstring says what an extra clause
-    cost. `contains("github-actions")` is a SUBSTRING test, so the REST spelling
-    `github-actions[bot]` and the GraphQL spelling `github-actions` both match.
+    NOTHING ELSE IS AND-ED ON, and the module docstring says what an extra clause cost. `contains("github-actions")` is a SUBSTRING test, so the REST spelling `github-actions[bot]` and the GraphQL spelling `github-actions` both match.
     """
     matches = [
         comment
@@ -286,9 +263,7 @@ def newest_report(comments: list[dict], prefix: str) -> dict | None:
 def find_reply(comments: list[dict], report: dict) -> dict | None:
     """The first comment satisfying all four clauses (a) to (d).
 
-    ORDERED BY `created_at` ASCENDING and taking the FIRST match, which is what the
-    twin's `sort_by(.created_at) | .[]` plus `break` does. Taking the newest instead
-    would name a different comment id in the success line for the same PR.
+    ORDERED BY `created_at` ASCENDING and taking the FIRST match, which is what the twin's `sort_by(.created_at) | .[]` plus `break` does. Taking the newest instead would name a different comment id in the success line for the same PR.
     """
     author = ((report.get("user") or {}).get("login")) or ""
     created = report.get("created_at") or ""
@@ -365,9 +340,7 @@ def gh_json(what: str, argv: list[str], *, sleeper=time.sleep, binary: str = "gh
 def _colour() -> bool:
     """`common.sh:18`: colour when STDERR is a tty and NO_COLOR is unset.
 
-    Written out rather than delegated to `rediacc_ci.log` because this gate's other
-    output is bare `echo`, and mixing the two loggers would produce a file whose
-    colour rules differ line by line.
+    Written out rather than delegated to `rediacc_ci.log` because this gate's other output is bare `echo`, and mixing the two loggers would produce a file whose colour rules differ line by line.
     """
     if os.environ.get("NO_COLOR"):
         return False

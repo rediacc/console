@@ -1,72 +1,36 @@
 #!/usr/bin/env python3
 """check:ci-python-control-plants -- a Python control may not build its mutant by raw substitution.
 
-WHY THIS EXISTS, and it is a defect this repo predicted and then could not see.
-A control proves a gate can fail by feeding it a MUTATED fixture. If the
-mutation silently does nothing, the gate is handed the CLEAN input, stays green,
-and the control reports a pass for an assertion it never made.
-`check:ci-control-vacuity` catches that -- on the bash side only. Its own comment
-at `.ci/scripts/quality/check-control-vacuity.sh:183-193` says, verbatim, that of
-the 21 Python gates ZERO built a control mutant by substitution, and that "what
-must not happen is that changing silently".
+WHY THIS EXISTS, and it is a defect this repo predicted and then could not see. A control proves a gate can fail by feeding it a MUTATED fixture. If the mutation silently does nothing, the gate is handed the CLEAN input, stays green, and the control reports a pass for an assertion it never made. `check:ci-control-vacuity` catches that -- on the bash side only. Its own comment at
+`.ci/scripts/quality/check-control-vacuity.sh:183-193` says, verbatim, that of the 21 Python gates ZERO built a control mutant by substitution, and that "what must not happen is that changing silently".
 
-IT CHANGED, AND IT CHANGED SILENTLY. 21 became 50. The tripwire its author
-installed was a COUNT PRINTED INSIDE A SUCCESS MESSAGE, which `shadow-gate.ts`
-classifies as chatter rather than a finding, so nothing ever read the alarm.
-Measured 2026-09-08: 61 substitution-built plant sites across 11 Python gate
-modules, three proof assertions between them, and one already-vacuous mutant
+IT CHANGED, AND IT CHANGED SILENTLY. 21 became 50. The tripwire its author installed was a COUNT PRINTED INSIDE A SUCCESS MESSAGE, which `shadow-gate.ts` classifies as chatter rather than a finding, so nothing ever read the alarm. Measured 2026-09-08: 61 substitution-built plant sites across 11 Python gate modules, three proof assertions between them, and one already-vacuous mutant
 sitting in the tree (`review_turn_capacity.py`, `.replace("max_turns=140",
 "max_turns=140")`, inside the port of the very gate `control_vacuity` uses as its
 own control).
 
 THE CLASS IS: A DISCLOSURE IS NOT A CONTROL.
 
-WHY THIS IS A NEW GATE AND NOT A WIDENED `control_vacuity`. Three reasons in
-descending force. The live gate there is the BASH twin (`package.json`), and
-`.ci/rediacc_ci/tests/test_quality_control_vacuity.py:189` requires the two
-implementations to print identical bytes -- so teaching it Python means writing
-an AST-equivalent predicate in bash, which with grep is exactly the
+WHY THIS IS A NEW GATE AND NOT A WIDENED `control_vacuity`. Three reasons in descending force. The live gate there is the BASH twin (`package.json`), and `.ci/rediacc_ci/tests/test_quality_control_vacuity.py:189` requires the two implementations to print identical bytes -- so teaching it Python means writing an AST-equivalent predicate in bash, which with grep is exactly the
 false-positive machine that would flag `datetime.replace(tzinfo=...)`. Invariant
-5 forbids deleting the twin until W7 P5, so widening would mean MAINTAINING that
-bash Python-parser. And the question is genuinely different: `control_vacuity`
-asks "is there a proof?", this asks "did you use the harness?" -- stronger, and
+5 forbids deleting the twin until W7 P5, so widening would mean MAINTAINING that bash Python-parser. And the question is genuinely different: `control_vacuity` asks "is there a proof?", this asks "did you use the harness?" -- stronger, and
 with no false positives by construction.
 
-THE PREDICATE. Inside a CONTROL REGION, a call `X.replace(...)` or
-`re.sub(..., X)` where `X` is a BARE NAME is a finding. `plant(...)` and
-`plant_re(...)` are not.
+THE PREDICATE. Inside a CONTROL REGION, a call `X.replace(...)` or `re.sub(..., X)` where `X` is a BARE NAME is a finding. `plant(...)` and `plant_re(...)` are not.
 
-The bare-Name restriction IS the exemption mechanism, and it is why this gate
-needs no allowlist file. A receiver that is itself a call -- `str(ROOT).lstrip(
-"/").replace("/", "-")` in `check_resprofile.py`, `match.group(1).replace(" ",
-"")` in `release_signing_coverage.py`, `(out + "\\n").replace("\\n", " ")` in
-`drill_verdicts.py` -- is parsing, not planting, and is invisible here. Measured:
+The bare-Name restriction IS the exemption mechanism, and it is why this gate needs no allowlist file. A receiver that is itself a call -- `str(ROOT).lstrip( "/").replace("/", "-")` in `check_resprofile.py`, `match.group(1).replace(" ", "")` in `release_signing_coverage.py`, `(out + "\\n").replace("\\n", " ")` in `drill_verdicts.py` -- is parsing, not planting, and is invisible
+here. Measured:
 with the restriction 12 files, without it 14, and both extras are false
 positives. One AST condition instead of a JSON file nobody drains.
 
-RESOLVING THE NAME, NOT MATCHING THE TOKEN, and this is not theoretical. THREE
-modules in this tree define a LOCAL `def plant(...)` that is not the harness:
-`check_plan_record.py` and `cli_doc_coverage.py` did (both since renamed to
-`expect_finding`), and `test_gate_watchdog_monitor_ordering.py:98` still does. A
-gate that merely counted `plant(` would read those call sites as compliant while
-they use no harness at all -- a FALSE NEGATIVE, which is worse than the blindness
-this closes. So a module only earns harness credit when it imports `plant` from
-`rediacc_ci.controls` AND does not shadow it locally.
+RESOLVING THE NAME, NOT MATCHING THE TOKEN, and this is not theoretical. THREE modules in this tree define a LOCAL `def plant(...)` that is not the harness: `check_plan_record.py` and `cli_doc_coverage.py` did (both since renamed to `expect_finding`), and `test_gate_watchdog_monitor_ordering.py:98` still does. A gate that merely counted `plant(` would read those call sites as
+compliant while they use no harness at all -- a FALSE NEGATIVE, which is worse than the blindness this closes. So a module only earns harness credit when it imports `plant` from `rediacc_ci.controls` AND does not shadow it locally.
 
-ANTI-VACUITY, both halves. Discovering zero modules FAILS. Discovering zero
-`plant()` call sites across the whole corpus also FAILS, with a DIFFERENT
-message: the day the harness is renamed and this gate is not updated, every
-module looks compliant and a green here would mean nothing. That is the single
-most important refusal in the file.
+ANTI-VACUITY, both halves. Discovering zero modules FAILS. Discovering zero `plant()` call sites across the whole corpus also FAILS, with a DIFFERENT message: the day the harness is renamed and this gate is not updated, every module looks compliant and a green here would mean nothing. That is the single most important refusal in the file.
 
 Exit 1 on any finding, 2 on a failed control.
 
----- gate ----
-step: Python control plants
-needs: none
-lane: quality-static
-selftest: true
-why: a Python control plant built by raw substitution can silently no-op, handing
+---- gate ---- step: Python control plants needs: none lane: quality-static selftest: true why: a Python control plant built by raw substitution can silently no-op, handing
      the gate its clean fixture while the control reports a pass; the harness in
      `rediacc_ci.controls` makes that impossible and this gate requires the harness.
 ---- end gate ----
@@ -104,9 +68,7 @@ NC = "\033[0m"
 def control_region_functions(tree: ast.AST) -> set[str]:
     """Functions whose name marks them as a control region.
 
-    Name-based ON PURPOSE. The alternative -- "any function that builds a mutant"
-    -- is the question this gate is asking, so using it to decide scope would be
-    circular.
+    Name-based ON PURPOSE. The alternative -- "any function that builds a mutant" -- is the question this gate is asking, so using it to decide scope would be circular.
     """
     out = set()
     for node in ast.walk(tree):
@@ -172,13 +134,8 @@ def _is_substitution(node: ast.AST):
 def _normalises_a_comparison(node: ast.Call) -> bool:
     """Is this substitution a SIBLING of another, inside one call?
 
-    THE FIRST EXEMPTION, and it is a shape rather than a name. Two substitutions
-    as sibling arguments of one call are normalising BOTH SIDES of a comparison,
-    not building a mutant -- `ctl.check(label, welded.replace("\n", ""),
-    _ARMOR.replace("\n", ""))` in `release_key_canonical.py:650-653` asserts that
-    two texts are equal once a line break is removed from each. A mutant is never
-    compared against another mutant of its own shape, so the sibling test
-    separates the two without an allowlist and without dataflow.
+    THE FIRST EXEMPTION, and it is a shape rather than a name. Two substitutions as sibling arguments of one call are normalising BOTH SIDES of a comparison, not building a mutant -- `ctl.check(label, welded.replace("\n", ""), _ARMOR.replace("\n", ""))` in `release_key_canonical.py:650-653` asserts that two texts are equal once a line break is removed from each. A mutant is never
+    compared against another mutant of its own shape, so the sibling test separates the two without an allowlist and without dataflow.
     """
     parent = getattr(node, "parent", None)
     if not isinstance(parent, ast.Call):
@@ -191,12 +148,10 @@ def _has_own_vacuity_guard(node: ast.Call) -> bool:
 
     THE SECOND EXEMPTION, and it deliberately mirrors `control_vacuity`'s own
     `proves_plant_landed`: a plant that checks `mutant == clean` has already made
-    the assertion this gate exists to demand, and flagging it would put the two
-    gates in contradiction. `check_plan_record.py:1155-1157` is the live case --
+    the assertion this gate exists to demand, and flagging it would put the two gates in contradiction. `check_plan_record.py:1155-1157` is the live case --
     `drifted = cen.replace(A)`, `if drifted == cen: drifted = cen.replace(B)`,
     then a control asserting `drifted != cen`. That fallback chain is STRONGER
-    than `plant()` can be, because `plant()` raises on the first miss and would
-    destroy the second attempt.
+    than `plant()` can be, because `plant()` raises on the first miss and would destroy the second attempt.
     """
     recv = _is_substitution(node)
     assign = getattr(node, "parent", None)
@@ -397,11 +352,9 @@ def selftest(verbose: bool = False) -> int:
 def main_against(root: pathlib.Path) -> str:
     """WHICH refusal fires against an explicit root: "modules", "sites", "findings" or "".
 
-    IT RETURNS THE REASON, NOT AN EXIT CODE, and that is the whole point. The two
-    refusals overlap -- an empty tree has no modules AND no sites -- so a control
+    IT RETURNS THE REASON, NOT AN EXIT CODE, and that is the whole point. The two refusals overlap -- an empty tree has no modules AND no sites -- so a control
     asserting only `== 1` passes whichever arm is deleted, which is an assertion
-    re-asking a question the next branch already answers. Found by planting:
-    removing the module arm left the suite green until this returned the reason.
+    re-asking a question the next branch already answers. Found by planting: removing the module arm left the suite green until this returned the reason.
     """
     prev = os.environ.get("PY_CONTROL_PLANTS_ROOT")
     os.environ["PY_CONTROL_PLANTS_ROOT"] = str(root)
@@ -424,13 +377,8 @@ def main_against(root: pathlib.Path) -> str:
 def _root() -> pathlib.Path:
     """Resolved at CALL time, not import time.
 
-    THE ANTI-VACUITY REFUSALS ARE UNTESTABLE OTHERWISE, and untested refusals are
-    the thing this gate exists to object to. A module-level constant cannot be
-    pointed at a starved tree from a control, so the two refusals below would have
-    been asserted by nothing -- exactly the shape `.ci/scripts/test/gates/
-    test-gate-anti-vacuity.sh` looks for, and it cannot reach them itself because
-    its fixture copies `.ci/rediacc_ci` wholesale and therefore feeds this gate its
-    real inputs.
+    THE ANTI-VACUITY REFUSALS ARE UNTESTABLE OTHERWISE, and untested refusals are the thing this gate exists to object to. A module-level constant cannot be pointed at a starved tree from a control, so the two refusals below would have been asserted by nothing -- exactly the shape `.ci/scripts/test/gates/ test-gate-anti-vacuity.sh` looks for, and it cannot reach them itself because
+    its fixture copies `.ci/rediacc_ci` wholesale and therefore feeds this gate its real inputs.
     """
     env = os.environ.get("PY_CONTROL_PLANTS_ROOT")
     if env:

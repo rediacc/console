@@ -3,8 +3,7 @@
 Ported from `.ci/scripts/quality/check-ci-scans-tracked-paths.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-The twin's header, carried whole because the incident and the false-positive
-argument are both load-bearing:
+The twin's header, carried whole because the incident and the false-positive argument are both load-bearing:
 
     A GitHub runner checks out tracked files only. So a workflow step or a CI
     shell script that RUNS something under a gitignored path invokes a file that
@@ -33,15 +32,11 @@ argument are both load-bearing:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE IGNORED ROOTS ARE ASKED OF GIT, NEVER HARDCODED, and the twin says why in
-one line kept at the function: "a new ignored directory is covered the day it
-appears, and a path that stops being ignored stops being flagged." The globs are
-`*/` and `*/*/`, which is bash's own behaviour and therefore EXCLUDES dotted
-directories: `.git`, `.github` and `.ci` are never candidates. That is not an
+THE IGNORED ROOTS ARE ASKED OF GIT, NEVER HARDCODED, and the twin says why in one line kept at the function: "a new ignored directory is covered the day it appears, and a path that stops being ignored stops being flagged." The globs are `*/` and `*/*/`, which is bash's own behaviour and therefore EXCLUDES dotted directories: `.git`, `.github` and `.ci` are never candidates. That is
+not an
 oversight to be tidied; widening it would put `.git` itself in the alternation.
 
-TWO CONDITIONS, AND DROPPING EITHER MAKES THIS GATE NOISE. The twin's words,
-carried at the two tests they describe:
+TWO CONDITIONS, AND DROPPING EITHER MAKES THIS GATE NOISE. The twin's words, carried at the two tests they describe:
 
     Without the command-position test, a YAML artifact `path:` list entry like
     `private/bin/renet-linux-*` reads as an executable. Without the executable
@@ -56,34 +51,19 @@ carried at the two tests they describe:
 `return "$hits"` IS FORBIDDEN AND THE REASON IS CARRIED. The twin: "A shell
 return is taken mod 256, so exactly 256 findings would return 0 and read as a
 clean scan. Only the STATUS is made boolean here; the count itself is still
-printed with the findings." This port returns the findings themselves and lets
-the caller test emptiness, which cannot wrap at all, and the comment stays
-because it explains why an obvious refactor is wrong.
+printed with the findings." This port returns the findings themselves and lets the caller test emptiness, which cannot wrap at all, and the comment stays because it explains why an obvious refactor is wrong.
 
-ONE PASS, NOT ONE PER ROOT. The twin: "ONE grep over each surface, not one pass
-per ignored root. The nested form was O(roots x files x lines) in pure bash and
-did not finish in two minutes on this repo." Measured while porting on the real
-checkout: `node_modules/*` alone contributes several hundred ignored roots, so
-the alternation is enormous and the nested form would be hopeless. The port
-compiles the same alternation once.
+ONE PASS, NOT ONE PER ROOT. The twin: "ONE grep over each surface, not one pass per ignored root. The nested form was O(roots x files x lines) in pure bash and did not finish in two minutes on this repo." Measured while porting on the real checkout: `node_modules/*` alone contributes several hundred ignored roots, so the alternation is enormous and the nested form would be
+hopeless. The port compiles the same alternation once.
 
-THE ESCAPING IS `sed 's/[].[^$*\\/]/\\\\&/g'`, a seven-character class:
-`]`, `.`, `[`, `^`, `$`, `*`, `/`. `]` first in a bracket expression is literal
-and `^` not first is literal, which is why that spelling is not a typo. Every one
-of those escapes is also valid in Python's `re`, so the pattern string crosses
-languages unchanged rather than being rebuilt.
+THE ESCAPING IS `sed 's/[].[^$*\\/]/\\\\&/g'`, a seven-character class: `]`, `.`, `[`, `^`, `$`, `*`, `/`. `]` first in a bracket expression is literal and `^` not first is literal, which is why that spelling is not a typo. Every one of those escapes is also valid in Python's `re`, so the pattern string crosses languages unchanged rather than being rebuilt.
 
 THE SORT IS BYTEWISE. The twin pipes grep's output through `sort` under the
 comparator's `LC_ALL=C`, so the port sorts the same `path:line:text` strings by
-their bytes. Sorting the parsed tuples instead would order 9 before 10 and
-disagree with the twin on any file with more than nine hits.
+their bytes. Sorting the parsed tuples instead would order 9 before 10 and disagree with the twin on any file with more than nine hits.
 
 A TREE WITH NO IGNORED DIRECTORIES PASSES, AND THAT IS A TWIN DEFECT CARRIED
-RATHER THAN FIXED. `[ -z "$roots" ] && return 0` means a checkout whose
-`.gitignore` vanished reports "Nothing CI executes reaches into a gitignored
-path" while having examined nothing. It is reproduced because changing it would
-change the verdict, and it is named here so it is a known hole rather than a
-surprise.
+RATHER THAN FIXED. `[ -z "$roots" ] && return 0` means a checkout whose `.gitignore` vanished reports "Nothing CI executes reaches into a gitignored path" while having examined nothing. It is reproduced because changing it would change the verdict, and it is named here so it is a known hole rather than a surprise.
 """
 
 import os
@@ -139,9 +119,7 @@ def escape_for_ere(name: str) -> str:
 def ignored_roots(root: pathlib.Path) -> list[str]:
     """The one- and two-level directories git ignores, repo-relative.
 
-    The globs are bash's `*/` and `*/*/`, so a dotted directory is never a
-    candidate and the order is the shell's sorted order: every first-level entry
-    before every second-level one.
+    The globs are bash's `*/` and `*/*/`, so a dotted directory is never a candidate and the order is the shell's sorted order: every first-level entry before every second-level one.
     """
     candidates: list[str] = []
     for depth in (1, 2):
@@ -165,9 +143,7 @@ def ignored_roots(root: pathlib.Path) -> list[str]:
 def _glob_dirs(root: pathlib.Path, depth: int) -> list[str]:
     """Directories exactly `depth` levels down, skipping dotted names.
 
-    Bash's `*` does not match a leading dot, which is what keeps `.git` out of
-    the alternation. Reproduced explicitly rather than relying on a library
-    glob's defaults.
+    Bash's `*` does not match a leading dot, which is what keeps `.git` out of the alternation. Reproduced explicitly rather than relying on a library glob's defaults.
     """
     if depth == 1:
         return [child for child in _listdir(root) if (root / child).is_dir()]
@@ -195,9 +171,7 @@ def roots_pattern(roots: list[str]) -> str:
 def grep_lines(root: pathlib.Path, pattern: str) -> list[str]:
     """`grep -rnE <pat> <surfaces> --include='*.yml' --include='*.sh' | sort`.
 
-    Returns `path:line:text` strings, sorted BYTEWISE, with the paths spelled the
-    way grep spells them: the surface directory it was given, then the relative
-    tail.
+    Returns `path:line:text` strings, sorted BYTEWISE, with the paths spelled the way grep spells them: the surface directory it was given, then the relative tail.
     """
     compiled = re.compile(pattern)
     hits: list[str] = []
@@ -223,10 +197,7 @@ def grep_lines(root: pathlib.Path, pattern: str) -> list[str]:
 def executable_token(stripped: str) -> str | None:
     """The thing being RUN on this line, or None when the line runs nothing.
 
-    Both of the twin's conditions live here: the command-position test decides
-    whether the line is a command at all, and the keyword stripping decides which
-    token is the executable. `npm` returns None on purpose, because an npm key is
-    resolved by package.json and is not a path.
+    Both of the twin's conditions live here: the command-position test decides whether the line is a command at all, and the keyword stripping decides which token is the executable. `npm` returns None on purpose, because an npm key is resolved by package.json and is not a path.
     """
     if not stripped.startswith(COMMAND_PREFIXES):
         return None
@@ -250,8 +221,7 @@ def executable_token(stripped: str) -> str | None:
 def scan(root: pathlib.Path) -> list[str]:
     """Every finding, as the two printed lines per hit, in grep order.
 
-    NOT A COUNT AND NOT AN EXIT STATUS. See the port notes: a shell `return` is
-    taken mod 256, so exactly 256 findings would read as a clean scan.
+    NOT A COUNT AND NOT AN EXIT STATUS. See the port notes: a shell `return` is taken mod 256, so exactly 256 findings would read as a clean scan.
     """
     roots = ignored_roots(root)
     if not roots:
@@ -318,8 +288,7 @@ def build_control_tree(where: pathlib.Path) -> pathlib.Path:
 def run_controls(where: pathlib.Path) -> str | None:
     """Run the two controls. None means both fired; a string is the failure text.
 
-    A gate nobody has watched fail is not a gate, so this runs BEFORE the real
-    tree is touched and its failure is fatal rather than advisory.
+    A gate nobody has watched fail is not a gate, so this runs BEFORE the real tree is touched and its failure is fatal rather than advisory.
     """
     build_control_tree(where)
     found = scan(where)
@@ -376,9 +345,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions for the command-position test, the executable test and the scan.
 
-    The over-broad direction is the one that matters most here: a gate that
-    flagged an artifact path list or a script writing its OUTPUT into an ignored
-    directory would be noise, would be silenced, and would then guard nothing.
+    The over-broad direction is the one that matters most here: a gate that flagged an artifact path list or a script writing its OUTPUT into an ignored directory would be noise, would be silenced, and would then guard nothing.
     """
     ctl = Controls("ci-scans-tracked-paths", floor=24, verbose=True)
 

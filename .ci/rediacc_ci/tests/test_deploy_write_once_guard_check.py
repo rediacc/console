@@ -1,28 +1,18 @@
 """Differential: `rediacc_ci.deploy.write_once_guard_check` against its twin
 `.ci/scripts/test/test-write-once-guard.sh` (gate `test:write-once-guard`).
 
-THE HAPPY PATH IS THE WEAKEST CASE HERE, so most of this file is about the
-FAILURE paths. Both subjects pass on the real tree today, which proves only
-that two programs agree about a guard neither of them is currently catching
-out. Every case below therefore runs both against a FIXTURE TREE holding a
-MUTATED copy of `upload-to-r2.sh` or `release-state-validator.sh`, so the
-twin's four `log_fail` branches are actually reached and compared byte for
-byte -- including the ANSI escapes, which are the part a reader of a CI log
-sees and the part a "tidier" port would drop.
+THE HAPPY PATH IS THE WEAKEST CASE HERE, so most of this file is about the FAILURE paths. Both subjects pass on the real tree today, which proves only that two programs agree about a guard neither of them is currently catching out. Every case below therefore runs both against a FIXTURE TREE holding a MUTATED copy of `upload-to-r2.sh` or `release-state-validator.sh`, so the twin's
+four `log_fail` branches are actually reached and compared byte for byte -- including the ANSI escapes, which are the part a reader of a CI log sees and the part a "tidier" port would drop.
 
 HOW THE TWO SIDES ARE POINTED AT A FIXTURE, and it is different for each. The
 twin resolves `ROOT_DIR` from `${BASH_SOURCE[0]}`, so it is COPIED into the
-fixture and run from there. The port resolves it through `paths.repo_root()`,
-whose documented single override is `$REDIACC_CI_ROOT`, so it runs from the
-real tree with that variable set. Both then read the same mutated bash.
+fixture and run from there. The port resolves it through `paths.repo_root()`, whose documented single override is `$REDIACC_CI_ROOT`, so it runs from the real tree with that variable set. Both then read the same mutated bash.
 
 NOTHING ON DISK IS MUTATED. Every fixture is built under pytest's `tmp_path`
 from `shutil.copy2` of the real files; the repository's own
-`upload-to-r2.sh`, `release-state-validator.sh` and the twin are only ever
-read.
+`upload-to-r2.sh`, `release-state-validator.sh` and the twin are only ever read.
 
-NO NETWORK, NO AWS. The subject under test mocks `aws` with a bash script on
-`PATH`, which is the twin's own design and is reproduced rather than replaced.
+NO NETWORK, NO AWS. The subject under test mocks `aws` with a bash script on `PATH`, which is the twin's own design and is reproduced rather than replaced.
 
 K=5 LEDGER: `.ci/shadow/w7p6-write-once-guard.observations.jsonl`.
 """
@@ -273,10 +263,7 @@ def test_extract_guard_matches_the_real_sed() -> None:
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:
     """Delete the never-scrub assertion from a COPY of the port.
 
-    That check is the whole reason this gate exists (the guard must not delete a
-    retried release's binaries), and it is invisible on every green run. A port
-    that dropped it would agree with the twin on the real tree and disagree only
-    against a scrubbing guard, which is exactly the fixture built here.
+    That check is the whole reason this gate exists (the guard must not delete a retried release's binaries), and it is invisible on every green run. A port that dropped it would agree with the twin on the real tree and disagree only against a scrubbing guard, which is exactly the fixture built here.
     """
     source = PORT.read_text(encoding="utf-8")
     anchor = """    if h.logged("s3 rm"):

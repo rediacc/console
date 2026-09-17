@@ -1,40 +1,27 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/autopilot/update-state.sh`.
 
-Renders the autopilot state comment and writes it to the PR: the ONE place any
-job posts or patches it.
+Renders the autopilot state comment and writes it to the PR: the ONE place any job posts or patches it.
 
-THE LEDGER IS NEVER OPTIONAL (03-v2-autonomy.md section 0). Autopilot commits
-are attributed to the operator, and this comment is the audit trail recording
-every round's run, commit and reasoning. It is also the loop's memory: the round
-counter that bounds the whole design is COUNTED FROM THIS COMMENT, so a round
-that runs without recording itself is a round the termination proof cannot see.
+THE LEDGER IS NEVER OPTIONAL (03-v2-autonomy.md section 0). Autopilot commits are attributed to the operator, and this comment is the audit trail recording every round's run, commit and reasoning. It is also the loop's memory: the round counter that bounds the whole design is COUNTED FROM THIS COMMENT, so a round that runs without recording itself is a round the termination proof
+cannot see.
 
-ONE WRITER, THREE CALLERS, AND THAT IS WHY THE IDEMPOTENCY LIVES IN ONE `if`.
-`--comment-id` decides everything:
+ONE WRITER, THREE CALLERS, AND THAT IS WHY THE IDEMPOTENCY LIVES IN ONE `if`. `--comment-id` decides everything:
 
     absent   POST   repos/<repo>/issues/<pr>/comments        (create it)
     present  PATCH  repos/<repo>/issues/comments/<id>        (rewrite it)
 
-The comment is REWRITTEN WHOLE rather than appended to, and the carry-over of
-the previous rounds is `state-comment.sh render`'s job, fed the old body through
-`--body`. So the second round on a PR is not "the first round plus a line" -- it
-is a fresh render of everything, and the only thing that makes it idempotent is
-that `--comment-id` and `--body` name the same comment. `endpoint_for` below is
-that decision, exported so the differential can drive both arms without a PR.
+The comment is REWRITTEN WHOLE rather than appended to, and the carry-over of the previous rounds is `state-comment.sh render`'s job, fed the old body through `--body`. So the second round on a PR is not "the first round plus a line" -- it is a fresh render of everything, and the only thing that makes it idempotent is that `--comment-id` and `--body` name the same comment.
+`endpoint_for` below is that decision, exported so the differential can drive both arms without a PR.
 
-WHAT THIS PORT DOES NOT RE-IMPLEMENT. `state-comment.sh` (the renderer) and `gh`
-are spawned, exactly as the twin spawns them. Re-implementing the renderer would
-create a second writer of a format whose whole design is one reader and one
+WHAT THIS PORT DOES NOT RE-IMPLEMENT. `state-comment.sh` (the renderer) and `gh` are spawned, exactly as the twin spawns them. Re-implementing the renderer would create a second writer of a format whose whole design is one reader and one
 writer; re-implementing `gh` is not a thing anyone can do.
 
 WHERE jq IS SPAWNED, and the rule is this wave's: the `--verdict` file comes
 from `autopilot-push.sh --verdict-out` and can be truncated, and when it is, the
-observable is JQ's parse error and JQ's exit code (5, measured on 1.8.1) via
-`set -e`. Neither is reproducible by hand, so the two `jq -r` calls are run as
+observable is JQ's parse error and JQ's exit code (5, measured on 1.8.1) via `set -e`. Neither is reproducible by hand, so the two `jq -r` calls are run as
 `jq`. `gsub("[\\r\\n]+"; " ")` is part of that program and is load-bearing: the
-carry-over parser in `state-comment.sh` keeps only lines beginning with `- `, so
-a multi-line entry would lose its own continuation on the next round.
+carry-over parser in `state-comment.sh` keeps only lines beginning with `- `, so a multi-line entry would lose its own continuation on the next round.
 
   DEFECT THE jq CALL CARRIES, PRESERVED: `gsub` refuses a non-string, so a
   verdict whose `ruled_out[]` holds a number dies with
@@ -45,27 +32,15 @@ a multi-line entry would lose its own continuation on the next round.
   live bug, and changing it means changing what the workflow writes. Named here,
   pinned by `test_a_non_string_ruled_out_entry_kills_the_write`.
 
-THE SECOND HAZARD, ALSO PRESERVED: `--verdict` is checked with `[[ -n && -s ]]`,
-never with `require_file`. A MISPELLED PATH IS THEREFORE SILENT -- the ruled-out
-and decisions sections render empty and the round looks like it had nothing to
-say. That is the anti-thrash memory going quietly missing, and it is exactly the
-`decision.json` asymmetry `compose_prompt.py` documents in its own twin. Fixing
-it means editing a live workflow step, which is the cutover box's call.
+THE SECOND HAZARD, ALSO PRESERVED: `--verdict` is checked with `[[ -n && -s ]]`, never with `require_file`. A MISPELLED PATH IS THEREFORE SILENT -- the ruled-out and decisions sections render empty and the round looks like it had nothing to say. That is the anti-thrash memory going quietly missing, and it is exactly the `decision.json` asymmetry `compose_prompt.py` documents in its
+own twin. Fixing it means editing a live workflow step, which is the cutover box's call.
 
 STAGE FLAG, DOUBLED ON PURPOSE. `AUTOPILOT_ALLOW_STATE` must be exactly `true`;
-absent is off. The calling step's `if:` checks the same flag, and this check is
-the second half of that pair, so a mis-wired step cannot write state the stage
-forbids. Note the ORDER, kept: usage first, then the flag, so a broken invocation
-still gets the usage message rather than a confusing refusal.
+absent is off. The calling step's `if:` checks the same flag, and this check is the second half of that pair, so a mis-wired step cannot write state the stage forbids. Note the ORDER, kept: usage first, then the flag, so a broken invocation still gets the usage message rather than a confusing refusal.
 
-`gh_retry` IS TRANSLITERATED, NOT IMPORTED, including its sleeps (3s then 6s).
-`.ci/rediacc_ci/quality/claude_attribution.py:122` and
-`.ci/rediacc_ci/quality/submodule_branches.py:271` already carry the same
-transliteration and say why: `ghx` has no `_gh_probe`-compatible entry point yet,
-and dropping the sleeps stops it being a retry past a rate limit.
+`gh_retry` IS TRANSLITERATED, NOT IMPORTED, including its sleeps (3s then 6s). `.ci/rediacc_ci/quality/claude_attribution.py:122` and `.ci/rediacc_ci/quality/submodule_branches.py:271` already carry the same transliteration and say why: `ghx` has no `_gh_probe`-compatible entry point yet, and dropping the sleeps stops it being a retry past a rate limit.
 
-Exit: 0 written, 1 refused or the write failed, 2 usage, and jq's or
-`state-comment.sh`'s own status when either fails.
+Exit: 0 written, 1 refused or the write failed, 2 usage, and jq's or `state-comment.sh`'s own status when either fails.
 
 K=5 LEDGER: `.ci/shadow/w7p6-update-state.observations.jsonl`.
 """
@@ -109,8 +84,7 @@ def script_dir() -> pathlib.Path:
     """The twin's `SCRIPT_DIR`: `.ci/scripts/autopilot`.
 
     From THIS file's location, matching `dirname "${BASH_SOURCE[0]}"`.
-    `rediacc_ci.paths.repo_root()` is deliberately not used: it honours
-    `$REDIACC_CI_ROOT` and the twin honours nothing.
+    `rediacc_ci.paths.repo_root()` is deliberately not used: it honours `$REDIACC_CI_ROOT` and the twin honours nothing.
     """
     return pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "autopilot"
 
@@ -118,10 +92,7 @@ def script_dir() -> pathlib.Path:
 def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
     """`gh_retry <what> -- <gh args...>`. Returns (ok, stdout).
 
-    The exit status is ALWAYS checked and a failure is never turned into an
-    empty answer, which is the whole reason `_gh_probe` exists
-    (`.ci/scripts/lib/common.sh:392-397`). Trailing newlines are stripped
-    because the twin captures this through `$( )`.
+    The exit status is ALWAYS checked and a failure is never turned into an empty answer, which is the whole reason `_gh_probe` exists (`.ci/scripts/lib/common.sh:392-397`). Trailing newlines are stripped because the twin captures this through `$( )`.
     """
     rc = 0
     stderr = ""
@@ -156,10 +127,7 @@ def endpoint_for(repo: str, pr: str, comment_id: str) -> tuple[str, str]:
     """(endpoint, method). The whole idempotency decision, in one place.
 
     An EMPTY `--comment-id` is "no comment yet" and means POST; any non-empty
-    value means PATCH, including the literal `true` that `parse_args` stores for
-    a value-less `--comment-id`. That last one is the twin's behaviour, not a
-    tidy-up: the flag is passed by a workflow that either has an id or omits the
-    flag, and a port that "fixed" it would refuse an invocation the twin accepts.
+    value means PATCH, including the literal `true` that `parse_args` stores for a value-less `--comment-id`. That last one is the twin's behaviour, not a tidy-up: the flag is passed by a workflow that either has an id or omits the flag, and a port that "fixed" it would refuse an invocation the twin accepts.
     """
     if comment_id:
         return "repos/%s/issues/comments/%s" % (repo, comment_id), "PATCH"
@@ -171,10 +139,7 @@ def render_args(args: dict[str, str], work: str) -> list[str]:
 
     The optional flags are appended only when NON-EMPTY, which is the twin's
     `[[ -n ... ]] && args+=(...)`. An omitted `--campaign` is not the same as
-    `--campaign ""`: the renderer carries the previous body's value forward when
-    the flag is absent, and would normalize an empty one to `none`. So a port
-    that always passed the flag would silently CLOSE a campaign on any round
-    that had nothing to say about it.
+    `--campaign ""`: the renderer carries the previous body's value forward when the flag is absent, and would normalize an empty one to `none`. So a port that always passed the flag would silently CLOSE a campaign on any round that had nothing to say about it.
     """
     argv = [
         "render",
@@ -210,13 +175,9 @@ def render_args(args: dict[str, str], work: str) -> list[str]:
 def jq_to_file(program: str, source: str, target: str) -> int:
     """`jq -r '<program>' "$VERDICT" >"$target"`. Returns jq's exit code.
 
-    The target is written with whatever jq produced BEFORE it failed, because
-    that is what a shell redirection does: the file is open and being written as
-    jq runs. A port that buffered and discarded on failure would leave a
-    different file behind for the renderer to read.
+    The target is written with whatever jq produced BEFORE it failed, because that is what a shell redirection does: the file is open and being written as jq runs. A port that buffered and discarded on failure would leave a different file behind for the renderer to read.
 
-    STDERR IS INHERITED so jq's own diagnostic lands on fd 2 in real time, which
-    is what the twin's unredirected jq does.
+    STDERR IS INHERITED so jq's own diagnostic lands on fd 2 in real time, which is what the twin's unredirected jq does.
     """
     with open(target, "wb") as handle:
         proc = subprocess.run(

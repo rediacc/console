@@ -1,35 +1,18 @@
 """Port of `.ci/scripts/test/gates/test-gate-header.sh`.
 
-The per-gate DECLARATION parser in `scripts/lib/gate-header.ts`, proved in both
-directions.
+The per-gate DECLARATION parser in `scripts/lib/gate-header.ts`, proved in both directions.
 
-WHY IT NEEDS ITS OWN GATE. That module is the single source the gate binder derives
-every registration from -- id, run command, lane, needs. A parser that silently
-returns `null` makes the binder emit NOTHING for that gate, which reads exactly like
-"this gate has no declaration yet" and is the vacuity shape this repo keeps paying
+WHY IT NEEDS ITS OWN GATE. That module is the single source the gate binder derives every registration from -- id, run command, lane, needs. A parser that silently returns `null` makes the binder emit NOTHING for that gate, which reads exactly like "this gate has no declaration yet" and is the vacuity shape this repo keeps paying
 for. So the NEGATIVES matter as much as the positives: no block, an UNTERMINATED
-block, and a block with no step must each be null for a STATED reason rather than by
-accident.
+block, and a block with no step must each be null for a STATED reason rather than by accident.
 
-The two inference cases are the ones that cost CI time. `--recurse-submodules` in a
-gate placed in a lane without submodules is exactly how `check:ci-docker-npm-pins`
-lost the file it exists to scan (job 100870135489), and `check_syncpack_sources.py`
-carries the identical scar from its own first run.
+The two inference cases are the ones that cost CI time. `--recurse-submodules` in a gate placed in a lane without submodules is exactly how `check:ci-docker-npm-pins` lost the file it exists to scan (job 100870135489), and `check_syncpack_sources.py` carries the identical scar from its own first run.
 
-THE PROBE IS THE TWIN'S, CHARACTER FOR CHARACTER, and it is embedded here rather
-than lifted out of the twin at runtime. Reading it from `test-gate-header.sh` would
-make this module stop working the day W7 P5 deletes that file, which is the one
-event the whole port exists to survive. The duplication is therefore deliberate and
-temporary, and it is why the checks below are on the probe's OWN output rather than
-on a re-implementation of the parser: the port drives the same TypeScript against
-the same module and replays each verdict line as a control.
+THE PROBE IS THE TWIN'S, CHARACTER FOR CHARACTER, and it is embedded here rather than lifted out of the twin at runtime. Reading it from `test-gate-header.sh` would make this module stop working the day W7 P5 deletes that file, which is the one event the whole port exists to survive. The duplication is therefore deliberate and temporary, and it is why the checks below are on the
+probe's OWN output rather than on a re-implementation of the parser: the port drives the same TypeScript against the same module and replays each verdict line as a control.
 
-WHY `tsx -` READING STDIN RATHER THAN A TEMP FILE. The probe imports
-`./scripts/lib/gate-header.js`, a path relative to the CWD. Written to a temp file
-and run from there, that import resolves against the temp directory and the run dies
-before a single control executes -- the same failure mode the layout-overflow twin
-records from its own first draft. Fed on stdin with `cwd` at the repo root, the
-relative import resolves exactly as it does for every other consumer.
+WHY `tsx -` READING STDIN RATHER THAN A TEMP FILE. The probe imports `./scripts/lib/gate-header.js`, a path relative to the CWD. Written to a temp file and run from there, that import resolves against the temp directory and the run dies before a single control executes -- the same failure mode the layout-overflow twin records from its own first draft. Fed on stdin with `cwd` at the
+repo root, the relative import resolves exactly as it does for every other consumer.
 
 THREE REFUSALS ARE KEPT, and each is a different way this could go quiet:
   1. no TOTAL line   -> the probe never reached its end, so nothing was asserted;

@@ -1,7 +1,6 @@
 """ONE parser for GitHub Actions workflows, with no dependency to import.
 
-WHAT IT REPLACES, MEASURED 2026-09-06. Fifteen separate parsers read
-`.github/workflows/*.yml` in this repository, in three incompatible ways:
+WHAT IT REPLACES, MEASURED 2026-09-06. Fifteen separate parsers read `.github/workflows/*.yml` in this repository, in three incompatible ways:
 
   PyYAML, 8 gates      check_checkout_cone.py, check_pr_head_ref_completeness.py,
                        check_workflow_env_provision.py, check_python_gate_deps.py,
@@ -13,8 +12,7 @@ WHAT IT REPLACES, MEASURED 2026-09-06. Fifteen separate parsers read
   a hand scanner in    scripts/ci-runner/lanes.ts
   TypeScript
 
-plus a dozen bash gates driving `awk` and `grep` over the same files. The corpus
-they disagree about is 28 files and 13,395 lines.
+plus a dozen bash gates driving `awk` and `grep` over the same files. The corpus they disagree about is 28 files and 13,395 lines.
 
 THE THREE OF THEM THAT WROTE DOWN WHY THEY DO NOT USE PyYAML ARE THE REASON THIS
 MODULE HAS NO DEPENDENCY:
@@ -27,38 +25,18 @@ MODULE HAS NO DEPENDENCY:
   * `check_job_timeout_headroom.py:87-90` and `check_runner_advice.py:316-320` --
     "Deliberately regex-based rather than yaml.safe_load".
 
-They are right about the constraint and each paid for it with a different partial
-parser. Measured again this session, and it is worse than a preference: pytest is
-provisioned by `uv tool install`, which builds an ISOLATED virtual environment,
-so `import yaml` fails inside the very suite these ports are judged by even
-though the system interpreter has PyYAML 6.0.3. A module that imported it could
-not be tested here at all.
+They are right about the constraint and each paid for it with a different partial parser. Measured again this session, and it is worse than a preference: pytest is provisioned by `uv tool install`, which builds an ISOLATED virtual environment, so `import yaml` fails inside the very suite these ports are judged by even though the system interpreter has PyYAML 6.0.3. A module that
+imported it could not be tested here at all.
 
-So this is a real parser for the subset of YAML that Actions workflows are, and
-its acceptance is that it agrees with PyYAML on every one of the 28 files.
-`tests/test_workflows.py` runs `yaml.safe_load` in a SUBPROCESS under the system
-interpreter -- which is how the comparison happens at all from inside an
-environment that cannot import it -- and compares document to document.
+So this is a real parser for the subset of YAML that Actions workflows are, and its acceptance is that it agrees with PyYAML on every one of the 28 files. `tests/test_workflows.py` runs `yaml.safe_load` in a SUBPROCESS under the system interpreter -- which is how the comparison happens at all from inside an environment that cannot import it -- and compares document to document.
 
-THE SUBSET, stated so the boundary is a decision rather than a discovery. Block
-mappings, block sequences, block scalars (`|`, `>`, with `-` and `+` chomping and
-explicit indent indicators), single-line flow sequences and mappings, single and
-double quoted scalars with escapes, comments, and YAML 1.1 scalar resolution.
-NOT supported, because the corpus contains none of them and a parser that guesses
-is worse than one that refuses: anchors and aliases, merge keys, tags, multiple
-documents, and complex mapping keys. `UnsupportedYAMLError` names the line.
+THE SUBSET, stated so the boundary is a decision rather than a discovery. Block mappings, block sequences, block scalars (`|`, `>`, with `-` and `+` chomping and explicit indent indicators), single-line flow sequences and mappings, single and double quoted scalars with escapes, comments, and YAML 1.1 scalar resolution. NOT supported, because the corpus contains none of them and a
+parser that guesses is worse than one that refuses: anchors and aliases, merge keys, tags, multiple documents, and complex mapping keys. `UnsupportedYAMLError` names the line.
 
-THE ONE DELIBERATE DIVERGENCE FROM PyYAML, AND IT IS A BUG FIX. PyYAML applies
-YAML 1.1 resolution to KEYS as well as values, so the `on:` block that every
-workflow file opens with parses to the key `True`. `check_secret_reachability.py:151`
-carries a workaround for exactly that, and any consumer that forgets it silently
-finds no triggers. Keys here are always strings. The differential normalises
-PyYAML's side before comparing, so the divergence is asserted rather than
-smoothed over -- see `test_workflows.py::test_pyyaml_turns_the_on_key_into_a_boolean`.
+THE ONE DELIBERATE DIVERGENCE FROM PyYAML, AND IT IS A BUG FIX. PyYAML applies YAML 1.1 resolution to KEYS as well as values, so the `on:` block that every workflow file opens with parses to the key `True`. `check_secret_reachability.py:151` carries a workaround for exactly that, and any consumer that forgets it silently finds no triggers. Keys here are always strings. The
+differential normalises PyYAML's side before comparing, so the divergence is asserted rather than smoothed over -- see `test_workflows.py::test_pyyaml_turns_the_on_key_into_a_boolean`.
 
-VALUES ARE STILL RESOLVED THE YAML 1.1 WAY, including `yes`/`no`/`on`/`off` as
-booleans, because that is what `submodules: true`, `fetch-depth: 0` and
-`timeout-minutes: 12` mean to Actions and to every consumer here.
+VALUES ARE STILL RESOLVED THE YAML 1.1 WAY, including `yes`/`no`/`on`/`off` as booleans, because that is what `submodules: true`, `fetch-depth: 0` and `timeout-minutes: 12` mean to Actions and to every consumer here.
 """
 
 import pathlib
@@ -85,9 +63,7 @@ _ANCHOR_RE = re.compile(r"^[&*][A-Za-z0-9_-]")
 class UnsupportedYAMLError(ValueError):
     """A construct outside the Actions subset. Names the line so it is findable.
 
-    A distinct type so a caller can tell "this file uses a YAML feature I do not
-    implement" from "this file is malformed", which want different responses: the
-    first is a reason to widen the parser, the second is a reason to fix the file.
+    A distinct type so a caller can tell "this file uses a YAML feature I do not implement" from "this file is malformed", which want different responses: the first is a reason to widen the parser, the second is a reason to fix the file.
     """
 
 
@@ -105,10 +81,7 @@ def _error(kind, line_no: int, text: str, why: str):
 def resolve_scalar(text: str) -> object:
     """A plain (unquoted) scalar as YAML 1.1 would resolve it.
 
-    ORDER MATTERS AND IS NOT ARBITRARY: null, then bool, then int, then float,
-    then string. `0x10` must reach the hex rule before the float rule, and the
-    underscore stripping happens only inside the numeric branches so a plain
-    string like `some_word` is never touched.
+    ORDER MATTERS AND IS NOT ARBITRARY: null, then bool, then int, then float, then string. `0x10` must reach the hex rule before the float rule, and the underscore stripping happens only inside the numeric branches so a plain string like `some_word` is never touched.
     """
     stripped = text.strip()
     if stripped in _NULL:
@@ -149,9 +122,7 @@ _DOUBLE_ESCAPES = {
 def _parse_double_quoted(body: str) -> str:
     """The escape set YAML defines for double quotes, plus \\uXXXX.
 
-    Hand-written rather than delegated to `json.loads`, which is the tempting
-    shortcut: JSON rejects `\\e`, `\\v` and single quotes inside, all of which are
-    legal here, and it would raise on files this parser must read.
+    Hand-written rather than delegated to `json.loads`, which is the tempting shortcut: JSON rejects `\\e`, `\\v` and single quotes inside, all of which are legal here, and it would raise on files this parser must read.
     """
     out = []
     index = 0
@@ -182,9 +153,7 @@ def _parse_double_quoted(body: str) -> str:
 def _strip_comment(text: str) -> str:
     """Drop a trailing `# ...` that is outside quotes and preceded by a space.
 
-    THE SPACE IS REQUIRED BY YAML AND BY REALITY: `runs-on: ubuntu#1` is a value
-    containing a hash, and `image: ghcr.io/x#tag` would lose its fragment to a
-    naive split. A `#` at the very start of the field is a comment regardless.
+    THE SPACE IS REQUIRED BY YAML AND BY REALITY: `runs-on: ubuntu#1` is a value containing a hash, and `image: ghcr.io/x#tag` would lose its fragment to a naive split. A `#` at the very start of the field is a comment regardless.
     """
     quote = None
     index = 0
@@ -308,10 +277,7 @@ _KEY_RE = re.compile(r"^(?P<key>\"[^\"]*\"|'[^']*'|[^:#\s][^:]*?)\s*:(?:\s+(?P<r
 class _Reader:
     """A cursor over the lines, with the two questions the parser keeps asking.
 
-    A class rather than an index passed around because the sequence parser
-    REWRITES a line in place (turning `- key: v` into `  key: v` so the item can
-    be parsed as an ordinary mapping), and threading a mutable list plus an index
-    through recursion by hand is where off-by-ones live.
+    A class rather than an index passed around because the sequence parser REWRITES a line in place (turning `- key: v` into ` key: v` so the item can be parsed as an ordinary mapping), and threading a mutable list plus an index through recursion by hand is where off-by-ones live.
     """
 
     def __init__(self, text: str) -> None:
@@ -345,10 +311,7 @@ class _Reader:
 def _block_scalar(reader: _Reader, header: str, parent_indent: int) -> str:
     """A `|` or `>` block, with chomping and an optional explicit indent.
 
-    THE INDENT IS TAKEN FROM THE FIRST NON-EMPTY LINE unless the header states
-    one, which is YAML's rule and the one that matters most here: every `run: |`
-    body in these workflows relies on it, and getting it wrong shifts whole shell
-    scripts by a space.
+    THE INDENT IS TAKEN FROM THE FIRST NON-EMPTY LINE unless the header states one, which is YAML's rule and the one that matters most here: every `run: |` body in these workflows relies on it, and getting it wrong shifts whole shell scripts by a space.
     """
     match = _BLOCK_HEADER_RE.match(header.strip())
     if not match:
@@ -408,17 +371,10 @@ def _block_scalar(reader: _Reader, header: str, parent_indent: int) -> str:
 def _fold(lines: list[str]) -> str:
     """`>` folding, with the two rules that are easy to get subtly wrong.
 
-    RULE 1: a single line break between two equally-indented non-empty lines
-    folds to a SPACE. RULE 2: blank lines do not fold -- n blank lines between
-    two paragraphs produce n newlines, not n+1. An implementation that appends a
-    newline for the blank line AND another for the join produces `a\n\nb` where
-    YAML says `a\nb`, which is exactly what this function did until the
-    differential ran over `.github/actions/setup-workspace/action.yml` and found
-    one extra newline inside a `>-` description.
+    RULE 1: a single line break between two equally-indented non-empty lines folds to a SPACE. RULE 2: blank lines do not fold -- n blank lines between two paragraphs produce n newlines, not n+1. An implementation that appends a newline for the blank line AND another for the join produces `a\n\nb` where YAML says `a\nb`, which is exactly what this function did until the
+    differential ran over `.github/actions/setup-workspace/action.yml` and found one extra newline inside a `>-` description.
 
-    THE MORE-INDENTED RULE, which is the one people forget entirely: a line
-    indented further than the block keeps its break literally. Folding it into a
-    space would join two shell commands into one, silently.
+    THE MORE-INDENTED RULE, which is the one people forget entirely: a line indented further than the block keeps its break literally. Folding it into a space would join two shell commands into one, silently.
     """
     out: list[str] = []
     pending = 0
@@ -543,18 +499,14 @@ def _continue_plain(reader: _Reader, first: str, indent: int) -> str:
     """A plain scalar that runs onto the following, more-indented lines.
 
     THE CASE THAT COST TWO WHOLE JOBS' WORTH OF STEPS.
-    `.github/workflows/cd-deploy-account.yml:249-251` writes an Actions expression
-    across three lines:
+    `.github/workflows/cd-deploy-account.yml:249-251` writes an Actions expression across three lines:
 
         STRIPE_SECRET_KEY: ${{ inputs.target == 'stable'
           && env.BWS_STRIPE_SECRET_KEY
           || env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
 
-    A parser that reads only the first line does not merely truncate the value --
-    the two orphaned continuation lines are more indented than the mapping, so the
-    mapping ends there, and everything after it in the file is silently dropped.
-    The differential against PyYAML measured the damage exactly: 13 steps parsed
-    where 15 exist, with `Deploy account Worker` and `Set Worker secrets` gone.
+    A parser that reads only the first line does not merely truncate the value -- the two orphaned continuation lines are more indented than the mapping, so the mapping ends there, and everything after it in the file is silently dropped. The differential against PyYAML measured the damage exactly: 13 steps parsed where 15 exist, with `Deploy account Worker` and `Set Worker secrets`
+    gone.
     Nothing about the result looked wrong; there was simply less of it.
 
     YAML folds these with a single space, which is why `${{ a\n&& b }}` and
@@ -594,8 +546,7 @@ def _parse_inline(text: str, line_no: int):
 def parse(text: str):
     """Parse one YAML document. Returns the same shape `yaml.safe_load` would.
 
-    Multiple documents are refused rather than silently reduced to the first,
-    which is the shape of mistake that makes a gate judge half a file.
+    Multiple documents are refused rather than silently reduced to the first, which is the shape of mistake that makes a gate judge half a file.
     """
     for offset, line in enumerate(text.split("\n")):
         if line.rstrip() == "---" and offset > 0:
@@ -762,9 +713,7 @@ def lane_capabilities(workflow: "Workflow") -> list[LaneCapabilities]:
 
     THE `str()` ON runs-on IS NOT COSMETIC. lanes.ts reads the raw token out of
     the line, so `runs-on: ubuntu-slim` is the string "ubuntu-slim" there; the
-    structural parse of the same line is also a string, but a bare `runs-on: 22`
-    would resolve to an int here and to "22" there. Coercing at the boundary keeps
-    the two comparable without weakening the parser for everyone else.
+    structural parse of the same line is also a string, but a bare `runs-on: 22` would resolve to an int here and to "22" there. Coercing at the boundary keeps the two comparable without weakening the parser for everyone else.
     """
     out = []
     for job in workflow.jobs:

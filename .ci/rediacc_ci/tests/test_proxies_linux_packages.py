@@ -1,18 +1,11 @@
 """`rediacc_ci.proxies.linux_packages` against its bash twin
-`.ci/scripts/test/proxies/proxy-linux-packages.sh` (gate
-`check:ci-proxy-linux-packages`, `package.json:385`).
+`.ci/scripts/test/proxies/proxy-linux-packages.sh` (gate `check:ci-proxy-linux-packages`, `package.json:385`).
 
 Sibling of `test_proxies_ensure_nfpm.py`; see that file for why the two
 invocations are compared byte for byte rather than as a finding set.
 
-MOST CASES BUILD NO PACKAGES. Only `test_real_tree_agrees_byte_for_byte` runs
-the genuine `test-linux-packages.sh --dry-run` (nfpm really builds four
-formats, build-pkg-repo.sh really generates APT/RPM/APK/Arch metadata, ~1 s on
-this host). The rest run against a fixture root whose SUBJECT is a stub with
-the same SHAPE -- `^run_test "` call sites, `TEST: ` banners on stderr,
-`[DRY-RUN] Would` stub lines, a `Results:` summary -- which is the only way to
-drive the marker-rename defect at all: the real subject cannot be asked to
-rename its own stub text.
+MOST CASES BUILD NO PACKAGES. Only `test_real_tree_agrees_byte_for_byte` runs the genuine `test-linux-packages.sh --dry-run` (nfpm really builds four formats, build-pkg-repo.sh really generates APT/RPM/APK/Arch metadata, ~1 s on this host). The rest run against a fixture root whose SUBJECT is a stub with the same SHAPE -- `^run_test "` call sites, `TEST: ` banners on stderr,
+`[DRY-RUN] Would` stub lines, a `Results:` summary -- which is the only way to drive the marker-rename defect at all: the real subject cannot be asked to rename its own stub text.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-linux-packages.observations.jsonl` (6 rows,
 6 distinct trees, 5 distinct finding sets), re-recorded on 2026-09-10 after the
@@ -306,11 +299,7 @@ def test_a_renamed_dry_run_marker_is_now_a_loud_refusal(
 ) -> None:
     """MUST FIRE. `:132` subtracts a count of a LITERAL that lives in the subject.
 
-    Before 2026-09-10 a rename turned the subtraction into `N - 0`, so the
-    proxy reported the STRONGEST possible coverage claim -- "4 of 4 subtests
-    really executed", "0 stub lines" -- at the exact moment its evidence
-    disappeared, and exited 0. `:126` now corroborates the marker against the
-    subject's SOURCE first, so the rename is a named refusal on both sides.
+    Before 2026-09-10 a rename turned the subtraction into `N - 0`, so the proxy reported the STRONGEST possible coverage claim -- "4 of 4 subtests really executed", "0 stub lines" -- at the exact moment its evidence disappeared, and exited 0. `:126` now corroborates the marker against the subject's SOURCE first, so the rename is a named refusal on both sides.
     """
     fixture = build_fixture(tmp_path, subject=STUB_SUBJECT.replace("MARKER", "[dry-run] skipping"))
     old, new = run_both(fixture)
@@ -328,10 +317,7 @@ def test_a_present_marker_with_no_stub_lines_is_not_a_refusal(
 ) -> None:
     """MUST NOT FIRE. The corroboration reads the SOURCE, never the output.
 
-    A run in which every subtest did real work prints no `[DRY-RUN] Would` line
-    at all, and that is the strongest possible outcome, not a defect. The
-    marker is still in the subject's source, so the refusal above stays silent
-    and the PASS line reports the corroborated site count.
+    A run in which every subtest did real work prints no `[DRY-RUN] Would` line at all, and that is the strongest possible outcome, not a defect. The marker is still in the subject's source, so the refusal above stays silent and the PASS line reports the corroborated site count.
     """
     subject = (
         STUB_SUBJECT.replace("MARKER", "[DRY-RUN] Would")
@@ -370,9 +356,7 @@ def test_the_surviving_pass_line_prints_the_corroborated_shape(
 def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
     """A control that never fires is a claim about the control, not the port.
 
-    The plant drops the `-B1` context line from `banners_above_stubs`, which
-    turns `10 of 21` into `21 of 21` on the port side alone. If this passes
-    without the plant, every green above means nothing.
+    The plant drops the `-B1` context line from `banners_above_stubs`, which turns `10 of 21` into `21 of 21` on the port side alone. If this passes without the plant, every green above means nothing.
     """
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace("            if i > 0:\n                emitted.add(i - 1)\n", "", 1)

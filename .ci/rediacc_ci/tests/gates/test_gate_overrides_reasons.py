@@ -1,28 +1,19 @@
 """Port of `.ci/scripts/test/gates/test-overrides-reasons.sh`.
 
-Integration test for `scripts/gates/check-overrides-reasons.ts`: the JSON-safe sibling of
-the BLOCKER convention. JSON allows no inline comments, so every entry in
+Integration test for `scripts/gates/check-overrides-reasons.ts`: the JSON-safe sibling of the BLOCKER convention. JSON allows no inline comments, so every entry in
 package.json's `overrides` carries its rationale in a parallel `_overridesReasons`
-object keyed identically, and the validator refuses a missing reason, a low-effort
-one, and a reason whose override has since been removed.
+object keyed identically, and the validator refuses a missing reason, a low-effort one, and a reason whose override has since been removed.
 
-HOW THE FIXTURE CASES REACH THE SUBJECT, and why it is a copy rather than a flag.
-The validator resolves package.json from ITS OWN location (`__dirname/..`), with no
-override. There is therefore no seam to point it at a fixture, so the twin copies the
-whole `scripts/` tree beside a synthetic package.json in a temp directory and runs it
+HOW THE FIXTURE CASES REACH THE SUBJECT, and why it is a copy rather than a flag. The validator resolves package.json from ITS OWN location (`__dirname/..`), with no override. There is therefore no seam to point it at a fixture, so the twin copies the whole `scripts/` tree beside a synthetic package.json in a temp directory and runs it
 there. This port does the same thing for the same reason; re-implementing the
 validator in Python to avoid the copy would be testing a copy.
 
-THE FIRST CASE HAS NO FIXTURE AT ALL. `test_accepts_real_package_json` drives the
-validator against the repo's own package.json, which is what makes this a real-tree
-reader rather than a self-contained unit test.
+THE FIRST CASE HAS NO FIXTURE AT ALL. `test_accepts_real_package_json` drives the validator against the repo's own package.json, which is what makes this a real-tree reader rather than a self-contained unit test.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Every case reads the working tree:
-three of them `cp -r` the entire `scripts/` directory, and the fourth reads
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Every case reads the working tree: three of them `cp -r` the entire `scripts/` directory, and the fourth reads
 package.json in place. A battery step rewriting either mid-copy is a `cp: cannot
 stat` flake that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
-the serialisation, and it is honoured only because this module declares no
-`XDIST_GROUP` of its own.
+the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own.
 """
 
 import json
@@ -47,8 +38,7 @@ def npx(gate) -> str:
 
     A missing node toolchain would otherwise arrive as `FileNotFoundError: 'npx'`
     from inside a helper, which reads as harness breakage rather than as a statement
-    about the machine. `check:ci-pytest` runs in `quality-security`, which DOES set
-    the workspace up, so an absent npx here is a real finding about the lane.
+    about the machine. `check:ci-pytest` runs in `quality-security`, which DOES set the workspace up, so an absent npx here is a real finding about the lane.
     """
     if not VALIDATOR.is_file():
         gate.log_fail("subject under test is missing: %s" % VALIDATOR_REL)
@@ -64,9 +54,7 @@ def run_validator_on_real_tree(gate) -> harness.RunResult:
 def run_validator_with_pkg(gate, pkg_content: str) -> harness.RunResult:
     """`run_validator_with_pkg`: a synthetic package.json, the REAL validator.
 
-    The validator reads package.json relative to its own `__dirname/..`, so `scripts/`
-    has to sit beside the fixture manifest. The twin merges the streams (`2>&1`) and
-    asserts on the merged text, so callers here read `.combined`.
+    The validator reads package.json relative to its own `__dirname/..`, so `scripts/` has to sit beside the fixture manifest. The twin merges the streams (`2>&1`) and asserts on the merged text, so callers here read `.combined`.
     """
     tool = npx(gate)
     with harness.temp_dir() as temp:
@@ -128,12 +116,9 @@ def test_the_real_manifest_declares_overrides_to_check(gate):
     """ADDED BY THE PORT. `test_accepts_real_package_json` is the only case that
     touches the shipping manifest, and it would pass just as green against a
     package.json with NO overrides at all -- the validator prints
-    `All 0 ... overrides have valid BLOCKER reasons` and exits 0. That green says
-    nothing, so this pins the corpus: the count the validator reports must be
-    non-zero AND must equal the number of top-level override keys in the file.
+    `All 0 ... overrides have valid BLOCKER reasons` and exits 0. That green says nothing, so this pins the corpus: the count the validator reports must be non-zero AND must equal the number of top-level override keys in the file.
 
-    Not a hand-typed floor. Both numbers are read at runtime, so the case follows
-    the manifest instead of dating it.
+    Not a hand-typed floor. Both numbers are read at runtime, so the case follows the manifest instead of dating it.
     """
     manifest = paths.from_root("package.json")
     if not manifest.is_file():

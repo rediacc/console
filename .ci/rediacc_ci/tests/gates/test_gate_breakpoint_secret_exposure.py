@@ -2,31 +2,19 @@
 
 breakpoint must never route an access credential through a step `env:`.
 
-WHY THIS GATE EXISTS -- it is a regression test for a LIVE leak, not a hypothetical.
-Run 30254567365 (public repo, email channel, 2026-07-27) sent the access email
-correctly AND published the tunnel URL in cleartext::
+WHY THIS GATE EXISTS -- it is a regression test for a LIVE leak, not a hypothetical. Run 30254567365 (public repo, email channel, 2026-07-27) sent the access email correctly AND published the tunnel URL in cleartext::
 
     09:39:32.5205053Z   BP_URL: https://program-explore-lucia-graduated.trycloudflare.com
     09:39:36.1644525Z ✓ access details emailed to muhammed@rediacc.com
 
-The runner prints a step's `env:` block BEFORE the step's script runs, and
-`::add-mask::` only redacts occurrences that appear AFTER it registers, so
+The runner prints a step's `env:` block BEFORE the step's script runs, and `::add-mask::` only redacts occurrences that appear AFTER it registers, so
 `env: BP_URL: ${{ steps.tunnel.outputs.url }}` published the URL roughly four seconds
-before `publish-endpoints.sh` could mask it. The email channel is the DEFAULT
-precisely because a quick-mode URL is a bearer credential to a box holding the repo
-source and (with debug-shell) an interactive shell, so the leak defeated the entire
-control while every step still reported success. No other gate can see it: it is a
-property of the workflow YAML's data flow, invisible to shellcheck, shfmt,
-check-commands and the drift manifest, which proves the file is UNCHANGED rather than
+before `publish-endpoints.sh` could mask it. The email channel is the DEFAULT precisely because a quick-mode URL is a bearer credential to a box holding the repo source and (with debug-shell) an interactive shell, so the leak defeated the entire control while every step still reported success. No other gate can see it: it is a property of the workflow YAML's data flow, invisible to
+shellcheck, shfmt, check-commands and the drift manifest, which proves the file is UNCHANGED rather than
 CORRECT.
 
-WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md`
-records six `test-breakpoint-*.sh` subjects as unportable by any agent under the
-standard brief and NOT on merit, because plant-verifying one means temporarily writing
-under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The
-brief's two ways out are to hand one batch owner that path explicitly or to exclude
-them in the derivation with the reason recorded, and it adds "Do not silently drop
-them a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
+WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md` records six `test-breakpoint-*.sh` subjects as unportable by any agent under the standard brief and NOT on merit, because plant-verifying one means temporarily writing under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The brief's two ways out are to hand one batch owner
+that path explicitly or to exclude them in the derivation with the reason recorded, and it adds "Do not silently drop them a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
 
 `GITHUB_ACTIONS=true` IS THE LOAD-BEARING PART of the last case, carried verbatim from
 the twin. Both helpers no-op without it, so the identical check run locally passes
@@ -62,9 +50,7 @@ CREDENTIAL_EXPRESSIONS = (
 def credential_hits(path) -> list[str]:
     """Every `<line-number>:<line>` in `path` carrying a credential expression.
 
-    FACTORED OUT for the same reason the twin factors out `detect_credential_exposure`:
-    the anti-vacuity case below points it at a deliberately broken copy, and a detector
-    that only ever runs against the real file has never been shown to fire. The twin
+    FACTORED OUT for the same reason the twin factors out `detect_credential_exposure`: the anti-vacuity case below points it at a deliberately broken copy, and a detector that only ever runs against the real file has never been shown to fire. The twin
     returns 1 and prints; this returns the hits, because a caller that must decide
     whether the detector FIRED needs the evidence rather than an exit code.
     """
@@ -77,8 +63,7 @@ def credential_hits(path) -> list[str]:
 
 def test_no_credential_expression_in_workflow(gate):
     """Deliberately WHOLE-FILE rather than scoped to `env:` blocks. A credential has no
-    legitimate use in workflow text at all -- `run:` interpolation is already banned as
-    script injection, and `env:` is this leak -- so whole-file is both stricter and
+    legitimate use in workflow text at all -- `run:` interpolation is already banned as script injection, and `env:` is this leak -- so whole-file is both stricter and
     simpler to reason about than a YAML-aware env-block parse."""
     if not WORKFLOW.is_file():
         gate.log_fail("workflow template is missing: %s" % paths.relative_to_root(WORKFLOW))
@@ -100,13 +85,9 @@ def test_detector_fires_on_the_real_leak(gate):
     """ANTI-VACUITY, BY MUTATION AND NOT BY ASSERTION. A gate that has only ever been
     seen to pass has not been verified. This reconstructs the exact line that leaked in
     run 30254567365, points the detector at it, and asserts it trips; weaken the
-    expression list or the scan and THIS case goes red rather than the gate going
-    quietly blind.
+    expression list or the scan and THIS case goes red rather than the gate going quietly blind.
 
-    It also avoids the trap the twin's first version fell into: asserting the guarded
-    output names still exist in the scripts. After the fix they legitimately do not --
-    the whole point is that nothing emits them any more -- so that check failed on a
-    correct tree and would have been "fixed" by deleting it.
+    It also avoids the trap the twin's first version fell into: asserting the guarded output names still exist in the scripts. After the fix they legitimately do not -- the whole point is that nothing emits them any more -- so that check failed on a correct tree and would have been "fixed" by deleting it.
     """
     with harness.temp_dir() as tmp:
         broken = tmp / "leaky-breakpoint.yml"
@@ -138,10 +119,7 @@ def test_publish_reads_state(gate):
 
 def test_shell_does_not_mask_unconditionally(gate):
     """The first version of this feature masked the tmate strings the moment they were
-    created. Masking is irreversible within a run, so on the logs channel the operator
-    got `SSH: ***` -- a shell nobody could reach. Same rule as the URL, opposite
-    direction: never mask without a working alternative channel, and never publish
-    without one either. `publish-endpoints.sh` owns both decisions because it is the
+    created. Masking is irreversible within a run, so on the logs channel the operator got `SSH: ***` -- a shell nobody could reach. Same rule as the URL, opposite direction: never mask without a working alternative channel, and never publish without one either. `publish-endpoints.sh` owns both decisions because it is the
     only thing that knows which channel is live."""
     script = BP / "scripts" / "start-shell.sh"
     if not script.is_file():
@@ -183,8 +161,7 @@ def test_workflow_commands_never_hit_stdout(gate):
     """`bp_gha_mask`/`bp_gha_warning` emit `::add-mask::` / `::warning::` lines. Several
     scripts here have a stdout DATA CONTRACT (`start-tunnel.sh` prints exactly one line,
     the URL, and the workflow does `URL=$(start-tunnel.sh ...)`), so a workflow command
-    on stdout is CAPTURED INTO the value. That killed the first real named-mode run
-    after it had already created the tunnel, DNS record and Access app::
+    on stdout is CAPTURED INTO the value. That killed the first real named-mode run after it had already created the tunnel, DNS record and Access app::
 
         ##[error]Invalid format 'https://rdc-ci-30258284234.rediacc.io'
     """

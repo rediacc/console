@@ -1,11 +1,8 @@
 """Differential: `rediacc_ci.review.claude_review_gate` against its twin
 `.ci/scripts/review/claude-review-gate.sh`.
 
-THIS SCRIPT WRITES TO GITHUB ON THE WORD OF A LANGUAGE MODEL, so the fake `gh`
-is not a convenience. `--post-report` posts a comment, `--post-findings` posts
-line-anchored review comments, `--apply-labels` CREATES and DELETES labels, and
-`--mark` upserts the marker that decides whether the next green push pays for
-another review pass. Four independent things keep the real binary out of reach:
+THIS SCRIPT WRITES TO GITHUB ON THE WORD OF A LANGUAGE MODEL, so the fake `gh` is not a convenience. `--post-report` posts a comment, `--post-findings` posts line-anchored review comments, `--apply-labels` CREATES and DELETES labels, and `--mark` upserts the marker that decides whether the next green push pays for another review pass. Four independent things keep the real binary
+out of reach:
 
   1. the stub directory is FIRST on PATH and `shutil.which("gh", path=...)` is
      asserted to resolve to the fake, in `test_the_fake_gh_is_the_gh`;
@@ -29,9 +26,7 @@ WHAT IS COMPARED, ON EVERY CASE:
     and posted the wrong body would be caught.
 
 THE FAILURE-INJECTION KNOBS EXIST FOR THE THREE DEFECTS. `FAKE_GH_FAIL_ON_JQ`
-targets ONE read among several to the same endpoint (the marker read and the two
-budget reads all hit `/issues/<n>/comments`), which is what makes DEFECT 1 and
-DEFECT 3 reproducible rather than merely arguable.
+targets ONE read among several to the same endpoint (the marker read and the two budget reads all hit `/issues/<n>/comments`), which is what makes DEFECT 1 and DEFECT 3 reproducible rather than merely arguable.
 
 K=5 LEDGER: `.ci/shadow/w7p6-claude-review-gate.observations.jsonl`, recorded in
 a disposable scratch git repository outside this checkout.
@@ -269,8 +264,7 @@ def findings_report(findings: list[dict], trailer: str = "") -> str:
 
     PRETTY-PRINTED, because that is the shape `prompts/initial.md:53-57` asks
     for and a one-line array would hide every multi-line property of the
-    scanner. `trailer` is whatever the model wrote AFTER the fence, which is the
-    input DEFECT 4 turns on.
+    scanner. `trailer` is whatever the model wrote AFTER the fence, which is the input DEFECT 4 turns on.
     """
     return "## Verdict\n\n%sjson:review-findings\n%s\n%s\n%s" % (
         TICKS,
@@ -316,9 +310,7 @@ class World:
     def compare(self, *filenames: str) -> None:
         """The compare fixture in the API's own shape.
 
-        `--jq '[.files[]?.filename]'` is applied to it, so a fixture shaped as a
-        bare list makes jq answer `[]` and silently exercises the empty-diff arm
-        instead of the one the case names.
+        `--jq '[.files[]?.filename]'` is applied to it, so a fixture shaped as a bare list makes jq answer `[]` and silently exercises the empty-diff arm instead of the one the case names.
         """
         self.write("compare", {"files": [{"filename": name} for name in filenames]})
 
@@ -510,9 +502,7 @@ def test_the_constants_still_match_the_twins_assignments() -> None:
 def test_same_repo_is_enforced_by_the_workflow_not_by_either_implementation() -> None:
     """The clause a differential of this file CANNOT cover, pinned where it lives.
 
-    Neither implementation can see the head repository, so "same-repo" is
-    enforced in `claude-review.yml`'s `if:`. If that condition is ever deleted a
-    fork PR reaches the gate and both sides say yes.
+    Neither implementation can see the head repository, so "same-repo" is enforced in `claude-review.yml`'s `if:`. If that condition is ever deleted a fork PR reaches the gate and both sides say yes.
     """
     text = (ROOT / ".github" / "workflows" / "claude-review.yml").read_text(encoding="utf-8")
     assert "github.event.workflow_run.head_repository.full_name == github.repository" in text
@@ -932,8 +922,7 @@ def test_the_turn_budget_scales_continuously_with_the_diff(additions: int, turns
 def test_defect1_a_failed_marker_read_re_reviews_an_already_reviewed_head() -> None:
     """DEFECT 1. `last_marker_sha`'s `|| true` turns a gh failure into "never
     reviewed", so the gate emits go=true with the INITIAL prompt for a head whose
-    marker comment is present and current. `FAKE_GH_FAIL_ON_JQ` targets that one
-    read: the two budget reads hit the same endpoint and must still succeed, or
+    marker comment is present and current. `FAKE_GH_FAIL_ON_JQ` targets that one read: the two budget reads hit the same endpoint and must still succeed, or
     the case would prove nothing about this call."""
 
     def build(world: World) -> None:
@@ -964,12 +953,9 @@ def test_defect1_control_the_same_world_refuses_when_the_read_works() -> None:
 
 def test_defect2_a_non_numeric_diff_size_kills_the_gate() -> None:
     """DEFECT 2. `emit_review_turns` feeds `gh pr view`'s answer straight into
-    `$(( ))` with no `^[0-9]+$` guard, unlike `pr_diff_loc` two functions away.
-    A `null` answer is `null: unbound variable` under `set -u`.
+    `$(( ))` with no `^[0-9]+$` guard, unlike `pr_diff_loc` two functions away. A `null` answer is `null: unbound variable` under `set -u`.
 
-    stderr is compared by SUFFIX here: bash prefixes the message with the
-    script's own path, which is `.sh` on one side and `.py` on the other. Exit
-    code and `$GITHUB_OUTPUT` are compared exactly, and the point of the case is
+    stderr is compared by SUFFIX here: bash prefixes the message with the script's own path, which is `.sh` on one side and `.py` on the other. Exit code and `$GITHUB_OUTPUT` are compared exactly, and the point of the case is
     that `$GITHUB_OUTPUT` holds NO `go` key at all."""
     with tempfile.TemporaryDirectory() as td:
         world = World(pathlib.Path(td))
@@ -996,8 +982,7 @@ def test_defect2_control_pr_diff_loc_does_have_the_guard() -> None:
 
 def test_defect3_a_failed_attempt_read_restarts_the_per_head_count() -> None:
     """DEFECT 3. The nested command substitution in `--mark` discards
-    `review_attempt_states`' failure, so a head that has already spent 3 of 3
-    attempts records "attempt 1 of 3" and the per-head ceiling resets.
+    `review_attempt_states`' failure, so a head that has already spent 3 of 3 attempts records "attempt 1 of 3" and the per-head ceiling resets.
 
     This case pays `gh_retry`'s real backoff (3s + 6s) on BOTH sides, because the
     twin pays it and the stderr comparison is the point."""
@@ -1185,19 +1170,11 @@ def test_post_findings_reads_a_pretty_printed_array_spanning_many_lines() -> Non
 def test_defect4_a_sibling_pr_labels_fence_swallows_every_inline_finding() -> None:
     """DEFECT 4, AND IT FIRES ON THE SHAPE THE PROMPT ASKS FOR.
 
-    `--post-findings`' awk never clears `capturing`, so it takes everything from
-    the `json:review-findings` opener to the LAST closing fence ANYWHERE later in
-    the report. `prompts/initial.md:67` instructs the model to close the report
+    `--post-findings`' awk never clears `capturing`, so it takes everything from the `json:review-findings` opener to the LAST closing fence ANYWHERE later in the report. `prompts/initial.md:67` instructs the model to close the report
     with a SECOND fence, `json:pr-labels`, after that section. The extraction
-    therefore runs past the findings array, through the prose and into the labels
-    block, jq rejects it as an array, and the arm prints "no parseable
-    review-findings block" and posts NOTHING.
+    therefore runs past the findings array, through the prose and into the labels block, jq rejects it as an array, and the arm prints "no parseable review-findings block" and posts NOTHING.
 
-    The last-closer rule was added to survive a fence nested inside a finding's
-    `body`, and that case is not reachable through valid JSON: a JSON string
-    cannot contain a raw newline, so an embedded fence never lands on a line of
-    its own and never matches the closer. The rule buys nothing and costs every
-    inline comment on a report that follows its own prompt.
+    The last-closer rule was added to survive a fence nested inside a finding's `body`, and that case is not reachable through valid JSON: a JSON string cannot contain a raw newline, so an embedded fence never lands on a line of its own and never matches the closer. The rule buys nothing and costs every inline comment on a report that follows its own prompt.
     """
 
     def build(world: World) -> None:

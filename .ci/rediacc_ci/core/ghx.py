@@ -1,100 +1,53 @@
 """Asking GitHub a question through `gh`, where a FAILED call cannot look empty.
 
-THE ONE RULE THIS MODULE EXISTS FOR. A `gh` call has three outcomes, not two:
-it answered, it answered with nothing, or it never answered at all. Almost every
-call site in this tree collapses the third into the second, and the collapse is
-silent because the natural bash spelling makes it silent.
+THE ONE RULE THIS MODULE EXISTS FOR. A `gh` call has three outcomes, not two: it answered, it answered with nothing, or it never answered at all. Almost every call site in this tree collapses the third into the second, and the collapse is silent because the natural bash spelling makes it silent.
 
 ------------------------------------------------------------------------------
 TRAP 1: `|| echo "[]"` AND `2>/dev/null` TURN AN OUTAGE INTO AN EMPTY ANSWER.
 ------------------------------------------------------------------------------
-Measured across `.ci`, `scripts` and `.claude`: 28 `gh` call sites end in
-`|| echo "..."` or a `// empty` jq default. A rate limit, an expired token or a
-network blip then produces the SAME value as "there is nothing here", and the
-caller acts on it. `.ci/scripts/lib/common.sh:392-397` already records what that
-cost: "Nine call sites across the review, attribution and submodule-branch gates
+Measured across `.ci`, `scripts` and `.claude`: 28 `gh` call sites end in `|| echo "..."` or a `// empty` jq default. A rate limit, an expired token or a network blip then produces the SAME value as "there is nothing here", and the caller acts on it. `.ci/scripts/lib/common.sh:392-397` already records what that cost: "Nine call sites across the review, attribution and
+submodule-branch gates
 were spelled `X=$(gh api ... 2>/dev/null || echo "[]")` ... those are
-merge-blocking gates: a swallowed failure there is a silent green on the check
-that is supposed to stop the merge." `_gh_probe` there is the bash answer, and
-this module is its typed counterpart -- with one addition `_gh_probe` cannot
-have, below.
+merge-blocking gates: a swallowed failure there is a silent green on the check that is supposed to stop the merge." `_gh_probe` there is the bash answer, and this module is its typed counterpart -- with one addition `_gh_probe` cannot have, below.
 
 ------------------------------------------------------------------------------
 TRAP 2: A PIPELINE ENDING IN `sort` ALWAYS EXITS 0, SO THE CALLER CANNOT CHECK.
 ------------------------------------------------------------------------------
-This is the sharper version of trap 1, because here there is nothing left to
-check even if the caller wanted to. `.claude/rediacc_hooks/guards/
-block_nonstandard_branch_name.py:230-233` prints this as the advice for picking
-the next branch name:
+This is the sharper version of trap 1, because here there is nothing left to check even if the caller wanted to. `.claude/rediacc_hooks/guards/ block_nonstandard_branch_name.py:230-233` prints this as the advice for picking the next branch name:
 
     gh pr list --state all --limit 100 --json headRefName \\
       --jq '.[].headRefName' | grep "^${d}-" | sed "s/^${d}-//" | sort -n | tail -1
 
-`gh` is the FIRST stage. Its exit code is discarded by the pipe, `grep` finding
-nothing exits 1, and `sort`/`tail` exit 0 with empty output. An unauthenticated
-`gh` and a day with no branches yet produce byte-identical results: empty. The
-caller adds one to nothing and picks `-1`. That same guard, at :228-231, names
-what it cost: "that is exactly how 0826-1 got picked twice on 2026-08-26, the
-second time after PR #576 had already merged it that morning."
+`gh` is the FIRST stage. Its exit code is discarded by the pipe, `grep` finding nothing exits 1, and `sort`/`tail` exit 0 with empty output. An unauthenticated `gh` and a day with no branches yet produce byte-identical results: empty. The caller adds one to nothing and picks `-1`. That same guard, at :228-231, names what it cost: "that is exactly how 0826-1 got picked twice on
+2026-08-26, the second time after PR #576 had already merged it that morning."
 
-`branch_indexes()` and `next_branch_name()` below are that pipeline, with the
-failure kept. Measured while writing this module: an unauthenticated
-`gh pr list --repo rediacc/console --state open --json number` exits **4**, not
-1, and writes "To get started with GitHub CLI, please run: gh auth login" to
-STDERR -- which `2>/dev/null` deletes and the pipe discards. Both halves of the
+`branch_indexes()` and `next_branch_name()` below are that pipeline, with the failure kept. Measured while writing this module: an unauthenticated `gh pr list --repo rediacc/console --state open --json number` exits **4**, not 1, and writes "To get started with GitHub CLI, please run: gh auth login" to STDERR -- which `2>/dev/null` deletes and the pipe discards. Both halves of the
 evidence are thrown away by the spelling the guard recommends.
 
 ------------------------------------------------------------------------------
 HOW THE CHECK IS MADE IMPOSSIBLE TO SKIP: `.stdout` RAISES.
 ------------------------------------------------------------------------------
-`GhResult.stdout` is a PROPERTY that raises the classified error when the call
-did not succeed. There is no way to write `json.loads(result.stdout)` or
-`result.stdout.splitlines()` and have a failure arrive as an empty answer,
-because the attribute a caller reaches for first is the one that refuses.
+`GhResult.stdout` is a PROPERTY that raises the classified error when the call did not succeed. There is no way to write `json.loads(result.stdout)` or `result.stdout.splitlines()` and have a failure arrive as an empty answer, because the attribute a caller reaches for first is the one that refuses.
 
-THIS IS A DELIBERATE DIVERGENCE FROM `rediacc_ci.proc.Result`, whose `.stdout`
-is a plain string, and the divergence is the point. `proc` is a general
-subprocess layer where a non-zero exit is often the answer (`git diff --quiet`
-means something at 1). `gh` is a network client where a non-zero exit is never
-an answer about the repository, only about the call. The raw bytes are still
-reachable as `.stdout_raw` for diagnostics and for the error messages, which is
-the one use a failed call's output has.
+THIS IS A DELIBERATE DIVERGENCE FROM `rediacc_ci.proc.Result`, whose `.stdout` is a plain string, and the divergence is the point. `proc` is a general subprocess layer where a non-zero exit is often the answer (`git diff --quiet` means something at 1). `gh` is a network client where a non-zero exit is never an answer about the repository, only about the call. The raw bytes are
+still reachable as `.stdout_raw` for diagnostics and for the error messages, which is the one use a failed call's output has.
 
-`.stderr` is a plain attribute and is ALWAYS readable, because surfacing it is
-the second half of the requirement: 28 sites send it to /dev/null, so the one
-sentence that says "your token expired" never reaches a human.
+`.stderr` is a plain attribute and is ALWAYS readable, because surfacing it is the second half of the requirement: 28 sites send it to /dev/null, so the one sentence that says "your token expired" never reaches a human.
 
 ------------------------------------------------------------------------------
 TRAP 3: EXIT 0 IS NOT A PROMISE THAT THE BODY IS WHAT YOU ASKED FOR.
 ------------------------------------------------------------------------------
-`common.sh:418-420`: "`gh api graphql` can exit 0 while returning a truncated or
-malformed body, so an exit-code check alone misses it." So `json()` parses and
-raises `GhBadOutputError` rather than returning whatever `json.loads` made of it, and
-`value()` refuses an EMPTY string where a scalar was expected.
+`common.sh:418-420`: "`gh api graphql` can exit 0 while returning a truncated or malformed body, so an exit-code check alone misses it." So `json()` parses and raises `GhBadOutputError` rather than returning whatever `json.loads` made of it, and `value()` refuses an EMPTY string where a scalar was expected.
 
-The reason that refusal is not paranoia is written down in this repository at
-`docs/dev-environments.md:102-110` and `scripts/gates/check-external-links.ts:174-186`:
-a documented one-liner piped an unchecked HTTP response into
-`ACCOUNT_ED25519_PUBLIC_KEY`. The URL had started answering 404. With `curl -f`
+The reason that refusal is not paranoia is written down in this repository at `docs/dev-environments.md:102-110` and `scripts/gates/check-external-links.ts:174-186`: a documented one-liner piped an unchecked HTTP response into `ACCOUNT_ED25519_PUBLIC_KEY`. The URL had started answering 404. With `curl -f`
 the variable was assigned the EMPTY string; without `-f` the 404's HTML BODY was
-baked into `keys.ProductionPublicKey` via ldflags. Either way the build
-succeeded and every production-signed licence then failed as
-`invalid_signature`. An unchecked response became a signing key. Nothing in this
-module returns a caller-trusted value without first checking the status that
-produced it.
+baked into `keys.ProductionPublicKey` via ldflags. Either way the build succeeded and every production-signed licence then failed as `invalid_signature`. An unchecked response became a signing key. Nothing in this module returns a caller-trusted value without first checking the status that produced it.
 
 ------------------------------------------------------------------------------
 GITHUB SECRETS ARE WRITE-ONLY. THERE IS NO GETTER HERE, AND THERE CANNOT BE ONE.
 ------------------------------------------------------------------------------
-`secret_names()` lists names. `secret_value()` exists ONLY to raise, with the
-reason, because the failure this module is guarding against was somebody
-reaching for a value GitHub does not serve and settling for whatever a URL
-returned instead. `docs/dev-environments.md:112-116`: "GitHub secrets are
-write-only, so no command can fetch it, and the old one-liner was not merely
-pointing at a dead URL but at a shape of solution that cannot exist."
-`.ci/scripts/quality/check_bws_map.py:69-73` says the same from the write side:
-"`gh secret set` cannot re-supply a value it is forbidden to read". An
-`AttributeError` from a missing function sends the next reader to write their
+`secret_names()` lists names. `secret_value()` exists ONLY to raise, with the reason, because the failure this module is guarding against was somebody reaching for a value GitHub does not serve and settling for whatever a URL returned instead. `docs/dev-environments.md:112-116`: "GitHub secrets are write-only, so no command can fetch it, and the old one-liner was not merely
+pointing at a dead URL but at a shape of solution that cannot exist." `.ci/scripts/quality/check_bws_map.py:69-73` says the same from the write side: "`gh secret set` cannot re-supply a value it is forbidden to read". An `AttributeError` from a missing function sends the next reader to write their
 own `curl`; a raised sentence sends them to the operator.
 
 ------------------------------------------------------------------------------
@@ -102,16 +55,9 @@ READ ONLY, BY CONSTRUCTION WHERE IT MATTERS
 ------------------------------------------------------------------------------
 Every typed helper here is a read. `api_json()` takes no `method` argument at
 all, so it cannot be turned into a POST by adding one flag at a call site; a
-write goes through `gh()` explicitly, where a reviewer sees the verb. This is
-not a security boundary -- `gh()` runs whatever it is given -- it is the same
-argument the rest of this package makes about spelling: the dangerous thing
-should be the one that has to be typed out.
+write goes through `gh()` explicitly, where a reviewer sees the verb. This is not a security boundary -- `gh()` runs whatever it is given -- it is the same argument the rest of this package makes about spelling: the dangerous thing should be the one that has to be typed out.
 
-WHY `gh` IS RUN THROUGH `rediacc_ci.proc`: for the bounded, stdin-closed,
-streams-separate contract that module documents. `proc.run` closes stdin, which
-matters more for `gh` than for anything else in this tree -- an expired token is
-one of the three cases `proc`'s own docstring names as a command that decides to
-prompt a terminal nobody is watching.
+WHY `gh` IS RUN THROUGH `rediacc_ci.proc`: for the bounded, stdin-closed, streams-separate contract that module documents. `proc.run` closes stdin, which matters more for `gh` than for anything else in this tree -- an expired token is one of the three cases `proc`'s own docstring names as a command that decides to prompt a terminal nobody is watching.
 """
 
 import json
@@ -178,11 +124,7 @@ _DAY_RE = re.compile(r"^[0-9]{4}$")
 class GhError(RuntimeError):
     """A `gh` call that did not answer. Carries the evidence, not just a message.
 
-    The four fields are the ones a reader needs and a bare `RuntimeError("gh
-    failed")` throws away: what was run, what it exited with, what it said, and
-    which classification this module reached. `str(exc)` renders all of them,
-    stderr included, because the whole point of the module is that stderr stops
-    going to /dev/null.
+    The four fields are the ones a reader needs and a bare `RuntimeError("gh failed")` throws away: what was run, what it exited with, what it said, and which classification this module reached. `str(exc)` renders all of them, stderr included, because the whole point of the module is that stderr stops going to /dev/null.
     """
 
     def __init__(self, argv: list[str], returncode: int, stderr: str, failure: str) -> None:
@@ -204,8 +146,7 @@ class GhNotInstalledError(GhError):
 class GhUnauthenticatedError(GhError):
     """`gh` ran and GitHub refused the credentials.
 
-    Its own class because the ACTION differs: a missing binary is installed, an
-    expired token is refreshed, and neither is a statement about the repository.
+    Its own class because the ACTION differs: a missing binary is installed, an expired token is refreshed, and neither is a statement about the repository.
     """
 
 
@@ -216,17 +157,14 @@ class GhRateLimitedError(GhError):
 class GhBadOutputError(GhError):
     """`gh` exited 0 and the body was not usable. TRAP 3.
 
-    Reached with returncode 0, which looks contradictory and is exactly the case
-    worth naming: `common.sh:418-420` records `gh api graphql` doing it.
+    Reached with returncode 0, which looks contradictory and is exactly the case worth naming: `common.sh:418-420` records `gh api graphql` doing it.
     """
 
 
 class SecretValueUnavailableError(NotImplementedError):
     """Raised by `secret_value`. A GitHub secret cannot be read back, ever.
 
-    NotImplementedError and not GhError on purpose: no call was made and none
-    could be. This is a mistake in the calling program, not a failure of the
-    network.
+    NotImplementedError and not GhError on purpose: no call was made and none could be. This is a mistake in the calling program, not a failure of the network.
     """
 
 
@@ -256,8 +194,7 @@ class GhResult:
     """What a `gh` call did, with the success check in front of the output.
 
     `.stdout` RAISES unless the call succeeded. See the module docstring; that
-    property is the whole mechanism, and every accessor below routes through it,
-    so there is no second path that forgets to check.
+    property is the whole mechanism, and every accessor below routes through it, so there is no second path that forgets to check.
     """
 
     __slots__ = ("argv", "duration", "returncode", "stderr", "stdout_raw", "timed_out")
@@ -308,8 +245,7 @@ class GhResult:
     def error(self) -> GhError:
         """The typed exception for this failure. Raises if called on a success.
 
-        Building an error object for a call that worked is always a bug in the
-        caller, and returning a plausible one would hide it.
+        Building an error object for a call that worked is always a bug in the caller, and returning a plausible one would hide it.
         """
         failure = self.failure
         if failure is None:
@@ -331,9 +267,7 @@ class GhResult:
     def value(self, what: str = "value") -> str:
         """One stripped scalar. Refuses empty.
 
-        THE `invalid_signature` CLAUSE. An empty string is what an unchecked
-        `curl -f` assigns, and a build that accepts it succeeds while producing
-        artefacts that cannot work. Where a caller genuinely wants "maybe
+        THE `invalid_signature` CLAUSE. An empty string is what an unchecked `curl -f` assigns, and a build that accepts it succeeds while producing artefacts that cannot work. Where a caller genuinely wants "maybe
         nothing", `lines()` says so with a list; this one is for the case where
         emptiness is a defect.
         """
@@ -368,9 +302,7 @@ class GhResult:
         """`json()` that also insists the body is a list.
 
         `gh api` answers an error with a JSON OBJECT (`{"message": "Not Found"}`)
-        at some statuses, and a caller that wrote `for row in result.json()`
-        would iterate the object's KEYS -- one string, "message" -- and report
-        one finding named after the error. A type check is one line and closes it.
+        at some statuses, and a caller that wrote `for row in result.json()` would iterate the object's KEYS -- one string, "message" -- and report one finding named after the error. A type check is one line and closes it.
         """
         parsed = self.json()
         if not isinstance(parsed, list):
@@ -399,17 +331,11 @@ def gh(
 ) -> GhResult:
     """Run `gh <args>` non-interactively. Never raises for a non-zero exit.
 
-    The LOW level. It hands back a GhResult whose `.stdout` refuses, so the
-    caller chooses where the failure surfaces without being able to lose it.
+    The LOW level. It hands back a GhResult whose `.stdout` refuses, so the caller chooses where the failure surfaces without being able to lose it.
 
-    `repo` appends `--repo <repo>` rather than relying on the cwd's remote,
-    because `gh` resolves an ambiguous cwd by PROMPTING, and a prompt with stdin
-    closed is a failure whose message names neither the repository nor the fork.
+    `repo` appends `--repo <repo>` rather than relying on the cwd's remote, because `gh` resolves an ambiguous cwd by PROMPTING, and a prompt with stdin closed is a failure whose message names neither the repository nor the fork.
 
-    `attempts` DEFAULTS TO 1, and that is a considered difference from
-    `common.sh:_gh_probe`, which always tries three times. Retrying an
-    unauthenticated call three times with backoff costs six seconds to learn
-    something the first attempt already said. A caller in a merge-blocking gate
+    `attempts` DEFAULTS TO 1, and that is a considered difference from `common.sh:_gh_probe`, which always tries three times. Retrying an unauthenticated call three times with backoff costs six seconds to learn something the first attempt already said. A caller in a merge-blocking gate
     passes `attempts=3` and gets exactly `_gh_probe`'s behaviour; `sleep` is
     injectable so a test can assert the schedule without spending it.
     """
@@ -443,16 +369,10 @@ def version(env: dict[str, str] | None = None) -> str:
 def auth_state(env: dict[str, str] | None = None) -> str:
     """Tri-state: authenticated, unauthenticated, or unknown.
 
-    THREE VALUES, NOT A BOOLEAN, for the reason `gitx.is_ancestor` gives about
-    ancestry: a probe that could not run is not an answer of "no". `gh` absent,
-    or a timeout, or an exit this module cannot classify, all mean the question
-    was not answered -- and a caller that treats "unknown" as "unauthenticated"
-    will tell a human to log in when the real problem is that gh is not
+    THREE VALUES, NOT A BOOLEAN, for the reason `gitx.is_ancestor` gives about ancestry: a probe that could not run is not an answer of "no". `gh` absent, or a timeout, or an exit this module cannot classify, all mean the question was not answered -- and a caller that treats "unknown" as "unauthenticated" will tell a human to log in when the real problem is that gh is not
     installed.
 
-    `gh auth status` exits 1 with "You are not logged into any GitHub hosts"
-    (measured 2026-09-06), which classifies as unauthenticated through the
-    stderr markers rather than through the exit code.
+    `gh auth status` exits 1 with "You are not logged into any GitHub hosts" (measured 2026-09-06), which classifies as unauthenticated through the stderr markers rather than through the exit code.
     """
     result = gh(["auth", "status"], env=env, timeout=20)
     if result.ok:
@@ -474,14 +394,9 @@ def api_json(
 ) -> object:
     """`gh api <path>`, checked then parsed. Raises rather than returning a default.
 
-    NO `method` ARGUMENT. This is a read, and the absence of the parameter is
-    what keeps it one: a write has to be spelled out through `gh()` at a call
-    site, where a reviewer sees the verb, instead of appearing as one extra
-    keyword on a line that already looked harmless.
+    NO `method` ARGUMENT. This is a read, and the absence of the parameter is what keeps it one: a write has to be spelled out through `gh()` at a call site, where a reviewer sees the verb, instead of appearing as one extra keyword on a line that already looked harmless.
 
-    `--paginate` WITH `--jq` IS THE COMBINATION THAT DOES NOT PRODUCE ONE JSON
-    DOCUMENT: gh concatenates each page's jq output, so the result is a stream of
-    values rather than an array, and `json.loads` on it fails. It is refused here
+    `--paginate` WITH `--jq` IS THE COMBINATION THAT DOES NOT PRODUCE ONE JSON DOCUMENT: gh concatenates each page's jq output, so the result is a stream of values rather than an array, and `json.loads` on it fails. It is refused here
     with a sentence rather than left to surface as a confusing parse error.
     """
     if paginate and jq is not None:
@@ -512,12 +427,8 @@ def pr_list(
 ) -> list[dict]:
     """Pull requests as dicts. RAISES on a failed call; [] means genuinely none.
 
-    The return type carries the whole rule: there is no value of this function
-    that means "I could not ask". `.claude/rediacc_hooks/guards/block_second_open_pr.py:64-72`
-    reaches the same conclusion in bash and says why -- "An unreadable list is
-    not evidence that the list is empty" -- and fails closed. A Python caller
-    gets that for free here, because the alternative to catching the exception is
-    propagating it, not ignoring it.
+    The return type carries the whole rule: there is no value of this function that means "I could not ask". `.claude/rediacc_hooks/guards/block_second_open_pr.py:64-72` reaches the same conclusion in bash and says why -- "An unreadable list is not evidence that the list is empty" -- and fails closed. A Python caller gets that for free here, because the alternative to catching the
+    exception is propagating it, not ignoring it.
     """
     if not fields:
         raise ValueError("pr_list needs at least one --json field; gh rejects an empty set")
@@ -541,9 +452,7 @@ def pr_head_refs(
     """Every PR's head branch name. Raises on a failed call.
 
     `state="all"` IS THE DEFAULT HERE AND IT IS THE WHOLE POINT. A merged PR's
-    branch is deleted, so `git branch -r` cannot see the name it consumed -- the
-    guard at block_nonstandard_branch_name.py:227-229 says so in as many words.
-    Only the PR list remembers.
+    branch is deleted, so `git branch -r` cannot see the name it consumed -- the guard at block_nonstandard_branch_name.py:227-229 says so in as many words. Only the PR list remembers.
     """
     rows = pr_list(
         repo=repo,
@@ -568,14 +477,9 @@ def branch_indexes(
 ) -> set[int]:
     """The N's already used by `MMDD-N` branches for `day`. TRAP 2, with the failure kept.
 
-    A SET, and an empty set is a real answer that only ever means "no branch for
-    this day yet". The failure arrives as an exception. That is the entire
-    difference from the shell pipeline this replaces, and the difference is worth
-    a whole function because the pipeline's two outcomes are byte-identical.
+    A SET, and an empty set is a real answer that only ever means "no branch for this day yet". The failure arrives as an exception. That is the entire difference from the shell pipeline this replaces, and the difference is worth a whole function because the pipeline's two outcomes are byte-identical.
 
-    `day` is validated. `branch_indexes("0826-1")` -- passing a branch where a day
-    belongs -- would otherwise match nothing and answer "no branches today", which
-    is the same wrong answer by a different route.
+    `day` is validated. `branch_indexes("0826-1")` -- passing a branch where a day belongs -- would otherwise match nothing and answer "no branches today", which is the same wrong answer by a different route.
     """
     if not _DAY_RE.match(day):
         raise ValueError("day must be MMDD, four digits (got %r)" % day)
@@ -604,8 +508,7 @@ def next_branch_name(
 ) -> str:
     """`MMDD-N` with N one past the highest already used. Raises if gh cannot answer.
 
-    Never returns `MMDD-0` and never returns a name it could not verify. Both of
-    those are the 2026-08-26 duplicate in different clothes.
+    Never returns `MMDD-0` and never returns a name it could not verify. Both of those are the 2026-08-26 duplicate in different clothes.
     """
     used = branch_indexes(day, repo=repo, limit=limit, env=env, attempts=attempts, sleep=sleep)
     return "%s-%d" % (day, (max(used) if used else 0) + 1)
@@ -622,8 +525,7 @@ def secret_names(
     """The NAMES of the configured secrets. Never their values -- see `secret_value`.
 
     Sorted, so two enumerations are comparable; `check_bws_map.py` compares
-    exactly this kind of set and a caller diffing git's order against a Python
-    set would see churn that is not there.
+    exactly this kind of set and a caller diffing git's order against a Python set would see churn that is not there.
     """
     if (org is None) == (repo is None):
         raise ValueError("secret_names needs exactly one of org= or repo=")
@@ -643,18 +545,10 @@ def secret_names(
 def secret_value(name: str) -> str:
     """ALWAYS RAISES. A GitHub secret's value cannot be read back, by design.
 
-    This function exists so that reaching for it produces the REASON rather than
-    an AttributeError, because the last time somebody in this repository needed a
-    write-only secret locally they went looking for an endpoint that would serve
-    it, found a URL that answered 404, and piped the answer into a build:
-    `ACCOUNT_ED25519_PUBLIC_KEY` ended up empty (with `curl -f`) or holding the
-    404's HTML body (without it), the build succeeded either way, and every
-    production-signed licence failed as `invalid_signature`
-    (docs/dev-environments.md:102-110, scripts/gates/check-external-links.ts:174-186).
+    This function exists so that reaching for it produces the REASON rather than an AttributeError, because the last time somebody in this repository needed a write-only secret locally they went looking for an endpoint that would serve it, found a URL that answered 404, and piped the answer into a build: `ACCOUNT_ED25519_PUBLIC_KEY` ended up empty (with `curl -f`) or holding the
+    404's HTML body (without it), the build succeeded either way, and every production-signed licence failed as `invalid_signature` (docs/dev-environments.md:102-110, scripts/gates/check-external-links.ts:174-186).
 
-    THE ANSWER IS NOT A DIFFERENT URL. There is no live endpoint, and
-    `.ci/scripts/quality/check_bws_map.py:69-73` records the mirror image on the
-    write side: `gh secret set` cannot re-supply a value it is forbidden to read.
+    THE ANSWER IS NOT A DIFFERENT URL. There is no live endpoint, and `.ci/scripts/quality/check_bws_map.py:69-73` records the mirror image on the write side: `gh secret set` cannot re-supply a value it is forbidden to read.
     CI references the secret directly as `${{ secrets.NAME }}`; locally the value
     is pasted by the operator, from the password store, once.
     """
@@ -674,9 +568,7 @@ def secret_value(name: str) -> str:
 def main(argv: list[str]) -> int:
     """Verbs for shell callers. A FAILURE IS A NON-ZERO EXIT WITH STDERR, never empty stdout.
 
-    That is the contract the pipeline in block_nonstandard_branch_name.py cannot
-    offer: `python3 -m rediacc_ci.core.ghx next-branch-name 0826` either prints a
-    name and exits 0, or prints nothing on stdout, the reason on stderr, and
+    That is the contract the pipeline in block_nonstandard_branch_name.py cannot offer: `python3 -m rediacc_ci.core.ghx next-branch-name 0826` either prints a name and exits 0, or prints nothing on stdout, the reason on stderr, and
     exits non-zero. `name="$(...)" || handle-it` then works, and `set -o pipefail`
     is not required for it to work.
     """

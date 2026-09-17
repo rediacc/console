@@ -1,36 +1,17 @@
 """Port of `.ci/scripts/test/gates/test-dead-bash.sh`.
 
-Subject: `scripts/gates/check-dead-bash.ts`, the detector for unreferenced shell
-scripts and uncalled shell functions.
+Subject: `scripts/gates/check-dead-bash.ts`, the detector for unreferenced shell scripts and uncalled shell functions.
 
-PROVABLE BOTH WAYS OR NOT AT ALL. The detector must fire on planted dead code AND
-must stay silent on the two discovery mechanisms that make a naive version
-useless -- glob expansion and dynamic dispatch. A naive detector reports 54
-orphan files in this repo, about 85% of them false, and a gate that noisy is a
-gate that gets suppressed.
+PROVABLE BOTH WAYS OR NOT AT ALL. The detector must fire on planted dead code AND must stay silent on the two discovery mechanisms that make a naive version useless -- glob expansion and dynamic dispatch. A naive detector reports 54 orphan files in this repo, about 85% of them false, and a gate that noisy is a gate that gets suppressed.
 
-THE REAL-TREE HALF LIVES IN `check:ci-dead-bash`, NOT HERE, and the twin records
-why (changed 2026-09-06): it used to open with a full-repository scan that
-`check:ci-dead-bash` already performs as its own first-class manifest gate, so
-the real-tree scan executed TWICE per `npm run ci` -- measured at 246s and 239s
+THE REAL-TREE HALF LIVES IN `check:ci-dead-bash`, NOT HERE, and the twin records why (changed 2026-09-06): it used to open with a full-repository scan that `check:ci-dead-bash` already performs as its own first-class manifest gate, so the real-tree scan executed TWICE per `npm run ci` -- measured at 246s and 239s
 for the two long-lived processes. What replaced it is
-`test_real_tree_scan_is_delegated`, which asserts the delegate still EXISTS and
-is still scheduled. Deleting that assertion is how the coverage would actually be
-lost, so it fails this gate rather than being left to a comment.
+`test_real_tree_scan_is_delegated`, which asserts the delegate still EXISTS and is still scheduled. Deleting that assertion is how the coverage would actually be lost, so it fails this gate rather than being left to a comment.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Two of its cases read the real
-`package.json` and the real `scripts/ci-runner/manifest.ts` -- the lock records
-`reads: ["tree:repo"]` for `gate-test:dead-bash` -- and `real_tree_admission` in
-`test_twin_parity.py` refuses a twin in that set that does not declare
-`REAL_TREE_TWIN`. Nothing here WRITES a tracked file: every fixture lives under a
-temp dir reached through `DEAD_BASH_ROOT`, because the working tree routinely
-holds other sessions' uncommitted work.
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Two of its cases read the real `package.json` and the real `scripts/ci-runner/manifest.ts` -- the lock records `reads: ["tree:repo"]` for `gate-test:dead-bash` -- and `real_tree_admission` in `test_twin_parity.py` refuses a twin in that set that does not declare `REAL_TREE_TWIN`. Nothing here WRITES a tracked file: every fixture lives
+under a temp dir reached through `DEAD_BASH_ROOT`, because the working tree routinely holds other sessions' uncommitted work.
 
-`delegation_verdict` IS A PURE FUNCTION TAKING BOTH REGISTRIES AS ARGUMENTS, and
-that is the same seam the twin cut for the same reason: the control below drives
-the IDENTICAL code path against four doctored registries rather than against a
-lookalike reimplementation of it. A control that re-derives the answer proves
-only that the control agrees with itself.
+`delegation_verdict` IS A PURE FUNCTION TAKING BOTH REGISTRIES AS ARGUMENTS, and that is the same seam the twin cut for the same reason: the control below drives the IDENTICAL code path against four doctored registries rather than against a lookalike reimplementation of it. A control that re-derives the answer proves only that the control agrees with itself.
 """
 
 import json
@@ -59,10 +40,7 @@ def delegation_verdict(
 ) -> str | None:
     """None when the real-tree scan is still registered, else the reason it is not.
 
-    A clause-by-clause transcription of the twin's shell function, in its order.
-    Each clause names a DIFFERENT way the delegate can vanish, and the control
-    asserts each one is caught FOR ITS OWN REASON: a control that fires for the
-    wrong reason keeps firing after the defect it names is fixed.
+    A clause-by-clause transcription of the twin's shell function, in its order. Each clause names a DIFFERENT way the delegate can vanish, and the control asserts each one is caught FOR ITS OWN REASON: a control that fires for the wrong reason keeps firing after the defect it names is fixed.
     """
     pkg = DEFAULT_PACKAGE_JSON if package_json is None else package_json
     man = DEFAULT_MANIFEST if manifest is None else manifest
@@ -105,9 +83,7 @@ def delegation_verdict(
 def manifest_entry(manifest: pathlib.Path, key: str) -> str | None:
     """The manifest block for `key`, bounded by its own two-space closing brace.
 
-    BOUNDED BY THE BRACE and not by a fixed line count, which is the twin's awk
-    program: a `grep -A <n>` window either misses a reordered field or bleeds into
-    the NEXT entry and reads its `gate: true` as this one's.
+    BOUNDED BY THE BRACE and not by a fixed line count, which is the twin's awk program: a `grep -A <n>` window either misses a reordered field or bleeds into the NEXT entry and reads its `gate: true` as this one's.
     """
     needle = "id: '%s'," % key
     out: list[str] = []
@@ -169,10 +145,7 @@ def test_real_tree_scan_is_delegated(gate):
 def test_delegation_assertion_fires(gate):
     """CONTROL, in the file's own both-ways style.
 
-    An assertion that cannot fail is worth what no assertion is worth, and "the
-    delegate quietly vanished" looks exactly like "the delegate ran and passed".
-    Four planted defects, each of which must be caught, and each of which must be
-    caught FOR ITS OWN REASON.
+    An assertion that cannot fail is worth what no assertion is worth, and "the delegate quietly vanished" looks exactly like "the delegate ran and passed". Four planted defects, each of which must be caught, and each of which must be caught FOR ITS OWN REASON.
     """
     pkg_text = DEFAULT_PACKAGE_JSON.read_text(encoding="utf-8")
     man_text = DEFAULT_MANIFEST.read_text(encoding="utf-8")
@@ -237,9 +210,7 @@ def test_delegation_assertion_fires(gate):
 def _flip_gate_false(gate, source: str) -> str:
     """`gate: true` -> `gate: false` inside the delegate's entry ONLY.
 
-    Bounded by the entry's own closing brace for the same reason
-    `manifest_entry` is: an unbounded replace would flip a neighbouring gate and
-    the control would then be measuring the wrong entry.
+    Bounded by the entry's own closing brace for the same reason `manifest_entry` is: an unbounded replace would flip a neighbouring gate and the control would then be measuring the wrong entry.
     """
     out: list[str] = []
     inside = False
@@ -394,15 +365,9 @@ def test_empty_tree_is_vacuous(gate):
 
 def test_the_delegate_key_resolves_to_a_real_npm_script(gate):
     """ADDED BY THE PORT. `delegation_verdict` reads package.json as TEXT, exactly
-    as the twin's grep does, which is what keeps the two sides comparable. Text is
-    not JSON, though: a key inside a comment-like string, or a duplicated
-    `scripts` block, would satisfy the grep and not the runtime. This reads the
-    same file through a JSON parser and requires the two answers to agree.
+    as the twin's grep does, which is what keeps the two sides comparable. Text is not JSON, though: a key inside a comment-like string, or a duplicated `scripts` block, would satisfy the grep and not the runtime. This reads the same file through a JSON parser and requires the two answers to agree.
 
-    A manifest id is NOT an npm script, and this repo has paid for that
-    confusion: `npm run --silent <id-that-is-not-a-key>` exits 1 with zero bytes
-    on both streams, which is indistinguishable from a gate failing for a real
-    reason.
+    A manifest id is NOT an npm script, and this repo has paid for that confusion: `npm run --silent <id-that-is-not-a-key>` exits 1 with zero bytes on both streams, which is indistinguishable from a gate failing for a real reason.
     """
     data = json.loads(DEFAULT_PACKAGE_JSON.read_text(encoding="utf-8"))
     scripts = data.get("scripts") or {}

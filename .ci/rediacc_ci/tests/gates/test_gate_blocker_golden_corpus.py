@@ -1,20 +1,11 @@
 """Port of `.ci/scripts/test/gates/test-blocker-golden-corpus.sh`.
 
-THREE-WAY GOLDEN CORPUS for the BLOCKER quality validator. The same rule ("a
-BLOCKER reason must be substantive") is implemented three times in this tree:
-`scripts/lib/blocker-validator.ts`, `.ci/scripts/lib/blocker-validator.sh`, and
-the drift-locked vendored subset at `.ci/breakpoint/lib/breakpoint-blocker.sh`.
-The corpus is the RECORD of what all three answer today, including the five cases
-where the vendored subset deliberately diverges.
+THREE-WAY GOLDEN CORPUS for the BLOCKER quality validator. The same rule ("a BLOCKER reason must be substantive") is implemented three times in this tree: `scripts/lib/blocker-validator.ts`, `.ci/scripts/lib/blocker-validator.sh`, and the drift-locked vendored subset at `.ci/breakpoint/lib/breakpoint-blocker.sh`. The corpus is the RECORD of what all three answer today, including
+the five cases where the vendored subset deliberately diverges.
 
-THE CORPUS TEXT IS THE TWIN'S, BYTE FOR BYTE, including the seven `real-*` rows
-that are VERBATIM BLOCKER reasons from the live allowlists. A corpus of invented
-strings proves the validator agrees about strings nobody writes.
+THE CORPUS TEXT IS THE TWIN'S, BYTE FOR BYTE, including the seven `real-*` rows that are VERBATIM BLOCKER reasons from the live allowlists. A corpus of invented strings proves the validator agrees about strings nobody writes.
 
-THE VENDORED COPY IS NEVER WRITTEN. Every perturbation control copies its subject
-into pytest's own `tmp_path` first, and the last case re-asserts that with
-`git status --porcelain` on the vendored path, so a future edit that wrote in
-place is caught here rather than in another repository.
+THE VENDORED COPY IS NEVER WRITTEN. Every perturbation control copies its subject into pytest's own `tmp_path` first, and the last case re-asserts that with `git status --porcelain` on the vendored path, so a future edit that wrote in place is caught here rather than in another repository.
 
 WHERE THIS REIMPLEMENTS awk, sed AND `read_lines`, AND WHY THE ANSWERS AGREE:
 
@@ -32,8 +23,7 @@ WHERE THIS REIMPLEMENTS awk, sed AND `read_lines`, AND WHY THE ANSWERS AGREE:
     anchor is missing rather than writing an unperturbed copy: a control that
     silently did not land is the exact vacuity this file exists to refuse.
 
-NO `xdist_group`. Everything is written into pytest's own `tmp_path`. The only
-tree read that could race is `git status` on one path, which is a read.
+NO `xdist_group`. Everything is written into pytest's own `tmp_path`. The only tree read that could race is `git status` on one path, which is a read.
 """
 
 import pathlib
@@ -219,8 +209,7 @@ def perturb(gate, source: pathlib.Path, target: pathlib.Path, old: str, new: str
     """A perturbation that REFUSES when its anchor is missing.
 
     The twin's TypeScript control checks the shape with a follow-up grep; this
-    applies the same discipline to all three, because a perturbation that did not
-    land makes the control pass for the wrong reason and there is no way to tell
+    applies the same discipline to all three, because a perturbation that did not land makes the control pass for the wrong reason and there is no way to tell
     from the outside.
     """
     text = source.read_text(encoding="utf-8")
@@ -304,12 +293,9 @@ def test_recorded_divergence_is_still_exactly_five(gate):
 def scratch_canonical(gate, scratch: pathlib.Path) -> pathlib.Path:
     """A four-file minimum `rediacc_ci` under <scratch>/.ci, with "tbd" removed.
 
-    THE TWIN'S `scratch_canonical`, function for function. Both clients used to
-    carry their own copy of the banned list, so "drop one phrase" was a sed on
+    THE TWIN'S `scratch_canonical`, function for function. Both clients used to carry their own copy of the banned list, so "drop one phrase" was a sed on
     each file; they are CLIENTS now, and a sed on the bash mirror would perturb
-    nothing while still looking like a control. The phrase is dropped from the
-    CANONICAL instead, and the assertion is that the clients FOLLOW, which is a
-    strictly stronger claim: it proves the delegation is live.
+    nothing while still looking like a control. The phrase is dropped from the CANONICAL instead, and the assertion is that the clients FOLLOW, which is a strictly stronger claim: it proves the delegation is live.
     """
     root = paths.repo_root()
     core = scratch / "canonical" / ".ci" / "rediacc_ci" / "core"
@@ -381,11 +367,7 @@ def test_perturbing_the_canonical_is_followed_by_bash(gate, tmp_path):
 def test_perturbing_the_typescript_normaliser_is_caught(gate, tmp_path):
     """THE ONE DECISION STILL WRITTEN IN TYPESCRIPT.
 
-    The client renders from the canonical's templates and matches against the
-    canonical's tables, but it lowercases and trims the reason itself, because
-    doing that in a subprocess would cost one interpreter start per entry. That
-    step needs its own control: without it the normalised '  TBD  ' case would
-    stop being normalised and nothing above would notice.
+    The client renders from the canonical's templates and matches against the canonical's tables, but it lowercases and trims the reason itself, because doing that in a subprocess would cost one interpreter start per entry. That step needs its own control: without it the normalised ' TBD ' case would stop being normalised and nothing above would notice.
     """
     require_inputs(gate)
     reasons = write_reasons(tmp_path)

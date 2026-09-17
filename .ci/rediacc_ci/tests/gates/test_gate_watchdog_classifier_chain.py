@@ -2,23 +2,16 @@
 
 The failure-classifier PROVIDER CHAIN in `.ci/scripts/ci/watchdog-monitor.cjs`.
 
-WHAT THIS IS FOR. The watchdog's verdict decides whether to spend a retry, which
-is roughly 500 machine-minutes. There is a three-tier chain:
+WHAT THIS IS FOR. The watchdog's verdict decides whether to spend a retry, which is roughly 500 machine-minutes. There is a three-tier chain:
 
   1. Cloudflare / Workers AI
   2. Anthropic / Claude
   3. the known-flaky allowlist
 
-Tier 3 is NOT a classifier. It is a safety net that cannot tell a real break in
-an E2E job from a flake in one, and before tier 2 existed every failure reached
-it, because tier 1 has been returning HTTP 402 continuously. So the property
-under test is an ORDERING property across providers, and the thing most worth
-pinning is that a provider which does not answer is SKIPPED rather than believed.
+Tier 3 is NOT a classifier. It is a safety net that cannot tell a real break in an E2E job from a flake in one, and before tier 2 existed every failure reached it, because tier 1 has been returning HTTP 402 continuously. So the property under test is an ORDERING property across providers, and the thing most worth pinning is that a provider which does not answer is SKIPPED rather
+than believed.
 
-WHY NOT A UNIT TEST. The chain lives inside monitor()'s closure, and the claim is
-about what gets CALLED, not just what gets returned. So this drives the REAL
-monitor() with a mocked GitHub client and a mocked global.fetch, then asserts on
-the sequence of URLs actually requested.
+WHY NOT A UNIT TEST. The chain lives inside monitor()'s closure, and the claim is about what gets CALLED, not just what gets returned. So this drives the REAL monitor() with a mocked GitHub client and a mocked global.fetch, then asserts on the sequence of URLs actually requested.
 
 Both directions matter throughout:
   - Too eager: tier 2 gets called even when tier 1 already answered, paying twice
@@ -26,9 +19,7 @@ Both directions matter throughout:
   - Too lazy: tier 1 declining ends the chain, so tier 2 never runs and the
     allowlist decides after all, which is the bug this change removes.
 
-The runs happen with cwd at the repo root because the classifier prompt is read
-by relative path. Nothing is written to the tree: the harness lives in `tmp_path`
-and no network call leaves the process, because `global.fetch` is replaced.
+The runs happen with cwd at the repo root because the classifier prompt is read by relative path. Nothing is written to the tree: the harness lives in `tmp_path` and no network call leaves the process, because `global.fetch` is replaced.
 """
 
 import pathlib
@@ -296,10 +287,7 @@ def test_provider_order_is_declared_not_incidental(gate):
     """The order is a cost decision (cheapest capable first), so it is pinned
     against the source rather than left to whichever function was defined first.
 
-    Anchored on the CALL, not on the model name. This assertion used to grep for
-    a literal model string, which coupled an ordering test to a display string
-    and is exactly why the label could go stale unnoticed. The call target is the
-    tier's real identity and cannot drift with the model.
+    Anchored on the CALL, not on the model name. This assertion used to grep for a literal model string, which coupled an ordering test to a display string and is exactly why the label could go stale unnoticed. The call target is the tier's real identity and cannot drift with the model.
     """
     lines = subject(gate).read_text(encoding="utf-8").splitlines()
     gate.assert_contains(
@@ -321,15 +309,10 @@ def test_provider_order_is_declared_not_incidental(gate):
 
 def test_tier1_label_is_derived_from_the_model_it_calls(gate):
     """THE ROT THIS PREVENTS, observed on watchdog run 30541558539: the log said
-    "[AI] verdict from cloudflare/deepseek-v4-pro" while the request actually went
-    to /ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast. The label is the only
-    record of which model produced a verdict that decides whether to spend ~500
-    machine-minutes on a retry, and the 402 that broke this tier was diagnosed BY
-    MODEL IDENTITY, so a label that lies sends the next investigation to the wrong
-    provider.
+    "[AI] verdict from cloudflare/deepseek-v4-pro" while the request actually went to /ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast. The label is the only record of which model produced a verdict that decides whether to spend ~500 machine-minutes on a retry, and the 402 that broke this tier was diagnosed BY MODEL IDENTITY, so a label that lies sends the next investigation to the
+    wrong provider.
 
-    Asserting the SHAPE (interpolated from AI_MODEL) rather than the current model
-    string, because pinning the string would rebuild the same trap.
+    Asserting the SHAPE (interpolated from AI_MODEL) rather than the current model string, because pinning the string would rebuild the same trap.
     """
     text = subject(gate).read_text(encoding="utf-8")
     entry = next((ln for ln in text.splitlines() if "call: callCloudflareClassifier" in ln), "")
@@ -347,10 +330,7 @@ def test_tier1_label_is_derived_from_the_model_it_calls(gate):
 
 def test_declining_tier_reports_why_not_just_the_status(gate, tmp_path):
     """REGRESSION. Both tiers went dark in production simultaneously and the run
-    log said only "HTTP 402" and "HTTP 400". Those are different problems with
-    different fixes (a quota versus a malformed request), and neither status alone
-    says which. Worse, "both tiers declined" is indistinguishable from "both tiers
-    are unconfigured" when the reason is missing, so the chain looks absent rather
+    log said only "HTTP 402" and "HTTP 400". Those are different problems with different fixes (a quota versus a malformed request), and neither status alone says which. Worse, "both tiers declined" is indistinguishable from "both tiers are unconfigured" when the reason is missing, so the chain looks absent rather
     than broken and nobody goes looking."""
     out = run_chain_full(gate, tmp_path, "http402", "http402")
 

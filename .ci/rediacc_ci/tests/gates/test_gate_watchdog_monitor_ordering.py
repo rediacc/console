@@ -2,27 +2,16 @@
 
 CHECK 6 of `check-workflow-gates.sh` had never been proven able to fail.
 
-WHY IT NEEDS A TEST. CHECK 6 is the rule that keeps the watchdog watching: no
-step ahead of "Monitor jobs and cancel on failure" may be able to stop the job.
-It was written after run 33704079162 reported "failure" having monitored NOTHING,
-and until this file its only evidence of working was that it was green -- which
-is also exactly what it looks like when its anchor moves, its allowlist swallows
-the case, or its verdict is computed off the wrong list.
+WHY IT NEEDS A TEST. CHECK 6 is the rule that keeps the watchdog watching: no step ahead of "Monitor jobs and cancel on failure" may be able to stop the job. It was written after run 33704079162 reported "failure" having monitored NOTHING, and until this file its only evidence of working was that it was green -- which is also exactly what it looks like when its anchor moves, its
+allowlist swallows the case, or its verdict is computed off the wrong list.
 
-It also got LOOSER in one direction and STRICTER in another: a step carrying BOTH
-`continue-on-error: true` and a small `timeout-minutes` is admitted regardless of
-its name, because those two properties are what the name was ever standing in
+It also got LOOSER in one direction and STRICTER in another: a step carrying BOTH `continue-on-error: true` and a small `timeout-minutes` is admitted regardless of its name, because those two properties are what the name was ever standing in
 for. A rule with a new door in it is precisely the rule that needs a test walking
 through the door and then trying the wall beside it.
 
-HOW. The checker is EXTRACTED FROM THE LIVE GATE rather than restated here. A
-restated copy keeps passing after the original changes, which is the failure this
-file exists to detect.
+HOW. The checker is EXTRACTED FROM THE LIVE GATE rather than restated here. A restated copy keeps passing after the original changes, which is the failure this file exists to detect.
 
-THE TWIN IS A FLAT SCRIPT, so the port chooses the split: one test per plant,
-plus the extraction, plus one the twin does not have -- a check that the plant
-really lands AHEAD of the monitor step, because a plant that landed after it
-would make every refusal below fire for the wrong reason.
+THE TWIN IS A FLAT SCRIPT, so the port chooses the split: one test per plant, plus the extraction, plus one the twin does not have -- a check that the plant really lands AHEAD of the monitor step, because a plant that landed after it would make every refusal below fire for the wrong reason.
 """
 
 import re
@@ -129,9 +118,7 @@ def test_check6_is_extracted_from_the_live_gate(gate):
 def test_the_plant_lands_ahead_of_the_monitor(gate):
     """PORT-ONLY ANTI-VACUITY on the instrument, not the subject.
 
-    Every refusal below is "a step ahead of the monitor is refused". If the plant
-    landed AFTER the monitor, CHECK 6 would still refuse it for a different rule
-    and each case would read green having proved the wrong thing.
+    Every refusal below is "a step ahead of the monitor is refused". If the plant landed AFTER the monitor, CHECK 6 would still refuse it for a different rule and each case would read green having proved the wrong thing.
     """
     planted = plant(gate, "run: exit 1").split("\n")
     where_plant = next(i for i, ln in enumerate(planted) if "name: Planted step" in ln)

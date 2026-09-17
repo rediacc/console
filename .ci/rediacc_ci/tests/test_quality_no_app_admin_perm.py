@@ -1,18 +1,11 @@
 """`rediacc_ci.quality.no_app_admin_perm` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-no-app-admin-perm.sh` over
-a fixture, with stdout and stderr captured SEPARATELY, and its bytes are compared
-against the port's over the same fixture. The committed ledger
-(`.ci/shadow/w7p2-appadmin.observations.jsonl`) records the same comparison over
+A bash child runs the REAL `.ci/scripts/quality/check-no-app-admin-perm.sh` over a fixture, with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's over the same fixture. The committed ledger (`.ci/shadow/w7p2-appadmin.observations.jsonl`) records the same comparison over
 K distinct trees; these cases are what catch a regression on the day someone
 edits either file.
 
-ORDER IS COMPARED AS A SET, DELIBERATELY. GNU grep walks with fts in readdir
-order and this module walks sorted, so the two agree about WHICH lines and not
-about the order of them. `shadow-gate.ts` compares a multiset for the same
-reason. Comparing the sequence would fail on a machine whose directory happened
-to be laid out differently, which is a difference in the filesystem rather than
-in either implementation.
+ORDER IS COMPARED AS A SET, DELIBERATELY. GNU grep walks with fts in readdir order and this module walks sorted, so the two agree about WHICH lines and not about the order of them. `shadow-gate.ts` compares a multiset for the same reason. Comparing the sequence would fail on a machine whose directory happened to be laid out differently, which is a difference in the filesystem
+rather than in either implementation.
 """
 
 import pathlib
@@ -106,20 +99,12 @@ def test_no_workflows_at_all_is_the_declared_divergence(tmp_path: pathlib.Path) 
     """The divergence CLOSED, and this test now pins that both sides refuse.
 
     It used to assert `old_exit == 0`: the twin's `grep ... 2>/dev/null` could not
-    tell "no workflow asks for it" from "there are no workflows", and reported the
-    clean tree while the port refused. That was the one place the port was
-    stronger, recorded as a decision rather than a bug.
+    tell "no workflow asks for it" from "there are no workflows", and reported the clean tree while the port refused. That was the one place the port was stronger, recorded as a decision rather than a bug.
 
-    THE TWIN WAS THEN FIXED, in this same programme, because failing open is a
-    worse defect than a divergence: `grep` exits 2 on a missing operand WHILE
-    PRINTING its hits, so `if grep` was false and the gate printed the violation
-    and then declared the tree clean. The hardened twin checks its scan
-    directories first and reads grep's exit as three outcomes, so it now refuses
-    exactly where the port does.
+    THE TWIN WAS THEN FIXED, in this same programme, because failing open is a worse defect than a divergence: `grep` exits 2 on a missing operand WHILE PRINTING its hits, so `if grep` was false and the gate printed the violation and then declared the tree clean. The hardened twin checks its scan directories first and reads grep's exit as three outcomes, so it now refuses exactly
+    where the port does.
 
-    Kept rather than deleted, and inverted rather than loosened: a test that
-    asserted a divergence must assert its ABSENCE once it closes, or nothing
-    notices if the twin ever fails open again.
+    Kept rather than deleted, and inverted rather than loosened: a test that asserted a divergence must assert its ABSENCE once it closes, or nothing notices if the twin ever fails open again.
     """
     root = tmp_path / "bare"
     (root / ".ci/scripts/quality").mkdir(parents=True)

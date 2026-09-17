@@ -1,7 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-ci-complete-tiers.sh`.
 
-Both-ways test for the tier logic in `.ci/scripts/ci/assert-ci-complete.sh`,
-added with the pointer-bump fast path (2026-07-22).
+Both-ways test for the tier logic in `.ci/scripts/ci/assert-ci-complete.sh`, added with the pointer-bump fast path (2026-07-22).
 
 The contract under test:
   - Normally, BUILD_DOCKER / BUILD_DOCKER_FAST / BUILD_CLI are HARD-required: a
@@ -15,18 +14,12 @@ Both directions matter: too strict and every fast-path run is red (the fast path
 is dead on arrival); too lax and a skipped build reads as green on a normal run,
 which is the exact DAG-breakage the hard tier exists to catch.
 
-THE ONE PLACE THE PORT IS DELIBERATELY NOT A TRANSLATION. The twin hand-types the
-21 `RESULT_*` names of its all-green baseline, with a comment on three of them
-recording that each was added only after a job landed and the fixture caught the
-omission by accident. That is a hand-typed floor, and the failure it invites is
-the quiet one: a job added to the subject and NOT to the fixture is simply never
-exercised, and the suite stays green having stopped covering it.
+THE ONE PLACE THE PORT IS DELIBERATELY NOT A TRANSLATION. The twin hand-types the 21 `RESULT_*` names of its all-green baseline, with a comment on three of them recording that each was added only after a job landed and the fixture caught the omission by accident. That is a hand-typed floor, and the failure it invites is the quiet one: a job added to the subject and NOT to the
+fixture is simply never exercised, and the suite stays green having stopped covering it.
 
-So the port DERIVES the baseline from `HARD_REQUIRED` and `SOFT_REQUIRED` in the
-subject itself, refuses an empty parse, and keeps a case whose whole job is to
+So the port DERIVES the baseline from `HARD_REQUIRED` and `SOFT_REQUIRED` in the subject itself, refuses an empty parse, and keeps a case whose whole job is to
 assert the two agree. Measured 2026-09-07: 5 hard + 16 soft = 21, exactly the
-twin's 21. If they ever disagree the port reds and the twin does not, and the
-parity driver will say so -- which is the report a reader wants, not a silence.
+twin's 21. If they ever disagree the port reds and the twin does not, and the parity driver will say so -- which is the report a reader wants, not a silence.
 """
 
 import os
@@ -130,9 +123,7 @@ def baseline(gate) -> dict[str, str]:
 def run_assert(gate, expected: int, name: str, overrides: dict | None = None, drop=()) -> None:
     """The twin's `run_assert`: green baseline plus overrides, under `env -i`.
 
-    `env -i` IS the point and not tidiness. An unset `RESULT_*` must read as
-    `<unset>` and fail, and this process inherits a real CI environment in CI,
-    where those very names are exported.
+    `env -i` IS the point and not tidiness. An unset `RESULT_*` must read as `<unset>` and fail, and this process inherits a real CI environment in CI, where those very names are exported.
     """
     env = baseline(gate)
     for key in drop:

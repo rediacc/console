@@ -7,33 +7,19 @@ WHY, measured 2026-09-01. `Build (Docker) / Devcontainer (amd64)` died on:
     https://go.dev/dl/go1.26.6.linux-amd64.tar.gz
 
 go.dev was briefly unwell; probed minutes later the same URL answered 302. Nothing was
-wrong with the image, the pin or the checksum -- a ten-minute multi-arch build that gates
-every PR simply had no second attempt. Two apt steps in that file carried hand-rolled
-five-attempt retry loops while EIGHT other fetches had none, so the asymmetry, not the
-outage, was the defect.
+wrong with the image, the pin or the checksum -- a ten-minute multi-arch build that gates every PR simply had no second attempt. Two apt steps in that file carried hand-rolled five-attempt retry loops while EIGHT other fetches had none, so the asymmetry, not the outage, was the defect.
 
-Fixed by hand across nine call sites. This gate is what stops a tenth landing bare, which
-is the whole i18n lesson: the thing was fixed and nothing prevented its return.
+Fixed by hand across nine call sites. This gate is what stops a tenth landing bare, which is the whole i18n lesson: the thing was fixed and nothing prevented its return.
 
-NOT COVERED BY check_dockerfile_mirror_resilience.py, and that is deliberate on both
-sides. Its own docstring says it checks that apt is not pinned to a single mirror and
+NOT COVERED BY check_dockerfile_mirror_resilience.py, and that is deliberate on both sides. Its own docstring says it checks that apt is not pinned to a single mirror and
 explicitly NOT "a particular retry count". Retrying a dead mirror is its problem; not
 retrying a live one that hiccuped is this one's.
 
-SCOPED TO THE SHAPE, NOT THE FILE. The sibling gate learned this the hard way -- shipped
-Dockerfile-only, then the same defect took down CI from a shell script hours later. So
-this reuses its `tracked_files()` (Dockerfiles AND shell scripts) and its `run_blocks()`
-rather than re-deriving either.
+SCOPED TO THE SHAPE, NOT THE FILE. The sibling gate learned this the hard way -- shipped Dockerfile-only, then the same defect took down CI from a shell script hours later. So this reuses its `tracked_files()` (Dockerfiles AND shell scripts) and its `run_blocks()` rather than re-deriving either.
 
-WHAT COUNTS AS RETRIED is deliberately generous, because the goal is a second attempt, not
-a particular spelling: curl's own `--retry`, wget's `--tries`, a shared ARG carrying them,
-or an enclosing hand-rolled loop. Any of those is a pass.
+WHAT COUNTS AS RETRIED is deliberately generous, because the goal is a second attempt, not a particular spelling: curl's own `--retry`, wget's `--tries`, a shared ARG carrying them, or an enclosing hand-rolled loop. Any of those is a pass.
 
----- gate ----
-step: Fetch retry
-needs: none
-lane: quality-code
----- end gate ----
+---- gate ---- step: Fetch retry needs: none lane: quality-code ---- end gate ----
 """
 
 import os
@@ -76,17 +62,11 @@ LOCAL = re.compile(r"https?://(127\.0\.0\.1|localhost|\[::1\])")
 def in_scope(path):
     """Image builds only: Dockerfiles, and the scripts that run inside one.
 
-    SCOPED AFTER MEASURING, and the number is why. Once the shell parser above was fixed,
-    the unrestricted corpus reported **119 unretried fetches across 69 files** -- a wall,
-    not a gate, and this repo already has the scar from shipping one of those.
+    SCOPED AFTER MEASURING, and the number is why. Once the shell parser above was fixed, the unrestricted corpus reported **119 unretried fetches across 69 files** -- a wall, not a gate, and this repo already has the scar from shipping one of those.
 
-    The defect that was actually paid for is narrower and worth stating exactly: a fetch
-    inside an IMAGE BUILD, where one upstream hiccup discards ten minutes of work that
-    every PR waits on. A `curl` in a local dev helper or a CI diagnostic retries by being
-    re-run by a human who is already watching. Same command, different cost.
+    The defect that was actually paid for is narrower and worth stating exactly: a fetch inside an IMAGE BUILD, where one upstream hiccup discards ten minutes of work that every PR waits on. A `curl` in a local dev helper or a CI diagnostic retries by being re-run by a human who is already watching. Same command, different cost.
 
-    In this scope the tree had FOUR offences, all in `.devcontainer/` shell scripts that
-    the Dockerfile-only parser could not see. All four were fixed rather than baselined.
+    In this scope the tree had FOUR offences, all in `.devcontainer/` shell scripts that the Dockerfile-only parser could not see. All four were fixed rather than baselined.
     Widening later is a decision with its own evidence; it is not this gate's job to
     smuggle it in.
     """
@@ -100,12 +80,8 @@ def in_scope(path):
 def logical_blocks(text, is_dockerfile):
     """The units a fetch can live in, with backslash continuations joined.
 
-    A SHELL SCRIPT HAS NO `RUN` INSTRUCTIONS, and that is how this gate shipped vacuous.
-    It reused `run_blocks` -- a Dockerfile parser -- for a corpus that is mostly shell,
-    and measured after the fact: 25 blocks for `.devcontainer/Dockerfile`, **0** for
-    `.devcontainer/download-extensions.sh`. The gate printed "551 file(s) scanned" while
-    every shell script contributed nothing, so three real unretried fetches under
-    `.devcontainer/` sat inside its own corpus and it called the tree clean.
+    A SHELL SCRIPT HAS NO `RUN` INSTRUCTIONS, and that is how this gate shipped vacuous. It reused `run_blocks` -- a Dockerfile parser -- for a corpus that is mostly shell, and measured after the fact: 25 blocks for `.devcontainer/Dockerfile`, **0** for `.devcontainer/download-extensions.sh`. The gate printed "551 file(s) scanned" while every shell script contributed nothing, so
+    three real unretried fetches under `.devcontainer/` sat inside its own corpus and it called the tree clean.
 
     That is the exact vacuity this repo gates against, in a gate written to catch a class.
     Reusing the corpus was right; reusing a parser that cannot read it was not.

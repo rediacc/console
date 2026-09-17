@@ -1,11 +1,9 @@
 """A script that INSTALLS a Go tool must be able to FIND it.
 
 Ported from `.ci/scripts/quality/check-go-tool-path.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live side by side until a
-committed differential ledger says otherwise.
+see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
 
-WHY THE TWIN EXISTS, carried over from its header because the archaeology is the
-half of a gate that cannot be recovered from the code:
+WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
   `go install` writes to $(go env GOPATH)/bin, and nothing puts that directory on
   PATH. A script that installs a tool and then invokes it by bare name therefore
@@ -37,71 +35,36 @@ half of a gate that cannot be recovered from the code:
   CI and its own copy of this problem, already fixed at its root in
   .ci/scripts/lib/common.sh; this gate keeps console from growing a fifth.
 
-The twin's gate header also records why it is registered with `emit: false`, and
-that reason is about WIRING rather than about go tools, so it stays with the bash
-file: the step "runs before this lane's `- id: setup` step, so its hand-written
-step carries no `steps.setup.outcome` guard. Emitting it into the region would
-move it below that guard and skip it whenever setup fails." A port inherits no
-registration, so nothing here re-states that as a live suppression.
+The twin's gate header also records why it is registered with `emit: false`, and that reason is about WIRING rather than about go tools, so it stays with the bash file: the step "runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails." A
+port inherits no registration, so nothing here re-states that as a live suppression.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE PATHSPEC IS `.ci/*.sh`, NOT `.ci/**/*.sh`, AND THAT IS LOAD-BEARING. The
-twin says so in six lines and they are carried here because the wrong spelling
-is the one a reader would "correct" to: git's default (non-`:(glob)`) wildmatch
-lets `*` cross `/`, so `.ci/*.sh` already reaches every depth, while
-`.ci/**/*.sh` demands a literal slash after `.ci/` and therefore MISSES every
-script sitting directly under `.ci/`. Measured 2026-09-06 when .ci/bootstrap.sh
-became the first file in that class: the two spellings return the same 453
-tracked files, and only the second one drops bootstrap.sh.
+THE PATHSPEC IS `.ci/*.sh`, NOT `.ci/**/*.sh`, AND THAT IS LOAD-BEARING. The twin says so in six lines and they are carried here because the wrong spelling is the one a reader would "correct" to: git's default (non-`:(glob)`) wildmatch lets `*` cross `/`, so `.ci/*.sh` already reaches every depth, while `.ci/**/*.sh` demands a literal slash after `.ci/` and therefore MISSES every
+script sitting directly under `.ci/`. Measured 2026-09-06 when .ci/bootstrap.sh became the first file in that class: the two spellings return the same 453 tracked files, and only the second one drops bootstrap.sh.
 
-THE FLOOR IS 50 AND IT IS COUNTED FROM THE TRACKED LIST, not from the
-filesystem, so a stray untracked file cannot prop the number up. Below it the
-gate FAILS rather than passing quietly: a glob that silently matches nothing
-would make it green forever while checking not one line.
+THE FLOOR IS 50 AND IT IS COUNTED FROM THE TRACKED LIST, not from the filesystem, so a stray untracked file cannot prop the number up. Below it the gate FAILS rather than passing quietly: a glob that silently matches nothing would make it green forever while checking not one line.
 
-`grep -n` NUMBERS THE FILTERED STREAM, NOT THE FILE, and the port reproduces
-that faithfully. The twin pipes the body through `grep -vE '^[[:space:]]*#'`
-BEFORE `grep -nE`, so every comment line is removed and the numbers that reach
-the operator count only the surviving lines. In a file with a 40-line header the
-reported number is off by 40. That is a real defect in the twin -- the numbers
-look like file line numbers and are not -- and it is REPORTED rather than
-repaired here, because repairing it would change the finding text and the port's
-job is to keep the verdict.
+`grep -n` NUMBERS THE FILTERED STREAM, NOT THE FILE, and the port reproduces that faithfully. The twin pipes the body through `grep -vE '^[[:space:]]*#'` BEFORE `grep -nE`, so every comment line is removed and the numbers that reach the operator count only the surviving lines. In a file with a 40-line header the reported number is off by 40. That is a real defect in the twin -- the
+numbers look like file line numbers and are not -- and it is REPORTED rather than repaired here, because repairing it would change the finding text and the port's job is to keep the verdict.
 
 THE COLOUR IS UNCONDITIONAL IN THE TWIN, unlike every sibling gate. `pass` and
 `fail` here `printf` raw `\033[0;31m` and `\033[0;32m` with no `[ -t 1 ]` test,
-no `NO_COLOR` test and no `CI` test, so this gate writes escape sequences into
-every CI log and every pipe. check-git-op-conditionals.sh and
-check-host-toolchain-coverage.sh, written by the same hand, both gate their
+no `NO_COLOR` test and no `CI` test, so this gate writes escape sequences into every CI log and every pipe. check-git-op-conditionals.sh and check-host-toolchain-coverage.sh, written by the same hand, both gate their
 colour on `[ -t 1 ] && [ -z "${NO_COLOR:-}" ]`. Carried unchanged and reported;
-`scripts/lib/shadow-gate.ts` strips ANSI before comparing, so this costs the
-differential nothing and costs a human reading a log a little.
+`scripts/lib/shadow-gate.ts` strips ANSI before comparing, so this costs the differential nothing and costs a human reading a log a little.
 
-FINDINGS GO TO STDOUT IN THE TWIN. `fail()` has no `>&2`, so every finding, the
-floor refusal and the final `N finding(s).` line all land on stdout. That is the
-opposite of `rediacc_ci.log`'s rule (messages on stderr, stdout is data), so the
-port uses `print()` for exactly these lines and says so at each call site rather
-than silently moving a stream. A stream swap is precisely the 2026-09-06
-emit-advisory incident, and moving one during a port is how it would happen
-again.
+FINDINGS GO TO STDOUT IN THE TWIN. `fail()` has no `>&2`, so every finding, the floor refusal and the final `N finding(s).` line all land on stdout. That is the opposite of `rediacc_ci.log`'s rule (messages on stderr, stdout is data), so the port uses `print()` for exactly these lines and says so at each call site rather than silently moving a stream. A stream swap is precisely the
+2026-09-06 emit-advisory incident, and moving one during a port is how it would happen again.
 
 `[[:space:]]` IS NOT `\\s`. POSIX space is exactly [ \\t\\n\\v\\f\\r]; Python's
-`\\s` on a str pattern additionally matches U+00A0 and friends, so a line
-indented with a non-breaking space would be seen by the port and not by grep.
-The class is written out rather than abbreviated. grep also works line by line,
-so the `\\n` member can never participate in a match -- stated because its
-presence in the class otherwise looks like a bug when read next to `re.MULTILINE`.
+`\\s` on a str pattern additionally matches U+00A0 and friends, so a line indented with a non-breaking space would be seen by the port and not by grep. The class is written out rather than abbreviated. grep also works line by line, so the `\\n` member can never participate in a match -- stated because its presence in the class otherwise looks like a bug when read next to
+`re.MULTILINE`.
 
-WHAT THIS GATE STILL CANNOT SEE, unchanged by the port and worth knowing before
-anyone trusts a green: the analysis is per-FILE, so a GOBIN mention anywhere in
-a file clears every bare invocation in it, including ones on a code path the
-GOBIN line never runs on. That is the twin's deliberate trade -- the install and
-the invocation are usually several lines apart, and a PATH fix anywhere above the
-call site is what actually makes it work -- and widening it would flag correct
-code, which is how a gate gets suppressed.
+WHAT THIS GATE STILL CANNOT SEE, unchanged by the port and worth knowing before anyone trusts a green: the analysis is per-FILE, so a GOBIN mention anywhere in a file clears every bare invocation in it, including ones on a code path the GOBIN line never runs on. That is the twin's deliberate trade -- the install and the invocation are usually several lines apart, and a PATH fix
+anywhere above the call site is what actually makes it work -- and widening it would flag correct code, which is how a gate gets suppressed.
 """
 
 import os
@@ -151,8 +114,7 @@ _QUALIFIED = re.compile(r"[/\"'$](%s)" % GO_TOOLS)
 def installs_go_tool(body: str) -> bool:
     """`grep -qE '(^|[[:space:];&|])go[[:space:]]+install[[:space:]]'`.
 
-    Exported so a test can drive it without a file on disk. Line-oriented,
-    because grep is: a match must sit entirely inside one physical line.
+    Exported so a test can drive it without a file on disk. Line-oriented, because grep is: a match must sit entirely inside one physical line.
     """
     return any(_INSTALLS.search(line) for line in body.split("\n"))
 
@@ -165,14 +127,10 @@ def has_path_fix(body: str) -> bool:
 def bare_invocations(body: str) -> list[str]:
     """The twin's `hits`: `<n>:<line>` for each bare invocation, numbers and all.
 
-    THE NUMBERS COUNT THE FILTERED STREAM. Comment lines are removed first and
-    the numbering starts after that, so these are NOT file line numbers. See the
+    THE NUMBERS COUNT THE FILTERED STREAM. Comment lines are removed first and the numbering starts after that, so these are NOT file line numbers. See the
     port notes; this is a defect being preserved, not introduced.
 
-    `printf '%s' "$body"` in the twin drops the trailing newline, so a file
-    ending in `\\n` does not contribute a final empty line. `split("\\n")` would
-    produce one, and an empty string matches neither pattern, so the two agree
-    without a guard -- stated because the absence of one looks like an oversight.
+    `printf '%s' "$body"` in the twin drops the trailing newline, so a file ending in `\\n` does not contribute a final empty line. `split("\\n")` would produce one, and an empty string matches neither pattern, so the two agree without a guard -- stated because the absence of one looks like an oversight.
     """
     out: list[str] = []
     number = 0
@@ -188,15 +146,13 @@ def bare_invocations(body: str) -> list[str]:
 def scan_file(path: pathlib.Path, label: str) -> list[str]:
     """The twin's `scan_file`, as the lines it would print. Empty means clean.
 
-    Returned rather than printed so `main` owns every stream decision in one
-    place and a test can assert on the decision without capturing anything. The
+    Returned rather than printed so `main` owns every stream decision in one place and a test can assert on the decision without capturing anything. The
     first line is the finding header; the rest are its continuation, which is
     what `scripts/lib/shadow-gate.ts` folds into the same finding.
 
     An unreadable file is NOT a finding. The twin's `cat "$f" 2>/dev/null ||
     return 0` swallows it, and a port that turned it into an error would report
-    findings the twin never reports -- on this repo's own tree, where a path in
-    the index but deleted from disk is an ordinary state.
+    findings the twin never reports -- on this repo's own tree, where a path in the index but deleted from disk is an ordinary state.
     """
     try:
         body = path.read_text(encoding="utf-8", errors="replace")
@@ -229,15 +185,9 @@ def scan_file(path: pathlib.Path, label: str) -> list[str]:
 def tracked_shell_files(root: pathlib.Path) -> list[str]:
     """`git ls-files '.ci/*.sh' 'scripts/*.sh'`, in git's order.
 
-    NOT `rediacc_ci.gitx.ls_files`, which sorts and de-duplicates. The twin
-    prints findings in git's own order and the differential compares a multiset,
-    so the order costs nothing -- but the COUNT would differ if two pathspecs
-    ever overlapped, and the floor is computed from that count. Same command,
-    same number.
+    NOT `rediacc_ci.gitx.ls_files`, which sorts and de-duplicates. The twin prints findings in git's own order and the differential compares a multiset, so the order costs nothing -- but the COUNT would differ if two pathspecs ever overlapped, and the floor is computed from that count. Same command, same number.
 
-    A git failure yields an empty list, which the floor then refuses. That is the
-    right direction: "git said nothing" and "the tree has no shell scripts" are
-    both states in which this gate has verified nothing.
+    A git failure yields an empty list, which the floor then refuses. That is the right direction: "git said nothing" and "the tree has no shell scripts" are both states in which this gate has verified nothing.
     """
     proc = subprocess.run(
         ["git", "ls-files", *PATHSPECS],
@@ -254,8 +204,7 @@ def tracked_shell_files(root: pathlib.Path) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 violation.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments
-    at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -357,11 +306,7 @@ _CONTROL_CASES = (
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will
-    happily flag a correct tree, and the mirrors below are the half that proves
-    it does not. The whole-gate cases build a REAL git repository, because the
-    floor is computed from `git ls-files` and a fixture that skipped git would
-    exercise a code path no caller ever takes.
+    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct tree, and the mirrors below are the half that proves it does not. The whole-gate cases build a REAL git repository, because the floor is computed from `git ls-files` and a fixture that skipped git would exercise a code path no caller ever takes.
     """
     ctl = Controls("go-tool-path", floor=24, verbose=True)
 
@@ -479,8 +424,7 @@ def selftest() -> int:
 def _git_init(root: pathlib.Path) -> None:
     """A real repository, because the scan is `git ls-files` and nothing else.
 
-    `-c` rather than a written config: the identity is needed only for the commit
-    this never makes, and `init` alone leaves an index `ls-files` can read.
+    `-c` rather than a written config: the identity is needed only for the commit this never makes, and `init` alone leaves an index `ls-files` can read.
     """
     subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
 
@@ -492,9 +436,7 @@ def _git_add(root: pathlib.Path) -> None:
 def _run(root: pathlib.Path) -> int:
     """Drive `main` against a fixture root through the package-wide override.
 
-    REDIACC_CI_ROOT is the one name for the whole program (see
-    `rediacc_ci.paths`), set through the mapping the module reads rather than
-    through a private seam invented for the test.
+    REDIACC_CI_ROOT is the one name for the whole program (see `rediacc_ci.paths`), set through the mapping the module reads rather than through a private seam invented for the test.
     """
     saved = os.environ.get(paths.ROOT_ENV)
     os.environ[paths.ROOT_ENV] = str(root)

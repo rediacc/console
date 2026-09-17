@@ -1,13 +1,8 @@
 """Differential: `rediacc_ci.autopilot.restore_trusted_config` against its twin
 `.ci/scripts/autopilot/restore-trusted-config.sh`.
 
-THE FILESYSTEM IS THE OUTPUT, so comparing streams and exit codes would test
-the announcements rather than the work. Every case here runs a SEQUENCE of
-invocations against a fixture tree built identically for both sides, and then
-compares three whole trees -- `checkout`, `snapshot`, `quarantine` -- entry by
-entry: type, permission bits, symlink TARGET, and file bytes. A port that
-restored the right content with the executable bit missing would leave a hook
-that cannot run, and only the mode comparison catches it.
+THE FILESYSTEM IS THE OUTPUT, so comparing streams and exit codes would test the announcements rather than the work. Every case here runs a SEQUENCE of invocations against a fixture tree built identically for both sides, and then compares three whole trees -- `checkout`, `snapshot`, `quarantine` -- entry by entry: type, permission bits, symlink TARGET, and file bytes. A port that
+restored the right content with the executable bit missing would leave a hook that cannot run, and only the mode comparison catches it.
 
 THE FIXTURE IS DELIBERATELY AWKWARD, because the easy tree proves nothing:
 
@@ -20,18 +15,13 @@ THE FIXTURE IS DELIBERATELY AWKWARD, because the easy tree proves nothing:
   CLAUDE.local.md                   ABSENT, so the branch-introduced arm of
                                     `assert` has something to find
 
-`assert` IS THE CONTROL AND IT IS DRIVEN IN BOTH DIRECTIONS. A control that has
-only ever been seen passing is not a control: `test_assert_passes_on_an_
-untouched_checkout` and the four tamper cases below (content, a new file, a
-directory replaced by a file, a file replaced by a symlink) are the pair.
+`assert` IS THE CONTROL AND IT IS DRIVEN IN BOTH DIRECTIONS. A control that has only ever been seen passing is not a control: `test_assert_passes_on_an_ untouched_checkout` and the four tamper cases below (content, a new file, a directory replaced by a file, a file replaced by a symlink) are the pair.
 
 NO STUBS AT ALL. This subject makes no network call and runs no `gh`; the one
 thing it shells out to is `diff`, which both sides use.
 
 K=5 LEDGER: `.ci/shadow/w7p6-restore-trusted-config.observations.jsonl`,
-recorded in a disposable scratch git repository outside this checkout, since
-`shadow-gate.ts --record` refuses a dirty tree and this checkout is never
-clean.
+recorded in a disposable scratch git repository outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean.
 """
 
 from __future__ import annotations
@@ -121,14 +111,9 @@ def _run(subject: pathlib.Path, base: pathlib.Path, argv: list[str]):
 def _sides(name: str, steps: list[list[str]], *, tamper=None, mask=None):
     """Run the same SEQUENCE against a fresh fixture per side and compare.
 
-    `tamper` is called with the base path after the step whose index it is
-    keyed on, so a case can snapshot, edit the checkout, and assert.
+    `tamper` is called with the base path after the step whose index it is keyed on, so a case can snapshot, edit the checkout, and assert.
 
-    `mask` normalises stderr before comparison, for the ONE case where the
-    diagnostic belongs to the implementation (coreutils' `cp` against Python's
-    `OSError`) rather than to the script. Everything else about that case --
-    exit code, stdout, and all three trees -- is still compared exactly, which
-    is what makes the masking a narrowing rather than a hole.
+    `mask` normalises stderr before comparison, for the ONE case where the diagnostic belongs to the implementation (coreutils' `cp` against Python's `OSError`) rather than to the script. Everything else about that case -- exit code, stdout, and all three trees -- is still compared exactly, which is what makes the masking a narrowing rather than a hole.
     """
     with tempfile.TemporaryDirectory() as td:
         results = []
@@ -296,16 +281,10 @@ def test_a_dangling_symlink_over_a_protected_directory_aborts_the_restore() -> N
 
     `[[ -e ]]` is false for a dangling symlink, so `.claude -> /nonexistent`
     is NOT quarantined; the restore loop then tries to copy the snapshot's
-    `.claude` DIRECTORY onto that link and fails. Exit 1, and the checkout is
-    left PARTLY QUARANTINED: the entries the loop had already moved
-    (`.claude.json`, `.gitmodules`, `CLAUDE.md`, `.husky`) are in the
-    quarantine and nothing has been restored. That is fail-closed rather than
-    fail-safe -- the step fails, so the workflow stops -- but the intermediate
-    state is real and is asserted here rather than left to be discovered.
+    `.claude` DIRECTORY onto that link and fails. Exit 1, and the checkout is left PARTLY QUARANTINED: the entries the loop had already moved (`.claude.json`, `.gitmodules`, `CLAUDE.md`, `.husky`) are in the quarantine and nothing has been restored. That is fail-closed rather than fail-safe -- the step fails, so the workflow stops -- but the intermediate state is real and is
+    asserted here rather than left to be discovered.
 
-    STDERR IS MASKED FOR THIS CASE ONLY: the diagnostic is coreutils' on one
-    side ("cannot overwrite non-directory") and Python's errno on the other.
-    Exit code, stdout and all three trees are compared exactly.
+    STDERR IS MASKED FOR THIS CASE ONLY: the diagnostic is coreutils' on one side ("cannot overwrite non-directory") and Python's errno on the other. Exit code, stdout and all three trees are compared exactly.
     """
 
     def tamper(index: int, base: pathlib.Path) -> None:
@@ -387,15 +366,10 @@ def test_defect_snapshotting_twice_poisons_the_baseline() -> None:
     """A DEFECT IN THE TWIN, reproduced by the port and pinned here so a fix
     turns this red rather than sliding past.
 
-    `cp -a SRC DEST` puts SRC INSIDE DEST when DEST is an existing directory,
-    so a second `snapshot` into the same directory writes `snapshot/.claude/
-    .claude`. `assert` then compares that against a checkout nobody touched,
-    finds an extra entry, and reports drift on `.claude` and `.husky` -- every
-    DIRECTORY-valued protected entry. The file-valued ones are overwritten and
-    stay correct, which is what makes the failure look selective and puzzling.
+    `cp -a SRC DEST` puts SRC INSIDE DEST when DEST is an existing directory, so a second `snapshot` into the same directory writes `snapshot/.claude/ .claude`. `assert` then compares that against a checkout nobody touched, finds an extra entry, and reports drift on `.claude` and `.husky` -- every DIRECTORY-valued protected entry. The file-valued ones are overwritten and stay
+    correct, which is what makes the failure look selective and puzzling.
 
-    Any re-run of the snapshot step reds the control with a diagnosis that
-    blames the branch.
+    Any re-run of the snapshot step reds the control with a diagnosis that blames the branch.
     """
     steps, trees = _sides("twice", [SNAPSHOT, ASSERT, SNAPSHOT, ASSERT])
     assert [s[0] for s in steps] == [0, 0, 0, 1], [s[0] for s in steps]

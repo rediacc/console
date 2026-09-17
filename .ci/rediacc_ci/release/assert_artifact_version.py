@@ -1,16 +1,10 @@
 """Port of `.ci/scripts/release/assert-artifact-version.sh`.
 
-Asserts that the CI run CD is about to promote actually BUILT the version CD is
-about to publish. `cd-v2.yml:216` runs it in the init job, before any registry
-mutation, and the twin's header records what it is for: a stale `ci_run_id`
-whose artifacts were built against a previous tag would be retagged with the
-new version label, and only Docker's runtime `--version` check would notice,
-hours later. It happened -- "the second published 1.2.16 binaries as 1.2.17".
+Asserts that the CI run CD is about to promote actually BUILT the version CD is about to publish. `cd-v2.yml:216` runs it in the init job, before any registry mutation, and the twin's header records what it is for: a stale `ci_run_id` whose artifacts were built against a previous tag would be retagged with the new version label, and only Docker's runtime `--version` check would
+notice, hours later. It happened -- "the second published 1.2.16 binaries as 1.2.17".
 
 IT DOES NOT COMPUTE THE VERSION, AND THAT IS THE FIRST THING TO KNOW ABOUT IT.
-The twin does NO "latest tag + bump" arithmetic of its own: `VERSION` arrives
-already computed, from `resolve-version.sh --bump-type` by way of the init
-job's outputs, and this script's whole contribution is the COMPARISON. So the
+The twin does NO "latest tag + bump" arithmetic of its own: `VERSION` arrives already computed, from `resolve-version.sh --bump-type` by way of the init job's outputs, and this script's whole contribution is the COMPARISON. So the
 version-arithmetic edge cases live upstream; the edge cases that live HERE are
 in the extraction and the comparison, and they are these four:
 
@@ -43,31 +37,18 @@ in the extraction and the comparison, and they are these four:
      the literal text `1.20` (jq 1.8 preserves the source spelling of a number
      literal), so it does NOT equal `1.2` -- driven, both sides, 2026-09-10.
 
-ABSENCE IS A HARD FAILURE, DELIBERATELY, and the twin's HARDENED 2026-08-07
-note is the reason. This check spent its whole life taking the artifact
-not-found branch -- nothing produced an artifact named `cli-manifest` -- and
-warning-and-exiting-0, so it verified nothing for months while looking green.
-`cd-stage.yml` now uploads it (`cd-stage.yml:288` names the artifact for this
+ABSENCE IS A HARD FAILURE, DELIBERATELY, and the twin's HARDENED 2026-08-07 note is the reason. This check spent its whole life taking the artifact not-found branch -- nothing produced an artifact named `cli-manifest` -- and warning-and-exiting-0, so it verified nothing for months while looking green. `cd-stage.yml` now uploads it (`cd-stage.yml:288` names the artifact for this
 script), so absence means something is genuinely wrong.
 
-THE DOWNLOAD DIRECTORY IS A FIXED PATH AND IS NEVER CLEARED, which is the
-twin's behaviour and is carried across unchanged: `mkdir -p
-/tmp/cd-artifact-check` and nothing else. A second invocation in the same
-job with an artifact that has no `manifest.json` would read the FIRST
-invocation's leftover file and compare against a stale version. Not reachable
+THE DOWNLOAD DIRECTORY IS A FIXED PATH AND IS NEVER CLEARED, which is the twin's behaviour and is carried across unchanged: `mkdir -p /tmp/cd-artifact-check` and nothing else. A second invocation in the same job with an artifact that has no `manifest.json` would read the FIRST invocation's leftover file and compare against a stale version. Not reachable
 from `cd-v2.yml`, which runs this once per job on a fresh runner, and reported
-rather than silently corrected here, because correcting it in the port alone
-would make the port and the twin disagree on the one path a differential
-cannot then prove.
+rather than silently corrected here, because correcting it in the port alone would make the port and the twin disagree on the one path a differential cannot then prove.
 
-NOT A REGISTERED GATE: `grep -n assert-artifact-version package.json` matches
-nothing. It is a workflow `run:` step (`cd-v2.yml:216`), so there is no
-`check:ci-*` id to cite and no manifest entry to keep in step.
+NOT A REGISTERED GATE: `grep -n assert-artifact-version package.json` matches nothing. It is a workflow `run:` step (`cd-v2.yml:216`), so there is no `check:ci-*` id to cite and no manifest entry to keep in step.
 
 REWORDED, NOT BYTE-IDENTICAL, on the three missing-variable paths only: the
 twin's `${VAR:?msg}` diagnostic carries a bash line number, same reasoning as
-every other port in this package. Every `::error::` and `::notice::` line is
-byte-identical, because those are the lines a CD log actually shows.
+every other port in this package. Every `::error::` and `::notice::` line is byte-identical, because those are the lines a CD log actually shows.
 
 K=5 LEDGER: `.ci/shadow/w7p6-assert-artifact-version.observations.jsonl`.
 """

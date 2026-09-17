@@ -1,31 +1,15 @@
 """Differential: `rediacc_ci.deploy.deploy_proxy` against its twin
 `.ci/scripts/deploy/deploy-proxy.sh`.
 
-RECORDING FAKE `npm` AND `npx` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT.
-NOTHING IS BUILT HERE. The twin's first real act is two `npm run build
---workspace` runs from the repo root (:33-34), and the fake `npm` is what stops
-them: a differential that let those run would compile `@rediacc/shared` and
-`@rediacc/cli` for real, twice per case. The root is made to agree across the
-two implementations exactly as in the two sibling differentials -- a COPY of
-`common.sh` inside `tmp_path` for the bash side, `$REDIACC_CI_ROOT` for the
-port -- and `test_the_copied_twin_is_the_real_twin` keeps the copy honest.
+RECORDING FAKE `npm` AND `npx` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT. NOTHING IS BUILT HERE. The twin's first real act is two `npm run build --workspace` runs from the repo root (:33-34), and the fake `npm` is what stops them: a differential that let those run would compile `@rediacc/shared` and `@rediacc/cli` for real, twice per case. The root is made to agree across the two
+implementations exactly as in the two sibling differentials -- a COPY of `common.sh` inside `tmp_path` for the bash side, `$REDIACC_CI_ROOT` for the port -- and `test_the_copied_twin_is_the_real_twin` keeps the copy honest.
 
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one
-real run" clause and says in as many words that the mocked parity ledger is a
-separate, achievable piece of work. This is that piece. The twin is additionally
-MANUAL ONLY by its own header: no workflow invokes it, and CI drives only the
-`--dry-run` path.
+`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece. The twin is additionally MANUAL ONLY by its own header: no workflow invokes it, and CI drives only the `--dry-run` path.
 
-WHAT THE STREAMS CANNOT SHOW, and therefore what the call log is compared for:
-which region reached wrangler (none: the region is printed and never passed),
-whether the dry run really passed `--outdir`, and whether the two builds ran
-BEFORE the worker directory was looked at. All three are recorded rather than
-inferred.
+WHAT THE STREAMS CANNOT SHOW, and therefore what the call log is compared for: which region reached wrangler (none: the region is printed and never passed), whether the dry run really passed `--outdir`, and whether the two builds ran BEFORE the worker directory was looked at. All three are recorded rather than inferred.
 
 TWO DEFECTS IN THE TWIN ARE PINNED, NOT FIXED:
-`test_the_build_runs_before_the_directory_is_checked` shows both builds
-completing and only then a failed `cd`, and
-`test_the_account_id_is_documented_and_never_checked` shows a run succeeding
+`test_the_build_runs_before_the_directory_is_checked` shows both builds completing and only then a failed `cd`, and `test_the_account_id_is_documented_and_never_checked` shows a run succeeding
 with `CLOUDFLARE_ACCOUNT_ID` entirely absent, against a header that lists it as
 required.
 """
@@ -101,8 +85,7 @@ DEPLOY_STDERR = (
 def _fixture_root(tmp_path: pathlib.Path, *, worker: str = "dir") -> pathlib.Path:
     """A repo root holding a COPY of the twin, its library, and `workers/proxy`.
 
-    `worker` is `dir` for the normal case, `file` for the "Not a directory" one,
-    and `absent` for the missing-directory defect.
+    `worker` is `dir` for the normal case, `file` for the "Not a directory" one, and `absent` for the missing-directory defect.
     """
     root = tmp_path / "root"
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
@@ -368,8 +351,7 @@ def test_the_account_id_is_documented_and_never_checked(tmp_path: pathlib.Path) 
 
 def test_the_build_runs_before_the_directory_is_checked(tmp_path: pathlib.Path) -> None:
     """DEFECT, REPRODUCED NOT FIXED. There is no guard on `workers/proxy` (:36),
-    unlike the `-f` checks both siblings do FIRST, so a missing worker directory
-    costs a full CLI build before bash's own `cd` diagnostic ends the run.
+    unlike the `-f` checks both siblings do FIRST, so a missing worker directory costs a full CLI build before bash's own `cd` diagnostic ends the run.
 
     The divergence in that diagnostic is the usual one: bash prefixes it with
     the script path and a line number."""
@@ -460,9 +442,7 @@ def test_the_literals_are_still_the_twins(tmp_path: pathlib.Path) -> None:
 def test_the_deploy_call_still_carries_no_config_flag(tmp_path: pathlib.Path) -> None:
     """THE DIFFERENCE FROM BOTH SIBLINGS, re-derived rather than remembered.
 
-    The twin names `--config` exactly ONCE, and it is inside the closing
-    `log_info` that tells a human what to paste next -- never on a line this
-    script runs. If a `--config` ever appears on the deploy itself, this fails
+    The twin names `--config` exactly ONCE, and it is inside the closing `log_info` that tells a human what to paste next -- never on a line this script runs. If a `--config` ever appears on the deploy itself, this fails
     instead of the port silently deploying a different Worker."""
     del tmp_path
     source = _twin_source()

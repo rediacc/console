@@ -4,25 +4,16 @@
 W7P6 wave 27. The bash twin stays the LIVE registered gate; this module is its
 VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
 `.ci/rediacc_ci/tests/test_security_ci_workflow_invariants.py` and by the K=5
-shadow ledger `.ci/shadow/w7p6-check-ci-workflow-invariants.observations.jsonl`.
-Nothing is repointed at this file. Cutover is a separate, later, driver-only
-step.
+shadow ledger `.ci/shadow/w7p6-check-ci-workflow-invariants.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
-NAMING. `check_` is dropped from the module name to match the closest sibling
-already in this package, `rediacc_ci.security.workflow_gates` (the port of
-`check-workflow-gates.sh`). `check_commands.py` and `rdc_sh_env_check.py` kept
+NAMING. `check_` is dropped from the module name to match the closest sibling already in this package, `rediacc_ci.security.workflow_gates` (the port of `check-workflow-gates.sh`). `check_commands.py` and `rdc_sh_env_check.py` kept
 their prefixes; the package is not internally consistent, so the rule applied
 here is "match the nearest shape", not "match the package".
 
-WHAT THE TWIN DOES, AND HOW MUCH OF IT IS ALREADY PYTHON. 224 lines, of which
-103 (`:66-168`) are the body of a `python3 - <<'PY'` heredoc that parses the
-workflow with PyYAML and prints tab-separated findings on stdout. The bash around it does
-three things and no more: resolve `$WORKFLOW_FILE`, refuse a missing file, and
-translate each finding kind into one long `log_error` sentence. So this port is
-a transcription of the heredoc plus a translation of the ~40-line orchestrator.
+WHAT THE TWIN DOES, AND HOW MUCH OF IT IS ALREADY PYTHON. 224 lines, of which 103 (`:66-168`) are the body of a `python3 - <<'PY'` heredoc that parses the workflow with PyYAML and prints tab-separated findings on stdout. The bash around it does three things and no more: resolve `$WORKFLOW_FILE`, refuse a missing file, and translate each finding kind into one long `log_error`
+sentence. So this port is a transcription of the heredoc plus a translation of the ~40-line orchestrator.
 
-THE SIX INVARIANTS, all read from the PARSED document rather than grepped, so a
-reflowed `if:` or a reordered `with:` map cannot silently unenforce one:
+THE SIX INVARIANTS, all read from the PARSED document rather than grepped, so a reflowed `if:` or a reordered `with:` map cannot silently unenforce one:
 
   1. `channel-as-docker-tag` -- a job passing a channel-derived `docker_tag`
      must refuse an empty channel in its `if:`.
@@ -37,12 +28,9 @@ reflowed `if:` or a reordered `with:` map cannot silently unenforce one:
 
 NO EXTERNAL PROCESS IS INVOLVED, ON EITHER SIDE. The twin shells out to exactly
 one thing, `python3`, and only to run the heredoc that is transcribed below;
-there is no `yq`, no `jq`, no `gh`, no network. That is why the differential
-needs no recording fakes at all and drives both sides over fixture YAML through
-`$WORKFLOW_FILE`, which the twin already exposes for its own gate test.
+there is no `yq`, no `jq`, no `gh`, no network. That is why the differential needs no recording fakes at all and drives both sides over fixture YAML through `$WORKFLOW_FILE`, which the twin already exposes for its own gate test.
 
-PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired.
-Fixing one only HERE would make the differential lie.
+PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired. Fixing one only HERE would make the differential lie.
 
   * THE `python3` PROBE IS KEPT, and it is the one line of the twin that cannot
     literally hold here: `command -v python3 || exit 2` runs before the heredoc,
@@ -71,13 +59,9 @@ Fixing one only HERE would make the differential lie.
     or default`, never `os.environ.get(name, default)`: an exported-empty
     `WORKFLOW_FILE` must fall back, not resolve to the repository root.
 
-ONE NAMED DIVERGENCE THIS PORT ADDS, the same one `workflow_gates` documents:
-`paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin's
+ONE NAMED DIVERGENCE THIS PORT ADDS, the same one `workflow_gates` documents: `paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin's
 `${BASH_SOURCE[0]}/../../..` does not. The differential never sets it, and the
-two files sit at the same depth (`.ci/scripts/security/x.sh` and
-`.ci/rediacc_ci/security/x.py` are both three levels below the root), so a
-fixture that copies both to their real relative paths gets the same answer from
-each.
+two files sit at the same depth (`.ci/scripts/security/x.sh` and `.ci/rediacc_ci/security/x.py` are both three levels below the root), so a fixture that copies both to their real relative paths gets the same answer from each.
 """
 
 from __future__ import annotations
@@ -112,11 +96,7 @@ KINDS = (
 class SetupExit(Exception):  # noqa: N818 - it is a control-flow signal, not an error state
     """The heredoc's `sys.stderr.write(...); sys.exit(2)` pair, as an object.
 
-    Carried rather than raised as SystemExit so `_guarded` can tell a deliberate
-    setup exit from a crash: bash treats them identically (both take the `||`
-    branch and both become exit 1), but the STDERR differs -- a setup exit
-    writes one `SETUP: ...` line and a crash writes a traceback -- and a port
-    that conflated them would print the wrong bytes on one of the two paths.
+    Carried rather than raised as SystemExit so `_guarded` can tell a deliberate setup exit from a crash: bash treats them identically (both take the `||` branch and both become exit 1), but the STDERR differs -- a setup exit writes one `SETUP: ...` line and a crash writes a traceback -- and a port that conflated them would print the wrong bytes on one of the two paths.
     """
 
     def __init__(self, message: str) -> None:
@@ -127,11 +107,9 @@ class SetupExit(Exception):  # noqa: N818 - it is a control-flow signal, not an 
 def load_workflow(path: str) -> dict:
     """`:66-78`: import PyYAML, then parse the file. Both failures are SETUP.
 
-    Returns whatever `yaml.safe_load` returned, which is deliberately NOT
-    narrowed to a dict: the twin passes the raw value straight to
+    Returns whatever `yaml.safe_load` returned, which is deliberately NOT narrowed to a dict: the twin passes the raw value straight to
     `(doc or {}).get("jobs")`, so a scalar or a list crashes with an
-    AttributeError there rather than being rejected here, and that crash is a
-    reproduced behaviour (see the module docstring).
+    AttributeError there rather than being rejected here, and that crash is a reproduced behaviour (see the module docstring).
     """
     yaml = _import_yaml()
     if yaml is None:
@@ -159,9 +137,7 @@ def analyse(doc: object) -> list[tuple[str, str]]:
 
     Exported so the selftest can drive every branch without a subprocess. The
     return value is the tab-separated stdout of the heredoc, split -- one tuple
-    per printed line, IN THE PRINTED ORDER, because the twin's translation loop
-    emits one `log_error` per line in exactly that order and a reordering would
-    be a visible difference.
+    per printed line, IN THE PRINTED ORDER, because the twin's translation loop emits one `log_error` per line in exactly that order and a reordering would be a visible difference.
     """
     out: list[tuple[str, str]] = []
     # A non-mapping document raises here, exactly as the twin's heredoc does;
@@ -241,8 +217,7 @@ def analyse(doc: object) -> list[tuple[str, str]]:
 def message_for(kind: str, name: str, workflow_file: str) -> str | None:
     """`:179-216`, the `case` that turns one finding into one `log_error` line.
 
-    None means the twin's `case` has no arm for that kind, which is a silent
-    skip there and must stay a silent skip here.
+    None means the twin's `case` has no arm for that kind, which is a silent skip there and must stay a silent skip here.
     """
     if kind == "ungated":
         return (
@@ -298,10 +273,7 @@ def message_for(kind: str, name: str, workflow_file: str) -> str | None:
 def _guarded(path: str) -> tuple[list[tuple[str, str]] | None, int]:
     """Run the analysis the way bash runs the heredoc: any failure is rc != 0.
 
-    Returns (findings, rc). rc is 0 on success, 2 for a SETUP exit and 1 for a
-    crash, mirroring the inner Python's own `sys.exit` codes -- the caller then
-    reports `(exit %d)` with that number, which is the only place the 1-vs-2
-    distinction is observable from outside.
+    Returns (findings, rc). rc is 0 on success, 2 for a SETUP exit and 1 for a crash, mirroring the inner Python's own `sys.exit` codes -- the caller then reports `(exit %d)` with that number, which is the only place the 1-vs-2 distinction is observable from outside.
     """
     try:
         doc = load_workflow(path)

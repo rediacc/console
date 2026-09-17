@@ -1,9 +1,6 @@
 """`rdc.sh` stays a wrapper, and the SEA build it delegates answers the same on all three OSes.
 
-WHAT THIS GATE IS FOR. On 2026-09-09 the `--native` SEA build left `rdc.sh` for
-`rediacc_ci.native`: 93 lines out of a 314-line file, including two hand-written
-`case "$(uname ...)"` blocks that `rediacc_ci.core.platform` already owned and cites by
-line. Two things can undo that and neither is visible in a diff review of one file.
+WHAT THIS GATE IS FOR. On 2026-09-09 the `--native` SEA build left `rdc.sh` for `rediacc_ci.native`: 93 lines out of a 314-line file, including two hand-written `case "$(uname ...)"` blocks that `rediacc_ci.core.platform` already owned and cites by line. Two things can undo that and neither is visible in a diff review of one file.
 
   1. THE WRAPPER RE-ABSORBS LOGIC, one reasonable special case at a time, which is the
      same failure `.ci/scripts/test/gates/test-run-sh.sh` section 7 exists to stop for
@@ -16,25 +13,14 @@ line. Two things can undo that and neither is visible in a diff review of one fi
      `rediacc_ci.native.plan()` takes `system` and `machine` as ARGUMENTS, so this gate
      asks all three arms on a Linux box and holds the answers against a literal table.
 
-THE TABLE IS WRITTEN OUT, NOT DERIVED, and that is the whole value of it. Deriving the
-expected paths by calling the same helpers the subject calls would agree with any defect
-in those helpers, which is the tautology this gate would otherwise be. `ARMS` below spells
-`rdc-mac-arm64`, `rdc-win-x64.exe` and `rdc.old.exe` as literals, read off the bash that
-was deleted, so a re-keyed mapping is a MISMATCH rather than a matching pair of wrongs.
+THE TABLE IS WRITTEN OUT, NOT DERIVED, and that is the whole value of it. Deriving the expected paths by calling the same helpers the subject calls would agree with any defect in those helpers, which is the tautology this gate would otherwise be. `ARMS` below spells `rdc-mac-arm64`, `rdc-win-x64.exe` and `rdc.old.exe` as literals, read off the bash that was deleted, so a re-keyed
+mapping is a MISMATCH rather than a matching pair of wrongs.
 
 ANTI-VACUITY. Every probe is a real subprocess and its exit code is checked; a probe that
-could not run is a finding, never a skip. The arm count is asserted against the table's
-own length, so a loop that stopped iterating fails instead of reporting a clean sweep. The
-subject file being absent is a failure, and so is a `rdc.sh` of zero bytes.
+could not run is a finding, never a skip. The arm count is asserted against the table's own length, so a loop that stopped iterating fails instead of reporting a clean sweep. The subject file being absent is a failure, and so is a `rdc.sh` of zero bytes.
 
-THE CONTROL RUNS AGAINST A MUTATED COPY OF THE PACKAGE, not against a mutated copy of the
-gate. `plan()` resolves its root from `native.py`'s own location and this gate points the
-subprocess at the copy with `PYTHONPATH`, so the control exercises the same delegation the
-real run does, over a package whose darwin mapping has been re-keyed. The plant is
-asserted to have landed before its result is believed: a substitution that matched nothing
-would otherwise produce an identical copy, a control that "fires" on unmutated source, and
-a green that means nothing. Both directions are covered, because a differential that
-always reports a mismatch is as useless as one that never does.
+THE CONTROL RUNS AGAINST A MUTATED COPY OF THE PACKAGE, not against a mutated copy of the gate. `plan()` resolves its root from `native.py`'s own location and this gate points the subprocess at the copy with `PYTHONPATH`, so the control exercises the same delegation the real run does, over a package whose darwin mapping has been re-keyed. The plant is asserted to have landed before
+its result is believed: a substitution that matched nothing would otherwise produce an identical copy, a control that "fires" on unmutated source, and a green that means nothing. Both directions are covered, because a differential that always reports a mismatch is as useless as one that never does.
 """
 
 from __future__ import annotations
@@ -88,9 +74,7 @@ PROBE_HOME = "/nonexistent-probe-home"
 def expected_plan(root: str, home: str, arm: tuple[str, str, str, str, str]) -> dict[str, str]:
     """What `--print-plan` must say for one arm, as literals.
 
-    `backup` is spelled `rdc.old<exe>` rather than derived from `dest`, because that is
-    what `getOldBinaryPath()` in `packages/cli/src/utils/platform.ts` looks for and a
-    derivation would agree with a subject that derived it wrongly the same way.
+    `backup` is spelled `rdc.old<exe>` rather than derived from `dest`, because that is what `getOldBinaryPath()` in `packages/cli/src/utils/platform.ts` looks for and a derivation would agree with a subject that derived it wrongly the same way.
     """
     _system, _machine, sea_os, sea_arch, exe = arm
     return {
@@ -106,10 +90,7 @@ def expected_plan(root: str, home: str, arm: tuple[str, str, str, str, str]) -> 
 def probe(ci_dir: str, system: str, machine: str) -> tuple[int, str, str]:
     """Ask one arm, in a real subprocess, against the package under `ci_dir`.
 
-    `ci_dir` is the directory that goes on PYTHONPATH, so pointing it at a COPY is what
-    makes the planted-defect control exercise the real delegation rather than a stub.
-    cwd is `/`: nothing here may depend on the caller's directory, and running from the
-    repo root would hide it if something did.
+    `ci_dir` is the directory that goes on PYTHONPATH, so pointing it at a COPY is what makes the planted-defect control exercise the real delegation rather than a stub. cwd is `/`: nothing here may depend on the caller's directory, and running from the repo root would hide it if something did.
     """
     env = dict(os.environ)
     env["PYTHONPATH"] = ci_dir + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
@@ -139,9 +120,7 @@ def probe(ci_dir: str, system: str, machine: str) -> tuple[int, str, str]:
 def arm_findings(ci_dir: str) -> list[str]:
     """One line per arm whose answer is not the table's. [] when all nine agree.
 
-    A probe that FAILED is a finding naming its stderr, never a skipped arm: an
-    interpreter that cannot import the package would otherwise leave this list empty and
-    the gate would call that a clean sweep.
+    A probe that FAILED is a finding naming its stderr, never a skipped arm: an interpreter that cannot import the package would otherwise leave this list empty and the gate would call that a clean sweep.
     """
     root = str(pathlib.Path(ci_dir).parent)
     out: list[str] = []
@@ -223,11 +202,8 @@ def wrapper_findings(text: str, ceiling: int = CEILING, floor: int = FLOOR) -> l
 def _mutated_copy(ci_dir: str, dest: str) -> str:
     """A copy of the package with darwin's SEA name re-keyed. Returns the copy's `.ci` dir.
 
-    THE PLANT IS ASSERTED BY THE CALLER, and the assertion is not ceremony. This is a
-    pattern substitution: reword the line it targets and it silently produces an identical
-    copy, the control passes against unmutated source, and the green proves nothing. That
-    is the exact shape `check:ci-control-vacuity` refuses in bash, applied here by hand
-    because that gate parses only `check-*.sh`.
+    THE PLANT IS ASSERTED BY THE CALLER, and the assertion is not ceremony. This is a pattern substitution: reword the line it targets and it silently produces an identical copy, the control passes against unmutated source, and the green proves nothing. That is the exact shape `check:ci-control-vacuity` refuses in bash, applied here by hand because that gate parses only
+    `check-*.sh`.
     """
     copied_ci = os.path.join(dest, ".ci")
     os.makedirs(copied_ci, exist_ok=True)

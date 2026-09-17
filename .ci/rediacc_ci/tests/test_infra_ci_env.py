@@ -1,9 +1,7 @@
 """Differential: `rediacc_ci.infra.ci_env` against its twin
 `.ci/scripts/infra/ci-env.sh`.
 
-THE TWIN IS SOURCED, NEVER EXECUTED, so "run both and compare stdout" is not
-the comparison. Sourcing it leaves FOUR observables behind and this file
-compares all four on every case:
+THE TWIN IS SOURCED, NEVER EXECUTED, so "run both and compare stdout" is not the comparison. Sourcing it leaves FOUR observables behind and this file compares all four on every case:
 
   1. the exported environment (`env` after sourcing, versus the port's `env`
      verb), with the four shell-private names dropped from BOTH SIDES by the
@@ -13,23 +11,14 @@ compares all four on every case:
   3. the bytes appended to `$GITHUB_ENV`;
   4. stdout: the `::add-mask::` directives and the three summary lines.
 
-ONE TREE, TWO SEQUENTIAL RUNS, and that is deliberate. `CONSOLE_ROOT` is
-derived from the script's own location on both sides, so giving each side its
-own copy of the tree would make `CI_DOCKER_DIR` and `CI_COMPOSE_FILE`
-legitimately differ and every case would need those two values normalised away.
+ONE TREE, TWO SEQUENTIAL RUNS, and that is deliberate. `CONSOLE_ROOT` is derived from the script's own location on both sides, so giving each side its own copy of the tree would make `CI_DOCKER_DIR` and `CI_COMPOSE_FILE` legitimately differ and every case would need those two values normalised away.
 Sharing one tree makes them identical and keeps the comparison exact; the
 artifacts are captured after each run, before the other side overwrites them.
 
-`node` AND `openssl` ARE RECORDING FAKES ON A PREPENDED PATH, for two reasons
-and only the first is speed. The second is that both real programs are RANDOM:
-a differential against the real ones can only ever compare shapes, and shapes
-are what a port gets right while producing a key that does not verify. With
-canned generators the comparison is byte-exact, and the ARGV the two sides hand
-to `node` -- a 300-character program whose curve name is the only thing that
-varies -- is compared too.
+`node` AND `openssl` ARE RECORDING FAKES ON A PREPENDED PATH, for two reasons and only the first is speed. The second is that both real programs are RANDOM: a differential against the real ones can only ever compare shapes, and shapes are what a port gets right while producing a key that does not verify. With canned generators the comparison is byte-exact, and the ARGV the two
+sides hand to `node` -- a 300-character program whose curve name is the only thing that varies -- is compared too.
 
-THREE TWIN BEHAVIOURS PINNED BY NAME, all measured against the live bash on
-2026-09-13 before the port was written:
+THREE TWIN BEHAVIOURS PINNED BY NAME, all measured against the live bash on 2026-09-13 before the port was written:
 
   * `test_a_failing_openssl_yields_empty_secrets` -- A REAL DEFECT, reported
     and not repaired. Exit 0 with `ACCOUNT_SERVER_API_KEY=` and
@@ -136,9 +125,7 @@ class Side:
 def _tree(base: pathlib.Path) -> pathlib.Path:
     """A checkout-shaped tree holding BOTH implementations at their real depths.
 
-    The depth is what matters: each side computes `CONSOLE_ROOT` from its own
-    file's location, the twin as `<dir>/../../..` and the port as `parents[3]`,
-    and both must land on `base`.
+    The depth is what matters: each side computes `CONSOLE_ROOT` from its own file's location, the twin as `<dir>/../../..` and the port as `parents[3]`, and both must land on `base`.
     """
     (base / ".ci" / "scripts" / "infra").mkdir(parents=True)
     (base / ".ci" / "scripts" / "lib").mkdir(parents=True)
@@ -165,8 +152,7 @@ def _split(stdout: bytes, environ_out: bool):
 
     A dump line is `NAME=value` with a shell-legal NAME; every mask directive
     starts with `:` and every summary line has no `=` before its first space,
-    so the split is unambiguous. The filtering happens HERE, on both sides
-    identically -- never in the port. See the module docstring.
+    so the split is unambiguous. The filtering happens HERE, on both sides identically -- never in the port. See the module docstring.
     """
     chatter: list[str] = []
     found: dict[str, str] = {}
@@ -415,8 +401,7 @@ def test_a_private_key_without_its_public_leaves_the_public_unexported() -> None
 
 def test_a_failing_openssl_yields_empty_secrets() -> None:
     """THE DEFECT, reproduced rather than repaired. Measured against the live
-    twin on 2026-09-13: exit 0, two empty secrets and a stub webhook secret,
-    all three written to the `.env` file and appended to `$GITHUB_ENV`.
+    twin on 2026-09-13: exit 0, two empty secrets and a stub webhook secret, all three written to the `.env` file and appended to `$GITHUB_ENV`.
 
     Two things have to be true at once for `set -e` to miss it: there is no
     `set -o pipefail`, and the three assignments are `export VAR=$(...)`, whose

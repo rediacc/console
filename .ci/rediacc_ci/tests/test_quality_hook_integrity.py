@@ -1,12 +1,7 @@
 """`rediacc_ci.quality.hook_integrity` against the twin's own embedded readers.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-hook-integrity.observations.jsonl` drives the whole gate over
-five distinct trees: a guard on disk the inventory does not list, a baselined
-guard whose file is gone, a guard newly missing both directions, an empty scope
-list, and a harness folding an external count with no minimum. What a ledger row
-cannot isolate is that this gate's three readers were ALREADY Python, embedded as
-heredocs, and every one of them has a documented history of narrowing silently:
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-hook-integrity.observations.jsonl` drives the whole gate over five distinct trees: a guard on disk the inventory does not list, a baselined guard whose file is gone, a guard newly missing both directions, an empty scope list, and a harness folding an external count with no minimum. What a ledger row cannot isolate is
+that this gate's three readers were ALREADY Python, embedded as heredocs, and every one of them has a documented history of narrowing silently:
 
   * `covmap` missed the pre-edit and pre-ask chains entirely for months, and
     counted only literal `check N <guard>` calls, so two well-covered guards sat
@@ -17,9 +12,7 @@ heredocs, and every one of them has a documented history of narrowing silently:
   * `scope_list` is the thing standing between a malformed data file and a gate
     that audits nothing and exits 0.
 
-So all three heredocs are EXTRACTED from the twin and run as subprocesses over
-the same inputs, and compared. That is stronger than any hand-written
-expectation, because it fails when either side changes.
+So all three heredocs are EXTRACTED from the twin and run as subprocesses over the same inputs, and compared. That is stronger than any hand-written expectation, because it fails when either side changes.
 """
 
 import json
@@ -36,11 +29,7 @@ TWIN = paths.from_root(".ci", "scripts", "quality", "check-hook-integrity.sh")
 def _heredoc(marker: str, after: str) -> str:
     """The body of the first `<<'MARKER'` heredoc that follows `after`.
 
-    THE OPENING IS NOT ALWAYS THE END OF ITS LINE. `scope_list` writes
-    `<<'PY' 2>/dev/null`, so anchoring on `<<'PY'\n` skips it and finds
-    `mkspec`'s heredoc instead -- which extracts a real program, runs cleanly,
-    and answers a different question. The first version of this helper did
-    exactly that and the comparison failed as though the twin disagreed.
+    THE OPENING IS NOT ALWAYS THE END OF ITS LINE. `scope_list` writes `<<'PY' 2>/dev/null`, so anchoring on `<<'PY'\n` skips it and finds `mkspec`'s heredoc instead -- which extracts a real program, runs cleanly, and answers a different question. The first version of this helper did exactly that and the comparison failed as though the twin disagreed.
     """
     body = TWIN.read_text(encoding="utf-8")
     anchor = body.index(after)
@@ -111,8 +100,7 @@ def test_covmap_matches_the_twin_with_an_uncovered_guard_and_a_test_file(
 ) -> None:
     """The negative control and the dedicated-test-file rule, in one comparison.
 
-    The uncovered guard is the one that matters: a reader that simply says yes to
-    everything passes every positive case above.
+    The uncovered guard is the one that matters: a reader that simply says yes to everything passes every positive case above.
     """
     hooks = hi.build_fixture_hooks(tmp_path)
     (hooks / "hooks" / "pre-bash" / "block-fixture-uncovered.sh").write_text(
@@ -130,8 +118,7 @@ def test_covmap_matches_the_twin_with_an_uncovered_guard_and_a_test_file(
 def test_covmap_matches_the_twin_on_a_python_ported_guard(tmp_path: pathlib.Path) -> None:
     """`block_ported.py`: hyphen to underscore, which is what a port produces.
 
-    A reader anchored on `block-` inventories it and never asks it for a
-    direction, which is a silent hole opened by a correct port.
+    A reader anchored on `block-` inventories it and never asks it for a direction, which is a silent hole opened by a correct port.
     """
     hooks = hi.build_fixture_hooks(tmp_path)
     (hooks / "hooks" / "pre-bash" / "block_ported.py").write_text("", encoding="utf-8")

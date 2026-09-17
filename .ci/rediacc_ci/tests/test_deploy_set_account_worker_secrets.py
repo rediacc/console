@@ -1,29 +1,15 @@
 """Differential: `rediacc_ci.deploy.set_account_worker_secrets` against its twin
 `.ci/scripts/deploy/set-account-worker-secrets.sh`.
 
-A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the
-fake logs its exact argv AND the bytes on its stdin, and every case uses fixture
-values two characters long. `.ci/shadow/w7p5a-status.json` records this path as
-blocked only for the "one real run" clause and says in as many words that the
-mocked parity ledger is a separate, achievable piece of work. This is that piece.
+A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
+is that piece.
 
-THE DOCUMENT IS THE ONLY EVIDENCE ON THE HAPPY PATH, exactly as for the www
-sibling: the twin prints nothing of its own when it succeeds. On THIS script that
-matters more, because this one DECIDES rather than marshals. A port that picked
-the edge bucket on stable, kept the ASIA region's SES credential instead of
-borrowing EU's, or shipped an endpoint without its jurisdiction label would exit
-0 with byte-identical streams and break a region at runtime. Every case that
-reaches wrangler therefore asserts the recorded stdin.
+THE DOCUMENT IS THE ONLY EVIDENCE ON THE HAPPY PATH, exactly as for the www sibling: the twin prints nothing of its own when it succeeds. On THIS script that matters more, because this one DECIDES rather than marshals. A port that picked the edge bucket on stable, kept the ASIA region's SES credential instead of borrowing EU's, or shipped an endpoint without its jurisdiction label
+would exit 0 with byte-identical streams and break a region at runtime. Every case that reaches wrangler therefore asserts the recorded stdin.
 
-THE GUARD NAME IS NOT ALWAYS THE VARIABLE TO BLANK, and `GUARD_SOURCE` below is
-where that is written down. Four of the seventeen guards report a Worker key
-(`AWS_SES_ACCESS_KEY_ID`) whose value came from a suffixed name
-(`AWS_SES_ACCESS_KEY_ID_EU`), so a test that blanked the reported name would
-drive nothing at all and pass while proving nothing.
+THE GUARD NAME IS NOT ALWAYS THE VARIABLE TO BLANK, and `GUARD_SOURCE` below is where that is written down. Four of the seventeen guards report a Worker key (`AWS_SES_ACCESS_KEY_ID`) whose value came from a suffixed name (`AWS_SES_ACCESS_KEY_ID_EU`), so a test that blanked the reported name would drive nothing at all and pass while proving nothing.
 
-FIVE STALENESS ALARMS RE-DERIVE THE TWIN'S OWN LISTS from its source, because
-`KEYS`, `REQUIRED_NONEMPTY`, `REQUIRED_NONEMPTY_STABLE`, `MISSING_MESSAGES` and
-`SUFFIXED_PREFIXES` are all copies of something the twin states.
+FIVE STALENESS ALARMS RE-DERIVE THE TWIN'S OWN LISTS from its source, because `KEYS`, `REQUIRED_NONEMPTY`, `REQUIRED_NONEMPTY_STABLE`, `MISSING_MESSAGES` and `SUFFIXED_PREFIXES` are all copies of something the twin states.
 """
 
 from __future__ import annotations
@@ -216,8 +202,7 @@ def _twin_source() -> str:
 
 def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Path) -> None:
     """ONE CALL, PINNED AGAINST LITERAL BYTES. Twenty-nine keys in the twin's
-    order, on the stable EU channel: the Stripe pair present, the SES pair fanned
-    in from the EU names, the endpoint carrying its `eu` jurisdiction label, and
+    order, on the stable EU channel: the Stripe pair present, the SES pair fanned in from the EU names, the endpoint carrying its `eu` jurisdiction label, and
     the STABLE bucket rather than the edge one."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert old.returncode == 0
@@ -272,8 +257,7 @@ def test_a_successful_run_says_nothing_of_its_own(tmp_path: pathlib.Path) -> Non
 
 def test_the_edge_channel_blanks_both_stripe_values(tmp_path: pathlib.Path) -> None:
     """DECISION 1. Billing is disabled on edge, so the key and the webhook secret
-    are written as EMPTY STRINGS rather than omitted, and neither is demanded.
-    The regional webhook secret is in the environment and must NOT reach the
+    are written as EMPTY STRINGS rather than omitted, and neither is demanded. The regional webhook secret is in the environment and must NOT reach the
     document."""
     old, new, old_calls, new_calls = run_both(tmp_path, TARGET="edge")
     assert old.returncode == 0
@@ -472,9 +456,7 @@ def test_divergence_a_the_three_control_variables_are_bashs_own_refusals(
     tmp_path: pathlib.Path,
 ) -> None:
     """THE FIRST DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED"
-    BY ACCIDENT. bash names its own FILE and LINE NUMBER and then the twin's
-    message, which already begins with the script name, so the name is printed
-    TWICE. The port prints the `VAR: message` half. Same stream, same status, no
+    BY ACCIDENT. bash names its own FILE and LINE NUMBER and then the twin's message, which already begins with the script name, so the name is printed TWICE. The port prints the `VAR: message` half. Same stream, same status, no
     call from either side."""
     lines = {"WORKER_NAME": 106, "TARGET": 107, "SUFFIX": 108}
     for name, line in lines.items():
@@ -493,8 +475,7 @@ def test_divergence_a_the_three_control_variables_are_bashs_own_refusals(
 
 def test_the_first_missing_control_variable_wins(tmp_path: pathlib.Path) -> None:
     """ORDER IS OBSERVABLE for the three `:?` refusals too: with all three gone,
-    both sides name WORKER_NAME and stop. The expected line is a LITERAL rather
-    than `port.MISSING_MESSAGES[0]`, because reading the order out of the port is
+    both sides name WORKER_NAME and stop. The expected line is a LITERAL rather than `port.MISSING_MESSAGES[0]`, because reading the order out of the port is
     how a reordered tuple passes its own test."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, drop_env=("WORKER_NAME", "TARGET", "SUFFIX")
@@ -523,8 +504,7 @@ def test_an_empty_control_variable_refuses_exactly_as_an_absent_one(
 
 def test_divergence_b_a_suffix_that_is_not_an_identifier(tmp_path: pathlib.Path) -> None:
     """THE SECOND DIVERGENCE. `${!var}` refuses a constructed name bash cannot
-    parse, and WHICH name it is depends on the channel: the Stripe webhook is
-    evaluated first on stable, the SES key first on edge. Both sides exit 1 with
+    parse, and WHICH name it is depends on the channel: the Stripe webhook is evaluated first on stable, the SES key first on edge. Both sides exit 1 with
     the same sentence; only bash's file-and-line prefix differs."""
     cases = (
         ("stable", "STRIPE_WEBHOOK_SECRET_EU-1", 115),
@@ -547,13 +527,9 @@ def test_divergence_b_an_array_subscript_suffix_is_the_one_shape_not_reproduced(
     """THE COROLLARY, NAMED RATHER THAN HIDDEN AND MEASURED RATHER THAN REASONED
     ABOUT. bash accepts an ARRAY REFERENCE as the target of `${!var}`, and a
     SCALAR answers to subscript 0, so `SUFFIX=EU[0]` reads
-    `AWS_SES_ACCESS_KEY_ID_EU[0]`, which is the EU credential itself: the twin
-    DEPLOYS, exit 0, with a perfectly ordinary document. The port refuses.
+    `AWS_SES_ACCESS_KEY_ID_EU[0]`, which is the EU credential itself: the twin DEPLOYS, exit 0, with a perfectly ordinary document. The port refuses.
 
-    Unreachable in production, since SUFFIX is `regions.json`'s `secretSuffix`,
-    one of EU / US / ASIA. Asserted so a later reader finds the divergence
-    written down instead of discovering it, and so nobody "fixes" the identifier
-    rule without reading this. It is also the safe direction: the port refuses
+    Unreachable in production, since SUFFIX is `regions.json`'s `secretSuffix`, one of EU / US / ASIA. Asserted so a later reader finds the divergence written down instead of discovering it, and so nobody "fixes" the identifier rule without reading this. It is also the safe direction: the port refuses
     where the twin would deploy."""
     old, new, old_calls, new_calls = run_both(tmp_path, TARGET="edge", SUFFIX="EU[0]")
     assert old.returncode == 0, "bash no longer resolves the subscript form"
@@ -679,8 +655,7 @@ def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
 
 def test_the_guard_label_defect_has_no_third_occurrence() -> None:
     """`set-preview-worker-secrets.sh:53` prints `WORKER_NAME=` for a script whose
-    variable is `WORKER`, inherited verbatim from the www twin. This twin really
-    does have WORKER_NAME, and prints TARGET and SUFFIX beside it, so every label
+    variable is `WORKER`, inherited verbatim from the www twin. This twin really does have WORKER_NAME, and prints TARGET and SUFFIX beside it, so every label
     in its guard message names a variable it holds."""
     assert preview.GUARD_LABEL_SAYS_WORKER_NAME
     assert "WORKER_NAME" not in preview.__doc__.split("K=5 LEDGER")[0].split("1. THE GUARD")[0]
@@ -741,11 +716,7 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on THE DECISION rather than on a key: the mutant
-    picks the EDGE bucket on the stable channel. That is the exact defect the
-    twin's header records as already having happened once in the other direction
-    (one global bucket secret against six per-region bindings), and it is
-    invisible everywhere a reader would look -- exit 0 on both sides, the same
-    stdout, the same empty stderr. Only the document shows it. Driven red, then
+    picks the EDGE bucket on the stable channel. That is the exact defect the twin's header records as already having happened once in the other direction (one global bucket secret against six per-region bindings), and it is invisible everywhere a reader would look -- exit 0 on both sides, the same stdout, the same empty stderr. Only the document shows it. Driven red, then
     the source is confirmed byte-identical and green again."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

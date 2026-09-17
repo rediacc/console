@@ -3,8 +3,7 @@
 Ported from `.ci/scripts/quality/check-devcontainer-scripts.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-The twin's header, carried whole because the incident and the control-first rule
-are the gate:
+The twin's header, carried whole because the incident and the control-first rule are the gate:
 
     Why this exists. `.devcontainer/init-submodules.sh` used to run
         git submodule update --init --recursive "$sub" 2>/dev/null
@@ -36,8 +35,7 @@ are the gate:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-ASSERTION A IS DELIBERATELY NARROW AND THE TWIN SAYS WHY, twice, and both
-sentences are kept at the patterns they describe:
+ASSERTION A IS DELIBERATELY NARROW AND THE TWIN SAYS WHY, twice, and both sentences are kept at the patterns they describe:
 
     Not a blanket ban on 2>/dev/null: probing for a pid, a command or a config
     value legitimately discards noise, and a gate that forbids those gets
@@ -48,42 +46,18 @@ sentences are kept at the patterns they describe:
     (`command -v x 2>/dev/null`, `kill -0`, `ps`) is not a primary operation, and
     a gate that forbids those gets suppressed within a week.
 
-THE MUTATIONS ARE RUN BY THE REAL `sed`, not re-implemented. Two of the three
-carry BRE back-references (`s@^\\(  *\\)...@\\1...@`), and a Python rewrite of
-those would be a second implementation of the thing whose job is to be identical.
-Shelling out keeps the plant byte-for-byte what the twin plants, which is the
-only way `CONTROL IS VACUOUS` keeps meaning what it says.
+THE MUTATIONS ARE RUN BY THE REAL `sed`, not re-implemented. Two of the three carry BRE back-references (`s@^\\( *\\)...@\\1...@`), and a Python rewrite of those would be a second implementation of the thing whose job is to be identical. Shelling out keeps the plant byte-for-byte what the twin plants, which is the only way `CONTROL IS VACUOUS` keeps meaning what it says.
 
-EACH CONTROL CHECKS THAT ITS PLANT LANDED, and that is the half most gates skip.
-The twin greps the mutated copy for a marker before trusting the result: "The
-planted marker is checked for explicitly, so a refactor that moves the target
-line makes this control VACUOUS (and fails the gate) rather than silently
-mutating nothing and calling it a pass."
+EACH CONTROL CHECKS THAT ITS PLANT LANDED, and that is the half most gates skip. The twin greps the mutated copy for a marker before trusting the result: "The planted marker is checked for explicitly, so a refactor that moves the target line makes this control VACUOUS (and fails the gate) rather than silently mutating nothing and calling it a pass."
 
-`control_must_fail` RUNS THE ASSERTION IN A SUBSHELL in the twin, so the `fail()`
-calls inside a control run do NOT increment the real counter and their output is
-captured and thrown away. That is not incidental: without it, every control would
-add its own deliberate failure to the gate's verdict. The port reproduces it with
-a discarding reporter rather than a subshell.
+`control_must_fail` RUNS THE ASSERTION IN A SUBSHELL in the twin, so the `fail()` calls inside a control run do NOT increment the real counter and their output is captured and thrown away. That is not incidental: without it, every control would add its own deliberate failure to the gate's verdict. The port reproduces it with a discarding reporter rather than a subshell.
 
-THE GATE EMITS NO SEVERITY MARKER AT ALL. `fail()` prints `FAIL <text>` with ONE
-space, which is not the `FAIL  ` (two spaces) the repository's comparator knows,
-and `pass()` prints `ok   `. So the differential for this pair is recorded with a
-`--finding-re`, stored on every ledger row so the rows can be re-run.
+THE GATE EMITS NO SEVERITY MARKER AT ALL. `fail()` prints `FAIL <text>` with ONE space, which is not the `FAIL ` (two spaces) the repository's comparator knows, and `pass()` prints `ok `. So the differential for this pair is recorded with a `--finding-re`, stored on every ledger row so the rows can be re-run.
 
-THE EM DASH IN THE THREE `CONTROL IS VACUOUS` LINES is named by code point rather
-than typed, because this repository's authoring rule forbids the character and
-the differential compares finding TEXT. Same treatment as
-`scripts/lib/shadow-gate.ts` naming ESC with `String.fromCharCode(27)`.
+THE EM DASH IN THE THREE `CONTROL IS VACUOUS` LINES is named by code point rather than typed, because this repository's authoring rule forbids the character and the differential compares finding TEXT. Same treatment as `scripts/lib/shadow-gate.ts` naming ESC with `String.fromCharCode(27)`.
 
-UGREP WAS CHECKED HERE, NOT ASSUMED. `PRIMARY_OPS` alternates a `^`-anchored
-branch with a branch carrying a negated class (`curl [^|]*`), which is the shape
-`docs/agent-reference/TRAPS.md` records as returning silent false zeros from
-`grep -E`. Measured on this host, ugrep 7.8.4: `-E` and `-P` return the SAME five
-lines over a corpus containing one instance of each branch. The port's Python
-regex is compared against the real `grep -E` over every `.devcontainer/*.sh` in
-`tests/test_quality_devcontainer_scripts.py`, so a future ugrep that does
-diverge shows up as a test failure rather than as two gates quietly disagreeing.
+UGREP WAS CHECKED HERE, NOT ASSUMED. `PRIMARY_OPS` alternates a `^`-anchored branch with a branch carrying a negated class (`curl [^|]*`), which is the shape `docs/agent-reference/TRAPS.md` records as returning silent false zeros from `grep -E`. Measured on this host, ugrep 7.8.4: `-E` and `-P` return the SAME five lines over a corpus containing one instance of each branch. The
+port's Python regex is compared against the real `grep -E` over every `.devcontainer/*.sh` in `tests/test_quality_devcontainer_scripts.py`, so a future ugrep that does diverge shows up as a test failure rather than as two gates quietly disagreeing.
 """
 
 import os
@@ -156,9 +130,7 @@ C_MUTATIONS = (
 def scan_suppression(text: str) -> list[str]:
     """`grep -nE PRIMARY_OPS | grep -vE '^[0-9]+:[[:space:]]*#' | grep -E SUPPRESSORS`.
 
-    Returns the offending `<n>:<line>` strings. The comment filter runs BETWEEN
-    the two matchers, on the NUMBERED lines, which is why its pattern carries the
-    `^[0-9]+:` prefix.
+    Returns the offending `<n>:<line>` strings. The comment filter runs BETWEEN the two matchers, on the NUMBERED lines, which is why its pattern carries the `^[0-9]+:` prefix.
     """
     numbered = [
         "%d:%s" % (number, line)
@@ -172,9 +144,7 @@ def scan_suppression(text: str) -> list[str]:
 def build_scratch_super(where: pathlib.Path) -> None:
     """A superproject whose submodule URL is an unreachable local path.
 
-    So assertion B needs neither the network nor credentials: the failure is a
-    repository that is not there, which is the same class of failure as a stale
-    credential helper and produces git's own diagnostic either way.
+    So assertion B needs neither the network nor credentials: the failure is a repository that is not there, which is the same class of failure as a stale credential helper and produces git's own diagnostic either way.
     """
     where.mkdir(parents=True, exist_ok=True)
     run = lambda *args: subprocess.run(  # noqa: E731
@@ -206,8 +176,7 @@ def run_init_against_scratch(script: pathlib.Path, tmp: pathlib.Path) -> tuple[i
 
     Returns (exit status, combined output with trailing newlines stripped),
     matching `out="$(... 2>&1)"; rc=$?`. Three tokens are REMOVED from the
-    environment (`GITHUB_TOKEN`, `GH_TOKEN`, `PAT`) so a developer's own
-    credentials cannot make the unreachable URL reachable.
+    environment (`GITHUB_TOKEN`, `GH_TOKEN`, `PAT`) so a developer's own credentials cannot make the unreachable URL reachable.
     """
     where = tmp / ("super.%d" % os.getpid())
     counter = 0
@@ -284,9 +253,7 @@ def assert_c(script: pathlib.Path, report) -> int:
 class Reporter:
     """`fail()` plus its detail lines, or a sink that counts and prints nothing.
 
-    The silent form is what `control_must_fail` needs: the twin runs each control
-    inside a command substitution, so the deliberate failures a mutated copy
-    produces are captured and discarded and never reach the real counter.
+    The silent form is what `control_must_fail` needs: the twin runs each control inside a command substitution, so the deliberate failures a mutated copy produces are captured and discarded and never reach the real counter.
     """
 
     def __init__(self, *, silent: bool) -> None:
@@ -306,9 +273,7 @@ class Reporter:
 def mutate(src: pathlib.Path, dst: pathlib.Path, expressions: tuple[str, ...]) -> None:
     """`cp` then one `sed -i` per expression, run by the REAL sed.
 
-    See the port notes: two of these carry BRE back-references, and
-    re-implementing them would put a second implementation between the plant and
-    the thing it is supposed to plant.
+    See the port notes: two of these carry BRE back-references, and re-implementing them would put a second implementation between the plant and the thing it is supposed to plant.
     """
     shutil.copyfile(src, dst)
     for expression in expressions:
@@ -428,9 +393,7 @@ def main(argv: list[str] | None = None) -> int:
 def control_must_fail(label: str, run) -> bool:
     """The planted defect must be REJECTED. True when the control fired.
 
-    The assertion's own output is discarded, matching the twin's command
-    substitution: a control that printed its deliberate failure would read in the
-    log exactly like a real one.
+    The assertion's own output is discarded, matching the twin's command substitution: a control that printed its deliberate failure would read in the log exactly like a real one.
     """
     sink = Reporter(silent=True)
     if run(sink) == 0:
@@ -474,11 +437,9 @@ NOT_SUPPRESSED = (
 def selftest() -> int:
     """Both directions for A and C, and both directions for every mutation.
 
-    The mutations are the part a port is most likely to get subtly wrong, so each
-    one is applied to a fixture written by construction and the marker it plants
+    The mutations are the part a port is most likely to get subtly wrong, so each one is applied to a fixture written by construction and the marker it plants
     is asserted present; then the same mutation is applied to a fixture it CANNOT
-    match and the absence of the marker is asserted, which is exactly the
-    `CONTROL IS VACUOUS` arm the twin fails itself on.
+    match and the absence of the marker is asserted, which is exactly the `CONTROL IS VACUOUS` arm the twin fails itself on.
     """
     ctl = Controls("devcontainer-scripts", floor=24, verbose=True)
 

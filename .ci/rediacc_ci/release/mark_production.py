@@ -1,53 +1,29 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/release/mark-production.sh`.
 
-Records what is ACTUALLY in production. GitHub's "Latest release" badge tracks
-whatever was published most recently, which on this repo is the EDGE build,
-published on every release-worthy merge to main. Production is whatever
-survived the 7-day soak and was promoted, so this script writes two markers a
-human can trust: the MOVING annotated tag `production`, and `--latest` on that
+Records what is ACTUALLY in production. GitHub's "Latest release" badge tracks whatever was published most recently, which on this repo is the EDGE build, published on every release-worthy merge to main. Production is whatever survived the 7-day soak and was promoted, so this script writes two markers a human can trust: the MOVING annotated tag `production`, and `--latest` on that
 version's GitHub Release.
 
 Usage: mark_production.py <version>, or `VERSION=<version>` in the environment.
 
-"COULD NOT TELL" IS A FAILURE, NOT A PASS, and that is the whole reason this
-script has more code than two `gh` calls. The release lookup is verified rather
-than assumed, and a 403 or a network fault takes the distinct "the check did
-NOT run" branch instead of being folded into "no such release". Both branches
-are preserved here verbatim.
+"COULD NOT TELL" IS A FAILURE, NOT A PASS, and that is the whole reason this script has more code than two `gh` calls. The release lookup is verified rather than assumed, and a 403 or a network fault takes the distinct "the check did NOT run" branch instead of being folded into "no such release". Both branches are preserved here verbatim.
 
-THE TAG IS RESOLVED THROUGH THE API, NOT THROUGH git, and the port keeps that.
-The caller (`promote-stable.yml`'s verify-stable job) does a sparse, shallow
+THE TAG IS RESOLVED THROUGH THE API, NOT THROUGH git, and the port keeps that. The caller (`promote-stable.yml`'s verify-stable job) does a sparse, shallow
 checkout with no tags, where `git tag -f -a production "$VERSION^{commit}"`
-fails with "unknown revision" on a perfectly good tag. An annotated tag's ref
-points at a TAG object, so the port also keeps the dereference step: without
-it, `production` would point at an annotation and `git show production` would
-print the message instead of the code.
+fails with "unknown revision" on a perfectly good tag. An annotated tag's ref points at a TAG object, so the port also keeps the dereference step: without it, `production` would point at an annotation and `git show production` would print the message instead of the code.
 
 TWO LOGGERS, BECAUSE THE TWIN HAS TWO. `source common.sh 2>/dev/null || { ... }`
-means the script runs with common.sh's stderr loggers when the library is
-present and with a private `echo`-based fallback when it is not -- and the
-fallback's `log_info` writes to STDOUT, not stderr, with no glyph. That is a
-stream difference, not a cosmetic one, so `_Loggers.for_root()` picks the same
-pair off the same single input (does `<root>/.ci/scripts/lib/common.sh` exist),
+means the script runs with common.sh's stderr loggers when the library is present and with a private `echo`-based fallback when it is not -- and the fallback's `log_info` writes to STDOUT, not stderr, with no glyph. That is a stream difference, not a cosmetic one, so `_Loggers.for_root()` picks the same pair off the same single input (does `<root>/.ci/scripts/lib/common.sh` exist),
 and the differential drives BOTH by copying each subject into a fixture tree
 with no lib directory. A port that only implemented the common.sh path would be
-byte-identical in CI and wrong on any machine where the library is missing,
-which is precisely the case the fallback exists for.
+byte-identical in CI and wrong on any machine where the library is missing, which is precisely the case the fallback exists for.
 
-ROOT IS DERIVED FROM THIS FILE'S OWN LOCATION, matching the twin's
-`SCRIPT_DIR/../../..`. This module sits one directory deeper than the twin, so
-it is `parents[3]` here against the twin's `parents[2]`, and both land on the
-repository root. `rediacc_ci.paths.repo_root()` is deliberately NOT used: it
-honours `$REDIACC_CI_ROOT`, the twin has no such override, and a fixture that
-moved one and not the other would diverge for a reason that has nothing to do
+ROOT IS DERIVED FROM THIS FILE'S OWN LOCATION, matching the twin's `SCRIPT_DIR/../../..`. This module sits one directory deeper than the twin, so it is `parents[3]` here against the twin's `parents[2]`, and both land on the repository root. `rediacc_ci.paths.repo_root()` is deliberately NOT used: it honours `$REDIACC_CI_ROOT`, the twin has no such override, and a fixture that moved
+one and not the other would diverge for a reason that has nothing to do
 with this script.
 
-THE ONE KNOWN DIVERGENCE, PINNED BY A TEST RATHER THAN HIDDEN. common.sh logs
-through `echo -e`, which interprets backslash escapes IN THE MESSAGE, and the
-error branches interpolate `gh`'s own output into the message. So a `gh` failure
-whose text contains a literal `\\n` prints a newline through the twin and two
-characters through this port. `rediacc_ci.log` formats the message as data on
+THE ONE KNOWN DIVERGENCE, PINNED BY A TEST RATHER THAN HIDDEN. common.sh logs through `echo -e`, which interprets backslash escapes IN THE MESSAGE, and the error branches interpolate `gh`'s own output into the message. So a `gh` failure whose text contains a literal `\\n` prints a newline through the twin and two characters through this port. `rediacc_ci.log` formats the message as
+data on
 purpose (see its module docstring); the differential asserts the two disagree
 there, so nobody later "fixes" the Python to re-interpret escapes.
 
@@ -118,9 +94,7 @@ def console_root() -> pathlib.Path:
 def normalise_version(raw: str) -> str:
     """`v${VERSION#v}`: add a leading `v`, and strip exactly ONE if present.
 
-    `vv1.2.3` therefore stays `vv1.2.3` and is rejected by SEMVER_RE, and
-    `1.2.3` becomes `v1.2.3`. Reproduced rather than tidied: the twin's
-    normalisation is the thing that decides which strings reach the tag.
+    `vv1.2.3` therefore stays `vv1.2.3` and is rejected by SEMVER_RE, and `1.2.3` becomes `v1.2.3`. Reproduced rather than tidied: the twin's normalisation is the thing that decides which strings reach the tag.
     """
     return "v" + raw.removeprefix("v")
 

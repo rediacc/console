@@ -1,34 +1,19 @@
 """Differential: `rediacc_ci.autopilot.fetch_review_threads` against its twin
 `.ci/scripts/autopilot/fetch-review-threads.sh`.
 
-A RECORDING FAKE `gh` ON A STUB PATH, and here the fake is not a convenience: it
-is the only thing standing between a test run and a real GraphQL query against
-whatever repository a fixture names. The fake answers from a SCRIPT of
-per-call responses handed to it in the environment, so a case can make page two
-fail, or return a GraphQL error object, or hand back a cursor that never
+A RECORDING FAKE `gh` ON A STUB PATH, and here the fake is not a convenience: it is the only thing standing between a test run and a real GraphQL query against whatever repository a fixture names. The fake answers from a SCRIPT of per-call responses handed to it in the environment, so a case can make page two fail, or return a GraphQL error object, or hand back a cursor that never
 advances, without any of it leaving the process tree.
 
-`test_the_fake_gh_is_the_gh` resolves `gh` through the stub PATH and fails if
-anything else wins. Every other case rests on that.
+`test_the_fake_gh_is_the_gh` resolves `gh` through the stub PATH and fails if anything else wins. Every other case rests on that.
 
-WHAT IS COMPARED: exit code, stdout bytes, stderr bytes, the `gh` CALL LOG, and
-the CONTENT OF `--out`. The last two are the artifact. This script's entire
-effect on the world is which GraphQL requests it makes and what array it leaves
-behind, and a port that fetched the right threads from the wrong repository, or
-dropped the `repo`/`pr` tags that let a reply be routed back, would print an
-identical summary line. The call log therefore carries the full argv INCLUDING
-the query text, so a reflowed query is a failure here rather than a surprise in
-production.
+WHAT IS COMPARED: exit code, stdout bytes, stderr bytes, the `gh` CALL LOG, and the CONTENT OF `--out`. The last two are the artifact. This script's entire effect on the world is which GraphQL requests it makes and what array it leaves behind, and a port that fetched the right threads from the wrong repository, or dropped the `repo`/`pr` tags that let a reply be routed back, would
+print an identical summary line. The call log therefore carries the full argv INCLUDING the query text, so a reflowed query is a failure here rather than a surprise in production.
 
 THE OUT FILE IS CHECKED FOR ABSENCE ON EVERY FAILURE PATH, not for emptiness.
 "No threads" and "could not ask" must not share an output; an empty file is a
 value a reader could act on, absence is not.
 
-ONE CASE COSTS EIGHTEEN SECONDS PER SIDE. `_gh_probe` sleeps 3 then 6 between
-its three attempts, and it is the only way to prove the retry loop, the final
-`gh failed after 3 attempts` line and the exit code agree. It is named
-`test_slow_...` so it can be deselected by name, and it is not skipped by
-default, because a retry loop nobody drives is a retry loop nobody has seen.
+ONE CASE COSTS EIGHTEEN SECONDS PER SIDE. `_gh_probe` sleeps 3 then 6 between its three attempts, and it is the only way to prove the retry loop, the final `gh failed after 3 attempts` line and the exit code agree. It is named `test_slow_...` so it can be deselected by name, and it is not skipped by default, because a retry loop nobody drives is a retry loop nobody has seen.
 
 K=5 LEDGER: `.ci/shadow/w7p6-fetch-review-threads.observations.jsonl`, recorded
 in a disposable scratch git repository outside this checkout.
@@ -534,16 +519,9 @@ def test_a_transient_failure_recovers_on_the_second_attempt() -> None:
 def test_a_broken_accumulator_does_not_end_the_run() -> None:
     """HAZARD, PRESERVED AND PINNED.
 
-    `fetch_target` is only ever called from an `||` list and an `if !`, and bash
-    DISABLES `set -e` for the whole body of a function invoked that way. So a
-    failing accumulator does not fail the run: the array becomes the empty
-    string and the script writes a blank line to `--out` and reports
-    `fetched  review thread(s)` with the count missing.
+    `fetch_target` is only ever called from an `||` list and an `if !`, and bash DISABLES `set -e` for the whole body of a function invoked that way. So a failing accumulator does not fail the run: the array becomes the empty string and the script writes a blank line to `--out` and reports `fetched review thread(s)` with the count missing.
 
-    Reaching it needs a page whose `nodes` is not an array, which `gh_json`
-    happily passes through because it IS valid JSON. Every real page comes from
-    a schema that cannot produce it, so this is defence-in-depth failing quietly
-    rather than a live bug -- and it is the one place in this script where a
+    Reaching it needs a page whose `nodes` is not an array, which `gh_json` happily passes through because it IS valid JSON. Every real page comes from a schema that cannot produce it, so this is defence-in-depth failing quietly rather than a live bug -- and it is the one place in this script where a
     failure does not fail closed."""
     broken = json.dumps(
         {

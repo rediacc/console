@@ -2,17 +2,11 @@
 `.ci/scripts/test/proxies/proxy-ensure-nfpm.sh` (gate `check:ci-proxy-ensure-nfpm`).
 
 Sibling of `test_proxies_docker_prepull.py`; see that file for why the two
-invocations are compared byte for byte rather than as a finding set. This one
-needs a reachable `https://github.com`, because BOTH sides declare it as a
-requirement and would otherwise exit 77 (cannot-run, not a verdict) -- the test
+invocations are compared byte for byte rather than as a finding set. This one needs a reachable `https://github.com`, because BOTH sides declare it as a requirement and would otherwise exit 77 (cannot-run, not a verdict) -- the test
 would then assert 77 == 77 and prove nothing, so it is skipped instead, exactly
 as a developer's offline run would be.
 
-MOST CASES DOWNLOAD NOTHING. Only `test_real_tree_agrees_byte_for_byte` fetches
-the pinned tarball. The rest run against a fixture root whose SUBJECT is a stub
-that prints a directory holding a fake `nfpm`, which is what lets the
-version-comparison branch be driven at all: the real subject can only be made to
-report a wrong version by shipping a wrong binary.
+MOST CASES DOWNLOAD NOTHING. Only `test_real_tree_agrees_byte_for_byte` fetches the pinned tarball. The rest run against a fixture root whose SUBJECT is a stub that prints a directory holding a fake `nfpm`, which is what lets the version-comparison branch be driven at all: the real subject can only be made to report a wrong version by shipping a wrong binary.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-ensure-nfpm.observations.jsonl` (5 rows, 5
 distinct trees, 5 distinct finding sets).
@@ -187,8 +181,7 @@ def test_selftest_is_byte_identical() -> None:
 def test_real_tree_agrees_byte_for_byte() -> None:
     """The only case that fetches the pinned tarball, and it fetches it twice.
 
-    Both sides build their own throwaway fixture root with a COLD cache, so
-    neither can be satisfied by this checkout's warm `.ci/cache/bin/nfpm`.
+    Both sides build their own throwaway fixture root with a COLD cache, so neither can be satisfied by this checkout's warm `.ci/cache/bin/nfpm`.
     """
     env = {
         "PATH": os.environ.get("PATH", ""),
@@ -248,8 +241,7 @@ def test_a_constants_sh_with_no_pin_refuses_before_comparing(tmp_path: pathlib.P
 def test_the_set_e_toggle_really_enables_errexit() -> None:
     """MEASURED, in this test, not asserted from reading.
 
-    `proxy-ensure-nfpm.sh:33` is `set -uo pipefail` with no `-e`, and `:92-95`
-    wraps the first subject run in `set +e` / `set -e`. `set -e` TURNS ERREXIT
+    `proxy-ensure-nfpm.sh:33` is `set -uo pipefail` with no `-e`, and `:92-95` wraps the first subject run in `set +e` / `set -e`. `set -e` TURNS ERREXIT
     ON; it does not restore the previous state.
     """
     flags = subprocess.run(
@@ -308,9 +300,7 @@ def test_the_twin_still_carries_the_toggle_and_the_ungated_pipeline() -> None:
 def test_a_version_with_no_semver_token_kills_both_sides(tmp_path: pathlib.Path) -> None:
     """`:113` under the acquired errexit: exit 1, four PASS lines, no FAIL line.
 
-    That is indistinguishable from the gate crashing, which is why it is a
-    defect and not a quirk. Fixing it changes what a registered gate prints, so
-    both sides reproduce it and this test pins the shape.
+    That is indistinguishable from the gate crashing, which is why it is a defect and not a quirk. Fixing it changes what a registered gate prints, so both sides reproduce it and this test pins the shape.
     """
     fixture = build_fixture(tmp_path, stub_version="nfpm banana")
     old, new = run_both(fixture)
@@ -325,8 +315,7 @@ def test_a_version_with_no_semver_token_kills_both_sides(tmp_path: pathlib.Path)
 def test_a_planted_soft_version_read_is_caught(tmp_path: pathlib.Path) -> None:
     """Plant the obvious "fix": return "" instead of aborting.
 
-    It is the RIGHT behaviour and the WRONG port. If this ever passes, the case
-    above has stopped comparing anything.
+    It is the RIGHT behaviour and the WRONG port. If this ever passes, the case above has stopped comparing anything.
 
     The real file is compared before and after; the mutation lives in the
     fixture copy only.

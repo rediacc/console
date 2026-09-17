@@ -1,48 +1,23 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/docker/cleanup-staging.sh`.
 
-Deletes the staging Docker tags from GHCR after a Phase 1 staging failure or a
-Phase 2 commit. One GHCR package version per image in `PUBLISH_IMAGES`, found by
-listing the org's container package versions and picking the one whose tag list
-contains the staging tag.
+Deletes the staging Docker tags from GHCR after a Phase 1 staging failure or a Phase 2 commit. One GHCR package version per image in `PUBLISH_IMAGES`, found by listing the org's container package versions and picking the one whose tag list contains the staging tag.
 
-THE `staging-` PREFIX GUARD IS THE WHOLE SAFETY MODEL, so it is reproduced
-character for character rather than "improved". The twin refuses any tag that
-does not start with `staging-` before it reaches a single API call, which is
-what makes a stray invocation unable to delete `edge`, `stable`, `latest` or a
-semver. `rediacc_ci.release.cleanup_channel_docker_tags` documents the same
-guard from the caller's side, and `.ci/scripts/quality/check-staging-tag-guard.sh`
-is a gate whose subject is that this guard exists. A port that widened it would
-delete the rail three separate things are leaning on.
+THE `staging-` PREFIX GUARD IS THE WHOLE SAFETY MODEL, so it is reproduced character for character rather than "improved". The twin refuses any tag that does not start with `staging-` before it reaches a single API call, which is what makes a stray invocation unable to delete `edge`, `stable`, `latest` or a semver. `rediacc_ci.release.cleanup_channel_docker_tags` documents the same
+guard from the caller's side, and `.ci/scripts/quality/check-staging-tag-guard.sh` is a gate whose subject is that this guard exists. A port that widened it would delete the rail three separate things are leaning on.
 
-WHAT IS DELETED IS A PACKAGE VERSION, NOT A TAG. GHCR has no delete-one-tag API,
-so the twin resolves a version id and deletes the VERSION. A version carrying a
-second tag loses that tag too. Reproduced as-is and pinned by
+WHAT IS DELETED IS A PACKAGE VERSION, NOT A TAG. GHCR has no delete-one-tag API, so the twin resolves a version id and deletes the VERSION. A version carrying a second tag loses that tag too. Reproduced as-is and pinned by
 `test_a_version_carrying_a_second_tag_is_deleted_whole`; changing it is a
 cutover-box decision.
 
 jq IS SHELLED OUT TO, NOT REIMPLEMENTED, and the reason is the two filters
 rather than laziness. `type == "array"` under `jq -e` is a REFUSAL TEST on
-arbitrary bytes -- the twin merges gh's stderr into the response with `2>&1`
-precisely so that an error page fails to parse -- and
-`.[] | select(.metadata.container.tags | index("<tag>")) | .id` has jq's own
-null-tolerance semantics at three levels (`.metadata` absent, `.container`
-absent, `.tags` null). `json.loads` plus hand-written `.get()` chains is a second
-answer to a question the twin already answered, and the difference would decide
-which package version gets DELETED.
+arbitrary bytes -- the twin merges gh's stderr into the response with `2>&1` precisely so that an error page fails to parse -- and `.[] | select(.metadata.container.tags | index("<tag>")) | .id` has jq's own null-tolerance semantics at three levels (`.metadata` absent, `.container` absent, `.tags` null). `json.loads` plus hand-written `.get()` chains is a second answer to a
+question the twin already answered, and the difference would decide which package version gets DELETED.
 
-THE STAGING TAG IS INTERPOLATED INTO THE jq PROGRAM UNQUOTED, as in the twin. A
-tag containing a `"` produces a jq syntax error, jq's stderr goes to /dev/null,
-the filter yields nothing and the run reports "may already be deleted". That is
-a real (small) defect of the twin's, recorded by
-`test_defect_a_quote_in_the_tag_is_swallowed_as_already_deleted` rather than
-fixed here.
+THE STAGING TAG IS INTERPOLATED INTO THE jq PROGRAM UNQUOTED, as in the twin. A tag containing a `"` produces a jq syntax error, jq's stderr goes to /dev/null, the filter yields nothing and the run reports "may already be deleted". That is a real (small) defect of the twin's, recorded by `test_defect_a_quote_in_the_tag_is_swallowed_as_already_deleted` rather than fixed here.
 
-STREAM DISCIPLINE. Every log line is stderr (common.sh's loggers) and the two
-blank separator lines are stdout (`echo ""`). The DELETE call's own stdout is
-INHERITED -- the twin redirects only its stderr -- so `sys.stdout` is flushed
-before each spawn, or Python's block buffering against a pipe would move the two
-blank lines behind gh's output.
+STREAM DISCIPLINE. Every log line is stderr (common.sh's loggers) and the two blank separator lines are stdout (`echo ""`). The DELETE call's own stdout is INHERITED -- the twin redirects only its stderr -- so `sys.stdout` is flushed before each spawn, or Python's block buffering against a pipe would move the two blank lines behind gh's output.
 """
 
 from __future__ import annotations
@@ -92,9 +67,7 @@ def dry_run_default() -> str:
 def org_of(registry_url: str) -> str:
     """`${REG#ghcr.io/}` then `${ORG%%/*}` (twin :67-68).
 
-    `%%/*` removes the LONGEST trailing match of `/*`, i.e. keeps everything
-    before the FIRST slash. Note that a non-GHCR registry falls through the
-    prefix strip and yields the HOST as the org, which is the twin's behaviour
+    `%%/*` removes the LONGEST trailing match of `/*`, i.e. keeps everything before the FIRST slash. Note that a non-GHCR registry falls through the prefix strip and yields the HOST as the org, which is the twin's behaviour
     and is wrong for any registry that is not ghcr.io; the differential records
     it as `test_defect_a_non_ghcr_registry_yields_the_host_as_the_org`.
     """
@@ -115,9 +88,7 @@ def versions_path(org: str, package: str) -> str:
 def version_delete_path(org: str, package: str, version_id: str) -> str:
     """The delete endpoint at :103. `version_id` is interpolated RAW.
 
-    That matters: jq can return more than one id, joined by a newline, and the
-    twin puts the whole multi-line string into the URL. See
-    `test_defect_two_versions_sharing_a_tag_build_one_malformed_url`.
+    That matters: jq can return more than one id, joined by a newline, and the twin puts the whole multi-line string into the URL. See `test_defect_two_versions_sharing_a_tag_build_one_malformed_url`.
     """
     return "%s/%s" % (versions_path(org, package), version_id)
 
@@ -192,8 +163,7 @@ def _flush() -> None:
     """stdout before every spawn that INHERITS it.
 
     Python block-buffers stdout against a pipe; the child writes straight to the
-    descriptor. Without this the two `echo ""` separators arrive after gh's own
-    output, with byte-identical content in the wrong order.
+    descriptor. Without this the two `echo ""` separators arrive after gh's own output, with byte-identical content in the wrong order.
     """
     sys.stdout.flush()
 
@@ -201,16 +171,12 @@ def _flush() -> None:
 def _gh_list(org: str, package: str) -> str:
     """`api_response=$(gh api <path> --paginate 2>&1) || true` (:83-85).
 
-    STDERR IS MERGED INTO THE VALUE ON PURPOSE and the exit code is discarded:
-    the twin's next step is a jq parse, so a 404 body, a rate-limit warning or a
+    STDERR IS MERGED INTO THE VALUE ON PURPOSE and the exit code is discarded: the twin's next step is a jq parse, so a 404 body, a rate-limit warning or a
     `command not found` all fail the `type == "array"` test the same way. Command
     substitution strips trailing newlines, which `rstrip("\\n")` reproduces.
 
     THE MERGE IS `stderr=STDOUT`, NOT `stdout + stderr`. Concatenating two
-    captured buffers puts every stderr byte after every stdout byte, while
-    `2>&1` hands the child ONE descriptor and preserves the interleaving. A gh
-    that prints a warning before its JSON would parse under one and not the
-    other.
+    captured buffers puts every stderr byte after every stdout byte, while `2>&1` hands the child ONE descriptor and preserves the interleaving. A gh that prints a warning before its JSON would parse under one and not the other.
     """
     argv = ["gh", "api", versions_path(org, package), "--paginate"]
     try:
@@ -247,8 +213,7 @@ def _jq(program: str, payload: str, *, exit_status: bool) -> subprocess.Complete
 def looks_like_json_array(payload: str) -> bool:
     """`echo "$x" | jq -e 'type == "array"' >/dev/null 2>&1` (:88).
 
-    A missing jq is a non-zero status under bash too (`command not found`, with
-    both streams already redirected), so it takes the same branch here.
+    A missing jq is a non-zero status under bash too (`command not found`, with both streams already redirected), so it takes the same branch here.
     """
     try:
         proc = _jq('type == "array"', payload, exit_status=True)
@@ -260,10 +225,7 @@ def looks_like_json_array(payload: str) -> bool:
 def extract_version_id(payload: str, tag: str) -> str:
     """`version_id=$(echo "$x" | jq -r '<filter>' 2>/dev/null || true)` (:94-95).
 
-    Returns jq's stdout with trailing newlines stripped, exactly as command
-    substitution does, so TWO matching ids come back as `"111\\n222"` rather
-    than as a list. Preserving that is the point: the twin then splices the
-    whole thing into a URL.
+    Returns jq's stdout with trailing newlines stripped, exactly as command substitution does, so TWO matching ids come back as `"111\\n222"` rather than as a list. Preserving that is the point: the twin then splices the whole thing into a URL.
     """
     try:
         proc = _jq(tag_filter(tag), payload, exit_status=False)

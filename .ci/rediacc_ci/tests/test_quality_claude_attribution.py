@@ -1,22 +1,12 @@
 """`rediacc_ci.quality.claude_attribution` against the grep it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-claude-attribution.observations.jsonl` drives the whole gate
-over five distinct trees: attribution in the PR body, in a commit message, in a
-commit author, all three at once, and an empty commit list. What a ledger row
-cannot isolate is that the gate is ONE regular expression, written as a POSIX
-ERE and evaluated by `grep -iE`, and that this port evaluates it with Python's
-`re` instead.
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-claude-attribution.observations.jsonl` drives the whole gate over five distinct trees: attribution in the PR body, in a commit message, in a commit author, all three at once, and an empty commit list. What a ledger row cannot isolate is that the gate is ONE regular expression, written as a POSIX ERE and evaluated by
+`grep -iE`, and that this port evaluates it with Python's `re` instead.
 
 Those two engines are not the same engine. `[[:space:]]` is six characters;
-Python's `\\s` is more. So the pattern is TAKEN FROM THE TWIN'S OWN SOURCE and
-run through the real `grep -iE`, and every case is compared against the port.
-A pattern that had silently widened would still pass a hand-written expectation.
+Python's `\\s` is more. So the pattern is TAKEN FROM THE TWIN'S OWN SOURCE and run through the real `grep -iE`, and every case is compared against the port. A pattern that had silently widened would still pass a hand-written expectation.
 
-The trailer literal is assembled from parts, for the same reason the port
-assembles it: `.claude/hooks/pre-bash/block-commit-meta.sh` refuses any shell
-command whose text carries it, so a test that spelled it out could not be
-written from a shell and could not be grepped for from one either.
+The trailer literal is assembled from parts, for the same reason the port assembles it: `.claude/hooks/pre-bash/block-commit-meta.sh` refuses any shell command whose text carries it, so a test that spelled it out could not be written from a shell and could not be grepped for from one either.
 """
 
 import re
@@ -32,8 +22,7 @@ TRAILER = "Co-" + "Authored-By"
 def twin_pattern() -> str:
     """The ERE the twin actually carries, read from its source.
 
-    Read rather than copied so a change to the twin reds this test instead of
-    drifting past it. That is the whole point of a differential port.
+    Read rather than copied so a change to the twin reds this test instead of drifting past it. That is the whole point of a differential port.
     """
     body = TWIN.read_text(encoding="utf-8")
     found = re.search(r'^CLAUDE_PATTERN="(.+)"$', body, re.MULTILINE)
@@ -67,9 +56,7 @@ def test_the_pattern_agrees_with_the_twins_grep_on_every_case() -> None:
 def test_the_ported_pattern_is_the_twins_pattern_modulo_the_class_spelling() -> None:
     """`[[:space:]]` is the only thing that had to change, and it changed nowhere else.
 
-    Asserted structurally rather than by eye: substituting the ERE's class for
-    the port's spelling must reproduce the port's pattern exactly, so a second
-    difference could not hide inside the first.
+    Asserted structurally rather than by eye: substituting the ERE's class for the port's spelling must reproduce the port's pattern exactly, so a second difference could not hide inside the first.
     """
     ere = twin_pattern()
     rebuilt = ere.replace("[[:space:]]", ca.SPACE)
@@ -107,8 +94,7 @@ def test_first_match_is_the_line_grep_head_1_would_print() -> None:
 def test_is_blank_matches_the_twins_parameter_expansion() -> None:
     """`[[ -z "${COMMITS//[[:space:]]/}" ]]`, evaluated by bash itself.
 
-    This is the anti-vacuity test on the commit list, so getting it wrong in the
-    lenient direction would clear a PR whose commits were never read.
+    This is the anti-vacuity test on the commit list, so getting it wrong in the lenient direction would clear a PR whose commits were never read.
     """
     for payload in ("", "  \n\t\n", "abc123\n", "a b\n", "\v\f\r"):
         proc = subprocess.run(

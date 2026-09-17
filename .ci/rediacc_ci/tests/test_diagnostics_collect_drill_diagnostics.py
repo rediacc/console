@@ -1,13 +1,9 @@
 """Differential: `rediacc_ci.diagnostics.collect_drill_diagnostics` against its
 twin `.ci/scripts/test/collect-drill-diagnostics.sh`.
 
-Both subjects derive the console root from their own file location
-(three directories up), so both COPIES live in one shared fixture tree at the
+Both subjects derive the console root from their own file location (three directories up), so both COPIES live in one shared fixture tree at the
 right relative depth; the tool is read-only with respect to that tree (it only
-ever creates a fresh `$RUNNER_TEMP/drill-diagnostics`), so unlike a mutating
-teardown script the two sides can safely share one source fixture and differ
-only in `RUNNER_TEMP`/`TMPDIR`, which route each side's collection to its own
-scratch directory.
+ever creates a fresh `$RUNNER_TEMP/drill-diagnostics`), so unlike a mutating teardown script the two sides can safely share one source fixture and differ only in `RUNNER_TEMP`/`TMPDIR`, which route each side's collection to its own scratch directory.
 
 K=5 LEDGER: `.ci/shadow/w7p6-collect-drill-diagnostics.observations.jsonl`.
 """
@@ -74,10 +70,7 @@ def _run(
 
 def _both(tmp_path: pathlib.Path, *, account_logs: bool, drills: list[str]):
     """Run both subjects and NORMALIZE the one legitimate difference: each side
-    is deliberately given its own `$RUNNER_TEMP` (a mutating collector cannot
-    safely share a destination between two runs), and that path is printed
-    verbatim in `$dest`. Comparing stdout with each side's own scratch prefix
-    stripped is the same idea `differential.py`'s `<repo>` substitution uses for
+    is deliberately given its own `$RUNNER_TEMP` (a mutating collector cannot safely share a destination between two runs), and that path is printed verbatim in `$dest`. Comparing stdout with each side's own scratch prefix stripped is the same idea `differential.py`'s `<repo>` substitution uses for
     the checkout root."""
     root = _fixture(tmp_path, account_logs=account_logs, drills=drills)
     old = _run(TWIN, root, tmp_path)

@@ -2,19 +2,11 @@
 
 Sibling of `test_deploy_resolve_account_deploy_config.py`; see that file for
 why `/dev/stdout` is not used as `$GITHUB_OUTPUT`. The K=5 ledger is
-`.ci/shadow/w7p5a-backfill-write-sentinel.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-backfill-write-sentinel
---assert --k 5` -> "equivalence holds over 5 distinct trees").
+`.ci/shadow/w7p5a-backfill-write-sentinel.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-backfill-write-sentinel --assert --k 5` -> "equivalence holds over 5 distinct trees").
 
 `DRY_RUN=false` STAYS ON THE LOCAL-ARGUMENT-VALIDATION PATH, same design as
-`test_deploy_upload_media_to_r2.py`'s forwarding-shim cases: `aws` is absent
-on this host (`shutil.which("aws") is None`, asserted below so this test
-fails loud rather than silently passing on a host where it is not), so both
-sides' forward into `.ci/scripts/deploy/write-release-sentinel.sh` dies at
-its own `require_cmd aws` -- before any network access, before any R2
-credential is read. That failure message is exactly what these cases assert,
-which is the real, unmocked forward this port makes, stopped by the same
-missing binary the bash twin would stop on.
+`test_deploy_upload_media_to_r2.py`'s forwarding-shim cases: `aws` is absent on this host (`shutil.which("aws") is None`, asserted below so this test fails loud rather than silently passing on a host where it is not), so both sides' forward into `.ci/scripts/deploy/write-release-sentinel.sh` dies at its own `require_cmd aws` -- before any network access, before any R2 credential is
+read. That failure message is exactly what these cases assert, which is the real, unmocked forward this port makes, stopped by the same missing binary the bash twin would stop on.
 """
 
 from __future__ import annotations
@@ -35,9 +27,7 @@ def masked_path() -> str:
     """The differential's PATH with `aws` MADE unreachable, once per session.
 
     The DRY_RUN=false cases below need the forward to stop at `require_cmd aws`
-    before it can reach R2. This used to be left to the host, and the host
-    obliged on every developer machine and refused on a GitHub runner, which
-    ships the CLI at /usr/local/bin/aws. See pathmask.py for why the mask
+    before it can reach R2. This used to be left to the host, and the host obliged on every developer machine and refused on a GitHub runner, which ships the CLI at /usr/local/bin/aws. See pathmask.py for why the mask
     mirrors a directory rather than guessing at `PATH=/usr/bin:/bin`.
     """
     scratch = pathlib.Path(tempfile.mkdtemp(prefix="backfill-pathmask-"))
@@ -49,12 +39,8 @@ def masked_path() -> str:
 def test_the_subjects_cannot_reach_aws() -> None:
     """The premise every DRY_RUN=false case below depends on -- MADE, not assumed.
 
-    This was `assert shutil.which("aws") is None`, a claim about the machine
-    that happened to be running the suite. It passed here and failed in CI run
-    34970782616 with `/usr/local/bin/aws`, and the failure was the honest one:
-    on a host WITH aws those cases were never exercising the refusal they
-    document. Now the PATH handed to both subjects is masked, and this asserts
-    the mask rather than the host.
+    This was `assert shutil.which("aws") is None`, a claim about the machine that happened to be running the suite. It passed here and failed in CI run 34970782616 with `/usr/local/bin/aws`, and the failure was the honest one: on a host WITH aws those cases were never exercising the refusal they document. Now the PATH handed to both subjects is masked, and this asserts the mask
+    rather than the host.
     """
     pathmask.assert_absent("aws", masked_path())
 

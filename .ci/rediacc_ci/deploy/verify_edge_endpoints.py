@@ -5,51 +5,29 @@ Post-deploy smoke test for the edge environment. The twin's own header carries
 the WHY for every assertion; this docstring records only what the PORT had to
 decide, because everything else is a line-for-line transcription.
 
-CURL IS SHELLED OUT TO, NOT REPLACED BY `urllib`. Its sibling
-`wait_for_preview_worker.py` went the other way and said so: `curl` is a
-generic HTTP client with no credential of its own, so faking the BINARY there
-would have reimplemented `urllib.request` under another name. THIS script is
-different in the one way that matters. Every URL in it is a hard-coded
-production hostname (`edge.rediacc.com`, `releases.rediacc.com`) with no
-override knob anywhere, so the only way to drive either implementation without
-touching production is to put a fake `curl` on `PATH`. A port that used
-`urllib` could not be driven through that fake, which means it could not be
-compared against the twin at all, which means it could never be shown
-equivalent. The argv is therefore byte-identical to the twin's on every one of
-the eleven call sites, and the differential asserts the recorded call log
-matches.
+CURL IS SHELLED OUT TO, NOT REPLACED BY `urllib`. Its sibling `wait_for_preview_worker.py` went the other way and said so: `curl` is a generic HTTP client with no credential of its own, so faking the BINARY there would have reimplemented `urllib.request` under another name. THIS script is different in the one way that matters. Every URL in it is a hard-coded production hostname
+(`edge.rediacc.com`, `releases.rediacc.com`) with no override knob anywhere, so the only way to drive either implementation without touching production is to put a fake `curl` on `PATH`. A port that used `urllib` could not be driven through that fake, which means it could not be compared against the twin at all, which means it could never be shown equivalent. The argv is therefore
+byte-identical to the twin's on every one of the eleven call sites, and the differential asserts the recorded call log matches.
 
-`jq` IS ALSO SHELLED OUT TO, for the same reason plus one more: the twin reads
-`jq -re '.version'`'s three distinct exit codes (0 with a value, 1 on a JSON
-`null`, 4 on empty input -- all three driven, not assumed), and jq's stderr is
-NOT redirected on that call site, so a parse error reaches the script's stderr.
-Reproducing that from `json.loads` would be a re-derivation of jq's diagnostics.
+`jq` IS ALSO SHELLED OUT TO, for the same reason plus one more: the twin reads `jq -re '.version'`'s three distinct exit codes (0 with a value, 1 on a JSON `null`, 4 on empty input -- all three driven, not assumed), and jq's stderr is NOT redirected on that call site, so a parse error reaches the script's stderr. Reproducing that from `json.loads` would be a re-derivation of jq's
+diagnostics.
 
 PIPEFAIL IS OFF IN THE TWIN AND ITS ABSENCE IS LOAD-BEARING, which the twin's
 own header explains: `HDRS=$(curl -sI ... | tr -d '\\r')` reports `tr`'s status,
-so a transient curl failure falls through to the "headers not yet enabled"
-branch instead of aborting the smoke test. Python has no such option to get
+so a transient curl failure falls through to the "headers not yet enabled" branch instead of aborting the smoke test. Python has no such option to get
 wrong; the equivalent is simply that `headers()` below ignores curl's exit
 status, and it is called out here so a later reader does not "fix" it.
 
-THE GLOBALS ARE REAL GLOBALS IN THE TWIN, and the error paths depend on it.
-`_install_sh_baked` assigns `INSTALL_SH` with no `local`, so after
-`fetch_retry` gives up, the `echo "$INSTALL_SH" | grep -E ...` diagnostic
-prints the body of the LAST attempt. `S`, `FOOTER_HTML`, `EDGE_VERSION`,
-`R2_SH` and `R2_PS1` are the same. `_Last` below is that shared scratch space,
-named rather than hidden so the coupling stays visible.
+THE GLOBALS ARE REAL GLOBALS IN THE TWIN, and the error paths depend on it. `_install_sh_baked` assigns `INSTALL_SH` with no `local`, so after `fetch_retry` gives up, the `echo "$INSTALL_SH" | grep -E ...` diagnostic prints the body of the LAST attempt. `S`, `FOOTER_HTML`, `EDGE_VERSION`, `R2_SH` and `R2_PS1` are the same. `_Last` below is that shared scratch space, named rather
+than hidden so the coupling stays visible.
 
-`$RANDOM$RANDOM` BECOMES `secrets.randbelow(32768)` TWICE, not `random`. The
-value is a cache-buster in a query string and nothing reads it back, so the
+`$RANDOM$RANDOM` BECOMES `secrets.randbelow(32768)` TWICE, not `random`. The value is a cache-buster in a query string and nothing reads it back, so the
 generator's quality is irrelevant; `secrets` is used only because ruff's S311
-objects to `random` and this repo does not add per-line suppressions to get
-past a gate. The value DOMAIN is identical (0..32767 concatenated), which is
-the only property the twin relies on.
+objects to `random` and this repo does not add per-line suppressions to get past a gate. The value DOMAIN is identical (0..32767 concatenated), which is the only property the twin relies on.
 
 REWORDED ON EXACTLY ONE PATH: a missing `$VERSION`. The twin spells that
 `${VERSION:?verify-edge-endpoints.sh: VERSION must be set}`, and bash prefixes
-its own `<path>: line 87:` to the message. The line number is not worth
-reproducing and would rot on the next edit, so the port prints its own line.
+its own `<path>: line 87:` to the message. The line number is not worth reproducing and would rot on the next edit, so the port prints its own line.
 Exit code (1) and the named variable agree; the bytes do not, and the
 differential asserts that narrowly rather than pretending otherwise.
 
@@ -84,8 +62,7 @@ DEVNULL = subprocess.DEVNULL
 class _Last:
     """The twin's un-`local`ised predicate variables, in one place.
 
-    Every field here is read by an ERROR path after the predicate that set it
-    has already returned false, which is why they cannot be locals.
+    Every field here is read by an ERROR path after the predicate that set it has already returned false, which is why they cannot be locals.
     """
 
     install_sh: str = ""
@@ -105,9 +82,7 @@ def substitute(out: str) -> str:
 def lines(text: str) -> list[str]:
     """The lines `echo "$text" | grep ...` would see.
 
-    `echo` appends one newline, and grep does not treat the empty tail after a
-    final newline as a line. Written once so the four diagnostic greps below
-    cannot drift apart.
+    `echo` appends one newline, and grep does not treat the empty tail after a final newline as a line. Written once so the four diagnostic greps below cannot drift apart.
     """
     return (text + "\n").split("\n")[:-1]
 
@@ -115,9 +90,7 @@ def lines(text: str) -> list[str]:
 def curl_run(args: list[str], *, quiet_stderr: bool) -> tuple[int, str]:
     """One `curl` invocation, argv exactly as the twin spells it.
 
-    `quiet_stderr` is the twin's `2>/dev/null`, which is present on the
-    `-fsSL` body fetches and the region health probe and ABSENT on the
-    `-sI` fingerprint probes. The asymmetry is the twin's, not a choice.
+    `quiet_stderr` is the twin's `2>/dev/null`, which is present on the `-fsSL` body fetches and the region health probe and ABSENT on the `-sI` fingerprint probes. The asymmetry is the twin's, not a choice.
     """
     proc = subprocess.run(
         ["curl", *args],
@@ -138,9 +111,7 @@ def _fetch_body(url: str) -> tuple[int, str]:
 def _status(url: str) -> str:
     """`S=$(curl -sI -o /dev/null -w '%{http_code}' <url>)`.
 
-    NO `2>/dev/null` HERE, deliberately: the twin does not suppress curl's
-    stderr on the three fingerprint probes, so a TLS or DNS diagnostic reaches
-    the job log. Reproduced rather than tidied.
+    NO `2>/dev/null` HERE, deliberately: the twin does not suppress curl's stderr on the three fingerprint probes, so a TLS or DNS diagnostic reaches the job log. Reproduced rather than tidied.
     """
     _rc, out = curl_run(["-sI", "-o", "/dev/null", "-w", "%{http_code}", url], quiet_stderr=False)
     return substitute(out)
@@ -149,9 +120,7 @@ def _status(url: str) -> str:
 def headers(url: str) -> str:
     """`HDRS=$(curl -sI <url> | tr -d '\\r')`.
 
-    curl's exit status is DISCARDED, which under the twin's `set +o pipefail`
-    is what the pipeline does: the status reported is `tr`'s, and `tr` succeeds
-    on empty input. See the module docstring.
+    curl's exit status is DISCARDED, which under the twin's `set +o pipefail` is what the pipeline does: the status reported is `tr`'s, and `tr` succeeds on empty input. See the module docstring.
     """
     _rc, out = curl_run(["-sI", url], quiet_stderr=False)
     return substitute(out.replace("\r", ""))
@@ -173,26 +142,13 @@ def jq_run(args: list[str], *, stdin: str | None = None) -> tuple[int, str]:
 def fetch_retry(what: str, predicate: Callable[[], bool], retries: int, sleep_s: str) -> bool:
     """`fetch_retry` (verify-edge-endpoints.sh:70-86).
 
-    The predicate does its own fetching AND its own matching, which is the
-    whole point: a stale-but-200 response is a failure it can retry, and a
-    blanket `curl --retry` cannot see one.
+    The predicate does its own fetching AND its own matching, which is the whole point: a stale-but-200 response is a failure it can retry, and a blanket `curl --retry` cannot see one.
 
-    `sleep_s` STAYS A STRING because the twin passes it to `sleep`, which
-    accepts a fraction, while the give-up message computes
-    `(retries - 1) * sleep` in bash ARITHMETIC, which does not.
+    `sleep_s` STAYS A STRING because the twin passes it to `sleep`, which accepts a fraction, while the give-up message computes `(retries - 1) * sleep` in bash ARITHMETIC, which does not.
 
-    THIS PORT DELIBERATELY DIVERGES ON A FRACTIONAL `EDGE_RETRY_SLEEP`, and it
-    is the one place a port must not be faithful. FINDING 3: in the twin, the
-    arithmetic error inside the give-up `echo` aborts `fetch_retry` BEFORE its
-    `return 1`, and because every call site invokes it under `||` or `if !`,
-    bash suppresses the exit and hands the caller status 0. `fetch_retry` then
-    reports SUCCESS for a check that just failed twice, the caller prints its
-    `OK` line, and the smoke test ends with `Smoke test passed` and exit 0
-    having verified nothing. All six call sites are affected. Reproducing that
-    would be transcribing a silent pass into a second language, so the port
-    renders the number with `float` instead: byte-identical for every integer
-    `EDGE_RETRY_SLEEP` (including the default 5), and correct rather than
-    catastrophic for a fractional one.
+    THIS PORT DELIBERATELY DIVERGES ON A FRACTIONAL `EDGE_RETRY_SLEEP`, and it is the one place a port must not be faithful. FINDING 3: in the twin, the arithmetic error inside the give-up `echo` aborts `fetch_retry` BEFORE its `return 1`, and because every call site invokes it under `||` or `if !`, bash suppresses the exit and hands the caller status 0. `fetch_retry` then reports
+    SUCCESS for a check that just failed twice, the caller prints its `OK` line, and the smoke test ends with `Smoke test passed` and exit 0 having verified nothing. All six call sites are affected. Reproducing that would be transcribing a silent pass into a second language, so the port renders the number with `float` instead: byte-identical for every integer `EDGE_RETRY_SLEEP`
+    (including the default 5), and correct rather than catastrophic for a fractional one.
     """
     attempt = 1
     while True:
@@ -435,8 +391,7 @@ NOSNIFF = re.compile(r"^x-content-type-options: *nosniff", re.IGNORECASE)
 def _region_domains() -> list[str]:
     """`done < <(jq -r '.regions[] | .edgeDomain' regions.json)`.
 
-    A FAILING jq PRODUCES ZERO DOMAINS AND NO ERROR, because a process
-    substitution's exit status is not the loop's and `set -e` never sees it.
+    A FAILING jq PRODUCES ZERO DOMAINS AND NO ERROR, because a process substitution's exit status is not the loop's and `set -e` never sees it.
     Carried unchanged; see FINDING 1 in the differential, where it is
     reproduced rather than fixed.
     """

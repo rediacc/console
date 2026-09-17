@@ -1,10 +1,6 @@
 """`rediacc_ci.quality.release_state` against the shell it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The library this port
-carries is deliberately PURE -- its own header says callers "should usually feed
-`rsv_assert_bijection` synthetic version lists rather than shimming AWS" -- so
-the interesting half can be driven directly on both sides. What cannot be
-inferred, and is measured below rather than reasoned:
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The library this port carries is deliberately PURE -- its own header says callers "should usually feed `rsv_assert_bijection` synthetic version lists rather than shimming AWS" -- so the interesting half can be driven directly on both sides. What cannot be inferred, and is measured below rather than reasoned:
 
   * `sort -uV` on `v1.0.9` and `v1.0.10` is NOT lexicographic, and the whole
     bijection depends on it. The port approximates version sort with a numeric
@@ -17,10 +13,7 @@ inferred, and is measured below rather than reasoned:
     purpose; this file pins it so nobody "fixes" one side.
   * `${v:+N cli sentinels}${v:-none}` glues the count to the WHOLE version list.
 
-They are NOT the whole gate: the whole gate is what the committed shadow ledger
-`.ci/shadow/w7p2-release-state.observations.jsonl` compares over five distinct
-trees, against a stub `aws` committed inside each fixture. This file covers the
-seams that ledger cannot isolate.
+They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-release-state.observations.jsonl` compares over five distinct trees, against a stub `aws` committed inside each fixture. This file covers the seams that ledger cannot isolate.
 """
 
 import os
@@ -59,8 +52,7 @@ def test_sort_unique_versions_matches_sort_uv(values: list[str]) -> None:
 def test_the_sort_table_would_fail_under_lexicographic_order() -> None:
     """The control ON the table: at least one case must distinguish the two.
 
-    Without this a later tidy could reduce the table to single-digit versions,
-    where `sort -V` and `sort` agree, and the differential would prove nothing.
+    Without this a later tidy could reduce the table to single-digit versions, where `sort -V` and `sort` agree, and the differential would prove nothing.
     """
     assert rs.sort_unique_versions(["v1.0.10", "v1.0.9"]) == ["v1.0.9", "v1.0.10"]
     assert sorted(["v1.0.10", "v1.0.9"]) == ["v1.0.10", "v1.0.9"]
@@ -104,9 +96,7 @@ def test_the_pointer_table_exercises_both_directions() -> None:
 def test_the_greedy_match_is_deliberate() -> None:
     """Pinned separately because it looks like a bug and is a decision.
 
-    BRE `.*` is greedy, so a nested `"version"` after the top-level one wins.
-    A left-to-right search would be a DIFFERENT gate, and this assertion is what
-    stops someone making the port that gate while the twin stays as it is.
+    BRE `.*` is greedy, so a nested `"version"` after the top-level one wins. A left-to-right search would be a DIFFERENT gate, and this assertion is what stops someone making the port that gate while the twin stays as it is.
     """
     assert rs.pointer_version('{"version": "1.0.0", "tool": {"version": "9.9.9"}}') == "v9.9.9"
 
@@ -130,13 +120,9 @@ def test_assert_bijection_matches_the_bash_function(
 ) -> None:
     """The real `rsv_assert_bijection`, sourced from the library it lives in.
 
-    THE RATCHET IS PINNED AWAY ON BOTH SIDES. `rsv_pre_contract_floor`'s second
-    candidate is `<lib>/../../config/release-contract-floor.txt`, which does not
-    move when a caller passes a fixture root, so an unpinned run computes its
-    floor from whatever version the REAL repository is on and grandfathers every
+    THE RATCHET IS PINNED AWAY ON BOTH SIDES. `rsv_pre_contract_floor`'s second candidate is `<lib>/../../config/release-contract-floor.txt`, which does not move when a caller passes a fixture root, so an unpinned run computes its floor from whatever version the REAL repository is on and grandfathers every
     case here. `RSV_FLOOR_FILE` pointing at a path that does not exist is how
-    the library itself is told "no ratchet": the candidate search is skipped
-    entirely when the variable is set.
+    the library itself is told "no ratchet": the candidate search is skipped entirely when the variable is set.
     """
     nofloor = str(tmp_path / "no-such-floor.txt")
     # `|| rc=$?` IS LOAD-BEARING. `common.sh` sets `-euo pipefail`, so a bare
@@ -237,11 +223,7 @@ def test_the_pointer_assert_table_exercises_both_verdicts() -> None:
 def test_zero_tags_is_reported_as_one_because_of_the_herestring() -> None:
     """The twin's count is wrong for the empty case, and the port matches it.
 
-    `wc -l <<<""` is 1: a herestring of the empty string is one (empty) line.
-    This is the one count a reader most needs to be right, and it is preserved
-    because a port that fixed it would disagree with its twin on every clean
-    fresh clone. Measured here so the claim is checked rather than asserted in
-    a comment.
+    `wc -l <<<""` is 1: a herestring of the empty string is one (empty) line. This is the one count a reader most needs to be right, and it is preserved because a port that fixed it would disagree with its twin on every clean fresh clone. Measured here so the claim is checked rather than asserted in a comment.
     """
     code, out, err = diff.bash_streams('x=""; wc -l <<<"$x"')
     assert code == 0, err
@@ -251,8 +233,7 @@ def test_zero_tags_is_reported_as_one_because_of_the_herestring() -> None:
 def test_the_sentinel_count_line_glues_the_whole_list_to_the_count() -> None:
     """`${v:+N cli sentinels}${v:-none}` is the count AND the list, unseparated.
 
-    Reproduced by the port and reported as a defect. Measured against bash so a
-    reader does not have to trust the reading of the expansion.
+    Reproduced by the port and reported as a defect. Measured against bash so a reader does not have to trust the reading of the expansion.
     """
     script = """
         v="v1.0.0

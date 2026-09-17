@@ -2,27 +2,13 @@
 
 The watchdog's by-design failure must SAY it is by design.
 
-THE PROBLEM, measured 2026-08-26 across three days of rediacc/console runs: 589
-success, 230 skipped, 117 cancelled, 64 failure -- and 63 of those 64 failures
-are this one code path. The watchdog cancels the CI run it monitors, then
-`core.setFailed()`s to signal that it did. That is its SUCCESS mode.
+THE PROBLEM, measured 2026-08-26 across three days of rediacc/console runs: 589 success, 230 skipped, 117 cancelled, 64 failure -- and 63 of those 64 failures are this one code path. The watchdog cancels the CI run it monitors, then `core.setFailed()`s to signal that it did. That is its SUCCESS mode.
 
-Nothing said so. To a human scanning the Actions tab, to any dashboard, and to
-any sweeper keyed on `conclusion`, a working watchdog and a broken one are
-indistinguishable. It is also the direct reason the nightly retry
-(`.ci/scripts/housekeeping/retry-failed-runs.sh`) must exclude this workflow by
-path: without that exclusion, 63 of its 64 candidates are deliberate.
+Nothing said so. To a human scanning the Actions tab, to any dashboard, and to any sweeper keyed on `conclusion`, a working watchdog and a broken one are indistinguishable. It is also the direct reason the nightly retry (`.ci/scripts/housekeeping/retry-failed-runs.sh`) must exclude this workflow by path: without that exclusion, 63 of its 64 candidates are deliberate.
 
-WHY THE RUN NAME IS NOT THE FIX, worth recording because the obvious design does
-not work: GitHub evaluates `run-name` at run CREATION from the dispatch inputs,
-before the monitored run's outcome exists. It CANNOT carry a verdict decided
-mid-run. The step summary is the earliest surface that can, so that is where the
-explanation lives.
+WHY THE RUN NAME IS NOT THE FIX, worth recording because the obvious design does not work: GitHub evaluates `run-name` at run CREATION from the dispatch inputs, before the monitored run's outcome exists. It CANNOT carry a verdict decided mid-run. The step summary is the earliest surface that can, so that is where the explanation lives.
 
-WHAT THIS GATE CANNOT SEE: it asserts the marker and the ordering in the source.
-It cannot prove GitHub renders the summary, and it deliberately does NOT assert
-the exact prose -- only that the by-design claim and the monitored run id are
-present, so the wording stays editable.
+WHAT THIS GATE CANNOT SEE: it asserts the marker and the ordering in the source. It cannot prove GitHub renders the summary, and it deliberately does NOT assert the exact prose -- only that the by-design claim and the monitored run id are present, so the wording stays editable.
 """
 
 import re

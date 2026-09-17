@@ -1,11 +1,8 @@
 """Controls for rediacc_ci.paths.
 
-EVERY ASSERTION HERE IS A PAIR, which is the house style of the five control
-files this package is replacing and is not a formality. A resolver that returned
-the same constant for every input would satisfy "the override is honoured" on its
+EVERY ASSERTION HERE IS A PAIR, which is the house style of the five control files this package is replacing and is not a formality. A resolver that returned the same constant for every input would satisfy "the override is honoured" on its
 own; the paired control is that WITHOUT the override the answer is different. The
-same shape covers the nested-repo case, the `.git`-as-a-file case and the
-idempotence of the sys.path hop.
+same shape covers the nested-repo case, the `.git`-as-a-file case and the idempotence of the sys.path hop.
 
 The two facts pinned here that cost something to learn elsewhere in this tree:
 
@@ -78,9 +75,7 @@ def test_root_env_override_is_honoured(tmp_path, monkeypatch):
 def test_without_the_override_the_answer_is_different(tmp_path, monkeypatch):
     """CONTROL for the test above.
 
-    Without this, a `repo_root` hard-wired to return its argument -- or one that
-    ignored the environment entirely while the test happened to run inside
-    tmp_path -- would pass the override assertion while resolving nothing.
+    Without this, a `repo_root` hard-wired to return its argument -- or one that ignored the environment entirely while the test happened to run inside tmp_path -- would pass the override assertion while resolving nothing.
     """
     monkeypatch.delenv(paths.ROOT_ENV, raising=False)
     assert paths.repo_root() != tmp_path.resolve()
@@ -110,8 +105,7 @@ def test_the_raise_names_the_variable_so_the_operator_can_act():
 
 def test_an_empty_override_falls_back_rather_than_raising(monkeypatch):
     """`FOO= ./gate` is how a shell UNSETS a variable for one command in
-    practice, and treating that as "you pointed me at nothing" would refuse every
-    such invocation. Empty is absent.
+    practice, and treating that as "you pointed me at nothing" would refuse every such invocation. Empty is absent.
     """
     monkeypatch.setenv(paths.ROOT_ENV, "")
     assert paths.repo_root() == paths.CI_DIR.parent
@@ -130,9 +124,7 @@ def test_derived_directories_follow_the_override(tmp_path, monkeypatch):
 def test_derived_directories_exist_in_the_real_tree(monkeypatch):
     """CONTROL: the paths above are not merely well-formed strings.
 
-    A typo in any of the three joins produces a perfectly valid Path that names
-    nothing, and the override test cannot see that because its fixture has no
-    subdirectories either.
+    A typo in any of the three joins produces a perfectly valid Path that names nothing, and the override test cannot see that because its fixture has no subdirectories either.
     """
     monkeypatch.delenv(paths.ROOT_ENV, raising=False)
     assert paths.ci_dir().is_dir()
@@ -200,9 +192,7 @@ def test_looks_like_repo_root_rejects_a_bare_directory(tmp_path):
 def test_looks_like_repo_root_accepts_a_worktree_git_file(tmp_path):
     """THE CASE AN `is_dir()` MARKER GETS WRONG.
 
-    `git worktree add` writes `.git` as a FILE holding a gitdir pointer. Every
-    session in this repo works in a worktree, so this is not the exotic case, it
-    is the normal one.
+    `git worktree add` writes `.git` as a FILE holding a gitdir pointer. Every session in this repo works in a worktree, so this is not the exotic case, it is the normal one.
     """
     assert paths.looks_like_repo_root(make_repo(tmp_path / "wt", git_as_file=True))
 
@@ -214,9 +204,7 @@ def test_looks_like_repo_root_accepts_an_ordinary_git_directory(tmp_path):
 def test_looks_like_repo_root_needs_all_three_markers(tmp_path):
     """CONTROL: any ONE marker alone must not be enough.
 
-    Without this the function could be `(p / ".git").exists()` and every test
-    above would still pass, while `find_repo_root` would stop at the first
-    checkout of anything it met on the way up.
+    Without this the function could be `(p / ".git").exists()` and every test above would still pass, while `find_repo_root` would stop at the first checkout of anything it met on the way up.
     """
     root = make_repo(tmp_path / "partial")
     (root / "package.json").unlink()
@@ -226,10 +214,7 @@ def test_looks_like_repo_root_needs_all_three_markers(tmp_path):
 def test_the_anti_vacuity_fixture_shape_is_not_a_repo_root(tmp_path):
     """WHY repo_root() DOES NOT VALIDATE MARKERS.
 
-    test-gate-anti-vacuity.sh copies `.ci/rediacc_ci` into a tempdir with no
-    `.git` and no package.json, then requires gates to run there. This asserts
-    that such a tree really does fail the marker test, which is the measurement
-    behind the resolver's decision not to apply one.
+    test-gate-anti-vacuity.sh copies `.ci/rediacc_ci` into a tempdir with no `.git` and no package.json, then requires gates to run there. This asserts that such a tree really does fail the marker test, which is the measurement behind the resolver's decision not to apply one.
     """
     fixture = tmp_path / "fixture"
     (fixture / ".ci" / "rediacc_ci").mkdir(parents=True)
@@ -257,10 +242,7 @@ def test_find_repo_root_accepts_a_file_and_starts_from_its_directory(tmp_path):
 def test_find_repo_root_stops_at_the_inner_repo(tmp_path):
     """THE NESTED-REPO TRAP, pinned as behaviour rather than left as a warning.
 
-    `private/renet` is a submodule and `private/growth` a gitignored sibling
-    checkout, so a start path under either answers with the inner tree. That is
-    correct for "the nearest repository" and wrong for "this repository", which
-    is exactly why repo_root() does not walk.
+    `private/renet` is a submodule and `private/growth` a gitignored sibling checkout, so a start path under either answers with the inner tree. That is correct for "the nearest repository" and wrong for "this repository", which is exactly why repo_root() does not walk.
     """
     outer = make_repo(tmp_path / "outer")
     inner = make_repo(outer / "private" / "inner")
@@ -293,9 +275,7 @@ def test_on_sys_path_puts_the_directory_first(tmp_path, monkeypatch):
 def test_on_sys_path_is_idempotent(tmp_path, monkeypatch):
     """THE ONE BEHAVIOURAL DIFFERENCE FROM THE HOPS IT REPLACES.
 
-    `sys.path.insert(0, d)` in a module imported twice -- once as `__main__` and
-    once by name, which is what happens when one gate imports another -- leaves
-    two copies of the directory on the path.
+    `sys.path.insert(0, d)` in a module imported twice -- once as `__main__` and once by name, which is what happens when one gate imports another -- leaves two copies of the directory on the path.
     """
     monkeypatch.setattr(sys, "path", list(sys.path))
     paths.on_sys_path(tmp_path)
@@ -342,10 +322,7 @@ def collect(root: pathlib.Path, **kwargs) -> set[str]:
 def make_corpus(root: pathlib.Path) -> pathlib.Path:
     """One real file, and its identical twin inside a fake peer worktree.
 
-    The two files are BYTE-IDENTICAL and differ only in where they sit, which is
-    the whole point: the 2026-09-13 incident was one real file scanned twice, and
-    a fixture whose copies differed would let a gate pass by telling them apart on
-    content rather than on location.
+    The two files are BYTE-IDENTICAL and differ only in where they sit, which is the whole point: the 2026-09-13 incident was one real file scanned twice, and a fixture whose copies differed would let a gate pass by telling them apart on content rather than on location.
     """
     body = "replace github.com/rediacc/renet => ../../private/renet\n"
     (root / "pkg").mkdir(parents=True, exist_ok=True)
@@ -359,10 +336,7 @@ def make_corpus(root: pathlib.Path) -> pathlib.Path:
 def test_a_file_inside_claude_worktrees_is_not_collected(tmp_path):
     """THE DEFECT THIS HELPER EXISTS FOR.
 
-    `.claude/worktrees/` holds sibling checkouts of this same repository for
-    isolated sub-agent sessions. `.git/info/exclude:11` hides them from
-    `git ls-files` and from every CI checkout, so a gate that walks the raw
-    filesystem judges a peer's tree and nobody else can reproduce the verdict.
+    `.claude/worktrees/` holds sibling checkouts of this same repository for isolated sub-agent sessions. `.git/info/exclude:11` hides them from `git ls-files` and from every CI checkout, so a gate that walks the raw filesystem judges a peer's tree and nobody else can reproduce the verdict.
     """
     assert "\n".join(sorted(collect(make_corpus(tmp_path)))) == "pkg/go.mod"
 
@@ -371,8 +345,7 @@ def test_the_identical_file_outside_that_path_is_collected(tmp_path):
     """THE OTHER HALF, and without it the test above passes on a helper that
     returns the empty set for everything.
 
-    Asserted as an equality rather than a membership, so a prune that took the
-    whole tree with it fails here instead of quietly widening.
+    Asserted as an equality rather than a membership, so a prune that took the whole tree with it fails here instead of quietly widening.
     """
     root = make_corpus(tmp_path)
     assert collect(root) == {"pkg/go.mod"}
@@ -382,11 +355,7 @@ def test_the_identical_file_outside_that_path_is_collected(tmp_path):
 def test_a_root_inside_a_worktrees_path_still_walks(tmp_path):
     """THE CASE A NAIVE PRUNE TURNS INTO A FALSE GREEN.
 
-    Every isolated sub-agent in this repo has a repo root of
-    `<main>/.claude/worktrees/agent-xxxx`, so a prune written as "reject any path
-    containing .claude/worktrees" would make every gate in such a session scan
-    NOTHING and exit 0. Pruning descendants only is what keeps that from
-    happening, and this pins it.
+    Every isolated sub-agent in this repo has a repo root of `<main>/.claude/worktrees/agent-xxxx`, so a prune written as "reject any path containing .claude/worktrees" would make every gate in such a session scan NOTHING and exit 0. Pruning descendants only is what keeps that from happening, and this pins it.
     """
     root = tmp_path / ".claude" / "worktrees" / "agent-self"
     (root / "src").mkdir(parents=True)
@@ -412,9 +381,7 @@ def test_a_root_with_a_trailing_separator_still_prunes(tmp_path):
 
     The pair prune matches on the parent directory's NAME, so a root handed in
     with a trailing separator would miss the match at the top level, which is
-    exactly the level a caller walking `.claude` prunes from. Passed as a raw
-    string rather than a Path because pathlib normalises the separator away and
-    would make this control pass without the fix.
+    exactly the level a caller walking `.claude` prunes from. Passed as a raw string rather than a Path because pathlib normalises the separator away and would make this control pass without the fix.
     """
     (tmp_path / ".claude" / "worktrees" / "peer").mkdir(parents=True)
     (tmp_path / ".claude" / "worktrees" / "peer" / "x.sh").write_text("", encoding="utf-8")
@@ -440,9 +407,7 @@ def test_git_and_node_modules_are_pruned_too(tmp_path):
 def test_a_directory_merely_named_worktrees_is_kept(tmp_path):
     """`worktrees` IS PRUNED ONLY UNDER `.claude`, and that is not pedantry.
 
-    Pruning the bare name at any depth would silently drop a real
-    `docs/worktrees/` from a gate's corpus, which is the same invisible
-    corpus-loss the helper exists to prevent, pointed the other way.
+    Pruning the bare name at any depth would silently drop a real `docs/worktrees/` from a gate's corpus, which is the same invisible corpus-loss the helper exists to prevent, pointed the other way.
     """
     (tmp_path / "docs" / "worktrees").mkdir(parents=True)
     (tmp_path / "docs" / "worktrees" / "guide.md").write_text("", encoding="utf-8")
@@ -473,9 +438,7 @@ def test_exclude_dirs_adds_to_the_standing_prune_rather_than_replacing_it(tmp_pa
 
 def test_the_yielded_dirnames_list_is_mutated_in_place(tmp_path):
     """CALL SITES SORT `dirnames` TO STEER THE WALK, and that only works because
-    the helper mutates the list `os.walk` still holds rather than handing back a
-    new one. `no_app_admin_perm`, `agent_browser_exit` and `e2e_coverage` all do
-    it for deterministic output.
+    the helper mutates the list `os.walk` still holds rather than handing back a new one. `no_app_admin_perm`, `agent_browser_exit` and `e2e_coverage` all do it for deterministic output.
     """
     for name in ("b", "a", "node_modules"):
         (tmp_path / name).mkdir()
@@ -498,8 +461,7 @@ def test_walk_tree_does_not_follow_directory_symlinks(tmp_path):
 
 def test_a_missing_root_yields_nothing_rather_than_raising(tmp_path):
     """Several callers rely on this to match a twin's `2>/dev/null`. It is NOT a
-    vacuity hole being blessed: the anti-vacuity floor is per gate, because only
-    the caller knows how big its corpus has to be. See the helper's docstring.
+    vacuity hole being blessed: the anti-vacuity floor is per gate, because only the caller knows how big its corpus has to be. See the helper's docstring.
     """
     assert collect(tmp_path / "no-such-dir") == set()
 
@@ -507,9 +469,7 @@ def test_a_missing_root_yields_nothing_rather_than_raising(tmp_path):
 def test_the_real_tree_walk_is_not_trivially_empty():
     """ANTI-VACUITY FOR THIS CONTROL FILE ITSELF.
 
-    Every assertion above runs on a tmp_path fixture, and all of them would pass
-    against a helper that yielded nothing on a real tree. This is the one that
-    would not.
+    Every assertion above runs on a tmp_path fixture, and all of them would pass against a helper that yielded nothing on a real tree. This is the one that would not.
     """
     root = paths.repo_root()
     dirs = [dirpath for dirpath, _d, _f in paths.walk_tree(root)]

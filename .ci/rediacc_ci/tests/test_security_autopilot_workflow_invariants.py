@@ -1,33 +1,19 @@
 """Differential: `rediacc_ci.security.autopilot_workflow_invariants` against its
 twin `.ci/scripts/security/check-autopilot-workflow-invariants.sh`.
 
-THE COMPARISON IS BYTE FOR BYTE ON BOTH STREAMS, with exactly one exemption:
-`test_two_token_jobs_disagree_only_on_order`, which pins the twin's `for (j in
-array)` non-determinism rather than pretending it away. Every other case, the
-real workflow included, is compared with nothing elided.
+THE COMPARISON IS BYTE FOR BYTE ON BOTH STREAMS, with exactly one exemption: `test_two_token_jobs_disagree_only_on_order`, which pins the twin's `for (j in array)` non-determinism rather than pretending it away. Every other case, the real workflow included, is compared with nothing elided.
 
-NO FAKES, AND THAT IS MEASURED. The twin shells out to `awk` (three separate
-programs) and `grep`, and to nothing else:
+NO FAKES, AND THAT IS MEASURED. The twin shells out to `awk` (three separate programs) and `grep`, and to nothing else:
 
     $ grep -nE '(^|[^a-z-])(yq|jq|gh|curl|wget|docker|git) ' \\
         .ci/scripts/security/check-autopilot-workflow-invariants.sh
     (no output)
 
-Both of those are transcribed into the port, so there is nothing left to record
-and no scratch PATH to build. Every case drives both sides over a FIXTURE
-workflow through `$WORKFLOW_FILE` -- the seam the twin already exposes for its
-own gate test -- and two cases drive both over the real
-`.github/workflows/autopilot.yml`.
+Both of those are transcribed into the port, so there is nothing left to record and no scratch PATH to build. Every case drives both sides over a FIXTURE workflow through `$WORKFLOW_FILE` -- the seam the twin already exposes for its own gate test -- and two cases drive both over the real `.github/workflows/autopilot.yml`.
 
-THE INVARIANTS ARE ABOUT TEXT, NOT ABOUT A PARSE TREE, which is why the port
-walks lines instead of loading YAML: `wall4-comment-missing` is a claim about a
-COMMENT, `trusted-checkout-not-first` is a claim about the ORDER of two steps,
-and `model-round-file-tools` is a claim about the contents of a block SCALAR.
-None of the three survives `yaml.safe_load`.
+THE INVARIANTS ARE ABOUT TEXT, NOT ABOUT A PARSE TREE, which is why the port walks lines instead of loading YAML: `wall4-comment-missing` is a claim about a COMMENT, `trusted-checkout-not-first` is a claim about the ORDER of two steps, and `model-round-file-tools` is a claim about the contents of a block SCALAR. None of the three survives `yaml.safe_load`.
 
-WHY A BASELINE-GREEN FIXTURE EXISTS. Without it a case asserting exit 1 proves
-nothing, because the fixture might have been red for a reason the case did not
-plant. `test_the_baseline_fixture_is_green` is the control every other fixture
+WHY A BASELINE-GREEN FIXTURE EXISTS. Without it a case asserting exit 1 proves nothing, because the fixture might have been red for a reason the case did not plant. `test_the_baseline_fixture_is_green` is the control every other fixture
 case leans on, and it doubles as the NEGATIVE direction of the selftest.
 
 K=5 LEDGER:
@@ -116,10 +102,7 @@ def write(tmp_path: pathlib.Path, body: str, name: str = "wf.yml") -> pathlib.Pa
 def _env(**extra: str) -> dict[str, str]:
     """REPLACES the caller's environment; see `differential.BASE_ENV`.
 
-    `PYTHONPATH` is set for BOTH sides even though only the port needs it, so
-    the two children differ in nothing but which program they run.
-    `REDIACC_CI_ROOT` is deliberately absent: it is the one seam the port has
-    and the twin does not.
+    `PYTHONPATH` is set for BOTH sides even though only the port needs it, so the two children differ in nothing but which program they run. `REDIACC_CI_ROOT` is deliberately absent: it is the one seam the port has and the twin does not.
     """
     env = differential.env_for(PYTHONPATH=str(ROOT / ".ci"), PYTHONDONTWRITEBYTECODE="1")
     env.update(extra)
@@ -158,9 +141,7 @@ def assert_red(old: tuple, token: str) -> None:
 def mutate(original: str, before: str, after: str, count: int = 1) -> str:
     """`str.replace` that REFUSES to be a no-op.
 
-    A red case whose substitution silently missed still runs, still compares two
-    identical outputs, and still passes -- while asserting nothing. This is the
-    control for the control.
+    A red case whose substitution silently missed still runs, still compares two identical outputs, and still passes -- while asserting nothing. This is the control for the control.
     """
     out = original.replace(before, after, count)
     assert out != original, "the substitution %r -> %r matched nothing" % (before, after)
@@ -173,9 +154,7 @@ def mutate(original: str, before: str, after: str, count: int = 1) -> str:
 def test_the_real_repository_agrees() -> None:
     """The clean-tree case, over the real `.github/workflows/autopilot.yml`.
 
-    No fixture reproduces 5 jobs, their real checkout ordering and the real
-    `settings: |` block at once, and a fixture cannot notice a rename landing in
-    the real file.
+    No fixture reproduces 5 jobs, their real checkout ordering and the real `settings: |` block at once, and a fixture cannot notice a rename landing in the real file.
     """
     old, new = run_both()
     assert_same(old, new)
@@ -252,8 +231,7 @@ def test_a_first_checkout_that_is_not_the_trusted_ref(tmp_path: pathlib.Path) ->
 def test_a_trusted_checkout_on_the_wrong_ref(tmp_path: pathlib.Path) -> None:
     """`ref: main` must be the WHOLE value: `main-next` is not main.
 
-    The regex is `ref:[[:space:]]*main[[:space:]]*$`, anchored at end of line,
-    and this is the case that proves the anchor is carried.
+    The regex is `ref:[[:space:]]*main[[:space:]]*$`, anchored at end of line, and this is the case that proves the anchor is carried.
     """
     body = mutate(BASELINE, "          ref: main\n", "          ref: main-next\n", 1)
     old, new = run_both(write(tmp_path, body))
@@ -273,9 +251,7 @@ def test_event_payload_interpolated_into_a_run_block(tmp_path: pathlib.Path) -> 
 def test_event_payload_outside_a_run_block_is_not_a_finding(tmp_path: pathlib.Path) -> None:
     """The POSITIVE control's twin: `in_run` really is scoped.
 
-    `github.event.` in an `env:` value is the SUPPORTED way to carry untrusted
-    payload text, so a port that dropped the `in_run` condition would flag the
-    correct pattern. Nothing else in this file exercises that.
+    `github.event.` in an `env:` value is the SUPPORTED way to carry untrusted payload text, so a port that dropped the `in_run` condition would flag the correct pattern. Nothing else in this file exercises that.
     """
     body = mutate(
         BASELINE,
@@ -382,10 +358,7 @@ def test_the_state_flag_only_in_a_step_does_not_satisfy_the_job_guard(
 ) -> None:
     """THE SUBSTITUTE THE TWIN'S HEADER SAYS IT MUST NOT ACCEPT.
 
-    A whole-file grep for AUTOPILOT_ALLOW_STATE would pass on the state-write
-    step that already mentions the flag. The extraction is scoped to the model
-    job's own `if:` precisely so it does not, and this is the only case that
-    distinguishes the two implementations of that idea.
+    A whole-file grep for AUTOPILOT_ALLOW_STATE would pass on the state-write step that already mentions the flag. The extraction is scoped to the model job's own `if:` precisely so it does not, and this is the only case that distinguishes the two implementations of that idea.
     """
     body = mutate(
         BASELINE,
@@ -434,8 +407,7 @@ def test_an_unlocatable_settings_block(tmp_path: pathlib.Path) -> None:
 def test_a_workflow_with_crlf_line_endings(tmp_path: pathlib.Path) -> None:
     """`sub(/\\r$/, "", line)` in the twin, `re.sub(r"\\r$", ...)` in the port.
 
-    A CRLF file must produce the same verdict as an LF one, or a Windows-edited
-    workflow silently changes what the gate sees.
+    A CRLF file must produce the same verdict as an LF one, or a Windows-edited workflow silently changes what the gate sees.
     """
     path = tmp_path / "crlf.yml"
     path.write_bytes(BASELINE.replace("\n", "\r\n").encode("utf-8"))
@@ -447,9 +419,7 @@ def test_a_workflow_with_crlf_line_endings(tmp_path: pathlib.Path) -> None:
 def test_a_file_with_no_trailing_newline(tmp_path: pathlib.Path) -> None:
     """awk yields N records for N lines whether or not the last one is terminated.
 
-    `text.split("\\n")` yields N+1 with a trailing empty string when it IS
-    terminated, and the port's `records()` drops exactly that one. Getting it
-    wrong shifts every line NUMBER in every finding.
+    `text.split("\\n")` yields N+1 with a trailing empty string when it IS terminated, and the port's `records()` drops exactly that one. Getting it wrong shifts every line NUMBER in every finding.
     """
     path = tmp_path / "nonl.yml"
     path.write_text(BASELINE.rstrip("\n"), encoding="utf-8")
@@ -462,8 +432,7 @@ def test_colour_is_emitted_when_stderr_is_a_terminal(tmp_path: pathlib.Path) -> 
     """`[[ -t 2 ]] && [[ -z "${NO_COLOR:-}" ]]` (common.sh:18), the branch a human sees.
 
     `CI` is left UNSET: `rediacc_ci.log` also disables colour on `CI=true` and
-    common.sh does not, which is `log.py`'s documented deliberate divergence and
-    is not this gate's subject.
+    common.sh does not, which is `log.py`'s documented deliberate divergence and is not this gate's subject.
     """
     body = mutate(BASELINE, "track_progress: false", "track_progress: true")
     workflow = write(tmp_path, body)
@@ -482,15 +451,9 @@ def test_two_token_jobs_disagree_only_on_order(tmp_path: pathlib.Path) -> None:
 
     gawk 5.3.2 answers in internal hash order, which is stable run to run and
     reproducible only from inside gawk; the port emits in insertion order. The
-    two therefore print the SAME SET of findings in a different sequence, and
-    only when two or more jobs violate the same invariant. Every real violation
-    is a single job, and the real workflow has none at all.
+    two therefore print the SAME SET of findings in a different sequence, and only when two or more jobs violate the same invariant. Every real violation is a single job, and the real workflow has none at all.
 
-    This case asserts three things at once: the sets match, the exit codes
-    match, and the twin's order really is neither insertion nor sorted -- the
-    last one so that a future gawk whose iteration became insertion-ordered
-    turns this test RED rather than letting the port's divergence note go quietly
-    stale.
+    This case asserts three things at once: the sets match, the exit codes match, and the twin's order really is neither insertion nor sorted -- the last one so that a future gawk whose iteration became insertion-ordered turns this test RED rather than letting the port's divergence note go quietly stale.
     """
     body = """name: multi
 on: push
@@ -535,15 +498,9 @@ jobs:
 def test_a_deterministic_mutation_sweep_of_the_real_workflow(tmp_path: pathlib.Path) -> None:
     """Twenty seeded mutations of the real file, compared byte for byte.
 
-    The hand-written cases above each aim at ONE rule and therefore only ever
-    exercise the shapes their author thought of. This sweep is the part that
-    catches an interaction -- a dedent that ends a pending checkout at the same
-    line a run block closes, a step marker inside a with-block -- and it is
-    seeded so a failure is reproducible rather than a flake.
+    The hand-written cases above each aim at ONE rule and therefore only ever exercise the shapes their author thought of. This sweep is the part that catches an interaction -- a dedent that ends a pending checkout at the same line a run block closes, a step marker inside a with-block -- and it is seeded so a failure is reproducible rather than a flake.
 
-    Anti-vacuity is enforced INSIDE the loop: the sweep must produce at least
-    one red and at least one green, or it has proved nothing about either
-    branch and fails on that ground alone.
+    Anti-vacuity is enforced INSIDE the loop: the sweep must produce at least one red and at least one green, or it has proved nothing about either branch and fails on that ground alone.
     """
     source = REAL.read_text(encoding="utf-8").split("\n")
     rng = random.Random(20260914)  # noqa: S311 - fixture generation, not a security draw

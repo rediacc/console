@@ -1,34 +1,21 @@
 """Differential: `rediacc_ci.build.prepare_cli_assets` against its twin
 `.ci/scripts/build/prepare-cli-assets.sh`.
 
-THE ARTIFACTS ARE THE SUBJECT, NOT THE LOG. This script's whole output is three
-files -- `dist/assets/renet-metadata.json`, `dist/assets/THIRD_PARTY_LICENSES`
-and `packages/cli/sea-config.generated.json`, plus the copied binaries -- and
-its stderr says almost nothing about them. Every case therefore compares the
-FULL byte content of everything the run wrote under `packages/cli/`, not just
-the three streams. A port that logged the right sentences and emitted different
+THE ARTIFACTS ARE THE SUBJECT, NOT THE LOG. This script's whole output is three files -- `dist/assets/renet-metadata.json`, `dist/assets/THIRD_PARTY_LICENSES` and `packages/cli/sea-config.generated.json`, plus the copied binaries -- and its stderr says almost nothing about them. Every case therefore compares the FULL byte content of everything the run wrote under `packages/cli/`,
+not just the three streams. A port that logged the right sentences and emitted different
 JSON would pass on stdout, stderr and exit code alone;
 `test_a_planted_defect_is_caught_only_by_the_artifacts` plants exactly that.
 
-`date` IS FAKED, AND IT HAS TO BE. `:171` stamps `generatedAt` with
-`date -u +%Y-%m-%dT%H:%M:%SZ`. That is the only non-deterministic byte in the
-metadata, and two sides run seconds apart, so without a frozen `date` the two
-files differ for a reason that has nothing to do with the port. The port shells
+`date` IS FAKED, AND IT HAS TO BE. `:171` stamps `generatedAt` with `date -u +%Y-%m-%dT%H:%M:%SZ`. That is the only non-deterministic byte in the metadata, and two sides run seconds apart, so without a frozen `date` the two files differ for a reason that has nothing to do with the port. The port shells
 out to the same `date` for that reason; a `datetime.now()` implementation could
 not be pinned on both sides at once.
 
-`npx` IS FAKED because `:190` runs a real `tsx` program that walks the whole
-dependency tree and reaches the network. `jq`, `sha256sum`, `cp` and `stat` are
-REAL: they are deterministic, and the point of the comparison is the bytes they
-produce.
+`npx` IS FAKED because `:190` runs a real `tsx` program that walks the whole dependency tree and reaches the network. `jq`, `sha256sum`, `cp` and `stat` are REAL: they are deterministic, and the point of the comparison is the bytes they produce.
 
 A PATH THAT REPLACES, NEVER PREPENDS.
-`test_the_scratch_path_cannot_reach_a_real_npx` asserts the seal before anything
-is driven.
+`test_the_scratch_path_cannot_reach_a_real_npx` asserts the seal before anything is driven.
 
-FAKES RECORD TO `$FAKE_CALL_LOG`, NEVER TO STDOUT, and never to the stdout of
-anything whose stdout is an artifact. A prior wave's fake `jq` logged to stdout
-and corrupted the very JSON the twin was writing.
+FAKES RECORD TO `$FAKE_CALL_LOG`, NEVER TO STDOUT, and never to the stdout of anything whose stdout is an artifact. A prior wave's fake `jq` logged to stdout and corrupted the very JSON the twin was writing.
 
 `$0` IS MASKED TO `<SELF>`; nothing else is. Streams are compared separately.
 
@@ -510,8 +497,7 @@ def test_defect_a_generator_that_writes_nothing_is_still_reported_as_generated(
 
 def test_defect_an_unknown_arch_is_reported_and_then_ignored(tmp_path) -> None:
     """DEFECT 1. `map_arch`'s `exit 1` runs two command substitutions deep, and
-    bash does not inherit errexit into `$( )`, so the refusal is printed and
-    discarded. On `--platform linux` the value is never used and the run
+    bash does not inherit errexit into `$( )`, so the refusal is printed and discarded. On `--platform linux` the value is never used and the run
     completes with exit 0 and a fully valid artifact set."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--platform", "linux", "--arch", "bogus"))
@@ -524,8 +510,7 @@ def test_defect_an_unknown_arch_is_reported_and_then_ignored(tmp_path) -> None:
 
 def test_defect_an_unknown_arch_on_mac_dies_with_the_wrong_diagnostic(tmp_path) -> None:
     """The other half of DEFECT 1: on `--platform mac` the empty `renet_arch`
-    becomes the asset name `renet-darwin-`, which does not exist, so the run
-    fails at `:128` complaining about a MISSING BINARY rather than about the
+    becomes the asset name `renet-darwin-`, which does not exist, so the run fails at `:128` complaining about a MISSING BINARY rather than about the
     argument it already rejected two lines earlier."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--platform", "mac", "--arch", "bogus"))
@@ -551,8 +536,7 @@ def test_defect_the_platform_is_never_validated(tmp_path) -> None:
 def test_defect_the_reported_asset_count_is_one_short(tmp_path) -> None:
     """DEFECT 3. `:211` uses `printf '%b'` with no trailing newline and counts
     with `wc -l`, so it reports SEPARATORS. `:213`, which feeds the same string
-    to jq, uses `printf '%b\\n'` -- so the FILE is right and only the report is
-    wrong. Both halves are asserted, on both platforms, because a fix to one
+    to jq, uses `printf '%b\\n'` -- so the FILE is right and only the report is wrong. Both halves are asserted, on both platforms, because a fix to one
     without the other is the plausible half-repair."""
     root = fixture(tmp_path)
     for args, real_count in (

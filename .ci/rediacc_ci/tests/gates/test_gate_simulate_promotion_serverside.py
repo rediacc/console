@@ -2,40 +2,20 @@
 
 Both-ways test for the SERVER-SIDE copy in `.ci/scripts/deploy/simulate-promotion.sh`.
 
-WHAT BROKE. The promotion simulation synced the whole source channel DOWN to /tmp
-and then back UP to the promoted channel, so the job cost two full transfers of a
-channel that grows with every release. Measured on the `main` push runs: 21m57s
-(2026-07-27), 30m51s (2026-08-07, cancelled at the then-30-minute ceiling), 57m01s
-(2026-08-18), 61m12s (2026-08-20, run 32423301927, blew the raised 60-minute
-ceiling). That cancellation failed CI Complete and Pipeline Sentinel, and the
-release sentinel never ran. The failing job's log holds ZERO retry warnings and
-died mid-transfer, so it was size and not flakiness.
+WHAT BROKE. The promotion simulation synced the whole source channel DOWN to /tmp and then back UP to the promoted channel, so the job cost two full transfers of a channel that grows with every release. Measured on the `main` push runs: 21m57s (2026-07-27), 30m51s (2026-08-07, cancelled at the then-30-minute ceiling), 57m01s (2026-08-18), 61m12s (2026-08-20, run 32423301927, blew
+the raised 60-minute ceiling). That cancellation failed CI Complete and Pipeline Sentinel, and the release sentinel never ran. The failing job's log holds ZERO retry warnings and died mid-transfer, so it was size and not flakiness.
 
-A PR CANNOT EXERCISE THE REAL PATH: PR runs promote a tiny per-PR channel in
-minutes, only `main` promotes the full `edge` channel. So this does not try to
-prove the timing. It pins the SHAPE that caused the timing: the bytes must not
-travel through the runner. A regression to download-and-reupload is invisible to
-every other check in the repo and would simply be slow again.
+A PR CANNOT EXERCISE THE REAL PATH: PR runs promote a tiny per-PR channel in minutes, only `main` promotes the full `edge` channel. So this does not try to prove the timing. It pins the SHAPE that caused the timing: the bytes must not travel through the runner. A regression to download-and-reupload is invisible to every other check in the repo and would simply be slow again.
 
-WHY THE ABSENT `aws` DOES NOT MAKE THIS VACUOUS, and it is worth saying because a
-sibling gate test was dropped from this batch for exactly the opposite reason.
-`aws` is NOT installed on this machine. It does not matter here, because the
-transfers are driven through a STUB `aws` that this fixture WRITES onto PATH and
-that records its argv: the assertions read what the script actually invoked. A
-gate test whose subject takes a tool-absent branch has two unreachable cases and
+WHY THE ABSENT `aws` DOES NOT MAKE THIS VACUOUS, and it is worth saying because a sibling gate test was dropped from this batch for exactly the opposite reason. `aws` is NOT installed on this machine. It does not matter here, because the transfers are driven through a STUB `aws` that this fixture WRITES onto PATH and that records its argv: the assertions read what the script
+actually invoked. A gate test whose subject takes a tool-absent branch has two unreachable cases and
 cannot be plant-verified; this one shims the tool rather than probing for it, so
 every case runs on any machine.
 
-WHERE THE PORT REIMPLEMENTS THE TWIN. Nowhere behaviourally. The fixture tree, the
-`aws` stub and the `cf-purge-urls.sh` stub are written from Python instead of from
-heredocs, byte for byte the same scripts, and the `rogue` flag is baked into the
-stub at write time exactly as the twin's unquoted heredoc bakes it. `get_repo_root()`
-resolves from the SCRIPT's own path (`.ci/scripts/lib` -> up 3), so the fixture
-still mirrors the tree layout rather than just holding the script.
+WHERE THE PORT REIMPLEMENTS THE TWIN. Nowhere behaviourally. The fixture tree, the `aws` stub and the `cf-purge-urls.sh` stub are written from Python instead of from heredocs, byte for byte the same scripts, and the `rogue` flag is baked into the stub at write time exactly as the twin's unquoted heredoc bakes it. `get_repo_root()` resolves from the SCRIPT's own path
+(`.ci/scripts/lib` -> up 3), so the fixture still mirrors the tree layout rather than just holding the script.
 
-NO `xdist_group`. Each case builds a complete private fixture under pytest's
-`tmp_path`, puts its stub bin FIRST on a PATH used by one subprocess, and writes
-nothing in the repository.
+NO `xdist_group`. Each case builds a complete private fixture under pytest's `tmp_path`, puts its stub bin FIRST on a PATH used by one subprocess, and writes nothing in the repository.
 """
 
 import os
@@ -105,9 +85,7 @@ def build_fixture(gate, base: pathlib.Path, *, rogue: bool = False) -> Fixture:
 def write_fake_aws(fx: Fixture, *, rogue: bool = False) -> None:
     """A stub that records every invocation and answers `s3 ls --recursive`.
 
-    The listing includes a key containing a SPACE, which is exactly what a naive
-    field-split would corrupt. `rogue` makes the listing return a key OUTSIDE the
-    requested prefix, which is what the doubled-destination guard must catch.
+    The listing includes a key containing a SPACE, which is exactly what a naive field-split would corrupt. `rogue` makes the listing return a key OUTSIDE the requested prefix, which is what the doubled-destination guard must catch.
     """
     rogue_line = '    prefix="somewhere-else/"\n' if rogue else ""
     _write_exec(
@@ -164,8 +142,7 @@ def run_promotion(fx: Fixture) -> harness.RunResult:
 def promote_or_fail(gate, fx: Fixture) -> harness.RunResult:
     """Run it, and surface the script's OWN output when it dies.
 
-    The twin does this so `set -e` cannot kill the test with an empty transcript,
-    which hides the reason entirely.
+    The twin does this so `set -e` cannot kill the test with an empty transcript, which hides the reason entirely.
     """
     result = run_promotion(fx)
     if result.rc != 0:

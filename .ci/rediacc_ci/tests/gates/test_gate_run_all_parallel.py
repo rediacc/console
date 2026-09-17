@@ -2,12 +2,8 @@
 
 Proof battery for the parallel scheduler inside `.ci/scripts/test/run-all.sh`.
 
-WHY THIS EXISTS. run-all.sh is the runner for every OTHER gate test, so a defect in
-it does not fail loudly: it fails by running FEWER tests, or by shredding their
-output, or by reintroducing the real-tree collision the schedule exists to prevent.
-All three of those look like a green run. What is pinned here is the four properties
-that separate "fast" from "still a gate", and every timing assertion carries its own
-control, because a stopwatch that can only ever read "fast enough" measures nothing.
+WHY THIS EXISTS. run-all.sh is the runner for every OTHER gate test, so a defect in it does not fail loudly: it fails by running FEWER tests, or by shredding their output, or by reintroducing the real-tree collision the schedule exists to prevent. All three of those look like a green run. What is pinned here is the four properties that separate "fast" from "still a gate", and every
+timing assertion carries its own control, because a stopwatch that can only ever read "fast enough" measures nothing.
 
   1. The pool really runs tests at the same time -- with the control that proves the
      measurement can FAIL (the same set at jobs=1 must be slow).
@@ -19,24 +15,15 @@ control, because a stopwatch that can only ever read "fast enough" measures noth
      is alive. Its control removes the schedule and shows the same fixtures go red,
      so a green here is the hold-back and not luck.
 
-Everything runs against PLANTED FIXTURES in pytest's own `tmp_path` via
-`RUN_ALL_GATES_DIR`, so this touches no real gate and no real tree.
+Everything runs against PLANTED FIXTURES in pytest's own `tmp_path` via `RUN_ALL_GATES_DIR`, so this touches no real gate and no real tree.
 
-THE STOPWATCH IS THE ONE PLACE THE PORT IS SIMPLER, and the twin's comment explains
-why it had to be complicated. `date +%s%3N` is NOT portable: uutils coreutils (the
-Rust reimplementation) IGNORES the precision digit and returns full NANOSECONDS
+THE STOPWATCH IS THE ONE PLACE THE PORT IS SIMPLER, and the twin's comment explains why it had to be complicated. `date +%s%3N` is NOT portable: uutils coreutils (the Rust reimplementation) IGNORES the precision digit and returns full NANOSECONDS
 while GNU honours it, so on a GNU host the twin's first draft returned milliseconds
 and passed, and on a uutils host it returned a number a million times larger and the
 `>= 6000` assertion could never be satisfied. Measured 2026-08-27: four 2s tests
-"took 2034286583ms", which is 2.03 SECONDS in the units actually returned. The twin
-answers that with `EPOCHREALTIME`, a bash builtin that depends on no `date` at all.
-`time.monotonic()` is the same answer in Python and is additionally immune to a wall
-clock stepping mid-measurement, which `EPOCHREALTIME` is not.
+"took 2034286583ms", which is 2.03 SECONDS in the units actually returned. The twin answers that with `EPOCHREALTIME`, a bash builtin that depends on no `date` at all. `time.monotonic()` is the same answer in Python and is additionally immune to a wall clock stepping mid-measurement, which `EPOCHREALTIME` is not.
 
-NO `xdist_group`. Every case owns its fixture directory under `tmp_path`, and
-`RUN_ALL_GATES_DIR` / `RUN_ALL_JOBS` / `RUN_ALL_WRITERS` / `RUN_ALL_SCANNERS` are
-passed as an ENV OVERLAY per invocation rather than exported onto this process. Two
-of these in one worker cannot see each other's fixtures or each other's schedule.
+NO `xdist_group`. Every case owns its fixture directory under `tmp_path`, and `RUN_ALL_GATES_DIR` / `RUN_ALL_JOBS` / `RUN_ALL_WRITERS` / `RUN_ALL_SCANNERS` are passed as an ENV OVERLAY per invocation rather than exported onto this process. Two of these in one worker cannot see each other's fixtures or each other's schedule.
 
 IT IS SLOW ON PURPOSE. The concurrency control needs the serial arm to take longer
 than 8 seconds; a fixture set fast enough to be cheap would make the measurement

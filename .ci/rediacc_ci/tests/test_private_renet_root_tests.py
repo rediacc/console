@@ -1,19 +1,12 @@
 """Differential: `.ci/rediacc_ci/private/renet_root_tests.py` against its twin
 `.ci/scripts/private/renet-root-tests.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
 NO REAL `go` IS EVER INVOKED. The subject's whole job is to run root-tagged Go
 tests that need `sudo`, a BTRFS mount and a compiled `private/renet`; a suite
-that shelled out to the real toolchain would take minutes, would need root, and
-would SKIP on any machine that lacked one of those, which is the exact vacuity
-this campaign exists to avoid. `go` is a recording fake on a scratch PATH: it
-appends its cwd and full argv to a log, writes canned bytes to stdout AND
-stderr, and exits with a canned status. Every case below therefore drives a
-`go test` outcome that could not otherwise be produced on this machine at all,
-including "the run passed but one named test never appeared".
+that shelled out to the real toolchain would take minutes, would need root, and would SKIP on any machine that lacked one of those, which is the exact vacuity this campaign exists to avoid. `go` is a recording fake on a scratch PATH: it appends its cwd and full argv to a log, writes canned bytes to stdout AND stderr, and exits with a canned status. Every case below therefore drives
+a `go test` outcome that could not otherwise be produced on this machine at all, including "the run passed but one named test never appeared".
 
 WHAT IS COMPARED, AND WHY IT IS FOUR THINGS. Every case compares:
 
@@ -25,28 +18,17 @@ WHAT IS COMPARED, AND WHY IT IS FOUR THINGS. Every case compares:
      printed the same transcript while dropping `-tags root`, or running from
      the wrong directory, passes a stdout-only comparison and compiles nothing.
 
-PATH IS REPLACED, NEVER PREPENDED, and this host HAS a real `go`
-(`/home/developer/.local/bin/go`, go1.26.6, verified with `which go`). A prepend would leave the "go is missing"
+PATH IS REPLACED, NEVER PREPENDED, and this host HAS a real `go` (`/home/developer/.local/bin/go`, go1.26.6, verified with `which go`). A prepend would leave the "go is missing"
 case silently consulting the real toolchain. `_binder` therefore builds the
-ENTIRE PATH out of named tools and asserts that what it was asked to exclude
-really is absent, because a probe that cannot fire looks exactly like a subject
-that cannot fail.
+ENTIRE PATH out of named tools and asserts that what it was asked to exclude really is absent, because a probe that cannot fire looks exactly like a subject that cannot fail.
 
-ONE FIXTURE TREE PER CASE, BOTH SUBJECTS IN IT. Unlike `test_infra_build_renet
-.py`, neither subject here mutates the tree, so a second copy would only make
-the two runs disagree about their own root path for no reason. The binder is
-shared for the same reason: the `Permission denied` case prints the RESOLVED
-path of the fake `go`, and two per-subject binders would put two different
-paths into that message.
+ONE FIXTURE TREE PER CASE, BOTH SUBJECTS IN IT. Unlike `test_infra_build_renet .py`, neither subject here mutates the tree, so a second copy would only make the two runs disagree about their own root path for no reason. The binder is shared for the same reason: the `Permission denied` case prints the RESOLVED path of the fake `go`, and two per-subject binders would put two
+different paths into that message.
 
 THE ONE MASK, AND WHY IT IS NOT A LOOPHOLE. Bash prefixes its own diagnostics
 with `<$0>: line <n>: `, and `$0` is the path of the file bash is running: the
-twin. The port composes the same prefix from `sys.argv[0]` and its own live
-frame. Those two prefixes can never be equal, because they name two different
-files, so `_mask` collapses exactly that prefix on both sides and compares
-everything after it byte for byte. `test_the_mask_does_not_hide_the_message`
-pins the mask itself, so it cannot quietly grow into something that hides a real
-divergence.
+twin. The port composes the same prefix from `sys.argv[0]` and its own live frame. Those two prefixes can never be equal, because they name two different files, so `_mask` collapses exactly that prefix on both sides and compares everything after it byte for byte. `test_the_mask_does_not_hide_the_message` pins the mask itself, so it cannot quietly grow into something that hides a
+real divergence.
 """
 
 import os
@@ -141,19 +123,11 @@ def _mask(text: str, root: pathlib.Path, tmp: pathlib.Path) -> str:
 def _fixture(tmp_path: pathlib.Path, *, submodule: str = "dir") -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because each subject derives the console root from its own location
-    (`BASH_SOURCE`/`__file__`, then three directories up). Driving the tracked
-    files with a `cwd` would point both at the REAL repository, and the go fake
-    would then be invoked in the real `private/renet`.
+    Copies, because each subject derives the console root from its own location (`BASH_SOURCE`/`__file__`, then three directories up). Driving the tracked files with a `cwd` would point both at the REAL repository, and the go fake would then be invoked in the real `private/renet`.
 
-    `.resolve()` on the root is load-bearing: bash's `cd X && pwd` reports the
-    LOGICAL path it was handed while `pathlib.resolve()` follows symlinks, and
-    the root string appears in the `cd` diagnostic. Handing both subjects an
-    already-resolved root makes them agree for the right reason.
+    `.resolve()` on the root is load-bearing: bash's `cd X && pwd` reports the LOGICAL path it was handed while `pathlib.resolve()` follows symlinks, and the root string appears in the `cd` diagnostic. Handing both subjects an already-resolved root makes them agree for the right reason.
 
-    `submodule` takes the three shapes the `cd` can meet: a directory, nothing
-    at all, and a plain FILE where the directory should be (an uninitialised
-    submodule that somebody replaced), which bash reports differently.
+    `submodule` takes the three shapes the `cd` can meet: a directory, nothing at all, and a plain FILE where the directory should be (an uninitialised submodule that somebody replaced), which bash reports differently.
     """
     root = tmp_path.resolve() / "tree"
     (root / ".ci" / "scripts" / "private").mkdir(parents=True)
@@ -181,9 +155,7 @@ def _binder(
 ) -> str:
     """The COMPLETE PATH for one case: named real tools, plus the fake `go`.
 
-    `go` is one of "ok" (a recording fake), "missing" (absent from PATH
-    entirely) and "noexec" (present, not executable) -- the third is the only
-    shape for which bash names the resolved path instead of the bare word.
+    `go` is one of "ok" (a recording fake), "missing" (absent from PATH entirely) and "noexec" (present, not executable) -- the third is the only shape for which bash names the resolved path instead of the bare word.
     """
     binder = tmp_path.resolve() / "bin"
     binder.mkdir(parents=True, exist_ok=True)
@@ -339,9 +311,7 @@ def test_port_and_twin_agree(tmp_path, binder_kw, fixture_kw):
 def test_the_recording_go_is_actually_reached(tmp_path):
     """ANTI-VACUITY. Every comparison above is worthless if `go` never ran.
 
-    The argv is asserted ELEMENT BY ELEMENT rather than as a blob, because
-    `-tags root` is the one flag without which the three subject tests do not
-    compile, and a port that dropped it would still print a green transcript.
+    The argv is asserted ELEMENT BY ELEMENT rather than as a blob, because `-tags root` is the one flag without which the three subject tests do not compile, and a port that dropped it would still print a green transcript.
     """
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
@@ -372,8 +342,7 @@ def test_the_recording_go_is_actually_reached(tmp_path):
 def test_the_guard_fires_on_a_green_run_that_skipped_everything(tmp_path):
     """THE POSITIVE CONTROL for the reason this script exists.
 
-    `go test` exits 0 when every test skipped. Without the guard both subjects
-    would report success having verified nothing at all.
+    `go test` exits 0 when every test skipped. Without the guard both subjects would report success having verified nothing at all.
     """
     root = _fixture(tmp_path)
     skipped = "=== RUN   %s\n--- SKIP: %s (0.00s)\nPASS\nok\t0.001s\n" % (NAMES[0], NAMES[0])
@@ -398,8 +367,7 @@ def test_the_guard_does_not_fire_on_a_real_pass(tmp_path):
 
 def test_only_the_first_missing_name_is_reported(tmp_path):
     """The twin's loop exits on the FIRST miss, so a run in which all three are
-    absent names one test, not three. Reproduced rather than improved: a port
-    that listed all three would be a different gate, and the difference would
+    absent names one test, not three. Reproduced rather than improved: a port that listed all three would be a different gate, and the difference would
     show up in CI annotations."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, out=b"PASS\nok\t0.001s\n")
@@ -416,9 +384,7 @@ def test_a_substring_match_satisfies_the_guard(tmp_path):
     for `TestLoadState_PreservesData`. A renamed test would therefore keep the
     guard green while the test it names no longer exists.
 
-    Reported, not fixed: anchoring the pattern would change what the gate
-    accepts, which is a cutover-box decision, and a port that anchored it would
-    no longer be equivalent to the script it claims to replace.
+    Reported, not fixed: anchoring the pattern would change what the gate accepts, which is a cutover-box decision, and a port that anchored it would no longer be equivalent to the script it claims to replace.
     """
     root = _fixture(tmp_path)
     renamed = "".join(

@@ -1,19 +1,9 @@
 """`rediacc_ci.quality.npmrc` against the shell pipeline it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The interesting half of
-this gate is a four-stage shell pipeline -- `grep -E | tail -n1 | sed -E | tr -d`
--- whose behaviour on the awkward inputs (a trailing comment, inner whitespace,
-a key that appears twice, an empty value) is decided by POSIX character classes
-and by sed's substitution order rather than by anything a reader could infer.
-A table of expected strings would be a table of what the PORT does, asserted
-against itself. Running the real pipeline under bash and comparing is the only
-form of this test that can fail for the right reason.
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The interesting half of this gate is a four-stage shell pipeline -- `grep -E | tail -n1 | sed -E | tr -d` -- whose behaviour on the awkward inputs (a trailing comment, inner whitespace, a key that appears twice, an empty value) is decided by POSIX character classes and by sed's substitution order rather than by anything a
+reader could infer. A table of expected strings would be a table of what the PORT does, asserted against itself. Running the real pipeline under bash and comparing is the only form of this test that can fail for the right reason.
 
-The bash fragments below are lifted from `.ci/scripts/quality/check-npmrc.sh`
-lines 44-69 with the variables substituted, and nothing else changed. They are
-NOT the whole gate: the whole gate is what the committed shadow ledger
-`.ci/shadow/w7p2-npmrc.observations.jsonl` compares over five distinct trees.
-This file covers the seams that ledger cannot isolate.
+The bash fragments below are lifted from `.ci/scripts/quality/check-npmrc.sh` lines 44-69 with the variables substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-npmrc.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate.
 """
 
 import pathlib
@@ -90,10 +80,7 @@ def test_forbidden_scan_matches_bash(tmp_path: pathlib.Path, content: str) -> No
 def test_the_forbidden_table_exercises_both_directions() -> None:
     """ANTI-VACUITY on the table above.
 
-    A parametrized suite where every case matches would pass a scan that flags
-    everything, and a suite where none matches would pass a scan that flags
-    nothing. Both directions must be present, and that is asserted rather than
-    eyeballed because a case is one edit away from being deleted.
+    A parametrized suite where every case matches would pass a scan that flags everything, and a suite where none matches would pass a scan that flags nothing. Both directions must be present, and that is asserted rather than eyeballed because a case is one edit away from being deleted.
     """
     hits = [c for c in FORBIDDEN_CASES if npmrc.forbidden_matches(c)]
     misses = [c for c in FORBIDDEN_CASES if not npmrc.forbidden_matches(c)]

@@ -2,20 +2,12 @@
 
 Integration test for `scripts/gates/check-unverified-downloads.ts`.
 
-Both-ways, offline, fixture-driven: proves the gate passes the real tree, that its
-own detector controls run on EVERY invocation, that a bare allowlist entry is
-refused, and that the allowlist is load-bearing rather than decorative.
+Both-ways, offline, fixture-driven: proves the gate passes the real tree, that its own detector controls run on EVERY invocation, that a bare allowlist entry is refused, and that the allowlist is load-bearing rather than decorative.
 
-THE SHAPES MATTER MORE THAN THE COUNT. Three of them shipped as real defects on
-2026-09-01: a curl streamed straight into tar (unverifiable by construction), an
-image pinned by a MUTABLE tag, and a plain download with no checksum at all.
+THE SHAPES MATTER MORE THAN THE COUNT. Three of them shipped as real defects on 2026-09-01: a curl streamed straight into tar (unverifiable by construction), an image pinned by a MUTABLE tag, and a plain download with no checksum at all.
 
-WHY `test_allowlist_is_load_bearing` IS THE INTERESTING ONE. Every other case here
-would still pass on a tree where the gate had nothing to find, because "no findings"
-and "found nothing because the scan is blind" are the same exit code. Emptying the
-allowlist strips the real exemptions and REQUIRES the gate to go red, which is the
-only case that distinguishes them. The port keeps it verbatim and adds nothing,
-because there is nothing to add.
+WHY `test_allowlist_is_load_bearing` IS THE INTERESTING ONE. Every other case here would still pass on a tree where the gate had nothing to find, because "no findings" and "found nothing because the scan is blind" are the same exit code. Emptying the allowlist strips the real exemptions and REQUIRES the gate to go red, which is the only case that distinguishes them. The port keeps
+it verbatim and adds nothing, because there is nothing to add.
 """
 
 from rediacc_ci import paths
@@ -45,8 +37,7 @@ def test_real_tree_passes(gate):
 
 def test_controls_run_every_invocation(gate):
     """The gate self-tests its detector on every run, so a green IS the
-    planted-defect proof for the pure logic. This asserts that machinery is
-    actually wired.
+    planted-defect proof for the pure logic. This asserts that machinery is actually wired.
     """
     result = run(gate)
     gate.assert_contains(
@@ -72,8 +63,7 @@ def test_bare_allowlist_entry_is_refused(gate, tmp_path):
 
 def test_allowlist_is_load_bearing(gate, tmp_path):
     """An empty allowlist strips the four real exemptions, so the gate must go red on
-    the tree's genuinely-unverifiable fetches. This is the vacuity guard: it proves
-    the allowlist is doing work rather than the gate having nothing to find.
+    the tree's genuinely-unverifiable fetches. This is the vacuity guard: it proves the allowlist is doing work rather than the gate having nothing to find.
     """
     allow = tmp_path / "allow"
     allow.write_text("", encoding="utf-8")

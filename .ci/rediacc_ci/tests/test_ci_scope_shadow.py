@@ -17,12 +17,9 @@ THREE LAYERS, because this pair has three genuinely different risks.
      the seven branches below reachable in a unit test at all, and each fake is
      a real node module the real `require` loads.
 
-WHY FAKE CJS AND NOT THE REAL ONES: `--resolve-baseline` makes up to `limit`
-`gh run list` plus `gh run download` calls. A test that hit them would be a
-network test that passes or fails on a token.
+WHY FAKE CJS AND NOT THE REAL ONES: `--resolve-baseline` makes up to `limit` `gh run list` plus `gh run download` calls. A test that hit them would be a network test that passes or fails on a token.
 
-NOTHING IS NORMALIZED except the fixture's own absolute path, which appears
-identically on both sides anyway and is folded so a failure diff is readable.
+NOTHING IS NORMALIZED except the fixture's own absolute path, which appears identically on both sides anyway and is folded so a failure diff is readable.
 
 K=7 LEDGER: `.ci/shadow/w7p6-scope-shadow.observations.jsonl` (7 rows, 7
 distinct trees, 7 distinct finding sets; K=5 required).
@@ -245,9 +242,7 @@ def run_both(
 ) -> tuple[tuple[int, str, str, str], tuple[int, str, str, str]]:
     """Both sides, each with its OWN out dir, summary and $GITHUB_OUTPUT.
 
-    Separate artifact paths rather than a reset between runs: this script APPENDS
-    to `$GITHUB_OUTPUT` and to the summary, so a shared path would let the twin's
-    run leak into the port's comparison as extra agreeing lines.
+    Separate artifact paths rather than a reset between runs: this script APPENDS to `$GITHUB_OUTPUT` and to the summary, so a shared path would let the twin's run leak into the port's comparison as extra agreeing lines.
     """
     results = []
     for side, argv in (
@@ -378,12 +373,8 @@ def test_greenlight_digest_matches_real_awk(tmp_path: pathlib.Path) -> None:
 def test_the_digest_corpus_is_not_vacuous(tmp_path: pathlib.Path) -> None:
     """Twelve comparisons of "" against "" would prove nothing, so count them.
 
-    SIX of the twelve cases produce output, MEASURED rather than guessed: the
-    other six (empty input, an orphan trail row, a verdict with no closure, a
-    row with no sha column, whitespace-only lines, and a final line with no
-    newline) are all cases where awk's END block has no key in `order`, which is
-    itself the behaviour under test. The floor is the measured six, and at least
-    one case must produce a real TABLE row rather than only pass-through lines.
+    SIX of the twelve cases produce output, MEASURED rather than guessed: the other six (empty input, an orphan trail row, a verdict with no closure, a row with no sha column, whitespace-only lines, and a final line with no newline) are all cases where awk's END block has no key in `order`, which is itself the behaviour under test. The floor is the measured six, and at least one
+    case must produce a real TABLE row rather than only pass-through lines.
     """
     program = _twin_awk_program()
     produced = [_run_awk(program, text, tmp_path) for text in DIGEST_CASES.values()]
@@ -485,13 +476,9 @@ def test_defect_1_a_dead_pending_query_is_reported_as_nothing_to_ask(
     """`scope-shadow.sh:394-406`, reproduced rather than fixed.
 
     The pending query throws at module load. `pending=""` and the next line
-    prints `nothing to ask (every eligible key is already planned to skip)`,
-    which is FALSE -- nothing was asked because node died. The stack trace is
-    captured into `greenlight.err` and then never read by anything, so the
-    failure is invisible in the job log and in the step summary alike.
+    prints `nothing to ask (every eligible key is already planned to skip)`, which is FALSE -- nothing was asked because node died. The stack trace is captured into `greenlight.err` and then never read by anything, so the failure is invisible in the job log and in the step summary alike.
 
-    Fixing this changes what a live `ci.yml:348` step prints, so it is pinned
-    here instead: both sides must tell the same lie.
+    Fixing this changes what a live `ci.yml:348` step prints, so it is pinned here instead: both sides must tell the same lie.
     """
     fixture = build_fixture(tmp_path, base_conf(pending_crash=True))
     old, new = run_both(fixture, HEAD_SHA="deadbeefcafe")
@@ -508,10 +495,7 @@ def test_defect_2_an_empty_engine_output_renders_empty_not_no_output(
 ) -> None:
     """`|| emit "(no output)"` at `:522`/`:538` is DEAD, and this measures it.
 
-    The shell creates `scope-baseline.json` with the redirection before node
-    runs, so `head` on the resulting empty file exits 0 and the `||` arm cannot
-    fire. A crashed engine therefore renders as an EMPTY fenced block. Both
-    sides must produce that same misleading emptiness.
+    The shell creates `scope-baseline.json` with the redirection before node runs, so `head` on the resulting empty file exits 0 and the `||` arm cannot fire. A crashed engine therefore renders as an EMPTY fenced block. Both sides must produce that same misleading emptiness.
     """
     fixture = build_fixture(tmp_path, base_conf(baseline_crash=True))
     old, new = run_both(fixture, HEAD_SHA="deadbeefcafe")
@@ -523,8 +507,7 @@ def test_defect_2_an_empty_engine_output_renders_empty_not_no_output(
 def test_the_classify_branch_over_a_real_git_merge(tmp_path: pathlib.Path) -> None:
     """The only case that needs a real repository: `MERGE_SHA^1` and `^2`.
 
-    `git diff-tree -r --raw --no-commit-id "$base" "$head"` is a real command
-    over real commits, and `--classify` counts the lines it produced.
+    `git diff-tree -r --raw --no-commit-id "$base" "$head"` is a real command over real commits, and `--classify` counts the lines it produced.
     """
     fixture = build_fixture(tmp_path, base_conf())
 
@@ -567,10 +550,7 @@ def test_the_classify_branch_over_a_real_git_merge(tmp_path: pathlib.Path) -> No
 def test_a_planted_sort_in_the_digest_is_caught(tmp_path: pathlib.Path) -> None:
     """Plant the tidiest-looking wrong change there is: sort the digest's keys.
 
-    awk emits them in FIRST-SEEN order, which for greenlight is cost-descending
-    (`greenlight.cjs:81-85`), and a reader uses that order to see which keys the
-    budget reached. Sorting looks like an improvement and destroys the signal.
-    If this ever passes, the layer-3 comparison has stopped comparing anything.
+    awk emits them in FIRST-SEEN order, which for greenlight is cost-descending (`greenlight.cjs:81-85`), and a reader uses that order to see which keys the budget reached. Sorting looks like an improvement and destroys the signal. If this ever passes, the layer-3 comparison has stopped comparing anything.
 
     The real file is hashed before and after; the mutation lives in the fixture
     copy only.
@@ -607,10 +587,7 @@ def test_a_planted_true_line_in_the_output_emitter_is_caught(
     """The fail-open contract, planted against: emit `run_<key>=true`.
 
     `scope-shadow.sh:9-20` says the script NEVER writes a `=true` line, and that
-    asymmetry IS the fail-open. The emitter is a carried node program, so the
-    plant goes into the carried text -- which is exactly the drift
-    `test_the_five_node_programs_are_verbatim` guards, driven here as a
-    behaviour change rather than a string compare.
+    asymmetry IS the fail-open. The emitter is a carried node program, so the plant goes into the carried text -- which is exactly the drift `test_the_five_node_programs_are_verbatim` guards, driven here as a behaviour change rather than a string compare.
     """
     before = PORT.read_bytes()
     source = PORT.read_text(encoding="utf-8")

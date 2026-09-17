@@ -4,25 +4,17 @@
 W7P6 wave 27. The bash twin stays the LIVE tool; this module is its
 VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
 `.ci/rediacc_ci/tests/test_security_dependency_inventory.py` and by the K=5
-shadow ledger `.ci/shadow/w7p6-dependency-inventory.observations.jsonl`.
-Nothing is repointed at this file. Cutover is a separate, later, driver-only
-step.
+shadow ledger `.ci/shadow/w7p6-dependency-inventory.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
-WHAT IT DOES. Enumerates every dependency across the four analyzed Rediacc
-packages (www, cli, account, renet) for the NIS2/CRA supply-chain SBOM. Each
-dependency is classified by level (direct vs transitive), tagged by type
+WHAT IT DOES. Enumerates every dependency across the four analyzed Rediacc packages (www, cli, account, renet) for the NIS2/CRA supply-chain SBOM. Each dependency is classified by level (direct vs transitive), tagged by type
 (dependencies/devDependencies/peer/optional for npm; direct/indirect for Go),
 and carries its full dependency chain(s) from the package root down.
 
 REAL RUNS OR STUBS: THE ANSWER IS BOTH, AND THE SPLIT IS DELIBERATE.
 The twin's only external calls are `npm ls --all --json [--omit=dev]
-[--workspace NAME]`, `go list -m`, `go list -m -json all` and `go mod graph`.
-Every one of those is a READ of an already-installed tree: `npm ls` reads
-`node_modules` and never writes it, and the three `go` probes read `go.mod` /
-`go.sum` / the module cache. `go mod graph` and `go list -m -json all` CAN write
+[--workspace NAME]`, `go list -m`, `go list -m -json all` and `go mod graph`. Every one of those is a READ of an already-installed tree: `npm ls` reads `node_modules` and never writes it, and the three `go` probes read `go.mod` / `go.sum` / the module cache. `go mod graph` and `go list -m -json all` CAN write
 `go.sum` when a checksum is missing, so the differential passes `GOFLAGS=-mod=mod`
-to neither side and instead asserts, after every real-run case, that `go.mod`,
-`go.sum` and every lockfile still hash to what they hashed before. So:
+to neither side and instead asserts, after every real-run case, that `go.mod`, `go.sum` and every lockfile still hash to what they hashed before. So:
 
   * the HAPPY PATHS run for real, against this repository's own dependency tree,
     because that is the only input that exercises 1,760 records, 209 Go modules
@@ -32,9 +24,7 @@ to neither side and instead asserts, after every real-run case, that `go.mod`,
     scratch `PATH`, because there is no way to make the real tools fail on
     demand without breaking the tree.
 
-PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired.
-Fixing one only HERE would make the differential lie, and every one of the three
-below is a genuine defect in the twin that this wave REPORTS rather than fixes.
+PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired. Fixing one only HERE would make the differential lie, and every one of the three below is a genuine defect in the twin that this wave REPORTS rather than fixes.
 
   1. `require_cmd jq npm go awk` CHECKS ONLY `jq`. `common.sh:141-148` binds
      `local cmd="$1"` and ignores the rest, so `npm`, `go` and `awk` are NOT
@@ -65,8 +55,7 @@ below is a genuine defect in the twin that this wave REPORTS rather than fixes.
 
 WHY THERE IS NO `jq` AND NO `awk` IN THIS FILE. The twin's real content is six
 jq programs and two awk programs; a port that shelled out to jq would be a
-rewrite of the shell, not of the tool. Every one is transcribed into Python, and
-each transcription carries the jq semantics it depends on:
+rewrite of the shell, not of the tool. Every one is transcribed into Python, and each transcription carries the jq semantics it depends on:
 
   * `group_by(f)` SORTS BY f, then groups. The final `sort_by(.level, .depth,
     .name)` is STABLE in jq, so ties (one name at two versions) keep the
@@ -86,14 +75,9 @@ each transcription carries the jq semantics it depends on:
     non-ASCII package name, of which this tree has none. Named here rather than
     silently assumed away.
 
-THE ONE NON-DETERMINISTIC INPUT is `generatedAt`, which is `date -u
-+%Y-%m-%dT%H:%M:%SZ` at the moment of the run and appears only in `--format
-json`. `$DEPENDENCY_INVENTORY_NOW` is NOT read here and no such seam is added:
-the differential runs the two sides and compares with that one field masked,
-which keeps the port free of a test-only branch.
+THE ONE NON-DETERMINISTIC INPUT is `generatedAt`, which is `date -u +%Y-%m-%dT%H:%M:%SZ` at the moment of the run and appears only in `--format json`. `$DEPENDENCY_INVENTORY_NOW` is NOT read here and no such seam is added: the differential runs the two sides and compares with that one field masked, which keeps the port free of a test-only branch.
 
-ONE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours
-`$REDIACC_CI_ROOT` and the twin's `get_repo_root` does not.
+ONE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin's `get_repo_root` does not.
 """
 
 from __future__ import annotations
@@ -165,10 +149,7 @@ TABLE_HEADER = ("LEVEL", "DEPTH", "TYPE", "INTERNAL", "PRODREACH", "NAME", "VERS
 class Failure(Exception):  # noqa: N818 - it is a control-flow signal, not an error state
     """A `return 1` out of `build_npm_package` / `build_go_package`.
 
-    `set -e` turns that into an immediate exit 1 of the whole script, with the
-    `log_error` already printed. Modelled as an exception so the two builders
-    can keep the twin's early-return shape without a rc-threading argument at
-    every call site.
+    `set -e` turns that into an immediate exit 1 of the whole script, with the `log_error` already printed. Modelled as an exception so the two builders can keep the twin's early-return shape without a rc-threading argument at every call site.
     """
 
 
@@ -183,16 +164,14 @@ class UnboundValue(Exception):  # noqa: N818 - same, and it carries a bash diagn
 class JqAbort(Exception):  # noqa: N818 - a control-flow signal carrying jq's own text
     """A raw `jq` diagnostic that kills the script under `set -e`, with exit 2.
 
-    TWO REACHABLE CASES, both of them defects in the twin that this wave reports
-    rather than fixes:
+    TWO REACHABLE CASES, both of them defects in the twin that this wave reports rather than fixes:
 
       * `--argjson prodset ""`, which happens whenever `npm ls --omit=dev`
         prints NOTHING. `jq -c '<keyset>' <<<""` produces no output at all, the
         shell assigns the empty string, and jq then refuses the argument.
       * `jq -c '<types>' "$dir/package.json"` on an absent package.json.
 
-    The message text belongs to jq, not to this gate, so it is carried here as a
-    constant and `test_the_jq_diagnostics_still_match_this_host` re-derives both
+    The message text belongs to jq, not to this gate, so it is carried here as a constant and `test_the_jq_diagnostics_still_match_this_host` re-derives both
     from the jq on PATH on every run. If jq changes its banner the test goes red
     and names the fix, rather than the differential silently drifting.
     """
@@ -215,24 +194,17 @@ JQ_ARGJSON_FALLBACK = (
 def jq_argjson_banner() -> str:
     """jq's own `--argjson` diagnostic, ASKED OF THE jq ON PATH.
 
-    THIS USED TO BE A CONSTANT, and the constant was right on exactly one class
-    of host. The banner's last line carries jq's documentation URL, which moved
-    between releases:
+    THIS USED TO BE A CONSTANT, and the constant was right on exactly one class of host. The banner's last line carries jq's documentation URL, which moved between releases:
 
         jq 1.8.1 (this tree's hosts)  ... online docs  at https://jqlang.org
         jq 1.7.x (ubuntu-24.04 runner) ... online docs  at https://jqlang.github.io/jq
 
     The twin PRINTS whatever the real jq printed; the port SYNTHESISES the same
-    bytes without running jq. With a constant, the two agree only where the
-    developer's jq matches the constant, so `test_an_empty_prod_tree_dies_on_a_
-    raw_jq_diagnostic` passed here and failed in CI -- measured 2026-09-15, run
-    34970782616, the first run that let `quality-security` finish.
+    bytes without running jq. With a constant, the two agree only where the developer's jq matches the constant, so `test_an_empty_prod_tree_dies_on_a_ raw_jq_diagnostic` passed here and failed in CI -- measured 2026-09-15, run 34970782616, the first run that let `quality-security` finish.
 
     A pin cannot fix this, because there is no single right answer: two hosts
     with two jqs are both correct at the same time. Transcribing a tool's
-    message means transcribing THE TOOL THAT IS HERE, so this asks it. The
-    constant survives as the fallback for a host with no jq at all, where
-    nothing can be asked and the previous behaviour is the safe answer.
+    message means transcribing THE TOOL THAT IS HERE, so this asks it. The constant survives as the fallback for a host with no jq at all, where nothing can be asked and the previous behaviour is the safe answer.
     """
     try:
         proc = subprocess.run(
@@ -259,9 +231,7 @@ JQ_OPEN_ERROR = "jq: error: Could not open file %s: No such file or directory\n"
 def walk_tree(node: dict, chain: tuple[str, ...]) -> Iterable[dict]:
     """`JQ_WALK` (`:95-101`): one record per OCCURRENCE, each with its ancestors.
 
-    Depth-first in the object's own key order, which for `json.loads` is the
-    order the bytes arrived in -- the same order jq's `to_entries` produces.
-    A node is emitted BEFORE its children, matching the `A, (B)` comma operator.
+    Depth-first in the object's own key order, which for `json.loads` is the order the bytes arrived in -- the same order jq's `to_entries` produces. A node is emitted BEFORE its children, matching the `A, (B)` comma operator.
     """
     if not isinstance(node, dict):
         return
@@ -291,9 +261,7 @@ def keyset(node: dict) -> dict[str, bool]:
 def type_map(package_json: dict) -> dict[str, str]:
     """`:150-154`: the direct-dependency type index.
 
-    Four sections merged with jq's object `+`, so a name in both
-    `devDependencies` and `dependencies` is typed `dependencies`. The order
-    below IS that precedence and must not be sorted.
+    Four sections merged with jq's object `+`, so a name in both `devDependencies` and `dependencies` is typed `dependencies`. The order below IS that precedence and must not be sorted.
     """
     out: dict[str, str] = {}
     for key, label in (
@@ -319,9 +287,7 @@ def group_dependencies(
 
     The group key uses `.version // "null"` and the prodReachable key uses
     `.version // "unknown"`; both spellings are kept, because a package whose
-    `version` is genuinely absent lands in a group named `x@null` while its
-    prod-set lookup asks for `x@unknown`, and collapsing the two would change
-    which records report `prodReachable: true`.
+    `version` is genuinely absent lands in a group named `x@null` while its prod-set lookup asks for `x@unknown`, and collapsing the two would change which records report `prodReachable: true`.
     """
     groups: dict[str, list[dict]] = {}
     for record in walk_tree(root, ()):
@@ -364,11 +330,7 @@ def group_dependencies(
 def bfs_chains(edges_text: str, root: str) -> dict[str, dict]:
     """`:232-254`: shortest path from the main module to every reachable node.
 
-    Chain excludes the main module and starts at the direct dependency (depth
-    1), matching npm chain semantics. Adjacency is built in EDGE ORDER, which is
-    what makes the predecessor -- and therefore the chain -- deterministic even
-    though the twin's `for (v in seen)` output order is not (that order is only
-    used to build a lookup map, so it never reaches the output).
+    Chain excludes the main module and starts at the direct dependency (depth 1), matching npm chain semantics. Adjacency is built in EDGE ORDER, which is what makes the predecessor -- and therefore the chain -- deterministic even though the twin's `for (v in seen)` output order is not (that order is only used to build a lookup map, so it never reaches the output).
     """
     adjacency: dict[str, list[str]] = {}
     for line in edges_text.split("\n"):
@@ -447,9 +409,7 @@ def go_dependencies(modules: list[dict], bfs: dict[str, dict]) -> list[dict]:
 def align_tsv(rows: list[list[str]]) -> list[str]:
     """`align_tsv` (`:285-296`), the two-pass column aligner.
 
-    `column -t` is not available in the minimal CI images (see
-    check-commands.sh), which is why the twin has its own and why this port has
-    to reproduce the two-trailing-spaces-then-rstrip shape exactly.
+    `column -t` is not available in the minimal CI images (see check-commands.sh), which is why the twin has its own and why this port has to reproduce the two-trailing-spaces-then-rstrip shape exactly.
     """
     widths: dict[int, int] = {}
     for row in rows:
@@ -487,16 +447,11 @@ def build_npm_package(
 ) -> dict | None:
     """`build_npm_package` (`:112-188`). Raises Failure where the twin returns 1.
 
-    RETURNS None WHEN `npm ls` PRINTED NOTHING, and that is a REPRODUCED DEFECT,
-    not a convenience. With an empty `tree_all` every jq in the chain has no
-    input and therefore emits no output, so `$WORK/pkg_N.json` is written EMPTY,
-    `jq -s` slurps nothing from it, and the package VANISHES from the inventory
+    RETURNS None WHEN `npm ls` PRINTED NOTHING, and that is a REPRODUCED DEFECT, not a convenience. With an empty `tree_all` every jq in the chain has no input and therefore emits no output, so `$WORK/pkg_N.json` is written EMPTY, `jq -s` slurps nothing from it, and the package VANISHES from the inventory
     while the run still exits 0. Measured on a fixture: `packagesAnalyzed`
-    reported 3 with four packages requested, and no warning was printed. Since
-    this document is NIS2/CRA supply-chain evidence, a package silently dropping
+    reported 3 with four packages requested, and no warning was printed. Since this document is NIS2/CRA supply-chain evidence, a package silently dropping
     out is the worst outcome the tool has; it is reported in this wave's findings
-    and fixed in neither side, because fixing one side only would make the
-    differential lie.
+    and fixed in neither side, because fixing one side only would make the differential lie.
     """
     directory = os.path.join(repo_root, relpath)
     if mode == "workspace":
@@ -637,8 +592,7 @@ def _go(directory: str, args: list[str]) -> tuple[int, str, str]:
 def _echo_probe(stderr_text: str) -> None:
     """`[[ -s "$probe_err" ]] && sed 's/^/    /' "$probe_err" >&2`.
 
-    Four spaces in front of every LINE, including a trailing partial one, and
-    nothing at all when the file is empty.
+    Four spaces in front of every LINE, including a trailing partial one, and nothing at all when the file is empty.
     """
     if not stderr_text:
         return
@@ -658,11 +612,7 @@ def _echo_probe(stderr_text: str) -> None:
 def build_go_package(repo_root: str, work_dir: str) -> dict:
     """`build_go_package` (`:191-281`). Raises Failure where the twin returns 1.
 
-    EVERY PROBE IS CHECKED, and the twin's own comment says why: `edges` used to
-    end in `|| true`, so a `go mod graph` failure produced an empty edge list,
-    the BFS walked nothing, and every Go dependency silently dropped out with a
-    "transitive: 0" that looked like a real answer. This inventory is NIS2/CRA
-    supply-chain evidence, so a partial one is worse than none.
+    EVERY PROBE IS CHECKED, and the twin's own comment says why: `edges` used to end in `|| true`, so a `go mod graph` failure produced an empty edge list, the BFS walked nothing, and every Go dependency silently dropped out with a "transitive: 0" that looked like a real answer. This inventory is NIS2/CRA supply-chain evidence, so a partial one is worse than none.
     """
     directory = os.path.join(repo_root, GO_PKG_PATH)
 
@@ -855,8 +805,7 @@ def build_summary(packages: list[dict], generated: str, max_chains: int) -> dict
 def parse_args(argv: list[str]) -> tuple[str, str, int]:
     """`:38-73`. Returns (format, output, max_chains) or raises.
 
-    `SystemExit(0)` for `--help` after printing, `Failure` after a `log_error`,
-    `UnboundValue` for a missing option value.
+    `SystemExit(0)` for `--help` after printing, `Failure` after a `log_error`, `UnboundValue` for a missing option value.
     """
     fmt = "table"
     output = ""

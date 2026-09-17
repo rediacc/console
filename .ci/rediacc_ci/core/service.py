@@ -1,18 +1,11 @@
 """The rediacc/web + RustFS local stack, ported from `.ci/lib/service.sh`.
 
-PORTED FROM `.ci/lib/service.sh` (225 lines). The twin still exists and is
-untouched by this file, and it has exactly ONE sourcer:
-`.ci/legacy/run-legacy.sh:48`, which is the pre-split body of the repo-root
-`run.sh`. Re-measured 2026-09-09.
+PORTED FROM `.ci/lib/service.sh` (225 lines). The twin still exists and is untouched by this file, and it has exactly ONE sourcer: `.ci/legacy/run-legacy.sh:48`, which is the pre-split body of the repo-root `run.sh`. Re-measured 2026-09-09.
 
 --------------------------------------------------------------------------
 THREE DEFECTS THE PORT FOUND, ALL REPRODUCED HERE ON PURPOSE
 --------------------------------------------------------------------------
-A port that quietly improved any of these would disagree with the live twin on
-real input, so each is reproduced, each is pinned by a case in
-`.ci/rediacc_ci/tests/test_core_service.py`, and each is named here so the
-reader knows it is a decision rather than an oversight. NONE of them is fixed in
-the bash, because the bash is not this box's to edit.
+A port that quietly improved any of these would disagree with the live twin on real input, so each is reproduced, each is pinned by a case in `.ci/rediacc_ci/tests/test_core_service.py`, and each is named here so the reader knows it is a decision rather than an oversight. NONE of them is fixed in the bash, because the bash is not this box's to edit.
 
   1. `service_status` ABORTS SILENTLY, MID-OUTPUT, ON A STATE FILE WITH NO
      `port=` LINE. Measured 2026-09-09. `port=$(grep "^port=" "$STATE" | cut -d=
@@ -47,37 +40,19 @@ the bash, because the bash is not this box's to edit.
 --------------------------------------------------------------------------
 WHAT IS AND IS NOT DIFFERENTIALLY PROVED
 --------------------------------------------------------------------------
-PROVED, against the live twin, on real `docker`: `service_status` in every shape
-its state file can take, and `service_logs` refusing an unknown service. Those
-run without a stack up, which is what makes them cheap enough to record five
-times.
+PROVED, against the live twin, on real `docker`: `service_status` in every shape its state file can take, and `service_logs` refusing an unknown service. Those run without a stack up, which is what makes them cheap enough to record five times.
 
-NOT PORTED AT ALL, and said out loud rather than left as an absence:
-`service_start` and `service_stop`. THERE IS NO `service_start` OR
-`service_stop` FUNCTION BELOW. `service_start` builds an image, sources
-`.ci/docker/service/env.sh` (which MINTS CREDENTIALS and writes a `.env`), and
+NOT PORTED AT ALL, and said out loud rather than left as an absence: `service_start` and `service_stop`. THERE IS NO `service_start` OR `service_stop` FUNCTION BELOW. `service_start` builds an image, sources `.ci/docker/service/env.sh` (which MINTS CREDENTIALS and writes a `.env`), and
 polls a health endpoint for up to 90 seconds; `service_stop` tears down a compose
-project and removes containers by name. Driving either twice per observation,
-five times over, would build the web image ten times and would leave real
-containers behind if a comparison were interrupted, so neither could be proved
-here, and a port nobody can compare is a second implementation rather than a
-replacement.
+project and removes containers by name. Driving either twice per observation, five times over, would build the web image ten times and would leave real containers behind if a comparison were interrupted, so neither could be proved here, and a port nobody can compare is a second implementation rather than a replacement.
 
-What IS here from those two is the set of pieces that are decidable without
-Docker and are therefore assertable: `parse_start_args` (the argument loop),
-`compose_argv` (`_service_compose`), `docker_available` / `check_docker`,
-`health_ok` (the poll's single probe) and `uptime_line`. THE LIFECYCLE BODIES
-ARE AN HONEST GAP, and whoever closes it owns finding a way to compare them.
+What IS here from those two is the set of pieces that are decidable without Docker and are therefore assertable: `parse_start_args` (the argument loop), `compose_argv` (`_service_compose`), `docker_available` / `check_docker`, `health_ok` (the poll's single probe) and `uptime_line`. THE LIFECYCLE BODIES ARE AN HONEST GAP, and whoever closes it owns finding a way to compare them.
 
 --------------------------------------------------------------------------
 WHY THE LOGGER IS `rediacc_ci.log` AND THE COLOURS ARE NOT
 --------------------------------------------------------------------------
-`log_info` / `log_error` / `log_step` / `log_debug` here are `common.sh`'s, and
-`rediacc_ci.log` is already the byte-exact port of those four, tty gating
-included. Re-deriving them would be the fifth copy of a thing that has one.
-The `COLOR_*` constants are the OTHER family -- `constants.sh`'s ungated pair --
-and they are duplicated below precisely because they are not the same decision.
-Collapsing them into `log`'s would fix defect 2 by accident, in a port.
+`log_info` / `log_error` / `log_step` / `log_debug` here are `common.sh`'s, and `rediacc_ci.log` is already the byte-exact port of those four, tty gating included. Re-deriving them would be the fifth copy of a thing that has one. The `COLOR_*` constants are the OTHER family -- `constants.sh`'s ungated pair -- and they are duplicated below precisely because they are not the same
+decision. Collapsing them into `log`'s would fix defect 2 by accident, in a port.
 """
 
 import os
@@ -130,10 +105,7 @@ a container, because a differential cannot compare two streams that do not end.
 class StatusAbortedError(Exception):
     """`service_status` died where the twin's errexit kills it. See defect 1.
 
-    An exception rather than a return code because the twin does not RETURN
-    there -- `set -e` unwinds it, and everything after the failing line, health
-    check included, never runs. Modelling that as a code would let a caller
-    print the rest.
+    An exception rather than a return code because the twin does not RETURN there -- `set -e` unwinds it, and everything after the failing line, health check included, never runs. Modelling that as a code would let a caller print the rest.
     """
 
 
@@ -153,8 +125,7 @@ def grep_cut(text: str, prefix: str) -> str:
     Zero matches is grep's exit 1, and the twin dies on it. `cut -d= -f2` takes
     the SECOND field only, so a value containing `=` is truncated in both
     implementations; that is preserved rather than fixed for the same reason.
-    On several matches grep emits several lines and `cut` several fields, and
-    the twin then assigns the whole multi-line string -- also preserved.
+    On several matches grep emits several lines and `cut` several fields, and the twin then assigns the whole multi-line string -- also preserved.
     """
     hits = [line for line in text.splitlines() if line.startswith(prefix)]
     if not hits:
@@ -169,12 +140,9 @@ def grep_cut(text: str, prefix: str) -> str:
 def uptime_line(seconds: int) -> str:
     """`Uptime: HH:MM:SS` from a second count. `printf '%02d:%02d:%02d'`.
 
-    NOT `datetime.timedelta`, which prints `1:02:05` for the same input and
-    rolls over into days past 24 hours. The twin's arithmetic is
+    NOT `datetime.timedelta`, which prints `1:02:05` for the same input and rolls over into days past 24 hours. The twin's arithmetic is
     `h=$((u/3600)) m=$((u%3600/60)) s=$((u%60))`, so 25 hours prints as `25:00:00`
-    and stays on one field. A negative count (a state file written by a machine
-    whose clock later moved back) formats with a minus sign in both languages,
-    which is ugly and is what the twin does.
+    and stays on one field. A negative count (a state file written by a machine whose clock later moved back) formats with a minus sign in both languages, which is ugly and is what the twin does.
     """
     return "Uptime: %02d:%02d:%02d" % (seconds // 3600, seconds % 3600 // 60, seconds % 60)
 
@@ -183,9 +151,7 @@ def parse_start_args(args: list[str]) -> tuple[str, bool]:
     """`service_start`'s loop: (port, skip_build). LAST positional wins.
 
     The twin's `for arg in "$@"; do case ... *) port="$arg" ;; esac done` has no
-    break, so `service_start 9000 9100` ends with 9100 and no complaint. Kept,
-    and stated, because "the last one wins" and "the first one wins" are both
-    plausible readings of a shell loop and only one of them is this file's.
+    break, so `service_start 9000 9100` ends with 9100 and no complaint. Kept, and stated, because "the last one wins" and "the first one wins" are both plausible readings of a shell loop and only one of them is this file's.
     """
     port = ""
     skip_build = False
@@ -201,8 +167,7 @@ def docker_available() -> tuple[bool, list[str]]:
     """`check_docker`, as `.ci/legacy/run-legacy.sh` defines it. See defect 3.
 
     Returns (ok, lines-to-log). The twin `exit 1`s; returning lets the caller
-    decide, and the two call shapes are proved to agree in the tests rather than
-    assumed.
+    decide, and the two call shapes are proved to agree in the tests rather than assumed.
     """
     if shutil.which("docker") is None:
         return False, [
@@ -228,10 +193,7 @@ def check_docker() -> None:
 def running_containers() -> set[str]:
     """`docker ps --format "{{.Names}}"`, as a set.
 
-    ONE `docker ps` FOR THE WHOLE STATUS, where the twin runs one per container.
-    That is the single behavioural liberty taken here and it is invisible in the
-    output: the twin greps the same list twice. It is called out because a
-    reader diffing the two will notice the missing second call.
+    ONE `docker ps` FOR THE WHOLE STATUS, where the twin runs one per container. That is the single behavioural liberty taken here and it is invisible in the output: the twin greps the same list twice. It is called out because a reader diffing the two will notice the missing second call.
     """
     probe = subprocess.run(
         ["docker", "ps", "--format", "{{.Names}}"],
@@ -262,9 +224,7 @@ def health_ok(port: int | str, timeout: float = 5) -> bool:
 
     `curl` AND NOT `urllib`, deliberately. `-f` makes a 4xx a non-zero exit,
     `-s` silences the progress meter, and both streams go to /dev/null; matching
-    that with urllib means matching curl's redirect policy, its proxy
-    environment handling and its idea of a connection failure. The twin's
-    behaviour IS curl's behaviour, so the port runs curl.
+    that with urllib means matching curl's redirect policy, its proxy environment handling and its idea of a connection failure. The twin's behaviour IS curl's behaviour, so the port runs curl.
     """
     if shutil.which("curl") is None:
         raise StatusAbortedError(
@@ -335,10 +295,7 @@ def service_status(*, root: str | None = None, now: int | None = None, out=None)
 def service_logs_target(service: str) -> tuple[str, list[str]] | None:
     """`service_logs`'s case arms, WITHOUT attaching. None means unknown.
 
-    Split out from the attach because a differential cannot compare two `-f`
-    streams that never end, and because the dispatch is the part with a bug
-    surface: `all` and `""` share an arm, so `service_logs ""` follows every
-    container rather than refusing.
+    Split out from the attach because a differential cannot compare two `-f` streams that never end, and because the dispatch is the part with a bug surface: `all` and `""` share an arm, so `service_logs ""` follows every container rather than refusing.
     """
     if service == "web":
         return "docker", ["docker", "logs", "-f", "rediacc-service-web"]

@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/dispatch-watchdog.sh` (138 lines).
 
-Dispatches ONE generation of the chained watchdog monitor. The twin's header
-carries why the chain exists (ubuntu-slim's 15-minute job cap against a 1-2h CI
+Dispatches ONE generation of the chained watchdog monitor. The twin's header carries why the chain exists (ubuntu-slim's 15-minute job cap against a 1-2h CI
 run) and who calls it; none of it is restated here.
 
-LIVE CALLERS, not repointed: `.github/workflows/ci.yml` (CI Watchdog bootstrap,
-`--generation 1`) and `.github/workflows/watchdog-monitor.yml` (chain handoff).
+LIVE CALLERS, not repointed: `.github/workflows/ci.yml` (CI Watchdog bootstrap, `--generation 1`) and `.github/workflows/watchdog-monitor.yml` (chain handoff).
 The bash twin stays the registered gate; this module is its verified-equivalent
 alternative, and the cutover is a separate, later, driver-only step.
 
-Ledger: `.ci/shadow/w7p6-dispatch-watchdog.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-watchdog --assert
---k 5`).
+Ledger: `.ci/shadow/w7p6-dispatch-watchdog.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-watchdog --assert --k 5`).
 
 -----------------------------------------------------------------------------
 DEFECT C: THE GENERATION CAP IS EVALUATED IN OCTAL, AND A ZERO-PADDED VALUE
@@ -51,38 +47,25 @@ The fallback arm is
     elif try_dispatch "$(gh api "repos/${GITHUB_REPOSITORY}" \\
         --jq '.default_branch')"; then
 
-and a command substitution inside an `elif` condition runs with `set -e`
-suspended. So when THAT lookup fails, its exit status is discarded, the ref
-becomes the EMPTY STRING, and `gh workflow run --ref ''` is attempted and
-reported as the dispatch having failed. Driven, with every `gh` call failing:
+and a command substitution inside an `elif` condition runs with `set -e` suspended. So when THAT lookup fails, its exit status is discarded, the ref becomes the EMPTY STRING, and `gh workflow run --ref ''` is attempted and reported as the dispatch having failed. Driven, with every `gh` call failing:
 
     (error) Failed to dispatch watchdog generation 1 for run 1: gh workflow run
       watchdog-monitor.yml --repo r/c --ref  -f target_run_id=1 ...
 
-The empty `--ref ` in that message is the whole receipt. "The lookup could not
-run" is folded into "the dispatch was refused", and the 404-bootstrap arm below
-then greps the WRONG error text for its fail-open decision.
+The empty `--ref ` in that message is the whole receipt. "The lookup could not run" is folded into "the dispatch was refused", and the 404-bootstrap arm below then greps the WRONG error text for its fail-open decision.
 
 -----------------------------------------------------------------------------
 DEFECT E: TWO ARGUMENT SHAPES DIE WITHOUT THE SCRIPT'S OWN MESSAGE
 -----------------------------------------------------------------------------
-`--run-id` / `--generation` / `--pr-number` / `--head-ref` as the LAST token
-reads `"$2"` under `set -u`, so bash refuses with
-`<path>: line 40: $2: unbound variable`, exit 1 -- not the `Unknown option`
-message the parser exists to print. And `--pending-rerun` as the last token is
+`--run-id` / `--generation` / `--pr-number` / `--head-ref` as the LAST token reads `"$2"` under `set -u`, so bash refuses with `<path>: line 40: $2: unbound variable`, exit 1 -- not the `Unknown option` message the parser exists to print. And `--pending-rerun` as the last token is
 worse: `"${2:-false}"` tolerates the absence, then `shift 2` with one argument
-left returns non-zero and `set -e` turns it into a **completely silent exit 1**
-(driven: zero bytes on both streams). Same class as
-`deploy/write_release_sentinel.py`'s FINDING 5.
+left returns non-zero and `set -e` turns it into a **completely silent exit 1** (driven: zero bytes on both streams). Same class as `deploy/write_release_sentinel.py`'s FINDING 5.
 
 -----------------------------------------------------------------------------
 DEFECT F: A FAILED head_branch LOOKUP KILLS THE RUN WITH NO MESSAGE OF ITS OWN
 -----------------------------------------------------------------------------
 `HEAD_REF="$(gh api "$RUN_API" --jq '.head_branch // ""')"` is a plain
-assignment, so a failing lookup ends the script at exit 1 through `set -e` with
-only gh's own stderr to explain it -- while the very next `elif` treats an
-unreachable API as a reason to fail OPEN. The two adjacent lookups disagree
-about what an unreachable API means.
+assignment, so a failing lookup ends the script at exit 1 through `set -e` with only gh's own stderr to explain it -- while the very next `elif` treats an unreachable API as a reason to fail OPEN. The two adjacent lookups disagree about what an unreachable API means.
 
 -----------------------------------------------------------------------------
 DIVERGENCES, ALL IN TEXT ONLY A HUMAN READS
@@ -100,8 +83,7 @@ DIVERGENCES, ALL IN TEXT ONLY A HUMAN READS
  4. common.sh's `echo -e` interprets backslash escapes in the message;
     `rediacc_ci.log` formats the message as data.
 
-Exit: 0 dispatched, 0 cap reached, 0 pre-merge bootstrap (fail open), 1 any
-argument error or dispatch failure.
+Exit: 0 dispatched, 0 cap reached, 0 pre-merge bootstrap (fail open), 1 any argument error or dispatch failure.
 """
 
 from __future__ import annotations
@@ -147,9 +129,7 @@ VALUE_OPTIONS = {
 class ArgError(Exception):
     """An argument the parser refuses. Carries the exact stderr text, or None.
 
-    `None` is the silent `shift 2` shape of Defect E, which prints nothing at
-    all -- and a message-less refusal has to be representable, or the port
-    would invent output the twin does not produce.
+    `None` is the silent `shift 2` shape of Defect E, which prints nothing at all -- and a message-less refusal has to be representable, or the port would invent output the twin does not produce.
     """
 
     def __init__(self, message: str | None) -> None:
@@ -160,9 +140,7 @@ class ArgError(Exception):
 def octal_gt(value: str, ceiling: int) -> bool | None:
     """`((VALUE > ceiling))`, with bash's base rules. None = the arithmetic died.
 
-    A leading `0` makes it OCTAL, a leading `0x` hexadecimal, and an invalid
-    digit for the chosen base aborts the whole expression. None is the abort,
-    and the twin's `if` then falls through -- which is Defect C.
+    A leading `0` makes it OCTAL, a leading `0x` hexadecimal, and an invalid digit for the chosen base aborts the whole expression. None is the abort, and the twin's `if` then falls through -- which is Defect C.
     """
     try:
         parsed = int(value, 8) if len(value) > 1 and value[0] == "0" else int(value, 10)
@@ -205,8 +183,7 @@ def parse_args(argv: list[str]) -> dict[str, str]:
 def gh_api(endpoint: str, jq: str) -> tuple[int, str]:
     """`gh api <endpoint> --jq <filter>`. Returns (status, stdout, trimmed).
 
-    stderr is NOT captured: the twin lets it through to its own stderr for both
-    of these lookups, and only the DISPATCH merges the two streams.
+    stderr is NOT captured: the twin lets it through to its own stderr for both of these lookups, and only the DISPATCH merges the two streams.
     """
     try:
         proc = subprocess.run(

@@ -1,28 +1,15 @@
 """Differential: `rediacc_ci.autopilot.autopilot_gate` against its twin
 `.ci/scripts/autopilot/autopilot-gate.sh`.
 
-THE TWIN'S OWN SENTENCE IS THIS FILE'S BRIEF: "an untested branch in this file
-is an untested security decision". The subject is a 414-line decision tree with
-twenty-seven distinct exits, and a port that quietly dropped one of them would
-look exactly like a port that kept it -- on every input except the one the
-dropped check existed for. So the cases below walk the tree ARM BY ARM, in the
-twin's own order, and each arm is named after the refusal string it proves.
+THE TWIN'S OWN SENTENCE IS THIS FILE'S BRIEF: "an untested branch in this file is an untested security decision". The subject is a 414-line decision tree with twenty-seven distinct exits, and a port that quietly dropped one of them would look exactly like a port that kept it -- on every input except the one the dropped check existed for. So the cases below walk the tree ARM BY ARM,
+in the twin's own order, and each arm is named after the refusal string it proves.
 
-THE PURITY CLAIM IS MADE MECHANICAL, NOT ASSERTED. The gate advertises itself as
-running no network calls, and every case here runs with a POISON `gh` first on
-PATH that records its argv and exits 66. `test_the_gate_never_reaches_the_network`
-is the control that proves the poison would be noticed, and every `_sides` call
-asserts the call log is empty, so a port that grew a `gh` call would fail every
+THE PURITY CLAIM IS MADE MECHANICAL, NOT ASSERTED. The gate advertises itself as running no network calls, and every case here runs with a POISON `gh` first on PATH that records its argv and exits 66. `test_the_gate_never_reaches_the_network` is the control that proves the poison would be noticed, and every `_sides` call asserts the call log is empty, so a port that grew a `gh`
+call would fail every
 case rather than one.
 
-WHAT IS COMPARED. Exit code, stdout bytes, stderr bytes, and the `gh` call log,
-on both sides, for every case. STDOUT IS THE WHOLE PRODUCT HERE: one JSON line
-whose twelve keys the calling workflow reads, so a port that reached the right
-verdict with the wrong `rounds_max` would still be a different gate. Several
-cases therefore assert the decoded object field by field ON TOP of the byte
-comparison, because "the two sides agree" and "the two sides are right" are
-different claims and only the second one catches a shared misreading of the
-twin.
+WHAT IS COMPARED. Exit code, stdout bytes, stderr bytes, and the `gh` call log, on both sides, for every case. STDOUT IS THE WHOLE PRODUCT HERE: one JSON line whose twelve keys the calling workflow reads, so a port that reached the right verdict with the wrong `rounds_max` would still be a different gate. Several cases therefore assert the decoded object field by field ON TOP of
+the byte comparison, because "the two sides agree" and "the two sides are right" are different claims and only the second one catches a shared misreading of the twin.
 
 ONE STDERR LINE DIVERGES, IN ONE CASE, AND IT IS PINNED RATHER THAN HIDDEN.
 `((08 > 0))` is a bash arithmetic ERROR whose diagnostic carries the script path
@@ -32,8 +19,7 @@ with that single line filtered out of both sides. Nothing else in this file
 filters anything.
 
 K=5 LEDGER: `.ci/shadow/w7p6-autopilot-gate.observations.jsonl`, recorded in a
-disposable scratch git repository outside this checkout, since
-`shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean.
+disposable scratch git repository outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean.
 """
 
 from __future__ import annotations
@@ -73,11 +59,7 @@ HEADER = "### Autopilot state (machine-maintained, do not edit)"
 def _stub_bin(base: pathlib.Path) -> str:
     """The poison `gh` FIRST, then the real PATH.
 
-    The real PATH is kept because the twin needs `jq`, `grep`, `sort`, `awk`,
-    `sed`, `tr`, `mktemp`, `dirname`, `uname`, `cat` and `wc` -- and because
-    `state-comment.sh`, which the twin spawns for real, needs them too. Only
-    `gh` is displaced, and `test_the_gate_never_reaches_the_network` proves the
-    displacement took.
+    The real PATH is kept because the twin needs `jq`, `grep`, `sort`, `awk`, `sed`, `tr`, `mktemp`, `dirname`, `uname`, `cat` and `wc` -- and because `state-comment.sh`, which the twin spawns for real, needs them too. Only `gh` is displaced, and `test_the_gate_never_reaches_the_network` proves the displacement took.
     """
     stub = base / "bin"
     stub.mkdir(exist_ok=True)
@@ -220,10 +202,7 @@ def state_body(
 ) -> str:
     """A rendered state comment, in `state-comment.sh render`'s exact shape.
 
-    Written by hand rather than by calling the renderer, so a change in the
-    renderer cannot silently change what these cases test. The metadata line's
-    ` | ` separators and the `r<n> | run ` ledger prefix are both parsed by the
-    subject, so both are the contract this fixture asserts against.
+    Written by hand rather than by calling the renderer, so a change in the renderer cannot silently change what these cases test. The metadata line's ` | ` separators and the `r<n> | run ` ledger prefix are both parsed by the subject, so both are the contract this fixture asserts against.
     """
     ledger = run_ids or ["%d/1" % (4000 + i) for i in range(rounds)]
     lines = [
@@ -243,8 +222,7 @@ def sig_of(text: str) -> str:
     """The gate's signature over a failed-jobs file, computed independently.
 
     `LC_ALL=C sort` then sha256, first 8 hex. Recomputed here rather than
-    imported from the port, so a fixture that must MATCH a stored signature is
-    not built by the same code the case is testing.
+    imported from the port, so a fixture that must MATCH a stored signature is not built by the same code the case is testing.
     """
     lines = sorted(line for line in text.split("\n") if line != "")
     blob = "".join(line + "\n" for line in lines).encode("utf-8")
@@ -260,9 +238,7 @@ BASE_FIXTURES = {"event.json": event_json(), "pr.json": pr_json()}
 def test_the_gate_never_reaches_the_network() -> None:
     """CONTROL for every `calls == []` assertion in this file.
 
-    The poison `gh` must be the `gh` a subject would find, AND it must record.
-    Without this, "no gh call was logged" is equally consistent with the log
-    never being written to by anything.
+    The poison `gh` must be the `gh` a subject would find, AND it must record. Without this, "no gh call was logged" is equally consistent with the log never being written to by anything.
     """
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
@@ -329,10 +305,7 @@ def test_a_fixture_that_does_not_exist_is_require_file_not_a_no_go() -> None:
 def test_a_fixture_that_is_not_json() -> None:
     """`jq -e .`, and its two failure shapes.
 
-    A PARSE failure and a `null` body are the same refusal here, and that is
-    jq's rule rather than a choice: `jq -e` exits 1 when the last value is null
-    or false. A port built on `json.loads` would accept `null` and then read
-    every field off nothing.
+    A PARSE failure and a `null` body are the same refusal here, and that is jq's rule rather than a choice: `jq -e` exits 1 when the last value is null or false. A port built on `json.loads` would accept `null` and then read every field off nothing.
     """
     for label, body, which in (
         ("garbage-event", "not json at all\n", "event"),
@@ -644,8 +617,7 @@ def test_dispatch_trusted_is_not_the_same_claim_as_armed() -> None:
 
 def test_the_campaign_path_has_no_further_trust_check() -> None:
     """The empty `campaign)` case arm, asserted rather than assumed: a campaign
-    round with a hostile `label_applier` and no dispatch actor still goes,
-    because the state comment's AUTHORSHIP is the check and it happened
+    round with a hostile `label_applier` and no dispatch actor still goes, because the state comment's AUTHORSHIP is the check and it happened
     upstream."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["pr.json"] = pr_json(labels=[], label_applier="drive-by")
@@ -1038,10 +1010,7 @@ def test_round_cap_resolution_order() -> None:
 def test_the_campaign_cap_cannot_carry_an_octal_because_jq_launders_it() -> None:
     """MEASURED, AND IT REFUTES THE OBVIOUS GUESS.
 
-    `state-comment.sh fields` emits `rounds_max` through `jq --argjson`, which
-    prints 12 for the input `012`, so the value the gate reads back from a state
-    comment is ALREADY decimal. A test aimed here would pass while proving
-    nothing about bash's grammar. The env-var and dispatch paths below are the
+    `state-comment.sh fields` emits `rounds_max` through `jq --argjson`, which prints 12 for the input `012`, so the value the gate reads back from a state comment is ALREADY decimal. A test aimed here would pass while proving nothing about bash's grammar. The env-var and dispatch paths below are the
     ones that actually reach `((...))` with the zero intact."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["pr.json"] = pr_json(labels=[])
@@ -1057,8 +1026,7 @@ def test_the_campaign_cap_cannot_carry_an_octal_because_jq_launders_it() -> None
 def test_an_octal_round_cap_is_enforced_as_octal_and_reported_as_decimal() -> None:
     """`AUTOPILOT_MAX_ROUNDS=012` is TEN to `((...))` and TWELVE to jq.
 
-    A twin inconsistency, preserved because it decides where a campaign stops.
-    The case that proves it: ten recorded rounds against a cap that READS as 12
+    A twin inconsistency, preserved because it decides where a campaign stops. The case that proves it: ten recorded rounds against a cap that READS as 12
     still hits the cap."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["state.md"] = state_body(rounds=10, campaign="none", rounds_max="0")
@@ -1090,12 +1058,9 @@ def test_an_invalid_octal_round_cap() -> None:
 
     THE ONE FILTERED CASE IN THIS FILE. Exit code, stdout and the gh log are
     compared byte for byte; the bash diagnostic (which carries the twin's script
-    path and line number, unreproducible from Python) is dropped from BOTH sides
-    and its presence on the twin's side is asserted, so the filter cannot become
-    a way of hiding a divergence that is not this one.
+    path and line number, unreproducible from Python) is dropped from BOTH sides and its presence on the twin's side is asserted, so the filter cannot become a way of hiding a divergence that is not this one.
 
-    THE DIRECTION MATTERS: the error reads as FALSE, so the cap is not reached
-    and the round RUNS. A malformed cap fails open, which is a finding about the
+    THE DIRECTION MATTERS: the error reads as FALSE, so the cap is not reached and the round RUNS. A malformed cap fails open, which is a finding about the
     twin rather than about this port."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["state.md"] = state_body(rounds=10, campaign="none", rounds_max="0")
@@ -1119,8 +1084,7 @@ def test_an_invalid_octal_round_cap() -> None:
 
 def test_a_mistyped_state_path_is_silently_no_state() -> None:
     """HAZARD 1, PRESERVED AND PINNED. `--state` is `[[ -n && -s ]]`, never
-    `require_file`, so a typo reads as "no state comment yet": the round counter
-    resets to 1 and an exhausted campaign is invisible. Fail OPEN, which is the
+    `require_file`, so a typo reads as "no state comment yet": the round counter resets to 1 and an exhausted campaign is invisible. Fail OPEN, which is the
     wrong direction for this file; fixing it changes a live workflow step's
     contract, so it is the cutover box's call."""
     fixtures = dict(BASE_FIXTURES)
@@ -1150,8 +1114,7 @@ def test_a_mistyped_state_path_is_silently_no_state() -> None:
 
 def test_the_allowlist_strips_interior_whitespace() -> None:
     """HAZARD 2, PRESERVED AND PINNED. `${item//[[:space:]]/}` deletes every
-    whitespace character rather than trimming the ends, so `a b` allowlists
-    `ab`. GitHub logins cannot contain a space, so this cannot admit a real
+    whitespace character rather than trimming the ends, so `a b` allowlists `ab`. GitHub logins cannot contain a space, so this cannot admit a real
     account today; it is pinned because it guards a model invocation."""
     fixtures = dict(BASE_FIXTURES)
     # Both trust checks read the same list here (APPLIER falls back to AUTHOR),
@@ -1199,8 +1162,7 @@ def test_bash_cmp_treats_an_arithmetic_error_as_false_not_as_zero() -> None:
     """THE DIVERGENCE THE DIFFERENTIAL CAUGHT, pinned as a unit as well.
 
     `((10 >= 08))` is FALSE. Reading `08` as 0 makes it TRUE, which turns a
-    fail-open hazard in the twin into a refusal in the port. Both directions,
-    because only the second one catches a `bash_cmp` that returns False for
+    fail-open hazard in the twin into a refusal in the port. Both directions, because only the second one catches a `bash_cmp` that returns False for
     everything."""
     assert ag.bash_cmp("10", ">=", "08") is False
     assert ag.bash_cmp("08", ">", "0") is False

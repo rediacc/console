@@ -1,8 +1,7 @@
 r"""check:ci-hook-exec-baseline -- the hook wiring cannot change its cost silently.
 
 THE BASELINE THIS GUARDS DID NOT EXIST UNTIL 2026-09-09, AND THAT IS THE POINT.
-W5 P0 lists "a fork counter" among its delivered artifacts and W5 P6 records
-"456 execs per Bash call to 35". Neither is reproducible from the tree:
+W5 P0 lists "a fork counter" among its delivered artifacts and W5 P6 records "456 execs per Bash call to 35". Neither is reproducible from the tree:
 
     grep -rlnP 'strace|GUARD_PASS|HOOKS_ONLY|FORK_COUNT' .ci .claude scripts
       -> zero files
@@ -11,27 +10,17 @@ W5 P0 lists "a fork counter" among its delivered artifacts and W5 P6 records
 
 So W5's target of "2 processes per Bash tool call" was, for three days, a number
 with nothing on the other side of the comparison. A target with no baseline is
-unfalsifiable, and an unfalsifiable target is checked off by whoever gets tired
-first. `.claude/rediacc_hooks/execcount.py` is the counter and
+unfalsifiable, and an unfalsifiable target is checked off by whoever gets tired first. `.claude/rediacc_hooks/execcount.py` is the counter and
 `.ci/policy/hook-exec-baseline.json` is the pin; this gate is what makes the pin
 mean something.
 
-WHY IT IS STATIC AND NOT strace. Three disqualifications, any one of them
-enough: strace is absent on macOS, it needs a ptrace capability containers
-routinely withhold, and it measures a RUN rather than the wiring, so its answer
-moves with whichever guard short-circuited that day. A baseline CI cannot
-recompute on demand is the same failure class as the baseline that vanished.
-The counter therefore reads `.claude/settings.json` and counts the processes the
-HARNESS starts, one per `hooks[].command`. That is a FLOOR on the true exec
+WHY IT IS STATIC AND NOT strace. Three disqualifications, any one of them enough: strace is absent on macOS, it needs a ptrace capability containers routinely withhold, and it measures a RUN rather than the wiring, so its answer moves with whichever guard short-circuited that day. A baseline CI cannot recompute on demand is the same failure class as the baseline that vanished. The
+counter therefore reads `.claude/settings.json` and counts the processes the HARNESS starts, one per `hooks[].command`. That is a FLOOR on the true exec
 count and the module says so in as many words; in-guard forks are a different
 measurement and this gate does not pretend to make it.
 
-BOTH DIRECTIONS, AND THE SECOND ONE IS THE HALF THAT KEEPS IT SHRINKING. A count
-that GREW is refused, which is the obvious direction. A count that SHRANK is
-ALSO refused, with the new value printed ready to paste. A baseline that
-silently absorbs an improvement can no longer prove the next one, and D4's whole
-acceptance ("30 entries down to 11") is a statement about this file's numbers
-moving in a change that says it is moving them.
+BOTH DIRECTIONS, AND THE SECOND ONE IS THE HALF THAT KEEPS IT SHRINKING. A count that GREW is refused, which is the obvious direction. A count that SHRANK is ALSO refused, with the new value printed ready to paste. A baseline that silently absorbs an improvement can no longer prove the next one, and D4's whole acceptance ("30 entries down to 11") is a statement about this file's
+numbers moving in a change that says it is moving them.
 
 WHAT ELSE IS PINNED, because a table of tool costs is not by itself complete:
 
@@ -56,9 +45,7 @@ WHAT ELSE IS PINNED, because a table of tool costs is not by itself complete:
 ANTI-VACUITY, FIVE REFUSALS AND EACH ITS OWN SENTENCE. A missing or unparseable
 baseline; a baseline with no probe tools; a baseline with no `measured` block; a
 settings file the counter cannot read; and a wiring that parses to zero hook
-commands. The last one is the shape of the failure that started this box: an
-instrument that stopped producing numbers and reported nothing rather than
-reporting that it had stopped.
+commands. The last one is the shape of the failure that started this box: an instrument that stopped producing numbers and reported nothing rather than reporting that it had stopped.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
 
@@ -173,8 +160,7 @@ def _drift(label, pinned, live):
 def compare(baseline, result, unmatched):
     """Every finding, as a list of strings. Pure: no I/O, no exits.
 
-    Exported so the controls can drive it directly, and so a caller that wants
-    the findings without the printing can have them.
+    Exported so the controls can drive it directly, and so a caller that wants the findings without the printing can have them.
     """
     findings = []
     pinned = baseline["measured"]

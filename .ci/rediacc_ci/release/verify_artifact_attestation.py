@@ -1,25 +1,11 @@
 """Port of `.ci/scripts/release/verify-artifact-attestation.sh`.
 
-Verifies build provenance (SLSA attestation) of every file under `dist/cli`
-and `dist/packages`, relative to the repo root. Zero files found is a
-FAILURE, not a pass -- the twin's own header names the incident this guards:
-"the old script exited 0 having verified precisely zero artifacts,
-indistinguishable from a clean pass."
+Verifies build provenance (SLSA attestation) of every file under `dist/cli` and `dist/packages`, relative to the repo root. Zero files found is a FAILURE, not a pass -- the twin's own header names the incident this guards: "the old script exited 0 having verified precisely zero artifacts, indistinguishable from a clean pass."
 
-`gh attestation verify` IS SHELLED OUT TO, not reimplemented: attestation
-verification is exactly the kind of cryptographic, GitHub-hosted check that
-has no local equivalent, so the differential fakes the `gh` BINARY and
-proves this port drives it with the same per-file loop, the same counting,
-and the same all-or-nothing exit as the twin.
+`gh attestation verify` IS SHELLED OUT TO, not reimplemented: attestation verification is exactly the kind of cryptographic, GitHub-hosted check that has no local equivalent, so the differential fakes the `gh` BINARY and proves this port drives it with the same per-file loop, the same counting, and the same all-or-nothing exit as the twin.
 
-FILE DISCOVERY REPRODUCES `find dist/cli dist/packages -type f 2>/dev/null`,
-INCLUDING THE TWIN'S OWN CAVEAT: files are walked with `os.walk`, sorted for
-determinism (the twin's `for f in $(find ...)` also happens to sort, since
-`find`'s traversal order on a real filesystem is not glob-sorted but this
-twin's own comment block already accepts `find`'s ordinary behaviour here --
-sorting only makes this port's own output deterministic across runs, it does
-not change which files are found). A missing directory is silently skipped,
-matching `find`'s `2>/dev/null`.
+FILE DISCOVERY REPRODUCES `find dist/cli dist/packages -type f 2>/dev/null`, INCLUDING THE TWIN'S OWN CAVEAT: files are walked with `os.walk`, sorted for determinism (the twin's `for f in $(find ...)` also happens to sort, since `find`'s traversal order on a real filesystem is not glob-sorted but this twin's own comment block already accepts `find`'s ordinary behaviour here --
+sorting only makes this port's own output deterministic across runs, it does not change which files are found). A missing directory is silently skipped, matching `find`'s `2>/dev/null`.
 """
 
 from __future__ import annotations

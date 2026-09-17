@@ -1,15 +1,9 @@
 """`rediacc_ci.deploy.verify_stable_endpoints` against its bash twin.
 
-THE FAKE `curl` AND THE FOUR-WAY COMPARISON ARE THE EDGE DIFFERENTIAL'S, imported
-rather than copied: `test_deploy_verify_edge_endpoints` owns the recording fake,
-the fixture-directory convention and `assert_same`, and the two subjects are
-close enough that a second copy would drift. The reason both are shelled out to
-`curl` at all is in `verify_edge_endpoints`'s module docstring: hard-coded
-production hostnames, no override knob, so the CLIENT is what gets replaced.
+THE FAKE `curl` AND THE FOUR-WAY COMPARISON ARE THE EDGE DIFFERENTIAL'S, imported rather than copied: `test_deploy_verify_edge_endpoints` owns the recording fake, the fixture-directory convention and `assert_same`, and the two subjects are close enough that a second copy would drift. The reason both are shelled out to `curl` at all is in `verify_edge_endpoints`'s module docstring:
+hard-coded production hostnames, no override knob, so the CLIENT is what gets replaced.
 
-WHAT THIS FILE HAS TO PROVE THAT THE EDGE ONE DOES NOT, because the two scripts
-read almost identically and differ in exactly the places a careless port would
-smooth over:
+WHAT THIS FILE HAS TO PROVE THAT THE EDGE ONE DOES NOT, because the two scripts read almost identically and differ in exactly the places a careless port would smooth over:
 
   * NO RETRY. Every assertion samples once. `test_a_single_bad_sample_fails`
     plants a surface that recovers on the second attempt and requires BOTH sides
@@ -216,11 +210,9 @@ def test_a_404_on_install_sh_exits_22_with_no_annotation(tmp_path: pathlib.Path)
     """FINDING 4, REPRODUCED NOT FIXED.
 
     `INSTALL_SH=$(curl -fsSL https://www.rediacc.com/install.sh)` is a top-level
-    assignment under `set -e`. When curl's `-f` turns a 404 into exit 22, the
-    script dies THERE: the `::error::www.rediacc.com/install.sh is not baked to
+    assignment under `set -e`. When curl's `-f` turns a 404 into exit 22, the script dies THERE: the `::error::www.rediacc.com/install.sh is not baked to
     channel=stable` branch two lines below is never reached, so the CI job shows
-    a bare non-zero step with curl's own one-line diagnostic and no annotation.
-    The exit code is 22, which nothing in the pipeline maps to anything.
+    a bare non-zero step with curl's own one-line diagnostic and no annotation. The exit code is 22, which nothing in the pipeline maps to anything.
     """
 
     def mutate(d: pathlib.Path) -> None:
@@ -236,8 +228,7 @@ def test_a_404_on_install_sh_exits_22_with_no_annotation(tmp_path: pathlib.Path)
 
 def test_a_transport_failure_on_a_fingerprint_probe_exits_7(tmp_path: pathlib.Path) -> None:
     """The same defect on the `-sI` probes, and the sharpest contrast with the
-    edge twin: the identical fixture there yields `got 000` plus a real
-    `::error::` and exit 1, because the probe runs inside a `fetch_retry`
+    edge twin: the identical fixture there yields `got 000` plus a real `::error::` and exit 1, because the probe runs inside a `fetch_retry`
     predicate where `set -e` is suspended."""
 
     def mutate(d: pathlib.Path) -> None:
@@ -347,9 +338,7 @@ def test_a_missing_regions_json_warns_about_nothing_and_passes(
     tmp_path: pathlib.Path,
 ) -> None:
     """FINDING 1, second instance. The process-substitution loop sees zero
-    domains, `Stable verification complete` prints, exit 0. Here it is even
-    quieter than in the edge twin, because region health only warns anyway:
-    nothing about the output distinguishes "three healthy regions" from "no
+    domains, `Stable verification complete` prints, exit 0. Here it is even quieter than in the edge twin, because region health only warns anyway: nothing about the output distinguishes "three healthy regions" from "no
     regions were looked at"."""
     tree = edgediff.fixture_tree(tmp_path, with_regions=False)
     old, new = drive(tmp_path, tree=tree)
@@ -415,10 +404,7 @@ def test_the_script_takes_no_environment_input(tmp_path: pathlib.Path) -> None:
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:
     """Swap `.domain` for `.edgeDomain` in a COPY of the port.
 
-    This is the single most dangerous one-character-class error available here:
-    the run still exits 0, still prints three `health: OK` lines, and the only
-    trace is WHICH hosts were contacted. On a real run it would report the edge
-    fleet's health as the stable fleet's.
+    This is the single most dangerous one-character-class error available here: the run still exits 0, still prints three `health: OK` lines, and the only trace is WHICH hosts were contacted. On a real run it would report the edge fleet's health as the stable fleet's.
     """
     source = PORT_FILE.read_text(encoding="utf-8")
     anchor = 'edge.jq_run(["-r", ".regions[] | .domain", "regions.json"])'

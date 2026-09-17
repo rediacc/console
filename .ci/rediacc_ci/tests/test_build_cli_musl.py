@@ -1,34 +1,17 @@
 """Differential: `rediacc_ci.build.build_cli_musl` against its twin
 `.ci/scripts/build/build-cli-musl.sh`.
 
-ONE REAL INVOCATION PULLS `node:22-alpine`, RUNS `npm ci` INSIDE IT AND WRITES
-INTO `dist/cli/` OF WHATEVER TREE IT IS POINTED AT. It also runs
-`sudo chown -R` over that directory. Nothing here goes near a real one: every
+ONE REAL INVOCATION PULLS `node:22-alpine`, RUNS `npm ci` INSIDE IT AND WRITES INTO `dist/cli/` OF WHATEVER TREE IT IS POINTED AT. It also runs `sudo chown -R` over that directory. Nothing here goes near a real one: every
 case runs with a PATH that REPLACES the caller's rather than prepending to it,
-and `test_the_scratch_path_cannot_reach_a_real_docker_or_sudo` asserts the real
-binaries are unreachable from it before anything is driven. A prepended PATH
-would still resolve whatever the developer has installed, which is how a
-previous wave nearly let a stub reach into the live checkout.
+and `test_the_scratch_path_cannot_reach_a_real_docker_or_sudo` asserts the real binaries are unreachable from it before anything is driven. A prepended PATH would still resolve whatever the developer has installed, which is how a previous wave nearly let a stub reach into the live checkout.
 
-THE CALL LOG IS THE EVIDENCE. Both sides produce the same three log lines on a
-successful run no matter what argv they hand `docker`, so a port that swapped
-`--platform`, dropped the `-v` mount, forgot an `-e`, or shipped a different
-container script would pass on stdout, stderr and exit code alone.
-`test_a_planted_defect_is_caught_only_by_the_call_log` plants exactly that.
+THE CALL LOG IS THE EVIDENCE. Both sides produce the same three log lines on a successful run no matter what argv they hand `docker`, so a port that swapped `--platform`, dropped the `-v` mount, forgot an `-e`, or shipped a different container script would pass on stdout, stderr and exit code alone. `test_a_planted_defect_is_caught_only_by_the_call_log` plants exactly that.
 
-RECORDING FAKES LOG TO STDERR, NEVER STDOUT. This script's stdout is empty on
-every path except `--help`, and a fake writing to stdout would invent a
-difference that is the fake's, not the port's. They write to `$FAKE_CALL_LOG`
+RECORDING FAKES LOG TO STDERR, NEVER STDOUT. This script's stdout is empty on every path except `--help`, and a fake writing to stdout would invent a difference that is the fake's, not the port's. They write to `$FAKE_CALL_LOG`
 instead, and the `FAKEBIN ` prefix is also what the K=5 ledger scopes
-`--finding-re` to: `shadow-gate.ts` classifies any line opening `-> ` or `ok `
-as CHATTER before any message regex is consulted, and every one of this
-script's own lines is exactly that, so a ledger keyed on message text alone
-would record `VACUOUS_BOTH_EMPTY` on every row.
+`--finding-re` to: `shadow-gate.ts` classifies any line opening `-> ` or `ok ` as CHATTER before any message regex is consulted, and every one of this script's own lines is exactly that, so a ledger keyed on message text alone would record `VACUOUS_BOTH_EMPTY` on every row.
 
-`rediacc_ci` IS VENDORED INTO THE FIXTURE rather than reached through an
-absolute `PYTHONPATH`: it proves the port's dependency set, and
-`scripts/lib/shadow-gate.ts --record` refuses a command string naming an
-absolute path outside the recorded tree.
+`rediacc_ci` IS VENDORED INTO THE FIXTURE rather than reached through an absolute `PYTHONPATH`: it proves the port's dependency set, and `scripts/lib/shadow-gate.ts --record` refuses a command string naming an absolute path outside the recorded tree.
 
 `$0` IS MASKED TO `<SELF>`. bash names the script in its `set -u` death and in
 its `--help` usage; `sys.argv[0]` ends `.py`. Nothing else is masked, and stdout
@@ -393,8 +376,7 @@ def test_dry_run_previews_and_executes_nothing(tmp_path) -> None:
 
 def test_defect_dry_run_previews_an_architecture_the_real_run_rejects(tmp_path) -> None:
     """DEFECT 1. The `case` that rejects a bad `--arch` is at `:90-97`, AFTER the
-    dry-run `exit 0` at `:68`, so the preview reports a binary that can never be
-    built and exits 0. Both halves are asserted: the lie under `--dry-run`, and
+    dry-run `exit 0` at `:68`, so the preview reports a binary that can never be built and exits 0. Both halves are asserted: the lie under `--dry-run`, and
     the refusal without it, from the SAME argument."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--arch", "banana", "--dry-run"))
@@ -550,9 +532,7 @@ def test_no_output_from_the_container_is_a_refusal(tmp_path) -> None:
 
 def test_defect_a_stale_glibc_binary_ships_as_a_musl_one(tmp_path) -> None:
     """DEFECT 2. `:133` is an EXISTENCE test. A `dist/cli/rdc-linux-x64` left by
-    an earlier glibc build satisfies it even though this container produced
-    nothing, and the file is renamed, checksummed and reported as a finished
-    musl build. The assertion is on the CONTENT, because the log lines are
+    an earlier glibc build satisfies it even though this container produced nothing, and the file is renamed, checksummed and reported as a finished musl build. The assertion is on the CONTENT, because the log lines are
     indistinguishable from a real success."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--arch", "x64"), produces=False, stale_output=True)
@@ -564,8 +544,7 @@ def test_defect_a_stale_glibc_binary_ships_as_a_musl_one(tmp_path) -> None:
 
 def test_an_existing_checksum_is_rewritten_rather_than_recomputed(tmp_path) -> None:
     """`:146-149`: when the container left a `.sha256`, the twin `sed`s the
-    filename inside it and deletes the original instead of hashing again. The
-    fake writes a checksum that is deliberately NOT the file's real hash, which
+    filename inside it and deletes the original instead of hashing again. The fake writes a checksum that is deliberately NOT the file's real hash, which
     is the only way to tell the two branches apart."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--arch", "x64"), produces=True, checksum=True)

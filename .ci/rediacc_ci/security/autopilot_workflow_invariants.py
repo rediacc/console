@@ -2,21 +2,15 @@
 """Port of `.ci/scripts/security/check-autopilot-workflow-invariants.sh`.
 
 W7P6 wave 27. The bash twin stays the LIVE registered gate; this module is its
-VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
-`.ci/rediacc_ci/tests/test_security_autopilot_workflow_invariants.py` and by the
+VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by `.ci/rediacc_ci/tests/test_security_autopilot_workflow_invariants.py` and by the
 K=5 shadow ledger
-`.ci/shadow/w7p6-check-autopilot-workflow-invariants.observations.jsonl`.
-Nothing is repointed at this file. Cutover is a separate, later, driver-only
-step.
+`.ci/shadow/w7p6-check-autopilot-workflow-invariants.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
 NAMING. `check_` is dropped to match `rediacc_ci.security.workflow_gates`, the
 nearest sibling in this package; see the same note in `ci_workflow_invariants`.
 
-WHAT THE TWIN DOES. Static invariants over `.github/workflows/autopilot.yml`,
-the workflow that hands a model a shell over PR-authored code. Each invariant is
-a structural expression of a rule from `docs/ci-overhaul/03-v2-autonomy.md`, so
-a violation means the SECURITY design is broken rather than that a style rule is
-bent. The nine findings, and the twin's own one-line reason for each:
+WHAT THE TWIN DOES. Static invariants over `.github/workflows/autopilot.yml`, the workflow that hands a model a shell over PR-authored code. Each invariant is a structural expression of a rule from `docs/ci-overhaul/03-v2-autonomy.md`, so a violation means the SECURITY design is broken rather than that a style rule is bent. The nine findings, and the twin's own one-line reason for
+each:
 
   wall4-comment-missing        the WALL 4 comment must stay in the file
   trusted-checkout-not-first   a job's FIRST checkout must be rediacc/console@main
@@ -32,12 +26,8 @@ bent. The nine findings, and the twin's own one-line reason for each:
 
 NO EXTERNAL PROCESS IS INVOLVED, ON EITHER SIDE. The twin shells out to `awk`
 (three separate programs) and `grep`, both of which are transcribed here; there
-is no `yq`, no `jq`, no `gh`, no network, and no YAML parser -- the twin walks
-the file as TEXT and this port must walk it the same way, because the invariants
-are partly about COMMENTS and about indentation, neither of which survives a
-parse. That is why the differential needs no recording fakes and drives both
-sides over fixture YAML through `$WORKFLOW_FILE`, the seam the twin already
-exposes for its own gate test.
+is no `yq`, no `jq`, no `gh`, no network, and no YAML parser -- the twin walks the file as TEXT and this port must walk it the same way, because the invariants are partly about COMMENTS and about indentation, neither of which survives a parse. That is why the differential needs no recording fakes and drives both sides over fixture YAML through `$WORKFLOW_FILE`, the seam the twin
+already exposes for its own gate test.
 
 PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired.
 
@@ -130,10 +120,7 @@ REQUIRED_TOOLS = ('"Edit"', '"Write"', '"Read"')
 def records(text: str) -> list[str]:
     """The file as awk sees it: RS='\\n', and a final newline yields no empty record.
 
-    `text.splitlines()` would be wrong twice over -- it also splits on \\x0b,
-    \\x0c, \\x1c-\\x1e and U+2028/U+2029, none of which awk treats as a record
-    separator, so a workflow containing a form feed inside a run block would be
-    walked with different line NUMBERS by the two sides.
+    `text.splitlines()` would be wrong twice over -- it also splits on \\x0b, \\x0c, \\x1c-\\x1e and U+2028/U+2029, none of which awk treats as a record separator, so a workflow containing a form feed inside a run block would be walked with different line NUMBERS by the two sides.
     """
     lines = text.split("\n")
     if lines and lines[-1] == "":
@@ -144,10 +131,7 @@ def records(text: str) -> list[str]:
 def walk(text: str) -> list[tuple[str, str, str]]:
     """`:75-171`, the single awk pass, as (kind, line, where) triples.
 
-    Exported so the selftest can drive every rule without a subprocess. The last
-    triple is always the twin's `scanned-jobs` row, kept in the list rather than
-    returned separately because the twin's vacuity guard reads it back out of
-    the same stream.
+    Exported so the selftest can drive every rule without a subprocess. The last triple is always the twin's `scanned-jobs` row, kept in the list rather than returned separately because the twin's vacuity guard reads it back out of the same stream.
     """
     out: list[tuple[str, str, str]] = []
     job = "<top>"
@@ -276,10 +260,7 @@ def walk(text: str) -> list[tuple[str, str, str]]:
 def model_if_block(text: str) -> list[str]:
     """`:196-204`: the model job's JOB-LEVEL `if:`, and nothing else.
 
-    Extracted as its own pass rather than folded into `walk` because it is a
-    claim about one specific key's contents. A grep over the whole file would
-    pass on the state-write STEP that already mentions the flag, which is
-    precisely the substitute this invariant must not accept.
+    Extracted as its own pass rather than folded into `walk` because it is a claim about one specific key's contents. A grep over the whole file would pass on the state-write STEP that already mentions the flag, which is precisely the substitute this invariant must not accept.
     """
     out: list[str] = []
     inmodel = False
@@ -305,8 +286,7 @@ def model_if_block(text: str) -> list[str]:
 def model_settings_block(text: str) -> list[str]:
     """`:223-230`: the `settings: |` scalar of the step named `Model round`.
 
-    Scoped to that block rather than the whole file: a mention of `"Edit"`
-    anywhere else must not satisfy the requirement.
+    Scoped to that block rather than the whole file: a mention of `"Edit"` anywhere else must not satisfy the requirement.
     """
     out: list[str] = []
     instep = False

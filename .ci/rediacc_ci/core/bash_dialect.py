@@ -1,8 +1,6 @@
 """What THIS bash says when it complains, asked rather than assumed.
 
-WHY THIS EXISTS. Bash 5.3 reworded several diagnostics that ported modules and
-their tests reproduce as string literals. Measured 2026-09-15 by running both
-bashes, not by reading a changelog:
+WHY THIS EXISTS. Bash 5.3 reworded several diagnostics that ported modules and their tests reproduce as string literals. Measured 2026-09-15 by running both bashes, not by reading a changelog:
 
     bash 5.3.9(1)   [[: 1 2: arithmetic syntax error in expression (error token is "2")
     bash 5.2.21(1)  [[: 1 2: syntax error in expression (error token is "2")
@@ -19,38 +17,20 @@ bashes, not by reading a changelog:
     bash 5.3.9(1)   cd "" -> cd: null directory
     bash 5.2.37(1)  cd "" -> (silence; the empty argument is simply accepted)
 
-THREE independent changes: a uniform `arithmetic ` prefix on all three
-arithmetic shapes, `[`'s integer complaint losing the word `expression`, and
-`cd ""` going from silent to refused. The third is the odd one out and the
-reason this module returns a STRING rather than a flag -- on 5.2 the honest
-answer is the empty string, so a caller can append it unconditionally.
+THREE independent changes: a uniform `arithmetic ` prefix on all three arithmetic shapes, `[`'s integer complaint losing the word `expression`, and `cd ""` going from silent to refused. The third is the odd one out and the reason this module returns a STRING rather than a flag -- on 5.2 the honest answer is the empty string, so a caller can append it unconditionally.
 
-HOW IT HID FOR 53 WAVES. Every port here is verified against its bash twin by a
-differential test asserting the two produce the same bytes. Both sides run on
-the same host, so a literal baked into the port agrees with the twin **on the
-machine that wrote it** and disagrees nowhere a developer can see. This tree's
+HOW IT HID FOR 53 WAVES. Every port here is verified against its bash twin by a differential test asserting the two produce the same bytes. Both sides run on the same host, so a literal baked into the port agrees with the twin **on the machine that wrote it** and disagrees nowhere a developer can see. This tree's
 hosts run bash 5.3; every GitHub runner is ubuntu-24.04, which is bash 5.2. The
-divergence was therefore invisible locally by construction and unreachable in
-CI, because `quality-security` -- the only lane that runs this suite -- had been
-watchdog-cancelled on every run of the wave. It surfaced in run 34970782616,
-the first that ever let that lane finish, as fourteen failures.
+divergence was therefore invisible locally by construction and unreachable in CI, because `quality-security` -- the only lane that runs this suite -- had been watchdog-cancelled on every run of the wave. It surfaced in run 34970782616, the first that ever let that lane finish, as fourteen failures.
 
 WHY IT PROBES INSTEAD OF COMPARING VERSION NUMBERS. `BASH_VERSINFO >= (5, 3)`
-would be a claim about where the boundary is, inferred from two measurements at
-5.2.21 and 5.3.9 and blind to a distro that backports the strings without the
-version. Asking bash what it actually prints cannot be wrong about that, costs
-one subprocess per process, and is the same move the rest of this campaign
-makes: run the thing that decides.
+would be a claim about where the boundary is, inferred from two measurements at 5.2.21 and 5.3.9 and blind to a distro that backports the strings without the version. Asking bash what it actually prints cannot be wrong about that, costs one subprocess per process, and is the same move the rest of this campaign makes: run the thing that decides.
 
-WHICH BASH. The one on PATH -- the same resolution the twins get when a test
-runs `bash <script>`, and the same one `differential.bash_streams` uses. Callers
-inside a differential that stubs PATH should pass that env through, so the port
+WHICH BASH. The one on PATH -- the same resolution the twins get when a test runs `bash <script>`, and the same one `differential.bash_streams` uses. Callers inside a differential that stubs PATH should pass that env through, so the port
 is told about the bash the twin will really run; `env=None` means the ambient
 one.
 
-IF THE PROBE CANNOT RUN it returns the 5.3 spellings, which is what every call
-site hardcoded before this module existed. A missing bash therefore changes
-nothing rather than silently rewording every diagnostic in the tree.
+IF THE PROBE CANNOT RUN it returns the 5.3 spellings, which is what every call site hardcoded before this module existed. A missing bash therefore changes nothing rather than silently rewording every diagnostic in the tree.
 """
 
 from __future__ import annotations
@@ -110,8 +90,7 @@ def _dialect(env: dict[str, str] | None) -> tuple[str, str, str, bool]:
 def arith_syntax_error(env: dict[str, str] | None = None) -> str:
     """`arithmetic syntax error` on bash 5.3+, `syntax error` before it.
 
-    The whole leading clause, not a prefix to glue on, so a call site reads as
-    the sentence bash prints:
+    The whole leading clause, not a prefix to glue on, so a call site reads as the sentence bash prints:
 
         '%s in expression (error token is "%s")' % (arith_syntax_error(), token)
         '%s: invalid arithmetic operator (error token is "%s")' % (arith_syntax_error(), token)
@@ -131,9 +110,7 @@ def integer_expected(env: dict[str, str] | None = None) -> str:
 def cd_null_directory(env: dict[str, str] | None = None) -> str:
     """What bash says about `cd ""` -- `cd: null directory` on 5.3+, NOTHING before.
 
-    The empty string is the real 5.2 answer, not a placeholder: that bash accepts
-    `cd ""` silently. A caller building an expected stderr can append this
-    unconditionally and get the right bytes on either.
+    The empty string is the real 5.2 answer, not a placeholder: that bash accepts `cd ""` silently. A caller building an expected stderr can append this unconditionally and get the right bytes on either.
     """
     return _dialect(env)[2]
 
@@ -144,9 +121,7 @@ def read_error(fd: str, reason: str, env: dict[str, str] | None = None) -> str:
         bash 5.3.9   read: 0: read error: Is a directory
         bash 5.2.37  read: read error: 0: Is a directory
 
-    The file descriptor moved from AFTER the phrase to BEFORE it, so unlike
-    the other entries here this one cannot be handled by swapping a noun --
-    the caller has to be handed the whole assembled line.
+    The file descriptor moved from AFTER the phrase to BEFORE it, so unlike the other entries here this one cannot be handled by swapping a noun -- the caller has to be handed the whole assembled line.
     """
     if _dialect(env)[3]:
         return "read: %s: read error: %s" % (fd, reason)

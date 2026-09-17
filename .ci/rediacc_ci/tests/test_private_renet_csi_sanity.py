@@ -1,45 +1,27 @@
 """Differential: `.ci/rediacc_ci/private/renet_csi_sanity.py` against its twin
 `.ci/scripts/private/renet-csi-sanity.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-NOTHING REAL IS EVER INVOKED, AND THAT IS NOT A CONVENIENCE. The twin runs under
-`sudo`, formats a 4 GB BTRFS image, mounts it on a loop device, apt-installs two
-packages and then drives the ginkgo csi-sanity suite through `go test -tags
+NOTHING REAL IS EVER INVOKED, AND THAT IS NOT A CONVENIENCE. The twin runs under `sudo`, formats a 4 GB BTRFS image, mounts it on a loop device, apt-installs two packages and then drives the ginkgo csi-sanity suite through `go test -tags
 root`. Every one of those needs root and a Go toolchain; a suite that reached
-them would take minutes, would mutate `/mnt`, and would SKIP on any machine
-missing one -- which is the exact vacuity this campaign exists to avoid. All
-SEVEN externals (`apt-get`, `umount`, `truncate`, `mkfs.btrfs`, `mkdir`,
-`mount`, `go`) are recording fakes on a scratch PATH: each appends its cwd and
-full argv to a log, writes canned bytes to both streams, and exits with a canned
-status.
+them would take minutes, would mutate `/mnt`, and would SKIP on any machine missing one -- which is the exact vacuity this campaign exists to avoid. All SEVEN externals (`apt-get`, `umount`, `truncate`, `mkfs.btrfs`, `mkdir`, `mount`, `go`) are recording fakes on a scratch PATH: each appends its cwd and full argv to a log, writes canned bytes to both streams, and exits with a
+canned status.
 
 WHAT IS COMPARED, AND WHY THE CALL LOG IS THE MOST IMPORTANT OF THE FOUR. Every
 case compares the exit code, stdout, stderr, and the CALL LOG. Almost everything
-this script does is a SIDE EFFECT on a block device, and none of it appears on
-any stream. A port that used `os.makedirs` instead of `mkdir -p`, or reordered
-the `umount` before the `truncate`, or word-split the ginkgo skip expression
-into three arguments, would produce byte-identical output and a different
-machine state. The log also records `REDIACC_CSI_SANITY_BASE` as `go` saw it,
-because that per-command assignment is the only thing that points the suite at
-the scratch datastore and no stream can show it.
+this script does is a SIDE EFFECT on a block device, and none of it appears on any stream. A port that used `os.makedirs` instead of `mkdir -p`, or reordered the `umount` before the `truncate`, or word-split the ginkgo skip expression into three arguments, would produce byte-identical output and a different machine state. The log also records `REDIACC_CSI_SANITY_BASE` as `go` saw
+it, because that per-command assignment is the only thing that points the suite at the scratch datastore and no stream can show it.
 
-PATH IS REPLACED, NEVER PREPENDED, and this host HAS a real `go`
-(`/home/developer/.local/bin/go`). A prepend would leave the "go is missing"
+PATH IS REPLACED, NEVER PREPENDED, and this host HAS a real `go` (`/home/developer/.local/bin/go`). A prepend would leave the "go is missing"
 case silently consulting the real toolchain, and `_binder` asserts every
-deliberate exclusion really took: a probe that cannot fire looks exactly like a
-subject that cannot fail.
+deliberate exclusion really took: a probe that cannot fire looks exactly like a subject that cannot fail.
 
-OUTPUT IS CAPTURED AS BYTES, not text. One case drives a transcript that is not
-valid UTF-8, because the twin's two guards are `grep`s over bytes and a port
-that decoded first would raise where the twin ruled.
+OUTPUT IS CAPTURED AS BYTES, not text. One case drives a transcript that is not valid UTF-8, because the twin's two guards are `grep`s over bytes and a port that decoded first would raise where the twin ruled.
 
 THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
 the file it is running; the port composes the same prefix from `sys.argv[0]` and
-its own live frame. Those can never be equal, so `_mask` collapses exactly that
-prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
+its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
 """
 
 import pathlib
@@ -123,10 +105,7 @@ def _mask(text: str, root: pathlib.Path, tmp: pathlib.Path) -> str:
 def _fixture(tmp_path: pathlib.Path, *, renet: bool = True) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because each subject derives the console root from its own location
-    (`BASH_SOURCE` / `__file__`, then three directories up). Driving the tracked
-    files with a `cwd` would point both `cd`s at the REAL `private/renet` and
-    the go fake would run there.
+    Copies, because each subject derives the console root from its own location (`BASH_SOURCE` / `__file__`, then three directories up). Driving the tracked files with a `cwd` would point both `cd`s at the REAL `private/renet` and the go fake would run there.
 
     `renet=False` removes `private/renet` entirely, which is the `cd` failure
     arm: bash prints its own diagnostic under `set -e` and exits 1.
@@ -156,10 +135,7 @@ def _binder(
 ) -> str:
     """The COMPLETE PATH for one case: named real tools, plus the eight fakes.
 
-    `absent` names fakes to LEAVE OUT, which is how the two probe arms
-    (`mkfs.btrfs` / `cryptsetup` missing) and every `command not found` arm are
-    driven. Each exclusion is asserted, because a probe that cannot fire is
-    indistinguishable from a subject that cannot fail.
+    `absent` names fakes to LEAVE OUT, which is how the two probe arms (`mkfs.btrfs` / `cryptsetup` missing) and every `command not found` arm are driven. Each exclusion is asserted, because a probe that cannot fire is indistinguishable from a subject that cannot fail.
 
     `rc` maps a tool name to a per-SUBCOMMAND status table, keyed on the tool's
     first argument with `""` as the default: `{"apt-get": {"update": 100}}` fails
@@ -224,12 +200,9 @@ def _run(
 ) -> dict[str, object]:
     """Drive one subject from a NEUTRAL cwd and collect all four observables.
 
-    Neutral, because the datastore setup runs BEFORE the `cd` and the recorded
-    cwd is what proves the ordering.
+    Neutral, because the datastore setup runs BEFORE the `cd` and the recorded cwd is what proves the ordering.
 
-    Output is captured as BYTES and decoded with `surrogateescape`, so a
-    transcript that is not valid UTF-8 survives the harness intact instead of
-    raising inside it.
+    Output is captured as BYTES and decoded with `surrogateescape`, so a transcript that is not valid UTF-8 survives the harness intact instead of raising inside it.
     """
     cwd = tmp_path.resolve() / "elsewhere"
     cwd.mkdir(exist_ok=True)
@@ -405,8 +378,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, binder_kw, run_kw):
 
 def test_every_external_is_actually_reached_in_order(tmp_path):
     """ANTI-VACUITY, and the strongest claim in the file. Every comparison above
-    is worthless if the datastore setup never happened, and a port that printed
-    the same three log lines while touching no block device would satisfy a
+    is worthless if the datastore setup never happened, and a port that printed the same three log lines while touching no block device would satisfy a
     stdout-only comparison exactly."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root)
@@ -438,9 +410,7 @@ def test_every_external_is_actually_reached_in_order(tmp_path):
 
 def test_the_ginkgo_skip_expression_survives_as_one_argument(tmp_path):
     """THE CONTRACT NO STREAM CAN SHOW. `-ginkgo.skip=<a>|<b>` carries spaces and
-    an alternation pipe, and it must reach ginkgo as ONE argument. A port that
-    word-split it would run 50 of 50 specs and go red on two ruled deviations
-    (spec 09 section 16) for a reason that has nothing to do with the driver.
+    an alternation pipe, and it must reach ginkgo as ONE argument. A port that word-split it would run 50 of 50 specs and go red on two ruled deviations (spec 09 section 16) for a reason that has nothing to do with the driver.
     Both subjects are asserted, character for character."""
     expected = [
         "test",
@@ -473,8 +443,7 @@ def test_the_ginkgo_skip_expression_survives_as_one_argument(tmp_path):
 
 def test_the_zero_spec_guard_is_the_reason_the_script_exists(tmp_path):
     """`go test` exits 0 for a run in which every spec skipped, which is exactly
-    what happens off-root or off-BTRFS. Both subjects must REFUSE that, on
-    stdout, as a GitHub annotation, with exit 1. This is the single assertion in
+    what happens off-root or off-BTRFS. Both subjects must REFUSE that, on stdout, as a GitHub annotation, with exit 1. This is the single assertion in
     the file whose failure would mean the step had become vacuous."""
     root = _fixture(tmp_path)
     binder = _binder(
@@ -505,8 +474,7 @@ def test_a_healthy_run_is_not_refused(tmp_path):
 
 def test_the_two_guards_fire_in_order_and_only_one_speaks(tmp_path):
     """The count guard is evaluated FIRST and returns immediately, so a run that
-    fails both says only the first thing. A port that checked the PASS guard
-    first, or reported both, would be more informative and would not be the same
+    fails both says only the first thing. A port that checked the PASS guard first, or reported both, would be more informative and would not be the same
     script."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root, go_out=b"Ran 0 of 50 Specs in 0.1s\nFAIL\n")
@@ -546,9 +514,7 @@ def test_go_stderr_is_folded_into_stdout(tmp_path):
 
 def test_the_install_arm_fires_once_for_either_missing_tool(tmp_path):
     """Two separate `command -v` probes, `||`-joined, so EITHER absence installs
-    BOTH packages -- and this script therefore does NOT have the
-    `require_cmd`-only-validates-its-first-argument defect. Driven from both
-    sides, because a port that probed only the first name would pass the
+    BOTH packages -- and this script therefore does NOT have the `require_cmd`-only-validates-its-first-argument defect. Driven from both sides, because a port that probed only the first name would pass the
     `mkfs.btrfs` case and silently skip the install for `cryptsetup`."""
     root = _fixture(tmp_path)
     for missing in ("mkfs.btrfs", "cryptsetup"):
@@ -574,16 +540,10 @@ def test_the_install_arm_fires_once_for_either_missing_tool(tmp_path):
 def test_a_failing_apt_get_update_is_swallowed_and_that_is_a_defect(tmp_path):
     """A REAL DEFECT IN THE TWIN, PINNED RATHER THAN FIXED.
 
-    `apt-get update -qq && apt-get install ...` reads as one guarded install
-    under `set -e`, and is not: `set -e` is ignored for a non-final member of an
-    AND-OR list, so a failed `update` short-circuits the `install` and the
-    script CARRIES ON. With only `cryptsetup` missing, nothing else the script
-    runs needs it, so the run reaches the end and prints "conformance passed"
-    having decided it needed two packages and installed neither.
+    `apt-get update -qq && apt-get install ...` reads as one guarded install under `set -e`, and is not: `set -e` is ignored for a non-final member of an AND-OR list, so a failed `update` short-circuits the `install` and the script CARRIES ON. With only `cryptsetup` missing, nothing else the script runs needs it, so the run reaches the end and prints "conformance passed" having
+    decided it needed two packages and installed neither.
 
-    Its mirror is asserted in the same test, because the asymmetry is the whole
-    point and a port that swallowed BOTH would pass the first half alone: a
-    failing `install` IS the last member of the list, so it exits.
+    Its mirror is asserted in the same test, because the asymmetry is the whole point and a port that swallowed BOTH would pass the first half alone: a failing `install` IS the last member of the list, so it exits.
     """
     root = _fixture(tmp_path)
 

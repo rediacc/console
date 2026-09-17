@@ -1,29 +1,15 @@
 """`rediacc_ci.quality.pr_description` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-pr-description.sh` over a
-specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and
-its bytes are compared against the port's. Same recipe as the committed ledger,
-`.ci/shadow/w7p2-pr-description.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-pr-description.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-pr-description.observations.jsonl`.
 
-THE `gh` STUB FAILS ON ANYTHING IT DOES NOT RECOGNISE, deliberately. A stub that
-answered every call with an empty success would make both sides take the
-"skipping check" branch and agree perfectly about nothing, which is the both-empty
-trap `scripts/lib/shadow-gate.ts` names as rule 2. Failing loudly on an
-unrecognised shape means a change to the twin's call arguments turns these cases
-red rather than quietly vacuous.
+THE `gh` STUB FAILS ON ANYTHING IT DOES NOT RECOGNISE, deliberately. A stub that answered every call with an empty success would make both sides take the "skipping check" branch and agree perfectly about nothing, which is the both-empty trap `scripts/lib/shadow-gate.ts` names as rule 2. Failing loudly on an unrecognised shape means a change to the twin's call arguments turns these
+cases red rather than quietly vacuous.
 
 TWO CASES HERE ARE NOT IN THE LEDGER, AND THAT IS THE POINT OF HAVING BOTH. A
-fresh description and a two-commit PR both exit 0 printing only chatter, so the
-comparator would score them VACUOUS_BOTH_EMPTY and refuse to record them. They are
-still the negative half of this gate: without them a port that reported EVERY PR
-stale would pass every ledger row. Byte equality is a stronger claim than the
-comparator's finding-set equality, so it can rule on them where the ledger cannot.
+fresh description and a two-commit PR both exit 0 printing only chatter, so the comparator would score them VACUOUS_BOTH_EMPTY and refuse to record them. They are still the negative half of this gate: without them a port that reported EVERY PR stale would pass every ledger row. Byte equality is a stronger claim than the comparator's finding-set equality, so it can rule on them
+where the ledger cannot.
 
-THE UNGUARDED-PIPELINE DEFECT IS ASSERTED HERE. The twin dies silently when
-`gh api graphql` fails, because pipefail plus `set -e` kill it at the assignment
-and the "Could not get PR description edit time" handler three lines below is
-unreachable. That is reproduced rather than repaired (invariant 5), and it is
-pinned by a case so that a future "fix" to either side shows up as a
+THE UNGUARDED-PIPELINE DEFECT IS ASSERTED HERE. The twin dies silently when `gh api graphql` fails, because pipefail plus `set -e` kill it at the assignment and the "Could not get PR description edit time" handler three lines below is unreachable. That is reproduced rather than repaired (invariant 5), and it is pinned by a case so that a future "fix" to either side shows up as a
 disagreement rather than as a silent improvement in one of them.
 """
 
@@ -60,9 +46,7 @@ HEAD_SHA = "dead0beef0dead0beef0dead0beef0dead0beef0"
 def pr_view(commits: int) -> str:
     """`gh api repos/{R}/pulls/{n} --jq '{commits, head, body, title}'`.
 
-    `commits` is an INTEGER here, which is the whole point of the change: it is
-    the PR's true commit count from the REST object rather than the length of a
-    `gh pr view` array that silently stops at 100.
+    `commits` is an INTEGER here, which is the whole point of the change: it is the PR's true commit count from the REST object rather than the length of a `gh pr view` array that silently stops at 100.
     """
     return json.dumps({"commits": commits, "head": HEAD_SHA, "body": "b", "title": "t"})
 
@@ -205,11 +189,7 @@ def test_differential(tmp_path, data, want_exit):
 def test_a_failing_graphql_read_kills_both_sides_silently(tmp_path):
     """The unguarded pipeline, pinned so a one-sided "fix" is a disagreement.
 
-    `gh api graphql` failing means pipefail fails the pipeline, the pipeline is the
-    right-hand side of an assignment, and `set -e` ends the script there. The
-    "Could not get PR description edit time - skipping check" branch below it is
-    unreachable. Reproduced rather than repaired: invariant 5 says the twin is not
-    edited in the change that ports it.
+    `gh api graphql` failing means pipefail fails the pipeline, the pipeline is the right-hand side of an assignment, and `set -e` ends the script there. The "Could not get PR description edit time - skipping check" branch below it is unreachable. Reproduced rather than repaired: invariant 5 says the twin is not edited in the change that ports it.
     """
     root = build(
         tmp_path,
@@ -228,9 +208,7 @@ def test_a_failing_graphql_read_kills_both_sides_silently(tmp_path):
 def test_the_advice_block_still_protects_the_generated_sections():
     """The 2026-09-03 correction, asserted in both directions.
 
-    Nothing in the exit code protects this sentence, and the wording it replaced
-    told the reader to overwrite the entire PR body, which deletes both
-    machine-written marker blocks.
+    Nothing in the exit code protects this sentence, and the wording it replaced told the reader to overwrite the entire PR body, which deletes both machine-written marker blocks.
     """
     text = "\n".join(gate.stale_block("rediacc/console", "553", 6, 90))
     assert "WITHOUT dropping its generated sections" in text
@@ -244,15 +222,10 @@ def test_the_advice_block_still_protects_the_generated_sections():
 def test_neither_side_reads_the_commit_list_through_gh_pr_view():
     """The regression guard for the 100-commit cap, asserted on BOTH sources.
 
-    `gh pr view --json commits` stops at 100 and says nothing about it. Measured
-    2026-09-15 on rediacc/console#589 (254 commits): the "latest commit" it
-    reported was 2026-09-07, eight days stale, so the age came out NEGATIVE and
-    the gate printed "within 30m - OK" forever. Nothing in the cases above can
-    see that, because a stub serves whatever shape the test author chose -- only
-    the call itself distinguishes a gate that can fail from one that cannot.
+    `gh pr view --json commits` stops at 100 and says nothing about it. Measured 2026-09-15 on rediacc/console#589 (254 commits): the "latest commit" it reported was 2026-09-07, eight days stale, so the age came out NEGATIVE and the gate printed "within 30m - OK" forever. Nothing in the cases above can see that, because a stub serves whatever shape the test author chose -- only the
+    call itself distinguishes a gate that can fail from one that cannot.
 
-    `gh pr view ... --json body` in the ADVICE text is fine and is why this
-    asserts the `commits` field specifically rather than the command.
+    `gh pr view ... --json body` in the ADVICE text is fine and is why this asserts the `commits` field specifically rather than the command.
     """
     root = pathlib.Path(diff.repo())
     twin = (root / TWIN).read_text(encoding="utf-8")

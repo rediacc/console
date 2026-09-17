@@ -3,8 +3,7 @@
 Ported from `.ci/scripts/quality/check-gate-id-convention.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-The twin's header, carried whole because the review quote, the narrowness
-argument, the accepted limitation and the subject change are each load-bearing:
+The twin's header, carried whole because the review quote, the narrowness argument, the accepted limitation and the subject change are each load-bearing:
 
     WHY THIS EXISTS. On 2026-08-08 a new gate under `.ci/scripts/test/gates/` was
     registered as `check:ci-edge-verify-retries` with a `package.json` script,
@@ -81,13 +80,9 @@ argument, the accepted limitation and the subject change are each load-bearing:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`evaluate` WAS ALREADY PYTHON, as a heredoc, so this port is that program with
-the heredoc removed. Its comments are the twin's, kept at the lines they
-describe, including the two that explain why the floor is corpus-derived and why
-the sibling count in the CONVENTION message is computed rather than typed.
+`evaluate` WAS ALREADY PYTHON, as a heredoc, so this port is that program with the heredoc removed. Its comments are the twin's, kept at the lines they describe, including the two that explain why the floor is corpus-derived and why the sibling count in the CONVENTION message is computed rather than typed.
 
-ARGUMENTS ARE PATHS, NOT CONTENTS, and that is a scar rather than a style choice.
-The twin's words, carried at the function:
+ARGUMENTS ARE PATHS, NOT CONTENTS, and that is a scar rather than a style choice. The twin's words, carried at the function:
 
     The previous version passed the whole manifest text through temp files
     precisely because it could not pass it through argv: Linux caps a single
@@ -100,18 +95,10 @@ The twin's words, carried at the function:
     class is designed out: nothing but a path ever crosses argv, and the control
     writes its planted copies to temp FILES.
 
-That constraint is gone the moment both sides are one process, and the port keeps
-the path-passing shape anyway. Not out of caution: the CONTROLS write planted
-copies to temp files and hand `evaluate` their paths, so a port taking contents
-would have to change the controls too, and a control rewritten during a port is
-a control nobody has watched fire in its new form.
+That constraint is gone the moment both sides are one process, and the port keeps the path-passing shape anyway. Not out of caution: the CONTROLS write planted copies to temp files and hand `evaluate` their paths, so a port taking contents would have to change the controls too, and a control rewritten during a port is a control nobody has watched fire in its new form.
 
-THE SCOPE LINE IS ON STDERR AND IS NOT PRINTED BY EVERY PATH. `evaluate` writes
-`# SUBJECTS n of m entries, floor f` to stderr only after the PARSE and FLOOR
-branches have not fired, because both of those `raise SystemExit(0)` first. The
-success path then reformats it with `sed 's/^# /  scope: /'`. Carried exactly:
-a reader who greps for `scope:` in a green log is reading the count of what was
-actually judged.
+THE SCOPE LINE IS ON STDERR AND IS NOT PRINTED BY EVERY PATH. `evaluate` writes `# SUBJECTS n of m entries, floor f` to stderr only after the PARSE and FLOOR branches have not fired, because both of those `raise SystemExit(0)` first. The success path then reformats it with `sed 's/^# / scope: /'`. Carried exactly: a reader who greps for `scope:` in a green log is reading the count
+of what was actually judged.
 """
 
 import glob
@@ -148,9 +135,7 @@ GATES_DIR_REL = ".ci/scripts/test/gates"
 def resolves_to_gate_script(run: str, scripts: dict) -> bool:
     """Does this `run` string actually EXECUTE a gates/ script?
 
-    One hop of alias unwinding, deliberately. See the header's ACCEPTED
-    LIMITATION: a two-hop chain would escape this, no such chain exists, and the
-    design principle is control-first against shapes that have shipped.
+    One hop of alias unwinding, deliberately. See the header's ACCEPTED LIMITATION: a two-hop chain would escape this, no such chain exists, and the design principle is control-first against shapes that have shipped.
     """
     if run.startswith(GATES):
         return True
@@ -163,10 +148,7 @@ def resolves_to_gate_script(run: str, scripts: dict) -> bool:
 def evaluate(lock_path: str, pkg_path: str, gates_dir: str) -> tuple[list[str], list[str]]:
     """One line per violation, plus the scope line. Empty findings means clean.
 
-    Returns (stdout lines, stderr lines) rather than printing, so the two
-    controls can inspect the result the way the twin inspects a captured string.
-    The PARSE and FLOOR branches return with NO scope line, matching the twin's
-    `raise SystemExit(0)` before it is written.
+    Returns (stdout lines, stderr lines) rather than printing, so the two controls can inspect the result the way the twin inspects a captured string. The PARSE and FLOOR branches return with NO scope line, matching the twin's `raise SystemExit(0)` before it is written.
     """
     out: list[str] = []
     try:
@@ -387,8 +369,7 @@ def selftest() -> int:
     """Both directions for the resolver, the floor and each violation class.
 
     The narrowness is what is being defended here: a `ci: { test: ... }` field
-    naming a gates/ script must NOT be a subject, because flagging those "would
-    be a false positive that trains people to ignore this gate".
+    naming a gates/ script must NOT be a subject, because flagging those "would be a false positive that trains people to ignore this gate".
     """
     ctl = Controls("gate-id-convention", floor=22, verbose=True)
 

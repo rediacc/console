@@ -2,8 +2,7 @@
 
 Controls for `./run.sh`, the entry point every other command goes through.
 
-WHY IT EXISTS. The twin was written after two defects had already lived in that
-file precisely because it had no test:
+WHY IT EXISTS. The twin was written after two defects had already lived in that file precisely because it had no test:
 
   1. `quality all` logged a warning and returned SUCCESS when shfmt was missing,
      so on any machine without shfmt the command reported green having run no
@@ -11,14 +10,10 @@ file precisely because it had no test:
   2. `fix shell` formatted with whatever shfmt was on PATH while the gate verified
      with the pinned one, so the fixer could produce a state the checker rejects.
 
-HERMETIC BY CONSTRUCTION, and the port keeps that: no docker, no network, no
-submodules. Every control is either a DISPATCH assertion (a real `./run.sh <verb>`
-whose exit code is read) or a SOURCE-LEVEL invariant. Nothing here runs a real
+HERMETIC BY CONSTRUCTION, and the port keeps that: no docker, no network, no submodules. Every control is either a DISPATCH assertion (a real `./run.sh <verb>` whose exit code is read) or a SOURCE-LEVEL invariant. Nothing here runs a real
 gate; that is what the gates themselves are for.
 
-TWO FILES, AND THE DISTINCTION IS LOAD BEARING IN BOTH DIRECTIONS. Since the
-2026-09-06 split `./run.sh` is a router and the body it used to hold is
-`.ci/legacy/run-legacy.sh`:
+TWO FILES, AND THE DISTINCTION IS LOAD BEARING IN BOTH DIRECTIONS. Since the 2026-09-06 split `./run.sh` is a router and the body it used to hold is `.ci/legacy/run-legacy.sh`:
 
     RUN  the router, and the thing a person or a workflow actually types. Every
          dispatch control drives this, because dispatch is what the split must not
@@ -28,42 +23,21 @@ TWO FILES, AND THE DISTINCTION IS LOAD BEARING IN BOTH DIRECTIONS. Since the
          them would find nothing and three controls would PASS on nothing found,
          which is the vacuous green this file exists to prevent.
 
-WHAT THE PORT RESPELLS, AND WHAT IT DOES NOT. The twin's seven extractors and
-findings functions are awk, sed and shell (`arms_of`, `documented_in`, `ported_of`,
+WHAT THE PORT RESPELLS, AND WHAT IT DOES NOT. The twin's seven extractors and findings functions are awk, sed and shell (`arms_of`, `documented_in`, `ported_of`,
 `usage_of`, `router_table_of`, `verb_findings`, `vacuity_findings`); this module
-reimplements six of them in Python, rule for rule, and keeps `ported_of` in bash on
-purpose: it SOURCES the router and prints the array bash itself sees, because a regex
-over the table can be fooled by a multi-line or commented entry, and the router's
-`BASH_SOURCE` guard means sourcing it runs nothing. That is the twin's argument and it
-survives the port unchanged.
+reimplements six of them in Python, rule for rule, and keeps `ported_of` in bash on purpose: it SOURCES the router and prints the array bash itself sees, because a regex over the table can be fooled by a multi-line or commented entry, and the router's `BASH_SOURCE` guard means sourcing it runs nothing. That is the twin's argument and it survives the port unchanged.
 
-THE REIMPLEMENTED EXTRACTORS THEREFORE OWE A CONTROL OF THEIR OWN, which is the
-one case this port ADDS. `test_the_extractors_survive_the_traps_the_awk_documents`
-drives `arms_of`, `documented_in` and `usage_of` over a synthetic fixture with a
-known answer, including the three shapes the twin's comments name as the reason
-each rule is written the way it is: an inner `case` whose numeric arms sit at the
-same INDENT as a real subcommand (depth decides the level, never indentation), a
-help signature separated from its prose by TWO spaces (splitting on one reads the
-first word of the prose as a subcommand), and a `Usage:` line with a NESTED
-bracket group (cutting at the first `]` takes the nested three for subcommands and
-loses the rest). Those are the rules a Python rewrite is most likely to get subtly
-wrong, and a rewrite checked only against today's tree would look right while
-being wrong for the next shape that arrives.
+THE REIMPLEMENTED EXTRACTORS THEREFORE OWE A CONTROL OF THEIR OWN, which is the one case this port ADDS. `test_the_extractors_survive_the_traps_the_awk_documents` drives `arms_of`, `documented_in` and `usage_of` over a synthetic fixture with a known answer, including the three shapes the twin's comments name as the reason each rule is written the way it is: an inner `case` whose
+numeric arms sit at the same INDENT as a real subcommand (depth decides the level, never indentation), a help signature separated from its prose by TWO spaces (splitting on one reads the first word of the prose as a subcommand), and a `Usage:` line with a NESTED bracket group (cutting at the first `]` takes the nested three for subcommands and loses the rest). Those are the rules a
+Python rewrite is most likely to get subtly wrong, and a rewrite checked only against today's tree would look right while being wrong for the next shape that arrives.
 
-IT DOES NOT DRIVE THE TWIN TO CHECK ITSELF, deliberately. Comparing the Python
-extractors against the awk ones at runtime would be the strongest possible check
-today and a broken test in W7 P5, which deletes the twin. The fixture above makes
-the same claim without borrowing the twin's lifetime.
+IT DOES NOT DRIVE THE TWIN TO CHECK ITSELF, deliberately. Comparing the Python extractors against the awk ones at runtime would be the strongest possible check today and a broken test in W7 P5, which deletes the twin. The fixture above makes the same claim without borrowing the twin's lifetime.
 
-NO `REAL_TREE_TWIN`, AND IT IS CHECKED RATHER THAN ASSUMED. `test-run-sh.sh` is in
-neither `gates.lock.json`'s `mutex`/`reads` claims nor `run-all.sh`'s
-`WRITER_TESTS_FALLBACK` / `SCANNER_TESTS_FALLBACK` arrays, so the parity driver's
-`real_tree_admission` would REFUSE the declaration as an unearned serialisation
-slot. What this module does to the real tree is read three files and run
+NO `REAL_TREE_TWIN`, AND IT IS CHECKED RATHER THAN ASSUMED. `test-run-sh.sh` is in neither `gates.lock.json`'s `mutex`/`reads` claims nor `run-all.sh`'s `WRITER_TESTS_FALLBACK` / `SCANNER_TESTS_FALLBACK` arrays, so the parity driver's `real_tree_admission` would REFUSE the declaration as an unearned serialisation slot. What this module does to the real tree is read three files and
+run
 `./run.sh <verb>` four times; the only writes are into a `mktemp -d` holding copies.
 
-TWO PLACES THE PORT SAYS MORE THAN THE TWIN, both narrower than they look and
-neither of them a verdict change. Driven against a dozen planted defects the two
+TWO PLACES THE PORT SAYS MORE THAN THE TWIN, both narrower than they look and neither of them a verdict change. Driven against a dozen planted defects the two
 sides went red together every time; these are the two states where the MESSAGE
 differs, and in both the port names the real cause and the twin does not.
 
@@ -89,9 +63,7 @@ differs, and in both the port names the real cause and the twin does not.
    divergence is only entry 1 above: a router that cannot be SOURCED is unread
    rather than empty, and the port says so where it happens.
 
-NO `XDIST_GROUP` for the same class of reason: no port is bound, no module global
-is mutated, and the environment overlay each lane probe uses is passed to one
-short-lived `bash -c` rather than set on this process.
+NO `XDIST_GROUP` for the same class of reason: no port is bound, no module global is mutated, and the environment overlay each lane probe uses is passed to one short-lived `bash -c` rather than set on this process.
 """
 
 import os
@@ -149,12 +121,9 @@ def read(path) -> str:
 def run_verb(gate, *args: str) -> int:
     """`./run.sh <args...>` from the repo root; its exit code and nothing else.
 
-    A FILE THAT CANNOT BE EXECUTED IS A VERDICT, NOT A TRACEBACK. `subprocess`
-    raises `PermissionError` when the router has lost its `+x` bit, which arrives
+    A FILE THAT CANNOT BE EXECUTED IS A VERDICT, NOT A TRACEBACK. `subprocess` raises `PermissionError` when the router has lost its `+x` bit, which arrives
     as an ERROR inside a helper and reads as harness flake; the bash twin gets a
-    plain 126 from its shell. This turns the exception back into the statement the
-    twin makes, and names the file, because the executable-bit control one section
-    down is exactly the state that produces it.
+    plain 126 from its shell. This turns the exception back into the statement the twin makes, and names the file, because the executable-bit control one section down is exactly the state that produces it.
     """
     try:
         return harness.run([str(RUN), *args], cwd=ROOT).rc
@@ -178,10 +147,7 @@ def exits(gate, label: str, want: int, *args: str) -> None:
 def body(source: str, name: str) -> str:
     """`body <file> <function-name>`: the function's body, comment lines emptied.
 
-    CODE ONLY, and the twin's header says why in a sentence worth keeping: an
-    earlier draft grepped a fixed window and matched the word `log_warn` inside the
-    COMMENT that explains the old behaviour, so the test failed on correct code --
-    the wrong direction for a control to fail in.
+    CODE ONLY, and the twin's header says why in a sentence worth keeping: an earlier draft grepped a fixed window and matched the word `log_warn` inside the COMMENT that explains the old behaviour, so the test failed on correct code -- the wrong direction for a control to fail in.
     """
     out = []
     opening = re.compile(r"^%s\(\) \{" % re.escape(name))
@@ -200,10 +166,7 @@ def body(source: str, name: str) -> str:
 def lines_after(source: str, pattern: str, count: int) -> str:
     """`grep -A <count> <pattern>`: every matching line plus the `count` after it.
 
-    Overlapping windows are concatenated rather than de-duplicated, which grep does
-    de-duplicate. It cannot matter for either call site here (one match each, proved
-    by the anti-vacuity refusal in the caller), and the difference is only ever
-    duplicated text in a haystack that is then searched for a substring.
+    Overlapping windows are concatenated rather than de-duplicated, which grep does de-duplicate. It cannot matter for either call site here (one match each, proved by the anti-vacuity refusal in the caller), and the difference is only ever duplicated text in a haystack that is then searched for a substring.
     """
     lines = source.splitlines()
     matcher = re.compile(pattern)
@@ -217,10 +180,7 @@ def lines_after(source: str, pattern: str, count: int) -> str:
 def arms_of(source: str) -> set[str]:
     """`main()`'s case arms as `"TOP <verb>"` / `"SUB <top>/<sub>"`.
 
-    CASE-NESTING DEPTH DECIDES THE LEVEL, NEVER INDENTATION. The docker-group route
-    code in the legacy dispatcher contains an inner `case` whose arms sit at the
-    same indent as a real subcommand, and an indentation rule reports its numeric
-    arms as verbs.
+    CASE-NESTING DEPTH DECIDES THE LEVEL, NEVER INDENTATION. The docker-group route code in the legacy dispatcher contains an inner `case` whose arms sit at the same indent as a real subcommand, and an indentation rule reports its numeric arms as verbs.
     """
     found: set[str] = set()
     inmain = False
@@ -260,8 +220,7 @@ def arms_of(source: str) -> set[str]:
 def documented_in(source: str) -> set[str]:
     """`show_help`'s inventory as `"TOP <verb>"` / `"SUB <top>/<sub>"`.
 
-    THE SIGNATURE IS THE PART BEFORE THE FIRST RUN OF TWO SPACES. Splitting on a
-    single space reads the first word of the prose as a subcommand.
+    THE SIGNATURE IS THE PART BEFORE THE FIRST RUN OF TWO SPACES. Splitting on a single space reads the first word of the prose as a subcommand.
     """
     found: set[str] = set()
     inhelp = False
@@ -303,27 +262,16 @@ def documented_in(source: str) -> set[str]:
 def router_table_of(source: str) -> tuple[int, list[str]]:
     """`PORTED_VERBS`'s footprint: (row count, the rows that are NOT a bare verb name).
 
-    THE TABLE IS NOT LOGIC, decided 2026-09-09 rather than discovered later. `run.sh:16`
-    promises that "porting a verb is one line in PORTED_VERBS and nothing else moves",
-    and the file sits at the ceiling: the moment that array goes multi-line, the very
-    next port has to raise the ceiling in the same commit, which is a second edit per
-    port and the exact contradiction of the promise. Worse, raising a ceiling to land a
-    change is how a ceiling stops meaning anything. So the ceiling measures the router's
-    LOGIC and the verb table is excluded from it.
+    THE TABLE IS NOT LOGIC, decided 2026-09-09 rather than discovered later. `run.sh:16` promises that "porting a verb is one line in PORTED_VERBS and nothing else moves", and the file sits at the ceiling: the moment that array goes multi-line, the very next port has to raise the ceiling in the same commit, which is a second edit per port and the exact contradiction of the promise.
+    Worse, raising a ceiling to land a change is how a ceiling stops meaning anything. So the ceiling measures the router's LOGIC and the verb table is excluded from it.
 
-    THE WHOLE TABLE IS EXCLUDED, its two structural lines included, and that is the
-    difference between "cheaper" and "free". Excluding only the verb ROWS leaves the
+    THE WHOLE TABLE IS EXCLUDED, its two structural lines included, and that is the difference between "cheaper" and "free". Excluding only the verb ROWS leaves the
     `PORTED_VERBS=(` / `)` pair costing one line more than the single-line spelling, so
-    the FIRST port that needs a multi-line table still has to raise the ceiling --
-    measured on the real file 2026-09-09: 124 lines, 3 rows excluded, 121 of 120, red by
-    one. The single-line form is excluded too, so the two spellings cost the same
-    nothing and no port ever pays for the shape of the table.
+    the FIRST port that needs a multi-line table still has to raise the ceiling -- measured on the real file 2026-09-09: 124 lines, 3 rows excluded, 121 of 120, red by one. The single-line form is excluded too, so the two spellings cost the same nothing and no port ever pays for the shape of the table.
 
-    THE HOLE THAT OPENS, AND WHAT CLOSES IT. An exclusion is somewhere to hide code. A
-    row is excluded only when it is a BARE VERB NAME (optionally with a trailing
+    THE HOLE THAT OPENS, AND WHAT CLOSES IT. An exclusion is somewhere to hide code. A row is excluded only when it is a BARE VERB NAME (optionally with a trailing
     comment) or blank; anything else inside the array is counted as logic AND returned
-    by name, so a `$(...)` smuggled between two verbs costs a line and a finding rather
-    than buying an exemption.
+    by name, so a `$(...)` smuggled between two verbs costs a line and a finding rather than buying an exemption.
     """
     rows = 0
     bad: list[str] = []
@@ -353,8 +301,7 @@ def router_table_of(source: str) -> tuple[int, list[str]]:
 def usage_of(source: str, verb: str) -> set[str]:
     """A verb's own `Usage:` line, NESTED GROUPS REMOVED FIRST.
 
-    `devbox` writes `url [term|account|db]` inside its own list, so cutting at the
-    first `]` would take those three for subcommands and lose the seven that follow.
+    `devbox` writes `url [term|account|db]` inside its own list, so cutting at the first `]` would take those three for subcommands and lose the seven that follow.
     """
     matcher = re.compile(r"Usage: \./run\.sh %s \[.*" % re.escape(verb))
     for line in source.splitlines():
@@ -371,8 +318,7 @@ def usage_of(source: str, verb: str) -> set[str]:
 def ported_of(gate, router) -> set[str]:
     """`PORTED_VERBS` as BASH sees it, by sourcing the router.
 
-    Not a regex: a multi-line or commented entry cannot fool the parser this way,
-    and the `BASH_SOURCE` guard at the end of the router means sourcing runs nothing.
+    Not a regex: a multi-line or commented entry cannot fool the parser this way, and the `BASH_SOURCE` guard at the end of the router means sourcing runs nothing.
     """
     result = harness.run([bash_bin(), "-c", PORTED_TABLE_SNIPPET, "_", str(router)])
     if result.rc != 0:
@@ -396,16 +342,10 @@ def subs_of(entries: set[str], top: str) -> set[str]:
 def verb_findings(gate, router, legacy) -> list[str]:
     """One line per problem, EMPTY when the split is a partition.
 
-    A findings FUNCTION rather than inline assertions, so the controls below can
-    drive the same code against a deliberately broken COPY: an assertion that has
-    never been seen to fire is not yet evidence of anything.
+    A findings FUNCTION rather than inline assertions, so the controls below can drive the same code against a deliberately broken COPY: an assertion that has never been seen to fire is not yet evidence of anything.
 
-    NO EMPTY-STRING GUARD IS NEEDED HERE, and its absence is the one place the port
-    is structurally safer than the twin. The twin pipes each half through
-    `printf '%s\\n'`, where an EMPTY set is one blank line rather than zero lines,
-    so without `sed '/^$/d'` on every side an empty half is reported as a finding
-    about a verb whose name is the empty string -- an instrument inventing a defect.
-    A Python set of zero elements has no such spelling.
+    NO EMPTY-STRING GUARD IS NEEDED HERE, and its absence is the one place the port is structurally safer than the twin. The twin pipes each half through `printf '%s\\n'`, where an EMPTY set is one blank line rather than zero lines, so without `sed '/^$/d'` on every side an empty half is reported as a finding about a verb whose name is the empty string -- an instrument inventing a
+    defect. A Python set of zero elements has no such spelling.
     """
     router_text, legacy_text = read(router), read(legacy)
     router_arms = arms_of(router_text)
@@ -446,25 +386,16 @@ def vacuity_findings(
 ) -> list[str]:
     """One line per way the extractors could be measuring NOTHING. Empty is the good case.
 
-    ANTI-VACUITY BEFORE THE ASSERTION, because every claim `verb_findings` makes is
-    "this set is empty" and an extractor that matched nothing satisfies all of them at
-    once. A findings FUNCTION for the same reason `verb_findings` is one: the controls
-    drive it against numbers they choose, so each clause is SEEN to fire rather than
-    assumed to. Arguments in the order the messages print them.
+    ANTI-VACUITY BEFORE THE ASSERTION, because every claim `verb_findings` makes is "this set is empty" and an extractor that matched nothing satisfies all of them at once. A findings FUNCTION for the same reason `verb_findings` is one: the controls drive it against numbers they choose, so each clause is SEEN to fire rather than assumed to. Arguments in the order the messages print
+    them.
 
-    REWRITTEN 2026-09-09, AND THE REWRITE IS THE POINT. The clause that stood here
-    required `legacy > 0`, and that is a floor the migration is TRYING TO BREACH: the
-    whole purpose of PORTED_VERBS is that the legacy dispatcher ends at zero arms, so
-    the gate guarding the port would have gone red at the exact moment the port
-    succeeded -- and the cheap way out of that is to lower the floor, which retires the
+    REWRITTEN 2026-09-09, AND THE REWRITE IS THE POINT. The clause that stood here required `legacy > 0`, and that is a floor the migration is TRYING TO BREACH: the whole purpose of PORTED_VERBS is that the legacy dispatcher ends at zero arms, so the gate guarding the port would have gone red at the exact moment the port succeeded -- and the cheap way out of that is to lower the
+    floor, which retires the
     assertion. There is no named budget anywhere in the tree; the number that reaches
     zero is `legacy` and nothing else.
 
-    WHAT REPLACES IT, AND WHY NOTHING IS LOST. The floor was belt-and-braces over an
-    assertion that already catches a blind extractor far more loudly: with `arms_of`
-    returning nothing for the legacy file, `verb_findings` reports every documented
-    verb as `documented-but-unreachable`, which is 16 findings today rather than one.
-    And the extractor's LIVENESS is proven every run by control (b) in the partition
+    WHAT REPLACES IT, AND WHY NOTHING IS LOST. The floor was belt-and-braces over an assertion that already catches a blind extractor far more loudly: with `arms_of` returning nothing for the legacy file, `verb_findings` reports every documented verb as `documented-but-unreachable`, which is 16 findings today rather than one. And the extractor's LIVENESS is proven every run by
+    control (b) in the partition
     case, which deletes a real dispatch arm from a copy and requires the report to name
     it; an extractor that saw nothing could not pass that. So the three clauses below
     are the ones that stay true in every state of the migration INCLUDING its last:
@@ -475,10 +406,7 @@ def vacuity_findings(
                                              dispatches top-level verbs, because when it
                                              dispatches none it owns no second level
 
-    THE ONE THING THIS CANNOT PRE-SOLVE, stated so the last port does not discover it.
-    `documented_in` reads SRC, so `show_help` moving to Python is the commit where SRC
-    and clause 1 have to be retargeted at whatever owns the help text then
-    (`rediacc_ci/__main__.py` derives `--help` from its VERBS table already). Every port
+    THE ONE THING THIS CANNOT PRE-SOLVE, stated so the last port does not discover it. `documented_in` reads SRC, so `show_help` moving to Python is the commit where SRC and clause 1 have to be retargeted at whatever owns the help text then (`rediacc_ci/__main__.py` derives `--help` from its VERBS table already). Every port
     BEFORE that one is now safe; that one still needs a hand on it.
     """
     findings: list[str] = []
@@ -503,10 +431,7 @@ def vacuity_findings(
 def counts_of(gate) -> tuple[int, int, int, int, int, int]:
     """The six numbers `vacuity_findings` judges, read off the REAL tree.
 
-    One function rather than two copies: the partition case asks whether today's tree
-    is vacuous, and the control case asks the same question again as its negative half
-    (`today's real numbers are not reported as vacuous either`). Two transcriptions of
-    the same six extractor calls would be two chances to read a different tree.
+    One function rather than two copies: the partition case asks whether today's tree is vacuous, and the control case asks the same question again as its negative half (`today's real numbers are not reported as vacuous either`). Two transcriptions of the same six extractor calls would be two chances to read a different tree.
     """
     router_arms = arms_of(read(RUN))
     legacy_arms = arms_of(read(SRC))
@@ -524,13 +449,9 @@ def counts_of(gate) -> tuple[int, int, int, int, int, int]:
 def plant(gate, path, pattern: str, replacement: str, why: str) -> None:
     """Rewrite one line of a COPY, and REFUSE if the rewrite matched nothing.
 
-    THE CONTROL'S OWN CONTROL, and it is the half the twin leaves implicit. Each of
-    the three plants below is a `sed -i` whose pattern is anchored to a literal line
+    THE CONTROL'S OWN CONTROL, and it is the half the twin leaves implicit. Each of the three plants below is a `sed -i` whose pattern is anchored to a literal line
     of the real file; when such a line is reworded the substitution silently becomes
-    a no-op, the finding it was supposed to provoke never appears, and what reads as
-    "the assertion does not fire" is really "the plant was never planted". The twin
-    still goes red in that state, so the verdicts agree, but it goes red naming the
-    wrong thing. Counting the substitution says which one happened.
+    a no-op, the finding it was supposed to provoke never appears, and what reads as "the assertion does not fire" is really "the plant was never planted". The twin still goes red in that state, so the verdicts agree, but it goes red naming the wrong thing. Counting the substitution says which one happened.
     """
     text = read(path)
     planted, count = re.subn(pattern, replacement, text, flags=re.MULTILINE)
@@ -555,9 +476,7 @@ def test_an_unknown_verb_does_not_look_like_success(gate):
 def test_quality_all_refuses_when_the_shell_gates_cannot_run(gate):
     """THE VACUOUS GREEN. A gate that cannot run must not report success.
 
-    Both directions, which is what makes the pair a control rather than a wish: the
-    warn-and-continue spelling must be ABSENT, and a failure path must be PRESENT.
-    Either one alone is satisfied by a `quality_all` that does nothing at all.
+    Both directions, which is what makes the pair a control rather than a wish: the warn-and-continue spelling must be ABSENT, and a failure path must be PRESENT. Either one alone is satisfied by a `quality_all` that does nothing at all.
     """
     quality_all = body(read(SRC), "quality_all")
     if not quality_all.strip():
@@ -583,8 +502,7 @@ def test_quality_all_refuses_when_the_shell_gates_cannot_run(gate):
 def test_fix_and_check_use_the_same_binary(gate):
     """`fix shell` must format with the binary the gate verifies with.
 
-    The nastiest shape of a version split is the one where the tool that is supposed
-    to fix the problem creates it.
+    The nastiest shape of a version split is the one where the tool that is supposed to fix the problem creates it.
     """
     source = read(SRC)
     window = lines_after(source, r"^fix_shell\(\)", 12)
@@ -611,9 +529,7 @@ def lane(**overrides: str) -> str:
     """`gate_lane_decide` under an environment overlay, stdout only.
 
     THE OVERLAY IS ONE VARIABLE, exactly as `env VAR=1 bash -c ...` gives the twin.
-    Clearing the others would be tidier and would let this module report a lane the
-    twin does not see on a machine where one of them is already exported, which is a
-    divergence invented by the port.
+    Clearing the others would be tidier and would let this module report a lane the twin does not see on a machine where one of them is already exported, which is a divergence invented by the port.
     """
     result = harness.run([bash_bin(), "-c", LANE_SNIPPET], cwd=ROOT, env=dict(overrides))
     return result.out.strip()
@@ -668,9 +584,7 @@ def test_the_gate_lane_is_decided_and_never_degrades_silently(gate):
 def test_both_halves_are_runnable_at_all(gate):
     """Parse and permission bits, on the router AND on the legacy body.
 
-    The legacy file is checked too, and not as symmetry: the router `exec`s it, so a
-    legacy file that does not parse or has lost its `+x` bit fails on the FIRST verb
-    anybody types, with the router named in the error and not the file at fault.
+    The legacy file is checked too, and not as symmetry: the router `exec`s it, so a legacy file that does not parse or has lost its `+x` bit fails on the FIRST verb anybody types, with the router named in the error and not the file at fault.
     """
     for path, label in ((RUN, "run.sh"), (SRC, "the legacy body")):
         if harness.run([bash_bin(), "-n", str(path)]).rc == 0:
@@ -687,9 +601,7 @@ def test_both_halves_are_runnable_at_all(gate):
 def test_the_split_is_a_partition_of_the_documented_verb_set(gate):
     """SET EQUALITY PLUS DISJOINTNESS, in both directions, against `show_help`.
 
-    `./run.sh <verb>` has three possible destinations now -- the media entry point,
-    the `rediacc_ci` package, and the legacy body -- and the two ways a move between
-    them goes wrong are silent in OPPOSITE directions:
+    `./run.sh <verb>` has three possible destinations now -- the media entry point, the `rediacc_ci` package, and the legacy body -- and the two ways a move between them goes wrong are silent in OPPOSITE directions:
 
       AN ORPHAN. A verb deleted from the legacy dispatcher and not added to
         PORTED_VERBS falls through to the legacy `*)` arm and reports "Unknown
@@ -699,10 +611,7 @@ def test_the_split_is_a_partition_of_the_documented_verb_set(gate):
         first, so the port appears to work while the code it was meant to replace is
         what actually ran.
 
-    SECOND LEVEL, NOT JUST TOP LEVEL. On the day the twin was written the dispatcher
-    served SEVEN subcommands `show_help` did not mention, and the per-verb `Usage:`
-    strings were a THIRD inventory agreeing with neither. A check over top-level
-    verbs alone finds none of that and would have shipped green.
+    SECOND LEVEL, NOT JUST TOP LEVEL. On the day the twin was written the dispatcher served SEVEN subcommands `show_help` did not mention, and the per-verb `Usage:` strings were a THIRD inventory agreeing with neither. A check over top-level verbs alone finds none of that and would have shipped green.
     """
     # ANTI-VACUITY BEFORE THE ASSERTION, because every claim here is "this set is empty" and an extractor that matched nothing satisfies all of them at once. SET-DERIVED AND STATE-INDEPENDENT: see `vacuity_findings` for why the clause that used to require a non-empty legacy dispatcher had to go.
     router, ported, legacy, docs, subs, doc_subs = counts_of(gate)
@@ -775,16 +684,10 @@ def test_the_split_is_a_partition_of_the_documented_verb_set(gate):
 def test_the_vacuity_clauses_fire_and_the_finish_line_is_not_a_failure(gate):
     """Both directions on all three clauses of `vacuity_findings`.
 
-    A CLAUSE THAT HAS NEVER BEEN SEEN TO FIRE IS NOT YET A CHECK, so each of the three
-    shapes it names is driven directly with numbers chosen to produce it.
+    A CLAUSE THAT HAS NEVER BEEN SEEN TO FIRE IS NOT YET A CHECK, so each of the three shapes it names is driven directly with numbers chosen to produce it.
 
-    THE NEGATIVE HALF IS THE ONE THIS PAIR EXISTS FOR. The clause these replaced
-    required a non-empty legacy dispatcher, which is the state the migration is working
-    to leave: it would have gone red at the exact moment the port succeeded, on the gate
-    whose whole job is guarding that port. So the TERMINAL state -- every verb ported,
-    legacy dispatcher empty, second level legitimately empty with it -- is asserted NOT
-    to be a vacuity failure, and today's real numbers are asserted the same way, because
-    three positives and no negative would be satisfied by a function that always fires.
+    THE NEGATIVE HALF IS THE ONE THIS PAIR EXISTS FOR. The clause these replaced required a non-empty legacy dispatcher, which is the state the migration is working to leave: it would have gone red at the exact moment the port succeeded, on the gate whose whole job is guarding that port. So the TERMINAL state -- every verb ported, legacy dispatcher empty, second level legitimately
+    empty with it -- is asserted NOT to be a vacuity failure, and today's real numbers are asserted the same way, because three positives and no negative would be satisfied by a function that always fires.
     """
     for label, needle, counts in (
         (
@@ -834,11 +737,8 @@ def test_the_vacuity_clauses_fire_and_the_finish_line_is_not_a_failure(gate):
 def test_the_verb_table_is_excluded_from_the_ceiling_whole(gate):
     """`router_table_of`, both directions, on fixtures rather than on the one real file.
 
-    THE EXCLUSION IS A HOLE UNTIL SOMETHING CLOSES IT, so the middle case is the one
-    that matters: a `$(...)` smuggled between two verb names must cost a logic line AND
-    be named, not buy an exemption. The other two say the two spellings of the same
-    table cost the same nothing, which is what stops the first multi-line table from
-    having to raise the ceiling in the same commit that lands a port.
+    THE EXCLUSION IS A HOLE UNTIL SOMETHING CLOSES IT, so the middle case is the one that matters: a `$(...)` smuggled between two verb names must cost a logic line AND be named, not buy an exemption. The other two say the two spellings of the same table cost the same nothing, which is what stops the first multi-line table from having to raise the ceiling in the same commit that
+    lands a port.
 
     FIXTURES, NOT `run.sh`. The real file carries exactly one shape at a time; driven
     only against it, two of these three rules would never be exercised at all.
@@ -882,9 +782,7 @@ def test_the_router_stays_a_router(gate):
     """The ceiling over the router's LOGIC, and the one arm whose target has to exist.
 
     THE TABLE IS NOT LOGIC. `router_table_of`'s docstring carries the argument; what
-    matters here is that the number compared against the ceiling is the file's line
-    count MINUS the whole `PORTED_VERBS` table, so no port ever pays for the shape of
-    the table and no ceiling ever has to be raised to land one.
+    matters here is that the number compared against the ceiling is the file's line count MINUS the whole `PORTED_VERBS` table, so no port ever pays for the shape of the table and no ceiling ever has to be raised to land one.
     """
     # `wc -l`, which counts NEWLINES: a final line with no terminator is not counted by either, so the two numbers cannot drift on a file the formatter has seen.
     router_lines = RUN.read_bytes().count(b"\n")
@@ -963,16 +861,11 @@ EOF
 def test_the_extractors_survive_the_traps_the_awk_documents(gate):
     """ADDED BY THE PORT. Four extractors reimplemented from awk owe this.
 
-    THE TREE IS NOT A CONTROL FOR A REWRITE. Checked only against today's `run.sh`
-    the Python and the awk agree by construction, because the Python was written
+    THE TREE IS NOT A CONTROL FOR A REWRITE. Checked only against today's `run.sh` the Python and the awk agree by construction, because the Python was written
     while reading that tree. What has to hold is the RULE, so this drives a fixture
-    whose expected answer is written out in full and whose every line is one of the
-    shapes the twin's comments name as the reason a rule is not simpler.
+    whose expected answer is written out in full and whose every line is one of the shapes the twin's comments name as the reason a rule is not simpler.
 
-    BOTH DIRECTIONS. The negative half is the one that matters most here: an
-    extractor that returned everything would satisfy every "is this present" check
-    in the file, so the assertions are EQUALITY against a complete set rather than
-    membership.
+    BOTH DIRECTIONS. The negative half is the one that matters most here: an extractor that returned everything would satisfy every "is this present" check in the file, so the assertions are EQUALITY against a complete set rather than membership.
     """
     arms = arms_of(TRAP_ROUTER)
     expect_arms = {

@@ -2,23 +2,13 @@
 
 Unit test for `.ci/scripts/ci/assert-channel-for-event.sh`.
 
-WHAT THIS GUARDS, unchanged from the twin. The channel decides whether a run
-uploads to R2. A previous design resolved a `dryrun-<sha>` channel for
-non-publishing events and produced roughly 5 GB of orphan R2 bytes per trigger.
-This script is the assertion that stops that returning, so it is load-bearing for
-cost, not just for tidiness.
+WHAT THIS GUARDS, unchanged from the twin. The channel decides whether a run uploads to R2. A previous design resolved a `dryrun-<sha>` channel for non-publishing events and produced roughly 5 GB of orphan R2 bytes per trigger. This script is the assertion that stops that returning, so it is load-bearing for cost, not just for tidiness.
 
-The script's final `*)` arm WARNS AND ACCEPTS ANY CHANNEL, so a new event type
-lands exempt from the guard unless someone remembers to add an arm. The
-fall-through is deliberately KEPT (failing closed on an unknown event would break
-CI the moment GitHub adds one), which is precisely why every event the repo
-actually uses needs an explicit arm and a test pinning it.
+The script's final `*)` arm WARNS AND ACCEPTS ANY CHANNEL, so a new event type lands exempt from the guard unless someone remembers to add an arm. The fall-through is deliberately KEPT (failing closed on an unknown event would break CI the moment GitHub adds one), which is precisely why every event the repo actually uses needs an explicit arm and a test pinning it.
 
-THE PORT CHANGES ONE THING AND IT IS NOT A VERDICT. The twin keeps the last
-run's output in a single `$OUT/log.txt` and two of its cases read it after the
+THE PORT CHANGES ONE THING AND IT IS NOT A VERDICT. The twin keeps the last run's output in a single `$OUT/log.txt` and two of its cases read it after the
 fact; here `check()` returns the output alongside the verdict, so a case reads the
-output of the call it made rather than of whichever call ran last. Same bytes,
-same assertions, no shared mutable file.
+output of the call it made rather than of whichever call ran last. Same bytes, same assertions, no shared mutable file.
 """
 
 from rediacc_ci import paths
@@ -33,10 +23,7 @@ CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")
 def check(gate, event: str, channel: str) -> tuple[str, str]:
     """`check <event> <channel>` -> ("ok" | "rejected" | "usage", output).
 
-    Exit 2 is the script's USAGE code and is kept distinct from every other
-    non-zero, because "you called me wrong" and "that channel is illegal for that
-    event" are different findings and collapsing them would let a typo in this
-    test read as a rejection it never made.
+    Exit 2 is the script's USAGE code and is kept distinct from every other non-zero, because "you called me wrong" and "that channel is illegal for that event" are different findings and collapsing them would let a typo in this test read as a rejection it never made.
     """
     result = harness.run(["bash", str(ASSERT), event, channel])
     if result.rc == 0:

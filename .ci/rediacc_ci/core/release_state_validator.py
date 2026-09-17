@@ -1,43 +1,26 @@
 """The sentinel-based release-commit contract, ported from the bash library.
 
-PORTED FROM `.ci/scripts/lib/release-state-validator.sh` (496 lines), which
-still exists, is untouched by this file, and has **11 real sourcers**,
-re-measured on 2026-09-10 with
+PORTED FROM `.ci/scripts/lib/release-state-validator.sh` (496 lines), which still exists, is untouched by this file, and has **11 real sourcers**, re-measured on 2026-09-10 with
 
     grep -rnP '^\\s*(source|\\.)\\s+.*\\brelease-state-validator\\.sh' .
 
-(`.ci/scripts/quality/check-release-state.sh:23`,
-`.ci/scripts/deploy/upload-to-r2.sh:258`,
-`.ci/scripts/deploy/write-release-sentinel.sh:34`,
-`.ci/scripts/test/assert-r2-sentinel.sh:23`,
-`.ci/scripts/test/gates/test-release-state-consistency.sh:33`,
-`.ci/scripts/housekeeping/cleanup-versions.sh:1309`,
-`.ci/scripts/release/reprobe-r2-sentinel.sh:28`,
-`.ci/scripts/release/advance-contract-floor.sh:49`,
-`scripts/dev/scrub-sentinel.sh:32`, and two heredocs inside
-`.ci/rediacc_ci/tests/test_quality_release_state.py:148,213`). It is NOT the
+(`.ci/scripts/quality/check-release-state.sh:23`, `.ci/scripts/deploy/upload-to-r2.sh:258`, `.ci/scripts/deploy/write-release-sentinel.sh:34`, `.ci/scripts/test/assert-r2-sentinel.sh:23`, `.ci/scripts/test/gates/test-release-state-consistency.sh:33`, `.ci/scripts/housekeeping/cleanup-versions.sh:1309`, `.ci/scripts/release/reprobe-r2-sentinel.sh:28`,
+`.ci/scripts/release/advance-contract-floor.sh:49`, `scripts/dev/scrub-sentinel.sh:32`, and two heredocs inside `.ci/rediacc_ci/tests/test_quality_release_state.py:148,213`). It is NOT the
 "496" in the programme plan, which is this file's LINE COUNT and not its fan-in;
-the twin's own "Sourced by:" header at `release-state-validator.sh:19-24` lists
-only five and is itself four short.
+the twin's own "Sourced by:" header at `release-state-validator.sh:19-24` lists only five and is itself four short.
 
-The contract, restated from the twin's header because a port that does not carry
-the invariant is just a translation:
+The contract, restated from the twin's header because a port that does not carry the invariant is just a translation:
 
     Committed(v${V})  <=>  cli/v${V}/.released exists  AND  git tag v${V} exists
 
-Sentinels are written LAST, after every gate has passed. A prefix that is
-non-empty but missing its sentinel is an orphan from a cancelled run.
+Sentinels are written LAST, after every gate has passed. A prefix that is non-empty but missing its sentinel is an orphan from a cancelled run.
 
 --------------------------------------------------------------------------
 THE DUPLICATE THAT ALREADY EXISTS, NAMED RATHER THAN LEFT TO BE FOUND
 --------------------------------------------------------------------------
-`.ci/rediacc_ci/quality/release_state.py` ALREADY carries a port of the
-ASSERTION half of this library, inlined into one gate because that gate was
-ported (W7 P2) before the library was. REPOINTING IT IS NOT DONE HERE and is not
-this module's licence to grant: that gate has its own recorded shadow ledger
+`.ci/rediacc_ci/quality/release_state.py` ALREADY carries a port of the ASSERTION half of this library, inlined into one gate because that gate was ported (W7 P2) before the library was. REPOINTING IT IS NOT DONE HERE and is not this module's licence to grant: that gate has its own recorded shadow ledger
 (`.ci/shadow/w7p2-release-state.observations.jsonl`, K=5), and a body swap under
-a ledger is a separate change with its own evidence. What the two hold, so that
-whoever collapses them knows exactly what moves:
+a ledger is a separate change with its own evidence. What the two hold, so that whoever collapses them knows exactly what moves:
 
   * SHARED, and byte-identical in their emitted lines: `pre_contract_floor`,
     `assert_bijection`, `assert_channel_pointer_tagged`, `list_sentinels`,
@@ -56,37 +39,21 @@ whoever collapses them knows exactly what moves:
 --------------------------------------------------------------------------
 WHY THE THREE-STATE PROBES ARE AN ENUM AND NOT AN int
 --------------------------------------------------------------------------
-This is the one place a faithful port would have introduced a bug the twin does
-not have, so it is argued rather than asserted.
+This is the one place a faithful port would have introduced a bug the twin does not have, so it is argued rather than asserted.
 
-The twin answers three of its probes with a SHELL exit code: `0` sealed / `1`
-absent / `2` could not tell. In shell, `0` is TRUE. In Python, `0` is FALSE.
-Returning the raw code would make
+The twin answers three of its probes with a SHELL exit code: `0` sealed / `1` absent / `2` could not tell. In shell, `0` is TRUE. In Python, `0` is FALSE. Returning the raw code would make
 
     if sentinel_exists(product, version):   # WRONG, and it reads correctly
 
-mean the exact opposite of `if rsv_sentinel_exists ...` at
-`upload-to-r2.sh:275`, `reprobe-r2-sentinel.sh:43` and `scrub-sentinel.sh:81`,
-in the direction that proceeds with an upload over a sealed release. So `Probe`
-is a plain `enum.Enum` and NOT an `IntEnum`: it has no truth value worth
-guessing at, `Probe.YES` is not `0`, and a caller must say `is Probe.YES` or ask
-`.rc` for the shell code. A test pins that `Probe` is not an `int` subclass,
-because the day someone "tidies" it into an `IntEnum` is the day the bug lands.
+mean the exact opposite of `if rsv_sentinel_exists ...` at `upload-to-r2.sh:275`, `reprobe-r2-sentinel.sh:43` and `scrub-sentinel.sh:81`, in the direction that proceeds with an upload over a sealed release. So `Probe` is a plain `enum.Enum` and NOT an `IntEnum`: it has no truth value worth guessing at, `Probe.YES` is not `0`, and a caller must say `is Probe.YES` or ask `.rc` for
+the shell code. A test pins that `Probe` is not an `int` subclass, because the day someone "tidies" it into an `IntEnum` is the day the bug lands.
 
-The twin's own reason for the third state, at `release-state-validator.sh:128-132`
-and `:194-206`, is the anti-vacuity one: "no objects under this version prefix"
-is the signal for a scrubbed or corrupt release, and reporting it because a
-credential expired would condemn a healthy release. An unanswered question is
-not a `no`.
+The twin's own reason for the third state, at `release-state-validator.sh:128-132` and `:194-206`, is the anti-vacuity one: "no objects under this version prefix" is the signal for a scrubbed or corrupt release, and reporting it because a credential expired would condemn a healthy release. An unanswered question is not a `no`.
 
 --------------------------------------------------------------------------
 DEFECT 1, REPRODUCED NOT FIXED: `log_error` IS NOT DEFINED IN THIS LIBRARY
 --------------------------------------------------------------------------
-`rsv_prefix_nonempty:145`, `rsv_binary_count:178,187` and
-`rsv_sentinel_exists:227` all call `log_error`, which the library neither
-defines nor sources. `release-state-validator.sh` sources NOTHING (its first 31
-lines are a re-source guard and two constants), so the symbol resolves only
-because every production caller happens to source `common.sh` FIRST.
+`rsv_prefix_nonempty:145`, `rsv_binary_count:178,187` and `rsv_sentinel_exists:227` all call `log_error`, which the library neither defines nor sources. `release-state-validator.sh` sources NOTHING (its first 31 lines are a re-source guard and two constants), so the symbol resolves only because every production caller happens to source `common.sh` FIRST.
 
 Driven live on 2026-09-10, bash 5.3.9:
 
@@ -99,79 +66,46 @@ Driven live on 2026-09-10, bash 5.3.9:
     release-state-validator.sh: line 178: log_error: command not found
 
 and the `echo "rc=$?"` NEVER RUNS: `command not found` is 127, errexit fires on
-it, and the function dies BEFORE its `rm -f "$err"` and before its `return 1`.
-So on that path the documented three-state contract collapses into a 127 abort
-plus a leaked `mktemp` file, and the caller is told nothing about R2 at all.
+it, and the function dies BEFORE its `rm -f "$err"` and before its `return 1`. So on that path the documented three-state contract collapses into a 127 abort plus a leaked `mktemp` file, and the caller is told nothing about R2 at all.
 
-BLAST RADIUS, MEASURED RATHER THAN GUESSED: 1 of the 11 sourcers does not source
-`common.sh` (`.ci/scripts/test/gates/test-release-state-consistency.sh`, a
-REGISTERED gate test), and it exercises only the two PURE assertion functions,
-which contain no `log_error`. So there are ZERO live paths today. It is latent,
-not exploitable, and it is the same shape as the `service.sh` / `check_docker`
-finding from this workstream's first wave. This port defines its own
+BLAST RADIUS, MEASURED RATHER THAN GUESSED: 1 of the 11 sourcers does not source `common.sh` (`.ci/scripts/test/gates/test-release-state-consistency.sh`, a REGISTERED gate test), and it exercises only the two PURE assertion functions, which contain no `log_error`. So there are ZERO live paths today. It is latent, not exploitable, and it is the same shape as the `service.sh` /
+`check_docker` finding from this workstream's first wave. This port defines its own
 `_log_error` and therefore cannot inherit the defect; a test pins that the twin
 still has it, so the pin goes red the day the twin is fixed.
 
 --------------------------------------------------------------------------
-DEFECT 2, REPRODUCED NOT FIXED: THE ONE PROBE THAT STILL CONFLATES
-"EMPTY" WITH "UNREACHABLE" IS THE ONE THE BLOCKER GATE'S VERDICT RESTS ON
+DEFECT 2, REPRODUCED NOT FIXED: THE ONE PROBE THAT STILL CONFLATES "EMPTY" WITH "UNREACHABLE" IS THE ONE THE BLOCKER GATE'S VERDICT RESTS ON
 --------------------------------------------------------------------------
 `rsv_list_sentinels:101-112` wraps its whole pipeline in `{ ... } || true`, and
-`aws ... 2>/dev/null` inside it. An expired credential, a 5xx and a genuinely
-empty bucket therefore all produce the same thing: empty stdout, exit 0.
+`aws ... 2>/dev/null` inside it. An expired credential, a 5xx and a genuinely empty bucket therefore all produce the same thing: empty stdout, exit 0.
 
-That is precisely what the file spends two long comments refusing for its three
-siblings. `:128-132`: "This used to end in `|| echo 0`, collapsing 'the prefix is
-empty' and 'R2 is unreachable' into the same answer. Release-state validation is
-exactly the place that must not confuse those two". `:194-200`: "a confident
-'this release is not sealed' from a probe that never ran ... this one was the
-odd one out". The odd one out is now `rsv_list_sentinels`, and it feeds
-`check-release-state.sh:41`, the BLOCKER drift gate.
+That is precisely what the file spends two long comments refusing for its three siblings. `:128-132`: "This used to end in `|| echo 0`, collapsing 'the prefix is empty' and 'R2 is unreachable' into the same answer. Release-state validation is exactly the place that must not confuse those two". `:194-200`: "a confident 'this release is not sealed' from a probe that never ran ...
+this one was the odd one out". The odd one out is now `rsv_list_sentinels`, and it feeds `check-release-state.sh:41`, the BLOCKER drift gate.
 
-WHY IT IS NOT GREEN TODAY, and this is the part worth writing down because it is
-the difference between "latent" and "live": the RATCHET saves it. With
-`cli_versions` empty and `.ci/config/release-contract-floor.txt` holding
-`v1.2.21` (tracked in git, verified present 2026-09-10), `pre_contract_floor`
-returns the ratchet, every git tag at or above `v1.2.21` becomes
-`DRIFT <v>: git tag present, cli sentinel missing`, and the gate goes RED. The
-gate is protected by a one-line data file, not by the probe.
+WHY IT IS NOT GREEN TODAY, and this is the part worth writing down because it is the difference between "latent" and "live": the RATCHET saves it. With `cli_versions` empty and `.ci/config/release-contract-floor.txt` holding `v1.2.21` (tracked in git, verified present 2026-09-10), `pre_contract_floor` returns the ratchet, every git tag at or above `v1.2.21` becomes `DRIFT <v>: git
+tag present, cli sentinel missing`, and the gate goes RED. The gate is protected by a one-line data file, not by the probe.
 
-DELETE OR EMPTY THAT FILE AND THE GATE GOES GREEN ON A DEAD PROBE: floor is "",
-`assert_bijection` short-circuits to
-`OK: release-state bijection holds - no cli sentinels yet (contract not in
-effect)` and returns 0. The port reproduces that short-circuit exactly, because
+DELETE OR EMPTY THAT FILE AND THE GATE GOES GREEN ON A DEAD PROBE: floor is "", `assert_bijection` short-circuits to `OK: release-state bijection holds - no cli sentinels yet (contract not in effect)` and returns 0. The port reproduces that short-circuit exactly, because
 changing it here would make the port disagree with the twin about a verdict; the
 finding is recorded and pinned in a test instead.
 
 --------------------------------------------------------------------------
-DEFECT 3, REPRODUCED NOT FIXED: A FUNCTION DEFINED INSIDE A FUNCTION IS STILL
-GLOBAL, AND THIS ONE CLOSES OVER A `local`
+DEFECT 3, REPRODUCED NOT FIXED: A FUNCTION DEFINED INSIDE A FUNCTION IS STILL GLOBAL, AND THIS ONE CLOSES OVER A `local`
 --------------------------------------------------------------------------
-`rsv_drop_pre_contract` is defined at `release-state-validator.sh:365`, INSIDE
-`rsv_assert_bijection`, and bash has no nested scope for functions: after the
-first call to `rsv_assert_bijection` the name is defined globally for the rest of
-the shell. It reads `$floor`, which is `local` to its DEFINER, so calling it
-standalone afterwards under `set -u` dies with `floor: unbound variable`, and
-calling it under `set +u` silently keeps everything (an empty floor compares
-before every version). It is also re-parsed on every call.
+`rsv_drop_pre_contract` is defined at `release-state-validator.sh:365`, INSIDE `rsv_assert_bijection`, and bash has no nested scope for functions: after the first call to `rsv_assert_bijection` the name is defined globally for the rest of the shell. It reads `$floor`, which is `local` to its DEFINER, so calling it standalone afterwards under `set -u` dies with `floor: unbound
+variable`, and calling it under `set +u` silently keeps everything (an empty floor compares before every version). It is also re-parsed on every call.
 
-Nothing calls it, so the impact is a leaked name and a re-parse. Reproduced here
-as a module-private closure, which is the honest Python spelling of what the
-bash MEANT, and named so nobody re-exports it.
+Nothing calls it, so the impact is a leaked name and a re-parse. Reproduced here as a module-private closure, which is the honest Python spelling of what the bash MEANT, and named so nobody re-exports it.
 
 --------------------------------------------------------------------------
 BASH 4.0 IS A PRECONDITION OF THE TWIN, AND HAS NO COUNTERPART HERE
 --------------------------------------------------------------------------
-`:33-70` refuses to load on bash 3.2 because `declare -A` is a 4.0 feature and
-its failure on 3.2 is SILENT: both set names stay indexed, every `cli_set["$v"]`
-subscript is evaluated as arithmetic, and (driven on a real bash 3.2.0 on
+`:33-70` refuses to load on bash 3.2 because `declare -A` is a 4.0 feature and its failure on 3.2 is SILENT: both set names stay indexed, every `cli_set["$v"]` subscript is evaluated as arithmetic, and (driven on a real bash 3.2.0 on
 2026-09-06, recorded in the twin) a healthy release state reports rc=1 with
 EMPTY stdout while a real drift reports rc=1 with empty stdout too. A gate that
 cannot say WHICH version drifted is worse than one that did not run.
 
-A Python `dict` is a `dict` on every interpreter this repo supports, so there is
-nothing to guard. The guard is not dropped silently: a test asserts the twin
-still carries it, so removing it there is a red here.
+A Python `dict` is a `dict` on every interpreter this repo supports, so there is nothing to guard. The guard is not dropped silently: a test asserts the twin still carries it, so removing it there is a red here.
 
 --------------------------------------------------------------------------
 COMMAND-LINE ENTRY POINT (what a bash caller can reach)
@@ -232,8 +166,7 @@ CHANNELS = ("edge", "stable")
 class Probe(enum.Enum):
     """A three-state probe answer. NOT an `IntEnum`; see the module docstring.
 
-    `.rc` is the shell exit code the twin returns, so a CLI wrapper can hand a
-    bash caller the identical number without anyone re-deriving the mapping.
+    `.rc` is the shell exit code the twin returns, so a CLI wrapper can hand a bash caller the identical number without anyone re-deriving the mapping.
     """
 
     YES = "yes"
@@ -248,10 +181,7 @@ class Probe(enum.Enum):
 def _log_error(message: str) -> None:
     """The twin's `log_error`, which the twin does not define. See DEFECT 1.
 
-    `common.sh`'s `log_error` writes to stderr with a colour prefix when stderr
-    is a tty. The prefix is deliberately NOT reproduced: it is chatter, the
-    differential normalises it away, and a port that invents a colour code the
-    twin might not emit is a port that can never be proven equal.
+    `common.sh`'s `log_error` writes to stderr with a colour prefix when stderr is a tty. The prefix is deliberately NOT reproduced: it is chatter, the differential normalises it away, and a port that invents a colour code the twin might not emit is a port that can never be proven equal.
     """
     print(message, file=sys.stderr)
 
@@ -259,10 +189,7 @@ def _log_error(message: str) -> None:
 def bucket(env: dict[str, str] | None = None) -> str:
     """`${RELEASES_BUCKET:-rediacc-releases}`, read at CALL time.
 
-    Read per call rather than frozen at import, because the twin reads it at
-    SOURCE time (`:72`) into a variable every function then interpolates, and a
-    caller that exports `RELEASES_BUCKET` after sourcing gets the OLD value in
-    bash and would get the NEW one from a module constant here. Neither
+    Read per call rather than frozen at import, because the twin reads it at SOURCE time (`:72`) into a variable every function then interpolates, and a caller that exports `RELEASES_BUCKET` after sourcing gets the OLD value in bash and would get the NEW one from a module constant here. Neither
     behaviour is better; they just have to be the same, and a function is the
     only spelling a test can pin.
     """
@@ -273,10 +200,7 @@ def bucket(env: dict[str, str] | None = None) -> str:
 def version_key(value: str) -> tuple:
     """A `sort -V` key: digit runs as integers, everything else as text.
 
-    Not a general reimplementation of GNU version sort, on purpose. Every value
-    that reaches this function has already passed `STRICT_SEMVER` or is the
-    operator-supplied `$RSV_GRANDFATHER_BEFORE`, and a full reimplementation
-    would be a much larger thing to get wrong for inputs that cannot occur.
+    Not a general reimplementation of GNU version sort, on purpose. Every value that reaches this function has already passed `STRICT_SEMVER` or is the operator-supplied `$RSV_GRANDFATHER_BEFORE`, and a full reimplementation would be a much larger thing to get wrong for inputs that cannot occur.
     """
     parts: list[tuple[int, object]] = []
     for chunk in re.findall(r"\d+|\D+", value):
@@ -295,10 +219,7 @@ def sort_unique_versions(values: list[str]) -> list[str]:
 def records(text: str) -> list[str]:
     """The lines a `while IFS= read -r v` loop would see. Trailing blank dropped.
 
-    A bash here-string ALWAYS appends a newline, so `<<<"$input"` over an empty
-    string yields exactly one empty record, which every loop in the twin then
-    skips with `[[ -z "$v" ]] && continue`. Centralised so the port's loops do
-    not each grow their own guard and drift apart.
+    A bash here-string ALWAYS appends a newline, so `<<<"$input"` over an empty string yields exactly one empty record, which every loop in the twin then skips with `[[ -z "$v" ]] && continue`. Centralised so the port's loops do not each grow their own guard and drift apart.
     """
     lines = text.split("\n")
     if lines and lines[-1] == "":
@@ -309,10 +230,7 @@ def records(text: str) -> list[str]:
 def _run(argv: list[str], *, cwd: str | None = None) -> subprocess.CompletedProcess:
     """Run one external command. A missing binary is a FAILED PROBE, not a crash.
 
-    The twin's callers run `require_cmd aws` up front, so `aws` vanishing
-    mid-run is not a case any of them handle. Returning 127 with the message on
-    stderr keeps that in the "could not tell" bucket, which is the direction
-    this whole library errs in.
+    The twin's callers run `require_cmd aws` up front, so `aws` vanishing mid-run is not a case any of them handle. Returning 127 with the message on stderr keeps that in the "could not tell" bucket, which is the direction this whole library errs in.
     """
     try:
         return subprocess.run(argv, capture_output=True, text=True, check=False, cwd=cwd)
@@ -331,12 +249,9 @@ def list_sentinels(product: str, endpoint: str | None = None) -> list[str]:
     THE AWS_ACCESS_KEY_ID CHECK IS AT CALL TIME, matching the twin's
     `: "${AWS_ACCESS_KEY_ID:?...}"` at :100 and the comment beside it. In bash
     that `:?` EXITS a non-interactive shell; here it raises, because a module
-    that calls `sys.exit` from a library function takes the decision away from
-    the one caller (`cleanup-versions.sh`) that loops over products.
+    that calls `sys.exit` from a library function takes the decision away from the one caller (`cleanup-versions.sh`) that loops over products.
 
-    SEE DEFECT 2: a failed probe is indistinguishable from an empty bucket, and
-    that is carried unchanged rather than improved, because improving it here
-    would make this port disagree with the twin about a live gate's verdict.
+    SEE DEFECT 2: a failed probe is indistinguishable from an empty bucket, and that is carried unchanged rather than improved, because improving it here would make this port disagree with the twin about a live gate's verdict.
     """
     if not os.environ.get("AWS_ACCESS_KEY_ID"):
         raise RuntimeError(
@@ -373,8 +288,7 @@ def list_sentinels(product: str, endpoint: str | None = None) -> list[str]:
 def list_git_tags(cwd: str | None = None) -> list[str]:
     """Every strict-semver `v${X}.${Y}.${Z}` tag. `rsv_list_git_tags` (:117-123).
 
-    Pre-release tags are skipped by the same grep the twin uses, and the whole
-    thing is `|| true` there so an empty tag list does not trip pipefail.
+    Pre-release tags are skipped by the same grep the twin uses, and the whole thing is `|| true` there so an empty tag list does not trip pipefail.
     """
     proc = _run(["git", "tag", "-l", "v*"], cwd=cwd)
     return sort_unique_versions(
@@ -385,10 +299,7 @@ def list_git_tags(cwd: str | None = None) -> list[str]:
 def prefix_nonempty(prefix: str, endpoint: str | None = None) -> Probe:
     """YES the prefix holds an object, NO it is empty, UNKNOWN it could not tell.
 
-    `rsv_prefix_nonempty` (:133-152). THREE STATES, DELIBERATELY: this used to
-    end in `|| echo 0`, collapsing "the prefix is empty" and "R2 is unreachable"
-    into one answer, and reporting a scrubbed release because a credential
-    expired would condemn a healthy one.
+    `rsv_prefix_nonempty` (:133-152). THREE STATES, DELIBERATELY: this used to end in `|| echo 0`, collapsing "the prefix is empty" and "R2 is unreachable" into one answer, and reporting a scrubbed release because a credential expired would condemn a healthy one.
     """
     proc = _run(
         [
@@ -426,13 +337,9 @@ def prefix_nonempty(prefix: str, endpoint: str | None = None) -> Probe:
 def binary_count(prefix: str, endpoint: str | None = None) -> int | None:
     """Objects under `prefix` EXCLUDING the sentinel, or None when unobtainable.
 
-    `rsv_binary_count` (:167-191). Distinguishes a healthy sealed release
-    (sentinel + binaries) from the corrupt "sealed-but-empty" state (sentinel
-    only, binaries scrubbed).
+    `rsv_binary_count` (:167-191). Distinguishes a healthy sealed release (sentinel + binaries) from the corrupt "sealed-but-empty" state (sentinel only, binaries scrubbed).
 
-    None RATHER THAN 0 IS THE WHOLE POINT, and the twin says so at :161-166:
-    `|| echo 0` meant an unreachable bucket produced the same "0" as a scrubbed
-    prefix, and 0 is precisely the value callers act on to REFUSE a release.
+    None RATHER THAN 0 IS THE WHOLE POINT, and the twin says so at :161-166: `|| echo 0` meant an unreachable bucket produced the same "0" as a scrubbed prefix, and 0 is precisely the value callers act on to REFUSE a release.
     """
     proc = _run(
         [
@@ -473,18 +380,10 @@ def binary_count(prefix: str, endpoint: str | None = None) -> int | None:
 def sentinel_exists(product: str, version: str, endpoint: str | None = None) -> Probe:
     """YES sealed, NO genuinely absent, UNKNOWN could not tell.
 
-    `rsv_sentinel_exists` (:207-231). The third state is the point: this used to
-    be a bare `>/dev/null 2>&1`, so expired credentials, a 5xx and a DNS failure
-    all returned the same "absent" as a genuinely missing sentinel, which is a
-    confident answer from a probe that never ran.
+    `rsv_sentinel_exists` (:207-231). The third state is the point: this used to be a bare `>/dev/null 2>&1`, so expired credentials, a 5xx and a DNS failure all returned the same "absent" as a genuinely missing sentinel, which is a confident answer from a probe that never ran.
 
-    A 404 IS THE ONLY FAILURE THAT MEANS ABSENT. Anything else means the
-    question was not answered, and an unanswered question is not a `no`. The
-    twin decides that by grepping the CAPTURED STDERR for `404|Not Found|
-    NoSuchKey`, case-insensitively, and that text match is reproduced verbatim
-    rather than replaced with an exit-code table: the aws CLI returns 254 for
-    both a 404 and an auth failure, so the exit code cannot tell them apart and
-    the message is genuinely the only signal available.
+    A 404 IS THE ONLY FAILURE THAT MEANS ABSENT. Anything else means the question was not answered, and an unanswered question is not a `no`. The twin decides that by grepping the CAPTURED STDERR for `404|Not Found| NoSuchKey`, case-insensitively, and that text match is reproduced verbatim rather than replaced with an exit-code table: the aws CLI returns 254 for both a 404 and an
+    auth failure, so the exit code cannot tell them apart and the message is genuinely the only signal available.
     """
     proc = _run(
         [
@@ -515,12 +414,8 @@ def sentinel_exists(product: str, version: str, endpoint: str | None = None) -> 
 def get_sentinel_payload(product: str, version: str, endpoint: str | None = None) -> str:
     """The JSON body of `<product>/<version>/.released`, or "" when absent.
 
-    `rsv_get_sentinel_payload` (:235-240). FAILS OPEN by design (`|| true` plus
-    `2>/dev/null`), so an unreachable bucket and an absent sentinel both yield
-    "". Carried unchanged, and it is the same conflation DEFECT 2 names, in a
-    fourth place: `write-release-sentinel.sh:140` uses this for a READBACK
-    VERIFICATION, so a torn network read there reads as "the sentinel I just
-    wrote is not there".
+    `rsv_get_sentinel_payload` (:235-240). FAILS OPEN by design (`|| true` plus `2>/dev/null`), so an unreachable bucket and an absent sentinel both yield "". Carried unchanged, and it is the same conflation DEFECT 2 names, in a fourth place: `write-release-sentinel.sh:140` uses this for a READBACK VERIFICATION, so a torn network read there reads as "the sentinel I just wrote is
+    not there".
     """
     proc = _run(
         [
@@ -557,8 +452,7 @@ def pre_contract_floor(
 ) -> str:
     """The oldest version still subject to the bijection check.
 
-    `rsv_pre_contract_floor` (:279-320). THREE INPUTS, and the order between
-    them is the design:
+    `rsv_pre_contract_floor` (:279-320). THREE INPUTS, and the order between them is the design:
 
       1. OBSERVED   the oldest CLI sentinel in the supplied list.
       2. RATCHET    `.ci/config/release-contract-floor.txt`, a monotonic
@@ -570,14 +464,9 @@ def pre_contract_floor(
 
     Floor = max(observed, ratchet) when both are present, so it only advances.
 
-    THE OVERRIDE IS NOT VALIDATED, matching :281-284: whatever the variable
-    holds is printed straight back, semver or not. That is deliberate on the
-    twin's part (a test pins a synthetic floor with it) and reproducing it means
-    a typo'd override yields a floor that sorts before everything, which
-    silently grandfathers the whole history. Named here rather than fixed.
+    THE OVERRIDE IS NOT VALIDATED, matching :281-284: whatever the variable holds is printed straight back, semver or not. That is deliberate on the twin's part (a test pins a synthetic floor with it) and reproducing it means a typo'd override yields a floor that sorts before everything, which silently grandfathers the whole history. Named here rather than fixed.
 
-    WHAT THE RATCHET DOES NOT CATCH, from the twin's own comment at :262-268:
-    the "oldest CLI sentinel was scrubbed in isolation" case. Once observed
+    WHAT THE RATCHET DOES NOT CATCH, from the twin's own comment at :262-268: the "oldest CLI sentinel was scrubbed in isolation" case. Once observed
     advances past the scrubbed version, max(observed, ratchet) == observed and
     the scrubbed version falls below the floor and is grandfathered.
     """
@@ -638,15 +527,12 @@ def assert_bijection(
 ) -> tuple[list[str], int]:
     """(the lines to print, 0 on bijection / 1 on any drift finding).
 
-    `rsv_assert_bijection` (:341-425). For every strict-semver version seen in
-    either input, require BOTH (committed) or NEITHER (absent).
+    `rsv_assert_bijection` (:341-425). For every strict-semver version seen in either input, require BOTH (committed) or NEITHER (absent).
 
-    RETURNED RATHER THAN PRINTED, so a caller can assert on the decision without
-    capturing a stream. The twin echoes to stdout and returns the same two
+    RETURNED RATHER THAN PRINTED, so a caller can assert on the decision without capturing a stream. The twin echoes to stdout and returns the same two
     codes; the CLI below prints them in order and is what the differential runs.
 
-    `in_flight` is the one version this CI run is building, excluded so the gate
-    does not false-positive on its own in-flight release.
+    `in_flight` is the one version this CI run is building, excluded so the gate does not false-positive on its own in-flight release.
     """
     out: list[str] = []
     floor = pre_contract_floor(cli_versions, root=root, env=env)
@@ -660,11 +546,7 @@ def assert_bijection(
     def drop_pre_contract(values: list[str]) -> list[str]:
         """`rsv_drop_pre_contract` (:365-378), as a closure. See DEFECT 3.
 
-        Keep v iff v sorts equal-or-after the floor. The twin decides that with
-        `printf '%s\\n%s\\n' "$floor" "$v" | sort -V | head -1`, i.e. it keeps v
-        when the FLOOR is the older of the two. `min(...)` with a stable key
-        returns its first argument on a tie, which is the same thing `head -1`
-        does with `$floor` printed first, so the equality case agrees without
+        Keep v iff v sorts equal-or-after the floor. The twin decides that with `printf '%s\\n%s\\n' "$floor" "$v" | sort -V | head -1`, i.e. it keeps v when the FLOOR is the older of the two. `min(...)` with a stable key returns its first argument on a tie, which is the same thing `head -1` does with `$floor` printed first, so the equality case agrees without
         needing the explicit `[[ "$v" == "$floor" ]]` shortcut the twin has.
         """
         kept: list[str] = []
@@ -722,18 +604,10 @@ def assert_channel_pointer_tagged(
 ) -> tuple[list[str], int]:
     """(the lines to print, 0 when the pointer is consistent and tagged).
 
-    `rsv_assert_channel_pointer_tagged` (:449-496). THE RELATION THE BIJECTION
-    DOES NOT COVER: a `bump-none` merge correctly skips both the sentinel and
-    the tag, so those two stay in step while the channel pointer is advanced
-    anyway. It happened three times (PRs #573, #574, #576, all resolving to
-    1.3.1) and would have half-applied a production release across eu/us/asia on
-    2026-09-01, because promote-stable reads the manifest and then checks out
-    `ref: v<version>`.
+    `rsv_assert_channel_pointer_tagged` (:449-496). THE RELATION THE BIJECTION DOES NOT COVER: a `bump-none` merge correctly skips both the sentinel and the tag, so those two stay in step while the channel pointer is advanced anyway. It happened three times (PRs #573, #574, #576, all resolving to 1.3.1) and would have half-applied a production release across eu/us/asia on
+    2026-09-01, because promote-stable reads the manifest and then checks out `ref: v<version>`.
 
-    PURE, deliberately, and the twin says why at :440-443: `aws` is not
-    installable on the maintainer's host or in the devbox, so an I/O-coupled
-    assertion here would be untestable locally, which is how a release gate ends
-    up unverified.
+    PURE, deliberately, and the twin says why at :440-443: `aws` is not installable on the maintainer's host or in the devbox, so an I/O-coupled assertion here would be untestable locally, which is how a release gate ends up unverified.
     """
     out: list[str] = []
     drift = 0
@@ -785,9 +659,7 @@ def assert_channel_pointer_tagged(
 def _read_list(spec: str | None) -> list[str]:
     """A newline list from a file, from `-` for stdin, or from an inline value.
 
-    An ABSENT `--cli`/`--tags` is an EMPTY LIST and not an error, because that
-    is a state the contract has an answer for (a fresh dev bucket). An
-    UNREADABLE file is an error, because that is a question nobody answered.
+    An ABSENT `--cli`/`--tags` is an EMPTY LIST and not an error, because that is a state the contract has an answer for (a fresh dev bucket). An UNREADABLE file is an error, because that is a question nobody answered.
     """
     if spec is None:
         return []

@@ -1,34 +1,19 @@
 """Port of the SHARED CONTRACT in `.ci/scripts/test/proxies/proxy-lib.sh`.
 
-`proxy-lib.sh` is sourced, never executed -- it has no exec bit "by design"
-(its own header says so) and every real invocation is one of the nine
-`proxy-*.sh` scripts in that directory sourcing it for its functions. There is
-therefore no bash TWIN for this file itself to be shadow-gated against: the
-twin relationship lives one level up, between each `proxy-*.sh` and its
-`rediacc_ci.proxies.*` port, both of which import this module the way the
-bash scripts source `proxy-lib.sh`.
+`proxy-lib.sh` is sourced, never executed -- it has no exec bit "by design" (its own header says so) and every real invocation is one of the nine `proxy-*.sh` scripts in that directory sourcing it for its functions. There is therefore no bash TWIN for this file itself to be shadow-gated against: the twin relationship lives one level up, between each `proxy-*.sh` and its
+`rediacc_ci.proxies.*` port, both of which import this module the way the bash scripts source `proxy-lib.sh`.
 
-WHAT A PROXY IS, copied from the bash header because the contract is the
-point: a heavy CI job that `npm run ci` never exercises gets a local stand-in
-that runs the SAME subject script CI runs, on a reduced input, so a developer
-finds the breakage before the push instead of after it.
+WHAT A PROXY IS, copied from the bash header because the contract is the point: a heavy CI job that `npm run ci` never exercises gets a local stand-in that runs the SAME subject script CI runs, on a reduced input, so a developer finds the breakage before the push instead of after it.
 
-THE ONE RULE THAT MAKES A PROXY HONEST, preserved exactly: the exit alphabet
-is three symbols and no others.
+THE ONE RULE THAT MAKES A PROXY HONEST, preserved exactly: the exit alphabet is three symbols and no others.
 
     0    the real subject ran and passed
     77   the subject could not be run here; NOT a verdict
     any other non-zero   the subject ran and there is a real finding
 
-ANTI-VACUITY, preserved exactly: `finish()` refuses to return 0 when zero
-checks were made, and `preflight()` refuses to run at all when zero
-requirements were declared (a preflight that checks nothing could never say
-cannot-run, so its green would mean nothing).
+ANTI-VACUITY, preserved exactly: `finish()` refuses to return 0 when zero checks were made, and `preflight()` refuses to run at all when zero requirements were declared (a preflight that checks nothing could never say cannot-run, so its green would mean nothing).
 
-COLOUR is decided by `sys.stdout.isatty()` at construction time, matching
-bash's `[[ -t 1 ]]` decided once at `proxy_init` time -- not re-checked per
-call, so a script that later redirects stdout keeps whatever it started with,
-exactly as the bash globals do.
+COLOUR is decided by `sys.stdout.isatty()` at construction time, matching bash's `[[ -t 1 ]]` decided once at `proxy_init` time -- not re-checked per call, so a script that later redirects stdout keeps whatever it started with, exactly as the bash globals do.
 """
 
 from __future__ import annotations
@@ -250,10 +235,7 @@ def _probe_noreqs() -> int:
 def run_selftest() -> int:
     """Both directions, over a real subprocess boundary for the PATH case.
 
-    Cases 2-4 run `python3 -c "..."` as a CHILD process (like the bash twin
-    running a throwaway probe script), because case 2 needs an environment
-    where `shutil.which('bash')` genuinely fails -- a real PATH removal, not a
-    monkeypatched one.
+    Cases 2-4 run `python3 -c "..."` as a CHILD process (like the bash twin running a throwaway probe script), because case 2 needs an environment where `shutil.which('bash')` genuinely fails -- a real PATH removal, not a monkeypatched one.
     """
     fails = 0
     cases = 0

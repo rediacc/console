@@ -1,26 +1,16 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/release/update-homebrew-tap.sh`.
 
-Rewrites `Formula/rediacc-cli.rb` in the `private/homebrew-tap` submodule with a
-new version and the four platform SHA256 checksums, then optionally commits and
-pushes it and moves the parent repository's submodule pointer.
+Rewrites `Formula/rediacc-cli.rb` in the `private/homebrew-tap` submodule with a new version and the four platform SHA256 checksums, then optionally commits and pushes it and moves the parent repository's submodule pointer.
 
 Usage: update_homebrew_tap.py --version X.Y.Z [--push | --stage-only]
        [--local-checksums <dir>] [--dry-run]
 
 THIS SCRIPT MUTATES ANOTHER REPOSITORY, WHICH IS WHY THE DIFFERENTIAL NEVER
-RUNS EITHER SIDE AGAINST THE REAL TREE. `get_repo_root` (common.sh:205-210)
-derives the root from common.sh's OWN location and takes no override, so the
-twin always resolves `<root>/private/homebrew-tap` and will `sed` the live
-formula, `git commit` inside the submodule and `git push origin HEAD:main`.
-`test_release_update_homebrew_tap.py` therefore copies BOTH subjects into a
-fixture tree at their real relative depths and stubs `git`, `curl` and `gh` as
-recording fakes, so the only thing either side can reach is the fixture.
+RUNS EITHER SIDE AGAINST THE REAL TREE. `get_repo_root` (common.sh:205-210) derives the root from common.sh's OWN location and takes no override, so the twin always resolves `<root>/private/homebrew-tap` and will `sed` the live formula, `git commit` inside the submodule and `git push origin HEAD:main`. `test_release_update_homebrew_tap.py` therefore copies BOTH subjects into a
+fixture tree at their real relative depths and stubs `git`, `curl` and `gh` as recording fakes, so the only thing either side can reach is the fixture.
 
-FOUR EXTERNAL PROGRAMS ARE STILL INVOKED, DELIBERATELY, and each for the same
-reason `verify_release_assets.py` still invokes `jq`: the twin's behaviour on
-awkward input IS that program's behaviour, and re-implementing it in Python
-would be a second implementation of sed rather than a port of this script.
+FOUR EXTERNAL PROGRAMS ARE STILL INVOKED, DELIBERATELY, and each for the same reason `verify_release_assets.py` still invokes `jq`: the twin's behaviour on awkward input IS that program's behaviour, and re-implementing it in Python would be a second implementation of sed rather than a port of this script.
 
   * `sed`, through `rediacc_ci.core.common.sed_in_place` -- the already-ported
     twin of `sed_in_place` (common.sh:88-94), so the GNU/BSD branch comes free.
@@ -39,36 +29,19 @@ would be a second implementation of sed rather than a port of this script.
 
 `extract_checksum` IS ALSO `awk`, and that is not laziness: the twin's
 `awk '{print $1}' "$file"` on a MISSING file writes an implementation-specific
-diagnostic to stderr and exits 2, which `set -e` turns into the script's exit
-code. gawk, mawk and busybox awk word that diagnostic differently, so the only
-way both sides say the same thing on the same machine is for both to ask the
-same awk.
+diagnostic to stderr and exits 2, which `set -e` turns into the script's exit code. gawk, mawk and busybox awk word that diagnostic differently, so the only way both sides say the same thing on the same machine is for both to ask the same awk.
 
-THREE `set -u` DEATHS ARE REPRODUCED IN SHAPE, NOT IN COORDINATES, and the
-differential pins the difference rather than hiding it. `--version` and
-`--local-checksums` read `"$2"` unguarded, and `commit_and_push` /
-`update_submodule_pointer` read `"$GIT_BOT_NAME"` / `"$GIT_BOT_EMAIL"`, which
-`.ci/config/constants.sh:164-166` deliberately does NOT declare. Each is a live
-crash path a caller can reach, so the port exits 1 and writes bash's own
-`<script>: line <n>: <name>: unbound variable`. The script name and the line
+THREE `set -u` DEATHS ARE REPRODUCED IN SHAPE, NOT IN COORDINATES, and the differential pins the difference rather than hiding it. `--version` and `--local-checksums` read `"$2"` unguarded, and `commit_and_push` / `update_submodule_pointer` read `"$GIT_BOT_NAME"` / `"$GIT_BOT_EMAIL"`, which `.ci/config/constants.sh:164-166` deliberately does NOT declare. Each is a live crash path a
+caller can reach, so the port exits 1 and writes bash's own `<script>: line <n>: <name>: unbound variable`. The script name and the line
 number are the port's own, because they are true of the port; every other byte
 and the exit code agree.
 
-CONSTANTS ARE LITERALS WITH A DRIFT TEST, not a bash parser. Two scalars are
-read out of `.ci/config/constants.sh` by the twin -- `HOMEBREW_FORMULA_PATH`
-(:288) and `RELEASES_BASE_URL` (:200) -- and both are reproduced below with
-their line references. `test_constants_have_not_drifted` reads constants.sh and
-asserts the pair still matches, so a change there turns the test RED instead of
-being silently followed.
+CONSTANTS ARE LITERALS WITH A DRIFT TEST, not a bash parser. Two scalars are read out of `.ci/config/constants.sh` by the twin -- `HOMEBREW_FORMULA_PATH` (:288) and `RELEASES_BASE_URL` (:200) -- and both are reproduced below with their line references. `test_constants_have_not_drifted` reads constants.sh and asserts the pair still matches, so a change there turns the test RED
+instead of being silently followed.
 
-WHAT SOURCING constants.sh COSTS, reproduced because it fires before any
-argument is read. `.ci/config/constants.sh:20-33` refuses when
-`<root>/.devcontainer/toolchain.env` is not readable, and `set -e` on the
-`source` line kills the caller. So `update-homebrew-tap.sh --help` exits 1 on a
+WHAT SOURCING constants.sh COSTS, reproduced because it fires before any argument is read. `.ci/config/constants.sh:20-33` refuses when `<root>/.devcontainer/toolchain.env` is not readable, and `set -e` on the `source` line kills the caller. So `update-homebrew-tap.sh --help` exits 1 on a
 checkout with no toolchain.env, and so does this. The two `${VAR:?}` refusals
-further down constants.sh are NOT reproduced: they need a toolchain.env that
-exists but is incomplete, which nothing in this repository can produce, and a
-divergence nobody can reach is worse documented than implemented.
+further down constants.sh are NOT reproduced: they need a toolchain.env that exists but is incomplete, which nothing in this repository can produce, and a divergence nobody can reach is worse documented than implemented.
 
 K=5 LEDGER: `.ci/shadow/w7p6-update-homebrew-tap.observations.jsonl`.
 """
@@ -158,8 +131,7 @@ class HelpRequestedError(Exception):
 class UnboundVariableError(Exception):
     """One `set -u` death, carrying bash's own wording.
 
-    `line` is where it happens in THIS file, which is what makes the message
-    true of the program that printed it. See the module docstring.
+    `line` is where it happens in THIS file, which is what makes the message true of the program that printed it. See the module docstring.
     """
 
     def __init__(self, name: str, line: int) -> None:
@@ -169,10 +141,7 @@ class UnboundVariableError(Exception):
 class MissingSourceError(Exception):
     """`source <path>` on a path that is not there (:25-26).
 
-    bash writes `<script>: line <n>: <path>: No such file or directory` and
-    `set -e` exits 1. Reproduced because a checkout missing common.sh or
-    constants.sh must refuse, not run this script's logic with different
-    defaults.
+    bash writes `<script>: line <n>: <path>: No such file or directory` and `set -e` exits 1. Reproduced because a checkout missing common.sh or constants.sh must refuse, not run this script's logic with different defaults.
     """
 
     def __init__(self, path: pathlib.Path, line: int) -> None:
@@ -193,10 +162,7 @@ class Options:
 def console_root() -> pathlib.Path:
     """`get_repo_root` (common.sh:205-210), from this file's own location.
 
-    This module sits at `<root>/.ci/rediacc_ci/release/`, so `parents[3]` is the
-    root, the same place `.ci/scripts/lib/../../..` lands. `paths.repo_root()`
-    is deliberately not used: it honours `$REDIACC_CI_ROOT`, the twin has no
-    such override, and a fixture that moved one and not the other would diverge
+    This module sits at `<root>/.ci/rediacc_ci/release/`, so `parents[3]` is the root, the same place `.ci/scripts/lib/../../..` lands. `paths.repo_root()` is deliberately not used: it honours `$REDIACC_CI_ROOT`, the twin has no such override, and a fixture that moved one and not the other would diverge
     for a reason that has nothing to do with this script.
     """
     return pathlib.Path(__file__).resolve().parents[3]
@@ -232,10 +198,7 @@ def releases_base_url(env: dict[str, str] | None = None) -> str:
 def parse_argv(argv: list[str]) -> Options:
     """The twin's hand-rolled loop (:34-65), including both ways it can die.
 
-    NOT `common.parse_args`. This script does not call the shared parser: it
-    matches five exact flags, treats anything else as an error rather than
-    ignoring it, and reads `"$2"` with no `$# > 1` guard, which is precisely
-    the crash path a shared parser would have removed.
+    NOT `common.parse_args`. This script does not call the shared parser: it matches five exact flags, treats anything else as an error rather than ignoring it, and reads `"$2"` with no `$# > 1` guard, which is precisely the crash path a shared parser would have removed.
     """
     opts = Options()
     i = 0
@@ -301,12 +264,9 @@ def _git(args: list[str], *, quiet: bool = False, capture: bool = False, cwd=Non
 def sync_to_origin_main(directory: pathlib.Path, *, dry_run: bool) -> int:
     """`:81-90`.
 
-    THE FETCH IS ALLOWED TO FAIL AND THE REV-PARSE IS NOT. `|| true` on the
-    fetch means an offline machine still proceeds against whatever `origin/main`
+    THE FETCH IS ALLOWED TO FAIL AND THE REV-PARSE IS NOT. `|| true` on the fetch means an offline machine still proceeds against whatever `origin/main`
     it already has; the `rev-parse` that follows is a bare assignment, so `set
-    -e` kills the script when there is no `origin/main` at all. Both halves are
-    reproduced, including the fact that DRY-RUN still runs both of them and only
-    skips the checkout.
+    -e` kills the script when there is no `origin/main` at all. Both halves are reproduced, including the fact that DRY-RUN still runs both of them and only skips the checkout.
     """
     _git(["-C", str(directory), "fetch", "origin", "main"], quiet=True)
     proc = _git(["-C", str(directory), "rev-parse", "origin/main"], capture=True)
@@ -351,13 +311,8 @@ def download_checksums(tmpdir: pathlib.Path, version: str, *, dry_run: bool) -> 
 def _find_first(directory: str, name: str) -> str:
     """`find "$dir" -name "${name}*" ! -name "*.sha256" -type f | head -1 || true`.
 
-    SHELLED OUT BECAUSE THE ORDER IS THE ANSWER. `head -1` takes whatever
-    readdir handed `find` first, so a directory holding both `rdc-mac-arm64` and
-    `rdc-mac-arm64.old` resolves differently depending on the filesystem. An
-    `os.walk` re-implementation would agree on every tidy directory and disagree
-    on exactly the untidy one somebody would then have to debug. `find`'s own
-    stderr is inherited here, as it is in the twin, so a missing directory still
-    says so.
+    SHELLED OUT BECAUSE THE ORDER IS THE ANSWER. `head -1` takes whatever readdir handed `find` first, so a directory holding both `rdc-mac-arm64` and `rdc-mac-arm64.old` resolves differently depending on the filesystem. An `os.walk` re-implementation would agree on every tidy directory and disagree on exactly the untidy one somebody would then have to debug. `find`'s own stderr is
+    inherited here, as it is in the twin, so a missing directory still says so.
     """
     proc = subprocess.run(
         ["find", directory, "-name", "%s*" % name, "!", "-name", "*.sha256", "-type", "f"],
@@ -372,10 +327,7 @@ def _find_first(directory: str, name: str) -> str:
 def calculate_local_checksums(directory: str, outdir: pathlib.Path, *, dry_run: bool) -> int:
     """`:112-140`.
 
-    A VACUOUS RUN IS ALREADY FATAL, PER ARTIFACT. The twin's own comment
-    (:125-127) says so and it is worth keeping in the port: three of four
-    binaries present still exits 1, because the test is inside the loop rather
-    than on the aggregate.
+    A VACUOUS RUN IS ALREADY FATAL, PER ARTIFACT. The twin's own comment (:125-127) says so and it is worth keeping in the port: three of four binaries present still exits 1, because the test is inside the loop rather than on the aggregate.
     """
     log.step("Computing SHA256 checksums from local binaries in %s..." % directory)
     if dry_run:
@@ -404,8 +356,7 @@ def calculate_local_checksums(directory: str, outdir: pathlib.Path, *, dry_run: 
 def extract_checksum(path: pathlib.Path) -> str | None:
     """`awk '{print $1}' "$file"` (:142-146), inside `$( )`.
 
-    Returns None when awk itself failed, which is how `set -e` sees it. See the
-    module docstring for why this is awk and not `text.split()[0]`.
+    Returns None when awk itself failed, which is how `set -e` sees it. See the module docstring for why this is awk and not `text.split()[0]`.
     """
     proc = subprocess.run(
         ["awk", "{print $1}", str(path)], stdout=subprocess.PIPE, text=True, check=False
@@ -472,8 +423,7 @@ def update_formula(
 def commit_and_push(tap_dir: pathlib.Path, version: str, *, dry_run: bool) -> int:
     """`:226-244`.
 
-    `git diff --quiet <path>` IS THE IDEMPOTENCE TEST, and it is asked inside an
-    `if`, so its exit 1 is data rather than a failure. Re-running this script
+    `git diff --quiet <path>` IS THE IDEMPOTENCE TEST, and it is asked inside an `if`, so its exit 1 is data rather than a failure. Re-running this script
     for a version already in the formula prints one line and pushes nothing.
     """
     if dry_run:
@@ -573,8 +523,7 @@ def require_sources(root: pathlib.Path) -> None:
     """`source common.sh` (:25) and `source constants.sh` (:26), plus what the
     second one refuses on.
 
-    Ordered exactly as the twin sources them, because the message a broken
-    checkout gets names the FIRST missing file and no other.
+    Ordered exactly as the twin sources them, because the message a broken checkout gets names the FIRST missing file and no other.
     """
     frame = inspect.currentframe()
     line = frame.f_lineno if frame else 0

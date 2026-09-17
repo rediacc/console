@@ -1,25 +1,13 @@
 """`rediacc_ci.core.service` against the live `.ci/lib/service.sh`.
 
-REAL DOCKER, NO STACK. Every case runs the real `docker ps` and `docker inspect`
-against a daemon with the `rediacc-service-*` containers absent, which is the
-state a developer's machine is in almost all the time and the only state a
-differential can enter five times without building an image ten times. What is
-NOT covered is named in the module docstring of the port rather than left as an
-absence: `service_start` and `service_stop`.
+REAL DOCKER, NO STACK. Every case runs the real `docker ps` and `docker inspect` against a daemon with the `rediacc-service-*` containers absent, which is the state a developer's machine is in almost all the time and the only state a differential can enter five times without building an image ten times. What is NOT covered is named in the module docstring of the port rather than
+left as an absence: `service_start` and `service_stop`.
 
 THE CLOCK IS FROZEN ON BOTH SIDES, BY DIFFERENT SEAMS, AND THAT IS DELIBERATE.
-`service_status` prints an uptime derived from `date +%s`, so two runs a second
-apart disagree and no byte comparison is possible. The twin's seam is a fake
-`date` earlier on PATH -- the same trick `test-bws-env.sh` uses for `bws`. The
-port reads the clock in-process, so its seam is `SERVICE_STATUS_NOW`. Both are
-supplied by `env_for` below from ONE value, so the two sides cannot drift apart
-through the harness.
+`service_status` prints an uptime derived from `date +%s`, so two runs a second apart disagree and no byte comparison is possible. The twin's seam is a fake `date` earlier on PATH -- the same trick `test-bws-env.sh` uses for `bws`. The port reads the clock in-process, so its seam is `SERVICE_STATUS_NOW`. Both are supplied by `env_for` below from ONE value, so the two sides cannot
+drift apart through the harness.
 
-`check_docker` IS DEFINED BY THE HARNESS ON THE BASH SIDE because the twin does
-not define it: it lives in `.ci/legacy/run-legacy.sh`, the file that SOURCES
-`service.sh`, and only late binding makes the twin work at all. The definition
-below is copied from that file verbatim. That is defect 3 in the port's
-docstring, and the harness having to supply it is the evidence for it.
+`check_docker` IS DEFINED BY THE HARNESS ON THE BASH SIDE because the twin does not define it: it lives in `.ci/legacy/run-legacy.sh`, the file that SOURCES `service.sh`, and only late binding makes the twin work at all. The definition below is copied from that file verbatim. That is defect 3 in the port's docstring, and the harness having to supply it is the evidence for it.
 """
 
 import shutil
@@ -63,10 +51,7 @@ FROZEN_NOW = 1700003725
 def fake_date(tmp_path_factory):
     """A `date` that answers `+%s` from the environment and defers otherwise.
 
-    DEFERS RATHER THAN REFUSES, because `service.sh` is not the only thing on the
-    other side of this PATH: anything it sources may call `date` for a real
-    reason, and a fake that answered every form would change behaviour the
-    differential is trying to measure.
+    DEFERS RATHER THAN REFUSES, because `service.sh` is not the only thing on the other side of this PATH: anything it sources may call `date` for a real reason, and a fake that answered every form would change behaviour the differential is trying to measure.
     """
     binroot = tmp_path_factory.mktemp("fakebin")
     script = binroot / "date"
@@ -165,15 +150,9 @@ def test_status_aborts_silently_on_a_partial_state_file(tmp_path, fake_date) -> 
     """DEFECT 1, measured on both sides, and the one place the port speaks up.
 
     A state file carrying `started=` but no `port=` makes the twin's bare
-    assignment take grep's exit 1 through `pipefail` into `errexit`. The function
-    stops mid-output: two container lines, a blank, and then NOTHING. No health
-    check, no trailing blank, no message, exit 1 -- and because errexit is still
-    armed in the sourcing script, it takes `run-legacy.sh` down with it.
+    assignment take grep's exit 1 through `pipefail` into `errexit`. The function stops mid-output: two container lines, a blank, and then NOTHING. No health check, no trailing blank, no message, exit 1 -- and because errexit is still armed in the sourcing script, it takes `run-legacy.sh` down with it.
 
-    stdout AND the exit code MATCH EXACTLY. The port adds one line on stderr
-    naming the cause, which is the single deliberate divergence here: a port that
-    reproduced a silent death without saying why would be reproducing the defect
-    and hiding its own discovery of it. The shadow ledger therefore omits this
+    stdout AND the exit code MATCH EXACTLY. The port adds one line on stderr naming the cause, which is the single deliberate divergence here: a port that reproduced a silent death without saying why would be reproducing the defect and hiding its own discovery of it. The shadow ledger therefore omits this
     case, because a ledger row is a claim of equivalence.
     """
     root = tmp_path / "partial"
@@ -202,8 +181,7 @@ def test_status_aborts_silently_on_a_partial_state_file(tmp_path, fake_date) -> 
 def test_status_writes_raw_ansi_to_stdout_while_stderr_is_clean(tmp_path, fake_date) -> None:
     """DEFECT 2. The DATA stream is coloured on a pipe and the LOG stream is not.
 
-    Asserted on both sides so the port cannot quietly "fix" it, and so a reader
-    who finds this surprising finds the measurement rather than an opinion.
+    Asserted on both sides so the port cannot quietly "fix" it, and so a reader who finds this surprising finds the measurement rather than an opinion.
     """
     root = tmp_path / "colour"
     root.mkdir()

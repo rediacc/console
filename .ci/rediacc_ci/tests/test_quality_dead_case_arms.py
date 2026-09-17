@@ -1,24 +1,14 @@
 r"""`rediacc_ci.quality.dead_case_arms` against the grep pipelines it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-dead-case-arms.observations.jsonl` drives the whole gate over
-five distinct trees carrying a dead arm in each scan root, a live mirror, and
-the vacuity floor. What a ledger row cannot isolate is the two greps that decide
-the verdict for every arm:
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-dead-case-arms.observations.jsonl` drives the whole gate over five distinct trees carrying a dead arm in each scan root, a live mirror, and the vacuity floor. What a ledger row cannot isolate is the two greps that decide the verdict for every arm:
 
     grep -rnE '^[[:space:]]*\*[^)]*"[^"]*"[^)]*\)'   is this line an ASSERTION
     grep -rhE --exclude-dir=test "${key}=" $CODE_DIRS | grep -qvE '^\s*(#|//|\*)'
                                                      is this key ALIVE
 
-The second is the gate. Drop its comment filter and every documented pattern
-vaccinates the tree against detection, which is the 2026-08-05 defect the twin's
-header records. Widen the first and the gate reports assignments as assertions.
-Both are compared against the real grep below.
+The second is the gate. Drop its comment filter and every documented pattern vaccinates the tree against detection, which is the 2026-08-05 defect the twin's header records. Widen the first and the gate reports assignments as assertions. Both are compared against the real grep below.
 
-A FALSE POSITIVE COSTS MORE THAN A MISS HERE, and the tests are written that
-way round: `key_is_live` counting a key as alive on the flimsiest evidence is
-the SAFE direction, because a dead-arm finding tells an author to rewrite an
-assertion that may in fact be working.
+A FALSE POSITIVE COSTS MORE THAN A MISS HERE, and the tests are written that way round: `key_is_live` counting a key as alive on the flimsiest evidence is the SAFE direction, because a dead-arm finding tells an author to rewrite an assertion that may in fact be working.
 """
 
 import pathlib
@@ -31,10 +21,7 @@ from rediacc_ci.tests import differential as diff
 def _joined(*rows: str) -> str:
     """`"\n".join(rows)` behind a call. The rows stay one per line.
 
-    A helper rather than a literal join because ruff's FLY002 rewrites a join
-    over a LITERAL list into an f-string, and a ten-line shell fixture written
-    as one f-string is unreadable. Passing the rows as arguments keeps the
-    fixture legible and gives the linter nothing static to fold.
+    A helper rather than a literal join because ruff's FLY002 rewrites a join over a LITERAL list into an f-string, and a ten-line shell fixture written as one f-string is unreadable. Passing the rows as arguments keeps the fixture legible and gives the linter nothing static to fold.
     """
     return "\n".join(rows)
 

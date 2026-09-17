@@ -2,13 +2,9 @@
 
 Sibling of `test_deploy_resolve_account_deploy_config.py`; see that file for
 why `/dev/stdout` is not used as `$GITHUB_STEP_SUMMARY`. The K=5 ledger is
-`.ci/shadow/w7p5a-deployment-summary.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-deployment-summary --assert
---k 5` -> "equivalence holds over 5 distinct trees").
+`.ci/shadow/w7p5a-deployment-summary.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-deployment-summary --assert --k 5` -> "equivalence holds over 5 distinct trees").
 
-The valid path is byte-identical on purpose: this script has no branch at
-all, only string interpolation into a fixed template, so "both sides wrote
-the exact same bytes" is the whole claim being tested.
+The valid path is byte-identical on purpose: this script has no branch at all, only string interpolation into a fixed template, so "both sides wrote the exact same bytes" is the whole claim being tested.
 """
 
 from __future__ import annotations

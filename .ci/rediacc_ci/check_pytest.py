@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
 """Run the rediacc_ci suite, and refuse to call a collapsed collection green.
 
-WHAT THIS GATE IS FOR. `pytest` on its own is not a gate. Point it at a directory
-that no longer exists, mistype `testpaths`, break an import in a conftest, and it
-prints `no tests ran` and exits 5 -- or, worse, collects a handful of the files it
-can still see and exits 0. A wrapper that only forwards pytest's exit code turns
-the second case into a green CI step forever, which is the same failure
-`.ci/scripts/quality/check-python-lint.sh` documents for `ruff check` with an
-empty file list, and the same one `test-gate-anti-vacuity.sh` exists to catch
-across the whole battery.
+WHAT THIS GATE IS FOR. `pytest` on its own is not a gate. Point it at a directory that no longer exists, mistype `testpaths`, break an import in a conftest, and it prints `no tests ran` and exits 5 -- or, worse, collects a handful of the files it can still see and exits 0. A wrapper that only forwards pytest's exit code turns the second case into a green CI step forever, which is
+the same failure `.ci/scripts/quality/check-python-lint.sh` documents for `ruff check` with an empty file list, and the same one `test-gate-anti-vacuity.sh` exists to catch across the whole battery.
 
 So this refuses on three separate grounds before it will report a pass:
 
@@ -21,23 +15,14 @@ So this refuses on three separate grounds before it will report a pass:
      time all reduce the collected count while leaving the files in place.
   3. THE RESULT. Every collected test must pass.
 
-WHY TWO FLOORS AND NOT ONE, since docs/ci-overhaul/08-driver-contract.md section
-6 rules that a floor must be corpus-derived rather than hand-typed. Floor 2 IS
-corpus-derived and is the primary: it re-keys itself as tests are added and
-removed, so a correct rename never reds it. But a corpus-derived floor has one
-hole, and it is the hole that matters most -- if the test DIRECTORY disappears,
+WHY TWO FLOORS AND NOT ONE, since docs/ci-overhaul/08-driver-contract.md section 6 rules that a floor must be corpus-derived rather than hand-typed. Floor 2 IS corpus-derived and is the primary: it re-keys itself as tests are added and removed, so a correct rename never reds it. But a corpus-derived floor has one hole, and it is the hole that matters most -- if the test DIRECTORY
+disappears,
 the corpus is 0, the derived floor is 0, and `0 >= 0` reports green. Floor 1 is
-the base case under that recursion: a constant is the only thing that can catch
-the corpus itself vanishing. It is stated here, with its size argued, rather than
-being the whole design.
+the base case under that recursion: a constant is the only thing that can catch the corpus itself vanishing. It is stated here, with its size argued, rather than being the whole design.
 
-WHY `MIN_TESTS` IS 150 AND NOT 1. Sized to roughly two thirds of the corpus, so
-a legitimate consolidation has room and a HALF-broken glob does not. It read 40
+WHY `MIN_TESTS` IS 150 AND NOT 1. Sized to roughly two thirds of the corpus, so a legitimate consolidation has room and a HALF-broken glob does not. It read 40
 against phase 2's 65 test functions; phase 3 landed `log`, `proc`, `gitx` and
-`workflows` with their differentials and the corpus is 187 across six modules, so
-the floor is re-sized in the same commit rather than left behind at a number that
-one module's tests would satisfy on their own. That is the whole hazard a
-constant floor exists for: it only works while it is proportionate.
+`workflows` with their differentials and the corpus is 187 across six modules, so the floor is re-sized in the same commit rather than left behind at a number that one module's tests would satisfy on their own. That is the whole hazard a constant floor exists for: it only works while it is proportionate.
 
 This is the same reasoning, and the same shape, as `MIN_PY_FILES=10` in
 check-python-lint.sh. Raise it when the suite grows; a deliberate REMOVAL of most
@@ -49,33 +34,20 @@ EXIT CODES, AND THE ONE DISTINCTION THAT MATTERS.
     1   a real verdict: a test failed, or a floor was not met
     77  pytest is NOT AVAILABLE, so no verdict was reached at all
 
-77 is this repo's "could not run", classified by the ci-runner as BLOCKED --
-counted, named and warned about, but never a judgement on the code. It exists
-because exit 1 here would say "the tests failed", which is false, and which made
-a pre-push lane refuse every push on a machine that simply lacked the tool. It is
-NOT a skip and NOT softer: under CI the bootstrap has run, so 77 never fires
+77 is this repo's "could not run", classified by the ci-runner as BLOCKED -- counted, named and warned about, but never a judgement on the code. It exists because exit 1 here would say "the tests failed", which is false, and which made a pre-push lane refuse every push on a machine that simply lacked the tool. It is NOT a skip and NOT softer: under CI the bootstrap has run, so 77
+never fires
 there; if it ever did, the workflow sees a plain non-zero and the lane is broken,
 which is correct.
 
-A CONFIG ERROR IS NOT A 77. pytest exiting 4 (usage error) means this repo's own
-`[tool.pytest.ini_options]` is wrong, which is a defect in the tree and gets a 1.
-The line between the two is "is the tool here", not "did the tool complain".
+A CONFIG ERROR IS NOT A 77. pytest exiting 4 (usage error) means this repo's own `[tool.pytest.ini_options]` is wrong, which is a defect in the tree and gets a 1. The line between the two is "is the tool here", not "did the tool complain".
 
-HOW pytest IS FOUND. It is not resolved here. `.ci/bootstrap.sh doctor` already
-implements the three-rung ladder -- $PYTEST_BIN, then a PATH binary AT THE PIN,
-then the repo-local install under .ci/cache/ -- and its rungs are themselves
-lifted from `resolve_ruff` in check-python-lint.sh. This parses that report
-rather than growing a fourth copy of the ladder, so $PYTEST_BIN and the pin are
-honoured here for free and cannot drift from what the bootstrap installs.
+HOW pytest IS FOUND. It is not resolved here. `.ci/bootstrap.sh doctor` already implements the three-rung ladder -- $PYTEST_BIN, then a PATH binary AT THE PIN, then the repo-local install under .ci/cache/ -- and its rungs are themselves lifted from `resolve_ruff` in check-python-lint.sh. This parses that report rather than growing a fourth copy of the ladder, so $PYTEST_BIN and the
+pin are honoured here for free and cannot drift from what the bootstrap installs.
 
     .ci/rediacc_ci/check_pytest.py              run the suite and judge it
     .ci/rediacc_ci/check_pytest.py --selftest   prove this gate can fail
 
-NOT YET REGISTERED. There is no `---- gate ----` header in this file on purpose:
-`scripts/gate-bind.ts` only scans `.ci/scripts/` and `scripts/` (its `inScope`
-regex is `^(\\.ci\\/scripts|scripts)\\/`), so a header here would be inert -- a
-declaration that reads as wired and is not. Registration is the root driver's,
-via package.json, scripts/ci-runner/manifest.ts and the workflow.
+NOT YET REGISTERED. There is no `---- gate ----` header in this file on purpose: `scripts/gate-bind.ts` only scans `.ci/scripts/` and `scripts/` (its `inScope` regex is `^(\\.ci\\/scripts|scripts)\\/`), so a header here would be inert -- a declaration that reads as wired and is not. Registration is the root driver's, via package.json, scripts/ci-runner/manifest.ts and the workflow.
 """
 
 import ast
@@ -228,17 +200,10 @@ RED, GREEN, NC = _colours()
 def corpus_test_count(tests_dir: pathlib.Path) -> int:
     """How many test functions EXIST on disk under `tests_dir`.
 
-    Reads the files rather than asking pytest, on purpose: this number is what
-    pytest's answer is checked AGAINST, so deriving it from pytest would make the
-    comparison a tautology -- the exact "check that cannot fail" shape
-    check-python-lint.sh records having introduced once in a control.
+    Reads the files rather than asking pytest, on purpose: this number is what pytest's answer is checked AGAINST, so deriving it from pytest would make the comparison a tautology -- the exact "check that cannot fail" shape check-python-lint.sh records having introduced once in a control.
 
-    PARSED WHEN IT PARSES, MATCHED WHEN IT DOES NOT. The old objection to an AST
-    walk was sound -- "a floor that needs an AST walk to compute is a floor that
-    can fail for its own reasons" -- and it is answered by falling back rather
-    than by staying inexact: a file that will not parse is counted by the regex
-    exactly as before, so the floor still cannot fail for its own reasons, while
-    every file that DOES parse is counted exactly. Reading the file is still the
+    PARSED WHEN IT PARSES, MATCHED WHEN IT DOES NOT. The old objection to an AST walk was sound -- "a floor that needs an AST walk to compute is a floor that can fail for its own reasons" -- and it is answered by falling back rather than by staying inexact: a file that will not parse is counted by the regex exactly as before, so the floor still cannot fail for its own reasons,
+    while every file that DOES parse is counted exactly. Reading the file is still the
     point; only the way the text is read has changed, so nothing here asks pytest
     anything and the comparison stays a real one.
     """
@@ -278,11 +243,9 @@ def count_test_defs(body: str) -> int:
 def parse_counts(text: str) -> tuple[int | None, int | None]:
     """(collected, passed) from pytest's output; None for either it did not say.
 
-    None rather than 0 for "not stated", because the two mean opposite things: a
-    run that never printed a collection line did not get far enough to have one,
+    None rather than 0 for "not stated", because the two mean opposite things: a run that never printed a collection line did not get far enough to have one,
     while a run that collected zero got all the way there and found nothing. A
-    zero substituted for the first turns a crashed pytest into a floor failure,
-    which reports the wrong problem.
+    zero substituted for the first turns a crashed pytest into a floor failure, which reports the wrong problem.
     """
     collected = COLLECTED_RE.search(text)
     passed = PASSED_RE.search(text)
@@ -303,8 +266,7 @@ def parse_counts(text: str) -> tuple[int | None, int | None]:
 def parse_contract_skips(text: str) -> int:
     """How many tests skipped under the proxies' declared cannot-run contract.
 
-    The COUNTS are summed, not the lines: `-ra` groups tests by reason and
-    prefixes each with `[N]`, so two subjects that cannot run produce two lines
+    The COUNTS are summed, not the lines: `-ra` groups tests by reason and prefixes each with `[N]`, so two subjects that cannot run produce two lines
     while five tests behind one subject produce one line reading `[5]`.
     """
     return sum(int(m.group(1)) for m in CONTRACT_SKIP_RE.finditer(text or ""))
@@ -320,10 +282,7 @@ def verdict(
 ) -> str:
     """The whole decision, as a pure function of four numbers. "" means green.
 
-    PURE ON PURPOSE. Every refusal this gate can make is decided here, so the
-    selftest can exercise the entire matrix -- including combinations that are
-    hard to produce for real, like `pytest exited 0 having collected nothing` --
-    without running pytest at all.
+    PURE ON PURPOSE. Every refusal this gate can make is decided here, so the selftest can exercise the entire matrix -- including combinations that are hard to produce for real, like `pytest exited 0 having collected nothing` -- without running pytest at all.
     """
     if collected is None:
         return (
@@ -374,11 +333,7 @@ DOCTOR_TIMEOUT_S = 120
 def resolve_pytest(root: pathlib.Path) -> str | None:
     """The pytest binary the bootstrap resolves, or None.
 
-    ONE LADDER, NOT A FOURTH COPY. `.ci/bootstrap.sh doctor` already implements
-    $PYTEST_BIN -> a PATH binary at the pin -> the repo-local install, and
-    reports what it resolved. Re-implementing those rungs in Python would be a
-    second thing to drift, and the drift would be silent: both copies would find
-    SOME pytest, just not the same one.
+    ONE LADDER, NOT A FOURTH COPY. `.ci/bootstrap.sh doctor` already implements $PYTEST_BIN -> a PATH binary at the pin -> the repo-local install, and reports what it resolved. Re-implementing those rungs in Python would be a second thing to drift, and the drift would be silent: both copies would find SOME pytest, just not the same one.
     """
     bootstrap = root / ".ci" / "bootstrap.sh"
     if not bootstrap.is_file():
@@ -447,11 +402,9 @@ def cannot_run(reason: str) -> int:
 def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None):
     """(returncode, combined output). Args default to none, so `testpaths` applies.
 
-    STDERR IS FOLDED INTO STDOUT deliberately. pytest writes its summary to
-    stdout and its internal errors to stderr, and this function's caller needs to
+    STDERR IS FOLDED INTO STDOUT deliberately. pytest writes its summary to stdout and its internal errors to stderr, and this function's caller needs to
     parse one text for both; splitting them here would mean a collection error
-    that never reached the summary was parsed out of the wrong stream and read as
-    "no collection line", which is a true statement about the wrong reason.
+    that never reached the summary was parsed out of the wrong stream and read as "no collection line", which is a true statement about the wrong reason.
     """
     # THROUGH THE SHARED RUNNER, and for this call site that is the whole point: the main invocation passes `-n <jobs>`, so pytest forks xdist workers that
     # inherit the capture pipes. `subprocess.run(capture_output=True, timeout=...)`
@@ -486,9 +439,7 @@ def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None
 def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     """Controls in both directions, including one real planted defect.
 
-    Uses the package's own Controls runner rather than a private tally, which is
-    the point of having one: the gate that proves the suite runs is itself a
-    consumer of the thing the suite tests.
+    Uses the package's own Controls runner rather than a private tally, which is the point of having one: the gate that proves the suite runs is itself a consumer of the thing the suite tests.
     """
     # FLOOR RAISED WITH THE SUITE, 16 -> 25 -> 29 -> 35 (six corpus-counter
     # controls, then two more for class methods). It was 16 against 19 controls; the
@@ -848,16 +799,11 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
 def testpath_dirs(root: pathlib.Path) -> list[pathlib.Path]:
     """Every root pytest is configured to collect, read from pyproject.toml.
 
-    THE CORPUS MUST COVER WHAT THE COLLECTION COVERS, or floor 2 stops working.
-    This gate used to hard-code `.ci/rediacc_ci/tests` while pytest collected
-    whatever `testpaths` listed. The moment a second root was added
-    (.claude/rediacc_hooks/tests, 421 tests) the comparison became 615 collected
-    against a 187-file corpus, and the rediacc_ci suite could have dropped to zero
+    THE CORPUS MUST COVER WHAT THE COLLECTION COVERS, or floor 2 stops working. This gate used to hard-code `.ci/rediacc_ci/tests` while pytest collected whatever `testpaths` listed. The moment a second root was added (.claude/rediacc_hooks/tests, 421 tests) the comparison became 615 collected against a 187-file corpus, and the rediacc_ci suite could have dropped to zero
     with the sum still comfortably above its floor -- a corpus-derived floor that
     no longer derives from the corpus it is judging.
 
-    Read from the ini rather than restated here, because a second literal list is
-    exactly the drift this repo pays for repeatedly.
+    Read from the ini rather than restated here, because a second literal list is exactly the drift this repo pays for repeatedly.
     """
     with (root / "pyproject.toml").open("rb") as fh:
         cfg = tomllib.load(fh)
@@ -884,10 +830,7 @@ Environment:
 def wants_help(argv: list[str]) -> bool:
     """Whether the caller asked for usage. A PREDICATE, so it can be controlled.
 
-    The obvious control -- `c.check(main(["--help"]), EXIT_OK)` -- is a trap, and
-    it caught me: with the early return planted away, that call falls through and
-    runs the ENTIRE suite, so the plant produces a thirty-minute hang instead of a
-    red. A control must fail fast or it is not usable as a control.
+    The obvious control -- `c.check(main(["--help"]), EXIT_OK)` -- is a trap, and it caught me: with the early return planted away, that call falls through and runs the ENTIRE suite, so the plant produces a thirty-minute hang instead of a red. A control must fail fast or it is not usable as a control.
     """
     return "--help" in argv or "-h" in argv
 
@@ -895,9 +838,7 @@ def wants_help(argv: list[str]) -> bool:
 def help_precedes_resolution() -> bool:
     """The help guard must come BEFORE any resolution, checked structurally.
 
-    This is an ORDERING property, and no run can demonstrate it: a `--help` that
-    resolves first still prints usage on a healthy host, and only hangs on the
-    broken one. So it is read off the AST rather than driven.
+    This is an ORDERING property, and no run can demonstrate it: a `--help` that resolves first still prints usage on a healthy host, and only hangs on the broken one. So it is read off the AST rather than driven.
     """
     tree = ast.parse(pathlib.Path(__file__).read_text(encoding="utf-8"))
     for node in ast.walk(tree):

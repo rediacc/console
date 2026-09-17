@@ -1,32 +1,17 @@
 #!/usr/bin/env python3
 """A judged stop-rule that nothing CALLS is a rule that does not run.
 
-THE GAP THIS CLOSES, measured 2026-09-01. `wl_shapedup` shipped with 239 controls in
-`test-judge-schema.py` and every one of them exercises the module in ISOLATION --
-`read_verdict`, `apply_verdict`, the latch, the driver. Not one asserts that
-`wl_checks.py` actually calls it. Delete the single line `wl_shapedup.run(...)` at its
-call site and all 239 controls stay green while the rule silently stops running.
+THE GAP THIS CLOSES, measured 2026-09-01. `wl_shapedup` shipped with 239 controls in `test-judge-schema.py` and every one of them exercises the module in ISOLATION -- `read_verdict`, `apply_verdict`, the latch, the driver. Not one asserts that `wl_checks.py` actually calls it. Delete the single line `wl_shapedup.run(...)` at its call site and all 239 controls stay green while the
+rule silently stops running.
 
-That is the i18n lesson exactly: the thing was built, tested, and unenforced. A rule whose
-call site can be deleted without a red is indistinguishable, from CI's point of view, from
-a rule that was never written.
+That is the i18n lesson exactly: the thing was built, tested, and unenforced. A rule whose call site can be deleted without a red is indistinguishable, from CI's point of view, from a rule that was never written.
 
-WHAT check-rubric-calibration.sh DOES AND DOES NOT COVER. It hashes the PROMPT TEXT of
-SWEEP_PROMPT, BRAVE_PROMPT and REGGATE_PROMPT against a recorded manifest, so a calibrated
-rubric cannot change without being re-calibrated. It says nothing about whether the rule is
-invoked -- the text can be perfectly preserved in a module nobody imports.
+WHAT check-rubric-calibration.sh DOES AND DOES NOT COVER. It hashes the PROMPT TEXT of SWEEP_PROMPT, BRAVE_PROMPT and REGGATE_PROMPT against a recorded manifest, so a calibrated rubric cannot change without being re-calibrated. It says nothing about whether the rule is invoked -- the text can be perfectly preserved in a module nobody imports.
 
-THE INVARIANT. Every module under `.claude/hooks/stop/` that defines BOTH a `*_MARKER`
-constant and an `apply_verdict` function is a judged rule. Each one must be imported by,
-and CALLED from, the stop path (`wl_checks.py` or `wl_judge.py`). The set is discovered,
-never listed: a hand-maintained list of wired rules is the same unkept promise this gate
-exists to distrust, and a new rule added without wiring would simply be absent from it.
+THE INVARIANT. Every module under `.claude/hooks/stop/` that defines BOTH a `*_MARKER` constant and an `apply_verdict` function is a judged rule. Each one must be imported by, and CALLED from, the stop path (`wl_checks.py` or `wl_judge.py`). The set is discovered, never listed: a hand-maintained list of wired rules is the same unkept promise this gate exists to distrust, and a new
+rule added without wiring would simply be absent from it.
 
----- gate ----
-step: Judged rule wiring
-needs: none
-lane: quality-code
----- end gate ----
+---- gate ---- step: Judged rule wiring needs: none lane: quality-code ---- end gate ----
 """
 
 import os
@@ -48,10 +33,7 @@ MIN_RULES = 4
 def judged_rules(stop_dir):
     """{module: marker} for every module that looks like a judged rule.
 
-    DISCOVERED, not listed. Both signals are required: a `*_MARKER` (the string that makes
-    the judge ask the question) and an `apply_verdict` (the function that acts on the
-    answer). Either alone is something else -- wl_reggate has a verdict applier under a
-    different name and no marker of its own, and several modules define constants.
+    DISCOVERED, not listed. Both signals are required: a `*_MARKER` (the string that makes the judge ask the question) and an `apply_verdict` (the function that acts on the answer). Either alone is something else -- wl_reggate has a verdict applier under a different name and no marker of its own, and several modules define constants.
     """
     found = {}
     for name in sorted(os.listdir(stop_dir)):
@@ -82,8 +64,7 @@ def wiring_of(module, drivers):
 
     IMPORT IS NOT ENOUGH, and that distinction is the whole gate. `import wl_shapedup` at
     the top of a file whose call site was deleted still satisfies a grep for the name;
-    ruff would even keep it if anything else referenced it. Only an actual call means the
-    rule runs, so the two are reported separately and the CALL is what is required.
+    ruff would even keep it if anything else referenced it. Only an actual call means the rule runs, so the two are reported separately and the CALL is what is required.
     """
     imported, called = [], []
     # `import wl_x`, `import wl_x as X`, `from wl_x import ...`

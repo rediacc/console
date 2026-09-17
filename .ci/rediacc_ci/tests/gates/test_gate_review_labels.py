@@ -3,11 +3,7 @@
 Both-ways test for `claude-review-gate.sh --apply-labels`, the arm that labels a PR
 from the automated review that just ran.
 
-WHY THIS CLASS NEEDS A GATE. This arm writes to the repository on the word of a
-language model, and it is the one piece of the review pipeline that cannot be
-exercised before it reaches main: the workflow runs review scripts from
-`console@main` by design. So the only pre-merge evidence that exists is this file,
-and it has to cover the two failures that would matter.
+WHY THIS CLASS NEEDS A GATE. This arm writes to the repository on the word of a language model, and it is the one piece of the review pipeline that cannot be exercised before it reaches main: the workflow runs review scripts from `console@main` by design. So the only pre-merge evidence that exists is this file, and it has to cover the two failures that would matter.
 
   TOO LOUD. A hallucinated or malformed verdict reaching the labels API.
   `POST /issues/{n}/labels` is not a safe call for an unvalidated name, and a stray
@@ -19,20 +15,13 @@ and it has to cover the two failures that would matter.
   because a starved review is the common failure mode of this pipeline, not an
   exotic one.
 
-Plus the property that makes the design safe to run unattended: removal is scoped to
-the arm's OWN ledger comment, so a hand-applied label survives any verdict, and a
-tampered ledger cannot be turned into a delete-anything primitive.
+Plus the property that makes the design safe to run unattended: removal is scoped to the arm's OWN ledger comment, so a hand-applied label survives any verdict, and a tampered ledger cannot be turned into a delete-anything primitive.
 
-THE ONE PLACE THE PORT MUST NOT BE LITERAL, carried over from the twin verbatim
-because the reason still applies. `test_kind_vocabulary_maps_to_the_repo_labels`
+THE ONE PLACE THE PORT MUST NOT BE LITERAL, carried over from the twin verbatim because the reason still applies. `test_kind_vocabulary_maps_to_the_repo_labels`
 BUILDS its needle rather than spelling it out: the string `labels[]=<word>` written
-literally in this file is indistinguishable, to `check:ci-label-refs`, from real code
-applying a label by that name, and that gate would then demand the label be declared
-and created. Interpolating dodges its extractor honestly rather than by asking for an
-exclusion.
+literally in this file is indistinguishable, to `check:ci-label-refs`, from real code applying a label by that name, and that gate would then demand the label be declared and created. Interpolating dodges its extractor honestly rather than by asking for an exclusion.
 
-GitHub is a routing fake `gh` serving fixture JSON per endpoint, applying the
-caller's own `--jq` so the real extraction runs, and CAPTURING every non-GET call
+GitHub is a routing fake `gh` serving fixture JSON per endpoint, applying the caller's own `--jq` so the real extraction runs, and CAPTURING every non-GET call
 with its full argv.
 """
 
@@ -332,8 +321,7 @@ def label_declared(name: str) -> bool:
 def label_field(name: str, field: str) -> str:
     """The `color` or `description` of `name` in labels.yml, or "" if absent.
 
-    The twin's two awk one-liners, collapsed into one reader because they walk the
-    identical block and differ only in which key they take out of it.
+    The twin's two awk one-liners, collapsed into one reader because they walk the identical block and differ only in which key they take out of it.
     """
     found = False
     for line in LABELS_FILE.read_text(encoding="utf-8").splitlines():
@@ -644,9 +632,7 @@ def test_ci_label_is_created_before_first_use(gate, tmp_path):
 
 def test_create_on_demand_metadata_matches_the_declaration(gate):
     """The applier cannot read labels.yml (the post-review steps run from a staged
-    copy of .ci alone), so colour and description are duplicated in the script. A
-    duplicate with no gate drifts, and a drifted colour is a label that looks foreign
-    in the UI forever. EVERY ROW, not just the first: the three scalars became a table
+    copy of .ci alone), so colour and description are duplicated in the script. A duplicate with no gate drifts, and a drifted colour is a label that looks foreign in the UI forever. EVERY ROW, not just the first: the three scalars became a table
     when bump-none arrived, and a check reading only row one would leave row two free."""
     block = re.search(
         r"^CREATE_ON_DEMAND_LABELS=\(\n(.*?)^\)$",
@@ -887,8 +873,7 @@ def test_ledger_prefix_is_invisible_to_the_other_counters(gate):
 
 def test_mark_does_not_count_the_ledger_comment_as_output(gate, tmp_path):
     """THE HONESTY GUARD, driven for real. `--mark` refuses to stamp a SHA as reviewed
-    unless the pass actually POSTED something. The ledger comment is written by this
-    pipeline about itself seconds earlier, so counting it would let the pipeline vouch
+    unless the pass actually POSTED something. The ledger comment is written by this pipeline about itself seconds earlier, so counting it would let the pipeline vouch
     for itself: a review that "succeeded" and posted nothing (the 36-permission-denials
     shape that motivated the guard) would be marked reviewed on its own bookkeeping."""
     world = make_world(gate, tmp_path)
@@ -934,8 +919,7 @@ def test_mark_does_not_count_the_ledger_comment_as_output(gate, tmp_path):
 def test_fence_only_in_posted_comment_is_found(gate, tmp_path):
     """The feature's FIRST LIVE RUN (#559, run 31267699743): the model posted its
     summary itself and put the fence in the COMMENT; its result text back to the
-    harness did not repeat it. The old extraction read only the result text, logged
-    "no json:pr-labels block", and applied nothing beside a PR whose verdict comment
+    harness did not repeat it. The old extraction read only the result text, logged "no json:pr-labels block", and applied nothing beside a PR whose verdict comment
     plainly carried a verdict."""
     world = make_world(gate, tmp_path)
     world.execution_file(report_with_verdict(""))

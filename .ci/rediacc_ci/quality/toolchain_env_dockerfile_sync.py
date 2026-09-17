@@ -7,58 +7,35 @@ is NOT deleted; see `rediacc_ci.quality.__init__`.
 THE TWIN'S HEADER, CARRIED ACROSS.
 -----------------------------------------------------------------------------
 
-Gate: GO_VERSION and NODE_VERSION in toolchain.env and the devcontainer
-Dockerfile's matching ARG lines must be identical.
+Gate: GO_VERSION and NODE_VERSION in toolchain.env and the devcontainer Dockerfile's matching ARG lines must be identical.
 
-WHY THIS EXISTS. check-toolchain-pins.sh's A1 (one definition per pin)
-deliberately EXEMPTS GO_VERSION and NODE_VERSION from its single-source check,
-because both also appear as bare majors in third-party action inputs and go.mod
--- values this repo does not own and must not try to unify. That exemption is
-correct for THOSE call sites, but it has a side effect: it also removes ANY
-check between the two files that ARE supposed to carry the identical value on
-purpose -- .devcontainer/toolchain.env (the pin) and .devcontainer/Dockerfile's
+WHY THIS EXISTS. check-toolchain-pins.sh's A1 (one definition per pin) deliberately EXEMPTS GO_VERSION and NODE_VERSION from its single-source check, because both also appear as bare majors in third-party action inputs and go.mod -- values this repo does not own and must not try to unify. That exemption is correct for THOSE call sites, but it has a side effect: it also removes ANY
+check between the two files that ARE supposed to carry the identical value on purpose -- .devcontainer/toolchain.env (the pin) and .devcontainer/Dockerfile's
 `ARG GO_VERSION=`/`ARG NODE_VERSION=` (consumed at image-build time). Nothing
 currently asserts these two stay equal; a bump to one without the other would
-build a devcontainer image running a DIFFERENT Go/Node than the pin file claims,
-silently.
+build a devcontainer image running a DIFFERENT Go/Node than the pin file claims, silently.
 
 WHAT THIS CHECKS. For GO_VERSION and NODE_VERSION: the value in
 .devcontainer/toolchain.env must equal the value of the matching `ARG <KEY>=`
-line in .devcontainer/Dockerfile. Nothing else -- this is a narrow, two-file,
-two-key check, not a reopening of the broader exemption.
+line in .devcontainer/Dockerfile. Nothing else -- this is a narrow, two-file, two-key check, not a reopening of the broader exemption.
 
-AND ONE MORE PAIR, ADDED LATER: NODE_VERSION_MIN. The paragraph above says
-"narrow, two-file", so the third pair needs its own justification rather than
-quietly widening that sentence.
+AND ONE MORE PAIR, ADDED LATER: NODE_VERSION_MIN. The paragraph above says "narrow, two-file", so the third pair needs its own justification rather than quietly widening that sentence.
 
-NODE_VERSION_MIN is the repo's Node FLOOR, and it has three copies by necessity,
-not by sloppiness: .devcontainer/toolchain.env (the pin every shell path
-sources) plus engines.node in package.json and in packages/cli/package.json. The
-manifests cannot read a shell variable and npm will not accept one, so the value
-must be WRITTEN in all three -- which makes it the one pin where "single-sourced"
-is impossible and a comparison is the only remaining instrument.
+NODE_VERSION_MIN is the repo's Node FLOOR, and it has three copies by necessity, not by sloppiness: .devcontainer/toolchain.env (the pin every shell path sources) plus engines.node in package.json and in packages/cli/package.json. The manifests cannot read a shell variable and npm will not accept one, so the value must be WRITTEN in all three -- which makes it the one pin where
+"single-sourced" is impossible and a comparison is the only remaining instrument.
 
-It is the same failure this gate already exists for, one file further out, and
-it had already happened: .ci/config/constants.sh COMPOSED the floor as
+It is the same failure this gate already exists for, one file further out, and it had already happened: .ci/config/constants.sh COMPOSED the floor as
 "${NODE_VERSION}.0.0" -> 22.0.0, while both manifests said ">=22.13.0". Nothing
-compared them, so for the whole life of that line ./run.sh setup accepted hosts
-that npm then rejected. Composing a value from another pin passes a
+compared them, so for the whole life of that line ./run.sh setup accepted hosts that npm then rejected. Composing a value from another pin passes a
 single-source scan and still drifts; only an equality check catches it.
 
-CONTROL-FIRST. Builds fixtures by construction (a temp toolchain.env + temp
-Dockerfile with a deliberately mismatched value), never by substituting into
-real source, so rewording a real file cannot silently void the control.
+CONTROL-FIRST. Builds fixtures by construction (a temp toolchain.env + temp Dockerfile with a deliberately mismatched value), never by substituting into real source, so rewording a real file cannot silently void the control.
 
 THE MANIFESTS ARE READ AND NEVER WRITTEN. This gate reports the drift and names
 the file to edit; it does not reach into package.json, because the two manifests
-are owned by npm tooling that rewrites them wholesale and a gate that edits one
-is a gate that loses a race with `npm pkg set`.
+are owned by npm tooling that rewrites them wholesale and a gate that edits one is a gate that loses a race with `npm pkg set`.
 
-EVERY, NOT "A". `check_engines_pair` compares the floor against EVERY manifest
-it is given, because the failure mode worth catching is one of the two moving
-alone: packages/cli/package.json ships to npm as its own artifact, so a floor
-that is right in the root and stale in the CLI is invisible in this repo and
-wrong for everyone who installs the published package.
+EVERY, NOT "A". `check_engines_pair` compares the floor against EVERY manifest it is given, because the failure mode worth catching is one of the two moving alone: packages/cli/package.json ships to npm as its own artifact, so a floor that is right in the root and stale in the CLI is invisible in this repo and wrong for everyone who installs the published package.
 
 THE ">=" IS ASSERTED, NOT PARSED. The manifests carry a RANGE and the pin
 carries a bare version; ">=" is the whole of the translation. Accepting any
@@ -69,23 +46,11 @@ differ while the check stayed green, which is the drift itself.
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`engines_node` IS PARSED, NOT GREPPED, and the twin explains the asymmetry with
-`env_value`/`arg_value` at length: `"node"` is a legal key in more than one place
-in a manifest -- a `volta` block pins a node version, so does a
-`packageManager`-adjacent stanza, and `"@types/node"` is one character away from
-matching a careless pattern. A `grep | head -1` would answer with whichever copy
-sits highest in the file and be right only by luck, and a WRONG answer here does
-not read as a broken gate: it reads as a real floor mismatch and sends someone to
-edit the wrong number.
+`engines_node` IS PARSED, NOT GREPPED, and the twin explains the asymmetry with `env_value`/`arg_value` at length: `"node"` is a legal key in more than one place in a manifest -- a `volta` block pins a node version, so does a `packageManager`-adjacent stanza, and `"@types/node"` is one character away from matching a careless pattern. A `grep | head -1` would answer with whichever
+copy sits highest in the file and be right only by luck, and a WRONG answer here does not read as a broken gate: it reads as a real floor mismatch and sends someone to edit the wrong number.
 
-The twin shells out to `node -e` for that parse, guarded by "node(1) is
-guaranteed here because this gate runs as an npm script. If it ever is not, this
-returns empty and the caller reports 'engines.node not found', which is a failure
-and not a silent skip". This port uses `json.loads`, which is the same parse
-without the subprocess, and it keeps the same swallow: a malformed manifest
-yields "" and is reported as "not found" rather than crashing. Keeping the
-`node -e` call would have made the port depend on node being on PATH for a
-question Python answers natively, and the differential proves the two agree.
+The twin shells out to `node -e` for that parse, guarded by "node(1) is guaranteed here because this gate runs as an npm script. If it ever is not, this returns empty and the caller reports 'engines.node not found', which is a failure and not a silent skip". This port uses `json.loads`, which is the same parse without the subprocess, and it keeps the same swallow: a malformed
+manifest yields "" and is reported as "not found" rather than crashing. Keeping the `node -e` call would have made the port depend on node being on PATH for a question Python answers natively, and the differential proves the two agree.
 
 `env_value` IS `grep -E "^KEY=" | head -1 | cut -d= -f2-`. THREE properties that
 a "sensible" rewrite loses, so each is reproduced explicitly: the match is
@@ -95,26 +60,15 @@ definition); the FIRST match wins, not the last, which is the opposite of the
 so a value containing an `=` survives whole.
 
 `arg_value` IS `grep -oP "^ARG\\s+KEY=\\K.*" | head -1`. `\\K` drops everything
-matched before it, so the result is the value alone. `[[:space:]]+` after ARG
-means one or more spaces or tabs, and the anchor means an indented ARG inside a
-multi-stage block is NOT read. Both are carried.
+matched before it, so the result is the value alone. `[[:space:]]+` after ARG means one or more spaces or tabs, and the anchor means an indented ARG inside a multi-stage block is NOT read. Both are carried.
 
-A `\\r` AT THE END OF A DOCKERFILE LINE would end up inside the value on both
-sides, since neither implementation strips one. Stated rather than fixed: a CRLF
-Dockerfile would make this gate report a mismatch between two values that look
-identical, which is confusing but is the twin's behaviour and is caught by the
-editorconfig gate anyway.
+A `\\r` AT THE END OF A DOCKERFILE LINE would end up inside the value on both sides, since neither implementation strips one. Stated rather than fixed: a CRLF Dockerfile would make this gate report a mismatch between two values that look identical, which is confusing but is the twin's behaviour and is caught by the editorconfig gate anyway.
 
 THE FINAL FAILURE BANNER STARTS WITH A LOWERCASE `x`, NOT `✗`. That is the
 twin's text (`echo "${RED}x $fails toolchain-env/Dockerfile mismatch(es)${NC}"`),
-so `scripts/lib/shadow-gate.ts` classifies it as chatter rather than as a
-finding, while every `fail()` line above it IS a finding. Carried unchanged: the
-difference is invisible to a human and load-bearing for the comparator, and
-"fixing" the glyph would change which lines the ledger compares.
+so `scripts/lib/shadow-gate.ts` classifies it as chatter rather than as a finding, while every `fail()` line above it IS a finding. Carried unchanged: the difference is invisible to a human and load-bearing for the comparator, and "fixing" the glyph would change which lines the ledger compares.
 
-STREAMS. `fail()` writes to stderr, `pass()` and the banners to stdout. Nothing
-here uses `rediacc_ci.log`, because the twin sources no logger and its lines
-carry no glyph but the one typed into them.
+STREAMS. `fail()` writes to stderr, `pass()` and the banners to stdout. Nothing here uses `rediacc_ci.log`, because the twin sources no logger and its lines carry no glyph but the one typed into them.
 """
 
 import io
@@ -141,11 +95,7 @@ _ANSI = {"RED": "\033[0;31m", "GREEN": "\033[0;32m", "NC": "\033[0m"}
 def colours(stream=None, env=None) -> dict[str, str]:
     """`[ -t 1 ] && [ -z "${NO_COLOR:-}" ]`, as a mapping of the three names.
 
-    STDOUT is the stream tested, not stderr, even though `fail()` writes to
-    stderr. That is the twin's condition and it is reproduced rather than
-    corrected: a run with stdout to a terminal and stderr to a file would put
-    escapes in the file, which is a real (small) defect and not one a port may
-    quietly change.
+    STDOUT is the stream tested, not stderr, even though `fail()` writes to stderr. That is the twin's condition and it is reproduced rather than corrected: a run with stdout to a terminal and stderr to a file would put escapes in the file, which is a real (small) defect and not one a port may quietly change.
     """
     environ = os.environ if env is None else env
     target = sys.stdout if stream is None else stream
@@ -161,8 +111,7 @@ def colours(stream=None, env=None) -> dict[str, str]:
 def env_value(key: str, path: pathlib.Path) -> str:
     """`grep -E "^KEY=" file | head -1 | cut -d= -f2-`, or "" when absent.
 
-    See the port notes for the three properties this spelling preserves. A file
-    that cannot be read is "" too, matching the twin's `2>/dev/null`.
+    See the port notes for the three properties this spelling preserves. A file that cannot be read is "" too, matching the twin's `2>/dev/null`.
     """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -198,10 +147,7 @@ def arg_value(key: str, path: pathlib.Path) -> str:
 def engines_node(path: pathlib.Path) -> str:
     """`(JSON.parse(...).engines || {}).node || ""`, PARSED, never grepped.
 
-    Every failure -- unreadable, malformed, no engines block, a non-string
-    value -- collapses to "", which the caller reports as "engines.node not
-    found in <file>". That is a FAILURE and not a silent skip, and it is the same
-    direction the missing-ARG case already fails in.
+    Every failure -- unreadable, malformed, no engines block, a non-string value -- collapses to "", which the caller reports as "engines.node not found in <file>". That is a FAILURE and not a silent skip, and it is the same direction the missing-ARG case already fails in.
     """
     try:
         data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
@@ -220,10 +166,7 @@ def engines_node(path: pathlib.Path) -> str:
 class Report:
     """The twin's `fails` counter with its two printers, as one object.
 
-    An object rather than module state because `run_controls` and the real
-    checks share the SAME counter in the twin -- a control failure makes the
-    gate exit before it ever judges the tree -- and that coupling is easy to
-    lose when the two halves are separate functions with separate globals.
+    An object rather than module state because `run_controls` and the real checks share the SAME counter in the twin -- a control failure makes the gate exit before it ever judges the tree -- and that coupling is easy to lose when the two halves are separate functions with separate globals.
     """
 
     def __init__(self, colour: dict[str, str] | None = None) -> None:
@@ -264,8 +207,7 @@ def check_engines_pair(
 ) -> None:
     """The floor in the pins file against engines.node in EVERY manifest.
 
-    A single `ok` line when all of them agree, naming the count, so a reader can
-    see the number collapse if a manifest stops being passed in.
+    A single `ok` line when all of them agree, naming the count, so a reader can see the number collapse if a manifest stops being passed in.
     """
     value = env_value(key, env_file)
     if value == "":
@@ -295,10 +237,7 @@ def check_engines_pair(
 def run_controls(report: Report) -> None:
     """Every assertion, planted against a temp fixture, BEFORE the real tree.
 
-    A control that does not fire fails this gate rather than letting it report a
-    green it did not earn. The fixtures are written by construction, never by
-    substituting into real source, so rewording a real file cannot silently void
-    them.
+    A control that does not fire fails this gate rather than letting it report a green it did not earn. The fixtures are written by construction, never by substituting into real source, so rewording a real file cannot silently void them.
     """
     with tempfile.TemporaryDirectory() as tmp:
         tmpdir = pathlib.Path(tmp)
@@ -309,9 +248,7 @@ def run_controls(report: Report) -> None:
             """Run one check into a private Report and return its combined text.
 
             The twin does this with `out="$(check_pair ... 2>&1)"`, a subshell
-            whose `fails` increments are DISCARDED. A private Report is the same
-            isolation without the subshell, and it is the reason the outer
-            counter only moves when a control genuinely misbehaves.
+            whose `fails` increments are DISCARDED. A private Report is the same isolation without the subshell, and it is the reason the outer counter only moves when a control genuinely misbehaves.
             """
             inner = Report(colour={"RED": "", "GREEN": "", "NC": ""})
             out = io.StringIO()
@@ -486,9 +423,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions on every extractor and on the whole gate.
 
-    The twin's own controls run INLINE on every invocation and are preserved
-    above. What they cannot reach is the extractors' edge cases and the
-    missing-subject paths, which is what this adds.
+    The twin's own controls run INLINE on every invocation and are preserved above. What they cannot reach is the extractors' edge cases and the missing-subject paths, which is what this adds.
     """
     ctl = Controls("toolchain-env-dockerfile-sync", floor=26, verbose=True)
     plain = {"RED": "", "GREEN": "", "NC": ""}

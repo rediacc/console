@@ -2,24 +2,13 @@
 
 The version component of the closure key in `.ci/scripts/ci/generate-tag.sh`.
 
-WHAT THE KEY IS FOR. `generate-tag.sh --closure web|rdc` mints the tag that names
-a Docker image. initialize.sh asks the registry whether that tag exists and skips
-the build if it does, so the key is a cache key: two builds that hash the same
-reuse the same image. Both images BAKE a version in, and the version comes from a
-git tag, which is not a path -- so it is folded into the hash explicitly.
+WHAT THE KEY IS FOR. `generate-tag.sh --closure web|rdc` mints the tag that names a Docker image. initialize.sh asks the registry whether that tag exists and skips the build if it does, so the key is a cache key: two builds that hash the same reuse the same image. Both images BAKE a version in, and the version comes from a git tag, which is not a path -- so it is folded into the
+hash explicitly.
 
-WHAT WAS BROKEN. When no tag was reachable the fallback was an EMPTY marker, and
-an empty marker COLLAPSES the key: every version on a tagless checkout hashes
-identically, so a cached image built at an older version can be reused and then
-promoted under a new one. That is the exact failure the version component was
-added to prevent. It also runs at initialize.sh Step 5, BEFORE that script
-fetches tags, so the tagless path is not hypothetical -- it is latent purely
-because ci.yml's checkout happens to pass fetch-tags: true.
+WHAT WAS BROKEN. When no tag was reachable the fallback was an EMPTY marker, and an empty marker COLLAPSES the key: every version on a tagless checkout hashes identically, so a cached image built at an older version can be reused and then promoted under a new one. That is the exact failure the version component was added to prevent. It also runs at initialize.sh Step 5, BEFORE that
+script fetches tags, so the tagless path is not hypothetical -- it is latent purely because ci.yml's checkout happens to pass fetch-tags: true.
 
-EVERY FIXTURE IS A THROWAWAY GIT REPO UNDER `tmp_path`. The real tree is READ
-(three scripts are copied out of it, and the rdc closure list is read back from
-generate-tag.sh) and never written, which is what keeps this module admissible
-to the parity driver.
+EVERY FIXTURE IS A THROWAWAY GIT REPO UNDER `tmp_path`. The real tree is READ (three scripts are copied out of it, and the rdc closure list is read back from generate-tag.sh) and never written, which is what keeps this module admissible to the parity driver.
 """
 
 import pathlib

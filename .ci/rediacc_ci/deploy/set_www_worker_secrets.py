@@ -1,46 +1,21 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/set-www-worker-secrets.sh`.
 
-Pushes twenty-four runtime secrets into the www Worker (stable or edge) in ONE
-`wrangler secret bulk` call. The twin's own header carries the reason the call
-is bulk and not twenty-four `secret put`s: each `put` mints a new Worker
-version, and on an assets-bound Worker a new version disassociates the static
-assets the deploy just uploaded.
+Pushes twenty-four runtime secrets into the www Worker (stable or edge) in ONE `wrangler secret bulk` call. The twin's own header carries the reason the call is bulk and not twenty-four `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
 
-THIS SCRIPT MARSHALS, IT DOES NOT DECIDE. Which Stripe and SES credentials land
-here is `cd-deploy-worker.yml`'s choice (sandbox on edge, live EU on stable), and
-the twin says so at :10-12 and again at :36-38: there is no region indirection
-anywhere in it. The port keeps that property, which is why there is no channel
-argument and no lookup table here either.
+THIS SCRIPT MARSHALS, IT DOES NOT DECIDE. Which Stripe and SES credentials land here is `cd-deploy-worker.yml`'s choice (sandbox on edge, live EU on stable), and the twin says so at :10-12 and again at :36-38: there is no region indirection anywhere in it. The port keeps that property, which is why there is no channel argument and no lookup table here either.
 
 SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS. `argv` is visible
 in `ps` and in some log surfaces; a value travels env -> `jq --arg` -> the pipe
 into `wrangler` and nowhere else.
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` is the only external tool that
-carries a credential, so the differential
-(`.ci/rediacc_ci/tests/test_deploy_set_www_worker_secrets.py`) puts a RECORDING
-FAKE `npx` on a scratch PATH that logs its exact argv AND THE BYTES ON ITS
-STDIN. The stdin log is the main evidence here, and on this script it is the
-ONLY evidence on the happy path: unlike its preview sibling, this twin prints
-NOTHING of its own when it succeeds (there is no closing `log_info` at :141), so
-a port that sent an empty document would produce byte-identical streams. What
-distinguishes success from doing nothing is entirely the document.
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` is the only external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_set_www_worker_secrets.py`) puts a RECORDING FAKE `npx` on a scratch PATH that logs its exact argv AND THE BYTES ON ITS STDIN. The stdin log is the main evidence here, and on this script it is the ONLY evidence on the happy
+path: unlike its preview sibling, this twin prints NOTHING of its own when it succeeds (there is no closing `log_info` at :141), so a port that sent an empty document would produce byte-identical streams. What distinguishes success from doing nothing is entirely the document.
 
-`jq` IS CALLED, NOT REIMPLEMENTED, for the reason
-`set_preview_worker_secrets.py` states at length: the bytes on wrangler's stdin
-ARE the contract, and `json.dumps` differs from jq on inputs a secret can really
-contain (raw UTF-8 versus `\\uXXXX`, and U+007F). A secret is opaque bytes chosen
-by someone else, so "probably the same" is not a property this port may assume.
+`jq` IS CALLED, NOT REIMPLEMENTED, for the reason `set_preview_worker_secrets.py` states at length: the bytes on wrangler's stdin ARE the contract, and `json.dumps` differs from jq on inputs a secret can really contain (raw UTF-8 versus `\\uXXXX`, and U+007F). A secret is opaque bytes chosen by someone else, so "probably the same" is not a property this port may assume.
 
-PIPEFAIL IS REPRODUCED, NOT APPROXIMATED, and on this script it is a documented
-repair rather than an incidental. The twin's header (:44-46) records that the
-workflow block it came from ran under plain `bash -e`, and that `-uo pipefail`
-were added precisely because "a jq failure previously went unnoticed because
-wrangler's status won". So the run's status is the RIGHTMOST non-zero one, and
-`main` runs both halves even when jq fails, then folds the two in that order.
-The concurrency caveat is the same one the preview sibling names: a wrangler
-exiting 0 without draining stdin would SIGPIPE jq in bash and cannot here.
+PIPEFAIL IS REPRODUCED, NOT APPROXIMATED, and on this script it is a documented repair rather than an incidental. The twin's header (:44-46) records that the workflow block it came from ran under plain `bash -e`, and that `-uo pipefail` were added precisely because "a jq failure previously went unnoticed because wrangler's status won". So the run's status is the RIGHTMOST non-zero
+one, and `main` runs both halves even when jq fails, then folds the two in that order. The concurrency caveat is the same one the preview sibling names: a wrangler exiting 0 without draining stdin would SIGPIPE jq in bash and cannot here.
 
 ONE DIVERGENCE, in text nobody parses.
 `: "${WORKER_NAME:?set-www-worker-secrets.sh: WORKER_NAME must be set}"` (:54) is
@@ -48,27 +23,14 @@ bash's own refusal, and it prints the bash FILE and a bash LINE NUMBER:
 
     .ci/scripts/deploy/set-www-worker-secrets.sh: line 54: WORKER_NAME: set-www-worker-secrets.sh: WORKER_NAME must be set
 
-Note the doubled name: the twin's message already begins with the script name,
-so bash's own prefix says it twice. `MISSING_WORKER_NAME` carries the
-`VAR: message` half, on the same stream, with the same exit status 1. Identical
-ruling to `deploy/wait_for_preview_worker.py` and `deploy/delete_r2_channel.py`,
-and the differential asserts BOTH sides of it so it cannot be quietly "fixed"
-into agreement.
+Note the doubled name: the twin's message already begins with the script name, so bash's own prefix says it twice. `MISSING_WORKER_NAME` carries the `VAR: message` half, on the same stream, with the same exit status 1. Identical ruling to `deploy/wait_for_preview_worker.py` and `deploy/delete_r2_channel.py`, and the differential asserts BOTH sides of it so it cannot be quietly
+"fixed" into agreement.
 
 `:?` IS AN UNSET-OR-EMPTY TEST, so `WORKER_NAME=` refuses exactly as an absent
-one does. Driven in the differential: a port testing `"WORKER_NAME" in
-os.environ` would sail past the empty case and then run
-`wrangler secret bulk --name ''` against whatever Worker wrangler picks by
-default.
+one does. Driven in the differential: a port testing `"WORKER_NAME" in os.environ` would sail past the empty case and then run `wrangler secret bulk --name ''` against whatever Worker wrangler picks by default.
 
-THE SIBLING SCRIPTS ARE NOT THE SAME SCRIPT, and the differences are load
-bearing rather than cosmetic. Against `set-preview-worker-secrets.sh`: this one
-demands STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET too (thirteen guards, not
-eleven), carries the nine SELLER_* keys (twenty-four keys, not fifteen), takes
-its Worker name whole instead of composing `pr-<n>`, prints a DIFFERENT
-explanation under a failed guard, and ends with no log line at all. Each of
-those is pinned separately in the differential, because "the same file with a
-longer list" is exactly the assumption that would port it wrong.
+THE SIBLING SCRIPTS ARE NOT THE SAME SCRIPT, and the differences are load bearing rather than cosmetic. Against `set-preview-worker-secrets.sh`: this one demands STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET too (thirteen guards, not eleven), carries the nine SELLER_* keys (twenty-four keys, not fifteen), takes its Worker name whole instead of composing `pr-<n>`, prints a DIFFERENT
+explanation under a failed guard, and ends with no log line at all. Each of those is pinned separately in the differential, because "the same file with a longer list" is exactly the assumption that would port it wrong.
 
 K=5 LEDGER: `.ci/shadow/w7p6-set-www-worker-secrets.observations.jsonl`.
 """
@@ -182,9 +144,7 @@ def check_nonempty(env: dict[str, str], worker_name: str) -> None:
 def jq_filter() -> str:
     """The object constructor (:116-140), rebuilt from `KEYS`.
 
-    Whitespace inside a jq program does not reach the output, so this is the
-    twin's filter in meaning rather than in indentation. What MUST match is the
-    key list and its order, and that is `KEYS`.
+    Whitespace inside a jq program does not reach the output, so this is the twin's filter in meaning rather than in indentation. What MUST match is the key list and its order, and that is `KEYS`.
     """
     body = ", ".join("%s: $%s" % (key, var) for key, var in KEYS)
     return "{%s}" % body
@@ -194,10 +154,7 @@ def jq_argv(env: dict[str, str]) -> list[str]:
     """`jq -n --arg ... '{...}'` (:91-141), as an argv a test can pin.
 
     Every value is read as `"${NAME:-}"`, so an absent variable becomes the
-    empty string rather than an error: the thirteen guards have already refused
-    the ones that must not be empty, and the eleven remaining (the two SES
-    presentation fields and the nine SELLER_* ones) are legitimately absent on a
-    Worker that issues no invoices.
+    empty string rather than an error: the thirteen guards have already refused the ones that must not be empty, and the eleven remaining (the two SES presentation fields and the nine SELLER_* ones) are legitimately absent on a Worker that issues no invoices.
     """
     argv = ["jq", "-n"]
     for key, var in KEYS:
@@ -209,9 +166,7 @@ def jq_argv(env: dict[str, str]) -> list[str]:
 def _jq(argv: list[str]) -> tuple[int, str]:
     """The left half of the pipe: stdout captured, stderr INHERITED.
 
-    jq's diagnostics are the only explanation a workflow log would get if the
-    document could not be built, and the header at :44-46 exists because that
-    status used to be swallowed. Not captured here either.
+    jq's diagnostics are the only explanation a workflow log would get if the document could not be built, and the header at :44-46 exists because that status used to be swallowed. Not captured here either.
     """
     proc = subprocess.run(argv, stdout=subprocess.PIPE, text=True, check=False)
     return proc.returncode, proc.stdout

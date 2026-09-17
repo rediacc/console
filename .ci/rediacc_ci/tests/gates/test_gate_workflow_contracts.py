@@ -1,36 +1,19 @@
 """Port of `.ci/scripts/test/gates/test-workflow-contracts.sh`.
 
-Both-ways test for the reusable-workflow contract checks in
-`.ci/scripts/security/check-workflow-gates.sh`: CHECK 2 (callers in this repo),
-CHECK 4 (callers in other repositories, declared in `.github/external-callers.yml`)
-and arm a2 (a `workflow_call` secret declaration nothing reads).
+Both-ways test for the reusable-workflow contract checks in `.ci/scripts/security/check-workflow-gates.sh`: CHECK 2 (callers in this repo), CHECK 4 (callers in other repositories, declared in `.github/external-callers.yml`) and arm a2 (a `workflow_call` secret declaration nothing reads).
 
-WHY THIS CLASS NEEDS A GATE AT ALL. Inside a reusable workflow, `secrets.FOO` for a
-secret nobody declared under `on.workflow_call.secrets` evaluates to the EMPTY
-STRING: no warning, no failure, no log line. `cd-deploy-account.yml` read
+WHY THIS CLASS NEEDS A GATE AT ALL. Inside a reusable workflow, `secrets.FOO` for a secret nobody declared under `on.workflow_call.secrets` evaluates to the EMPTY STRING: no warning, no failure, no log line. `cd-deploy-account.yml` read
 `OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA}` that way, so every deployed account Worker ran
 with a blank telemetry credential. The failure is invisible at every layer except a
 parser that compares declaration to use, which is what this asserts.
 
-Both directions matter, and the too-loud direction has already cost a nightly:
-`secrets: inherit`, `GITHUB_TOKEN`, optional inputs and a script filename ending in
-`-secrets.sh` must NOT be reported. Arm a2's liveness sweep shipped with no test at
-all and reddened `test-slim-timeout.sh` plus every case in the twin, because the
-sweep ran on FIXTURE trees and judged them against the real tree's exemption list
-(nightly 34014201256). `test_liveness_stands_down_on_fixture_trees` is that
-regression, kept verbatim.
+Both directions matter, and the too-loud direction has already cost a nightly: `secrets: inherit`, `GITHUB_TOKEN`, optional inputs and a script filename ending in `-secrets.sh` must NOT be reported. Arm a2's liveness sweep shipped with no test at all and reddened `test-slim-timeout.sh` plus every case in the twin, because the sweep ran on FIXTURE trees and judged them against the
+real tree's exemption list (nightly 34014201256). `test_liveness_stands_down_on_fixture_trees` is that regression, kept verbatim.
 
-WHAT THE PORT KEEPS. Every fixture is written into pytest's own `tmp_path`, and the
-subject is driven with `WORKFLOWS_DIR` / `EXTERNAL_CALLERS_FILE` /
-`EXTERNAL_CALLERS_ROOT` as an env OVERLAY per invocation, exactly as the twin does.
-The twin's three `sed -i` edits become Python string replacement on the same bytes,
-and its inline `python3 - <<PYX` heredoc becomes an ordinary function, which is the
-only place the port is shorter rather than merely different.
+WHAT THE PORT KEEPS. Every fixture is written into pytest's own `tmp_path`, and the subject is driven with `WORKFLOWS_DIR` / `EXTERNAL_CALLERS_FILE` / `EXTERNAL_CALLERS_ROOT` as an env OVERLAY per invocation, exactly as the twin does. The twin's three `sed -i` edits become Python string replacement on the same bytes, and its inline `python3 - <<PYX` heredoc becomes an ordinary
+function, which is the only place the port is shorter rather than merely different.
 
-ONE CASE READS THE REAL TREE, and it is the case that makes the other 28 worth
-having: `test_ec_real_registry_is_wired` drives the subject with no override at all,
-so a fixture-only suite cannot pass while CI checks nothing. It is READ-ONLY, which
-is why this twin is not in the lock's real-tree set and needs no `xdist_group`.
+ONE CASE READS THE REAL TREE, and it is the case that makes the other 28 worth having: `test_ec_real_registry_is_wired` drives the subject with no override at all, so a fixture-only suite cannot pass while CI checks nothing. It is READ-ONLY, which is why this twin is not in the lock's real-tree set and needs no `xdist_group`.
 """
 
 import pathlib
@@ -67,10 +50,7 @@ def run_check(directory, **overlay) -> harness.RunResult:
 def write_callee(d: pathlib.Path, extra: str = "") -> None:
     """A reusable workflow declaring one required input and one required secret.
 
-    It READS both declared secrets. Arm a2 reports a declaration nothing reads, so a
-    fixture that declares `OPTIONAL_ONE` and ignores it is itself the defect, and it
-    made every case in the twin fail once. `OPTIONAL_ONE` stays optional, which is
-    what the caller-side assertions actually exercise.
+    It READS both declared secrets. Arm a2 reports a declaration nothing reads, so a fixture that declares `OPTIONAL_ONE` and ignores it is itself the defect, and it made every case in the twin fail once. `OPTIONAL_ONE` stays optional, which is what the caller-side assertions actually exercise.
     """
     (d / "callee.yml").write_text(
         "name: callee\n"
@@ -205,9 +185,7 @@ def run_ec(root: pathlib.Path) -> harness.RunResult:
 def edit(path: pathlib.Path, old: str, new: str) -> None:
     """The twin's `sed -i`, as a substitution that REFUSES a no-op.
 
-    `sed -i s/a/b/` on a file not containing `a` exits 0 and changes nothing, so a
-    fixture whose shape drifted would leave the case asserting against the unedited
-    tree and still going green. Refusing here turns that into the finding it is.
+    `sed -i s/a/b/` on a file not containing `a` exits 0 and changes nothing, so a fixture whose shape drifted would leave the case asserting against the unedited tree and still going green. Refusing here turns that into the finding it is.
     """
     text = path.read_text(encoding="utf-8")
     if old not in text:
@@ -556,8 +534,7 @@ def test_ec_fixture_tree_skips_cleanly(gate, tmp_path):
 def test_ec_real_registry_is_wired(gate):
     """The registry is only worth having if the real run reads the real file.
 
-    Without this, every case above could pass against fixtures while the gate checked
-    nothing in CI. READ-ONLY on the real tree: no override, no write.
+    Without this, every case above could pass against fixtures while the gate checked nothing in CI. READ-ONLY on the real tree: no override, no write.
     """
     result = run_check(None)
     gate.assert_exit_code(
@@ -621,8 +598,7 @@ def a3_fixture(d: pathlib.Path) -> pathlib.Path:
 def run_ec_live(root: pathlib.Path) -> harness.RunResult:
     """`run_ec` with the real-tree flag forced on, so the a2 sweep and a3 both run.
 
-    SLIM coverage is pinned off: it defaults from the same flag and this fixture has
-    no slim job to offer.
+    SLIM coverage is pinned off: it defaults from the same flag and this fixture has no slim job to offer.
     """
     return run_check(
         root / ".github" / "workflows",
@@ -730,8 +706,7 @@ def test_a3_empty_registry_is_blind_not_pass(gate, tmp_path):
 def test_a3_stands_down_without_a_registry(gate, tmp_path):
     """CONTROL, the regression a2's liveness sweep already paid for once.
 
-    An arm that cannot see the registry must stay SILENT rather than condemn a
-    fixture tree for lacking one.
+    An arm that cannot see the registry must stay SILENT rather than condemn a fixture tree for lacking one.
     """
     # The a3 arm itself is what must stay silent, not the unrelated per-file "declares but never reads" check that a3_fixture's callee trips on its own merit and that runs regardless of real_tree -- the same synthetic exemption run_ec_live uses keeps that check quiet here too.
     root = a3_fixture(tmp_path)

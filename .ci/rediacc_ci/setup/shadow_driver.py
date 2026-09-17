@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Both sides of the `setup` port differential, in one file.
 
-WHAT THIS IS FOR. `scripts/lib/shadow-gate.ts` compares two commands and rules
-on whether a port kept the verdict. It needs each side to PRINT what it
-observed, because the thing being compared is a finding multiset and not a
+WHAT THIS IS FOR. `scripts/lib/shadow-gate.ts` compares two commands and rules on whether a port kept the verdict. It needs each side to PRINT what it observed, because the thing being compared is a finding multiset and not a
 return value. This module is the printer, and it can print either side:
 
     python3 .ci/rediacc_ci/setup/shadow_driver.py --side old
@@ -13,22 +11,13 @@ return value. This module is the printer, and it can print either side:
     python3 .ci/rediacc_ci/setup/shadow_driver.py --side new
         drives the PYTHON: `rediacc_ci.setup.machine` and `.host`.
 
-ONE FILE AND NOT TWO, and the reason is a gate rather than tidiness.
-`.ci/rediacc_ci/quality/dead_python.py:280` admits a pre-cutover port as alive
+ONE FILE AND NOT TWO, and the reason is a gate rather than tidiness. `.ci/rediacc_ci/quality/dead_python.py:280` admits a pre-cutover port as alive
 only when it is "named as the NEW side of a `.ci/shadow/*.jsonl` record"; the OLD
-side's command is scanned for a live `.sh` TWIN, never for a Python file. A
-separate `shadow_old.py` would therefore be reported dead the day it landed. One
-module, named on the new side, imports everything else in this package, and the
-`imported` route carries the rest.
+side's command is scanned for a live `.sh` TWIN, never for a Python file. A separate `shadow_old.py` would therefore be reported dead the day it landed. One module, named on the new side, imports everything else in this package, and the `imported` route carries the rest.
 
-WHY IT IS DRIVEN AGAINST THE FUNCTION BODIES AND NEVER THROUGH `./run.sh setup`.
-`.ci/scripts/test/gates/test-run-sh.sh:279-290` emits `overlap <verb>` when a
-verb sits in both `PORTED_VERBS` and the legacy dispatcher, so the flip has to be
+WHY IT IS DRIVEN AGAINST THE FUNCTION BODIES AND NEVER THROUGH `./run.sh setup`. `.ci/scripts/test/gates/test-run-sh.sh:279-290` emits `overlap <verb>` when a verb sits in both `PORTED_VERBS` and the legacy dispatcher, so the flip has to be
 atomic: `PORTED_VERBS=(setup)` lands in the SAME change that deletes the legacy
-arm and both function bodies. After that change there is no bash side left to
-drive. So this ledger is recorded BEFORE the flip, and it reaches the bash by
-sourcing it, which keeps working right up to the moment the bash is deleted and
-stops working loudly the moment after.
+arm and both function bodies. After that change there is no bash side left to drive. So this ledger is recorded BEFORE the flip, and it reaches the bash by sourcing it, which keeps working right up to the moment the bash is deleted and stops working loudly the moment after.
 
 -----------------------------------------------------------------------------
 THE SIX OBSERVATION GROUPS, AND WHAT EACH ONE WOULD CATCH
@@ -56,14 +45,8 @@ THE SIX OBSERVATION GROUPS, AND WHAT EACH ONE WOULD CATCH
 -----------------------------------------------------------------------------
 WHY THE CLOSED-STDIN BRANCH IS THE ONE DRIVEN, AND WHY THAT IS NOT A CHEAT
 -----------------------------------------------------------------------------
-Every install path in `.ci/lib/setup.sh` is behind `[[ -t 0 ]]` and a
-`prompt_continue`. A differential cannot answer a prompt, cannot be given root,
-and must not download a Go tarball. So both sides run with stdin closed, which
-takes the branch that PRINTS the command instead of running it. That branch is
-not a fallback: `.ci/lib/setup.sh:21-23` describes it as the contract, and it is
-the branch every agent session, CI checkout and piped run actually meets. The
-install halves are covered by reading, are marked as such in `host.py`, and this
-file does not pretend otherwise.
+Every install path in `.ci/lib/setup.sh` is behind `[[ -t 0 ]]` and a `prompt_continue`. A differential cannot answer a prompt, cannot be given root, and must not download a Go tarball. So both sides run with stdin closed, which takes the branch that PRINTS the command instead of running it. That branch is not a fallback: `.ci/lib/setup.sh:21-23` describes it as the contract, and
+it is the branch every agent session, CI checkout and piped run actually meets. The install halves are covered by reading, are marked as such in `host.py`, and this file does not pretend otherwise.
 """
 
 from __future__ import annotations
@@ -189,9 +172,7 @@ npm()                     { _p check:env-credential-drift; }
 class _Counting(io.StringIO):
     """A stdout that can be counted before it is released.
 
-    THE FLOOR HAS TO BE CHECKED BEFORE ANYTHING IS PRINTED, or the comparator
-    has already read a short run by the time this process notices. Buffering the
-    whole thing costs a few kilobytes and makes the refusal reachable.
+    THE FLOOR HAS TO BE CHECKED BEFORE ANYTHING IS PRINTED, or the comparator has already read a short run by the time this process notices. Buffering the whole thing costs a few kilobytes and makes the refusal reachable.
     """
 
 
@@ -203,8 +184,7 @@ def emit(group: str, text: str) -> None:
 def emit_block(group: str, text: str) -> None:
     """A multi-line blob as numbered observations, blank lines included.
 
-    NUMBERED, and every line kept including the empty ones. `setup --check`
-    prints two deliberate blank lines and the bash's own `printf` column widths
+    NUMBERED, and every line kept including the empty ones. `setup --check` prints two deliberate blank lines and the bash's own `printf` column widths
     are part of what a person reads; a comparison that dropped blanks would
     pass a port that lost them.
     """
@@ -305,12 +285,9 @@ def _emit_idem(name: str, first: tuple[int, str, str], second: tuple[int, str, s
 def _emit_plan(root: pathlib.Path, env: dict[str, str]) -> None:
     """The conditional selection, stated for the tree the fixture really is.
 
-    READ FROM THE TREE ON BOTH SIDES, not from either implementation: the two
-    conditions are `[[ -f "$ROOT_DIR/.gitmodules" ]]` and
+    READ FROM THE TREE ON BOTH SIDES, not from either implementation: the two conditions are `[[ -f "$ROOT_DIR/.gitmodules" ]]` and
     `SKIP_ENV_DRIFT_CHECK != 1 && [[ -f "$ROOT_DIR/private/account/.env" ]]`,
-    and the point of this group is that the fixture's answer to them is part of
-    the ledger row. A fixture with no `.gitmodules` produces a genuinely
-    different phase trace above, and this group says why.
+    and the point of this group is that the fixture's answer to them is part of the ledger row. A fixture with no `.gitmodules` produces a genuinely different phase trace above, and this group says why.
     """
     emit("plan", "gitmodules=%s" % ("yes" if (root / ".gitmodules").is_file() else "no"))
     emit(
@@ -326,10 +303,7 @@ def _emit_plan(root: pathlib.Path, env: dict[str, str]) -> None:
 def _capture(call) -> tuple[int, str, str]:
     """Run `call()` with stdout and stderr captured SEPARATELY.
 
-    `ctx.say` writes to stdout and every `log_*` writes to stderr, so the split
-    has to survive into the observation or the comparison stops being able to
-    see a stream swap. `.ci/rediacc_ci/log.py`'s header records the day one
-    happened.
+    `ctx.say` writes to stdout and every `log_*` writes to stderr, so the split has to survive into the observation or the comparison stops being able to see a stream swap. `.ci/rediacc_ci/log.py`'s header records the day one happened.
     """
     out, err = io.StringIO(), io.StringIO()
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
@@ -360,11 +334,7 @@ def new_phase_trace(
 ) -> tuple[int, list[str]]:
     """The Python `run_setup` with every phase stubbed. Mirrors `TRACE_STUBS`.
 
-    THE REAL `run_setup` RUNS. Nothing here reads `phases.PHASES` and prints it:
-    the whole value of this group is that the ORDER comes out of the code path
-    that will actually execute, on both sides. Substituting the table here would
-    make the comparison "does the Python table match the bash", which is a
-    weaker claim and, worse, one a broken `run_setup` would still satisfy.
+    THE REAL `run_setup` RUNS. Nothing here reads `phases.PHASES` and prints it: the whole value of this group is that the ORDER comes out of the code path that will actually execute, on both sides. Substituting the table here would make the comparison "does the Python table match the bash", which is a weaker claim and, worse, one a broken `run_setup` would still satisfy.
     """
     sink: list[str] = []
     saved_host = {name: getattr(host, name) for name in PY_FOR.values()}
@@ -477,10 +447,7 @@ def new_side(root: pathlib.Path, env: dict[str, str]) -> None:
 def _unknown(printer: log.Logger, name: str) -> int:
     """`main`'s unknown-option arm, without going through `main`.
 
-    NOT A REIMPLEMENTATION: `main` would run the docker-group re-exec and read
-    the constants first, neither of which belongs in this observation, and both
-    of which can `exec` this process away. The two lines here are the arm
-    itself, and `test_setup_machine.py` asserts `main` still takes it.
+    NOT A REIMPLEMENTATION: `main` would run the docker-group re-exec and read the constants first, neither of which belongs in this observation, and both of which can `exec` this process away. The two lines here are the arm itself, and `test_setup_machine.py` asserts `main` still takes it.
     """
     printer.emit("error", "Unknown option for setup: %s" % name)
     return machine.EXIT_USAGE

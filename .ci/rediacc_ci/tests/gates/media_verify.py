@@ -1,38 +1,17 @@
 """`.ci/media/verify.sh`, ported: the post-cutover ownership proof and the module sandbox.
 
-WHAT THE BASH ORIGINAL PROVES, restated because it is the whole reason a media
-gate test is not just a behaviour test. Phase 1 of the media split copied 35
-functions out of run.sh and three out of media.sh into seven modules WITHOUT
-deleting the originals, so for one phase both copies existed and the entire risk
-was silent drift between them. Phase 2 deleted the originals. There is no second
-copy left to drift from, so the question changed from "did the copy drift" to
-"does the delegation still reach the function that used to be here", and it is
-answered two ways: STRUCTURE (exactly one file defines the name, it is the module
-under test, the origins no longer define it, and sourcing media-entry.sh resolves
-the name to THIS module's body) and BEHAVIOUR (what the module does when its
-dependencies are missing, which is the only part CI can drive).
+WHAT THE BASH ORIGINAL PROVES, restated because it is the whole reason a media gate test is not just a behaviour test. Phase 1 of the media split copied 35 functions out of run.sh and three out of media.sh into seven modules WITHOUT deleting the originals, so for one phase both copies existed and the entire risk was silent drift between them. Phase 2 deleted the originals. There is
+no second copy left to drift from, so the question changed from "did the copy drift" to "does the delegation still reach the function that used to be here", and it is answered two ways: STRUCTURE (exactly one file defines the name, it is the module under test, the origins no longer define it, and sourcing media-entry.sh resolves the name to THIS module's body) and BEHAVIOUR (what
+the module does when its dependencies are missing, which is the only part CI can drive).
 
-WHAT IS PORTED AND WHAT IS NOT. The two `fidelity_assert_*` byte-identity helpers
-are already GONE from the bash file, deleted in phase 2 rather than left pointing
-at an absent function, and nothing here recreates them. The chain probe
-(`media_chain_probe` / `media_chain_mutate` / `media_chain_run`) is not ported
+WHAT IS PORTED AND WHAT IS NOT. The two `fidelity_assert_*` byte-identity helpers are already GONE from the bash file, deleted in phase 2 rather than left pointing at an absent function, and nothing here recreates them. The chain probe (`media_chain_probe` / `media_chain_mutate` / `media_chain_run`) is not ported
 either, because no subject in this batch drives a verb chain; `media_chain_sandbox`
-IS ported, because `media_assert_ownership_control` needs a real writable repo.
-When a later batch ports a chain test it adds those three here rather than
-building a second sandbox.
+IS ported, because `media_assert_ownership_control` needs a real writable repo. When a later batch ports a chain test it adds those three here rather than building a second sandbox.
 
-THE VACUITY TRAP IS THE SAME ONE, so it is guarded the same way. Extraction still
-fails loudly on a name it cannot find, every comparison is preceded by a floor on
-its size, and each module's gate test plants a mutation and requires the assertion
-to fire, because a comparison that has never been seen to fail is a comparison
-nobody has checked.
+THE VACUITY TRAP IS THE SAME ONE, so it is guarded the same way. Extraction still fails loudly on a name it cannot find, every comparison is preceded by a floor on its size, and each module's gate test plants a mutation and requires the assertion to fire, because a comparison that has never been seen to fail is a comparison nobody has checked.
 
-TWO THINGS ARE RESOLVED AT IMPORT TIME, NOT AT CALL TIME, and both for the reason
-the bash file records. Callers invoke these from inside `fake_bin`, where PATH
-holds ONLY what the test named, so a lookup deferred to call time fails with
-"command not found" reported as the module's exit code. `_BASH` is the absolute
-interpreter path (`"$BASH"` in the original, for exactly this reason) and
-`MEDIA_DIR` is resolved from this package's own location rather than from cwd.
+TWO THINGS ARE RESOLVED AT IMPORT TIME, NOT AT CALL TIME, and both for the reason the bash file records. Callers invoke these from inside `fake_bin`, where PATH holds ONLY what the test named, so a lookup deferred to call time fails with "command not found" reported as the module's exit code. `_BASH` is the absolute interpreter path (`"$BASH"` in the original, for exactly this
+reason) and `MEDIA_DIR` is resolved from this package's own location rather than from cwd.
 """
 
 import os
@@ -62,12 +41,9 @@ class ExtractionError(Exception):
 def fidelity_extract(path: pathlib.Path, name: str) -> str:
     """The function's body: the `name() {` line through the closing `}` in COLUMN 0.
 
-    Column 0 is what makes this unambiguous: every nested block in these files
-    closes indented, and shfmt (`-i 4 -ci`, enforced by check:ci-shell-format over
-    `.ci/**`) is what keeps that true. The bash original is an awk program doing
+    Column 0 is what makes this unambiguous: every nested block in these files closes indented, and shfmt (`-i 4 -ci`, enforced by check:ci-shell-format over `.ci/**`) is what keeps that true. The bash original is an awk program doing
     exactly this scan; the two agree because both test for the literal opening
-    line and the literal single-character closing line, with no regex involved on
-    either side.
+    line and the literal single-character closing line, with no regex involved on either side.
     """
     if not path.is_file():
         raise ExtractionError("fidelity_extract: no such file: %s" % path)
@@ -89,12 +65,9 @@ def fidelity_extract(path: pathlib.Path, name: str) -> str:
 def fidelity_extract_any(path: pathlib.Path, name: str) -> str:
     """`fidelity_extract`, widened to the ONE-LINE form `name() { ...; }`.
 
-    media.sh wrote `die` that way before the cutover, and a block-only extractor
-    reported it MISSING, which under a naive comparison read as "both sides
-    empty, therefore equal". media.sh no longer defines anything, so the form
+    media.sh wrote `die` that way before the cutover, and a block-only extractor reported it MISSING, which under a naive comparison read as "both sides empty, therefore equal". media.sh no longer defines anything, so the form
     survives only in prose today; the widening stays because `media_defines` uses
-    this to ask WHETHER A FILE STILL DEFINES A NAME, and a one-line definition
-    would otherwise be invisible to exactly the check that must not miss it.
+    this to ask WHETHER A FILE STILL DEFINES A NAME, and a one-line definition would otherwise be invisible to exactly the check that must not miss it.
     """
     if not path.is_file():
         raise ExtractionError("fidelity_extract: no such file: %s" % path)
@@ -119,16 +92,11 @@ def media_defines(path: pathlib.Path, name: str) -> bool:
 def media_origins(root: pathlib.Path) -> tuple[list[pathlib.Path], list[str]]:
     """(existing origin paths, complaints about missing ones).
 
-    IT REFUSES A MISSING ORIGIN RATHER THAN SKIPPING IT, which is the whole point
-    of the function. An absence assertion over a file that is not there passes for
-    FREE: `media_defines` returns False on a missing file, and `grep -q pat a b`
+    IT REFUSES A MISSING ORIGIN RATHER THAN SKIPPING IT, which is the whole point of the function. An absence assertion over a file that is not there passes for FREE: `media_defines` returns False on a missing file, and `grep -q pat a b`
     with b absent exits 2 while writing to stderr. Both read as "the name is not
-    there" when what happened is "nobody looked". Measured 2026-09-06 in a
-    sandbox: deleting run-legacy.sh left the sole-owner assertion green with its
-    legacy arm doing nothing at all.
+    there" when what happened is "nobody looked". Measured 2026-09-06 in a sandbox: deleting run-legacy.sh left the sole-owner assertion green with its legacy arm doing nothing at all.
 
-    The caller decides what a missing origin means, which is why this returns the
-    complaints rather than raising.
+    The caller decides what a missing origin means, which is why this returns the complaints rather than raising.
     """
     found: list[pathlib.Path] = []
     missing: list[str] = []
@@ -149,14 +117,10 @@ def _coverage_prelude() -> str:
 
     SHELLOPTS is readonly in a running bash, so the option can only be inherited
     from an environment, and inheriting it is precisely what perturbs: forcing
-    xtrace into every child makes eight of the ten media gate tests FAIL, because
-    `media_run_module` captures MERGED stdout and stderr and the behaviour cases
-    assert on that text. Scoped here, the trace goes to its own descriptor and the
-    captured output is byte-identical with the probe on and off.
+    xtrace into every child makes eight of the ten media gate tests FAIL, because `media_run_module` captures MERGED stdout and stderr and the behaviour cases assert on that text. Scoped here, the trace goes to its own descriptor and the captured output is byte-identical with the probe on and off.
 
     `${BASH_SOURCE:-}` and NOT `${BASH_SOURCE}`: common.sh sets `set -u`, and at
-    the top level of a `bash -c` string BASH_SOURCE is unset, so the bare form
-    makes the FIRST traced command die with "BASH_SOURCE: unbound variable".
+    the top level of a `bash -c` string BASH_SOURCE is unset, so the bare form makes the FIRST traced command die with "BASH_SOURCE: unbound variable".
     """
     target = os.environ.get("MEDIA_COVERAGE_FILE")
     if not target:
@@ -173,36 +137,24 @@ def media_run_module(
 ) -> harness.RunResult:
     """Run `code` against the named `.ci/media` modules in a FRESH bash.
 
-    A FRESH SHELL RATHER THAN A SUBSHELL, for two reasons that both bit while the
-    bash original was being written: the functions under test call `exit`, which
+    A FRESH SHELL RATHER THAN A SUBSHELL, for two reasons that both bit while the bash original was being written: the functions under test call `exit`, which
     in a plain subshell ends the enclosing test rather than the code under test;
-    and common.sh sets `set -euo pipefail`, which is what run.sh does too, so a
-    fresh shell is also the HONEST environment rather than a convenient one.
+    and common.sh sets `set -euo pipefail`, which is what run.sh does too, so a fresh shell is also the HONEST environment rather than a convenient one.
 
-    It inherits PATH, so a caller inside `fake_bin` gets the emptied PATH here
-    too, which is the entire point. `modules` is a space-separated list of file
-    names relative to `.ci/media`, sourced in the order given, so a test states
-    its own dependency edges instead of pulling the whole folder in.
+    It inherits PATH, so a caller inside `fake_bin` gets the emptied PATH here too, which is the entire point. `modules` is a space-separated list of file names relative to `.ci/media`, sourced in the order given, so a test states its own dependency edges instead of pulling the whole folder in.
 
-    `module_dir` IS THE MUTATION SEAM (`$MEDIA_MODULE_DIR` in bash). A test writes
-    one altered module into a temp directory, points this at it, re-runs the same
-    probe and requires the result to CHANGE. Without it a behaviour case could
-    only ever run the module that is already green, and "this assertion would fail
+    `module_dir` IS THE MUTATION SEAM (`$MEDIA_MODULE_DIR` in bash). A test writes one altered module into a temp directory, points this at it, re-runs the same probe and requires the result to CHANGE. Without it a behaviour case could only ever run the module that is already green, and "this assertion would fail
     if the code were wrong" would be an assumption rather than something the test
     file has watched happen.
 
     portable.sh IS ALWAYS SOURCED, and always from the REAL folder rather than
     from `module_dir`. It is the seam layer, not a subject: every module is
     entitled to `media_mtime` and `${MEDIA_SHA256[@]}` being in scope exactly as
-    media-entry.sh guarantees, and a test naming its module without naming the
-    seams would fail with "command not found" for a reason unrelated to what it
-    asserts. From the real folder because `module_dir` points at a mutant
-    directory holding one altered module and nothing else.
+    media-entry.sh guarantees, and a test naming its module without naming the seams would fail with "command not found" for a reason unrelated to what it asserts. From the real folder because `module_dir` points at a mutant directory holding one altered module and nothing else.
 
     ONE COMMAND IS ALWAYS REQUIRED of the caller: common.sh runs
     `CI_OS="$(detect_os)"` at source time, and `detect_os` shells out to `uname`.
-    A caller inside `fake_bin` must admit `+uname`, or every run carries a stray
-    "uname: command not found" on stderr.
+    A caller inside `fake_bin` must admit `+uname`, or every run carries a stray "uname: command not found" on stderr.
     """
     directory = MEDIA_DIR if module_dir is None else module_dir
     sources = ["source '%s/portable.sh';" % MEDIA_DIR]
@@ -240,9 +192,7 @@ def media_assert_sole_owner(root: pathlib.Path, module: str, name: str) -> str |
          canonical form, so the comparison is indifferent to formatting and to
          nothing else.
 
-    `root` is a PARAMETER rather than a constant so a control can point it at a
-    sandbox where the invariant has been deliberately broken. That is the only way
-    this assertion is ever watched failing.
+    `root` is a PARAMETER rather than a constant so a control can point it at a sandbox where the invariant has been deliberately broken. That is the only way this assertion is ever watched failing.
     """
     module_path = root / ".ci" / "media" / module
 
@@ -327,26 +277,14 @@ def media_assert_module_owns(gate, module: str, *names: str) -> None:
 def media_chain_sandbox(directory: pathlib.Path) -> pathlib.Path:
     """A REAL, RUNNABLE repo at `<directory>/repo`.
 
-    Everything at the repo root is a SYMLINK to the real checkout except run.sh,
-    media.sh, `.ci/media` and `.ci/legacy`, which are COPIES. Those are the only
-    paths an ownership control needs to ALTER, and the last of them joined the
-    list on 2026-09-06 when the router split made run-legacy.sh a third origin.
-    `.ci` itself is rebuilt as a directory of symlinks for the same reason.
+    Everything at the repo root is a SYMLINK to the real checkout except run.sh, media.sh, `.ci/media` and `.ci/legacy`, which are COPIES. Those are the only paths an ownership control needs to ALTER, and the last of them joined the list on 2026-09-06 when the router split made run-legacy.sh a third origin. `.ci` itself is rebuilt as a directory of symlinks for the same reason.
 
-    Symlinks rather than copies because the whole tree is needed (run.sh sources
-    .ci/config, .ci/scripts/lib, .ci/lib and reads .devcontainer/toolchain.env at
-    startup) and copying it per test would be slow enough to matter.
+    Symlinks rather than copies because the whole tree is needed (run.sh sources .ci/config, .ci/scripts/lib, .ci/lib and reads .devcontainer/toolchain.env at startup) and copying it per test would be slow enough to matter.
 
-    `.ci/legacy` IS REBUILT AS A REAL DIRECTORY OF COPIES, and that is a
-    CORRECTNESS requirement rather than a preference: the ownership control plants
-    a duplicate definition into each origin, and through a symlinked directory
-    that append lands in the REAL checkout, corrupting a 1,300-line file owned by
-    another workstream while the sandbox proves nothing. Verified 2026-09-06 in
-    the bash original: before that change the sandbox path resolved straight back
-    to the live tree.
+    `.ci/legacy` IS REBUILT AS A REAL DIRECTORY OF COPIES, and that is a CORRECTNESS requirement rather than a preference: the ownership control plants a duplicate definition into each origin, and through a symlinked directory that append lands in the REAL checkout, corrupting a 1,300-line file owned by another workstream while the sandbox proves nothing. Verified 2026-09-06 in the
+    bash original: before that change the sandbox path resolved straight back to the live tree.
 
-    `.git` is skipped outright: nothing on the path to a marker runs git, and a
-    symlink into the real object store is not worth the one accident.
+    `.git` is skipped outright: nothing on the path to a marker runs git, and a symlink into the real object store is not worth the one accident.
     """
     repo = directory / "repo"
     (repo / ".ci").mkdir(parents=True, exist_ok=True)
@@ -383,10 +321,7 @@ def media_chain_sandbox(directory: pathlib.Path) -> pathlib.Path:
 def media_assert_ownership_control(gate, directory: pathlib.Path, module: str, name: str) -> None:
     """THE CONTROL, in the four ways the ownership assertion could go quiet.
 
-    An assertion nobody has watched fail is an assertion nobody has checked, and
-    this one has a specific vacuity in its history: the byte-identity helper it
-    replaced compared two extractions that had both found nothing and called them
-    equal.
+    An assertion nobody has watched fail is an assertion nobody has checked, and this one has a specific vacuity in its history: the byte-identity helper it replaced compared two extractions that had both found nothing and called them equal.
 
       1. A second definition put back into EVERY origin, one at a time: run.sh,
          `.ci/legacy/run-legacy.sh` (where the router split moved every verb body,
@@ -405,8 +340,7 @@ def media_assert_ownership_control(gate, directory: pathlib.Path, module: str, n
          would silently retire a third of this proof while every gate stayed
          green.
 
-    Each arm RESTORES the origin it damaged before the next one runs, so the arms
-    are independent rather than cumulative and a failure names one cause.
+    Each arm RESTORES the origin it damaged before the next one runs, so the arms are independent rather than cumulative and a failure names one cause.
     """
     repo = media_chain_sandbox(directory)
 
@@ -462,9 +396,7 @@ def media_assert_ownership_control(gate, directory: pathlib.Path, module: str, n
 def media_assert_mutation_swapped(gate, observed: str, original: str, planted: str, subject: str):
     """The two-line pair that closes every "the mutation is visible" control.
 
-    BOTH HALVES ARE LOAD-BEARING and the first is the one people forget: asserting
-    only that the planted text appears would still pass if the run were reading
-    the UNMUTATED module and the marker happened to be a substring of something
+    BOTH HALVES ARE LOAD-BEARING and the first is the one people forget: asserting only that the planted text appears would still pass if the run were reading the UNMUTATED module and the marker happened to be a substring of something
     else.
     """
     gate.assert_not_contains(

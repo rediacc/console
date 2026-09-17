@@ -1,19 +1,10 @@
 """Differential: `rediacc_ci.security.audit` against `.ci/scripts/security/audit.sh`.
 
-THE TWIN IS THE LIVE GATE `check:ci-security-audit`, so nothing here runs it
-against the real tree: every case is a scratch fixture holding BOTH
-implementations at their real relative paths, with recording fakes for `npm`,
-`gh`, `node` and `sleep` on a scratch PATH. There is no read-only mode of this
-gate to borrow -- it shells out to the npm registry twice and to the GitHub
-Advisory Database once per advisory -- and a differential that made those calls
-would be rate-limiting a shared account to prove a text transform.
+THE TWIN IS THE LIVE GATE `check:ci-security-audit`, so nothing here runs it against the real tree: every case is a scratch fixture holding BOTH implementations at their real relative paths, with recording fakes for `npm`, `gh`, `node` and `sleep` on a scratch PATH. There is no read-only mode of this gate to borrow -- it shells out to the npm registry twice and to the GitHub
+Advisory Database once per advisory -- and a differential that made those calls would be rate-limiting a shared account to prove a text transform.
 
-WHY THE FIXTURE COPIES BOTH IMPLEMENTATIONS AND THE WHOLE PACKAGE. Each side
-resolves the repository root from its OWN location (`audit.sh` walks up from
-`.ci/scripts/security/`, `paths.repo_root()` walks up from `.ci/rediacc_ci/`),
-and the twin's four sourced libraries then shell out to `rediacc_ci.core.*`
-under that root. Pointing both at a fixture therefore means putting both, and
-the package they share, inside it.
+WHY THE FIXTURE COPIES BOTH IMPLEMENTATIONS AND THE WHOLE PACKAGE. Each side resolves the repository root from its OWN location (`audit.sh` walks up from `.ci/scripts/security/`, `paths.repo_root()` walks up from `.ci/rediacc_ci/`), and the twin's four sourced libraries then shell out to `rediacc_ci.core.*` under that root. Pointing both at a fixture therefore means putting both,
+and the package they share, inside it.
 
 FOUR CHANNELS ARE COMPARED, NOT TWO:
   * exit code,
@@ -385,13 +376,8 @@ class Fixture:
     def env(self, log: pathlib.Path, **extra: str) -> dict[str, str]:
         """REPLACES the caller's environment; see `differential.BASE_ENV`.
 
-        THE PATH IS TWO CURATED DIRECTORIES AND NOTHING ELSE, which is a safety
-        control before it is a determinism one. Appending the caller's PATH after
-        the fakes leaves the REAL `npm`, `node` and `gh` reachable, and the first
-        version of this file proved it: removing the `npm` fake to test the
-        missing-binary path found `~/.local/bin/npm` instead and ran a real
-        `npm audit signatures` against a scratch directory. A test suite that can
-        reach the npm registry by deleting one file is a test suite that will.
+        THE PATH IS TWO CURATED DIRECTORIES AND NOTHING ELSE, which is a safety control before it is a determinism one. Appending the caller's PATH after the fakes leaves the REAL `npm`, `node` and `gh` reachable, and the first version of this file proved it: removing the `npm` fake to test the missing-binary path found `~/.local/bin/npm` instead and ran a real `npm audit
+        signatures` against a scratch directory. A test suite that can reach the npm registry by deleting one file is a test suite that will.
         """
         env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")
         env["PATH"] = "%s%s%s" % (
@@ -552,8 +538,7 @@ WINDOW_PROBE = "call: node --window-seconds"
 def assert_agree(fx: Fixture, **extra: str) -> Run:
     """Run both sides over one fixture and rule on all four channels.
 
-    Returns the TWIN's run, so a case can then assert what it actually saw --
-    without which two identically broken sides would score as agreement.
+    Returns the TWIN's run, so a case can then assert what it actually saw -- without which two identically broken sides would score as agreement.
     """
     old = fx.run("old", **extra)
     new = fx.run("new", **extra)
@@ -633,11 +618,7 @@ def test_every_advisory_allowlisted_with_a_blocker(fx: Fixture) -> None:
 def test_defect3_an_empty_vulnerable_range_shifts_the_two_fields(fx: Fixture) -> None:
     """`Affected: 7.0.2  ->  Patched in: Host header SSRF.` -- both sides.
 
-    GHSA-2pvr's `vulnerable_version_range` is the empty string, so the TAB run in
-    the `@tsv` row collapses, `first_patched_version` lands in the range slot and
-    the DESCRIPTION lands in the patched slot. This is the case that would make a
-    naive `line.split("\\t")` port disagree, and it disagrees in a direction that
-    looks like the port being correct.
+    GHSA-2pvr's `vulnerable_version_range` is the empty string, so the TAB run in the `@tsv` row collapses, `first_patched_version` lands in the range slot and the DESCRIPTION lands in the patched slot. This is the case that would make a naive `line.split("\\t")` port disagree, and it disagrees in a direction that looks like the port being correct.
     """
     fx.reports(AUDIT_PROD, AUDIT_ALL)
     fx.advisories(
@@ -707,10 +688,7 @@ def test_an_unallowed_dev_advisory_fails_in_pass_two(fx: Fixture) -> None:
 def test_one_advisory_reached_through_two_packages_is_reported_once(fx: Fixture) -> None:
     """`unique` and `unique_by(.source)`, and the FIRST occurrence wins.
 
-    Both are dedup steps a port can drop without any fixture noticing, because
-    every other report here mentions each source once. This is the case that
-    notices: without `unique` the advisory is emitted twice, and with the wrong
-    end of `unique_by` it is emitted with the second package's title and url.
+    Both are dedup steps a port can drop without any fixture noticing, because every other report here mentions each source once. This is the case that notices: without `unique` the advisory is emitted twice, and with the wrong end of `unique_by` it is emitted with the second package's title and url.
     """
     fx.reports(AUDIT_DUPE)
     fx.advisories(("GHSA-j687-52p2-xcff", GHSA_ASTRO_XSS))
@@ -767,8 +745,7 @@ def test_a_low_effort_blocker_is_refused(fx: Fixture) -> None:
 def test_defect1_an_empty_audit_report_is_a_green_run(fx: Fixture) -> None:
     """A ZERO-BYTE `npm audit --json` passes `jq empty` and the gate reports clean.
 
-    This is the vacuity case: the gate audits nothing and says so in green. It is
-    pinned as a fact about the twin, not fixed here.
+    This is the vacuity case: the gate audits nothing and says so in green. It is pinned as a fact about the twin, not fixed here.
     """
     fx.reports("", "")
     old = assert_agree(fx)
@@ -807,8 +784,7 @@ def test_defect6_a_failed_gh_fetch_kills_both_sides_with_a_silent_exit_5(fx: Fix
     `xargs -I {}` rewrites the `{}` inside the worker script, so the fallback
     writes the SLUG into the cache file; the next `jq` cannot parse it and the
     unguarded `details=$(jq ...)` takes the whole gate down under `set -e`. Every
-    `gh api` failure -- 404, offline, or the anonymous rate limit the gate
-    header's BLOCKER is about -- lands here.
+    `gh api` failure -- 404, offline, or the anonymous rate limit the gate header's BLOCKER is about -- lands here.
     """
     fx.reports(AUDIT_PROD, AUDIT_ALL)
     # Only ONE of the three advisories has a cached body; the other two fail.
@@ -993,9 +969,7 @@ def test_an_allowlist_entry_older_than_the_fail_window_is_refused(fx: Fixture) -
     """The age gate, driven over a REAL git history rather than a stubbed date.
 
     `entry_age_days` is `git log -S<entry> --diff-filter=A`, so the fixture needs
-    a commit that introduced the line and a committer date old enough to cross
-    AGE_FAIL_DAYS. Without the repository both sides answer 0 and the case would
-    pass while measuring nothing.
+    a commit that introduced the line and a committer date old enough to cross AGE_FAIL_DAYS. Without the repository both sides answer 0 and the case would pass while measuring nothing.
     """
     fx.policy(".audit-prod-allowlist", PROD_ALLOWLIST_BOTH)
     _git(fx.root, "init", "-q", "-b", "main")
@@ -1039,9 +1013,7 @@ def test_describe_fix_matches_the_twins_case_statement(
 ) -> None:
     """The pure helper, driven directly on both sides.
 
-    The twin's `describe_fix` is a shell function, so it is reached by sourcing
-    the real file and calling it -- not by re-typing its `case` here, which would
-    make this a test of the copy.
+    The twin's `describe_fix` is a shell function, so it is reached by sourcing the real file and calling it -- not by re-typing its `case` here, which would make this a test of the copy.
     """
     # `describe_fix` is defined in audit.sh's body; the twin has no library seam
     # for it, so the function is lifted out of the file's TEXT by name.
@@ -1077,8 +1049,7 @@ def test_describe_fix_matches_the_twins_case_statement(
 def test_bash_read_fields_matches_a_real_bash_read(line: str) -> None:
     """`IFS=$'\\t' read -r a b c` on THIS bash, not on a remembered rule.
 
-    Nine shapes, including the two the collapsing rule makes surprising: a
-    leading tab and an interior empty field.
+    Nine shapes, including the two the collapsing rule makes surprising: a leading tab and an interior empty field.
     """
     script = 'IFS=$\'\\t\' read -r a b c <<< "$1"; printf \'%s\\x1f%s\\x1f%s\' "$a" "$b" "$c"'
     proc = subprocess.run(
@@ -1097,10 +1068,7 @@ def test_deps_blocklist_has_matches_the_real_grep(
 ) -> None:
     """The re-implemented `grep -qE '^<pkg>([[:space:]]|$)'`, against the real one.
 
-    `grep` here is ugrep, and this repo has already been bitten by ugrep
-    answering differently from PCRE on an alternated anchor. This case is the
-    reason the port is allowed to re-implement the match at all: if the two ever
-    disagree, it goes red naming the package.
+    `grep` here is ugrep, and this repo has already been bitten by ugrep answering differently from PCRE on an alternated anchor. This case is the reason the port is allowed to re-implement the match at all: if the two ever disagree, it goes red naming the package.
     """
     body = (
         "# packages held back\n"
@@ -1126,9 +1094,7 @@ def test_deps_blocklist_has_matches_the_real_grep(
 def test_the_jq_programs_match_the_real_jq(fx: Fixture, tmp_path: pathlib.Path) -> None:
     """Every jq program the twin runs, re-derived from the twin's own TEXT.
 
-    The programs are lifted out of `audit.sh` rather than re-typed, so an edit to
-    the twin's jq that this port did not follow goes red here instead of showing
-    up as a mismatched byte three cases later.
+    The programs are lifted out of `audit.sh` rather than re-typed, so an edit to the twin's jq that this port did not follow goes red here instead of showing up as a mismatched byte three cases later.
     """
     report = tmp_path / "audit-prod.json"
     report.write_text(AUDIT_ALL, encoding="utf-8")
@@ -1202,11 +1168,7 @@ def test_the_details_program_matches_the_real_jq(tmp_path: pathlib.Path) -> None
 def _scenario(fx: Fixture, name: str) -> None:
     """The three fixtures the plants run against, so each plant is visible.
 
-    A plant that changes nothing OBSERVABLE in the scenario it runs under is a
-    control that cannot fire, and the first cut of this file had exactly that:
-    the tab-split plant ran against a fixture whose stale sweep was never
-    reached, so the shifted field was never printed and the mutation looked
-    harmless.
+    A plant that changes nothing OBSERVABLE in the scenario it runs under is a control that cannot fire, and the first cut of this file had exactly that: the tab-split plant ran against a fixture whose stale sweep was never reached, so the shifted field was never printed and the mutation looked harmless.
     """
     fx.reports(AUDIT_PROD, AUDIT_ALL)
     fx.policy(".audit-prod-allowlist", PROD_ALLOWLIST_BOTH)
@@ -1267,11 +1229,7 @@ def test_a_planted_defect_in_the_port_is_caught(
 ) -> None:
     """Four plants, four reds. A differential nobody has seen fail is not one.
 
-    Each plant is a change a reviewer might call an IMPROVEMENT -- a tab split
-    that looks right, a fallback that writes valid JSON, one retry fewer, a green
-    line that stops lying. Every one of them is a behavioural difference from the
-    live gate, and this case is what says so. The last two are the interesting
-    ones: `one attempt fewer` is invisible on stdout and stderr and is caught
+    Each plant is a change a reviewer might call an IMPROVEMENT -- a tab split that looks right, a fallback that writes valid JSON, one retry fewer, a green line that stops lying. Every one of them is a behavioural difference from the live gate, and this case is what says so. The last two are the interesting ones: `one attempt fewer` is invisible on stdout and stderr and is caught
     ONLY by the call log.
     """
     _scenario(fx, scenario)
@@ -1284,8 +1242,7 @@ def test_a_planted_defect_in_the_port_is_caught(
 def test_the_control_passes_without_the_plant(fx: Fixture, scenario: str) -> None:
     """The other half of the control: the same three fixtures, unplanted, AGREE.
 
-    Without this the plants above would pass for any reason at all, including a
-    fixture that cannot run either side.
+    Without this the plants above would pass for any reason at all, including a fixture that cannot run either side.
     """
     _scenario(fx, scenario)
     old = assert_agree(fx)

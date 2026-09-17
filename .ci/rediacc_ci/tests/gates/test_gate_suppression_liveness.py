@@ -1,38 +1,22 @@
 """Port of `.ci/scripts/test/gates/test-suppression-liveness.sh`.
 
-Integration test for `scripts/gates/check-suppression-liveness.ts`, the gate that asks
-whether every allowlist / blocklist / override entry in this repo still suppresses
-something that exists.
+Integration test for `scripts/gates/check-suppression-liveness.ts`, the gate that asks whether every allowlist / blocklist / override entry in this repo still suppresses something that exists.
 
 WHAT IT GUARDS. The `BLOCKER:` convention proves a reason EXISTS; it cannot prove
-the reason is still TRUE. This gate closes the other half, and the twin's header
-names the two receipts for why it has to be provable in BOTH directions:
-`check_stale_entries` in `audit.sh` skipped the common staleness case for its whole
-life, and `check-no-app-admin-perm.sh` was never wired into a job at all. A gate
-that has only ever been seen to pass is indistinguishable from `true`.
+the reason is still TRUE. This gate closes the other half, and the twin's header names the two receipts for why it has to be provable in BOTH directions: `check_stale_entries` in `audit.sh` skipped the common staleness case for its whole life, and `check-no-app-admin-perm.sh` was never wired into a job at all. A gate that has only ever been seen to pass is indistinguishable from
+`true`.
 
-EVERY FIXTURE CASE RUNS AGAINST A FIXTURE ROOT through `SUPPRESSION_LIVENESS_ROOT`,
-so no tracked file is ever mutated. The working tree routinely holds uncommitted
-work from other sessions, which is the reason the twin took that shape and the
-reason this port keeps it.
+EVERY FIXTURE CASE RUNS AGAINST A FIXTURE ROOT through `SUPPRESSION_LIVENESS_ROOT`, so no tracked file is ever mutated. The working tree routinely holds uncommitted work from other sessions, which is the reason the twin took that shape and the reason this port keeps it.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_passes_on_real_repo` and the
-added shape case drive the subject seam-free over the REAL repository: the probes
-walk `.ci`, `scripts`, `.claude`, `.devcontainer`, `packages` and `private` for
-shell scripts, shell out to `git ls-files`, and read the real `package.json`,
-`package-lock.json` and eleven policy files. A battery step writing under any of
-those mid-sweep is a divergence that would be blamed on this port.
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_passes_on_real_repo` and the added shape case drive the subject seam-free over the REAL repository: the probes walk `.ci`, `scripts`, `.claude`, `.devcontainer`, `packages` and `private` for shell scripts, shell out to `git ls-files`, and read the real `package.json`, `package-lock.json` and eleven policy files. A battery step
+writing under any of those mid-sweep is a divergence that would be blamed on this port.
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured only because
 this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in
 `test_twin_parity.py`.
 
-THE SUBJECT DOES NOT SELF-SCAN THIS FILE, checked rather than assumed. The one
-probe that walks `.ci` recursively is `dead-bash-allowlist`, and it collects only
+THE SUBJECT DOES NOT SELF-SCAN THIS FILE, checked rather than assumed. The one probe that walks `.ci` recursively is `dead-bash-allowlist`, and it collects only
 names ending `.sh`; `dockerfileFetchTokens` reads `git ls-files` filtered to
-`Dockerfile*`. Nothing in either corpus can match a `.py` file under
-`.ci/rediacc_ci/tests/gates/`, so the fixture strings below are written out
-literally rather than through the `%s` template treatment
-`test_gate_label_references.py` owes its own self-scanning subject.
+`Dockerfile*`. Nothing in either corpus can match a `.py` file under `.ci/rediacc_ci/tests/gates/`, so the fixture strings below are written out literally rather than through the `%s` template treatment `test_gate_label_references.py` owes its own self-scanning subject.
 
 TWO DELIBERATE DIVERGENCES FROM THE TWIN, both narrower than they look.
 
@@ -51,11 +35,8 @@ TWO DELIBERATE DIVERGENCES FROM THE TWIN, both narrower than they look.
    nothing to do with a dead skiplist entry. The port makes the missing tree a loud
    failure instead, so the case cannot pass by the wrong door.
 
-ADDED BY THE PORT: `test_the_real_run_reports_a_non_trivial_corpus`. The twin's
-real-repo case asserts exit 0 and the presence of the string `probes:`, which a
-run that checked ZERO entries would also satisfy. The added case reads the probe
-and entry counts out of the summary line and refuses a collapse, so the SHAPE of
-the real sweep is visible on every run rather than only its verdict.
+ADDED BY THE PORT: `test_the_real_run_reports_a_non_trivial_corpus`. The twin's real-repo case asserts exit 0 and the presence of the string `probes:`, which a run that checked ZERO entries would also satisfy. The added case reads the probe and entry counts out of the summary line and refuses a collapse, so the SHAPE of the real sweep is visible on every run rather than only its
+verdict.
 """
 
 import json
@@ -101,9 +82,7 @@ OPTIONAL_SOURCES = (
 def require_subject(gate) -> str:
     """The subject and its interpreter, proved present before anything is claimed.
 
-    A missing `npx` is a LOUD failure carrying the fix, never a skip: a case that
-    could not run has not been checked, and unchecked folded into fine is the shape
-    this directory refuses.
+    A missing `npx` is a LOUD failure carrying the fix, never a skip: a case that could not run has not been checked, and unchecked folded into fine is the shape this directory refuses.
     """
     if not SUBJECT.is_file():
         gate.log_fail("subject under test is missing: %s" % SUBJECT_REL)
@@ -115,11 +94,7 @@ def require_subject(gate) -> str:
 def make_fixture(gate, root):
     """`make_fixture`: a repo that is healthy on every probe, for a case to bend one thing.
 
-    ANTI-VACUITY, and it is the whole reason this is a function rather than four
-    `cp` lines. A fixture missing one of its oracles does not make a probe report a
-    finding, it makes the probe SKIP -- and a skipped probe answers every question
-    below with silence that reads as agreement. So the four required sources are a
-    loud failure when absent, naming which one.
+    ANTI-VACUITY, and it is the whole reason this is a function rather than four `cp` lines. A fixture missing one of its oracles does not make a probe report a finding, it makes the probe SKIP -- and a skipped probe answers every question below with silence that reads as agreement. So the four required sources are a loud failure when absent, naming which one.
     """
     for rel in REQUIRED_SOURCES:
         src = paths.from_root(*rel.split("/"))
@@ -143,17 +118,10 @@ def run_gate(gate, root, *args: str) -> harness.RunResult:
     """`run_gate <root>`: the subject, from the repo root, pointed at a fixture.
 
     ACTION_REFS_MIN_FILES=2, NOT 0, carried verbatim from the twin and for its
-    recorded reason: `make_fixture` plants exactly two `.github` files, while
-    `collectActionRefs` carries a vacuity floor of 10 sized for the real tree --
-    which threw VACUOUS here on 2026-09-05 and took the whole gate-test battery
-    red. Telling the probe the fixture's TRUE corpus size keeps the floor
-    meaningful (an empty or half-built fixture still refuses) instead of switching
-    the guard off, which is what a 0 would do.
+    recorded reason: `make_fixture` plants exactly two `.github` files, while `collectActionRefs` carries a vacuity floor of 10 sized for the real tree -- which threw VACUOUS here on 2026-09-05 and took the whole gate-test battery red. Telling the probe the fixture's TRUE corpus size keeps the floor meaningful (an empty or half-built fixture still refuses) instead of switching the
+    guard off, which is what a 0 would do.
 
-    The twin merges `2>&1`, so every caller reads `.combined`. That matters beyond
-    fidelity: npm prints an `Unknown project config "minimum-release-age"` warning
-    to stderr on every `npx` invocation in this repo, so a port reading only `.err`
-    would be matching npm's noise.
+    The twin merges `2>&1`, so every caller reads `.combined`. That matters beyond fidelity: npm prints an `Unknown project config "minimum-release-age"` warning to stderr on every `npx` invocation in this repo, so a port reading only `.err` would be matching npm's noise.
     """
     npx = require_subject(gate)
     return harness.run(
@@ -187,9 +155,7 @@ def add_override(root, reason: str) -> None:
 def summary(gate, output: str) -> tuple[int, int, int]:
     """(probes run, probes skipped, entries checked) from the verdict line.
 
-    A run with no summary line at all is a FAILURE. "exit 0" from a gate that
-    printed nothing recognisable is not evidence that it checked anything, and
-    treating it as such is precisely how a gate passes without running.
+    A run with no summary line at all is a FAILURE. "exit 0" from a gate that printed nothing recognisable is not evidence that it checked anything, and treating it as such is precisely how a gate passes without running.
     """
     match = SUMMARY_RE.search(output)
     if not match:
@@ -219,8 +185,7 @@ def test_passes_on_real_repo(gate):
 
 def test_the_real_run_reports_a_non_trivial_corpus(gate):
     """ADDED BY THE PORT. The twin's real-repo case is satisfied by a run that
-    checked ZERO entries, because `probes:` is printed either way. This reads the
-    counts out of the summary and refuses a collapse, and PRINTS the shape so a
+    checked ZERO entries, because `probes:` is printed either way. This reads the counts out of the summary and refuses a collapse, and PRINTS the shape so a
     reader can see the green was non-trivial."""
     npx = require_subject(gate)
     result = harness.run([npx, "tsx", SUBJECT_REL], cwd=paths.repo_root())
@@ -270,8 +235,7 @@ def test_fires_on_dead_deps_entry(gate):
 
 def test_no_false_positive_on_live_entry(gate):
     """THE CONTROL FOR THE CASE ABOVE. eslint is genuinely declared in the root
-    manifest, which is the only one the fixture carries. (zod would NOT work here:
-    it appears in the real package.json only under "overrides", and an override is
+    manifest, which is the only one the fixture carries. (zod would NOT work here: it appears in the real package.json only under "overrides", and an override is
     not a declaration, so the deps probe would correctly condemn it.)"""
     with harness.temp_dir() as root:
         make_fixture(gate, root)
@@ -288,12 +252,9 @@ def test_no_false_positive_on_live_entry(gate):
 
 def test_oracle_floor_skips_instead_of_condemning(gate):
     """A SUSPECT ORACLE MUST SKIP LOUDLY, never condemn. Two deps only, far below
-    the deps probe's floor of 20: the direct analogue of the `total_vulns>0` guard
-    in `.ci/scripts/security/audit.sh`.
+    the deps probe's floor of 20: the direct analogue of the `total_vulns>0` guard in `.ci/scripts/security/audit.sh`.
 
-    The second, LIVE entry on a healthy probe is not decoration. Without it the
-    only entry is the skipped one, the run asserts nothing, and the gate's own
-    anti-vacuity refusal fails it for a different reason than the one under test.
+    The second, LIVE entry on a healthy probe is not decoration. Without it the only entry is the skipped one, the run asserts nothing, and the gate's own anti-vacuity refusal fails it for a different reason than the one under test.
     """
     with harness.temp_dir() as root:
         make_fixture(gate, root)
@@ -324,12 +285,9 @@ def test_oracle_floor_skips_instead_of_condemning(gate):
 
 def test_vacuous_run_fails(gate):
     """THE ANTI-VACUITY REFUSAL, IN THE SUBJECT. No manifests, no lockfile, no
-    `.github`, no go.mod: every oracle unavailable, yet entries exist. The run
-    proved nothing and must not report success.
+    `.github`, no go.mod: every oracle unavailable, yet entries exist. The run proved nothing and must not report success.
 
-    `.ci/policy` alone is not a full checkout (`isFullCheckout` wants
-    `.ci/scripts/quality`, `package.json` and `.github/workflows`), so this stays
-    the all-oracles-missing root it was before the lists moved there.
+    `.ci/policy` alone is not a full checkout (`isFullCheckout` wants `.ci/scripts/quality`, `package.json` and `.github/workflows`), so this stays the all-oracles-missing root it was before the lists moved there.
     """
     with harness.temp_dir() as root:
         (root / ".ci" / "policy").mkdir(parents=True, exist_ok=True)
@@ -366,11 +324,7 @@ def test_composite_action_counts_as_a_reference(gate):
 def test_a_python_port_invocation_keeps_its_exemption_alive(gate):
     """THE W7 P4 REGRESSION, both directions in one pair with the case below.
 
-    The workflow oracle read `(\\.ci/scripts/[\\w./-]+\\.sh)` and nothing else, so the
-    instant a cutover repointed a step at `check_<name>.py` the oracle stopped
-    seeing any invocation of that gate and condemned its own exemption as DEAD --
-    handing the reader a FIX that deletes the line keeping a LIVE gate excused.
-    Nine entries went that way at once on 2026-09-08.
+    The workflow oracle read `(\\.ci/scripts/[\\w./-]+\\.sh)` and nothing else, so the instant a cutover repointed a step at `check_<name>.py` the oracle stopped seeing any invocation of that gate and condemned its own exemption as DEAD -- handing the reader a FIX that deletes the line keeping a LIVE gate excused. Nine entries went that way at once on 2026-09-08.
     """
     with harness.temp_dir() as root:
         make_fixture(gate, root)
@@ -432,8 +386,7 @@ def test_overrides_warn_never_fail(gate):
 
 def test_preventive_annotation_silences_override_warning(gate):
     """THE OPT-OUT, and the converse of the case above. An override that guards
-    against a vulnerable transitive RETURNING is dead by construction and must not
-    be reported forever.
+    against a vulnerable transitive RETURNING is dead by construction and must not be reported forever.
 
     The reason string here uses a plain hyphen where the twin uses an em dash. The
     matcher is `/^BLOCKER:\\s*preventive\\b/i`, so only the word is load-bearing;
@@ -468,10 +421,7 @@ def test_findings_are_capped(gate):
 def test_fires_on_dead_template_skiplist_entry(gate):
     """A skiplist entry naming a template that no longer exists.
 
-    THE TEMPLATE TREE IS REQUIRED, where the twin tolerates its absence. Without
-    it the probe's universe is null, the probe SKIPS, the fixture's only entry goes
-    unchecked, and the run exits 1 as VACUOUS -- which satisfies an exit-code
-    assertion for entirely the wrong reason. See the module docstring.
+    THE TEMPLATE TREE IS REQUIRED, where the twin tolerates its absence. Without it the probe's universe is null, the probe SKIPS, the fixture's only entry goes unchecked, and the run exits 1 as VACUOUS -- which satisfies an exit-code assertion for entirely the wrong reason. See the module docstring.
     """
     with harness.temp_dir() as root:
         make_fixture(gate, root)
@@ -494,8 +444,7 @@ def test_fires_on_dead_template_skiplist_entry(gate):
 
 def test_cli_i18n_prefix_matching(gate):
     """PREFIXES ARE MATCHED AS PREFIXES, not as exact keys. Both directions in one
-    fixture: a live dynamic-key prefix that still matches leaves must survive, and
-    a prefix matching nothing must fire. A gate doing exact-key lookups would
+    fixture: a live dynamic-key prefix that still matches leaves must survive, and a prefix matching nothing must fire. A gate doing exact-key lookups would
     condemn the first and pass the second."""
     with harness.temp_dir() as root:
         make_fixture(gate, root)

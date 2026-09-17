@@ -1,8 +1,6 @@
 """`rediacc_ci.quality.renet_tier_map` against the shell it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. This gate's verdict is
-decided by two text transforms and one regular expression, and each of the three
-has an edge that is not inferable:
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. This gate's verdict is decided by two text transforms and one regular expression, and each of the three has an edge that is not inferable:
 
   * `go test -list <re> <pkg> | grep '^Test' | sort` -- the `grep` is not
     cosmetic. `go test -list` also prints the package result line
@@ -16,10 +14,7 @@ has an edge that is not inferable:
     the port only for a control. If the two ever disagree, phase 1 verifies a
     different set from the one phase 2 runs.
 
-They are NOT the whole gate: the whole gate is what the committed shadow ledger
-`.ci/shadow/w7p2-renet-tiermap.observations.jsonl` compares over five distinct
-trees, against a minimal Go package standing in for `pkg/functions`. This file
-covers the seams that ledger cannot isolate.
+They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-renet-tiermap.observations.jsonl` compares over five distinct trees, against a minimal Go package standing in for `pkg/functions`. This file covers the seams that ledger cannot isolate.
 """
 
 import pathlib
@@ -132,10 +127,7 @@ def test_the_pass_table_exercises_both_directions() -> None:
 def test_the_run_regex_selects_exactly_the_expected_set_under_go() -> None:
     """Go's own regexp engine, not Python's, because `go test` is the consumer.
 
-    A `re.match` control lives in the module's selftest and proves the port's
-    understanding. This proves the SHELL's: `go test -list` is what actually
-    applies the pattern, and a Go/Python regexp divergence here would make
-    phase 1 verify a set phase 2 never runs.
+    A `re.match` control lives in the module's selftest and proves the port's understanding. This proves the SHELL's: `go test -list` is what actually applies the pattern, and a Go/Python regexp divergence here would make phase 1 verify a set phase 2 never runs.
     """
     if shutil.which("go") is None:
         pytest.skip("no Go toolchain on this host; the ledger covers this end to end")
@@ -164,8 +156,7 @@ def test_the_run_regex_selects_exactly_the_expected_set_under_go() -> None:
 def test_the_expected_list_still_matches_the_bash_twins_array() -> None:
     """Drift between the two copies would make one of them verify nothing.
 
-    Read out of the twin rather than transcribed, so the assertion cannot be
-    satisfied by editing this file.
+    Read out of the twin rather than transcribed, so the assertion cannot be satisfied by editing this file.
     """
     twin = paths.repo_root() / ".ci/scripts/quality/check-renet-tier-map.sh"
     text = twin.read_text(encoding="utf-8")

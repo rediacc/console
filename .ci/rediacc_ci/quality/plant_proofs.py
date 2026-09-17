@@ -1,14 +1,9 @@
 r"""check:ci-plant-proofs -- a control that PLANTS a defect must prove the plant landed.
 
-THE CLASS. A control earns a gate's green by feeding it a MUTATED fixture and
-requiring the opposite verdict. If the mutation silently does nothing -- because
-the needle it replaces has been reworded, deleted or moved -- the control scans
-the UNMUTATED text, asserts the opposite verdict about identical input, and
-PASSES FOR FREE. The gate then reports that it can detect a defect it has never
-once been shown.
+THE CLASS. A control earns a gate's green by feeding it a MUTATED fixture and requiring the opposite verdict. If the mutation silently does nothing -- because the needle it replaces has been reworded, deleted or moved -- the control scans the UNMUTATED text, asserts the opposite verdict about identical input, and PASSES FOR FREE. The gate then reports that it can detect a defect it
+has never once been shown.
 
-WHY THIS FILE EXISTS AND WHAT IT IS NOT DUPLICATING. On 2026-09-09 the class was
-swept across all three languages in this tree and came back uneven:
+WHY THIS FILE EXISTS AND WHAT IT IS NOT DUPLICATING. On 2026-09-09 the class was swept across all three languages in this tree and came back uneven:
 
   * PYTHON is covered, by `check:ci-python-control-plants`. Its rule is "use the
     HARNESS": `rediacc_ci.controls.plant` raises `VacuousPlantError` when the
@@ -24,8 +19,7 @@ swept across all three languages in this tree and came back uneven:
     TEST corpus with no proof at all. TypeScript had no gate of any kind; two
     control sites existed, one occurrence-checked by hand and one not.
 
-WHY THREE ARMS AND NOT ONE WIDENED GATE. This was decided on evidence, not
-taste, and the evidence is three specific obstacles:
+WHY THREE ARMS AND NOT ONE WIDENED GATE. This was decided on evidence, not taste, and the evidence is three specific obstacles:
 
   1. THE PYTHON PREDICATE CANNOT BE THE BASH PREDICATE. Python's rule is "call
      the harness". Bash has no harness and cannot get one: ruling 7
@@ -46,43 +40,31 @@ taste, and the evidence is three specific obstacles:
      workflow for a gate that is currently green, to merge two predicates that
      stay different anyway.
 
-So: this gate owns BASH and TYPESCRIPT, everywhere in the tracked tree, and it
-DELEGATES Python -- with an assertion, not a comment. If the Python gate's entry
-point stops existing or stops being registered, this gate REFUSES rather than
-quietly leaving a third of the class unscanned. That refusal is the whole
+So: this gate owns BASH and TYPESCRIPT, everywhere in the tracked tree, and it DELEGATES Python -- with an assertion, not a comment. If the Python gate's entry point stops existing or stops being registered, this gate REFUSES rather than quietly leaving a third of the class unscanned. That refusal is the whole
 difference between a delegation and a hole; the 2026-09-08 note in
-`check_python_control_plants.py` records what happened the last time a coverage
-boundary was documented in prose instead of asserted ("21 became 50, and it
-changed silently").
+`check_python_control_plants.py` records what happened the last time a coverage boundary was documented in prose instead of asserted ("21 became 50, and it changed silently").
 
 -----------------------------------------------------------------------------
 THE BASH PREDICATE
 -----------------------------------------------------------------------------
 
-A PLANT is an IN-PLACE mutation of a named file: `sed -i`, `sed -E -i`,
-`sed --in-place`, or `perl -i`/`perl -pi`/`perl -ni`. The target is the last
+A PLANT is an IN-PLACE mutation of a named file: `sed -i`, `sed -E -i`, `sed --in-place`, or `perl -i`/`perl -pi`/`perl -ni`. The target is the last
 word of the command SEGMENT (the logical line split on unquoted `;`, `&&`, `||`
 and `|`), so `for e in "$@"; do sed -i "$e" "$dst"; done` yields `"$dst"` and
 not `done`.
 
-A PROOF is a `grep -q`/`grep -c`/`cmp`/`diff` within eight logical lines either
-side of the plant, naming the SAME target, on a line that is not building a
-string. Both directions count, and both are in real use here:
+A PROOF is a `grep -q`/`grep -c`/`cmp`/`diff` within eight logical lines either side of the plant, naming the SAME target, on a line that is not building a string. Both directions count, and both are in real use here:
 
     # BEFORE: the needle exists to be replaced
     grep -qE '^PORTED_VERBS=\(' "$ctl/run.sh" || fail "PLANT DID NOT LAND"
     # AFTER: the replacement is present
     grep -q '^PORTED_VERBS=(quality)$' "$ctl/run.sh" || fail "PLANT DID NOT LAND"
 
-THE `<<<` AND `$(` EXCLUSION ON A PROOF LINE IS NOT COSMETIC, and it is the one
-tightening this gate needed most. `test-run-sh.sh:441` reads
+THE `<<<` AND `$(` EXCLUSION ON A PROOF LINE IS NOT COSMETIC, and it is the one tightening this gate needed most. `test-run-sh.sh:441` reads
 
     if grep -q '^documented-but-unreachable clean$' <<<"$(verb_findings "$ctl/run.sh" "$ctl/legacy.sh")"
 
-which contains `grep -q` and names the target, and is the CONTROL'S VERDICT, not
-a proof of anything. Counting it turned two genuinely unproven plants at
-`test-run-sh.sh:439` and `:448` into false greens -- measured, in the first
-version of this file. A proof must grep the FILE.
+which contains `grep -q` and names the target, and is the CONTROL'S VERDICT, not a proof of anything. Counting it turned two genuinely unproven plants at `test-run-sh.sh:439` and `:448` into false greens -- measured, in the first version of this file. A proof must grep the FILE.
 
 TWO EXEMPTIONS, both because the mutation CANNOT go vacuous:
 
@@ -98,21 +80,12 @@ TWO EXEMPTIONS, both because the mutation CANNOT go vacuous:
 THE TYPESCRIPT PREDICATE
 -----------------------------------------------------------------------------
 
-Inside a CONTROL REGION, `IDENT.replace(NEEDLE, ...)` where IDENT is a BARE NAME
-must be accompanied, in the same region, by an OCCURRENCE CHECK on the SAME
-needle text: `IDENT.split(NEEDLE).length`, `IDENT.match(...)`, or
-`IDENT.indexOf(NEEDLE)`.
+Inside a CONTROL REGION, `IDENT.replace(NEEDLE, ...)` where IDENT is a BARE NAME must be accompanied, in the same region, by an OCCURRENCE CHECK on the SAME needle text: `IDENT.split(NEEDLE).length`, `IDENT.match(...)`, or `IDENT.indexOf(NEEDLE)`.
 
-THE REGION RESTRICTION IS THE EXEMPTION MECHANISM, exactly as the bare-Name
-restriction is in the Python gate, and it is why there is no allowlist file.
-Measured over the 175 tracked `.ts` files under `scripts/`: 197 bare-identifier
-`.replace(` calls, nearly all of them PARSING -- normalising a path, stripping a
-suffix, indenting a message. Requiring an occurrence check on those would be
-absurd. Scoped to control regions the number collapses to the handful that are
-actually building a mutant.
+THE REGION RESTRICTION IS THE EXEMPTION MECHANISM, exactly as the bare-Name restriction is in the Python gate, and it is why there is no allowlist file. Measured over the 175 tracked `.ts` files under `scripts/`: 197 bare-identifier `.replace(` calls, nearly all of them PARSING -- normalising a path, stripping a suffix, indenting a message. Requiring an occurrence check on those
+would be absurd. Scoped to control regions the number collapses to the handful that are actually building a mutant.
 
-A CONTROL REGION is opened by either of two markers and closed by the brace
-depth returning to where the marker found it:
+A CONTROL REGION is opened by either of two markers and closed by the brace depth returning to where the marker found it:
 
     // ── Control: the extractor, both directions, before it is trusted ──
     {  ...  }                                   a comment naming a control
@@ -128,31 +101,20 @@ the second.
 THE SHELL LEXER, AND WHY IT REPORTS ITS OWN DEGRADATION
 -----------------------------------------------------------------------------
 
-Deciding whether a `sed -i` is CODE or a STRING needs quote state, and quote
-state in bash crosses lines. Three measured false positives depend on getting
-this right, and all three are in the tree today:
+Deciding whether a `sed -i` is CODE or a STRING needs quote state, and quote state in bash crosses lines. Three measured false positives depend on getting this right, and all three are in the tree today:
 
     check-control-vacuity.sh:83   grep -qE '...|sed -i'      inside one line's quotes
     test-media-portable.sh:272    'sed -i "s/a/b/" f'        a fixture ROW, not a command
     test-install-methods.sh:807   [ -f \"\$f\" ] && sed -i   inside a multi-line "..."
 
-So the lexer carries quote state and heredoc state across lines. It is not a
-bash parser: it does not model `$( )` nesting, and on eight of the 520 tracked
-shell files the state does not return to neutral at EOF. Those files are scanned
-in DEGRADED mode -- per line, quote state reset each line -- and the count of
-them is PRINTED. Degraded scanning over-reports rather than under-reports, which
-is the direction this gate wants: a spurious "add a proof" costs one line, a
-missed vacuous plant costs a gate that cannot fail. Measured 2026-09-09: the
-eight degraded files contain ZERO plants under either reading, so the choice is
-currently free.
+So the lexer carries quote state and heredoc state across lines. It is not a bash parser: it does not model `$( )` nesting, and on eight of the 520 tracked shell files the state does not return to neutral at EOF. Those files are scanned in DEGRADED mode -- per line, quote state reset each line -- and the count of them is PRINTED. Degraded scanning over-reports rather than
+under-reports, which is the direction this gate wants: a spurious "add a proof" costs one line, a missed vacuous plant costs a gate that cannot fail. Measured 2026-09-09: the eight degraded files contain ZERO plants under either reading, so the choice is currently free.
 
 -----------------------------------------------------------------------------
 THE BASELINE
 -----------------------------------------------------------------------------
 
-`.ci/config/plant-proof-baseline.json` freezes today's unproven plants. It is
-SHRINK-ONLY and SET-EQUAL IN BOTH DIRECTIONS, and the second direction is the
-half that usually goes missing:
+`.ci/config/plant-proof-baseline.json` freezes today's unproven plants. It is SHRINK-ONLY and SET-EQUAL IN BOTH DIRECTIONS, and the second direction is the half that usually goes missing:
 
   * a plant with NO proof that is NOT in the baseline is a finding (a new
     vacuous control -- or, identically, someone DELETED a baseline row while the
@@ -161,20 +123,14 @@ half that usually goes missing:
     the author to drain with `--write-baseline` (so the set has to shrink, and
     a row cannot be pre-banked for a violation that does not exist).
 
-`--write-baseline` REFUSES any reseed that would ADD a row. A drain that removes
-thirty and adds one has still added one, and comparing totals is not the same
-claim as comparing sets. To admit a genuinely new row it must be typed:
+`--write-baseline` REFUSES any reseed that would ADD a row. A drain that removes thirty and adds one has still added one, and comparing totals is not the same claim as comparing sets. To admit a genuinely new row it must be typed:
 
     check_plant_proofs.py --write-baseline --allow-new <id>
 
-and `--allow-new` is itself checked against the derived set, so it cannot
-pre-load a row for a plant that does not exist.
+and `--allow-new` is itself checked against the derived set, so it cannot pre-load a row for a plant that does not exist.
 
-IDS ARE HASHED OVER THE TEXT, NEVER THE LINE NUMBER. A line number churns when a
-paragraph moves above it, and a churning baseline gets reseeded wholesale, which
-silently re-absorbs every other writer's fresh findings. The id covers the
-language, the file and the WHITESPACE-NORMALISED command text, so a row survives
-a MOVE and re-keys on a REWRITE -- a rewrite being exactly when a human should
+IDS ARE HASHED OVER THE TEXT, NEVER THE LINE NUMBER. A line number churns when a paragraph moves above it, and a churning baseline gets reseeded wholesale, which silently re-absorbs every other writer's fresh findings. The id covers the language, the file and the WHITESPACE-NORMALISED command text, so a row survives a MOVE and re-keys on a REWRITE -- a rewrite being exactly when a
+human should
 look at the plant again. When a re-key happens, hand-edit the single row; do not
 run `--write-baseline`.
 
@@ -193,9 +149,7 @@ ANTI-VACUITY, and every clause is written for the FINISH LINE as well as today
     result. An empty baseline with zero unproven plants is the terminal state
     this gate is aiming at, and it passes, printing zero.
 
-There is deliberately NO `> 0` floor on the unproven count. That is the clause
-that reds at the finish line, and three of them shipped in this repo in three
-days.
+There is deliberately NO `> 0` floor on the unproven count. That is the clause that reds at the finish line, and three of them shipped in this repo in three days.
 """
 
 import hashlib
@@ -235,13 +189,9 @@ def shell_rows(text):
     """[(lineno, code, mask)] plus whether the file needed DEGRADED scanning.
 
     `code` is the line with any trailing comment removed; `mask[i]` is True when
-    `code[i]` sits inside a quoted string. Heredoc bodies are dropped entirely:
-    they are data, not commands.
+    `code[i]` sits inside a quoted string. Heredoc bodies are dropped entirely: they are data, not commands.
 
-    Quote and heredoc state carry ACROSS lines, which is what a bash quote does.
-    When the state has not returned to neutral at EOF the file is rescanned line
-    by line and the second element of the return is True -- see the module
-    docstring on why over-reporting is the safe direction.
+    Quote and heredoc state carry ACROSS lines, which is what a bash quote does. When the state has not returned to neutral at EOF the file is rescanned line by line and the second element of the return is True -- see the module docstring on why over-reporting is the safe direction.
     """
     rows, quote, pending = _shell_rows_once(text)
     if quote is None and pending is None:
@@ -463,13 +413,9 @@ def grep_pattern(code, mask):
 def _has_shell_proof(rows, position, target, needle_words):
     """A proof must name the SAME target AND correlate with the SAME needle.
 
-    THE CORRELATION IS THE HALF THIS GATE SHIPPED WITHOUT AND HAD TO ADD, and it
-    was found by planting on the real tree rather than in a fixture. Stripping
-    both proof lines off control (b) in `test-run-sh.sh` did NOT turn it red:
-    control (c), six logical lines later, greps the SAME `"$ctl/legacy.sh"` copy
+    THE CORRELATION IS THE HALF THIS GATE SHIPPED WITHOUT AND HAD TO ADD, and it was found by planting on the real tree rather than in a fixture. Stripping both proof lines off control (b) in `test-run-sh.sh` did NOT turn it red: control (c), six logical lines later, greps the SAME `"$ctl/legacy.sh"` copy
     for a completely different line, and a target-only rule let (c)'s proof
-    launder (b)'s plant. A proof proves ONE mutation, and the thing that ties
-    them together is the needle.
+    launder (b)'s plant. A proof proves ONE mutation, and the thing that ties them together is the needle.
 
     A whole-file `cmp`/`diff`/`[[ "$a" == "$b" ]]` is accepted without
     correlation: it proves the bytes moved, whatever the needle was.
@@ -508,18 +454,12 @@ _REGEX_PRECEDERS = set("(,=:[!&|?{};+-*%~^<>") | {""}
 def ts_rows(source):
     """[(lineno, code, comment, balanced)] with strings, regexes and comments blanked.
 
-    `comment` is the raw comment text on that line, kept because a control
-    region can be OPENED by a comment. `balanced` is False on the LAST row of a
-    file whose quote, template or block-comment state never returned to neutral,
-    which is the lexer reporting that it could not read the file rather than
-    reporting a clean one.
+    `comment` is the raw comment text on that line, kept because a control region can be OPENED by a comment. `balanced` is False on the LAST row of a file whose quote, template or block-comment state never returned to neutral, which is the lexer reporting that it could not read the file rather than reporting a clean one.
 
     TEMPLATE LITERALS ARE NESTABLE and they nest through `${...}`, so the
     backtick state is a STACK of substitution depths and not a flag. Measured:
     a flag mis-read `${process.env.X ?? `${process.env.HOME}/.rediacc`}/staging`
-    in packages/e2e-tests as a template that closed at the inner backtick, and
-    blanked the remaining 200 lines of the file -- an UNDER-report, which is the
-    dangerous direction for this gate.
+    in packages/e2e-tests as a template that closed at the inner backtick, and blanked the remaining 200 lines of the file -- an UNDER-report, which is the dangerous direction for this gate.
     """
     out = []
     quote = None  # "'" or '"' when inside an ordinary string
@@ -649,9 +589,7 @@ def _opens_regex(prior):
 def _skip_regex(raw, cursor, code):
     """Blank a `/.../flags` literal. Returns the new cursor.
 
-    A `[` class suspends the meaning of `/`, which is what makes
-    `/[^/]*/` parse. An unterminated literal (a lone `/` the preceder
-    heuristic guessed wrong about) blanks to end of line and no further.
+    A `[` class suspends the meaning of `/`, which is what makes `/[^/]*/` parse. An unterminated literal (a lone `/` the preceder heuristic guessed wrong about) blanks to end of line and no further.
     """
     code.append(" ")
     cursor += 1
@@ -690,11 +628,7 @@ _TS_COMMENT_REGION = re.compile(
 def _is_control_name(name):
     """A declaration whose NAME says it is a control, or builds a control mutant.
 
-    The second half is not decoration. `scripts/gates/check-guard-mutations.ts` reaches
-    its `source.replace(m.find, m.replace)` from `applyMutation`, a helper the
-    control calls rather than a control itself, and a rule keyed only on
-    `control*`/`selftest*` walks straight past the one TypeScript site in this
-    tree that already does the right thing -- which would leave the arm with a
+    The second half is not decoration. `scripts/gates/check-guard-mutations.ts` reaches its `source.replace(m.find, m.replace)` from `applyMutation`, a helper the control calls rather than a control itself, and a rule keyed only on `control*`/`selftest*` walks straight past the one TypeScript site in this tree that already does the right thing -- which would leave the arm with a
     single positive and no proof that the PROVEN branch can ever be reached.
     """
     lowered = name.lower()
@@ -756,8 +690,7 @@ _TS_REPLACE = re.compile(
 def ts_plants(source):
     """([(lineno, text, needle, proven)], balanced, region_count) for one .ts file.
 
-    The region count comes back with the plants rather than being recomputed by
-    the caller: lexing 1049 files twice cost three of the gate's six seconds.
+    The region count comes back with the plants rather than being recomputed by the caller: lexing 1049 files twice cost three of the gate's six seconds.
     """
     rows = ts_rows(source)
     balanced = bool(rows) and rows[-1][3]
@@ -806,18 +739,10 @@ def normalise(text):
 def finding_id(lang, rel, text, ordinal=0):
     """sha256 over language, path, NORMALISED TEXT and a duplicate ordinal.
 
-    NEVER A LINE NUMBER: a line number churns when a paragraph moves above it,
-    and a churning baseline gets reseeded wholesale, which is how a fresh
-    finding gets absorbed.
+    NEVER A LINE NUMBER: a line number churns when a paragraph moves above it, and a churning baseline gets reseeded wholesale, which is how a fresh finding gets absorbed.
 
-    THE ORDINAL IS NOT A LINE NUMBER IN DISGUISE, and it exists because the
-    first version of this file did not have one. `test-runner-advice.sh` plants
-    `sed -i 's/"format": 1,/"format": 2,/' "$d/base.json"` at line 371 and again
-    at line 505 -- byte-identical text in the same file. Keyed on text alone the
-    two collapsed to one id, the seeded baseline read 24 where the scan reported
-    25, and the second site was permanently invisible. The ordinal counts
-    IDENTICAL texts within one file, so it is stable under any move that does
-    not add or remove one of the duplicates.
+    THE ORDINAL IS NOT A LINE NUMBER IN DISGUISE, and it exists because the first version of this file did not have one. `test-runner-advice.sh` plants `sed -i 's/"format": 1,/"format": 2,/' "$d/base.json"` at line 371 and again at line 505 -- byte-identical text in the same file. Keyed on text alone the two collapsed to one id, the seeded baseline read 24 where the scan reported
+    25, and the second site was permanently invisible. The ordinal counts IDENTICAL texts within one file, so it is stable under any move that does not add or remove one of the duplicates.
     """
     payload = "\0".join((lang, rel, normalise(text), str(ordinal)))
     return hashlib.sha256(payload.encode("utf-8", "surrogateescape")).hexdigest()[:16]
@@ -989,9 +914,7 @@ NOTE = (
 def baseline_path(root=None):
     """`<root>/.ci/config/plant-proof-baseline.json`, and DELIBERATELY no env override.
 
-    An override would be an undeclared input (`check:ci-python-env-registry`
-    would have to carry it) bought for nothing: every caller here already
-    threads an explicit `root`, which is what the fixtures use.
+    An override would be an undeclared input (`check:ci-python-env-registry` would have to carry it) bought for nothing: every caller here already threads an explicit `root`, which is what the fixtures use.
     """
     return pathlib.Path(root or paths.repo_root()) / BASELINE_REL
 
@@ -1099,12 +1022,8 @@ def _new_finding(row):
 def baseline_additions(old, new):
     """Keys `new` carries that `old` did not -- the DIFF half of the shrink-only guard.
 
-    Named the way `.ci/scripts/quality/check_language_policy.py:442` names it, and
-    extracted from the call site rather than left inline, because the composition gate
-    at `.ci/scripts/test/gates/test-shrink-only-composition.sh:148` requires a writer to
-    DEFINE the diff, CALL the verdict, and compute both -- a writer that reseeds without
-    a named diff can drain thirty findings, absorb one brand new one, and print a smaller
-    number while doing it.
+    Named the way `.ci/scripts/quality/check_language_policy.py:442` names it, and extracted from the call site rather than left inline, because the composition gate at `.ci/scripts/test/gates/test-shrink-only-composition.sh:148` requires a writer to DEFINE the diff, CALL the verdict, and compute both -- a writer that reseeds without a named diff can drain thirty findings, absorb
+    one brand new one, and print a smaller number while doing it.
     """
     return [] if old is None else [k for k in new if k not in old]
 

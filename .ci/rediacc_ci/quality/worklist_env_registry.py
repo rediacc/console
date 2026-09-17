@@ -1,30 +1,19 @@
 r"""check:ci-worklist-env-registry -- every WORKLIST_* name is registered, and
 every registered name is read.
 
-THE DEFECT, IN ONE SENTENCE. A typo'd environment name reads as UNSET, and for a
-feature flag that defaults to `on` that is the FAIL-OPEN direction: the author
-believes they switched something off, the default applies, and the check keeps
-firing with nothing anywhere saying why. Four names in this repository are
-exactly that shape (`WORKLIST_AGENT_HINT`, `WORKLIST_AGENT_PUSHBACK`,
-`WORKLIST_CADENCE`, `WORKLIST_FOCUS`), and until 2026-09-09 there was no
-registry, no schema and nothing that could tell a live name from a dead one.
+THE DEFECT, IN ONE SENTENCE. A typo'd environment name reads as UNSET, and for a feature flag that defaults to `on` that is the FAIL-OPEN direction: the author believes they switched something off, the default applies, and the check keeps firing with nothing anywhere saying why. Four names in this repository are exactly that shape (`WORKLIST_AGENT_HINT`, `WORKLIST_AGENT_PUSHBACK`,
+`WORKLIST_CADENCE`, `WORKLIST_FOCUS`), and until 2026-09-09 there was no registry, no schema and nothing that could tell a live name from a dead one.
 
-MEASURED BEFORE ANY OF IT WAS WRITTEN, 2026-09-09, and the numbers matter
-because the plan box's did not survive contact:
+MEASURED BEFORE ANY OF IT WAS WRITTEN, 2026-09-09, and the numbers matter because the plan box's did not survive contact:
 
     133 live names, 60 tracked files, 183 read sites
       = 155 Python environment lookups + 28 bash ${...} expansions
     plus 153 bash ASSIGNMENT sites, which are the test corpora setting them
 
-The box said "134 distinct names across ~56-60 files at 178 read sites". 134 is
-the GREP answer, and one of those is `WORKLIST_EMAIL`, which appears once, in a
-COMMENT, at `.claude/hooks/stop/worklist-cases/13-ci-queue-and-mail.sh:142`,
-describing a name that used to exist. It is read nowhere. A registry built from
-the grep answer would have enshrined it as a live variable on day one, which is
-the whole argument for scanning the AST instead.
+The box said "134 distinct names across ~56-60 files at 178 read sites". 134 is the GREP answer, and one of those is `WORKLIST_EMAIL`, which appears once, in a COMMENT, at `.claude/hooks/stop/worklist-cases/13-ci-queue-and-mail.sh:142`, describing a name that used to exist. It is read nowhere. A registry built from the grep answer would have enshrined it as a live variable on day
+one, which is the whole argument for scanning the AST instead.
 
-WHAT IS DERIVED AND WHAT IS AUTHORED, because a registry whose every field is
-derivable is a second copy of the code.
+WHAT IS DERIVED AND WHAT IS AUTHORED, because a registry whose every field is derivable is a second copy of the code.
 
   DERIVED, and pinned so drift is a finding: the NAME SET, and the set of
   DEFAULT spellings each name is read with. The default set is the more useful
@@ -45,9 +34,7 @@ derivable is a second copy of the code.
   requirement, because 111 machine-written sentences about numeric thresholds
   would be filler, and filler is how a required field stops being read.
 
-`corpus` IS THE RESIDUAL, AND THAT IS WHY IT REQUIRES A REASON. Any name whose
-default fits no other shape lands there. Making the residual the most expensive
-kind to declare is what stops it becoming the drawer everything is swept into.
+`corpus` IS THE RESIDUAL, AND THAT IS WHY IT REQUIRES A REASON. Any name whose default fits no other shape lands there. Making the residual the most expensive kind to declare is what stops it becoming the drawer everything is swept into.
 
 BOTH DIRECTIONS, WHICH IS THE ACCEPTANCE THE BOX ASKS FOR:
 
@@ -57,19 +44,14 @@ BOTH DIRECTIONS, WHICH IS THE ACCEPTANCE THE BOX ASKS FOR:
     direction that rots, because nothing breaks when a variable stops being
     read, and a registry full of names nobody uses is a registry nobody trusts.
 
-THE EXCLUSIONS ARE IN THE REGISTRY, NOT IN THIS FILE, and the box is right to
-insist. `agent/` is live gated state under invariant 7 and is full of plans that
+THE EXCLUSIONS ARE IN THE REGISTRY, NOT IN THIS FILE, and the box is right to insist. `agent/` is live gated state under invariant 7 and is full of plans that
 NAME these variables in prose; admitting it would register every name any plan
-ever discussed and make "dead" unreportable forever. `docs/` is the same
-argument. Both are declared in the registry with their reasons, so the reason
-travels with the exclusion and this gate cannot quietly widen it. An exclusion
-prefix that excludes NOTHING is itself a finding.
+ever discussed and make "dead" unreportable forever. `docs/` is the same argument. Both are declared in the registry with their reasons, so the reason travels with the exclusion and this gate cannot quietly widen it. An exclusion prefix that excludes NOTHING is itself a finding.
 
 ANTI-VACUITY, SIX REFUSALS. A missing or unparseable registry; a registry with
 no names; a registry with no exclusions; a corpus of zero tracked files; a
 corpus in which zero names are read; and a `git ls-files` that fails. Each exits
-1 with its own sentence. The success line prints the name count, the file count,
-the read-site count and the per-kind breakdown, so a collapse is visible.
+1 with its own sentence. The success line prints the name count, the file count, the read-site count and the per-kind breakdown, so a collapse is visible.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
 
@@ -114,10 +96,7 @@ class RefusalError(Exception):
 class Read:
     """One place a WORKLIST_* name is read, with the fallback it is read with.
 
-    `default` is a SPELLING, not a value: `str(400 * 1024)` is kept verbatim
-    rather than evaluated. Evaluating it would make the pin agree with a
-    refactor that changed the arithmetic, which is exactly the change a reader
-    would want to see.
+    `default` is a SPELLING, not a value: `str(400 * 1024)` is kept verbatim rather than evaluated. Evaluating it would make the pin agree with a refactor that changed the arithmetic, which is exactly the change a reader would want to see.
     """
 
     def __init__(self, name, rel, line, default):
@@ -137,8 +116,7 @@ def scan_python(rel, source):
     """Every WORKLIST_* environment READ in one Python file.
 
     Writes are excluded: `os.environ["X"] = v` is a test setting the variable,
-    not code depending on it, and counting it would make a name that only the
-    test corpus assigns look alive.
+    not code depending on it, and counting it would make a name that only the test corpus assigns look alive.
     """
     tree = ast.parse(source, filename=rel)
     written = set()
@@ -188,9 +166,7 @@ _BASH_BARE = re.compile(r"\$\{?(WORKLIST_[A-Z0-9_]+)(?![A-Z0-9_:])")
 def scan_bash(rel, source):
     """Every WORKLIST_* expansion in one shell file, with its `:-` fallback.
 
-    An ASSIGNMENT is not a read, for the same reason as in Python. The bash
-    corpus is mostly `worklist-cases/*.sh` setting variables up for a fixture,
-    and 153 of those assignments would otherwise drown the 28 real expansions.
+    An ASSIGNMENT is not a read, for the same reason as in Python. The bash corpus is mostly `worklist-cases/*.sh` setting variables up for a fixture, and 153 of those assignments would otherwise drown the 28 real expansions.
     """
     out = []
     for index, line in enumerate(source.splitlines(), 1):
@@ -209,9 +185,7 @@ def scan_bash(rel, source):
 def tracked_files(root):
     """Tracked paths under `root`, from git. Never a filesystem walk.
 
-    The policy is about what is COMMITTED: a scratch file naming a variable is
-    not a read this registry should account for, and a filesystem walk would
-    also drag in `node_modules` and every `__pycache__`.
+    The policy is about what is COMMITTED: a scratch file naming a variable is not a read this registry should account for, and a filesystem walk would also drag in `node_modules` and every `__pycache__`.
     """
     try:
         proc = subprocess.run(

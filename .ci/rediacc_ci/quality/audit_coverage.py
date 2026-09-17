@@ -1,8 +1,7 @@
 r"""Audit-logging coverage for machine-level CLI operations.
 
 Ported from `.ci/scripts/quality/check-audit-coverage.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live and for the phase-5
-decision that retires the twin.
+see `rediacc_ci.quality.__init__` for why both copies live and for the phase-5 decision that retires the twin.
 
 THE TWIN'S OWN HEADER, carried over because the list of invariants IS the gate:
 
@@ -21,74 +20,45 @@ THE TWIN'S OWN HEADER, carried over because the list of invariants IS the gate:
     0 - All operations have audit logging coverage
     1 - One or more gaps detected
 
-There are FIVE phases and only three invariants, which is not a contradiction:
-phases 4 and 5 were added later and phase 4 is a WARNING that never sets ERRORS.
-The header was not updated. Left as it stands, and reported.
+There are FIVE phases and only three invariants, which is not a contradiction: phases 4 and 5 were added later and phase 4 is a WARNING that never sets ERRORS. The header was not updated. Left as it stands, and reported.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-PHASE 4'S FILE ORDER IS NONDETERMINISTIC IN THE TWIN, AND SORTED HERE. The twin
-builds that list with a bare `grep -rl ... "$CLI_SRC/commands/"` and never pipes
-it through `sort`, unlike phases 5's two `sort -u`s. The `grep` on this host is
-ugrep 7.8.4, which walks the tree with a thread pool, and six consecutive runs
-over the same six-file fixture printed six DIFFERENT orders:
+PHASE 4'S FILE ORDER IS NONDETERMINISTIC IN THE TWIN, AND SORTED HERE. The twin builds that list with a bare `grep -rl ... "$CLI_SRC/commands/"` and never pipes it through `sort`, unlike phases 5's two `sort -u`s. The `grep` on this host is ugrep 7.8.4, which walks the tree with a thread pool, and six consecutive runs over the same six-file fixture printed six DIFFERENT orders:
 
     commands/bravo.ts commands/alpha.ts commands/mike.ts commands/zeta.ts ...
     commands/alpha.ts commands/zeta.ts commands/mike.ts commands/bravo.ts ...
     commands/bravo.ts commands/sub/yankee.ts commands/alpha.ts ...
 
-So there is no order to transliterate: two runs of the twin on ONE tree already
-disagree with each other. This port sorts, which is the only reproducible choice
-and is what phase 5 already does for its own two lists. `scripts/lib/shadow-gate.ts`
-compares findings as a MULTISET and fingerprints a SORTED list, so the two sides
+So there is no order to transliterate: two runs of the twin on ONE tree already disagree with each other. This port sorts, which is the only reproducible choice and is what phase 5 already does for its own two lists. `scripts/lib/shadow-gate.ts` compares findings as a MULTISET and fingerprints a SORTED list, so the two sides
 are ruled equivalent either way; the sorting is for the human reading a diff.
 Reported as a defect in the twin rather than treated as an ordering preference.
 
-THE `/commands/` FILTER IN PHASE 4 IS DEAD CODE. `grep -rl` is rooted at
-`$CLI_SRC/commands/`, so every path it can possibly return already contains
+THE `/commands/` FILTER IN PHASE 4 IS DEAD CODE. `grep -rl` is rooted at `$CLI_SRC/commands/`, so every path it can possibly return already contains
 `/commands/`, and the `if [[ "$rel" != *"/commands/"* ]]; then continue; fi`
-guarding "Skip non-command files (services, utils)" can never fire. Carried,
-because removing it would be a change to the twin under a port, and reported.
+guarding "Skip non-command files (services, utils)" can never fire. Carried, because removing it would be a change to the twin under a port, and reported.
 
-PHASE 5'S EXCLUSION OF THE AUDIT SERVICE DOES NOT WORK, and this is the one that
-matters. The comment says the scan runs "excluding tests and the audit service
-itself, where mappings are *defined*", and the pipeline is:
+PHASE 5'S EXCLUSION OF THE AUDIT SERVICE DOES NOT WORK, and this is the one that matters. The comment says the scan runs "excluding tests and the audit service itself, where mappings are *defined*", and the pipeline is:
 
     grep -rhE "functionName: '[a-z_]+'" .../commands/ .../services/ \
         --include='*.ts' --exclude-dir=__tests__ 2>/dev/null |
       grep -v 'audit.ts' | ...
 
-`-h` SUPPRESSES THE FILENAME PREFIX, so by the time `grep -v 'audit.ts'` runs
-there are no filenames left in the stream: it filters LINES whose own text
-contains `audit.ts`, which a `functionName: 'x'` line never does. Every
-`functionName` literal inside `services/core/audit.ts` is therefore scanned,
-including any the service defines as examples. Preserved exactly, because
-"fixing" it would drop findings the twin reports, and reported.
+`-h` SUPPRESSES THE FILENAME PREFIX, so by the time `grep -v 'audit.ts'` runs there are no filenames left in the stream: it filters LINES whose own text contains `audit.ts`, which a `functionName: 'x'` line never does. Every `functionName` literal inside `services/core/audit.ts` is therefore scanned, including any the service defines as examples. Preserved exactly, because "fixing"
+it would drop findings the twin reports, and reported.
 
-`grep -v 'audit.ts'` IS A BRE, so the `.` matches any character and a line
-mentioning `auditXts` would also be dropped. Reproduced with the same
-permissiveness rather than with a literal match, since a port that was stricter
-here could keep a line the twin discards.
+`grep -v 'audit.ts'` IS A BRE, so the `.` matches any character and a line mentioning `auditXts` would also be dropped. Reproduced with the same permissiveness rather than with a literal match, since a port that was stricter here could keep a line the twin discards.
 
-PHASE 3 REPORTS A COUNT IT DID NOT CHECK. When an edge-case file is missing from
-disk the twin logs a warning and `continue`s, then prints "All 2 edge-case files
+PHASE 3 REPORTS A COUNT IT DID NOT CHECK. When an edge-case file is missing from disk the twin logs a warning and `continue`s, then prints "All 2 edge-case files
 have audit calls" using `${#EDGE_CASE_FILES[@]}` -- the length of the LIST, not
-the number actually verified. One missing file and one good one still reads as
-"All 2". Carried byte for byte, and reported.
+the number actually verified. One missing file and one good one still reads as "All 2". Carried byte for byte, and reported.
 
-THE ABSENT-INPUT PATHS ARE ASYMMETRIC, and that asymmetry is the twin's. Phases
-1, 2 and 5 treat a missing file as an ERROR, which is right. Phases 4 and 5's
-source scans treat a missing DIRECTORY as an empty result and pass: point this
-gate at a tree with no `packages/cli/src/commands` at all and it reports no
-unaudited paths and no missing event types. That is a vacuity hole in the twin,
-preserved because closing it would change the verdict, and reported.
+THE ABSENT-INPUT PATHS ARE ASYMMETRIC, and that asymmetry is the twin's. Phases 1, 2 and 5 treat a missing file as an ERROR, which is right. Phases 4 and 5's source scans treat a missing DIRECTORY as an empty result and pass: point this gate at a tree with no `packages/cli/src/commands` at all and it reports no unaudited paths and no missing event types. That is a vacuity hole in
+the twin, preserved because closing it would change the verdict, and reported.
 
-`grep -q 'auditService\.recordOperation'` IS A BRE WITH AN ESCAPED DOT, so it is
-a plain substring test and is written as one here. `'cli\.[a-z._]+[a-z_]'` is an
-ERE and is written as a regex. The two are not the same kind of pattern and are
-not treated as if they were.
+`grep -q 'auditService\.recordOperation'` IS A BRE WITH AN ESCAPED DOT, so it is a plain substring test and is written as one here. `'cli\.[a-z._]+[a-z_]'` is an ERE and is written as a regex. The two are not the same kind of pattern and are not treated as if they were.
 """
 
 import os
@@ -145,10 +115,7 @@ EXACT_RULES = {
 def function_name_to_event_type(fn: str) -> str:
     """`case "$fn" in ... esac` -- the twin's mapping, arm for arm.
 
-    Keep this in sync with `functionNameToEventType` in event-schema.ts, which is
-    what the twin's own comment asks of the next reader. It is duplicated logic
-    in BOTH implementations and the duplication is the point: the gate exists to
-    notice when the two drift.
+    Keep this in sync with `functionNameToEventType` in event-schema.ts, which is what the twin's own comment asks of the next reader. It is duplicated logic in BOTH implementations and the duplication is the point: the gate exists to notice when the two drift.
     """
     for prefix, replacement in PREFIX_RULES:
         if fn.startswith(prefix):
@@ -161,9 +128,7 @@ def function_name_to_event_type(fn: str) -> str:
 def _read(path: pathlib.Path) -> str:
     """A file's text, or "" when it cannot be read.
 
-    grep sends its complaint to the stderr the twin redirects to /dev/null and
-    lists nothing, so an unreadable file contributes nothing rather than raising
-    in the middle of a failure report.
+    grep sends its complaint to the stderr the twin redirects to /dev/null and lists nothing, so an unreadable file contributes nothing rather than raising in the middle of a failure report.
     """
     try:
         return path.read_text(encoding="utf-8", errors="replace")
@@ -177,12 +142,8 @@ def _walk_files(
     """`grep -r` over `root`, as a SORTED path list.
 
     Sorted, unlike the twin's phase 4; see the port notes for the six runs that
-    produced six orders. `exclude_dirs` is `--exclude-dir`, which prunes by
-    directory NAME at any depth, matching grep rather than matching a path
-    prefix. `paths.walk_tree` applies it, and adds this package's standing prune
-    of `.git`, `node_modules` and `.claude/worktrees` on top -- the last of which
-    is a peer's sibling checkout of this same repository, invisible to git and
-    not to a raw `os.walk`.
+    produced six orders. `exclude_dirs` is `--exclude-dir`, which prunes by directory NAME at any depth, matching grep rather than matching a path prefix. `paths.walk_tree` applies it, and adds this package's standing prune of `.git`, `node_modules` and `.claude/worktrees` on top -- the last of which is a peer's sibling checkout of this same repository, invisible to git and not to
+    a raw `os.walk`.
     """
     out: list[pathlib.Path] = []
     if not root.is_dir():
@@ -217,8 +178,7 @@ def sftp_importers(cli_src: pathlib.Path, repo_root: pathlib.Path) -> list[str]:
 def _relative(path: pathlib.Path, repo_root: pathlib.Path) -> str:
     """`${file#"$REPO_ROOT"/}` -- a PREFIX STRIP, not a path computation.
 
-    A file that is not under the root keeps its whole name, which is what the
-    parameter expansion does and is the harmless case.
+    A file that is not under the root keeps its whole name, which is what the parameter expansion does and is the harmless case.
     """
     return str(path).removeprefix(str(repo_root).rstrip("/") + "/")
 
@@ -227,10 +187,7 @@ def union_types(schema_text: str) -> list[str]:
     """Phase 5's declared event types: `grep -oE ... | sort -u`, then unquoted.
 
     The four `${var//x/}` substitutions the twin applies afterwards (strip `'`,
-    `"`, `,`, then every space) are folded into one pass, because on the output
-    of THIS regex they can only ever remove the two surrounding quotes: the
-    pattern admits no comma, no double quote and no space. Stated rather than
-    left as an unexplained simplification.
+    `"`, `,`, then every space) are folded into one pass, because on the output of THIS regex they can only ever remove the two surrounding quotes: the pattern admits no comma, no double quote and no space. Stated rather than left as an unexplained simplification.
     """
     found = {m.group(0) for m in EVENT_TYPE_RE.finditer(schema_text)}
     cleaned = {t.replace("'", "").replace('"', "").replace(",", "").replace(" ", "") for t in found}
@@ -240,10 +197,7 @@ def union_types(schema_text: str) -> list[str]:
 def emitted_function_names(cli_src: pathlib.Path) -> list[str]:
     """Phase 5's emitted names: the `grep -rhE | grep -v | grep -oE | sed | sort -u`.
 
-    THE `grep -v 'audit.ts'` STAGE FILTERS NOTHING, because `-h` has already
-    stripped the filenames. It is reproduced faithfully, filtering LINES whose
-    own text matches, so the audit service's own literals are counted exactly as
-    the twin counts them. See the port notes.
+    THE `grep -v 'audit.ts'` STAGE FILTERS NOTHING, because `-h` has already stripped the filenames. It is reproduced faithfully, filtering LINES whose own text matches, so the audit service's own literals are counted exactly as the twin counts them. See the port notes.
     """
     names: set[str] = set()
     for root in (cli_src / "commands", cli_src / "services"):
@@ -262,13 +216,9 @@ def emitted_function_names(cli_src: pathlib.Path) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 one or more gaps.
 
-    Long and branchy on purpose: the twin is five sequential phases sharing one
-    ERRORS counter, and splitting it into five functions that each return a
-    partial verdict would make the ORDER of the output an accident of the
-    caller. The order is part of what the differential compares.
+    Long and branchy on purpose: the twin is five sequential phases sharing one ERRORS counter, and splitting it into five functions that each return a partial verdict would make the ORDER of the output an accident of the caller. The order is part of what the differential compares.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments
-    at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -401,8 +351,7 @@ def main(argv: list[str] | None = None) -> int:
 def _seed_clean(root: pathlib.Path) -> None:
     """A tree that satisfies every phase. The base every plant below mutates.
 
-    Asserted CLEAN first in `selftest`: without that, each plant would "fire"
-    against a fixture that was already failing and the suite would be green
+    Asserted CLEAN first in `selftest`: without that, each plant would "fire" against a fixture that was already failing and the suite would be green
     while testing nothing.
     """
     cli = root / "packages" / "cli" / "src"
@@ -433,9 +382,7 @@ def _seed_clean(root: pathlib.Path) -> None:
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will
-    happily flag a correct tree, and the mirrors below are the half that proves
-    it does not.
+    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct tree, and the mirrors below are the half that proves it does not.
     """
     ctl = Controls("audit-coverage", floor=22, verbose=True)
 

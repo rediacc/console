@@ -3,13 +3,8 @@
 
 Skip-plan reconciliation for `ci-complete`. Polarity depends on `SCOPE_MODE`:
 when the scope step actually reduced this run (`SCOPE_MODE=reduced`), every
-way of failing to verify that reduction against the run's real per-job
-outcomes -- a missing plan artifact, an unreadable Jobs API, an absent `gh` or
-`node`, a reconciler that times out or disagrees -- is a HARD FAILURE (exit
-1). Otherwise the same gaps are reported as gaps and the script exits 0. See
-the twin's own header for the measured argument for why this is safe across a
-rerun (the Jobs API's default `latest` filter materializes a complete job list
-per attempt) and for `PREEXISTING_CONDITIONS`.
+way of failing to verify that reduction against the run's real per-job outcomes -- a missing plan artifact, an unreadable Jobs API, an absent `gh` or `node`, a reconciler that times out or disagrees -- is a HARD FAILURE (exit 1). Otherwise the same gaps are reported as gaps and the script exits 0. See the twin's own header for the measured argument for why this is safe across a
+rerun (the Jobs API's default `latest` filter materializes a complete job list per attempt) and for `PREEXISTING_CONDITIONS`.
 
 REQUIRED ENV: `GH_TOKEN`, `GITHUB_REPOSITORY`, `GITHUB_RUN_ID`, `SCOPE_MODE`.
 `GITHUB_STEP_SUMMARY` optional; falls back to stdout when running locally.
@@ -18,51 +13,26 @@ PORT NOTES.
 
 NO `errexit` TO REPLICATE. The twin runs under `set -uo pipefail`, with NO
 `-e`: every external call's success is checked EXPLICITLY (`if ! cmd; then
-...`), so this port's control flow is a direct, mechanical transliteration --
-there is no implicit "the script dies here" behaviour hiding in a bare
-command the way there would be under `-e`.
+...`), so this port's control flow is a direct, mechanical transliteration -- there is no implicit "the script dies here" behaviour hiding in a bare command the way there would be under `-e`.
 
 `emit()` CAN DUPLICATE ITS OWN OUTPUT, and that is a property of the twin
 being ported faithfully, not a port defect. `SUMMARY="${GITHUB_STEP_SUMMARY:-
 /dev/stdout}"` and `emit` is `printf '%s\\n' "$@" | tee -a "$SUMMARY"`: `tee`
-always writes once to its own inherited stdout AND appends to the file named
-by `$SUMMARY`. When `GITHUB_STEP_SUMMARY` is unset (the documented local-run
+always writes once to its own inherited stdout AND appends to the file named by `$SUMMARY`. When `GITHUB_STEP_SUMMARY` is unset (the documented local-run
 case), `$SUMMARY` IS `/dev/stdout` -- the same fd -- so every `emit` call
-writes its lines TWICE. Measured directly: `printf 'hello\\n' | tee -a
-/dev/stdout` prints `hello` twice. `_emit`/`_tee_head` below reproduce this
-by writing to real stdout unconditionally and then EITHER appending to the
-summary file (when one is set) OR writing to stdout a second time (when it is
-not), matching `tee`'s own behaviour rather than special-casing "local mode"
-away.
+writes its lines TWICE. Measured directly: `printf 'hello\\n' | tee -a /dev/stdout` prints `hello` twice. `_emit`/`_tee_head` below reproduce this by writing to real stdout unconditionally and then EITHER appending to the summary file (when one is set) OR writing to stdout a second time (when it is not), matching `tee`'s own behaviour rather than special-casing "local mode" away.
 
-`gap()` HAS EXACTLY ONE MEANING PER POLARITY, always: emit the caller's lines,
-then either the hard-failure block and exit 1 (`HARD_GATE`), or the soft-gap
-note and exit 0. Ported as a function that RETURNS the exit code rather than
-calling `sys.exit` itself, so `main()` can `return gap(...)` from any call
-site exactly where the twin would `gap ...` and fall off the end of the
-script -- the twin's `gap` never returns to its caller (it always `exit`s),
-and neither does a `return gap(...)` in `main`.
+`gap()` HAS EXACTLY ONE MEANING PER POLARITY, always: emit the caller's lines, then either the hard-failure block and exit 1 (`HARD_GATE`), or the soft-gap note and exit 0. Ported as a function that RETURNS the exit code rather than calling `sys.exit` itself, so `main()` can `return gap(...)` from any call site exactly where the twin would `gap ...` and fall off the end of the
+script -- the twin's `gap` never returns to its caller (it always `exit`s), and neither does a `return gap(...)` in `main`.
 
-THE TOOL PROBE EXITS ON THE FIRST MISSING TOOL, checked `gh` then `node`, and
-never checks the second if the first is already missing -- `gap` inside the
+THE TOOL PROBE EXITS ON THE FIRST MISSING TOOL, checked `gh` then `node`, and never checks the second if the first is already missing -- `gap` inside the
 twin's `for tool in gh node; do ... done` loop calls `exit` directly, ending
-the whole script, not just the loop. `return gap(...)` inside the `for tool in
-("gh", "node")` loop reproduces that: `main` returns before the loop's next
-iteration.
+the whole script, not just the loop. `return gap(...)` inside the `for tool in ("gh", "node")` loop reproduces that: `main` returns before the loop's next iteration.
 
-`_head_bytes` TRANSLITERATES `"$(head -c N "$file" 2>/dev/null)"` AS CAPTURED
-INTO A SHELL ARGUMENT, which means ALL trailing newlines are stripped (command
-substitution strips every trailing newline, not one), matching `emit`'s
-subsequent `printf '%s\\n'` re-adding EXACTLY one. A missing file yields the
-empty string on both sides (`head`'s own stderr is redirected away and a
+`_head_bytes` TRANSLITERATES `"$(head -c N "$file" 2>/dev/null)"` AS CAPTURED INTO A SHELL ARGUMENT, which means ALL trailing newlines are stripped (command substitution strips every trailing newline, not one), matching `emit`'s subsequent `printf '%s\\n'` re-adding EXACTLY one. A missing file yields the empty string on both sides (`head`'s own stderr is redirected away and a
 `$(...)` around a command that printed nothing to stdout is simply `""`).
 
-`_tee_head`, BY CONTRAST, TRANSLITERATES THE RAW-FILE PATH
-(`head -c N "$file" 2>/dev/null | tee -a "$SUMMARY"`) with NO extra newline
-added and NO trailing-newline stripping: whatever raw bytes `head` would
-produce (including none, for a missing file) are written to stdout and to the
-summary exactly as read, because this is a `cat`-shaped pipeline, not an
-`emit` call.
+`_tee_head`, BY CONTRAST, TRANSLITERATES THE RAW-FILE PATH (`head -c N "$file" 2>/dev/null | tee -a "$SUMMARY"`) with NO extra newline added and NO trailing-newline stripping: whatever raw bytes `head` would produce (including none, for a missing file) are written to stdout and to the summary exactly as read, because this is a `cat`-shaped pipeline, not an `emit` call.
 
 `bounded()` WRAPS EVERY EXTERNAL CALL IN A TIMEOUT, matching the twin's
 `timeout "$GH_TIMEOUT" "$@"`. `subprocess.run(..., timeout=...)` raising
@@ -70,30 +40,11 @@ summary exactly as read, because this is a `cat`-shaped pipeline, not an
 for "killed the child" -- the twin's `rc -eq 124` branch depends on that exact
 number, not on some other characteristic of a timeout.
 
-ONE RESIDUAL DIVERGENCE, named rather than hidden, on the `GITHUB_STEP_SUMMARY`
-UNSET path only. Measured directly on this host: when `$SUMMARY` falls back to
-`/dev/stdout` AND the script's own stdout is redirected to a regular file
-(`bash scope-reconcile-shadow.sh > out.txt`, the documented LOCAL RUN shape),
-the twin's output is not a clean duplicate -- it is DETERMINISTICALLY
-GARBLED (reproduced identically across three separate runs, byte for byte).
-The cause is a kernel-level file-offset race, not script logic: each `emit`
-spawns a fresh `tee -a /dev/stdout` process whose `-a` target reopens
-`/dev/stdout` (`/proc/self/fd/1`) as a SEPARATE open file description with its
-own `O_APPEND`-driven "seek to true end of file" on every write, while the
-same `tee` process's OWN stdout is the ONE inherited, offset-sharing
-descriptor threaded through every `emit` call across the whole script. Two
-descriptions racing to extend the same regular file corrupts interleaving in
-exactly the way observed. This port's `_dual_write` does NOT reproduce that:
-writing twice through Python's single buffered `sys.stdout` produces a clean,
-correctly-ordered duplicate (verified: the twin's corrupted output and the
-port's clean output diverge on this one path). Not fixed and not chased
-further, because production never takes it: `ci.yml:1781` runs this step
-inside GitHub Actions, which ALWAYS sets `GITHUB_STEP_SUMMARY` to a real file,
-so the fallback-to-`/dev/stdout` branch is unreachable in the wiring that
-actually calls this script. Every differential case in this port's test file
-therefore sets `GITHUB_STEP_SUMMARY` to a real path, matching production
-exactly, and the unset-SUMMARY case is exercised once, separately, as a named
-divergence rather than an equivalence claim.
+ONE RESIDUAL DIVERGENCE, named rather than hidden, on the `GITHUB_STEP_SUMMARY` UNSET path only. Measured directly on this host: when `$SUMMARY` falls back to `/dev/stdout` AND the script's own stdout is redirected to a regular file (`bash scope-reconcile-shadow.sh > out.txt`, the documented LOCAL RUN shape), the twin's output is not a clean duplicate -- it is DETERMINISTICALLY
+GARBLED (reproduced identically across three separate runs, byte for byte). The cause is a kernel-level file-offset race, not script logic: each `emit` spawns a fresh `tee -a /dev/stdout` process whose `-a` target reopens `/dev/stdout` (`/proc/self/fd/1`) as a SEPARATE open file description with its own `O_APPEND`-driven "seek to true end of file" on every write, while the same
+`tee` process's OWN stdout is the ONE inherited, offset-sharing descriptor threaded through every `emit` call across the whole script. Two descriptions racing to extend the same regular file corrupts interleaving in exactly the way observed. This port's `_dual_write` does NOT reproduce that: writing twice through Python's single buffered `sys.stdout` produces a clean,
+correctly-ordered duplicate (verified: the twin's corrupted output and the port's clean output diverge on this one path). Not fixed and not chased further, because production never takes it: `ci.yml:1781` runs this step inside GitHub Actions, which ALWAYS sets `GITHUB_STEP_SUMMARY` to a real file, so the fallback-to-`/dev/stdout` branch is unreachable in the wiring that actually
+calls this script. Every differential case in this port's test file therefore sets `GITHUB_STEP_SUMMARY` to a real path, matching production exactly, and the unset-SUMMARY case is exercised once, separately, as a named divergence rather than an equivalence claim.
 """
 
 from __future__ import annotations

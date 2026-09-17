@@ -1,26 +1,13 @@
 """The gate test for `check:ci-secret-supply`, which has no bash twin.
 
-NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name
-here and nothing to compare against. What it tests is the half a selftest
-structurally cannot: the gate as a PROCESS, invoked the way CI invokes it,
-against the REAL `.ci/config/secret-supply.json`, the REAL env manifest and the
-REAL vault map.
+NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name here and nothing to compare against. What it tests is the half a selftest structurally cannot: the gate as a PROCESS, invoked the way CI invokes it, against the REAL `.ci/config/secret-supply.json`, the REAL env manifest and the REAL vault map.
 
-WHY THAT DISTINCTION EARNS ITS KEEP HERE SPECIFICALLY. Every control in
-`secret_supply.selftest()` runs against a five-name fixture. The clauses that
-matter most on this gate are the ones about the SIZE and SHAPE of the real
-corpus: 84 declared names, 58 in the map, 26 unstated. A fixture proves the
+WHY THAT DISTINCTION EARNS ITS KEEP HERE SPECIFICALLY. Every control in `secret_supply.selftest()` runs against a five-name fixture. The clauses that matter most on this gate are the ones about the SIZE and SHAPE of the real corpus: 84 declared names, 58 in the map, 26 unstated. A fixture proves the
 arithmetic; only the real tree proves the gate is pointed at it.
 
-NOTHING THE REPOSITORY OWNS IS MUTATED. The plants below all run against a
-MIRROR: a scratch root holding copies of the three real config files plus every
-file the spec cites as evidence, with `$REDIACC_CI_ROOT` pointed at it. Other
-sessions share this worktree, and a config that is wrong for even a second is a
-config some other session's gate ran against.
+NOTHING THE REPOSITORY OWNS IS MUTATED. The plants below all run against a MIRROR: a scratch root holding copies of the three real config files plus every file the spec cites as evidence, with `$REDIACC_CI_ROOT` pointed at it. Other sessions share this worktree, and a config that is wrong for even a second is a config some other session's gate ran against.
 
-AND THE MIRROR IS PROVEN GREEN BEFORE EVERY PLANT. A plant that reds against a
-mirror which was already red proves nothing at all, so each case asserts the
-clean copy first and only then mutates it.
+AND THE MIRROR IS PROVEN GREEN BEFORE EVERY PLANT. A plant that reds against a mirror which was already red proves nothing at all, so each case asserts the clean copy first and only then mutates it.
 """
 
 import json
@@ -56,9 +43,7 @@ def _spec() -> dict:
 def _mirror(tmp: pathlib.Path) -> pathlib.Path:
     """A scratch root holding copies of the real inputs, as a git repository.
 
-    The evidence citations are checked against `git ls-files`, so a mirror that
-    is not a repository would report every citation as DEAD and the plants below
-    would all "pass" for the wrong reason.
+    The evidence citations are checked against `git ls-files`, so a mirror that is not a repository would report every citation as DEAD and the plants below would all "pass" for the wrong reason.
     """
     rels = list(CONFIGS) + sorted({e["evidence"] for e in _spec()["residue"].values()})
     for rel in rels:

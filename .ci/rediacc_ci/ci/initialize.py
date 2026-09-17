@@ -1,29 +1,19 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/initialize.sh` (324 lines, 7 steps).
 
-The first job of every CI run: validate the app token, decide whether the push
-came from a bot, initialise the private submodules, mint the three image tags,
-resolve the next version from the tag list, and ask the registry which of the
-three images already exist. Everything downstream reads its outputs, so a wrong
-answer here is a wrong answer everywhere.
+The first job of every CI run: validate the app token, decide whether the push came from a bot, initialise the private submodules, mint the three image tags, resolve the next version from the tag list, and ask the registry which of the three images already exist. Everything downstream reads its outputs, so a wrong answer here is a wrong answer everywhere.
 
 LIVE CALLER, not repointed. The bash twin stays the registered gate; this module
-is its verified-equivalent alternative, and the cutover is a separate, later,
-driver-only step. The twin is also the subject of
-`.ci/scripts/test/gates/test-releaseversion-tag-fetch.sh`, which EXTRACTS its
+is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step. The twin is also the subject of `.ci/scripts/test/gates/test-releaseversion-tag-fetch.sh`, which EXTRACTS its
 tag-fetch block by literal anchors; nothing here changes those anchors because
 nothing here touches the twin.
 
-Ledger: `.ci/shadow/w7p6-initialize.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).
+Ledger: `.ci/shadow/w7p6-initialize.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).
 
 -----------------------------------------------------------------------------
 WHY THE FIVE SIBLING SCRIPTS ARE STILL THE BASH ONES
 -----------------------------------------------------------------------------
-The twin shells out to `detect-pointer-bump.sh`, `generate-tag.sh` (three
-times), `detect-bump-type.sh`, `dispatch-release.sh` and `resolve-version.sh`.
-This port runs the SAME five bash scripts, by the same relative paths, with the
-same argv. Three reasons, in order of weight:
+The twin shells out to `detect-pointer-bump.sh`, `generate-tag.sh` (three times), `detect-bump-type.sh`, `dispatch-release.sh` and `resolve-version.sh`. This port runs the SAME five bash scripts, by the same relative paths, with the same argv. Three reasons, in order of weight:
 
   1. `detect-pointer-bump.sh` has no Python port at all, so a port that reached
      for `rediacc_ci` siblings would have to reach for bash anyway, and the
@@ -34,8 +24,7 @@ same argv. Three reasons, in order of weight:
   3. Repointing a live caller at a port is exactly the cutover step this wave is
      forbidden to take.
 
-`set_image_tags.py`, the other file in this wave, does the opposite and calls
-`derive_image_tag` in process. The difference is deliberate: that sibling is
+`set_image_tags.py`, the other file in this wave, does the opposite and calls `derive_image_tag` in process. The difference is deliberate: that sibling is
 ALREADY ported and already carries a K=5 ledger, and its twin's job there is one
 call with two arms rather than six calls threaded through five steps.
 
@@ -43,9 +32,7 @@ call with two arms rather than six calls threaded through five steps.
 DEFECT A -- `GITHUB_REPOSITORY` IS REQUIRED AND NEVER CHECKED, AND IT DIES 200
 LINES AFTER THE CHECK THAT WOULD HAVE CAUGHT IT
 -----------------------------------------------------------------------------
-Step 1 validates `GITHUB_PAT` with four lines of prose naming the secret, the
-settings page and the scopes it needs. `GITHUB_REPOSITORY` is just as required
--- it is half of the fetch URL -- and is read bare, under `set -u`, at :219:
+Step 1 validates `GITHUB_PAT` with four lines of prose naming the secret, the settings page and the scopes it needs. `GITHUB_REPOSITORY` is just as required -- it is half of the fetch URL -- and is read bare, under `set -u`, at :219:
 
     $ GITHUB_PAT=s3cr3t GITHUB_EVENT_NAME=pull_request \\
         bash .ci/scripts/ci/initialize.sh
@@ -54,17 +41,12 @@ settings page and the scopes it needs. `GITHUB_REPOSITORY` is just as required
     <path>/initialize.sh: line 219: GITHUB_REPOSITORY: unbound variable
     exit=1
 
-By then the submodules are initialised, the token rewrite is written into the
-GLOBAL git config, three tags are minted and EIGHT outputs are already on stdout
-and in `$GITHUB_OUTPUT`. The diagnostic is bash's, names no fix, and arrives
+By then the submodules are initialised, the token rewrite is written into the GLOBAL git config, three tags are minted and EIGHT outputs are already on stdout and in `$GITHUB_OUTPUT`. The diagnostic is bash's, names no fix, and arrives
 after the expensive half of the work. Reproduced verbatim; not repaired, because
-`.ci/scripts/ci/` is not this writer's to change. `UNCHECKED_REQUIRED_ENV` names
-it so a test can assert it by name.
+`.ci/scripts/ci/` is not this writer's to change. `UNCHECKED_REQUIRED_ENV` names it so a test can assert it by name.
 
 Note the asymmetry the port has to preserve: `${GITHUB_REPOSITORY}` refuses an
-UNSET variable and accepts an EMPTY one, which yields
-`https://x-access-token:<pat>@github.com/.git` and a fetch failure three
-attempts and fifteen seconds later.
+UNSET variable and accepts an EMPTY one, which yields `https://x-access-token:<pat>@github.com/.git` and a fetch failure three attempts and fifteen seconds later.
 
 -----------------------------------------------------------------------------
 DEFECT B -- `IFS=', '` JOINS WITH A COMMA AND NO SPACE
@@ -87,8 +69,7 @@ DEFECT C -- `--output` WITH NO VALUE WRITES A FILE CALLED `true` IN THE REPO ROO
 -----------------------------------------------------------------------------
 `parse_args` turns a flag with no value into the STRING `true`, so
 `OUTPUT_FILE="${ARG_OUTPUT:-}"` becomes `true`, and `write_output` appends to a
-relative path -- resolved against the repo root, because step 0 has already
-`cd`'d there:
+relative path -- resolved against the repo root, because step 0 has already `cd`'d there:
 
     $ GITHUB_PAT=x bash .ci/scripts/ci/initialize.sh --check-only --output
     ... exit=0, and a new file `./true` holding is_bot=false, pointer_bump_only=false
@@ -99,21 +80,16 @@ will look in. Reproduced; not repaired. `EMPTY_OUTPUT_FLAG_WRITES_TRUE` names it
 -----------------------------------------------------------------------------
 DEFECT D -- THE REGISTRY PROBE FOLDS "COULD NOT ASK" INTO "DOES NOT EXIST"
 -----------------------------------------------------------------------------
-`check_image_path` returns `false` when docker is missing, when the daemon is
-down, when the registry refuses the credentials and when the manifest genuinely
+`check_image_path` returns `false` when docker is missing, when the daemon is down, when the registry refuses the credentials and when the manifest genuinely
 is not there. Only the last one is what `renet_exists=false` claims. The
-consequence is a rebuild rather than a wrong artifact, which is why this is
-recorded and not repaired, but the log line
+consequence is a rebuild rather than a wrong artifact, which is why this is recorded and not repaired, but the log line
 `✓ renet:<tag> exists=false` is stated with the same confidence in all four
-cases and the twin's own comment ("Docker not available, assume images don't
-exist") only covers one of them.
+cases and the twin's own comment ("Docker not available, assume images don't exist") only covers one of them.
 
 -----------------------------------------------------------------------------
 WHAT `set -e`, `set -u` AND `set -o pipefail` MEAN FOR THIS PORT
 -----------------------------------------------------------------------------
-Every point where the twin would die is reproduced as an early `return` with the
-twin's exit status, and the places where it would NOT die are reproduced too.
-Three that are easy to get backwards:
+Every point where the twin would die is reproduced as an early `return` with the twin's exit status, and the places where it would NOT die are reproduced too. Three that are easy to get backwards:
 
   * `NEXT_VERSION=$(...)` dies on a failing sibling (a failing command
     substitution IS the assignment's status), so the port returns that status.
@@ -129,11 +105,7 @@ ONE DELIBERATE DIVERGENCE, AND IT IS THE SAME ONE `common.repo_root` CARRIES
 -----------------------------------------------------------------------------
 `get_repo_root` resolves three directories up from `common.sh` and honours
 nothing; `common.repo_root()` delegates to `paths.repo_root()`, which honours
-`$REDIACC_CI_ROOT`. On every real run that variable is unset and the two land on
-the same directory, which is what the ledger records. The differential exploits
-the override deliberately: it points the port at a fixture tree whose
-`.ci/scripts/lib/common.sh` sends the twin to the same place, which is the only
-way to drive the five sibling calls without running the real ones.
+`$REDIACC_CI_ROOT`. On every real run that variable is unset and the two land on the same directory, which is what the ledger records. The differential exploits the override deliberately: it points the port at a fixture tree whose `.ci/scripts/lib/common.sh` sends the twin to the same place, which is the only way to drive the five sibling calls without running the real ones.
 """
 
 from __future__ import annotations
@@ -239,9 +211,7 @@ class Exit(Exception):  # noqa: N818 -- this is a control flow signal, not an er
 def bash_exec_failure(line: int, command: str, err: OSError, *, searched: bool) -> int:
     """Bash's own message for a command it could not run, and bash's status.
 
-    Not defensive padding: without it a missing sibling is a Python traceback
-    where the twin prints one line and carries on (step 4) or dies with 127
-    (everywhere else), and a traceback is a bigger divergence than any wording.
+    Not defensive padding: without it a missing sibling is a Python traceback where the twin prints one line and carries on (step 4) or dies with 127 (everywhere else), and a traceback is a bigger divergence than any wording.
 
     `searched` distinguishes the two messages bash uses. A name resolved through
     PATH that is not there is `command not found`; a path containing a slash is
@@ -263,11 +233,9 @@ def run_inherit(
 ) -> int:
     """A plain command: both streams inherited, status returned.
 
-    STDOUT IS FLUSHED FIRST, every time. The child writes to the same descriptor
-    this process buffers, and Python block-buffers a redirected stdout where bash
+    STDOUT IS FLUSHED FIRST, every time. The child writes to the same descriptor this process buffers, and Python block-buffers a redirected stdout where bash
     does not. Without the flush the port's `key=value` lines would sort AFTER a
-    child's output in a captured stream, which is a byte difference in the one
-    thing every downstream consumer parses.
+    child's output in a captured stream, which is a byte difference in the one thing every downstream consumer parses.
     """
     sys.stdout.flush()
     try:
@@ -283,11 +251,9 @@ def run_inherit(
 def run_capture(argv: list[str], line: int) -> tuple[int, str]:
     """`VAR=$(cmd)`: stdout captured, stderr inherited, trailing newlines stripped.
 
-    UTF-8 STRICTLY, where bash passes bytes through. The only values captured
-    here are a tag, a bump type and a version, all minted by siblings that
+    UTF-8 STRICTLY, where bash passes bytes through. The only values captured here are a tag, a bump type and a version, all minted by siblings that
     produce `[0-9a-z.-]`, so the two cannot differ on any real input; and if one
-    ever did, a decode error is a loud stop rather than a tag that silently
-    differs by one byte from the one the twin would have used.
+    ever did, a decode error is a loud stop rather than a tag that silently differs by one byte from the one the twin would have used.
     """
     sys.stdout.flush()
     try:
@@ -305,8 +271,7 @@ def run_capture(argv: list[str], line: int) -> tuple[int, str]:
 def write_output(key: str, value: str, output_file: str) -> None:
     """`write_output` (twin :39-47). The FILE first, then stdout.
 
-    The order matters and is observable: when the file cannot be opened the twin
-    dies before the `echo`, so the key never reaches stdout either (driven).
+    The order matters and is observable: when the file cannot be opened the twin dies before the `echo`, so the key never reaches stdout either (driven).
     """
     if output_file:
         try:
@@ -325,9 +290,7 @@ def write_output(key: str, value: str, output_file: str) -> None:
 def is_bot_commit(event_name: str, commit_author: str) -> tuple[str, str]:
     """Step 2's decision (twin :70-80), as a pure function.
 
-    Returns `(is_bot, message)`. Exported so the differential can exercise all
-    three arms directly: the whole of step 2 is one three-armed condition, and
-    two of the arms are one character apart in the output they produce.
+    Returns `(is_bot, message)`. Exported so the differential can exercise all three arms directly: the whole of step 2 is one three-armed condition, and two of the arms are one character apart in the output they produce.
     """
     if event_name == "push" and commit_author:
         if commit_author in BOT_AUTHORS:
@@ -344,15 +307,11 @@ def fetch_url(pat: str, repository: str) -> str:
 def redact(data: bytes, pat: str) -> bytes:
     """`sed "s|${GITHUB_PAT:-__no_github_pat_set__}|***|g"` (twin :249).
 
-    BYTES, not text: this is git's stderr, and a decode step could raise on
-    output the twin passes through untouched.
+    BYTES, not text: this is git's stderr, and a decode step could raise on output the twin passes through untouched.
 
-    THE ONE PLACE THIS IS NOT SED. sed's pattern is a BASIC REGULAR EXPRESSION,
-    so a token containing `.`, `*`, `[`, `\\`, `^` or `$` would match more (or
+    THE ONE PLACE THIS IS NOT SED. sed's pattern is a BASIC REGULAR EXPRESSION, so a token containing `.`, `*`, `[`, `\\`, `^` or `$` would match more (or
     less) than itself; `bytes.replace` is literal. Every token this repository
-    issues is `[A-Za-z0-9_]`, for which the two are identical, and a literal
-    replacement can only redact MORE conservatively than a regex that failed to
-    match. Stated rather than hidden.
+    issues is `[A-Za-z0-9_]`, for which the two are identical, and a literal replacement can only redact MORE conservatively than a regex that failed to match. Stated rather than hidden.
     """
     needle = (pat or NO_PAT_SENTINEL).encode("utf-8", "surrogateescape")
     return data.replace(needle, REDACTION.encode("ascii"))
@@ -384,8 +343,7 @@ def release_decision(root_relative: str = DISPATCH_RELEASE) -> str:
 
     `2>&1` merges the child's stderr INTO the pipe, so its diagnostics are
     filtered out with everything else and never reach the log; `|| true`
-    swallows every non-zero status, the child's and grep's alike. A crashed,
-    cancelled or missing decider therefore yields the empty string, and the
+    swallows every non-zero status, the child's and grep's alike. A crashed, cancelled or missing decider therefore yields the empty string, and the
     caller's `!= 'decision: skip'` then releases. That polarity is the twin's
     stated design, not an accident, so it is reproduced exactly.
     """

@@ -1,28 +1,19 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/housekeeping/retry-failed-runs.sh`.
 
-Nightly sweep that re-runs the failed jobs of workflow runs that failed for a
-reason a rerun can fix. Usage: `retry_failed_runs.py [--dry-run]`.
+Nightly sweep that re-runs the failed jobs of workflow runs that failed for a reason a rerun can fix. Usage: `retry_failed_runs.py [--dry-run]`.
 
-THE FILTERS ARE THE FEATURE, and the twin's 40-line banner is the evidence for
-each one: three measured days of runs held 64 failures, 63 of them
-watchdog-monitor.yml failing BY DESIGN. So `cancelled` is never retried, the
-watchdog is excluded BY PATH rather than by its generated display name, a run
-whose head is no longer any branch tip is treated as superseded, and both an
+THE FILTERS ARE THE FEATURE, and the twin's 40-line banner is the evidence for each one: three measured days of runs held 64 failures, 63 of them watchdog-monitor.yml failing BY DESIGN. So `cancelled` is never retried, the watchdog is excluded BY PATH rather than by its generated display name, a run whose head is no longer any branch tip is treated as superseded, and both an
 attempt cap and an age floor apply. All five are reproduced exactly; dropping
-any one turns a sweeper with an expected yield of ~1 per night into one that
-retries 63 deliberate failures.
+any one turns a sweeper with an expected yield of ~1 per night into one that retries 63 deliberate failures.
 
 EXPECTED YIELD IS ~1 PER NIGHT, AND THE SUMMARY LINE IS WHAT MAKES A ZERO
 READABLE. `considered=.. excluded=.. too-old=.. attempt-capped=.. dead-head=..
 retried=..` prints on every run, including the ones that retry nothing, because
-a sweeper that legitimately does nothing must be distinguishable from a broken
-one. The port prints the same six numbers.
+a sweeper that legitimately does nothing must be distinguishable from a broken one. The port prints the same six numbers.
 
 TWO LOGGERS, BECAUSE THE TWIN HAS TWO. `source common.sh 2>/dev/null || { ... }`
-gives this script common.sh's stderr loggers when the library is present and a
-private `echo`-based set when it is not, and the two are NOT cosmetic variants
-of each other:
+gives this script common.sh's stderr loggers when the library is present and a private `echo`-based set when it is not, and the two are NOT cosmetic variants of each other:
 
     level   common.sh                     fallback
     info    "✓ <msg>"  -> stderr     "  <msg>"        -> STDOUT
@@ -30,27 +21,16 @@ of each other:
     step    "→ <msg>"  -> stderr     "==> <msg>"      -> STDOUT
     error   "✗ <msg>"  -> stderr     "<msg>"          -> stderr
 
-`_Loggers.for_root()` picks the pair off the same single input the twin picks it
-off (does `<root>/.ci/scripts/lib/common.sh` exist), and the differential drives
-BOTH by copying each subject into a fixture tree with no lib directory. A port
-that implemented only the library path would be byte-identical in CI and put
-every line on the wrong stream on a fresh clone.
+`_Loggers.for_root()` picks the pair off the same single input the twin picks it off (does `<root>/.ci/scripts/lib/common.sh` exist), and the differential drives BOTH by copying each subject into a fixture tree with no lib directory. A port that implemented only the library path would be byte-identical in CI and put every line on the wrong stream on a fresh clone.
 
-`jq`, `date` AND `gh` ARE STILL SHELLED OUT TO, each for a different reason.
-`gh` is the API. `date -u -d "$created"` accepts GNU's whole free-form date
-grammar and returns 0 on strings no Python parser agrees about, and the twin's
-`|| echo 0` turns exactly that answer into the too-old skip, so the port asks
-the same `date`. `jq -r '... | @tsv'` is the record splitter, and its escaping
+`jq`, `date` AND `gh` ARE STILL SHELLED OUT TO, each for a different reason. `gh` is the API. `date -u -d "$created"` accepts GNU's whole free-form date grammar and returns 0 on strings no Python parser agrees about, and the twin's `|| echo 0` turns exactly that answer into the too-old skip, so the port asks the same `date`. `jq -r '... | @tsv'` is the record splitter, and its
+escaping
 of a tab or newline INSIDE a workflow name is what keeps one run on one line;
 re-implementing it would put the port's idea of `@tsv` against the twin's.
 
 THE TAB SPLIT IS NOT A TAB SPLIT, and `read_fields` exists because of it. The
 twin reads with `IFS=$'\\t'`, and TAB IS AN IFS WHITESPACE CHARACTER in bash, so
-runs of tabs collapse into one delimiter and leading and trailing tabs are
-dropped. A run whose `.name` is null therefore does NOT yield an empty second
-field: every later field shifts left by one, and the script reads the workflow
-PATH as the name. Driven against real bash, reproduced rather than repaired,
-and pinned in both directions by `test_read_fields_collapses_runs_of_tabs`.
+runs of tabs collapse into one delimiter and leading and trailing tabs are dropped. A run whose `.name` is null therefore does NOT yield an empty second field: every later field shifts left by one, and the script reads the workflow PATH as the name. Driven against real bash, reproduced rather than repaired, and pinned in both directions by `test_read_fields_collapses_runs_of_tabs`.
 
 K=5 LEDGER: `.ci/shadow/w7p6-retry-failed-runs.observations.jsonl`.
 """
@@ -124,9 +104,7 @@ class _Loggers:
     def require_cmd(self, cmd: str) -> bool:
         """Both worlds print the same words; only the decoration differs.
 
-        The fallback defines its OWN `require_cmd` (:55-60) rather than calling
-        common.sh's, and the twin says why in a comment: a fallback for
-        "common.sh is missing" that called common.sh's helper would die at 127
+        The fallback defines its OWN `require_cmd` (:55-60) rather than calling common.sh's, and the twin says why in a comment: a fallback for "common.sh is missing" that called common.sh's helper would die at 127
         while reporting nothing about the dependency it exists to report.
         """
         if shutil.which(cmd) is not None:
@@ -161,8 +139,7 @@ def read_fields(line: str, count: int = FIELD_COUNT) -> list[str]:
       3. The LAST variable absorbs the remainder including its internal
          delimiters, with trailing IFS whitespace stripped.
 
-    Short lines pad with empty strings, which is what bash does to the
-    variables it did not reach.
+    Short lines pad with empty strings, which is what bash does to the variables it did not reach.
     """
     stripped = line.strip("\t")
     if not stripped:
@@ -182,14 +159,8 @@ def read_fields(line: str, count: int = FIELD_COUNT) -> list[str]:
 def env_int(name: str, default: int, env: dict[str, str] | None = None) -> int:
     """`${RETRY_MAX_AGE_HOURS:-48}` reaching a bash arithmetic context.
 
-    An unset OR EMPTY value takes the default, which is what `:-` means. A value
-    bash would read as something other than a decimal integer (`0x10`, `010`,
-    a bare identifier) is NOT reproduced: bash would treat those as hex, octal
-    and a variable reference respectively, nothing in this repository sets them
-    that way, and inventing an answer here would be a second arithmetic
-    evaluator. Such a value is refused loudly rather than folded into the
-    default, because a knob that silently means 48 when the operator wrote
-    something else is how a sweeper quietly stops sweeping.
+    An unset OR EMPTY value takes the default, which is what `:-` means. A value bash would read as something other than a decimal integer (`0x10`, `010`, a bare identifier) is NOT reproduced: bash would treat those as hex, octal and a variable reference respectively, nothing in this repository sets them that way, and inventing an answer here would be a second arithmetic evaluator.
+    Such a value is refused loudly rather than folded into the default, because a knob that silently means 48 when the operator wrote something else is how a sweeper quietly stops sweeping.
     """
     e = dict(os.environ) if env is None else env
     raw = e.get(name, "")
@@ -207,9 +178,7 @@ def env_int(name: str, default: int, env: dict[str, str] | None = None) -> int:
 def _gh_or_empty(args: list[str], fallback: str) -> str:
     """`$(gh ... 2>/dev/null || echo <fallback>)`.
 
-    Both halves write to the same captured stdout, so a call that printed
-    something AND failed contributes both, exactly as bash concatenates them,
-    and command substitution then strips every trailing newline.
+    Both halves write to the same captured stdout, so a call that printed something AND failed contributes both, exactly as bash concatenates them, and command substitution then strips every trailing newline.
     """
     proc = subprocess.run(
         ["gh", *args], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, check=False
@@ -223,9 +192,7 @@ def _gh_or_empty(args: list[str], fallback: str) -> str:
 def tsv_records(runs_json: str) -> list[str]:
     """`echo "$RUNS" | jq -r '<TSV_JQ>'`, one line per record.
 
-    jq's STDERR IS INHERITED, as it is in the twin: a malformed `$RUNS` prints
-    jq's own complaint and yields no records, and the process substitution's
-    exit status is never checked on either side.
+    jq's STDERR IS INHERITED, as it is in the twin: a malformed `$RUNS` prints jq's own complaint and yields no records, and the process substitution's exit status is never checked on either side.
     """
     proc = subprocess.run(
         ["jq", "-r", TSV_JQ],
@@ -240,8 +207,7 @@ def tsv_records(runs_json: str) -> list[str]:
 def created_epoch(created: str) -> int:
     """`date -u -d "$created" +%s 2>/dev/null || echo 0`.
 
-    ZERO IS THE FAILURE VALUE AND THE TWIN THEN TREATS IT AS TOO-OLD, which is
-    the safe direction: an unparseable timestamp must not license a rerun.
+    ZERO IS THE FAILURE VALUE AND THE TWIN THEN TREATS IT AS TOO-OLD, which is the safe direction: an unparseable timestamp must not license a rerun.
     """
     proc = subprocess.run(
         ["date", "-u", "-d", created, "+%s"],
@@ -262,11 +228,7 @@ def created_epoch(created: str) -> int:
 def head_is_live(head: str, live_heads: str) -> bool:
     """`grep -qx "$head" <<<"$LIVE_HEADS"`.
 
-    `-x` WITHOUT `-F` means the head is a BASIC REGULAR EXPRESSION anchored to
-    the whole line. For the only value that ever arrives, a 40-character hex
-    object name, a BRE and a literal are the same string, so this compares
-    whole lines. A head containing a regex metacharacter would diverge, and git
-    cannot produce one.
+    `-x` WITHOUT `-F` means the head is a BASIC REGULAR EXPRESSION anchored to the whole line. For the only value that ever arrives, a 40-character hex object name, a BRE and a literal are the same string, so this compares whole lines. A head containing a regex metacharacter would diverge, and git cannot produce one.
     """
     return head in live_heads.split("\n")
 
@@ -381,20 +343,12 @@ def main(argv: list[str]) -> int:
 def _as_int(text: str) -> int:
     """`[[ "$attempt" -ge "$MAX_ATTEMPT" ]]`, for the one field gh supplies.
 
-    `.run_attempt` is a JSON number, so `@tsv` renders a decimal integer, and
-    the only way anything else arrives is the field shift the module docstring
-    describes: a null `.name` slides the TIMESTAMP into this column.
+    `.run_attempt` is a JSON number, so `@tsv` renders a decimal integer, and the only way anything else arrives is the field shift the module docstring describes: a null `.name` slides the TIMESTAMP into this column.
 
-    THE ONE DELIBERATE DIVERGENCE IN THIS PORT, and it is named rather than
-    hidden. `[[ "2026-09-13T10:20:30Z" -ge 3 ]]` makes bash write `value too
-    great for base (error token is "09")` to stderr and then evaluate FALSE.
-    Reading 0 here reaches the same FALSE, and the same verdict, without
-    carrying a bash arithmetic evaluator into this module for the sake of a
-    diagnostic line that could not be byte-identical anyway (it names the
-    script and the line). The two agree on the exit code, the six counters and
+    THE ONE DELIBERATE DIVERGENCE IN THIS PORT, and it is named rather than hidden. `[[ "2026-09-13T10:20:30Z" -ge 3 ]]` makes bash write `value too great for base (error token is "09")` to stderr and then evaluate FALSE. Reading 0 here reaches the same FALSE, and the same verdict, without carrying a bash arithmetic evaluator into this module for the sake of a diagnostic line that
+    could not be byte-identical anyway (it names the script and the line). The two agree on the exit code, the six counters and
     every gh call; they differ by that one line, and
-    `test_divergence_a_null_workflow_name_shifts_the_fields_and_only_bash_complains`
-    asserts both halves.
+    `test_divergence_a_null_workflow_name_shifts_the_fields_and_only_bash_complains` asserts both halves.
 
     The residue, stated so it is not discovered later: with
     `RETRY_MAX_ATTEMPT=0` the two would also disagree on the VERDICT, because

@@ -1,15 +1,9 @@
 """`rediacc_ci.quality.ci_job_aggregation` against the five awk programs it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-ci-job-aggregation.observations.jsonl` drives the whole gate
-over five distinct trees, one per failure class. What a ledger row cannot isolate
-is that the port re-implements FIVE awk programs plus a `tr`, and every one of
-them decides which jobs the gate believes exist. A reader that narrows by one
-rule reports a fully wired workflow, which is the exact shape this gate exists
-to make impossible.
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-ci-job-aggregation.observations.jsonl` drives the whole gate over five distinct trees, one per failure class. What a ledger row cannot isolate is that the port re-implements FIVE awk programs plus a `tr`, and every one of them decides which jobs the gate believes exist. A reader that narrows by one rule reports a fully
+wired workflow, which is the exact shape this gate exists to make impossible.
 
-Each program is run through the real awk on the same input and compared, and the
-inputs chosen are the ones where awk is surprising:
+Each program is run through the real awk on the same input and compared, and the inputs chosen are the ones where awk is surprising:
 
   * `match()` finds only the FIRST RESULT_ var on a line
   * the tier reader's `index(line, ")")` closes the array on the same line
@@ -127,8 +121,7 @@ def test_needs_names_matches_awk_on_both_forms() -> None:
 def test_result_vars_matches_awk_including_the_first_match_only_shape() -> None:
     """awk's `match()` returns the FIRST occurrence, so two vars on a line read as one.
 
-    That is a limitation of the twin, not of the port, and it is pinned here so
-    the two agree about a shape neither of them handles.
+    That is a limitation of the twin, not of the port, and it is pinned here so the two agree about a shape neither of them handles.
     """
     for text in (
         "      RESULT_A: ${{ needs.a.result }}\n      RESULT_B: x\n",
@@ -153,9 +146,7 @@ def test_tier_entries_matches_awk_on_every_array_form() -> None:
 def test_result_var_for_matches_tr() -> None:
     """`tr '[:lower:]-' '[:upper:]_'`, run for real, on the cases that differ.
 
-    `a.b` is the interesting one: `.upper().replace()` gives the same answer here
-    and would diverge from tr on any character outside both sets, so the test
-    asserts against tr rather than against the tidier spelling.
+    `a.b` is the interesting one: `.upper().replace()` gives the same answer here and would diverge from tr on any character outside both sets, so the test asserts against tr rather than against the tidier spelling.
     """
     for job in ("build-cli", "quality", "a.b", "MiXeD-Case", "job_1"):
         proc = subprocess.run(
@@ -171,9 +162,7 @@ def test_result_var_for_matches_tr() -> None:
 def test_the_exempt_set_matches_the_twins_block_entry_for_entry() -> None:
     """The five exempt job names, and their reasons, taken from the twin's own text.
 
-    A port that dropped one would silently widen the gate by one job. A port that
-    ADDED one would silently narrow it, which is worse, so the comparison is a
-    set equality against the twin rather than a floor.
+    A port that dropped one would silently widen the gate by one job. A port that ADDED one would silently narrow it, which is worse, so the comparison is a set equality against the twin rather than a floor.
     """
     body = TWIN.read_text(encoding="utf-8")
     start = body.index("read -r -d '' EXEMPT_BLOCK <<'EXEMPT'")

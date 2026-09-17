@@ -4,8 +4,7 @@ Ported from `.ci/scripts/quality/check-setup-idempotency.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__`.
 
 -----------------------------------------------------------------------------
-THE TWIN'S HEADER, CARRIED ACROSS. Seven invariants, each paid for by a defect
-found while building this feature.
+THE TWIN'S HEADER, CARRIED ACROSS. Seven invariants, each paid for by a defect found while building this feature.
 -----------------------------------------------------------------------------
 
   A. Every mutating step is GUARDED, so a second `./run.sh setup` is a no-op.
@@ -42,144 +41,82 @@ found while building this feature.
      call placed after the phase that reads a submodule path fixes nothing, and
      reads as correct in a diff.
 
-Control-first: every assertion is re-run against a copy carrying the original
-defect, with a vacuity check that the mutation applied. A control that does not
-fire fails this gate rather than letting it report a green it did not earn.
+Control-first: every assertion is re-run against a copy carrying the original defect, with a vacuity check that the mutation applied. A control that does not fire fails this gate rather than letting it report a green it did not earn.
 
 Hermetic: no docker, no network, no package installs.
 
 -----------------------------------------------------------------------------
-THE TWO INCIDENTS BEHIND CHECK B'S SETTLE POLL, both carried verbatim because
-they are the reason the assertion has the shape it has.
+THE TWO INCIDENTS BEHIND CHECK B'S SETTLE POLL, both carried verbatim because they are the reason the assertion has the shape it has.
 -----------------------------------------------------------------------------
 
-A NEIGHBOUR'S TEST FIXTURE IS NOT EVIDENCE ABOUT `setup --check`. This snapshot
-is taken twice around one command, and under `npm run ci` twenty-two gates share
-the tree. `gate-test:gate-paths-exist` plants a scan fixture INSIDE the repo on
-purpose -- the detector it controls globs `.ci/scripts/**/*.ts`, so a fixture
-outside the tree would prove nothing -- and names it
-`.gate-paths-exist-<kind>-fixture.<pid>.ts`. If that lands between the two
-snapshots, check B reports "setup --check changed the working tree" over a file
-`run.sh` never touched. Observed 2026-08-31 in the pre-push lane:
+A NEIGHBOUR'S TEST FIXTURE IS NOT EVIDENCE ABOUT `setup --check`. This snapshot is taken twice around one command, and under `npm run ci` twenty-two gates share the tree. `gate-test:gate-paths-exist` plants a scan fixture INSIDE the repo on purpose -- the detector it controls globs `.ci/scripts/**/*.ts`, so a fixture outside the tree would prove nothing -- and names it
+`.gate-paths-exist-<kind>-fixture.<pid>.ts`. If that lands between the two snapshots, check B reports "setup --check changed the working tree" over a file `run.sh` never touched. Observed 2026-08-31 in the pre-push lane:
 
     FAIL B: setup --check changed the working tree
     < ?? .ci/scripts/.gate-paths-exist-noise-fixture.2530850.ts
 
-The filter is deliberately the DOTTED, PID-SUFFIXED fixture shape those gates
-already share, applied to BOTH snapshots so it cannot hide a real change: a path
-`setup --check` actually created would have to be named like another gate's
-throwaway fixture to slip through, and nothing under run.sh is.
+The filter is deliberately the DOTTED, PID-SUFFIXED fixture shape those gates already share, applied to BOTH snapshots so it cannot hide a real change: a path `setup --check` actually created would have to be named like another gate's throwaway fixture to slip through, and nothing under run.sh is.
 
-A DELTA MUST PERSIST BEFORE IT IS BLAMED ON `setup --check`. The filter above
-pins ONE fixture shape, and shape-filtering is whack-a-mole: on 2026-09-03 this
-assertion failed under `ci:quick` over a TRACKED file it had no pattern for --
+A DELTA MUST PERSIST BEFORE IT IS BLAMED ON `setup --check`. The filter above pins ONE fixture shape, and shape-filtering is whack-a-mole: on 2026-09-03 this assertion failed under `ci:quick` over a TRACKED file it had no pattern for --
 
     FAIL B: setup --check changed the working tree
     >  M .ci/scripts/version/resolve-version.sh
 
--- which `run.sh` never writes and which was byte-identical to HEAD moments
-later. Some neighbour among the 291 gates sharing this tree had it open across
-the two snapshots. So test the property that actually distinguishes the two: a
-change `setup --check` made is STILL THERE afterwards, and a neighbour's scratch
+-- which `run.sh` never writes and which was byte-identical to HEAD moments later. Some neighbour among the 291 gates sharing this tree had it open across the two snapshots. So test the property that actually distinguishes the two: a change `setup --check` made is STILL THERE afterwards, and a neighbour's scratch
 is not. Poll back toward the `before` snapshot for a bounded window; recovering
-means the delta was never ours. This keeps the assertion able to fail -- a real
-mutation never reverts, so it burns the full window and is then reported --
+means the delta was never ours. This keeps the assertion able to fail -- a real mutation never reverts, so it burns the full window and is then reported --
 while removing a false accusation that names the wrong command and sends the
 reader hunting through run.sh.
 
-THE POLL IS SCOPED TO THE DELTA PATHS, not to the whole tree, and that is the
-difference between a settle test that can succeed and one that cannot. Comparing
-the WHOLE snapshot means any unrelated neighbour among the 300 gates sharing
-this tree -- one that touches a file this delta never mentioned -- keeps the
-equality false for the rest of the window. B then reports "delta persisted 15s"
-about a path that settled in one, which is the same false accusation the
-paragraph above exists to remove, arriving by a second door.
+THE POLL IS SCOPED TO THE DELTA PATHS, not to the whole tree, and that is the difference between a settle test that can succeed and one that cannot. Comparing the WHOLE snapshot means any unrelated neighbour among the 300 gates sharing this tree -- one that touches a file this delta never mentioned -- keeps the equality false for the rest of the window. B then reports "delta
+persisted 15s" about a path that settled in one, which is the same false accusation the paragraph above exists to remove, arriving by a second door.
 
 -----------------------------------------------------------------------------
 THE OTHER INLINE NOTES, carried across.
 -----------------------------------------------------------------------------
 
-CHECK C TAKES A ROOT, NOT A FILE. The subject moved in W7 phase 1 and moved
-again in W7P5-b. `.ci/lib/find-port.sh` was a delegating shim over
-rediacc_ci.core.ports, so mutating the shim proved nothing -- the digest it used
-to compute was not there any more -- and the shim is now DELETED outright. What
-this takes is a ROOT, turned into the PYTHONPATH the subprocess runs under, so
-the control can point it at a COPY of the package with the digest line broken.
-That is a strictly stronger control than the original: it fails unless the
-derivation actually reaches that copy of the Python.
+CHECK C TAKES A ROOT, NOT A FILE. The subject moved in W7 phase 1 and moved again in W7P5-b. `.ci/lib/find-port.sh` was a delegating shim over rediacc_ci.core.ports, so mutating the shim proved nothing -- the digest it used to compute was not there any more -- and the shim is now DELETED outright. What this takes is a ROOT, turned into the PYTHONPATH the subprocess runs under, so
+the control can point it at a COPY of the package with the digest line broken. That is a strictly stronger control than the original: it fails unless the derivation actually reaches that copy of the Python.
 
-FIVE SAMPLES, NOT TWO. The control for check C plants a random digest, and a
-random value mod 100 repeats itself about 1% of the time -- so a two-sample
-comparison let the planted defect pass at that rate and the gate reported
-"CONTROL DID NOT FIRE" at random. Five agreeing samples drops that to ~1e-8
+FIVE SAMPLES, NOT TWO. The control for check C plants a random digest, and a random value mod 100 repeats itself about 1% of the time -- so a two-sample comparison let the planted defect pass at that rate and the gate reported "CONTROL DID NOT FIRE" at random. Five agreeing samples drops that to ~1e-8
 while costing microseconds. A flaky control is worse than no control: it teaches
 the reader to re-run until green. (The planted value was `$RANDOM` while the
 implementation was bash; it is `random.randbytes` now that it is Python. The
 arithmetic is unchanged.)
 
-CHECK G STRIPS COMMENTS, and that is load-bearing. The first version matched
-"private/renet/go.mod" inside the comment that explains the ordering and
-concluded the real, correctly-ordered code was broken. Same family as the gate
-that matched "binary" against a PATH: judge the code, not the prose describing
-it.
+CHECK G STRIPS COMMENTS, and that is load-bearing. The first version matched "private/renet/go.mod" inside the comment that explains the ordering and concluded the real, correctly-ordered code was broken. Same family as the gate that matched "binary" against a PATH: judge the code, not the prose describing it.
 
-WHERE setup() LIVES. The 2026-09-06 router split left run.sh a 120-line
-dispatcher and moved every verb body to .ci/legacy/run-legacy.sh. This gate read
-run.sh and said "no setup() function", which is the refusal working: a scan
-whose subject moved must go red rather than pass over an empty function. One
-name, three readers.
+WHERE setup() LIVES. The 2026-09-06 router split left run.sh a 120-line dispatcher and moved every verb body to .ci/legacy/run-legacy.sh. This gate read run.sh and said "no setup() function", which is the refusal working: a scan whose subject moved must go red rather than pass over an empty function. One name, three readers.
 
-THE F CONTROL PLANTS THE EXACT DEFECT -- a redirect router on Path(`/`) with no
-Method. The current tree has no redirect at all, so without that control the
-assertion would be vacuously green.
+THE F CONTROL PLANTS THE EXACT DEFECT -- a redirect router on Path(`/`) with no Method. The current tree has no redirect at all, so without that control the assertion would be vacuously green.
 
-THE G CONTROL IS TWO PLANTS, because presence and ORDER are different defects
-and a check that only notices absence would pass the one that actually shipped
-later.
+THE G CONTROL IS TWO PLANTS, because presence and ORDER are different defects and a check that only notices absence would pass the one that actually shipped later.
 
-THE C CONTROL COPIES THE PACKAGE rather than editing it in place, and that
-matters twice over: this gate must never write into the tree it is checking, and
-other sessions share this checkout.
+THE C CONTROL COPIES THE PACKAGE rather than editing it in place, and that matters twice over: this gate must never write into the tree it is checking, and other sessions share this checkout.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-EVERY SUBPROCESS THE TWIN RUNS IS STILL RUN. The slot is derived by running
-`rediacc_ci.core.ports derive-slot` as a CHILD under the control's PYTHONPATH
+EVERY SUBPROCESS THE TWIN RUNS IS STILL RUN. The slot is derived by running `rediacc_ci.core.ports derive-slot` as a CHILD under the control's PYTHONPATH
 (it used to be sourced out of a bash shim, deleted in W7P5-b; importing the
-module in-process instead would read THIS interpreter's copy and the broken-copy
-control would go permanently green). `devbox_route_label` is still sourced out
-of `devbox.sh` through `bash -c`, exactly as the twin invokes it.
-Re-implementing either in Python would test this module's idea of what those
-functions do rather than what they do, and check E in particular exists because
+module in-process instead would read THIS interpreter's copy and the broken-copy control would go permanently green). `devbox_route_label` is still sourced out of `devbox.sh` through `bash -c`, exactly as the twin invokes it. Re-implementing either in Python would test this module's idea of what those functions do rather than what they do, and check E in particular exists because
 "OK" and "404" are both valid text to a static reader.
 
-THE `awk` FUNCTION-BODY EXTRACTOR IS TRANSLATED, NOT SHELLED OUT, because it is
-four lines and its exact semantics matter: it starts at a line matching
+THE `awk` FUNCTION-BODY EXTRACTOR IS TRANSLATED, NOT SHELLED OUT, because it is four lines and its exact semantics matter: it starts at a line matching
 `^<name>\(\) \{`, prints every line from there INCLUDING the closing `}`, and
 stops at the first line whose first character is `}`. A body containing an
 indented `}` is unaffected; a body containing a column-0 `}` would be truncated,
-which is the twin's behaviour and is why every function in the subject files is
-written with its brace in column 0.
+which is the twin's behaviour and is why every function in the subject files is written with its brace in column 0.
 
-`fail()` WRITES `FAIL ` WITH ONE SPACE, so `scripts/lib/shadow-gate.ts` does not
-recognise it through the `FAIL\s\s+` marker it carries for the `gate-controls.sh`
-tally. The differential for this pair is therefore recorded with an explicit
-`--finding-re`. Carried rather than "fixed": widening the marker would reclassify
-prose across the whole estate, and adding a second space here would change the
-bytes of a gate CI already reads.
+`fail()` WRITES `FAIL ` WITH ONE SPACE, so `scripts/lib/shadow-gate.ts` does not recognise it through the `FAIL\s\s+` marker it carries for the `gate-controls.sh` tally. The differential for this pair is therefore recorded with an explicit `--finding-re`. Carried rather than "fixed": widening the marker would reclassify prose across the whole estate, and adding a second space here
+would change the bytes of a gate CI already reads.
 
-`control()` RUNS ITS SUBJECT IN A SUBSHELL, so a `fail()` inside the mutated run
-increments a counter that is then discarded and prints into a captured string
-that is then discarded. That is deliberate: a control is asking "does this
-assertion REJECT the defect", and the assertion's own complaint about the defect
-is not a complaint about the tree. The Python version captures the streams and
-the counter the same way.
+`control()` RUNS ITS SUBJECT IN A SUBSHELL, so a `fail()` inside the mutated run increments a counter that is then discarded and prints into a captured string that is then discarded. That is deliberate: a control is asking "does this assertion REJECT the defect", and the assertion's own complaint about the defect is not a complaint about the tree. The Python version captures the
+streams and the counter the same way.
 
 STREAMS. `fail()` and every CONTROL line go to stderr; `pass()` and the offender
-detail go to stdout. Nothing here uses `rediacc_ci.log`: the twin sources no
-logger and its lines carry no glyph.
+detail go to stdout. Nothing here uses `rediacc_ci.log`: the twin sources no logger and its lines carry no glyph.
 """
 
 import contextlib
@@ -264,9 +201,7 @@ def function_body(text: str, name: str) -> str:
 def read_text(path: pathlib.Path) -> str:
     """File contents, or "" when it cannot be read.
 
-    The twin's `awk ... "$file"` writes "cannot open" to stderr and produces no
-    stdout, so the caller sees an empty body and reports the assertion's own
-    "not found" message. Same outcome, one fewer stderr line.
+    The twin's `awk ... "$file"` writes "cannot open" to stderr and produces no stdout, so the caller sees an empty body and reports the assertion's own "not found" message. Same outcome, one fewer stderr line.
     """
     try:
         return path.read_text(encoding="utf-8", errors="replace")
@@ -345,8 +280,7 @@ def delta_paths(before: str, after: str) -> str:
     """The paths named by EITHER snapshot but not both, one per line, sorted.
 
     `diff | sed -n 's/^[<>] *//p' | awk '{print $NF}' | sort -u`: the LAST field
-    of a porcelain line, so `?? p` and ` M p` alike yield `p`. A file that
-    appeared and one that vanished are both ours to watch.
+    of a porcelain line, so `?? p` and ` M p` alike yield `p`. A file that appeared and one that vanished are both ours to watch.
     """
     before_lines = before.split("\n")
     after_lines = after.split("\n")
@@ -362,8 +296,7 @@ def delta_paths(before: str, after: str) -> str:
 def scoped_to(snapshot: str, wanted_paths: str) -> str:
     """The snapshot lines mentioning one of `paths`, sorted. "" for no paths.
 
-    `grep -F -f <(paths)` is a FIXED-STRING, SUBSTRING match, so a path that is
-    a prefix of another matches both lines. Carried unchanged.
+    `grep -F -f <(paths)` is a FIXED-STRING, SUBSTRING match, so a path that is a prefix of another matches both lines. Carried unchanged.
     """
     if wanted_paths == "":
         return ""
@@ -460,9 +393,7 @@ def derive_slot(root: str, key: str, modulus: str) -> str:
 
     Shelled out on purpose; see the port notes. It used to go through
     `source find-port.sh; derive_slot ...`, but that shim is DELETED (W7P5-b)
-    and PYTHONPATH is what the shim was setting anyway. Prefixed, never
-    appended, because the whole point of check C's control is that a broken
-    COPY of the package at `<root>` must win over the real one.
+    and PYTHONPATH is what the shim was setting anyway. Prefixed, never appended, because the whole point of check C's control is that a broken COPY of the package at `<root>` must win over the real one.
     """
     env = dict(os.environ)
     ci_dir = str(pathlib.Path(root) / ".ci")
@@ -615,11 +546,7 @@ READER_RE = re.compile(r"ensure_docker_installed|private/renet|private/account")
 def python_function_body(text: str, name: str) -> str:
     """The body of a top-level `def <name>(`, by INDENTATION. "" when absent.
 
-    THE PYTHON TWIN OF `function_body`, needed because the SUBJECT MOVED. See
-    `check_g`: `setup()` was ported to `rediacc_ci.setup.machine.run_setup`, and
-    an invariant that only knows how to read bash retires itself at the exact
-    moment the port lands. Kept as text rather than `ast`, so the comment
-    stripping in `check_g` still applies to the same string either way.
+    THE PYTHON TWIN OF `function_body`, needed because the SUBJECT MOVED. See `check_g`: `setup()` was ported to `rediacc_ci.setup.machine.run_setup`, and an invariant that only knows how to read bash retires itself at the exact moment the port lands. Kept as text rather than `ast`, so the comment stripping in `check_g` still applies to the same string either way.
     """
     start = re.compile(r"^def %s\(" % re.escape(name))
     out: list[str] = []
@@ -642,13 +569,8 @@ def check_g(report: Report, runsh: pathlib.Path) -> bool:
 
     TWO SUBJECTS, ONE INVARIANT, and the fallback is the whole point. `setup()`
     was ported to `rediacc_ci.setup.machine.run_setup`; the ordering rule it
-    enforces did not move with it, it applies to whichever implementation is
-    the live one. Written against the bash alone, this assertion would have gone
-    RED at the moment the port succeeded, which is the same trap
-    `.ci/scripts/test/gates/test-run-sh.sh:315-327` had to be rewritten to
-    escape. `INIT_RE` and `READER_RE` match both languages unchanged: the Python
-    names `init-submodules.sh` in its `ctx.run` and `ensure_docker_installed` in
-    its `bridge.call`, which are the same two tokens the bash used.
+    enforces did not move with it, it applies to whichever implementation is the live one. Written against the bash alone, this assertion would have gone RED at the moment the port succeeded, which is the same trap `.ci/scripts/test/gates/test-run-sh.sh:315-327` had to be rewritten to escape. `INIT_RE` and `READER_RE` match both languages unchanged: the Python names
+    `init-submodules.sh` in its `ctx.run` and `ensure_docker_installed` in its `bridge.call`, which are the same two tokens the bash used.
 
     THE REFUSAL IS WHEN NEITHER EXISTS, which is a tree with no setup at all.
     """
@@ -703,9 +625,7 @@ def g_subject(root: pathlib.Path, tmpdir: pathlib.Path, body_file: pathlib.Path)
 
     ONE INVARIANT, TWO LANGUAGES. Before the cutover the subject is the bash
     `setup()`; after it, `rediacc_ci.setup.machine.run_setup`. The two plants
-    below need the subject's TEXT, a place to write the mutated copy that
-    `check_g` will find, and the line that marks the first phase which READS a
-    submodule. All three differ by language and nothing else does.
+    below need the subject's TEXT, a place to write the mutated copy that `check_g` will find, and the line that marks the first phase which READS a submodule. All three differ by language and nothing else does.
     """
     bash_text = read_text(body_file)
     if function_body(bash_text, "setup"):
@@ -737,8 +657,7 @@ def g_runsh(written: pathlib.Path) -> pathlib.Path:
     """The path to hand `check_g` for a copy `g_subject` produced.
 
     For the bash subject that is the file itself; for the Python subject it is
-    the empty `legacy/run-legacy.sh` beside it, because `check_g` takes the
-    LEGACY path and finds the port relative to it.
+    the empty `legacy/run-legacy.sh` beside it, because `check_g` takes the LEGACY path and finds the port relative to it.
     """
     if written.name == "machine.py":
         return written.parent.parent.parent / "legacy" / "run-legacy.sh"

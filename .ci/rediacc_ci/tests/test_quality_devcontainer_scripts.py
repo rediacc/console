@@ -1,26 +1,12 @@
 """`rediacc_ci.quality.devcontainer_scripts` against the grep pipeline it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-devcontainer-scripts.observations.jsonl` drives the whole gate
-over five distinct trees: a broken process-group lifecycle, a suppressed primary
-operation, a missing subject, a syntax error, and a control whose plant no longer
-applies. What a ledger row cannot isolate is the three-stage grep pipeline that
-decides which lines assertion A objects to, and there is a specific reason to
-distrust it here.
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-devcontainer-scripts.observations.jsonl` drives the whole gate over five distinct trees: a broken process-group lifecycle, a suppressed primary operation, a missing subject, a syntax error, and a control whose plant no longer applies. What a ledger row cannot isolate is the three-stage grep pipeline that decides which
+lines assertion A objects to, and there is a specific reason to distrust it here.
 
-`PRIMARY_OPS` alternates a `^`-anchored branch with a branch carrying a NEGATED
-character class (`curl [^|]*`). `docs/agent-reference/TRAPS.md` records exactly
-that shape returning SILENT FALSE ZEROS from `grep -E` under ugrep, which would
-make assertion A pass while reading nothing. So the port's Python regex is run
-against the REAL `grep -E` over every `.devcontainer/*.sh` in the tree plus a
-corpus of hand-written positives and negatives, and any divergence is a test
-failure rather than two gates quietly disagreeing.
+`PRIMARY_OPS` alternates a `^`-anchored branch with a branch carrying a NEGATED character class (`curl [^|]*`). `docs/agent-reference/TRAPS.md` records exactly that shape returning SILENT FALSE ZEROS from `grep -E` under ugrep, which would make assertion A pass while reading nothing. So the port's Python regex is run against the REAL `grep -E` over every `.devcontainer/*.sh` in the
+tree plus a corpus of hand-written positives and negatives, and any divergence is a test failure rather than two gates quietly disagreeing.
 
-The three sed mutations are also exercised here, in both directions: applied to
-the real files they must plant their markers, and applied to a decoy they must
-plant nothing. That second half is the `CONTROL IS VACUOUS` arm, which is the
-only thing standing between a moved target line and a control that mutates
-nothing and calls it a pass.
+The three sed mutations are also exercised here, in both directions: applied to the real files they must plant their markers, and applied to a decoy they must plant nothing. That second half is the `CONTROL IS VACUOUS` arm, which is the only thing standing between a moved target line and a control that mutates nothing and calls it a pass.
 """
 
 import pathlib
@@ -63,9 +49,7 @@ def test_scan_suppression_agrees_with_the_pipeline_on_the_corpus() -> None:
 def test_scan_suppression_agrees_on_every_real_devcontainer_script() -> None:
     """The live corpus, which is where a false zero would actually cost something.
 
-    Also asserts the corpus is non-empty: a comparison over zero files would
-    agree perfectly and prove nothing, which is the vacuity this whole programme
-    is about.
+    Also asserts the corpus is non-empty: a comparison over zero files would agree perfectly and prove nothing, which is the vacuity this whole programme is about.
     """
     scripts = sorted(paths.from_root(ds.DC_REL).glob("*.sh"))
     assert len(scripts) >= 5, scripts
@@ -77,9 +61,7 @@ def test_scan_suppression_agrees_on_every_real_devcontainer_script() -> None:
 def test_the_anchored_branch_and_the_negated_class_branch_both_still_fire() -> None:
     """The TRAPS.md shape, measured rather than assumed, in both engines.
 
-    One line per branch of `PRIMARY_OPS`, so an engine that dropped the anchored
-    branch when a negated class appears elsewhere in the alternation shows up as
-    a shorter list on one side.
+    One line per branch of `PRIMARY_OPS`, so an engine that dropped the anchored branch when a negated class appears elsewhere in the alternation shows up as a shorter list on one side.
     """
     text = (
         "git clone x 2>/dev/null\n"
@@ -95,8 +77,7 @@ def test_the_anchored_branch_and_the_negated_class_branch_both_still_fire() -> N
 def test_the_comment_filter_runs_on_the_numbered_lines() -> None:
     """`grep -vE '^[0-9]+:[[:space:]]*#'` sits BETWEEN the two matchers.
 
-    A port that filtered comments before numbering would shift every reported
-    line number, which is the same class of defect check-devbox-exec carries.
+    A port that filtered comments before numbering would shift every reported line number, which is the same class of defect check-devbox-exec carries.
     """
     text = "# git clone x 2>/dev/null\ngit clone y 2>/dev/null\n"
     assert ds.scan_suppression(text) == _shell_scan(text) == ["2:git clone y 2>/dev/null"]

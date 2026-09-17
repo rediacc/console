@@ -1,11 +1,7 @@
 """`private/renet/.ci/scripts/quality/pipefail-grep-q.sh`, driven from console.
 
-renet carries its own BASH copy of the pipefail/`grep -q` detector, and that copy
-is correct as bash: renet is required to work standalone, so a `sys.path` reach
-into console's `.ci` would make the gate silently skip in exactly the case the
-rest of that directory is built for. A third implementation of a detector this
-repo already keeps as a bash/Python twin pair drifts unless something holds it,
-and THIS FILE IS THAT SOMETHING. It pins two things:
+renet carries its own BASH copy of the pipefail/`grep -q` detector, and that copy is correct as bash: renet is required to work standalone, so a `sys.path` reach into console's `.ci` would make the gate silently skip in exactly the case the rest of that directory is built for. A third implementation of a detector this repo already keeps as a bash/Python twin pair drifts unless
+something holds it, and THIS FILE IS THAT SOMETHING. It pins two things:
 
   1. the detector's CONTRACT, driven against the renet script's own `offenders()`
      (reachable because the script guards its main block with
@@ -20,32 +16,16 @@ and THIS FILE IS THAT SOMETHING. It pins two things:
      direction that costs a MISSED DEFECT is console widening and renet not
      following, and that is the one this reds on.
 
-Console's list is read by IMPORTING the shipped port
-(`rediacc_ci.quality.pipefail_grep_q`), never by re-parsing its source: a test
-that re-derives a value from the same text it is checking can agree with a typo.
+Console's list is read by IMPORTING the shipped port (`rediacc_ci.quality.pipefail_grep_q`), never by re-parsing its source: a test that re-derives a value from the same text it is checking can agree with a typo.
 
-NO `BASH_TWIN`, AND THAT IS NOT THE COEXISTENCE RULE BEING SKIPPED. This package's
-`__init__` says a bash original is deleted by a LATER change than the one that
-ports it, so both can be driven against each other for a while. There is no bash
-original here to keep. A `.ci/scripts/test/gates/test-renet-pipefail-grep-q.sh`
-existed for exactly one commit (eda35491a) before Ruling 7 (2026-09-06) caught it
--- `.ci` and `.claude` are Python trees and that surface may shrink but never grow
--- so it was written in Python instead and the bash file deleted in the same change
-that added this one. Nothing was ported, so there is nothing to hold parity with,
-and this module joins the nine others here that carry no twin.
+NO `BASH_TWIN`, AND THAT IS NOT THE COEXISTENCE RULE BEING SKIPPED. This package's `__init__` says a bash original is deleted by a LATER change than the one that ports it, so both can be driven against each other for a while. There is no bash original here to keep. A `.ci/scripts/test/gates/test-renet-pipefail-grep-q.sh` existed for exactly one commit (eda35491a) before Ruling 7
+(2026-09-06) caught it -- `.ci` and `.claude` are Python trees and that surface may shrink but never grow -- so it was written in Python instead and the bash file deleted in the same change that added this one. Nothing was ported, so there is nothing to hold parity with, and this module joins the nine others here that carry no twin.
 
-WHY THE SUBJECT IS SOURCED RATHER THAN EXECUTED. Running the script outright runs
-the real gate over the real renet tree, which is renet's own stage's job, not this
-one's. Sourcing skips main and pulls `offenders`, `SCALING_PRODUCERS` and
-`RENET_EXTRA_PRODUCERS` into scope. A Python port has no shell to source into, so
+WHY THE SUBJECT IS SOURCED RATHER THAN EXECUTED. Running the script outright runs the real gate over the real renet tree, which is renet's own stage's job, not this one's. Sourcing skips main and pulls `offenders`, `SCALING_PRODUCERS` and `RENET_EXTRA_PRODUCERS` into scope. A Python port has no shell to source into, so
 each case is one fresh `bash -c`; that is in the port's favour, since nothing a
 case leaves behind can leak into the next.
 
-THE FIXTURES ARE ASSEMBLED AT RUNTIME, out of `GQ` and `PF`, for exactly the
-reason the renet script assembles its own that way: written out literally, this
-file's text would carry the racing shape contiguously. `.ci/**` is inside
-`check:ci-pipefail-grep-q`'s corpus, so a gate test that commits the defect it
-polices would be found by that gate -- correctly.
+THE FIXTURES ARE ASSEMBLED AT RUNTIME, out of `GQ` and `PF`, for exactly the reason the renet script assembles its own that way: written out literally, this file's text would carry the racing shape contiguously. `.ci/**` is inside `check:ci-pipefail-grep-q`'s corpus, so a gate test that commits the defect it polices would be found by that gate -- correctly.
 
 NO `xdist_group`. Every case writes into pytest's own `tmp_path` and runs one
 short-lived `bash -c`; nothing is bound, no module global is mutated, and both
@@ -73,13 +53,9 @@ def source_and_run(gate, code: str) -> harness.RunResult:
 
     Merged because renet's `common.sh` writes its log lines to stderr while the
     assertions here care only about what `offenders` printed on stdout; keeping
-    them apart would still work, but `.combined` is what makes a failure message
-    show the log line that explains it.
+    them apart would still work, but `.combined` is what makes a failure message show the log line that explains it.
 
-    A MISSING SUBJECT IS A FAILURE, NOT A SKIP. `check:ci-pytest` runs in
-    `quality-security`, whose checkout sets `submodules: true`, so the absent
-    submodule is not a state CI reaches -- and a case that could not run has not
-    been checked.
+    A MISSING SUBJECT IS A FAILURE, NOT A SKIP. `check:ci-pytest` runs in `quality-security`, whose checkout sets `submodules: true`, so the absent submodule is not a state CI reaches -- and a case that could not run has not been checked.
     """
     if not RENET_GATE.is_file():
         gate.log_fail(
@@ -94,11 +70,7 @@ def source_and_run(gate, code: str) -> harness.RunResult:
 def offenders_of(gate, tmp_path, name: str, *lines: str) -> str:
     """Write a fixture script, then print what renet's `offenders()` makes of it.
 
-    `|| true` IS REQUIRED, not defensive noise: `offenders` returns the status of
-    its LAST inner grep, which is non-zero exactly when the file is CLEAN. The
-    renet gate never notices because it runs under `set +e`. Without this, every
-    silent-direction case below would die on the `bash -c` exit status instead of
-    asserting on empty output.
+    `|| true` IS REQUIRED, not defensive noise: `offenders` returns the status of its LAST inner grep, which is non-zero exactly when the file is CLEAN. The renet gate never notices because it runs under `set +e`. Without this, every silent-direction case below would die on the `bash -c` exit status instead of asserting on empty output.
     """
     fixture = tmp_path / ("%s.sh" % name)
     fixture.write_text("".join("%s\n" % line for line in lines), encoding="utf-8")
@@ -188,9 +160,7 @@ def test_a_scaling_command_producer_is_flagged(gate, tmp_path):
 def test_a_pipeline_spanning_lines_is_flagged(gate, tmp_path):
     """No single LINE holds both halves, which is how the real one hid.
 
-    console's `check-control-vacuity.sh` offender sat on three separate lines, so
-    no per-line regex ever saw a producer and `grep -q` together. `join_logical`
-    is what closes that, and this case is what proves it still does.
+    console's `check-control-vacuity.sh` offender sat on three separate lines, so no per-line regex ever saw a producer and `grep -q` together. `join_logical` is what closes that, and this case is what proves it still does.
     """
     gate.log_test("producer on one line, grep -q on the next")
     assert_flagged(
@@ -304,10 +274,7 @@ def test_the_shape_in_a_double_quoted_string_is_not_flagged(gate, tmp_path):
 def test_the_console_import_is_not_empty(gate):
     """THE FLOOR UNDER THE NEXT CASE, and it is not ceremony.
 
-    `test_renet_list_is_a_superset_of_consoles` iterates console's names and
-    checks each one. Over an empty list that loop body never runs and the
-    assertion passes having compared nothing, which is indistinguishable from
-    agreement. This is the case that makes the next one's green mean something.
+    `test_renet_list_is_a_superset_of_consoles` iterates console's names and checks each one. Over an empty list that loop body never runs and the assertion passes having compared nothing, which is indistinguishable from agreement. This is the case that makes the next one's green mean something.
     """
     gate.log_test("console's SCALING_PRODUCERS imported, and non-trivially so")
     count = len(CONSOLE_PRODUCERS)
@@ -346,8 +313,7 @@ def test_renet_list_is_a_superset_of_consoles(gate):
 def test_every_declared_extra_is_really_in_the_list(gate):
     """`RENET_EXTRA_PRODUCERS` is documentation two headers lean on.
 
-    If an extra is removed from the live list but left named as an extra, the
-    declaration and the behaviour disagree silently. This is what stops that.
+    If an extra is removed from the live list but left named as an extra, the declaration and the behaviour disagree silently. This is what stops that.
     """
     gate.log_test("every name renet declares as an extra is really in its live list")
     extras = renet_list(gate, "RENET_EXTRA_PRODUCERS")

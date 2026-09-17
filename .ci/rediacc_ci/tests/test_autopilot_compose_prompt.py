@@ -1,33 +1,17 @@
 """Differential: `rediacc_ci.autopilot.compose_prompt` against its twin
 `.ci/scripts/autopilot/compose-prompt.sh`.
 
-BESPOKE SUBPROCESS COMPARISON, because this subject's real output is neither
-stdout nor stderr: it is the FILE named by `--out` plus the `prompt<<HEREDOC`
-block appended to `$GITHUB_OUTPUT`. Every case here compares five things --
-exit code, stdout, stderr, the `--out` bytes, and the `$GITHUB_OUTPUT` bytes --
-and it compares the two files as BYTES rather than text, because a prompt
-carries review-thread content written by whoever replied to the thread and a
-decoder in the test would refuse input the subject passes through untouched.
+BESPOKE SUBPROCESS COMPARISON, because this subject's real output is neither stdout nor stderr: it is the FILE named by `--out` plus the `prompt<<HEREDOC` block appended to `$GITHUB_OUTPUT`. Every case here compares five things -- exit code, stdout, stderr, the `--out` bytes, and the `$GITHUB_OUTPUT` bytes -- and it compares the two files as BYTES rather than text, because a prompt
+carries review-thread content written by whoever replied to the thread and a decoder in the test would refuse input the subject passes through untouched.
 
-THE RANDOM DELIMITER IS NORMALISED, NOT ASSERTED. `compose-prompt.sh` draws a
-fresh 32-hex-character marker per run on purpose (a fixed marker inside
-attacker-influenceable text could close the step output early), so two runs
-cannot produce identical `$GITHUB_OUTPUT` bytes and a byte comparison would be
-a test that can never pass. The comparison masks the hex and asserts the SHAPE
-separately: the prefix, exactly 32 lowercase hex characters, the same marker on
-both fence lines, and two runs of the SAME implementation differing. Asserting
-the value would be asserting that a CSPRNG repeats itself.
+THE RANDOM DELIMITER IS NORMALISED, NOT ASSERTED. `compose-prompt.sh` draws a fresh 32-hex-character marker per run on purpose (a fixed marker inside attacker-influenceable text could close the step output early), so two runs cannot produce identical `$GITHUB_OUTPUT` bytes and a byte comparison would be a test that can never pass. The comparison masks the hex and asserts the SHAPE
+separately: the prefix, exactly 32 lowercase hex characters, the same marker on both fence lines, and two runs of the SAME implementation differing. Asserting the value would be asserting that a CSPRNG repeats itself.
 
-TWO REFUSALS DIVERGE IN TEXT AND ARE COMPARED STRUCTURALLY, and both are named
-in the port's docstring rather than discovered here: a bash `>"$OUT"`
-redirection failure and (in the parse path) `printf -v`'s identifier error both
-carry the twin's own path and LINE NUMBER. Exit code, stream and ordering are
+TWO REFUSALS DIVERGE IN TEXT AND ARE COMPARED STRUCTURALLY, and both are named in the port's docstring rather than discovered here: a bash `>"$OUT"` redirection failure and (in the parse path) `printf -v`'s identifier error both carry the twin's own path and LINE NUMBER. Exit code, stream and ordering are
 compared exactly; only the text is compared by shape.
 
 K=5 LEDGER: `.ci/shadow/w7p6-compose-prompt.observations.jsonl`, recorded
-against a disposable scratch git repository built outside this checkout, since
-`shadow-gate.ts --record` refuses a dirty tree and this checkout is never
-clean.
+against a disposable scratch git repository built outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean.
 """
 
 from __future__ import annotations
@@ -143,10 +127,7 @@ def _sides(
 ) -> tuple[int, str, str, bytes | None, bytes]:
     """Build a fresh fixture per side, run both, and compare.
 
-    A FRESH TREE PER SIDE, never one shared directory: the subject WRITES into
-    the fixture, so a shared directory would let the first side's output become
-    the second side's input, and the two would agree because one of them read
-    what the other left.
+    A FRESH TREE PER SIDE, never one shared directory: the subject WRITES into the fixture, so a shared directory would let the first side's output become the second side's input, and the two would agree because one of them read what the other left.
     """
     with tempfile.TemporaryDirectory() as td:
         results = []
@@ -365,10 +346,7 @@ def test_out_in_a_nonexistent_directory() -> None:
 def test_github_output_shape() -> None:
     """The heredoc fence, and the delimiter's shape.
 
-    Compared by shape rather than value on purpose (see the module docstring),
-    so this is where the shape itself is pinned: prefix, 32 lowercase hex, the
-    SAME marker on the opening and closing fence, and the prompt bytes verbatim
-    between them.
+    Compared by shape rather than value on purpose (see the module docstring), so this is where the shape itself is pinned: prefix, 32 lowercase hex, the SAME marker on the opening and closing fence, and the prompt bytes verbatim between them.
     """
     with tempfile.TemporaryDirectory() as td:
         seen = []

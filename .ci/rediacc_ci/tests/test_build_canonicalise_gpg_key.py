@@ -1,31 +1,17 @@
 """Differential: `rediacc_ci.build.canonicalise_gpg_key` against its twin
 `.ci/scripts/build/canonicalise-gpg-key.sh`.
 
-REAL GPG, NEVER REIMPLEMENTED, on both sides -- same argument as
-`rediacc_ci.quality.release_key_canonical`'s own header: a Python OpenPGP
-library would answer a different question than "what does the real gpg binary
-do to these bytes", and the whole point of this module is that question. One
-throwaway RSA key (module-scoped: key generation is the slow part, ~2-3s, and
-nothing here needs more than one) is generated with `%no-protection` OFF, i.e.
-genuinely passphrase-protected, because that is the shape the twin's own
-comment says it is designed for (`PASSPHRASE`, `--pinentry-mode loopback`).
+REAL GPG, NEVER REIMPLEMENTED, on both sides -- same argument as `rediacc_ci.quality.release_key_canonical`'s own header: a Python OpenPGP library would answer a different question than "what does the real gpg binary do to these bytes", and the whole point of this module is that question. One throwaway RSA key (module-scoped: key generation is the slow part, ~2-3s, and nothing here
+needs more than one) is generated with `%no-protection` OFF, i.e. genuinely passphrase-protected, because that is the shape the twin's own comment says it is designed for (`PASSPHRASE`, `--pinentry-mode loopback`).
 
-WHY THE FINAL FILE CONTENT IS NOT COMPARED BYTE FOR BYTE. gpg re-encrypts a
-passphrase-protected secret key with fresh salt on every `--export-secret-keys`
-call, so the SAME twin run twice on the SAME input produces two different
-outputs (verified manually: `cmp` disagrees at byte 413 on two successive real
-runs). A byte comparison between the twin's output and the port's output would
-therefore fail even for a port with zero bugs. Equivalence here means: same
-exit code, same stdout, same stderr, and -- on the two paths that mutate the
-file -- the resulting file still imports under the same passphrase and still
+WHY THE FINAL FILE CONTENT IS NOT COMPARED BYTE FOR BYTE. gpg re-encrypts a passphrase-protected secret key with fresh salt on every `--export-secret-keys` call, so the SAME twin run twice on the SAME input produces two different outputs (verified manually: `cmp` disagrees at byte 413 on two successive real runs). A byte comparison between the twin's output and the port's output
+would therefore fail even for a port with zero bugs. Equivalence here means: same exit code, same stdout, same stderr, and -- on the two paths that mutate the file -- the resulting file still imports under the same passphrase and still
 carries a body whose longest non-armor-marker line is <= 64 columns (i.e. it is
 itself canonical, regardless of which implementation produced it).
 
 USAGE-ERROR TEXT IS NOT COMPARED. See `canonicalise_gpg_key`'s own docstring:
 the twin's `${1:?msg}` diagnostic embeds bash's own script path and interpreter
-line number, which `scripts/lib/shadow-gate.ts` classifies as CHATTER (no
-`::error::`/`✗`/`ERROR:` marker, no `path:line` shape), and which this port
-does not attempt to reproduce. Exit code 1 is the ported behaviour.
+line number, which `scripts/lib/shadow-gate.ts` classifies as CHATTER (no `::error::`/`✗`/`ERROR:` marker, no `path:line` shape), and which this port does not attempt to reproduce. Exit code 1 is the ported behaviour.
 
 K=5 LEDGER: `.ci/shadow/w7p6-canonicalise-gpg-key.observations.jsonl`.
 """
@@ -314,9 +300,7 @@ def test_welded_key_is_repaired(tmp_path: pathlib.Path, real_key: str) -> None:
 
 def test_planted_defect_is_caught() -> None:
     """ANTI-VACUITY. Flip the repair boundary from `> 64` to `>= 64` (an
-    off-by-one on the exact column RFC 4880 wraps at) and confirm the
-    differential rejects it on the CLEAN-key case, whose longest line sits
-    exactly on that boundary. Driven red, then the source is restored
+    off-by-one on the exact column RFC 4880 wraps at) and confirm the differential rejects it on the CLEAN-key case, whose longest line sits exactly on that boundary. Driven red, then the source is restored
     byte-identical and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

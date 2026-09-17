@@ -1,32 +1,18 @@
 """Differential: `rediacc_ci.housekeeping.cleanup_github_deployments` against
 its twin `.ci/scripts/housekeeping/cleanup-github-deployments.sh`.
 
-A RECORDING FAKE `gh`, written as Python, seam is PATH -- ruling 7's shape, as
-in `test_pr_sync_epic_block.py`. Nothing here reaches the network, and the real
-`gh` on this machine is never on the PATH handed to either subject. That is not
-merely tidy: this script's non-dry-run arm DELETES deployment records, and its
-`--repo` comes from the command line, so a case that leaked the real binary
-would delete real records from whatever repository the argument named.
+A RECORDING FAKE `gh`, written as Python, seam is PATH -- ruling 7's shape, as in `test_pr_sync_epic_block.py`. Nothing here reaches the network, and the real `gh` on this machine is never on the PATH handed to either subject. That is not merely tidy: this script's non-dry-run arm DELETES deployment records, and its `--repo` comes from the command line, so a case that leaked the
+real binary would delete real records from whatever repository the argument named.
 
-THE CALL LOG IS THE PRIMARY ARTIFACT, not stdout. This script writes NOTHING to
-stdout (every message is `log_*`, which is stderr), and its whole observable
-effect is the sequence of `gh` invocations. So every case compares the two
-sides' recorded call sequences as well as their streams and exit codes: a port
-that printed the right messages while making the wrong requests would otherwise
-pass.
+THE CALL LOG IS THE PRIMARY ARTIFACT, not stdout. This script writes NOTHING to stdout (every message is `log_*`, which is stderr), and its whole observable effect is the sequence of `gh` invocations. So every case compares the two sides' recorded call sequences as well as their streams and exit codes: a port that printed the right messages while making the wrong requests would
+otherwise pass.
 
-TWO CASES PIN DEFECTS IN THE TWIN RATHER THAN CORRECT BEHAVIOUR, and say so in
-their own names, so a future fix turns them red instead of sliding past:
-`test_DEFECT_failed_deletions_do_not_affect_the_exit_code` and
-`test_DEFECT_the_environment_is_not_url_encoded`. Both are described in the
-port's module docstring.
+TWO CASES PIN DEFECTS IN THE TWIN RATHER THAN CORRECT BEHAVIOUR, and say so in their own names, so a future fix turns them red instead of sliding past: `test_DEFECT_failed_deletions_do_not_affect_the_exit_code` and `test_DEFECT_the_environment_is_not_url_encoded`. Both are described in the port's module docstring.
 
 K=5 LEDGER: `.ci/shadow/w7p6-cleanup-github-deployments.observations.jsonl`
--- five distinct trees, `--assert --k 5` prints "equivalence holds over 5
-distinct trees". Recorded in a disposable scratch repo outside this checkout
+-- five distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout
 (dirty tree; `--record` refuses one) with the same fake `gh` on PATH, one
-scenario per tree: a dry run over three ids, one failed deletion, all
-deletions failing, a usage error, and a listing that returns HTTP 403.
+scenario per tree: a dry run over three ids, one failed deletion, all deletions failing, a usage error, and a listing that returns HTTP 403.
 """
 
 from __future__ import annotations
@@ -264,9 +250,7 @@ def test_a_failed_deletion_warns_and_the_others_still_run(tmp_path: pathlib.Path
 
 def test_defect_failed_deletions_do_not_affect_the_exit_code(tmp_path: pathlib.Path) -> None:
     """PINNING A DEFECT, NOT A REQUIREMENT. Every deletion fails and the script
-    still exits 0, so a workflow step shows a green tick while the Deployments
-    view is untouched. Reported to the driver rather than fixed here: changing
-    it changes live release-path behaviour on both sides at once. If the twin
+    still exits 0, so a workflow step shows a green tick while the Deployments view is untouched. Reported to the driver rather than fixed here: changing it changes live release-path behaviour on both sides at once. If the twin
     is ever fixed, THIS TEST GOES RED, which is the point."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -346,10 +330,7 @@ def test_pure_url_builders() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the line that makes `--dry-run` safe. Removing
-    the `continue` turns the dry run into a real one: the messages stay
-    identical, the exit code stays 0, and only the CALL LOG shows that records
-    were deleted -- which is exactly why every case in this file compares the
-    call log. Driven red, then the source is restored byte-identical and
+    the `continue` turns the dry run into a real one: the messages stay identical, the exit code stays 0, and only the CALL LOG shows that records were deleted -- which is exactly why every case in this file compares the call log. Driven red, then the source is restored byte-identical and
     re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

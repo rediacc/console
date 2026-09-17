@@ -1,16 +1,9 @@
 """`rediacc_ci.quality.python_lint` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-python-lint.sh` over a git
-fixture with stdout and stderr captured SEPARATELY, and its bytes are compared
-against the port's. Same recipe as the committed ledger,
-`.ci/shadow/w7p2-python-lint.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-python-lint.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-python-lint.observations.jsonl`.
 
-THE FIXTURE CARRIES THE REAL `pyproject.toml`, and it has to. The control this
-gate runs before judging anything asserts that F821 and ARG001 are reported and
-that ANN001 is NOT, which pins three separate facts about the configuration that
-ruff DISCOVERED by walking up from the file it linted. A fixture without that file
-would be linted with ruff's defaults, would still report F821, and would prove
-nothing -- which is the exact trap the twin's comment describes.
+THE FIXTURE CARRIES THE REAL `pyproject.toml`, and it has to. The control this gate runs before judging anything asserts that F821 and ARG001 are reported and that ANN001 is NOT, which pins three separate facts about the configuration that ruff DISCOVERED by walking up from the file it linted. A fixture without that file would be linted with ruff's defaults, would still report
+F821, and would prove nothing -- which is the exact trap the twin's comment describes.
 
 TWO THINGS THIS FILE PROVES THAT THE LEDGER CANNOT.
 
@@ -25,13 +18,8 @@ TWO THINGS THIS FILE PROVES THAT THE LEDGER CANNOT.
     which once made a pre-push lane refuse every push on a machine that simply
     lacked the tool.
 
-A NOTE ON PLANTING DEFECTS IN THIS PARTICULAR PORT, because it cost a wasted
-control. This gate LINTS ITS OWN PORT FILE: `.ci/rediacc_ci/quality/python_lint.py`
-is inside the enumerated corpus. A planted defect that is itself a ruff violation
-(`if False and ...` trips SIM223) is caught by the ruff-check stage on BOTH sides
-and the run never reaches the planted branch, so the comparator scores EQUIVALENT
-and the plant looks like a gate that cannot fail. It is not: the plant was at
-fault. Plant something ruff accepts -- changing a compared literal, for instance.
+A NOTE ON PLANTING DEFECTS IN THIS PARTICULAR PORT, because it cost a wasted control. This gate LINTS ITS OWN PORT FILE: `.ci/rediacc_ci/quality/python_lint.py` is inside the enumerated corpus. A planted defect that is itself a ruff violation (`if False and ...` trips SIM223) is caught by the ruff-check stage on BOTH sides and the run never reaches the planted branch, so the
+comparator scores EQUIVALENT and the plant looks like a gate that cannot fail. It is not: the plant was at fault. Plant something ruff accepts -- changing a compared literal, for instance.
 """
 
 import pathlib
@@ -58,8 +46,7 @@ def build(
 ) -> pathlib.Path:
     """A sealed git specimen holding both implementations, the config, and `extra`.
 
-    `extra` maps a path to (text, octal mode). The MODE is a subject of this gate
-    (EXE001/EXE002 read the GIT mode), so it is explicit at every call site.
+    `extra` maps a path to (text, octal mode). The MODE is a subject of this gate (EXE001/EXE002 read the GIT mode), so it is explicit at every call site.
     """
     src = pathlib.Path(diff.repo())
     root = tmp_path / "fixture"
@@ -164,9 +151,7 @@ def test_a_clean_run_still_prints_ruffs_own_pass_line(tmp_path):
     """The byte a capturing port swallows, and only on the GREEN path.
 
     `$RUFF check --no-cache -- "${PY_FILES[@]}"` is a bare command in the twin, so
-    ruff writes straight to the gate's streams. A port that captured that output to
-    inspect it drops `All checks passed!` when there is nothing to inspect -- a
-    divergence a differential built only from red specimens never sees.
+    ruff writes straight to the gate's streams. A port that captured that output to inspect it drops `All checks passed!` when there is nothing to inspect -- a divergence a differential built only from red specimens never sees.
     """
     root = build(tmp_path, {})
     (old_rc, old_out, _old_err), (new_rc, new_out, _new_err) = run_both(root)
@@ -179,9 +164,7 @@ def test_a_clean_run_still_prints_ruffs_own_pass_line(tmp_path):
 def test_the_file_floor_refuses_rather_than_reporting_clean(tmp_path):
     """`ruff check` with no paths exits 0, so a shrinking input reads as clean.
 
-    NOT IN THE LEDGER: the refusal says `VACUOUS INPUT`, and
-    `scripts/lib/shadow-gate.ts` treats that vocabulary as a suspended comparison
-    rather than a verdict. Byte equality can rule on it, so it lives here.
+    NOT IN THE LEDGER: the refusal says `VACUOUS INPUT`, and `scripts/lib/shadow-gate.ts` treats that vocabulary as a suspended comparison rather than a verdict. Byte equality can rule on it, so it lives here.
     """
     root = build(tmp_path, {}, with_core=False)
     (old_rc, old_out, old_err), (new_rc, new_out, new_err) = run_both(root)
@@ -196,9 +179,7 @@ def test_the_file_floor_refuses_rather_than_reporting_clean(tmp_path):
 def test_a_missing_ruff_is_77_and_not_1(tmp_path):
     """77 is CANNOT RUN. 1 would say "ruff found a problem", which is false.
 
-    Driven by handing the gate a PATH with neither ruff nor uvx on it, which is an
-    ENVIRONMENT difference rather than a tree difference and therefore cannot be a
-    ledger row.
+    Driven by handing the gate a PATH with neither ruff nor uvx on it, which is an ENVIRONMENT difference rather than a tree difference and therefore cannot be a ledger row.
     """
     root = build(tmp_path, {})
     (old_rc, old_out, old_err), (new_rc, new_out, new_err) = run_both(
@@ -217,10 +198,7 @@ def test_a_missing_ruff_is_77_and_not_1(tmp_path):
 def test_the_control_verdict_pins_three_separate_facts():
     """F821 present, ARG001 present, ANN001 ABSENT. Any one alone is satisfiable.
 
-    Measured 2026-09-06: `--isolated` reports F821 only, `--isolated --select ALL`
-    reports F821 + ARG001 + ANN001 + more, and this repo's config reports
-    F821 + ARG001. So the three-way test is what tells a resolved config from no
-    config at all.
+    Measured 2026-09-06: `--isolated` reports F821 only, `--isolated --select ALL` reports F821 + ARG001 + ANN001 + more, and this repo's config reports F821 + ARG001. So the three-way test is what tells a resolved config from no config at all.
     """
     assert gate.control_verdict("F821\nARG001\n") == ""
     assert "F821 was not reported" in gate.control_verdict("ARG001\n")
@@ -231,8 +209,7 @@ def test_the_control_verdict_pins_three_separate_facts():
 def test_the_unformatted_parser_survives_ruffs_colour():
     """ruff colours through a pipe, and an anchored match without a strip finds nothing.
 
-    That silent failure fell back to naming all 80 tracked files, which is the very
-    thing the parser exists to stop.
+    That silent failure fell back to naming all 80 tracked files, which is the very thing the parser exists to stop.
     """
     assert gate.unformatted_paths("\x1b[1m\x1b[94m--> \x1b[0ma/b.py:1:1\n") == "a/b.py "
     assert gate.unformatted_paths("  --> z.py:1\n  --> a.py:1\n") == "a.py z.py "
@@ -242,8 +219,7 @@ def test_the_unformatted_parser_survives_ruffs_colour():
 def test_colour_is_decided_by_ci_not_by_a_terminal(monkeypatch):
     """One of the nine disagreeing conventions, reproduced rather than corrected.
 
-    Using `rediacc_ci.log` here would decide colour by `isatty` and change the
-    bytes on every non-CI run, so every differential above would mismatch.
+    Using `rediacc_ci.log` here would decide colour by `isatty` and change the bytes on every non-CI run, so every differential above would mismatch.
     """
     monkeypatch.setenv("CI", "true")
     assert gate.colours() == ("", "", "")

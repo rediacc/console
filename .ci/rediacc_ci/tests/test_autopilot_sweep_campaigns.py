@@ -1,25 +1,13 @@
 """Differential: `rediacc_ci.autopilot.sweep_campaigns` against its twin
 `.ci/scripts/autopilot/sweep-campaigns.sh`.
 
-NO NETWORK AND NO STUBS, because the twin has none either: the sweeper's whole
-design is that the decision is made from a PR list and a directory of comment
-dumps, so it can be exercised offline. Both sides call the REAL
-`state-comment.sh`, which is the point -- the trust rule (author equality plus
-exact header prefix) lives there, and a test that stubbed it would prove the
-port calls something, not that a lookalike comment is refused.
+NO NETWORK AND NO STUBS, because the twin has none either: the sweeper's whole design is that the decision is made from a PR list and a directory of comment dumps, so it can be exercised offline. Both sides call the REAL `state-comment.sh`, which is the point -- the trust rule (author equality plus exact header prefix) lives there, and a test that stubbed it would prove the port
+calls something, not that a lookalike comment is refused.
 
-THE LOOKALIKE IS THE FIXTURE THAT MATTERS. Console is public, so the attack is
-a comment from any account whose body claims `campaign: open`. Every case below
-that expects a dispatch is accompanied by one that must NOT dispatch: wrong
-author, right author with the wrong header, campaign `closed`, campaign absent.
-A test with only the positive direction would agree with the twin while the
-author check was deleted.
+THE LOOKALIKE IS THE FIXTURE THAT MATTERS. Console is public, so the attack is a comment from any account whose body claims `campaign: open`. Every case below that expects a dispatch is accompanied by one that must NOT dispatch: wrong author, right author with the wrong header, campaign `closed`, campaign absent. A test with only the positive direction would agree with the twin
+while the author check was deleted.
 
-RELATIVE PATHS ON PURPOSE. Each side runs with its own private `cwd`, and the
-warning line quotes the dump path it was given, so the fixtures pass
-`--comments-dir comments` rather than an absolute path. An absolute path would
-put two different temp directories into the two sides' stderr and force a
-masked comparison for no reason.
+RELATIVE PATHS ON PURPOSE. Each side runs with its own private `cwd`, and the warning line quotes the dump path it was given, so the fixtures pass `--comments-dir comments` rather than an absolute path. An absolute path would put two different temp directories into the two sides' stderr and force a masked comparison for no reason.
 
 K=5 LEDGER: `.ci/shadow/w7p6-sweep-campaigns.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.

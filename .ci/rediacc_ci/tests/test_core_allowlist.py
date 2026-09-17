@@ -1,9 +1,6 @@
 """`rediacc_ci.core.allowlist` against the two readers it consolidates.
 
-WHAT THE PROOF IS. `core/allowlist.py` is a third implementation of a convention
-that already has two shared ones plus two hand-rolled copies. "The port looks
-right" is not evidence, so this suite runs the REAL bash function and the REAL
-TypeScript function over real input and compares BYTES.
+WHAT THE PROOF IS. `core/allowlist.py` is a third implementation of a convention that already has two shared ones plus two hand-rolled copies. "The port looks right" is not evidence, so this suite runs the REAL bash function and the REAL TypeScript function over real input and compares BYTES.
 
 THE GOLDEN MECHANISM, and why it is shaped this way.
 
@@ -30,8 +27,7 @@ THE GOLDEN MECHANISM, and why it is shaped this way.
      cannot be run, ASSERT ITS ABSENCE rather than skipping, because a skip
      reads exactly like a pass in the count `check_pytest.py` parses.
 
-THE ANTI-VACUITY CONTRACT, because a golden suite is the easiest thing in this
-repository to write in a form that cannot fail:
+THE ANTI-VACUITY CONTRACT, because a golden suite is the easiest thing in this repository to write in a form that cannot fail:
 
   * BOTH-EMPTY IS A MISMATCH. `_agree()` refuses a comparison in which both
     sides are empty, and `test_both_empty_is_refused_as_a_comparison` proves
@@ -48,28 +44,15 @@ repository to write in a form that cannot fail:
   * NO HAND-TYPED FLOORS. Every count in here is derived from the corpus or
     from the readers' own tables.
 
-THE DEFECT THIS SUITE FOUND ON THE WAY, AND ITS FIX. `validate_blocker_quality`
-in the bash reader used to normalize with `echo "$reason"`, and bash's `echo`
-builtin eats a word that is exactly `-n`, `-e` or `-E`. A BLOCKER reason of `-n`
-was therefore measured as ZERO characters by bash and TWO by TypeScript. Both
-still rejected it, so no gate was wrong, and this suite recorded the divergence
-and said the fix belonged in the bash file. It landed on 2026-09-09 with the
-collapse: neither shared reader normalizes anything any more, both ask this
-module, and `test_the_bash_echo_builtin_defect_is_gone_and_stays_gone` now
-asserts the agreement plus a reproduction of the old normalization proving the
-control still has something to detect.
+THE DEFECT THIS SUITE FOUND ON THE WAY, AND ITS FIX. `validate_blocker_quality` in the bash reader used to normalize with `echo "$reason"`, and bash's `echo` builtin eats a word that is exactly `-n`, `-e` or `-E`. A BLOCKER reason of `-n` was therefore measured as ZERO characters by bash and TWO by TypeScript. Both still rejected it, so no gate was wrong, and this suite recorded
+the divergence and said the fix belonged in the bash file. It landed on 2026-09-09 with the collapse: neither shared reader normalizes anything any more, both ask this module, and `test_the_bash_echo_builtin_defect_is_gone_and_stays_gone` now asserts the agreement plus a reproduction of the old normalization proving the control still has something to detect.
 
 WHAT THIS SUITE NO LONGER HAS TO CARRY. It says below that the readers are
 separate implementations; since 2026-09-09 they are CLIENTS, which is why every
-comparison here still passes and why none of them would notice a phrase present
-in a reader's own table and absent from this module's. That direction is
-`.ci/rediacc_ci/tests/test_blocker_implementations.py`'s, and it exists because
-this file's reason corpus is generated FROM `LOW_EFFORT_PHRASES` at :370 and is
-structurally blind to the list being short.
+comparison here still passes and why none of them would notice a phrase present in a reader's own table and absent from this module's. That direction is `.ci/rediacc_ci/tests/test_blocker_implementations.py`'s, and it exists because this file's reason corpus is generated FROM `LOW_EFFORT_PHRASES` at :370 and is structurally blind to the list being short.
 
 REGENERATING THE GOLDENS: `PYTHONPATH=.ci python3 .ci/rediacc_ci/tests/
-test_core_allowlist.py --record` from the repo root, with node_modules present.
-It re-freezes the corpus from the live sources and re-runs both readers.
+test_core_allowlist.py --record` from the repo root, with node_modules present. It re-freezes the corpus from the live sources and re-runs both readers.
 """
 
 import hashlib
@@ -240,9 +223,7 @@ def _tsx_available() -> bool:
 def _run_tsx(script: str, args: list[str]) -> str | None:
     """`npx --no-install tsx` over a temporary entry point. None when unavailable.
 
-    PID-KEYED entry point, for the reason `test_workflows.py:283` gives: `.ci/
-    cache/` is shared by every session in this tree and a fixed name lets two
-    concurrent suites truncate each other's script mid-run.
+    PID-KEYED entry point, for the reason `test_workflows.py:283` gives: `.ci/ cache/` is shared by every session in this tree and a fixed name lets two concurrent suites truncate each other's script mid-run.
     """
     entry = pathlib.Path(diff.repo()) / ".ci" / "cache" / ("allowlist-diff-%d.mts" % os.getpid())
     try:
@@ -266,15 +247,9 @@ def _run_tsx(script: str, args: list[str]) -> str | None:
 def _run_bash(script: str, args: list[str], *, cwd: str | None = None) -> tuple[int, str, str]:
     """The bash reader, with stdout and stderr kept APART.
 
-    Never merged, for the reason `differential.py` states at length: the shape of
-    defect these differentials exist to catch is a stream swap, and `2>&1` hides
-    it completely. Every caller below asserts on stderr separately.
+    Never merged, for the reason `differential.py` states at length: the shape of defect these differentials exist to catch is a stream swap, and `2>&1` hides it completely. Every caller below asserts on stderr separately.
 
-    Arguments arrive as POSITIONAL PARAMETERS via a `set --` prelude rather than
-    being interpolated into the script text. `differential.bash_streams` runs
-    `bash -c <script>` with nothing after it, so there is no other way to give
-    the driver a `$1`, and string-substituting a path into a shell script is how
-    a directory with a quote in it becomes a syntax error.
+    Arguments arrive as POSITIONAL PARAMETERS via a `set --` prelude rather than being interpolated into the script text. `differential.bash_streams` runs `bash -c <script>` with nothing after it, so there is no other way to give the driver a `$1`, and string-substituting a path into a shell script is how a directory with a quote in it becomes a syntax error.
     """
     prelude = "set -- %s\n" % " ".join(shlex.quote(a) for a in args)
     return diff.bash_streams(prelude + script, env=diff.env_for(CI="true"), cwd=cwd)
@@ -325,9 +300,7 @@ def _corpus_text(slug: str) -> str:
 def _agree(label: str, left: str, right: str) -> None:
     """Byte equality, with BOTH-EMPTY treated as a MISMATCH.
 
-    If both sides are empty the comparison established nothing: an
-    implementation that returned "" unconditionally would satisfy it, which is
-    exactly the vacuous green this repository hunts. Cases that legitimately
+    If both sides are empty the comparison established nothing: an implementation that returned "" unconditionally would satisfy it, which is exactly the vacuous green this repository hunts. Cases that legitimately
     have no rows are covered by a different control; see the module docstring.
     """
     assert left or right, (
@@ -381,9 +354,7 @@ def _python_reason_rows(cases: list[tuple[str, str]]) -> str:
 def _cases_tsv(cases: list[tuple[str, str]]) -> str:
     """TAB-separated, so the transport is only safe while no reason holds a TAB.
 
-    Asserted rather than hoped: a reason carrying a TAB or a newline would be
-    silently split by both drivers and the two halves compared against each
-    other's neighbours, which would look like agreement.
+    Asserted rather than hoped: a reason carrying a TAB or a newline would be silently split by both drivers and the two halves compared against each other's neighbours, which would look like agreement.
     """
     for case_id, reason in cases:
         assert "\t" not in reason, case_id
@@ -442,10 +413,7 @@ def test_every_golden_names_its_reader_its_command_and_its_input():
 def test_the_goldens_taken_together_are_not_empty():
     """The whole point of `_agree`'s both-empty rule, applied to the CORPUS.
 
-    Seven of the seventeen lists hold no entries, which is fine individually and
-    fatal collectively: if every golden were empty the suite above would return
-    early seventeen times and report green. The floor is the number of entries
-    the frozen corpus actually contains, so it is derived rather than typed.
+    Seven of the seventeen lists hold no entries, which is fine individually and fatal collectively: if every golden were empty the suite above would return early seventeen times and report green. The floor is the number of entries the frozen corpus actually contains, so it is derived rather than typed.
     """
     total = sum(len(allowlist.parse_text(_corpus_text(slug))) for slug in SLUGS)
     assert total > 0, "the frozen corpus contains no entries at all"
@@ -466,8 +434,7 @@ def test_the_goldens_taken_together_are_not_empty():
 def test_every_corpus_entry_line_becomes_exactly_one_entry():
     """The count is DERIVED from the corpus, so a zero here is a proved zero.
 
-    This is the control that keeps the entry-free files honest. An entry line is
-    a line that is neither blank nor a comment, which is the grammar both readers
+    This is the control that keeps the entry-free files honest. An entry line is a line that is neither blank nor a comment, which is the grammar both readers
     implement; if the parser dropped or invented rows, this diverges even for a
     file whose golden payload is empty.
     """
@@ -506,10 +473,7 @@ def _slugs_with_rows() -> list[str]:
 def test_perturbing_one_entry_breaks_the_bash_pairs_golden_and_bash_follows(tmp_path):
     """Both directions, on every non-empty corpus file.
 
-    The mutation is applied to a COPY. Renaming one entry token must (a) change
-    what this module renders, so the golden no longer matches, and (b) change
-    what the bash reader renders in the same way -- otherwise the "failure" would
-    only prove the port is fragile, not that the comparison is watching anything.
+    The mutation is applied to a COPY. Renaming one entry token must (a) change what this module renders, so the golden no longer matches, and (b) change what the bash reader renders in the same way -- otherwise the "failure" would only prove the port is fragile, not that the comparison is watching anything.
     """
     slugs = _slugs_with_rows()
     assert slugs, "nothing to perturb; the corpus has no entries"
@@ -581,9 +545,7 @@ def test_both_empty_is_refused_as_a_comparison():
 def _live_source(source: str) -> pathlib.Path | None:
     """Where git tracks the corpus source TODAY, found by basename.
 
-    Not a hardcoded second path. W4 P2 relocates these lists into `.ci/policy/`,
-    and a differential that stopped comparing after the move would go quietly
-    vacuous rather than red. Resolving through `git ls-files` follows the file
+    Not a hardcoded second path. W4 P2 relocates these lists into `.ci/policy/`, and a differential that stopped comparing after the move would go quietly vacuous rather than red. Resolving through `git ls-files` follows the file
     wherever it is tracked; a file that is genuinely gone returns None and the
     caller counts it.
     """
@@ -625,10 +587,7 @@ def test_bash_reader_and_python_agree_on_the_live_lists():
 def test_typescript_reader_and_python_agree_on_the_live_lists():
     """The real `parseBlockeredList`, or a proved absence of tsx.
 
-    NOT A SKIP. A skipped test is indistinguishable from a passing one in the
-    count `check_pytest.py` reconciles, and the lane that runs this suite is
-    `node: false`, so the absent branch would be the only one CI ever took. If
-    tsx IS installed and the driver still failed, that is a real failure.
+    NOT A SKIP. A skipped test is indistinguishable from a passing one in the count `check_pytest.py` reconciles, and the lane that runs this suite is `node: false`, so the absent branch would be the only one CI ever took. If tsx IS installed and the driver still failed, that is a real failure.
     """
     live = {s: _live_source(s) for s in SOURCES}
     present = [s for s, p in live.items() if p is not None]
@@ -682,9 +641,7 @@ def test_reason_messages_golden_matches_python_byte_for_byte():
 def test_bash_reason_validator_agrees_with_python_on_every_case(tmp_path):
     """The real `validate_blocker_quality`, driven over the same corpus.
 
-    Compared by sha256 of the message with `ci_error`'s `::error::` prefix
-    stripped, so a difference in a single character of any of the four output
-    lines is a failure -- not merely a difference in the accept/reject verdict.
+    Compared by sha256 of the message with `ci_error`'s `::error::` prefix stripped, so a difference in a single character of any of the four output lines is a failure -- not merely a difference in the accept/reject verdict.
     """
     cases = [case for case in _reason_cases() if case[1] != "-n"]
     assert cases
@@ -700,20 +657,11 @@ def test_bash_reason_validator_agrees_with_python_on_every_case(tmp_path):
 def test_the_bash_echo_builtin_defect_is_gone_and_stays_gone(tmp_path):
     """THE DEFECT, AND THE COLLAPSE THAT REMOVED IT.
 
-    `echo "-n"` in bash prints NOTHING, so `validate_blocker_quality` used to
-    normalize a two-character reason to zero characters and print a different
-    message from the other two readers. This suite recorded that divergence
-    rather than working around it, and said in as many words that the fix
-    belonged in the bash file and that this control should be retired when it
-    landed. It landed on 2026-09-09: the bash reader no longer normalizes
-    anything, it asks `rediacc_ci.core.allowlist`, so `echo` is not on the path.
+    `echo "-n"` in bash prints NOTHING, so `validate_blocker_quality` used to normalize a two-character reason to zero characters and print a different message from the other two readers. This suite recorded that divergence rather than working around it, and said in as many words that the fix belonged in the bash file and that this control should be retired when it landed. It
+    landed on 2026-09-09: the bash reader no longer normalizes anything, it asks `rediacc_ci.core.allowlist`, so `echo` is not on the path.
 
-    THE CONTROL IS RETIRED BY INVERSION, NOT BY DELETION. What was "the two
-    disagree, and here is the digest that proves it" is now "the two agree, and
-    here is the same digest on both sides", plus a reproduction of the old
-    normalization showing the driver WOULD still see the divergence if it came
-    back. Deleting it would have removed the only test in this repository that
-    exercises a reason bash's `echo` can eat.
+    THE CONTROL IS RETIRED BY INVERSION, NOT BY DELETION. What was "the two disagree, and here is the digest that proves it" is now "the two agree, and here is the same digest on both sides", plus a reproduction of the old normalization showing the driver WOULD still see the divergence if it came back. Deleting it would have removed the only test in this repository that exercises a
+    reason bash's `echo` can eat.
     """
     tsv = tmp_path / "dashn.tsv"
     tsv.write_text("dashn\t-n\n", encoding="utf-8")
@@ -758,8 +706,7 @@ def test_the_bash_echo_builtin_defect_is_gone_and_stays_gone(tmp_path):
 def test_entries_with_no_reason_are_reported_not_silently_accepted():
     """The reportable population, taken from a real list that HAS one.
 
-    `.ci/config/content-quality-allowlist.txt` carries entries under plain
-    comments rather than BLOCKER lines, so it is the tree's own example of the
+    `.ci/config/content-quality-allowlist.txt` carries entries under plain comments rather than BLOCKER lines, so it is the tree's own example of the
     case the module must not swallow. The expected count is derived from the
     file, never typed.
     """
@@ -832,8 +779,7 @@ def test_a_missing_list_is_an_error_here_and_silence_in_both_readers(tmp_path):
 def test_the_module_entry_point_separates_absent_from_dirty(tmp_path):
     """`python3 -m rediacc_ci.core.allowlist` exit codes, run for real.
 
-    2 for "you pointed me at nothing" and 1 for "the list is dirty". Collapsing
-    them is precisely how an absent list becomes a clean bill of health.
+    2 for "you pointed me at nothing" and 1 for "the list is dirty". Collapsing them is precisely how an absent list becomes a clean bill of health.
     """
     dirty = tmp_path / "dirty.list"
     dirty.write_text("# not a blocker comment\nsome-entry\n", encoding="utf-8")

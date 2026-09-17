@@ -1,11 +1,7 @@
 """Differential: `rediacc_ci.autopilot.update_state` against its twin
 `.ci/scripts/autopilot/update-state.sh`.
 
-A RECORDING FAKE `gh` ON A PREPENDED PATH, and the fake is not a convenience:
-this script's success path is an `api --method POST|PATCH` against a real
-repository, and a case that reached the real binary would write a comment onto
-whatever PR the argument named. Three independent things stop that, because one
-would be a claim rather than a control:
+A RECORDING FAKE `gh` ON A PREPENDED PATH, and the fake is not a convenience: this script's success path is an `api --method POST|PATCH` against a real repository, and a case that reached the real binary would write a comment onto whatever PR the argument named. Three independent things stop that, because one would be a claim rather than a control:
 
   1. the stub directory is FIRST on PATH and `shutil.which("gh", path=...)`
      is asserted to resolve to the fake, in `test_the_fake_gh_is_the_gh` --
@@ -14,26 +10,14 @@ would be a claim rather than a control:
   3. `GH_TOKEN` is a fixture string and `GH_CONFIG_DIR` points into the temp
      tree, so a leaked real `gh` would fail auth instead of writing.
 
-THE CALL LOG IS A PRIMARY ARTIFACT, not a sanity check. Almost everything this
-script does is invisible in stdout: which endpoint, which method, and what body
-bytes went up. A stdout-only comparison would be satisfied by a port that logged
-the right sentence and PATCHed the wrong comment. So every case compares the
+THE CALL LOG IS A PRIMARY ARTIFACT, not a sanity check. Almost everything this script does is invisible in stdout: which endpoint, which method, and what body bytes went up. A stdout-only comparison would be satisfied by a port that logged the right sentence and PATCHed the wrong comment. So every case compares the
 recorded `gh` argv AND the bytes of the file behind `-F body=@...`, and the fake
-rewrites that path to `<work>/body.md` because the two sides' mktemp directories
-legitimately differ.
+rewrites that path to `<work>/body.md` because the two sides' mktemp directories legitimately differ.
 
-WHAT THE BODY BYTES PROVE. The rendered comment is `state-comment.sh`'s output,
-which both sides spawn -- so comparing it is not testing the renderer, it is
-testing that the port passed the SAME argv into it. The `--campaign`-shaped
-optional flags are the interesting half: an omitted flag means "carry the
-previous value forward" and an empty one means "reset to none", so a port that
-passed every flag unconditionally would silently close a live campaign. The
-carry-over case below is what would catch that.
+WHAT THE BODY BYTES PROVE. The rendered comment is `state-comment.sh`'s output, which both sides spawn -- so comparing it is not testing the renderer, it is testing that the port passed the SAME argv into it. The `--campaign`-shaped optional flags are the interesting half: an omitted flag means "carry the previous value forward" and an empty one means "reset to none", so a port
+that passed every flag unconditionally would silently close a live campaign. The carry-over case below is what would catch that.
 
-TWO PRESERVED DEFECTS ARE PINNED BY NAME rather than described in prose:
-`test_a_mistyped_verdict_path_is_silent` and
-`test_a_non_string_ruled_out_entry_kills_the_write`. If either twin behaviour is
-ever repaired, the test goes red and the repair gets noticed here first.
+TWO PRESERVED DEFECTS ARE PINNED BY NAME rather than described in prose: `test_a_mistyped_verdict_path_is_silent` and `test_a_non_string_ruled_out_entry_kills_the_write`. If either twin behaviour is ever repaired, the test goes red and the repair gets noticed here first.
 
 K=5 LEDGER: `.ci/shadow/w7p6-update-state.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
@@ -92,11 +76,7 @@ REPO = "acme/widget"
 def _stub_bin(base: pathlib.Path) -> str:
     """A directory holding the fake `gh`, prepended to the real PATH.
 
-    PREPENDED rather than curated down to a symlink farm, because both subjects
-    reach for a long tail of coreutils through `common.sh` and
-    `state-comment.sh` (dirname, uname, tr, mktemp, awk, jq, wc, grep, sed).
-    The safety property is therefore RESOLUTION ORDER, and it is asserted rather
-    than assumed -- see `test_the_fake_gh_is_the_gh`.
+    PREPENDED rather than curated down to a symlink farm, because both subjects reach for a long tail of coreutils through `common.sh` and `state-comment.sh` (dirname, uname, tr, mktemp, awk, jq, wc, grep, sed). The safety property is therefore RESOLUTION ORDER, and it is asserted rather than assumed -- see `test_the_fake_gh_is_the_gh`.
     """
     stub = base / "bin"
     stub.mkdir(exist_ok=True)
@@ -404,8 +384,7 @@ def test_a_failing_gh_is_never_a_success() -> None:
     """Three attempts, the warnings between them, the indented child stderr, and
     exit 1 -- the swallowed-failure shape `_gh_probe` exists to end.
 
-    SLOW ON PURPOSE (9 seconds per side): the retry sleeps are 3s then 6s, and a
-    port that dropped them would stop being a retry past a rate limit.
+    SLOW ON PURPOSE (9 seconds per side): the retry sleeps are 3s then 6s, and a port that dropped them would stop being a retry past a rate limit.
     """
     exit_code, _, stderr, calls, _ = _sides(
         "gh-fails",

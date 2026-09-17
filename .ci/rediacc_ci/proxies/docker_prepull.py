@@ -1,23 +1,16 @@
 """Port of `.ci/scripts/test/proxies/proxy-docker-prepull.sh`.
 
-Local proxy for `.ci/scripts/infra/docker-prepull.sh`. The proxy runs the REAL
-script, against docker, on the smallest public image there is
-(`hello-world`), in both argument shapes the subject parses:
+Local proxy for `.ci/scripts/infra/docker-prepull.sh`. The proxy runs the REAL script, against docker, on the smallest public image there is (`hello-world`), in both argument shapes the subject parses:
 `<ref>` and `<ref>=<platform>`. The subject's argument grammar is the
 interesting part -- `image="${spec%%=*}"` has to survive a ref that itself
 contains `:` and `/` -- so this proxy exercises the split, not just the pull.
 The subject stays bash and unported; only the proxy is ported here.
 
-If the image was not already present it is removed afterwards, so the proxy
-leaves the daemon exactly as it found it -- preserved as `_Cleanup` below.
+If the image was not already present it is removed afterwards, so the proxy leaves the daemon exactly as it found it -- preserved as `_Cleanup` below.
 
-THE FAILURE PATH IS DELIBERATELY NOT DRIVEN, same reason as the bash twin: an
-unpullable ref costs three attempts with 30s/60s sleeps between them in the
-subject, which would add 90s to a pre-push gate. The no-arguments refusal
-proves the subject can fail and costs nothing.
+THE FAILURE PATH IS DELIBERATELY NOT DRIVEN, same reason as the bash twin: an unpullable ref costs three attempts with 30s/60s sleeps between them in the subject, which would add 90s to a pre-push gate. The no-arguments refusal proves the subject can fail and costs nothing.
 
-CANNOT-RUN, not a verdict: no docker binary, no reachable daemon, or no
-reachable registry all exit 77.
+CANNOT-RUN, not a verdict: no docker binary, no reachable daemon, or no reachable registry all exit 77.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-docker-prepull.observations.jsonl`.
 """

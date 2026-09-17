@@ -1,20 +1,11 @@
 """`rediacc_ci.proxies.cli_manifest` against its bash twin.
 
-TWIN is the PROXY itself (`proxy-cli-manifest.sh`), not the subject it drives
-(`.ci/scripts/build/generate-cli-manifest.sh`, which stays bash on both sides
-of this comparison -- it now also has its own separate W7P6 port,
-`rediacc_ci.build.generate_cli_manifest`, but that port is not what this proxy
-invokes). Both the bash and the Python proxy build
-their own fixture dist directory in a fresh tmpdir and invoke the SAME bash
-subject, so this differential is really asking one question: does the ported
-harness assert the same things, in the same order, with the same exit code?
+TWIN is the PROXY itself (`proxy-cli-manifest.sh`), not the subject it drives (`.ci/scripts/build/generate-cli-manifest.sh`, which stays bash on both sides of this comparison -- it now also has its own separate W7P6 port, `rediacc_ci.build.generate_cli_manifest`, but that port is not what this proxy invokes). Both the bash and the Python proxy build their own fixture dist directory
+in a fresh tmpdir and invoke the SAME bash subject, so this differential is really asking one question: does the ported harness assert the same things, in the same order, with the same exit code?
 
-BOTH INVOCATIONS ARE BYTE-IDENTICAL ON PURPOSE, same technique as
-`test_version_resolve_version.py`: no timestamps, no tmp paths and no PIDs
-appear in this proxy's own output (the one literal `$(mktemp -d)` in the
+BOTH INVOCATIONS ARE BYTE-IDENTICAL ON PURPOSE, same technique as `test_version_resolve_version.py`: no timestamps, no tmp paths and no PIDs appear in this proxy's own output (the one literal `$(mktemp -d)` in the
 hazard message is prose, not a real path), so `old == new` on the full
-`(exit, stdout, stderr)` tuple is the right assertion rather than a
-weaker finding-set comparison.
+`(exit, stdout, stderr)` tuple is the right assertion rather than a weaker finding-set comparison.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-cli-manifest.observations.jsonl`, recorded
 against a disposable scratch git repo built OUTSIDE this checkout (this

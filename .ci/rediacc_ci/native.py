@@ -1,28 +1,15 @@
 """`./rdc.sh --native` -- build the local Node SEA and install it over the user's rdc.
 
-WHAT MOVED AND WHY. This is `rdc.sh:67-159` as it stood on 2026-09-09: ninety-three
-lines, sixty of them code, two hand-written `case "$(uname ...)"` blocks and a
-seven-step install sequence, sitting in the wrapper a developer types a hundred times
-a day to run an ordinary CLI command. Every one of those lines was dead weight on the
-common path, and the two case blocks were copies four and five of a mapping this
+WHAT MOVED AND WHY. This is `rdc.sh:67-159` as it stood on 2026-09-09: ninety-three lines, sixty of them code, two hand-written `case "$(uname ...)"` blocks and a seven-step install sequence, sitting in the wrapper a developer types a hundred times a day to run an ordinary CLI command. Every one of those lines was dead weight on the common path, and the two case blocks were copies
+four and five of a mapping this
 package already owns: `rediacc_ci.core.platform`'s module docstring cites
 `rdc.sh:89` and `rdc.sh:98` BY LINE as two of the fourteen it was written to replace.
 
-THE SEAM, WHICH IS THE POINT OF THE PORT AND NOT A SIDE EFFECT. `plan()` takes
-`system` and `machine` as arguments and defaults them to the real `uname`. Nothing
-below the argv layer calls `uname` itself. That is what makes the three platform
-arms -- linux, mac, win -- checkable from one Linux box: `--print-plan --system
-Darwin --machine arm64` answers what the macOS arm WOULD do, and a gate can hold that
-answer against the artefact names the deleted bash produced. In bash the same
-question needed a Mac, so the mac and win arms of `rdc.sh` were never once executed
-by anything in CI.
+THE SEAM, WHICH IS THE POINT OF THE PORT AND NOT A SIDE EFFECT. `plan()` takes `system` and `machine` as arguments and defaults them to the real `uname`. Nothing below the argv layer calls `uname` itself. That is what makes the three platform arms -- linux, mac, win -- checkable from one Linux box: `--print-plan --system Darwin --machine arm64` answers what the macOS arm WOULD do,
+and a gate can hold that answer against the artefact names the deleted bash produced. In bash the same question needed a Mac, so the mac and win arms of `rdc.sh` were never once executed by anything in CI.
 
-WHAT IS DELIBERATELY NOT REIMPLEMENTED. `check_node_version`, `ensure_deps` and
-`ensure_packages_built` stay in `.ci/lib/local-common.sh` and are reached through one
-`bash -c` that sources it. They are shared with `rdc.sh`'s ordinary path, they are
-several hundred lines between them, and a second copy here would be the "two
-implementations kept in sync" failure the whole transformation exists to remove. One
-process, not three, so the sourcing cost is paid once.
+WHAT IS DELIBERATELY NOT REIMPLEMENTED. `check_node_version`, `ensure_deps` and `ensure_packages_built` stay in `.ci/lib/local-common.sh` and are reached through one `bash -c` that sources it. They are shared with `rdc.sh`'s ordinary path, they are several hundred lines between them, and a second copy here would be the "two implementations kept in sync" failure the whole
+transformation exists to remove. One process, not three, so the sourcing cost is paid once.
 
 TWO BEHAVIOURS CHANGED ON PURPOSE, both stated here rather than discovered later:
 
@@ -33,11 +20,7 @@ TWO BEHAVIOURS CHANGED ON PURPOSE, both stated here rather than discovered later
      `.ci/rediacc_ci` is a scanned surface for `check:ci-em-dash-surfaces` whose
      baseline refuses additions, and the house rule bans them in authored text.
 
-WHAT IS UNCHANGED, because a port that improves things is a rewrite: the step order,
-the artefact paths, the backup naming (`getOldBinaryPath()` in
-`packages/cli/src/utils/platform.ts` looks for `rdc.old` / `rdc.old.exe` and will not
-find anything else), the refusal on an unsupported platform or arch, the `--version`
-run at the end, and the exit codes.
+WHAT IS UNCHANGED, because a port that improves things is a rewrite: the step order, the artefact paths, the backup naming (`getOldBinaryPath()` in `packages/cli/src/utils/platform.ts` looks for `rdc.old` / `rdc.old.exe` and will not find anything else), the refusal on an unsupported platform or arch, the `--version` run at the end, and the exit codes.
 """
 
 from __future__ import annotations
@@ -81,9 +64,7 @@ class NativeError(RuntimeError):
 class Plan:
     """Every path and name the build/install sequence needs, and no side effects.
 
-    Frozen and pure so a gate can compare three of these against a table without
-    a Mac, a Windows box, or a build. `sea_platform` and `sea_arch` are the exact
-    strings `build-cli-executables.sh` takes for `--platform` and `--arch`.
+    Frozen and pure so a gate can compare three of these against a table without a Mac, a Windows box, or a build. `sea_platform` and `sea_arch` are the exact strings `build-cli-executables.sh` takes for `--platform` and `--arch`.
     """
 
     sea_platform: str
@@ -105,12 +86,9 @@ def plan(
 ) -> Plan:
     """The whole uname-dependent half of `./rdc.sh --native`, as data.
 
-    `system` and `machine` default to this host's uname. Passing them is the seam:
-    the mac and win arms are then reachable from a Linux gate.
+    `system` and `machine` default to this host's uname. Passing them is the seam: the mac and win arms are then reachable from a Linux gate.
 
-    Raises NativeError, not the package's UnsupportedPlatformError, so the caller
-    has one exception type to print and the message keeps the wording the bash
-    refusal had ("Unsupported platform X for --native").
+    Raises NativeError, not the package's UnsupportedPlatformError, so the caller has one exception type to print and the message keeps the wording the bash refusal had ("Unsupported platform X for --native").
     """
     # The raw uname strings, resolved HERE and passed down explicitly. `os_for` and `arch_for` would default to the host themselves, but then the refusal below could not name what it refused, and the bash it replaces printed the raw value: "Unsupported platform MINGW32_NT-6.1 for --native" is actionable, "None" is not.
     real_system = system if system is not None else _host.system()
@@ -147,8 +125,7 @@ def _stream(argv: list[str], cwd: str | os.PathLike[str] | None = None) -> None:
 
     NOT `rediacc_ci.proc.run`, and the reason is not style. `proc.run` captures both
     streams and bounds the command at 60 seconds; a two-arch Go cross-compile plus an
-    esbuild bundle plus a SEA injection is minutes of output a person watches to know
-    it is alive. Swallowing that and killing it at 60 seconds would both be wrong.
+    esbuild bundle plus a SEA injection is minutes of output a person watches to know it is alive. Swallowing that and killing it at 60 seconds would both be wrong.
     """
     completed = subprocess.run(argv, cwd=None if cwd is None else str(cwd), check=False)
     if completed.returncode != 0:
@@ -169,13 +146,9 @@ ensure_packages_built
 def prepare_toolchain(root: pathlib.Path) -> None:
     """node version + deps + built packages, through the bash that already owns them.
 
-    ONE bash, not three: sourcing `local-common.sh` is the expensive part and the
-    three calls are one logical step. `set -euo pipefail` inside, so the first
-    failure is the exit code, exactly as it was when these three lines sat in
-    `rdc.sh` under its own `set -e`.
+    ONE bash, not three: sourcing `local-common.sh` is the expensive part and the three calls are one logical step. `set -euo pipefail` inside, so the first failure is the exit code, exactly as it was when these three lines sat in `rdc.sh` under its own `set -e`.
 
-    THE ORDER IS THE BASH ORDER. `check_node_version` first: `ensure_deps` runs npm,
-    and npm on an unsupported node produces a worse message than the version check.
+    THE ORDER IS THE BASH ORDER. `check_node_version` first: `ensure_deps` runs npm, and npm on an unsupported node produces a worse message than the version check.
     """
     _stream(
         [
@@ -226,10 +199,7 @@ def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
 def _copy(src: pathlib.Path, dst: pathlib.Path) -> None:
     """`cp -f`: overwrite the CONTENT, never replace the inode.
 
-    shutil.copyfile, not shutil.copy2 and not a rename. `~/.local/bin/rdc` is a
-    SYMLINK to the destination in every documented setup, and a rename would leave
-    that link dangling while a metadata copy would carry the build tree's mtime onto
-    a binary the updater compares by version string.
+    shutil.copyfile, not shutil.copy2 and not a rename. `~/.local/bin/rdc` is a SYMLINK to the destination in every documented setup, and a rename would leave that link dangling while a metadata copy would carry the build tree's mtime onto a binary the updater compares by version string.
     """
     dst.write_bytes(src.read_bytes())
 

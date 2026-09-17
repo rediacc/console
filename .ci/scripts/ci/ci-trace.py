@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """ci-trace: the ONE way an agent reads this repo's CI.
 
-WHY THIS EXISTS. Watching CI used to mean hand-writing a `gh` polling loop from
-prose in a skill file. Landing console#574 on 2026-08-25 that failed four ways
-in a single afternoon:
+WHY THIS EXISTS. Watching CI used to mean hand-writing a `gh` polling loop from prose in a skill file. Landing console#574 on 2026-08-25 that failed four ways in a single afternoon:
 
   1. The recipe was stale in NINE places. A manual sweep found six; a gate found
      three more in hook SCRIPTS the sweep's *.md grep could not see. Two of them
@@ -15,20 +13,12 @@ in a single afternoon:
   4. A watch ate a `network is unreachable` blip and survived only because its
      retry arm happened to be written correctly.
 
-Each was patched by hand, and each patch was more prose. So: one script, and the
-ad-hoc form is blocked at the pre-bash guard and at the Stop hook.
+Each was patched by hand, and each patch was more prose. So: one script, and the ad-hoc form is blocked at the pre-bash guard and at the Stop hook.
 
-HOW 2 AND 3 BECOME IMPOSSIBLE RATHER THAN HANDLED. This keys on the PR's HEAD
-COMMIT, never on a run id, and reads GitHub's `statusCheckRollup`, which exposes
-the LATEST check run per context. A watchdog rerun therefore REPLACES the failed
-attempt instead of appearing beside it, and a run belonging to an older head is
-not in the rollup at all. There is no attempt number to get wrong.
+HOW 2 AND 3 BECOME IMPOSSIBLE RATHER THAN HANDLED. This keys on the PR's HEAD COMMIT, never on a run id, and reads GitHub's `statusCheckRollup`, which exposes the LATEST check run per context. A watchdog rerun therefore REPLACES the failed attempt instead of appearing beside it, and a run belonging to an older head is not in the rollup at all. There is no attempt number to get
+wrong.
 
-ONE IMPLEMENTATION. Every rule here already existed inside the Stop hook's
-wl_ci.py, whose own docstrings describe failures 2 and 3 verbatim -- it was just
-unreachable from a shell, so agents kept rebuilding a worse version. This imports
-that module rather than restating it, so the CLI and the Stop hook cannot
-disagree about what red means.
+ONE IMPLEMENTATION. Every rule here already existed inside the Stop hook's wl_ci.py, whose own docstrings describe failures 2 and 3 verbatim -- it was just unreachable from a shell, so agents kept rebuilding a worse version. This imports that module rather than restating it, so the CLI and the Stop hook cannot disagree about what red means.
 """
 
 import argparse
@@ -73,9 +63,7 @@ def _branch(root):
 def _run_snapshot(root, run_id):
     """(status, conclusion, jobs) for ONE run id, or (None, None, err).
 
-    Reads per-JOB conclusions, not the run-level conclusion alone: a run whose
-    status is `completed` can still carry a failed job, and the run-level field
-    is the same coarse signal ci_classify refuses to treat as a verdict.
+    Reads per-JOB conclusions, not the run-level conclusion alone: a run whose status is `completed` can still carry a failed job, and the run-level field is the same coarse signal ci_classify refuses to treat as a verdict.
     """
     try:
         out = subprocess.run(
@@ -427,11 +415,7 @@ def main(argv=None):
 def _selftest():
     """Controls for _trace_run's CI_NONBLOCKING_CONTEXTS filter.
 
-    Review-found live on PR #579: `--run <id>` reads a run's jobs endpoint
-    DIRECTLY rather than through wl_ci.ci_classify's GraphQL contexts, so the
-    filter fixing ci_classify (see wl_ci.py --selftest) never touched this
-    path -- proven by ci-trace.py itself calling a run GitHub scored
-    "success" RED, because "Review Complete" (a check-run that can never
+    Review-found live on PR #579: `--run <id>` reads a run's jobs endpoint DIRECTLY rather than through wl_ci.ci_classify's GraphQL contexts, so the filter fixing ci_classify (see wl_ci.py --selftest) never touched this path -- proven by ci-trace.py itself calling a run GitHub scored "success" RED, because "Review Complete" (a check-run that can never
     block Console CI) showed up as conclusion=failure in the jobs list.
     """
     ok = True

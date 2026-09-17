@@ -1,28 +1,17 @@
 """Differential: `rediacc_ci.housekeeping.cleanup_cf_preview` against its twin
 `.ci/scripts/housekeeping/cleanup-cf-preview.sh`.
 
-A RECORDING FAKE `curl` ON A SCRATCH PATH, answering from the REQUEST SHAPE.
-Nothing here reaches Cloudflare. The fake routes on the URL -- a `/deployments/`
-segment is a delete, anything else is a listing -- and every case pins a fixture
-account id and token, so even a bypassed fake would not name a real account.
+A RECORDING FAKE `curl` ON A SCRATCH PATH, answering from the REQUEST SHAPE. Nothing here reaches Cloudflare. The fake routes on the URL -- a `/deployments/` segment is a delete, anything else is a listing -- and every case pins a fixture account id and token, so even a bypassed fake would not name a real account.
 
 THE REQUEST LOG IS COMPARED, NOT JUST THE STREAMS, and for this script it is the
 main evidence. The observable effect is a set of DELETE calls against a live CDN;
-two implementations can print the same tally while deleting different
-deployments, or while paginating differently, or while sending the token in the
-wrong header. `test_the_request_shape_is_asserted_in_full` pins the exact argv of
-both endpoints -- method, URL, and both headers -- against the port's own
-`curl_argv`, so the shape is checked against the code as well as against the twin.
+two implementations can print the same tally while deleting different deployments, or while paginating differently, or while sending the token in the wrong header. `test_the_request_shape_is_asserted_in_full` pins the exact argv of both endpoints -- method, URL, and both headers -- against the port's own `curl_argv`, so the shape is checked against the code as well as against the
+twin.
 
-THE THREE jq FAILURE MODES ARE DRIVEN, because the port shells out to jq rather
-than parsing JSON in Python precisely so that they agree: a non-JSON body and a
-`result`-less body both kill the run with jq's own message and exit 5, while an
-EMPTY body does not and takes the ordinary warning branch. A port using
-`json.loads` would pass every happy-path test here and differ on all three.
+THE THREE jq FAILURE MODES ARE DRIVEN, because the port shells out to jq rather than parsing JSON in Python precisely so that they agree: a non-JSON body and a `result`-less body both kill the run with jq's own message and exit 5, while an EMPTY body does not and takes the ordinary warning branch. A port using `json.loads` would pass every happy-path test here and differ on all
+three.
 
-THE VACUITY DEFECT IS PINNED. `test_defect_a_failed_listing_reads_as_nothing_to_do`
-drives a curl that cannot reach the host and asserts the twin exits 0 saying
-"No preview deployments to clean up". Reproduced because agreement with the live
+THE VACUITY DEFECT IS PINNED. `test_defect_a_failed_listing_reads_as_nothing_to_do` drives a curl that cannot reach the host and asserts the twin exits 0 saying "No preview deployments to clean up". Reproduced because agreement with the live
 twin is the deliverable; repaired, the test goes red and names the port that
 must follow.
 """
@@ -414,9 +403,7 @@ def test_missing_jq_is_refused(tmp_path: pathlib.Path) -> None:
 def test_defect_a_failed_listing_reads_as_nothing_to_do(tmp_path: pathlib.Path) -> None:
     """THE VACUITY DEFECT, PINNED. curl cannot reach the host, the `|| echo
     '{"result":[]}'` fallback fires, `.success // false` is false, and the run
-    ends GREEN with "No preview deployments to clean up". The one warning line
-    sits in the middle of a successful run, so a branch whose previews were never
-    enumerated is indistinguishable from a branch that had none.
+    ends GREEN with "No preview deployments to clean up". The one warning line sits in the middle of a successful run, so a branch whose previews were never enumerated is indistinguishable from a branch that had none.
 
     Reproduced because agreement with the live twin is the deliverable;
     repaired, this test goes red and names the port that must follow.
@@ -450,8 +437,7 @@ def test_a_non_json_body_kills_the_run_with_jqs_own_message(
     tmp_path: pathlib.Path,
 ) -> None:
     """THE CASE A `json.loads` PORT WOULD GET WRONG. An HTML error page reaches
-    an unguarded `jq`, whose parse error goes to stderr and whose exit status
-    passes through `set -e`. Both the message and the status must agree, which is
+    an unguarded `jq`, whose parse error goes to stderr and whose exit status passes through `set -e`. Both the message and the status must agree, which is
     why the port runs jq rather than parsing in Python."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--branch", "feature-x"], FAKE_CURL_BODY="<html>504 Gateway Timeout</html>\n"
@@ -511,8 +497,7 @@ def test_divergence_common_sh_interprets_backslash_escapes_in_the_cf_error(
     tmp_path: pathlib.Path,
 ) -> None:
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. `Could not delete <id>: <error_msg>` is the one message
-    that interpolates remote text, and common.sh logs through `echo -e`.
+    "FIXED" BY ACCIDENT. `Could not delete <id>: <error_msg>` is the one message that interpolates remote text, and common.sh logs through `echo -e`.
     `rediacc_ci.log` formats the message as data (see its module docstring)."""
     old, new, _oc, _nc = run_both(
         tmp_path,

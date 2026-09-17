@@ -1,28 +1,19 @@
 """Differential: `rediacc_ci.release.install_sh_config_check` against its twin
 `.ci/scripts/test/test-install-sh-config.sh` (gate `check:ci-install-sh-config`).
 
-BOTH SIDES PASS ON THE REAL TREE, which proves only that two programs agree
-about an `install.sh` neither is currently catching out. So every case below
-runs both against a FIXTURE TREE holding a MUTATED copy of
-`packages/www/public/install.sh`, driving the twin's five failure branches --
-including the one it was written for, "a preview-cloned backend must not
-override the baked channel".
+BOTH SIDES PASS ON THE REAL TREE, which proves only that two programs agree about an `install.sh` neither is currently catching out. So every case below runs both against a FIXTURE TREE holding a MUTATED copy of `packages/www/public/install.sh`, driving the twin's five failure branches -- including the one it was written for, "a preview-cloned backend must not override the baked
+channel".
 
-THE ONE BYTE THE TWO SIDES CANNOT SHARE is the mock server's port. Each side
-boots its own `python3 -m http.server` on a kernel-assigned port, and case
+THE ONE BYTE THE TWO SIDES CANNOT SHARE is the mock server's port. Each side boots its own `python3 -m http.server` on a kernel-assigned port, and case
 five's line quotes it. `norm()` masks `127.0.0.1:<port>` on both sides; nothing
 else is normalized, so the ANSI-free glyph lines, the blank lines
-`write_install_config` prints, the tally and the exit code are all compared as
-bytes.
+`write_install_config` prints, the tally and the exit code are all compared as bytes.
 
 HOW THE TWO SIDES ARE POINTED AT A FIXTURE, and it differs per side. The twin
 resolves `REPO_ROOT` from `${BASH_SOURCE[0]}`, so it is COPIED into the fixture
-and run from there. The port resolves it through `paths.repo_root()`, whose
-documented single override is `$REDIACC_CI_ROOT`. Both then source the same
-mutated `install.sh`.
+and run from there. The port resolves it through `paths.repo_root()`, whose documented single override is `$REDIACC_CI_ROOT`. Both then source the same mutated `install.sh`.
 
-NOTHING ON DISK IS MUTATED: every fixture is a `shutil.copy2` under pytest's
-`tmp_path`.
+NOTHING ON DISK IS MUTATED: every fixture is a `shutil.copy2` under pytest's `tmp_path`.
 
 K=5 LEDGER: `.ci/shadow/w7p6-install-sh-config.observations.jsonl`.
 """
@@ -103,8 +94,7 @@ def _run(subject: pathlib.Path, fixture: pathlib.Path) -> subprocess.CompletedPr
 def python_shows_caret_ruler() -> bool:
     """Does the `python3` on PATH draw a caret ruler under a `-c` traceback?
 
-    ASKED, because it is a property of the INTERPRETER and this suite runs on two
-    very different ones. Measured 2026-09-15:
+    ASKED, because it is a property of the INTERPRETER and this suite runs on two very different ones. Measured 2026-09-15:
 
         Python 3.14.4 (this tree's hosts)
             File "<string>", line 1, in <module>
@@ -117,13 +107,9 @@ def python_shows_caret_ruler() -> bool:
 
     CPython only began echoing the SOURCE of a `-c` snippet (and so the PEP 657
     ruler under it) in 3.13; before that there is no source line to underline.
-    An unconditional `"^^^" in stderr` therefore passed on every machine here and
-    failed in CI run 35009582358 -- the fourth toolchain in this wave whose
-    version differs between this tree and the runner, after bash, jq and
-    coreutils.
+    An unconditional `"^^^" in stderr` therefore passed on every machine here and failed in CI run 35009582358 -- the fourth toolchain in this wave whose version differs between this tree and the runner, after bash, jq and coreutils.
 
-    THE DIFFERENTIAL IS NOT WEAKENED BY THIS. `assert_same` still compares the
-    twin's and the port's stderr byte for byte, so a port that forged ANY part of
+    THE DIFFERENTIAL IS NOT WEAKENED BY THIS. `assert_same` still compares the twin's and the port's stderr byte for byte, so a port that forged ANY part of
     the rendering still reds; this predicate only decides which anti-vacuity
     proof is available on the interpreter at hand.
     """
@@ -219,9 +205,7 @@ def test_a_config_that_is_never_written_is_caught(tmp_path: pathlib.Path) -> Non
 def test_the_regression_this_gate_exists_for(tmp_path: pathlib.Path) -> None:
     """A preview-cloned backend must NOT override the baked channel.
 
-    Removing the guard at `install.sh:220` lets server-info's `stable` win over
-    the baked `edge`, which is the exact user-visible bug case five was written
-    against.
+    Removing the guard at `install.sh:220` lets server-info's `stable` win over the baked `edge`, which is the exact user-visible bug case five was written against.
     """
     fixture = build_fixture(tmp_path)
     mutate(fixture, BAKED_CHANNEL_GUARD, "if true; then")
@@ -237,9 +221,7 @@ def test_a_config_missing_a_key_kills_both_sides_the_same_way(
 ) -> None:
     """The `set -e` + un-redirected `python3 -c` path.
 
-    `test-install-sh-config.sh:98` captures only stdout, so a `KeyError` puts
-    CPython's own traceback -- caret ruler and tilde underline included -- on
-    the gate's stderr and then ends the run. The port runs the identical
+    `test-install-sh-config.sh:98` captures only stdout, so a `KeyError` puts CPython's own traceback -- caret ruler and tilde underline included -- on the gate's stderr and then ends the run. The port runs the identical
     command rather than forging that rendering; this case is what proves it.
     """
     fixture = build_fixture(tmp_path)
@@ -307,10 +289,7 @@ def test_substituted_strips_every_trailing_newline() -> None:
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:
     """Make a COPY of the port accept any channel/server it is handed.
 
-    That comparison is the gate's whole verdict, and it is invisible on a green
-    tree: a port that always reported OK agrees with the twin everywhere except
-    against an `install.sh` that really does override the baked channel, which
-    is the fixture built here. The real port file is never touched.
+    That comparison is the gate's whole verdict, and it is invisible on a green tree: a port that always reported OK agrees with the twin everywhere except against an `install.sh` that really does override the baked channel, which is the fixture built here. The real port file is never touched.
     """
     source = PORT.read_text(encoding="utf-8")
     anchor = """        if got_channel == expect_channel and got_account == expect_account:

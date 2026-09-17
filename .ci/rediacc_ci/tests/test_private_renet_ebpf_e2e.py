@@ -1,19 +1,12 @@
 """Differential: `.ci/rediacc_ci/private/renet_ebpf_e2e.py` against its twin
 `.ci/scripts/private/renet-ebpf-e2e.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
 NOTHING PRIVILEGED IS EVER INVOKED. The subject probes a filesystem type,
 MOUNTS bpffs and runs root-only eBPF tests; a suite that let any of that reach
-the real system would need root, would alter the host's mount table, and would
-SKIP wherever it could not, which is the exact vacuity this campaign exists to
-avoid. `stat`, `mount` and `go` are all recording fakes on a scratch PATH: each
-appends its cwd and full argv to one shared log and returns canned bytes and a
-canned status. That is also the only way to drive the two cases that matter
-most and cannot be produced on a developer machine at all: "bpffs is already
-mounted" and "the tests ran green having skipped every one of them".
+the real system would need root, would alter the host's mount table, and would SKIP wherever it could not, which is the exact vacuity this campaign exists to avoid. `stat`, `mount` and `go` are all recording fakes on a scratch PATH: each appends its cwd and full argv to one shared log and returns canned bytes and a canned status. That is also the only way to drive the two cases
+that matter most and cannot be produced on a developer machine at all: "bpffs is already mounted" and "the tests ran green having skipped every one of them".
 
 WHAT IS COMPARED, AND WHY IT IS FOUR THINGS. Every case compares:
 
@@ -27,18 +20,11 @@ WHAT IS COMPARED, AND WHY IT IS FOUR THINGS. Every case compares:
      never mounting, or while mounting when the probe already said `bpf_fs`,
      passes a stdout-only comparison and is a different program.
 
-PATH IS REPLACED, NEVER PREPENDED. This host has a real `go`, a real `stat` and
-a real `mount`, and a prepend would leave the "not installed" cases silently
-consulting them. `_binder` builds the ENTIRE PATH out of named tools and
-asserts that what it was asked to exclude really is absent, because a probe
-that cannot fire looks exactly like a subject that cannot fail.
+PATH IS REPLACED, NEVER PREPENDED. This host has a real `go`, a real `stat` and a real `mount`, and a prepend would leave the "not installed" cases silently consulting them. `_binder` builds the ENTIRE PATH out of named tools and asserts that what it was asked to exclude really is absent, because a probe that cannot fire looks exactly like a subject that cannot fail.
 
 THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
 the file it is running; the port composes the same prefix from `sys.argv[0]`
-and its own live frame. Those can never be equal, so `_mask` collapses exactly
-that prefix on both sides and compares everything after it byte for byte.
-`test_the_mask_does_not_hide_the_message` pins the mask so it cannot quietly
-grow into something that hides a real divergence.
+and its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides and compares everything after it byte for byte. `test_the_mask_does_not_hide_the_message` pins the mask so it cannot quietly grow into something that hides a real divergence.
 """
 
 import os
@@ -127,11 +113,7 @@ def _mask(text: str, root: pathlib.Path, tmp: pathlib.Path) -> str:
 def _fixture(tmp_path: pathlib.Path, *, submodule: str = "dir") -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because each subject derives the console root from its own location
-    and driving the tracked files with a `cwd` would point both at the REAL
-    repository. `.resolve()` on the root is load-bearing: bash's `cd X && pwd`
-    reports the LOGICAL path while `pathlib.resolve()` follows symlinks, and the
-    root string appears in the `cd` diagnostic.
+    Copies, because each subject derives the console root from its own location and driving the tracked files with a `cwd` would point both at the REAL repository. `.resolve()` on the root is load-bearing: bash's `cd X && pwd` reports the LOGICAL path while `pathlib.resolve()` follows symlinks, and the root string appears in the `cd` diagnostic.
     """
     root = tmp_path.resolve() / "tree"
     (root / ".ci" / "scripts" / "private").mkdir(parents=True)
@@ -166,10 +148,7 @@ def _binder(
 ) -> str:
     """The COMPLETE PATH for one case: named real tools, plus three fakes.
 
-    Each of `stat`, `mount` and `go` takes one of "ok" (a recording fake),
-    "missing" (absent from PATH entirely) and "noexec" (present, not
-    executable) -- the third is the only shape for which bash names the
-    resolved path instead of the bare word.
+    Each of `stat`, `mount` and `go` takes one of "ok" (a recording fake), "missing" (absent from PATH entirely) and "noexec" (present, not executable) -- the third is the only shape for which bash names the resolved path instead of the bare word.
     """
     binder = tmp_path.resolve() / "bin"
     binder.mkdir(parents=True, exist_ok=True)
@@ -338,9 +317,7 @@ def test_port_and_twin_agree(tmp_path, binder_kw, fixture_kw):
 def test_every_fake_is_actually_reached(tmp_path):
     """ANTI-VACUITY. Every comparison above is worthless if the fakes never ran.
 
-    The go argv is asserted ELEMENT BY ELEMENT rather than as a blob, because
-    `-tags ebpf_e2e` is the one flag without which these tests are not even
-    compiled, and a port that dropped it would still print a green transcript.
+    The go argv is asserted ELEMENT BY ELEMENT rather than as a blob, because `-tags ebpf_e2e` is the one flag without which these tests are not even compiled, and a port that dropped it would still print a green transcript.
     """
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)

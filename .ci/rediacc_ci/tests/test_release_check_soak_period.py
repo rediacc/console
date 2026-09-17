@@ -2,17 +2,10 @@
 
 Sibling of `test_deploy_resolve_account_deploy_config.py`; see that file for
 why `/dev/stdout` is not used as `$GITHUB_OUTPUT`. The K=5 ledger is
-`.ci/shadow/w7p5a-check-soak-period.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-check-soak-period --assert
---k 5` -> "equivalence holds over 5 distinct trees").
+`.ci/shadow/w7p5a-check-soak-period.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-check-soak-period --assert --k 5` -> "equivalence holds over 5 distinct trees").
 
-THE SILENT-ABORT CASE (`test_unparseable_date_aborts_silently_on_both_sides`)
-IS THE ONE WORTH READING FIRST. It looks like a missing assertion rather than
-a real case: both sides exit 1 with EMPTY stdout, EMPTY stderr, and an EMPTY
-`$GITHUB_OUTPUT`. That is not this test failing to check anything -- it is
-the twin's own `set -e` behaviour (see the port's module docstring) proven
-directly against the real `date` binary on this host, then reproduced by the
-port rather than "fixed" into a helpful error message the twin never printed.
+THE SILENT-ABORT CASE (`test_unparseable_date_aborts_silently_on_both_sides`) IS THE ONE WORTH READING FIRST. It looks like a missing assertion rather than a real case: both sides exit 1 with EMPTY stdout, EMPTY stderr, and an EMPTY `$GITHUB_OUTPUT`. That is not this test failing to check anything -- it is the twin's own `set -e` behaviour (see the port's module docstring) proven
+directly against the real `date` binary on this host, then reproduced by the port rather than "fixed" into a helpful error message the twin never printed.
 """
 
 from __future__ import annotations
@@ -32,12 +25,8 @@ MODULE = "check_soak_period"
 def edge_date(days_ago: int) -> str:
     """An `EDGE_DATE` exactly `days_ago` days before the moment this runs.
 
-    A literal calendar date rots: the twin computes age from `date +%s` AT RUN
-    TIME, so a fixture pinned to a fixed date drifts by one real day every day
-    this file exists, and it drifted for six days before this was noticed. The
-    twin's own arithmetic is a FLOOR (`$(((NOW_EPOCH - EDGE_EPOCH) / 86400))`
-    on bash integers), so subtracting exactly `days_ago * 86400` seconds keeps
-    the floor at `days_ago` for as long as the test itself takes to run.
+    A literal calendar date rots: the twin computes age from `date +%s` AT RUN TIME, so a fixture pinned to a fixed date drifts by one real day every day this file exists, and it drifted for six days before this was noticed. The twin's own arithmetic is a FLOOR (`$(((NOW_EPOCH - EDGE_EPOCH) / 86400))` on bash integers), so subtracting exactly `days_ago * 86400` seconds keeps the
+    floor at `days_ago` for as long as the test itself takes to run.
     """
     # Suppressed on this LINE only, rather than disabling DTZ in pyproject: the rule is right everywhere else and wrong here. The twin stamps and reads this in LOCAL time (`date +%s` against a `%Y-%m-%dT%H:%M:%S` string carrying no offset), so a tz-aware `now()` would shift the fixture by the machine's offset and move the floor across a day boundary on any host east or west of
     # Greenwich -- the same two-clock defect block_stale_pr_branch_date.py records in its own port notes.

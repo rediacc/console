@@ -1,18 +1,10 @@
 """Port of `.ci/scripts/test/gates/test-external-gate-wrapper.sh`.
 
-Tests for `.ci/scripts/quality/run-external-gate.sh`, the wrapper that gives
-externally-dependent quality gates their three-state behaviour: hard on a normal
-PR, absent on a labelled PR via the step `if:`, soft on schedule.
+Tests for `.ci/scripts/quality/run-external-gate.sh`, the wrapper that gives externally-dependent quality gates their three-state behaviour: hard on a normal PR, absent on a labelled PR via the step `if:`, soft on schedule.
 
-Every direction is exercised with a REAL child process, and both failure
-directions are proven able to fire: a soft failure that exits non-zero, or a hard
-failure that exits zero, would each silently break the design in the dangerous
-direction -- a red nightly nobody wanted, or a green PR that should have blocked.
+Every direction is exercised with a REAL child process, and both failure directions are proven able to fire: a soft failure that exits non-zero, or a hard failure that exits zero, would each silently break the design in the dangerous direction -- a red nightly nobody wanted, or a green PR that should have blocked.
 
-THE ONE THING THE PORT DOES THAT THE TWIN CANNOT. `env -u EXTERNAL_QUALITY_MODE`
-is how the twin unsets the variable for one call. Here the unset is expressed by
-passing `None` through `run_wrapper`, which deletes the key from the OVERLAY
-before it reaches `harness.run`. Same effect, and it cannot leak into a later
+THE ONE THING THE PORT DOES THAT THE TWIN CANNOT. `env -u EXTERNAL_QUALITY_MODE` is how the twin unsets the variable for one call. Here the unset is expressed by passing `None` through `run_wrapper`, which deletes the key from the OVERLAY before it reaches `harness.run`. Same effect, and it cannot leak into a later
 case because the overlay is rebuilt per call rather than mutated in place.
 """
 
@@ -31,8 +23,7 @@ UNSET = object()
 def run_wrapper(gate, mode, expected: int, label: str, *argv: str) -> str:
     """Drive the wrapper, assert its exit code, return its merged output.
 
-    `mode` is a string, or `UNSET` for "the variable never reached the step",
-    which is the wiring break the fail-closed case exists for.
+    `mode` is a string, or `UNSET` for "the variable never reached the step", which is the wiring break the fail-closed case exists for.
     """
     if not os.access(WRAPPER, os.X_OK):
         gate.log_fail("wrapper not found or not executable: %s" % WRAPPER)

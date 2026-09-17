@@ -1,32 +1,17 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/upload-repos-to-r2.sh`.
 
-Uploads the built package repositories (`apt`, `rpm`, `apk`, `archlinux`) and
-the two channel install scripts to R2, then purges the Cloudflare cache for
-every URL it touched.
+Uploads the built package repositories (`apt`, `rpm`, `apk`, `archlinux`) and the two channel install scripts to R2, then purges the Cloudflare cache for every URL it touched.
 
-WHY THE CACHE-CONTROL IS `no-cache` AND NOT `immutable`, carried over from the
-twin's header because it is the reason this script exists in its own file:
+WHY THE CACHE-CONTROL IS `no-cache` AND NOT `immutable`, carried over from the twin's header because it is the reason this script exists in its own file:
 package-manager channel paths reuse filenames across releases, so
-`cli/edge/rdc-0.9.13.deb` can serve DIFFERENT bytes from one CI run to the next.
-Marking those immutable let CF keep a previous run's body under a URL the next
-run's APKINDEX points at with a different sha256, and `BAD signature` cascaded.
-`no-cache` means CF never caches, so there is no stale body to go stale. Truly
-versioned paths (`cli/v<semver>/`, `npm/<channel>/*.tgz`) keep their one-year
-immutable policy and are `upload-to-r2.sh`'s business, not this file's.
+`cli/edge/rdc-0.9.13.deb` can serve DIFFERENT bytes from one CI run to the next. Marking those immutable let CF keep a previous run's body under a URL the next run's APKINDEX points at with a different sha256, and `BAD signature` cascaded. `no-cache` means CF never caches, so there is no stale body to go stale. Truly versioned paths (`cli/v<semver>/`, `npm/<channel>/*.tgz`) keep
+their one-year immutable policy and are `upload-to-r2.sh`'s business, not this file's.
 
-NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST. `aws` and (through
-`cf-purge-urls.sh`) `curl` are the two external tools that carry a credential,
-so the differential (`.ci/rediacc_ci/tests/test_deploy_upload_repos_to_r2.py`)
-puts RECORDING FAKES for both on a scratch PATH. The `aws` fake logs its exact
-argv and, for a `cp`, the CONTENT of the file being uploaded. That content log is
-load bearing: the install scripts are REWRITTEN on the way past (the default
-channel is substituted), and two implementations can print an identical
-`Repos uploaded to R2 channel: edge` while uploading a script that still points
-at `stable`.
+NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST. `aws` and (through `cf-purge-urls.sh`) `curl` are the two external tools that carry a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_upload_repos_to_r2.py`) puts RECORDING FAKES for both on a scratch PATH. The `aws` fake logs its exact argv and, for a `cp`, the CONTENT of the file being uploaded. That content log
+is load bearing: the install scripts are REWRITTEN on the way past (the default channel is substituted), and two implementations can print an identical `Repos uploaded to R2 channel: edge` while uploading a script that still points at `stable`.
 
-THREE EXTERNAL TOOLS ARE CALLED RATHER THAN REIMPLEMENTED, each for a measured
-reason and not for symmetry:
+THREE EXTERNAL TOOLS ARE CALLED RATHER THAN REIMPLEMENTED, each for a measured reason and not for symmetry:
 
   * `find`, because ITS ORDER IS THE PURGE ORDER. The twin walks
     `find <dir> -type f` and appends one URL per line, and find emits directory
@@ -44,21 +29,13 @@ reason and not for symmetry:
     honouring TMPDIR) as the twin's. That path appears in the `aws s3 cp` argv,
     which is the thing the differential compares.
 
-`cf-purge-urls.sh` IS INVOKED AS THE BASH SCRIPT THE TWIN INVOKES, deliberately,
-even though `rediacc_ci.deploy.cf_purge_urls` exists and is itself a verified
-port. The acceptance rule for this wave is agreement with the LIVE twin, and the
+`cf-purge-urls.sh` IS INVOKED AS THE BASH SCRIPT THE TWIN INVOKES, deliberately, even though `rediacc_ci.deploy.cf_purge_urls` exists and is itself a verified port. The acceptance rule for this wave is agreement with the LIVE twin, and the
 twin's observable behaviour includes that script's exact bytes; repointing a
-call site is a cutover-box decision, not this one's. `PURGE_SCRIPT` names the
-path once so the cutover is a one-line change when the box that owns it lands.
+call site is a cutover-box decision, not this one's. `PURGE_SCRIPT` names the path once so the cutover is a one-line change when the box that owns it lands.
 
-`get_repo_root` IS REPRODUCED BY LOCATION, NOT BY cwd. The twin does
-`cd "$(get_repo_root)"`, and `get_repo_root` resolves `.ci/scripts/lib/../../..`
+`get_repo_root` IS REPRODUCED BY LOCATION, NOT BY cwd. The twin does `cd "$(get_repo_root)"`, and `get_repo_root` resolves `.ci/scripts/lib/../../..`
 from `common.sh`'s own directory. This file sits at `.ci/rediacc_ci/deploy/`,
-also three directories under the root, so the arithmetic is identical. It is
-`abspath`, NOT `realpath`, on purpose: bash's `cd` is logical, so a checkout
-reached through a symlink keeps the symlinked spelling on both sides.
-`paths.repo_root()` is deliberately not used, because it resolves symlinks and
-honours `$REDIACC_CI_ROOT`, and neither is a thing the twin does.
+also three directories under the root, so the arithmetic is identical. It is `abspath`, NOT `realpath`, on purpose: bash's `cd` is logical, so a checkout reached through a symlink keeps the symlinked spelling on both sides. `paths.repo_root()` is deliberately not used, because it resolves symlinks and honours `$REDIACC_CI_ROOT`, and neither is a thing the twin does.
 
 TWO VACUITY FACTS ABOUT THE TWIN, THE FIRST DELIBERATE AND THE SECOND NOT.
 Neither is repaired here; this wave's acceptance rule is agreement with the live
@@ -84,14 +61,10 @@ with the script name:
 
     .ci/scripts/deploy/upload-repos-to-r2.sh: line 49: CHANNEL: upload-repos-to-r2.sh: CHANNEL must be set
 
-This port prints the `VAR: msg` half, on the same stream, with the same exit
-status 1. Identical ruling to `deploy/delete_r2_channel.py`. The ORDER of the
-guards is kept, and `require_cmd aws` runs BEFORE all five, so a run missing both
-the binary and every variable names the binary.
+This port prints the `VAR: msg` half, on the same stream, with the same exit status 1. Identical ruling to `deploy/delete_r2_channel.py`. The ORDER of the guards is kept, and `require_cmd aws` runs BEFORE all five, so a run missing both the binary and every variable names the binary.
 
 `:?` IS AN UNSET-OR-EMPTY TEST: `CHANNEL=` refuses exactly as an absent CHANNEL
-does. Driven, because a port testing `"CHANNEL" in os.environ` would sail past it
-and then sync every package format to `s3://rediacc-releases/apt//`.
+does. Driven, because a port testing `"CHANNEL" in os.environ` would sail past it and then sync every package format to `s3://rediacc-releases/apt//`.
 
 K=5 LEDGER: `.ci/shadow/w7p6-upload-repos-to-r2.observations.jsonl`.
 """
@@ -160,9 +133,7 @@ class MissingEnvError(Exception):
 class BashExitError(Exception):
     """`set -e` ending the run on a command the twin does not guard.
 
-    `aws s3 sync`, `aws s3 cp`, `sed` and the final purge pipeline are all
-    unguarded, so the failing program's own stderr is the only explanation the
-    caller gets and its status becomes the script's.
+    `aws s3 sync`, `aws s3 cp`, `sed` and the final purge pipeline are all unguarded, so the failing program's own stderr is the only explanation the caller gets and its status becomes the script's.
     """
 
     def __init__(self, code: int) -> None:
@@ -173,9 +144,7 @@ class BashExitError(Exception):
 def repo_root() -> str:
     """`cd "$(get_repo_root)"` (:105), by location rather than by cwd.
 
-    `.ci/rediacc_ci/deploy/` is three directories under the root, exactly as
-    `.ci/scripts/lib/` is. `abspath` and not `realpath`: see the module
-    docstring.
+    `.ci/rediacc_ci/deploy/` is three directories under the root, exactly as `.ci/scripts/lib/` is. `abspath` and not `realpath`: see the module docstring.
     """
     return os.path.abspath(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
@@ -205,9 +174,7 @@ def skip_release_requested(env: dict[str, str]) -> bool:
 def skip_banner(channel: str) -> list[str]:
     """The bump-none refusal block (:78-96), as the lines it echoes to STDOUT.
 
-    On stdout and not stderr, and exit 0: the twin's closing sentence says this
-    is "the intended outcome of a bump-none merge, not an error", and a port that
-    treated it as a warning would make a correct build look broken.
+    On stdout and not stderr, and exit 0: the twin's closing sentence says this is "the intended outcome of a bump-none merge, not an error", and a port that treated it as a warning would make a correct build look broken.
     """
     return [
         "",
@@ -312,11 +279,9 @@ def strip_prefix(path: str, prefix: str) -> str:
 def read_lines(text: str) -> list[str]:
     """`while IFS= read -r f; do ... done < <(find ...)`.
 
-    A FINAL LINE WITH NO NEWLINE IS DROPPED, because `read` stores it and then
-    returns non-zero at EOF so the loop body never runs for it. find always
+    A FINAL LINE WITH NO NEWLINE IS DROPPED, because `read` stores it and then returns non-zero at EOF so the loop body never runs for it. find always
     terminates its last line, so this cannot bite on real input; it is written
-    the bash way anyway, because the day it does bite the two would disagree
-    about a URL rather than about a count.
+    the bash way anyway, because the day it does bite the two would disagree about a URL rather than about a count.
     """
     if not text:
         return []
@@ -328,16 +293,10 @@ def read_lines(text: str) -> list[str]:
 def _find_files(directory: str) -> tuple[str, int]:
     """`find <dir> -type f`, and `... | wc -l` over the same output.
 
-    THE TWIN RUNS `find` TWICE, once into `wc -l` for the vacuity floor (:128)
-    and once into the URL loop (:136), and this returns both answers from ONE
-    run. That is the single deliberate consolidation in this file, and it is
-    safe in the direction that matters: two runs can only disagree if the
-    directory changes between them, and if it did, the twin would report a count
-    that does not match the URLs it then builds.
+    THE TWIN RUNS `find` TWICE, once into `wc -l` for the vacuity floor (:128) and once into the URL loop (:136), and this returns both answers from ONE run. That is the single deliberate consolidation in this file, and it is safe in the direction that matters: two runs can only disagree if the directory changes between them, and if it did, the twin would report a count that does
+    not match the URLs it then builds.
 
-    The count is NEWLINES, which is what `wc -l` counts. find's status is
-    DISCARDED, exactly as `|| true` discards it: a find that fails still leaves
-    `wc` printing a number, and the twin acts on the number.
+    The count is NEWLINES, which is what `wc -l` counts. find's status is DISCARDED, exactly as `|| true` discards it: a find that fails still leaves `wc` printing a number, and the twin acts on the number.
     """
     _flush()
     proc = subprocess.run(
@@ -354,11 +313,7 @@ def _flush() -> None:
 
     NOT HOUSEKEEPING, A REAL DIVERGENCE THIS REPAIRS, measured 2026-09-13. bash
     `echo` writes through immediately; Python block-buffers stdout when it is a
-    pipe and flushes at exit. Without this, `Repos uploaded to R2 channel: edge`
-    landed AFTER the purge script's two lines instead of before them, on the
-    same stream, with byte-identical content in a different order. The call log
-    was identical, both exits were 0, and only a byte comparison of stdout saw
-    it. Every spawn goes through here for that reason.
+    pipe and flushes at exit. Without this, `Repos uploaded to R2 channel: edge` landed AFTER the purge script's two lines instead of before them, on the same stream, with byte-identical content in a different order. The call log was identical, both exits were 0, and only a byte comparison of stdout saw it. Every spawn goes through here for that reason.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -440,8 +395,7 @@ def _purge(urls: list[str], zone: str) -> None:
     """`printf '%s\\n' "${PURGE_URLS[@]}" | cf-purge-urls.sh --zone <zone>` (:160-163).
 
     Guarded by `${#PURGE_URLS[@]} -gt 0` in the twin, which is why an empty list
-    makes no call at all rather than a call with empty stdin. Under `pipefail`
-    the pipeline's status is the purge script's, since printf cannot fail here.
+    makes no call at all rather than a call with empty stdin. Under `pipefail` the pipeline's status is the purge script's, since printf cannot fail here.
     """
     payload = "".join(url + "\n" for url in urls)
     try:

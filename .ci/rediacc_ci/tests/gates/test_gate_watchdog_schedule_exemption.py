@@ -4,35 +4,19 @@ The cancel-exemption in `.ci/scripts/ci/watchdog-monitor.cjs`.
 
 WHAT BROKE. Cancelling a run REWRITES ITS CONCLUSION. A run whose job genuinely
 failed reports `conclusion: failure`; the same run, force-cancelled by the
-watchdog, reports `conclusion: cancelled` -- and every reader treats `cancelled`
-as "superseded by a newer push, ignore me". On a PR that is survivable, because a
-human is watching and the next push supersedes the run anyway. On the NIGHTLY it
+watchdog, reports `conclusion: cancelled` -- and every reader treats `cancelled` as "superseded by a newer push, ignore me". On a PR that is survivable, because a human is watching and the next push supersedes the run anyway. On the NIGHTLY it
 is fatal: `full_suite` is `github.event_name != 'push'`, so push-to-main runs no
-tests at all and the nightly is the ONLY thing validating main. Every one of the
-twelve measured nights had a real, fixable gate failure. None were noticed,
-because the rollup said `cancelled`, and that laundering is why they survived
-twelve days.
+tests at all and the nightly is the ONLY thing validating main. Every one of the twelve measured nights had a real, fixable gate failure. None were noticed, because the rollup said `cancelled`, and that laundering is why they survived twelve days.
 
-WHY A LABEL COULD NOT SAVE IT. Labels are read from the PR, and a `schedule` run
-has no PR: `prNumber` is null and the whole label block is skipped. The nightly
-is structurally incapable of wearing a PR-side escape hatch, so the exemption has
-to live in code.
+WHY A LABEL COULD NOT SAVE IT. Labels are read from the PR, and a `schedule` run has no PR: `prNumber` is null and the whole label block is skipped. The nightly is structurally incapable of wearing a PR-side escape hatch, so the exemption has to live in code.
 
-WHY A UNIT TEST AND NOT A MIRROR. Re-implementing the boolean here would prove
-nothing about the watchdog. This calls the EXPORTED decision, reads the exempt
-list out of the REAL module, and checks the real ci.yml still has the schedule
-trigger the exemption exists for.
+WHY A UNIT TEST AND NOT A MIRROR. Re-implementing the boolean here would prove nothing about the watchdog. This calls the EXPORTED decision, reads the exempt list out of the REAL module, and checks the real ci.yml still has the schedule trigger the exemption exists for.
 
-Both directions matter. Too quiet: the nightly keeps laundering failures into
-`cancelled`. Too loud: a PR run stops being cancellable, so one red would burn
-the full E2E fleet instead of being killed at the first failure.
+Both directions matter. Too quiet: the nightly keeps laundering failures into `cancelled`. Too loud: a PR run stops being cancellable, so one red would burn the full E2E fleet instead of being killed at the first failure.
 
 WHAT THE PORT REIMPLEMENTS. The twin locates the two ordering anchors with
 `grep -n ... | head -1 | cut -d: -f1` and counts chokepoints with `grep -c`; this
-enumerates the same anchors with Python line numbering. They agree because both
-are plain SUBSTRING searches over the same file with no anchors or alternation
-involved -- and Python is deliberate here, since the house note about ugrep's
-silent false zeros bites the alternated-anchor shape a hand-translation reaches
+enumerates the same anchors with Python line numbering. They agree because both are plain SUBSTRING searches over the same file with no anchors or alternation involved -- and Python is deliberate here, since the house note about ugrep's silent false zeros bites the alternated-anchor shape a hand-translation reaches
 for, and a false zero in `test_single_chokepoint` would read as "the call site is
 gone" rather than as "nobody looked".
 

@@ -3,40 +3,24 @@
 
 The UPLOAD direction of the media sync: three `aws s3 sync` calls that push
 `packages/www/public/assets/{tutorials/video,videos,tutorials/audio}` into the
-R2 bucket `rediacc-www-media`. Its download counterpart is
-`sync-media-from-r2.sh`, ported beside this file as
-`rediacc_ci.deploy.sync_media_from_r2`. Same bucket, same three prefixes, same
+R2 bucket `rediacc-www-media`. Its download counterpart is `sync-media-from-r2.sh`, ported beside this file as `rediacc_ci.deploy.sync_media_from_r2`. Same bucket, same three prefixes, same
 flag vocabulary; the differences between the two ports are exactly the
-differences between reading a bucket and writing one, and they are named where
-they occur rather than factored into a shared helper (see the last section).
+differences between reading a bucket and writing one, and they are named where they occur rather than factored into a shared helper (see the last section).
 
-INCREMENTAL BY DESIGN, which is the twin's own headline and the reason there is
-no "changed files" logic to port: `aws s3 sync` uploads only what is new or
-whose size/mtime differs, so re-running after re-recording a handful of
-tutorials pushes those and not the whole 5GB+ tree.
+INCREMENTAL BY DESIGN, which is the twin's own headline and the reason there is no "changed files" logic to port: `aws s3 sync` uploads only what is new or whose size/mtime differs, so re-running after re-recording a handful of tutorials pushes those and not the whole 5GB+ tree.
 
-THE AUDIO PREFIX IS NOT A CDN ASSET. `tutorials/audio/` is a build-time TTS
-cache (`.ci/docs/r2-media-setup.md` #3) that the public media.rediacc.com host
-does not serve at all. It rides this script purely because it is the same bucket
-and the same primitive, and it still gets the one-year `Cache-Control` below,
-which is meaningless for an object nothing fetches over HTTP.
+THE AUDIO PREFIX IS NOT A CDN ASSET. `tutorials/audio/` is a build-time TTS cache (`.ci/docs/r2-media-setup.md` #3) that the public media.rediacc.com host does not serve at all. It rides this script purely because it is the same bucket and the same primitive, and it still gets the one-year `Cache-Control` below, which is meaningless for an object nothing fetches over HTTP.
 
 -----------------------------------------------------------------------------
 NOTHING HERE REACHES R2 IN A TEST
 -----------------------------------------------------------------------------
-`aws` is the one external tool that carries a credential, so the differential
-(`.ci/rediacc_ci/tests/test_deploy_sync_media_to_r2.py`) puts a RECORDING FAKE
-`aws` on a scratch PATH that logs its exact argv and answers from the
-environment. `.ci/shadow/w7p5a-status.json` records this path as blocked only
+`aws` is the one external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_sync_media_to_r2.py`) puts a RECORDING FAKE `aws` on a scratch PATH that logs its exact argv and answers from the environment. `.ci/shadow/w7p5a-status.json` records this path as blocked only
 for the "one real run" clause and says in as many words that the mocked parity
 ledger is a SEPARATE, achievable piece of work. This is that piece.
 
-THE CALL LOG IS THE PRIMARY EVIDENCE. What this script prints is three
-`Syncing ...` lines plus a three-line closing recipe, none of it derived from
+THE CALL LOG IS THE PRIMARY EVIDENCE. What this script prints is three `Syncing ...` lines plus a three-line closing recipe, none of it derived from
 what actually moved; the entire observable effect is the argv of the `aws s3
-sync` calls. A port that dropped `--cache-control`, or appended `--delete` in
-the wrong position, would print byte-identical output and exit 0 while
-publishing objects with the wrong headers.
+sync` calls. A port that dropped `--cache-control`, or appended `--delete` in the wrong position, would print byte-identical output and exit 0 while publishing objects with the wrong headers.
 
 -----------------------------------------------------------------------------
 FOUR FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FOUR ARE REPRODUCED
@@ -81,35 +65,21 @@ is a cutover-box decision rather than a port's.
 -----------------------------------------------------------------------------
 THE ONE DIVERGENCE: WHAT `set -u` PRINTS
 -----------------------------------------------------------------------------
-When `CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY` or `CLOUDFLARE_R2_MEDIA_ENDPOINT`
-is UNSET, bash's own refusal names the bash FILE and a bash LINE NUMBER:
+When `CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY` or `CLOUDFLARE_R2_MEDIA_ENDPOINT` is UNSET, bash's own refusal names the bash FILE and a bash LINE NUMBER:
 
     .ci/scripts/deploy/sync-media-to-r2.sh: line 83: \
 CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY: unbound variable
 
-This port prints the `NAME: unbound variable` half, on the same stream, with the
-same exit status 1. Identical ruling and identical wording to
-`deploy/promote_r2_to_stable.py`, `deploy/delete_r2_channel.py` and
-`deploy/upload_repos_to_r2.py`. The differential asserts BOTH directions so
-nobody "fixes" either side into the other.
+This port prints the `NAME: unbound variable` half, on the same stream, with the same exit status 1. Identical ruling and identical wording to `deploy/promote_r2_to_stable.py`, `deploy/delete_r2_channel.py` and `deploy/upload_repos_to_r2.py`. The differential asserts BOTH directions so nobody "fixes" either side into the other.
 
-THE ORDER OF THE REFUSALS IS PART OF THE CONTRACT: `require_var` on the access
-key, then `require_cmd aws`, then the secret, then the endpoint. A machine with
-no `aws` and no credentials at all reports the MISSING BINARY.
+THE ORDER OF THE REFUSALS IS PART OF THE CONTRACT: `require_var` on the access key, then `require_cmd aws`, then the secret, then the endpoint. A machine with no `aws` and no credentials at all reports the MISSING BINARY.
 
 -----------------------------------------------------------------------------
 THE TWIN SHARES REAL LOGIC WITH `sync_media_from_r2` AND IT IS DELIBERATELY NOT
 FACTORED OUT
 -----------------------------------------------------------------------------
-The two BASH twins share nothing but `common.sh`. There is no media-sync bash
-library, each file carries its own copy of the parse loop, its own copy of the
-credential block and its own `SYNC_ARGS`, and the copies are NOT identical: this
-one adds `--cache-control` and `--delete`, the other adds `mkdir -p`, and the
-`--dry-run` sentences differ word for word. A shared Python helper would have no
-bash counterpart, and an edit to one twin would silently change the other's
-port. Collapsing the pair belongs to the cutover box that deletes both bash
-files. Same ruling, and the same reason, as `promote_r2_to_stable.py` gives for
-its hotfix sibling.
+The two BASH twins share nothing but `common.sh`. There is no media-sync bash library, each file carries its own copy of the parse loop, its own copy of the credential block and its own `SYNC_ARGS`, and the copies are NOT identical: this one adds `--cache-control` and `--delete`, the other adds `mkdir -p`, and the `--dry-run` sentences differ word for word. A shared Python helper
+would have no bash counterpart, and an edit to one twin would silently change the other's port. Collapsing the pair belongs to the cutover box that deletes both bash files. Same ruling, and the same reason, as `promote_r2_to_stable.py` gives for its hotfix sibling.
 
 K=5 LEDGER: `.ci/shadow/w7p6-sync-media-to-r2.observations.jsonl`.
 """
@@ -189,9 +159,7 @@ class UnboundVariableError(Exception):
 class BashExitError(Exception):
     """`set -e` ending the run on the unguarded `aws s3 sync`.
 
-    The failing program's own stderr is the only explanation the caller gets and
-    its status becomes the script's. Unlike the download twin there is no
-    `mkdir` here, so `aws` is the only command that can end a run this way.
+    The failing program's own stderr is the only explanation the caller gets and its status becomes the script's. Unlike the download twin there is no `mkdir` here, so `aws` is the only command that can end a run this way.
     """
 
     def __init__(self, code: int) -> None:
@@ -202,9 +170,7 @@ class BashExitError(Exception):
 class Options:
     """The five parse-loop variables (twin :39-43), as one object.
 
-    Plain attributes rather than a dataclass: the differential compares these
-    against literal booleans, and a dataclass would add a repr nobody reads and
-    an equality nobody wants (two runs with the same flags are not the same run).
+    Plain attributes rather than a dataclass: the differential compares these against literal booleans, and a dataclass would add a repr nobody reads and an equality nobody wants (two runs with the same flags are not the same run).
     """
 
     def __init__(
@@ -237,20 +203,12 @@ class Options:
 def parse_args(argv: list[str]) -> Options:
     """The `while [[ $# -gt 0 ]]` loop (twin :45-76), verbatim in behaviour.
 
-    EACH `--*-only` FLAG SETS ALL THREE BOOLEANS, so they are not additive and
-    the LAST one wins: `--tutorials-only --audio-only` syncs audio alone. A port
-    that OR-ed them would upload two prefixes where the twin uploads one.
-    `--dry-run` and `--delete` are orthogonal and may appear anywhere.
+    EACH `--*-only` FLAG SETS ALL THREE BOOLEANS, so they are not additive and the LAST one wins: `--tutorials-only --audio-only` syncs audio alone. A port that OR-ed them would upload two prefixes where the twin uploads one. `--dry-run` and `--delete` are orthogonal and may appear anywhere.
 
     `--delete` IS A STRING IN THE TWIN (`DELETE_FLAG="--delete"`, tested with
-    `-n`), not a boolean, and the string is what gets appended to `SYNC_ARGS`.
-    A boolean here is the same thing observed through the same two questions
-    ("was it given" and "what is appended"), and the appended literal lives in
-    `sync_args` where the twin puts it.
+    `-n`), not a boolean, and the string is what gets appended to `SYNC_ARGS`. A boolean here is the same thing observed through the same two questions ("was it given" and "what is appended"), and the appended literal lives in `sync_args` where the twin puts it.
 
-    An EMPTY STRING argument reaches the `*)` arm and is refused as
-    `Unknown argument: ` with a trailing space, exactly as the twin's
-    `log_error "Unknown argument: $1"` renders it.
+    An EMPTY STRING argument reaches the `*)` arm and is refused as `Unknown argument: ` with a trailing space, exactly as the twin's `log_error "Unknown argument: $1"` renders it.
     """
     opts = Options()
     for argument in argv:
@@ -273,11 +231,7 @@ def repo_root() -> str:
     """`REPO_ROOT` (twin :35), by location rather than by cwd.
 
     The twin resolves `.ci/scripts/deploy/../../..` from its own `BASH_SOURCE`;
-    this file sits at `.ci/rediacc_ci/deploy/`, three directories under the same
-    root, so the arithmetic is identical and neither side depends on the
-    caller's cwd. `abspath`, NOT `realpath`: bash's `cd` is logical, so a
-    checkout reached through a symlink keeps the symlinked spelling on both
-    sides, and the paths in the step lines therefore match byte for byte.
+    this file sits at `.ci/rediacc_ci/deploy/`, three directories under the same root, so the arithmetic is identical and neither side depends on the caller's cwd. `abspath`, NOT `realpath`: bash's `cd` is logical, so a checkout reached through a symlink keeps the symlinked spelling on both sides, and the paths in the step lines therefore match byte for byte.
     """
     here = os.path.dirname(os.path.abspath(__file__))
     return os.path.abspath(os.path.join(here, "..", "..", ".."))
@@ -286,16 +240,11 @@ def repo_root() -> str:
 def environment() -> dict[str, str | None]:
     """Every variable this module reads, ONE `os.environ.get` PER NAME.
 
-    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE.
-    `check:ci-python-env-registry` derives a module's declared inputs by walking
+    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE. `check:ci-python-env-registry` derives a module's declared inputs by walking
     its AST for literal `os.environ` subscripts, `.get` calls and `in` tests; a
-    read that goes through a materialised copy or a local alias is INVISIBLE to
-    it, and the module then reports zero inputs while depending on three.
+    read that goes through a materialised copy or a local alias is INVISIBLE to it, and the module then reports zero inputs while depending on three.
 
-    `None` MEANS UNSET AND `""` MEANS SET-BUT-EMPTY, and the distinction is the
-    whole of fact 3 in the module docstring: `set -u` fires on the first and not
-    on the second, so a helper that folded them together would refuse a run the
-    twin performs.
+    `None` MEANS UNSET AND `""` MEANS SET-BUT-EMPTY, and the distinction is the whole of fact 3 in the module docstring: `set -u` fires on the first and not on the second, so a helper that folded them together would refuse a run the twin performs.
     """
     return {
         ACCESS_KEY_ENV: os.environ.get("CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
@@ -316,8 +265,7 @@ def require_access_key(env: dict[str, str | None]) -> str:
 def require_secret_key(env: dict[str, str | None]) -> str:
     """`export AWS_SECRET_ACCESS_KEY="$CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY"` (twin :83).
 
-    Not a guard: an expansion that `set -u` happens to police. An empty value is
-    accepted and exported, which is fact 3.
+    Not a guard: an expansion that `set -u` happens to police. An empty value is accepted and exported, which is fact 3.
     """
     value = env.get(SIGNING_KEY_ENV)
     if value is None:
@@ -328,8 +276,7 @@ def require_secret_key(env: dict[str, str | None]) -> str:
 def require_endpoint(env: dict[str, str | None]) -> str:
     """`SYNC_ARGS=(--endpoint-url "$CLOUDFLARE_R2_MEDIA_ENDPOINT" ...)` (twin :86).
 
-    Same shape as the secret, three lines later, which is why an unset secret is
-    reported before an unset endpoint even though both are missing.
+    Same shape as the secret, three lines later, which is why an unset secret is reported before an unset endpoint even though both are missing.
     """
     value = env.get(ENDPOINT_ENV)
     if value is None:
@@ -342,8 +289,7 @@ def sync_args(endpoint: str, *, dry_run: bool, delete: bool) -> list[str]:
 
     Base, then `--dryrun`, then `--delete`, because that is the order the twin
     appends them in. `aws` does not care; the recorded argv does, and the argv is
-    the evidence this port is judged on. `--cache-control` is ONE element
-    carrying a space (see `CACHE_CONTROL`).
+    the evidence this port is judged on. `--cache-control` is ONE element carrying a space (see `CACHE_CONTROL`).
     """
     args = ["--endpoint-url", endpoint, "--cache-control", CACHE_CONTROL, "--no-progress"]
     if dry_run:
@@ -361,9 +307,7 @@ def upload_argv(local_dir: str, remote_prefix: str, args: list[str]) -> list[str
 def _run(argv: list[str], env: dict[str, str]) -> None:
     """The one unguarded external command under `set -e`.
 
-    stdout and stderr are INHERITED, not captured: the twin does not capture
-    them either, and `aws --no-progress` still writes an `upload: ...` line per
-    object that a caller reads as the record of what moved.
+    stdout and stderr are INHERITED, not captured: the twin does not capture them either, and `aws --no-progress` still writes an `upload: ...` line per object that a caller reads as the record of what moved.
     """
     proc = subprocess.run(argv, env=env, check=False)
     if proc.returncode != 0:
@@ -373,22 +317,13 @@ def _run(argv: list[str], env: dict[str, str]) -> None:
 def sync_dir(local_dir: str, remote_prefix: str, args: list[str], env: dict[str, str]) -> bool:
     """`sync_dir` (twin :98-105). True when it uploaded, False when it skipped.
 
-    THE SKIP IS `return 0`, NOT AN ERROR, and nothing downstream counts the
-    Falses. That is fact 1 in the module docstring. The boolean exists so the
-    differential can assert the skip happened without parsing the warning, and
+    THE SKIP IS `return 0`, NOT AN ERROR, and nothing downstream counts the Falses. That is fact 1 in the module docstring. The boolean exists so the differential can assert the skip happened without parsing the warning, and
     so a future cutover has a value to build a floor on; the twin discards it.
 
-    `os.path.isdir` FOLLOWS SYMLINKS, exactly as `[[ -d ]]` does, and answers
-    False for a regular file, which is fact 4.
+    `os.path.isdir` FOLLOWS SYMLINKS, exactly as `[[ -d ]]` does, and answers False for a regular file, which is fact 4.
 
-    THE TRAILING SLASH MAKES THAT ROBUST IN A WAY WORTH RECORDING, because it
-    swallowed a planted defect while the plant was being validated 2026-09-13.
-    Every `local_dir` here ends in `/`, and a trailing slash asks the kernel to
-    resolve the final component: `os.path.islink("<dir>/")` is False even for a
-    symlinked directory, and `os.path.lexists("<file>/")` is False for a regular
-    file. So a port that tried to distinguish a symlink at THIS path would find
-    it cannot, and a reader who "simplifies" the slash away would change three
-    answers at once.
+    THE TRAILING SLASH MAKES THAT ROBUST IN A WAY WORTH RECORDING, because it swallowed a planted defect while the plant was being validated 2026-09-13. Every `local_dir` here ends in `/`, and a trailing slash asks the kernel to resolve the final component: `os.path.islink("<dir>/")` is False even for a symlinked directory, and `os.path.lexists("<file>/")` is False for a regular
+    file. So a port that tried to distinguish a symlink at THIS path would find it cannot, and a reader who "simplifies" the slash away would change three answers at once.
     """
     if not os.path.isdir(local_dir):
         log.warn("Skipping %s (not present locally)" % local_dir)
@@ -402,9 +337,7 @@ def child_env(access_key: str, secret_key: str) -> dict[str, str]:
     """The three `export`s (twin :82-84), as the environment the children get.
 
     `export` in the twin mutates the whole process; passing an explicit `env=`
-    to each child reproduces the only part of that which is observable, and
-    leaves this process's own environment alone so an importing caller does not
-    inherit a credential it never asked for.
+    to each child reproduces the only part of that which is observable, and leaves this process's own environment alone so an importing caller does not inherit a credential it never asked for.
     """
     env = dict(os.environ)
     env["AWS_ACCESS_KEY_ID"] = access_key

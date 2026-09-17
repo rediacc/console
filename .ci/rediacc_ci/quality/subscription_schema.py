@@ -13,79 +13,43 @@ Check that subscription schema is up-to-date between TypeScript and Go.
     0 - Schema is up-to-date
     1 - Stale schema detected
 
-GENERATE OUT OF TREE. Phase 1 used to regenerate `$SCHEMA_FILE` in place and
-then `biome format --write` it, which made this gate a WRITER of a tracked file
+GENERATE OUT OF TREE. Phase 1 used to regenerate `$SCHEMA_FILE` in place and then `biome format --write` it, which made this gate a WRITER of a tracked file
 while the ~8.7x-parallel pool read the same tree -- the hazard class in
-scripts/ci-runner/manifest.ts:346-365, observed live with this exact file
-stamped mid-battery. The check only ever needed something to DIFF against, so
-it writes to $TEMP_DIR and the tracked file is never touched.
+scripts/ci-runner/manifest.ts:346-365, observed live with this exact file stamped mid-battery. The check only ever needed something to DIFF against, so it writes to $TEMP_DIR and the tracked file is never touched.
 
-Formatting goes through STDIN rather than `--write`, so biome still resolves
-this repo's config for the file's real path without that path being written.
+Formatting goes through STDIN rather than `--write`, so biome still resolves this repo's config for the file's real path without that path being written.
 Formatting is cosmetic here; an unformatted comparison is still a valid
-staleness check, and failing the gate on a formatter hiccup would be worse, so
-a biome failure falls back to the unformatted text.
+staleness check, and failing the gate on a formatter hiccup would be worse, so a biome failure falls back to the unformatted text.
 
-THIS COMPARISON IS THE GATE, so it EXITS rather than warning. It used to warn,
-which was survivable only because phase 1 regenerated `$SCHEMA_FILE` in place
-and phase 3's `git diff` against HEAD then failed on the difference. Generating
-out of tree removed that side effect and, with it, the only path that could fail
-a stale schema: phase 3 now diffs an untouched file and is clean no matter how
-stale the committed output is. A gate whose green no longer depends on the thing
-it checks is worse than no gate.
+THIS COMPARISON IS THE GATE, so it EXITS rather than warning. It used to warn, which was survivable only because phase 1 regenerated `$SCHEMA_FILE` in place and phase 3's `git diff` against HEAD then failed on the difference. Generating out of tree removed that side effect and, with it, the only path that could fail a stale schema: phase 3 now diffs an untouched file and is clean
+no matter how stale the committed output is. A gate whose green no longer depends on the thing it checks is worse than no gate.
 
-Phase 3 compares against git HEAD, so it stays red in a working tree that has
-legitimately-regenerated output but is not committed yet. Phase 1 verified the
-content is CURRENT but does NOT write this file, so anything phase 3 reports is
-the author's own edit.
+Phase 3 compares against git HEAD, so it stays red in a working tree that has legitimately-regenerated output but is not committed yet. Phase 1 verified the content is CURRENT but does NOT write this file, so anything phase 3 reports is the author's own edit.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`set -euo pipefail` IS INHERITED FROM `common.sh`, NOT WRITTEN IN THE GATE, and
-that is load-bearing for the port. Every external command in the twin is
-therefore an implicit `|| exit $?`: a missing `npx`, a failed generator, a
-`mktemp` that cannot write all abort the script with the child's status and no
-message of the gate's own. Python has no such default, so each subprocess call
-below returns its status explicitly and the module returns it. Anywhere the twin
-would have aborted, this returns the same number.
+`set -euo pipefail` IS INHERITED FROM `common.sh`, NOT WRITTEN IN THE GATE, and that is load-bearing for the port. Every external command in the twin is therefore an implicit `|| exit $?`: a missing `npx`, a failed generator, a `mktemp` that cannot write all abort the script with the child's status and no message of the gate's own. Python has no such default, so each subprocess
+call below returns its status explicitly and the module returns it. Anywhere the twin would have aborted, this returns the same number.
 
-The exceptions are the three places the twin guards explicitly, and they are the
-interesting ones: `npx biome ... || cp` (a formatter hiccup must not fail the
-gate), `diff -u | head -40 || true` (a diff that exits 1 is the normal case, and
-`head` closing the pipe early is a SIGPIPE the twin does not want to see), and
-`require_submodule ... || exit 0` (absent locally is a skip, absent in CI is a
-hard failure).
+The exceptions are the three places the twin guards explicitly, and they are the interesting ones: `npx biome ... || cp` (a formatter hiccup must not fail the gate), `diff -u | head -40 || true` (a diff that exits 1 is the normal case, and `head` closing the pipe early is a SIGPIPE the twin does not want to see), and `require_submodule ... || exit 0` (absent locally is a skip,
+absent in CI is a hard failure).
 
-`diff` AND `head` ARE THE REAL BINARIES, deliberately. `difflib.unified_diff`
-produces a different header format, a different hunk-count spelling and a
-different treatment of a missing final newline, and this gate PRINTS its diff
+`diff` AND `head` ARE THE REAL BINARIES, deliberately. `difflib.unified_diff` produces a different header format, a different hunk-count spelling and a different treatment of a missing final newline, and this gate PRINTS its diff
 for a human to act on. Reproducing the bytes matters more than avoiding a
 subprocess, and the subprocess is what the twin runs anyway.
 
-`require_submodule` IS RE-IMPLEMENTED HERE rather than imported, because it
-lives in `common.sh` and the whole point of the port is not to source that file.
-Its contract, from the twin's own comment: "Returns 0 when the submodule is
-present. When it is absent: in CI -> hard failure, because a gate that silently
-skips is worse than no gate at all. check:ci-renet rides on this, and it carries
-govulncheck (Go CVE scanning), deadcode and golangci-lint -- all three would
-report success while checking nothing. locally -> warn and return 1, so a fresh
-clone without --recursive is still workable."
+`require_submodule` IS RE-IMPLEMENTED HERE rather than imported, because it lives in `common.sh` and the whole point of the port is not to source that file. Its contract, from the twin's own comment: "Returns 0 when the submodule is present. When it is absent: in CI -> hard failure, because a gate that silently skips is worse than no gate at all. check:ci-renet rides on this, and
+it carries govulncheck (Go CVE scanning), deadcode and golangci-lint -- all three would report success while checking nothing. locally -> warn and return 1, so a fresh clone without --recursive is still workable."
 
-`[[ -e "$marker" ]]` IS `-e`, NOT `-d`, so a submodule checked out as a FILE
-gitlink (`.git` file rather than directory) still counts. `os.path.exists`
-follows symlinks the same way `-e` does. A broken symlink is absent to both.
+`[[ -e "$marker" ]]` IS `-e`, NOT `-d`, so a submodule checked out as a FILE gitlink (`.git` file rather than directory) still counts. `os.path.exists` follows symlinks the same way `-e` does. A broken symlink is absent to both.
 
-THE ORDER OF THE `cd`s IS BEHAVIOUR. The twin `cd`s to the repo root, then into
-the submodule for `go test`, then back to the root for phase 3. Nothing here
+THE ORDER OF THE `cd`s IS BEHAVIOUR. The twin `cd`s to the repo root, then into the submodule for `go test`, then back to the root for phase 3. Nothing here
 changes process-global state; each subprocess is given its own `cwd`, which is
-the same fact expressed without the hazard of leaving the interpreter somewhere
-unexpected if a phase returns early.
+the same fact expressed without the hazard of leaving the interpreter somewhere unexpected if a phase returns early.
 
-STREAMS. `log_step`, `log_info`, `log_warn` and `log_error` are all stderr in
-`common.sh`, and `rediacc_ci.log` matches them byte for byte. The generator's
-stdout is discarded (`>/dev/null`) and its stderr is INHERITED, so a real
+STREAMS. `log_step`, `log_info`, `log_warn` and `log_error` are all stderr in `common.sh`, and `rediacc_ci.log` matches them byte for byte. The generator's stdout is discarded (`>/dev/null`) and its stderr is INHERITED, so a real
 failure still explains itself; `go test -v` inherits both, because its output is
 the evidence a reader needs.
 """
@@ -143,9 +107,7 @@ def generate(root: pathlib.Path, out: pathlib.Path) -> int:
     """Phase 1's generator, writing OUT OF TREE. Returns its exit status.
 
     stdout is discarded exactly as the twin's `>/dev/null` discards it; stderr is
-    inherited, so the reason a generator failed is not swallowed. That asymmetry
-    is the twin's and it is the right one: the schema itself is not wanted on a
-    terminal, and the failure text is.
+    inherited, so the reason a generator failed is not swallowed. That asymmetry is the twin's and it is the right one: the schema itself is not wanted on a terminal, and the failure text is.
     """
     env = dict(os.environ)
     env["SUBSCRIPTION_SCHEMA_OUT"] = str(out)
@@ -168,10 +130,7 @@ def generate(root: pathlib.Path, out: pathlib.Path) -> int:
 def format_through_stdin(root: pathlib.Path, fresh: pathlib.Path, formatted: pathlib.Path) -> None:
     """biome, through STDIN so nothing tracked is written. Never fatal.
 
-    A formatter hiccup falls back to copying the unformatted text, which is what
-    the twin does and for the reason it states: "an unformatted comparison is
-    still a valid staleness check, and failing the gate on a formatter hiccup
-    would be worse."
+    A formatter hiccup falls back to copying the unformatted text, which is what the twin does and for the reason it states: "an unformatted comparison is still a valid staleness check, and failing the gate on a formatter hiccup would be worse."
     """
     status = NOT_FOUND
     try:
@@ -194,11 +153,7 @@ def format_through_stdin(root: pathlib.Path, fresh: pathlib.Path, formatted: pat
 def files_differ(a: pathlib.Path, b: pathlib.Path) -> bool:
     """`diff -q a b >/dev/null 2>&1` -- true when they are not identical.
 
-    Shelled out rather than compared in Python because `diff`'s notion of
-    identical is what the twin rules on, and because a missing file makes `diff`
-    exit 2, which the twin treats as "differ" through its `if !`. Reproducing
-    that with a byte comparison would need the same three-way branch written out
-    by hand and would drift from it.
+    Shelled out rather than compared in Python because `diff`'s notion of identical is what the twin rules on, and because a missing file makes `diff` exit 2, which the twin treats as "differ" through its `if !`. Reproducing that with a byte comparison would need the same three-way branch written out by hand and would drift from it.
     """
     try:
         proc = subprocess.run(
@@ -218,9 +173,7 @@ def files_differ(a: pathlib.Path, b: pathlib.Path) -> bool:
 def print_diff(a: pathlib.Path, b: pathlib.Path) -> None:
     """`diff -u a b | head -40 || true`, on STDOUT, with the pipe reproduced.
 
-    The `|| true` matters: `diff` exits 1 whenever there IS a difference, which
-    is exactly when this runs, and under the twin's inherited `set -e` an
-    unguarded call would abort the gate before it printed its advice.
+    The `|| true` matters: `diff` exits 1 whenever there IS a difference, which is exactly when this runs, and under the twin's inherited `set -e` an unguarded call would abort the gate before it printed its advice.
     """
     # BUILT AS TWO PROCESSES, NOT AS A SHELL STRING. `shell=True` would be the
     # literal transliteration and it is refused by this repo's own ruff rule (S602), correctly: a path interpolated into a shell string is an injection the day a path contains a quote. Two Popens joined by a pipe are what the shell would have built anyway, and they preserve the two behaviours that matter: `head` closing the pipe early sends `diff` a SIGPIPE, and neither exit status
@@ -332,10 +285,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions, against fixtures the gate's own subprocesses can reach.
 
-    THE SUBJECT IS A PIPELINE OF FOUR EXTERNAL TOOLS -- npx tsx, npx biome, diff,
-    go -- so the controls here drive the DECISIONS around them (present/absent,
-    identical/different, CI/local) rather than the tools themselves. The tools
-    are covered by the committed shadow ledger, which runs the whole gate.
+    THE SUBJECT IS A PIPELINE OF FOUR EXTERNAL TOOLS -- npx tsx, npx biome, diff, go -- so the controls here drive the DECISIONS around them (present/absent, identical/different, CI/local) rather than the tools themselves. The tools are covered by the committed shadow ledger, which runs the whole gate.
     """
     ctl = Controls("subscription-schema", floor=13, verbose=True)
 

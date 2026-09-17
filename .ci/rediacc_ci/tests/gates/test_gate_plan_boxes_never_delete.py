@@ -2,32 +2,18 @@
 
 NEW TEST, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` named here.
 
-WHY THIS FILE EXISTS BESIDE A 31-CONTROL SELFTEST. Every control in that selftest
-drives `transition_problems()` with `base_ledger`, `renames_into_archive`,
-`_touched_plans`, `_added_plans` and `_content_age_days` all stubbed out through
-`globals()`. That is the right shape for a rule table, and it is structurally
-incapable of catching the thing that actually decides the verdict here: whether the
-GIT plumbing feeding those five functions produces the inputs the rule table expects.
+WHY THIS FILE EXISTS BESIDE A 31-CONTROL SELFTEST. Every control in that selftest drives `transition_problems()` with `base_ledger`, `renames_into_archive`, `_touched_plans`, `_added_plans` and `_content_age_days` all stubbed out through `globals()`. That is the right shape for a rule table, and it is structurally incapable of catching the thing that actually decides the verdict
+here: whether the GIT plumbing feeding those five functions produces the inputs the rule table expects.
 Age comes out of `git log -1 --format=%cI <base> -- <path>`, the archive exemption
-comes out of `git diff --find-renames -M100%`, and the base ledger comes out of
-`git show <base>:.ci/config/plan-boxes.json`. A stub agrees with whatever it is told.
+comes out of `git diff --find-renames -M100%`, and the base ledger comes out of `git show <base>:.ci/config/plan-boxes.json`. A stub agrees with whatever it is told.
 
-So every case below builds a REAL git repository, commits real plan files with real
-committer dates, and drives the gate as a PROCESS through `PLAN_BOXES_ROOT` and
-`PLAN_BOXES_BASE`, which is how CI invokes it.
+So every case below builds a REAL git repository, commits real plan files with real committer dates, and drives the gate as a PROCESS through `PLAN_BOXES_ROOT` and `PLAN_BOXES_BASE`, which is how CI invokes it.
 
-WHAT WAS TRUE BEFORE 2026-09-09, measured exactly this way and the reason for the
-41-day fixture: a plan older than `delete_days` was exempt from BOTH G-A1 and G-A5 by
-an age amnesty, so deleting one wholesale and losing its only open box exited 0 -- and
-the success line ASSERTED "21 box(es) open at <base> all survive at HEAD" on a base
-that held 22. The amnesty existed to avoid a deadlock with the housekeeping gate, and
-that gate's remedy is no longer deletion (`check-plan-housekeeping.sh:51`).
+WHAT WAS TRUE BEFORE 2026-09-09, measured exactly this way and the reason for the 41-day fixture: a plan older than `delete_days` was exempt from BOTH G-A1 and G-A5 by an age amnesty, so deleting one wholesale and losing its only open box exited 0 -- and the success line ASSERTED "21 box(es) open at <base> all survive at HEAD" on a base that held 22. The amnesty existed to avoid a
+deadlock with the housekeeping gate, and that gate's remedy is no longer deletion (`check-plan-housekeeping.sh:51`).
 
-AND THE HALF THE CHANGE UNCOVERED. G-A1 never consulted `renames_into_archive`, so a
-plan `git mv`d untouched into the archive -- the exact remedy G-A1's own message
-prints -- reddened, unless the age amnesty happened to cover it. `test_an_r100_archive_
-is_silent_at_both_ages` is that pair, and it is a PAIR because a control run only at
-999 days would have passed over the bug for as long as the amnesty stood.
+AND THE HALF THE CHANGE UNCOVERED. G-A1 never consulted `renames_into_archive`, so a plan `git mv`d untouched into the archive -- the exact remedy G-A1's own message prints -- reddened, unless the age amnesty happened to cover it. `test_an_r100_archive_ is_silent_at_both_ages` is that pair, and it is a PAIR because a control run only at 999 days would have passed over the bug for
+as long as the amnesty stood.
 
 THE LIVE TREE IS NEVER MUTATED. Each case builds its own repository under `tmp_path`.
 """
@@ -80,8 +66,7 @@ def _gate(root: pathlib.Path, base: str | None = None, update: bool = False):
 def _seed(tmp_path: pathlib.Path, subject: str, age_days: int) -> tuple[pathlib.Path, str]:
     """A repo with FILLERS live plans plus `subject`, committed `age_days` ago.
 
-    Returns (root, base_sha). The ledger is written by the gate itself rather than by
-    hand: a hand-built ledger is a second implementation of the thing under test.
+    Returns (root, base_sha). The ledger is written by the gate itself rather than by hand: a hand-built ledger is a second implementation of the thing under test.
     """
     root = tmp_path / "tree"
     (root / "agent").mkdir(parents=True)
@@ -149,8 +134,7 @@ def test_deleting_a_41_day_old_plan_that_loses_a_box_is_refused(gate, tmp_path):
 def test_the_success_line_never_claims_boxes_it_did_not_compare(gate, tmp_path):
     """The old amnesty did not merely permit the loss, it ASSERTED survival.
 
-    This is the anti-vacuity half and it is a separate case because a rule that fires
-    is not the same claim as a summary that stops lying.
+    This is the anti-vacuity half and it is a separate case because a rule that fires is not the same claim as a summary that stops lying.
     """
     gate.log_test("the transitions summary over an aged deletion")
     root, base = _seed(tmp_path, "PLAN-old.md", 41)
@@ -169,9 +153,7 @@ def test_the_success_line_never_claims_boxes_it_did_not_compare(gate, tmp_path):
 def test_an_r100_archive_is_silent_at_both_ages(gate, tmp_path):
     """The three doors must not red, and AGE MUST NOT DECIDE WHICH DOOR IS OPEN.
 
-    Both ages, deliberately. Until 2026-09-09 the 999-day half was silent and the
-    1-day half reported "is GONE at HEAD ... not archived" about a plan that had just
-    been archived exactly as that sentence instructs.
+    Both ages, deliberately. Until 2026-09-09 the 999-day half was silent and the 1-day half reported "is GONE at HEAD ... not archived" about a plan that had just been archived exactly as that sentence instructs.
     """
     for age in (1, 999):
         gate.log_test("`git mv` untouched into the archive, plan aged %d day(s)" % age)
@@ -218,9 +200,7 @@ def test_an_aged_husk_whose_boxes_moved_is_still_free(gate, tmp_path):
 def test_the_selftest_runs_and_records_the_never_delete_controls(gate):
     """The rule table's own controls, driven as a process on the real tree.
 
-    Named individually rather than counted: a count moves for reasons that have
-    nothing to do with this rule, and a floor that only counts cannot tell which
-    control went missing.
+    Named individually rather than counted: a count moves for reasons that have nothing to do with this rule, and a floor that only counts cannot tell which control went missing.
     """
     gate.log_test("check_plan_boxes.py --selftest on the real tree")
     result = harness.run([sys.executable, str(GATE), "--selftest"], cwd=paths.repo_root())

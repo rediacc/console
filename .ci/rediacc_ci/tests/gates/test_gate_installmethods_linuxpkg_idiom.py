@@ -2,25 +2,17 @@
 
 The version assertions in `.ci/scripts/test/test-linux-packages.sh`.
 
-WHY THIS EXISTS. That file carried the same unanchored-grep idiom that let a
-1.2.16 binary verify as 1.2.17 in the release path, in two shapes:
+WHY THIS EXISTS. That file carried the same unanchored-grep idiom that let a 1.2.16 binary verify as 1.2.17 in the release path, in two shapes:
 
     ${PKG_BINARY_NAME} --version 2>/dev/null | grep -q '${TEST_VERSION}'
     echo "$info" | grep -q "Version: ${TEST_VERSION}"
 
-SEVERITY IS LOW and deliberately recorded as such: TEST_VERSION is hardcoded to
-99.0.0 and the binary under test is a dummy shell script the same file writes,
-so no real version could drift out from under those checks. The point of the
-change, and of this file, is to stop the idiom being COPIED somewhere a real
-version is at stake -- and to keep it from creeping back in.
+SEVERITY IS LOW and deliberately recorded as such: TEST_VERSION is hardcoded to 99.0.0 and the binary under test is a dummy shell script the same file writes, so no real version could drift out from under those checks. The point of the change, and of this file, is to stop the idiom being COPIED somewhere a real version is at stake -- and to keep it from creeping back in.
 
 The name carries the test-installmethods- prefix because that is the prefix the
 batch of gate tests was added under; the target is test-linux-packages.sh.
 
-WHY THE PORT STILL RUNS BASH for the first four cases: `version_token_re` and
-`assert_version_field` are the SUBJECT's own shell functions, and reimplementing
-either in Python would pin the port's idea of the regex rather than the
-subject's. The fifth case is a text census and is pure Python.
+WHY THE PORT STILL RUNS BASH for the first four cases: `version_token_re` and `assert_version_field` are the SUBJECT's own shell functions, and reimplementing either in Python would pin the port's idea of the regex rather than the subject's. The fifth case is a text census and is pure Python.
 
 ARGUMENT ORDER. The twin calls `assert_eq "0" "$(field ...)"`, EXPECTED first,
 which inverts `assert_eq`'s own contract. Same verdict, inverted diagnostic; one
@@ -192,14 +184,9 @@ def test_the_token_regex_matches_whole_versions_only(gate, tmp_path):
 def test_the_old_idiom_is_gone_from_the_target(gate):
     """Structural, so the idiom cannot quietly come back.
 
-    Comment lines are stripped first: the header of the target QUOTES both old
-    idioms verbatim to explain what was wrong with them, and a naive whole-file
-    search matches that documentation and fails on it. (It did, on the first run
-    of the twin.)
+    Comment lines are stripped first: the header of the target QUOTES both old idioms verbatim to explain what was wrong with them, and a naive whole-file search matches that documentation and fails on it. (It did, on the first run of the twin.)
 
-    `count` is LINES CONTAINING the literal, matching `grep -cF`, not the number
-    of occurrences. Two spellings of that would disagree the day a line carries
-    the token twice.
+    `count` is LINES CONTAINING the literal, matching `grep -cF`, not the number of occurrences. Two spellings of that would disagree the day a line carries the token twice.
     """
     code = [ln for ln in SUBJECT.text(gate).splitlines() if not COMMENT_RE.match(ln)]
 

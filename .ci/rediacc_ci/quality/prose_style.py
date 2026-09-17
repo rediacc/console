@@ -1,20 +1,15 @@
 #!/usr/bin/env python3
 """The prose-style engine: R1-R18, "the work, not the person".
 
-WHAT THIS ENFORCES. `.ci/config/prose-style-rules.json` is the single source of
-truth for the eighteen rules, their severities, their scopes, their patterns and
+WHAT THIS ENFORCES. `.ci/config/prose-style-rules.json` is the single source of truth for the eighteen rules, their severities, their scopes, their patterns and
 their examples. Nothing in this module restates a rule; it loads them, extracts
-PROSE from a file or a message, and reports what fires. A rule added to that file
-is enforced here with no edit to this one, and a rule whose patterns move here
-would be a rule with two definitions.
+PROSE from a file or a message, and reports what fires. A rule added to that file is enforced here with no edit to this one, and a rule whose patterns move here would be a rule with two definitions.
 
 =============================================================================
 THE THING THIS MODULE IS MOSTLY MADE OF: DECIDING WHAT IS PROSE
 =============================================================================
 
-Matching `\\byou\\b` is four characters. Everything hard about this gate is
-deciding WHERE to match it, because the tree is full of text that contains the
-word and is not prose addressed to a reader:
+Matching `\\byou\\b` is four characters. Everything hard about this gate is deciding WHERE to match it, because the tree is full of text that contains the word and is not prose addressed to a reader:
 
   * a fenced code block holding a shell transcript
   * an inline code span, `` `your-branch` ``
@@ -24,28 +19,17 @@ word and is not prose addressed to a reader:
   * a `bad:` line in a style document, which exists PRECISELY to hold the
     violation, and flagging it would make this file unable to describe itself
 
-So the extractors are the subject of this module and the matchers are a
-footnote. They are deliberately CONSERVATIVE, and the reason is the asymmetry a
-dead-code gate has in the other direction: a false positive here blocks an edit
-or a commit that was fine, which teaches the next session to reach for the
-suppression marker, and a gate everybody suppresses is a gate that has stopped
-meaning what its name says. A missed violation costs one unstyled sentence.
+So the extractors are the subject of this module and the matchers are a footnote. They are deliberately CONSERVATIVE, and the reason is the asymmetry a dead-code gate has in the other direction: a false positive here blocks an edit or a commit that was fine, which teaches the next session to reach for the suppression marker, and a gate everybody suppresses is a gate that has
+stopped meaning what its name says. A missed violation costs one unstyled sentence.
 
-ANTI-VACUITY, baked in rather than remembered. `check` over ZERO extracted lines
-is a FAILURE, not a pass: a glob that stops matching, an extractor that starts
-throwing everything away, and a genuinely clean tree are indistinguishable by
-exit code, and only one of them is good news. The success line prints the SHAPE
-(files, prose lines, rules loaded, advisory rules, undetectable examples) so a
-reader can see a number collapse.
+ANTI-VACUITY, baked in rather than remembered. `check` over ZERO extracted lines is a FAILURE, not a pass: a glob that stops matching, an extractor that starts throwing everything away, and a genuinely clean tree are indistinguishable by exit code, and only one of them is good news. The success line prints the SHAPE (files, prose lines, rules loaded, advisory rules, undetectable
+examples) so a reader can see a number collapse.
 
 =============================================================================
 THE BASELINE IS SHRINK-ONLY, AND ITS COMPOSITION IS CHECKED
 =============================================================================
 
-577 markdown files already exceed the 384-character limit and hundreds of
-comment blocks are hard-wrapped at 100. None of that is reflowed by this change.
-The debt is FROZEN in `.ci/config/prose-style-baseline.json` as stable ids, and
-the gate fails on GROWTH.
+577 markdown files already exceed the 384-character limit and hundreds of comment blocks are hard-wrapped at 100. None of that is reflowed by this change. The debt is FROZEN in `.ci/config/prose-style-baseline.json` as stable ids, and the gate fails on GROWTH.
 
 Two halves, and the second is what keeps the set shrinking:
 
@@ -53,18 +37,10 @@ Two halves, and the second is what keeps the set shrinking:
   * a BASELINED finding that no longer fires ALSO fails, telling the author to
     drain with `--write-baseline`
 
-AN ID IS A HASH OF THE FINDING'S TEXT, NEVER OF ITS LINE NUMBER. A line number
-churns the moment a paragraph is inserted above it, and a baseline that churns
-gets regenerated wholesale, which silently re-absorbs every fresh finding made
-in the same hour. The price of hashing text is that a REWRITE re-keys the entry,
-and that is the right price: a rewrite is exactly when a human should look at
-the line again.
+AN ID IS A HASH OF THE FINDING'S TEXT, NEVER OF ITS LINE NUMBER. A line number churns the moment a paragraph is inserted above it, and a baseline that churns gets regenerated wholesale, which silently re-absorbs every fresh finding made in the same hour. The price of hashing text is that a REWRITE re-keys the entry, and that is the right price: a rewrite is exactly when a human
+should look at the line again.
 
-`--write-baseline` DIFFS THE OLD AND NEW SETS AND REFUSES A NON-EMPTY ADDED
-SIDE. Comparing SIZES is a different and weaker claim: a drain that removes
-thirty and adds one prints a smaller number and goes green while enshrining a
-brand-new violation. The ADDED side has to be empty, so the only way a new
-finding enters the baseline is to say so on the command line.
+`--write-baseline` DIFFS THE OLD AND NEW SETS AND REFUSES A NON-EMPTY ADDED SIDE. Comparing SIZES is a different and weaker claim: a drain that removes thirty and adds one prints a smaller number and goes green while enshrining a brand-new violation. The ADDED side has to be empty, so the only way a new finding enters the baseline is to say so on the command line.
 """
 
 import fnmatch
@@ -116,10 +92,7 @@ DEFAULT_MARKERS = ("<!-- style-ok -->", "# style-ok", "// style-ok")
 class Rule:
     """One loaded rule, with its patterns already compiled.
 
-    COMPILED AT LOAD, NOT AT MATCH. A bad regex in the rules file is then a LOAD
-    failure naming the rule and the pattern, instead of an exception thrown from
-    inside a sweep over four thousand files where the traceback names this module
-    and not the data that broke it.
+    COMPILED AT LOAD, NOT AT MATCH. A bad regex in the rules file is then a LOAD failure naming the rule and the pattern, instead of an exception thrown from inside a sweep over four thousand files where the traceback names this module and not the data that broke it.
     """
 
     __slots__ = (
@@ -154,9 +127,7 @@ class Rule:
     def advisory(self):
         """A rule with no patterns and no measurement: documentation only.
 
-        Counted and PRINTED rather than hidden, because "18 rules" and "9 rules
-        that can fire" are different claims and a reader is entitled to the
-        second one.
+        Counted and PRINTED rather than hidden, because "18 rules" and "9 rules that can fire" are different claims and a reader is entitled to the second one.
         """
         return not self.raw_patterns and self.detection not in ("measured", "underwrap")
 
@@ -176,9 +147,7 @@ def _compile(rule_id, pattern):
 def load_rules(text):
     """Parse the rules document. Exported so the selftest drives it directly.
 
-    REFUSES AN EMPTY RULE SET. A rules file that parsed to zero rules would make
-    every `check` below exit 0 over nothing, and the output would read exactly
-    like a clean tree.
+    REFUSES AN EMPTY RULE SET. A rules file that parsed to zero rules would make every `check` below exit 0 over nothing, and the output would read exactly like a clean tree.
     """
     try:
         doc = json.loads(text)
@@ -319,11 +288,7 @@ class Line:
 def scrub(text):
     """Strip everything that is not prose from ONE line.
 
-    ORDER MATTERS AND IS NOT ARBITRARY. Code spans go first, because a URL or a
-    link inside one is already exempt and running the link stripper first would
-    eat the backticks that proved it. Link TEXT is preserved deliberately:
-    `[Send the file](x)` is prose a reader reads, and dropping it with its
-    target would exempt every piece of link text in the tree.
+    ORDER MATTERS AND IS NOT ARBITRARY. Code spans go first, because a URL or a link inside one is already exempt and running the link stripper first would eat the backticks that proved it. Link TEXT is preserved deliberately: `[Send the file](x)` is prose a reader reads, and dropping it with its target would exempt every piece of link text in the tree.
     """
     out = HTML_COMMENT.sub(" ", text)
     out = INLINE_CODE.sub(" ", out)
@@ -340,8 +305,7 @@ def is_marked(line, markers):
 def markdown_lines(text, markers=DEFAULT_MARKERS):
     """Every prose line of a markdown document, fences and quotations removed.
 
-    WHAT IS DROPPED, and the reason for each, because a reader deciding whether a
-    green means anything needs the list rather than the count:
+    WHAT IS DROPPED, and the reason for each, because a reader deciding whether a green means anything needs the list rather than the count:
 
       frontmatter      metadata, and its values are ids and dates
       fenced code      transcripts and source, where the words are not addressed
@@ -402,8 +366,8 @@ def markdown_lines(text, markers=DEFAULT_MARKERS):
 class _PyChunk:
     """One COMMENT token or docstring-shaped STRING token, tokenized once.
 
-    THE SINGLE SOURCE OF TRUTH FOR WHETHER A LINE IS A COMMENT OR A DOCSTRING. `python_comment_lines` (feeding `extract()`, R1-R18) and `_python_reflow_lines` (feeding `comment_segments()`, reflow and R19) used to run this tokenize walk independently.
-    The reflow side never looked at a STRING token at all -- a docstring was invisible to it no matter what the lint side had already decided about the identical bytes. Both now read the same chunk list and cannot disagree.
+    THE SINGLE SOURCE OF TRUTH FOR WHETHER A LINE IS A COMMENT OR A DOCSTRING. `python_comment_lines` (feeding `extract()`, R1-R18) and `_python_reflow_lines` (feeding `comment_segments()`, reflow and R19) used to run this tokenize walk independently. The reflow side never looked at a STRING token at all -- a docstring was invisible to it no matter what the lint side had already
+    decided about the identical bytes. Both now read the same chunk list and cannot disagree.
     """
 
     __slots__ = ("col", "kind", "start", "text")
@@ -435,8 +399,8 @@ def _python_scan(text):
 def python_comment_lines(text, markers=DEFAULT_MARKERS):
     """Comments and docstrings of a Python module, from `_python_scan`.
 
-    `# code` IS AN INDENTED BLOCK, exactly as ` code` is in markdown, and it is how a Python comment shows a snippet. Measured 2026-09-16 at `prose_style.py:388`: the fix for the docstring case below handled STRING bodies only, and the very next run flagged the capital `I` in the COMMENT restating that same literal block.
-    The gate found a false positive in the comment explaining its previous false positive, twice, which is what finally made the indent rule apply to both token kinds instead of one.
+    `# code` IS AN INDENTED BLOCK, exactly as ` code` is in markdown, and it is how a Python comment shows a snippet. Measured 2026-09-16 at `prose_style.py:388`: the fix for the docstring case below handled STRING bodies only, and the very next run flagged the capital `I` in the COMMENT restating that same literal block. The gate found a false positive in the comment explaining
+    its previous false positive, twice, which is what finally made the indent rule apply to both token kinds instead of one.
 
     THE DOCSTRING'S OWN INDENT is what makes an indented block inside it detectable at all. A markdown document's code block is four spaces from column zero; a docstring's is four spaces from wherever the docstring starts, and a function's docstring already starts at four.
     MEASURED, NOT ANTICIPATED: `prose_style.py:404` -- this file -- once carried a reStructuredText literal block holding the very test label that exposed the docstring bug above, and R2 flagged the capital `I` inside it before the indent rule covered docstrings too.
@@ -493,26 +457,15 @@ _LINE_CLOSERS = frozenset({tokenize.NEWLINE, tokenize.NL, tokenize.ENDMARKER})
 def _is_docstring(stream, index):
     """A STRING token that is a whole EXPRESSION STATEMENT: a docstring, or bare prose.
 
-    THE FIRST VERSION ASKED WHETHER THE TOKEN'S LINE STARTS WITH A QUOTE, and it
-    was wrong in a way that only a data structure shows. Measured 2026-09-16 on
-    `block_prose_style_edit.py:129`, a row of a test-case table::
+    THE FIRST VERSION ASKED WHETHER THE TOKEN'S LINE STARTS WITH A QUOTE, and it was wrong in a way that only a data structure shows. Measured 2026-09-16 on `block_prose_style_edit.py:129`, a row of a test-case table::
 
         "an edit whose new_string says I",
 
-    That line starts with a quote, so it read as a docstring, and R2 flagged the
-    capital `I` inside a TEST LABEL. Every element of every multi-line list,
-    tuple and dict in the repository was being linted as prose, which is both a
-    false-positive source and a quiet widening of what this gate claims to scan.
+    That line starts with a quote, so it read as a docstring, and R2 flagged the capital `I` inside a TEST LABEL. Every element of every multi-line list, tuple and dict in the repository was being linted as prose, which is both a false-positive source and a quiet widening of what this gate claims to scan.
 
-    The real predicate is grammatical rather than textual: a docstring is a
-    string that is ALONE on its logical line. So the token before it must open a
-    line (NEWLINE / NL / INDENT / DEDENT / ENCODING) and the token after it must
-    close one. A collection element fails the second test, because what follows
-    it is a comma.
+    The real predicate is grammatical rather than textual: a docstring is a string that is ALONE on its logical line. So the token before it must open a line (NEWLINE / NL / INDENT / DEDENT / ENCODING) and the token after it must close one. A collection element fails the second test, because what follows it is a comma.
 
-    A BARE MODULE-LEVEL STRING PASSES BOTH AND IS DELIBERATELY ADMITTED: it is
-    either documentation or dead, and linting it is right in the first case and
-    harmless in the second.
+    A BARE MODULE-LEVEL STRING PASSES BOTH AND IS DELIBERATELY ADMITTED: it is either documentation or dead, and linting it is right in the first case and harmless in the second.
 
     AN IMPLICITLY CONCATENATED FRAGMENT IS NOT A WHOLE LOGICAL STRING, and treating NL as a genuine opener/closer without also looking past it missed that. Found live by review 2026-09-16, reproduced against the `PERMISSION` regex tuple in `block_secret_exposure.py`::
 
@@ -560,9 +513,9 @@ def _nth_line(text, lineno):
 def _cstyle_scan(text):
     """Every `//` line comment and `/* */` block comment, walked once.
 
-    THE SINGLE SOURCE OF TRUTH for the same reason `_python_scan` is: `cstyle_comment_lines` (feeding `extract()`, every comment, INCLUDING a trailing one and a block's interior) and `_cstyle_reflow_lines` (feeding `comment_segments()`, whole-line `//` only, a block left entirely alone) used to run this quote/template state machine as two independently maintained copies.
-    They agreed on everything except one thing neither copy's author noticed: the lint copy advanced past a backslash-escaped newline inside a string WITHOUT counting the line, so a comment after a multi-line string with a line-continuation backslash was reported at the wrong line number.
-    Fixed here, in the one walk both consumers now share, rather than carried forward into a merge that kept it broken in exactly one of the two former copies.
+    THE SINGLE SOURCE OF TRUTH for the same reason `_python_scan` is: `cstyle_comment_lines` (feeding `extract()`, every comment, INCLUDING a trailing one and a block's interior) and `_cstyle_reflow_lines` (feeding `comment_segments()`, whole-line `//` only, a block left entirely alone) used to run this quote/template state machine as two independently maintained copies. They
+    agreed on everything except one thing neither copy's author noticed: the lint copy advanced past a backslash-escaped newline inside a string WITHOUT counting the line, so a comment after a multi-line string with a line-continuation backslash was reported at the wrong line number. Fixed here, in the one walk both consumers now share, rather than carried forward into a merge that
+    kept it broken in exactly one of the two former copies.
 
     Yields `("line", lineno, indent, body)` for a `//` comment -- `indent` is the raw text before the `//` on its physical line, which is how the reflow side tells a whole-line comment from a trailing one.
     And `("block", start_lineno, raw_text)` for a `/* */` span, UNSPLIT into physical lines, because the two consumers break it apart differently (one strips a leading `*` per line for lint; the other never touches a block at all).
@@ -652,26 +605,14 @@ _JSON_ARRAY_STRING = re.compile(r'^\s*"((?:[^"\\]|\\.)*)"\s*,?\s*$')
 def json_prose_lines(text, markers=DEFAULT_MARKERS):
     """Prose lines of a `.json` file: PHYSICAL LINE, decoded string VALUES only.
 
-    NOT A PARSED WALK. `json.load` gives no line numbers, so a `Finding`
-    (which is anchored to a line) could not be built from one, and a
-    decoded-string-length measure would let a 380-char value sitting at 300
-    columns of indentation pass while the file is unreadable as text. R18
-    measures what a reader of the FILE sees, the same contract `Line.raw`
-    already keeps for every other suffix.
+    NOT A PARSED WALK. `json.load` gives no line numbers, so a `Finding` (which is anchored to a line) could not be built from one, and a decoded-string-length measure would let a 380-char value sitting at 300 columns of indentation pass while the file is unreadable as text. R18 measures what a reader of the FILE sees, the same contract `Line.raw` already keeps for every other
+    suffix.
 
     ONE LINE, ONE JSON TOKEN. This repository's `.json` is machine-written
     with `json.dumps(..., indent=2)` (or hand-written to match), so a
-    `"key": "value"` pair and an array element each occupy exactly one
-    physical line in practice. A minified or reformatted file degenerates to
-    the file being unreadable as text, which is the same failure mode a
-    minified `.js` file already has against `cstyle_comment_lines`.
+    `"key": "value"` pair and an array element each occupy exactly one physical line in practice. A minified or reformatted file degenerates to the file being unreadable as text, which is the same failure mode a minified `.js` file already has against `cstyle_comment_lines`.
 
-    KEYS ARE NEVER PROSE, only the string VALUE beside one is -- catches a
-    key like `"glob": "agent/pr/*.md"` before it is scanned as a sentence.
-    An ARRAY ELEMENT has no key at all: this is the wrapped-prose shape
-    `exempt_why`/`exclude_why`/an array-form `reason` already use, and each
-    element is measured on its own line exactly the way a hand-wrapped
-    paragraph in a `.md` file is.
+    KEYS ARE NEVER PROSE, only the string VALUE beside one is -- catches a key like `"glob": "agent/pr/*.md"` before it is scanned as a sentence. An ARRAY ELEMENT has no key at all: this is the wrapped-prose shape `exempt_why`/`exclude_why`/an array-form `reason` already use, and each element is measured on its own line exactly the way a hand-wrapped paragraph in a `.md` file is.
     """
     lines = []
     for lineno, raw in enumerate(text.splitlines(), start=1):
@@ -700,10 +641,7 @@ def json_prose_lines(text, markers=DEFAULT_MARKERS):
 def extract(path, text, markers=DEFAULT_MARKERS):
     """Prose lines of one file, dispatched on its suffix.
 
-    A file whose Python will not tokenize falls back to the C-style scanner,
-    which finds nothing, and the CALLER is told: a file that silently extracted
-    nothing is indistinguishable from a clean one, which is the whole vacuity
-    problem in miniature.
+    A file whose Python will not tokenize falls back to the C-style scanner, which finds nothing, and the CALLER is told: a file that silently extracted nothing is indistinguishable from a clean one, which is the whole vacuity problem in miniature.
     """
     suffix = pathlib.Path(path).suffix
     if suffix == ".md":
@@ -780,8 +718,7 @@ def lint_line(line, rules, scope, max_len):
 def lint_text(path, text, rules, globals_, scope=None):
     """Findings for one document. Returns `(findings, note)`.
 
-    `note` is not None when extraction could not be trusted, and the caller must
-    treat it as UNCHECKED rather than folding it into a pass.
+    `note` is not None when extraction could not be trusted, and the caller must treat it as UNCHECKED rather than folding it into a pass.
     """
     markers = tuple(globals_.get("ignore_markers") or DEFAULT_MARKERS)
     max_len = globals_.get("max_line_length")
@@ -802,8 +739,7 @@ def lint_text(path, text, rules, globals_, scope=None):
 def lint_message(text, rules, globals_, scope):
     """Findings for a MESSAGE rather than a file: a commit body, a PR body, an edit.
 
-    Scoped by the caller, because a commit message and an Edit's new content are
-    the same bytes to this function and different things to R11.
+    Scoped by the caller, because a commit message and an Edit's new content are the same bytes to this function and different things to R11.
     """
     markers = tuple(globals_.get("ignore_markers") or DEFAULT_MARKERS)
     max_len = globals_.get("max_line_length")
@@ -826,32 +762,15 @@ def lint_message(text, rules, globals_, scope):
 def tracked_files(root):
     """Every path git TRACKS under `root`, repo-relative, present on disk.
 
-    GIT, NOT A FILESYSTEM WALK, and the reason is the artifact this gate writes.
-    `.ci/config/prose-style-baseline.json` is COMMITTED and SHRINK-ONLY, so
-    every path in it must exist in a fresh checkout. A walk enumerates whatever
-    the machine happens to hold -- a gitignored scratch directory, a file not
-    yet added, a peer's stale worktree -- and `--write-baseline` then freezes
-    rows CI is structurally incapable of satisfying. 944aa6210 is the receipt:
-    six precompact-facts entries, ignored by a gitignore of a bare star,
-    reded CI with "6 baselined finding(s) no longer fire".
+    GIT, NOT A FILESYSTEM WALK, and the reason is the artifact this gate writes. `.ci/config/prose-style-baseline.json` is COMMITTED and SHRINK-ONLY, so every path in it must exist in a fresh checkout. A walk enumerates whatever the machine happens to hold -- a gitignored scratch directory, a file not yet added, a peer's stale worktree -- and `--write-baseline` then freezes rows CI
+    is structurally incapable of satisfying. 944aa6210 is the receipt: six precompact-facts entries, ignored by a gitignore of a bare star, reded CI with "6 baselined finding(s) no longer fire".
 
-    TRACKED, NOT MERELY NOT-IGNORED. `dead_python.py:249` adds
-    `--others --exclude-standard` and is right to: a reachability scan that
-    could not see a brand-new module would call it dead. Here the claim is
-    about what the repository SHIPS, and an untracked-but-unignored file is the
-    same contamination as an ignored one -- it is on one disk and in no
-    checkout.
+    TRACKED, NOT MERELY NOT-IGNORED. `dead_python.py:249` adds `--others --exclude-standard` and is right to: a reachability scan that could not see a brand-new module would call it dead. Here the claim is about what the repository SHIPS, and an untracked-but-unignored file is the same contamination as an ignored one -- it is on one disk and in no checkout.
 
-    REFUSES RATHER THAN RETURNING NOTHING, which is what
-    `plant_proofs.py:867-877`, `python_env_registry.py:345-355` and
-    `check_language_policy.py:235-241` all do at this exact call. An empty
-    corpus and a clean tree are indistinguishable by exit code, and only one is
-    good news.
+    REFUSES RATHER THAN RETURNING NOTHING, which is what `plant_proofs.py:867-877`, `python_env_registry.py:345-355` and `check_language_policy.py:235-241` all do at this exact call. An empty corpus and a clean tree are indistinguishable by exit code, and only one is good news.
 
     `existing=True` drops index entries whose file is gone -- gitx TRAP 1's
-    second half. A file removed with `rm` rather than `git rm` would otherwise
-    arrive here, fail to open, and land in the UNCHECKED list that `run_check`
-    treats as a failure.
+    second half. A file removed with `rm` rather than `git rm` would otherwise arrive here, fail to open, and land in the UNCHECKED list that `run_check` treats as a failure.
     """
     if not gitx.is_work_tree(root):
         msg = (
@@ -866,14 +785,9 @@ def tracked_files(root):
 def under_excluded_dir(rel, skip):
     """Does any ANCESTOR directory of `rel` appear in `skip`?
 
-    BOTH SPELLINGS, because `exclude_dirs` has always carried both and the walk
-    this replaces honoured both: a BARE NAME prunes at every depth, a
-    repo-relative PATH prunes once. Dropping the bare-name arm is not a
-    tidy-up, it is a corpus change -- `build` alone admits the tracked modules
-    under `.ci/rediacc_ci/build/`, `private` admits `.ci/rediacc_ci/private/`.
+    BOTH SPELLINGS, because `exclude_dirs` has always carried both and the walk this replaces honoured both: a BARE NAME prunes at every depth, a repo-relative PATH prunes once. Dropping the bare-name arm is not a tidy-up, it is a corpus change -- `build` alone admits the tracked modules under `.ci/rediacc_ci/build/`, `private` admits `.ci/rediacc_ci/private/`.
 
-    A FILE is never matched, only its ancestors, so a tracked `docs/build.md`
-    survives an entry of `build`.
+    A FILE is never matched, only its ancestors, so a tracked `docs/build.md` survives an entry of `build`.
     """
     parts = rel.split("/")
     for index in range(len(parts) - 1):
@@ -887,19 +801,9 @@ def discover(root, globals_, subtrees=None):
 
     EXPLICIT TARGETS DO NOT COME THROUGH HERE, and that is the distinction this
     function exists on one side of. `run_check` and `run_reflow` both spell it
-    `targets or discover(...)`: a path named on the command line is scanned
-    whatever git thinks of it, because the caller named it and a file being
-    written for the first time is untracked by definition. Only the BROAD
-    sweep -- the default `check`, and every `--write-baseline` -- is narrowed
-    to what git tracks, because only the broad sweep writes the committed
-    baseline.
+    `targets or discover(...)`: a path named on the command line is scanned whatever git thinks of it, because the caller named it and a file being written for the first time is untracked by definition. Only the BROAD sweep -- the default `check`, and every `--write-baseline` -- is narrowed to what git tracks, because only the broad sweep writes the committed baseline.
 
-    SORTED, NOT READDIR ORDER. `check_content_quality.py` records measuring
-    the same thing on this tree: raw `find` is not lexicographic here, so an
-    unsorted walk makes the output depend on filesystem state rather than on
-    repository content, and two runs on two machines disagree for no reason a
-    reader can act on. git's own order is not this order either, so the sort
-    stays.
+    SORTED, NOT READDIR ORDER. `check_content_quality.py` records measuring the same thing on this tree: raw `find` is not lexicographic here, so an unsorted walk makes the output depend on filesystem state rather than on repository content, and two runs on two machines disagree for no reason a reader can act on. git's own order is not this order either, so the sort stays.
     """
     patterns = tuple(globals_.get("include") or ())
     skip = set(globals_.get("exclude_dirs") or ())
@@ -924,10 +828,7 @@ def read_text(path):
 def exemptions(globals_):
     """`[(glob, reason)]`, refusing any entry without a `BLOCKER:` reason.
 
-    THE REFUSAL IS THE FEATURE. `docs/agent-reference/suppressions.md` requires a
-    `BLOCKER:` on every allowlist entry in this tree, and an exemption mechanism
-    that accepted a bare glob would be the one place that rule was not enforced
-    by anything. A reason nobody had to type is a reason nobody will check.
+    THE REFUSAL IS THE FEATURE. `docs/agent-reference/suppressions.md` requires a `BLOCKER:` on every allowlist entry in this tree, and an exemption mechanism that accepted a bare glob would be the one place that rule was not enforced by anything. A reason nobody had to type is a reason nobody will check.
     """
     out = []
     for entry in globals_.get("exempt_paths") or ():
@@ -944,13 +845,8 @@ def exemptions(globals_):
 def exempt_for(rel, exempts):
     """The reason `rel` is exempt, or None.
 
-    SEGMENT BY SEGMENT, NOT `fnmatch` OVER THE WHOLE PATH. `fnmatch`'s `*`
-    crosses `/` -- `agent/*/STATE.md` would match `agent/archive/x/y/STATE.md`
-    under it -- so an exemption written to cover one directory level silently
-    covers every level below it. An exemption that is wider than its author
-    believes is the shape this whole mechanism exists to keep visible, so the
-    glob is matched the way a reader reads it: one segment at a time, and the
-    depths must agree.
+    SEGMENT BY SEGMENT, NOT `fnmatch` OVER THE WHOLE PATH. `fnmatch`'s `*` crosses `/` -- `agent/*/STATE.md` would match `agent/archive/x/y/STATE.md` under it -- so an exemption written to cover one directory level silently covers every level below it. An exemption that is wider than its author believes is the shape this whole mechanism exists to keep visible, so the glob is
+    matched the way a reader reads it: one segment at a time, and the depths must agree.
     """
     parts = rel.replace(os.sep, "/").split("/")
     for glob, reason in exempts:
@@ -985,14 +881,8 @@ def markdown_segments(text):
     """Yield `("raw", lineno, line)` for a structural line, or `("para",
     start_lineno, [lines])` for a run of joinable plain-prose lines.
 
-    THE SINGLE SOURCE OF TRUTH FOR A MARKDOWN PARAGRAPH BOUNDARY, factored out
-    of `reflow_markdown`'s own loop so `underwrap_findings` (R19) consumes the
-    IDENTICAL boundary logic instead of a second, driftable copy of it. This is
-    a mechanical extraction, not a rewrite: every branch below is the same
-    branch `reflow_markdown` always had, just yielding instead of appending to
-    a shared `out` list. `test_reflow*` (which exercises `reflow_markdown`, now
-    a thin consumer of this generator) is what proves the extraction changed
-    nothing.
+    THE SINGLE SOURCE OF TRUTH FOR A MARKDOWN PARAGRAPH BOUNDARY, factored out of `reflow_markdown`'s own loop so `underwrap_findings` (R19) consumes the IDENTICAL boundary logic instead of a second, driftable copy of it. This is a mechanical extraction, not a rewrite: every branch below is the same branch `reflow_markdown` always had, just yielding instead of appending to a shared
+    `out` list. `test_reflow*` (which exercises `reflow_markdown`, now a thin consumer of this generator) is what proves the extraction changed nothing.
     """
     buffer = []
     start = None
@@ -1044,9 +934,7 @@ def markdown_segments(text):
 def _join_and_wrap(buffer, width):
     """One joined-then-wrapped paragraph, as the list of output lines it becomes.
 
-    Shared by `reflow_markdown` and `comment_segments`' caller-side wrap step
-    (via the same join-collapse-wrap arithmetic), so a width/whitespace
-    decision made once is made everywhere.
+    Shared by `reflow_markdown` and `comment_segments`' caller-side wrap step (via the same join-collapse-wrap arithmetic), so a width/whitespace decision made once is made everywhere.
     """
     joined = " ".join(piece.strip() for piece in buffer)
     joined = re.sub(r"\s{2,}", " ", joined).strip()
@@ -1063,11 +951,7 @@ UNDERWRAP_MAX_RATIO = 0.4
 
 def _looks_hard_wrapped(buffer, width):
     """Whether `buffer` (already known joinable, by construction of the
-    segment generators) is a NARROW HARD-WRAP rather than an ordinary short
-    paragraph -- the R19 heuristic gate from `agent/PLAN-prose-style-under-
-    wrap.md`, measured against a naive "would `_join_and_wrap` change
-    anything" test that fires on 99.99% of this repo's real markdown corpus
-    and is therefore not a debt detector at all.
+    segment generators) is a NARROW HARD-WRAP rather than an ordinary short paragraph -- the R19 heuristic gate from `agent/PLAN-prose-style-under- wrap.md`, measured against a naive "would `_join_and_wrap` change anything" test that fires on 99.99% of this repo's real markdown corpus and is therefore not a debt detector at all.
 
     Four conditions, ALL required:
       1. 3+ lines. A 2-line paragraph almost always just ends there -- a
@@ -1099,14 +983,8 @@ def underwrap_findings(path, text, rule, scope, max_len):
     """R19's findings for one document or message: a hard-wrapped paragraph
     that should have used more of the available width.
 
-    Reuses `markdown_segments`/`comment_segments` for boundaries -- the SAME
-    generators `reflow_markdown`/`reflow_comments` use to actually fix the
-    paragraphs this rule flags, so detection and remedy agree by
-    construction about what one paragraph is. `Finding.text` is the whole
-    paragraph joined by `\\n`, not a single line, so rewriting ANY line
-    inside it re-keys the baseline entry -- exactly the "a rewrite is when
-    a human looks again" contract every other multi-line Finding in this
-    module already uses.
+    Reuses `markdown_segments`/`comment_segments` for boundaries -- the SAME generators `reflow_markdown`/`reflow_comments` use to actually fix the paragraphs this rule flags, so detection and remedy agree by construction about what one paragraph is. `Finding.text` is the whole paragraph joined by `\\n`, not a single line, so rewriting ANY line inside it re-keys the baseline entry
+    -- exactly the "a rewrite is when a human looks again" contract every other multi-line Finding in this module already uses.
     """
     findings = []
     if scope in ("markdown", "pr"):
@@ -1139,17 +1017,9 @@ def underwrap_findings(path, text, rule, scope, max_len):
 def reflow_markdown(text, width):
     """Join hard-wrapped prose paragraphs to one line, then wrap at `width`.
 
-    IDEMPOTENT BY CONSTRUCTION, and that is a property rather than a hope: the
-    output of a join-then-wrap is a paragraph whose lines are all at or under
-    `width`, and joining those again reproduces the same string before the same
-    wrap. `test_reflow_is_idempotent` drives it rather than trusting the
-    argument.
+    IDEMPOTENT BY CONSTRUCTION, and that is a property rather than a hope: the output of a join-then-wrap is a paragraph whose lines are all at or under `width`, and joining those again reproduces the same string before the same wrap. `test_reflow_is_idempotent` drives it rather than trusting the argument.
 
-    WHAT IT REFUSES TO TOUCH: fences, headings, tables, blockquotes, indented
-    code, link definitions and LIST ITEMS. A list item's wrapped continuation
-    lines carry indentation that is part of the structure, and a joiner that did
-    not know the difference would flatten a nested list into a paragraph. The
-    conservative choice loses some reflow and cannot corrupt a document.
+    WHAT IT REFUSES TO TOUCH: fences, headings, tables, blockquotes, indented code, link definitions and LIST ITEMS. A list item's wrapped continuation lines carry indentation that is part of the structure, and a joiner that did not know the difference would flatten a nested list into a paragraph. The conservative choice loses some reflow and cannot corrupt a document.
     """
     out = []
     for kind, _start, payload in markdown_segments(text):
@@ -1167,14 +1037,9 @@ def reflow_markdown(text, width):
 def load_baseline(root):
     """The frozen ids, as `{id: (path, rule)}`, or None when there is no baseline.
 
-    THE FILE IS GROUPED BY PATH AND CARRIES IDS ONLY, and the reason is a measured
-    one rather than tidiness. The first cut stored one flat record per finding
+    THE FILE IS GROUPED BY PATH AND CARRIES IDS ONLY, and the reason is a measured one rather than tidiness. The first cut stored one flat record per finding
     with its text, and produced a 2.3 MB file against a repository whose largest
-    data file is a 620 KB lockfile. A baseline nobody can open in a diff is a
-    baseline that gets regenerated wholesale, which is precisely the failure the
-    stable-id design exists to prevent. Grouped, ids only, it is an order of
-    magnitude smaller and it READS: a reader sees which files carry debt and
-    under which rule, which is the question anyone opening it has.
+    data file is a 620 KB lockfile. A baseline nobody can open in a diff is a baseline that gets regenerated wholesale, which is precisely the failure the stable-id design exists to prevent. Grouped, ids only, it is an order of magnitude smaller and it READS: a reader sees which files carry debt and under which rule, which is the question anyone opening it has.
     """
     path = pathlib.Path(root) / BASELINE_FILE
     if not path.is_file():
@@ -1191,10 +1056,7 @@ def load_baseline(root):
 def write_baseline(root, findings, previous):
     """Write the baseline, refusing a drain that ADDED anything.
 
-    THE COMPOSITION TRAP, which a size comparison does not catch. A drain here
-    can print `2,189 -> 2,160` and go green while the two sets differ by thirty
-    removed and ONE added -- a fresh violation, made in the same hour, silently
-    enshrined. So the ADDED side is diffed and must be empty. Baselining a new
+    THE COMPOSITION TRAP, which a size comparison does not catch. A drain here can print `2,189 -> 2,160` and go green while the two sets differ by thirty removed and ONE added -- a fresh violation, made in the same hour, silently enshrined. So the ADDED side is diffed and must be empty. Baselining a new
     finding is still possible; it takes `--accept-new`, at the command line,
     where it is a decision somebody typed.
     """
@@ -1264,9 +1126,7 @@ def run_check(
 ):
     """The `check` subcommand. Returns an exit code.
 
-    ZERO SCANNED FILES IS A FAILURE. So is zero extracted prose lines across a
-    non-empty file set: the second one is the extractor breaking rather than the
-    glob, and both look like a clean tree from the outside.
+    ZERO SCANNED FILES IS A FAILURE. So is zero extracted prose lines across a non-empty file set: the second one is the extractor breaking rather than the glob, and both look like a clean tree from the outside.
     """
     # TARGETS BYPASS DISCOVERY DELIBERATELY. A path named on the command line
     # is scanned whether or not git tracks it; only the broad sweep is
@@ -1417,12 +1277,8 @@ def run_check(
 def baseline_additions(old, new):
     """Ids `new` carries that `old` did not -- the DIFF half of the shrink-only guard.
 
-    Named the way `.ci/scripts/quality/check_language_policy.py:442` names it, and
-    extracted from the call site rather than left inline, because the composition gate
-    at `.ci/scripts/test/gates/test-shrink-only-composition.sh:148` requires a writer to
-    DEFINE the diff, CALL the verdict, and compute both -- a writer that reseeds without
-    a named diff can drain thirty findings, absorb one brand new one, and print a smaller
-    number while doing it.
+    Named the way `.ci/scripts/quality/check_language_policy.py:442` names it, and extracted from the call site rather than left inline, because the composition gate at `.ci/scripts/test/gates/test-shrink-only-composition.sh:148` requires a writer to DEFINE the diff, CALL the verdict, and compute both -- a writer that reseeds without a named diff can drain thirty findings, absorb
+    one brand new one, and print a smaller number while doing it.
     """
     return sorted(set(new) - set(old or {}))
 
@@ -1430,10 +1286,7 @@ def baseline_additions(old, new):
 def write_verdict(*, previous_exists: bool, additions, accept_new: bool):
     """The complete write decision. Returns the ADDED ids when refused, None when allowed.
 
-    A first-ever baseline (`previous_exists` False) is always allowed to write: there is
-    nothing yet to have shrunk relative to, so refusing it would make `--write-baseline`
-    unusable on a fresh gate. Every later write refuses unless the addition side is empty
-    or the caller typed `--accept-new`.
+    A first-ever baseline (`previous_exists` False) is always allowed to write: there is nothing yet to have shrunk relative to, so refusing it would make `--write-baseline` unusable on a fresh gate. Every later write refuses unless the addition side is empty or the caller typed `--accept-new`.
     """
     if additions and not accept_new and previous_exists:
         return additions
@@ -1503,11 +1356,33 @@ COMMENT_LINE_BY_SUFFIX = {
 }
 
 
-# A doctest prompt/continuation and a reST field list or directive, never joined into a paragraph: each one's own line structure IS its content, exactly like `LIST_ITEM`/`REFLOW_STOP` already protect for markdown. Checked against the docstring's own interior lines only (see `_python_reflow_lines` below);
-# these three never applied to a `#`/`//` comment in the first place, since a comment has no equivalent convention.
+# A doctest prompt/continuation and a reST field list or directive, never joined into a paragraph: each one's own line structure IS its content, exactly like `LIST_ITEM`/`REFLOW_STOP` already protect for markdown.
 DOCTEST_PROMPT = re.compile(r"^\s*(?:>>>|\.\.\.) ")
 REST_FIELD = re.compile(r"^\s*:[^:\s][^:]*:")
 REST_DIRECTIVE = re.compile(r"^\s*\.\.\s+\S")
+
+# THE COMMENT PATH NEEDS THE SAME STOPS THE MARKDOWN PATH HAS, and the belief that it did not is what this block exists to correct. The previous note here claimed a comment "has no equivalent convention" to protect; measured across 400 tracked `.py` files on 2026-09-17, one reflow pass absorbed 793 rule-line banners
+# across 154 files, 296 standalone all-caps section headings and 9 list items, turning a three-line `---- / TITLE / ----` banner into one run-on line joined to the paragraph beneath it. A docstring and a `#` comment both carry section structure in this repository, so both get checked.
+#
+# MATCHING TOO MUCH IS THE SAFE DIRECTION HERE, which is the same trade `DOC_HEADER_FIELD` records: an over-broad stop costs a paragraph that could have been rewrapped, while a missing one costs the structure of a document nobody re-reads until it is wrong. `ALLCAPS_HEADING` therefore requires the WHOLE line to be caps, so this file's own `WHAT THIS ENFORCES. The single source ...`
+# lead-in, which is caps followed by ordinary prose on one line, still joins normally. The first column at which a `#` comment's body counts as a HANGING continuation rather than ordinary prose. One space after the hash is this repository's convention and zero is the other common spelling, so two is the first depth that means something.
+COMMENT_BODY_FLUSH = 2
+RULE_LINE_BANNER = re.compile(r"^\s*(?:-{4,}|={4,}|_{4,}|\*{4,})\s*$")
+ALLCAPS_HEADING = re.compile(r"^\s*[A-Z][A-Z0-9 ,'`/()\[\]._-]{6,}[.:]?\s*$")
+COMMENT_LIST_ITEM = re.compile(r"^\s*(?:\d+\.|[-*+])\s")
+COMMENT_STRUCTURE = (
+    DOCTEST_PROMPT,
+    REST_FIELD,
+    REST_DIRECTIVE,
+    RULE_LINE_BANNER,
+    ALLCAPS_HEADING,
+    COMMENT_LIST_ITEM,
+)
+
+
+def _is_structural_comment_line(piece):
+    """Whether `piece` carries structure that a paragraph join would destroy, for either a docstring interior line or a whole-line comment."""
+    return any(pattern.match(piece) for pattern in COMMENT_STRUCTURE)
 
 
 # A LEXER DECIDES WHAT A COMMENT OR A DOCSTRING IS, never `^\s*#`. Measured 2026-09-17: a regex version of this map once rewrote 52 of 1051 `.py` files in this repository into a DIFFERENT `ast.dump`, because a docstring quoting an example `# ...` line reads to a per-line regex exactly like the real comment paragraph underneath it. `_python_scan` is the fix: ONE tokenize pass,
@@ -1520,12 +1395,12 @@ def _python_reflow_lines(text):
     Or a FLUSH interior line of a docstring (`marker` is `None`, meaning "prose text, no marker to reproduce").
 
     A DOCSTRING'S FIRST AND LAST PHYSICAL LINE ARE NEVER INCLUDED. The first carries the opening quote (and, for a one-line docstring, the whole thing); the last carries the closing quote, sometimes with a trailing comment beside it.
-    Joining either into a reconstructed paragraph would mean splicing prose around a string delimiter instead of between two lines of plain text -- a risk a `#` comment never carries, since it owns no delimiter to protect.
-    Losing the two boundary lines to reflow is the same conservative trade `reflow_markdown` states for a list item: it loses some reflow and cannot corrupt a document.
+    Joining either into a reconstructed paragraph would mean splicing prose around a string delimiter instead of between two lines of plain text -- a risk a `#` comment never carries, since it owns no delimiter to protect. Losing the two boundary lines to reflow is the same conservative trade `reflow_markdown` states for a list item: it loses some reflow and cannot corrupt a
+    document.
 
     AN INTERIOR LINE ONLY JOINS WHEN IT SITS FLUSH WITH THE DOCSTRING'S OWN LEFT MARGIN -- the same `base` column `python_comment_lines` already measures indentation against for its own `>= base + 4` code-block rule.
-    A line indented by 1-3 columns is neither prose nor a code block by that rule, and is exactly the shape a hand-written flag list or enumerated block uses in this repository's own docstrings (`retire-shadowed-secrets.py`'s `Usage:` section is a real, currently-tracked example).
-    Never joined, each such line is kept on its own. A doctest prompt/continuation or a reST field/directive is excluded the same way and for the same reason: its line structure is its content, not a paragraph waiting to be rewrapped.
+    A line indented by 1-3 columns is neither prose nor a code block by that rule, and is exactly the shape a hand-written flag list or enumerated block uses in this repository's own docstrings (`retire-shadowed-secrets.py`'s `Usage:` section is a real, currently-tracked example). Never joined, each such line is kept on its own. A doctest prompt/continuation or a reST
+    field/directive is excluded the same way and for the same reason: its line structure is its content, not a paragraph waiting to be rewrapped.
     """
     found = {}
     for chunk in _python_scan(text):
@@ -1533,7 +1408,14 @@ def _python_reflow_lines(text):
             indent = _nth_line(text, chunk.start)[: chunk.col]
             if indent.strip():
                 continue
-            found[chunk.start] = (indent, chunk.text[1:], "#")
+            body = chunk.text[1:]
+            if _is_structural_comment_line(body):
+                continue
+            # A HANGING CONTINUATION IS PART OF ITS ITEM, and stopping the item line alone would strand it: the `1.` line is held while the lines beneath it join each other, which reads as a paragraph that lost its number. This is the `#` comment's version of the rule the docstring branch below already applies by requiring a line to sit flush with its own margin. Measured over 500
+            # tracked `.py` files: 8,859 comment bodies sit at the conventional one space after the hash and 218 at none, while just 51 sit two columns or deeper, so requiring a flush body costs almost no reflow and protects every hanging line.
+            if len(body) - len(body.lstrip(" ")) >= COMMENT_BODY_FLUSH:
+                continue
+            found[chunk.start] = (indent, body, "#")
             continue
         base = chunk.col
         body_lines = chunk.text.splitlines()
@@ -1543,7 +1425,7 @@ def _python_reflow_lines(text):
                 continue
             if _indent(piece) != base or not piece.strip():
                 continue
-            if DOCTEST_PROMPT.match(piece) or REST_FIELD.match(piece) or REST_DIRECTIVE.match(piece):
+            if _is_structural_comment_line(piece):
                 continue
             indent_text = piece[: len(piece) - len(piece.lstrip(" \t"))]
             found[chunk.start + offset] = (indent_text, piece[len(indent_text) :], None)
@@ -1555,8 +1437,7 @@ def _cstyle_reflow_lines(text):
 
     Only a WHOLE-LINE `//` comment is eligible (`marker` is always `"//"`
     here; a C-style language has no docstring convention this module reflows).
-    A `/* */` span is a STOP, never a paragraph: rewrapping one risks its own
-    asterisk alignment, and there is no reader benefit that pays for that.
+    A `/* */` span is a STOP, never a paragraph: rewrapping one risks its own asterisk alignment, and there is no reader benefit that pays for that.
     """
     found = {}
     for item in _cstyle_scan(text):
@@ -1571,9 +1452,8 @@ def _cstyle_reflow_lines(text):
 def comment_segments(text, suffix):
     """Yield `("raw", lineno, line)` or `("para", start_lineno, indent, marker, [bodies])` for `text`'s whole-line comments AND (Python only) its flush docstring interior lines.
 
-    THE SINGLE SOURCE OF TRUTH FOR A COMMENT-OR-DOCSTRING PARAGRAPH BOUNDARY, factored out of `reflow_comments`'s own loop for the same reason `markdown_segments` was: `underwrap_findings` (R19) must consume the IDENTICAL boundary logic, not a second copy of it.
-    `marker` is `"#"`/`"//"` for a real comment paragraph and `None` for a docstring paragraph, which is how `reflow_comments` knows not to invent a marker that was never there.
-    Nothing yielded at all means the suffix is not a known comment language, or the lexer could not read the file -- both cases the caller must treat as "nothing to say", never as an empty result implying a clean file.
+    THE SINGLE SOURCE OF TRUTH FOR A COMMENT-OR-DOCSTRING PARAGRAPH BOUNDARY, factored out of `reflow_comments`'s own loop for the same reason `markdown_segments` was: `underwrap_findings` (R19) must consume the IDENTICAL boundary logic, not a second copy of it. `marker` is `"#"`/`"//"` for a real comment paragraph and `None` for a docstring paragraph, which is how
+    `reflow_comments` knows not to invent a marker that was never there. Nothing yielded at all means the suffix is not a known comment language, or the lexer could not read the file -- both cases the caller must treat as "nothing to say", never as an empty result implying a clean file.
     """
     if COMMENT_LINE_BY_SUFFIX.get(suffix) is None:
         return
@@ -1628,8 +1508,7 @@ def comment_segments(text, suffix):
 def _comment_prefix(indent, marker):
     """The exact text a reconstructed line starts with: `indent + marker + " "`
     for a real comment, or plain `indent` for a docstring paragraph, which has
-    no marker to reproduce. One function so `reflow_comments` and
-    `underwrap_findings` cannot compute this two different ways.
+    no marker to reproduce. One function so `reflow_comments` and `underwrap_findings` cannot compute this two different ways.
     """
     return indent + (marker + " " if marker else "")
 
@@ -1639,11 +1518,11 @@ def reflow_comments(text, suffix, width):
 
     Same join-then-wrap contract as `reflow_markdown`, over a narrower and more conservative corpus.
     A paragraph ends on: a blank line, a code line (including a line with a TRAILING comment -- `x = 1  # note` is left alone, not partially joined), an indentation change (a different nesting level, not a continuation, and -- for a docstring -- anything other than its own flush margin), a marker this suffix does not use, a `COMMENT_DIRECTIVE` line, or a `CODE_SHAPED_COMMENT` line.
-    Or, for a comment only, a body whose first character is not whitespace (`#!shebang`, `##header`, `/// <reference>`, an ASCII divider `#---`).
-    None of that is prose a reader would want rewrapped with its neighbours, and each is emitted unchanged. A docstring's own first and last physical line, an indented sub-block inside one, a doctest line and a reST field or directive are excluded one level down, in `_python_reflow_lines`.
+    Or, for a comment only, a body whose first character is not whitespace (`#!shebang`, `##header`, `/// <reference>`, an ASCII divider `#---`). None of that is prose a reader would want rewrapped with its neighbours, and each is emitted unchanged. A docstring's own first and last physical line, an indented sub-block inside one, a doctest line and a reST field or directive are
+    excluded one level down, in `_python_reflow_lines`.
 
-    A FILE THE LEXER CANNOT READ IS RETURNED UNCHANGED, which is where this contract differs from `python_comment_lines`. That function lets the error reach a caller that reports the file as UNCHECKED, because a lint result nobody produced must not read as clean.
-    A rewriter has no equivalent honest partial answer: guessing at the shape of a file Python itself rejects is how a broken file becomes a differently broken file.
+    A FILE THE LEXER CANNOT READ IS RETURNED UNCHANGED, which is where this contract differs from `python_comment_lines`. That function lets the error reach a caller that reports the file as UNCHECKED, because a lint result nobody produced must not read as clean. A rewriter has no equivalent honest partial answer: guessing at the shape of a file Python itself rejects is how a
+    broken file becomes a differently broken file.
     """
     if COMMENT_LINE_BY_SUFFIX.get(suffix) is None:
         return text
@@ -1720,8 +1599,7 @@ def run_sync(globals_, rules):
     """The `sync` subcommand: render the rules as the markdown a document embeds.
 
     ONE SOURCE, RENDERED. The table below is what a `gen-docs` region would carry;
-    printing it here means the rules file is the only place a rule's text is
-    typed, and a document quoting a rule can be regenerated instead of edited.
+    printing it here means the rules file is the only place a rule's text is typed, and a document quoting a rule can be regenerated instead of edited.
     """
     out = [
         "Scans: %s, one row per rule." % RULES_FILE,
@@ -1892,9 +1770,7 @@ def _ids(findings):
 def selftest():
     """Plant each violation and prove it reds; remove it and prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL, and the negative half is the one that
-    matters here: a prose linter with only positive controls will happily flag
-    the entire tree, and every one of those flags looks like the gate working.
+    BOTH DIRECTIONS FOR EVERY CONTROL, and the negative half is the one that matters here: a prose linter with only positive controls will happily flag the entire tree, and every one of those flags looks like the gate working.
     """
     ctl = Controls("prose-style", floor=40, verbose=True)
     globals_, rules = load_rules(_MINI)

@@ -2,28 +2,18 @@
 
 `test_update_check()` in `.ci/scripts/test/test-install-methods.sh`.
 
-WHY THIS EXISTS. The update-manifest check fetched the channel's manifest.json,
-PRINTED its version, and never compared it:
+WHY THIS EXISTS. The update-manifest check fetched the channel's manifest.json, PRINTED its version, and never compared it:
 
     manifest_ver=$(echo "$manifest" | jq -r '.version')
     log_info "  Manifest version: $manifest_ver"     # last mention
 
-`$VERSION` did not appear anywhere in the function, so a channel still
-advertising the previous release looked exactly like a correctly published one.
-Two more silent passes sat underneath it: the structural guard
+`$VERSION` did not appear anywhere in the function, so a channel still advertising the previous release looked exactly like a correctly published one. Two more silent passes sat underneath it: the structural guard
 `jq -e '.version, .binaries'` accepts `"binaries": {}` because an empty object is
-TRUTHY in jq, and the reachability check read the URL with `// empty` and,
-finding none, skipped itself and returned 0 -- so a manifest naming no binary at
-all passed twice over.
+TRUTHY in jq, and the reachability check read the URL with `// empty` and, finding none, skipped itself and returned 0 -- so a manifest naming no binary at all passed twice over.
 
-All three are now failures. Each is asserted against the CURRENT code and against
-a re-creation of the OLD code, because a negative case only means something if
-the previous implementation really did admit it.
+All three are now failures. Each is asserted against the CURRENT code and against a re-creation of the OLD code, because a negative case only means something if the previous implementation really did admit it.
 
-NOTHING TOUCHES THE NETWORK: `curl` is shimmed inside `tmp_path` and PATH is
-overlaid for the subprocess only, never for this process. jq is required rather
-than tolerated -- without it `test_update_check` returns 77 (skip) and this
-module would run green having exercised nothing.
+NOTHING TOUCHES THE NETWORK: `curl` is shimmed inside `tmp_path` and PATH is overlaid for the subprocess only, never for this process. jq is required rather than tolerated -- without it `test_update_check` returns 77 (skip) and this module would run green having exercised nothing.
 
 ARGUMENT ORDER. The twin calls `assert_eq "0" "$(check ...)"`, EXPECTED first,
 inverting `assert_eq`'s contract. Same verdict, inverted diagnostic; the port

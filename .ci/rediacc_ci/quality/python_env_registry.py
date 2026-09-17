@@ -1,29 +1,15 @@
 r"""check:ci-python-env-registry -- the pinned SET of every `module:NAME` pair
 where a tracked Python module reads an environment variable, held shrink-only.
 
-THE GENERAL CASE OF `check:ci-worklist-env-registry`. That gate, landed the same
-day, asks one question about one PREFIX: is every `WORKLIST_*` name registered,
-and is every registered name read. This one asks the whole-tree question with no
-prefix at all, and keys on the PAIR rather than the name, because "who reads it"
-is the half a name-keyed registry throws away. The two are complements and the
-narrow one is NOT subsumed: it additionally pins the DEFAULT SPELLING each name
-is read with and an authored KIND per name, neither of which this file has any
-opinion about. See the section "WHAT THIS DOES NOT CLAIM" below.
+THE GENERAL CASE OF `check:ci-worklist-env-registry`. That gate, landed the same day, asks one question about one PREFIX: is every `WORKLIST_*` name registered, and is every registered name read. This one asks the whole-tree question with no prefix at all, and keys on the PAIR rather than the name, because "who reads it" is the half a name-keyed registry throws away. The two are
+complements and the narrow one is NOT subsumed: it additionally pins the DEFAULT SPELLING each name is read with and an authored KIND per name, neither of which this file has any opinion about. See the section "WHAT THIS DOES NOT CLAIM" below.
 
-WHY A REGISTRY AT ALL. An environment read is an undeclared input. Nothing in
-this tree could answer "which Python modules depend on the environment, and on
-what" without a fresh grep, and a grep answers wrongly in both directions: it
-misses the 87 pairs read through a module-level constant (`os.environ.get(
-paths.ROOT_ENV)`), and it counts names that appear only inside string literals
-and prose. Both were measured here, on the tree, before a line of this was
+WHY A REGISTRY AT ALL. An environment read is an undeclared input. Nothing in this tree could answer "which Python modules depend on the environment, and on what" without a fresh grep, and a grep answers wrongly in both directions: it misses the 87 pairs read through a module-level constant (`os.environ.get( paths.ROOT_ENV)`), and it counts names that appear only inside string
+literals and prose. Both were measured here, on the tree, before a line of this was
 written; the numbers are in "THE SEEDING RECEIPT" below.
 
-WHAT IS DERIVED, AND WHY NOTHING IS AUTHORED. Every entry in the baseline is
-derived from the AST. There is no `why` field, no kind, no owner. That is a
-deliberate difference from the worklist registry: 445 machine-written sentences
-about environment variables would be filler, and filler is how a required field
-stops being read. What this file buys instead is CHANGE DETECTION -- the set is
-frozen, and any movement in it, in either direction, has to be looked at.
+WHAT IS DERIVED, AND WHY NOTHING IS AUTHORED. Every entry in the baseline is derived from the AST. There is no `why` field, no kind, no owner. That is a deliberate difference from the worklist registry: 445 machine-written sentences about environment variables would be filler, and filler is how a required field stops being read. What this file buys instead is CHANGE DETECTION --
+the set is frozen, and any movement in it, in either direction, has to be looked at.
 
 THE BASELINE IS SHRINK-ONLY, AND THE ARM THAT USUALLY GOES MISSING IS THE
 SECOND ONE. Both of these red:
@@ -37,40 +23,24 @@ SECOND ONE. Both of these red:
     violation that never existed). Nothing can be pre-loaded into the file
     either.
 
-Those are the same two set differences, and stating them as four cases is the
-point: the two tamper directions are not extra code, they are what set equality
-already means, and a gate that only checks `derived \ baseline` has half of it.
+Those are the same two set differences, and stating them as four cases is the point: the two tamper directions are not extra code, they are what set equality already means, and a gate that only checks `derived \ baseline` has half of it.
 
-HOW A GENUINELY NEW READ IS REGISTERED, and why `--write-baseline` alone cannot
-do it. A blanket reseed is refused whenever it would ADD a pair, exactly as
-`.ci/scripts/quality/check_language_policy.py` refuses one: a drain that removes
-30 and adds 1 has still added 1, and comparing totals is not the same claim as
-comparing sets. To add, the pair must be TYPED:
+HOW A GENUINELY NEW READ IS REGISTERED, and why `--write-baseline` alone cannot do it. A blanket reseed is refused whenever it would ADD a pair, exactly as `.ci/scripts/quality/check_language_policy.py` refuses one: a drain that removes 30 and adds 1 has still added 1, and comparing totals is not the same claim as comparing sets. To add, the pair must be TYPED:
 
     check_python_env_registry.py --write-baseline --allow-new <module>:<NAME>
 
-and `--allow-new` is itself checked -- a pair that is not actually an addition
-is refused, so the flag cannot be used to pre-bank a read that does not exist.
+and `--allow-new` is itself checked -- a pair that is not actually an addition is refused, so the flag cannot be used to pre-bank a read that does not exist.
 
-WHY NOT PURE SHRINK-ONLY WITH NO ADDITION PATH AT ALL. Because the terminal
-state of "no Python module reads the environment" is not reachable and never
-will be: `rediacc_ci.paths` reads `REDIACC_CI_ROOT` to find the repository, and
-every gate test in the suite steers the gate under test through it. A clause
-that can never be satisfied is a clause that gets suppressed, and the whole
-estate is built on not doing that. So the file shrinks by default and grows only
-through a typed, individually justified diff.
+WHY NOT PURE SHRINK-ONLY WITH NO ADDITION PATH AT ALL. Because the terminal state of "no Python module reads the environment" is not reachable and never will be: `rediacc_ci.paths` reads `REDIACC_CI_ROOT` to find the repository, and every gate test in the suite steers the gate under test through it. A clause that can never be satisfied is a clause that gets suppressed, and the
+whole estate is built on not doing that. So the file shrinks by default and grows only through a typed, individually justified diff.
 
 THE ANTI-VACUITY FLOOR IS WRITTEN FOR THE TERMINAL STATE, which is the trap this
 week paid for twice. `derived == {}` is a REFUSAL only when the baseline is
-non-empty -- that combination is the scanner having gone blind against a
-registry that still claims hundreds of pairs. An empty baseline with an empty
-derivation is the (unreachable, but legal) terminal state and passes, printing
+non-empty -- that combination is the scanner having gone blind against a registry that still claims hundreds of pairs. An empty baseline with an empty derivation is the (unreachable, but legal) terminal state and passes, printing
 zero. `scanned == 0` is an unconditional refusal, and it cannot fire at the
 finish line either, because this gate's own module is a tracked `.py` file.
 
-THE SEEDING RECEIPT, 2026-09-09, and it is a receipt with a date rather than an
-acceptance: every number below is DERIVED and PRINTED on every run, so a reader
-watches them move instead of trusting this paragraph.
+THE SEEDING RECEIPT, 2026-09-09, and it is a receipt with a date rather than an acceptance: every number below is DERIVED and PRINTED on every run, so a reader watches them move instead of trusting this paragraph.
 
     563 tracked .py files, all 563 parse
     445 pairs across 164 modules = 426 named + 19 opaque; 295 distinct names
@@ -82,28 +52,14 @@ watches them move instead of trusting this paragraph.
     wrong: peers land tracked Python all day. The pair count is the one to
     watch, which is why the success line prints both.
 
-THAT 87 IS THE ARGUMENT FOR SCANNING THE AST, and the argument against grep. A
-grep-shaped registry would have been wrong in both directions at once: short by
-87 real inputs, and long by every name that appears only inside a string literal
-or a comment. Both errors are silent, and the second is the worse one, because a
-registry full of names nobody reads is a registry nobody trusts.
+THAT 87 IS THE ARGUMENT FOR SCANNING THE AST, and the argument against grep. A grep-shaped registry would have been wrong in both directions at once: short by 87 real inputs, and long by every name that appears only inside a string literal or a comment. Both errors are silent, and the second is the worse one, because a registry full of names nobody reads is a registry nobody
+trusts.
 
-OPAQUE READS ARE BANKED VISIBLY, NEVER DROPPED. 19 sites read a name held in a
-local variable -- `os.environ.get(key)` inside a save/restore harness, or a CLI
-taking names from argv. The registry cannot name the variable, so it records the
-EXPRESSION with a `*` prefix (`.ci/rediacc_ci/quality/branch.py:*key`) and counts
-them separately in the success line. Unknown is not folded into fine: an opaque
-read is an entry like any other, and a new one reds like any other.
+OPAQUE READS ARE BANKED VISIBLY, NEVER DROPPED. 19 sites read a name held in a local variable -- `os.environ.get(key)` inside a save/restore harness, or a CLI taking names from argv. The registry cannot name the variable, so it records the EXPRESSION with a `*` prefix (`.ci/rediacc_ci/quality/branch.py:*key`) and counts them separately in the success line. Unknown is not folded
+into fine: an opaque read is an entry like any other, and a new one reds like any other.
 
-WHY `.ci/config/` AND NOT `.ci/policy/`. Clause 1 of `.ci/policy/README.md`
-section 1: a policy file is a DECISION, a set of entries someone chose to exempt,
-each carrying a BLOCKER reason. This file is a MEASUREMENT, generated wholesale
-by `--write-baseline`, with no reasons in it and none possible. It fails clause
-1 and clause 2 for exactly the reasons `language-policy-baseline.json`,
-`secret-scope-baseline.json` and `tracked-credentials-baseline.json` do, and it
-sits beside them. There is also a hard mechanical reason: `.ci/policy/` is under
-four-way set equality (`check:ci-policy-inventory`), so a file landing there
-without a matching edit to two POLICY_FILES tuples and the README reds.
+WHY `.ci/config/` AND NOT `.ci/policy/`. Clause 1 of `.ci/policy/README.md` section 1: a policy file is a DECISION, a set of entries someone chose to exempt, each carrying a BLOCKER reason. This file is a MEASUREMENT, generated wholesale by `--write-baseline`, with no reasons in it and none possible. It fails clause 1 and clause 2 for exactly the reasons
+`language-policy-baseline.json`, `secret-scope-baseline.json` and `tracked-credentials-baseline.json` do, and it sits beside them. There is also a hard mechanical reason: `.ci/policy/` is under four-way set equality (`check:ci-policy-inventory`), so a file landing there without a matching edit to two POLICY_FILES tuples and the README reds.
 
 WHAT THIS DOES NOT CLAIM, so nobody reads more into a green than is there:
 
@@ -116,10 +72,7 @@ WHAT THIS DOES NOT CLAIM, so nobody reads more into a green than is there:
     around, or a name built by concatenation is invisible to it. The first two
     do not appear in this tree; the third lands as an opaque entry.
 
-THE GATE HEADER LIVES IN THE ENTRY POINT, not here, for the reason
-`check_worklist_env_registry.py` records: `gate-bind` reads the file the registry
-INVOKES BY PATH, and a header on the module derives this module's own path, which
-the package.json binding then disagrees with.
+THE GATE HEADER LIVES IN THE ENTRY POINT, not here, for the reason `check_worklist_env_registry.py` records: `gate-bind` reads the file the registry INVOKES BY PATH, and a header on the module derives this module's own path, which the package.json binding then disagrees with.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
 """
@@ -172,11 +125,7 @@ class RefusalError(Exception):
 def module_constants(tree: ast.Module) -> dict[str, str]:
     """MODULE-LEVEL `NAME = "literal"` bindings, with ambiguity dropped.
 
-    Only the top level, and only a plain string constant. A name assigned twice
-    at module level resolves to NOTHING rather than to the first spelling: a
-    wrong resolution is worse than an opaque one, because it puts a name in the
-    registry that the code never reads and the STALE direction then fires on an
-    entry the author cannot find.
+    Only the top level, and only a plain string constant. A name assigned twice at module level resolves to NOTHING rather than to the first spelling: a wrong resolution is worse than an opaque one, because it puts a name in the registry that the code never reads and the STALE direction then fires on an entry the author cannot find.
     """
     out: dict[str, str] = {}
     seen: set[str] = set()
@@ -203,9 +152,7 @@ def module_index(rels) -> dict[str, str]:
 
     `from rediacc_ci import paths` gives the alias `paths` the dotted target
     `rediacc_ci.paths`, which must reach `.ci/rediacc_ci/paths.py`; so every
-    suffix of the path is indexed. A suffix produced by two different files maps
-    to nothing at all, for the same reason `module_constants` drops a name
-    assigned twice: an ambiguous hit is a wrong hit.
+    suffix of the path is indexed. A suffix produced by two different files maps to nothing at all, for the same reason `module_constants` drops a name assigned twice: an ambiguous hit is a wrong hit.
     """
     hits: dict[str, set[str]] = {}
     for rel in rels:
@@ -240,13 +187,8 @@ def env_key_nodes(tree: ast.Module):
     Three shapes, and the NON-READ exclusion is the load-bearing part.
     `os.environ["X"] = v` is a test SETTING a variable and `del os.environ["X"]`
     is a test CLEARING one; neither is code depending on a value. Counting
-    either would make a name that only the test corpus manipulates look like an
-    input, and the `del` half is not hypothetical: 34 sites in this tree spell
-    `del os.environ[paths.ROOT_ENV]` inside a save/restore harness, and the
-    first draft of this function scored every one of them as a read. It is the
-    same argument that keeps `pop` and `setdefault` out of GET_FUNCS, and the
-    two exclusions have to agree or the registry says a variable is an input
-    depending on which spelling the harness happens to use.
+    either would make a name that only the test corpus manipulates look like an input, and the `del` half is not hypothetical: 34 sites in this tree spell `del os.environ[paths.ROOT_ENV]` inside a save/restore harness, and the first draft of this function scored every one of them as a read. It is the same argument that keeps `pop` and `setdefault` out of GET_FUNCS, and the two
+    exclusions have to agree or the registry says a variable is an input depending on which spelling the harness happens to use.
     """
     not_a_read = set()
     for node in ast.walk(tree):
@@ -315,9 +257,7 @@ def scan_module(rel: str, tree: ast.Module, consts_by_rel, index) -> set[str]:
 def tracked_python(root: pathlib.Path) -> list[str]:
     """Tracked `.py` paths, from git. Never a filesystem walk.
 
-    The claim is about what is COMMITTED. A walk would also drag in every
-    `__pycache__`, `node_modules` and one developer's scratch file, and the
-    baseline would then depend on whose checkout wrote it.
+    The claim is about what is COMMITTED. A walk would also drag in every `__pycache__`, `node_modules` and one developer's scratch file, and the baseline would then depend on whose checkout wrote it.
     """
     try:
         proc = subprocess.run(
@@ -394,13 +334,9 @@ def pairs_of(modules: dict[str, list[str]]) -> set[str]:
 def evaluate(baseline: dict[str, list[str]], derived: dict[str, list[str]]):
     """(findings, stats). Pure, and both tamper directions fall out of it.
 
-    NEW is `derived \\ baseline`: a read the registry does not have. That is a
-    new undeclared input AND it is what happens when someone deletes a line to
-    make a red go away, which is why deleting a line cannot make a red go away.
+    NEW is `derived \\ baseline`: a read the registry does not have. That is a new undeclared input AND it is what happens when someone deletes a line to make a red go away, which is why deleting a line cannot make a red go away.
 
-    STALE is `baseline \\ derived`: an entry nothing reads. That is an
-    undrained removal AND it is what happens when someone banks a violation
-    that never existed, which is why nothing can be pre-loaded either.
+    STALE is `baseline \\ derived`: an entry nothing reads. That is an undrained removal AND it is what happens when someone banks a violation that never existed, which is why nothing can be pre-loaded either.
     """
     have, want = pairs_of(baseline), pairs_of(derived)
     findings = []
@@ -435,9 +371,7 @@ def read_baseline(path: pathlib.Path):
     """The registry, or None when the file is absent. Raises on corruption.
 
     A corrupt baseline is NOT an empty one. Returning `{}` for unreadable JSON
-    would report the whole tree as NEW, which is noise, and would also let a
-    single stray byte convert every real finding into the same undifferentiated
-    wall.
+    would report the whole tree as NEW, which is noise, and would also let a single stray byte convert every real finding into the same undifferentiated wall.
     """
     if not path.is_file():
         return None
@@ -492,12 +426,8 @@ def run(root=None):
 def baseline_additions(old, new):
     """Keys `new` carries that `old` did not -- the DIFF half of the shrink-only guard.
 
-    Named the way `.ci/scripts/quality/check_language_policy.py:442` names it, and
-    extracted from the call site rather than left inline, because the composition gate
-    at `.ci/scripts/test/gates/test-shrink-only-composition.sh:148` requires a writer to
-    DEFINE the diff, CALL the verdict, and compute both -- a writer that reseeds without
-    a named diff can drain thirty findings, absorb one brand new one, and print a smaller
-    number while doing it.
+    Named the way `.ci/scripts/quality/check_language_policy.py:442` names it, and extracted from the call site rather than left inline, because the composition gate at `.ci/scripts/test/gates/test-shrink-only-composition.sh:148` requires a writer to DEFINE the diff, CALL the verdict, and compute both -- a writer that reseeds without a named diff can drain thirty findings, absorb
+    one brand new one, and print a smaller number while doing it.
     """
     return [] if old is None else [k for k in new if k not in old]
 
@@ -505,9 +435,7 @@ def baseline_additions(old, new):
 def write_verdict(*, exists: bool, first_seed: bool, additions, allowed):
     """The complete write decision. None means the write is allowed.
 
-    Returns `(code, payload)`. Split out and pure so the controls can drive
-    every arm without a filesystem, and so the three refusals below are one
-    statement each rather than three branches inside an I/O function.
+    Returns `(code, payload)`. Split out and pure so the controls can drive every arm without a filesystem, and so the three refusals below are one statement each rather than three branches inside an I/O function.
     """
     if not exists and not first_seed:
         return ("missing-baseline", None)
@@ -726,11 +654,7 @@ def _fixture(tmp, src=_SRC, consts=_CONSTS, modules=_CLEAN_MODULES):
 def _quiet(fn, *args, **kwargs):
     """Run `fn`, returning `(rc, everything it logged)` and printing none of it.
 
-    The write-path controls DRIVE refusals, and a refusal writes `\u2717 Refusing
-    to write the baseline` to the default logger. Left alone, a fully GREEN
-    selftest scrolls three of those past the reader, which is the shape that
-    teaches people to skim a gate's output. Capturing also upgrades the
-    controls: they assert the message a human would act on, not just the rc.
+    The write-path controls DRIVE refusals, and a refusal writes `\u2717 Refusing to write the baseline` to the default logger. Left alone, a fully GREEN selftest scrolls three of those past the reader, which is the shape that teaches people to skim a gate's output. Capturing also upgrades the controls: they assert the message a human would act on, not just the rc.
     """
     import io  # noqa: PLC0415
 

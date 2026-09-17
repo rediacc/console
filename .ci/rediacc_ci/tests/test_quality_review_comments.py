@@ -1,20 +1,13 @@
 """`rediacc_ci.quality.review_comments` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-review-comments.sh` over a
-specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and
-its bytes are compared against the port's. Same recipe as the committed ledger,
-`.ci/shadow/w7p2-review-comments.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-review-comments.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-review-comments.observations.jsonl`.
 
 THE STUB DISPATCHES ON `$2`, THE ENDPOINT, and that is a scar. `gh_json` calls
 `gh api <endpoint> --paginate`, so the endpoint is `$2`; the first version of this
-fixture keyed on `$3`, which is `--paginate`, and therefore failed EVERY call. Both
-implementations then failed identically, byte for byte, over six specimens, and the
-differential scored EQUIVALENT each time. What refused it was the comparator's
-distinct-fingerprint rule: six trees, one finding set, "that is one observation
-re-shaded". A stub that answers nothing is rule 2's both-empty trap in disguise.
+fixture keyed on `$3`, which is `--paginate`, and therefore failed EVERY call. Both implementations then failed identically, byte for byte, over six specimens, and the differential scored EQUIVALENT each time. What refused it was the comparator's distinct-fingerprint rule: six trees, one finding set, "that is one observation re-shaded". A stub that answers nothing is rule 2's
+both-empty trap in disguise.
 
-TWO PORT BUGS WERE FOUND BY THIS DIFFERENTIAL ONCE THE STUB WORKED, and both are
-one character wide:
+TWO PORT BUGS WERE FOUND BY THIS DIFFERENTIAL ONCE THE STUB WORKED, and both are one character wide:
 
   * `gh_json` returns `$(gh ...)`, and COMMAND SUBSTITUTION STRIPS TRAILING
     NEWLINES. The twin then compares the result against the literal `"[]"`. A port
@@ -194,10 +187,7 @@ def test_differential(tmp_path, inline, issues, want_exit):
 def test_the_stub_actually_answers(tmp_path):
     """The control on the control. See the module docstring for what it cost.
 
-    Six specimens once agreed perfectly because the stub failed every call. This
-    asserts the clean case reaches the SUCCESS path, so a stub that stops answering
-    reds this test instead of quietly turning every case above into a comparison of
-    two identical error messages.
+    Six specimens once agreed perfectly because the stub failed every call. This asserts the clean case reaches the SUCCESS path, so a stub that stops answering reds this test instead of quietly turning every case above into a comparison of two identical error messages.
     """
     root = build(tmp_path, [], [])
     (old_rc, old_out, old_err), _new = run_both(root)
@@ -210,10 +200,7 @@ def test_the_stub_actually_answers(tmp_path):
 def test_an_empty_list_is_compared_as_the_raw_string(tmp_path):
     """`"$COMMENTS" == "[]"`, on gh's stdout with its trailing newline stripped.
 
-    The port returned `"[]\\n"` and therefore printed "All 0 inline review comments
-    have been addressed with substantive replies - OK" where the twin printed "No
-    inline review comments found - OK". Same verdict, different bytes, and nothing
-    but a byte comparison would have noticed.
+    The port returned `"[]\\n"` and therefore printed "All 0 inline review comments have been addressed with substantive replies - OK" where the twin printed "No inline review comments found - OK". Same verdict, different bytes, and nothing but a byte comparison would have noticed.
     """
     root = build(tmp_path, [], [])
     (_old_rc, old_out, _old_err), (_new_rc, new_out, _new_err) = run_both(root)
@@ -225,8 +212,7 @@ def test_an_empty_list_is_compared_as_the_raw_string(tmp_path):
 def test_the_summary_excerpt_keeps_the_trailing_space(tmp_path):
     """`jq -r | tr '\\n' ' '` turns jq's OWN terminating newline into a space.
 
-    So the excerpt ends `... "` rather than `..."`, and a port translating only the
-    body's internal newlines is one character short on every summary.
+    So the excerpt ends `... "` rather than `..."`, and a port translating only the body's internal newlines is one character short on every summary.
     """
     root = build(tmp_path, [], [dict(SUMMARY, body="## Review verdict: approve")])
     (_old_rc, old_out, _e), (_new_rc, new_out, _e2) = run_both(root)

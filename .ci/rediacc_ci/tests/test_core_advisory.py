@@ -1,23 +1,13 @@
 """`rediacc_ci.core.advisory` against the live `emit-advisory.sh`.
 
-THE TWIN IS LIVE, not frozen: `.ci/scripts/lib/emit-advisory.sh` still carries
-its implementation and is still reached by `blocker-validator.sh:80`, by
-`age-check.sh` and by `.ci/scripts/security/audit.sh`. Every case below sources
-that file.
+THE TWIN IS LIVE, not frozen: `.ci/scripts/lib/emit-advisory.sh` still carries its implementation and is still reached by `blocker-validator.sh:80`, by `age-check.sh` and by `.ci/scripts/security/audit.sh`. Every case below sources that file.
 
-THE TWIN IS DRIVEN STANDALONE, WITH NO `common.sh`, AND THAT IS THE WHOLE
-DIFFERENTIAL'S SCOPE. `emit-advisory.sh` defines its loggers only when nothing
-has defined them already (`declare -F`), so sourcing `common.sh` first replaces
-four of the functions under test with common.sh's. A differential that did that
-would be measuring `common.sh` while appearing to measure this file. The
+THE TWIN IS DRIVEN STANDALONE, WITH NO `common.sh`, AND THAT IS THE WHOLE DIFFERENTIAL'S SCOPE. `emit-advisory.sh` defines its loggers only when nothing has defined them already (`declare -F`), so sourcing `common.sh` first replaces four of the functions under test with common.sh's. A differential that did that would be measuring `common.sh` while appearing to measure this file.
+The
 transitive branch belongs to whichever box ports `common.sh`; it is named here
 so its absence reads as a boundary rather than as an oversight.
 
-WHY BOTH STREAMS ARE COMPARED SEPARATELY AND NEVER MERGED. One advisory
-STRADDLES them: off CI the header goes to stderr through `log_error` while every
-continuation line -- Affected, Summary, Fix, Action, Details -- is a plain
-`echo` on stdout. `2>&1` would make a stream swap invisible, and a stream swap
-in this exact file is the 2026-09-06 incident `rediacc_ci.log` is shaped by.
+WHY BOTH STREAMS ARE COMPARED SEPARATELY AND NEVER MERGED. One advisory STRADDLES them: off CI the header goes to stderr through `log_error` while every continuation line -- Affected, Summary, Fix, Action, Details -- is a plain `echo` on stdout. `2>&1` would make a stream swap invisible, and a stream swap in this exact file is the 2026-09-06 incident `rediacc_ci.log` is shaped by.
 `differential.bash_streams` has no option to merge them.
 """
 
@@ -170,9 +160,7 @@ def test_the_differential_can_fail() -> None:
 def test_the_two_streams_are_really_separate() -> None:
     """The header is on stderr and the body on stdout, off CI. Both non-empty.
 
-    A CONTROL ON THE CONTROL. If `bash_streams` ever merged the two, every case
-    above would still pass -- both sides would be merged identically -- while the
-    stream swap this file exists to catch became invisible.
+    A CONTROL ON THE CONTROL. If `bash_streams` ever merged the two, every case above would still pass -- both sides would be merged identically -- while the stream swap this file exists to catch became invisible.
     """
     _rc, out, err = diff.bash_streams(
         "%s\nprintf '%%s' %s | _drive" % (BASH_DRIVER, _shquote(program(FULL))),

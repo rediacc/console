@@ -1,18 +1,11 @@
 """`rediacc_ci.quality.e2e_coverage` against the grep and sed pipelines it replaces.
 
-WHAT THE SHADOW LEDGER ALREADY PROVES, so that this file does not repeat it:
-`.ci/shadow/w7p2-e2e-coverage.observations.jsonl` drives both implementations
-end to end over five distinct committed trees, with a dead method dispatch, a
-dead raw dispatch, both at once, and a contract whose oracle array is gone.
-Exit codes and finding sets agree on all five.
+WHAT THE SHADOW LEDGER ALREADY PROVES, so that this file does not repeat it: `.ci/shadow/w7p2-e2e-coverage.observations.jsonl` drives both implementations end to end over five distinct committed trees, with a dead method dispatch, a dead raw dispatch, both at once, and a contract whose oracle array is gone. Exit codes and finding sets agree on all five.
 
 WHAT THE LEDGER CANNOT ISOLATE is the EXTRACTION, and that is what is here. The
 reverse half is three text pipelines: a bash `=~` state machine over the
-generated contract, and two `grep -rn | sed -E` pairs over the harness. Each one
-decides what the gate is even aware of, and each one narrows silently: a state
-machine that stops matching yields an empty oracle (loud), but a sed that
-extracts the wrong token yields a verdict about a verb nobody dispatched
-(quiet), and a comment filter that widens skips a live line (quiet, and green).
+generated contract, and two `grep -rn | sed -E` pairs over the harness. Each one decides what the gate is even aware of, and each one narrows silently: a state machine that stops matching yields an empty oracle (loud), but a sed that extracts the wrong token yields a verdict about a verb nobody dispatched (quiet), and a comment filter that widens skips a live line (quiet, and
+green).
 
 So the cases below run the REAL bash against the Python, on the same input.
 """
@@ -59,10 +52,7 @@ def _bash_hits(script: str, directory: pathlib.Path) -> list[str]:
 def _sweep(script: str, directory: pathlib.Path) -> list[str]:
     """`grep -rn <dir>` under bash, returned as `<abs-path>:<line>` pairs.
 
-    The match text is dropped: it is the part the two implementations are
-    ALLOWED to render differently, and keeping it here would make this file a
-    byte comparison of grep's output rather than a comparison of what the two
-    sweeps FIND.
+    The match text is dropped: it is the part the two implementations are ALLOWED to render differently, and keeping it here would make this file a byte comparison of grep's output rather than a comparison of what the two sweeps FIND.
     """
     proc = subprocess.run(
         ["bash", "-c", "set -e\n%s" % script, "_", str(directory)],
@@ -114,9 +104,7 @@ def test_oracle_reads_only_the_bridge_array() -> None:
 def test_oracle_mirror_ignores_the_arrays_on_either_side() -> None:
     """The half a reviewer waves through: it must NOT read the neighbours.
 
-    `RENET_FUNCTIONS` is the PUBLIC surface and omits the internal verbs this
-    gate exists to check, so a state machine that opened on the wrong assignment
-    would report every internal dispatch as dead.
+    `RENET_FUNCTIONS` is the PUBLIC surface and omits the internal verbs this gate exists to check, so a state machine that opened on the wrong assignment would report every internal dispatch as dead.
     """
     names = e2e.bridge_functions(CONTRACT)
     assert "public_only" not in names
@@ -151,9 +139,7 @@ def test_method_sweep_matches_bash_grep(tmp_path: pathlib.Path) -> None:
 def test_raw_sweep_finds_the_same_lines_as_bash_grep(tmp_path: pathlib.Path) -> None:
     """The GREP halves must agree; the comment filter is applied afterward.
 
-    Compared before the filter on purpose. If the two disagreed about which
-    lines grep matches, a later agreement about which of them are comments would
-    be an agreement about a different set.
+    Compared before the filter on purpose. If the two disagreed about which lines grep matches, a later agreement about which of them are comments would be an agreement about a different set.
     """
     src = _harness(tmp_path)
     hits = sorted(
@@ -208,9 +194,7 @@ def _bash_extract(sed: str, subject: str) -> str:
 def test_method_verb_extraction_is_greedy_exactly_as_sed_is() -> None:
     """TWO LITERALS ON ONE LINE: sed's leading `.*` is greedy, so the LAST wins.
 
-    This is a defect in the twin, reported and deliberately NOT fixed in the
-    port: a port that corrects a bug changes the verdict, and the differential
-    would rule MISMATCH on the very tree that would prove the fix right.
+    This is a defect in the twin, reported and deliberately NOT fixed in the port: a port that corrects a bug changes the verdict, and the differential would rule MISMATCH on the very tree that would prove the fix right.
     """
     subject = "7:send({ function: 'first' }); send({ function: 'second' });"
     assert e2e.METHOD_VERB_RE.match(subject).group(1) == "second"
@@ -226,9 +210,7 @@ def test_raw_verb_extraction_is_greedy_exactly_as_sed_is() -> None:
 def test_horizontal_space_class_does_not_widen_to_unicode() -> None:
     """`[[:space:]]` under LC_ALL=C is ASCII. `\\s` on a str pattern is not.
 
-    A non-breaking space between `function:` and the verb would be a dispatch to
-    a `\\s`-based port and not to the twin, which is a difference invisible in
-    every ASCII fixture.
+    A non-breaking space between `function:` and the verb would be a dispatch to a `\\s`-based port and not to the twin, which is a difference invisible in every ASCII fixture.
     """
     assert e2e.METHOD_GREP_RE.search("function: 'x'") is None
     assert e2e.METHOD_GREP_RE.search("function:\t'x'") is not None
@@ -249,9 +231,6 @@ def test_relative_is_a_prefix_strip_not_a_path_walk(tmp_path: pathlib.Path) -> N
 def test_selftest_passes() -> None:
     """The gate's own both-direction controls, driven as a test.
 
-    A `--selftest` that nothing runs is a control nobody proved, and the
-    anti-vacuity contract makes the selftest the thing that must run BEFORE any
-    real scan. Running it here means a regression in the controls themselves is
-    a red test rather than a green gate.
+    A `--selftest` that nothing runs is a control nobody proved, and the anti-vacuity contract makes the selftest the thing that must run BEFORE any real scan. Running it here means a regression in the controls themselves is a red test rather than a green gate.
     """
     assert e2e.selftest() == 0

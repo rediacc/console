@@ -1,40 +1,21 @@
 """Port of `.ci/scripts/test/gates/test-resprofile.sh`.
 
-Drives `.ci/scripts/quality/check_resprofile.py` through its three states and a
-mutant.
+Drives `.ci/scripts/quality/check_resprofile.py` through its three states and a mutant.
 
-WHY. The gate judges process-tree captures nobody has looked at by hand, so its
-own honesty is the whole question: pristine must WARN rather than pass silently, a
-seeded baseline must let a planted structural defect FIRE, and the dilation
-control must refuse a predicate that reads wall-clock. The mutant is the control on
-the control: strip the wall-only scaling out of `dilate()` and the gate must go red
-on its own captures, or the control was decoration.
+WHY. The gate judges process-tree captures nobody has looked at by hand, so its own honesty is the whole question: pristine must WARN rather than pass silently, a seeded baseline must let a planted structural defect FIRE, and the dilation control must refuse a predicate that reads wall-clock. The mutant is the control on the control: strip the wall-only scaling out of `dilate()`
+and the gate must go red on its own captures, or the control was decoration.
 
 THE FIXTURE IS BUILT PER CASE, and that is the one structural change.
 
-The twin builds ONE `mktemp -d` at file scope and walks its four cases through it
-in order: `test_seeded_then_enforces` writes the baseline that
-`test_seed_refuses_empty_corpus` then accumulates onto, and
-`test_mutant_wall_scaling_removed` edits the `wl_profile.py` copy that lives in the
-same fixture root. Straight-line bash can afford that. Independent pytest functions
-cannot, because an ordering dependency turns "case 2 broke" into "case 3 failed",
-and under `-n 8 --dist loadgroup` it is not even ordering, it is a race. Each case
-here therefore builds its own root. Verified case by case that the verdicts are
-unchanged by the rebuild: the seeding case seeds and then enforces within its own
-root, and the empty-seed case seeds from the quiet corpus first so that
-"accumulation is the only silent direction" is still being asserted about an
-accumulating baseline rather than a first one.
+The twin builds ONE `mktemp -d` at file scope and walks its four cases through it in order: `test_seeded_then_enforces` writes the baseline that `test_seed_refuses_empty_corpus` then accumulates onto, and `test_mutant_wall_scaling_removed` edits the `wl_profile.py` copy that lives in the same fixture root. Straight-line bash can afford that. Independent pytest functions cannot,
+because an ordering dependency turns "case 2 broke" into "case 3 failed", and under `-n 8 --dist loadgroup` it is not even ordering, it is a race. Each case here therefore builds its own root. Verified case by case that the verdicts are unchanged by the rebuild: the seeding case seeds and then enforces within its own root, and the empty-seed case seeds from the quiet corpus first
+so that "accumulation is the only silent direction" is still being asserted about an accumulating baseline rather than a first one.
 
-NO `xdist_group`: every case owns a private `mkdtemp` root, sets
-`RESPROFILE_ROOT` to it, and never writes inside the repository.
+NO `xdist_group`: every case owns a private `mkdtemp` root, sets `RESPROFILE_ROOT` to it, and never writes inside the repository.
 
-THE 81 FIXTURE CAPTURES ARE WRITTEN IN-PROCESS. The twin spawns one `python3`
-heredoc per file, which is 81 interpreter startups and most of its 15 seconds. The
-port writes the identical JSON records with `json.dumps`, so the corpus the gate
-reads is byte-equivalent and the cost is milliseconds. 80 quiet captures, NOT 24:
+THE 81 FIXTURE CAPTURES ARE WRITTEN IN-PROCESS. The twin spawns one `python3` heredoc per file, which is 81 interpreter startups and most of its 15 seconds. The port writes the identical JSON records with `json.dumps`, so the corpus the gate reads is byte-equivalent and the cost is milliseconds. 80 quiet captures, NOT 24:
 admission is a one-sided 95% Wilson bound on F/J <= 0.05, and at F=0 that needs J
-of roughly 60 before the bound drops under the line. The twin's first draft seeded
-24 and the gate CORRECTLY kept E6 report-only -- the fixture was under-powered, not
+of roughly 60 before the bound drops under the line. The twin's first draft seeded 24 and the gate CORRECTLY kept E6 report-only -- the fixture was under-powered, not
 the gate. "J >= 20" is necessary, not sufficient.
 """
 

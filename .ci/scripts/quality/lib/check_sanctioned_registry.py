@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Assert the sanctioned-command registry still says something true.
 
-A registry row is a rule agents are held to, so a row that has quietly stopped
-matching is worse than no row: it reads as an active guard while guarding
-nothing. Three things are checked per row, and all three are about the row
-being HONEST rather than about its content:
+A registry row is a rule agents are held to, so a row that has quietly stopped matching is worse than no row: it reads as an active guard while guarding nothing. Three things are checked per row, and all three are about the row being HONEST rather than about its content:
 
   * its own `example` must still match its `pattern` -- otherwise the rule is
     dead and nobody can tell by reading it;

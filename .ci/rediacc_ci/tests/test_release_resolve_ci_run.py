@@ -1,16 +1,8 @@
 """`rediacc_ci.release.resolve_ci_run` against its bash twin.
 
-THE FAKE `gh` UNDERSTANDS `--jq`, because both the twin and this port ask
-`gh api` to apply a jq filter itself (`--jq '.workflow_runs[0].id // empty'`,
-`--jq '.head_sha'`) rather than piping to a separate `jq` process for those
-two calls -- so a fake that ignores `--jq` and echoes the whole body would
-silently test a different code path than CI runs. The fake shells out to the
-REAL `jq` (a generic tool, no credentials) to apply whatever filter it was
-given, against one of two canned bodies selected by which endpoint the URL
-names: `FAKE_GH_LIST_JSON` for the `actions/workflows/ci.yml/runs?...`
-listing, `FAKE_GH_RUN_JSON` for `actions/runs/<id>` (used for both the
-explicit-id validation lookup and the final head_sha lookup, exactly as the
-twin calls that same endpoint twice). `FAKE_GH_RUN_RC` reproduces the twin's
+THE FAKE `gh` UNDERSTANDS `--jq`, because both the twin and this port ask `gh api` to apply a jq filter itself (`--jq '.workflow_runs[0].id // empty'`, `--jq '.head_sha'`) rather than piping to a separate `jq` process for those two calls -- so a fake that ignores `--jq` and echoes the whole body would silently test a different code path than CI runs. The fake shells out to the REAL
+`jq` (a generic tool, no credentials) to apply whatever filter it was given, against one of two canned bodies selected by which endpoint the URL names: `FAKE_GH_LIST_JSON` for the `actions/workflows/ci.yml/runs?...` listing, `FAKE_GH_RUN_JSON` for `actions/runs/<id>` (used for both the explicit-id validation lookup and the final head_sha lookup, exactly as the twin calls that same
+endpoint twice). `FAKE_GH_RUN_RC` reproduces the twin's
 `2>/dev/null || echo '{}'` fallback path.
 """
 

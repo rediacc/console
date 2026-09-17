@@ -1,27 +1,18 @@
 """`rediacc_ci.ci_signal.create_complete` against its bash twin.
 
-BYTE-IDENTICAL IS THE ASSERTION HERE, not a finding-set comparison: the twin's
-two messages are literal strings with no timestamp, pid or tmp path in them
+BYTE-IDENTICAL IS THE ASSERTION HERE, not a finding-set comparison: the twin's two messages are literal strings with no timestamp, pid or tmp path in them
 except the output path itself, and the output path is supplied by the test. So
-every case below compares the whole `(exit, stdout, stderr)` tuple, plus the
-BYTES OF BOTH FILES the script writes -- a port that logged the right line and
-wrote the wrong file would pass a stdout-only comparison.
+every case below compares the whole `(exit, stdout, stderr)` tuple, plus the BYTES OF BOTH FILES the script writes -- a port that logged the right line and wrote the wrong file would pass a stdout-only comparison.
 
 THE TWO SIDES GET DIFFERENT OUTPUT DIRECTORIES ON PURPOSE. Sharing one would
 let the second run overwrite the first's `complete.txt` and the comparison
-would then be reading the new side's file twice. `_swap` substitutes the two
-directory paths out of the captured stderr so the tuples can still be compared
-byte for byte.
+would then be reading the new side's file twice. `_swap` substitutes the two directory paths out of the captured stderr so the tuples can still be compared byte for byte.
 
 ONE CASE USES A REAL PTY (`tty="stderr"`), because colour is decided by
-`isatty` and a differential that only ever runs off a tty proves the boring
-half: `common.sh:18-32` and `rediacc_ci.log.colour_allowed` are two separate
-opinions about the same escape sequences, and the pty is the only way to make
-either of them speak.
+`isatty` and a differential that only ever runs off a tty proves the boring half: `common.sh:18-32` and `rediacc_ci.log.colour_allowed` are two separate opinions about the same escape sequences, and the pty is the only way to make either of them speak.
 
 K=5 LEDGER: `.ci/shadow/w7p6-create-complete.observations.jsonl`, recorded
-against a disposable scratch git repo built OUTSIDE this checkout (this repo's
-working tree is not clean and `shadow-gate.ts --record` refuses a dirty tree).
+against a disposable scratch git repo built OUTSIDE this checkout (this repo's working tree is not clean and `shadow-gate.ts --record` refuses a dirty tree).
 """
 
 from __future__ import annotations
@@ -213,8 +204,7 @@ def test_tmpdir_is_used_when_runner_temp_is_empty(tmp_path: pathlib.Path) -> Non
 
 def test_flag_valued_name_reproduces_the_parse_args_quirk(tmp_path: pathlib.Path) -> None:
     """`--name --status failure` does NOT mean "name is --status". parse_args
-    refuses to consume a token beginning with `--` as a value, so ARG_NAME
-    becomes the literal string `true` and the signal file is `complete-true.txt`.
+    refuses to consume a token beginning with `--` as a value, so ARG_NAME becomes the literal string `true` and the signal file is `complete-true.txt`.
     Surprising, live in the twin, and therefore required of the port."""
     old, new, old_dir, new_dir = run_both(tmp_path, ["--name", "--status", "failure"])
     assert old[0] == 0
@@ -255,8 +245,7 @@ def test_no_color_suppresses_the_escape_on_both_sides(tmp_path: pathlib.Path) ->
 
 def test_unwritable_output_directory_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> None:
     """DOCUMENTED DIVERGENCE, pinned rather than papered over: `mkdir -p` over
-    an existing regular file dies under `set -e`, and this port raises OSError.
-    Same exit code, same stream, different wording -- so the assertion is on the
+    an existing regular file dies under `set -e`, and this port raises OSError. Same exit code, same stream, different wording -- so the assertion is on the
     code and on the path being named, not on the bytes."""
     blocker_old = tmp_path / "blocked-old"
     blocker_new = tmp_path / "blocked-new"

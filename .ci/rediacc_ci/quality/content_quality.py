@@ -1,11 +1,9 @@
 """AI-slop patterns in markdown content, at two severities.
 
 Ported from `.ci/scripts/quality/check-content-quality.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live side by side until a
-committed differential ledger says otherwise.
+see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
 
-WHAT THE TWIN ENFORCES, carried over from its own header because the list is the
-gate and a paraphrase of it would be a different gate:
+WHAT THE TWIN ENFORCES, carried over from its own header because the list is the gate and a paraphrase of it would be a different gate:
 
     Scans markdown documentation and blog posts against the banned phrase list
     defined in .ci/config/content-quality-patterns.conf
@@ -20,17 +18,13 @@ gate and a paraphrase of it would be a different gate:
       3. Code blocks: lines inside ``` fenced blocks are skipped automatically
       4. Frontmatter: YAML frontmatter (between --- markers) is skipped
 
-The patterns file carries its own fix guidance, and it is the reason this gate
-exists rather than a spell-checker: "Restructure the sentence using periods,
-commas, colons, or parentheses. Do NOT replace em dashes or double dashes with
-spaced hyphens ( - ). A spaced hyphen is the same AI tell in different clothing."
+The patterns file carries its own fix guidance, and it is the reason this gate exists rather than a spell-checker: "Restructure the sentence using periods, commas, colons, or parentheses. Do NOT replace em dashes or double dashes with spaced hyphens ( - ). A spaced hyphen is the same AI tell in different clothing."
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TWIN'S OWN CLOSING COMMENT IS CARRIED, because it records a REMOVED check
-and the reason a future reader must not re-add it:
+THE TWIN'S OWN CLOSING COMMENT IS CARRIED, because it records a REMOVED check and the reason a future reader must not re-add it:
 
     NOTE: Double-dash ( -- ) detection was removed because ` -- ` is a
     legitimate CLI argument separator (e.g., `renet compose -- up -d`,
@@ -41,52 +35,33 @@ and the reason a future reader must not re-add it:
 
 BLANK IS "ONLY SPACES", NOT "ONLY WHITESPACE". The twin tests
 `[[ -z "${line// /}" ]]`, which deletes SPACE characters and nothing else, so a
-line holding a single TAB is not blank and becomes a pattern. `str.strip()`
-would silently widen that and change which patterns load, so the port deletes
-exactly the space character.
+line holding a single TAB is not blank and becomes a pattern. `str.strip()` would silently widen that and change which patterns load, so the port deletes exactly the space character.
 
-THE PATTERN LIST IS ORDERED AND THE ORDER IS OBSERVABLE. `identify_pattern`
-returns the FIRST pattern that matches, and the two loops inside it do not scan
-the list once: every short pattern is tried before any long one. So the reported
-"Pattern:" for a line matching both a short and a long pattern is the short one
-regardless of file order. Reproduced loop for loop rather than folded into a
-single pass.
+THE PATTERN LIST IS ORDERED AND THE ORDER IS OBSERVABLE. `identify_pattern` returns the FIRST pattern that matches, and the two loops inside it do not scan the list once: every short pattern is tried before any long one. So the reported "Pattern:" for a line matching both a short and a long pattern is the short one regardless of file order. Reproduced loop for loop rather than
+folded into a single pass.
 
 "SHORT" IS MEASURED IN BYTES, WHICH IS THE TWIN'S BEHAVIOUR UNDER LC_ALL=C AND
 NOT UNDER A UTF-8 LOCALE. `${#p}` counts characters when the locale is UTF-8 and
 BYTES when it is C, so the em dash pattern (U+2014, one character, three bytes)
 is length 1 or length 3 depending on an environment variable. Both are <= 3, so
-the live pattern set classifies identically either way and nothing observable
-turns on it today. A future two-character non-ASCII pattern would be 2 under
-UTF-8 and 4 or 6 under C, and the twin would take a different branch on two
+the live pattern set classifies identically either way and nothing observable turns on it today. A future two-character non-ASCII pattern would be 2 under UTF-8 and 4 or 6 under C, and the twin would take a different branch on two
 machines. That is a defect in the twin, reported rather than repaired; the port
 follows the C-locale reading because `scripts/lib/shadow-gate.ts` pins LC_ALL=C
 and that is the behaviour the differential compares against.
 
 THE FAST PATH IS CASE SENSITIVE AND THE SLOW PATH IS NOT. `[[ "$line" == *"$p"* ]]`
 is a literal substring test; `grep -iqE "$p"` is case insensitive. So a line that
-grep matched case-insensitively against a SHORT pattern can fall through the fast
-path, be re-tested by the slow path (which skips short patterns), and be reported
-as "(unknown)". That is real twin behaviour and it is preserved: a port that
-"fixed" it would print a different Pattern: line for the same finding.
+grep matched case-insensitively against a SHORT pattern can fall through the fast path, be re-tested by the slow path (which skips short patterns), and be reported as "(unknown)". That is real twin behaviour and it is preserved: a port that "fixed" it would print a different Pattern: line for the same finding.
 
 TRUNCATION IS BYTE TRUNCATION. `${line_text:0:117}` slices bytes under LC_ALL=C
-and can cut a UTF-8 sequence in half. The port encodes, slices, and decodes with
-`surrogateescape`, so the same bytes come out and a half-character stays half a
-character rather than becoming a replacement glyph the twin never printed.
+and can cut a UTF-8 sequence in half. The port encodes, slices, and decodes with `surrogateescape`, so the same bytes come out and a half-character stays half a character rather than becoming a replacement glyph the twin never printed.
 
-MESSAGES ON STDERR, DATA ON STDOUT, exactly as the twin splits them: `log_error`
-and `log_warn` write to stderr while the two indented `Pattern:` / `Line:` lines
-are bare `echo` and land on stdout. `rediacc_ci.log` refuses to put messages on
+MESSAGES ON STDERR, DATA ON STDOUT, exactly as the twin splits them: `log_error` and `log_warn` write to stderr while the two indented `Pattern:` / `Line:` lines are bare `echo` and land on stdout. `rediacc_ci.log` refuses to put messages on
 stdout, which is right for messages; these two are the copy-paste payload, so
 they go through `print()` and the split survives.
 
-WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it reads only the two
-content directories, so a slop phrase in `README.md`, in a component's JSX, or
-in a translation JSON is invisible to it. The allowlist is also a FILE-level
-opt-out with no expiry and no liveness check, so an allowlisted path stays
-unscanned forever. Both are limits of the twin, preserved rather than widened,
-because widening either would change the verdict.
+WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it reads only the two content directories, so a slop phrase in `README.md`, in a component's JSX, or in a translation JSON is invisible to it. The allowlist is also a FILE-level opt-out with no expiry and no liveness check, so an allowlisted path stays unscanned forever. Both are limits of the twin, preserved rather than
+widened, because widening either would change the verdict.
 """
 
 import os
@@ -102,10 +77,7 @@ from rediacc_ci.controls import Controls
 def _joined(*rows: str) -> str:
     """`"\n".join(rows)` behind a call. The rows stay one per line.
 
-    A helper rather than a literal join because ruff's FLY002 rewrites a join
-    over a LITERAL list into an f-string, and a ten-line shell fixture written
-    as one f-string is unreadable. Passing the rows as arguments keeps the
-    fixture legible and gives the linter nothing static to fold.
+    A helper rather than a literal join because ruff's FLY002 rewrites a join over a LITERAL list into an f-string, and a ten-line shell fixture written as one f-string is unreadable. Passing the rows as arguments keeps the fixture legible and gives the linter nothing static to fold.
     """
     return "\n".join(rows)
 
@@ -138,10 +110,7 @@ CUT_LINE_BYTES = 117
 def read_text(path) -> str:
     """A file's bytes as text, round-trippable.
 
-    `surrogateescape` rather than `replace`: every byte survives and can be
-    written back out unchanged, which is what keeps a truncation that cuts a
-    UTF-8 sequence in half byte-identical to the twin's. `replace` would turn
-    those bytes into a glyph bash never printed.
+    `surrogateescape` rather than `replace`: every byte survives and can be written back out unchanged, which is what keeps a truncation that cuts a UTF-8 sequence in half byte-identical to the twin's. `replace` would turn those bytes into a glyph bash never printed.
     """
     with open(path, "rb") as handle:
         return handle.read().decode("utf-8", "surrogateescape")
@@ -150,9 +119,7 @@ def read_text(path) -> str:
 def read_lines(text: str) -> list[str]:
     """The lines a `while IFS= read -r line || [[ -n "$line" ]]` loop would see.
 
-    The `||` half is the interesting one: it is what makes bash process a final
-    line that has no terminating newline. Splitting on "\\n" produces a trailing
-    empty string for a file that DOES end in a newline, and that empty string is
+    The `||` half is the interesting one: it is what makes bash process a final line that has no terminating newline. Splitting on "\\n" produces a trailing empty string for a file that DOES end in a newline, and that empty string is
     not a line, so it is dropped. Nothing else is stripped: `IFS=` means the
     loop does no whitespace trimming at all.
     """
@@ -195,9 +162,7 @@ def load_patterns(text: str) -> tuple[list[str], list[str]]:
 def load_allowlist(text: str) -> set[str]:
     """The file-level opt-outs, as repo-relative path strings.
 
-    Same blank and comment rules as the patterns file, and the same absence of
-    trimming: a trailing space in an allowlist entry makes it match nothing,
-    silently, in both implementations.
+    Same blank and comment rules as the patterns file, and the same absence of trimming: a trailing space in an allowlist entry makes it match nothing, silently, in both implementations.
     """
     out: set[str] = set()
     for line in read_lines(text):
@@ -212,10 +177,7 @@ def load_allowlist(text: str) -> set[str]:
 def build_regex(patterns: list[str]) -> str:
     """`local IFS='|'; echo "$*"` -- the alternation the twin hands to grep.
 
-    Not `re.escape`d and not parenthesised, on purpose: the entries ARE extended
-    regular expressions (`game[ -]changer`, `^in conclusion,`,
-    `plays? a (significant|crucial) role`), and wrapping them would change which
-    lines match. An unanchored alternation is exactly what grep receives.
+    Not `re.escape`d and not parenthesised, on purpose: the entries ARE extended regular expressions (`game[ -]changer`, `^in conclusion,`, `plays? a (significant|crucial) role`), and wrapping them would change which lines match. An unanchored alternation is exactly what grep receives.
     """
     return "|".join(patterns)
 
@@ -224,9 +186,7 @@ def grep_in_file(text: str, regex: str) -> list[tuple[int, str]]:
     """`grep -inE <regex> <file>`: (1-based line number, line) for every match.
 
     Case insensitive, extended, per line. `^` and `$` are line anchors in grep;
-    matching each line separately as its own string gives them the same meaning
-    without needing re.MULTILINE, and avoids `$` also matching before the final
-    newline of the whole buffer.
+    matching each line separately as its own string gives them the same meaning without needing re.MULTILINE, and avoids `$` also matching before the final newline of the whole buffer.
     """
     if regex == "":
         return []
@@ -241,8 +201,7 @@ def grep_in_file(text: str, regex: str) -> list[tuple[int, str]]:
 def exempt_lines(text: str) -> set[int]:
     """The line numbers awk marks exempt, rule for rule.
 
-    The twin's program, verbatim, because the ORDER of these five rules is the
-    whole semantics and a reordered "equivalent" would exempt different lines:
+    The twin's program, verbatim, because the ORDER of these five rules is the whole semantics and a reordered "equivalent" would exempt different lines:
 
         BEGIN { fm=0; cb=0 }
         /^---$/ && cb==0 { fm++; if (fm<=2) { print NR; next } }
@@ -251,16 +210,11 @@ def exempt_lines(text: str) -> set[int]:
         cb==1 { print NR; next }
         /<!-- slop-ok -->/ { print NR; next }
 
-    THE THIRD `---` IS NOT FRONTMATTER, and the twin says so by construction:
-    `fm` keeps counting past 2 but only the first two get the `next`, so a
-    horizontal rule later in the document falls through to the fence and
+    THE THIRD `---` IS NOT FRONTMATTER, and the twin says so by construction: `fm` keeps counting past 2 but only the first two get the `next`, so a horizontal rule later in the document falls through to the fence and
     slop-ok rules like any other line. `fm==1` is what exempts the BODY of the
-    frontmatter, so the block is only skipped while exactly one `---` has been
-    seen.
+    frontmatter, so the block is only skipped while exactly one `---` has been seen.
 
-    A FENCE LINE IS ITSELF EXEMPT, opener and closer both, because the toggle
-    happens in the same rule that prints NR. So a banned phrase written into
-    the ```` ```language ```` opener is not reported.
+    A FENCE LINE IS ITSELF EXEMPT, opener and closer both, because the toggle happens in the same rule that prints NR. So a banned phrase written into the ```` ```language ```` opener is not reported.
     """
     fm = 0
     cb = 0
@@ -290,11 +244,7 @@ def exempt_lines(text: str) -> set[int]:
 def identify_pattern(line: str, patterns: list[str]) -> str:
     """Which pattern to name in the report. First short match, then first long.
 
-    TWO FULL PASSES, NOT ONE. A single loop testing "short substring or long
-    regex" per pattern would report a different pattern for any line matching
-    both, and the reported pattern is the only thing telling an author what to
-    rewrite. See the port notes for the byte-length and case-sensitivity rules
-    that make this function's answer differ from "what grep matched".
+    TWO FULL PASSES, NOT ONE. A single loop testing "short substring or long regex" per pattern would report a different pattern for any line matching both, and the reported pattern is the only thing telling an author what to rewrite. See the port notes for the byte-length and case-sensitivity rules that make this function's answer differ from "what grep matched".
     """
     for pattern in patterns:
         if len(pattern.encode("utf-8", "surrogateescape")) <= 3 and pattern in line:
@@ -310,9 +260,7 @@ def identify_pattern(line: str, patterns: list[str]) -> str:
 def truncate(line_text: str) -> str:
     """The twin's `${line_text:0:117}...` when longer than 120, in BYTES.
 
-    Sliced on the encoded form so the cut lands on the same byte bash cuts at,
-    then decoded with `surrogateescape` so a severed multi-byte sequence comes
-    back out as the same bytes rather than as a replacement character.
+    Sliced on the encoded form so the cut lands on the same byte bash cuts at, then decoded with `surrogateescape` so a severed multi-byte sequence comes back out as the same bytes rather than as a replacement character.
     """
     raw = line_text.encode("utf-8", "surrogateescape")
     if len(raw) > MAX_LINE_BYTES:
@@ -323,10 +271,7 @@ def truncate(line_text: str) -> str:
 class Report:
     """The two counters and the printing, in one object.
 
-    An object rather than two module globals because `selftest` drives several
-    scans in one process and globals would carry a previous case's count into
-    the next one, which is the shape of bug that makes a suite pass in isolation
-    and fail in a run.
+    An object rather than two module globals because `selftest` drives several scans in one process and globals would carry a previous case's count into the next one, which is the shape of bug that makes a suite pass in isolation and fail in a run.
     """
 
     def __init__(self) -> None:
@@ -357,10 +302,7 @@ def scan_file(
 ) -> None:
     """Scan one content file and report every non-exempt match.
 
-    THE EXEMPT SET IS COMPUTED ONLY WHEN SOMETHING MATCHED, matching the twin's
-    early return. That is a performance decision in the original and it is
-    preserved because it is also a BEHAVIOUR one: a file whose awk pass would
-    crash or hang is never awk'd unless grep found something in it first.
+    THE EXEMPT SET IS COMPUTED ONLY WHEN SOMETHING MATCHED, matching the twin's early return. That is a performance decision in the original and it is preserved because it is also a BEHAVIOUR one: a file whose awk pass would crash or hang is never awk'd unless grep found something in it first.
     """
     if rel_file in allowlisted:
         return
@@ -391,13 +333,8 @@ def scan_file(
 def discover(root: pathlib.Path) -> list[pathlib.Path]:
     """Every `*.md` / `*.mdx` under the two content roots.
 
-    `find <dir> \\( -name '*.md' -o -name '*.mdx' \\) -type f`, which follows no
-    symlinks (find's default is -P) and descends without limit. SORTED here and
-    not by the twin: `find` emits in readdir order, which is filesystem state
-    rather than repository content, and two runs on one tree can differ. The
-    findings are compared as an unordered multiset by the differential, so the
-    sort changes the printed order and nothing else, and it makes the port's own
-    output reproducible.
+    `find <dir> \\( -name '*.md' -o -name '*.mdx' \\) -type f`, which follows no symlinks (find's default is -P) and descends without limit. SORTED here and not by the twin: `find` emits in readdir order, which is filesystem state rather than repository content, and two runs on one tree can differ. The findings are compared as an unordered multiset by the differential, so the sort
+    changes the printed order and nothing else, and it makes the port's own output reproducible.
     """
     out: list[pathlib.Path] = []
     for name in CONTENT_DIRS:
@@ -416,13 +353,9 @@ def discover(root: pathlib.Path) -> list[pathlib.Path]:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 on an ERROR-severity finding.
 
-    WARNINGS DO NOT BLOCK, and that is deliberate in the twin: the WARN section
-    of the patterns file holds structural tells ("^(First|Second|Third|Finally),")
-    that are frequently correct prose. They are counted, printed, and ignored by
-    the exit code.
+    WARNINGS DO NOT BLOCK, and that is deliberate in the twin: the WARN section of the patterns file holds structural tells ("^(First|Second|Third|Finally),") that are frequently correct prose. They are counted, printed, and ignored by the exit code.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes FILE
-    ARGUMENTS, so a twin invoked with this string would try to scan a file named
+    `--selftest` is intercepted BEFORE any real scan. The twin takes FILE ARGUMENTS, so a twin invoked with this string would try to scan a file named
     `--selftest`; no caller does that, and the differential never passes it.
     """
     args = list(argv or [])
@@ -504,9 +437,7 @@ _PATTERNS = _joined(
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. The suppression rules are the half most
-    likely to rot into "exempts everything", so each of the four has a MIRROR
-    proving an identical line one row outside the exemption still fires.
+    BOTH DIRECTIONS FOR EVERY CONTROL. The suppression rules are the half most likely to rot into "exempts everything", so each of the four has a MIRROR proving an identical line one row outside the exemption still fires.
     """
     ctl = Controls("content-quality", floor=20, verbose=True)
 

@@ -1,40 +1,24 @@
 """Port of `.ci/scripts/release/create-github-release.sh`.
 
-Creates the GitHub Release for a version and uploads every built asset to it.
-Runs LAST in cd-v2.yml, after edge deploys, smoke tests and post-publish install
-validation, so a broken release never gets a Release page pointing at it.
+Creates the GitHub Release for a version and uploads every built asset to it. Runs LAST in cd-v2.yml, after edge deploys, smoke tests and post-publish install validation, so a broken release never gets a Release page pointing at it.
 
 REFUSES RATHER THAN PUBLISHES AN EMPTY RELEASE. `dist/{cli,packages}` matching
-nothing means the download step upstream produced nothing, and a Release with no
-assets looks published and installs nothing. That refusal is the one behaviour
-here worth more than the `gh` call itself, so it keeps its own exit-1 path and
+nothing means the download step upstream produced nothing, and a Release with no assets looks published and installs nothing. That refusal is the one behaviour here worth more than the `gh` call itself, so it keeps its own exit-1 path and
 its `::error::` line on STDOUT (the twin's plain `echo`, not `>&2`; reproduced
-because a workflow annotation is parsed off either stream and moving it would
-change what a `2>/dev/null` caller sees).
+because a workflow annotation is parsed off either stream and moving it would change what a `2>/dev/null` caller sees).
 
 THE ASSET ORDER IS BASH'S GLOB ORDER, AND `sorted(glob(...))` REPRODUCES IT.
 `shopt -s globstar nullglob; assets=(dist/cli/**/* dist/packages/**/*)` sorts
-each pattern's matches independently and concatenates, so this port sorts each
-pattern's matches independently and concatenates too, rather than sorting the
-union. Driven rather than reasoned about, including the case that separates a
-plain byte sort from a pre-order directory walk: with `dist/cli/v1/a.bin`,
-`dist/cli/v1-x` and `dist/cli/v1.y` present, bash emits `v1`, `v1-x`, `v1.y`,
-`v1/a.bin` -- `-` (0x2D) and `.` (0x2E) both below `/` (0x2F) -- which is the
-byte order `sorted()` gives and is NOT the order a walk emitting a directory's
-children immediately after the directory would give.
+each pattern's matches independently and concatenates, so this port sorts each pattern's matches independently and concatenates too, rather than sorting the union. Driven rather than reasoned about, including the case that separates a plain byte sort from a pre-order directory walk: with `dist/cli/v1/a.bin`, `dist/cli/v1-x` and `dist/cli/v1.y` present, bash emits `v1`, `v1-x`,
+`v1.y`, `v1/a.bin` -- `-` (0x2D) and `.` (0x2E) both below `/` (0x2F) -- which is the byte order `sorted()` gives and is NOT the order a walk emitting a directory's children immediately after the directory would give.
 
-ONE KNOWN LOCALE DIVERGENCE, NAMED RATHER THAN PAPERED OVER: bash sorts glob
-results with `strcoll`, so under a UTF-8 locale whose collation ignores
-punctuation the twin can order two asset paths differently from this port's
-codepoint sort. It changes only the order of positional arguments handed to
+ONE KNOWN LOCALE DIVERGENCE, NAMED RATHER THAN PAPERED OVER: bash sorts glob results with `strcoll`, so under a UTF-8 locale whose collation ignores punctuation the twin can order two asset paths differently from this port's codepoint sort. It changes only the order of positional arguments handed to
 `gh release create`, which uploads a set; the differential pins `LC_ALL=C` on
 both sides so the comparison measures the port rather than the locale.
 
 DIRECTORIES ARE FILTERED OUT AFTER THE GLOB, not during it, matching the twin's
 `for f in "${assets[@]}"; do [[ -f "$f" ]] && files+=("$f"); done`. `-f` follows
-symlinks and is true only for a regular file, which is what `os.path.isfile`
-does, so a symlink to a directory is dropped by both and a symlink to a file is
-kept by both.
+symlinks and is true only for a regular file, which is what `os.path.isfile` does, so a symlink to a directory is dropped by both and a symlink to a file is kept by both.
 """
 
 from __future__ import annotations
@@ -72,8 +56,7 @@ def _require_var(name: str) -> str:
     """`${NAME:?message}`: unset AND empty both refuse, with exit 1.
 
     The wording is the port's, not bash's `<script>: line N: NAME: ...`; the exit
-    code and the named variable are what the differential compares, as in every
-    sibling port here.
+    code and the named variable are what the differential compares, as in every sibling port here.
     """
     value = os.environ.get(name)
     if not value:
@@ -85,8 +68,7 @@ def _require_var(name: str) -> str:
 def release_assets(root: str = _ROOT) -> list[str]:
     """Every regular file under `dist/cli` and `dist/packages`, in glob order.
 
-    Exported for the differential, which drives it directly against fixture
-    trees a subprocess comparison could only reach through `gh`'s argv.
+    Exported for the differential, which drives it directly against fixture trees a subprocess comparison could only reach through `gh`'s argv.
     """
     files: list[str] = []
     for pattern in ASSET_PATTERNS:

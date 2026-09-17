@@ -1,10 +1,6 @@
 """`rediacc_ci.deploy.write_release_sentinel` against its bash twin.
 
-NO R2, NO CREDENTIALS, NOTHING THAT LEAVES THIS HOST. `aws` is the only remote
-side this script has, so a recording fake `aws` goes first on `PATH`: it logs
-its exact argv, captures the UPLOADED BYTES from stdin, and answers each
-subcommand from environment knobs. Both implementations are driven through the
-same fake and five things are compared:
+NO R2, NO CREDENTIALS, NOTHING THAT LEAVES THIS HOST. `aws` is the only remote side this script has, so a recording fake `aws` goes first on `PATH`: it logs its exact argv, captures the UPLOADED BYTES from stdin, and answers each subcommand from environment knobs. Both implementations are driven through the same fake and five things are compared:
 
   1. the exit code,
   2. stdout, byte for byte,
@@ -14,30 +10,17 @@ same fake and five things are compared:
 
 WHY THE PAYLOAD IS THE ASSERTION THAT MATTERS. Everything this script produces
 for a human is three log lines that say the same thing whatever was written.
-The ARTIFACT is a JSON object that a forensic sweep reads months later to
-reconstruct what CI intended, and its key order, its types and its escaping are
-all jq's. A differential that compared only stdout would score a port that
+The ARTIFACT is a JSON object that a forensic sweep reads months later to reconstruct what CI intended, and its key order, its types and its escaping are all jq's. A differential that compared only stdout would score a port that
 uploaded `{}` as equivalent.
 
 THE ONE NORMALISATION, AND IT IS NOT THIS PORT'S DOING.
-`rediacc_ci.core.release_state_validator._log_error` deliberately omits
-`common.sh`'s `✗ ` glyph -- its own docstring says so, and that module was
-ported and ledgered in an earlier wave. So on the one path that surfaces a
-library error (`rsv_binary_count` failing) the twin's stderr carries `✗ ` and
+`rediacc_ci.core.release_state_validator._log_error` deliberately omits `common.sh`'s `✗ ` glyph -- its own docstring says so, and that module was ported and ledgered in an earlier wave. So on the one path that surfaces a library error (`rsv_binary_count` failing) the twin's stderr carries `✗ ` and
 the port's does not. `_normalise_err` strips that prefix and NOTHING else; the
-message text, the indented aws diagnostic beneath it and the exit code are all
-compared unmasked.
+message text, the indented aws diagnostic beneath it and the exit code are all compared unmasked.
 
-`released_at` CANNOT AGREE and is not supposed to: the twin stamps `date -u`,
-the port stamps `datetime.now(UTC)`, and the two processes run seconds apart.
-Only that field is masked, and `test_released_at_has_the_same_shape_on_both_sides`
-asserts the FORMAT separately so the masking cannot hide a port that wrote a
-Unix epoch there.
+`released_at` CANNOT AGREE and is not supposed to: the twin stamps `date -u`, the port stamps `datetime.now(UTC)`, and the two processes run seconds apart. Only that field is masked, and `test_released_at_has_the_same_shape_on_both_sides` asserts the FORMAT separately so the masking cannot hide a port that wrote a Unix epoch there.
 
-TWO TWIN DEFECTS ARE PINNED RATHER THAN FIXED, because fixing a twin belongs to
-a later cutover box: FINDING 5 (`--version` with no value exits 1 in silence,
-not the documented 2 with a message) and FINDING 6 (a failed R2 probe and a
-genuine sealed-but-empty refusal share exit code 1).
+TWO TWIN DEFECTS ARE PINNED RATHER THAN FIXED, because fixing a twin belongs to a later cutover box: FINDING 5 (`--version` with no value exits 1 in silence, not the documented 2 with a message) and FINDING 6 (a failed R2 probe and a genuine sealed-but-empty refusal share exit code 1).
 
 K=5 LEDGER: `.ci/shadow/w7p6-write-release-sentinel.observations.jsonl`.
 """
@@ -297,8 +280,7 @@ def test_a_prefix_holding_only_the_sentinel_is_also_refused(tmp_path: pathlib.Pa
 def test_a_failed_probe_refuses_too_and_says_which(tmp_path: pathlib.Path) -> None:
     """FINDING 6, REPRODUCED NOT FIXED. The library separates "the prefix is
     empty" from "the question could not be answered" on purpose; this caller
-    collapses both to exit 1, so only the stderr text tells them apart. A
-    release engineer reading `exit 1` cannot know whether to investigate R2 or
+    collapses both to exit 1, so only the stderr text tells them apart. A release engineer reading `exit 1` cannot know whether to investigate R2 or
     the credentials."""
     old, new = drive(tmp_path, HAPPY, env_extra={"FAKE_LIST_RC": "254"})
     assert old.rc == 1, "same code as the genuine refusal above; that is the finding"
@@ -385,9 +367,7 @@ def test_a_flag_with_no_value_exits_1_in_silence(tmp_path: pathlib.Path) -> None
     """FINDING 5, REPRODUCED NOT FIXED.
 
     `VERSION="${2:-}"; shift 2` with one argument left: `shift 2` returns
-    non-zero, `set -e` fires, and the script dies with exit 1 and NOTHING on
-    either stream. The documented behaviour for a usage error is exit 2 with a
-    `log_error` line. Every one of the three flags does it.
+    non-zero, `set -e` fires, and the script dies with exit 1 and NOTHING on either stream. The documented behaviour for a usage error is exit 2 with a `log_error` line. Every one of the three flags does it.
     """
     for flag in ("--version", "--channel", "--commit-sha"):
         old, new = drive(tmp_path, [flag])
@@ -504,10 +484,7 @@ def test_released_at_now_matches_the_date_format_the_twin_uses() -> None:
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:
     """Delete the empty-prefix refusal from a COPY of the port.
 
-    That check is the only thing standing between a cancelled upload and the
-    corrupt sealed-but-empty state, and it is invisible on every healthy run:
-    a port without it agrees with the twin on the happy path and every usage
-    error, and disagrees only against a scrubbed prefix.
+    That check is the only thing standing between a cancelled upload and the corrupt sealed-but-empty state, and it is invisible on every healthy run: a port without it agrees with the twin on the happy path and every usage error, and disagrees only against a scrubbed prefix.
     """
     source = PORT_FILE.read_text(encoding="utf-8")
     anchor = """    if bin_count <= 0:
@@ -534,9 +511,7 @@ def test_a_port_that_skipped_the_readback_is_caught_by_the_call_log(
 ) -> None:
     """The second control, aimed at the assertion nothing else covers.
 
-    Removing the readback changes NO stdout byte, NO stderr byte, NO exit code
-    and NO uploaded payload on a healthy run. Only the aws call log differs,
-    which is why it is compared.
+    Removing the readback changes NO stdout byte, NO stderr byte, NO exit code and NO uploaded payload on a healthy run. Only the aws call log differs, which is why it is compared.
     """
     source = PORT_FILE.read_text(encoding="utf-8")
     anchor = "    readback = rsv.get_sentinel_payload(product, version_tag)"

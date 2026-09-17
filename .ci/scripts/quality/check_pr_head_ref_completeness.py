@@ -1,45 +1,27 @@
 #!/usr/bin/env python3
 """PR_HEAD_REF must be SET by the invoking step, and must RESOLVE on every trigger.
 
-Two checks, two corpora, two different questions. They are separate because the
-exemption that is correct for one is wrong for the other, and collapsing them is
-what let a real bug through green.
+Two checks, two corpora, two different questions. They are separate because the exemption that is correct for one is wrong for the other, and collapsing them is what let a real bug through green.
 
 CHECK 1 -- every script that PREFERS PR_HEAD_REF is invoked by a step that SETS it.
 
-WHY THIS EXISTS. `check-pr-epic-block.ts`, `check-pr-task-trailers.ts` and
-`wl_git.py` all already preferred `PR_HEAD_REF` (falling back to
-`GITHUB_HEAD_REF`, then a bare `git` derivation) before this repo's own
+WHY THIS EXISTS. `check-pr-epic-block.ts`, `check-pr-task-trailers.ts` and `wl_git.py` all already preferred `PR_HEAD_REF` (falling back to `GITHUB_HEAD_REF`, then a bare `git` derivation) before this repo's own
 workflow steps caught up. The pattern was CORRECT at the reader; the gap was
 always at the SETTER: a workflow step invoking one of these scripts without a
 `PR_HEAD_REF` (or an explicit `GITHUB_HEAD_REF: ${{ github.head_ref }}`) in its
-`env:` block. On this repo's `workflow_call` chain, the runner's own default
-`GITHUB_HEAD_REF` does not reliably materialise, so an unset pair means the
-script falls all the way to `git branch --show-current`, which is EMPTY on the
-detached checkout every pull_request run uses -- silently skipping real work
-(`check-pr-epic-block.ts`) or silently degrading to a coarser check
+`env:` block. On this repo's `workflow_call` chain, the runner's own default `GITHUB_HEAD_REF` does not reliably materialise, so an unset pair means the script falls all the way to `git branch --show-current`, which is EMPTY on the detached checkout every pull_request run uses -- silently skipping real work (`check-pr-epic-block.ts`) or silently degrading to a coarser check
 (`check-review-report-replies.sh`).
 
-THIS RECURRED THREE TIMES IN ONE SESSION (2026-08-28: `891ff49db`,
-`946e0e6da`, `74114a26b`), each found by hand-sweeping `grep -rn
-PR_HEAD_REF`. A check-first gate that cannot fail is worth nothing, so this
-checks BOTH directions with real fixtures below, not merely one reader against
-one setter.
+THIS RECURRED THREE TIMES IN ONE SESSION (2026-08-28: `891ff49db`, `946e0e6da`, `74114a26b`), each found by hand-sweeping `grep -rn PR_HEAD_REF`. A check-first gate that cannot fail is worth nothing, so this checks BOTH directions with real fixtures below, not merely one reader against one setter.
 
-CHECK 2 -- every setter's EXPRESSION resolves non-empty on every trigger its step
-can actually run under.
+CHECK 2 -- every setter's EXPRESSION resolves non-empty on every trigger its step can actually run under.
 
-WHY CHECK 1 WAS NOT ENOUGH, and this is a receipt. `f1ce6911f` fixed
-`claude-review-reusable.yml:139`, which read
+WHY CHECK 1 WAS NOT ENOUGH, and this is a receipt. `f1ce6911f` fixed `claude-review-reusable.yml:139`, which read
 
     PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch }}
 
-Two clauses, THREE effective triggers: that file declares `workflow_call` only, its
-sole caller `claude-review.yml:90` declares `workflow_run`, `pull_request` and
-`workflow_dispatch`, and the calling job's `if:` (`claude-review.yml:70-88`) admits
-all three. On the `workflow_dispatch` path both clauses are empty,
-`.ci/rediacc_ci/review/discover_epics.py:151` refused, and the review died at its
-first job. CHECK 1 was green throughout, for two independent reasons:
+Two clauses, THREE effective triggers: that file declares `workflow_call` only, its sole caller `claude-review.yml:90` declares `workflow_run`, `pull_request` and `workflow_dispatch`, and the calling job's `if:` (`claude-review.yml:70-88`) admits all three. On the `workflow_dispatch` path both clauses are empty, `.ci/rediacc_ci/review/discover_epics.py:151` refused, and the review
+died at its first job. CHECK 1 was green throughout, for two independent reasons:
 
   1. It never reads the VALUE. `step_sets_var()` is presence-only, so any
      expression -- including the empty string -- satisfies it.
@@ -53,13 +35,9 @@ first job. CHECK 1 was green throughout, for two independent reasons:
      that SET the variable, enumerated from the workflow files directly, with no
      reader resolution anywhere in the path.
 
-WHAT CHECK 2 PROVES, AND WHAT IT DOES NOT. It proves NON-EMPTINESS, not
-CORRECTNESS. `github.ref_name` is non-empty on every event, so it makes any
+WHAT CHECK 2 PROVES, AND WHAT IT DOES NOT. It proves NON-EMPTINESS, not CORRECTNESS. `github.ref_name` is non-empty on every event, so it makes any
 expression trivially covered; on a `pull_request` event its value is `<n>/merge`,
-which is a real ref and the wrong answer to "which branch is this PR". That is
-acceptable here only because it is always LAST in these chains and an event-scoped
-clause wins ahead of it -- and this gate cannot check that ordering. A gate that
-pretended otherwise would be worse than one that names the hole.
+which is a real ref and the wrong answer to "which branch is this PR". That is acceptable here only because it is always LAST in these chains and an event-scoped clause wins ahead of it -- and this gate cannot check that ordering. A gate that pretended otherwise would be worse than one that names the hole.
 
 Two more things it deliberately does not do:
 
@@ -98,28 +76,13 @@ Two more things it deliberately does not do:
     `if:` narrower and the caller-chain resolver are separately named functions, so
     doing it later is a name plus an exemption rule rather than a rewrite.
 
-NOT AN EXEMPTION: A WAIVER COMMENT. House rule is never to suppress a gate to get
-past it. The two honest fixes are a covering clause or a narrowing `if:`, both
+NOT AN EXEMPTION: A WAIVER COMMENT. House rule is never to suppress a gate to get past it. The two honest fixes are a covering clause or a narrowing `if:`, both
 one line; a marker would only preserve the ambiguity this gate exists to end.
 
-SCOPE. CHECK 1 reads only `.ci/scripts/**` and `scripts/**`, and only files that
-are not themselves test fixtures (`test-*.sh`, `*.control.ts`, anything under a
-`test/` or `__tests__/` directory) -- those set the variable to drive a
-specific scenario, they are not a real CI caller needing a workflow setter.
-`.claude/hooks/**` is out of scope entirely: those run as local git hooks, not
-CI workflow steps, and have no `run:` line to resolve. CHECK 2 reads
-`.github/workflows/*.yml` and nothing else -- in particular it does NOT use
-`EXCLUDE_DIR_PARTS`, which once carried `"gates"` and silently blinded CHECK 1 to
-`scripts/gates/`, both of its own founding motivating cases, from the day it was
-written.
+SCOPE. CHECK 1 reads only `.ci/scripts/**` and `scripts/**`, and only files that are not themselves test fixtures (`test-*.sh`, `*.control.ts`, anything under a `test/` or `__tests__/` directory) -- those set the variable to drive a specific scenario, they are not a real CI caller needing a workflow setter. `.claude/hooks/**` is out of scope entirely: those run as local git hooks,
+not CI workflow steps, and have no `run:` line to resolve. CHECK 2 reads `.github/workflows/*.yml` and nothing else -- in particular it does NOT use `EXCLUDE_DIR_PARTS`, which once carried `"gates"` and silently blinded CHECK 1 to `scripts/gates/`, both of its own founding motivating cases, from the day it was written.
 
----- gate ----
-step: PR_HEAD_REF completeness
-emit: false
-blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
-needs: none
-lane: quality-code
----- end gate ----
+---- gate ---- step: PR_HEAD_REF completeness emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none lane: quality-code ---- end gate ----
 """
 
 from __future__ import annotations
@@ -395,10 +358,7 @@ def narrow_by_if(triggers: set[str], condition) -> set[str]:
 def has_event_name_env(env) -> bool:
     """Exemption E1: the step hands its reader `github.event_name`.
 
-    A step that passes the event name is telling the script to BRANCH on it, and a
-    script that branches takes a different resolution path on the triggers the
-    expression does not cover -- so static trigger coverage stops being a defect
-    predicate. Every one of these is a real reader that really behaves this way:
+    A step that passes the event name is telling the script to BRANCH on it, and a script that branches takes a different resolution path on the triggers the expression does not cover -- so static trigger coverage stops being a defect predicate. Every one of these is a real reader that really behaves this way:
 
       * `ci-quality.yml:536-540` -> `.ci/rediacc_ci/quality/branch.py:219` returns
         early unless `GITHUB_EVENT_NAME == 'pull_request'`.
@@ -469,12 +429,8 @@ class WorkflowSet:
     def on_block(self, wf_name: str) -> dict:
         """The `on:` mapping.
 
-        PyYAML RESOLVES A BARE `on:` KEY TO THE BOOLEAN `True` (YAML 1.1
-        y/n/on/off booleans), so `'on' in doc` is False on every workflow in this
-        repo and a naive read finds no triggers at all and silently checks
-        nothing. `check_secret_reachability.py` carries the same workaround and
-        `.ci/rediacc_ci/workflows.py:44-52` documents it as its one deliberate
-        divergence from PyYAML. Asserted in `controls()`, not merely remembered.
+        PyYAML RESOLVES A BARE `on:` KEY TO THE BOOLEAN `True` (YAML 1.1 y/n/on/off booleans), so `'on' in doc` is False on every workflow in this repo and a naive read finds no triggers at all and silently checks nothing. `check_secret_reachability.py` carries the same workaround and `.ci/rediacc_ci/workflows.py:44-52` documents it as its one deliberate divergence from PyYAML.
+        Asserted in `controls()`, not merely remembered.
         """
         doc = self.docs.get(wf_name) or {}
         block = doc.get(True)
@@ -501,11 +457,7 @@ class WorkflowSet:
     def effective_triggers(self, wf_name: str, _seen: frozenset = frozenset()) -> set[str]:
         """The events this workflow can really run under.
 
-        A `workflow_call`-only file is a CALLEE and has no triggers of its own: its
-        effective set is the union over its local callers of (that caller's own
-        effective set, narrowed by the calling job's `if:`). Verified edges in this
-        tree, depth 2: `ci.yml:506 -> ci-quality.yml`, `claude-review.yml:90 ->
-        claude-review-reusable.yml`. `_seen` is the cycle guard.
+        A `workflow_call`-only file is a CALLEE and has no triggers of its own: its effective set is the union over its local callers of (that caller's own effective set, narrowed by the calling job's `if:`). Verified edges in this tree, depth 2: `ci.yml:506 -> ci-quality.yml`, `claude-review.yml:90 -> claude-review-reusable.yml`. `_seen` is the cycle guard.
         """
         if wf_name in _seen:
             return set()
@@ -605,10 +557,7 @@ class WorkflowSet:
     def _env_line(self, wf_name: str, var: str, value, used: set[int]) -> int:
         """The source line of `var: <value>` in wf_name, or 0.
 
-        PyYAML's `safe_load` discards marks, and a loader subclass that injects
-        them pollutes every mapping it touches -- including the `on:` block this
-        gate reads. A text scan matched in document order is cheaper and cannot
-        change what is parsed.
+        PyYAML's `safe_load` discards marks, and a loader subclass that injects them pollutes every mapping it touches -- including the `on:` block this gate reads. A text scan matched in document order is cheaper and cannot change what is parsed.
         """
         want = str(value).strip()
         pattern = re.compile(rf"^\s*{re.escape(var)}:\s*(\S.*?)\s*$")

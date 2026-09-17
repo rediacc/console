@@ -1,32 +1,17 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/autopilot/submodule-prs.sh`.
 
-Opens a PR for every submodule branch the round pushed, and links them from the
-console PR body.
+Opens a PR for every submodule branch the round pushed, and links them from the console PR body.
 
-WHY THE LINK IS NOT COSMETIC. `.ci/scripts/quality/check-submodule-branches.sh`
-is a required gate and it reads the CONSOLE PR BODY to decide whether each
-submodule PR is accounted for: it accepts the full PR URL as a substring
-(check-submodule-branches.sh:251), or `owner/repo#N` / `owner/repo/pull/N`
-(:259). A round that pushes a submodule branch and does not link its PR leaves
-console red on a gate no later round can clear by editing code. So the link is
-part of the push, not a nicety after it.
+WHY THE LINK IS NOT COSMETIC. `.ci/scripts/quality/check-submodule-branches.sh` is a required gate and it reads the CONSOLE PR BODY to decide whether each submodule PR is accounted for: it accepts the full PR URL as a substring (check-submodule-branches.sh:251), or `owner/repo#N` / `owner/repo/pull/N` (:259). A round that pushes a submodule branch and does not link its PR leaves
+console red on a gate no later round can clear by editing code. So the link is part of the push, not a nicety after it.
 
-THE LINK FORMAT IS A SHARED CONTRACT WITH `linked-sub-prs.sh`, which is the
-READER of what this script writes: it greps the console body for
-`(https://github.com/)?<owner>/<repo>(/pull/|#)<digits>` and turns the links
-back into fetch targets so the review machinery can see findings raised in a
-submodule PR. Two consequences worth stating, since the two files are edited by
-different hands: the URL written here must keep its `owner/repo/pull/N` shape
-(the `- \\`path\\` -> ` prefix is decoration, the URL is the contract), and the
-`--dry-run` placeholder `.../pull/DRY-RUN` deliberately does NOT match that
-grep, which is correct -- a dry run has no PR to fetch from. That file is not
+THE LINK FORMAT IS A SHARED CONTRACT WITH `linked-sub-prs.sh`, which is the READER of what this script writes: it greps the console body for `(https://github.com/)?<owner>/<repo>(/pull/|#)<digits>` and turns the links back into fetch targets so the review machinery can see findings raised in a submodule PR. Two consequences worth stating, since the two files are edited by different
+hands: the URL written here must keep its `owner/repo/pull/N` shape (the `- \\`path\\` -> ` prefix is decoration, the URL is the contract), and the `--dry-run` placeholder `.../pull/DRY-RUN` deliberately does NOT match that grep, which is correct -- a dry run has no PR to fetch from. That file is not
 touched by this port; this paragraph exists so the coupling is written down
 somewhere both ends can find it.
 
-PLAIN PRs, NOT DRAFTS. The four submodules are private repos on a free plan
-where draft pull requests do not exist and `gh pr create --draft` fails.
-Console is the repo with the draft flow.
+PLAIN PRs, NOT DRAFTS. The four submodules are private repos on a free plan where draft pull requests do not exist and `gh pr create --draft` fails. Console is the repo with the draft flow.
 
 IDEMPOTENCE, TWICE OVER, and both halves are exported so a test can drive them:
 
@@ -48,35 +33,19 @@ IDEMPOTENCE, TWICE OVER, and both halves are exported so a test can drive them:
   `test_an_unterminated_block_swallows_the_rest`, which is a defect report in
   test form, not a requirement.
 
-DEFECT FOUND WHILE PORTING, REPRODUCED NOT REPAIRED, and it is the loudest
-thing in this file. `count` comes from `jq -r '(.submodules // []) | length'`,
-and jq's `length` on a NUMBER is its absolute value -- so a verdict carrying
+DEFECT FOUND WHILE PORTING, REPRODUCED NOT REPAIRED, and it is the loudest thing in this file. `count` comes from `jq -r '(.submodules // []) | length'`, and jq's `length` on a NUMBER is its absolute value -- so a verdict carrying
 `"submodules": 3.5` yields `3.5`, `for ((i = 0; i < 3.5; i++))` is a bash
-arithmetic syntax error, and `set -e` DOES NOT CATCH IT. Driven against the twin
-on 2026-09-10: the diagnostic prints, the loop body never runs, the script walks
-on with an empty links file, PATCHes the console PR body with an EMPTY
-`**Submodule PRs**` block -- destroying whatever links the previous round put
-there -- and exits 0 with "linked 3.5 submodule PR(s)". Since
-`check-submodule-branches.sh` reads those links from that body, the result is a
-required gate red on a complaint no later round can clear by editing code.
+arithmetic syntax error, and `set -e` DOES NOT CATCH IT. Driven against the twin on 2026-09-10: the diagnostic prints, the loop body never runs, the script walks on with an empty links file, PATCHes the console PR body with an EMPTY `**Submodule PRs**` block -- destroying whatever links the previous round put there -- and exits 0 with "linked 3.5 submodule PR(s)". Since
+`check-submodule-branches.sh` reads those links from that body, the result is a required gate red on a complaint no later round can clear by editing code.
 
 The handoff validator's enum bounds `submodules` to an array of known paths, so
 this is defence-in-depth failing OPEN rather than a live break; the fix is one
 `[[ "$count" =~ ^[0-9]+$ ]]` guard, and it belongs to the cutover box, because
-this wave's contract is that the twin stays live and the port is proven
-equivalent to it. Pinned by
-`test_a_non_integer_count_wipes_the_block_and_exits_0`.
+this wave's contract is that the twin stays live and the port is proven equivalent to it. Pinned by `test_a_non_integer_count_wipes_the_block_and_exits_0`.
 
-THE PATH -> REPO MAP IS A GUARD, NOT A LOOKUP. It is held to
-check-submodule-branches.sh:87-92, and the validator's enum already makes an
-unknown path unreachable from a handoff. It stays so that the two lists failing
-to agree is a loud stop (`submodule-unmapped`, exit 1) rather than a `gh pr
-create --repo <owner>/` with an empty name.
+THE PATH -> REPO MAP IS A GUARD, NOT A LOOKUP. It is held to check-submodule-branches.sh:87-92, and the validator's enum already makes an unknown path unreachable from a handoff. It stays so that the two lists failing to agree is a loud stop (`submodule-unmapped`, exit 1) rather than a `gh pr create --repo <owner>/` with an empty name.
 
-WHERE jq IS SPAWNED: over the `--verdict` file, for the same reason as
-`update_state.py`. That file comes from outside, a truncated one makes jq print
-a parse error and exit 5, and `set -e` turns that into the script's status.
-Neither the text nor the code is reproducible by hand.
+WHERE jq IS SPAWNED: over the `--verdict` file, for the same reason as `update_state.py`. That file comes from outside, a truncated one makes jq print a parse error and exit 5, and `set -e` turns that into the script's status. Neither the text nor the code is reproducible by hand.
 
   `jq -r '.message' | head -1` IS REPRODUCED AS "the first line", and the twin's
   spelling carries a latent trap worth naming: under `set -o pipefail`, `head`
@@ -85,11 +54,9 @@ Neither the text nor the code is reproducible by hand.
   buffer is written before `head` exits) and this port cannot reproduce it at
   all, because it takes the first line of a value it already holds.
 
-`gh_retry` IS TRANSLITERATED, NOT IMPORTED, sleeps included -- see
-`update_state.py`'s docstring for the reasoning and the two prior copies.
+`gh_retry` IS TRANSLITERATED, NOT IMPORTED, sleeps included -- see `update_state.py`'s docstring for the reasoning and the two prior copies.
 
-Exit: 0 (including "the verdict named no submodules"), 1 refused or a write
-failed, 2 usage, jq's own status when the verdict will not parse.
+Exit: 0 (including "the verdict named no submodules"), 1 refused or a write failed, 2 usage, jq's own status when the verdict will not parse.
 
 K=5 LEDGER: `.ci/shadow/w7p6-submodule-prs.observations.jsonl`.
 """
@@ -146,8 +113,7 @@ def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
 
     A FAILURE IS NEVER AN EMPTY ANSWER, which matters more here than anywhere
     else in this file: the empty string from `--jq '.[0].url // empty'` is what
-    makes the script CREATE a pull request. If a rate-limited `pr list` were
-    allowed to look empty, every retry of a round would open another PR.
+    makes the script CREATE a pull request. If a rate-limited `pr list` were allowed to look empty, every retry of a round would open another PR.
     """
     rc = 0
     stderr = ""
@@ -184,17 +150,12 @@ def submodule_repo(path: str) -> str | None:
 def strip_block(body: str) -> str:
     """The twin's awk: drop the delimited block, keep everything else.
 
-    A STATE MACHINE OVER EXACT-MATCH LINES, reproduced including the hazard: an
-    opening marker with no closing one drops the whole remainder of the body,
+    A STATE MACHINE OVER EXACT-MATCH LINES, reproduced including the hazard: an opening marker with no closing one drops the whole remainder of the body,
     because `skip` is never turned off again. `$0 == b` is a full-line
     comparison, so an indented or inline marker is not a marker.
 
-    THE INPUT IS THE BODY AS `gh` RETURNED IT, with no trailing newline: the
-    twin adds one with `printf '%s\n' "$body"` and awk then sees exactly
-    `body.split("\n")` lines, printing each kept one with a newline. So an empty
-    body yields ONE empty line and a `"\n"` result, not an empty string, and the
-    blank line that leaves at the top of a fresh block is real output rather
-    than an off-by-one here.
+    THE INPUT IS THE BODY AS `gh` RETURNED IT, with no trailing newline: the twin adds one with `printf '%s\n' "$body"` and awk then sees exactly `body.split("\n")` lines, printing each kept one with a newline. So an empty body yields ONE empty line and a `"\n"` result, not an empty string, and the blank line that leaves at the top of a fresh block is real output rather than an
+    off-by-one here.
     """
     out = []
     skip = False
@@ -213,9 +174,7 @@ def strip_block(body: str) -> str:
 def rebuild_body(stripped: str, links: list[str]) -> str:
     """`{ cat stripped; printf '\\n%s\\n' BEGIN; ... }`, byte for byte.
 
-    Note the blank line before BEGIN and the blank line after the heading: both
-    come from the twin's printf strings and both are visible in the rendered
-    comment, so they are preserved rather than tidied.
+    Note the blank line before BEGIN and the blank line after the heading: both come from the twin's printf strings and both are visible in the rendered comment, so they are preserved rather than tidied.
     """
     return "%s\n%s\n**Submodule PRs**\n\n%s%s\n" % (stripped, BEGIN, "".join(links), END)
 

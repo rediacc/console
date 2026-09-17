@@ -1,21 +1,9 @@
 """`rediacc_ci.quality.git_op_conditionals` against the greps it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. This gate is six
-regexes, two of them extraction patterns whose exact reach decided whether a real
-defect was found or silently missed. The twin's own history is the argument: an
-adjacency-requiring extraction pattern (`git[[:space:]]+rev-parse`) passed every
-synthetic fixture and found ZERO findings on a tree that genuinely had one,
-because the real defect wore `git -C "$dir" rev-parse`. A table of expected
-strings reproduces exactly that failure -- it asserts what the port does against
-itself. Running the real greps under bash is the only form that can fail for the
-right reason.
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. This gate is six regexes, two of them extraction patterns whose exact reach decided whether a real defect was found or silently missed. The twin's own history is the argument: an adjacency-requiring extraction pattern (`git[[:space:]]+rev-parse`) passed every synthetic fixture and found ZERO findings on a tree that genuinely
+had one, because the real defect wore `git -C "$dir" rev-parse`. A table of expected strings reproduces exactly that failure -- it asserts what the port does against itself. Running the real greps under bash is the only form that can fail for the right reason.
 
-The bash fragments below are lifted from
-`.ci/scripts/quality/check-git-op-conditionals.sh` lines 101-157 with the
-variables substituted, and nothing else changed. They are NOT the whole gate: the
-whole gate is what the committed shadow ledger
-`.ci/shadow/w7p2-gitop.observations.jsonl` compares over five distinct trees.
-This file covers the seams that ledger cannot isolate.
+The bash fragments below are lifted from `.ci/scripts/quality/check-git-op-conditionals.sh` lines 101-157 with the variables substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-gitop.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate.
 """
 
 import pathlib
@@ -154,9 +142,7 @@ def test_the_dash_c_shape_is_found_which_an_adjacency_pattern_missed(
 ) -> None:
     """THE REGRESSION THAT HAS ALREADY HAPPENED ONCE.
 
-    A first draft of this gate required `git` and its subcommand to be adjacent.
-    Every synthetic fixture passed, and the real scan found nothing on a tree
-    that genuinely had a defect. The mutation-proof is the assertion.
+    A first draft of this gate required `git` and its subcommand to be adjacent. Every synthetic fixture passed, and the real scan found nothing on a tree that genuinely had a defect. The mutation-proof is the assertion.
     """
     line = 'BRANCH=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null)'
     assert _bash_captures(line, tmp_path) != []
@@ -166,8 +152,7 @@ def test_the_dash_c_shape_is_found_which_an_adjacency_pattern_missed(
 def test_the_bare_shape_has_no_file_wide_exemption() -> None:
     """MEASURED, NOT ASSUMED, and the twin says so in eleven lines.
 
-    "does a HEAD-literal comparison appear ANYWHERE in the file" was tried and
-    PROVEN WRONG: check-submodule-branches.sh has an unrelated
+    "does a HEAD-literal comparison appear ANYWHERE in the file" was tried and PROVEN WRONG: check-submodule-branches.sh has an unrelated
     `"$sm_branch" == "HEAD"` on a DIFFERENT variable elsewhere, which cleared the
     finding even with the real unguarded shape reintroduced verbatim.
     """
@@ -183,8 +168,7 @@ def test_the_exemption_is_by_name_and_fires_in_one_direction_only(
 ) -> None:
     """The bash twin is exempt; the same bytes under another name are not.
 
-    A one-sided assertion here would pass for a port that exempted EVERYTHING,
-    which is why the second half exists.
+    A one-sided assertion here would pass for a port that exempted EVERYTHING, which is why the second half exists.
     """
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, capture_output=True)
     quality = tmp_path / ".ci" / "scripts" / "quality"
@@ -204,9 +188,7 @@ def test_the_flat_quality_glob_would_match_nothing_with_a_double_star(
 ) -> None:
     """The vacuity that was found INSIDE this gate, pinned as a fact.
 
-    `.ci/scripts/quality/**/*.sh` needs a genuine subdirectory, and that
-    directory is FLAT. The gate reported "71 shell file(s) scanned" while the
-    second glob contributed nothing at all.
+    `.ci/scripts/quality/**/*.sh` needs a genuine subdirectory, and that directory is FLAT. The gate reported "71 shell file(s) scanned" while the second glob contributed nothing at all.
     """
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, capture_output=True)
     quality = tmp_path / ".ci" / "scripts" / "quality"
@@ -316,10 +298,7 @@ def test_python_predicate_agrees_with_the_twins_awk(body: str, tmp_path: pathlib
 def test_the_hooks_python_glob_needs_the_flat_spelling(tmp_path: pathlib.Path) -> None:
     """`**/*.py` DROPS every top-level module, including the one defining git_out.
 
-    The sibling of the `.sh` case above, in the other direction. git's default
-    pathspec is wildmatch without pathname mode, so the flat `*.py` recurses and
-    the `**` form demands a literal slash. Getting this backwards costs SIX files
-    here, one of which is `hookio.py`.
+    The sibling of the `.sh` case above, in the other direction. git's default pathspec is wildmatch without pathname mode, so the flat `*.py` recurses and the `**` form demands a literal slash. Getting this backwards costs SIX files here, one of which is `hookio.py`.
     """
     root = tmp_path / "r"
     (root / ".claude" / "rediacc_hooks" / "guards").mkdir(parents=True)

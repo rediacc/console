@@ -1,18 +1,12 @@
 """Differential: `rediacc_ci.security.check_commands` against its twin
-`.ci/scripts/security/check-commands.sh` (registered gate
-`check:ci-shell-commands`, `ci-quality.yml:351`).
+`.ci/scripts/security/check-commands.sh` (registered gate `check:ci-shell-commands`, `ci-quality.yml:351`).
 
-A FIXTURE TREE, NOT THE REAL REPOSITORY. Both subjects derive the console
-root from their own file location (`.ci/scripts/security/` for the twin,
-`.ci/rediacc_ci/security/` for the port, both three directories up), so each
+A FIXTURE TREE, NOT THE REAL REPOSITORY. Both subjects derive the console root from their own file location (`.ci/scripts/security/` for the twin, `.ci/rediacc_ci/security/` for the port, both three directories up), so each
 case COPIES both subjects into a fresh tree at the right relative depth and
-scans fixture `.sh` files placed under `.ci/` and `scripts/` there --
-verified independently to also agree on the REAL tree (515 files, both sides
-clean, exit 0) before this file was written.
+scans fixture `.sh` files placed under `.ci/` and `scripts/` there -- verified independently to also agree on the REAL tree (515 files, both sides clean, exit 0) before this file was written.
 
 TWO REAL BUGS IN THE TWIN, FIXED 2026-09-10 IN LOCKSTEP WITH THIS PORT.
-Until this date, both were reproduced (not fixed) here to match the
-then-still-buggy twin:
+Until this date, both were reproduced (not fixed) here to match the then-still-buggy twin:
 
   1. `$(cmd)` used to be invisible. A double-quote escaping mistake in the
      twin's source turned the intended `\\$\\(` into a bare `$\\(` once
@@ -29,11 +23,7 @@ then-still-buggy twin:
      regex and nothing was ever reported. `test_if_guarded_form_is_now_caught`
      locks down the fix the same way.
 
-Fixed in `.ci/scripts/security/check-commands.sh:70,84` and
-`.ci/rediacc_ci/security/check_commands.py` in the same change, applying the
-46-finding corpus fix documented in `agent/PLAN-shell-command-gate-regex-fix.md`.
-`test_planted_defect_is_caught`'s two plants now regress the PORT alone
-against the fixed twin, guarding against either bug creeping back in.
+Fixed in `.ci/scripts/security/check-commands.sh:70,84` and `.ci/rediacc_ci/security/check_commands.py` in the same change, applying the 46-finding corpus fix documented in `agent/PLAN-shell-command-gate-regex-fix.md`. `test_planted_defect_is_caught`'s two plants now regress the PORT alone against the fixed twin, guarding against either bug creeping back in.
 
 K=5 LEDGER: `.ci/shadow/w7p6-check-commands.observations.jsonl` (re-recorded
 2026-09-10 against the fixed pair).
@@ -246,10 +236,7 @@ def test_multiple_files_aggregate_and_ci_env_disables_color(tmp_path: pathlib.Pa
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-REGRESSION, two independent plants. Each reintroduces one of the
-    two now-fixed bugs into the PORT ALONE, leaving the (now-fixed) twin
-    untouched, and asserts the mutated port diverges from the twin -- i.e.
-    the differential would catch either bug creeping back into just one
-    side. Driven red, then the source is restored byte-identical and
+    two now-fixed bugs into the PORT ALONE, leaving the (now-fixed) twin untouched, and asserts the mutated port diverges from the twin -- i.e. the differential would catch either bug creeping back into just one side. Driven red, then the source is restored byte-identical and
     re-verified green."""
     original = PORT.read_text(encoding="utf-8")
 

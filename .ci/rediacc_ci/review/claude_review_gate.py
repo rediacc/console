@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/review/claude-review-gate.sh`, the automated-review gate.
 
-THE INVARIANT FIRST, because every arm below exists to protect it. Operator
-ruling 2026-07-22, quoted from the twin's own header: "a review fires ONLY for
-an open, non-draft, same-repo PR whose CURRENT head SHA has green CI at decision
-time, that is not already marked reviewed, and whose delta since the last
-reviewed SHA is not submodule pointer bumps only. A red push after a review gets
-no re-review until a later push completes green."
+THE INVARIANT FIRST, because every arm below exists to protect it. Operator ruling 2026-07-22, quoted from the twin's own header: "a review fires ONLY for an open, non-draft, same-repo PR whose CURRENT head SHA has green CI at decision time, that is not already marked reviewed, and whose delta since the last reviewed SHA is not submodule pointer bumps only. A red push after a
+review gets no re-review until a later push completes green."
 
-SAME-REPO IS NOT ENFORCED HERE, AND THAT IS NOT AN OMISSION. It is enforced one
-level up, in `.github/workflows/claude-review.yml:74` and `:77`
+SAME-REPO IS NOT ENFORCED HERE, AND THAT IS NOT AN OMISSION. It is enforced one level up, in `.github/workflows/claude-review.yml:74` and `:77`
 (`github.event.workflow_run.head_repository.full_name == github.repository` and
 `github.event.pull_request.head.repo.full_name == github.repository`), so a fork
 PR never reaches this script at all. Nothing in either implementation can see
 the head repository, so a differential of this file cannot cover that clause;
-`test_review_claude_review_gate.py` pins the workflow condition instead, which is
-where the clause actually lives.
+`test_review_claude_review_gate.py` pins the workflow condition instead, which is where the clause actually lives.
 
 FIVE ARMS, selected by `$1`:
 
@@ -28,18 +22,10 @@ FIVE ARMS, selected by `$1`:
 ===========================================================================
 WHAT IS REUSED, AND WHAT IS DELIBERATELY NOT
 ===========================================================================
-The review BUDGET (the cap tiers, the attempt ledger, what counts as chargeable,
-what exhausts a head) is already ported at `core.review_budget`, whose docstring
-names this script as one of its two live callers and quotes the reason the rules
-live in one place: "the two disagreeing about the cap resurrects exactly the
-deadlock review-status.sh was written to prevent. One table, one function, both
-callers." So every PURE rule comes from there by import: `cap_for`,
-`parse_attempt_states`, `chargeable_attempts`, `head_attempt_state`,
-`head_is_exhausted`, `spend_total`, `class_is_infra`, the two per-head constants
-and the two report needles.
+The review BUDGET (the cap tiers, the attempt ledger, what counts as chargeable, what exhausts a head) is already ported at `core.review_budget`, whose docstring names this script as one of its two live callers and quotes the reason the rules live in one place: "the two disagreeing about the cap resurrects exactly the deadlock review-status.sh was written to prevent. One table, one
+function, both callers." So every PURE rule comes from there by import: `cap_for`, `parse_attempt_states`, `chargeable_attempts`, `head_attempt_state`, `head_is_exhausted`, `spend_total`, `class_is_infra`, the two per-head constants and the two report needles.
 
-The NETWORK halves of that module (`report_count`, `attempt_states`, `diff_loc`)
-are NOT used, and the reason is fidelity rather than taste:
+The NETWORK halves of that module (`report_count`, `attempt_states`, `diff_loc`) are NOT used, and the reason is fidelity rather than taste:
 
   * `review_budget.report_count` fetches the comment page and filters in Python,
     while the twin filters SERVER-SIDE with `gh api ... --jq`. Same answer,
@@ -51,21 +37,14 @@ are NOT used, and the reason is fidelity rather than taste:
     `pr_diff_loc` and `emit_review_turns` each make ONE call and fall back, so a
     failing lookup would log three calls here against the twin's one.
 
-`gh_retry` (`common.sh:434-470`, `_gh_probe`) is reproduced in `gh_retry()`
-below, warning lines, backoff schedule, indented replay of gh's stderr and all,
-because the two budget reads go through it and its stderr is part of what a
-differential on the failure path compares.
+`gh_retry` (`common.sh:434-470`, `_gh_probe`) is reproduced in `gh_retry()` below, warning lines, backoff schedule, indented replay of gh's stderr and all, because the two budget reads go through it and its stderr is part of what a differential on the failure path compares.
 
 ===========================================================================
 DEFECT 1 (REPORTED, NOT FIXED) -- `last_marker_sha` STILL SWALLOWS A gh FAILURE,
 AND IT IS THE ONE THAT COSTS MONEY
 ===========================================================================
-`common.sh` was fixed on 2026-09-10 so that `review_report_count`,
-`review_attempt_states` and `review_spend_total` route through `gh_retry` and
-propagate a failure, precisely because a rate-limited numerator of 0 "meant the
-cap was never reached, so a rate-limited run dispatched ANOTHER full review"
-(`core/review_budget.py`, DEFECT 1). The same spelling survives untouched in
-THIS file, on the dedup guard rather than on the cap:
+`common.sh` was fixed on 2026-09-10 so that `review_report_count`, `review_attempt_states` and `review_spend_total` route through `gh_retry` and propagate a failure, precisely because a rate-limited numerator of 0 "meant the cap was never reached, so a rate-limited run dispatched ANOTHER full review" (`core/review_budget.py`, DEFECT 1). The same spelling survives untouched in THIS
+file, on the dedup guard rather than on the cap:
 
     last_marker_sha() {
         gh api ".../issues/${1}/comments" --paginate --jq '...' 2>/dev/null |
@@ -73,21 +52,15 @@ THIS file, on the dedup guard rather than on the cap:
     }
 
 `pipefail` is on, so the pipeline DOES fail; `|| true` throws that away after
-`sed` has already printed nothing. An empty `last_sha` is indistinguishable from
-"this head was never reviewed", so the gate skips the `head already reviewed`
+`sed` has already printed nothing. An empty `last_sha` is indistinguishable from "this head was never reviewed", so the gate skips the `head already reviewed`
 check, skips the submodule-pointer-bump check, and emits `go=true` with the
-INITIAL prompt for a PR that was fully reviewed minutes earlier. The call has no
-retry either, unlike the two budget reads immediately above it.
+INITIAL prompt for a PR that was fully reviewed minutes earlier. The call has no retry either, unlike the two budget reads immediately above it.
 
-Driven, in the differential, by a fake `gh` that fails only its Nth call
-(`test_a_gh_failure_on_the_marker_read_re_reviews_an_already_reviewed_head`):
+Driven, in the differential, by a fake `gh` that fails only its Nth call (`test_a_gh_failure_on_the_marker_read_re_reviews_an_already_reviewed_head`):
 both implementations answer `go=true ... initial review: full PR diff` for a
-head whose marker comment is present and current. Reproduced rather than
-repaired: repairing a twin is a cutover-box decision.
+head whose marker comment is present and current. Reproduced rather than repaired: repairing a twin is a cutover-box decision.
 
-`last_marker_id` carries the same swallow with a smaller blast radius: a failed
-read makes `--mark` POST a second marker comment instead of PATCHing the one
-that exists.
+`last_marker_id` carries the same swallow with a smaller blast radius: a failed read makes `--mark` POST a second marker comment instead of PATCHing the one that exists.
 
 ===========================================================================
 DEFECT 2 (REPORTED, NOT FIXED) -- `emit_review_turns` HAS NO NUMERIC GUARD
@@ -99,14 +72,8 @@ it and feeds the answer straight into arithmetic:
 
     local kloc=$(((${changed:-0} + 999) / 1000))
 
-Under `set -u` a non-numeric word in an arithmetic context is read as a VARIABLE
-NAME, so a `gh` that exits 0 with `null` on stdout kills the gate with
-`claude-review-gate.sh: line 172: null: unbound variable` and exit 1, AFTER the
-budget has been read and BEFORE anything is written to `$GITHUB_OUTPUT`. The
-step then fails with no `go` output at all rather than with a decision.
-Reproduced here, byte for byte, by `_arith_or_die`, which raises the same
-message with the same exit code instead of letting Python compute something the
-twin could not.
+Under `set -u` a non-numeric word in an arithmetic context is read as a VARIABLE NAME, so a `gh` that exits 0 with `null` on stdout kills the gate with `claude-review-gate.sh: line 172: null: unbound variable` and exit 1, AFTER the budget has been read and BEFORE anything is written to `$GITHUB_OUTPUT`. The step then fails with no `go` output at all rather than with a decision.
+Reproduced here, byte for byte, by `_arith_or_die`, which raises the same message with the same exit code instead of letting Python compute something the twin could not.
 
 ===========================================================================
 DEFECT 3 (REPORTED, NOT FIXED) -- `--mark` LOSES THE ATTEMPT COUNT ON A gh
@@ -114,30 +81,19 @@ FAILURE, THROUGH A NESTED COMMAND SUBSTITUTION
 ===========================================================================
     prior=$(review_head_attempt_state "$(review_attempt_states "$PR_NUMBER" "$ATTEMPT_PREFIX")" "$HEAD_SHA")
 
-`set -e` looks at the status of the OUTER substitution, which is
-`review_head_attempt_state` and always 0. The inner `review_attempt_states`
-returning 1 after `gh_retry`'s three failed attempts is discarded, `prior`
-becomes the default `"0 "`, and `attempts` becomes 1. A head that has already
-spent 3 of 3 attempts is therefore recorded as spending its first, and the
-per-head ceiling that `review_head_is_exhausted` exists to enforce is reset by a
-transient rate limit. Reproduced, with the twin's own stderr, because
-`gh_retry()` here is faithful to `_gh_probe`.
+`set -e` looks at the status of the OUTER substitution, which is `review_head_attempt_state` and always 0. The inner `review_attempt_states` returning 1 after `gh_retry`'s three failed attempts is discarded, `prior` becomes the default `"0 "`, and `attempts` becomes 1. A head that has already spent 3 of 3 attempts is therefore recorded as spending its first, and the per-head
+ceiling that `review_head_is_exhausted` exists to enforce is reset by a transient rate limit. Reproduced, with the twin's own stderr, because `gh_retry()` here is faithful to `_gh_probe`.
 
 ===========================================================================
 DEFECT 4 (REPORTED, NOT FIXED) -- `--post-findings` DROPS EVERY INLINE COMMENT
 ON A REPORT THAT FOLLOWS ITS OWN PROMPT
 ===========================================================================
-The findings scanner (twin :333-340) never clears `capturing`, so it takes
-everything from the `json:review-findings` opener to the LAST closing fence
-ANYWHERE later in the report:
+The findings scanner (twin :333-340) never clears `capturing`, so it takes everything from the `json:review-findings` opener to the LAST closing fence ANYWHERE later in the report:
 
     /^[[:space:]]*```json:review-findings[[:space:]]*$/ { capturing = 1; ... }
     capturing { buf[++n] = $0; if ($0 ~ /^[[:space:]]*```[[:space:]]*$/) last = n }
 
-`prompts/initial.md:67` instructs the model to close the report with a SECOND
-fence, `json:pr-labels`, after that section, and `--apply-labels` depends on it
-being there. So the extraction runs past the findings array, through the prose
-and into the labels block. Driven against the real awk and the real jq:
+`prompts/initial.md:67` instructs the model to close the report with a SECOND fence, `json:pr-labels`, after that section, and `--apply-labels` depends on it being there. So the extraction runs past the findings array, through the prose and into the labels block. Driven against the real awk and the real jq:
 
     $ awk '<the twin's program>' report.md | jq -e 'type == "array"'
     jq: parse error: Invalid numeric literal at line 3, column 0
@@ -147,11 +103,7 @@ and into the labels block. Driven against the real awk and the real jq:
 block; skipping inline comments` and exits 0. Every line-anchored comment is
 silently dropped, on the shape the prompt asks for, and the arm reports success.
 
-The last-closer rule was added to survive a fence NESTED inside a finding's
-`body`, and that case is not reachable through valid JSON: a JSON string cannot
-contain a raw newline, so an embedded fence never lands on a line of its own and
-never matches the closer. The rule buys nothing and costs everything.
-`test_defect4_*` drives it, its control and the anti-vacuity check that the
+The last-closer rule was added to survive a fence NESTED inside a finding's `body`, and that case is not reachable through valid JSON: a JSON string cannot contain a raw newline, so an embedded fence never lands on a line of its own and never matches the closer. The rule buys nothing and costs everything. `test_defect4_*` drives it, its control and the anti-vacuity check that the
 prompt still asks for both fences in that order.
 
 ===========================================================================
@@ -179,10 +131,7 @@ SMALLER THINGS THAT ARE THE TWIN'S AND ARE REPRODUCED ON PURPOSE
     line filters ARE ported to Python, and each one is driven against the real
     program it replaces in the differential rather than argued to be equal.
 
-Env seam: `CLAUDE_REVIEW_GATE_SCRIPT_DIR` overrides the twin's `SCRIPT_DIR`,
-which is the only thing this module needs it for (the `prompts/` directory).
-It defaults to the real `.ci/scripts/review`, so a plain run reads the real
-templates.
+Env seam: `CLAUDE_REVIEW_GATE_SCRIPT_DIR` overrides the twin's `SCRIPT_DIR`, which is the only thing this module needs it for (the `prompts/` directory). It defaults to the real `.ci/scripts/review`, so a plain run reads the real templates.
 """
 
 from __future__ import annotations
@@ -339,9 +288,7 @@ class Aborted(Exception):  # noqa: N818 -- see Done
 def script_dir() -> pathlib.Path:
     """The twin's `SCRIPT_DIR`, which is `.ci/scripts/review/`.
 
-    This module lives in `.ci/rediacc_ci/review/`, where `$SCRIPT_DIR/prompts`
-    would resolve to a directory that does not exist, so the twin's own
-    directory is named explicitly rather than derived from `__file__`.
+    This module lives in `.ci/rediacc_ci/review/`, where `$SCRIPT_DIR/prompts` would resolve to a directory that does not exist, so the twin's own directory is named explicitly rather than derived from `__file__`.
     """
     # THE NAME IS A LITERAL AT THE CALL SITE, not `os.environ.get(SCRIPT_DIR_ENV)`. `check:ci-python-env-registry` derives a module's inputs from the AST and records a non-literal as an OPAQUE `*<expr>` entry, which is a declared input nobody can grep for. `SCRIPT_DIR_ENV` stays as the constant the tests name.
     override = os.environ.get("CLAUDE_REVIEW_GATE_SCRIPT_DIR", "")
@@ -353,8 +300,7 @@ def script_dir() -> pathlib.Path:
 def _gh(args: list[str], *, quiet: bool = False, stdin_null: bool = False) -> tuple[int, str]:
     """`gh <args>` with stdout captured; `quiet` is the twin's `2>/dev/null`.
 
-    The returned text has its trailing newlines stripped, which is what `$(...)`
-    does and what every caller here assumes.
+    The returned text has its trailing newlines stripped, which is what `$(...)` does and what every caller here assumes.
     """
     try:
         proc = subprocess.run(
@@ -386,8 +332,7 @@ def _gh_raw(args: list[str], *, quiet: bool = False) -> tuple[int, str]:
 def _gh_write(args: list[str], *, quiet: bool = False, stdin_null: bool = False) -> int:
     """A write whose stdout the twin sends to `/dev/null`. Returns the exit code.
 
-    `quiet` is `2>&1` into the same place, which the advisory writes use and the
-    two fatal ones (the report comment, the marker) deliberately do not.
+    `quiet` is `2>&1` into the same place, which the advisory writes use and the two fatal ones (the report comment, the marker) deliberately do not.
     """
     try:
         proc = subprocess.run(
@@ -405,13 +350,9 @@ def _gh_write(args: list[str], *, quiet: bool = False, stdin_null: bool = False)
 def gh_retry(what: str, args: list[str], *, sleep=time.sleep) -> tuple[int, str]:
     """`gh_retry` / `_gh_probe false` (common.sh:434-470), stderr and all.
 
-    Three attempts, `sleep attempt*3` between them, a `log_warn` per retry, and
-    on total failure a `log_error` plus gh's own stderr replayed indented four
-    spaces. That replay is the half `2>/dev/null` deletes at every unfixed call
-    site, so it is reproduced rather than summarised.
+    Three attempts, `sleep attempt*3` between them, a `log_warn` per retry, and on total failure a `log_error` plus gh's own stderr replayed indented four spaces. That replay is the half `2>/dev/null` deletes at every unfixed call site, so it is reproduced rather than summarised.
 
-    `sleep` is injectable so a test can assert the schedule without spending it.
-    The DIFFERENTIAL does spend it, because the twin does.
+    `sleep` is injectable so a test can assert the schedule without spending it. The DIFFERENTIAL does spend it, because the twin does.
     """
     rc = 0
     err = ""
@@ -474,16 +415,12 @@ def _jq_test(args: list[str], *, stdin: str) -> bool:
 def sed_replacement(text: str) -> str:
     """`sed_replacement` (twin :198-204). Escape TEXT for the RHS of `s|...|...|`.
 
-    THE BUG THIS CLOSES, from the first epic-scoped review of PR #583 (run
-    33445357414, job 99663191041): `sed: -e expression #6, char 77: unterminated
+    THE BUG THIS CLOSES, from the first epic-scoped review of PR #583 (run 33445357414, job 99663191041): `sed: -e expression #6, char 77: unterminated
     's' command`. Expression #6 is `{{EPIC_SCOPE}}` and the scope paragraph is
     seven lines; a replacement may not contain a raw newline, so the whole review
     died before it began on prose this script authors itself.
 
-    Four things are unsafe and all four are escaped: a backslash (starts an
-    escape), the `|` delimiter (ends the command), `&` (expands to the whole
-    match) and a newline (must be backslash-continued). Backslash goes FIRST or
-    it re-escapes the escapes.
+    Four things are unsafe and all four are escaped: a backslash (starts an escape), the `|` delimiter (ends the command), `&` (expands to the whole match) and a newline (must be backslash-continued). Backslash goes FIRST or it re-escapes the escapes.
     """
     out = text.replace("\\", "\\\\")
     out = out.replace("|", "\\|")
@@ -494,10 +431,7 @@ def sed_replacement(text: str) -> str:
 def extract_findings_fence(text: str) -> str:
     """The `--post-findings` awk (twin :333-340). LAST opener, LAST closer.
 
-    A finding's own `body` may embed a ``` fence (a review bot suggesting a code
-    fix), so stopping at the FIRST closing fence truncates the array and silently
-    drops all of it. This anchors to the LAST `json:review-findings` opener and
-    takes everything up to that block's LAST closing fence.
+    A finding's own `body` may embed a ``` fence (a review bot suggesting a code fix), so stopping at the FIRST closing fence truncates the array and silently drops all of it. This anchors to the LAST `json:review-findings` opener and takes everything up to that block's LAST closing fence.
 
     A new opener resets the buffer, which is what makes "last opener" true.
     """
@@ -524,11 +458,7 @@ def extract_findings_fence(text: str) -> str:
 def extract_labels_fence(text: str) -> str:
     """The `--apply-labels` awk (twin :462-467 and :485-490). LAST opener, FIRST closer.
 
-    Deliberately a DIFFERENT scanner from the findings one above: a verdict
-    object cannot contain a nested fence, and "a report may quote the required
-    format before emitting its real one" is the case that matters, so the LAST
-    fence wins and its first closer ends it. `capturing` going false without
-    clearing the buffer is what makes `END` print the last opened block.
+    Deliberately a DIFFERENT scanner from the findings one above: a verdict object cannot contain a nested fence, and "a report may quote the required format before emitting its real one" is the case that matters, so the LAST fence wins and its first closer ends it. `capturing` going false without clearing the buffer is what makes `END` print the last opened block.
     """
     opener = re.compile(r"^%s```%s%s$" % (_WS_CLASS, re.escape(LABELS_FENCE), _WS_CLASS))
     closer = re.compile(r"^%s```%s$" % (_WS_CLASS, _WS_CLASS))
@@ -579,9 +509,7 @@ def awk_second_fields(text: str) -> str:
 def grep_fixed_inverse(names: list[str], patterns_blob: str) -> str:
     """`grep -Fxv -f <(printf '%s\\n' "$patterns")`: drop exact-line matches.
 
-    `printf '%s\\n'` on an EMPTY blob writes a single empty line, and `-x` makes
-    the empty pattern match only empty lines, so no submodules means nothing is
-    dropped. That is the arm a hand-rolled `if patterns:` guard would get wrong.
+    `printf '%s\\n'` on an EMPTY blob writes a single empty line, and `-x` makes the empty pattern match only empty lines, so no submodules means nothing is dropped. That is the arm a hand-rolled `if patterns:` guard would get wrong.
     """
     patterns = set((patterns_blob + "\n").split("\n"))
     return "\n".join(name for name in names if name not in patterns)
@@ -600,10 +528,7 @@ def split_ledger_labels(prev: str) -> list[str]:
 def _arith_or_die(word: str, context: str) -> int:
     """Bash arithmetic on an untrusted word, with the twin's failure preserved.
 
-    Under `set -u` a non-numeric word inside `$(( ))` is read as a VARIABLE NAME
-    and the shell dies with `<word>: unbound variable`, exit 1. Python would
-    happily raise a `ValueError` somewhere unrelated, or worse, coerce. See
-    DEFECT 2 in the module docstring for why this arm is reachable at all.
+    Under `set -u` a non-numeric word inside `$(( ))` is read as a VARIABLE NAME and the shell dies with `<word>: unbound variable`, exit 1. Python would happily raise a `ValueError` somewhere unrelated, or worse, coerce. See DEFECT 2 in the module docstring for why this arm is reachable at all.
     """
     text = word.strip()
     if re.fullmatch(r"[+-]?[0-9]+", text):
@@ -708,15 +633,9 @@ def emit_prompt(output_path: str, template: pathlib.Path, fields: dict[str, str]
 
     RENDER FIRST, APPEND SECOND, and the ordering is the point rather than
     style. The block used to be `{ echo delim; sed ...; echo delim; } >> $GITHUB_
-    OUTPUT` under `bash -e`, so when sed died the OPENING delimiter had already
-    been written and the closing one never was, and GitHub then reported
-    `Invalid value. Matching delimiter not found 'CLAUDE_REVIEW_PROMPT_EOF'`
-    over the real error. A corrupted `$GITHUB_OUTPUT` also poisons every later
-    step's outputs.
+    OUTPUT` under `bash -e`, so when sed died the OPENING delimiter had already been written and the closing one never was, and GitHub then reported `Invalid value. Matching delimiter not found 'CLAUDE_REVIEW_PROMPT_EOF'` over the real error. A corrupted `$GITHUB_OUTPUT` also poisons every later step's outputs.
 
-    REAL `sed` RUNS HERE, with the twin's six expressions in the twin's order,
-    because its stdout is the product and its stderr is what a caller reads when
-    a template goes missing.
+    REAL `sed` RUNS HERE, with the twin's six expressions in the twin's order, because its stdout is the product and its stderr is what a caller reads when a template goes missing.
     """
     argv = ["sed"]
     for placeholder in (
@@ -746,8 +665,7 @@ def emit_prompt(output_path: str, template: pathlib.Path, fields: dict[str, str]
 def epic_scope_text(epic: str) -> str:
     """`{{EPIC_SCOPE}}` (twin :218-226): a real instruction, or nothing at all.
 
-    Empty for a flat review, so the flat prompt stays byte-identical to what it
-    was before epics existed.
+    Empty for a flat review, so the flat prompt stays byte-identical to what it was before epics existed.
     """
     if not epic:
         return ""
@@ -765,11 +683,7 @@ def epic_scope_text(epic: str) -> str:
 def review_report_count(repo: str, pr: str, epic: str) -> tuple[int, int]:
     """`review_report_count` (common.sh:589-596). Returns (count, exit-code).
 
-    KEYS ON THE HEADER ALONE, which is a PRODUCER CONSTANT this file writes
-    verbatim rather than a description of one. common.sh:560-573 records what a
-    content qualifier cost: it undercounted every measured PR, "#551 counted 0 of
-    1 (a completed, marked review costing $4.66 registering as never having
-    happened), #550 5 of 7, #546 3 of 7, #543 1 of 9". Never re-add one.
+    KEYS ON THE HEADER ALONE, which is a PRODUCER CONSTANT this file writes verbatim rather than a description of one. common.sh:560-573 records what a content qualifier cost: it undercounted every measured PR, "#551 counted 0 of 1 (a completed, marked review costing $4.66 registering as never having happened), #550 5 of 7, #546 3 of 7, #543 1 of 9". Never re-add one.
     """
     needle = review_budget.REPORT_NEEDLE
     if epic:
@@ -797,10 +711,7 @@ def review_report_count(repo: str, pr: str, epic: str) -> tuple[int, int]:
 def review_attempt_states(repo: str, pr: str, prefix: str) -> tuple[list, int]:
     """`review_attempt_states` (common.sh:686-703). Returns (states, exit-code).
 
-    The bodies are streamed with a `---REVIEW-ATTEMPT-EOF---` sentinel between
-    them because a marker body is multi-line and jq cannot express "the count and
-    the class are lines within it". The parse is `review_budget.parse_attempt_
-    states`, which is the twin's awk exactly.
+    The bodies are streamed with a `---REVIEW-ATTEMPT-EOF---` sentinel between them because a marker body is multi-line and jq cannot express "the count and the class are lines within it". The parse is `review_budget.parse_attempt_ states`, which is the twin's awk exactly.
     """
     rc, out = gh_retry(
         "review_attempt_states",
@@ -821,9 +732,7 @@ def review_attempt_states(repo: str, pr: str, prefix: str) -> tuple[list, int]:
 def pr_diff_loc(repo: str, pr: str) -> int:
     """`pr_diff_loc` (common.sh:766-772). additions + deletions, or 0.
 
-    "Failing to 0 puts an unreadable PR in the SMALLEST bucket, which is the
-    conservative direction: it spends fewer review passes, never more." Note the
-    numeric guard here that `emit_review_turns` does not have (DEFECT 2).
+    "Failing to 0 puts an unreadable PR in the SMALLEST bucket, which is the conservative direction: it spends fewer review passes, never more." Note the numeric guard here that `emit_review_turns` does not have (DEFECT 2).
     """
     rc, out = _gh(
         [
@@ -849,9 +758,7 @@ def pr_diff_loc(repo: str, pr: str) -> int:
 def submodule_paths() -> str:
     """`git config -f .gitmodules --get-regexp '^submodule\\..*\\.path$' | awk '{print $2}'`.
 
-    Reads `.gitmodules` in the CURRENT DIRECTORY, which is the twin's behaviour:
-    a run from the wrong cwd sees no submodules and reads a pointer bump as a
-    real change, which fails OPEN into a review rather than skipping one.
+    Reads `.gitmodules` in the CURRENT DIRECTORY, which is the twin's behaviour: a run from the wrong cwd sees no submodules and reads a pointer bump as a real change, which fails OPEN into a review rather than skipping one.
     """
     try:
         proc = subprocess.run(
@@ -1103,14 +1010,9 @@ def run_gate() -> int:
 def run_post_report() -> int:
     """Post the review report when the ACTION could not.
 
-    `track_progress` (which makes the action post/update the report comment
-    itself) is rejected by the action for any event outside
+    `track_progress` (which makes the action post/update the report comment itself) is rejected by the action for any event outside
     pull_request/issues/issue_comment/pull_request_review{,_comment}, so on the
-    workflow_run entry point the action runs in AGENT mode, creates no tracking
-    comment at all, and leaves the report existing only as the model's final text
-    inside the execution file. Posting it from here gives both entry points one
-    shape of report, with the action's OWN header prefix ("**Claude finished
-    ..."), which is the signature `review_report_count`,
+    workflow_run entry point the action runs in AGENT mode, creates no tracking comment at all, and leaves the report existing only as the model's final text inside the execution file. Posting it from here gives both entry points one shape of report, with the action's OWN header prefix ("**Claude finished ..."), which is the signature `review_report_count`,
     `check-review-report-replies.sh` and `--post-findings` all match on.
     """
     pr = common.require_var("PR_NUMBER")
@@ -1164,11 +1066,8 @@ def run_post_report() -> int:
 def run_post_findings() -> int:
     """Line-anchored review comments with severity badges, from the report fence.
 
-    The model's final report text is the ONLY channel proven to escape the action
-    sandbox, so inline posting is done HERE, deterministically, via github_token.
-    ADVISORY BY DESIGN: per-comment failures (line not in diff, stale position)
-    are logged and skipped, and this mode never fails the job -- the summary
-    report already posted, and a failure here would skip the following `--mark`.
+    The model's final report text is the ONLY channel proven to escape the action sandbox, so inline posting is done HERE, deterministically, via github_token. ADVISORY BY DESIGN: per-comment failures (line not in diff, stale position) are logged and skipped, and this mode never fails the job -- the summary report already posted, and a failure here would skip the following
+    `--mark`.
     """
     pr = common.require_var("PR_NUMBER")
     head_sha = common.require_var("HEAD_SHA")
@@ -1257,8 +1156,7 @@ def run_apply_labels() -> int:
          proven to escape the action sandbox and it is already being produced:
          zero extra invocations, zero extra turns, nothing in `review_spend_total`.
 
-    Every failure below logs and returns 0. A label is never worth failing the
-    review job or blocking a merge over.
+    Every failure below logs and returns 0. A label is never worth failing the review job or blocking a merge over.
     """
     pr = common.require_var("PR_NUMBER")
     head_sha = common.require_var("HEAD_SHA")
@@ -1519,17 +1417,10 @@ def run_apply_labels() -> int:
 def run_mark() -> int:
     """Upsert the reviewed-SHA marker, or record a SPENT ATTEMPT.
 
-    A review that burned its budget and produced nothing still COST money, and
-    until 2026-07-30 it cost it for free: the step failed, every following step
-    was skipped by implicit `success()`, no marker was written, and
-    `review_report_count` (which counts POSTED reports) stayed at zero, so the
-    cap never advanced and the same SHA was re-reviewed at full price on every
-    subsequent green push, able to fail identically forever.
+    A review that burned its budget and produced nothing still COST money, and until 2026-07-30 it cost it for free: the step failed, every following step was skipped by implicit `success()`, no marker was written, and `review_report_count` (which counts POSTED reports) stayed at zero, so the cap never advanced and the same SHA was re-reviewed at full price on every subsequent
+    green push, able to fail identically forever.
 
-    An attempt marker is deliberately NOT a reviewed marker: its own prefix keeps
-    it invisible to `last_marker_sha` (a spent attempt must never suppress a
-    later genuine review of the same SHA by pretending the code was read) while
-    `review_chargeable_attempts` does see it, so it consumes budget.
+    An attempt marker is deliberately NOT a reviewed marker: its own prefix keeps it invisible to `last_marker_sha` (a spent attempt must never suppress a later genuine review of the same SHA by pretending the code was read) while `review_chargeable_attempts` does see it, so it consumes budget.
     """
     pr = common.require_var("PR_NUMBER")
     head_sha = common.require_var("HEAD_SHA")
@@ -1721,9 +1612,7 @@ def run_mark() -> int:
 def _repo() -> str:
     """`${GITHUB_REPOSITORY}`, unbraced-default in the twin.
 
-    With `set -u` and the variable unset the twin dies with
-    `GITHUB_REPOSITORY: unbound variable` and exit 1, which names a line rather
-    than a cause. Same exit code here, with the cause in words.
+    With `set -u` and the variable unset the twin dies with `GITHUB_REPOSITORY: unbound variable` and exit 1, which names a line rather than a cause. Same exit code here, with the cause in words.
     """
     slug = os.environ.get("GITHUB_REPOSITORY", "")
     if not slug:
@@ -1746,8 +1635,7 @@ MODES = {
 def main(argv: list[str]) -> int:
     """`$1` selects the arm; anything unrecognised falls through to gate mode.
 
-    `require_cmd gh` and `require_cmd jq` run BEFORE the dispatch, for every arm,
-    exactly as the twin runs them at :46-47.
+    `require_cmd gh` and `require_cmd jq` run BEFORE the dispatch, for every arm, exactly as the twin runs them at :46-47.
     """
     try:
         common.require_cmd("gh")

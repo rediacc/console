@@ -1,80 +1,42 @@
 """Under `pipefail`, a locally-defined function piped into `grep -q` is a RACE.
 
 Ported from `.ci/scripts/quality/check-pipefail-grep-q.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live until a differential
-ledger row exists over K distinct trees. Its gate header registers it as step
-"No racing pipefail/grep -q detectors", lane quality-code, emit false, and it
-carries this BLOCKER, which is about WIRING rather than about the defect class,
-so it stays with the bash file: "runs before this lane's `- id: setup` step, so
-its hand-written step carries no `steps.setup.outcome` guard. Emitting it into
-the region would move it below that guard and skip it whenever setup fails."
+see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "No racing pipefail/grep -q detectors", lane quality-code, emit false, and it carries this BLOCKER, which is about WIRING rather than about the defect class, so it stays with the bash file: "runs before this lane's `- id:
+setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails."
 
-The twin's `why:` line, which is the one-sentence version: "A detector built as
-`producer | grep -q` under pipefail cannot reliably fail: grep -q exits at its
-first match, SIGPIPEs the producer, and pipefail makes that 141 the verdict.
-check-ci-watch-recipe.sh shipped exactly that in both detectors and certified 124
-files clean over a real offender for as long as it existed."
+The twin's `why:` line, which is the one-sentence version: "A detector built as `producer | grep -q` under pipefail cannot reliably fail: grep -q exits at its first match, SIGPIPEs the producer, and pipefail makes that 141 the verdict. check-ci-watch-recipe.sh shipped exactly that in both detectors and certified 124 files clean over a real offender for as long as it existed."
 
 -----------------------------------------------------------------------------
-THE TWIN'S HEADER, CARRIED WHOLE. Every paragraph below is evidence that cannot
-be recovered from the code, and a port that summarised it would destroy the only
-copy.
+THE TWIN'S HEADER, CARRIED WHOLE. Every paragraph below is evidence that cannot be recovered from the code, and a port that summarised it would destroy the only copy.
 -----------------------------------------------------------------------------
 
-THE MECHANISM. `grep -q` exits the instant it matches. That closes the pipe, the
-producer gets SIGPIPE, and its status becomes 141. `set -o pipefail` makes the
-RIGHTMOST NON-ZERO status the pipeline's status -- so a pipeline that MATCHED
-reports 141, i.e. false. Whether it happens depends on whether the producer has
-already written everything into the 64 KB pipe buffer and exited, which is a
+THE MECHANISM. `grep -q` exits the instant it matches. That closes the pipe, the producer gets SIGPIPE, and its status becomes 141. `set -o pipefail` makes the RIGHTMOST NON-ZERO status the pipeline's status -- so a pipeline that MATCHED reports 141, i.e. false. Whether it happens depends on whether the producer has already written everything into the 64 KB pipe buffer and exited,
+which is a
 function of output size and machine load. The same code returns different answers
 on different days.
 
-WHAT IT COST. `.ci/scripts/quality/check-ci-watch-recipe.sh` had exactly this in
-both of its detectors:
+WHAT IT COST. `.ci/scripts/quality/check-ci-watch-recipe.sh` had exactly this in both of its detectors:
 
     hands_out_banned() { advice_only "$1" | grep -qE '<banned>'; }
 
-Measured 2026-08-27 against .claude/hooks/test-hooks.sh, 1,644 lines then (hit at
-line 692 of the filtered stream): 8/8 trips WITHOUT pipefail, 0/8 WITH it. The gate had
-been printing "no hand-rolled watch in 124 scanned file(s)" over a real offender,
-and went red exactly once -- under `npm run ci`'s parallel load, where the timing
-flipped. Its own four controls could not have caught it: all of them ran on
-2-line fixtures, where the producer finishes long before `grep -q` exits, so the
-mechanism does not exist at that size.
+Measured 2026-08-27 against .claude/hooks/test-hooks.sh, 1,644 lines then (hit at line 692 of the filtered stream): 8/8 trips WITHOUT pipefail, 0/8 WITH it. The gate had been printing "no hand-rolled watch in 124 scanned file(s)" over a real offender, and went red exactly once -- under `npm run ci`'s parallel load, where the timing flipped. Its own four controls could not have
+caught it: all of them ran on 2-line fixtures, where the producer finishes long before `grep -q` exits, so the mechanism does not exist at that size.
 
-THE SUBJECT IS THE SIZE, NOT THAT FILE. It was 1,644 lines the day this was
-measured, 2,774 by 2026-09-09, and it is being ported out of bash into
-.claude/rediacc_hooks/tests/ -- so the citation is dated on purpose and the
-large-file control below is what keeps the measurement reproducible after the
-file it names is gone.
+THE SUBJECT IS THE SIZE, NOT THAT FILE. It was 1,644 lines the day this was measured, 2,774 by 2026-09-09, and it is being ported out of bash into .claude/rediacc_hooks/tests/ -- so the citation is dated on purpose and the large-file control below is what keeps the measurement reproducible after the file it names is gone.
 
-WHY A LOCALLY-DEFINED FUNCTION IS THE TEST, and not "any pipe into grep -q".
-There are 115 `| grep -q` sites under pipefail in this repo. What makes the shape
-MOST dangerous is a producer whose output SCALES WITH ITS INPUT -- a function that
-reads a file, filters a corpus, enumerates a tree. Judging "is the producer a
+WHY A LOCALLY-DEFINED FUNCTION IS THE TEST, and not "any pipe into grep -q". There are 115 `| grep -q` sites under pipefail in this repo. What makes the shape MOST dangerous is a producer whose output SCALES WITH ITS INPUT -- a function that reads a file, filters a corpus, enumerates a tree. Judging "is the producer a
 function this file defines" is a property this gate owns, independent of what the
-code claims, which is the trap gates.md warns about: an assertion that re-asks a
-question the code already answered cannot fire.
+code claims, which is the trap gates.md warns about: an assertion that re-asks a question the code already answered cannot fire.
 
-THE EXEMPTION BELOW USED TO BE STATED AS SAFETY, AND THAT WAS WRONG. This block
-previously read "almost all are harmless: `printf '%s' "$x" | grep -q` has a
-bounded producer that finishes before anything can race". Falsified on 2026-08-31
-by CI run 33432878128, job 99628247967:
+THE EXEMPTION BELOW USED TO BE STATED AS SAFETY, AND THAT WAS WRONG. This block previously read "almost all are harmless: `printf '%s' "$x" | grep -q` has a bounded producer that finishes before anything can race". Falsified on 2026-08-31 by CI run 33432878128, job 99628247967:
 
     .ci/scripts/test/gates/test-run-sh.sh:67
     if printf '%s' "$QA" | grep -q 'return 1'; then
 
-`$QA` is 1129 bytes, far inside the 64 KB pipe buffer, and the match sits on line
-23 of ~30. It still raced: the log carries `printf: write error: Broken pipe` and
-the branch took the else, reporting "quality_all has no failure path" against code
-whose `return 1` grep had just FOUND. EPIPE does not depend on the buffer filling.
-It depends on whether `grep -q` has already exited and CLOSED the read end when
-the write syscall lands, and that is pure scheduling. A bounded producer is less
-likely to lose the race, never immune to it.
+`$QA` is 1129 bytes, far inside the 64 KB pipe buffer, and the match sits on line 23 of ~30. It still raced: the log carries `printf: write error: Broken pipe` and the branch took the else, reporting "quality_all has no failure path" against code whose `return 1` grep had just FOUND. EPIPE does not depend on the buffer filling. It depends on whether `grep -q` has already exited and
+CLOSED the read end when the write syscall lands, and that is pure scheduling. A bounded producer is less likely to lose the race, never immune to it.
 
-THE BOUNDED PRODUCERS STOPPED BEING EXEMPT ON 2026-09-16, and the deferral that
-used to sit here -- "a separate, larger, still-untriaged class" -- was closed by
-measuring it rather than by arguing about it. The measurement:
+THE BOUNDED PRODUCERS STOPPED BEING EXEMPT ON 2026-09-16, and the deferral that used to sit here -- "a separate, larger, still-untriaged class" -- was closed by measuring it rather than by arguing about it. The measurement:
 `set -uo pipefail; if printf '%s' "$s" | grep -q NEEDLE; ...` with the NEEDLE on
 line 1, 40 trials per size, this host::
 
@@ -88,29 +50,17 @@ line 1, 40 trials per size, this host::
      65,556 B      39/40          40/40
     300,078 B      40/40            --
 
-So the shell BUILTINS reproduce the class outright, and the knee sits between
-32 KB and 48 KB -- BELOW the nominal 64 KB pipe buffer, because `grep -q` exits
-after its FIRST READ rather than after the buffer fills. This also re-confirms
-the 2026-08-31 datum above from the other side: a 1129-byte printf is 0/80 here
-and still lost the race once in CI under load, so sub-knee is RARE, not SAFE.
+So the shell BUILTINS reproduce the class outright, and the knee sits between 32 KB and 48 KB -- BELOW the nominal 64 KB pipe buffer, because `grep -q` exits after its FIRST READ rather than after the buffer fills. This also re-confirms the 2026-08-31 datum above from the other side: a 1129-byte printf is 0/80 here and still lost the race once in CI under load, so sub-knee is RARE,
+not SAFE.
 
-The mechanism differs and the effect does not: a BUILTIN takes EPIPE and returns
-non-zero, an EXTERNAL producer is SIGPIPE'd to 141, and under `pipefail` both
-make a pipeline that MATCHED report false. `printf` and `echo` are therefore in
-SCALING_PRODUCERS, and the eleven sites that widening found across eight files
-were converted in the same change.
+The mechanism differs and the effect does not: a BUILTIN takes EPIPE and returns non-zero, an EXTERNAL producer is SIGPIPE'd to 141, and under `pipefail` both make a pipeline that MATCHED report false. `printf` and `echo` are therefore in SCALING_PRODUCERS, and the eleven sites that widening found across eight files were converted in the same change.
 
-`.claude/oracles/**` IS EXCLUDED FROM THE CORPUS ON PURPOSE and holds eight of
-the shape. Those files are the FROZEN bash originals for
-`.claude/rediacc_hooks/guards/block_compacted_plan_edit.py` and
+`.claude/oracles/**` IS EXCLUDED FROM THE CORPUS ON PURPOSE and holds eight of the shape. Those files are the FROZEN bash originals for `.claude/rediacc_hooks/guards/block_compacted_plan_edit.py` and
 `block_unlinked_commit_author.py`; `.claude/oracles/README.md:49-54` says "They
 are FROZEN. Do not fix a bug here; fix it in the port." Nothing registers them,
-the live code is Python and has no pipe, so the eight are not defects and must
-not be converted. Recorded here so the next sweep does not re-derive 47 files
-and 104 sites and have to work out again why they do not count.
+the live code is Python and has no pipe, so the eight are not defects and must not be converted. Recorded here so the next sweep does not re-derive 47 files and 104 sites and have to work out again why they do not count.
 
-THE PIPEFAIL TEST IS PER-FILE, AND IT IS WRONG IN BOTH DIRECTIONS. It greps the
-whole file for `set -o pipefail` and cannot see an inner shell's options:
+THE PIPEFAIL TEST IS PER-FILE, AND IT IS WRONG IN BOTH DIRECTIONS. It greps the whole file for `set -o pipefail` and cannot see an inner shell's options:
 
   FALSE POSITIVE -- `.ci/scripts/test/test-install-methods.sh:1129`. The file
   sets `set -euo pipefail` at line 29, but the flagged line lives inside a
@@ -131,8 +81,7 @@ whole file for `set -o pipefail` and cannot see an inner shell's options:
   every tracked shell file that lacks its own pipefail and is sourced by one that
   has it, this is the ONLY such site in the repository.
 
-THE FIX IS ALWAYS THE SAME and is a drop-in: command substitution reads the
-producer to completion, so there is no signal to race.
+THE FIX IS ALWAYS THE SAME and is a drop-in: command substitution reads the producer to completion, so there is no signal to race.
 
     [ -n "$(producer | grep -E '<pattern>')" ]
 
@@ -153,91 +102,46 @@ THREE CAVEATS ON THAT DROP-IN, each paid for by a site in the 2026-09-16 sweep:
      position in the same `&&`/`||` list. Verify by RUNNING the file, not by
      reading it.
 
-NO BASELINE, deliberately. The class was 13 sites and every one was converted, so
-this gate stands at zero with an anti-vacuity floor. A baseline here would have
-recorded ten provably-safe sites as debt and left three real risks sitting in a
-list that says "known, fine" -- and a stale baseline entry is a slot where the
-next regression hides.
+NO BASELINE, deliberately. The class was 13 sites and every one was converted, so this gate stands at zero with an anti-vacuity floor. A baseline here would have recorded ten provably-safe sites as debt and left three real risks sitting in a list that says "known, fine" -- and a stale baseline entry is a slot where the next regression hides.
 
-THE MECHANISM CONTROL ASKS THE OPERATING SYSTEM, not this gate's regex.
-Everything else here is pattern matching, and pattern matching cannot tell you
-the mechanism is real on the machine the gate runs on. If SIGPIPE-under-pipefail
-ever stops flipping the verdict, this gate is guarding a myth and should say so
-rather than keep passing. THE PRODUCER MUST BE ONE THAT DIES ON SIGPIPE, and not
-every command does. Measured on this host (uutils coreutils 0.8.0, ugrep 7.8.4):
+THE MECHANISM CONTROL ASKS THE OPERATING SYSTEM, not this gate's regex. Everything else here is pattern matching, and pattern matching cannot tell you the mechanism is real on the machine the gate runs on. If SIGPIPE-under-pipefail ever stops flipping the verdict, this gate is guarding a myth and should say so rather than keep passing. THE PRODUCER MUST BE ONE THAT DIES ON SIGPIPE,
+and not every command does. Measured on this host (uutils coreutils 0.8.0, ugrep 7.8.4):
 `grep -v`, `sed` and `awk` all exhibit the race; `cat` does NOT -- uutils cat
-reports success on a 300 KB producer that was killed mid-write. The first draft
-of this control used `cat` and therefore could not reproduce the very mechanism
+reports success on a 300 KB producer that was killed mid-write. The first draft of this control used `cat` and therefore could not reproduce the very mechanism
 the gate exists for; the control refused to pass, which is what caught it.
-`grep -v` is used because that is literally what the defect's producer was:
-`advice_only()` in check-ci-watch-recipe.sh is a `grep -vE`.
+`grep -v` is used because that is literally what the defect's producer was: `advice_only()` in check-ci-watch-recipe.sh is a `grep -vE`.
 
-THE FIXTURE IS ASSEMBLED AT RUNTIME so this file's own TEXT never carries the
-racing shape contiguously. Written out literally, the gate flagged its own control
-fixture -- correctly, by its rule, since the fixture IS the bad shape on purpose.
-Self-exemption was the wrong answer: a gate that skips its own file stops policing
-the one script most likely to grow this bug next. The same runtime-concatenation
-convention test-hooks.sh uses for banned tokens.
+THE FIXTURE IS ASSEMBLED AT RUNTIME so this file's own TEXT never carries the racing shape contiguously. Written out literally, the gate flagged its own control fixture -- correctly, by its rule, since the fixture IS the bad shape on purpose. Self-exemption was the wrong answer: a gate that skips its own file stops policing the one script most likely to grow this bug next. The same
+runtime-concatenation convention test-hooks.sh uses for banned tokens.
 
-COMMENTS AND STRING LITERALS ARE BOTH STRIPPED FIRST, and the second one was
-learned the hard way: this gate flagged ITSELF the moment it became a tracked
-file, because its own message text says "no racing <function> | grep -q ..." and
-`pass` is a function it defines. Four findings, every one of them prose describing
-the very bug the gate exists for. That is the mention-as-execution class, this
-time inside the gate written to catch a different class -- and its own fixture
-heredoc (`if producer "$2" | grep -q ...`) is real code that must stay quoted-out
-too, since it is a CONTROL, not a defect. `sed` blanks quoted spans rather than
-deleting the line, so line numbers stay honest in the report.
+COMMENTS AND STRING LITERALS ARE BOTH STRIPPED FIRST, and the second one was learned the hard way: this gate flagged ITSELF the moment it became a tracked file, because its own message text says "no racing <function> | grep -q ..." and `pass` is a function it defines. Four findings, every one of them prose describing the very bug the gate exists for. That is the
+mention-as-execution class, this time inside the gate written to catch a different class -- and its own fixture heredoc (`if producer "$2" | grep -q ...`) is real code that must stay quoted-out too, since it is a CONTROL, not a defect. `sed` blanks quoted spans rather than deleting the line, so line numbers stay honest in the report.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE CORPUS IS `git ls-files`, INVOKED, NOT REIMPLEMENTED. The twin's pathspecs
-(`.ci/scripts/**/*.sh`, `scripts/**/*.sh`, `.claude/hooks/**/*.sh`) are matched by
-git's wildmatch, which by default lets `*` cross a `/`. A `pathlib.rglob`
-rewrite would be a SECOND definition of the corpus and would drift from the
-twin's the first time a directory moved -- and a corpus that quietly narrows is
-precisely the vacuity this gate's own floor exists to catch. It is a subprocess.
+THE CORPUS IS `git ls-files`, INVOKED, NOT REIMPLEMENTED. The twin's pathspecs (`.ci/scripts/**/*.sh`, `scripts/**/*.sh`, `.claude/hooks/**/*.sh`) are matched by git's wildmatch, which by default lets `*` cross a `/`. A `pathlib.rglob` rewrite would be a SECOND definition of the corpus and would drift from the twin's the first time a directory moved -- and a corpus that quietly
+narrows is precisely the vacuity this gate's own floor exists to catch. It is a subprocess.
 
-THE COLOUR CONDITION IS THE TWIN'S BUG, CARRIED. `[ -t 1 ]` tests STDOUT and
-`fail()` writes its coloured line to STDERR, which is the 11-file variant
-`rediacc_ci.log` was written to replace. `rediacc_ci.log` is deliberately NOT used
-here: it would decide colour from stderr and disable it under CI, so the two
-implementations would emit different bytes in exactly the environment CI runs in.
-Reported as a twin finding instead of repaired.
+THE COLOUR CONDITION IS THE TWIN'S BUG, CARRIED. `[ -t 1 ]` tests STDOUT and `fail()` writes its coloured line to STDERR, which is the 11-file variant `rediacc_ci.log` was written to replace. `rediacc_ci.log` is deliberately NOT used here: it would decide colour from stderr and disable it under CI, so the two implementations would emit different bytes in exactly the environment CI
+runs in. Reported as a twin finding instead of repaired.
 
-THE MECHANISM CONTROL IS RUN FOR REAL, in a bash child, with a 300 KB producer.
-It is the one control that would be worthless as a pure-Python assertion: the
-whole claim is about what the OPERATING SYSTEM does to a writer whose reader has
-gone, and Python cannot answer that on bash's behalf. Both implementations
-therefore spawn the same fixture, and if the host ever stops reproducing the race
-BOTH go red together, which is the correct joint behaviour.
+THE MECHANISM CONTROL IS RUN FOR REAL, in a bash child, with a 300 KB producer. It is the one control that would be worthless as a pure-Python assertion: the whole claim is about what the OPERATING SYSTEM does to a writer whose reader has gone, and Python cannot answer that on bash's behalf. Both implementations therefore spawn the same fixture, and if the host ever stops
+reproducing the race BOTH go red together, which is the correct joint behaviour.
 
-THERE ARE TWO OF THEM SINCE 2026-09-16, AND THE SECOND IS NOT A DUPLICATE. The
-original kills an EXTERNAL producer with SIGPIPE. A BUILTIN reaches the same
-verdict down a different kernel path: bash traps SIGPIPE for its own builtins, so
-`printf` does not die -- it takes EPIPE from write(2) and returns non-zero, which
-`pipefail` promotes to the pipeline's status. Adding `printf`/`echo` to
-SCALING_PRODUCERS without `mechanism_builtin_output()` would have left the two
-builtin controls guarding a claim nothing on the host had confirmed.
+THERE ARE TWO OF THEM SINCE 2026-09-16, AND THE SECOND IS NOT A DUPLICATE. The original kills an EXTERNAL producer with SIGPIPE. A BUILTIN reaches the same verdict down a different kernel path: bash traps SIGPIPE for its own builtins, so `printf` does not die -- it takes EPIPE from write(2) and returns non-zero, which `pipefail` promotes to the pipeline's status. Adding
+`printf`/`echo` to SCALING_PRODUCERS without `mechanism_builtin_output()` would have left the two builtin controls guarding a claim nothing on the host had confirmed.
 
-THE SED IS THREE SUBSTITUTIONS IN ORDER, per line: strip from the first `#` to
-end of line, then blank single-quoted spans, then blank double-quoted spans.
-Order matters -- a `#` inside a string is removed before the string is blanked,
-which is the twin's behaviour and not obviously right, but changing it would
-change which lines are findings.
+THE SED IS THREE SUBSTITUTIONS IN ORDER, per line: strip from the first `#` to end of line, then blank single-quoted spans, then blank double-quoted spans. Order matters -- a `#` inside a string is removed before the string is blanked, which is the twin's behaviour and not obviously right, but changing it would change which lines are findings.
 
 `\\b` AND `[[:space:]]` are written out rather than abbreviated. `\\b` means the
 same thing in both engines for ASCII identifiers; `[[:space:]]` does not equal
-Python's `\\s`, which additionally matches U+00A0 and U+2028, so the class is
-spelled literally.
+Python's `\\s`, which additionally matches U+00A0 and U+2028, so the class is spelled literally.
 
 SORT ORDER IS BYTEWISE IN BOTH. The twin pipes function names through `sort -u`
 with no locale pinned, and the differential harness exports LC_ALL=C; Python's
-`sorted()` on ASCII identifiers is the same order. Named because a locale-aware
-sort would reorder findings, and while the comparator treats findings as an
-unordered multiset, a human diffing the two streams would see churn.
+`sorted()` on ASCII identifiers is the same order. Named because a locale-aware sort would reorder findings, and while the comparator treats findings as an unordered multiset, a human diffing the two streams would see churn.
 """
 
 import os
@@ -356,8 +260,7 @@ SCALING_PRODUCERS = (
 def inherits_pipefail(rel: str | None) -> bool:
     """The twin's `inherits_pipefail`. An EMPTY path is false.
 
-    Fixture controls have no repo-relative identity, so they keep testing the
-    ordinary per-file rule.
+    Fixture controls have no repo-relative identity, so they keep testing the ordinary per-file rule.
     """
     return bool(rel) and str(rel).startswith(INHERITS_PIPEFAIL_PREFIXES)
 
@@ -365,9 +268,7 @@ def inherits_pipefail(rel: str | None) -> bool:
 def strip_code(line: str) -> str:
     """The twin's `sed -e 's/#.*$//' -e "s/'[^']*'/''/g" -e 's/"[^"]*"/""/g'`.
 
-    Blanks rather than deletes, so line numbers in the report stay honest.
-    Exported so `--selftest` can drive the mention-as-execution direction without
-    writing a file.
+    Blanks rather than deletes, so line numbers in the report stay honest. Exported so `--selftest` can drive the mention-as-execution direction without writing a file.
     """
     for pattern, replacement in (_STRIP_COMMENT, _BLANK_SQUOTE, _BLANK_DQUOTE):
         line = pattern.sub(replacement, line)
@@ -383,17 +284,10 @@ def local_functions(text: str) -> list[str]:
 def logical_lines(text: str) -> list[tuple[int, str]]:
     """Stripped lines, with a pipeline that CONTINUES onto the next line joined.
 
-    A pipeline written across several lines was invisible to a per-line regex,
-    and that is precisely how the `check-control-vacuity.sh` offender survived
-    every run of this gate: its three `grep` stages sit on three separate lines,
-    so no single line ever contained both a producer and `grep -q`.
+    A pipeline written across several lines was invisible to a per-line regex, and that is precisely how the `check-control-vacuity.sh` offender survived every run of this gate: its three `grep` stages sit on three separate lines, so no single line ever contained both a producer and `grep -q`.
 
-    A line whose stripped text ends in `|` is continued, so it is joined to the
-    one after it with NO separator inserted -- the next line's own leading
-    whitespace is what keeps the tokens apart, and inserting anything here would
-    make the twin and this port disagree byte for byte. The tuple carries the
-    number of the line the pipeline STARTED on, so the report still points at the
-    top of the construct rather than at its tail.
+    A line whose stripped text ends in `|` is continued, so it is joined to the one after it with NO separator inserted -- the next line's own leading whitespace is what keeps the tokens apart, and inserting anything here would make the twin and this port disagree byte for byte. The tuple carries the number of the line the pipeline STARTED on, so the report still points at the top
+    of the construct rather than at its tail.
     """
     out: list[tuple[int, str]] = []
     start = 0
@@ -430,10 +324,7 @@ def offenders_in(text: str, rel: str | None = None) -> list[str]:
     `inherits_pipefail()`; it is None for a fixture, which then takes the ordinary
     per-file test.
 
-    The order is the twin's: producer names in sorted order, and within each name
-    the file's own line order, because the twin runs one `grep -n` per name. A
-    line naming two different producers is therefore reported TWICE, which is real
-    and is preserved.
+    The order is the twin's: producer names in sorted order, and within each name the file's own line order, because the twin runs one `grep -n` per name. A line naming two different producers is therefore reported TWICE, which is real and is preserved.
     """
     if not inherits_pipefail(rel) and not PIPEFAIL_RE.search(text):
         return []
@@ -476,8 +367,7 @@ def scan_files(root: pathlib.Path) -> list[str]:
 def _write_big(big: pathlib.Path) -> None:
     """The twin's `{ echo NEEDLE; ...1500 x 200-byte lines... } >"$TMP/big.txt"`.
 
-    ~300 KB, well past the 64 KB pipe buffer, with the NEEDLE on line 1 so the
-    reader exits after its first read while the writer is still going.
+    ~300 KB, well past the 64 KB pipe buffer, with the NEEDLE on line 1 so the reader exits after its first read while the writer is still going.
     """
     pad = "x" * MECH_PAD_WIDTH
     with big.open("w", encoding="utf-8") as handle:
@@ -489,9 +379,7 @@ def _write_big(big: pathlib.Path) -> None:
 def mechanism_output(tmp: pathlib.Path) -> str:
     """Run the SIGPIPE fixture in a real bash child. "MISSED" means the race is live.
 
-    THE ONE CONTROL THAT ASKS THE OPERATING SYSTEM. See the module docstring: a
-    pure-Python assertion here would prove something about Python, and the claim
-    is about what bash and the kernel do to a writer whose reader has exited.
+    THE ONE CONTROL THAT ASKS THE OPERATING SYSTEM. See the module docstring: a pure-Python assertion here would prove something about Python, and the claim is about what bash and the kernel do to a writer whose reader has exited.
     """
     mech = tmp / "mech.sh"
     mech.write_text(
@@ -517,14 +405,9 @@ def mechanism_output(tmp: pathlib.Path) -> str:
 def mechanism_builtin_output(tmp: pathlib.Path) -> str:
     """The BUILTIN half of the mechanism, in a real bash child. "MISSED" means live.
 
-    Not a duplicate of `mechanism_output`: that one proves SIGPIPE kills an
-    EXTERNAL producer, and bash traps SIGPIPE for its own builtins, so `printf`
-    reaches the same verdict by taking EPIPE from write(2) instead. Adding
-    `printf`/`echo` to SCALING_PRODUCERS without this control would leave the two
-    builtin controls guarding a claim nothing on the host had confirmed.
+    Not a duplicate of `mechanism_output`: that one proves SIGPIPE kills an EXTERNAL producer, and bash traps SIGPIPE for its own builtins, so `printf` reaches the same verdict by taking EPIPE from write(2) instead. Adding `printf`/`echo` to SCALING_PRODUCERS without this control would leave the two builtin controls guarding a claim nothing on the host had confirmed.
 
-    Re-uses the same ~300 KB `big.txt` the external fixture writes, so the two
-    controls are measured against the identical payload.
+    Re-uses the same ~300 KB `big.txt` the external fixture writes, so the two controls are measured against the identical payload.
     """
     mech = tmp / "mech-builtin.sh"
     mech.write_text(
@@ -576,8 +459,7 @@ class _Report:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 clean, 1 on any failed control or any racing pipeline.
 
-    `--selftest` is intercepted BEFORE any real scan, which is the addition the
-    twin does not have. The twin takes no arguments, so no caller passes it.
+    `--selftest` is intercepted BEFORE any real scan, which is the addition the twin does not have. The twin takes no arguments, so no caller passes it.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -794,10 +676,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Plant each violation, prove it fires; remove it, prove it does not.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. The twin's own five fixture controls are
-    re-asserted here against `offenders_in` directly, plus the shapes the twin
-    does not cover: two functions on one line, a line number that survives
-    quoting, and the empty corpus.
+    BOTH DIRECTIONS FOR EVERY CONTROL. The twin's own five fixture controls are re-asserted here against `offenders_in` directly, plus the shapes the twin does not cover: two functions on one line, a line number that survives quoting, and the empty corpus.
     """
     # FLOOR 26, raised from 18 when the 2026-09-16 builtin widening added five controls (a printf pair, an echo pair, and the inherited-pipefail pair, less the one inverted mirror it replaced). The floor is the only thing that catches controls that stopped EXECUTING, so it tracks the real count rather than sitting comfortably below it.
     ctl = Controls("pipefail-grep-q", floor=26, verbose=True)

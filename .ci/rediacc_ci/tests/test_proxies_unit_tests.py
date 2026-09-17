@@ -1,23 +1,14 @@
 """`rediacc_ci.proxies.unit_tests` against its bash twin
-`.ci/scripts/test/proxies/proxy-unit-tests.sh`, which is TWO registered gates
-over one script: `check:test-provisioning` (`package.json:393`) and
-`check:test-e2e-unit` (`package.json:394`).
+`.ci/scripts/test/proxies/proxy-unit-tests.sh`, which is TWO registered gates over one script: `check:test-provisioning` (`package.json:393`) and `check:test-e2e-unit` (`package.json:394`).
 
 Sibling of `test_proxies_linux_packages.py`; see that file for why the two
 invocations are compared byte for byte rather than as a finding set.
 
-TWO CASES DRIVE THE REAL WORKSPACES, one per registered gate, so a rename on
-either side reds here. The rest use a fixture root with a stub
-`node_modules/.bin/vitest` (the proxy requires it to EXIST and never invokes
-it) and a workspace whose script prints a canned vitest summary -- which is
-the only way to drive the mixed-summary defect, since a real suite cannot be
-asked to print `Tests  1 failed | 10 passed (11)` on demand.
+TWO CASES DRIVE THE REAL WORKSPACES, one per registered gate, so a rename on either side reds here. The rest use a fixture root with a stub `node_modules/.bin/vitest` (the proxy requires it to EXIST and never invokes it) and a workspace whose script prints a canned vitest summary -- which is the only way to drive the mixed-summary defect, since a real suite cannot be asked to print
+`Tests 1 failed | 10 passed (11)` on demand.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-unit-tests.observations.jsonl`. Re-recorded
-2026-09-10 after the ANSI/wrong-token fix (5 rows, 5 distinct trees, 4 distinct
-finding sets): a clean suite, a COLOURED clean suite (the exact regression
-this fix closes), a mixed pass/fail suite, a vacuous workspace, and a missing
-vitest (77).
+2026-09-10 after the ANSI/wrong-token fix (5 rows, 5 distinct trees, 4 distinct finding sets): a clean suite, a COLOURED clean suite (the exact regression this fix closes), a mixed pass/fail suite, a vacuous workspace, and a missing vitest (77).
 """
 
 from __future__ import annotations
@@ -207,10 +198,7 @@ def _bin_without(tmp_path: pathlib.Path, drop: str) -> str:
 def _real_tree_env(no_color: bool = True) -> dict[str, str]:
     """NO_COLOR is set DELIBERATELY, and that is a finding rather than tidiness.
 
-    See `test_the_summary_regex_cannot_see_a_coloured_vitest_line` below: the
-    twin's summary regex cannot match vitest's coloured output, so whether this
-    gate is green depends on whether something in the ambient environment
-    happened to turn vitest's colour off. Pinning it here makes the green case
+    See `test_the_summary_regex_cannot_see_a_coloured_vitest_line` below: the twin's summary regex cannot match vitest's coloured output, so whether this gate is green depends on whether something in the ambient environment happened to turn vitest's colour off. Pinning it here makes the green case
     reproducible; the red case gets its own test rather than being inherited
     from whatever shell the suite is run from.
     """
@@ -355,14 +343,9 @@ def test_the_summary_regex_cannot_see_a_coloured_vitest_line() -> None:
 
         ESC[2m      Tests ESC[22m ESC[1mESC[32m11 passed ESC[39m...ESC[90m (11)ESC[39m
 
-    and the escapes used to sit BETWEEN the word `Tests` and the number, so
-    the OLD `grep -oE 'Tests +[0-9]+ (passed|failed)'` (`:124`) matched
-    nothing and the proxy false-reded a passing suite. The fix strips ANSI
-    SGR sequences before matching and reads the trailing "(N)" total, so this
-    now goes GREEN in exactly the environment that used to expose the bug.
+    and the escapes used to sit BETWEEN the word `Tests` and the number, so the OLD `grep -oE 'Tests +[0-9]+ (passed|failed)'` (`:124`) matched nothing and the proxy false-reded a passing suite. The fix strips ANSI SGR sequences before matching and reads the trailing "(N)" total, so this now goes GREEN in exactly the environment that used to expose the bug.
 
-    WHEN COLOUR APPEARED, measured one variable at a time on this host (now
-    irrelevant to the verdict, kept as a record of the failure class):
+    WHEN COLOUR APPEARED, measured one variable at a time on this host (now irrelevant to the verdict, kept as a record of the failure class):
 
         (bare shell)                        -> coloured
         CI=true                             -> coloured
@@ -414,12 +397,8 @@ def test_a_partly_failing_suite_reports_the_failed_count_on_both_sides(
 ) -> None:
     """vitest prints `Tests  1 failed | 10 passed (11)`.
 
-    The OLD `grep -oE 'Tests +[0-9]+ (passed|failed)'` matched the FIRST token
-    on that line -- the FAILURE count -- so a run of eleven was reported as
-    one. FIXED 2026-09-10: the trailing "(11)" total is read instead, which is
-    right regardless of which side of "|" wins. The verdict still goes red
-    here -- `npm run` exited non-zero and `:115` already recorded a FAIL --
-    but the PASS line under it now names the true count.
+    The OLD `grep -oE 'Tests +[0-9]+ (passed|failed)'` matched the FIRST token on that line -- the FAILURE count -- so a run of eleven was reported as one. FIXED 2026-09-10: the trailing "(11)" total is read instead, which is right regardless of which side of "|" wins. The verdict still goes red here -- `npm run` exited non-zero and `:115` already recorded a FAIL -- but the PASS
+    line under it now names the true count.
     """
     fixture = build_fixture(tmp_path, runner=MIXED_RUNNER)
     old, new = run_both(fixture, "@scratch/sample", "test")
@@ -433,8 +412,7 @@ def test_a_partly_failing_suite_reports_the_failed_count_on_both_sides(
 
 def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
     """The plant reverts the fix: it takes the FIRST number after `Tests`
-    instead of the trailing `(N)` total, which is exactly the class of bug
-    this pair was just fixed for.
+    instead of the trailing `(N)` total, which is exactly the class of bug this pair was just fixed for.
     """
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(

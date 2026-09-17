@@ -1,20 +1,14 @@
 """Port of `.ci/scripts/release/resolve-ci-run.sh`.
 
-Resolves (or validates) the CI run a release publishes from: auto-derives the
-latest green Console CI run on `main` when no `ci_run_id` was given, or
-validates an explicitly-dispatched one for branch/workflow/status.
+Resolves (or validates) the CI run a release publishes from: auto-derives the latest green Console CI run on `main` when no `ci_run_id` was given, or validates an explicitly-dispatched one for branch/workflow/status.
 
-`gh api` AND `jq` ARE BOTH SHELLED OUT TO, not reimplemented against the REST
-API directly, for the same reason as every other `gh`-based port in this box:
-the twin's exact invocations (including `gh api --jq` filters and the
+`gh api` AND `jq` ARE BOTH SHELLED OUT TO, not reimplemented against the REST API directly, for the same reason as every other `gh`-based port in this box: the twin's exact invocations (including `gh api --jq` filters and the
 `|| echo '{}'` fallback shape) are what the differential proves parity
 against.
 
 THE `run_json` FALLBACK IS REPRODUCED EXACTLY. `gh api .../runs/$ID
 2>/dev/null || echo '{}'` means a failed lookup (bad id, rate limit, network)
-degrades to an EMPTY OBJECT rather than aborting -- every subsequent
-`jq -r '.field // ""'` then reads as an empty string, which the twin's own
-branch/workflow checks treat as a validation FAILURE (not a crash). This port
+degrades to an EMPTY OBJECT rather than aborting -- every subsequent `jq -r '.field // ""'` then reads as an empty string, which the twin's own branch/workflow checks treat as a validation FAILURE (not a crash). This port
 matches that: a failed `gh api` call is caught and treated as `{}`, never
 raised.
 """

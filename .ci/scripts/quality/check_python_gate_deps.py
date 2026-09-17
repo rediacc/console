@@ -1,43 +1,21 @@
 #!/usr/bin/env python3
 """A Python script a workflow RUNS must have its third-party imports installed.
 
-WHY THIS EXISTS. check_workflow_submodule_deps.py imported PyYAML, ran green on
-the author's machine, and died on the runner with ModuleNotFoundError. The
+WHY THIS EXISTS. check_workflow_submodule_deps.py imported PyYAML, ran green on the author's machine, and died on the runner with ModuleNotFoundError. The
 author's environment had the module; a clean Ubuntu runner does not. Nothing
-compared what a script imports against what its job installs, so the gap was
-invisible until the job crashed -- and it crashed in the commit that added a
-gate against checks which silently do not run.
+compared what a script imports against what its job installs, so the gap was invisible until the job crashed -- and it crashed in the commit that added a gate against checks which silently do not run.
 
-WHY A DOCUMENT WAS NOT ENOUGH. The obvious remedy is a line in TRAPS.md saying
-"install your dependencies". A document an agent can skip is not a control, and
-this repo has the receipts: the stop-hook suite's own setup() carried a comment
-recording that 30 cases were once lost to an inherited GITHUB_ACTIONS, and a new
-call site was still added without the pin. The lesson was written down and then
-walked past. This asserts the property instead.
+WHY A DOCUMENT WAS NOT ENOUGH. The obvious remedy is a line in TRAPS.md saying "install your dependencies". A document an agent can skip is not a control, and this repo has the receipts: the stop-hook suite's own setup() carried a comment recording that 30 cases were once lost to an inherited GITHUB_ACTIONS, and a new call site was still added without the pin. The lesson was
+written down and then walked past. This asserts the property instead.
 
-WHAT IT CHECKS. For every workflow step that runs a repo .py file, it reads that
-file's top-level imports, drops the standard library and the script's own
-neighbours, and requires anything left to be named by a `pip install` earlier in
-the same job.
+WHAT IT CHECKS. For every workflow step that runs a repo .py file, it reads that file's top-level imports, drops the standard library and the script's own neighbours, and requires anything left to be named by a `pip install` earlier in the same job.
 
-WHAT IT DOES NOT DO. It does not follow imports transitively. A gate that runs
-its own helper module is one hop from this one, and the honest report of that
-limit belongs here rather than in a comment nobody reads: if a gate grows a
-helper with its own third-party import, this will not see it.
+WHAT IT DOES NOT DO. It does not follow imports transitively. A gate that runs its own helper module is one hop from this one, and the honest report of that limit belongs here rather than in a comment nobody reads: if a gate grows a helper with its own third-party import, this will not see it.
 
-THE ONE HOP IT DOES FOLLOW, and only for sys.path, not for dependencies. A
-sibling module a script imports may be the thing that puts a directory on
-sys.path -- `.ci/scripts/quality/_cipath.py` is exactly that, extracted so
-eighty-one gate entry points stop repeating the insert. Its importers are read
-one hop deep for the DIRECTORIES they gain, which keeps `rediacc_ci`
-first-party. What is NOT read one hop deep is the neighbour's own imports, so
-the limit in the paragraph above is unchanged.
+THE ONE HOP IT DOES FOLLOW, and only for sys.path, not for dependencies. A sibling module a script imports may be the thing that puts a directory on sys.path -- `.ci/scripts/quality/_cipath.py` is exactly that, extracted so eighty-one gate entry points stop repeating the insert. Its importers are read one hop deep for the DIRECTORIES they gain, which keeps `rediacc_ci` first-party.
+What is NOT read one hop deep is the neighbour's own imports, so the limit in the paragraph above is unchanged.
 
----- gate ----
-step: Python gate deps
-needs: python-yaml
-selftest: true
----- end gate ----
+---- gate ---- step: Python gate deps needs: python-yaml selftest: true ---- end gate ----
 """
 
 import ast
@@ -54,9 +32,7 @@ from rediacc_ci import paths as ci_paths
 def _pyyaml_pin():
     """The PyYAML version, read from the ONE place it is defined.
 
-    These strings are advice printed to a human, but a hardcoded version in
-    advice is still a second definition: it drifts silently, and the person
-    following it installs the wrong thing while believing the gate told them to.
+    These strings are advice printed to a human, but a hardcoded version in advice is still a second definition: it drifts silently, and the person following it installs the wrong thing while believing the gate told them to.
     """
     pins = pathlib.Path(__file__).resolve().parents[3] / ".devcontainer" / "toolchain.env"
     try:
@@ -101,22 +77,14 @@ DIR_ASSIGN_RE = re.compile(r"^([A-Z_]+)\s*=\s*(.+)$", re.MULTILINE)
 def _imported_roots(body: str) -> set[str]:
     """Top-level module names this source imports, read from the SYNTAX TREE.
 
-    NOT a line regex, and the difference is not cosmetic. IMPORT_RE matches the
-    word `import` or `from` at the start of ANY line, docstrings and comments
-    included, so a sentence beginning "from the comparison" or "from one tail
-    block" was read as an import of a module named `the` or `one`. Four such
-    sentences were live in .ci/scripts/quality on 2026-09-08 and this gate
-    reported all four as uninstalled dependencies, naming words that are not
-    modules. A parser cannot make that mistake, and a gate whose findings are
-    unbelievable stops being read.
+    NOT a line regex, and the difference is not cosmetic. IMPORT_RE matches the word `import` or `from` at the start of ANY line, docstrings and comments included, so a sentence beginning "from the comparison" or "from one tail block" was read as an import of a module named `the` or `one`. Four such sentences were live in .ci/scripts/quality on 2026-09-08 and this gate reported all
+    four as uninstalled dependencies, naming words that are not modules. A parser cannot make that mistake, and a gate whose findings are unbelievable stops being read.
 
-    A FILE THAT DOES NOT PARSE FALLS BACK to the regex rather than going quiet.
-    Returning an empty set on SyntaxError would turn a broken file into a silent
+    A FILE THAT DOES NOT PARSE FALLS BACK to the regex rather than going quiet. Returning an empty set on SyntaxError would turn a broken file into a silent
     pass here, which is the vacuity this estate has rules about; the over-reporting
     regex is the safer wrong answer.
 
-    RELATIVE IMPORTS ARE SKIPPED (`node.level > 0`): `from . import x` is
-    first-party by construction and has no top-level name to install.
+    RELATIVE IMPORTS ARE SKIPPED (`node.level > 0`): `from . import x` is first-party by construction and has no top-level name to install.
     """
     try:
         tree = ast.parse(body)
@@ -134,9 +102,7 @@ def _imported_roots(body: str) -> set[str]:
 def _root_names(script: pathlib.Path, depth) -> set[str]:
     """Importable names sitting in `script`'s Nth parent directory.
 
-    PACKAGES AS WELL AS MODULES: a `parents[N]` hop points at a directory whose
-    children are packages (`rediacc_ci/`), not loose `.py` files, so a
-    `glob("*.py")` alone finds nothing at all and the widening would be silent.
+    PACKAGES AS WELL AS MODULES: a `parents[N]` hop points at a directory whose children are packages (`rediacc_ci/`), not loose `.py` files, so a `glob("*.py")` alone finds nothing at all and the widening would be silent.
     """
     try:
         root = script.resolve().parents[int(depth)]
@@ -152,14 +118,9 @@ def _root_names(script: pathlib.Path, depth) -> set[str]:
 def first_party_modules(script: pathlib.Path, body: str, _seen=None) -> set[str]:
     """Module names importable as FIRST-PARTY from this script.
 
-    Its own directory, plus any directory it inserts into sys.path --
-    check_agent_hint_liveness.py imports wl_agents from .claude/hooks/stop that
-    way, and a same-directory-only test called that a third-party dependency.
+    Its own directory, plus any directory it inserts into sys.path -- check_agent_hint_liveness.py imports wl_agents from .claude/hooks/stop that way, and a same-directory-only test called that a third-party dependency.
 
-    Scanning the WHOLE repo instead was tried and is worse: three vendored
-    .venv trees contain a yaml.py, which made PyYAML look first-party and broke
-    this gate's own control. A first-party set that swallows the very module the
-    control depends on is not a widening, it is a hole.
+    Scanning the WHOLE repo instead was tried and is worse: three vendored .venv trees contain a yaml.py, which made PyYAML look first-party and broke this gate's own control. A first-party set that swallows the very module the control depends on is not a widening, it is a hole.
     """
     names = {p.stem for p in script.parent.glob("*.py")}
     # THE `/`-JOIN FORM, resolved from the sys.path LINE ITSELF rather than from a separate assignment: `sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))`. Five scripts write this and their wl_* imports still read as third-party after SYS_PATH_RE was widened, because DIR_ASSIGN_RE looks for the literals on the variable's ASSIGNMENT line and here they are on the insert

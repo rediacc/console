@@ -4,9 +4,7 @@
 Reply to and resolve the review threads a review-response round disposed of.
 
 THE MODEL HOLDS NO WRITE TOKEN, so it cannot reply to a thread or resolve one;
-it records dispositions as `decisions` entries shaped `thread <id>:
-<disposition>` and exits. This script is the deterministic other half, and it is
-split in two ON PURPOSE:
+it records dispositions as `decisions` entries shaped `thread <id>: <disposition>` and exits. This script is the deterministic other half, and it is split in two ON PURPOSE:
 
     plan   PURE. Turns the VALIDATED verdict's `decisions[]` into a reply plan.
            Every thread id must (a) match a tight id shape and (b) be present in
@@ -19,31 +17,21 @@ split in two ON PURPOSE:
 -----------------------------------------------------------------------------
 WHY THE ID MUST BE IN THE FIXTURE, NOT MERELY WELL-SHAPED
 -----------------------------------------------------------------------------
-The twin's own paragraph, kept because it is the security argument for the whole
-file: the reply body is MODEL-AUTHORED TEXT and the thread id chooses WHERE it
-is posted. A global GraphQL node id names a thread on ANY pull request in any
-repo the token can reach, so validating the id's characters alone would let a
-round that read a hostile finding post that finding's suggested text onto an
+The twin's own paragraph, kept because it is the security argument for the whole file: the reply body is MODEL-AUTHORED TEXT and the thread id chooses WHERE it is posted. A global GraphQL node id names a thread on ANY pull request in any repo the token can reach, so validating the id's characters alone would let a round that read a hostile finding post that finding's suggested text
+onto an
 unrelated PR. The payload is the round's whole world; a thread outside it is not
 addressable.
 
-That is TWO checks, not one, and the differential drives them separately
-(`malformed-id` and `unknown-thread`) because they fail for different reasons
-and a port that collapsed them into one would still pass a test that only ever
-fed it garbage.
+That is TWO checks, not one, and the differential drives them separately (`malformed-id` and `unknown-thread`) because they fail for different reasons and a port that collapsed them into one would still pass a test that only ever fed it garbage.
 
-THE ID SHAPE IS RE-CHECKED AT THE WRITE, not only at the plan, and that is not
-belt-and-braces: `apply` is a SEPARATE INVOCATION whose input is a file on disk
-that some other step wrote. `plan` having been careful is not a property of the
-bytes `apply` reads.
+THE ID SHAPE IS RE-CHECKED AT THE WRITE, not only at the plan, and that is not belt-and-braces: `apply` is a SEPARATE INVOCATION whose input is a file on disk that some other step wrote. `plan` having been careful is not a property of the bytes `apply` reads.
 
 -----------------------------------------------------------------------------
 THE PLAN PROGRAM IS JQ'S, VERBATIM, AND THAT IS THE POINT OF THIS PORT
 -----------------------------------------------------------------------------
 `PLAN_PROGRAM` below is the twin's jq program character for character. It is
 not a formatting decision; it is a piece of REASONING with four rules a rewrite
-would have to re-derive, and the first one it got wrong would post model text
-somewhere nobody looked:
+would have to re-derive, and the first one it got wrong would post model text somewhere nobody looked:
 
   1. `select(test("^thread [^:]+: "))` decides what is thread traffic AT ALL. An
      ordinary `decisions` entry is not a reply and is not an error either, so it
@@ -57,20 +45,14 @@ somewhere nobody looked:
   4. `$repos[.id] // "console"` is a `//`, so a thread whose payload entry has
      `repo: false` would fall back to `console`. jq's falsy rule, not Python's.
 
-`known` and `known_repos` are two more jq programs, and `(.threads // .) // []`
-in both is meant to be the twin's shrug at its own input: `--threads` is
-documented as accepting `review-payload.sh`'s object OR a bare array. See
+`known` and `known_repos` are two more jq programs, and `(.threads // .) // []` in both is meant to be the twin's shrug at its own input: `--threads` is documented as accepting `review-payload.sh`'s object OR a bare array. See
 DEFECT 2; it does not.
 
 -----------------------------------------------------------------------------
 TWO REAL DEFECTS IN THE TWIN, MEASURED AGAINST jq 1.8.1 ON 2026-09-13,
 PRESERVED HERE AND REPORTED RATHER THAN REPAIRED
 -----------------------------------------------------------------------------
-Both are preserved because this port's contract is to be a verified-equivalent
-alternative to a LIVE workflow step (`.github/workflows/autopilot.yml:817-818`),
-and changing either one changes what that step does. Repairing them is the
-cutover box's call, and each is pinned by a named test so the repair cannot
-happen unnoticed.
+Both are preserved because this port's contract is to be a verified-equivalent alternative to a LIVE workflow step (`.github/workflows/autopilot.yml:817-818`), and changing either one changes what that step does. Repairing them is the cutover box's call, and each is pinned by a named test so the repair cannot happen unnoticed.
 
 DEFECT 1, AND IT IS LIVE: A MULTI-LINE DISPOSITION IS SILENTLY DROPPED.
 
@@ -114,11 +96,7 @@ DEFECT 2, LATENT: THE BARE-ARRAY `--threads` SPELLING DOES NOT WORK.
 -----------------------------------------------------------------------------
 WHAT `apply` DOES TO THE WORLD, AND WHAT STOPS IT IN A TEST
 -----------------------------------------------------------------------------
-Two REAL, MUTATING GitHub writes per entry: a comment posted into a review
-thread, and that thread marked resolved. GitHub undoes neither. So the
-differential drives `gh` as a recording fake on a stub PATH and asserts the fake
-is the `gh` that resolves, and every fixture names `acme/...`. The mutations
-themselves are the ones `check-resolved-threads.sh` advertises to humans in its
+Two REAL, MUTATING GitHub writes per entry: a comment posted into a review thread, and that thread marked resolved. GitHub undoes neither. So the differential drives `gh` as a recording fake on a stub PATH and asserts the fake is the `gh` that resolves, and every fixture names `acme/...`. The mutations themselves are the ones `check-resolved-threads.sh` advertises to humans in its
 remediation output, so the automated and manual paths cannot drift.
 
 MODEL TEXT TRAVELS AS `-f k=v`, never as shell: the bytes land in one argv slot
@@ -138,9 +116,7 @@ with no re-parse. That is the property the differential checks by putting a
   giving the plan a resumable cursor, which is a design change and the cutover
   box's call. Pinned by `test_a_mutation_failure_stops_the_run_mid_plan`.
 
-`_gh_probe` IS TRANSLITERATED, NOT IMPORTED, for the reason `finish.py:51-59`
-records. `gh_json` is `_gh_probe true`, so the body must also PARSE and must not
-be `null` or `false`.
+`_gh_probe` IS TRANSLITERATED, NOT IMPORTED, for the reason `finish.py:51-59` records. `gh_json` is `_gh_probe true`, so the body must also PARSE and must not be `null` or `false`.
 
 Exit: 0 planned/applied, 1 write refused or a mutation failed, 2 usage.
 
@@ -244,8 +220,7 @@ def gh_json(what: str, args: list[str], *, sleeper=time.sleep) -> bool:
     """`gh_json <what> -- <gh args...> >/dev/null`, i.e. `_gh_probe true`.
 
     Returns success only; every caller here discards the body. Three attempts,
-    a `log_warn` between them, a 3-then-6-second backoff, and the captured
-    stderr replayed indented four spaces on final failure.
+    a `log_warn` between them, a 3-then-6-second backoff, and the captured stderr replayed indented four spaces on final failure.
     """
     rc = 0
     err = b""
@@ -303,12 +278,8 @@ def matches_id_shape(value: str) -> bool:
     """`[[ "$tid" =~ $ID_SHAPE ]]`, which is ERE and therefore UNANCHORED-safe
     only because the pattern carries its own `^` and `$`.
 
-    `re.search`, not `re.match`, so the `^` in the pattern is doing the work
-    rather than Python's implicit anchoring -- if the shape ever loses its
-    caret, this port loses it too, which is the behaviour a differential can
-    see. Note that bash's `$` and Python's `$` differ on a trailing newline:
-    Python's `$` also matches before a final `\\n`, so `\\Z` is used to keep an
-    id with a trailing newline REFUSED by both sides.
+    `re.search`, not `re.match`, so the `^` in the pattern is doing the work rather than Python's implicit anchoring -- if the shape ever loses its caret, this port loses it too, which is the behaviour a differential can see. Note that bash's `$` and Python's `$` differ on a trailing newline: Python's `$` also matches before a final `\\n`, so `\\Z` is used to keep an id with a
+    trailing newline REFUSED by both sides.
     """
     return re.search(ID_SHAPE.replace("$", r"\Z"), value) is not None
 

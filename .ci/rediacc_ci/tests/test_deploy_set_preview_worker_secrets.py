@@ -1,27 +1,14 @@
 """Differential: `rediacc_ci.deploy.set_preview_worker_secrets` against its twin
 `.ci/scripts/deploy/set-preview-worker-secrets.sh`.
 
-A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the
-fake logs its exact argv AND the bytes on its stdin, and every case uses fixture
-secrets whose values are two characters long, so even a bypassed fake would
-carry nothing real. `.ci/shadow/w7p5a-status.json` records this path as blocked
-only for the "one real run" clause and says in as many words that the mocked
-parity ledger is a separate, achievable piece of work. This is that piece.
+A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture secrets whose values are two characters long, so even a bypassed fake would carry nothing real. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that
+the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE DOCUMENT IS COMPARED, NOT JUST THE STREAMS, and on this script that is the
-whole point. The observable effect of the program is one JSON document handed to
+THE DOCUMENT IS COMPARED, NOT JUST THE STREAMS, and on this script that is the whole point. The observable effect of the program is one JSON document handed to
 `wrangler secret bulk`; two implementations can print an identical
-`✓ Set 15 secrets on pr-123 in one bulk call` while sending a different key set,
-a different key ORDER, or a differently escaped value. Every case that reaches
-wrangler asserts the recorded stdin, and
-`test_the_bulk_call_and_its_document_are_pinned_in_full` pins it against literal
-bytes rather than against the port's own builders.
+`✓ Set 15 secrets on pr-123 in one bulk call` while sending a different key set, a different key ORDER, or a differently escaped value. Every case that reaches wrangler asserts the recorded stdin, and `test_the_bulk_call_and_its_document_are_pinned_in_full` pins it against literal bytes rather than against the port's own builders.
 
-TWO STALENESS ALARMS RE-DERIVE THE TWIN'S OWN LISTS. `KEYS` and
-`REQUIRED_NONEMPTY` are copies, so the day someone adds a sixteenth secret or a
-twelfth guard to the twin, `test_the_key_list_is_the_twins_key_list` and
-`test_the_guard_list_is_the_twins_guard_list` fail instead of the port quietly
-sending a document that is one key short.
+TWO STALENESS ALARMS RE-DERIVE THE TWIN'S OWN LISTS. `KEYS` and `REQUIRED_NONEMPTY` are copies, so the day someone adds a sixteenth secret or a twelfth guard to the twin, `test_the_key_list_is_the_twins_key_list` and `test_the_guard_list_is_the_twins_guard_list` fail instead of the port quietly sending a document that is one key short.
 """
 
 from __future__ import annotations
@@ -176,8 +163,7 @@ def document(calls: str) -> str:
 
 def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Path) -> None:
     """ONE CALL, PINNED AGAINST LITERAL BYTES rather than against the port's own
-    builders, so a change in both would still be caught. The argv, then the
-    fifteen keys in order with the four legitimately-empty ones present as empty
+    builders, so a change in both would still be caught. The argv, then the fifteen keys in order with the four legitimately-empty ones present as empty
     strings."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert old.returncode == 0
@@ -215,8 +201,7 @@ def test_the_worker_name_is_the_pr_number_prefixed(tmp_path: pathlib.Path) -> No
 
 def test_stripe_is_deliberately_not_demanded(tmp_path: pathlib.Path) -> None:
     """A PREVIEW WITHOUT BILLING IS A LEGITIMATE STATE (twin :48-49): ci.yml feeds
-    the preview the sandbox key, so an absent Stripe key deploys rather than
-    refusing. Pinned in the direction a "consistency" edit would break: adding
+    the preview the sandbox key, so an absent Stripe key deploys rather than refusing. Pinned in the direction a "consistency" edit would break: adding
     Stripe to the guard list would turn every preview red."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert old.returncode == 0
@@ -281,9 +266,7 @@ def test_the_guard_message_names_a_variable_this_script_does_not_have(
     tmp_path: pathlib.Path,
 ) -> None:
     """OBSERVATION 1, PINNED. The guard prints `WORKER_NAME=pr-123`, and this
-    script has no WORKER_NAME: the sentence is inherited from the www sibling,
-    where the variable is real. The VALUE is right and the LABEL points a reader
-    at an environment variable that plays no part here. Reproduced, because
+    script has no WORKER_NAME: the sentence is inherited from the www sibling, where the variable is real. The VALUE is right and the LABEL points a reader at an environment variable that plays no part here. Reproduced, because
     agreement with the live twin is the deliverable."""
     old, new, old_calls, new_calls = run_both(tmp_path, ROOT_EMAIL="")
     assert "WORKER_NAME=pr-123." in old.stderr
@@ -447,11 +430,9 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the ONE property no printed line can show: the
-    key order of the document. `✓ Set 15 secrets on pr-123 in one bulk call` is
-    identical either way, the exit code is 0 either way, and only the recorded
+    key order of the document. `✓ Set 15 secrets on pr-123 in one bulk call` is identical either way, the exit code is 0 either way, and only the recorded
     stdin sees it. In production a reordered document is harmless; a REORDERED
-    PORT is the same class of edit as a dropped key, and this is the control that
-    proves the comparison would catch either. Driven red, then the source is
+    PORT is the same class of edit as a dropped key, and this is the control that proves the comparison would catch either. Driven red, then the source is
     confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

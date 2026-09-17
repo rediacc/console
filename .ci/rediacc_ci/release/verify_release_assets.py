@@ -1,24 +1,11 @@
 """Port of `.ci/scripts/release/verify-release-assets.sh`.
 
-Asserts a GitHub Release exists for `VERSION` and carries at least one
-`rdc-*` CLI asset -- the cheapest proof the build that made the release
-actually ran, before the R2 `.released` sentinel gets written for it.
+Asserts a GitHub Release exists for `VERSION` and carries at least one `rdc-*` CLI asset -- the cheapest proof the build that made the release actually ran, before the R2 `.released` sentinel gets written for it.
 
-`gh release view ... --json tagName,assets` IS SHELLED OUT TO, not
-reimplemented against the REST API directly: the twin's exact invocation
-(including which JSON fields it asks for) is what the differential proves
-parity against, and a from-scratch REST call would be a second, independent
-opinion about the same endpoint. `jq` IS ALSO SHELLED OUT TO, with the exact
-same filter expressions the twin uses (`[.assets[] | select(...)] | length`
-and `.assets | map(.name)`), rather than reimplemented in Python: the second
-filter's failure debug line is pretty-printed multi-line JSON, and matching
-that byte-for-byte is simpler by running the same `jq` than by re-deriving
-its formatting rules.
+`gh release view ... --json tagName,assets` IS SHELLED OUT TO, not reimplemented against the REST API directly: the twin's exact invocation (including which JSON fields it asks for) is what the differential proves parity against, and a from-scratch REST call would be a second, independent opinion about the same endpoint. `jq` IS ALSO SHELLED OUT TO, with the exact same filter
+expressions the twin uses (`[.assets[] | select(...)] | length` and `.assets | map(.name)`), rather than reimplemented in Python: the second filter's failure debug line is pretty-printed multi-line JSON, and matching that byte-for-byte is simpler by running the same `jq` than by re-deriving its formatting rules.
 
-REWORDED, NOT BYTE-IDENTICAL, on the missing-env-var paths only. The
-`gh release view` failure and asset-count paths reproduce the twin's `echo`
-lines byte-for-byte, since those are hand-chosen strings, not a bash
-diagnostic wrapper.
+REWORDED, NOT BYTE-IDENTICAL, on the missing-env-var paths only. The `gh release view` failure and asset-count paths reproduce the twin's `echo` lines byte-for-byte, since those are hand-chosen strings, not a bash diagnostic wrapper.
 """
 
 from __future__ import annotations

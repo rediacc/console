@@ -2,29 +2,16 @@
 """check:ci-gate-test-real-file-plants -- a test must never CLOBBER a REAL
 tracked file it also reads, even inside a try/finally restore.
 
-WHY THIS EXISTS. `test_gate_worklist_env_registry.py` had three such plants
-(two into `.ci/policy/worklist-env-registry.json`, one into
-`.claude/hooks/stop/worklist-cases/21-cadence.sh`): read the real file's bytes,
-mutate and write them, run the gate under test, restore from the in-memory
-original in a `finally`. A hard kill landing in the write-to-restore window
-leaves the tracked file genuinely corrupted with no backup -- and it happened
+WHY THIS EXISTS. `test_gate_worklist_env_registry.py` had three such plants (two into `.ci/policy/worklist-env-registry.json`, one into `.claude/hooks/stop/worklist-cases/21-cadence.sh`): read the real file's bytes, mutate and write them, run the gate under test, restore from the in-memory original in a `finally`. A hard kill landing in the write-to-restore window leaves the
+tracked file genuinely corrupted with no backup -- and it happened
 for real, twice in one session, from two unrelated causes (a `check:ci-pytest`
-suite timeout, then a concurrent pytest invocation from a second live
-session). The fix there was a test-only env-var seam
-(`WORKLIST_REGISTRY_OVERRIDE_FILE`, `WORKLIST_SOURCE_OVERRIDE_FILE`) that
-redirects the gate under test onto a tmp copy instead. This gate exists so the
+suite timeout, then a concurrent pytest invocation from a second live session). The fix there was a test-only env-var seam (`WORKLIST_REGISTRY_OVERRIDE_FILE`, `WORKLIST_SOURCE_OVERRIDE_FILE`) that redirects the gate under test onto a tmp copy instead. This gate exists so the
 NEXT test author who reaches for `TARGET.write_text(...); finally:
-TARGET.write_bytes(original)` is caught before they write it, not after a
-third real corruption.
+TARGET.write_bytes(original)` is caught before they write it, not after a third real corruption.
 
-THE PATTERN, stated as a shape rather than a location. A name that resolves to
-a path under the repo root is a REAL-PATH name. If that name is the target of
-a `.write_text(`, `.write_bytes(` or `.unlink(` call, the test mutates the real
-tree -- regardless of whether a `finally` restores it, because the restore only
-helps a run that finishes.
+THE PATTERN, stated as a shape rather than a location. A name that resolves to a path under the repo root is a REAL-PATH name. If that name is the target of a `.write_text(`, `.write_bytes(` or `.unlink(` call, the test mutates the real tree -- regardless of whether a `finally` restores it, because the restore only helps a run that finishes.
 
-FIVE WAYS THIS SCAN USED TO MISS A LIVE HAZARD, all five found on 2026-09-15 by
-running the detector against the corpus it was never pointed at:
+FIVE WAYS THIS SCAN USED TO MISS A LIVE HAZARD, all five found on 2026-09-15 by running the detector against the corpus it was never pointed at:
 
   1. `SCAN_DIR` was `.ci/rediacc_ci/tests/gates` alone, so the 281 test modules
      sitting one level up in `.ci/rediacc_ci/tests/` were never read.
@@ -56,8 +43,7 @@ running the detector against the corpus it was never pointed at:
      an untested blind spot in a detector whose whole job is finding blind
      spots does not get to wait for one.
 
-CLOBBER versus STRAY, the distinction that keeps this gate honest in both
-directions. Two different things write inside the repo tree:
+CLOBBER versus STRAY, the distinction that keeps this gate honest in both directions. Two different things write inside the repo tree:
 
   - CLOBBER: the test reads or copies the target's EXISTING bytes and then
     overwrites or deletes them. That file was in the tree before the test and
@@ -77,29 +63,17 @@ directions. Two different things write inside the repo tree:
     CLOBBER, so renaming a probe onto a tracked path cannot sneak through on
     the "it never reads it" branch.
 
-WHAT THIS STILL DOES NOT CATCH, said out loud. A path built from a sandboxed
-copy (`shutil.copy2(REAL, tmp_copy)`, `tmp_path / "x"`, `harness.temp_dir()`)
-is the safe pattern and is skipped by construction -- correct, that is the
-pattern this gate wants MORE of. Dataflow tracking is same-function and
-same-name only: a real path handed to a helper as an ARGUMENT, or stashed on
+WHAT THIS STILL DOES NOT CATCH, said out loud. A path built from a sandboxed copy (`shutil.copy2(REAL, tmp_copy)`, `tmp_path / "x"`, `harness.temp_dir()`) is the safe pattern and is skipped by construction -- correct, that is the pattern this gate wants MORE of. Dataflow tracking is same-function and same-name only: a real path handed to a helper as an ARGUMENT, or stashed on
 an object attribute, is not followed. That bound is deliberate; a full
 dataflow pass would buy little here and would be unreadable.
 
-ALLOWLIST: two entries, both live, both proven live on every run. It held three.
-`test_gate_hook_cross_os.py` came out, and the reason is the point of the STRAY
+ALLOWLIST: two entries, both live, both proven live on every run. It held three. `test_gate_hook_cross_os.py` came out, and the reason is the point of the STRAY
 class above rather than a relaxation: that entry's whole argument was "the target
-is verified NOT tracked by git", asserted once by a human in 2026-09-14 prose.
-The classifier now asks `git ls-files` that question on every run, so the entry
-would name no finding and fail the liveness check. A machine-checked claim
+is verified NOT tracked by git", asserted once by a human in 2026-09-14 prose. The classifier now asks `git ls-files` that question on every run, so the entry would name no finding and fail the liveness check. A machine-checked claim
 replaced a hand-checked one; if the probe is ever moved onto a tracked path it
 becomes a hazard again by itself, with nobody having to remember.
 
----- gate ----
-step: Gate-test real-file plants
-needs: none
-lane: quality-code
-selftest: true
----- end gate ----
+---- gate ---- step: Gate-test real-file plants needs: none lane: quality-code selftest: true ---- end gate ----
 """
 
 from __future__ import annotations
@@ -167,15 +141,11 @@ COPY_FUNCS = ("copy", "copy2", "copyfile", "move")
 def _own_nodes(fn: ast.AST):
     """Every node inside `fn`, NOT descending into a nested function or lambda.
 
-    Nested scopes are visited separately as their own `FunctionDef`, seeded from
-    the module's names only. Keeping the walk inside one scope is what makes the
-    local pass bounded and readable rather than a dataflow engine.
+    Nested scopes are visited separately as their own `FunctionDef`, seeded from the module's names only. Keeping the walk inside one scope is what makes the local pass bounded and readable rather than a dataflow engine.
 
-    PRE-ORDER, i.e. SOURCE order, and that is load-bearing rather than tidy. The
-    first cut used a LIFO stack, which handed `local_real_paths` the statements
+    PRE-ORDER, i.e. SOURCE order, and that is load-bearing rather than tidy. The first cut used a LIFO stack, which handed `local_real_paths` the statements
     backwards: `live = root / X` was classified before `root = paths.repo_root()`
-    had bound `root`, so the seed never existed when it was needed and the
-    control for the exact hazard this rewrite exists for went green.
+    had bound `root`, so the seed never existed when it was needed and the control for the exact hazard this rewrite exists for went green.
     """
     for child in ast.iter_child_nodes(fn):
         yield child
@@ -236,18 +206,10 @@ def _classify_assign(node: ast.Assign, roots: set[str], real: set[str]) -> bool:
 def real_path_constants(tree: ast.Module) -> tuple[set[str], set[str], dict[str, str]]:
     """Module-level real-path names, root names, and any statically known rel path.
 
-    `tree.body` only, deliberately NOT `ast.walk(tree)`: a local variable named
-    `path` inside some unrelated function can be assigned from a real-path-shaped
-    expression too, and that is not a "the subject's real path" CONSTANT -- it is
-    scoping noise. Restricting to the module's own top-level statements is what
-    makes a hit mean "this file declares a named constant for a real tracked
-    path". Function locals are handled by `local_real_paths`, per function, which
-    is a separate pass with its own narrower rules rather than a widening of this
-    one.
+    `tree.body` only, deliberately NOT `ast.walk(tree)`: a local variable named `path` inside some unrelated function can be assigned from a real-path-shaped expression too, and that is not a "the subject's real path" CONSTANT -- it is scoping noise. Restricting to the module's own top-level statements is what makes a hit mean "this file declares a named constant for a real tracked
+    path". Function locals are handled by `local_real_paths`, per function, which is a separate pass with its own narrower rules rather than a widening of this one.
 
-    Returns (real names, root names, name -> repo-relative path where resolvable).
-    A root name is one bound to a bare `paths.repo_root()` / `paths.from_root(...)`,
-    which is not itself a file but is the base a later `/` derives one from.
+    Returns (real names, root names, name -> repo-relative path where resolvable). A root name is one bound to a bare `paths.repo_root()` / `paths.from_root(...)`, which is not itself a file but is the base a later `/` derives one from.
     """
     real: set[str] = set()
     roots: set[str] = set()
@@ -297,8 +259,7 @@ def local_real_paths(fn: ast.AST, roots: set[str], real: set[str]) -> set[str]:
         live = root / em.MANIFEST_REL   # binds a REAL path, indirectly
         live.write_text(...)            # plants into the real tree
 
-    Seeded from the module's own names so a module-level `ROOT` works the same
-    way, and it never leaves this function (see `_own_nodes`).
+    Seeded from the module's own names so a module-level `ROOT` works the same way, and it never leaves this function (see `_own_nodes`).
     """
     local_roots = set(roots)
     local_real = set(real)
@@ -319,13 +280,8 @@ def local_real_paths(fn: ast.AST, roots: set[str], real: set[str]) -> set[str]:
 def mutations(scope: ast.AST, names: set[str], own_scope: bool) -> list[tuple[str, str, int]]:
     """[(name, attr, lineno)] for every real-path name mutated in this scope.
 
-    TWO SHAPES, because `reads_existing()` already had to know about both to spot
-    a restore, and this side had only learned one of them. `X.write_text(...)` is
-    an ATTRIBUTE call on the real name. `shutil.copy2(mutated, X)` is a FUNCTION
-    call where the real name is the DESTINATION argument, not the receiver -- a
-    plant that copies a doctored file ONTO the real tracked path is invisible to
-    an attribute-only scan. `COPY_FUNCS` (`reads_existing`'s source-argument check)
-    is the same list here on the destination argument, `node.args[1]`.
+    TWO SHAPES, because `reads_existing()` already had to know about both to spot a restore, and this side had only learned one of them. `X.write_text(...)` is an ATTRIBUTE call on the real name. `shutil.copy2(mutated, X)` is a FUNCTION call where the real name is the DESTINATION argument, not the receiver -- a plant that copies a doctored file ONTO the real tracked path is
+    invisible to an attribute-only scan. `COPY_FUNCS` (`reads_existing`'s source-argument check) is the same list here on the destination argument, `node.args[1]`.
     """
     walker = _own_nodes(scope) if own_scope else ast.walk(scope)
     hits = []
@@ -368,8 +324,7 @@ def reads_existing(scope: ast.AST, name: str, own_scope: bool) -> bool:
 def tracked_files(root: pathlib.Path) -> set[str]:
     """Every path `git ls-files` reports, as repo-relative strings.
 
-    An EMPTY result is a refusal upstream, not an empty set quietly meaning
-    "nothing is tracked": see `main`.
+    An EMPTY result is a refusal upstream, not an empty set quietly meaning "nothing is tracked": see `main`.
     """
     proc = subprocess.run(
         ["git", "-C", str(root), "ls-files", "-z"],
@@ -387,9 +342,7 @@ def scan(
 ) -> list[tuple[str, str, str, str]]:
     """[(name, real_name, attr, kind)] per file, kind in {clobber, tracked, stray}.
 
-    `tracked` is the `git ls-files` set. When a real-path name resolves statically
-    to a path in it, a mutation is a CLOBBER even with no read in sight -- that is
-    the branch that stops a probe being renamed onto a tracked file.
+    `tracked` is the `git ls-files` set. When a real-path name resolves statically to a path in it, a mutation is a CLOBBER even with no read in sight -- that is the branch that stops a probe being renamed onto a tracked file.
     """
     tracked = tracked or set()
     findings: list[tuple[str, str, str, str]] = []
@@ -447,8 +400,7 @@ def controls() -> None:
     """Both directions, on every shape the detector claims to see.
 
     Positive controls prove each of the four blind spots stays closed; negative
-    controls prove the widening did not turn every probe-planting gate test into
-    a finding, which is the failure mode a detector this eager falls into first.
+    controls prove the widening did not turn every probe-planting gate test into a finding, which is the failure mode a detector this eager falls into first.
     """
     with tempfile.TemporaryDirectory() as td:
         d = pathlib.Path(td)

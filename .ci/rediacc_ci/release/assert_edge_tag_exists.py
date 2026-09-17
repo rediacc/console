@@ -1,54 +1,26 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/release/assert-edge-tag-exists.sh`.
 
-Asserts that the version an R2 channel pointer advertises is a version that
-REALLY EXISTS, before `promote-stable.yml` writes anything. On 2026-08-24
-`cli/edge/manifest.json` advertised 1.3.1 while no `v1.3.1` tag, no GitHub
-Release and no `cli/v1.3.1/.released` existed, and promote-stable would have
-copied those bytes to stable and to the `:stable` Docker tag FIRST and only
-then failed on `ref: v1.3.1`, leaving a half-applied release across three
-regions.
+Asserts that the version an R2 channel pointer advertises is a version that REALLY EXISTS, before `promote-stable.yml` writes anything. On 2026-08-24 `cli/edge/manifest.json` advertised 1.3.1 while no `v1.3.1` tag, no GitHub Release and no `cli/v1.3.1/.released` existed, and promote-stable would have copied those bytes to stable and to the `:stable` Docker tag FIRST and only then
+failed on `ref: v1.3.1`, leaving a half-applied release across three regions.
 
-Usage: assert_edge_tag_exists.py --version 1.3.0   (or a bare `v1.3.0`)
+Usage: assert_edge_tag_exists.py --version 1.3.0 (or a bare `v1.3.0`)
 
-THREE INDEPENDENT ORACLES, AND THE PORT KEEPS THEM INDEPENDENT. `gh api
-repos/<repo>/git/ref/tags/<tag>` answers for the git tag, `gh release view`
-answers for the Release, and `aws s3api head-object` answers for the R2
-sentinel. Each has its own failure mode and its own probe function, and all
-three run even after one of them has already failed (`judge ... || true`), so
-one run names every missing piece rather than the first one.
+THREE INDEPENDENT ORACLES, AND THE PORT KEEPS THEM INDEPENDENT. `gh api repos/<repo>/git/ref/tags/<tag>` answers for the git tag, `gh release view` answers for the Release, and `aws s3api head-object` answers for the R2 sentinel. Each has its own failure mode and its own probe function, and all three run even after one of them has already failed (`judge ... || true`), so one run
+names every missing piece rather than the first one.
 
 "COULD NOT TELL" IS A FAILURE, NOT A PASS, and that is the whole design. A 404
 CONFIRMS absence; a 403, a 5xx, a DNS failure or `NoCredentials` mean the check
-did NOT RUN. `FAILED` and `COULD_NOT_TELL` are tracked separately here exactly
-as they are there, because the two states need OPPOSITE advice: the twin's own
-comment records the cost of conflating them, when a NoCredentials failure
-printed "cut the release, then Backfill Release Sentinel" at an operator whose
-sentinel was already fine.
+did NOT RUN. `FAILED` and `COULD_NOT_TELL` are tracked separately here exactly as they are there, because the two states need OPPOSITE advice: the twin's own comment records the cost of conflating them, when a NoCredentials failure printed "cut the release, then Backfill Release Sentinel" at an operator whose sentinel was already fine.
 
-THE THREE PROBE VERDICTS ARE STRINGS, NOT AN ENUM, and `judge()` still carries
-the twin's unreachable `*)` INTERNAL arm. `core.release_state_validator.Probe`
-exists and is deliberately NOT used: it collapses to three states with no
-detail, and the detail (`unknown:<one-line of the tool's own output>`) is the
-only thing that tells an operator WHICH way the probe failed. Reproducing the
-string protocol is also what keeps the INTERNAL arm reachable-in-principle, so
-a future edit that invents a fourth verdict is reported rather than silently
-treated as a pass.
+THE THREE PROBE VERDICTS ARE STRINGS, NOT AN ENUM, and `judge()` still carries the twin's unreachable `*)` INTERNAL arm. `core.release_state_validator.Probe` exists and is deliberately NOT used: it collapses to three states with no detail, and the detail (`unknown:<one-line of the tool's own output>`) is the only thing that tells an operator WHICH way the probe failed. Reproducing
+the string protocol is also what keeps the INTERNAL arm reachable-in-principle, so a future edit that invents a fourth verdict is reported rather than silently treated as a pass.
 
-`one_line()` KEEPS ITS TRAILING SPACE, AND THAT IS NOT AN OVERSIGHT. The twin
-is `tr '\\n' ' ' | sed 's/  */ /g'` fed by a here-string, and a bash here-string
-ALWAYS appends a newline, so the final newline becomes a space that no later
-step removes (command substitution strips newlines, not spaces). Driven against
-the real twin on 2026-09-13: the COULD NOT TELL line ends
-`...not accessible by integration ` with a space before the newline. A port that
-tidied that away would be byte-different on every could-not-tell line, which is
-the branch this whole script exists for.
+`one_line()` KEEPS ITS TRAILING SPACE, AND THAT IS NOT AN OVERSIGHT. The twin is `tr '\\n' ' ' | sed 's/ */ /g'` fed by a here-string, and a bash here-string ALWAYS appends a newline, so the final newline becomes a space that no later step removes (command substitution strips newlines, not spaces). Driven against the real twin on 2026-09-13: the COULD NOT TELL line ends `...not
+accessible by integration ` with a space before the newline. A port that tidied that away would be byte-different on every could-not-tell line, which is the branch this whole script exists for.
 
-`aws` READS `AWS_*` AND THE WORKFLOW PASSES `CLOUDFLARE_R2_*`. The twin bridges
-the two names at :90-91 and its comment records what happened when it did not:
-`head-object` died on NoCredentials, the sentinel probe answered `unknown`, and
-promote-stable failed all 7 runs from 2026-08-27 onward, never once green. The
-export is reproduced here, into `os.environ`, before any probe runs.
+`aws` READS `AWS_*` AND THE WORKFLOW PASSES `CLOUDFLARE_R2_*`. The twin bridges the two names at :90-91 and its comment records what happened when it did not: `head-object` died on NoCredentials, the sentinel probe answered `unknown`, and promote-stable failed all 7 runs from 2026-08-27 onward, never once green. The export is reproduced here, into `os.environ`, before any probe
+runs.
 
 FOUR DIVERGENCES, ALL IN REFUSAL TEXT NOBODY PARSES, NONE IN A VERDICT:
 
@@ -75,8 +47,7 @@ FOUR DIVERGENCES, ALL IN REFUSAL TEXT NOBODY PARSES, NONE IN A VERDICT:
      therefore prints a newline through the twin and two characters here. The
      differential asserts BOTH directions so nobody "fixes" it later.
 
-DEFECT IN THE TWIN, REPRODUCED AND REPORTED RATHER THAN FIXED (the acceptance
-rule for this wave is agreement with the live script):
+DEFECT IN THE TWIN, REPRODUCED AND REPORTED RATHER THAN FIXED (the acceptance rule for this wave is agreement with the live script):
 
   `assert-edge-tag-exists.sh --version` WITH NO VALUE EXITS 1 IN TOTAL SILENCE.
   The arm is `VERSION="${2:-}"; shift 2`, and with only one argument left
@@ -144,12 +115,9 @@ def one_line(text: str) -> str:
 
     THE TRAILING SPACE IS PART OF THE ANSWER. The here-string appends a newline
     that `tr` turns into a space; `sed` collapses runs of spaces to one, and
-    command substitution strips trailing NEWLINES, not spaces. So every
-    `unknown:` detail ends with exactly one space, including the empty case,
-    where the answer is a single space and nothing else.
+    command substitution strips trailing NEWLINES, not spaces. So every `unknown:` detail ends with exactly one space, including the empty case, where the answer is a single space and nothing else.
 
-    `s/  */ /g` is "one space then zero or more" -- i.e. any run of one or more
-    spaces -- so a single space is rewritten to itself and nothing changes.
+    `s/ */ /g` is "one space then zero or more" -- i.e. any run of one or more spaces -- so a single space is rewritten to itself and nothing changes.
     """
     return re.sub(r" +", " ", (text + "\n").replace("\n", " "))
 
@@ -167,9 +135,7 @@ def is_unknown(state: str) -> bool:
 def _capture_merged(argv: list[str]) -> tuple[int, str]:
     """`out="$(cmd 2>&1)"`: both streams into one string, trailing newlines gone.
 
-    A missing binary cannot happen after `require_cmd`, but a traceback here
-    would read as a crash rather than a probe result, so it is folded into the
-    shell's own 127.
+    A missing binary cannot happen after `require_cmd`, but a traceback here would read as a crash rather than a probe result, so it is folded into the shell's own 127.
     """
     try:
         proc = subprocess.run(
@@ -203,11 +169,9 @@ def probe_gh_release(tag: str) -> str:
 def probe_r2_sentinel(key: str, bucket: str, endpoint: str) -> str:
     """`probe_r2_sentinel` (:134-149).
 
-    THIS DELIBERATELY DOES NOT REUSE `rsv_sentinel_exists` -- nor its port,
-    `core.release_state_validator.sentinel_exists`. The twin says why at
+    THIS DELIBERATELY DOES NOT REUSE `rsv_sentinel_exists` -- nor its port, `core.release_state_validator.sentinel_exists`. The twin says why at
     :129-133: that helper collapses EVERY failure, expired credentials, a 5xx, a
-    DNS fault, into "the sentinel does not exist", which is the exact opposite
-    of rule 2. It can only ever answer present/absent, never "could not tell".
+    DNS fault, into "the sentinel does not exist", which is the exact opposite of rule 2. It can only ever answer present/absent, never "could not tell".
     """
     rc, out = _capture_merged(
         [
@@ -232,10 +196,7 @@ def probe_r2_sentinel(key: str, bucket: str, endpoint: str) -> str:
 class Verdicts:
     """`FAILED` and `COULD_NOT_TELL`, tracked separately (:151-157).
 
-    Two counters rather than one because the two states need OPPOSITE
-    remediation advice, and the twin's comment records what conflating them
-    cost: an operator was told to cut a release and backfill a sentinel that was
-    already fine, because a credentials failure had been filed as an absence.
+    Two counters rather than one because the two states need OPPOSITE remediation advice, and the twin's comment records what conflating them cost: an operator was told to cut a release and backfill a sentinel that was already fine, because a credentials failure had been filed as an absence.
     """
 
     def __init__(self) -> None:
@@ -245,9 +206,7 @@ class Verdicts:
     def judge(self, what: str, state: str) -> bool:
         """`judge` (:158-188). True when the thing is present.
 
-        Every caller is `judge ... || true`, so the return value is advisory and
-        the counters are the real output. All three probes run regardless, which
-        is what lets one run name every missing piece.
+        Every caller is `judge ... || true`, so the return value is advisory and the counters are the real output. All three probes run regardless, which is what lets one run name every missing piece.
         """
         if state == PRESENT:
             log.info("OK      %s" % what)
@@ -279,8 +238,7 @@ def _require_cmd(cmd: str) -> bool:
     """`require_cmd` (common.sh:141-147), inline so the message is this file's.
 
     `core.common.require_cmd` raises; this script's twin exits, and folding a
-    raise into the two-line main() below would put a try/except around the whole
-    body for a branch that prints one line.
+    raise into the two-line main() below would put a try/except around the whole body for a branch that prints one line.
     """
     if shutil.which(cmd) is not None:
         return True

@@ -1,24 +1,12 @@
 """Differential: `rediacc_ci.docker.create_manifest` against its twin
 `.ci/scripts/docker/create-manifest.sh`.
 
-A RECORDING FAKE `docker` ON A SCRATCH PATH, and the PATH is an explicit list of
-symlinks so that a tool nobody named is genuinely absent. That is not a
-formality here: an early probe for this port left `/usr/bin` on PATH and the
-real docker binary contacted `ghcr.io/token` before the twin printed its first
-line. Nothing in this file can reach a registry.
+A RECORDING FAKE `docker` ON A SCRATCH PATH, and the PATH is an explicit list of symlinks so that a tool nobody named is genuinely absent. That is not a formality here: an early probe for this port left `/usr/bin` on PATH and the real docker binary contacted `ghcr.io/token` before the twin printed its first line. Nothing in this file can reach a registry.
 
-THE CALL LOG IS THE EVIDENCE, and the fake is built to keep it that way: its
-`create` path prints NOTHING, so a port that pushed the wrong tag, dropped an
-architecture or skipped the `:latest` manifest would produce identical stdout,
-identical stderr and an identical exit code.
-`test_planted_defect_is_caught_only_by_the_call_log` plants a dropped arch and
-shows all three agreeing while the log does not.
+THE CALL LOG IS THE EVIDENCE, and the fake is built to keep it that way: its `create` path prints NOTHING, so a port that pushed the wrong tag, dropped an architecture or skipped the `:latest` manifest would produce identical stdout, identical stderr and an identical exit code. `test_planted_defect_is_caught_only_by_the_call_log` plants a dropped arch and shows all three agreeing
+while the log does not.
 
-grep AND head ARE COMPARED AGAINST THE REAL TOOLS. The port reimplements the
-twin's `grep -E "(Platform:|Name:)" | head -10` in Python, so
-`test_the_platform_filter_matches_grep_e_on_a_corpus` runs both over the same
-awkward corpus (no trailing newline, an eleventh match, a line matching both
-needles, an empty stream) rather than trusting that they agree.
+grep AND head ARE COMPARED AGAINST THE REAL TOOLS. The port reimplements the twin's `grep -E "(Platform:|Name:)" | head -10` in Python, so `test_the_platform_filter_matches_grep_e_on_a_corpus` runs both over the same awkward corpus (no trailing newline, an eleventh match, a line matching both needles, an empty stream) rather than trusting that they agree.
 """
 
 from __future__ import annotations
@@ -236,10 +224,7 @@ def test_neither_target_refuses(tmp_path) -> None:
 
 def test_no_arguments_at_all_reports_the_missing_target_not_the_missing_tag(tmp_path) -> None:
     """THE ARM THAT WAS MISSING, and its absence was measured rather than
-    guessed: a plant that swapped the "neither target" and "--tag" checks left
-    all 27 tests green, because every case either supplied a target or supplied
-    a tag. A control that does not fire is a claim about the control first, so
-    this is the case that distinguishes the two orders.
+    guessed: a plant that swapped the "neither target" and "--tag" checks left all 27 tests green, because every case either supplied a target or supplied a tag. A control that does not fire is a claim about the control first, so this is the case that distinguishes the two orders.
     """
     old, new, old_calls, new_calls = run_both(tmp_path, [])
     _agree(old, new, "no-args", old_calls, new_calls)
@@ -390,8 +375,7 @@ def test_a_missing_docker_is_bashs_own_command_not_found(tmp_path) -> None:
 
 def test_defect_a_manifest_that_cannot_be_verified_still_exits_zero(tmp_path) -> None:
     """The verification is ADVISORY. `inspect` failing produces a warning and
-    exit 0, so a `create` that reported success but pushed nothing readable is
-    reported as a complete run.
+    exit 0, so a `create` that reported success but pushed nothing readable is reported as a complete run.
     """
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--image", "api", "--tag", "1"], FAKE_INSPECT_RC="1"
@@ -430,14 +414,9 @@ def test_defect_a_single_arch_image_is_not_detected_before_the_push(tmp_path) ->
 
 def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     """PROVE THE DIFFERENTIAL CAN FIRE. The plant drops arm64 from the ARGV
-    handed to docker, at the call site, so the printed `Sources:` line still
-    names both architectures. That is exactly the mistake that publishes a
-    silently single-arch manifest under a name every consumer reads as
-    multi-arch: every printed byte and the exit code are unchanged by it.
+    handed to docker, at the call site, so the printed `Sources:` line still names both architectures. That is exactly the mistake that publishes a silently single-arch manifest under a name every consumer reads as multi-arch: every printed byte and the exit code are unchanged by it.
 
-    Planting it one layer down, in `source_images()`, was tried first and is the
-    WRONG plant -- it also rewrites the `Sources:` line, so stderr diverges and
-    the test proves nothing about the call log.
+    Planting it one layer down, in `source_images()`, was tried first and is the WRONG plant -- it also rewrites the `Sources:` line, so stderr diverges and the test proves nothing about the call log.
     """
     root = fixture(tmp_path)
     target = root / ".ci" / "rediacc_ci" / "docker" / PORT_FILE.name
@@ -463,12 +442,9 @@ def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
 def _run_merged(root, side: str, args: list[str], **extra: str):
     """ONE PIPE FOR BOTH STREAMS, which is what a CI log actually is.
 
-    The separate-stream comparison above cannot see a CROSS-stream ordering
-    divergence, and there is a real one to see: Python block-buffers stdout
-    against a pipe while bash's `echo` writes straight through, so without the
+    The separate-stream comparison above cannot see a CROSS-stream ordering divergence, and there is a real one to see: Python block-buffers stdout against a pipe while bash's `echo` writes straight through, so without the
     port's `flush=True` its `echo ""` separators arrive several lines late with
-    byte-identical content in each stream taken alone. Measured before the flush
-    was added, not imagined.
+    byte-identical content in each stream taken alone. Measured before the flush was added, not imagined.
     """
     call_log = root / ("%s-merged-calls.log" % side)
     call_log.write_text("", encoding="utf-8")

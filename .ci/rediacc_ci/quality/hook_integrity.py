@@ -3,8 +3,7 @@
 Ported from `.ci/scripts/quality/check-hook-integrity.sh`, which is NOT deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-The twin's header, carried whole. Every paragraph of it records a hole this gate
-had and closed, and the holes are the design:
+The twin's header, carried whole. Every paragraph of it records a hole this gate had and closed, and the holes are the design:
 
     WHY. Everything this repo relies on to stop an agent doing the wrong thing is
     a hook, and until 2026-08-25 nothing guarded the hooks themselves.
@@ -252,43 +251,20 @@ had and closed, and the holes are the design:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE SPEC INDIRECTION IS KEPT, AND IT IS NOT CEREMONY. The twin writes a JSON
-`spec` (sources plus a key-to-directory map) and hands `covmap` its PATH, so the
-reader has no opinion about where guards live: the real run hands it the checkout
-and the fixture controls hand it a throwaway tree the same way. This port keeps
-the same two-argument shape as a data structure rather than a file, because the
-property that matters is that the reader takes its roots from the caller.
+THE SPEC INDIRECTION IS KEPT, AND IT IS NOT CEREMONY. The twin writes a JSON `spec` (sources plus a key-to-directory map) and hands `covmap` its PATH, so the reader has no opinion about where guards live: the real run hands it the checkout and the fixture controls hand it a throwaway tree the same way. This port keeps the same two-argument shape as a data structure rather than a
+file, because the property that matters is that the reader takes its roots from the caller.
 
-`os.path.join(root, tail)` IGNORES `root` WHEN `tail` IS ABSOLUTE, which is what
-lets the fixture controls pass absolute paths through the same `mkspec`. Carried,
-because a port that rejected absolute entries would break exactly the controls
-that make this gate's green mean something.
+`os.path.join(root, tail)` IGNORES `root` WHEN `tail` IS ABSOLUTE, which is what lets the fixture controls pass absolute paths through the same `mkspec`. Carried, because a port that rejected absolute entries would break exactly the controls that make this gate's green mean something.
 
-DEDUPLICATION OF THE FINAL PATH SEGMENT IS REFUSED BEFORE ANYTHING RUNS. The twin
-does it with parameter expansion rather than `sed`, and says why:
-"check-control-vacuity.sh reads any `sed s///` in a gate that has controls as a
-control mutant built by substitution and demands a proof-of-plant this line has
-no plant for. Measured: adding the sed spelling turned that gate red on this file,
-which was clean at HEAD." The port has no such hazard, and the refusal is carried
-anyway because the CONDITION is the point, not the spelling.
+DEDUPLICATION OF THE FINAL PATH SEGMENT IS REFUSED BEFORE ANYTHING RUNS. The twin does it with parameter expansion rather than `sed`, and says why: "check-control-vacuity.sh reads any `sed s///` in a gate that has controls as a control mutant built by substitution and demands a proof-of-plant this line has no plant for. Measured: adding the sed spelling turned that gate red on this
+file, which was clean at HEAD." The port has no such hazard, and the refusal is carried anyway because the CONDITION is the point, not the spelling.
 
-THE COVERAGE READER'S THREE SOURCES are direct `check`/`check_out` calls, helper
-functions whose body names exactly one guard, and a dedicated `test-<stem>.py|.sh`
-beside the guard. All three are reproduced with the twin's own regexes, including
-the extension-agnostic `\\.(?:sh|py)` widening: "after the hook port a case in the
-suite names `pre-bash/block_x.py`, and a reader anchored to `.sh` would count zero
-cases for it. B would then report a fully covered guard as newly uncovered -- loud
-rather than silent, but wrong, and a gate that is wrong is a gate that gets
-suppressed. Measured a no-op on the suite it was widened against: 81 direct case
-matches before and after, identical set."
+THE COVERAGE READER'S THREE SOURCES are direct `check`/`check_out` calls, helper functions whose body names exactly one guard, and a dedicated `test-<stem>.py|.sh` beside the guard. All three are reproduced with the twin's own regexes, including the extension-agnostic `\\.(?:sh|py)` widening: "after the hook port a case in the suite names `pre-bash/block_x.py`, and a reader
+anchored to `.sh` would count zero cases for it. B would then report a fully covered guard as newly uncovered -- loud rather than silent, but wrong, and a gate that is wrong is a gate that gets suppressed. Measured a no-op on the suite it was widened against: 81 direct case matches before and after, identical set."
 
-`check` AND `check_out` THEMSELVES NAME THEIR GUARD THROUGH A VARIABLE, so they
-cannot match the helper-wrapper rule and do not need excluding by name. Carried
-verbatim from the twin, because it is the sort of exclusion a port adds "for
-safety" and thereby changes the answer.
+`check` AND `check_out` THEMSELVES NAME THEIR GUARD THROUGH A VARIABLE, so they cannot match the helper-wrapper rule and do not need excluding by name. Carried verbatim from the twin, because it is the sort of exclusion a port adds "for safety" and thereby changes the answer.
 
-THE TWIN READS ITS SCOPE WITH `while read` AND A TRAILING `|| true`, and both
-halves of that are archaeology this port would otherwise lose. It said `mapfile`
+THE TWIN READS ITS SCOPE WITH `while read` AND A TRAILING `|| true`, and both halves of that are archaeology this port would otherwise lose. It said `mapfile`
 until 2026-09-06; the twin's own words for the change:
 
     `while read` RATHER THAN `mapfile`, and it is not a style choice. `mapfile`
@@ -305,20 +281,10 @@ until 2026-09-06; the twin's own words for the change:
     That refusal is the only thing standing between an unreadable scope file and
     a gate that exits 0 having audited nothing.
 
-THE PORT NEEDED NO CHANGE FOR IT, and that is worth writing down rather than
-leaving as an absence. `scope_list` here raises `ScopeError` and the caller turns
-that into an empty list, which is the same value both `mapfile` and the
-`while read` loop produce from an empty process substitution. There is no
-`set -e` to survive, so there is nothing for `|| true` to correspond to -- but
-the HAZARD it guards is real in this file too, and it is the reason the three
-`except ScopeError` arms below assign `[]` and fall through to the emptiness
-refusal instead of returning early. A port that let the exception escape would
-exit non-zero with a traceback rather than the gate's own four-line refusal,
-which reads as a broken runner rather than an unreadable data file.
+THE PORT NEEDED NO CHANGE FOR IT, and that is worth writing down rather than leaving as an absence. `scope_list` here raises `ScopeError` and the caller turns that into an empty list, which is the same value both `mapfile` and the `while read` loop produce from an empty process substitution. There is no `set -e` to survive, so there is nothing for `|| true` to correspond to -- but
+the HAZARD it guards is real in this file too, and it is the reason the three `except ScopeError` arms below assign `[]` and fall through to the emptiness refusal instead of returning early. A port that let the exception escape would exit non-zero with a traceback rather than the gate's own four-line refusal, which reads as a broken runner rather than an unreadable data file.
 
-THE DIFFERENTIAL COVERS ALL THREE WAYS THE SCOPE CAN COLLAPSE, because under the
-`while read` form they are the same event and the `|| true` fires on the FIRST
-`read` rather than the last: a declared key holding an empty list, a scope file
+THE DIFFERENTIAL COVERS ALL THREE WAYS THE SCOPE CAN COLLAPSE, because under the `while read` form they are the same event and the `|| true` fires on the FIRST `read` rather than the last: a declared key holding an empty list, a scope file
 with no such key at all, and a scope file that is not JSON. The ledger carries a
 tree for each.
 """
@@ -363,19 +329,14 @@ FLOOR_LINE = 'lt "$floor"'
 class ScopeError(ValueError):
     """The scope file is unreadable, or a declared key is empty or malformed.
 
-    A named type because the caller must refuse rather than degrade: an empty
-    scope makes every loop iterate zero times and the gate exit 0 having audited
-    nothing.
+    A named type because the caller must refuse rather than degrade: an empty scope makes every loop iterate zero times and the gate exit 0 having audited nothing.
     """
 
 
 def scope_list(path: pathlib.Path, key: str) -> list[str]:
     """One entry per line, or a refusal. Never a partial list.
 
-    The twin's embedded reader exits 1 on ANY of: an unreadable file, a value
-    that is not a list, an empty list, or a list holding a non-string or an
-    empty string. All four are the same event -- the seam scanned to nothing --
-    and all four must refuse.
+    The twin's embedded reader exits 1 on ANY of: an unreadable file, a value that is not a list, an empty list, or a list holding a non-string or an empty string. All four are the same event -- the seam scanned to nothing -- and all four must refuse.
     """
     try:
         with open(path, encoding="utf-8") as handle:
@@ -393,11 +354,7 @@ def scope_list(path: pathlib.Path, key: str) -> list[str]:
 def mkspec(root: str, sources: list[str], dirs: list[str]) -> dict:
     """The seam, serialised. `{"sources": [...], "dirs": {key: abs}}`.
 
-    Every path the reader below touches arrives through this, so the reader has
-    no opinion about where guards live: callers hand it a root plus two lists,
-    and the fixture controls hand it a throwaway tree the same way the real run
-    hands it the checkout. An absolute entry passes through unchanged
-    (`os.path.join` ignores the root when the tail is absolute).
+    Every path the reader below touches arrives through this, so the reader has no opinion about where guards live: callers hand it a root plus two lists, and the fixture controls hand it a throwaway tree the same way the real run hands it the checkout. An absolute entry passes through unchanged (`os.path.join` ignores the root when the tail is absolute).
     """
     return {
         "sources": [os.path.join(root, s) for s in sources],
@@ -409,17 +366,10 @@ def mkspec(root: str, sources: list[str], dirs: list[str]) -> dict:
 def covmap(spec: dict) -> list[tuple[str, int, int]]:
     """Per guard, `(key/name, block-cases, allow-cases)`.
 
-    Counts cases asserting exit 2 and cases asserting exit 0, from three sources:
-    direct `check`/`check_out` calls, calls to a helper function that wraps
-    exactly one guard, and a dedicated `test-<stem>.py|.sh` beside the guard
-    (which exists to assert both directions, so it counts as both).
+    Counts cases asserting exit 2 and cases asserting exit 0, from three sources: direct `check`/`check_out` calls, calls to a helper function that wraps exactly one guard, and a dedicated `test-<stem>.py|.sh` beside the guard (which exists to assert both directions, so it counts as both).
 
-    CASES COME FROM A LIST OF SOURCES, not from one suite file. While it was one
-    file, moving a guard's cases into a second suite made that guard read as
-    newly uncovered -- and the cheapest way to make that red go away is to
-    baseline the guard, which retires the assertion permanently. Reading every
-    declared source means a case that MOVED still counts, and only a case that
-    was DELETED goes red.
+    CASES COME FROM A LIST OF SOURCES, not from one suite file. While it was one file, moving a guard's cases into a second suite made that guard read as newly uncovered -- and the cheapest way to make that red go away is to baseline the guard, which retires the assertion permanently. Reading every declared source means a case that MOVED still counts, and only a case that was
+    DELETED goes red.
     """
     sources, dirs = spec["sources"], spec["dirs"]
     src = ""
@@ -489,9 +439,7 @@ def lookup(mapping: dict[str, tuple[int, int]], guard: str) -> tuple[int, int]:
 def floorcheck(text: str) -> list[int]:
     """Line numbers of folds with NO minimum standing between count and addition.
 
-    The window INCLUDES the fold line itself. See the header: it used to stop one
-    line short, so a same-line refusal read as unfloored, and a correctly floored
-    fold named as a defect is the cry-wolf failure that gets a gate routed around.
+    The window INCLUDES the fold line itself. See the header: it used to stop one line short, so a same-line refusal read as unfloored, and a correctly floored fold named as a defect is the cry-wolf failure that gets a gate routed around.
     """
     lines = text.splitlines()
     out: list[int] = []
@@ -513,9 +461,7 @@ def read_json_list(path: pathlib.Path) -> list[str]:
 def inv_unlisted(listed: list[str], on_disk: list[str]) -> list[str]:
     """Guards on disk but absent from the inventory, in disk order.
 
-    A guard in that state can be DELETED without A noticing, which is the whole
-    point of A. Six guards were in it on 2026-08-27 because nobody re-ran the
-    baseline after adding them.
+    A guard in that state can be DELETED without A noticing, which is the whole point of A. Six guards were in it on 2026-08-27 because nobody re-ran the baseline after adding them.
     """
     known = set(listed)
     return [g for g in on_disk if g not in known]
@@ -925,9 +871,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions for the coverage reader, the floor reader and both arms of A.
 
-    The negative controls carry the weight: a reader that says yes to everything
-    passes every positive case, and the twin's own suite is built around exactly
-    that worry.
+    The negative controls carry the weight: a reader that says yes to everything passes every positive case, and the twin's own suite is built around exactly that worry.
     """
     ctl = Controls("hook-integrity", floor=28, verbose=True)
 

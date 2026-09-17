@@ -7,33 +7,23 @@ deleted; see `rediacc_ci.quality.__init__`.
 THE TWIN'S HEADER, CARRIED ACROSS.
 -----------------------------------------------------------------------------
 
-Catch shell scripts that pipe commands which can exit non-zero on empty
-input through a pipeline under `set -eo pipefail` without a guard.
+Catch shell scripts that pipe commands which can exit non-zero on empty input through a pipeline under `set -eo pipefail` without a guard.
 
 Why: `aws s3 ls` returns exit 1 when the prefix has no contents. Combined
 with `set -eo pipefail`, that propagates through any pipe (`| wc -l`,
-`| awk ...`, `| head -1`, `| grep ...`) and aborts the calling script
-silently mid-execution. We hit this three times in one day:
+`| awk ...`, `| head -1`, `| grep ...`) and aborts the calling script silently mid-execution. We hit this three times in one day:
   - scrub-sentinel.sh dry-run hung on empty cli/v1.0.7/ prefix
   - assert-r2-sentinel.sh would have aborted before flagging missing bytes
   - cleanup-versions.sh Phase 8 retention loop could die on a deleted-
     between-check-and-use race
 
-The lint scans every .sh under .ci/scripts/ and scripts/dev/ that has
-`set -eo pipefail` (or `set -e ... pipefail`) and flags occurrences of
-`aws s3 ls`, `find ...`, `grep ...` piped into `wc -l` / `head` / `tail`
-/ `awk` without a `|| true` / `|| echo ...` guard on the same logical
-pipeline.
+The lint scans every .sh under .ci/scripts/ and scripts/dev/ that has `set -eo pipefail` (or `set -e ... pipefail`) and flags occurrences of `aws s3 ls`, `find ...`, `grep ...` piped into `wc -l` / `head` / `tail` / `awk` without a `|| true` / `|| echo ...` guard on the same logical pipeline.
 
-Exit 0 on no findings, 1 on any unguarded match. The shared helper
-r2_count_objects in .ci/scripts/lib/common.sh is the recommended fix.
+Exit 0 on no findings, 1 on any unguarded match. The shared helper r2_count_objects in .ci/scripts/lib/common.sh is the recommended fix.
 
-Whitelist: add `# silent-failure-ok: <reason>` on the line above the
-risky line if the unguarded pattern is intentional (e.g. an inner step
-that actually wants to fail the script on missing input).
+Whitelist: add `# silent-failure-ok: <reason>` on the line above the risky line if the unguarded pattern is intentional (e.g. an inner step that actually wants to fail the script on missing input).
 
-TWO BUGS THAT EACH ALONE KEPT THIS GATE PERMANENTLY GREEN, both recorded in the
-twin's own comments and both preserved here as history:
+TWO BUGS THAT EACH ALONE KEPT THIS GATE PERMANENTLY GREEN, both recorded in the twin's own comments and both preserved here as history:
 
   * The repo root was a hand-counted `../..` from the script's directory, which
     resolved to `.ci`, so the find scanned `.ci/.ci/scripts` and
@@ -47,16 +37,10 @@ twin's own comments and both preserved here as history:
     defect it could not see; the escape warnings were swallowed by the
     `2>/dev/null` on the awk call).
 
-CLASS 2, the redaction-filter sink, from the twin's own comment: `cmd 2>&1 |
-grep -v X` under pipefail dies with ZERO error text when grep filters every line
--- including on SUCCESS, when the head's whole output happens to be the redacted
-lines (live: clone-d1.sh's D1 export, run 30628110972: a 21-second gap, then
-cleanup, nothing else). The head's own failure text is also lost when its output
-never flushes. Capture to a file, redact after, and test the head's own exit code
-instead.
+CLASS 2, the redaction-filter sink, from the twin's own comment: `cmd 2>&1 | grep -v X` under pipefail dies with ZERO error text when grep filters every line -- including on SUCCESS, when the head's whole output happens to be the redacted lines (live: clone-d1.sh's D1 export, run 30628110972: a 21-second gap, then cleanup, nothing else). The head's own failure text is also lost
+when its output never flushes. Capture to a file, redact after, and test the head's own exit code instead.
 
-A line is guarded if it contains `|| true`, `|| echo`, `|| return`, or a trailing
-`2>/dev/null` immediately after the head (the latter does not actually rescue
+A line is guarded if it contains `|| true`, `|| echo`, `|| return`, or a trailing `2>/dev/null` immediately after the head (the latter does not actually rescue
 exit codes but is the common operator habit; the twin treats it as a soft signal
 and still flags).
 
@@ -65,54 +49,28 @@ PORT NOTES.
 -----------------------------------------------------------------------------
 
 A DEFECT IN THE TWIN, FOUND WHILE PORTING AND DELIBERATELY NOT FIXED HERE.
-This gate has NO ANTI-VACUITY FLOOR. If the two scan directories disappear or
-are renamed, `find` prints nothing, `findings` is empty, and the gate prints
-"No unguarded pipefail-risk pipelines found" and exits 0 -- which is exactly the
-failure mode its own sibling `check-swallowed-failures.sh` refuses with "This
-gate scanned nothing, so its verdict would be meaningless." The twin was already
-green-for-the-wrong-reason once for this class of reason (the `../..` root bug
-above), so the shape is not hypothetical here.
+This gate has NO ANTI-VACUITY FLOOR. If the two scan directories disappear or are renamed, `find` prints nothing, `findings` is empty, and the gate prints "No unguarded pipefail-risk pipelines found" and exits 0 -- which is exactly the failure mode its own sibling `check-swallowed-failures.sh` refuses with "This gate scanned nothing, so its verdict would be meaningless." The twin
+was already green-for-the-wrong-reason once for this class of reason (the `../..` root bug above), so the shape is not hypothetical here.
 
-It is NOT repaired in this port, because a port that changes the verdict on any
-tree is not a port: a floor added here would make the two implementations
-disagree on an empty tree, and the shadow ledger would be attesting to something
-that is no longer true of the twin CI actually runs. The fix belongs in a change
-that touches BOTH files. `selftest()` below carries a control that pins the
-CURRENT behaviour and names it as the defect it is, so the day someone fixes the
-twin the control tells them this file needs the same edit.
+It is NOT repaired in this port, because a port that changes the verdict on any tree is not a port: a floor added here would make the two implementations disagree on an empty tree, and the shadow ledger would be attesting to something that is no longer true of the twin CI actually runs. The fix belongs in a change that touches BOTH files. `selftest()` below carries a control that
+pins the CURRENT behaviour and names it as the defect it is, so the day someone fixes the twin the control tells them this file needs the same edit.
 
-THE FIND ORDER IS DIRECTORY ORDER, NOT SORTED. `find ... -print0` walks in
-readdir order and the twin never sorts, so the printed finding ORDER is
-filesystem-dependent. `os.walk` gives the same class of order.
-`scripts/lib/shadow-gate.ts` compares findings as an unordered multiset, so this
+THE FIND ORDER IS DIRECTORY ORDER, NOT SORTED. `find ... -print0` walks in readdir order and the twin never sorts, so the printed finding ORDER is filesystem-dependent. `os.walk` gives the same class of order. `scripts/lib/shadow-gate.ts` compares findings as an unordered multiset, so this
 cannot make the two sides disagree; it is stated because a reader diffing the
-raw streams may see the same findings in a different order and should not go
-looking for a bug.
+raw streams may see the same findings in a different order and should not go looking for a bug.
 
-`[+\\-]` IS A THREE-CHARACTER CLASS, and it is worth pausing on. Inside a POSIX
-bracket expression a backslash is LITERAL, so the twin's `^set [+\\-]e` matches
-`set +e`, `set -e` and a backslash-e that is nonsense nothing writes. It is
-is carried across rather than tidied to `[+-]`, because tidying it is a change
-to the matcher, and a matcher change is the one thing a differential cannot see
-on trees that contain no instance of the difference.
+`[+\\-]` IS A THREE-CHARACTER CLASS, and it is worth pausing on. Inside a POSIX bracket expression a backslash is LITERAL, so the twin's `^set [+\\-]e` matches `set +e`, `set -e` and a backslash-e that is nonsense nothing writes. It is is carried across rather than tidied to `[+-]`, because tidying it is a change to the matcher, and a matcher change is the one thing a differential
+cannot see on trees that contain no instance of the difference.
 
-THE STRICT-MODE RULE DOES NOT `next`. The twin's `/^set [+\\-]e/` block updates
-`strict` and then falls through to the ordinary line handling, so the `set` line
-itself is scanned for pipeline shapes. It never matches one, but the fall-through
-is behaviour and is reproduced rather than "cleaned up" into an early return.
+THE STRICT-MODE RULE DOES NOT `next`. The twin's `/^set [+\\-]e/` block updates `strict` and then falls through to the ordinary line handling, so the `set` line itself is scanned for pipeline shapes. It never matches one, but the fall-through is behaviour and is reproduced rather than "cleaned up" into an early return.
 
-THE FILE-LEVEL PRE-FILTER AND THE PER-LINE TRACKER ARE DIFFERENT TESTS, and that
-asymmetry is the twin's. A file qualifies for scanning when ANY line matches the
+THE FILE-LEVEL PRE-FILTER AND THE PER-LINE TRACKER ARE DIFFERENT TESTS, and that asymmetry is the twin's. A file qualifies for scanning when ANY line matches the
 long `^set [+\\-](...)` alternation; within the file, `strict` is toggled by the
 much looser `^set [+\\-]e` plus a `pipefail` substring. A file that says
 `set -euo pipefail` at the top qualifies on both counts; one that only says
-`set -e` qualifies on neither. Reproduced exactly, including the fact that
-`set -e` alone (with no trailing space) fails the pre-filter.
+`set -e` qualifies on neither. Reproduced exactly, including the fact that `set -e` alone (with no trailing space) fails the pre-filter.
 
-STREAMS. The twin's findings go through `log_error`, so they are `✗ <text>` on
-stderr, and its clean verdict through `log_info`. `rediacc_ci.log` produces
-byte-identical lines for both. The `--json` output is a bare `printf` on stdout
-and stays there.
+STREAMS. The twin's findings go through `log_error`, so they are `✗ <text>` on stderr, and its clean verdict through `log_info`. `rediacc_ci.log` produces byte-identical lines for both. The `--json` output is a bare `printf` on stdout and stays there.
 """
 
 import json
@@ -162,8 +120,7 @@ REDACT_SUFFIX = " (redaction-filter sink: capture to a file, redact after, test 
 def file_is_strict(text: str) -> bool:
     """Does any line qualify this file for scanning at all?
 
-    The twin's `grep -qE` over the whole file. A file with no strict-mode line
-    is skipped entirely, which is the precondition that distinguishes this gate
+    The twin's `grep -qE` over the whole file. A file with no strict-mode line is skipped entirely, which is the precondition that distinguishes this gate
     from `check-swallowed-failures.sh`: an abort is what this one is about, and
     a swallowed failure lies with or without strict mode.
     """
@@ -174,8 +131,7 @@ def scan_text(text: str, label: str) -> list[str]:
     """The awk pass over one file, as `<label>:<lineno>: <line>` strings.
 
     `label` is the path the twin's awk receives in `-v file=`, which is the
-    ABSOLUTE path because `find` is given absolute directories. Passed in rather
-    than derived so a test can drive the scanner without a filesystem.
+    ABSOLUTE path because `find` is given absolute directories. Passed in rather than derived so a test can drive the scanner without a filesystem.
     """
     findings: list[str] = []
     strict = False
@@ -216,11 +172,7 @@ def scan_text(text: str, label: str) -> list[str]:
 def discover(root: pathlib.Path) -> list[pathlib.Path]:
     """Every `*.sh` under the scan directories, in walk order.
 
-    A missing directory is silently skipped, matching the twin's
-    `find ... 2>/dev/null` inside a process substitution, whose exit status is
-    discarded. That is a swallowed failure by the standards of the sibling gate,
-    and it is preserved rather than repaired for the reason the module docstring
-    gives at length.
+    A missing directory is silently skipped, matching the twin's `find ... 2>/dev/null` inside a process substitution, whose exit status is discarded. That is a swallowed failure by the standards of the sibling gate, and it is preserved rather than repaired for the reason the module docstring gives at length.
     """
     out: list[pathlib.Path] = []
     for rel in SCAN_DIRS:
@@ -254,9 +206,7 @@ def collect(root: pathlib.Path) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 finding, 2 usage error.
 
-    Argument handling is the twin's loop, including the fact that `--json` and
-    `--help` may appear anywhere and that an unknown argument is exit 2 rather
-    than exit 1. `--selftest` is the one addition, intercepted first.
+    Argument handling is the twin's loop, including the fact that `--json` and `--help` may appear anywhere and that an unknown argument is exit 2 rather than exit 1. `--selftest` is the one addition, intercepted first.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -315,10 +265,7 @@ _STRICT = "#!/bin/bash\nset -euo pipefail\n"
 def selftest() -> int:
     """Plant each violation, prove it fires; remove it, prove it does not.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. This gate's history is two independent
-    bugs that each made it match NOTHING while reporting a clean tree, so the
-    mirrors here are not decoration: a matcher that fires on everything and a
-    matcher that fires on nothing are both invisible to a positive-only suite.
+    BOTH DIRECTIONS FOR EVERY CONTROL. This gate's history is two independent bugs that each made it match NOTHING while reporting a clean tree, so the mirrors here are not decoration: a matcher that fires on everything and a matcher that fires on nothing are both invisible to a positive-only suite.
     """
     ctl = Controls("silent-failure-patterns", floor=29, verbose=True)
 

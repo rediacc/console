@@ -1,24 +1,16 @@
 """`rediacc_ci.quality.control_vacuity` against the grep pipeline it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-control-vacuity.observations.jsonl` drives the whole gate over
-five distinct trees carrying each verdict this check can reach. What a ledger
-row cannot isolate is the CLASSIFIER, which is three chained greps whose answer
-decides whether a sibling gate is judged at all:
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-control-vacuity.observations.jsonl` drives the whole gate over five distinct trees carrying each verdict this check can reach. What a ledger row cannot isolate is the CLASSIFIER, which is three chained greps whose answer decides whether a sibling gate is judged at all:
 
     grep -vE '^[[:space:]]*#'                      strip comments
     grep -vE "sed [^&]*[[:punct:]]s[/@|#]\\^[/@|#]"  drop prefix substitutions
     grep -qE '\\$\\{NAME//|sed [^&]*[[:punct:]]s[/@|#]|sed -i'
 
-A classifier that narrows moves gates from "checked" to "exempt" and the gate
-still prints a tick. So the cases below run the REAL pipeline over the REAL gate
-directory, file by file, and require the port to agree on every one.
+A classifier that narrows moves gates from "checked" to "exempt" and the gate still prints a tick. So the cases below run the REAL pipeline over the REAL gate directory, file by file, and require the port to agree on every one.
 
-THE ONE KNOWN SET DIFFERENCE, measured on this host and asserted below rather
-than left as a hope: `grep` here is ugrep, whose `[[:punct:]]` is the Unicode
+THE ONE KNOWN SET DIFFERENCE, measured on this host and asserted below rather than left as a hope: `grep` here is ugrep, whose `[[:punct:]]` is the Unicode
 punctuation categories and excludes `$ + < = > ^ ` | ~`. The port uses the wider
-POSIX set. `test_the_port_and_the_live_grep_agree_on_every_gate` is what proves
-the difference is unobservable on the corpus that exists.
+POSIX set. `test_the_port_and_the_live_grep_agree_on_every_gate` is what proves the difference is unobservable on the corpus that exists.
 """
 
 import pathlib
@@ -32,10 +24,7 @@ from rediacc_ci.tests import differential as diff
 def _joined(*rows: str) -> str:
     """`"\n".join(rows)` behind a call. The rows stay one per line.
 
-    A helper rather than a literal join because ruff's FLY002 rewrites a join
-    over a LITERAL list into an f-string, and a ten-line shell fixture written
-    as one f-string is unreadable. Passing the rows as arguments keeps the
-    fixture legible and gives the linter nothing static to fold.
+    A helper rather than a literal join because ruff's FLY002 rewrites a join over a LITERAL list into an f-string, and a ten-line shell fixture written as one f-string is unreadable. Passing the rows as arguments keeps the fixture legible and gives the linter nothing static to fold.
     """
     return "\n".join(rows)
 
@@ -71,21 +60,12 @@ def test_the_corpus_is_not_empty() -> None:
 
     DERIVED, NOT TYPED, and the difference is about to matter. This read
     `>= 50` against a directory holding 77 `check-*.sh`. W7 P5 deletes that
-    family, so the typed number turns an anti-vacuity guard into a FALSE RED
-    partway through a legitimate deletion -- and the porter's cheapest way past
-    a false red is to lower the number, which is how a floor stops meaning
-    anything. `check_guard_feature_completeness.py:176` already argues the
-    general case for this tree ("SET-BASED, NOT A TYPED COUNT ... a number here
-    would have to be re-keyed by every port anyway"), and driver contract
-    section 6 forbids the hand-typed form outright.
+    family, so the typed number turns an anti-vacuity guard into a FALSE RED partway through a legitimate deletion -- and the porter's cheapest way past a false red is to lower the number, which is how a floor stops meaning anything. `check_guard_feature_completeness.py:176` already argues the general case for this tree ("SET-BASED, NOT A TYPED COUNT ... a number here would have to
+    be re-keyed by every port anyway"), and driver contract section 6 forbids the hand-typed form outright.
 
-    So the floor is set EQUALITY against git rather than a constant: the glob
-    must see exactly the `check-*.sh` files the repository tracks. That is
+    So the floor is set EQUALITY against git rather than a constant: the glob must see exactly the `check-*.sh` files the repository tracks. That is
     strictly STRONGER than `>= 50` -- it catches a glob that narrows by one,
-    which a floor of 50 would sit through for twenty-seven deletions -- and it
-    walks down with P5 on its own. When the family reaches zero the `assert
-    tracked` below fires and says the honest thing: this file's subject is
-    gone, so delete it with the family rather than re-flooring it.
+    which a floor of 50 would sit through for twenty-seven deletions -- and it walks down with P5 on its own. When the family reaches zero the `assert tracked` below fires and says the honest thing: this file's subject is gone, so delete it with the family rather than re-flooring it.
     """
     tracked = {
         pathlib.Path(line).name
@@ -119,10 +99,7 @@ def test_the_corpus_is_not_empty() -> None:
 def test_the_port_and_the_live_grep_agree_on_every_gate() -> None:
     """`builds_by_substitution` over the whole real gate directory.
 
-    This is the assertion that makes the POSIX-versus-ugrep `[[:punct:]]`
-    difference safe to carry: if a gate ever contains a shape where the two
-    readings disagree, this fails by name instead of the gate quietly moving
-    one file from checked to exempt.
+    This is the assertion that makes the POSIX-versus-ugrep `[[:punct:]]` difference safe to carry: if a gate ever contains a shape where the two readings disagree, this fails by name instead of the gate quietly moving one file from checked to exempt.
     """
     disagreements = []
     for path in _gate_files():
@@ -181,8 +158,7 @@ def test_strip_guard_matches_the_twins_sed(tmp_path: pathlib.Path) -> None:
 
 def test_strip_guard_on_the_real_control_source_keeps_its_substitution() -> None:
     """The CONTROL's precondition, asserted directly: the stripped copy must
-    still carry a substitution, or the control proves nothing and the gate says
-    CONTROL IS VACUOUS. That branch firing on the real tree would be a finding
+    still carry a substitution, or the control proves nothing and the gate says CONTROL IS VACUOUS. That branch firing on the real tree would be a finding
     about check-review-turn-capacity.sh, not about the port."""
     source = paths.repo_root() / ".ci" / "scripts" / "quality" / cv.CONTROL_GATE
     assert source.is_file(), "%s moved; retarget the control in BOTH implementations" % source
@@ -234,11 +210,7 @@ def test_selftest_is_green() -> None:
 def test_the_real_tree_passes_and_the_two_implementations_print_the_same_bytes() -> None:
     """Byte comparison on the real tree, both streams, kept SEPARATE.
 
-    Not a substitute for the ledger: this is one tree, and one tree is one
-    observation (`scripts/lib/shadow-gate.ts`, invariant 5). It is here because
-    the twin's output is short enough for a byte comparison to be meaningful,
-    and a byte comparison catches a moved stream that a finding-set comparison
-    calls chatter and ignores.
+    Not a substitute for the ledger: this is one tree, and one tree is one observation (`scripts/lib/shadow-gate.ts`, invariant 5). It is here because the twin's output is short enough for a byte comparison to be meaningful, and a byte comparison catches a moved stream that a finding-set comparison calls chatter and ignores.
     """
     root = str(paths.repo_root())
     old = subprocess.run(

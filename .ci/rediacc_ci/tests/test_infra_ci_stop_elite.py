@@ -1,18 +1,11 @@
 """Differential: `rediacc_ci.infra.ci_stop_elite` against its twin
 `.ci/scripts/infra/ci-stop-elite.sh`.
 
-Same technique as `test_infra_ci_stop.py` and for the same reason: the subject
-shells out to `docker`, so the seam is PATH, and a recording fake `docker` lets
-the comparison assert on the ARGV SEQUENCE both sides produced rather than only
-on stdout. A port that printed "Force removing" and never called `docker rm`
-would pass a stdout-only comparison and leave the container running.
+Same technique as `test_infra_ci_stop.py` and for the same reason: the subject shells out to `docker`, so the seam is PATH, and a recording fake `docker` lets the comparison assert on the ARGV SEQUENCE both sides produced rather than only on stdout. A port that printed "Force removing" and never called `docker rm` would pass a stdout-only comparison and leave the container running.
 
 FIXTURE ROOT, NOT THE REAL REPOSITORY. Both subjects derive the console root
 from their own file location (`BASH_SOURCE[0]` / `__file__`, three directories
-up from where each actually lives -- `.ci/scripts/infra/` for the twin,
-`.ci/rediacc_ci/infra/` for the port). Driving the TRACKED files directly would
-point both at this real checkout's `private/elite`, so each case COPIES both
-subjects into a fresh tree at the right relative depth and runs the copies.
+up from where each actually lives -- `.ci/scripts/infra/` for the twin, `.ci/rediacc_ci/infra/` for the port). Driving the TRACKED files directly would point both at this real checkout's `private/elite`, so each case COPIES both subjects into a fresh tree at the right relative depth and runs the copies.
 
 K=5 LEDGER: `.ci/shadow/w7p6-ci-stop-elite.observations.jsonl`, recorded
 against a disposable scratch git repo built outside this checkout (this

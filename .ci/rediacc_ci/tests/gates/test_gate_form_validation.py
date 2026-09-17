@@ -2,10 +2,7 @@
 
 Tests for `scripts/gates/check-form-validation.ts`.
 
-The gate is RED on the real tree today: five of the six forms in packages/www
-disable browser validation without replacing it, or read an input and silently
-discard it. The fix belongs to a later wave, so this test does NOT pin the verdict.
-It pins:
+The gate is RED on the real tree today: five of the six forms in packages/www disable browser validation without replacing it, or read an input and silently discard it. The fix belongs to a later wave, so this test does NOT pin the verdict. It pins:
 
   1. the gate can FAIL -- both plants (the captcha-only guard, and the silent
      return) are exercised, AND the one form that gets it right stays clean, which
@@ -15,13 +12,8 @@ It pins:
   3. the real scan really ran over a form count above its floor, and refuses an
      empty tree rather than reporting it clean.
 
-THE MUTANT IS BUILT IN A TEMPDIR AND THE REAL GATE IS NEVER WRITTEN TO. `sed
-'s/&& !CAPTCHA_IDENTS.test(i)//' $GATE > $tmp/mutant.ts` in the twin becomes a
-string replacement here, and the PORT ADDS A REFUSAL THE TWIN DOES NOT HAVE: a
-replacement that matched NOTHING would hand `tsx` a byte-identical copy of the
-gate, whose selftest passes, and `test_the_control_can_actually_fail` would then be
-red for the opposite of its stated reason -- or, worse, an author "fixing" it would
-delete the case. The count is asserted before the mutant is run.
+THE MUTANT IS BUILT IN A TEMPDIR AND THE REAL GATE IS NEVER WRITTEN TO. `sed 's/&& !CAPTCHA_IDENTS.test(i)//' $GATE > $tmp/mutant.ts` in the twin becomes a string replacement here, and the PORT ADDS A REFUSAL THE TWIN DOES NOT HAVE: a replacement that matched NOTHING would hand `tsx` a byte-identical copy of the gate, whose selftest passes, and `test_the_control_can_actually_fail`
+would then be red for the opposite of its stated reason -- or, worse, an author "fixing" it would delete the case. The count is asserted before the mutant is run.
 """
 
 from rediacc_ci import paths

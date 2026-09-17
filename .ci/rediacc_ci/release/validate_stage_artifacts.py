@@ -1,36 +1,17 @@
 """Port of `.ci/scripts/release/validate-stage-artifacts.sh`.
 
-Counts the staged release artifacts under `dist/`, writes the run summary,
-and fails the stage when anything expected is missing. Pure filesystem
-inspection plus one shelled-out `du -sh` for the human-readable pages-bundle
-size: no network, no wrangler/aws/gh/docker, nothing that mutates anything.
+Counts the staged release artifacts under `dist/`, writes the run summary, and fails the stage when anything expected is missing. Pure filesystem inspection plus one shelled-out `du -sh` for the human-readable pages-bundle size: no network, no wrangler/aws/gh/docker, nothing that mutates anything.
 
-`du` IS SHELLED OUT TO, NOT REIMPLEMENTED, for the same reason `date` is in
-`rediacc_ci.release.check_soak_period`: reproducing `du`'s human-readable
-rounding (`52K` vs `53248`) in Python would be a second, silently-divergent
-implementation of a contract the system binary already owns. `cut -f1` splits
-on a literal TAB, confirmed directly (`du -sh <dir>/ | cat -A` prints
+`du` IS SHELLED OUT TO, NOT REIMPLEMENTED, for the same reason `date` is in `rediacc_ci.release.check_soak_period`: reproducing `du`'s human-readable rounding (`52K` vs `53248`) in Python would be a second, silently-divergent implementation of a contract the system binary already owns. `cut -f1` splits on a literal TAB, confirmed directly (`du -sh <dir>/ | cat -A` prints
 `52K^I<dir>/$`), so this port splits on `"\t"` rather than on whitespace.
 
-REPO ROOT COMES FROM `rediacc_ci.paths.repo_root()`, not from a manual
-`../../..` climb. Unlike the deploy-side forwarding shims in this box, this
-port genuinely needs the twin's `cd "$(get_repo_root)"` behaviour (every
-`dist/...` path is repo-root-relative), and `paths.repo_root()` is the
-one program-wide answer to "where is the repo root" -- including its
-`$REDIACC_CI_ROOT` override, which is what lets the differential test point
-both sides at an isolated fixture instead of this checkout's real `dist/`.
+REPO ROOT COMES FROM `rediacc_ci.paths.repo_root()`, not from a manual `../../..` climb. Unlike the deploy-side forwarding shims in this box, this port genuinely needs the twin's `cd "$(get_repo_root)"` behaviour (every `dist/...` path is repo-root-relative), and `paths.repo_root()` is the one program-wide answer to "where is the repo root" -- including its `$REDIACC_CI_ROOT`
+override, which is what lets the differential test point both sides at an isolated fixture instead of this checkout's real `dist/`.
 
-`-type f` EXCLUDES SYMLINKS, and this port's file-counting walk does too:
-`find -type f` reports a symlink's type as `l`, not `f`, even when the link
-target is a regular file. `os.walk` alone does not make that distinction (a
-symlink-to-file shows up in `filenames` either way), so every count here
-explicitly skips `Path.is_symlink()` entries before testing `is_file()`.
+`-type f` EXCLUDES SYMLINKS, and this port's file-counting walk does too: `find -type f` reports a symlink's type as `l`, not `f`, even when the link target is a regular file. `os.walk` alone does not make that distinction (a symlink-to-file shows up in `filenames` either way), so every count here explicitly skips `Path.is_symlink()` entries before testing `is_file()`.
 
 `FIND ... 2>/dev/null | wc -l` NEVER RAISES; A MISSING DIRECTORY COUNTS AS
-ZERO, matching the twin: this port returns 0 for any `dist/...` path that is
-not a directory rather than raising, which is what lets an entirely absent
-`dist/` tree fail loud through the vacuity checks below instead of crashing
-before it gets there.
+ZERO, matching the twin: this port returns 0 for any `dist/...` path that is not a directory rather than raising, which is what lets an entirely absent `dist/` tree fail loud through the vacuity checks below instead of crashing before it gets there.
 """
 
 from __future__ import annotations

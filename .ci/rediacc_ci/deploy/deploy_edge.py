@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/deploy-edge.sh`.
 
-Deploys the edge marketing Worker (edge.rediacc.com) from `workers/www` with
-`wrangler.edge.toml`. No D1, no migrations, no region: the account API for edge
+Deploys the edge marketing Worker (edge.rediacc.com) from `workers/www` with `wrangler.edge.toml`. No D1, no migrations, no region: the account API for edge
 is served by the separate `edge-rediacc-account-{eu,us,asia}` Workers that
-`deploy-account.sh --target edge` puts up, and this script knows nothing about
-them.
+`deploy-account.sh --target edge` puts up, and this script knows nothing about them.
 
-IT IS NOT `deploy-account.sh` WITH THE MIGRATIONS REMOVED, and the differences
-are the reason this is its own file rather than a flag. Against its sibling:
+IT IS NOT `deploy-account.sh` WITH THE MIGRATIONS REMOVED, and the differences are the reason this is its own file rather than a flag. Against its sibling:
 
   * IT PARSES NO ARGUMENTS AT ALL. There is no `parse_args` call (:12-14 of the
     twin has the source line and then goes straight to the repo root), so
@@ -24,16 +21,9 @@ are the reason this is its own file rather than a flag. Against its sibling:
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` and `npm` are the only external
 tools; the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_edge.py`) puts
-RECORDING FAKES for both on a scratch PATH and points both sides at a fixture
-repo root. `.ci/shadow/w7p5a-status.json` records this path as blocked only for
-the "one real run" clause and says in as many words that the mocked parity
-ledger is separate, achievable work. This is that piece.
+RECORDING FAKES for both on a scratch PATH and points both sides at a fixture repo root. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is separate, achievable work. This is that piece.
 
-THE FAILURE THIS SCRIPT CANNOT REPORT, named because it is the vacuity class:
-`CLOUDFLARE_ACCOUNT_ID` is required and then never used by anything in this
-file. It is `require_var`'d at :24 and read only by wrangler itself, out of the
-environment. A caller who exports the WRONG account id passes every check here
-and finds out from Cloudflare.
+THE FAILURE THIS SCRIPT CANNOT REPORT, named because it is the vacuity class: `CLOUDFLARE_ACCOUNT_ID` is required and then never used by anything in this file. It is `require_var`'d at :24 and read only by wrangler itself, out of the environment. A caller who exports the WRONG account id passes every check here and finds out from Cloudflare.
 
 K=5 LEDGER: `.ci/shadow/w7p6-deploy-edge.observations.jsonl`.
 """
@@ -72,15 +62,9 @@ def strip_newlines(token: str) -> str:
 
     DELIBERATELY NOT IMPORTED FROM `deploy_account.py`, which carries a line
     with the same bytes today. Each port is a port of ONE file, and a shared
-    helper would silently change this script the day someone edits that one --
-    the same reason `purge_media_cache.py` keeps its own `auth_headers` beside
-    an almost-identical sibling. The differential re-derives both twins' lines
-    and asserts they still agree, so the duplication is checked rather than
-    assumed.
+    helper would silently change this script the day someone edits that one -- the same reason `purge_media_cache.py` keeps its own `auth_headers` beside an almost-identical sibling. The differential re-derives both twins' lines and asserts they still agree, so the duplication is checked rather than assumed.
 
-    `tr -d` deletes BYTES, and in UTF-8 neither 0x0D nor 0x0A can appear inside
-    a multi-byte sequence, so deleting the characters and deleting the bytes
-    agree for every input.
+    `tr -d` deletes BYTES, and in UTF-8 neither 0x0D nor 0x0A can appear inside a multi-byte sequence, so deleting the characters and deleting the bytes agree for every input.
     """
     return token.replace("\r", "").replace("\n", "")
 
@@ -93,8 +77,7 @@ def deploy_argv() -> list[str]:
 def needs_npm_install(worker_dir: pathlib.Path) -> bool:
     """`if [[ ! -d "node_modules" ]]` (:31).
 
-    ONE CONDITION, unlike the account sibling: a global wrangler does not stop
-    the install here.
+    ONE CONDITION, unlike the account sibling: a global wrangler does not stop the install here.
     """
     return not (worker_dir / "node_modules").is_dir()
 

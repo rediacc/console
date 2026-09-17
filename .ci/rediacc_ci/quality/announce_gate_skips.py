@@ -1,26 +1,15 @@
 """Port of `.ci/scripts/quality/announce-gate-skips.sh`.
 
-Announces, loudly, which gates a CI-control label removed from a run. The
-twin's own header carries the WHY and it is worth restating because it is the
-reason this file is not just a `case` statement: the repo's label opt-outs are
-STEP-level `if:` conditions, and a skipped step leaves the job `success` and
-prints NOTHING. A run whose media gates were all removed by `no-media-quality`
-therefore looks exactly like a run where they all passed. The announcer runs
-UNCONDITIONALLY, outside that `if:`, so the hold is visible in the log.
+Announces, loudly, which gates a CI-control label removed from a run. The twin's own header carries the WHY and it is worth restating because it is the reason this file is not just a `case` statement: the repo's label opt-outs are STEP-level `if:` conditions, and a skipped step leaves the job `success` and prints NOTHING. A run whose media gates were all removed by
+`no-media-quality` therefore looks exactly like a run where they all passed. The announcer runs UNCONDITIONALLY, outside that `if:`, so the hold is visible in the log.
 
-NOT A REGISTERED GATE, so there is no `package.json:<line>` to cite the way the
-`check:ci-*` ports do. `grep -n announce-gate-skips package.json` matches
+NOT A REGISTERED GATE, so there is no `package.json:<line>` to cite the way the `check:ci-*` ports do. `grep -n announce-gate-skips package.json` matches
 nothing; it is a plain workflow step, invoked at `ci-quality.yml:1313` (`no-media-quality
-check:ci-tutorial-casts check:ci-tutorial-parity`) and `ci-quality.yml:1644`
-(`no-media-quality check:ci-i18n-media`). Its own coverage lives in the bash
-gate test `.ci/scripts/test/gates/test-gate-skip-announcer.sh`, which ALSO
-reads those two workflow lines back and checks that every gate behind a
-`no-media-quality` `if:` is named in an announcer call. That test still drives
+check:ci-tutorial-casts check:ci-tutorial-parity`) and `ci-quality.yml:1644` (`no-media-quality check:ci-i18n-media`). Its own coverage lives in the bash gate test `.ci/scripts/test/gates/test-gate-skip-announcer.sh`, which ALSO reads those two workflow lines back and checks that every gate behind a `no-media-quality` `if:` is named in an announcer call. That test still drives
 the bash twin; this port is a second implementation beside it, not a
 replacement for it.
 
-THE FOUR STATES, reproduced exactly, and the two refusals are the interesting
-half:
+THE FOUR STATES, reproduced exactly, and the two refusals are the interesting half:
 
   hard   one line naming how many gates ARE enforced. Exit 0. This is the
          proof the announcer ran at all, because a silent instrument and a
@@ -32,22 +21,12 @@ half:
          which is fail-closed but completely silent; this is the only place a
          typo'd mode string is ever reported.
 
-ZERO GATE NAMES IS A REFUSAL TOO (`$# -lt 2`, exit 2): an announcer with
-nothing to announce is a miswired announcer, not a clean run. That is the
-anti-vacuity rule of this script and it is carried across unchanged.
+ZERO GATE NAMES IS A REFUSAL TOO (`$# -lt 2`, exit 2): an announcer with nothing to announce is a miswired announcer, not a clean run. That is the anti-vacuity rule of this script and it is carried across unchanged.
 
-ONE DIVERGENCE, IN ONE STRING. The usage line interpolates `$0`, the path the
-shell was handed. `sys.argv[0]` is the same idea and resolves to this module's
-own file under `python3 -m`, so the two sides print different program names on
-that line and nowhere else. Reproducing bash's `$0` exactly is not possible for
-a module invoked by name, and hardcoding the twin's `.sh` path would print a
-path that did not run. The differential masks the program token and compares
-the rest byte for byte.
+ONE DIVERGENCE, IN ONE STRING. The usage line interpolates `$0`, the path the shell was handed. `sys.argv[0]` is the same idea and resolves to this module's own file under `python3 -m`, so the two sides print different program names on that line and nowhere else. Reproducing bash's `$0` exactly is not possible for a module invoked by name, and hardcoding the twin's `.sh` path would
+print a path that did not run. The differential masks the program token and compares the rest byte for byte.
 
-EVERYTHING ELSE IS BYTE-IDENTICAL, including the step-summary block: `$*`
-joins with a single space (IFS's first character, unmodified here), the
-markdown uses backticks the twin escaped for bash, and the summary is APPENDED,
-never truncated, because GITHUB_STEP_SUMMARY accumulates across steps.
+EVERYTHING ELSE IS BYTE-IDENTICAL, including the step-summary block: `$*` joins with a single space (IFS's first character, unmodified here), the markdown uses backticks the twin escaped for bash, and the summary is APPENDED, never truncated, because GITHUB_STEP_SUMMARY accumulates across steps.
 
 K=5 LEDGER: `.ci/shadow/w7p6-announce-gate-skips.observations.jsonl`.
 """

@@ -1,13 +1,9 @@
 """Differential: `.ci/rediacc_ci/infra/build_renet.py` against its twin
 `.ci/scripts/infra/build-renet.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-WHAT IS COMPARED, AND WHY IT IS SIX THINGS AND NOT ONE. This script's job is a
-SIDE EFFECT, so exit code and stdout between them describe almost none of it.
-Every case below compares:
+WHAT IS COMPARED, AND WHY IT IS SIX THINGS AND NOT ONE. This script's job is a SIDE EFFECT, so exit code and stdout between them describe almost none of it. Every case below compares:
 
   1. the exit code;
   2. stdout, which is the single `RENET_BINARY=<path>` line callers parse;
@@ -22,28 +18,14 @@ Every case below compares:
   6. whether the binary is present afterwards, and what was appended to
      `$GITHUB_ENV`.
 
-ANTI-VACUITY. `test_the_fake_build_is_actually_reached` fails if the recording
-`build.sh` was never invoked. Without it, the cases below could be "two programs
-that both refused to start, agreeing".
+ANTI-VACUITY. `test_the_fake_build_is_actually_reached` fails if the recording `build.sh` was never invoked. Without it, the cases below could be "two programs that both refused to start, agreeing".
 
-PATH IS REPLACED, NEVER PREPENDED. The subject asks `command -v go` and runs
-`uname -s`, and this host has a real `go`. A prepend would leave the "no go"
+PATH IS REPLACED, NEVER PREPENDED. The subject asks `command -v go` and runs `uname -s`, and this host has a real `go`. A prepend would leave the "no go"
 case passing while occasionally consulting the machine's real toolchain, and
-would let a real `uname` answer a question the MINGW case needs a fake for.
-`_binder` therefore builds the ENTIRE PATH out of named tools, and asserts that
-what it was asked to exclude really is absent -- a control on the control,
-because a probe that cannot fire looks exactly like a subject that cannot fail.
+would let a real `uname` answer a question the MINGW case needs a fake for. `_binder` therefore builds the ENTIRE PATH out of named tools, and asserts that what it was asked to exclude really is absent -- a control on the control, because a probe that cannot fire looks exactly like a subject that cannot fail.
 
-THE ONE DELIBERATE DIVERGENCE IS TESTED, NOT HIDDEN, and writing that test is
-what found a real defect in the twin.
-`test_a_missing_sha256sum_is_the_one_deliberate_divergence` asserts both sides of
-a `sha256sum`-less host: the twin's identity silently collapses to `<mode>|`
-(losing the key component the stamp exists to carry) while exiting 0, and the
-port keeps it. `test_the_collapsed_identity_defeats_the_rebuild_the_stamp_exists
-_for` then demonstrates the consequence -- two different keys, one stamp, no
-rebuild. The first draft of that test asserted exit 127 and FAILED, which is how
-the defect surfaced: a failing pipeline inside a command substitution used as an
-ARGUMENT is invisible to `set -e` and `pipefail`.
+THE ONE DELIBERATE DIVERGENCE IS TESTED, NOT HIDDEN, and writing that test is what found a real defect in the twin. `test_a_missing_sha256sum_is_the_one_deliberate_divergence` asserts both sides of a `sha256sum`-less host: the twin's identity silently collapses to `<mode>|` (losing the key component the stamp exists to carry) while exiting 0, and the port keeps it.
+`test_the_collapsed_identity_defeats_the_rebuild_the_stamp_exists _for` then demonstrates the consequence -- two different keys, one stamp, no rebuild. The first draft of that test asserted exit 127 and FAILED, which is how the defect surfaced: a failing pipeline inside a command substitution used as an ARGUMENT is invisible to `set -e` and `pipefail`.
 """
 
 import os
@@ -140,13 +122,9 @@ def _fixture(
 ) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because each subject derives the console root from its own location
-    (`BASH_SOURCE`/`__file__`, then three directories up). Driving the tracked
-    files with a `cwd` would point them at the real repository, and case 13
-    below would then delete the real `private/renet/bin/renet`.
+    Copies, because each subject derives the console root from its own location (`BASH_SOURCE`/`__file__`, then three directories up). Driving the tracked files with a `cwd` would point them at the real repository, and case 13 below would then delete the real `private/renet/bin/renet`.
 
-    `.resolve()` on the root is load-bearing: bash's `cd X && pwd` reports the
-    LOGICAL path it was handed while `pathlib.resolve()` follows symlinks, and
+    `.resolve()` on the root is load-bearing: bash's `cd X && pwd` reports the LOGICAL path it was handed while `pathlib.resolve()` follows symlinks, and
     the root string is printed verbatim in `RENET_BINARY=<path>`. Handing both
     subjects an already-resolved root makes the two agree for the right reason.
     """
@@ -398,11 +376,7 @@ def test_the_stamp_is_not_written_when_the_build_fails(tmp_path):
 def test_a_deleted_binary_is_not_restored_when_go_is_missing(tmp_path):
     """A REAL DEFECT IN THE TWIN, pinned in BOTH implementations.
 
-    The twin removes the differently-built binary BEFORE it checks that go is
-    installed, so a host without go loses a working binary and gets exit 1. The
-    port keeps that order deliberately (see its comment): reordering would make
-    the port's filesystem effect differ from the twin's on the exact input that
-    exposes the bug, and the differential would then certify the wrong script.
+    The twin removes the differently-built binary BEFORE it checks that go is installed, so a host without go loses a working binary and gets exit 1. The port keeps that order deliberately (see its comment): reordering would make the port's filesystem effect differ from the twin's on the exact input that exposes the bug, and the differential would then certify the wrong script.
     Reported, not fixed -- the repair is a cutover-box decision.
     """
     for subject in (TWIN_REL, PORT_REL):
@@ -424,24 +398,14 @@ def test_a_missing_sha256sum_is_the_one_deliberate_divergence(tmp_path):
     """THE ONE DELIBERATE DIVERGENCE, asserted in BOTH directions, and it is a
     REAL DEFECT in the twin rather than a stylistic difference.
 
-    With no `sha256sum` on PATH -- stock macOS ships `shasum`, not `sha256sum`,
-    and this script advertises itself as locally runnable -- the twin does NOT
-    die. `printf '%s|%s' "$mode" "$(... | sha256sum | cut ...)"` puts the failing
-    pipeline in a COMMAND SUBSTITUTION USED AS AN ARGUMENT, so `set -e` and
-    `pipefail` never see a failing command: printf succeeds with an empty second
+    With no `sha256sum` on PATH -- stock macOS ships `shasum`, not `sha256sum`, and this script advertises itself as locally runnable -- the twin does NOT die. `printf '%s|%s' "$mode" "$(... | sha256sum | cut ...)"` puts the failing pipeline in a COMMAND SUBSTITUTION USED AS AN ARGUMENT, so `set -e` and `pipefail` never see a failing command: printf succeeds with an empty second
     field and the identity collapses to `default|`.
 
-    The consequence is precise and is exactly what the stamp was introduced to
-    prevent: the ACCOUNT_ED25519_PUBLIC_KEY half of the identity disappears, so
-    a binary linked against one key is handed to a job wanting another and no
-    rebuild happens. The only trace is one line of stderr under exit 0.
+    The consequence is precise and is exactly what the stamp was introduced to prevent: the ACCOUNT_ED25519_PUBLIC_KEY half of the identity disappears, so a binary linked against one key is handed to a job wanting another and no rebuild happens. The only trace is one line of stderr under exit 0.
 
-    A first draft of this test asserted exit 127 and failed, which is how the
-    defect was found: the premise "a failing pipeline under `set -e` kills the
-    script" is false inside a command substitution.
+    A first draft of this test asserted exit 127 and failed, which is how the defect was found: the premise "a failing pipeline under `set -e` kills the script" is false inside a command substitution.
 
-    The port stamps the real digest. If either half ever changes, it reds here
-    rather than on somebody's laptop. Reported, not fixed.
+    The port stamps the real digest. If either half ever changes, it reds here rather than on somebody's laptop. Reported, not fixed.
     """
     root_a = _fixture(tmp_path / "ha")
     old = _run(TWIN_REL, root_a, exclude=("sha256sum",))
@@ -467,11 +431,9 @@ def test_a_missing_sha256sum_is_the_one_deliberate_divergence(tmp_path):
 
 def test_the_collapsed_identity_defeats_the_rebuild_the_stamp_exists_for(tmp_path):
     """The consequence of the case above, demonstrated rather than asserted in
-    prose: with `sha256sum` gone, TWO DIFFERENT KEYS produce the SAME twin stamp,
-    so the second run skips the build. The port rebuilds.
+    prose: with `sha256sum` gone, TWO DIFFERENT KEYS produce the SAME twin stamp, so the second run skips the build. The port rebuilds.
 
-    This is the incident build-renet.sh:44-63 describes, reachable again on any
-    host without coreutils' `sha256sum`.
+    This is the incident build-renet.sh:44-63 describes, reachable again on any host without coreutils' `sha256sum`.
     """
     root = _fixture(tmp_path / "k1")
     first = _run(
@@ -498,15 +460,9 @@ def test_the_collapsed_identity_defeats_the_rebuild_the_stamp_exists_for(tmp_pat
 
 def test_the_identity_digest_is_the_twins_own_pipeline():
     """`hashlib` is only allowed to stand in for `sha256sum | cut -c1-16` if it
-    produces the same 16 characters. Driven against the REAL bash pipeline
-    rather than against a constant -- a constant copied out of the port cannot
-    contradict the port -- for both the empty key and a realistic one.
+    produces the same 16 characters. Driven against the REAL bash pipeline rather than against a constant -- a constant copied out of the port cannot contradict the port -- for both the empty key and a realistic one.
 
-    The port half runs in a SUBPROCESS with a controlled environment, because
-    `build_identity()` reads `$RDC_RENET_LICENSE` and `$ACCOUNT_ED25519_PUBLIC_KEY`
-    directly (deliberately: an `os.environ` alias is invisible to the env
-    manifest reader), and a developer with either exported would otherwise see a
-    green here for the wrong reason.
+    The port half runs in a SUBPROCESS with a controlled environment, because `build_identity()` reads `$RDC_RENET_LICENSE` and `$ACCOUNT_ED25519_PUBLIC_KEY` directly (deliberately: an `os.environ` alias is invisible to the env manifest reader), and a developer with either exported would otherwise see a green here for the wrong reason.
     """
     env = dict(os.environ)
     env.pop("RDC_RENET_LICENSE", None)

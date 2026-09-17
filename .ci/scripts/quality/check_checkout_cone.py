@@ -5,32 +5,19 @@ WHY THIS EXISTS, and it cost a CI cycle on 2026-09-03. `Stripe Sandbox` failed w
 
     .ci/scripts/ci/shadow-compare.sh: No such file or directory
 
-The compare logic used to be 18 inline lines and needed no file on disk. Extracting
-it to a script -- which check:ci-workflows was right to demand -- silently broke every
-job whose sparse-checkout cone stopped at `.ci/config`. Three jobs were affected and
-nothing in the tree could see it: the cone was well-formed, the script existed, the
-step was correctly written. Each fact was true and the combination was not.
+The compare logic used to be 18 inline lines and needed no file on disk. Extracting it to a script -- which check:ci-workflows was right to demand -- silently broke every job whose sparse-checkout cone stopped at `.ci/config`. Three jobs were affected and nothing in the tree could see it: the cone was well-formed, the script existed, the step was correctly written. Each fact was
+true and the combination was not.
 
 THAT IS THE CLASS. Existing gates check that a cone is well-formed and that a script
 exists; none corroborates the static claim ("this job checks out X") against what the
-job actually RUNS. This one does, and it generalises past shadow-compare to every
-repo-relative path any `run:` step invokes.
+job actually RUNS. This one does, and it generalises past shadow-compare to every repo-relative path any `run:` step invokes.
 
-WHAT IT DELIBERATELY DOES NOT DO. It resolves only paths that look like a script
-INVOCATION at the start of a command or after a pipe/`&&` -- not every string that
-happens to look like a path. A mention inside an echo, a heredoc, or an argument is
-not an invocation, and flagging those would produce the kind of noise that gets a gate
-suppressed. Under-reporting is the safe direction here: a missed path fails loudly in
-CI with the exact message above, while a false positive blocks a correct workflow.
+WHAT IT DELIBERATELY DOES NOT DO. It resolves only paths that look like a script INVOCATION at the start of a command or after a pipe/`&&` -- not every string that happens to look like a path. A mention inside an echo, a heredoc, or an argument is not an invocation, and flagging those would produce the kind of noise that gets a gate suppressed. Under-reporting is the safe direction
+here: a missed path fails loudly in CI with the exact message above, while a false positive blocks a correct workflow.
 
 Exit 1 on any uncovered invocation, 2 on a failed control.
 
----- gate ----
-kind: step
-step: Checkout cone covers what steps run
-lane: quality-static
-needs-not: node
-blocker: BLOCKER: this gate is pure Python and never runs node. `inferredNeeds`
+---- gate ---- kind: step step: Checkout cone covers what steps run lane: quality-static needs-not: node blocker: BLOCKER: this gate is pure Python and never runs node. `inferredNeeds`
      reads string literals, and the only npx/tsx/node text here is the REGEX
      that DETECTS interpreter invocations in workflow files (:66) plus the
      selftest descriptions that exercise it (:177-180). Measured 2026-09-07:
@@ -40,8 +27,7 @@ blocker: BLOCKER: this gate is pure Python and never runs node. `inferredNeeds`
      the inference instead was REJECTED on measurement: 24 files would lose it
      and at least one, test_gate_policy_path.py, really does execute
      node_modules/.bin/tsx.
-why: A step may not run a file its job never checked out.
----- end gate ----
+why: A step may not run a file its job never checked out. ---- end gate ----
 """
 
 from __future__ import annotations

@@ -1,17 +1,9 @@
 """Port of `.ci/scripts/test/gates/test-label-guide-comment.sh`.
 
-WHAT IT GUARDS. The repo carries twelve labels, several of them kill switches
-whose effect is invisible unless you already know they exist. The module posts
-one comment per PR explaining them, rendered from `.github/labels.yml`, and the
-contract it has to keep is create/update/NO-OP: a PR gets a CI run per push, so
-a poster that wrote unconditionally would bury the conversation.
+WHAT IT GUARDS. The repo carries twelve labels, several of them kill switches whose effect is invisible unless you already know they exist. The module posts one comment per PR explaining them, rendered from `.github/labels.yml`, and the contract it has to keep is create/update/NO-OP: a PR gets a CI run per push, so a poster that wrote unconditionally would bury the conversation.
 
-THE NODE HARNESS IS THE TWIN'S, BYTE FOR BYTE, including the `@@RENDER@@`
-sentinel that means "byte-identical to what the module would render right now".
-Hand-copying an expected body into a fixture would make the no-op case pass for
-the wrong reason the moment the renderer changed, and translating the mock would
-mean the two sides drive the subject differently, which is the one thing a port
-must not do.
+THE NODE HARNESS IS THE TWIN'S, BYTE FOR BYTE, including the `@@RENDER@@` sentinel that means "byte-identical to what the module would render right now". Hand-copying an expected body into a fixture would make the no-op case pass for the wrong reason the moment the renderer changed, and translating the mock would mean the two sides drive the subject differently, which is the one
+thing a port must not do.
 
 WHERE THIS REIMPLEMENTS AWK AND GREP, AND WHY THE ANSWERS AGREE:
 
@@ -28,14 +20,9 @@ WHERE THIS REIMPLEMENTS AWK AND GREP, AND WHY THE ANSWERS AGREE:
     matches, so the Python side counts lines rather than `re.findall` hits. On
     this corpus the two agree, and the line form is what the twin claims.
 
-WHY `| \\`` AND NOT `|` ALONE for the real-file row count: the body escapes a
-pipe inside a description as `\\|`, so a bare pipe count would also count those.
-The backtick is what makes it a NAME cell.
+WHY `| \\`` AND NOT `|` ALONE for the real-file row count: the body escapes a pipe inside a description as `\\|`, so a bare pipe count would also count those. The backtick is what makes it a NAME cell.
 
-NO `xdist_group`. Fixtures are written into pytest's own `tmp_path`, the tracked
-files (`.github/labels.yml`, `.github/workflows/ci.yml`) are read and never
-written, and `assert-ci-complete.sh` is driven read-only. Nothing is bound and no
-module global is mutated.
+NO `xdist_group`. Fixtures are written into pytest's own `tmp_path`, the tracked files (`.github/labels.yml`, `.github/workflows/ci.yml`) are read and never written, and `assert-ci-complete.sh` is driven read-only. Nothing is bound and no module global is mutated.
 """
 
 import json

@@ -2,25 +2,14 @@
 
 Integration test for `scripts/gates/check-embed-asset-freshness.ts`.
 
-Drives the gate through `EMBED_FRESHNESS_FIXTURE` (a JSON map of base -> latest
-version/date used instead of the network), so it runs offline and
-deterministically. Proves: it passes when nothing is behind, FIRES on a stale pin,
-DEFERS a just-released version (the shared soak), and FAILS SOFT when a source
-cannot be checked.
+Drives the gate through `EMBED_FRESHNESS_FIXTURE` (a JSON map of base -> latest version/date used instead of the network), so it runs offline and deterministically. Proves: it passes when nothing is behind, FIRES on a stale pin, DEFERS a just-released version (the shared soak), and FAILS SOFT when a source cannot be checked.
 
 THE FIXTURE MAP IS DERIVED FROM THE SUBJECT'S OWN SOURCE LIST, not retyped. The
 twin hand-lists seven component keys in four separate heredocs; a component added
-upstream leaves all four short, and the gate's "not in fixture" branch quietly
-turns the new component into a could-not-check that FAILS SOFT -- so the twin would
-keep passing while covering one component less. Here the keys are obtained by
-IMPORTING `EMBED_ASSET_SOURCES`, the same module the gate imports, and reading
-`.base` off each entry. That is behaviour rather than a regex over the source: a
-list that moves to another file, or changes shape, breaks this loudly instead of
-matching nothing and quietly producing an empty map.
+upstream leaves all four short, and the gate's "not in fixture" branch quietly turns the new component into a could-not-check that FAILS SOFT -- so the twin would keep passing while covering one component less. Here the keys are obtained by IMPORTING `EMBED_ASSET_SOURCES`, the same module the gate imports, and reading `.base` off each entry. That is behaviour rather than a regex
+over the source: a list that moves to another file, or changes shape, breaks this loudly instead of matching nothing and quietly producing an empty map.
 
-`test_fixture_keys_are_corpus_derived` is the refusal that keeps that honest: zero
-keys read means every case below fed the gate an empty map, which is the
-fail-soft path, which is green.
+`test_fixture_keys_are_corpus_derived` is the refusal that keeps that honest: zero keys read means every case below fed the gate an empty map, which is the fail-soft path, which is green.
 
 THE SUBMODULE-ABSENT PATH IS A REFUSAL HERE, NOT A SILENT `exit 0`; see the same
 paragraph in `test_gate_embed_credits`.

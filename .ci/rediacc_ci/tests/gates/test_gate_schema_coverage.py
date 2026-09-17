@@ -2,30 +2,17 @@
 
 Integration test for `scripts/gates/check-schema-coverage.ts` (`check:ci-schema-coverage`).
 
-The gate walks `RdcConfigSchema`'s type tree and fails closed on any Zod leaf
-without a `SENSITIVITY_REGISTRY` entry, and on any registry template that matches
-nothing in the schema. Every gate run proves its own instrument FIRST -- a control
-schema with one deliberately unregistered leaf must fire -- and this asserts the
-green path, that in-run control, and, via the shared vitest suite for the coverage
-walker, the firing paths on synthetic schemas.
+The gate walks `RdcConfigSchema`'s type tree and fails closed on any Zod leaf without a `SENSITIVITY_REGISTRY` entry, and on any registry template that matches nothing in the schema. Every gate run proves its own instrument FIRST -- a control schema with one deliberately unregistered leaf must fire -- and this asserts the green path, that in-run control, and, via the shared vitest
+suite for the coverage walker, the firing paths on synthetic schemas.
 
-WHY BOTH HALVES ARE HERE. Asserting only the green would pass against a gate that
-had stopped walking anything: `Schema coverage OK` over zero leaves reads exactly
-like `Schema coverage OK` over all of them. The `fires as uncovered` line is the
-gate's own statement that its control fired before it printed the verdict, and the
-vitest suite is the same claim proven against synthetic schemas the real tree
-cannot produce.
+WHY BOTH HALVES ARE HERE. Asserting only the green would pass against a gate that had stopped walking anything: `Schema coverage OK` over zero leaves reads exactly like `Schema coverage OK` over all of them. The `fires as uncovered` line is the gate's own statement that its control fired before it printed the verdict, and the vitest suite is the same claim proven against synthetic
+schemas the real tree cannot produce.
 
 WHERE THE PORT REIMPLEMENTS THE TWIN. It does not. The twin runs `npx tsx` and
 `npx vitest`; the port runs the same two commands through the repo-local binaries
-(`node_modules/.bin/tsx`, `node_modules/.bin/vitest`) so a missing install is a
-named refusal here rather than npx silently reaching for a registry it cannot
-reach. That is the only difference, and it changes which failure a reader sees,
-never which verdict.
+(`node_modules/.bin/tsx`, `node_modules/.bin/vitest`) so a missing install is a named refusal here rather than npx silently reaching for a registry it cannot reach. That is the only difference, and it changes which failure a reader sees, never which verdict.
 
-NO `xdist_group`. Both cases are read-only subprocesses: one runs the gate over
-the real tree, the other runs a vitest file that builds its schemas in memory.
-Neither writes anything, so two of them side by side share nothing.
+NO `xdist_group`. Both cases are read-only subprocesses: one runs the gate over the real tree, the other runs a vitest file that builds its schemas in memory. Neither writes anything, so two of them side by side share nothing.
 """
 
 from rediacc_ci import paths

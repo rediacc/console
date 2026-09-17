@@ -1,51 +1,29 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/docker/create-manifest.sh`.
 
-Combines `<image>:<tag>-amd64` and `<image>:<tag>-arm64` into one multi-arch
-manifest at `<image>:<tag>`, via `docker buildx imagetools create`, optionally
-also at `<image>:latest`, then tries to verify what it pushed.
+Combines `<image>:<tag>-amd64` and `<image>:<tag>-arm64` into one multi-arch manifest at `<image>:<tag>`, via `docker buildx imagetools create`, optionally also at `<image>:latest`, then tries to verify what it pushed.
 
 THE ARCH LIST IS THE CONTRACT AND IT IS NOT DISCOVERED. `ARCHS=("amd64" "arm64")`
-is hard-coded in the twin, so an image built for only one of the two produces a
-`create` against a tag that does not exist and the failure comes from the
-registry, not from this script. Reproduced rather than "fixed" with a probe: a
-port that skipped a missing arch would publish a SILENTLY single-arch manifest
-under a name every consumer reads as multi-arch.
+is hard-coded in the twin, so an image built for only one of the two produces a `create` against a tag that does not exist and the failure comes from the registry, not from this script. Reproduced rather than "fixed" with a probe: a port that skipped a missing arch would publish a SILENTLY single-arch manifest under a name every consumer reads as multi-arch.
 
 THE DOUBLE SPACE IS REAL OUTPUT, NOT A TYPO IN THIS PORT. The twin accumulates
 `SOURCE_IMAGES="${SOURCE_IMAGES} ${IMAGE_PATH}:${TAG}-${arch}"` starting from
-the empty string, so the value carries a LEADING space, and every line that
-interpolates it after a space of its own therefore prints two:
+the empty string, so the value carries a LEADING space, and every line that interpolates it after a space of its own therefore prints two:
 
     log_info "  Sources: ${SOURCE_IMAGES}"      ->  "  Sources:  ghcr.io/..."
     echo "  docker ... -t $MANIFEST_TAG ${SOURCE_IMAGES}"
 
-`source_images_field()` below reproduces the leading space deliberately and
-`test_the_leading_space_in_the_sources_field_is_the_twins` pins it, so nobody
-"cleans it up" into a byte divergence. The ACTUAL argv passed to docker is built
+`source_images_field()` below reproduces the leading space deliberately and `test_the_leading_space_in_the_sources_field_is_the_twins` pins it, so nobody "cleans it up" into a byte divergence. The ACTUAL argv passed to docker is built
 from a list and has no such artefact; only the human-readable echoes do.
 
-VERIFICATION IS ADVISORY, AND IT INSPECTS TWICE. The twin runs
-`docker buildx imagetools inspect` once with `&>/dev/null` to decide the
-verdict, then AGAIN, piped through `grep -E "(Platform:|Name:)" | head -10`, to
-show platforms. Both calls are kept: the recorded call log is the evidence in
-the differential, so collapsing them into one would be a behaviour change hidden
-behind identical printed bytes. A failed verification only WARNS (`may still be
-pushing`) and the script still exits 0, which means this script cannot tell you
-whether the manifest it just created is readable. Recorded as
-`test_defect_a_manifest_that_cannot_be_verified_still_exits_zero`.
+VERIFICATION IS ADVISORY, AND IT INSPECTS TWICE. The twin runs `docker buildx imagetools inspect` once with `&>/dev/null` to decide the verdict, then AGAIN, piped through `grep -E "(Platform:|Name:)" | head -10`, to show platforms. Both calls are kept: the recorded call log is the evidence in the differential, so collapsing them into one would be a behaviour change hidden behind
+identical printed bytes. A failed verification only WARNS (`may still be pushing`) and the script still exits 0, which means this script cannot tell you whether the manifest it just created is readable. Recorded as `test_defect_a_manifest_that_cannot_be_verified_still_exits_zero`.
 
-`--push-latest` IS NEVER VERIFIED. Only `$MANIFEST_TAG` is inspected, so a
-`:latest` that failed to become readable passes silently. Same class, same
-treatment: pinned, not repaired.
+`--push-latest` IS NEVER VERIFIED. Only `$MANIFEST_TAG` is inspected, so a `:latest` that failed to become readable passes silently. Same class, same treatment: pinned, not repaired.
 
-grep AND head ARE IMPLEMENTED IN PYTHON, unlike jq in `cleanup_staging`. The
-distinction is whether the external tool's semantics DECIDE anything. jq picks
+grep AND head ARE IMPLEMENTED IN PYTHON, unlike jq in `cleanup_staging`. The distinction is whether the external tool's semantics DECIDE anything. jq picks
 which package version gets deleted; here the pipeline only selects lines for a
-human to read, `grep -E "(Platform:|Name:)"` is an unanchored substring
-alternation with no metacharacters, `head -10` is the first ten lines, and the
-whole pipeline's exit status is discarded by `|| true`. Reproducing that in
-Python removes two more processes from the differential's fake-PATH surface
+human to read, `grep -E "(Platform:|Name:)"` is an unanchored substring alternation with no metacharacters, `head -10` is the first ten lines, and the whole pipeline's exit status is discarded by `|| true`. Reproducing that in Python removes two more processes from the differential's fake-PATH surface
 without changing a byte; `test_the_platform_filter_matches_grep_e_on_a_corpus`
 checks the two against real grep on a corpus that includes the awkward cases.
 """
@@ -97,8 +75,7 @@ def source_images(image_path: str, tag: str) -> list[str]:
 def source_images_field(image_path: str, tag: str) -> str:
     """The twin's `$SOURCE_IMAGES` string, LEADING SPACE INCLUDED.
 
-    See the module docstring. This is the value the human-readable lines
-    interpolate, and it is not the same thing as `source_images()`.
+    See the module docstring. This is the value the human-readable lines interpolate, and it is not the same thing as `source_images()`.
     """
     field = ""
     for ref in source_images(image_path, tag):
@@ -198,8 +175,7 @@ def parse_args(argv: list[str]) -> Options:
 def validate(opts: Options) -> None:
     """`--image`/`--image-path` exclusivity then `--tag`, in the twin's ORDER.
 
-    The order is observable: `--image a --image-path b` with no `--tag` reports
-    the exclusivity error, not the missing tag.
+    The order is observable: `--image a --image-path b` with no `--tag` reports the exclusivity error, not the missing tag.
     """
     if opts.image_name and opts.image_path:
         raise Refusal("--image and --image-path are mutually exclusive")
@@ -224,15 +200,10 @@ def _flush() -> None:
 def _docker(args: list[str], *, line: int | None, **kwargs) -> int:
     """One `docker` call. A missing binary is bash's own 127, not a traceback.
 
-    bash prints `<script>: line <n>: docker: command not found` on the SHELL's
-    stderr and the surrounding `if !` then takes its failure branch. `line` is
-    where the call site sits in the twin, so a reader grepping a CI log for that
-    message still finds it.
+    bash prints `<script>: line <n>: docker: command not found` on the SHELL's stderr and the surrounding `if !` then takes its failure branch. `line` is where the call site sits in the twin, so a reader grepping a CI log for that message still finds it.
 
     `line=None` MEANS THE MESSAGE IS SUPPRESSED, and it is a distinction the
-    twin makes: a redirection on the command applies to the shell's own
-    diagnostic too, so `docker ... &>/dev/null` prints NOTHING when docker is
-    absent while `docker ... >/dev/null` prints the line. Measured, not assumed:
+    twin makes: a redirection on the command applies to the shell's own diagnostic too, so `docker ... &>/dev/null` prints NOTHING when docker is absent while `docker ... >/dev/null` prints the line. Measured, not assumed:
 
         $ bash -c 'if ! nope &>/dev/null; then echo taken; fi'
         taken

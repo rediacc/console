@@ -4,8 +4,7 @@ Ported from `.ci/scripts/quality/check-host-toolchain-coverage.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side
 until a committed differential ledger says otherwise.
 
-WHY THE TWIN EXISTS, carried over from its header because the archaeology is the
-half of a gate that cannot be recovered from the code:
+WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
   check-toolchain-pins.sh's A6 rule guarantees a GATE that invokes a pinned tool
   acquires it at the pin rather than trusting PATH -- but that is definition-time
@@ -31,11 +30,7 @@ half of a gate that cannot be recovered from the code:
   it is a superset, not a gap. The direction that matters is GATED_TOOLS ->
   BARE_TOOLS/NPX_TOOLS, checked here; the reverse is not required.
 
-The twin's gate header carries a BLOCKER about WIRING rather than about
-toolchains, so it stays with the bash file: the step "runs before this lane's
-`- id: setup` step, and its subject IS the setup path. Emitting it into the
-region would gate it on setup succeeding, so the gate that explains a broken
-setup would be the one silenced by it." A port inherits no registration, so
+The twin's gate header carries a BLOCKER about WIRING rather than about toolchains, so it stays with the bash file: the step "runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it." A port inherits no registration, so
 nothing here re-states that as a live suppression.
 
 -----------------------------------------------------------------------------
@@ -46,28 +41,14 @@ THE TWO EXTRACTORS ARE LINE-ORIENTED AND ANCHORED, and both properties are load
 bearing. `grep -oE "^GATED_TOOLS='[^']*'"` and `grep -oE "^NAME=\\([^)]*\\)"`
 cannot cross a newline, because grep matches within a line. So a GATED_TOOLS
 literal wrapped over two lines, or a `NPX_TOOLS=(` array written one tool per
-line -- both perfectly ordinary bash -- are INVISIBLE to this gate, and the
-invisibility reads as "nothing is missing" rather than as an error. The
-`^` anchor means an indented or `local`-prefixed declaration is invisible too.
-That is a real blind spot in the twin. It is preserved rather than quietly
-widened, because widening it would change the verdict, and it is reported.
+line -- both perfectly ordinary bash -- are INVISIBLE to this gate, and the invisibility reads as "nothing is missing" rather than as an error. The `^` anchor means an indented or `local`-prefixed declaration is invisible too. That is a real blind spot in the twin. It is preserved rather than quietly widened, because widening it would change the verdict, and it is reported.
 
-The gate does defend the near half of that hole: an unreadable GATED_TOOLS, or
-an unreadable pair of arrays, is a FAILURE with its own message rather than an
-empty set that silently covers everything. Read those two branches as the twin's
-own acknowledgement that the extractors can come back empty.
+The gate does defend the near half of that hole: an unreadable GATED_TOOLS, or an unreadable pair of arrays, is a FAILURE with its own message rather than an empty set that silently covers everything. Read those two branches as the twin's own acknowledgement that the extractors can come back empty.
 
-`tr ' ' '\\n'` SPLITS ON SPACE ONLY. A tab between two array members leaves them
-glued into one pseudo-tool (`ruff\\tgo`), which then appears as missing. Carried
-exactly, because a port that split on whitespace generally would DISAGREE with
-the twin on a file nobody has written yet but somebody eventually will.
+`tr ' ' '\\n'` SPLITS ON SPACE ONLY. A tab between two array members leaves them glued into one pseudo-tool (`ruff\\tgo`), which then appears as missing. Carried exactly, because a port that split on whitespace generally would DISAGREE with the twin on a file nobody has written yet but somebody eventually will.
 
 `sort -u` IS RUN UNDER LC_ALL=C by the differential harness, and `comm -23`
-requires both inputs sorted in the same collation. Python's `sorted()` on `str`
-compares code points, which is C collation for the ASCII these tool names are.
-Stated because a locale with a different collation would make `comm` and
-`sorted()` disagree, and that would be a difference in the HARNESS rather than
-in the subject.
+requires both inputs sorted in the same collation. Python's `sorted()` on `str` compares code points, which is C collation for the ASCII these tool names are. Stated because a locale with a different collation would make `comm` and `sorted()` disagree, and that would be a difference in the HARNESS rather than in the subject.
 
 TWO STREAM DIVERGENCES, both deliberate, neither changing a verdict:
 
@@ -83,18 +64,10 @@ TWO STREAM DIVERGENCES, both deliberate, neither changing a verdict:
      produces uncoloured output and the reverse writes escapes into the file.
      The port tests the stream it writes to. Reported, not reproduced.
 
-THE INDENTED ADVICE LINES ARE PRINTED RAW, not through the logger, because they
-are the twin's continuation lines under a finding header and
-`scripts/lib/shadow-gate.ts` folds an indented unmarked line into the finding
-above it. Sending them through `log.error` would give each its own `✗`, which is
-the same finding text after normalization but a noisier thing for a human to
-read next to the twin's output.
+THE INDENTED ADVICE LINES ARE PRINTED RAW, not through the logger, because they are the twin's continuation lines under a finding header and `scripts/lib/shadow-gate.ts` folds an indented unmarked line into the finding above it. Sending them through `log.error` would give each its own `✗`, which is the same finding text after normalization but a noisier thing for a human to read
+next to the twin's output.
 
-WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it compares two literal
-lists. A guard that names a tool in its arrays but never reaches the branch that
-uses them still passes, because presence in an array is all that is checked.
-That is the same class of blindness `check-toolchain-pins.sh` has at definition
-time, one layer further out.
+WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it compares two literal lists. A guard that names a tool in its arrays but never reaches the branch that uses them still passes, because presence in an array is all that is checked. That is the same class of blindness `check-toolchain-pins.sh` has at definition time, one layer further out.
 """
 
 import os
@@ -120,8 +93,7 @@ ARRAYS = ("NPX_TOOLS", "BARE_TOOLS")
 def extract_gated_tools(text: str) -> list[str]:
     """`GATED_TOOLS='a|b|c'` -> ["a", "b", "c"], sorted and de-duplicated.
 
-    THE TWIN'S PIPELINE, STAGE BY STAGE, because each stage has an edge a
-    "sensible" rewrite loses:
+    THE TWIN'S PIPELINE, STAGE BY STAGE, because each stage has an edge a "sensible" rewrite loses:
 
         grep -oE "^GATED_TOOLS='[^']*'"   every matching LINE, anchored at column 1
         sed -E "s/...'([^']*)'$/\\1/"      the inside of the quotes
@@ -129,9 +101,7 @@ def extract_gated_tools(text: str) -> list[str]:
         sed '/^$/d'                       drop empties, so `a||b` yields two
         sort -u                           sorted, de-duplicated
 
-    Multiple GATED_TOOLS lines all contribute, which is `grep` finding every
-    match rather than the first. `[^']*` cannot cross a quote, so the match ends
-    at the FIRST closing quote and trailing text on the line never reaches sed.
+    Multiple GATED_TOOLS lines all contribute, which is `grep` finding every match rather than the first. `[^']*` cannot cross a quote, so the match ends at the FIRST closing quote and trailing text on the line never reaches sed.
     """
     tools: set[str] = set()
     for line in text.split("\n"):
@@ -151,12 +121,9 @@ def extract_array(text: str, name: str) -> list[str]:
     BOTH SPELLINGS, and the second one is not optional. W5 P7 made the runtime
     guard a PYTHON module, so `NPX_TOOLS = ("ruff", "go", ...)` is what this now
     reads; the bash form is still here because this gate's own control fixtures
-    write it. Reading only the bash form made the port report "NPX_TOOLS or
-    BARE_TOOLS could not be read" against a guard that plainly declares them,
+    write it. Reading only the bash form made the port report "NPX_TOOLS or BARE_TOOLS could not be read" against a guard that plainly declares them,
     while the twin read them fine -- a MISMATCH_FINDINGS the shadow differential
-    caught on the first re-record after the cutover, and which no amount of
-    reading the diff would have shown, because the path constant had been
-    updated and only the READER had not.
+    caught on the first re-record after the cutover, and which no amount of reading the diff would have shown, because the path constant had been updated and only the READER had not.
 
     Space-separated or comma-separated; quotes are stripped. Anchored at column 1
     and confined to one line, which is the blind spot the notes describe.
@@ -185,9 +152,7 @@ def missing_from(gated: list[str], covered: list[str]) -> list[str]:
 def _read(path: pathlib.Path) -> str:
     """File text, or "" when it cannot be read.
 
-    The twin's `grep ... "$1" 2>/dev/null` swallows a read error into an empty
-    match set, and the callers then treat empty as "could not be read" and FAIL.
-    Same shape here: an unreadable file must not look like a covered one.
+    The twin's `grep ... "$1" 2>/dev/null` swallows a read error into an empty match set, and the callers then treat empty as "could not be read" and FAIL. Same shape here: an unreadable file must not look like a covered one.
     """
     try:
         return path.read_text(encoding="utf-8", errors="replace")
@@ -198,8 +163,7 @@ def _read(path: pathlib.Path) -> str:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 violation or control failure.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments
-    at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -317,9 +281,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will
-    happily flag a correct pair of files, and the mirrors below are the half that
-    proves it does not.
+    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct pair of files, and the mirrors below are the half that proves it does not.
     """
     ctl = Controls("host-toolchain-coverage", floor=26, verbose=True)
 

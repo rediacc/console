@@ -1,21 +1,13 @@
 """Port of `.ci/scripts/test/gates/test-release-state-consistency.sh`.
 
-Unit-tests `rsv_assert_bijection` and `rsv_assert_channel_pointer_tagged` in
-`.ci/scripts/lib/release-state-validator.sh` against synthetic version lists. The
-live R2 and git probes are exercised end to end by the quality gate itself during
+Unit-tests `rsv_assert_bijection` and `rsv_assert_channel_pointer_tagged` in `.ci/scripts/lib/release-state-validator.sh` against synthetic version lists. The live R2 and git probes are exercised end to end by the quality gate itself during
 CI; this pins the pure assertion logic so drift detection stays correct even if
 callers refactor.
 
 HOW A PYTHON FILE DRIVES A BASH LIBRARY, and why the two sides agree. The twin
 `source`s the library into its own shell ONCE and calls the functions directly;
-this module spawns one fresh `bash -c` per call that sources the same file and
-calls the same function with the same arguments. The library reads both of its
-knobs (`RSV_GRANDFATHER_BEFORE`, `RSV_FLOOR_FILE`) at CALL time rather than at
-source time -- checked in the file, at the two reads inside
-`rsv_pre_contract_floor` -- so a per-call source and a once-per-file source
-answer identically, and the per-call form additionally guarantees no case can
-leak state into the next one. Arguments are `shlex.quote`d, which is the same
-protection the twin gets from its `"$1"` quoting.
+this module spawns one fresh `bash -c` per call that sources the same file and calls the same function with the same arguments. The library reads both of its knobs (`RSV_GRANDFATHER_BEFORE`, `RSV_FLOOR_FILE`) at CALL time rather than at source time -- checked in the file, at the two reads inside `rsv_pre_contract_floor` -- so a per-call source and a once-per-file source answer
+identically, and the per-call form additionally guarantees no case can leak state into the next one. Arguments are `shlex.quote`d, which is the same protection the twin gets from its `"$1"` quoting.
 
 THE TWO ENVIRONMENT PREPARATIONS THE TWIN DOES AT LOAD TIME ARE DONE PER CALL
 HERE, in the script text rather than in the process environment:
@@ -25,12 +17,9 @@ HERE, in the script text rather than in the process environment:
     unit cases independent of the production
     `.ci/config/release-contract-floor.txt` value.
 Doing it in the script rather than through `env=` is deliberate: `harness.run`
-OVERLAYS `os.environ`, so it can set a variable but cannot unset one, and an
-inherited `RSV_GRANDFATHER_BEFORE` would then suppress exactly the findings these
-cases exist to see.
+OVERLAYS `os.environ`, so it can set a variable but cannot unset one, and an inherited `RSV_GRANDFATHER_BEFORE` would then suppress exactly the findings these cases exist to see.
 
-OUTPUT IS READ MERGED (`.combined`), because the twin captures `2>&1` and every
-assertion below is written against that merged text.
+OUTPUT IS READ MERGED (`.combined`), because the twin captures `2>&1` and every assertion below is written against that merged text.
 
 NO `xdist_group`. The ratchet cases write a single file inside pytest's own
 `tmp_path`; nothing else is written anywhere, no port is bound and no module

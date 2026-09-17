@@ -3,8 +3,7 @@
 Ported from `.ci/scripts/quality/check-ci-job-aggregation.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-The twin's header, carried in full because the four checks and the direction
-argument are the gate:
+The twin's header, carried in full because the four checks and the direction argument are the gate:
 
     WHY. `ci-complete` is the single required status check for branch
     protection. It is green when, and only when, the jobs it aggregates are
@@ -53,46 +52,25 @@ PORT NOTES.
 
 THE FIVE AWK PROGRAMS ARE THE GATE, so each is ported as its own named function
 with the awk it replaces quoted above it. They are not YAML parsers and must not
-become ones: a real parser would see `needs:` under an `if:` expression, would
-resolve anchors, and would therefore change WHICH jobs the gate believes exist.
-That is a different gate. The line-oriented reading is the specification here,
-and `check:ci-gates-lock` is not its oracle -- the workflow file is.
+become ones: a real parser would see `needs:` under an `if:` expression, would resolve anchors, and would therefore change WHICH jobs the gate believes exist. That is a different gate. The line-oriented reading is the specification here, and `check:ci-gates-lock` is not its oracle -- the workflow file is.
 
-THE EXEMPT SET IS CARRIED VERBATIM, REASONS INCLUDED. It is a suppression list,
-so its five BLOCKER reasons are the part that must survive a port intact: each
-one records why `ci-complete` genuinely cannot aggregate that job, and one of
-them (build-renet) is an explicit note that the current safety is ACCIDENTAL and
-should be removed the next time the tier logic is touched. Deleting that
-paragraph would delete the only record that the hole is known.
+THE EXEMPT SET IS CARRIED VERBATIM, REASONS INCLUDED. It is a suppression list, so its five BLOCKER reasons are the part that must survive a port intact: each one records why `ci-complete` genuinely cannot aggregate that job, and one of them (build-renet) is an explicit note that the current safety is ACCIDENTAL and should be removed the next time the tier logic is touched.
+Deleting that paragraph would delete the only record that the hole is known.
 
-`parse_blockered_list` AND `verify_all_blockers` COME FROM `rediacc_ci.core.allowlist`,
-which is the one implementation of this repository's BLOCKER contract and is
-proved byte-compatible with `.ci/scripts/lib/blocker-validator.sh` over a frozen
+`parse_blockered_list` AND `verify_all_blockers` COME FROM `rediacc_ci.core.allowlist`, which is the one implementation of this repository's BLOCKER contract and is proved byte-compatible with `.ci/scripts/lib/blocker-validator.sh` over a frozen
 corpus. The twin sources the bash copy; using a fourth hand-rolled reader here
 would be exactly the duplication that module exists to end.
 
-THE VALIDATOR ARM CANNOT FIRE FROM A FIXTURE, and that is worth stating rather
-than discovering. The exempt block lives INSIDE the gate file, so a differential
-fixture cannot plant a low-effort reason without editing the twin, which
-invariant 5 forbids. The arm is therefore exercised by the selftest, in both
-directions, against blocks written by construction.
+THE VALIDATOR ARM CANNOT FIRE FROM A FIXTURE, and that is worth stating rather than discovering. The exempt block lives INSIDE the gate file, so a differential fixture cannot plant a low-effort reason without editing the twin, which invariant 5 forbids. The arm is therefore exercised by the selftest, in both directions, against blocks written by construction.
 
 BASH ASSOCIATIVE-ARRAY ORDER IS NOT REPRODUCED, and it does not matter. The
 twin's `for n in "${!NEEDS[@]}"` walks a hash, so its phantom / untiered /
-orphan lists come out in an order that is neither insertion nor sorted. This
-port sorts them. Every one of those lines is an `echo` on STDOUT under a
-`log_error` header on STDERR, so the differential reads them as progress and
+orphan lists come out in an order that is neither insertion nor sorted. This port sorts them. Every one of those lines is an `echo` on STDOUT under a `log_error` header on STDERR, so the differential reads them as progress and
 compares the headers, which carry the COUNTS; a reader gets a stable order
 instead of a hash order, which is strictly better and changes no verdict.
 
-`tr '[:lower:]-' '[:upper:]_'` IS A TWO-SET TRANSLATION, NOT AN UPPERCASE. The
-set on the left is the 26 lowercase letters PLUS the hyphen, and the right is the
-26 uppercase letters PLUS the underscore. Digits, dots and any character outside
-those sets pass through untouched, and an already-uppercase letter is not
-touched either. `result_var_for` reproduces exactly that, because a port that
-called `.upper().replace("-", "_")` would agree on every job name this workflow
-has ever had and would diverge the first time one contains a character the
-translation leaves alone.
+`tr '[:lower:]-' '[:upper:]_'` IS A TWO-SET TRANSLATION, NOT AN UPPERCASE. The set on the left is the 26 lowercase letters PLUS the hyphen, and the right is the 26 uppercase letters PLUS the underscore. Digits, dots and any character outside those sets pass through untouched, and an already-uppercase letter is not touched either. `result_var_for` reproduces exactly that, because a
+port that called `.upper().replace("-", "_")` would agree on every job name this workflow has ever had and would diverge the first time one contains a character the translation leaves alone.
 """
 
 import os
@@ -150,12 +128,9 @@ def top_level_jobs(text: str) -> list[str]:
         '
 
     Job keys are the only 2-space-indented bare keys after the `jobs:` line; job
-    bodies sit at 4 spaces or deeper. Scoping to the jobs block keeps the `on:` /
-    `permissions:` / `concurrency:` keys (also 2-space) out.
+    bodies sit at 4 spaces or deeper. Scoping to the jobs block keeps the `on:` / `permissions:` / `concurrency:` keys (also 2-space) out.
 
-    THE `next` MATTERS: the `jobs:` line itself never reaches the third rule, so
-    a file whose first job is on the same line as `jobs:` yields nothing rather
-    than a phantom entry.
+    THE `next` MATTERS: the `jobs:` line itself never reaches the third rule, so a file whose first job is on the same line as `jobs:` yields nothing rather than a phantom entry.
     """
     in_jobs = False
     out: list[str] = []
@@ -181,11 +156,7 @@ def job_block(text: str, job: str) -> str:
             in_job { print }
         '
 
-    The start pattern is a REGEX built from the job name, exactly as awk builds
-    it, so a job name containing a regex metacharacter behaves the same on both
-    sides. This is reproduced rather than tidied to a literal comparison for that
-    reason alone: `re.escape` here would make the port disagree with its twin on
-    an input neither of them should ever be given.
+    The start pattern is a REGEX built from the job name, exactly as awk builds it, so a job name containing a regex metacharacter behaves the same on both sides. This is reproduced rather than tidied to a literal comparison for that reason alone: `re.escape` here would make the port disagree with its twin on an input neither of them should ever be given.
     """
     start = re.compile("^  " + job + r":[ \t]*$")
     in_job = False
@@ -225,9 +196,7 @@ def result_vars(block: str) -> list[str]:
 
         awk 'match($0, /RESULT_[A-Z0-9_]+:/) { print substr($0, RSTART, RLENGTH - 1) }'
 
-    ONE PER LINE, because awk's `match` finds only the first. Two RESULT_ vars on
-    one line would be read as one by the twin, and the port keeps that so the
-    two agree about a shape neither of them handles well.
+    ONE PER LINE, because awk's `match` finds only the first. Two RESULT_ vars on one line would be read as one by the twin, and the port keeps that so the two agree about a shape neither of them handles well.
     """
     out: list[str] = []
     for line in block.split("\n"):
@@ -246,9 +215,7 @@ def tier_entries(text: str) -> list[str]:
         '
 
     Reads the real arrays, including the `+=` form the pointer-bump fast path
-    uses, so a member added there is seen here. The closing-paren test is
-    `index(line, ")") > 0` on the WHOLE line, so an array whose last element sits
-    on the same line as the `)` still yields that element.
+    uses, so a member added there is seen here. The closing-paren test is `index(line, ")") > 0` on the WHOLE line, so an array whose last element sits on the same line as the `)` still yields that element.
     """
     out: list[str] = []
     collecting = False
@@ -279,10 +246,7 @@ def result_var_for(job: str) -> str:
 def exempt_entries() -> dict[str, str]:
     """The exempt job names mapped to their BLOCKER reasons.
 
-    `pairs` and not `records`, because the twin populates two bash ASSOCIATIVE
-    ARRAYS and an associative array cannot hold two rows for one key. See
-    `rediacc_ci.core.allowlist`'s docstring for why that distinction is not
-    academic.
+    `pairs` and not `records`, because the twin populates two bash ASSOCIATIVE ARRAYS and an associative array cannot hold two rows for one key. See `rediacc_ci.core.allowlist`'s docstring for why that distinction is not academic.
     """
     return allowlist.pairs(allowlist.parse_text(EXEMPT_BLOCK))
 
@@ -290,8 +254,7 @@ def exempt_entries() -> dict[str, str]:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 when the wiring is complete, 1 on any gap.
 
-    `--selftest` is intercepted BEFORE either input is read, so the controls run
-    on a tree whose ci.yml is missing.
+    `--selftest` is intercepted BEFORE either input is read, so the controls run on a tree whose ci.yml is missing.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -528,8 +491,7 @@ SOFT_REQUIRED=(BUILD_CLI)
 def selftest() -> int:
     """Both directions for every parser and both directions for the validator.
 
-    Each of the four checks has a plant AND a mirror, because a gate whose only
-    controls are plants will happily flag a correctly wired workflow.
+    Each of the four checks has a plant AND a mirror, because a gate whose only controls are plants will happily flag a correctly wired workflow.
     """
     ctl = Controls("ci-job-aggregation", floor=28, verbose=True)
 
@@ -683,9 +645,7 @@ def selftest() -> int:
 def run_missing(root: pathlib.Path) -> int:
     """Drive the gate against a root whose ci.yml has been removed.
 
-    Separated from the closure above so the deletion is visible: an input that is
-    not there must be a REFUSAL, and a gate that skipped it would report a clean
-    tree for a workflow nobody read.
+    Separated from the closure above so the deletion is visible: an input that is not there must be a REFUSAL, and a gate that skipped it would report a clean tree for a workflow nobody read.
     """
     (root / ".github" / "workflows" / "ci.yml").unlink()
     saved = os.environ.get(paths.ROOT_ENV)

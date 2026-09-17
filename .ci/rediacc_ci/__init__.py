@@ -9,8 +9,7 @@ arbitrated in docs/ci-overhaul/08-driver-contract.md are:
   rediacc_ci.gates         the gate registry and its ``---- gate ----`` headers
   rediacc_ci.battery       the runner that finally replaces .ci/scripts/test/run-all.sh
 
-WHY THE PACKAGE EXISTS ALREADY, EMPTY. Two things had to be true before any of
-that could be written, and neither is about code:
+WHY THE PACKAGE EXISTS ALREADY, EMPTY. Two things had to be true before any of that could be written, and neither is about code:
 
   1. A PACKAGE MANAGER. pytest, uv, uvx, pip and pipx were all absent on the
      host these gates run on (measured 2026-09-06). .ci/bootstrap.sh is the
@@ -23,15 +22,9 @@ that could be written, and neither is about code:
      neither the gate nor the real problem, on a harness whose entire job is
      telling a real failure from an absent input.
 
-WHERE IT SITS ON sys.path. The package directory is ``.ci/rediacc_ci``, so the
-importable name is ``rediacc_ci`` with ``.ci`` on the path. A consumer adds the
-repo's ``.ci`` directory to ``sys.path`` -- the same shape
-.ci/scripts/test/gates/test-gate-anti-vacuity.sh already uses to import
-``check_fetch_retry`` out of ``.ci/scripts/quality``.
+WHERE IT SITS ON sys.path. The package directory is ``.ci/rediacc_ci``, so the importable name is ``rediacc_ci`` with ``.ci`` on the path. A consumer adds the repo's ``.ci`` directory to ``sys.path`` -- the same shape .ci/scripts/test/gates/test-gate-anti-vacuity.sh already uses to import ``check_fetch_retry`` out of ``.ci/scripts/quality``.
 
-Deliberately no re-exports: an ``__init__`` that imports its submodules turns
-every consumer into a consumer of all of them, and this one is imported by a
-fixture whose point is that most of the tree is absent.
+Deliberately no re-exports: an ``__init__`` that imports its submodules turns every consumer into a consumer of all of them, and this one is imported by a fixture whose point is that most of the tree is absent.
 """
 
 __all__: list[str] = []

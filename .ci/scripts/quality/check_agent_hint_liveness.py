@@ -1,44 +1,20 @@
 #!/usr/bin/env python3
 """Every agent under .claude/agents must be REACHABLE by the stop hook's hint matcher.
 
-WHY THIS EXISTS. On 2026-08-15 the operator had to say "there is bench server
-deployment" by hand, because the word `bench` appeared ZERO times across all
-seven agent `description` fields and exactly once in the whole directory:
-account-dev.md:81, in the BODY. The knowledge existed and the matching surface
-did not. A specialist nobody can be pointed at is a specialist nobody uses, and
-nothing in the tree could tell the difference between "the matcher is healthy
-and this stop is quiet" and "the matcher is dead".
+WHY THIS EXISTS. On 2026-08-15 the operator had to say "there is bench server deployment" by hand, because the word `bench` appeared ZERO times across all seven agent `description` fields and exactly once in the whole directory: account-dev.md:81, in the BODY. The knowledge existed and the matching surface did not. A specialist nobody can be pointed at is a specialist nobody uses,
+and nothing in the tree could tell the difference between "the matcher is healthy and this stop is quiet" and "the matcher is dead".
 
-WHY "IS THE MATCHER SILENT" IS THE WRONG TEST, and this is the whole design.
-A healthy matcher on a quiet stop emits nothing, exactly like a broken one.
-Counting hints cannot separate them. So this plants a one-line specimen per
-agent -- the sentence a session would actually type -- and asserts the matcher
-picks that agent, above threshold and by margin. In the SAME run it asserts
-five neutral haystacks match nothing at all. Either half alone is worthless:
-"everything fires" and "everything is silent" both pass a one-sided test.
+WHY "IS THE MATCHER SILENT" IS THE WRONG TEST, and this is the whole design. A healthy matcher on a quiet stop emits nothing, exactly like a broken one. Counting hints cannot separate them. So this plants a one-line specimen per agent -- the sentence a session would actually type -- and asserts the matcher picks that agent, above threshold and by margin. In the SAME run it asserts
+five neutral haystacks match nothing at all. Either half alone is worthless: "everything fires" and "everything is silent" both pass a one-sided test.
 
-ADDING AN AGENT MEANS ADDING A SPECIMEN. That is deliberate friction, and it is
-the assertion that carries the feature: the specimen table's key set must EQUAL
-the set of agent files, in both directions, so a new agent with a vague
-description fails here rather than being quietly unreachable for six months.
+ADDING AN AGENT MEANS ADDING A SPECIMEN. That is deliberate friction, and it is the assertion that carries the feature: the specimen table's key set must EQUAL the set of agent files, in both directions, so a new agent with a vague description fails here rather than being quietly unreachable for six months.
 
-CONTROL-FIRST. Before the real corpus is judged at all, the matcher and this
-gate's own evaluator are driven against a synthetic fixture with planted
-defects: a blanked description must be reported DEAD, a specimen for a deleted
-agent must be reported STALE, an agent with no specimen must be reported
-UNPROVEN, and a threshold raised out of reach must silence a match that
-otherwise fires. If any planted defect passes, this gate declares itself broken
-and exits non-zero WITHOUT issuing a verdict on the real corpus. A verdict from
-an instrument that cannot fail is worse than no verdict.
+CONTROL-FIRST. Before the real corpus is judged at all, the matcher and this gate's own evaluator are driven against a synthetic fixture with planted defects: a blanked description must be reported DEAD, a specimen for a deleted agent must be reported STALE, an agent with no specimen must be reported UNPROVEN, and a threshold raised out of reach must silence a match that otherwise
+fires. If any planted defect passes, this gate declares itself broken and exits non-zero WITHOUT issuing a verdict on the real corpus. A verdict from an instrument that cannot fail is worse than no verdict.
 
 Design: agent/PLAN-agent-hints-implementation.md (sections 5 and 6).
 
----- gate ----
-step: Agent hints can actually fire
-needs: none
-selftest: true
-lane: quality-content
----- end gate ----
+---- gate ---- step: Agent hints can actually fire needs: none selftest: true lane: quality-content ---- end gate ----
 """
 
 from __future__ import annotations
@@ -241,8 +217,7 @@ def write_agent(path: str, name: str, description: str) -> None:
 def controls_fired(matcher, min_score, min_margin) -> list[str]:
     """Drive the matcher and THIS gate's evaluator against planted defects.
 
-    Returns the list of planted defects that were NOT caught. Anything in it
-    means the instrument cannot fail, so no verdict may be issued.
+    Returns the list of planted defects that were NOT caught. Anything in it means the instrument cannot fail, so no verdict may be issued.
     """
     missed: list[str] = []
     fixture_specs = {
@@ -307,22 +282,13 @@ def controls_fired(matcher, min_score, min_margin) -> list[str]:
 def glued_stopword_seams(src: str) -> list:
     """Literal seams in _STOPWORD_TEXT that silently merge two words into one.
 
-    THE DEFECT, 2026-08-26. Adjacent Python string literals concatenate with
-    NOTHING between them, so a literal that does not end in a space glues its
-    last word to the next literal's first word. Two waves rebased together each
+    THE DEFECT, 2026-08-26. Adjacent Python string literals concatenate with NOTHING between them, so a literal that does not end in a space glues its last word to the next literal's first word. Two waves rebased together each
     appended a line to this list; one lacked the trailing space, `touched` and
-    `see` became `touchedsee`, and BOTH tokens stopped being stopwords. Nothing
-    failed: the list still parsed, still had a plausible length, and the two
-    lost words simply started scoring as domain terms again.
+    `see` became `touchedsee`, and BOTH tokens stopped being stopwords. Nothing failed: the list still parsed, still had a plausible length, and the two lost words simply started scoring as domain terms again.
 
-    That is the shape this whole gate exists for -- a matcher that is quietly
-    less healthy than it looks -- so the check belongs here rather than in a new
-    gate of its own.
+    That is the shape this whole gate exists for -- a matcher that is quietly less healthy than it looks -- so the check belongs here rather than in a new gate of its own.
 
-    COMMENT LINES ARE STRIPPED FIRST. The comments in that block quote phrases
-    in double quotes ("just push and SEE what CI says"), and a naive scan reads
-    them as literals and reports seventeen seams instead of one. Mention is not
-    execution, in an analysis tool as much as in a guard.
+    COMMENT LINES ARE STRIPPED FIRST. The comments in that block quote phrases in double quotes ("just push and SEE what CI says"), and a naive scan reads them as literals and reports seventeen seams instead of one. Mention is not execution, in an analysis tool as much as in a guard.
     """
     m = re.search(r"_STOPWORD_TEXT = \((.*?)\n\)", src, re.DOTALL)
     if not m:

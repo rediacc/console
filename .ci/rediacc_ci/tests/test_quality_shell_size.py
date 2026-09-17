@@ -1,14 +1,9 @@
 """`rediacc_ci.quality.shell_size` against `wc -l` and the twin's grep.
 
-WHY A DIFFERENTIAL. The interesting half of this gate is a three-valued probe --
-a count, UNREADABLE, or "" -- built on `wc -l` and one `grep -qE`. Both are
-external tools whose edges (a missing final newline, an indented directive, a
-directive with extra flags) are decided by them and not by anything a reader
-could infer. Running them and comparing is the only form of this test that can
-fail for the right reason.
+WHY A DIFFERENTIAL. The interesting half of this gate is a three-valued probe -- a count, UNREADABLE, or "" -- built on `wc -l` and one `grep -qE`. Both are external tools whose edges (a missing final newline, an indented directive, a directive with extra flags) are decided by them and not by anything a reader could infer. Running them and comparing is the only form of this test
+that can fail for the right reason.
 
-The whole gate, its enumeration and its S1/S2 assertions are covered by
-`.ci/shadow/w7p2-shell-size.observations.jsonl` over five distinct trees.
+The whole gate, its enumeration and its S1/S2 assertions are covered by `.ci/shadow/w7p2-shell-size.observations.jsonl` over five distinct trees.
 """
 
 import pathlib

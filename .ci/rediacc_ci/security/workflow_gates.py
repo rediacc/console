@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/security/check-workflow-gates.sh` (`check:ci-workflow-gates`).
 
-Six structural invariants over GitHub Actions workflow YAML that only a real
-parser can see. The twin is 1108 lines, of which only 125 are bash: 788 lines
-already live inside six `python3 - ... <<'PYEOF'` heredocs. So this is not a
-translation of 1108 lines of shell, it is a translation of the 125-line
-orchestrator plus a transcription of six Python programs that were already
+Six structural invariants over GitHub Actions workflow YAML that only a real parser can see. The twin is 1108 lines, of which only 125 are bash: 788 lines already live inside six `python3 - ... <<'PYEOF'` heredocs. So this is not a translation of 1108 lines of shell, it is a translation of the 125-line orchestrator plus a transcription of six Python programs that were already
 Python. Each `sys.exit(N)` below became `return N`; nothing else about the six
 programs' logic moved.
 
@@ -39,58 +35,29 @@ THE SIX CHECKS, and what each one reads:
   6. nothing optional may precede the watchdog's monitor step. Reads
      `$ROOT_DIR/.github/workflows/watchdog-monitor.yml`, NOT `$WORKFLOWS_DIR`.
 
-PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired.
-Fixing one only HERE would make the differential lie, so the two ways an item can
-end are: reproduced in both sides, or fixed in BOTH SIDES IN LOCKSTEP in one
-change that also flips its differential test and re-records the shadow ledger.
+PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired. Fixing one only HERE would make the differential lie, so the two ways an item can end are: reproduced in both sides, or fixed in BOTH SIDES IN LOCKSTEP in one change that also flips its differential test and re-records the shadow ledger.
 CHECK 6's checkout exemption took the second route on 2026-09-10; everything else
 below is still the first.
 
 CHECK 1 WALKS, CHECKS 2 AND 3 DO NOT. `check-workflow-gates.sh:164`
 (`os.walk(workflows_dir)`) descends into subdirectories; `:236`
-(`os.listdir`) and `:527` (`os.listdir`) are flat. A workflow YAML in a
-subdirectory of `$WORKFLOWS_DIR` is therefore audited for the `always()` rule
-and NOT for the secret contract or the slim timeout. Measured: `.github/workflows`
-has no subdirectory today, so the blast radius on the real tree is zero and the
-divergence is only reachable through a fixture. `test_check1_walks_and_check3_does_not`
-pins it.
+(`os.listdir`) and `:527` (`os.listdir`) are flat. A workflow YAML in a subdirectory of `$WORKFLOWS_DIR` is therefore audited for the `always()` rule and NOT for the secret contract or the slim timeout. Measured: `.github/workflows` has no subdirectory today, so the blast radius on the real tree is zero and the divergence is only reachable through a fixture.
+`test_check1_walks_and_check3_does_not` pins it.
 
-CHECKS 5 AND 6 IGNORE `$WORKFLOWS_DIR` ENTIRELY. `check-workflow-gates.sh:886`
-and `:1012` pass `"$ROOT_DIR"`, so a gate test pointing `WORKFLOWS_DIR` at a
-fixture tree still runs CHECK 5 and CHECK 6 against the REAL repository. That is
-why `test_gate_slim_timeout.py` and friends can only assert on the checks they
-target: the other two run for real underneath them every time. Reproduced here
-by resolving the root the same way the twin does and never letting
-`workflows_dir` reach `check5`/`check6`.
+CHECKS 5 AND 6 IGNORE `$WORKFLOWS_DIR` ENTIRELY. `check-workflow-gates.sh:886` and `:1012` pass `"$ROOT_DIR"`, so a gate test pointing `WORKFLOWS_DIR` at a fixture tree still runs CHECK 5 and CHECK 6 against the REAL repository. That is why `test_gate_slim_timeout.py` and friends can only assert on the checks they target: the other two run for real underneath them every time.
+Reproduced here by resolving the root the same way the twin does and never letting `workflows_dir` reach `check5`/`check6`.
 
 CHECK 5 GLOBS `*.yml` ONLY. `:894-895` uses `.glob("*.yml")` for both
 `.github/workflows` and `.ci/breakpoint/workflow`; a `.yaml` workflow is
-invisible to CHECK 5 while CHECKS 1/2/3 all accept both extensions. Measured: 0
-`.yaml` files under either directory today.
+invisible to CHECK 5 while CHECKS 1/2/3 all accept both extensions. Measured: 0 `.yaml` files under either directory today.
 
-CHECK 6's CHECKOUT EXEMPTION WAS FIXED IN BOTH SIDES ON 2026-09-10, in lockstep.
-It used to test the step's *NAME*, not its `uses:`: `names` was built as
-`step.get("name") or str(step.get("uses",""))` and the exemption then asked
-`"actions/checkout" in name`, so a checkout step that HAS a `name:` lost the
-exemption unless the name itself contained `actions/checkout`. Measured on the
-real tree: 139 of the 144 `actions/checkout` steps under `.github/workflows` are
-unnamed (so they were exempt by the `uses:` fallback) and 5 are named (so they
-were not). `watchdog-monitor.yml`'s own checkout is unnamed, which is why the
-gate was green while one ordinary `name: Checkout` edit would have turned it red
-on the single workflow it guards. It now reads `uses:` and nothing else, and the
-same code path grew the type guards it never had: a non-str `name:` used to raise
-`TypeError` and an empty or malformed watchdog YAML used to raise `AttributeError`,
-both surfacing as a traceback under bash's "move the step after the monitor"
-message. Both now report cleanly and still exit 1.
-`test_check6_a_named_checkout_is_exempt`, `test_check6_a_non_string_step_name`
-and `test_check6_a_malformed_workflow_reports_cleanly` pin all three on both sides.
+CHECK 6's CHECKOUT EXEMPTION WAS FIXED IN BOTH SIDES ON 2026-09-10, in lockstep. It used to test the step's *NAME*, not its `uses:`: `names` was built as `step.get("name") or str(step.get("uses",""))` and the exemption then asked `"actions/checkout" in name`, so a checkout step that HAS a `name:` lost the exemption unless the name itself contained `actions/checkout`. Measured on
+the real tree: 139 of the 144 `actions/checkout` steps under `.github/workflows` are unnamed (so they were exempt by the `uses:` fallback) and 5 are named (so they were not). `watchdog-monitor.yml`'s own checkout is unnamed, which is why the gate was green while one ordinary `name: Checkout` edit would have turned it red on the single workflow it guards. It now reads `uses:` and
+nothing else, and the same code path grew the type guards it never had: a non-str `name:` used to raise `TypeError` and an empty or malformed watchdog YAML used to raise `AttributeError`, both surfacing as a traceback under bash's "move the step after the monitor" message. Both now report cleanly and still exit 1. `test_check6_a_named_checkout_is_exempt`,
+`test_check6_a_non_string_step_name` and `test_check6_a_malformed_workflow_reports_cleanly` pin all three on both sides.
 
-`SLIM_TIMEOUT_MAX` IS `int()`-ED WITH NO GUARD. `:520`
-(`int(sys.argv[2])`) raises `ValueError` on a non-numeric override, the heredoc
-dies with a traceback and exit 1, and bash then prints "ubuntu-slim timeout
-violations (see above)" -- a message about violations for what is a
-configuration error. Reproduced: the port lets the same `ValueError` escape
-`check3`, prints its own traceback and returns 1. The traceback TEXT necessarily
+`SLIM_TIMEOUT_MAX` IS `int()`-ED WITH NO GUARD. `:520` (`int(sys.argv[2])`) raises `ValueError` on a non-numeric override, the heredoc dies with a traceback and exit 1, and bash then prints "ubuntu-slim timeout violations (see above)" -- a message about violations for what is a configuration error. Reproduced: the port lets the same `ValueError` escape `check3`, prints its own
+traceback and returns 1. The traceback TEXT necessarily
 differs (different file, different line); the exit code and the bash-level
 message do not.
 
@@ -103,18 +70,13 @@ THE COLOUR CODES ARE EMITTED, not stripped. `:63` sets `RED='\\033[0;31m'` and
 `CI != "true"`. A port that printed plain text would differ from the twin on
 every single line outside CI.
 
-THE PYYAML BOOTSTRAP IS A REAL SUBPROCESS CHAIN. `:130` runs
-`python3 -c "import yaml" || pip install --user --quiet pyyaml || pip3 install
+THE PYYAML BOOTSTRAP IS A REAL SUBPROCESS CHAIN. `:130` runs `python3 -c "import yaml" || pip install --user --quiet pyyaml || pip3 install
 --user --quiet pyyaml || { log_error; exit 2; }`. Reproduced as a real
-`pip`/`pip3` attempt rather than a bare `ImportError`, because "the gate exits 2
-saying pyyaml is missing" and "the gate dies with a traceback" are different
-failures to the operator reading CI.
+`pip`/`pip3` attempt rather than a bare `ImportError`, because "the gate exits 2 saying pyyaml is missing" and "the gate dies with a traceback" are different failures to the operator reading CI.
 
 ONE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours
 `$REDIACC_CI_ROOT`, and the twin's `ROOT_DIR` (derived from `${BASH_SOURCE[0]}`,
-`:57-58`) does not. Set that variable and the two sides read different trees.
-It is the package-wide convention (`paths.py`'s own header argues for exactly
-one such name), and the differential harness never sets it.
+`:57-58`) does not. Set that variable and the two sides read different trees. It is the package-wide convention (`paths.py`'s own header argues for exactly one such name), and the differential harness never sets it.
 
 Exit: 0 all six clean, 1 any offender, 2 setup error (pyyaml).
 """
@@ -145,8 +107,7 @@ def _env(name: str, default: str) -> str:
     """`${name:-default}`: an exported-but-empty value is UNSET, not "".
 
     `os.environ.get(name, default)` would return "" for `FOO=`, which is the
-    opposite answer, and every one of the six overrides below is a path or a
-    boolean where "" means something different from the default.
+    opposite answer, and every one of the six overrides below is a path or a boolean where "" means something different from the default.
     """
     value = os.environ.get(name)
     return value or default
@@ -327,14 +288,9 @@ _DECLARED_UNUSED_OK: list[tuple[str, str]] = [
 def strip_comment_lines(text: str) -> str:
     """`:256-258`. COMMENTS ARE NOT USES.
 
-    `texts` feeds `USE_RE`, which decides whether a workflow "reads" a secret,
-    and a raw read counted `# ... secrets.X ...` as a use. So a comment RECORDING
-    that some `secrets.X` was removed made the callee look like it still consumed
-    the name, and the contract check then demanded a declaration for something
-    nothing reads.
+    `texts` feeds `USE_RE`, which decides whether a workflow "reads" a secret, and a raw read counted `# ... secrets.X ...` as a use. So a comment RECORDING that some `secrets.X` was removed made the callee look like it still consumed the name, and the contract check then demanded a declaration for something nothing reads.
 
-    Only a WHOLE-LINE comment is blanked -- `lstrip().startswith("#")`. A
-    trailing `foo: bar  # secrets.X` still reads as a use, on both sides.
+    Only a WHOLE-LINE comment is blanked -- `lstrip().startswith("#")`. A trailing `foo: bar # secrets.X` still reads as a use, on both sides.
     """
     return "\n".join("" if ln.lstrip().startswith("#") else ln for ln in text.split("\n"))
 
@@ -1044,8 +1000,7 @@ def harmless(step: dict) -> bool:
 def scalar(value: object) -> str | None:
     """A YAML scalar as the string GitHub would render, or None if it is not one.
 
-    YAML hands back whatever was written, so `name: 5` is an int and `name: null`
-    is None. Everything below goes through here rather than assuming str.
+    YAML hands back whatever was written, so `name: 5` is an int and `name: null` is None. Everything below goes through here rather than assuming str.
     """
     if isinstance(value, str):
         return value or None
@@ -1057,11 +1012,7 @@ def scalar(value: object) -> str | None:
 def step_label(step: dict) -> str:
     """What to call this step in a message, and what to match the monitor on.
 
-    FIXED 2026-09-10. This was inlined as `s.get("name") or str(s.get("uses", ""))`,
-    which returns a non-str for `name: 5` and then died on `"actions/checkout" in
-    name` with `TypeError: argument of type 'int' is not a container or iterable`
-    -- a traceback under which bash printed "move the step after the monitor",
-    a fix for a crash that has nothing to do with ordering.
+    FIXED 2026-09-10. This was inlined as `s.get("name") or str(s.get("uses", ""))`, which returns a non-str for `name: 5` and then died on `"actions/checkout" in name` with `TypeError: argument of type 'int' is not a container or iterable` -- a traceback under which bash printed "move the step after the monitor", a fix for a crash that has nothing to do with ordering.
     """
     return scalar(step.get("name")) or scalar(step.get("uses")) or ""
 
@@ -1069,13 +1020,8 @@ def step_label(step: dict) -> str:
 def is_checkout(step: dict) -> bool:
     """A repository checkout, decided by `uses:` and NEVER by the display name.
 
-    FIXED 2026-09-10. This used to ask `"actions/checkout" in <label>`, and the
-    label only falls back to `uses:` when the step has no `name:`. So the exemption
-    held for the 139 unnamed checkout steps under .github/workflows and was lost for
-    the 5 named ones. One ordinary edit (`name: Checkout` on watchdog-monitor.yml's
-    own checkout, which is unnamed today) would have turned this gate red on the one
-    workflow it exists to guard, with a message telling the author to move the
-    checkout AFTER the monitor and leave the monitor's scripts off disk.
+    FIXED 2026-09-10. This used to ask `"actions/checkout" in <label>`, and the label only falls back to `uses:` when the step has no `name:`. So the exemption held for the 139 unnamed checkout steps under .github/workflows and was lost for the 5 named ones. One ordinary edit (`name: Checkout` on watchdog-monitor.yml's own checkout, which is unnamed today) would have turned this
+    gate red on the one workflow it exists to guard, with a message telling the author to move the checkout AFTER the monitor and leave the monitor's scripts off disk.
     """
     uses = step.get("uses")
     return isinstance(uses, str) and uses.startswith("actions/checkout")
@@ -1168,8 +1114,7 @@ def _guarded(fn: typing.Callable[[], int]) -> int:
 
     An uncaught exception in a `python3 - <<PYEOF` heredoc prints a traceback and
     exits 1, and bash's `RC=$?` then takes the offender branch. In-process an
-    exception would abort the whole gate and skip the remaining checks, which is
-    NOT what the twin does.
+    exception would abort the whole gate and skip the remaining checks, which is NOT what the twin does.
     """
     try:
         return fn()

@@ -1,12 +1,8 @@
 """Differential: `rediacc_ci.build.extract_renet_from_image` against its twin
 `.ci/scripts/build/extract-renet-from-image.sh`.
 
-ONE REAL RUN CREATES A CONTAINER FROM `ghcr.io/rediacc/renet:<tag>`, COPIES
-BINARIES OUT OF IT, DELETES AND REWRITES `private/renet/pkg/embed/assets/`, AND
-CROSS-COMPILES FOUR GO BINARIES. Every case here runs against recording fakes on
-a PATH that REPLACES the caller's rather than prepending to it, inside a fixture
-tree, and `test_the_scratch_path_cannot_reach_a_real_docker_or_go` asserts the
-seal before anything is driven.
+ONE REAL RUN CREATES A CONTAINER FROM `ghcr.io/rediacc/renet:<tag>`, COPIES BINARIES OUT OF IT, DELETES AND REWRITES `private/renet/pkg/embed/assets/`, AND CROSS-COMPILES FOUR GO BINARIES. Every case here runs against recording fakes on a PATH that REPLACES the caller's rather than prepending to it, inside a fixture tree, and `test_the_scratch_path_cannot_reach_a_real_docker_or_go`
+asserts the seal before anything is driven.
 
 THREE KINDS OF EVIDENCE ARE COMPARED, because no one of them is sufficient:
 
@@ -19,12 +15,9 @@ THREE KINDS OF EVIDENCE ARE COMPARED, because no one of them is sufficient:
 
 `ls -la` TIMESTAMPS ARE MASKED, AND ONLY THEY. The two sides run seconds apart,
 so `ls` prints a different mtime for files that are otherwise identical; the
-mask replaces the `<Mon> <day> <HH:MM>` field and leaves mode, link count, owner,
-group, size and name alone. Nothing else in the output is masked except `$0`.
+mask replaces the `<Mon> <day> <HH:MM>` field and leaves mode, link count, owner, group, size and name alone. Nothing else in the output is masked except `$0`.
 
-RECORDING FAKES WRITE TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. This script's stdout
-IS an artifact (the checksum listing), and a prior wave's fake that logged to
-stdout corrupted the very file its twin was writing. The `FAKEBIN ` prefix is
+RECORDING FAKES WRITE TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. This script's stdout IS an artifact (the checksum listing), and a prior wave's fake that logged to stdout corrupted the very file its twin was writing. The `FAKEBIN ` prefix is
 also what the K=5 ledger scopes `--finding-re` to, because `shadow-gate.ts`
 classifies every `-> `/`ok ` line as CHATTER before any message regex runs.
 
@@ -635,8 +628,7 @@ def test_a_version_the_lockfile_forbids_refuses(tmp_path) -> None:
 
 def test_defect_a_silent_strings_turns_the_version_check_into_a_warning(tmp_path) -> None:
     """DEFECT 1. `strings` is never `require_cmd`ed and its stderr is discarded,
-    so when it produces nothing the check that exists to catch a stale criu
-    reports `cannot verify` and the run EXITS 0 -- with the very same stale
+    so when it produces nothing the check that exists to catch a stale criu reports `cannot verify` and the run EXITS 0 -- with the very same stale
     3.17.1 that the previous test refuses."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
@@ -735,8 +727,7 @@ def test_parse_args_is_exercised_directly_in_both_directions() -> None:
 
 def test_a_planted_defect_is_caught_only_by_the_staged_tree(tmp_path) -> None:
     """The proof that this differential can fail. Flattening the per-arch layout
-    is the exact regression the twin's comment says once shipped assetless
-    darwin/windows binaries, and it changes neither the exit code, nor stderr,
+    is the exact regression the twin's comment says once shipped assetless darwin/windows binaries, and it changes neither the exit code, nor stderr,
     nor the call log's `docker cp` count -- only where the files land."""
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(

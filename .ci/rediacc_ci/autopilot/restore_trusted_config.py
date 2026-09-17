@@ -1,14 +1,7 @@
 """Port of `.ci/scripts/autopilot/restore-trusted-config.sh`.
 
-WALL 4 MITIGATION (docs/ci-overhaul/03-v2-autonomy.md:112-138), and the wall is
-worth restating because everything below is shaped by it: on `workflow_run` the
-action's `restoreConfigFromBase` NEVER fires -- it is gated on
-`isEntityContext`, and `workflow_run` is an automation event -- while
-`.claude/hooks/**` still EXECUTE. A job that checks out PR head has therefore
-handed arbitrary PR-authored hook code a shell. This script closes that:
-snapshot the protected set from the TRUSTED ref before any PR-head checkout,
-restore it over the checkout afterwards, and quarantine the branch's copies for
-inspection AS DATA, never as executable config.
+WALL 4 MITIGATION (docs/ci-overhaul/03-v2-autonomy.md:112-138), and the wall is worth restating because everything below is shaped by it: on `workflow_run` the action's `restoreConfigFromBase` NEVER fires -- it is gated on `isEntityContext`, and `workflow_run` is an automation event -- while `.claude/hooks/**` still EXECUTE. A job that checks out PR head has therefore handed
+arbitrary PR-authored hook code a shell. This script closes that: snapshot the protected set from the TRUSTED ref before any PR-head checkout, restore it over the checkout afterwards, and quarantine the branch's copies for inspection AS DATA, never as executable config.
 
     snapshot   copy every protected entry that exists into `--snapshot`, and
                write `.protected-manifest` naming the ones that were captured.
@@ -19,45 +12,22 @@ inspection AS DATA, never as executable config.
                it WITHOUT restore against a tampered checkout and it must go
                red, or the restore step proves nothing.
 
-FAIL CLOSED IS THE DESIGN, twice over, and both refusals are preserved
-verbatim: `restore` without a manifest is exit 1 ("no trusted baseline"), and
-`assert` without a manifest is exit 1 ("nothing to assert against is itself a
-failure"). Either could have been written as "nothing to do, carry on", and
-either spelling would have been wall 4 reopened with a green tick on top.
+FAIL CLOSED IS THE DESIGN, twice over, and both refusals are preserved verbatim: `restore` without a manifest is exit 1 ("no trusted baseline"), and `assert` without a manifest is exit 1 ("nothing to assert against is itself a failure"). Either could have been written as "nothing to do, carry on", and either spelling would have been wall 4 reopened with a green tick on top.
 
 -----------------------------------------------------------------------------
 WHAT SHELLS OUT, AND WHY IT IS EXACTLY ONE THING
 -----------------------------------------------------------------------------
-`diff -r` IS STILL `diff -r`. It is the comparison the whole control rests on,
-and its recursive semantics are not a detail anyone should re-derive: it
-follows symlinks, it reports a name present on one side only, it reports a
-directory facing a regular file, and it exits 2 rather than 1 when it cannot
-read something -- which this script correctly treats as drift, since a
-protected entry it cannot compare is not an entry it can vouch for.
-`filecmp.dircmp` is NOT that function: its default comparison is `os.stat`
-shallow (size and mtime), and `cp -a` PRESERVES mtime, so a shallow comparator
-would call a tampered file identical whenever the tamper kept the size. That is
-the precise shape of a control that cannot fail.
+`diff -r` IS STILL `diff -r`. It is the comparison the whole control rests on, and its recursive semantics are not a detail anyone should re-derive: it follows symlinks, it reports a name present on one side only, it reports a directory facing a regular file, and it exits 2 rather than 1 when it cannot read something -- which this script correctly treats as drift, since a protected
+entry it cannot compare is not an entry it can vouch for. `filecmp.dircmp` is NOT that function: its default comparison is `os.stat` shallow (size and mtime), and `cp -a` PRESERVES mtime, so a shallow comparator would call a tampered file identical whenever the tamper kept the size. That is the precise shape of a control that cannot fail.
 
-THE COPIES ARE PYTHON, AND HERE IS WHAT THAT COSTS. `shutil` preserves mode,
-timestamps and symlinks-as-symlinks, which is everything this script's own
-`assert` compares and everything a hook needs in order to execute. It does NOT
-preserve ownership, xattrs, ACLs or SELinux context, and it does not keep hard
-links shared inside a copied tree, all of which `cp -a` does. None of the four
-is reachable from a CI job that runs as one unprivileged user over a git
-checkout, and none is compared by `diff -r`, so the divergence is real,
-documented, and outside the control's field of view rather than hidden from it.
+THE COPIES ARE PYTHON, AND HERE IS WHAT THAT COSTS. `shutil` preserves mode, timestamps and symlinks-as-symlinks, which is everything this script's own `assert` compares and everything a hook needs in order to execute. It does NOT preserve ownership, xattrs, ACLs or SELinux context, and it does not keep hard links shared inside a copied tree, all of which `cp -a` does. None of the
+four is reachable from a CI job that runs as one unprivileged user over a git checkout, and none is compared by `diff -r`, so the divergence is real, documented, and outside the control's field of view rather than hidden from it.
 
 -----------------------------------------------------------------------------
 THE `cp`/`mv` QUIRK THAT SURVIVES A SECOND RUN, REPRODUCED ON PURPOSE
 -----------------------------------------------------------------------------
-`cp -a SRC DEST` and `mv SRC DEST` do NOT mean "make DEST look like SRC". When
-DEST already exists AS A DIRECTORY they mean "put SRC INSIDE DEST". So running
-`snapshot` twice into one `--snapshot` directory produces
-`<snapshot>/.claude/.claude`, and running `restore` twice produces
-`<quarantine>/.claude/.claude`. `copy_a` and `move` below implement the rule
-rather than the intuition, because a port that quietly did the intuitive thing
-would diverge from the twin on the second invocation.
+`cp -a SRC DEST` and `mv SRC DEST` do NOT mean "make DEST look like SRC". When DEST already exists AS A DIRECTORY they mean "put SRC INSIDE DEST". So running `snapshot` twice into one `--snapshot` directory produces `<snapshot>/.claude/.claude`, and running `restore` twice produces `<quarantine>/.claude/.claude`. `copy_a` and `move` below implement the rule rather than the
+intuition, because a port that quietly did the intuitive thing would diverge from the twin on the second invocation.
 
 AND THE SECOND SNAPSHOT IS NOT LITTER, IT IS A DEFECT. Driven on 2026-09-10
 against the twin: `snapshot; assert` passes, and `snapshot; assert; snapshot;
@@ -66,16 +36,10 @@ assert` FAILS the second assert with
     trusted-config-drift: '.claude' differs from the pre-checkout snapshot
     trusted-config-drift: '.husky' differs from the pre-checkout snapshot
 
-on a checkout nobody touched. The snapshot now holds `.claude/.claude`, which
-the checkout does not, so `diff -r` is right and the message is pointing at the
+on a checkout nobody touched. The snapshot now holds `.claude/.claude`, which the checkout does not, so `diff -r` is right and the message is pointing at the
 wrong side. Every directory-valued protected entry is affected; the file-valued
-ones are simply overwritten and stay correct. Any re-run of the snapshot step
--- a retried job, two jobs sharing one snapshot path, a workflow that snapshots
-per matrix leg -- reds the control with a diagnosis that blames the branch. It
-is REPRODUCED here rather than repaired: the twin stays live and registered
-until cutover, and a port that silently disagreed with it would be a worse
-outcome than a defect both implementations share. `test_defect_snapshotting_
-twice_poisons_the_baseline` is the pin.
+ones are simply overwritten and stay correct. Any re-run of the snapshot step -- a retried job, two jobs sharing one snapshot path, a workflow that snapshots per matrix leg -- reds the control with a diagnosis that blames the branch. It is REPRODUCED here rather than repaired: the twin stays live and registered until cutover, and a port that silently disagreed with it would be a
+worse outcome than a defect both implementations share. `test_defect_snapshotting_ twice_poisons_the_baseline` is the pin.
 
 -----------------------------------------------------------------------------
 TWO HAZARDS, REPORTED RATHER THAN REPAIRED
@@ -151,9 +115,7 @@ def manifest_path(snapshot: str) -> str:
 def exists(path: str) -> bool:
     """`[[ -e "$path" ]]`: FOLLOWS symlinks, so a dangling link is False.
 
-    That is not a detail: a branch that replaces `.claude` with a symlink to
-    nowhere is invisible to `snapshot` and to the branch-introduced arm of
-    `assert`, in the twin and therefore here.
+    That is not a detail: a branch that replaces `.claude` with a symlink to nowhere is invisible to `snapshot` and to the branch-introduced arm of `assert`, in the twin and therefore here.
     """
     return os.path.exists(path)
 
@@ -162,8 +124,7 @@ def read_manifest(snapshot: str) -> list[str]:
     """The manifest's lines, in file order, blank lines dropped.
 
     `while IFS= read -r entry; [[ -z "$entry" ]] && continue`, plus the detail
-    that bash's `read` DISCARDS a final line with no newline. `: >file` then
-    `echo >>` always terminates every line, so the two agree on everything this
+    that bash's `read` DISCARDS a final line with no newline. `: >file` then `echo >>` always terminates every line, so the two agree on everything this
     script writes; the difference only shows on a hand-edited manifest.
     """
     with open(manifest_path(snapshot), "rb") as handle:
@@ -178,8 +139,7 @@ def read_manifest(snapshot: str) -> list[str]:
 def in_manifest(entry: str, snapshot: str) -> bool:
     """`grep -qxF "$entry" "$SNAPSHOT/$MANIFEST"`: whole line, fixed string.
 
-    Deliberately NOT `read_manifest`, which drops empty lines: `-x` is an exact
-    whole-line match on the raw file, and an unterminated final line DOES match
+    Deliberately NOT `read_manifest`, which drops empty lines: `-x` is an exact whole-line match on the raw file, and an unterminated final line DOES match
     for grep even though `read` would have dropped it.
     """
     try:
@@ -197,8 +157,7 @@ def in_manifest(entry: str, snapshot: str) -> bool:
 def copy_a(src: str, dest: str) -> None:
     """`cp -a SRC DEST`, including the DEST-is-a-directory rule.
 
-    Raises OSError or shutil.Error, which the caller turns into `set -e`'s exit
-    1 the way the twin does.
+    Raises OSError or shutil.Error, which the caller turns into `set -e`'s exit 1 the way the twin does.
     """
     if os.path.isdir(dest) and not os.path.islink(dest):
         dest = os.path.join(dest, os.path.basename(src.rstrip("/")))
@@ -225,10 +184,7 @@ def move(src: str, dest: str) -> None:
 def diff_r(left: str, right: str) -> int:
     """`diff -r "$left" "$right" >/dev/null 2>&1`. 0 identical, non-zero drift.
 
-    Both streams are discarded, as the twin discards them: the report a human
-    reads is this script's own `trusted-config-drift` line, naming the entry.
-    A missing `diff` binary is exit 127 here, which counts as drift -- the safe
-    direction, and the same thing the twin's `set -e`-free `if !` would do.
+    Both streams are discarded, as the twin discards them: the report a human reads is this script's own `trusted-config-drift` line, naming the entry. A missing `diff` binary is exit 127 here, which counts as drift -- the safe direction, and the same thing the twin's `set -e`-free `if !` would do.
     """
     try:
         return subprocess.run(

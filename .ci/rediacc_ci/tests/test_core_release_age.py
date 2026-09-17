@@ -1,17 +1,10 @@
 """`rediacc_ci.core.release_age` against the live `release-age.sh`.
 
-THE TWIN IS LIVE HERE, NOT FROZEN. `.ci/scripts/lib/release-age.sh` is still
-sourced by `.ci/scripts/security/audit.sh:39` and
-`.ci/scripts/quality/check-go-deps.sh:43`, so the real file is what runs on both
-sides of every comparison below.
+THE TWIN IS LIVE HERE, NOT FROZEN. `.ci/scripts/lib/release-age.sh` is still sourced by `.ci/scripts/security/audit.sh:39` and `.ci/scripts/quality/check-go-deps.sh:43`, so the real file is what runs on both sides of every comparison below.
 
-BOTH SIDES DELEGATE TO THE SAME `scripts/lib/release-age.ts`, which is the point:
-this is a differential over a TRANSPORT, and any disagreement is a transport bug
-rather than a rounding argument. The rule itself is proved elsewhere
-(`scripts/lib/release-age.ts` is the only round-up in the tree).
+BOTH SIDES DELEGATE TO THE SAME `scripts/lib/release-age.ts`, which is the point: this is a differential over a TRANSPORT, and any disagreement is a transport bug rather than a rounding argument. The rule itself is proved elsewhere (`scripts/lib/release-age.ts` is the only round-up in the tree).
 
-FOUR FIXTURE TREES, because three of the interesting behaviours are unreachable
-against the real repository:
+FOUR FIXTURE TREES, because three of the interesting behaviours are unreachable against the real repository:
 
   `ft_ok`        `release-age.ts` present, `.npmrc` says 60 minutes  -> window 3600
   `ft_no_npmrc`  `release-age.ts` present, NO `.npmrc`               -> window 86400
@@ -20,16 +13,10 @@ against the real repository:
 
 THE REAL REPO CANNOT DISTINGUISH THE FALLBACK FROM THE ANSWER, and that is why
 `ft_no_npmrc` exists: this repo's `.npmrc` carries `minimum-release-age=1440`
-MINUTES, which is 86400 seconds, exactly the number
-`RELEASE_AGE_DEFAULT_WINDOW_SECONDS` falls back to. A test written against the
-real tree would pass whether the delegate answered or not, which is the shape of
-a control that cannot fail.
+MINUTES, which is 86400 seconds, exactly the number `RELEASE_AGE_DEFAULT_WINDOW_SECONDS` falls back to. A test written against the real tree would pass whether the delegate answered or not, which is the shape of a control that cannot fail.
 
-TWO DEFECTS OF THE TWIN ARE PINNED HERE AS FACTS ABOUT THE BASH, not reproduced
-in the port. Both are argued in `rediacc_ci.core.release_age`'s docstring, and
-the tests that hold them (`test_the_twins_runner_memo_never_persists` and
-`test_the_twin_lets_bash_arithmetic_decide_an_unvalidated_now`) drive the TWIN,
-so if either is ever fixed in `.ci/scripts/lib/` these go red and say so.
+TWO DEFECTS OF THE TWIN ARE PINNED HERE AS FACTS ABOUT THE BASH, not reproduced in the port. Both are argued in `rediacc_ci.core.release_age`'s docstring, and the tests that hold them (`test_the_twins_runner_memo_never_persists` and `test_the_twin_lets_bash_arithmetic_decide_an_unvalidated_now`) drive the TWIN, so if either is ever fixed in `.ci/scripts/lib/` these go red and say
+so.
 """
 
 import hashlib
@@ -158,8 +145,7 @@ def test_the_verbs_agree_byte_for_byte(case, argv):
 def test_the_verbs_agree_on_a_tree_whose_npmrc_says_sixty_minutes(ft_ok, case, argv):
     """The window is 3600 here, so every default-window answer MOVES.
 
-    Against the real tree the window is 86400, which is also the fallback, so
-    this fixture is what proves the delegate is being consulted at all.
+    Against the real tree the window is 86400, which is also the fallback, so this fixture is what proves the delegate is being consulted at all.
     """
     old, new = _both(argv, root=ft_ok)
     assert old == new, "case %s: %r != %r" % (case, old, new)
@@ -201,9 +187,7 @@ def test_an_unreachable_delegate_behaves_identically(ft_broken, case, argv):
 def test_the_unreachable_delegate_is_loud_and_fails_closed(ft_broken):
     """The two halves of the policy, asserted rather than assumed from equality.
 
-    A silent fallback here would make every version look eligible, or every one
-    deferred, depending on the sentinel chosen, and a freshness gate that quietly
-    stops deferring is exactly the shape this repo keeps getting caught by.
+    A silent fallback here would make every version look eligible, or every one deferred, depending on the sentinel chosen, and a freshness gate that quietly stops deferring is exactly the shape this repo keeps getting caught by.
     """
     old, new = _both(["deferred", "1756000000", "1900000000", "86400"], root=ft_broken)
     expected = (
@@ -251,8 +235,7 @@ def test_a_successful_lookup_is_memoised(ft_ok):
 def counting_node(tmp_path):
     """A `node` first on PATH that appends one line per invocation, then execs.
 
-    Counting the CHILD PROCESSES is the only way to see this defect: the twin's
-    verdicts are correct, and the only symptom is how many times it starts node.
+    Counting the CHILD PROCESSES is the only way to see this defect: the twin's verdicts are correct, and the only symptom is how many times it starts node.
     """
     real = shutil.which("node")
     if real is None:
@@ -272,10 +255,7 @@ def counting_node(tmp_path):
 def _counts(log: pathlib.Path) -> tuple[int, int]:
     """(total node starts, `--window-seconds` starts).
 
-    THE SECOND NUMBER IS NOT THE PROBE COUNT, and conflating them cost this test
-    its first run: the ladder's probe and the real window query are the SAME
-    command line, so exactly one of the `--window-seconds` starts is a genuine
-    query and the rest are probes.
+    THE SECOND NUMBER IS NOT THE PROBE COUNT, and conflating them cost this test its first run: the ladder's probe and the real window query are the SAME command line, so exactly one of the `--window-seconds` starts is a genuine query and the rest are probes.
     """
     lines = [line for line in log.read_text(encoding="utf-8").splitlines() if line]
     window = [line for line in lines if line.endswith("--window-seconds")]
@@ -287,9 +267,7 @@ def test_the_twins_runner_memo_never_persists(ft_ok, counting_node):
 
     `__release_age_resolve_runner` assigns `__RELEASE_AGE_RUNNER`, but it is only
     ever reached from inside `answer=$(__release_age_delegate ...)`, which is a
-    command SUBSTITUTION and therefore a subshell. The assignment dies with it,
-    so every delegate call re-runs the `--window-seconds` probe before doing the
-    real query. The file's own comment at `:140-147` diagnoses exactly this trap
+    command SUBSTITUTION and therefore a subshell. The assignment dies with it, so every delegate call re-runs the `--window-seconds` probe before doing the real query. The file's own comment at `:140-147` diagnoses exactly this trap
     for the caches while the runner falls into it, and `:95-97` claims the runner
     is chosen "ONCE per shell process".
 
@@ -363,9 +341,7 @@ NOW_SHAPES = [
 def test_the_twin_lets_bash_arithmetic_decide_an_unvalidated_now(case, now, expected):
     """A FACT ABOUT THE BASH, pinned so it cannot change unnoticed.
 
-    LATENT, NOT LIVE: both real call sites pass one argument
-    (`audit.sh:271`, `check-go-deps.sh:151`), so `now` is always `date -u +%s`
-    today. `.ci/scripts/lib/` is not this box's to edit, so the twin is not fixed
+    LATENT, NOT LIVE: both real call sites pass one argument (`audit.sh:271`, `check-go-deps.sh:151`), so `now` is always `date -u +%s` today. `.ci/scripts/lib/` is not this box's to edit, so the twin is not fixed
     here; the port refuses a non-integer `now` instead, which is the divergence.
     """
     rc, out, err = diff.bash_streams(
@@ -392,9 +368,7 @@ def test_the_port_refuses_a_now_it_cannot_read(ft_ok):
 def test_the_fast_rung_is_proven_before_it_is_adopted(ft_broken):
     """A node that cannot answer must fall THROUGH, not poison every verdict.
 
-    `ft_broken` has no `release-age.ts`, so the probe runs, fails, and the ladder
-    must land on the local `tsx` stub rather than on
-    `node --experimental-strip-types`.
+    `ft_broken` has no `release-age.ts`, so the probe runs, fails, and the ladder must land on the local `tsx` stub rather than on `node --experimental-strip-types`.
     """
     shim = ra.ReleaseAge(ft_broken)
     runner = shim.resolve_runner()
@@ -419,8 +393,7 @@ def _digest(rel: str) -> str:
 def _load_mutated(tmp_path, old: str, new: str, name: str):
     """Load a MUTATED COPY of the port from a tmpdir, under a fresh module name.
 
-    The real file is never opened for writing, so an aborted test cannot leave
-    the tree broken.
+    The real file is never opened for writing, so an aborted test cannot leave the tree broken.
     """
     source = pathlib.Path(paths.from_root(PORT)).read_text(encoding="utf-8")
     assert old in source, "the plant did not land: %r is not in the port" % old

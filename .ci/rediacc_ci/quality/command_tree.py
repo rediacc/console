@@ -1,12 +1,9 @@
 """The exported command tree must still match the live CLI.
 
 Ported from `.ci/scripts/quality/check-command-tree.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live until a differential
-ledger row exists over K distinct trees. Its gate header registers it as step
-"Command tree", needs node, selftest true.
+see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "Command tree", needs node, selftest true.
 
-WHY THIS EXISTS, carried whole from the twin because the list of dependants IS
-the argument:
+WHY THIS EXISTS, carried whole from the twin because the list of dependants IS the argument:
 
     Check that the exported command tree is up-to-date with the CLI.
 
@@ -40,48 +37,26 @@ the argument:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE COMPARISON IS OVER BYTES, NOT OVER PARSED JSON, and that is carried across
-deliberately even though the sibling port `regions_sync` does the opposite. The
-difference is what the file IS. `regions.json` is maintained by two humans and a
-reformat is not drift, so that gate compares parsed content. THIS file is written
-by ONE program, `export-command-tree.ts`, and re-run through the same program a
+THE COMPARISON IS OVER BYTES, NOT OVER PARSED JSON, and that is carried across deliberately even though the sibling port `regions_sync` does the opposite. The difference is what the file IS. `regions.json` is maintained by two humans and a reformat is not drift, so that gate compares parsed content. THIS file is written by ONE program, `export-command-tree.ts`, and re-run through
+the same program a
 minute later; if the bytes differ, the exporter's output differs, and that IS the
-finding. Comparing parsed JSON here would hide a serialization change that every
-downstream reader of the file would see.
+finding. Comparing parsed JSON here would hide a serialization change that every downstream reader of the file would see.
 
-THE BUILD IS PART OF THE SUBJECT, not a precondition to be skipped. The twin's
-comment says why: "The exporter imports the live CLI, which resolves
-@rediacc/shared and @rediacc/provisioning through their dist builds." A port that
-skipped `npm run build:packages` to be fast would compare the committed tree
-against an exporter reading a stale dist, which is the same fail-open the gate
-exists to close.
+THE BUILD IS PART OF THE SUBJECT, not a precondition to be skipped. The twin's comment says why: "The exporter imports the live CLI, which resolves @rediacc/shared and @rediacc/provisioning through their dist builds." A port that skipped `npm run build:packages` to be fast would compare the committed tree against an exporter reading a stale dist, which is the same fail-open the
+gate exists to close.
 
-BOTH SUBPROCESSES KEEP THE TWIN'S STREAM SPLIT. `npm run build:packages
->/dev/null` discards stdout and lets stderr through (which is why a run of this
-gate shows npm's `minimum-release-age` warnings and nothing else), and the same
+BOTH SUBPROCESSES KEEP THE TWIN'S STREAM SPLIT. `npm run build:packages >/dev/null` discards stdout and lets stderr through (which is why a run of this gate shows npm's `minimum-release-age` warnings and nothing else), and the same
 for `npx tsx ... >/dev/null`. Reproduced exactly: stdout to DEVNULL, stderr
-inherited. Capturing stderr instead would silence the one channel that says why a
-build failed.
+inherited. Capturing stderr instead would silence the one channel that says why a build failed.
 
-THE DIFF IS PRODUCED BY `diff`, NOT BY difflib. The twin ends with
-`diff "$COMMITTED" "$TEMP" | head -40 | sed 's/^/    /'`, and difflib's formats
-(`unified_diff`, `ndiff`, `context_diff`) all render the same fact differently.
-The shadow comparator can be taught to read those indented lines as findings
-(`--finding-re`), and the moment it is, a difflib rendering makes the port
-disagree with the twin about every line of a diff they both computed correctly.
-`head -40` and the four-space `sed` indent are carried as written.
+THE DIFF IS PRODUCED BY `diff`, NOT BY difflib. The twin ends with `diff "$COMMITTED" "$TEMP" | head -40 | sed 's/^/ /'`, and difflib's formats (`unified_diff`, `ndiff`, `context_diff`) all render the same fact differently. The shadow comparator can be taught to read those indented lines as findings (`--finding-re`), and the moment it is, a difflib rendering makes the port disagree
+with the twin about every line of a diff they both computed correctly. `head -40` and the four-space `sed` indent are carried as written.
 
-`mktemp -d` AND ITS `trap 'rm -rf "$TEMP_DIR"' EXIT` become
-`tempfile.TemporaryDirectory()`, which is the same guarantee with the same
-lifetime and one fewer way to leak a directory when the script exits early.
+`mktemp -d` AND ITS `trap 'rm -rf "$TEMP_DIR"' EXIT` become `tempfile.TemporaryDirectory()`, which is the same guarantee with the same lifetime and one fewer way to leak a directory when the script exits early.
 
-THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the
-one archaeology token this file would otherwise drop. `log_step`, `log_error`,
-`log_info` and `get_repo_root` are the gate's only dependency on the shared bash
-library, which is what makes the twin cheap to retire.
+THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the one archaeology token this file would otherwise drop. `log_step`, `log_error`, `log_info` and `get_repo_root` are the gate's only dependency on the shared bash library, which is what makes the twin cheap to retire.
 
-THREE PLACES THIS IS DELIBERATELY STRONGER, all of them "the gate ran and
-verified nothing". None can fire on a tree where the exporter works, so none is
+THREE PLACES THIS IS DELIBERATELY STRONGER, all of them "the gate ran and verified nothing". None can fire on a tree where the exporter works, so none is
 reachable from the differential ledger; they are stated here so the divergence is
 on the record.
 
@@ -105,8 +80,7 @@ on the record.
      whatever npm last said. The port keeps the exit code and adds one line
      naming which of the two commands failed.
 
-WHAT IT CANNOT SEE: whether the tree is CORRECT, only whether it is CURRENT. A
-CLI whose Commander definitions are wrong exports a tree that matches itself.
+WHAT IT CANNOT SEE: whether the tree is CORRECT, only whether it is CURRENT. A CLI whose Commander definitions are wrong exports a tree that matches itself.
 """
 
 import json
@@ -137,9 +111,7 @@ DIFF_INDENT = "    "
 def _run(argv: list[str], cwd: pathlib.Path) -> int:
     """Run a child with stdout DISCARDED and stderr INHERITED, as the twin does.
 
-    `>/dev/null` on the twin's command line is stdout only. Stderr is the channel
-    that says why a build failed, and capturing it here would mean the gate ate
-    the only useful output on its worst day.
+    `>/dev/null` on the twin's command line is stdout only. Stderr is the channel that says why a build failed, and capturing it here would mean the gate ate the only useful output on its worst day.
     """
     completed = subprocess.run(
         argv,
@@ -271,9 +243,7 @@ def main(argv: list[str] | None = None) -> int:
 def _shims(bin_dir: pathlib.Path, build_status: int, export_body: str) -> None:
     """Write the `npm` and `npx` the gate will find on PATH.
 
-    FILES, not Python mocks: the subject resolves both through PATH exactly as
-    the bash twin does, and the differential drives the twin with these same
-    shims. A mock inside this process would prove nothing about that resolution.
+    FILES, not Python mocks: the subject resolves both through PATH exactly as the bash twin does, and the differential drives the twin with these same shims. A mock inside this process would prove nothing about that resolution.
     """
     bin_dir.mkdir(parents=True, exist_ok=True)
     npm = bin_dir / "npm"

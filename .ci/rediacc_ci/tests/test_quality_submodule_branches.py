@@ -1,15 +1,8 @@
 """`rediacc_ci.quality.submodule_branches` against the shell and jq it replaces.
 
-WHAT THIS FILE COVERS AND WHAT IT MOSTLY CANNOT. Most gh call sites cannot be
-exercised locally, so the parts that DECIDE a merge -- the low-effort-reply
-normaliser, the PR-link matcher, and the two jq oracles -- are exercised as pure
-functions against the shapes the GitHub API actually returns. The branch/pointer
-logic is covered end to end by
-`.ci/shadow/w7p2-submodule-branches.observations.jsonl` over five distinct
-trees. `console_pr_body` is the one exception: it takes a `gh` stub on `PATH`
-directly, added 2026-09-10 alongside the fix that made it distinguish a fetch
-failure from a genuinely empty description (they used to be indistinguishable,
-silently disabling the submodule-PR-link check on a transient API failure).
+WHAT THIS FILE COVERS AND WHAT IT MOSTLY CANNOT. Most gh call sites cannot be exercised locally, so the parts that DECIDE a merge -- the low-effort-reply normaliser, the PR-link matcher, and the two jq oracles -- are exercised as pure functions against the shapes the GitHub API actually returns. The branch/pointer logic is covered end to end by
+`.ci/shadow/w7p2-submodule-branches.observations.jsonl` over five distinct trees. `console_pr_body` is the one exception: it takes a `gh` stub on `PATH` directly, added 2026-09-10 alongside the fix that made it distinguish a fetch failure from a genuinely empty description (they used to be indistinguishable, silently disabling the submodule-PR-link check on a transient API
+failure).
 """
 
 import json
@@ -110,8 +103,7 @@ REPORT_CASES = [
 def test_report_oracle_matches_jq(comments: list[dict], verdict: str) -> None:
     """The port's oracle and the twin's jq expression agree.
 
-    The jq is lifted from the twin unchanged, so a divergence here is a
-    divergence in the port and not in a paraphrase of it.
+    The jq is lifted from the twin unchanged, so a divergence here is a divergence in the port and not in a paraphrase of it.
     """
     program = (
         '([.[] | select(.body | startswith("**Claude finished"))] '
@@ -154,9 +146,7 @@ def test_unreplied_oracle(comments: list[dict], count: int) -> None:
 def test_detached_head_never_reads_as_a_branch(tmp_path: pathlib.Path) -> None:
     """`rev-parse --abbrev-ref HEAD` SUCCEEDS on a detached checkout.
 
-    It prints the literal "HEAD", so a `|| echo main` fallback never fires. Two
-    coincidentally-detached checkouts would then compare EQUAL and report a
-    branch match that is not real.
+    It prints the literal "HEAD", so a `|| echo main` fallback never fires. Two coincidentally-detached checkouts would then compare EQUAL and report a branch match that is not real.
     """
     subprocess.run(["git", "init", "-q", "-b", "feature-x"], cwd=str(tmp_path), check=True)
     subprocess.run(
@@ -184,8 +174,7 @@ def test_console_pr_body_distinguishes_fetch_failure_from_empty_body(
 ) -> None:
     """FIXED 2026-09-10: a failed `gh pr view` fetch must be reported as a
     failure (ok=False), not silently returned as the same "" an empty-but-real
-    description would produce. Before the fix, both cases were indistinguishable
-    and a transient API failure silently disabled the submodule-PR-link check.
+    description would produce. Before the fix, both cases were indistinguishable and a transient API failure silently disabled the submodule-PR-link check.
     """
     fake_gh = tmp_path / "gh"
     fake_gh.write_text(

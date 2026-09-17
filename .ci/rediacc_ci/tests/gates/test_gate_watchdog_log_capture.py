@@ -2,31 +2,19 @@
 
 Failed-step log capture in `.ci/scripts/ci/watchdog-monitor.cjs`.
 
-WHAT BROKE. The watchdog auto-retries failures, and a rerun makes attempt 1's job
-logs unreachable. Nothing persisted them: fetchJobLogs kept an 80-line excerpt in
-an in-process Map that dies with the generation, and there was no upload-artifact
-anywhere in the watchdog path. So the retry destroyed the evidence for the only
-question worth asking afterwards -- was that a real break or a flake? -- and it
-destroyed it as a direct consequence of the action taken in response to it.
+WHAT BROKE. The watchdog auto-retries failures, and a rerun makes attempt 1's job logs unreachable. Nothing persisted them: fetchJobLogs kept an 80-line excerpt in an in-process Map that dies with the generation, and there was no upload-artifact anywhere in the watchdog path. So the retry destroyed the evidence for the only question worth asking afterwards -- was that a real break
+or a flake? -- and it destroyed it as a direct consequence of the action taken in response to it.
 
-WHY THIS IS NOT A UNIT TEST. The claim being tested is an ORDERING claim across
-the whole monitor: "the log is on disk BEFORE anything reruns the job". A
-pure-function test cannot see that. So this drives the REAL monitor() with a
-mocked GitHub client and asserts on the filesystem afterwards.
+WHY THIS IS NOT A UNIT TEST. The claim being tested is an ORDERING claim across the whole monitor: "the log is on disk BEFORE anything reruns the job". A pure-function test cannot see that. So this drives the REAL monitor() with a mocked GitHub client and asserts on the filesystem afterwards.
 
 Both directions matter:
   - Capture must happen on the retry path (or the evidence is still lost).
   - Capture must happen on the fail-fast path too (that log is the one a human
     reads to fix the break).
 
-ONE DELIBERATE DIFFERENCE FROM THE TWIN, and it is about parallelism rather than
-about the subject. The twin's `test_captured_content_*` and
-`test_capture_filename_*` READ `$WORK/retry`, a directory the EARLIER
+ONE DELIBERATE DIFFERENCE FROM THE TWIN, and it is about parallelism rather than about the subject. The twin's `test_captured_content_*` and `test_capture_filename_*` READ `$WORK/retry`, a directory the EARLIER
 `test_capture_before_the_rerun` produced; run out of order, or in isolation, they
-find nothing and assert on an empty path. pytest does not promise that ordering
-once `-n 8 --dist loadgroup` distributes items, so each case here mints its own
-capture directory under `tmp_path` via `capture_retry()`. Same claim, no
-inter-test coupling.
+find nothing and assert on an empty path. pytest does not promise that ordering once `-n 8 --dist loadgroup` distributes items, so each case here mints its own capture directory under `tmp_path` via `capture_retry()`. Same claim, no inter-test coupling.
 """
 
 import pathlib
@@ -179,8 +167,7 @@ def captured_files(tmp_path: pathlib.Path, subdir: str) -> int:
 def capture_retry(gate, tmp_path: pathlib.Path) -> pathlib.Path:
     """Drive the retry path once and hand back the directory it captured into.
 
-    Its own directory per test, so the two cases that inspect the captured FILE
-    do not depend on another test having run first. See the module docstring.
+    Its own directory per test, so the two cases that inspect the captured FILE do not depend on another test having run first. See the module docstring.
     """
     trace = run_monitor(gate, tmp_path, RETRY_JOB, "completed", "retry")
     if "rerun" not in trace:
@@ -235,8 +222,7 @@ def test_capture_before_the_rerun(gate, tmp_path):
 
 def test_captured_content_is_the_whole_log_not_the_excerpt(gate, tmp_path):
     """The excerpt is tuned for the classifier's context window and stops at the
-    first error block. A human debugging afterwards wants everything, and this is
-    the last moment it exists -- so the file must contain the post-error cleanup
+    first error block. A human debugging afterwards wants everything, and this is the last moment it exists -- so the file must contain the post-error cleanup
     lines the 80-line excerpt deliberately cuts."""
     body = capture_retry(gate, tmp_path).read_text(encoding="utf-8")
     gate.assert_contains(
@@ -273,13 +259,9 @@ def test_no_capture_dir_means_no_capture_and_no_crash(gate, tmp_path):
 
 def test_a_scheduled_run_records_the_failure_and_keeps_monitoring(gate, tmp_path):
     """THE NIGHTLY PATH. A scheduled run must never be cancelled -- cancelling
-    rewrites its conclusion from `failure` to `cancelled`, which is what hid
-    twelve consecutive red nights.
+    rewrites its conclusion from `failure` to `cancelled`, which is what hid twelve consecutive red nights.
 
-    The half that is easy to get wrong is "keeps monitoring". If the exemption
-    merely suppressed the cancel and returned, the watchdog chain would END at
-    the first failing job, the nightly would run unwatched from there, and no
-    later failure would get its log captured or its name into a roster.
+    The half that is easy to get wrong is "keeps monitoring". If the exemption merely suppressed the cancel and returned, the watchdog chain would END at the first failing job, the nightly would run unwatched from there, and no later failure would get its log captured or its name into a roster.
     """
     trace = run_monitor(gate, tmp_path, FAST_FAIL_JOB, "in_progress", "sched", "schedule", "1")
     gate.assert_not_contains(trace, "force-cancel", "a scheduled run must NOT be force-cancelled")
@@ -319,15 +301,10 @@ def test_a_stuck_job_on_a_scheduled_run_is_never_retried(gate, tmp_path):
     """THE REVIEW FINDING (PR #541, high severity), and a regression from the
     forceCancel-returns-bool refactor two commits earlier.
 
-    Branch 0 exists to say: a STUCK cancellation never goes near AI or retry,
-    because "the job hung once, retrying would just hang again". It ended with
+    Branch 0 exists to say: a STUCK cancellation never goes near AI or retry, because "the job hung once, retrying would just hang again". It ended with
     `if (await forceCancel(msg)) return;`. Once forceCancel began returning FALSE
-    on a cancel-exempt run, that return stopped firing on the nightly and
-    execution fell through into branches 1-5. Branch 5 then received
-    `isFailure: false` -- correct, it IS a cancellation -- and the
-    "non-stuck cancellation is a runner/infra flake" path resolved it to
-    retry:true. So the one run type that must never burn a pointless hour would
-    have re-run a job that had already hung for STUCK_THRESHOLD_MIN.
+    on a cancel-exempt run, that return stopped firing on the nightly and execution fell through into branches 1-5. Branch 5 then received `isFailure: false` -- correct, it IS a cancellation -- and the "non-stuck cancellation is a runner/infra flake" path resolved it to retry:true. So the one run type that must never burn a pointless hour would have re-run a job that had already
+    hung for STUCK_THRESHOLD_MIN.
     """
     trace = run_monitor(
         gate, tmp_path, RETRY_JOB, "completed", "stuck", "schedule", "1", "cancelled", "90"

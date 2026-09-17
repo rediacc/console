@@ -28,16 +28,8 @@ WHAT EACH GROUP OF CASES GUARDS.
   Windows         Never native, and the refusal must name launchers that exist
                   and that really re-enter WSL.
 
-THE DEFECT THE MODULE IS SHAPED BY, and the state of it as measured today.
-`toolchain.sh` used to hardcode the literal `linux` into both download URLs while
-deriving only the arch from `uname -m`, so an arm64 Mac downloaded a Linux
-binary, VERIFIED it against the ARM64 checksum, chmod +x'd it, and failed much
-later with "cannot execute binary file". Its sibling was a bare `sha256sum`,
-which does not exist on macOS and whose absence surfaced as a checksum MISMATCH
-that never happened. Both are FIXED in the live file (`_toolchain_os` at :303,
-`_toolchain_sha256sum` at :282), so the cases at the bottom of this file pin the
-fix rather than reproduce the bug -- with a control proving each pattern would
-still catch a regression.
+THE DEFECT THE MODULE IS SHAPED BY, and the state of it as measured today. `toolchain.sh` used to hardcode the literal `linux` into both download URLs while deriving only the arch from `uname -m`, so an arm64 Mac downloaded a Linux binary, VERIFIED it against the ARM64 checksum, chmod +x'd it, and failed much later with "cannot execute binary file". Its sibling was a bare
+`sha256sum`, which does not exist on macOS and whose absence surfaced as a checksum MISMATCH that never happened. Both are FIXED in the live file (`_toolchain_os` at :303, `_toolchain_sha256sum` at :282), so the cases at the bottom of this file pin the fix rather than reproduce the bug -- with a control proving each pattern would still catch a regression.
 """
 
 import hashlib
@@ -223,9 +215,7 @@ def test_the_uname_corpus_carries_no_bare_windows() -> None:
     """CONTROL for the corpus split, so the two lists cannot silently merge.
 
     `uname -s` cannot print `Windows`; only a native CPython says that. If the
-    two corpora are ever unified, the frozen `case` differentials would be asked
-    about an input no shell produces and would fail for the test's reason rather
-    than the module's -- which is exactly how they DID fail once.
+    two corpora are ever unified, the frozen `case` differentials would be asked about an input no shell produces and would fail for the test's reason rather than the module's -- which is exactly how they DID fail once.
     """
     assert "Windows" not in UNAME_SYSTEMS
     assert "Windows" in SYSTEMS
@@ -235,9 +225,7 @@ def test_the_uname_corpus_carries_no_bare_windows() -> None:
 def test_windows_shells_all_land_on_windows() -> None:
     """Git Bash, MSYS2 and Cygwin are one answer, matched by PREFIX.
 
-    The real strings carry a version (`MINGW64_NT-10.0-22631`), so an equality
-    test against `MINGW64` would have silently failed on a newer build of the
-    same shell.
+    The real strings carry a version (`MINGW64_NT-10.0-22631`), so an equality test against `MINGW64` would have silently failed on a newer build of the same shell.
     """
     seen = {plat.os_name(s) for s in SYSTEMS if s not in ("Linux", "Darwin")}
     assert seen == {plat.OS_WINDOWS}
@@ -246,8 +234,7 @@ def test_windows_shells_all_land_on_windows() -> None:
 def test_wsl_reports_as_linux_not_as_a_fourth_os() -> None:
     """Every artefact WSL downloads is the Linux one, so the OS answer is linux.
 
-    Driven from the real host: whatever this machine is, `os_name()` and the
-    WSL question must be independent of each other.
+    Driven from the real host: whatever this machine is, `os_name()` and the WSL question must be independent of each other.
     """
     assert plat.os_name("Linux") == plat.OS_LINUX
     assert plat.detect_wsl().is_wsl in (True, False)
@@ -287,12 +274,8 @@ def test_machine_key_folds_both_spellings(machine: str) -> None:
 def test_no_two_schemes_are_redundant() -> None:
     """A single "normalized arch" would be wrong for two of the three upstreams.
 
-    Stated PAIRWISE and not as "all three answers differ", which is what the
-    first draft asserted and which is false: `goarch` and `node` both spell
-    aarch64 as `arm64` and diverge only on x86_64 (`amd64` vs `x64`). The real
-    property is that no row can be deleted -- every pair of schemes disagrees
-    somewhere -- and that is what makes collapsing the table a behaviour change
-    rather than a tidy-up.
+    Stated PAIRWISE and not as "all three answers differ", which is what the first draft asserted and which is false: `goarch` and `node` both spell aarch64 as `arm64` and diverge only on x86_64 (`amd64` vs `x64`). The real property is that no row can be deleted -- every pair of schemes disagrees somewhere -- and that is what makes collapsing the table a behaviour change rather
+    than a tidy-up.
     """
     keys = sorted(plat.MACHINE_ALIASES.values())
     schemes = sorted(plat.ARCH_NAMES)
@@ -306,8 +289,7 @@ def test_no_two_schemes_are_redundant() -> None:
 def test_os_for_sea_matches_the_frozen_artefact_naming(system: str) -> None:
     """`linux | mac | win` is a SECOND OS spelling and it is not derivable.
 
-    No rule turns `darwin` into `mac`, so the table carries both and this
-    compares the `sea` row against the case block that names the executables.
+    No rule turns `darwin` into `mac`, so the table carries both and this compares the `sea` row against the case block that names the executables.
     """
     rc, out, err = _bash(FROZEN_OS_SEA + "\nfrozen_os_sea\n", system=system)
     assert rc == 0, err
@@ -351,10 +333,7 @@ def test_exe_suffix_is_empty_off_windows_and_set_on_it() -> None:
 def test_the_arch_differential_can_fail() -> None:
     """THE PLANTED DEFECT for the differential above.
 
-    Feed the frozen shfmt `case` the answer from the WRONG scheme and it must
-    disagree. Without this, `test_arch_for_matches_the_frozen_case...` proves
-    only that two things agree, not that the comparison can tell them apart --
-    and a table that had collapsed to one spelling would sail through it.
+    Feed the frozen shfmt `case` the answer from the WRONG scheme and it must disagree. Without this, `test_arch_for_matches_the_frozen_case...` proves only that two things agree, not that the comparison can tell them apart -- and a table that had collapsed to one spelling would sail through it.
     """
     rc, out, err = _bash(FROZEN_ARCH_GOARCH + "\nfrozen_arch\n", machine="x86_64")
     assert rc == 0, err
@@ -366,8 +345,7 @@ def test_the_arch_differential_can_fail() -> None:
 def test_the_os_differential_can_fail() -> None:
     """The same, for the literal `linux` the original defect hardcoded.
 
-    `_toolchain_os` on a Mac must answer something OTHER than `linux`, or the
-    differential would pass against the very bug it exists to keep out.
+    `_toolchain_os` on a Mac must answer something OTHER than `linux`, or the differential would pass against the very bug it exists to keep out.
     """
     rc, out, err = _bash(FROZEN_OS + "\n_toolchain_os\n", system="Darwin")
     assert rc == 0, err
@@ -401,8 +379,7 @@ def test_arch_for_control_a_known_scheme_answers() -> None:
 def test_uv_target_matches_the_frozen_bootstrap(system: str, machine: str) -> None:
     """Both fields, over the whole cross product.
 
-    The second field completes `UV_SHA256_<suffix>`, so a divergence here is a
-    download verified against another platform's hash, which is worse than a 404.
+    The second field completes `UV_SHA256_<suffix>`, so a divergence here is a download verified against another platform's hash, which is worse than a 404.
     """
     rc, out, err = _bash(FROZEN_UV_TARGET + "\nuv_target\n", system=system, machine=machine)
     assert rc == 0, err
@@ -454,8 +431,7 @@ PLAIN_OSRELEASE = "6.1.0-28-amd64\n"
 def _plant(tmp_path, version: str | None, osrelease: str | None):
     """Build a fake `/` carrying the two files `detect_wsl` reads.
 
-    A `None` means the file is ABSENT, which is the macOS case and a different
-    thing from a file whose contents do not match.
+    A `None` means the file is ABSENT, which is the macOS case and a different thing from a file whose contents do not match.
     """
     root = tmp_path / "fakeroot"
     (root / "proc" / "sys" / "kernel").mkdir(parents=True)
@@ -469,10 +445,7 @@ def _plant(tmp_path, version: str | None, osrelease: str | None):
 def test_the_wsl_fixtures_are_actually_discriminating() -> None:
     """THE PLANTED DEFECT for the WSL cases: the fixtures must not all match.
 
-    Asserted against the marker list itself rather than by eye. If someone
-    "fixes" PLAIN_VERSION_BANNER to a string that happens to contain `wsl`, or
-    widens WSL_MARKERS to something every kernel carries, every case below would
-    pass while detecting nothing.
+    Asserted against the marker list itself rather than by eye. If someone "fixes" PLAIN_VERSION_BANNER to a string that happens to contain `wsl`, or widens WSL_MARKERS to something every kernel carries, every case below would pass while detecting nothing.
     """
     lowered = {
         "wsl-version": WSL_VERSION_BANNER.lower(),
@@ -499,8 +472,7 @@ def test_wsl_is_detected_from_proc_version(tmp_path) -> None:
 def test_wsl_is_detected_from_osrelease_alone(tmp_path) -> None:
     """The kernel whose banner does NOT say Microsoft but whose release does.
 
-    Reading only /proc/version would answer "not WSL" here, which is why two
-    files are read and why the detector reports which one fired.
+    Reading only /proc/version would answer "not WSL" here, which is why two files are read and why the detector reports which one fired.
     """
     root = _plant(tmp_path, PLAIN_VERSION_BANNER, WSL_OSRELEASE)
     evidence = plat.detect_wsl(root, env={})
@@ -533,9 +505,7 @@ def test_absent_proc_is_not_wsl_and_does_not_raise(tmp_path) -> None:
 def test_an_environment_variable_alone_is_not_evidence(tmp_path) -> None:
     """The anti-guess assertion, and the reason this is not `if WSL_DISTRO_NAME`.
 
-    That variable is inherited by everything the shell spawns: it survives an
-    `ssh` from a WSL host into a plain Linux VM, and `wsl.exe -- env` carries it
-    the other way. So it is RECORDED, and the verdict is /proc's alone.
+    That variable is inherited by everything the shell spawns: it survives an `ssh` from a WSL host into a plain Linux VM, and `wsl.exe -- env` carries it the other way. So it is RECORDED, and the verdict is /proc's alone.
     """
     root = _plant(tmp_path, PLAIN_VERSION_BANNER, PLAIN_OSRELEASE)
     evidence = plat.detect_wsl(root, env={"WSL_DISTRO_NAME": "Ubuntu", "WSL_INTEROP": "/run/x"})
@@ -556,8 +526,7 @@ def test_env_signals_control_they_are_empty_when_unset(tmp_path) -> None:
 def test_detection_agrees_with_the_live_bash_on_this_host() -> None:
     """The differential against what `.ci/lib/setup.sh:588` really asks.
 
-    Host-independent by construction: it asserts AGREEMENT, not WSL-ness, so it
-    is a real case on a WSL machine, on a plain Linux runner and on a Mac.
+    Host-independent by construction: it asserts AGREEMENT, not WSL-ness, so it is a real case on a WSL machine, on a plain Linux runner and on a Mac.
     """
     rc, _, _ = diff.bash_streams("grep -qi microsoft /proc/version 2>/dev/null", env=diff.env_for())
     fired = ("proc/version", "microsoft") in plat.detect_wsl().signals
@@ -668,9 +637,7 @@ def _url_lines() -> list[str]:
 def test_the_download_urls_derive_their_os() -> None:
     """Both asset URLs interpolate ${os}; neither carries a literal platform.
 
-    This is the defect in its original form: a hardcoded `linux` in a URL whose
-    arch WAS derived, which on an arm64 Mac downloaded a Linux binary that then
-    passed its checksum. `os_name()` is what a caller uses instead.
+    This is the defect in its original form: a hardcoded `linux` in a URL whose arch WAS derived, which on an arm64 Mac downloaded a Linux binary that then passed its checksum. `os_name()` is what a caller uses instead.
     """
     lines = _url_lines()
     assert len(lines) >= 2, "no url= assignments found; the file has changed shape"
@@ -694,10 +661,7 @@ SHA_SHIM_OPEN = "_toolchain_sha256sum() {"
 def _sha256_call_sites() -> list[str]:
     """Every live `sha256sum` line in toolchain.sh OUTSIDE the portable shim.
 
-    The shim's own body is excluded, and that exclusion is the whole subtlety:
-    `sha256sum "$@"` inside `_toolchain_sha256sum` is the CORRECT line -- it is
-    the GNU rung of the ladder, guarded by the `command -v` above it. The first
-    draft of this case flagged it, which is a scanner that cannot tell the fix
+    The shim's own body is excluded, and that exclusion is the whole subtlety: `sha256sum "$@"` inside `_toolchain_sha256sum` is the CORRECT line -- it is the GNU rung of the ladder, guarded by the `command -v` above it. The first draft of this case flagged it, which is a scanner that cannot tell the fix
     from the defect. Comment lines are dropped for the same reason
     `check-toolchain-pins.sh` drops them: prose about a defect is not the defect.
     """

@@ -1,48 +1,21 @@
 """Port of `.ci/scripts/test/gates/test-breakpoint-teardown.sh`.
 
-Proves that breakpoint teardown kills what it started and NOTHING ELSE, and that it is
-safe to run again.
+Proves that breakpoint teardown kills what it started and NOTHING ELSE, and that it is safe to run again.
 
-THE BUG CLASS THIS TARGETS, BY NAME. The deleted `.github/actions/tmate` action tore
-down with a pattern-kill over `tmate.*new-session` and an `rm -f` glob under `/tmp`.
-Both reach outside their own job. On a runner hosting two concurrent jobs, the first to
-finish killed the other's live session and deleted its logs, and the victim job saw an
-unexplained disconnect. A pattern-kill cannot tell "my process" from "a process that
-looks like mine", so `.ci/breakpoint/lib/breakpoint-common.sh` records PIDs and kills
-only those. That is a property no amount of reading proves, so this file starts REAL
-processes: some recorded in the state dir, one deliberately not, and then checks which
-ones survive.
+THE BUG CLASS THIS TARGETS, BY NAME. The deleted `.github/actions/tmate` action tore down with a pattern-kill over `tmate.*new-session` and an `rm -f` glob under `/tmp`. Both reach outside their own job. On a runner hosting two concurrent jobs, the first to finish killed the other's live session and deleted its logs, and the victim job saw an unexplained disconnect. A pattern-kill
+cannot tell "my process" from "a process that looks like mine", so `.ci/breakpoint/lib/breakpoint-common.sh` records PIDs and kills only those. That is a property no amount of reading proves, so this file starts REAL processes: some recorded in the state dir, one deliberately not, and then checks which ones survive.
 
-Idempotence gets the same treatment. Teardown runs from `if: always()` and again from
-the nightly sweeper, so "already clean" is the NORMAL second call. A second run that
-exits 1 turns every swept session into a red workflow, and a red-by-default gate is one
-nobody reads.
+Idempotence gets the same treatment. Teardown runs from `if: always()` and again from the nightly sweeper, so "already clean" is the NORMAL second call. A second run that exits 1 turns every swept session into a red workflow, and a red-by-default gate is one nobody reads.
 
-`HOME` IS A TEMP DIR IN EVERY INVOCATION, deliberately and not for tidiness:
-`stop-breakpoint.sh` ends by removing `~/.cloudflared/*.json`, which on a developer
-laptop would take out real cloudflared credentials. This file must not be the thing
-that demonstrates that.
+`HOME` IS A TEMP DIR IN EVERY INVOCATION, deliberately and not for tidiness: `stop-breakpoint.sh` ends by removing `~/.cloudflared/*.json`, which on a developer laptop would take out real cloudflared credentials. This file must not be the thing that demonstrates that.
 
-WHAT THE PORT RESPELLS. The twin needs a `bp_alive` helper because a killed child of
-the test's own shell is a ZOMBIE until it is reaped and `kill -0` succeeds on a zombie,
-so the naive liveness test reports every successfully killed process as still running.
-`Popen.poll()` reaps as it reports, so the zombie window cannot exist here and the
-helper is not reproduced. The BOUNDED wait is reproduced, for the twin's stated reason:
-an unbounded wait on a teardown that failed to kill hangs the suite instead of failing
-it.
+WHAT THE PORT RESPELLS. The twin needs a `bp_alive` helper because a killed child of the test's own shell is a ZOMBIE until it is reaped and `kill -0` succeeds on a zombie, so the naive liveness test reports every successfully killed process as still running. `Popen.poll()` reaps as it reports, so the zombie window cannot exist here and the helper is not reproduced. The BOUNDED
+wait is reproduced, for the twin's stated reason: an unbounded wait on a teardown that failed to kill hangs the suite instead of failing it.
 
-WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md`
-records six `test-breakpoint-*.sh` subjects as unportable by any agent under the
-standard brief and NOT on merit, because plant-verifying one means temporarily writing
-under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The
-brief's two ways out are to hand one batch owner that path explicitly or to exclude
-them in the derivation with the reason recorded, and it adds "Do not silently drop them
-a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
+WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md` records six `test-breakpoint-*.sh` subjects as unportable by any agent under the standard brief and NOT on merit, because plant-verifying one means temporarily writing under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The brief's two ways out are to hand one batch owner
+that path explicitly or to exclude them in the derivation with the reason recorded, and it adds "Do not silently drop them a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
 
-`xdist_group` IS DECLARED, and this is the case the brief means. These cases spawn real
-processes and assert which of them are alive afterwards, and the subject under test is
-a script whose entire job is killing things. Running two copies concurrently is not a
-risk worth taking on the reasoning that each only kills what it recorded.
+`xdist_group` IS DECLARED, and this is the case the brief means. These cases spawn real processes and assert which of them are alive afterwards, and the subject under test is a script whose entire job is killing things. Running two copies concurrently is not a risk worth taking on the reasoning that each only kills what it recorded.
 """
 
 import os
@@ -72,10 +45,7 @@ FIXTURE_LIFETIME_S = "300"
 def start_sleeper() -> subprocess.Popen:
     """A long-lived background child whose streams go nowhere.
 
-    The discarded stdout is load-bearing in the twin, where the helper is called through
-    command substitution and a child inheriting that pipe blocks the caller for the full
-    lifetime. It is kept here because a child holding a pipe nobody drains is a hazard
-    in any language, not because Python needs it.
+    The discarded stdout is load-bearing in the twin, where the helper is called through command substitution and a child inheriting that pipe blocks the caller for the full lifetime. It is kept here because a child holding a pipe nobody drains is a hazard in any language, not because Python needs it.
     """
     return subprocess.Popen(
         ["sleep", FIXTURE_LIFETIME_S],
@@ -169,8 +139,7 @@ def test_kills_recorded_pids(gate):
 
 def test_second_teardown_is_clean(gate):
     """`GITHUB_RUN_ID` is set for BOTH calls so the second one still has a derivable
-    identity and walks the whole script (the sweeper's shape) rather than taking the
-    early "nothing to do" exit. That is the call that has to be green, and the early
+    identity and walks the whole script (the sweeper's shape) rather than taking the early "nothing to do" exit. That is the call that has to be green, and the early
     exit would hide it."""
     with harness.temp_dir() as tmp:
         state = prepared(tmp)

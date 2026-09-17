@@ -1,23 +1,13 @@
 """`rediacc_ci.quality.probe_parity` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-probe-parity.sh` over a git
-fixture with stdout and stderr captured SEPARATELY, and its bytes are compared
-against the port's. Same recipe as the committed ledger,
-`.ci/shadow/w7p2-probe-parity.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-probe-parity.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-probe-parity.observations.jsonl`.
 
-WHY A FIXTURE REPOSITORY AND NOT THE REAL TREE. The twin resolves its root from
-its OWN location (`get_repo_root` walks three directories up from
-`.ci/scripts/lib`), so both implementations have to live inside whatever tree the
+WHY A FIXTURE REPOSITORY AND NOT THE REAL TREE. The twin resolves its root from its OWN location (`get_repo_root` walks three directories up from `.ci/scripts/lib`), so both implementations have to live inside whatever tree the
 case wants judged. That is also the recording recipe's constraint: the comparator
 refuses a command reading outside the recorded root.
 
-THE CASES ARE BOTH DIRECTIONS ON PURPOSE. A gate that only ever fires is as
-useless as one that never does, and this one is a SET COVERAGE question with two
-symmetrical ways to be wrong: forgive everything (report parity always) or
-forgive nothing (report every verb missing). So the corpus carries a clean pair,
-a gap, the exemption being honoured, the exemption NOT being over-applied, and
-both empty-extraction controls, which are the branches the twin's missing
-`|| true` made unreachable until 96355d3b5 on 2026-09-06.
+THE CASES ARE BOTH DIRECTIONS ON PURPOSE. A gate that only ever fires is as useless as one that never does, and this one is a SET COVERAGE question with two symmetrical ways to be wrong: forgive everything (report parity always) or forgive nothing (report every verb missing). So the corpus carries a clean pair, a gap, the exemption being honoured, the exemption NOT being
+over-applied, and both empty-extraction controls, which are the branches the twin's missing `|| true` made unreachable until 96355d3b5 on 2026-09-06.
 """
 
 import pathlib
@@ -36,9 +26,7 @@ MODULE = "probe_parity"
 def build(tmp_path: pathlib.Path, consumer: str | None, probe: str | None) -> pathlib.Path:
     """A git specimen holding BOTH implementations plus the two subject files.
 
-    `None` means the file is ABSENT, which is the `require_input` branch. It is a
-    distinct case from "present but empty": one is a missing input and the other
-    is a collapsed extraction, and the twin says different things about them.
+    `None` means the file is ABSENT, which is the `require_input` branch. It is a distinct case from "present but empty": one is a missing input and the other is a collapsed extraction, and the twin says different things about them.
     """
     src = pathlib.Path(diff.repo())
     root = tmp_path / "fixture"
@@ -142,10 +130,7 @@ CASES = [
 def test_differential(tmp_path, consumer, probe, want_exit):
     """Byte equality on BOTH streams, and the exit code the case expects.
 
-    The expected exit is asserted as well as the equality, because two
-    implementations that are equally broken are byte-identical and prove nothing.
-    That is the both-empty trap `scripts/lib/shadow-gate.ts` names as rule 2,
-    reproduced here at the level of one case.
+    The expected exit is asserted as well as the equality, because two implementations that are equally broken are byte-identical and prove nothing. That is the both-empty trap `scripts/lib/shadow-gate.ts` names as rule 2, reproduced here at the level of one case.
     """
     root = build(tmp_path, consumer, probe)
     (old_rc, old_out, old_err), (new_rc, new_out, new_err) = run_both(root)
@@ -158,8 +143,7 @@ def test_differential(tmp_path, consumer, probe, want_exit):
 def test_selftest_exits_zero_and_prints_a_count():
     """`--selftest` is a real run, not an import.
 
-    EXIT 0 WITH ZERO PASS LINES IS A FAILURE, so the count line is asserted as
-    well as the status. A selftest whose cases stopped executing would still exit
+    EXIT 0 WITH ZERO PASS LINES IS A FAILURE, so the count line is asserted as well as the status. A selftest whose cases stopped executing would still exit
     0, and the `Controls` floor is what turns that into a red; this asserts the
     floor is actually reported.
     """
@@ -177,8 +161,7 @@ def test_consumer_extractor_rejects_a_different_binary():
     """The negative half of the consumer extractor, called directly.
 
     Exported helpers exist so a case can drive the decision without shelling out;
-    this is the one that would silently pass if the pattern were loosened to
-    `\\['[a-z]+`.
+    this is the one that would silently pass if the pattern were loosened to `\\['[a-z]+`.
     """
     assert gate.consumer_verbs("execFileSync('gpg', ['add', k])") == []
     assert gate.consumer_verbs("execFileSync('keyctl', ['add', k])") == ["add"]
@@ -194,9 +177,7 @@ def test_probe_extractor_respects_the_word_boundary():
 def test_the_twin_is_still_present():
     """Invariant 5: a twin is never deleted in the change that ports it.
 
-    Asserted rather than assumed, because every differential case above silently
-    degenerates into "two missing files behave the same" if the twin goes away,
-    and `bash <missing>` exits 127 on both sides.
+    Asserted rather than assumed, because every differential case above silently degenerates into "two missing files behave the same" if the twin goes away, and `bash <missing>` exits 127 on both sides.
     """
     assert (pathlib.Path(diff.repo()) / TWIN).is_file()
 
@@ -204,8 +185,7 @@ def test_the_twin_is_still_present():
 def test_git_is_available():
     """The specimen builder needs no git, but the twin's root walk needs a shell.
 
-    A missing tool is a LOUD failure with the fix in the message, never a stack
-    trace read as flake.
+    A missing tool is a LOUD failure with the fix in the message, never a stack trace read as flake.
     """
     if shutil.which("bash") is None:  # pragma: no cover - defensive
         pytest.fail("bash is not on PATH; install it (apt-get install bash)")

@@ -1,27 +1,20 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/housekeeping/cleanup-cf-preview.sh`.
 
-Deletes the Cloudflare Pages PREVIEW deployments belonging to one branch, which
-is what runs on PR close so a merged branch does not leave its previews behind
-forever.
+Deletes the Cloudflare Pages PREVIEW deployments belonging to one branch, which is what runs on PR close so a merged branch does not leave its previews behind forever.
 
 Usage: cleanup_cf_preview.py --branch <branch_name> [--dry-run]
 
-TWO CLOUDFLARE ENDPOINTS, AND NOTHING ELSE. Both are under
-`https://api.cloudflare.com/client/v4`, both carry
+TWO CLOUDFLARE ENDPOINTS, AND NOTHING ELSE. Both are under `https://api.cloudflare.com/client/v4`, both carry
 `Authorization: Bearer $CLOUDFLARE_API_TOKEN` and `Content-Type: application/json`:
 
   GET    /accounts/<acct>/pages/projects/rediacc/deployments
              ?env=preview&per_page=25&page=<n>
   DELETE /accounts/<acct>/pages/projects/rediacc/deployments/<id>?force=true
 
-The project name is the hard-coded literal `rediacc` (:21), not an argument, so
-a caller cannot point this at another project by accident.
+The project name is the hard-coded literal `rediacc` (:21), not an argument, so a caller cannot point this at another project by accident.
 
-`jq` IS CALLED, NOT REIMPLEMENTED, AND THAT IS A DELIBERATE CHOICE. Every JSON
-step here could be done with `json.loads`, and doing so would change observable
-behaviour in three measured places, because none of the twin's `jq` pipelines is
-guarded:
+`jq` IS CALLED, NOT REIMPLEMENTED, AND THAT IS A DELIBERATE CHOICE. Every JSON step here could be done with `json.loads`, and doing so would change observable behaviour in three measured places, because none of the twin's `jq` pipelines is guarded:
 
   * A NON-JSON BODY KILLS THE RUN. Driven 2026-09-13 with an HTML error page:
     `jq: parse error: Invalid numeric literal at line 2, column 0` on stderr and
@@ -33,37 +26,21 @@ guarded:
     nothing, `success` is the empty string, and the script takes the ordinary
     "CF API request failed on page N" warning branch.
 
-Those are jq's own bytes and jq's own exit status, on a script whose caller is a
-workflow log. Reproducing them from Python would mean emulating jq's
-diagnostics, which is a much bigger thing to get wrong than shelling out to the
-binary `require_cmd jq` already demands. So the port runs the SAME programs
-against the SAME stdin, with stderr INHERITED exactly as the twin leaves it.
+Those are jq's own bytes and jq's own exit status, on a script whose caller is a workflow log. Reproducing them from Python would mean emulating jq's diagnostics, which is a much bigger thing to get wrong than shelling out to the binary `require_cmd jq` already demands. So the port runs the SAME programs against the SAME stdin, with stderr INHERITED exactly as the twin leaves it.
 
-THE ARGUMENT PARSER IS NOT RE-IMPLEMENTED EITHER: `rediacc_ci.core.common.parse_args`
-is the port of `parse_args` (common.sh:324-353) and carries its four rules and
-both live quirks, including `--dry-run false` meaning NOT a dry run.
+THE ARGUMENT PARSER IS NOT RE-IMPLEMENTED EITHER: `rediacc_ci.core.common.parse_args` is the port of `parse_args` (common.sh:324-353) and carries its four rules and both live quirks, including `--dry-run false` meaning NOT a dry run.
 
-STREAMS: NOTHING THIS SCRIPT ITSELF WRITES GOES TO STDOUT. Every message is
-`log_step` / `log_warn` / `log_info` / `log_debug`, all of which write to
-stderr (common.sh:35-55). Only `jq`'s own diagnostics share that stream. A
-successful deletion is `log_debug`, so the default-quiet run prints the step
-lines and the tally and nothing per deployment.
+STREAMS: NOTHING THIS SCRIPT ITSELF WRITES GOES TO STDOUT. Every message is `log_step` / `log_warn` / `log_info` / `log_debug`, all of which write to stderr (common.sh:35-55). Only `jq`'s own diagnostics share that stream. A successful deletion is `log_debug`, so the default-quiet run prints the step lines and the tally and nothing per deployment.
 
 THE DEFECT THIS PORT REPRODUCES, AND IT IS THE VACUITY CLASS. A LISTING THAT
 NEVER SUCCEEDED IS REPORTED AS "NOTHING TO CLEAN UP", EXIT 0. The listing is
 `response="$(cf_api GET ... 2>/dev/null || echo '{"result":[]}')"`; a curl that
-cannot resolve the host, or a 403 whose body says `success: false`, both reach
-`log_warn "CF API request failed on page 1"` and `break`, leaving
-`all_deployments` at `[]`. The script then prints
+cannot resolve the host, or a 403 whose body says `success: false`, both reach `log_warn "CF API request failed on page 1"` and `break`, leaving `all_deployments` at `[]`. The script then prints
 
     → Found 0 preview deployments for branch 'x'
     ✓ No preview deployments to clean up
 
-and exits 0. Driven 2026-09-13. The warning is one line of stderr in the middle
-of a green run: the caller sees a success, and a branch whose previews were
-never enumerated is indistinguishable from a branch that had none.
-`API_FAILURE_READS_AS_NOTHING_TO_DO` names it and the differential pins it in
-both directions. Reproduced rather than repaired because the acceptance rule for
+and exits 0. Driven 2026-09-13. The warning is one line of stderr in the middle of a green run: the caller sees a success, and a branch whose previews were never enumerated is indistinguishable from a branch that had none. `API_FAILURE_READS_AS_NOTHING_TO_DO` names it and the differential pins it in both directions. Reproduced rather than repaired because the acceptance rule for
 this wave is agreement with the live twin.
 
 TWO DIVERGENCES, BOTH IN REFUSAL TEXT NOBODY PARSES:
@@ -117,11 +94,7 @@ API_FAILURE_READS_AS_NOTHING_TO_DO = True
 def deployments_path(account: str, page: int) -> str:
     """The listing endpoint (:66).
 
-    NOT URL-ENCODED, deliberately -- `$CLOUDFLARE_ACCOUNT_ID` is interpolated
-    raw, the same latent defect both `housekeeping` siblings already record. It
-    is unreachable in practice because a Cloudflare account id is a hex string,
-    and it is reproduced rather than hardened because hardening it here would
-    make this port disagree with the live script about which URL was requested.
+    NOT URL-ENCODED, deliberately -- `$CLOUDFLARE_ACCOUNT_ID` is interpolated raw, the same latent defect both `housekeeping` siblings already record. It is unreachable in practice because a Cloudflare account id is a hex string, and it is reproduced rather than hardened because hardening it here would make this port disagree with the live script about which URL was requested.
     """
     return "/accounts/%s/pages/projects/%s/deployments?env=preview&per_page=%d&page=%d" % (
         account,
@@ -135,9 +108,7 @@ def delete_path(account: str, deployment_id: str) -> str:
     """The delete endpoint (:104).
 
     `force=true` is what makes Cloudflare remove a deployment that still has
-    aliases pointing at it. The LATEST deployment per branch still cannot be
-    deleted, which is the case the `Could not delete` branch exists for and the
-    reason this script is written to keep going rather than to refuse.
+    aliases pointing at it. The LATEST deployment per branch still cannot be deleted, which is the case the `Could not delete` branch exists for and the reason this script is written to keep going rather than to refuse.
     """
     return "/accounts/%s/pages/projects/%s/deployments/%s?force=true" % (
         account,
@@ -165,9 +136,7 @@ def curl_argv(method: str, endpoint: str, token: str) -> list[str]:
 def _substitution(argv: list[str], fallback: str) -> str:
     """`$(cmd 2>/dev/null || echo <fallback>)`.
 
-    Both halves write to the same captured stdout, so a command that printed
-    something AND failed contributes both, exactly as bash concatenates them,
-    and command substitution then strips every trailing newline.
+    Both halves write to the same captured stdout, so a command that printed something AND failed contributes both, exactly as bash concatenates them, and command substitution then strips every trailing newline.
     """
     try:
         proc = subprocess.run(
@@ -186,10 +155,7 @@ def _substitution(argv: list[str], fallback: str) -> str:
 class JqError(Exception):
     """One `jq` invocation that failed, carrying the status `set -e` uses.
 
-    The twin has no handler for this: the assignment fails, `set -e` fires, and
-    the run ends with jq's own status and jq's own message already on stderr.
-    Modelled as an exception rather than a return code so every call site reads
-    like the unguarded assignment it is porting.
+    The twin has no handler for this: the assignment fails, `set -e` fires, and the run ends with jq's own status and jq's own message already on stderr. Modelled as an exception rather than a return code so every call site reads like the unguarded assignment it is porting.
     """
 
     def __init__(self, code: int) -> None:
@@ -200,10 +166,7 @@ class JqError(Exception):
 def jq(args: list[str], stdin_text: str) -> str:
     """`echo "$x" | jq <args>`, with jq's stderr INHERITED.
 
-    `echo` appends a newline and never fails, so under `pipefail` the pipeline's
-    status is jq's. jq's diagnostics are NOT redirected in the twin, which is
-    the only explanation a workflow log gets when a body is not what the script
-    assumed -- so they are not captured here either.
+    `echo` appends a newline and never fails, so under `pipefail` the pipeline's status is jq's. jq's diagnostics are NOT redirected in the twin, which is the only explanation a workflow log gets when a body is not what the script assumed -- so they are not captured here either.
     """
     proc = subprocess.run(
         ["jq", *args],

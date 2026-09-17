@@ -1,39 +1,22 @@
 """Port of `.ci/scripts/test/gates/test-renet-deadcode.sh`.
 
-`private/renet/.ci/scripts/quality/deadcode.sh`, the Go whole-program
-reachability gate, driven through its two pure predicates: `evaluate_deadcode`
-over a fixture dead-list plus a fixture allowlist, and `validate_blocker_reason`
-over one reason string. Nothing here runs Go, downloads the deadcode tool, or
-touches the renet checkout beyond READING the script.
+`private/renet/.ci/scripts/quality/deadcode.sh`, the Go whole-program reachability gate, driven through its two pure predicates: `evaluate_deadcode` over a fixture dead-list plus a fixture allowlist, and `validate_blocker_reason` over one reason string. Nothing here runs Go, downloads the deadcode tool, or touches the renet checkout beyond READING the script.
 
 WHY THE SUBJECT IS SOURCED RATHER THAN EXECUTED. `deadcode.sh` guards its main
 block with `[[ "${BASH_SOURCE[0]}" == "${0}" ]]`, deliberately, so a gate test
-can pull `evaluate_deadcode`, `validate_blocker_reason` and renet's own
-`common.sh` logging helpers into scope without the analysis running. The twin
+can pull `evaluate_deadcode`, `validate_blocker_reason` and renet's own `common.sh` logging helpers into scope without the analysis running. The twin
 sources it ONCE at file scope and calls the functions in-process; a Python port
-has no shell to source into, so each case is one fresh `bash -c` that sources the
-script and runs a single call. That is the only structural difference, and it is
-in the port's favour: a function that left state behind in the twin's one shell
-cannot leak into the next case here.
+has no shell to source into, so each case is one fresh `bash -c` that sources the script and runs a single call. That is the only structural difference, and it is in the port's favour: a function that left state behind in the twin's one shell cannot leak into the next case here.
 
-THE ONE DELIBERATE DIVERGENCE, and it is a verdict divergence, so it is stated
-rather than buried. The twin opens with
+THE ONE DELIBERATE DIVERGENCE, and it is a verdict divergence, so it is stated rather than buried. The twin opens with
 
     if [[ ! -f "$DEADCODE_SH" ]]; then
         echo "renet submodule not present -- skipping renet deadcode gate test"
         exit 0
     fi
 
-which is `exit 0` having asserted nothing. This port REFUSES instead. Two reasons,
-and the first is not a matter of taste: `.ci/scripts/test/run-all.sh` already
-scores an exit-0 run with no `PASS:` line as a FAILURE ("exited 0 but made no
-assertions"), so under the battery that actually runs these files the twin's skip
-is a red too -- it is only `bash <twin>` driven directly, which is what
-`test_twin_parity.py` does, that reads it as green. The second is the rule this
-whole directory is built on: a case that could not run has not been checked, and
-unchecked folded into fine is the shape being refused. `check:ci-pytest` runs in
-`quality-security`, which checks submodules out, so the absent-submodule state is
-not one CI reaches.
+which is `exit 0` having asserted nothing. This port REFUSES instead. Two reasons, and the first is not a matter of taste: `.ci/scripts/test/run-all.sh` already scores an exit-0 run with no `PASS:` line as a FAILURE ("exited 0 but made no assertions"), so under the battery that actually runs these files the twin's skip is a red too -- it is only `bash <twin>` driven directly, which
+is what `test_twin_parity.py` does, that reads it as green. The second is the rule this whole directory is built on: a case that could not run has not been checked, and unchecked folded into fine is the shape being refused. `check:ci-pytest` runs in `quality-security`, which checks submodules out, so the absent-submodule state is not one CI reaches.
 
 NO `xdist_group`. Every case writes its fixtures into pytest's own `tmp_path` and
 runs one short-lived `bash -c`; nothing is bound, no module global is mutated, and
@@ -61,8 +44,7 @@ REASON_B = "kept alive only by the btrfs-tagged privileged test suite in pkg/exa
 def source_and_run(gate, code: str) -> harness.RunResult:
     """Source the subject in a fresh bash and run one call, streams MERGED.
 
-    Merged rather than kept apart, and this is the case the harness's docstring
-    reserves for `.combined`: renet's `common.sh` writes its log lines to stderr
+    Merged rather than kept apart, and this is the case the harness's docstring reserves for `.combined`: renet's `common.sh` writes its log lines to stderr
     while the twin captures `2>&1` and asserts on the merged text. Splitting them
     here would make every message assertion below a claim the twin never made.
     """
@@ -80,9 +62,7 @@ def source_and_run(gate, code: str) -> harness.RunResult:
 def dead_tsv(directory, *names: str):
     """The `<name>\\tfile:line` table `deadcode` emits, with one row per name.
 
-    An EMPTY file when no names are given, which is a fixture in its own right:
-    `test_passes_on_empty_dead_list` needs a table that exists and holds nothing,
-    which is not the same input as a table that is absent.
+    An EMPTY file when no names are given, which is a fixture in its own right: `test_passes_on_empty_dead_list` needs a table that exists and holds nothing, which is not the same input as a table that is absent.
     """
     path = directory / "dead.tsv"
     path.write_text(
@@ -137,11 +117,7 @@ def test_fails_on_low_effort_blocker(gate, tmp_path):
 def test_fails_on_low_effort_phrase_at_length(gate):
     """The PHRASE list, reached without the length rule getting there first.
 
-    The twin's comment is the whole point of this case and is kept: a banned
-    phrase must fail because it is banned, not because it is short. "no fix
-    available" is 16 characters, so routing it through `evaluate_deadcode` would
-    be caught by BLOCKER_MIN_LENGTH and the phrase list would never be consulted.
-    Calling the validator directly is what puts the phrase arm under test.
+    The twin's comment is the whole point of this case and is kept: a banned phrase must fail because it is banned, not because it is short. "no fix available" is 16 characters, so routing it through `evaluate_deadcode` would be caught by BLOCKER_MIN_LENGTH and the phrase list would never be consulted. Calling the validator directly is what puts the phrase arm under test.
     """
     gate.log_test("a banned phrase is refused by the validator itself")
     result = source_and_run(gate, "validate_blocker_reason 'x' 'no fix available'")

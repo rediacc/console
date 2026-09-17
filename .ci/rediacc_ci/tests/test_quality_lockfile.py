@@ -1,20 +1,11 @@
 """`rediacc_ci.quality.lockfile` against the shell it replaces.
 
-NOTHING IN THIS FILE RUNS npm, AND THAT IS A RULE RATHER THAN A CONVENIENCE.
-`npx -y npm@11 ci --dry-run` needs the network, downloads a whole npm major, and
-sits next to eleven committed lockfiles whose byte form this repository has an
-entire CLAUDE.md section about (the 27-line `"dev": true` flip, issue #587). The
-gate's own logic is "which lockfiles did I find, which commands did I build, and
-what did their exit codes say" -- so `npx` is stubbed by a two-line script and
-the exit code is the only thing npm contributes. Every probe in this file runs
+NOTHING IN THIS FILE RUNS npm, AND THAT IS A RULE RATHER THAN A CONVENIENCE. `npx -y npm@11 ci --dry-run` needs the network, downloads a whole npm major, and sits next to eleven committed lockfiles whose byte form this repository has an entire CLAUDE.md section about (the 27-line `"dev": true` flip, issue #587). The gate's own logic is "which lockfiles did I find, which commands
+did I build, and what did their exit codes say" -- so `npx` is stubbed by a two-line script and the exit code is the only thing npm contributes. Every probe in this file runs
 with that stub first on PATH.
 
-WHY A DIFFERENTIAL FOR THE DISCOVERY. `find . -name package-lock.json -not -path
-'*/node_modules/*' | sed 's|^\\./||' | sort` has three edges a rewrite loses: the
-exclusion is a PATH glob rather than a directory name, the `sed` strips a prefix
-that only the root-level entry has, and the sort is byte order. Running the real
-pipeline and comparing is the only form of this test that can fail for the right
-reason.
+WHY A DIFFERENTIAL FOR THE DISCOVERY. `find . -name package-lock.json -not -path '*/node_modules/*' | sed 's|^\\./||' | sort` has three edges a rewrite loses: the exclusion is a PATH glob rather than a directory name, the `sed` strips a prefix that only the root-level entry has, and the sort is byte order. Running the real pipeline and comparing is the only form of this test that
+can fail for the right reason.
 
 The whole gate is what the committed shadow ledger
 `.ci/shadow/w7p2-lockfile.observations.jsonl` compares over five distinct trees;
@@ -71,10 +62,7 @@ def test_discovery_matches_find(files: list[str], tmp_path: pathlib.Path) -> Non
 def test_discovery_finds_a_lockfile_beside_a_pruned_node_modules(tmp_path: pathlib.Path) -> None:
     """PRUNING THE DIRECTORY MUST NOT PRUNE ITS PARENT.
 
-    `os.walk` pruning is a different mechanism from a path glob, and the way it
-    goes wrong is by skipping too much. A package whose own lockfile sits beside
-    an installed `node_modules` is the ordinary case, so this is the shape that
-    would break most loudly and is therefore worth an assertion of its own.
+    `os.walk` pruning is a different mechanism from a path glob, and the way it goes wrong is by skipping too much. A package whose own lockfile sits beside an installed `node_modules` is the ordinary case, so this is the shape that would break most loudly and is therefore worth an assertion of its own.
     """
     _make(tmp_path, ["pkg/package-lock.json", "pkg/node_modules/dep/package-lock.json"])
     assert lf.discover(tmp_path) == ["pkg/package-lock.json"]
@@ -84,9 +72,7 @@ def test_discovery_finds_a_lockfile_beside_a_pruned_node_modules(tmp_path: pathl
 def test_the_two_pins_are_different_majors_and_named_in_the_message() -> None:
     """A GATE THAT SILENTLY DROPPED ONE PIN WOULD STILL PRINT A TICK.
 
-    The twin's header spends a paragraph on why both exist: the canonical WRITER
-    and CI's INSTALLER answer different questions. Collapsing them to one is the
-    change this asserts against.
+    The twin's header spends a paragraph on why both exist: the canonical WRITER and CI's INSTALLER answer different questions. Collapsing them to one is the change this asserts against.
     """
     assert lf.CANONICAL_NPM != lf.CI_NPM
     assert lf.CANONICAL_NPM.startswith("npm@")
@@ -124,9 +110,7 @@ def test_the_probe_argv_is_the_twins_argv() -> None:
 def stub_npx(tmp_path: pathlib.Path):
     """An `npx` on PATH whose exit codes are decided per probe, and nothing else.
 
-    Yields a setter. The fixture restores PATH afterwards, because a leaked PATH
-    would let a LATER test reach the real npx without anyone noticing -- which is
-    exactly the thing this file exists to prevent.
+    Yields a setter. The fixture restores PATH afterwards, because a leaked PATH would let a LATER test reach the real npx without anyone noticing -- which is exactly the thing this file exists to prevent.
     """
     binpath = tmp_path / "stub-bin"
     binpath.mkdir()
@@ -165,9 +149,7 @@ def test_the_stub_is_really_what_runs(tmp_path: pathlib.Path, stub_npx) -> None:
 def test_the_failure_transcript_is_indented_and_truncated(tmp_path: pathlib.Path, stub_npx) -> None:
     """`2>&1 | head -25 | sed 's/^/    /'`, including the merge of the streams.
 
-    Merging is correct HERE and only here: this is a transcript shown to a human,
-    not a comparison, and the twin's `|| true` says its exit code is not part of
-    the verdict.
+    Merging is correct HERE and only here: this is a transcript shown to a human, not a comparison, and the twin's `|| true` says its exit code is not part of the verdict.
     """
     stub_npx(npm10=1)
     assert lf.resolve_failure_detail(tmp_path, lf.CI_NPM) == ["    npm10-transcript"]
@@ -177,11 +159,7 @@ def test_the_failure_transcript_is_indented_and_truncated(tmp_path: pathlib.Path
 def _run_gate(root: pathlib.Path) -> int:
     """Drive `main` at a fixture root, with the logger REBOUND to the current stream.
 
-    `rediacc_ci.log` builds its default Logger once and holds the `sys.stderr`
-    object it saw. pytest replaces that object per test, so a cached Logger keeps
-    writing to a stream `capsys` is no longer reading -- the messages appear in
-    pytest's own "Captured stderr" section while `readouterr().err` comes back
-    empty, which reads as "the gate printed nothing". `log.reset()` exists for
+    `rediacc_ci.log` builds its default Logger once and holds the `sys.stderr` object it saw. pytest replaces that object per test, so a cached Logger keeps writing to a stream `capsys` is no longer reading -- the messages appear in pytest's own "Captured stderr" section while `readouterr().err` comes back empty, which reads as "the gate printed nothing". `log.reset()` exists for
     exactly this caller; see its docstring.
     """
     saved = os.environ.get(paths.ROOT_ENV)
@@ -212,10 +190,7 @@ def test_a_lockfile_with_no_sibling_manifest_is_skipped_loudly(
 ) -> None:
     """SKIPPED, NOT SILENT, AND STILL EXIT 0.
 
-    The quality-security job checks out without submodules, so this state is
-    legitimate. The twin warns twice -- once per lockfile and once in a summary
-    -- and `scripts/lib/shadow-gate.ts` classifies a `⚠` line as a FINDING, so a
-    port that downgraded either warning to chatter would show up as a mismatch.
+    The quality-security job checks out without submodules, so this state is legitimate. The twin warns twice -- once per lockfile and once in a summary -- and `scripts/lib/shadow-gate.ts` classifies a `⚠` line as a FINDING, so a port that downgraded either warning to chatter would show up as a mismatch.
     """
     root = tmp_path / "tree"
     _make(root, ["package-lock.json"])
@@ -275,9 +250,7 @@ def test_a_skipped_lockfile_does_not_stop_the_others(tmp_path: pathlib.Path, stu
 def test_the_real_tree_has_lockfiles_to_check() -> None:
     """A CONTROL ON THE INPUT, and it runs no npm.
 
-    Discovery only. Without it, every case above could be passing while the
-    walker returned nothing on the repository it is actually pointed at, which is
-    the shape of a gate that has stopped seeing its subject.
+    Discovery only. Without it, every case above could be passing while the walker returned nothing on the repository it is actually pointed at, which is the shape of a gate that has stopped seeing its subject.
     """
     root = paths.repo_root()
     found = lf.discover(root)
@@ -294,12 +267,8 @@ def test_selftest_is_green() -> None:
 def test_no_test_in_this_file_can_reach_the_real_npx() -> None:
     """THE PROHIBITION, ASSERTED RATHER THAN REMEMBERED.
 
-    Outside the `stub_npx` fixture this module must never invoke `npx`. If a
-    future edit adds a probe without the fixture it would silently start
-    downloading npm majors beside this repository's committed lockfiles. There is
-    no way to assert "was not called", so the next best thing is asserted: the
-    module never spawns anything except through the three helpers named here, and
-    all three take an explicit argv built by `lint_argv` / `resolve_argv`.
+    Outside the `stub_npx` fixture this module must never invoke `npx`. If a future edit adds a probe without the fixture it would silently start downloading npm majors beside this repository's committed lockfiles. There is no way to assert "was not called", so the next best thing is asserted: the module never spawns anything except through the three helpers named here, and all
+    three take an explicit argv built by `lint_argv` / `resolve_argv`.
     """
     source = pathlib.Path(lf.__file__).read_text(encoding="utf-8")
     spawn_sites = [line for line in source.split("\n") if "subprocess.run(" in line]

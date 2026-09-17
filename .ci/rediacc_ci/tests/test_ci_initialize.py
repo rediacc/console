@@ -1,38 +1,23 @@
 """`rediacc_ci.ci.initialize` against its bash twin.
 
 NOTHING HERE TOUCHES THE REAL TREE, THE REAL GIT, THE REAL REGISTRY OR THE
-NETWORK, and that is not a nicety: the twin writes a token rewrite into the
-GLOBAL git config, initialises submodules, fetches from an authenticated remote
-and asks GHCR about three images. Every one of those is faked, and the fakes
-RECORD their argv so the two sides are compared on what they asked for as well
-as on what they printed.
+NETWORK, and that is not a nicety: the twin writes a token rewrite into the GLOBAL git config, initialises submodules, fetches from an authenticated remote and asks GHCR about three images. Every one of those is faked, and the fakes RECORD their argv so the two sides are compared on what they asked for as well as on what they printed.
 
-HOW BOTH SIDES ARE POINTED AT A FIXTURE. `get_repo_root` (common.sh:205) resolves
-three directories up from the common.sh THAT WAS SOURCED, so a fixture carrying
-its own `.ci/scripts/lib/common.sh`, reached through
-`<fixture>/.ci/scripts/ci/initialize.sh`, sends the twin into the fixture. The
-port resolves through `paths.repo_root()`, which honours `$REDIACC_CI_ROOT`. The
-twin itself is a SYMLINK to the real file -- bash does not resolve symlinks in
+HOW BOTH SIDES ARE POINTED AT A FIXTURE. `get_repo_root` (common.sh:205) resolves three directories up from the common.sh THAT WAS SOURCED, so a fixture carrying its own `.ci/scripts/lib/common.sh`, reached through `<fixture>/.ci/scripts/ci/initialize.sh`, sends the twin into the fixture. The port resolves through `paths.repo_root()`, which honours `$REDIACC_CI_ROOT`. The twin
+itself is a SYMLINK to the real file -- bash does not resolve symlinks in
 `${BASH_SOURCE[0]}` -- so the script under test is the real, unmodified one and a
 change to it cannot slip past this file.
 
-EACH SIDE GETS ITS OWN FIXTURE, `old-root` and `new-root`, because both write
-into it (an `--output` file, the `./true` of DEFECT C, the submodule sentinel a
-fake creates). Every comparison replaces the side's own root, HOME and call log
+EACH SIDE GETS ITS OWN FIXTURE, `old-root` and `new-root`, because both write into it (an `--output` file, the `./true` of DEFECT C, the submodule sentinel a fake creates). Every comparison replaces the side's own root, HOME and call log
 with `<root>`, so the two are compared on everything except the one string that
 must differ.
 
 THE PATH IS A CLOSED LIST. `<root>/bin` holds the fakes; `<tmp>/minbin` holds
-symlinks to the real coreutils the twin needs by name, and NOTHING ELSE. That is
-what makes the "docker is not installed" arm testable on a host that has docker:
-the arm is the default here, and the one case that needs docker adds the fake
-explicitly.
+symlinks to the real coreutils the twin needs by name, and NOTHING ELSE. That is what makes the "docker is not installed" arm testable on a host that has docker: the arm is the default here, and the one case that needs docker adds the fake explicitly.
 
-WHAT IS NORMALISED. Two of the twin's exits are bash's own diagnostics, which
-begin `<program>: line <N>:`. The program NAME necessarily differs between a
+WHAT IS NORMALISED. Two of the twin's exits are bash's own diagnostics, which begin `<program>: line <N>:`. The program NAME necessarily differs between a
 `.sh` and a module, so `strip_prog` replaces that one token; the LINE NUMBERS are
-compared, because a drifting line number is exactly the silent failure the pins
-exist to catch.
+compared, because a drifting line number is exactly the silent failure the pins exist to catch.
 
 The K=5 ledger is `.ci/shadow/w7p6-initialize.observations.jsonl`
 (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).
@@ -255,8 +240,7 @@ def run_both(
 ) -> tuple[tuple[int, str, str], tuple[int, str, str], dict[str, str | None]]:
     """Build one fixture per side, run both, and normalise the roots away.
 
-    `output` is a path RELATIVE to the fixture root (so both sides name the same
-    thing), or None for no `--output` at all.
+    `output` is a path RELATIVE to the fixture root (so both sides name the same thing), or None for no `--output` at all.
     """
     tools = minbin(tmp_path)
     results: dict[str, tuple[int, str, str]] = {}
@@ -462,9 +446,7 @@ def test_an_argument_that_is_not_a_shell_identifier_is_printfs_own_refusal(
 ) -> None:
     """`printf -v ARG_A.B` fails with status 2, and `set -e` takes the script.
 
-    The PREFIX differs by construction (bash names the sourced common.sh, the
-    port has no such file), so the prefix is normalised away and the twin's line
-    number is asserted separately -- that is the half that can drift.
+    The PREFIX differs by construction (bash names the sourced common.sh, the port has no such file), so the prefix is normalised away and the twin's line number is asserted separately -- that is the half that can drift.
     """
     old, new, files = run_both(tmp_path, "--a.b=1", env_extra=dict(PAT_ENV))
     assert old[0] == 2
@@ -741,8 +723,7 @@ def test_the_deciders_stderr_is_swallowed_by_the_two_to_one_redirect(
 ) -> None:
     """`2>&1 | grep` means the child's diagnostics are filtered, never printed.
 
-    The fake prints its own view of `$GITHUB_OUTPUT` to stderr, which also proves
-    the variable reaches it as the EMPTY STRING rather than unset.
+    The fake prints its own view of `$GITHUB_OUTPUT` to stderr, which also proves the variable reaches it as the EMPTY STRING rather than unset.
     """
     old, new, files = run_both(tmp_path, env_extra={**PUSH_MAIN, "FAKE_DECISION": "release"})
     assert "GITHUB_OUTPUT=[]" not in old[2]
@@ -797,10 +778,7 @@ def test_an_empty_repository_slug_is_accepted_and_fetched(tmp_path: pathlib.Path
 def test_three_failed_fetches_refuse_to_compute_a_version(tmp_path: pathlib.Path) -> None:
     """The whole retry ladder, its backoff, its refusal, and its redaction.
 
-    Costs the real 15 seconds per side, because the two implementations must
-    sleep the same amount: a fake `sleep` on the PATH would be used by bash and
-    not by Python, and the call logs would then disagree for a reason that has
-    nothing to do with the port.
+    Costs the real 15 seconds per side, because the two implementations must sleep the same amount: a fake `sleep` on the PATH would be used by bash and not by Python, and the call logs would then disagree for a reason that has nothing to do with the port.
     """
     old, new, files = run_both(
         tmp_path,
@@ -891,10 +869,7 @@ def test_colour_is_emitted_on_a_terminal_by_both_sides(tmp_path: pathlib.Path) -
 def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
     """Every constant the port prints inside a bash-shaped diagnostic.
 
-    Without this the port would keep printing `line 219` after someone inserted a
-    line above it, and every differential above would still pass -- both sides
-    would be wrong together until the twin moved, and the failure would then name
-    a byte difference instead of the reason for it.
+    Without this the port would keep printing `line 219` after someone inserted a line above it, and every differential above would still pass -- both sides would be wrong together until the twin moved, and the failure would then name a byte difference instead of the reason for it.
     """
     with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as handle:
         lines = handle.read().split("\n")

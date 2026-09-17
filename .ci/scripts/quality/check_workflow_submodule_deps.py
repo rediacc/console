@@ -1,39 +1,20 @@
 #!/usr/bin/env python3
 """A workflow job that READS submodule source must CHECK OUT the submodules.
 
-WHY THIS EXISTS. `Tests + Infra / Unit` ran a suite that parses
-`private/renet/pkg/prune/datastore.go` while its checkout took no submodules at
-all. It failed with ENOENT on a file it had never fetched, cancelled 26 sibling
-jobs, and read as a broken test rather than a missing checkout -- so the next
-reader goes into the test instead of the workflow. Five sibling jobs in the same
+WHY THIS EXISTS. `Tests + Infra / Unit` ran a suite that parses `private/renet/pkg/prune/datastore.go` while its checkout took no submodules at all. It failed with ENOENT on a file it had never fetched, cancelled 26 sibling jobs, and read as a broken test rather than a missing checkout -- so the next reader goes into the test instead of the workflow. Five sibling jobs in the same
 file already had the checkout; this one was added without it and nothing noticed.
 
-WHY NO EXISTING GATE CATCHES IT. Every gate here gets a tree where the
-submodules are present, so the dependency is invisible: the test passes locally,
-passes in the lane that does check them out, and fails only in the one job that
-does not. The dependency lives across two files that nothing reads together --
-the workflow's checkout step and a test file three call levels away.
+WHY NO EXISTING GATE CATCHES IT. Every gate here gets a tree where the submodules are present, so the dependency is invisible: the test passes locally, passes in the lane that does check them out, and fails only in the one job that does not. The dependency lives across two files that nothing reads together -- the workflow's checkout step and a test file three call levels away.
 
-WHAT IT CHECKS. For every job in every workflow, it walks what that job can
-actually execute -- `run:` lines, the repo scripts they name, `npm run` keys
-resolved through package.json (root and workspaces), and, crucially, the TEST
-FILES a test runner would sweep. If anything reachable names a real submodule
-path and the job configures no submodule checkout, that is the finding.
+WHAT IT CHECKS. For every job in every workflow, it walks what that job can actually execute -- `run:` lines, the repo scripts they name, `npm run` keys resolved through package.json (root and workspaces), and, crucially, the TEST FILES a test runner would sweep. If anything reachable names a real submodule path and the job configures no submodule checkout, that is the finding.
 
 The test-runner hop is the load-bearing one and the reason this is not a grep.
 The defect was not in `run-unit.sh`; it was in a test file that script runs.
-A gate that only read the step's own text would have looked right at this bug
-and reported nothing, which is the failure mode this repo keeps paying for.
+A gate that only read the step's own text would have looked right at this bug and reported nothing, which is the failure mode this repo keeps paying for.
 
-WHAT IT DOES NOT DO. It does not check that a submodule checkout is NEEDED --
-an unnecessary one costs fetch time, not correctness, and pruning those is a
-performance question with a different owner.
+WHAT IT DOES NOT DO. It does not check that a submodule checkout is NEEDED -- an unnecessary one costs fetch time, not correctness, and pruning those is a performance question with a different owner.
 
----- gate ----
-step: Workflow submodule deps
-needs: python-yaml
-selftest: true
----- end gate ----
+---- gate ---- step: Workflow submodule deps needs: python-yaml selftest: true ---- end gate ----
 """
 
 import json
@@ -64,8 +45,7 @@ NPM_RESOLVE_DEPTH = 1
 def submodule_paths() -> list[str]:
     """Submodule paths from .gitmodules, never a hardcoded list.
 
-    A hardcoded list is how the i18n gates went blind to 379 keys: the set moved
-    and the gate did not.
+    A hardcoded list is how the i18n gates went blind to 379 keys: the set moved and the gate did not.
     """
     gitmodules = REPO / ".gitmodules"
     if not gitmodules.exists():
@@ -92,10 +72,7 @@ def npm_scripts() -> dict[str, str]:
 def package_test_files(workspace: str | None = None) -> list[pathlib.Path]:
     """Test files, scoped to one workspace when the command named one.
 
-    `npm run test:unit -w @rediacc/cli` runs the CLI's tests and nothing else.
-    Sweeping every package's tests for any job that mentions a runner made
-    quality-static -- which runs shell linters and no tests at all -- inherit a
-    dependency from a package it never touches.
+    `npm run test:unit -w @rediacc/cli` runs the CLI's tests and nothing else. Sweeping every package's tests for any job that mentions a runner made quality-static -- which runs shell linters and no tests at all -- inherit a dependency from a package it never touches.
     """
     root = f"packages/{workspace}" if workspace else "packages/*"
     return [
@@ -126,9 +103,7 @@ def referenced_repo_files(text: str) -> list[pathlib.Path]:
 def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[str, str, bool]]:
     """(label, text, scannable) for everything a job's commands can reach.
 
-    scannable marks the entries whose CONTENT is evidence of a read: the commands
-    a job runs, and the test files a runner sweeps. Script bodies are walked for
-    further commands but not scanned, because naming a path is not reading one.
+    scannable marks the entries whose CONTENT is evidence of a read: the commands a job runs, and the test files a runner sweeps. Script bodies are walked for further commands but not scanned, because naming a path is not reading one.
     """
     seen_cmds: set[str] = set()
     seen_files: set[pathlib.Path] = set()
@@ -229,11 +204,7 @@ LINE_COMMENT = re.compile(r"(^|\s)(//|#)\s.*$", re.MULTILINE)
 def strip_comments(text: str) -> str:
     """Blank out line comments, keeping line COUNT so windows still line up.
 
-    A comment that cites a file is documentation, not a dependency:
-    datastore-relocate.test.ts explains an ordering rule by pointing at
-    "private/renet/pkg/datastore/adopt.go:22-28" and never opens it. Treating a
-    citation as a read punishes the habit of citing sources, which this repo
-    wants more of, not less.
+    A comment that cites a file is documentation, not a dependency: datastore-relocate.test.ts explains an ordering rule by pointing at "private/renet/pkg/datastore/adopt.go:22-28" and never opens it. Treating a citation as a read punishes the habit of citing sources, which this repo wants more of, not less.
     """
     return LINE_COMMENT.sub(lambda m: m.group(1), text)
 
@@ -345,8 +316,7 @@ def scan(workflow_files: list[pathlib.Path], subs: list[str], scripts: dict[str,
 def run_controls(subs: list[str], scripts: dict[str, str]) -> list[str]:
     """Prove the rule can FIRE and that it is not always firing.
 
-    Both directions, because always-on and always-off are different bugs and a
-    control that only checks one of them certifies half a gate.
+    Both directions, because always-on and always-off are different bugs and a control that only checks one of them certifies half a gate.
     """
     failures: list[str] = []
     if not subs:

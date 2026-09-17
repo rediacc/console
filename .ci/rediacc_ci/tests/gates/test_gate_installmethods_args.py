@@ -1,25 +1,17 @@
 """Port of `.ci/scripts/test/gates/test-installmethods-args.sh`.
 
-`.ci/scripts/test/test-install-methods.sh` must not be able to report success
-without having accounted for at least one test. Reproduced live on 2026-08-07:
+`.ci/scripts/test/test-install-methods.sh` must not be able to report success without having accounted for at least one test. Reproduced live on 2026-08-07:
 
     test-install-methods.sh --dry-run --method bogus --version 1.2.17
     -> "Results: 0 passed, 0 failed, 0 skipped (total 0)"   EXIT=0
 
 Two causes, both fixed and both pinned here. The argument parser ended with a
 bare `*) shift ;;` that swallowed anything it did not recognise, and METHOD was
-never validated, so a typo produced a run that matched no test block. And
-success was defined as `[[ $FAIL -eq 0 ]]`, which is also true of a run that did
-nothing at all.
+never validated, so a typo produced a run that matched no test block. And success was defined as `[[ $FAIL -eq 0 ]]`, which is also true of a run that did nothing at all.
 
-The rule: every path ends VERIFIED, or in a VISIBLE skip, or in a FAILURE. An
-all-skipped run is deliberately still a success -- each skip is printed with its
-reason and counted -- but a zero-total run is not, because it says nothing.
+The rule: every path ends VERIFIED, or in a VISIBLE skip, or in a FAILURE. An all-skipped run is deliberately still a success -- each skip is printed with its reason and counted -- but a zero-total run is not, because it says nothing.
 
-Every case drives the REAL script in `--dry-run`, so no Docker and no network.
-The zero-total backstop is proven to fire against a MUTATED COPY in a tempdir:
-mutating in place under `.ci/` is not an option in a shared tree, and the copy
-is why this module writes nowhere outside `tmp_path`.
+Every case drives the REAL script in `--dry-run`, so no Docker and no network. The zero-total backstop is proven to fire against a MUTATED COPY in a tempdir: mutating in place under `.ci/` is not an option in a shared tree, and the copy is why this module writes nowhere outside `tmp_path`.
 """
 
 import pathlib
@@ -53,8 +45,7 @@ def run_target(script, *args) -> harness.RunResult:
 def mutate(gate, dest: pathlib.Path, *, drop_backstop: bool = False) -> pathlib.Path:
     """A copy of the subject with the parser widened, in `dest`.
 
-    The copy lives in a tempdir, so SCRIPT_DIR is pinned back at the real
-    directory or it cannot find lib/common.sh.
+    The copy lives in a tempdir, so SCRIPT_DIR is pinned back at the real directory or it cannot find lib/common.sh.
     """
     source = target(gate).read_text(encoding="utf-8")
     if WIDEN[0] not in source:
@@ -212,10 +203,7 @@ def test_an_all_skipped_run_is_visible_and_allowed(gate):
 def test_the_backstop_fires_on_a_zero_total_run(gate, tmp_path):
     """The zero-total backstop, proven against a mutated copy.
 
-    With every method, platform and arch validated, and every block registering
-    at least a skip, no invocation of the shipped script can reach a zero total.
-    That makes the backstop unreachable by argument alone -- and an unreachable
-    guard is exactly the kind that rots into one that cannot fire.
+    With every method, platform and arch validated, and every block registering at least a skip, no invocation of the shipped script can reach a zero total. That makes the backstop unreachable by argument alone -- and an unreachable guard is exactly the kind that rots into one that cannot fire.
     """
     # Mutation 1: only the parser is loosened. The backstop must catch it.
     with_backstop = mutate(gate, tmp_path / "with-backstop.sh")

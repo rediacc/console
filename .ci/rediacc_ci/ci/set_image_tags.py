@@ -1,31 +1,25 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/set-image-tags.sh` (37 lines).
 
-Derive the base image tag into `$GITHUB_ENV`, then override the two per-image
-tags with the values the `initialize` job resolved, appending the `-amd64`
+Derive the base image tag into `$GITHUB_ENV`, then override the two per-image tags with the values the `initialize` job resolved, appending the `-amd64`
 suffix the fast single-arch build publishes. The twin's header owns the why; it
 is not restated here.
 
 LIVE CALLER, not repointed. The bash twin stays the registered gate; this module
-is its verified-equivalent alternative, and the cutover is a separate, later,
-driver-only step.
+is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
-Ledger: `.ci/shadow/w7p6-set-image-tags.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-set-image-tags --assert --k 5`).
+Ledger: `.ci/shadow/w7p6-set-image-tags.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-set-image-tags --assert --k 5`).
 
 -----------------------------------------------------------------------------
 THE SIBLING IS CALLED, NOT REIMPLEMENTED
 -----------------------------------------------------------------------------
-This twin is the one live caller of `derive-image-tag.sh`, and the whole of its
-first half is that call with two arms. `rediacc_ci.ci.derive_image_tag` is
+This twin is the one live caller of `derive-image-tag.sh`, and the whole of its first half is that call with two arms. `rediacc_ci.ci.derive_image_tag` is
 already ported and already carries its own K=5 ledger
-(`.ci/shadow/w7p6-derive-image-tag.observations.jsonl`), so this module invokes
-that module rather than re-deriving anything: a second implementation of the
+(`.ci/shadow/w7p6-derive-image-tag.observations.jsonl`), so this module invokes that module rather than re-deriving anything: a second implementation of the
 `--sort=-v:refname` ladder is exactly the divergence the campaign exists to
 avoid.
 
-IN PROCESS, NOT AS A SUBPROCESS, and the two observable consequences are stated
-rather than discovered:
+IN PROCESS, NOT AS A SUBPROCESS, and the two observable consequences are stated rather than discovered:
 
   * `main()` returns a status where the twin's `set -e` would kill the script,
     so the caller returns it unchanged and the trailing `log_info` is skipped on
@@ -49,12 +43,8 @@ NOTHING
     ✓ Image tags set (web=web-abc renet=renet-abc)
     exit=0
 
-The last line is a claim, and in this run it is false: no tag was set anywhere.
-The one warning comes from the SIBLING, is about the sibling's own half of the
-work, and says nothing about the two overrides this script exists to write. The
-same shape as `generate_tag`'s DEFECT G, one script further down the chain.
-Reproduced, not repaired: `.ci/scripts/ci/` is not this writer's to change.
-`GITHUB_ENV_IS_SILENTLY_OPTIONAL` names it so a test can assert it by name.
+The last line is a claim, and in this run it is false: no tag was set anywhere. The one warning comes from the SIBLING, is about the sibling's own half of the work, and says nothing about the two overrides this script exists to write. The same shape as `generate_tag`'s DEFECT G, one script further down the chain. Reproduced, not repaired: `.ci/scripts/ci/` is not this writer's to
+change. `GITHUB_ENV_IS_SILENTLY_OPTIONAL` names it so a test can assert it by name.
 
 -----------------------------------------------------------------------------
 DEFECT F -- THE SUCCESS LINE REPORTS THE INPUTS, NOT WHAT WAS WRITTEN
@@ -62,17 +52,14 @@ DEFECT F -- THE SUCCESS LINE REPORTS THE INPUTS, NOT WHAT WAS WRITTEN
 `log_info "Image tags set (web=${WEB_TAG:-<derived>} ...)"` prints the value it
 was GIVEN, without the `-amd64` suffix it just appended to the file. So the file
 says `WEB_TAG=web-abc-amd64` and the log says `web=web-abc`, and the two
-disagree about the one fact the step exists to establish. Byte-for-byte
-reproduced.
+disagree about the one fact the step exists to establish. Byte-for-byte reproduced.
 
 -----------------------------------------------------------------------------
 `[[ -n ... ]] && echo` IS NOT A `set -e` HAZARD HERE, AND IT IS WORTH SAYING WHY
 -----------------------------------------------------------------------------
-An `A && B` list whose A fails does not trip `set -e`, because A is not the last
-command of the list. It would be a hazard if the list were the last command of
+An `A && B` list whose A fails does not trip `set -e`, because A is not the last command of the list. It would be a hazard if the list were the last command of
 the script or of a function, where its status becomes the caller's; here
-`log_info` follows it, so an empty `WEB_TAG` skips the write and the script
-continues. Driven, both arms.
+`log_info` follows it, so an empty `WEB_TAG` skips the write and the script continues. Driven, both arms.
 """
 
 from __future__ import annotations
@@ -109,8 +96,7 @@ DERIVED_PLACEHOLDER = "<derived>"
 def derive_argv(image_tag: str) -> list[str]:
     """The two arms of twin :24-28, as the argv `derive_image_tag` receives.
 
-    Pure, and exported, because the whole of the first half of this script is
-    the choice between these two lists and it is worth testing without a
+    Pure, and exported, because the whole of the first half of this script is the choice between these two lists and it is worth testing without a
     subprocess. Note that `[[ -n "${IMAGE_TAG:-}" ]]` treats UNSET and EMPTY
     alike: both fall to the auto-derive arm.
     """
@@ -122,8 +108,7 @@ def derive_argv(image_tag: str) -> list[str]:
 def append_override(name: str, value: str, github_env: str, line: int) -> None:
     """One `echo "<name>=<value>-amd64" >>"$GITHUB_ENV"`.
 
-    A failing append is `set -e` with bash's own message naming the file and the
-    line, not a traceback.
+    A failing append is `set -e` with bash's own message naming the file and the line, not a traceback.
     """
     try:
         with open(github_env, "a", encoding="utf-8") as handle:

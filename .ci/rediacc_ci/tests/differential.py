@@ -1,12 +1,7 @@
 """Run the bash original and the Python port, and compare the bytes.
 
-WHY THIS FILE EXISTS. Every module in `rediacc_ci` replaces something that is
-already running in this tree, and "the port looks right" is not evidence. The
-acceptance rule for the whole workstream is that a port is proven EQUIVALENT to
-the thing it replaces, in the shape `.ci/scripts/quality/check-python-lint.sh`
-already uses for its own control: build a specimen, run both implementations
-over it, and compare. This module is the plumbing that makes that cheap enough
-to do for every case rather than for one.
+WHY THIS FILE EXISTS. Every module in `rediacc_ci` replaces something that is already running in this tree, and "the port looks right" is not evidence. The acceptance rule for the whole workstream is that a port is proven EQUIVALENT to the thing it replaces, in the shape `.ci/scripts/quality/check-python-lint.sh` already uses for its own control: build a specimen, run both
+implementations over it, and compare. This module is the plumbing that makes that cheap enough to do for every case rather than for one.
 
 THREE THINGS IT GETS RIGHT THAT AN INLINE `subprocess.run` DOES NOT.
 
@@ -31,12 +26,8 @@ THREE THINGS IT GETS RIGHT THAT AN INLINE `subprocess.run` DOES NOT.
      happens to export CI or NO_COLOR. Inheriting is how a test becomes green
      on one machine and red on another for reasons nobody can see.
 
-WHAT A PTY DOES TO THE BYTES, since it is the part that surprises people. A tty
-in its default mode has ONLCR set, so every `\\n` the child writes arrives at the
-master as `\\r\\n`. That is the terminal discipline, not the program's output, so
-`read_pty` strips the carriage returns. Without that every tty-mode comparison
-fails on invisible bytes and the natural "fix" is to compare stripped strings,
-which would also stop the comparison seeing a real trailing-whitespace change.
+WHAT A PTY DOES TO THE BYTES, since it is the part that surprises people. A tty in its default mode has ONLCR set, so every `\\n` the child writes arrives at the master as `\\r\\n`. That is the terminal discipline, not the program's output, so `read_pty` strips the carriage returns. Without that every tty-mode comparison fails on invisible bytes and the natural "fix" is to compare
+stripped strings, which would also stop the comparison seeing a real trailing-whitespace change.
 """
 
 import os
@@ -87,13 +78,10 @@ def env_for(**overrides: str) -> dict[str, str]:
 def read_pty(master_fd: int, proc: subprocess.Popen, timeout: float) -> bytes:
     """Drain a pty master until the child exits and the buffer is empty.
 
-    THE EIO IS NORMAL, NOT AN ERROR. When the last slave descriptor closes, Linux
-    reports EIO to a reader of the master rather than a clean EOF. Treating that
+    THE EIO IS NORMAL, NOT AN ERROR. When the last slave descriptor closes, Linux reports EIO to a reader of the master rather than a clean EOF. Treating that
     as a failure is the classic pty bug; treating it as end-of-stream is correct.
 
-    A selector rather than a blocking read because the child may exit having
-    written nothing, and a blocking read on a master whose slave this process
-    still holds open would never return.
+    A selector rather than a blocking read because the child may exit having written nothing, and a blocking read on a master whose slave this process still holds open would never return.
     """
     chunks: list[bytes] = []
     sel = selectors.DefaultSelector()
@@ -136,11 +124,7 @@ def bash_streams(
 ) -> tuple[int, str, str]:
     """Run `script` under bash. Returns (returncode, stdout, stderr), separately.
 
-    `tty` is None, "stdout" or "stderr": the named stream gets a pseudo-terminal
-    and the other gets a pipe. Only one at a time, on purpose -- the whole point
-    of most of these cases is that one stream is a terminal and the other is not,
-    which is precisely the asymmetry the 11-file `[ -t 1 ]`-then-write-to-stderr
-    variant gets wrong.
+    `tty` is None, "stdout" or "stderr": the named stream gets a pseudo-terminal and the other gets a pipe. Only one at a time, on purpose -- the whole point of most of these cases is that one stream is a terminal and the other is not, which is precisely the asymmetry the 11-file `[ -t 1 ]`-then-write-to-stderr variant gets wrong.
 
     `bash`, not `sh`: every script here is `#!/bin/bash` and uses `[[`.
     """
@@ -200,10 +184,7 @@ def bash_streams(
 def escape_bytes(text: str) -> int:
     """How many ESC bytes are in `text`.
 
-    The single number that answers "did colour leak into this stream", which is
-    the assertion `test-emit-advisory.sh:172` makes with `tr -cd '\\033' | wc -c`.
-    Counted rather than pattern-matched so a NEW escape sequence nobody
-    anticipated still trips it.
+    The single number that answers "did colour leak into this stream", which is the assertion `test-emit-advisory.sh:172` makes with `tr -cd '\\033' | wc -c`. Counted rather than pattern-matched so a NEW escape sequence nobody anticipated still trips it.
     """
     return text.count("\033")
 

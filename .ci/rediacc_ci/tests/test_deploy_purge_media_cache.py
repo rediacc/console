@@ -1,23 +1,14 @@
 """Differential: `rediacc_ci.deploy.purge_media_cache` against its twin
 `.ci/scripts/deploy/purge-media-cache.sh`.
 
-A RECORDING FAKE `curl` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the
-fake logs its exact argv and answers from the environment, and the only real
-credential name in the file is an environment KEY, never a value.
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one
-real run" clause and says in as many words that the mocked parity ledger is a
+A RECORDING FAKE `curl` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv and answers from the environment, and the only real credential name in the file is an environment KEY, never a value. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
 separate, achievable piece of work. This is that piece.
 
-THE REQUEST IS THE WHOLE CONTRACT, so the log is compared as well as the two
-streams. The zone id and the hostname are hard-coded in the twin and take no
+THE REQUEST IS THE WHOLE CONTRACT, so the log is compared as well as the two streams. The zone id and the hostname are hard-coded in the twin and take no
 argument, which means the ONLY thing this program does is send one exact POST;
-a port that sent it to a different zone would print identical output and exit 0.
-`test_planted_defect_is_caught` plants exactly that.
+a port that sent it to a different zone would print identical output and exit 0. `test_planted_defect_is_caught` plants exactly that.
 
-TWO jq CALL SITES WITH DIFFERENT `set -e` EXPOSURE are driven, because that is
-the pair a `json.loads` port gets wrong: a non-JSON body prints jq's parse error
-TWICE and still exits 1 through the script's own branch, while a curl that cannot
-reach the host ends the run with curl's status and NO diagnostic at all.
+TWO jq CALL SITES WITH DIFFERENT `set -e` EXPOSURE are driven, because that is the pair a `json.loads` port gets wrong: a non-JSON body prints jq's parse error TWICE and still exits 1 through the script's own branch, while a curl that cannot reach the host ends the run with curl's status and NO diagnostic at all.
 """
 
 from __future__ import annotations
@@ -286,8 +277,7 @@ def test_an_empty_body_fails_with_an_empty_tail_and_no_jq_error(
 
 def test_a_non_json_body_prints_jqs_parse_error_twice(tmp_path: pathlib.Path) -> None:
     """THE CASE A `json.loads` PORT WOULD GET WRONG, and the reason both jq call
-    sites are shelled out. Neither substitution is in a position `set -e` can
-    act on, so jq dies TWICE -- once for `.success`, once for `.errors` inside
+    sites are shelled out. Neither substitution is in a position `set -e` can act on, so jq dies TWICE -- once for `.success`, once for `.errors` inside
     the `log_error` argument -- and the script still reaches its own exit 1."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, [], FAKE_CURL_BODY="<html>504 Gateway Timeout</html>\n"
@@ -300,9 +290,7 @@ def test_a_non_json_body_prints_jqs_parse_error_twice(tmp_path: pathlib.Path) ->
 
 def test_defect_a_transport_failure_is_a_silent_non_zero(tmp_path: pathlib.Path) -> None:
     """THE DEFECT, PINNED. `curl -s` (no `-S`) says nothing on a network error and
-    the assignment feeds `set -e`, so the caller gets the step line, NO
-    diagnostic whatsoever, and exit 6. A workflow step fails with no reason in
-    the log.
+    the assignment feeds `set -e`, so the caller gets the step line, NO diagnostic whatsoever, and exit 6. A workflow step fails with no reason in the log.
 
     Reproduced because agreement with the live twin is the deliverable;
     repaired, this test goes red and names the port that must follow.
@@ -329,19 +317,10 @@ def test_divergence_common_sh_interprets_backslash_escapes_in_the_cf_error(
     tmp_path: pathlib.Path,
 ) -> None:
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. `Purge failed: <errors>` is the one message that
-    interpolates remote text, and common.sh logs through `echo -e`, which
-    interprets backslash escapes IN THE MESSAGE. `rediacc_ci.log` formats the
-    message as data (see its module docstring), so a Cloudflare error carrying a
-    literal backslash-n renders as a newline through the twin and as two
-    characters here.
+    "FIXED" BY ACCIDENT. `Purge failed: <errors>` is the one message that interpolates remote text, and common.sh logs through `echo -e`, which interprets backslash escapes IN THE MESSAGE. `rediacc_ci.log` formats the message as data (see its module docstring), so a Cloudflare error carrying a literal backslash-n renders as a newline through the twin and as two characters here.
 
-    THE FIXTURE HAS TO CARRY A REAL NEWLINE, not a literal backslash-n: jq
-    re-escapes what it prints, so a message holding two characters comes out of
-    `jq -c` as `\\\\n` and `echo -e` renders THAT as a literal backslash-n on
-    both sides. Only a genuine newline in the JSON string reaches `echo -e` as
-    the single escape that distinguishes the two implementations. Driven the
-    wrong way round first, which is how the distinction was found.
+    THE FIXTURE HAS TO CARRY A REAL NEWLINE, not a literal backslash-n: jq re-escapes what it prints, so a message holding two characters comes out of `jq -c` as `\\\\n` and `echo -e` renders THAT as a literal backslash-n on both sides. Only a genuine newline in the JSON string reaches `echo -e` as the single escape that distinguishes the two implementations. Driven the wrong way
+    round first, which is how the distinction was found.
     """
     body = '{"success":false,"errors":[{"message":"boom\\nline two"}]}\n'
     old, new, _oc, _nc = run_both(tmp_path, [], FAKE_CURL_BODY=body)
@@ -383,10 +362,7 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the zone id -- the one value that decides WHICH
-    cache is purged, and whose corruption leaves both streams and the exit code
-    completely unchanged while media.rediacc.com keeps serving the stale
-    response the script exists to evict. Driven red, then the source is confirmed
-    byte-identical and green.
+    cache is purged, and whose corruption leaves both streams and the exit code completely unchanged while media.rediacc.com keeps serving the stale response the script exists to evict. Driven red, then the source is confirmed byte-identical and green.
     """
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

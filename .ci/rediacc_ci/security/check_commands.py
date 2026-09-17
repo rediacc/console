@@ -1,67 +1,32 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/security/check-commands.sh`.
 
-Checks shell scripts for commands not reliably available in minimal CI
-environments (Ubuntu minimal, macOS, Windows Git Bash), complementing
-shellcheck (which does not know about runner-image gaps).
+Checks shell scripts for commands not reliably available in minimal CI environments (Ubuntu minimal, macOS, Windows Git Bash), complementing shellcheck (which does not know about runner-image gaps).
 
 REGISTERED CI GATE: `check:ci-shell-commands`, `ci-quality.yml:351`.
 
 PORT NOTES.
 
-TWO REAL BUGS, FIXED 2026-09-10 IN THE TWIN AND HERE IN LOCKSTEP. Until this
-date, both the `$(` branch of the wide per-file filter and the narrow
-per-command check, and the narrow check's missing `if` branch, were dead
-code in both the twin and this port (deliberately reproduced here to stay
-byte-for-byte behind the still-buggy twin). The twin's source used to read
+TWO REAL BUGS, FIXED 2026-09-10 IN THE TWIN AND HERE IN LOCKSTEP. Until this date, both the `$(` branch of the wide per-file filter and the narrow per-command check, and the narrow check's missing `if` branch, were dead code in both the twin and this port (deliberately reproduced here to stay byte-for-byte behind the still-buggy twin). The twin's source used to read
 `\\$\\(` inside a double-quoted grep argument; bash's double-quote rules strip
-the backslash before `$` (one of the five characters double quotes treat
-specially) while leaving the backslash before `(` untouched, so the byte
-sequence grep actually received was `$\\(` -- an UNESCAPED `$` immediately
-followed by a literal `(`. `.ci` runs on ugrep (7.5.0 measured), whose `-E`
-mode treats that `$` as a real end-of-line anchor even mid-pattern inside an
-alternation, exactly the class of silent breakage this repo's own house rule
-documents for an alternated `^` (`grep -cE '(^|[^a-z-])ease'` printing 0
-where `-P` printed 26). An anchor that cannot be followed by anything within
-the same match makes the whole alternative unmatchable.
+the backslash before `$` (one of the five characters double quotes treat specially) while leaving the backslash before `(` untouched, so the byte sequence grep actually received was `$\\(` -- an UNESCAPED `$` immediately followed by a literal `(`. `.ci` runs on ugrep (7.5.0 measured), whose `-E` mode treats that `$` as a real end-of-line anchor even mid-pattern inside an
+alternation, exactly the class of silent breakage this repo's own house rule documents for an alternated `^` (`grep -cE '(^|[^a-z-])ease'` printing 0 where `-P` printed 26). An anchor that cannot be followed by anything within the same match makes the whole alternative unmatchable.
 
 Consequence, before the fix: `x=$(shuf -n1 file.txt)` -- a disallowed command
-hidden inside a command substitution -- was invisible to this gate. A SECOND,
-INDEPENDENT GAP: the narrow per-command check lacked the wide filter's
-`^[[:space:]]*if[[:space:]]+` branch entirely (four branches against five), so
+hidden inside a command substitution -- was invisible to this gate. A SECOND, INDEPENDENT GAP: the narrow per-command check lacked the wide filter's `^[[:space:]]*if[[:space:]]+` branch entirely (four branches against five), so
 `if seq 1 10; then` passed the file-level candidate test but matched no
 per-command narrow regex and was never reported.
 
-FIXED 2026-09-10: `.ci/scripts/security/check-commands.sh:70,84` now read
-`\\\\$\\(` (an escaped `$` that survives bash's double-quote stripping) and
-line 84 carries all five alternatives, matching line 70. This module's
-`_WIDE_RE`/`_narrow_re` mirror the same fix: `\\$\\(` (Python raw-string
-escaping, not bash quoting, but the identical effect -- `re.search(r"\\$\\(",
-"a$(b")` matches where the old bare-`$` form did not). Applying the fix
-surfaced **46 real, previously-invisible findings** across the tracked
-corpus, verified live and all fixed in the same change (mostly
+FIXED 2026-09-10: `.ci/scripts/security/check-commands.sh:70,84` now read `\\\\$\\(` (an escaped `$` that survives bash's double-quote stripping) and line 84 carries all five alternatives, matching line 70. This module's `_WIDE_RE`/`_narrow_re` mirror the same fix: `\\$\\(` (Python raw-string escaping, not bash quoting, but the identical effect -- `re.search(r"\\$\\(", "a$(b")`
+matches where the old bare-`$` form did not). Applying the fix surfaced **46 real, previously-invisible findings** across the tracked corpus, verified live and all fixed in the same change (mostly
 `for i in $(seq A B); do` loops rewritten to `for ((i=A; i<=B; i++)); do`,
-plus a handful of non-mechanical padding-idiom and `timeout`/`set -e`
-rewrites -- see `agent/PLAN-shell-command-gate-regex-fix.md` for the full
-list and the two subtler bugs a naive rewrite would have introduced). The
-real registered gate (`npm run check:ci-shell-commands`) is green against
-the fully-fixed tree.
+plus a handful of non-mechanical padding-idiom and `timeout`/`set -e` rewrites -- see `agent/PLAN-shell-command-gate-regex-fix.md` for the full list and the two subtler bugs a naive rewrite would have introduced). The real registered gate (`npm run check:ci-shell-commands`) is green against the fully-fixed tree.
 
-CORPUS ENUMERATION SHELLS OUT TO THE REAL `find`, rather than reimplementing
-directory traversal in Python, because the twin's own output ORDER is
-whatever `find` returns (no `sort` in the pipeline) and that order is
-filesystem-dependent. Two different traversal implementations agreeing on the
-SET of files is not the same claim as agreeing on ORDER, and finding order
-changes which "first matching command" wins ties within a file's error
-count only in edge cases, but changes overall stdout/stderr INTERLEAVING
-across files unconditionally. Shelling out to the identical `find` binary
+CORPUS ENUMERATION SHELLS OUT TO THE REAL `find`, rather than reimplementing directory traversal in Python, because the twin's own output ORDER is whatever `find` returns (no `sort` in the pipeline) and that order is filesystem-dependent. Two different traversal implementations agreeing on the SET of files is not the same claim as agreeing on ORDER, and finding order changes which
+"first matching command" wins ties within a file's error count only in edge cases, but changes overall stdout/stderr INTERLEAVING across files unconditionally. Shelling out to the identical `find` binary
 with the identical arguments sidesteps the question rather than arguing it.
 
-`[[:space:]]` IS TRANSLITERATED AS `[ \\t]`, not `\\s`, in the two branches
-that use it (`^[[:space:]]*`, `^[[:space:]]*if\\s+`). POSIX's space class
-includes more (`\\n \\v \\f \\r`), but these patterns run against single
-already-split lines with no embedded newline, so the only members that can
-ever appear are space and tab.
+`[[:space:]]` IS TRANSLITERATED AS `[ \\t]`, not `\\s`, in the two branches that use it (`^[[:space:]]*`, `^[[:space:]]*if\\s+`). POSIX's space class includes more (`\\n \\v \\f \\r`), but these patterns run against single already-split lines with no embedded newline, so the only members that can ever appear are space and tab.
 """
 
 from __future__ import annotations
@@ -134,8 +99,7 @@ def _line_finding(line_content: str) -> tuple[str, str] | None:
     """Returns `(cmd, alt)` for the first disallowed command that fires on
     this line and is not skipped, or `None` if none does. Mirrors the twin's
     inner `for entry in DISALLOWED; do ... continue/break ... done` exactly:
-    a narrow-regex match that is SKIPPED (comment/assignment/yaml-key) moves
-    on to the NEXT disallowed command on the SAME line, it does not abandon
+    a narrow-regex match that is SKIPPED (comment/assignment/yaml-key) moves on to the NEXT disallowed command on the SAME line, it does not abandon
     the line."""
     for cmd, alt in DISALLOWED:
         if not _narrow_re(cmd).search(line_content):

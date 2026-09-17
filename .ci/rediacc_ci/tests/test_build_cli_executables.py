@@ -1,46 +1,25 @@
 """Differential: `rediacc_ci.build.build_cli_executables` against its twin
 `.ci/scripts/build/build-cli-executables.sh`.
 
-WHAT IS COMPARED. Four things per case, separately, never folded together:
-stdout, stderr, exit code, and the FAKE-BINARY CALL LOG -- one tab-separated
-line of argv per invocation of `node`, `uname`, `strip`, `codesign` and
-`prepare-cli-assets.sh`. Plus, on every build that gets that far, the ARTIFACTS:
-every file the run left under `dist/` and `packages/cli/dist/`, with its content
-and its executable bit.
+WHAT IS COMPARED. Four things per case, separately, never folded together: stdout, stderr, exit code, and the FAKE-BINARY CALL LOG -- one tab-separated line of argv per invocation of `node`, `uname`, `strip`, `codesign` and `prepare-cli-assets.sh`. Plus, on every build that gets that far, the ARTIFACTS: every file the run left under `dist/` and `packages/cli/dist/`, with its
+content and its executable bit.
 
-WHY THE CALL LOG IS NOT OPTIONAL HERE. Almost everything this script says it did
-is a `log_step` line, and `shadow-gate.ts` classifies any line starting with
-`→ ` or `✓ ` as CHATTER before a `--finding-re` ever sees it. A port that
-printed all eighteen log lines correctly and never ran `strip`, or ran
-`sea-inject/cli.mjs` with the wrong sentinel fuse, would be byte-identical on
-both streams. The call log is where those live, and it is why every fake echoes
-its own argv under a `FAKEBIN ` prefix.
+WHY THE CALL LOG IS NOT OPTIONAL HERE. Almost everything this script says it did is a `log_step` line, and `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before a `--finding-re` ever sees it. A port that printed all eighteen log lines correctly and never ran `strip`, or ran `sea-inject/cli.mjs` with the wrong sentinel fuse, would be byte-identical on
+both streams. The call log is where those live, and it is why every fake echoes its own argv under a `FAKEBIN ` prefix.
 
-RECORDED TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. The fake `node` is copied by the
-script under test and then EXECUTED as the built binary, whose stdout is parsed
+RECORDED TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. The fake `node` is copied by the script under test and then EXECUTED as the built binary, whose stdout is parsed
 as JSON by `jq`; a fake that logged to stdout would corrupt the artifact it is
 standing in for. A prior wave lost a day to exactly that.
 
-THE PATH IS REPLACED, NOT PREPENDED, and `test_the_scratch_path_is_sealed`
-asserts it before anything is driven. A prepended PATH let a real system binary
-reach into the live checkout in an earlier wave.
+THE PATH IS REPLACED, NOT PREPENDED, and `test_the_scratch_path_is_sealed` asserts it before anything is driven. A prepended PATH let a real system binary reach into the live checkout in an earlier wave.
 
-WHAT IS REAL AND WHAT IS FAKE. `dirname`, `mkdir`, `cp`, `chmod`, `sed`, `cat`,
-`wc`, `sha256sum` and `jq` are REAL: they are deterministic and several of them
-produce the bytes under comparison. `node`, `uname`, `strip`, `codesign` and
-`prepare-cli-assets.sh` are FAKE, because they are respectively not installed as
-a SEA toolchain here, the thing whose branches must be steered, destructive to
-the fixture, absent on Linux, and a 200-line sibling script with its own port
-and its own differential.
+WHAT IS REAL AND WHAT IS FAKE. `dirname`, `mkdir`, `cp`, `chmod`, `sed`, `cat`, `wc`, `sha256sum` and `jq` are REAL: they are deterministic and several of them produce the bytes under comparison. `node`, `uname`, `strip`, `codesign` and `prepare-cli-assets.sh` are FAKE, because they are respectively not installed as a SEA toolchain here, the thing whose branches must be steered,
+destructive to the fixture, absent on Linux, and a 200-line sibling script with its own port and its own differential.
 
 ONE FAKE, TWO PERSONALITIES. The fake `node` inspects `${0##*/}` and behaves as
-the built CLI when it has been copied to `rdc-*`. That is not a trick: it is what
-a SEA binary IS -- the host `node` with a blob glued on -- and it is the only way
-the `--version` and `doctor` smoke tests can be driven at all.
+the built CLI when it has been copied to `rdc-*`. That is not a trick: it is what a SEA binary IS -- the host `node` with a blob glued on -- and it is the only way the `--version` and `doctor` smoke tests can be driven at all.
 
-`$0` IS MASKED TO `<SELF>` and, in the two cases where bash names a line number
-of its own, `line <n>: ` is masked too (the twin's line and the port's line are
-necessarily different numbers in different files). Nothing else is masked.
+`$0` IS MASKED TO `<SELF>` and, in the two cases where bash names a line number of its own, `line <n>: ` is masked too (the twin's line and the port's line are necessarily different numbers in different files). Nothing else is masked.
 
 K=5 LEDGER: `.ci/shadow/w7p6-build-cli-executables.observations.jsonl`.
 """

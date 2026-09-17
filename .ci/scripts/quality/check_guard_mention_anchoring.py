@@ -1,40 +1,20 @@
 #!/usr/bin/env python3
 """A guard must refuse a COMMAND, never a SENTENCE about one.
 
-WHY THIS EXISTS. The defect class is "matches a MENTION rather than a TARGET":
-a guard greps the command line for a phrase, finds it inside prose, and refuses
-a worklist note or a doc line as if it were the rule being broken. It recurred
-FOUR times on 2026-08-28 alone -- block-bash-write-to-running-script.sh,
-block-roundlog-truncate.sh, block-git-empty-commit.sh (whose own header records
-being routed through command-scan.sh "because matching the raw command meant
-matching PROSE", a fix that covered the QUOTED case only), and
-warn-stale-index.sh, which was written by the session fixing the other three and
-reintroduced the class within the hour. Every instance was repaired by hand and
-nothing stopped the next one.
+WHY THIS EXISTS. The defect class is "matches a MENTION rather than a TARGET": a guard greps the command line for a phrase, finds it inside prose, and refuses a worklist note or a doc line as if it were the rule being broken. It recurred FOUR times on 2026-08-28 alone -- block-bash-write-to-running-script.sh, block-roundlog-truncate.sh, block-git-empty-commit.sh (whose own header
+records being routed through command-scan.sh "because matching the raw command meant matching PROSE", a fix that covered the QUOTED case only), and warn-stale-index.sh, which was written by the session fixing the other three and reintroduced the class within the hour. Every instance was repaired by hand and nothing stopped the next one.
 
-HOW THE PROBE IS BUILT, and why the obvious version does not work. The first
-attempt collected a guard's vocabulary and wrote a sentence out of it. That gate
-passed while the pre-fix unanchored matcher was planted back into
-block-git-empty-commit.sh, because the words were sorted alphabetically and the
-pattern needs `git commit` BEFORE `--allow-empty`. A probe that cannot trigger
+HOW THE PROBE IS BUILT, and why the obvious version does not work. The first attempt collected a guard's vocabulary and wrote a sentence out of it. That gate passed while the pre-fix unanchored matcher was planted back into block-git-empty-commit.sh, because the words were sorted alphabetically and the pattern needs `git commit` BEFORE `--allow-empty`. A probe that cannot trigger
 the guard proves nothing about it.
 
-So the pattern itself is turned into a CONCRETE INSTANCE -- the shortest literal
-string that matches it -- and that instance is embedded in an ordinary sentence.
-If the guard fires on the sentence, it is matching a mention.
+So the pattern itself is turned into a CONCRETE INSTANCE -- the shortest literal string that matches it -- and that instance is embedded in an ordinary sentence. If the guard fires on the sentence, it is matching a mention.
 
 ANCHOR, DO NOT NARROW. The fix for a finding here is to require command position
 `(^|[;&|(])`, never to delete the pattern: a guard that stops catching the real
 command is a worse outcome than the false positive it was cured of.
 
----- gate ----
-step: Guard mention anchoring
-emit: false
-blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
-needs: none
-selftest: true
-lane: quality-code
-why: A guard that refuses PROSE is a guard nobody can write a doc line about.
+---- gate ---- step: Guard mention anchoring emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code why: A guard that refuses PROSE is a guard nobody can write a
+doc line about.
      The class recurred FOUR times on 2026-08-28 and every instance was fixed
      by hand, including one reintroduced within the hour by the session doing
      the fixing -- which is the i18n lesson exactly. This probes each guard
@@ -74,11 +54,7 @@ DISPATCH = REPO_ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"
 def guard_argv(guard):
     """How to RUN the guard this path names.
 
-    A path under the oracle tree names a RETIRED bash file whose live equivalent is
-    the Python module of the same stem, so it is dispatched. Anything else is run as
-    a file, which is what the throwaway fixtures `controls()` writes have to be: they
-    are bash by construction, deliberately, so that rewording a real guard cannot
-    silently void the control.
+    A path under the oracle tree names a RETIRED bash file whose live equivalent is the Python module of the same stem, so it is dispatched. Anything else is run as a file, which is what the throwaway fixtures `controls()` writes have to be: they are bash by construction, deliberately, so that rewording a real guard cannot silently void the control.
     """
     try:
         guard.relative_to(HOOKS)
@@ -126,9 +102,7 @@ CLASS_SUB = [
 def instantiate(pattern: str) -> str:
     """The shortest literal string a pattern would match, best-effort.
 
-    Best-effort is enough: a probe that fails to trigger a guard is reported as
-    UNPROBED rather than silently counted as clean, so an imperfect instance
-    costs coverage that is visible, never a false green.
+    Best-effort is enough: a probe that fails to trigger a guard is reported as UNPROBED rather than silently counted as clean, so an imperfect instance costs coverage that is visible, never a false green.
     """
     text = pattern
     # DROP A LEADING ANCHOR GROUP FIRST. `(^|[;&|(]|&&|\|\|)[[:space:]]*` is a
@@ -167,11 +141,7 @@ def instantiate(pattern: str) -> str:
 def patterns_of(path: Path) -> list[str]:
     """Every quoted string in the guard that looks like a command matcher.
 
-    NOT just the ones on a `grep` line. Eight guards keep their patterns in an
-    array or a variable and interpolate later (`grep -qE "$pat"`), so a
-    grep-line-only reader left them UNPROBED -- and an unprobed guard's silence
-    proves nothing, which is the failure this whole gate exists to prevent. The
-    INTERESTING filter is what keeps ordinary prose strings out.
+    NOT just the ones on a `grep` line. Eight guards keep their patterns in an array or a variable and interpolate later (`grep -qE "$pat"`), so a grep-line-only reader left them UNPROBED -- and an unprobed guard's silence proves nothing, which is the failure this whole gate exists to prevent. The INTERESTING filter is what keeps ordinary prose strings out.
     """
     src = path.read_text(encoding="utf-8", errors="replace")
     out: list[str] = []
@@ -203,8 +173,7 @@ def payload_for(kind: str, text: str, file_path: str) -> str:
 
     Derived from the guards themselves: pre-edit reads file_path plus one of
     content / new_string / new_source / edits; pre-ask reads question and
-    questions. Every field is filled rather than guessed at, because a guard
-    that reads the one field left out would silently never fire.
+    questions. Every field is filled rather than guessed at, because a guard that reads the one field left out would silently never fire.
     """
     if kind == "command":
         return json.dumps({"tool_input": {"command": text}})
@@ -247,9 +216,7 @@ def fires(guard: Path, command: str, kind: str = "command", file_path: str = "")
 def file_path_for(guard: Path) -> str:
     """A path the guard will consider in scope, taken from its own source.
 
-    pre-edit guards gate on file_path before they look at content, so a probe
-    carrying an irrelevant path never reaches the matcher. Rather than guess,
-    the first concrete-looking repo path in the guard is reused.
+    pre-edit guards gate on file_path before they look at content, so a probe carrying an irrelevant path never reaches the matcher. Rather than guess, the first concrete-looking repo path in the guard is reused.
     """
     src = guard.read_text(encoding="utf-8", errors="replace")
     for m in re.finditer(r"[\"'\(|]((?:\.?[a-z][a-z0-9_.-]*/)+[a-zA-Z0-9_.*-]+)", src):

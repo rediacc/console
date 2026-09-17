@@ -1,17 +1,9 @@
 """`rediacc_ci.quality.ci_watch_recipe` against the awk, grep and bash it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-ci-watch-recipe.observations.jsonl` drives the whole gate over
-five distinct trees, one per broken check. What a ledger row cannot isolate is
-the four detectors, and this gate is ALL detector: check A is an awk block
-extractor, checks B and C are three greps whose false-positive boundaries were
-each argued over, and the whole file exists because ONE of those greps was
-racing its own pipe and reporting a clean bill of health over a real offender.
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-ci-watch-recipe.observations.jsonl` drives the whole gate over five distinct trees, one per broken check. What a ledger row cannot isolate is the four detectors, and this gate is ALL detector: check A is an awk block extractor, checks B and C are three greps whose false-positive boundaries were each argued over, and the
+whole file exists because ONE of those greps was racing its own pipe and reporting a clean bill of health over a real offender.
 
-So each detector is re-run as the twin's own bash, over the twin's own fixtures,
-and compared. The negative cases carry as much weight as the positive ones:
-three of the twin's controls exist only to prove the detectors do NOT fire on the
-sanctioned invocation, on a JSON value, or on a test assertion.
+So each detector is re-run as the twin's own bash, over the twin's own fixtures, and compared. The negative cases carry as much weight as the positive ones: three of the twin's controls exist only to prove the detectors do NOT fire on the sanctioned invocation, on a JSON value, or on a test assertion.
 """
 
 import pathlib
@@ -86,10 +78,7 @@ def test_hands_out_banned_agrees_with_the_twin_on_every_fixture(tmp_path: pathli
 def test_the_large_fixture_agrees_and_is_over_the_pipe_buffer(tmp_path: pathlib.Path) -> None:
     """The control the others could not be, run through the twin as well.
 
-    Under the twin this input is the one that raced: at ~240 KB the producer
-    BLOCKS on a full pipe, which is what let `grep -q`'s early exit kill it. The
-    port has no pipe, so what is being asserted here is that both sides still
-    agree on the answer at that size.
+    Under the twin this input is the one that raced: at ~240 KB the producer BLOCKS on a full pipe, which is what let `grep -q`'s early exit kill it. The port has no pipe, so what is being asserted here is that both sides still agree on the answer at that size.
     """
     big = cw.fixture_big()
     assert len(big) > 64 * 1024
@@ -133,9 +122,7 @@ def test_advice_only_matches_the_twins_grep(tmp_path: pathlib.Path) -> None:
 def test_scan_files_matches_git_ls_files() -> None:
     """The three pathspecs, run by git, minus the evidence file.
 
-    Not re-implemented as a walk: git's pathspec matching is not fnmatch, so
-    `.claude/**/*.md` does not mean what it looks like, and a hand-rolled walk
-    would scan a different set while the success line still read healthy.
+    Not re-implemented as a walk: git's pathspec matching is not fnmatch, so `.claude/**/*.md` does not mean what it looks like, and a hand-rolled walk would scan a different set while the success line still read healthy.
     """
     root = paths.repo_root()
     # THE PATHSPECS COME FROM THE PORT'S OWN CONSTANT, not retyped here. Two reasons, and the second is why this changed on 2026-09-06. First, a copy can drift from the thing it is meant to check, which would leave this test asserting that the port agrees with a literal nobody runs. Second, `check:ci-pathspec-scope` reads every `git ls-files` call site and refuses a `**/` pathspec,

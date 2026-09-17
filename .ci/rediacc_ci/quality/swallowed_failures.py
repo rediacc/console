@@ -7,10 +7,7 @@ deleted; see `rediacc_ci.quality.__init__`.
 THE TWIN'S HEADER, CARRIED ACROSS.
 -----------------------------------------------------------------------------
 
-THE CLASS. A gate captures a probe's output, discards the probe's exit status
-AND its stderr, and then reads the captured value. When the probe fails the
-value is empty, and empty is byte-identical to "nothing to report". The gate
-then prints its success message and exits 0. It is not reporting that things
+THE CLASS. A gate captures a probe's output, discards the probe's exit status AND its stderr, and then reads the captured value. When the probe fails the value is empty, and empty is byte-identical to "nothing to report". The gate then prints its success message and exits 0. It is not reporting that things
 are fine; it is reporting nothing, in the voice of success.
 
 THE LIVE SPECIMEN, fixed 2026-07-28 in .ci/scripts/quality/check-go-deps.sh:
@@ -20,12 +17,9 @@ THE LIVE SPECIMEN, fixed 2026-07-28 in .ci/scripts/quality/check-go-deps.sh:
     while IFS=' ' read -r path current latest uptime; do ... done <<<"$outdated"
 
 `go list` was exiting 1 on the machine (go.mod wanted >= 1.25, PATH had 1.24).
-The `2>/dev/null` hid the reason, the `|| true` hid the status, the loop ran
-zero times, and the gate printed "All Go direct dependencies are up-to-date"
-and exited 0 while CI failed on the same commit.
+The `2>/dev/null` hid the reason, the `|| true` hid the status, the loop ran zero times, and the gate printed "All Go direct dependencies are up-to-date" and exited 0 while CI failed on the same commit.
 
-NOT THE SAME AS check-silent-failure-patterns.sh, and this is a SIBLING to it
-rather than an extension of it, for four reasons:
+NOT THE SAME AS check-silent-failure-patterns.sh, and this is a SIBLING to it rather than an extension of it, for four reasons:
   1. Opposite polarity. That gate says "your probe is UNDER-guarded, a
      non-zero exit will abort the script"; this one says "your probe is
      OVER-guarded, a non-zero exit vanishes". One recommends adding `|| true`;
@@ -57,8 +51,7 @@ WHAT IT FLAGS, precisely. All four must hold:
      variable follows at all, or the test's own branch treats empty as
      success (`exit 0` / `return 0` with no error reported inside it).
 
-WHAT IT DELIBERATELY DOES NOT FLAG (precision over recall: a noisy gate gets
-suppressed, and a suppressed gate is the bug being fixed here)
+WHAT IT DELIBERATELY DOES NOT FLAG (precision over recall: a noisy gate gets suppressed, and a suppressed gate is the bug being fixed here)
   * Commands whose non-zero exit IS the answer rather than an error:
     `grep`, `command -v`, `type`, `which`, `hash`, `diff`, `cmp`. For these,
     "no match" and "failed" are the same event by design. Residual risk,
@@ -77,34 +70,17 @@ overrides the scanned directories (space-separated, root-relative).
 
 Exits 0 on no findings, 1 on any finding.
 
-THE PATTERNS LIVE INSIDE THE AWK PROGRAM rather than being passed with `-v`.
-awk processes backslash escapes when it assigns a `-v` value, so `\\(` arrived as
-a bare `(` and every regex became "Unmatched (". That is not a style point: the
-first version of this gate died on all 42 files and still printed "OK: no gate
-captures a probe...", because the empty output of a dead awk is
-indistinguishable from the empty output of a clean scan. It committed the defect
-it polices, which is why `scan_file` treats a non-zero awk exit as fatal.
+THE PATTERNS LIVE INSIDE THE AWK PROGRAM rather than being passed with `-v`. awk processes backslash escapes when it assigns a `-v` value, so `\\(` arrived as a bare `(` and every regex became "Unmatched (". That is not a style point: the first version of this gate died on all 42 files and still printed "OK: no gate captures a probe...", because the empty output of a dead awk is
+indistinguishable from the empty output of a clean scan. It committed the defect it polices, which is why `scan_file` treats a non-zero awk exit as fatal.
 
-AND THE SCANNER MUST BE FATAL IN THE CALLER, not inside the scan function. The
-first version ran it inside `< <(scan_file "$f")`, and an `exit` inside a process
-substitution kills only that subshell: the gate carried on and reported a clean
-scan over files it had never read. That is the same shape as the defect being
-policed, which is why the caller checks the return value instead.
+AND THE SCANNER MUST BE FATAL IN THE CALLER, not inside the scan function. The first version ran it inside `< <(scan_file "$f")`, and an `exit` inside a process substitution kills only that subshell: the gate carried on and reported a clean scan over files it had never read. That is the same shape as the defect being policed, which is why the caller checks the return value instead.
 
 SCOPE. quality/ and security/ are where gates live; lib/ is where they get their
-helpers, and a helper that swallows a failure lies on every caller's behalf
-(r2_count_objects in lib/common.sh is exactly that shape, which is why lib/ is
-not optional).
+helpers, and a helper that swallows a failure lies on every caller's behalf (r2_count_objects in lib/common.sh is exactly that shape, which is why lib/ is not optional).
 
-THE FUNCTION BOUNDARY IS PART OF THE WINDOW. Letting the 12-logical-line window
-run past the closing brace made a `log_error` in the NEXT function count as
-handling for this one, which silently cleared r2_count_objects in lib/common.sh:
-a genuine finding, and the one the sibling gate recommends as a remedy.
+THE FUNCTION BOUNDARY IS PART OF THE WINDOW. Letting the 12-logical-line window run past the closing brace made a `log_error` in the NEXT function count as handling for this one, which silently cleared r2_count_objects in lib/common.sh: a genuine finding, and the one the sibling gate recommends as a remedy.
 
-THE TEST PATTERN IS BUILT PER VARIABLE rather than templated once: an emptiness
-test on some OTHER variable says nothing about this one, and that distinction is
-what keeps the pre-fix check-go-deps probe flagged (its loop tests $path, never
-$outdated).
+THE TEST PATTERN IS BUILT PER VARIABLE rather than templated once: an emptiness test on some OTHER variable says nothing about this one, and that distinction is what keeps the pre-fix check-go-deps probe flagged (its loop tests $path, never $outdated).
 
 FOUR SHAPES COUNT AS "the author looked at the empty case":
     [[ -z/-n $VAR ]]           emptiness test
@@ -119,20 +95,15 @@ dropping it would let a defect hide behind a stray paren.
 
 THE OPTIONAL QUOTE IN THE CAPTURE PATTERN IS LOAD-BEARING:
 `tree_all="$(npm ls ... || true)"` is the commonest spelling in this repo, and
-omitting it hid every quoted capture, including the dependency-inventory
-specimens.
+omitting it hid every quoted capture, including the dependency-inventory specimens.
 
-A WAIVER MUST SIT IMMEDIATELY ABOVE the line it excuses: any other comment or a
-blank line clears a dangling one, or it drifts and starts excusing something
-nobody read.
+A WAIVER MUST SIT IMMEDIATELY ABOVE the line it excuses: any other comment or a blank line clears a dangling one, or it drifts and starts excusing something nobody read.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE AWK PROGRAM IS TRANSLATED FUNCTION BY FUNCTION, with the original regex
-quoted above each Python compilation, because every one of them has an edge that
-a "sensible" rewrite loses. Two translation facts are worth naming:
+THE AWK PROGRAM IS TRANSLATED FUNCTION BY FUNCTION, with the original regex quoted above each Python compilation, because every one of them has an edge that a "sensible" rewrite loses. Two translation facts are worth naming:
 
   * `"\\047"` inside an awk string is a backslash followed by `047`, which the
     regex engine reads as the octal escape for `'`. The class `["\047]?` is
@@ -142,22 +113,13 @@ a "sensible" rewrite loses. Two translation facts are worth naming:
     return value, to balance parentheses. `str.count("(")` is the same number.
 
 THE PARENTHESIS BALANCE IS COUNTED OVER THE WHOLE LOGICAL LINE INCLUDING QUOTED
-TEXT, so a `(` inside a string keeps the folder swallowing lines. That is the
-twin's behaviour and the reason the END block has to flush an unterminated
-buffer at all.
+TEXT, so a `(` inside a string keeps the folder swallowing lines. That is the twin's behaviour and the reason the END block has to flush an unterminated buffer at all.
 
-`validate_blocker_quality` IS RE-IMPLEMENTED HERE from
-`.ci/scripts/lib/blocker-validator.sh`, with both banned-phrase lists and the
-30-character floor copied verbatim, for the same reason `_gh_probe` is copied in
-`submodule_branches`: the port does not source `common.sh` and the exact
-messages are what a reader greps for. `rediacc_ci.core.allowlist` is the typed
-home this should eventually move to.
+`validate_blocker_quality` IS RE-IMPLEMENTED HERE from `.ci/scripts/lib/blocker-validator.sh`, with both banned-phrase lists and the 30-character floor copied verbatim, for the same reason `_gh_probe` is copied in `submodule_branches`: the port does not source `common.sh` and the exact messages are what a reader greps for. `rediacc_ci.core.allowlist` is the typed home this should
+eventually move to.
 
 `ci_error` PRINTS `::error::<msg>` ON STDOUT UNDER CI=true AND `✗ <msg>` ON
-STDERR OTHERWISE. Both are reproduced, because `scripts/lib/shadow-gate.ts`
-strips either prefix to the same normalized finding and a port that always used
-one would still be equivalent, but a human reading a CI log would lose the
-annotation.
+STDERR OTHERWISE. Both are reproduced, because `scripts/lib/shadow-gate.ts` strips either prefix to the same normalized finding and a port that always used one would still be equivalent, but a human reading a CI log would lose the annotation.
 
 `find ... | sort` IS SORTED HERE, unlike the sibling gate, so the finding ORDER
 is stable across machines. `sorted()` under `LC_ALL=C` is byte order, which is
@@ -165,10 +127,7 @@ what `sort` gives.
 
 STREAMS. The banner, the quoted source line under each finding and the advice
 block are bare `echo` on STDOUT; the finding identity lines are `log_error` on
-stderr. The twin's own comment about this split is in `shadow-gate.ts`: "the
-stderr half carries the `<path>:<line>: <var>: <reason>` identity, which is the
-half that decides equivalence, so the split costs precision rather than
-soundness."
+stderr. The twin's own comment about this split is in `shadow-gate.ts`: "the stderr half carries the `<path>:<line>: <var>: <reason>` identity, which is the half that decides equivalence, so the split costs precision rather than soundness."
 """
 
 import json
@@ -245,10 +204,7 @@ VERDICT_NO_TEST = "no test distinguishes a failed probe from an empty result"
 class Logical:
     """One logical line: its text, the physical line it started on, its waiver.
 
-    A small class rather than three parallel lists because the awk original has
-    exactly that (LL, LN, WV) and keeping them in step by index is the kind of
-    bookkeeping that goes wrong silently when an entry is appended in one place
-    and not another.
+    A small class rather than three parallel lists because the awk original has exactly that (LL, LN, WV) and keeping them in step by index is the kind of bookkeeping that goes wrong silently when an entry is appended in one place and not another.
     """
 
     __slots__ = ("line", "start", "waiver")
@@ -262,9 +218,7 @@ class Logical:
 def fold(text: str) -> list[Logical]:
     """Pass 1: fold physical lines into logical ones.
 
-    A logical line ends when its parentheses balance AND it does not end in a
-    pipe, an `&&` or a backslash. Comments and blanks are dropped, and either
-    clears a pending waiver.
+    A logical line ends when its parentheses balance AND it does not end in a pipe, an `&&` or a backslash. Comments and blanks are dropped, and either clears a pending waiver.
     """
     out: list[Logical] = []
     buf = ""
@@ -421,10 +375,7 @@ class Row:
 def scan_text(text: str, file: str) -> list[Row]:
     """Pass 2: apply the four rules to every logical line.
 
-    Order matters and is the twin's: capture, then swallow, then the two
-    exemptions, then the variable name, then the waiver, then the classifier. A
-    waiver is recorded WITHOUT running the classifier, so a waived line is never
-    also a finding.
+    Order matters and is the twin's: capture, then swallow, then the two exemptions, then the variable name, then the waiver, then the classifier. A waiver is recorded WITHOUT running the classifier, so a waived line is never also a finding.
     """
     lines = fold(text)
     rows: list[Row] = []
@@ -476,8 +427,7 @@ def validate_blocker_quality(entry_id: str, reason: str, file: str) -> bool:
 
     THE RULE IS NOT HERE. `rediacc_ci.core.allowlist.validate_reason` decides and
     supplies the words; what stays in this module is the STREAM SPLIT, which is
-    the twin's and not the rule's: the first line goes through `ci_error`, so it
-    becomes a `::error::` annotation under CI, and the rest is plain stdout.
+    the twin's and not the rule's: the first line goes through `ci_error`, so it becomes a `::error::` annotation under CI, and the rest is plain stdout.
     """
     rejection = allowlist.validate_reason(entry_id, reason, file)
     if rejection is None:

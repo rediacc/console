@@ -2,34 +2,19 @@
 
 The binary-exec override in `.ci/scripts/ci/watchdog-monitor.cjs`.
 
-The classifier prompt allows a non-executable downloaded binary to be called
-transient (CDN flake). The guard exists so a genuinely corrupt cross-platform
-build cannot be auto-retried away: when EVERY install-validation job in the run
-failed that way, the AI verdict is overridden to code-change. While the matrix is
-still running the guard DEFERS, so the first platform to fail cannot spend the
-run's one retry before the other platforms report.
+The classifier prompt allows a non-executable downloaded binary to be called transient (CDN flake). The guard exists so a genuinely corrupt cross-platform build cannot be auto-retried away: when EVERY install-validation job in the run failed that way, the AI verdict is overridden to code-change. While the matrix is still running the guard DEFERS, so the first platform to fail
+cannot spend the run's one retry before the other platforms report.
 
-THE PATTERNS UNDER TEST ARE THE ONES CI ACTUALLY SETS, not a copy. A guard that
-works on invented job names while the real config never matches is the exact
-failure this gate exists to catch, so `WATCHDOG_INSTALL_VALIDATION_PATTERNS` is
-read out of watchdog-monitor.yml -- the workflow the monitor step moved to from
-ci.yml with the ubuntu-slim generations -- and a missing value is a REFUSAL
-rather than an empty list.
+THE PATTERNS UNDER TEST ARE THE ONES CI ACTUALLY SETS, not a copy. A guard that works on invented job names while the real config never matches is the exact failure this gate exists to catch, so `WATCHDOG_INSTALL_VALIDATION_PATTERNS` is read out of watchdog-monitor.yml -- the workflow the monitor step moved to from ci.yml with the ubuntu-slim generations -- and a missing value is a
+REFUSAL rather than an empty list.
 
-WHAT THE PORT REIMPLEMENTS, and it is the one place the two languages had to say
-the same thing differently. The twin extracts the patterns with
+WHAT THE PORT REIMPLEMENTS, and it is the one place the two languages had to say the same thing differently. The twin extracts the patterns with
 
     sed -n "s/^ *WATCHDOG_INSTALL_VALIDATION_PATTERNS: *'\\(.*\\)'$/\\1/p"
 
-which is: the key at any indentation, a single-quoted value, captured without the
-quotes. The Python regex below is that expression transcribed, anchored the same
-way with MULTILINE, and it refuses on no match for the same reason the twin exits
-1 there. Its `test_deferred_job_is_not_marked_handled` uses
+which is: the key at any indentation, a single-quoted value, captured without the quotes. The Python regex below is that expression transcribed, anchored the same way with MULTILINE, and it refuses on no match for the same reason the twin exits 1 there. Its `test_deferred_job_is_not_marked_handled` uses
 `awk '/if \\(guard\\?\\.defer\\)/,/^      \\}/'` to slice the defer block, which is
-awk's RANGE form: from the first line matching the opening pattern through the
-first subsequent line matching the closing one. That is reimplemented literally
-below rather than approximated, because the case is a COUNT inside a WINDOW and a
-window off by one line would change the count silently.
+awk's RANGE form: from the first line matching the opening pattern through the first subsequent line matching the closing one. That is reimplemented literally below rather than approximated, because the case is a COUNT inside a WINDOW and a window off by one line would change the count silently.
 
 NO `xdist_group`. Every case is a short-lived `node -e` subprocess or a file
 read; nothing is bound and no module global moves.

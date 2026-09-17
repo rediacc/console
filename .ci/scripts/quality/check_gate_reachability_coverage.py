@@ -1,25 +1,14 @@
 #!/usr/bin/env python3
 """Assert the Stop hook's gate-reachability probe agrees with how gates are actually registered.
 
-WHY THIS EXISTS. On 2026-08-07 `wl_reggate.gate_reachable()` returned False for
-EVERY gate in this repo -- `check:ci-shell-commands`, `check:ci-dead-bash`,
-`check:ci-python-lint`, all 191 manifest registrations. It walked `npm run X`
-edges between package.json script bodies starting at `ci`, but `ci` is
-`tsx scripts/ci-runner/run.ts`, whose body contains no `npm run` references at
-all: the runner schedules from scripts/ci-runner/manifest.ts. The walk terminated
-immediately.
+WHY THIS EXISTS. On 2026-08-07 `wl_reggate.gate_reachable()` returned False for EVERY gate in this repo -- `check:ci-shell-commands`, `check:ci-dead-bash`, `check:ci-python-lint`, all 191 manifest registrations. It walked `npm run X` edges between package.json script bodies starting at `ci`, but `ci` is `tsx scripts/ci-runner/run.ts`, whose body contains no `npm run` references at
+all: the runner schedules from scripts/ci-runner/manifest.ts. The walk terminated immediately.
 
-The cost was not a missed defect but a MANUFACTURED one. The probe told two
-consecutive sessions that correctly-wired gates were "defined but never run" and
-demanded they be re-wired. A probe that cannot pass is the same class as a check
-that cannot fail, and it is more expensive, because it spends real work denying
-something true.
+The cost was not a missed defect but a MANUFACTURED one. The probe told two consecutive sessions that correctly-wired gates were "defined but never run" and demanded they be re-wired. A probe that cannot pass is the same class as a check that cannot fail, and it is more expensive, because it spends real work denying something true.
 
-WHAT THIS GUARDS. The probe now understands two registration mechanisms: npm-run
-chaining, and the ci-runner manifest. Nothing forced those two to stay in sync
+WHAT THIS GUARDS. The probe now understands two registration mechanisms: npm-run chaining, and the ci-runner manifest. Nothing forced those two to stay in sync
 with reality, so a future refactor of gate registration (a third mechanism, a
-renamed manifest, a changed entry shape) would silently return the probe to
-blindness. This compares the probe's verdict against the registrations that exist.
+renamed manifest, a changed entry shape) would silently return the probe to blindness. This compares the probe's verdict against the registrations that exist.
 
 ASSERTIONS
   1. FLOOR       the probe discovers a non-trivial number of manifest gates. An
@@ -30,15 +19,9 @@ ASSERTIONS
   3. CONTROL     a fabricated key is reported UNREACHABLE, so "reachable" has not
                  been widened into "always true".
 
-CONTROL-FIRST. Simulates the pre-fix probe (manifest awareness removed) and
-requires assertion 2 to FAIL against it. If the planted defect passes, this gate
-declares itself broken and exits non-zero.
+CONTROL-FIRST. Simulates the pre-fix probe (manifest awareness removed) and requires assertion 2 to FAIL against it. If the planted defect passes, this gate declares itself broken and exits non-zero.
 
----- gate ----
-step: Gate-reachability probe agrees with registrations
-needs: none
-selftest: true
----- end gate ----
+---- gate ---- step: Gate-reachability probe agrees with registrations needs: none selftest: true ---- end gate ----
 """
 
 from __future__ import annotations

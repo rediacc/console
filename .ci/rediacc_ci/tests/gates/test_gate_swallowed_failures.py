@@ -2,30 +2,17 @@ r"""Port of `.ci/scripts/test/gates/test-swallowed-failures.sh`.
 
 Both-ways test for `.ci/scripts/quality/check-swallowed-failures.sh`.
 
-THE DEFECT IT POLICES, carried across from the twin's header. A gate captures a
-probe, throws away the probe's exit status and its stderr, and reads the
-captured value. A failed probe yields empty, empty is byte-identical to
-"nothing to report", and the gate prints its success message. The live specimen
-is the pre-fix probe in `check-go-deps.sh`, recovered here from git history
-rather than paraphrased, so this file tests against the bytes that actually
-shipped.
+THE DEFECT IT POLICES, carried across from the twin's header. A gate captures a probe, throws away the probe's exit status and its stderr, and reads the captured value. A failed probe yields empty, empty is byte-identical to "nothing to report", and the gate prints its success message. The live specimen is the pre-fix probe in `check-go-deps.sh`, recovered here from git history
+rather than paraphrased, so this file tests against the bytes that actually shipped.
 
-WHY THE TWO HISTORICAL CASES ARE THE CENTRE OF THIS FILE. A lint of this shape
-is only worth having if it fires on the real defect and stays quiet on the real
-fix. Everything else here is calibration: each remaining case pins one
-exemption, and an exemption that cannot be shown to be load-bearing is just an
-untested branch.
+WHY THE TWO HISTORICAL CASES ARE THE CENTRE OF THIS FILE. A lint of this shape is only worth having if it fires on the real defect and stays quiet on the real fix. Everything else here is calibration: each remaining case pins one exemption, and an exemption that cannot be shown to be load-bearing is just an untested branch.
 
 CALIBRATION IS PART OF THE CONTRACT. `test_real_tree_is_clean` pins the count on
 the live tree at ZERO. The gate opened at 16 findings; all 16 were fixed, none
-waived. Pinning zero is what stops the class regrowing one call site at a time,
-which is how it reached 16 in the first place.
+waived. Pinning zero is what stops the class regrowing one call site at a time, which is how it reached 16 in the first place.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases drive the subject
-over the REAL tree: `test_silent_on_the_fixed_go_deps_probe` points it at the
-real `.ci/scripts/quality`, `test_real_tree_is_clean` runs it seam-free, and
-`test_the_repaired_sites_stay_repaired` greps nine real files. A battery step
-rewriting any of those mid-sweep is a divergence that would be blamed on this
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases drive the subject over the REAL tree: `test_silent_on_the_fixed_go_deps_probe` points it at the real `.ci/scripts/quality`, `test_real_tree_is_clean` runs it seam-free, and `test_the_repaired_sites_stay_repaired` greps nine real files. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on
+this
 port. `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured only
 because this module declares no `XDIST_GROUP` of its own; see
 `real_tree_admission` in `test_twin_parity.py`.
@@ -35,26 +22,16 @@ IS THIS FILE VISIBLE TO THE SWEEP IT DRIVES? NO, AND IT IS CHECKED
 --------------------------------------------------------------------------
 THE QUESTION HAD TO BE ASKED BEFORE A SINGLE FIXTURE WAS WRITTEN. Every fire
 case below writes out a genuine swallowed-failure shape. If the subject could
-see this source, a literal transcription would turn `check:ci-swallowed-failures`
-red tree-wide for whoever ran it next -- which is exactly what happened to the
-`label-references` port in an earlier batch, and why that one renders every
-fixture through a `%s` template.
+see this source, a literal transcription would turn `check:ci-swallowed-failures` red tree-wide for whoever ran it next -- which is exactly what happened to the `label-references` port in an earlier batch, and why that one renders every fixture through a `%s` template.
 
-Here the answer is different, and the difference is worth stating rather than
-assuming. The subject is scoped TWO ways, and this file is outside both:
+Here the answer is different, and the difference is worth stating rather than assuming. The subject is scoped TWO ways, and this file is outside both:
 
   * `DEFAULT_SCAN_DIRS=(".ci/scripts/quality" ".ci/scripts/security"
     ".ci/scripts/lib")`, and this file lives under `.ci/rediacc_ci/tests/gates`.
   * the walker is `find "$ROOT/$d" -type f -name '*.sh'`, and this file is `.py`.
 
-So the fixtures are written out LITERALLY, exactly as the twin writes them, and
-the port's diff can be read against its original. What replaces the `%s`
-treatment is a control rather than an argument:
-`test_this_module_plants_no_capture_the_real_sweep_can_see` points the REAL
-subject at this very directory and requires it to report that it scanned
-NOTHING. Either half of the scoping breaking -- a `.sh` file appearing beside
-these ports, or the walker widening to `*.py` -- turns that control red HERE, by
-name, instead of reddening the gate for the next session.
+So the fixtures are written out LITERALLY, exactly as the twin writes them, and the port's diff can be read against its original. What replaces the `%s` treatment is a control rather than an argument: `test_this_module_plants_no_capture_the_real_sweep_can_see` points the REAL subject at this very directory and requires it to report that it scanned NOTHING. Either half of the
+scoping breaking -- a `.sh` file appearing beside these ports, or the walker widening to `*.py` -- turns that control red HERE, by name, instead of reddening the gate for the next session.
 """
 
 import os
@@ -151,10 +128,7 @@ def require_gate(gate) -> str:
 def write_case(gate, root, name: str, *lines: str):
     """`write_case <basename> <body...>` -- one fixture script per case.
 
-    ANTI-VACUITY, and it is not decoration. A case that plants an EMPTY body
-    would be scanned, found clean, and pass every silence assertion below for
-    the wrong reason. An empty body is therefore a FAILURE here rather than a
-    fixture that says nothing.
+    ANTI-VACUITY, and it is not decoration. A case that plants an EMPTY body would be scanned, found clean, and pass every silence assertion below for the wrong reason. An empty body is therefore a FAILURE here rather than a fixture that says nothing.
     """
     if not lines:
         gate.log_fail(
@@ -174,8 +148,7 @@ def write_case(gate, root, name: str, *lines: str):
 def run_gate(gate, root, dirs: str = SCAN_REL) -> harness.RunResult:
     """`run_gate [scan-dirs]`: the two env seams, merged streams.
 
-    The twin captures `2>&1` into `LAST_OUT` and asserts on the merged text, so
-    every caller below reads `.combined` for the same reason.
+    The twin captures `2>&1` into `LAST_OUT` and asserts on the merged text, so every caller below reads `.combined` for the same reason.
     """
     bash = require_gate(gate)
     return harness.run(
@@ -190,8 +163,7 @@ def run_gate(gate, root, dirs: str = SCAN_REL) -> harness.RunResult:
 
 def test_fires_on_the_prefix_go_deps_probe(gate):
     """THE CONTROL. Byte-for-byte the probe that shipped before 2026-07-28,
-    recovered with `git show <commit>^:.ci/scripts/quality/check-go-deps.sh`.
-    It spans three physical lines with 2>/dev/null on the first and || true on
+    recovered with `git show <commit>^:.ci/scripts/quality/check-go-deps.sh`. It spans three physical lines with 2>/dev/null on the first and || true on
     the third, which is why a line-based scanner cannot see it at all."""
     with harness.temp_dir() as d:
         tree = d / "tree"
@@ -320,8 +292,7 @@ def test_empty_case_that_exits_zero_fires(gate):
     """The subtlest true positive, and the shape check-review-comments.sh and
     check-branch.sh BOTH carried before they were repaired: the author DID test
     for empty, and then treated empty as a pass. Both now fail closed (see the
-    repairs pinned in test_the_repaired_sites_stay_repaired), so this fixture is
-    the only place the shape still lives -- which is exactly why it is pinned
+    repairs pinned in test_the_repaired_sites_stay_repaired), so this fixture is the only place the shape still lives -- which is exactly why it is pinned
     here rather than left to be rediscovered in the wild."""
     with harness.temp_dir() as d:
         tree = d / "tree"
@@ -463,8 +434,7 @@ def test_reported_empty_case_is_silent(gate):
 
 def test_escalation_in_the_next_function_does_not_count(gate):
     """Found during calibration: the lookahead window ran past the closing brace,
-    so a log_error in the NEXT function counted as handling for this one. That
-    silently cleared r2_count_objects in lib/common.sh, which is a genuine
+    so a log_error in the NEXT function counted as handling for this one. That silently cleared r2_count_objects in lib/common.sh, which is a genuine
     finding AND the helper the sibling gate recommends as a remedy."""
     with harness.temp_dir() as d:
         tree = d / "tree"
@@ -592,10 +562,7 @@ def test_empty_scope_is_blind_not_clean(gate):
 
 def test_dead_scanner_is_not_a_clean_scan(gate):
     """THE GATE'S OWN FIRST BUG, pinned. Its awk program died on all 42 files
-    (backslash escapes are consumed when awk assigns a -v value, so every regex
-    became "Unmatched ("), and it printed "OK: no gate captures a probe..." and
-    exited 0. The empty output of a dead scanner is identical to the empty
-    output of a clean file, which is precisely the defect this gate exists to
+    (backslash escapes are consumed when awk assigns a -v value, so every regex became "Unmatched ("), and it printed "OK: no gate captures a probe..." and exited 0. The empty output of a dead scanner is identical to the empty output of a clean file, which is precisely the defect this gate exists to
     police."""
     with harness.temp_dir() as d:
         tree = d / "tree"
@@ -619,15 +586,9 @@ def test_dead_scanner_is_not_a_clean_scan(gate):
 
 def test_real_tree_is_clean(gate):
     """THE RATCHET. This started at 16 findings, all triaged by hand: 14 gates
-    that could pass vacuously when their probe failed, and 2 that failed safe.
-    All 16 were fixed rather than waived, so the live count is now ZERO and
-    stays that way.
+    that could pass vacuously when their probe failed, and 2 that failed safe. All 16 were fixed rather than waived, so the live count is now ZERO and stays that way.
 
-    Zero is the only bound worth pinning here. A range would let the class
-    regrow one call site at a time, which is exactly how it reached 16: nobody
-    was counting. If this case fails, a new capture is throwing away a probe
-    failure. Fix it or waive it with a real reason, and do not relax this
-    assertion to make the failure go away.
+    Zero is the only bound worth pinning here. A range would let the class regrow one call site at a time, which is exactly how it reached 16: nobody was counting. If this case fails, a new capture is throwing away a probe failure. Fix it or waive it with a real reason, and do not relax this assertion to make the failure go away.
     """
     bash = require_gate(gate)
     result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root())
@@ -647,13 +608,9 @@ def test_real_tree_is_clean(gate):
 
 def test_the_repaired_sites_stay_repaired(gate):
     """Anti-vacuity for the case above: "0 findings" is also what a gate that
-    stopped scanning would report. Assert that the specific repairs are still
-    present in the real files, so a regression shows up as a failure here rather
-    than as a suspiciously quiet clean run.
+    stopped scanning would report. Assert that the specific repairs are still present in the real files, so a regression shows up as a failure here rather than as a suspiciously quiet clean run.
 
-    A SUBSTRING TEST AND NOT `assert_contains`: these needles are searched in
-    WHOLE FILES, and a failing assert_contains would dump the entire file into
-    the test output, burying the one line that matters. The bash twin reaches
+    A SUBSTRING TEST AND NOT `assert_contains`: these needles are searched in WHOLE FILES, and a failing assert_contains would dump the entire file into the test output, burying the one line that matters. The bash twin reaches
     for `grep -qF` for the same reason.
     """
     if not REPAIRS:
@@ -673,8 +630,7 @@ def test_the_repaired_sites_stay_repaired(gate):
 
 def test_scope_is_gates_only(gate):
     """The scope is the justification for the whole design: only a gate can turn
-    a swallowed failure into a false GREEN that lets a merge through. If the
-    default scope silently widened to the whole repo, the false-positive budget
+    a swallowed failure into a false GREEN that lets a merge through. If the default scope silently widened to the whole repo, the false-positive budget
     calibrated above would be meaningless."""
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE_REL)
@@ -701,18 +657,12 @@ def test_scope_is_gates_only(gate):
 def test_this_module_plants_no_capture_the_real_sweep_can_see(gate):
     """ADDED BY THE PORT, and it is the control on this port's central claim.
 
-    Every fire case above writes a genuine swallowed-failure shape out
-    LITERALLY, which is only safe because the subject cannot see this file: it
+    Every fire case above writes a genuine swallowed-failure shape out LITERALLY, which is only safe because the subject cannot see this file: it
     walks `.ci/scripts/{quality,security,lib}` for `*.sh`, and this is a `.py`
-    under `.ci/rediacc_ci/tests/gates`. That is an argument, and an argument is
-    not a control.
+    under `.ci/rediacc_ci/tests/gates`. That is an argument, and an argument is not a control.
 
-    So: point the REAL subject at this directory and require it to say it
-    scanned NOTHING. Both halves of the scoping are then observed rather than
-    reasoned about. A `.sh` file appearing beside these ports, or the walker
-    widening to `*.py`, makes the subject find something here and reds this case
-    BY NAME, instead of reddening `check:ci-swallowed-failures` for whoever runs
-    it next and sending them hunting.
+    So: point the REAL subject at this directory and require it to say it scanned NOTHING. Both halves of the scoping are then observed rather than reasoned about. A `.sh` file appearing beside these ports, or the walker widening to `*.py`, makes the subject find something here and reds this case BY NAME, instead of reddening `check:ci-swallowed-failures` for whoever runs it next
+    and sending them hunting.
     """
     here = paths.from_root(*HERE_REL.split("/"))
     if not here.is_dir():

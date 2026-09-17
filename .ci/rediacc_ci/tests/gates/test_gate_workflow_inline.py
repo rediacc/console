@@ -1,12 +1,8 @@
 """Port of `.ci/scripts/test/gates/test-workflow-inline.sh`.
 
-Both-ways test for the inline-run rule in
-`.ci/scripts/quality/check-workflows.sh`.
+Both-ways test for the inline-run rule in `.ci/scripts/quality/check-workflows.sh`.
 
-The rule keeps CI step LOGIC out of workflow YAML: a `run:` block scalar whose
-shell logic exceeds INLINE_MAX_LOGIC (8) non-blank / non-comment lines is a
-violation. There is no baseline and no per-file exemption. A gate like this fails
-in BOTH directions, so both are asserted:
+The rule keeps CI step LOGIC out of workflow YAML: a `run:` block scalar whose shell logic exceeds INLINE_MAX_LOGIC (8) non-blank / non-comment lines is a violation. There is no baseline and no per-file exemption. A gate like this fails in BOTH directions, so both are asserted:
 
   * Too quiet: an over-threshold block slips through and the workflow accretes
     un-shared shell logic, or the whole rule goes blind because the workflow
@@ -14,21 +10,14 @@ in BOTH directions, so both are asserted:
   * Too loud: it miscounts (comments, blank lines, the step's own YAML keys) and
     reds a file that already complies.
 
-HISTORY, because it is the point of `test_no_baseline_escape_hatch`: the rule
-used to be a ratchet over `.ci/quality/workflow-inline-baseline.json`, which
-grandfathered 52 legacy blocks. All 52 were extracted and both the file and the
-ratchet logic were deleted. If someone reintroduces a baseline the rule stops
-holding, so that case pins its ABSENCE rather than trusting the reviewer.
+HISTORY, because it is the point of `test_no_baseline_escape_hatch`: the rule used to be a ratchet over `.ci/quality/workflow-inline-baseline.json`, which grandfathered 52 legacy blocks. All 52 were extracted and both the file and the ratchet logic were deleted. If someone reintroduces a baseline the rule stops holding, so that case pins its ABSENCE rather than trusting the
+reviewer.
 
-CI IS NOT SET HERE, and that is copied from the twin rather than overlooked.
-test-workflow-inline.sh defines its own `run_check` with no `CI` assignment,
+CI IS NOT SET HERE, and that is copied from the twin rather than overlooked. test-workflow-inline.sh defines its own `run_check` with no `CI` assignment,
 unlike the two callers of workflow-rule.sh which hard-code `CI=true`. The shared
-helper therefore takes `ci` as an argument and this file passes False, so the
-fixtures are judged in the same environment the twin judges them in.
+helper therefore takes `ci` as an argument and this file passes False, so the fixtures are judged in the same environment the twin judges them in.
 
-NO `xdist_group`. Each case gets its own `mktemp -d` fixture directory, and the
-subject is driven with a per-subprocess environment rather than by mutating this
-one.
+NO `xdist_group`. Each case gets its own `mktemp -d` fixture directory, and the subject is driven with a per-subprocess environment rather than by mutating this one.
 """
 
 import pathlib
@@ -44,8 +33,7 @@ INLINE_MAX_LOGIC = 8
 def write_workflow(path: pathlib.Path, n: int, lines: int = 9) -> None:
     """`n` over-threshold `run:` blocks plus one always-clean thin block.
 
-    The thin block is what proves thin blocks never count: it is present in every
-    fixture, including the one whose expected verdict is a pass.
+    The thin block is what proves thin blocks never count: it is present in every fixture, including the one whose expected verdict is a pass.
     """
     body = [
         "name: fixture",
@@ -227,14 +215,11 @@ def test_the_fixture_directory_is_what_is_judged(gate):
 
     Every case here claims a verdict about a fixture tree, and every one of those
     claims rests on `WORKFLOW_INLINE_ONLY=1` actually emptying GITHUB_YAMLS so the
-    banned-pattern scans become no-ops and `WORKFLOW_DIR` is the only thing
-    judged. `test_empty_tree_is_not_a_pass` proves the rule REFUSES a directory
+    banned-pattern scans become no-ops and `WORKFLOW_DIR` is the only thing judged. `test_empty_tree_is_not_a_pass` proves the rule REFUSES a directory
     with nothing in it, which is a different claim: it says the scan noticed the
     absence, not that a PRESENT file was the one read.
 
-    Two directories, one violating and one clean, driven through the same
-    incantation in the same process. A verdict that TRACKS the directory is the
-    only evidence that the directory is what was read.
+    Two directories, one violating and one clean, driven through the same incantation in the same process. A verdict that TRACKS the directory is the only evidence that the directory is what was read.
     """
     with harness.temp_dir() as root:
         bad = root / "bad"

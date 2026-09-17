@@ -1,34 +1,23 @@
 """Port of `.ci/scripts/test/proxies/proxy-ops-host-check.sh`.
 
-Local proxy for the `renet ops host check` leg of
-`.github/workflows/ci-ops-test.yml`, wired as the registered gate
-`check:ci-proxy-ops-host-check` (`package.json:389`).
+Local proxy for the `renet ops host check` leg of `.github/workflows/ci-ops-test.yml`, wired as the registered gate `check:ci-proxy-ops-host-check` (`package.json:389`).
 
-WHY THE TWIN EXISTS AT ALL, kept because it is the finding.
-`ci-ops-test.yml:573-575` is `run: $RENET_BINARY ops host check || true`, so
-that step cannot fail on any platform for any reason, and the only real
-assertion on the command's output in the whole workflow is Windows-only
-(`ci-ops-test.yml:584-589`). On Linux and macOS the command's CONTRACT -- that
-it emits parseable JSON with a populated check list at all -- has never been
-asserted anywhere. This proxy asserts the SHAPE of the report and deliberately
+WHY THE TWIN EXISTS AT ALL, kept because it is the finding. `ci-ops-test.yml:573-575` is `run: $RENET_BINARY ops host check || true`, so that step cannot fail on any platform for any reason, and the only real assertion on the command's output in the whole workflow is Windows-only (`ci-ops-test.yml:584-589`). On Linux and macOS the command's CONTRACT -- that it emits parseable JSON
+with a populated check list at all -- has never been asserted anywhere. This proxy asserts the SHAPE of the report and deliberately
 NOT the health of the host; the per-status tally is PRINTED instead, so a
 reader can see the composition and notice when it collapses.
 
 -----------------------------------------------------------------------------
 A jq ERROR USED TO BE FOLDED INTO "NO FINDINGS". FIXED 2026-09-10, BOTH SIDES
 -----------------------------------------------------------------------------
-`:93-108` computes every per-entry rule in ONE jq program. jq aborts the WHOLE
-program on the first type error, prints nothing (or a truncated prefix) on
-stdout and exits 5. The old code read
+`:93-108` computes every per-entry rule in ONE jq program. jq aborts the WHOLE program on the first type error, prints nothing (or a truncated prefix) on stdout and exits 5. The old code read
 
     bad="$(printf '%s' "$json" | jq -r '(.checks // []) | to_entries[] | ...'
            2>/dev/null)"
     [[ -n "$bad" ]] && findings+="$bad"
 
 with the status UNREAD, so `$bad` was empty and that scored as "no per-entry
-findings". The entire body of the contract this gate exists to assert
-evaporated on exactly the malformed input it is meant to catch. Measured
-against the twin's own `validate_report` BEFORE the fix:
+findings". The entire body of the contract this gate exists to assert evaporated on exactly the malformed input it is meant to catch. Measured against the twin's own `validate_report` BEFORE the fix:
 
     checks:[1,2,3]    -> RC=0, no findings   (should be: entries have no
                                               name/value/status)
@@ -39,11 +28,7 @@ against the twin's own `validate_report` BEFORE the fix:
     checks:[null]     -> RC=1, 3 findings    (jq's `null.name` is null, not an
                                               error, so this one case survived)
 
-THE FIX: the status is read into `bad_rc`, jq's stderr is kept in a temp file
-rather than sent to /dev/null, and a non-zero status becomes a NAMED refusal
-carrying jq's own first diagnostic line -- never the empty finding set it used
-to be read as. Partial stdout from a program that then aborted is DISCARDED
-rather than reported as if it were the whole finding set. The same three
+THE FIX: the status is read into `bad_rc`, jq's stderr is kept in a temp file rather than sent to /dev/null, and a non-zero status becomes a NAMED refusal carrying jq's own first diagnostic line -- never the empty finding set it used to be read as. Partial stdout from a program that then aborted is DISCARDED rather than reported as if it were the whole finding set. The same three
 reports now measure:
 
     checks:[1,2,3]    -> RC=1, VACUOUS ... jq said: jq: error (at <stdin>:0):
@@ -54,41 +39,22 @@ reports now measure:
                                               must-not-fire direction)
 
 jq's runtime-error status is 5 on jq-1.8.1, measured; `_bad_entries` raising
-is rendered with that literal here because the twin interpolates whatever jq
-returned. A jq that ever returned something else for a runtime error would
-show up as a byte divergence in the differential, which is the right place for
-it to show up.
+is rendered with that literal here because the twin interpolates whatever jq returned. A jq that ever returned something else for a runtime error would show up as a byte divergence in the differential, which is the right place for it to show up.
 
-BLAST RADIUS, measured not estimated. The subject is a Go binary and
-`private/renet/cmd/renet/ops_host.go:29` declares `Checks []HostCheckResult`,
-so `encoding/json` can only ever emit an array of objects or `null` -- and
-`null` is handled correctly by `(.checks // [])`. Live paths today: ZERO, both
-before and after. Override-reachable paths: ONE, `:172`'s
+BLAST RADIUS, measured not estimated. The subject is a Go binary and `private/renet/cmd/renet/ops_host.go:29` declares `Checks []HostCheckResult`, so `encoding/json` can only ever emit an array of objects or `null` -- and `null` is handled correctly by `(.checks // [])`. Live paths today: ZERO, both before and after. Override-reachable paths: ONE, `:172`'s
 `RENET_BINARY="${RENET_BINARY:-...}"`, which is honoured with no validation of
-what the binary is, so before the fix any other program's JSON was certified
-by this gate. That override is the path the differential actually drives:
-`test_proxies_ops_host_check.py::test_a_checks_array_of_non_objects_is_now_a_
-named_refusal` and `::test_checks_as_a_string_is_now_a_named_refusal` point
-`RENET_BINARY` at a shim, and
-`::test_a_null_entry_is_still_read_field_by_field` is the must-NOT-fire
-control beside them. The twin's own `--selftest` grew a tenth case for the
-same reason.
+what the binary is, so before the fix any other program's JSON was certified by this gate. That override is the path the differential actually drives: `test_proxies_ops_host_check.py::test_a_checks_array_of_non_objects_is_now_a_ named_refusal` and `::test_checks_as_a_string_is_now_a_named_refusal` point `RENET_BINARY` at a shim, and
+`::test_a_null_entry_is_still_read_field_by_field` is the must-NOT-fire control beside them. The twin's own `--selftest` grew a tenth case for the same reason.
 
 -----------------------------------------------------------------------------
 A SECOND, COSMETIC ONE: MULTIPLE CONTRACT VIOLATIONS RENDER AS ONE BULLET
 -----------------------------------------------------------------------------
-`:178` is `printf '  - %s\\n' "$FINDINGS"` -- QUOTED, so a multi-line
-`$FINDINGS` becomes a single `  - ` bullet with raw newlines inside it, unlike
-`proxy-go-unit.sh:92` which leaves the same construct unquoted on purpose.
-Reproduced.
+`:178` is `printf ' - %s\\n' "$FINDINGS"` -- QUOTED, so a multi-line `$FINDINGS` becomes a single ` - ` bullet with raw newlines inside it, unlike `proxy-go-unit.sh:92` which leaves the same construct unquoted on purpose. Reproduced.
 
 -----------------------------------------------------------------------------
 jq SEMANTICS ARE IMPLEMENTED, NOT SHELLED OUT TO
 -----------------------------------------------------------------------------
-`jq` stays a declared REQUIREMENT (`:146`) because the twin needs it and the
-preflight must still say cannot-run without it, but the validator's logic is
-Python here, the same way the twin's `grep` pipelines are Python in the sibling
-ports. That means jq's own rules are reproduced deliberately:
+`jq` stays a declared REQUIREMENT (`:146`) because the twin needs it and the preflight must still say cannot-run without it, but the validator's logic is Python here, the same way the twin's `grep` pipelines are Python in the sibling ports. That means jq's own rules are reproduced deliberately:
 
   * `a // b` yields `b` when `a` is null OR FALSE, which is why a check whose
     `.value` is the boolean `false` is reported as "has no value" (verified
@@ -103,11 +69,7 @@ ports. That means jq's own rules are reproduced deliberately:
 
 ONE NAMED DIVERGENCE, not reproduced: jq reads a STREAM of JSON values and
 `json.loads` reads exactly one, so `{"a":1} {"b":2}` on the subject's stdout
-would make the twin evaluate the pair and this port report "not parseable
-JSON". Unreachable from a Go `json.Marshal`, which emits one document, and
-pinned as still-real by
-`test_proxies_ops_host_check.py::test_a_two_document_stream_is_the_one_named_
-divergence`.
+would make the twin evaluate the pair and this port report "not parseable JSON". Unreachable from a Go `json.Marshal`, which emits one document, and pinned as still-real by `test_proxies_ops_host_check.py::test_a_two_document_stream_is_the_one_named_ divergence`.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-ops-host-check.observations.jsonl`.
 """
@@ -172,9 +134,7 @@ def _jq_raw(value: Any) -> str:
 def _jq_err_repr(value: Any) -> str:
     r"""How jq renders a value INSIDE a diagnostic: always JSON, never raw.
 
-    `Cannot iterate over string ("nope")` keeps the quotes, unlike `\(...)`
-    interpolation which prints a string raw. Getting these two the same way
-    round is a real byte difference and the ledger's variant 5 caught it.
+    `Cannot iterate over string ("nope")` keeps the quotes, unlike `\(...)` interpolation which prints a string raw. Getting these two the same way round is a real byte difference and the ledger's variant 5 caught it.
     """
     return json.dumps(value, separators=(",", ":"))
 
@@ -192,9 +152,7 @@ def _jq_length(value: Any) -> int:
 def _jq_entries(value: Any) -> list[tuple[Any, Any]]:
     """`to_entries[]`. An array keys on the index, an object on the key string.
 
-    The error wording is `to_entries`\' own and differs from `.[]`\'s, measured
-    on jq-1.8.1: `printf \'"ab"\' | jq to_entries` says `string ("ab") has no
-    keys` where `jq .[]` says `Cannot iterate over string ("ab")`. Both used to
+    The error wording is `to_entries`\' own and differs from `.[]`\'s, measured on jq-1.8.1: `printf \'"ab"\' | jq to_entries` says `string ("ab") has no keys` where `jq .[]` says `Cannot iterate over string ("ab")`. Both used to
     be invisible here because both sides discarded them; the fix of 2026-09-10
     puts this one in a FINDING, so the two wordings can no longer be conflated.
     """
@@ -221,8 +179,7 @@ def _jq_lineno(fed: str) -> int:
         printf '[1]\n'      | jq .platform  ->  <stdin>:1
         printf '[\n  1\n]\n' | jq .platform  ->  <stdin>:3
 
-    So the two call sites in the twin report DIFFERENT line numbers for the
-    same document: `validate_report` is fed `printf '%s' "$json"` where
+    So the two call sites in the twin report DIFFERENT line numbers for the same document: `validate_report` is fed `printf '%s' "$json"` where
     `json="$(cat)"` has already stripped the trailing newline, while the tally
     block at `:183-192` reads `<"$OUT"` with the newline still on it.
     """
@@ -232,9 +189,7 @@ def _jq_lineno(fed: str) -> int:
 def _bad_entries(checks: Any) -> list[str]:
     """`:93-101`, and it RAISES rather than returning silence.
 
-    A `_JqError` anywhere in the walk aborts the whole program, exactly as jq
-    does, and everything collected so far is discarded with it -- the twin
-    discards its own partial stdout the same way. The caller turns the
+    A `_JqError` anywhere in the walk aborts the whole program, exactly as jq does, and everything collected so far is discarded with it -- the twin discards its own partial stdout the same way. The caller turns the
     exception into a named finding; see this module's docstring for the hole
     that was.
     """
@@ -275,8 +230,7 @@ def _bash_arith(text: str) -> int:
 def validate_report(want_platform: str, report: str) -> tuple[str, int]:
     """The twin's pure `validate_report` (`:50-94`).
 
-    Returns the findings it would print on STDOUT plus its return code. jq's
-    own diagnostics go to stderr here, exactly as `:61-63` let them.
+    Returns the findings it would print on STDOUT plus its return code. jq's own diagnostics go to stderr here, exactly as `:61-63` let them.
     """
     # `json="$(cat)"` strips the trailing newlines, which is also what makes
     # jq report `<stdin>:0` here where the tally block reports `<stdin>:1`.

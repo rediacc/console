@@ -1,49 +1,26 @@
 #!/usr/bin/env python3
 """An apt source rewritten to ONE mirror must carry a fallback to another.
 
-WHY THIS EXISTS, from a defect that took down four consecutive CI attempts on
-2026-08-19. `.devcontainer/Dockerfile` rewrote every apt source to
-`azure.archive.ubuntu.com`, on a documented assumption written into the file: that
-mirror sits in the same data centers as the runners and "effectively never loses
-connectivity from them". It lost connectivity for over ninety minutes. Because ALL
-sources pointed at that one host, the surrounding five-attempt retry loop hammered
-the same dead mirror five times and could not help.
+WHY THIS EXISTS, from a defect that took down four consecutive CI attempts on 2026-08-19. `.devcontainer/Dockerfile` rewrote every apt source to `azure.archive.ubuntu.com`, on a documented assumption written into the file: that mirror sits in the same data centers as the runners and "effectively never loses connectivity from them". It lost connectivity for over ninety minutes.
+Because ALL sources pointed at that one host, the surrounding five-attempt retry loop hammered the same dead mirror five times and could not help.
 
-The retry loop was not the bug and was working exactly as designed. Retrying a
-single point of failure is still a single point of failure.
+The retry loop was not the bug and was working exactly as designed. Retrying a single point of failure is still a single point of failure.
 
-WHY NO EXISTING GATE CAUGHT IT, which is the whole reason this file exists rather
-than a comment in the Dockerfile. Every check in this repo that looks at retry
-logic counts ATTEMPTS. None asked whether the attempts could ever reach a
-DIFFERENT source. A loop with five retries and one host passes every existing
-notion of "has retries" while being strictly equivalent to no retries at all when
+WHY NO EXISTING GATE CAUGHT IT, which is the whole reason this file exists rather than a comment in the Dockerfile. Every check in this repo that looks at retry logic counts ATTEMPTS. None asked whether the attempts could ever reach a DIFFERENT source. A loop with five retries and one host passes every existing notion of "has retries" while being strictly equivalent to no retries
+at all when
 that host is down. The fix was applied by hand; nothing prevented its return, and
 a revert or a newly added single-mirror block would have been invisible.
 
-WHAT IT REQUIRES. If a Dockerfile RUN block rewrites apt sources to a specific
-mirror host, that same block must name at least TWO distinct hosts, so a failure
-of the first can fall through to the second. It does not mandate a particular
+WHAT IT REQUIRES. If a Dockerfile RUN block rewrites apt sources to a specific mirror host, that same block must name at least TWO distinct hosts, so a failure of the first can fall through to the second. It does not mandate a particular
 mirror, a particular retry count, or a particular shape of fallback; it only
 refuses the shape that has already cost this repo a night.
 
-AND IT CHECKS THE SEQUENCING, because naming a second host is necessary and not
-sufficient. A fallback guarded on the LAST loop iteration fires after the final
-attempt, so nothing is left to use it: two hosts appear, the shallow reading of
-this gate passes, and the build still dies exactly as before. That is the precise
-shape of box-ticking a regression gate is supposed to refuse, so the guard
-iteration is compared against the loop bound and a fallback that cannot help is
-reported with the numbers that make it useless.
+AND IT CHECKS THE SEQUENCING, because naming a second host is necessary and not sufficient. A fallback guarded on the LAST loop iteration fires after the final attempt, so nothing is left to use it: two hosts appear, the shallow reading of this gate passes, and the build still dies exactly as before. That is the precise shape of box-ticking a regression gate is supposed to refuse,
+so the guard iteration is compared against the loop bound and a fallback that cannot help is reported with the numbers that make it useless.
 
-WHAT IT DELIBERATELY DOES NOT DO. It does not police Dockerfiles that never
-rewrite apt sources. The stock `archive.ubuntu.com` is already a load-balanced
-pool of many machines, so a file that leaves sources alone is not carrying the
-single-point-of-failure this gate is about.
+WHAT IT DELIBERATELY DOES NOT DO. It does not police Dockerfiles that never rewrite apt sources. The stock `archive.ubuntu.com` is already a load-balanced pool of many machines, so a file that leaves sources alone is not carrying the single-point-of-failure this gate is about.
 
----- gate ----
-step: Dockerfile mirror resilience
-needs: none
-selftest: true
-why: An apt source rewritten to ONE mirror must carry a fallback to another.
+---- gate ---- step: Dockerfile mirror resilience needs: none selftest: true why: An apt source rewritten to ONE mirror must carry a fallback to another.
      Born 2026-08-19, when azure.archive.ubuntu.com refused connections for
      ninety minutes and took down four consecutive CI attempts: every apt
      source had been rewritten to that single host, so the surrounding
@@ -72,13 +49,8 @@ MIN_SCANNED = 50
 def tracked_files(root):
     """Every tracked Dockerfile AND shell script.
 
-    SHELL SCRIPTS WERE ADDED THE HARD WAY, hours after the Dockerfile-only
-    version shipped. The same single-mirror rewrite lived in
-    `.ci/scripts/test/test-install-methods.sh`, which drives apt inside
-    ubuntu:22.04 and ubuntu:24.04 containers, and it took down `Validate
-    Promotion` in the very next CI run while this gate reported the tree clean.
-    A gate scoped to the file where a defect was FOUND, rather than to the shape
-    of the defect, sweeps the instance and misses the class.
+    SHELL SCRIPTS WERE ADDED THE HARD WAY, hours after the Dockerfile-only version shipped. The same single-mirror rewrite lived in `.ci/scripts/test/test-install-methods.sh`, which drives apt inside ubuntu:22.04 and ubuntu:24.04 containers, and it took down `Validate Promotion` in the very next CI run while this gate reported the tree clean. A gate scoped to the file where a
+    defect was FOUND, rather than to the shape of the defect, sweeps the instance and misses the class.
 
     Uses git so an untracked scratch file cannot change the verdict either way.
     """
@@ -106,8 +78,7 @@ def tracked_files(root):
 def run_blocks(text):
     """Each RUN instruction as one logical line, backslash continuations joined.
 
-    A fallback lives in the SAME block as the rewrite it protects, because that is
-    the only place it can run between two attempts of the same loop.
+    A fallback lives in the SAME block as the rewrite it protects, because that is the only place it can run between two attempts of the same loop.
     """
     # COMMENTS ARE STRIPPED BEFORE THE JOIN, because that is the order Docker itself uses: a comment line inside a continued instruction is REMOVED, and the continuation closes over it. Joining first instead made a mid-RUN comment terminate the block, and everything after it -- in .devcontainer/ Dockerfile, the entire fallback arm -- fell outside the block the gate then judged. The
     # gate reported that file as "pinned to a SINGLE mirror" while its fallback sat 60 lines further down the SAME RUN, and pointed at that same file as the example to copy. A parser that ends a block early does not
@@ -191,8 +162,7 @@ ITER_TEST = r'\[\[?\s*"?\$\{?\w+\}?"?\s*(?:==?|-eq)\s*"?(\d+)"?\s*\]\]?'
 def giveup_iteration(block):
     """Iteration N of an iteration guard whose body EXITS.
 
-    A fallback can be correctly placed relative to the loop bound and still never
-    run, because an earlier iteration bails out first. Loop bound and fallback
+    A fallback can be correctly placed relative to the loop bound and still never run, because an earlier iteration bails out first. Loop bound and fallback
     position are each fine in isolation; only their relation to the give-up point
     decides whether the fallback is reachable.
     """
@@ -219,9 +189,7 @@ def last_attempt(block):
 def fallback_iteration(block):
     """Iteration N from a `[ "$i" = "N" ]` guard that wraps a source rewrite.
 
-    Returns the guard that protects a REWRITE, not the guard that protects the
-    give-up branch, which is why the search is anchored on a following sed rather
-    than on any equality test.
+    Returns the guard that protects a REWRITE, not the guard that protects the give-up branch, which is why the search is anchored on a following sed rather than on any equality test.
     """
     best = None
     for m in re.finditer(ITER_TEST, block):

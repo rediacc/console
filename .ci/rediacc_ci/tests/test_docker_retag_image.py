@@ -1,22 +1,11 @@
 """Differential: `rediacc_ci.docker.retag_image` against its twin
 `.ci/scripts/docker/retag-image.sh`.
 
-A RECORDING FAKE `docker` ON A SCRATCH PATH built from an explicit symlink list,
-so a tool nobody named is genuinely absent. Not a formality: an early probe for
-this port left `/usr/bin` on PATH and the real docker binary contacted
-`ghcr.io/token` before the twin printed a line. Nothing here can reach a
-registry.
+A RECORDING FAKE `docker` ON A SCRATCH PATH built from an explicit symlink list, so a tool nobody named is genuinely absent. Not a formality: an early probe for this port left `/usr/bin` on PATH and the real docker binary contacted `ghcr.io/token` before the twin printed a line. Nothing here can reach a registry.
 
-THE CALL LOG IS THE EVIDENCE, and the fake's `create` prints nothing, so a port
-that swapped `-t <dst>` and `<src>` -- the mistake that retags the OLD image
-onto the new version -- would produce identical stdout, identical stderr and an
-identical exit code. `test_planted_defect_is_caught_only_by_the_call_log` plants
-exactly that.
+THE CALL LOG IS THE EVIDENCE, and the fake's `create` prints nothing, so a port that swapped `-t <dst>` and `<src>` -- the mistake that retags the OLD image onto the new version -- would produce identical stdout, identical stderr and an identical exit code. `test_planted_defect_is_caught_only_by_the_call_log` plants exactly that.
 
-`--skip-if-exists` GETS FOUR CASES, NOT ONE, because it is the only branch in
-this directory that can silently do nothing: destination absent, digests equal,
-digests different, and source unreadable. The twin's own comment says an
-inverted version of this check "silently locks the new image out of promotion"
+`--skip-if-exists` GETS FOUR CASES, NOT ONE, because it is the only branch in this directory that can silently do nothing: destination absent, digests equal, digests different, and source unreadable. The twin's own comment says an inverted version of this check "silently locks the new image out of promotion"
 with the symptom appearing only in post-publish pull tests, so all four
 directions are driven.
 """
@@ -218,8 +207,7 @@ def test_from_is_demanded_first(tmp_path) -> None:
 
 def test_from_is_demanded_before_the_exclusivity_checks(tmp_path) -> None:
     """ORDER IS OBSERVABLE. `--all --image api` with no tags reports the missing
-    `--from`, not the mutual exclusion, and a port that validated targets first
-    would print a different message with the same exit code.
+    `--from`, not the mutual exclusion, and a port that validated targets first would print a different message with the same exit code.
     """
     old, new, old_calls, new_calls = run_both(tmp_path, ["--all", "--image", "api"])
     _agree(old, new, "order", old_calls, new_calls)
@@ -228,11 +216,7 @@ def test_from_is_demanded_before_the_exclusivity_checks(tmp_path) -> None:
 
 def test_the_missing_from_beats_the_image_exclusivity_too(tmp_path) -> None:
     """THE CASE THE PREVIOUS TEST DOES NOT COVER, and its absence was measured
-    rather than guessed: a plant that moved the `--image`/`--image-path`
-    exclusivity check ABOVE the `--from` check left all 36 tests green, because
-    every existing case either supplied `--from` or paired `--all` with
-    `--image` rather than the two target flags with each other. A control that
-    does not fire is a claim about the control, so this is the missing arm.
+    rather than guessed: a plant that moved the `--image`/`--image-path` exclusivity check ABOVE the `--from` check left all 36 tests green, because every existing case either supplied `--from` or paired `--all` with `--image` rather than the two target flags with each other. A control that does not fire is a claim about the control, so this is the missing arm.
     """
     old, new, old_calls, new_calls = run_both(tmp_path, ["--image", "a", "--image-path", "x/b"])
     _agree(old, new, "order-2", old_calls, new_calls)
@@ -342,8 +326,7 @@ def test_an_image_path_bypasses_the_registry_and_shortens_the_label(tmp_path) ->
 
 def test_an_image_with_a_slash_is_treated_as_a_full_path(tmp_path) -> None:
     """THE UNDOCUMENTED HALF: `--image` does not always mean "relative". The
-    twin decides by looking for a `/` inside `retag_image`, so this reaches the
-    same code path as `--image-path`.
+    twin decides by looking for a `/` inside `retag_image`, so this reaches the same code path as `--image-path`.
     """
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--image", "ghcr.io/acme/server", "--from", "a", "--to", "b"]
@@ -384,8 +367,7 @@ def test_a_failing_create_counts_as_failed_and_keeps_going(tmp_path) -> None:
 
 def test_a_failing_latest_push_aborts_that_image(tmp_path) -> None:
     """`--push-latest` failing returns 1 BEFORE the `Re-tagged ... successfully`
-    line, so the version tag is live and `:latest` is stale with nothing saying
-    so beyond the summary count.
+    line, so the version tag is live and `:latest` is stale with nothing saying so beyond the summary count.
     """
     body = FAKE_DOCKER.replace(
         "if rc:",
@@ -520,8 +502,7 @@ def test_skip_if_exists_retags_when_the_source_cannot_be_read(tmp_path) -> None:
 
 def test_defect_the_failing_summary_is_still_a_green_tick(tmp_path) -> None:
     """`log_info` on a summary that says `0 succeeded, 2 failed`, so the last
-    line of a totally failed run carries a ✓. `cleanup-staging.sh`, one
-    directory over, uses `log_error` for the same situation.
+    line of a totally failed run carries a ✓. `cleanup-staging.sh`, one directory over, uses `log_error` for the same situation.
     """
     old, _new, _oc, _nc = run_both(
         tmp_path, ["--all", "--from", "a", "--to", "b"], FAKE_DOCKER_RC="7"
@@ -550,10 +531,7 @@ def test_defect_nothing_verifies_the_destination_after_the_push(tmp_path) -> Non
 def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     """PROVE THE DIFFERENTIAL CAN FIRE, AND WHICH ASSERTION FIRES.
 
-    The plant swaps `-t <dst>` and `<src>`, which retags the release version
-    BACKWARDS onto the CI tag. Every printed byte and the exit code are
-    unchanged by it, so this also shows that a streams-only comparison would
-    have blessed the defective port.
+    The plant swaps `-t <dst>` and `<src>`, which retags the release version BACKWARDS onto the CI tag. Every printed byte and the exit code are unchanged by it, so this also shows that a streams-only comparison would have blessed the defective port.
     """
     root = fixture(tmp_path)
     target = root / ".ci" / "rediacc_ci" / "docker" / PORT_FILE.name
@@ -581,12 +559,9 @@ def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
 def _run_merged(root, side: str, args: list[str], **extra: str):
     """ONE PIPE FOR BOTH STREAMS, which is what a CI log actually is.
 
-    The separate-stream comparison above cannot see a CROSS-stream ordering
-    divergence, and there is a real one to see: Python block-buffers stdout
-    against a pipe while bash's `echo` writes straight through, so without the
+    The separate-stream comparison above cannot see a CROSS-stream ordering divergence, and there is a real one to see: Python block-buffers stdout against a pipe while bash's `echo` writes straight through, so without the
     port's `flush=True` its `echo ""` separators arrive several lines late with
-    byte-identical content in each stream taken alone. Measured before the flush
-    was added, not imagined.
+    byte-identical content in each stream taken alone. Measured before the flush was added, not imagined.
     """
     call_log = root / ("%s-merged-calls.log" % side)
     call_log.write_text("", encoding="utf-8")

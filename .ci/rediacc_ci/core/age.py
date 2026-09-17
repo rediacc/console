@@ -1,7 +1,6 @@
 """Age-based rot detection for suppression entries.
 
-PORTED FROM `.ci/scripts/lib/age-check.sh`, which still exists and now
-delegates here. The bash file's own header, preserved:
+PORTED FROM `.ci/scripts/lib/age-check.sh`, which still exists and now delegates here. The bash file's own header, preserved:
 
     Every allowlist / blocklist entry carries an implicit re-review cadence:
       - <= AGE_WARN_DAYS:  silently accepted
@@ -16,48 +15,32 @@ delegates here. The bash file's own header, preserved:
 WHY THIS REFUSES RATHER THAN GUESSING, measured 2026-09-03
 --------------------------------------------------------------------------
 `git log --diff-filter=A` on a TRUNCATED history attributes every line present
-at the graft boundary to the boundary commit, so an old suppression reports as
-new. The same real entry, github.com/docker/docker in
-.go-deps-upgrade-blocklist:
+at the graft boundary to the boundary commit, so an old suppression reports as new. The same real entry, github.com/docker/docker in .go-deps-upgrade-blocklist:
 
     full clone       195 days  (added 2026-02-20)
     truncated clone    2 days  (added 2026-09-01)
 
 AGE_WARN_DAYS is 180, so on the truncated clone that entry silently stops
 warning, and at AGE_FAIL_DAYS=365 it could never fail. A liveness gate whose
-whole job is expiring stale suppressions then expires nothing and says so in
-green. Sibling of the same defect in check-plan-housekeeping.sh, found by
-sweeping for it after that one landed.
+whole job is expiring stale suppressions then expires nothing and says so in green. Sibling of the same defect in check-plan-housekeeping.sh, found by sweeping for it after that one landed.
 
-So `entry_age_days` returns CANNOT_VERIFY (-1), and `verdict` turns that into a
-refusal in CI and a warning locally -- never into "fresh".
+So `entry_age_days` returns CANNOT_VERIFY (-1), and `verdict` turns that into a refusal in CI and a warning locally -- never into "fresh".
 
 --------------------------------------------------------------------------
 WHY THE GRAFT LIST AND NOT `--is-shallow-repository`
 --------------------------------------------------------------------------
-`git rev-parse --is-shallow-repository` is deliberately not the test: it
-answers on the EXISTENCE of .git/shallow, and `git fetch --unshallow` against a
-partial clone leaves that file behind EMPTY. What corrupts an age is a GRAFT,
-so the graft list is what gets asked, and it counts only when it is non-empty.
-(Same reasoning, same words, as check-plan-housekeeping.sh -- and if one of
-them is ever wrong, both are.)
+`git rev-parse --is-shallow-repository` is deliberately not the test: it answers on the EXISTENCE of .git/shallow, and `git fetch --unshallow` against a partial clone leaves that file behind EMPTY. What corrupts an age is a GRAFT, so the graft list is what gets asked, and it counts only when it is non-empty. (Same reasoning, same words, as check-plan-housekeeping.sh -- and if one
+of them is ever wrong, both are.)
 
 --------------------------------------------------------------------------
 WHY THE PORT KEEPS emit_advisory IN BASH
 --------------------------------------------------------------------------
-The decision and the emission are split here, and that split is the design.
-`emit_advisory` is a separate bash library with its own contract -- eight
-optional associative arrays a caller may populate by advisory id, and a
-`::error::` / `::warning::` GitHub-Actions form -- and porting it was not this
-phase's job. So this module answers WHAT the verdict is and the shim performs
-it. The two callers that matter (`.ci/scripts/security/audit.sh` and
-`.ci/scripts/quality/check-go-deps.sh`) keep populating those arrays exactly as
-they do today, and neither one changes.
+The decision and the emission are split here, and that split is the design. `emit_advisory` is a separate bash library with its own contract -- eight optional associative arrays a caller may populate by advisory id, and a `::error::` / `::warning::` GitHub-Actions form -- and porting it was not this phase's job. So this module answers WHAT the verdict is and the shim performs it.
+The two callers that matter (`.ci/scripts/security/audit.sh` and `.ci/scripts/quality/check-go-deps.sh`) keep populating those arrays exactly as they do today, and neither one changes.
 
 That also keeps the CI-versus-local branch honest: the level is decided here
 from the CI flag the shim passes in, so the verdict is testable without a
-GitHub runner, while the WORDING of the emission stays where the other
-advisories are worded.
+GitHub runner, while the WORDING of the emission stays where the other advisories are worded.
 
 --------------------------------------------------------------------------
 COMMAND-LINE ENTRY POINT (what the bash shim calls)
@@ -104,8 +87,7 @@ SECONDS_PER_DAY = 86400
 def grafts_file(root: os.PathLike[str] | str | None = None) -> pathlib.Path | None:
     """The path to a NON-EMPTY graft list, or None when history is complete.
 
-    Non-empty is the whole test: see the module docstring on why
-    `--is-shallow-repository` is the wrong question.
+    Non-empty is the whole test: see the module docstring on why `--is-shallow-repository` is the wrong question.
     """
     result = gitx.git(["rev-parse", "--git-path", "shallow"], root=root)
     if result.returncode != 0:
@@ -132,20 +114,15 @@ def entry_age_days(
 ) -> int:
     """Days since the line matching `pattern` was first introduced in `file`.
 
-    Returns an integer, or CANNOT_VERIFY (-1). Callers must not treat -1 as an
-    age.
+    Returns an integer, or CANNOT_VERIFY (-1). Callers must not treat -1 as an age.
 
-    -1 is returned when the answer would be fiction: the pattern resolves to no
-    commit at all ON A TRUNCATED HISTORY, or it resolves to a graft boundary,
-    which reports the boundary's date rather than the line's.
+    -1 is returned when the answer would be fiction: the pattern resolves to no commit at all ON A TRUNCATED HISTORY, or it resolves to a graft boundary, which reports the boundary's date rather than the line's.
 
-    `pattern` is a grep-style regex passed to `git log -S`, which finds the
-    commit where the pattern was added. This is more reliable than git blame
+    `pattern` is a grep-style regex passed to `git log -S`, which finds the commit where the pattern was added. This is more reliable than git blame
     for files where lines have been renumbered.
 
     `%H` alongside `%ct` so the commit can be tested against the graft list;
-    `tail -1` in the bash, i.e. the OLDEST matching commit, is the last element
-    here.
+    `tail -1` in the bash, i.e. the OLDEST matching commit, is the last element here.
     """
     result = gitx.git(
         [
@@ -188,9 +165,7 @@ def entry_age_days(
 class Verdict:
     """What `check_entry_age` should emit, and what it should return.
 
-    A tiny object rather than a tuple because the shim reads the fields by
-    name off a TAB-separated line, and a positional tuple is how those two
-    orders drift apart.
+    A tiny object rather than a tuple because the shim reads the fields by name off a TAB-separated line, and a positional tuple is how those two orders drift apart.
     """
 
     __slots__ = ("level", "message", "remedy")
@@ -217,10 +192,7 @@ def verdict(
 ) -> Verdict:
     """Turn an age (or CANNOT_VERIFY) into the advisory the caller emits.
 
-    The wording is carried over verbatim from the bash, because these strings
-    are what a developer reads in a red CI job and one of them names the exact
-    remedy (`fetch-depth: 0` plus `filter: blob:none`) that makes the gate
-    answerable again.
+    The wording is carried over verbatim from the bash, because these strings are what a developer reads in a red CI job and one of them names the exact remedy (`fetch-depth: 0` plus `filter: blob:none`) that makes the gate answerable again.
     """
     if age < 0:
         # CANNOT VERIFY. In CI that is a refusal: this gate's entire purpose is expiring stale suppressions, and a truncated history makes every one of them look new. Locally it is a warning, because a developer's shallow clone is normal and should not block their run.

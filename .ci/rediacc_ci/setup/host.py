@@ -1,43 +1,23 @@
 """The seven `setup_*` machine-bootstrap phases, ported from `.ci/lib/setup.sh`.
 
-WHAT THIS IS. `.ci/lib/setup.sh` is 845 lines answering one question: what does a
-bare machine need before this repository can build? Nine functions are defined
-there and this module carries all nine, keeping the split the bash drew
-(`node_pick_lts` and `go_pick_sha` are separate because they are the parts that
-can be unit-tested without a machine, and that reason survives the port).
+WHAT THIS IS. `.ci/lib/setup.sh` is 845 lines answering one question: what does a bare machine need before this repository can build? Nine functions are defined there and this module carries all nine, keeping the split the bash drew (`node_pick_lts` and `go_pick_sha` are separate because they are the parts that can be unit-tested without a machine, and that reason survives the
+port).
 
-THE CONTRACT THE BASH STATES AND THIS KEEPS, verbatim from `.ci/lib/setup.sh:17`:
-"EVERY FUNCTION HERE IS IDEMPOTENT and returns 0 early when its condition is
-already met. That is the contract: `./run.sh setup` is expected to be run
-repeatedly, and a second run must do no work." Each function below therefore has
-an early-return guard as its FIRST branch, and `shadow_driver.py` drives every
-one of them twice against a fixture where the tool is present and requires the
-second run to be byte-identical to the first.
+THE CONTRACT THE BASH STATES AND THIS KEEPS, verbatim from `.ci/lib/setup.sh:17`: "EVERY FUNCTION HERE IS IDEMPOTENT and returns 0 early when its condition is already met. That is the contract: `./run.sh setup` is expected to be run repeatedly, and a second run must do no work." Each function below therefore has an early-return guard as its FIRST branch, and `shadow_driver.py`
+drives every one of them twice against a fixture where the tool is present and requires the second run to be byte-identical to the first.
 
-AND THE SECOND CONTRACT, `.ci/lib/setup.sh:21-23`: each "refuses rather than
-hanging on a non-TTY, printing the command it would have run as PLAIN stdout so
-it can be pasted (log_* prefixes every line with a coloured marker, which breaks
+AND THE SECOND CONTRACT, `.ci/lib/setup.sh:21-23`: each "refuses rather than hanging on a non-TTY, printing the command it would have run as PLAIN stdout so it can be pasted (log_* prefixes every line with a coloured marker, which breaks
 a paste)". `ctx.say` is that plain stdout and `ctx.warn` is the marked stderr;
-the two are never swapped, because swapping them is invisible in a terminal and
-fatal to the paste.
+the two are never swapped, because swapping them is invisible in a terminal and fatal to the paste.
 
 ONE FUNCTION HERE IS REACHED BY NOTHING, AND THAT IS A FINDING ABOUT THE BASH,
-NOT A DECISION OF THE PORT. `setup_docker_probe` is defined at
-`.ci/lib/setup.sh:575` and called from NO file in the repository: `setup()` runs
-`ensure_docker_installed` (`.ci/lib/local-common.sh:669`) instead, and the only
-other occurrence of the name in the tree is a prose list in
-`docs/ci-overhaul/06-progress.md:5109`. Measured 2026-09-09 with
-`grep -rn setup_docker_probe`. It is carried here rather than dropped, because a
-port is not the place to delete something: `docker_probe` below is a faithful
-port, `PHASES` in `phases.py` does NOT list it, and the discrepancy is now
-visible from two files instead of hidden in one. `scripts/gates/check-dead-bash.ts`
-could never have found it: that gate asks whether a FILE's basename is mentioned,
-and a dead function inside a live file is invisible to it.
+NOT A DECISION OF THE PORT. `setup_docker_probe` is defined at `.ci/lib/setup.sh:575` and called from NO file in the repository: `setup()` runs `ensure_docker_installed` (`.ci/lib/local-common.sh:669`) instead, and the only other occurrence of the name in the tree is a prose list in `docs/ci-overhaul/06-progress.md:5109`. Measured 2026-09-09 with `grep -rn setup_docker_probe`. It
+is carried here rather than dropped, because a port is not the place to delete something: `docker_probe` below is a faithful port, `PHASES` in `phases.py` does NOT list it, and the discrepancy is now visible from two files instead of hidden in one. `scripts/gates/check-dead-bash.ts` could never have found it: that gate asks whether a FILE's basename is mentioned, and a dead
+function inside a live file is invisible to it.
 
 WHAT IS DELIBERATELY NOT PORTED. Nothing in this module ever runs `sudo` or a
 package manager on its own initiative. Every such path is behind
-`ctx.stdin_tty and ctx.confirm(...)`, exactly as the bash is, and the
-differential drives the closed-stdin side, which is the branch that prints.
+`ctx.stdin_tty and ctx.confirm(...)`, exactly as the bash is, and the differential drives the closed-stdin side, which is the branch that prints.
 """
 
 from __future__ import annotations
@@ -116,10 +96,7 @@ def _at_least(have: str, want: str) -> bool:
     """`printf '%s\\n%s\\n' "$want" "$have" | sort -V -C`, without coreutils.
 
     UNPARSEABLE IS FALSE, NOT AN EXCEPTION. `sort -V -C` never raises; it ranks.
-    A probe that threw here would turn "this node is too old" into a traceback,
-    and the caller's whole point is to report the old node and carry on.
-    `rediacc_ci.core.toolchain.at_least` is the shared implementation and its
-    agreement with `sort -V` is what the w6p2-toolchain shadow ledger records.
+    A probe that threw here would turn "this node is too old" into a traceback, and the caller's whole point is to report the old node and carry on. `rediacc_ci.core.toolchain.at_least` is the shared implementation and its agreement with `sort -V` is what the w6p2-toolchain shadow ledger records.
     """
     try:
         return toolchain.at_least(have, want)
@@ -130,11 +107,7 @@ def _at_least(have: str, want: str) -> bool:
 def _uname(ctx: Ctx) -> tuple[str, str]:
     """`uname -s` and `uname -m`, as the bash asks them.
 
-    THROUGH THE CHILD, not through `platform.uname()`. The differential points
-    both sides at one fixture, and a fixture that puts a fake `uname` on PATH is
-    the only way to drive the Darwin arms from a Linux box. `platform.uname()`
-    reads the kernel and cannot be steered, so a Python side using it would be
-    answering a question the bash side was never asked.
+    THROUGH THE CHILD, not through `platform.uname()`. The differential points both sides at one fixture, and a fixture that puts a fake `uname` on PATH is the only way to drive the Darwin arms from a Linux box. `platform.uname()` reads the kernel and cannot be steered, so a Python side using it would be answering a question the bash side was never asked.
     """
     system = ctx.run(["uname", "-s"], timeout=10).out.strip()
     machine = ctx.run(["uname", "-m"], timeout=10).out.strip()
@@ -144,11 +117,7 @@ def _uname(ctx: Ctx) -> tuple[str, str]:
 def _sha256_file(path: pathlib.Path) -> str:
     """`_sha256sum <file> | awk '{print $1}'` (.ci/lib/local-common.sh:37).
 
-    IN PROCESS, which removes the whole reason that bash helper exists. Its own
-    header records the defect: "bare `sha256sum` does not exist on macOS, so the
-    two checksum verifications below would report a MISMATCH that never happened,
-    which is a verifier that CANNOT RUN reading as a verifier that FAILED."
-    `hashlib` has no such platform hole, so the shim has no Python twin.
+    IN PROCESS, which removes the whole reason that bash helper exists. Its own header records the defect: "bare `sha256sum` does not exist on macOS, so the two checksum verifications below would report a MISMATCH that never happened, which is a verifier that CANNOT RUN reading as a verifier that FAILED." `hashlib` has no such platform hole, so the shim has no Python twin.
     """
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -160,11 +129,7 @@ def _sha256_file(path: pathlib.Path) -> str:
 def _fetch(url: str, timeout: int) -> bytes | None:
     """`curl -fsS --max-time N <url>`. None on any failure, exactly as `|| ver=""`.
 
-    `-f` is the flag that matters and the reason this returns None on an HTTP
-    error rather than the body: without it curl writes a 404 page to the output
-    file and exits 0, which is how "a documented `curl` of a 404 baked an HTML
-    error page into a signing key" (`.ci/lib/setup.sh:41-42`). `urlopen` raises
-    on 4xx/5xx, which is `-f` by default.
+    `-f` is the flag that matters and the reason this returns None on an HTTP error rather than the body: without it curl writes a 404 page to the output file and exits 0, which is how "a documented `curl` of a 404 baked an HTML error page into a signing key" (`.ci/lib/setup.sh:41-42`). `urlopen` raises on 4xx/5xx, which is `-f` by default.
     """
     try:
         with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310
@@ -181,8 +146,7 @@ def node_pick_lts(index_text: str, major: str) -> str | None:
 
     The bash shells out to `python3 -c` for this, so the port is the same code
     with the interpolation removed. Two passes and the fallback matters: an LTS
-    release is preferred, but a major with no LTS line yet still answers with its
-    newest release rather than with nothing.
+    release is preferred, but a major with no LTS line yet still answers with its newest release rather than with nothing.
     """
     try:
         index = json.loads(index_text)
@@ -205,10 +169,7 @@ def node_pick_lts(index_text: str, major: str) -> str | None:
 def go_pick_sha(index_text: str, filename: str) -> str | None:
     """sha256 for one Go release filename off go.dev's json index. `:448`.
 
-    Same shape as `node_pick_lts`: the bash is a `python3 -c` heredoc with the
-    filename interpolated into it, which is also a quoting hazard the port
-    removes for free (a filename with a quote in it would have broken the bash
-    program rather than failing to match).
+    Same shape as `node_pick_lts`: the bash is a `python3 -c` heredoc with the filename interpolated into it, which is also a quoting hazard the port removes for free (a filename with a quote in it would have broken the bash program rather than failing to match).
     """
     try:
         index = json.loads(index_text)
@@ -235,10 +196,7 @@ def node_toolchain(ctx: Ctx) -> int:
 
     THE FLOOR IS REQUIRED, NOT DEFAULTED, and the bash's own comment
     (`:44-51`) is the reason: `${NODE_VERSION_MIN:-22.0.0}` "applied exactly when
-    .ci/config/constants.sh had not been sourced, and 22.0.0 is LOOSER than the
-    repo's real floor", so the unsourced path "silently accepted a Node this repo
-    does not support and reported 'already present' for it". Here the missing
-    variable is a refusal with the variable named, which is what `:?` does there.
+    .ci/config/constants.sh had not been sourced, and 22.0.0 is LOOSER than the repo's real floor", so the unsourced path "silently accepted a Node this repo does not support and reported 'already present' for it". Here the missing variable is a refusal with the variable named, which is what `:?` does there.
     """
     minimum = ctx.env.get("NODE_VERSION_MIN", "")
     if not minimum:
@@ -327,10 +285,7 @@ def _os_unsupported(system: str) -> bool:
 def _node_install(ctx: Ctx, *, major: str, os_name: str, arch: str, minimum: str) -> int:
     """The consented install half of `setup_node_toolchain`. `.ci/lib/setup.sh:126`.
 
-    NEVER REACHED BY THE DIFFERENTIAL, and that is stated rather than hidden: it
-    needs a tty, a network and a writable home. It is a faithful port of the
-    bash's ordering, which is the part that carries the security property --
-    download, then VERIFY, then extract, and never the other way round.
+    NEVER REACHED BY THE DIFFERENTIAL, and that is stated rather than hidden: it needs a tty, a network and a writable home. It is a faithful port of the bash's ordering, which is the part that carries the security property -- download, then VERIFY, then extract, and never the other way round.
     """
     index = _fetch(NODE_DIST_INDEX, 30)
     version = node_pick_lts(index.decode("utf-8", "replace"), major) if index else None
@@ -419,8 +374,7 @@ def _node_install(ctx: Ctx, *, major: str, os_name: str, arch: str, minimum: str
 def _extract_strip1(tar, dest: pathlib.Path) -> None:
     """`tar -x ... --strip-components=1`.
 
-    THE PATH IS CHECKED, which `tar(1)` does not do and which is the difference
-    between extracting an archive and letting an archive write anywhere. A member
+    THE PATH IS CHECKED, which `tar(1)` does not do and which is the difference between extracting an archive and letting an archive write anywhere. A member
     whose resolved destination leaves `dest` is skipped rather than written; the
     bash had no equivalent and the port is not obliged to carry that hole.
     """
@@ -442,10 +396,7 @@ def _extract_strip1(tar, dest: pathlib.Path) -> None:
 def system_tools(ctx: Ctx) -> int:
     """`setup_system_tools`, .ci/lib/setup.sh:248. The one step that needs root.
 
-    MANDATORY, not best effort, and the bash's measurement is the reason
-    (`:234-239`): on a bare Ubuntu box `cpu-features` runs node-gyp and dies with
-    "Unable to detect compiler type", which fails `npm run install:natives`, which
-    fails setup and every `./rdc.sh` behind it.
+    MANDATORY, not best effort, and the bash's measurement is the reason (`:234-239`): on a bare Ubuntu box `cpu-features` runs node-gyp and dies with "Unable to detect compiler type", which fails `npm run install:natives`, which fails setup and every `./rdc.sh` behind it.
     """
     missing: list[str] = []
     if not ctx.which("cc"):
@@ -543,10 +494,7 @@ def go_pin(root: pathlib.Path) -> str:
 def go_toolchain(ctx: Ctx) -> int:
     """`setup_go_toolchain`, .ci/lib/setup.sh:339.
 
-    ONE PIN, ONE PLACE. The version is read from `.devcontainer/Dockerfile`
-    rather than restated, and the bash says why at `:332-335`. That indirection
-    is the reason this function can be driven differentially at all: change the
-    Dockerfile in a fixture and both sides move together.
+    ONE PIN, ONE PLACE. The version is read from `.devcontainer/Dockerfile` rather than restated, and the bash says why at `:332-335`. That indirection is the reason this function can be driven differentially at all: change the Dockerfile in a fixture and both sides move together.
     """
     want = go_pin(ctx.root)
     if not want:
@@ -654,10 +602,7 @@ def _go_install(ctx: Ctx, *, want: str, filename: str) -> int:
 def gh_cli(ctx: Ctx) -> int:
     """`setup_gh_cli`, .ci/lib/setup.sh:485.
 
-    MANDATORY. The bash's reason (`:466-471`) is that the PR guards run live `gh`
-    queries and FAIL CLOSED, so on a machine without gh every `gh pr create` is
-    refused. LATEST, NOT PINNED, deliberately: `gh` talks to an API that moves
-    under it, so a pin would rot.
+    MANDATORY. The bash's reason (`:466-471`) is that the PR guards run live `gh` queries and FAIL CLOSED, so on a machine without gh every `gh pr create` is refused. LATEST, NOT PINNED, deliberately: `gh` talks to an API that moves under it, so a pin would rot.
     """
     if ctx.which("gh"):
         ctx.info("GitHub CLI present (%s)" % ctx.run(["gh", "--version"], timeout=30).first_line())
@@ -698,11 +643,7 @@ def gh_cli(ctx: Ctx) -> int:
 def _gh_install(ctx: Ctx) -> int:
     """The apt half of `setup_gh_cli`, `.ci/lib/setup.sh:524`.
 
-    KEPT AS ONE SHELL PROGRAM, verbatim from the official docs. The bash's
-    comment at `:523` says why the commands are "kept verbatim rather than
-    paraphrased: they add a signed keyring and an apt source, and getting either
-    subtly wrong is a supply-chain problem, not a typo". Splitting them into
-    argv lists here would be exactly that paraphrase, so they stay a script.
+    KEPT AS ONE SHELL PROGRAM, verbatim from the official docs. The bash's comment at `:523` says why the commands are "kept verbatim rather than paraphrased: they add a signed keyring and an apt source, and getting either subtly wrong is a supply-chain problem, not a typo". Splitting them into argv lists here would be exactly that paraphrase, so they stay a script.
     """
     if ctx.run(["bash", "-c", GH_APT_SCRIPT], timeout=1800).rc != 0:
         ctx.error("apt could not install gh. See the official instructions:")
@@ -722,8 +663,7 @@ def _gh_install(ctx: Ctx) -> int:
 def docker_probe(ctx: Ctx) -> int:
     """`setup_docker_probe`, .ci/lib/setup.sh:575. ADVISORY, never fatal.
 
-    NOT IN `phases.PHASES`, because the bash `setup()` never calls it either.
-    Ported anyway so the discrepancy is visible in two files rather than hidden
+    NOT IN `phases.PHASES`, because the bash `setup()` never calls it either. Ported anyway so the discrepancy is visible in two files rather than hidden
     in one; see this module's header for the measurement.
     """
     if not ctx.which("docker"):
@@ -754,11 +694,7 @@ def docker_probe(ctx: Ctx) -> int:
 def _is_wsl() -> bool:
     """`grep -qi microsoft /proc/version`.
 
-    NOT `platform_.detect_wsl`, which also consults `WSL_DISTRO_NAME` and
-    `proc/sys/kernel/osrelease`. The bash asks one narrower question and the
-    port answers the same one: a broader probe here would make the two sides
-    disagree on a host where only the env var is set, and the differential would
-    be right to call that a difference.
+    NOT `platform_.detect_wsl`, which also consults `WSL_DISTRO_NAME` and `proc/sys/kernel/osrelease`. The bash asks one narrower question and the port answers the same one: a broader probe here would make the two sides disagree on a host where only the env var is set, and the differential would be right to call that a difference.
     """
     try:
         return (
@@ -821,10 +757,7 @@ def split_identity(suggested: str) -> tuple[str, str]:
 def git_identity(ctx: Ctx) -> int:
     """`setup_git_identity`, .ci/lib/setup.sh:609.
 
-    RETURNS 0 IN EVERY BRANCH, exactly as the bash does: `setup()` calls it
-    WITHOUT `|| return 1` (`.ci/legacy/run-legacy.sh:650`), so a missing identity
-    is reported and setup continues. That asymmetry with `git_credentials`, which
-    is fatal, is deliberate on the bash's side and is carried.
+    RETURNS 0 IN EVERY BRANCH, exactly as the bash does: `setup()` calls it WITHOUT `|| return 1` (`.ci/legacy/run-legacy.sh:650`), so a missing identity is reported and setup continues. That asymmetry with `git_credentials`, which is fatal, is deliberate on the bash's side and is carried.
     """
     name = _git_global(ctx, "user.name")
     email = _git_global(ctx, "user.email")
@@ -890,8 +823,7 @@ CREDENTIAL_QUERY = "protocol=https\nhost=github.com\n\n"
 def credential_probe(ctx: Ctx) -> Result:
     """`git credential fill` with prompts disabled and a 20s deadline.
 
-    HELPER-AGNOSTIC, which is why it is `git credential fill` and not a read of
-    `~/.git-credentials`: store, osxkeychain, manager and gh's helper all answer
+    HELPER-AGNOSTIC, which is why it is `git credential fill` and not a read of `~/.git-credentials`: store, osxkeychain, manager and gh's helper all answer
     it. `GIT_TERMINAL_PROMPT=0` is what makes it fail fast instead of hanging,
     and it is set on a COPY of the env so it does not leak into later calls.
     """
@@ -909,9 +841,7 @@ def credential_probe(ctx: Ctx) -> Result:
 def git_credentials(ctx: Ctx) -> int:
     """`setup_git_credentials`, .ci/lib/setup.sh:689. BLOCKING on purpose.
 
-    The bash's reason (`:672-676`): read access to this repo works ANONYMOUSLY,
-    so the first sign of a missing credential is normally a failed PUSH long
-    after setup said everything was fine.
+    The bash's reason (`:672-676`): read access to this repo works ANONYMOUSLY, so the first sign of a missing credential is normally a failed PUSH long after setup said everything was fine.
     """
     if ctx.env.get("SKIP_GIT_CREDENTIAL_CHECK") == "1":
         ctx.warn("SKIP_GIT_CREDENTIAL_CHECK=1; not checking GitHub credentials.")
@@ -997,11 +927,7 @@ def git_credentials(ctx: Ctx) -> int:
 def _try_gh_credential(ctx: Ctx) -> int | None:
     """The gh arms of `setup_git_credentials`. None means "fall through to a PAT".
 
-    PREFER gh, and only fall back to a hand-pasted token: the bash's reason
-    (`:747-755`) is that no token is ever typed, shown, or written in plaintext,
-    gh handles renewal, and the scopes come from the flow. IT IS OFFERED, NEVER
-    RUN UNASKED, because `gh auth login` opens a browser and authenticates a
-    real account.
+    PREFER gh, and only fall back to a hand-pasted token: the bash's reason (`:747-755`) is that no token is ever typed, shown, or written in plaintext, gh handles renewal, and the scopes come from the flow. IT IS OFFERED, NEVER RUN UNASKED, because `gh auth login` opens a browser and authenticates a real account.
     """
     if ctx.run(["gh", "auth", "status"], timeout=60).rc == 0:
         ctx.info("gh is already authenticated; wiring it in as git's credential helper.")

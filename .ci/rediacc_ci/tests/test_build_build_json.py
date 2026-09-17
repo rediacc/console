@@ -1,19 +1,14 @@
 """Differential: `rediacc_ci.build.build_json` against its twin
 `.ci/scripts/build/build-json.sh`.
 
-THE FIXTURE SHAPE AND ITS REASONS ARE `test_build_build_www.py`'s and are not
-restated: neither side takes a root override so both are copied into a
+THE FIXTURE SHAPE AND ITS REASONS ARE `test_build_build_www.py`'s and are not restated: neither side takes a root override so both are copied into a
 throwaway root; `npm` is a recording fake on a PATH that REPLACES the caller's
 rather than prepending to it; `rediacc_ci` is vendored so no absolute path
 outside the tree appears in any command string; `$0` is masked to `<SELF>` and
 nothing else is.
 
-WHAT THIS FILE ADDS ON TOP OF THAT is the pair assertion. `build-json.sh` is
-`build-www.sh` with the two output checks hand-rolled instead of delegated to
-`common.sh`, so the SAME failure prints a different sentence depending on which
-site failed. `test_the_two_twins_say_different_things_about_the_same_failure`
-drives BOTH bash twins and pins the disagreement, which is the only way a reader
-finds out that the wording is accidental rather than chosen.
+WHAT THIS FILE ADDS ON TOP OF THAT is the pair assertion. `build-json.sh` is `build-www.sh` with the two output checks hand-rolled instead of delegated to `common.sh`, so the SAME failure prints a different sentence depending on which site failed. `test_the_two_twins_say_different_things_about_the_same_failure` drives BOTH bash twins and pins the disagreement, which is the only way
+a reader finds out that the wording is accidental rather than chosen.
 
 K=5 LEDGER: `.ci/shadow/w7p6-build-json.observations.jsonl`.
 """
@@ -196,8 +191,7 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
 
 def test_the_scratch_path_cannot_reach_a_real_npm(tmp_path) -> None:
     """`npm run build:json` in this checkout is a real site build. A PREPENDED
-    PATH would still resolve the real binary, so the fixture REPLACES it and
-    this asserts the replacement holds in both directions.
+    PATH would still resolve the real binary, so the fixture REPLACES it and this asserts the replacement holds in both directions.
     """
     root = fixture(tmp_path)
     sealed = scratch_bin(root)
@@ -285,13 +279,9 @@ def test_a_missing_npm_reads_as_a_failed_build_with_bashs_line_above_it(tmp_path
 
 def test_the_two_twins_say_different_things_about_the_same_failure(tmp_path) -> None:
     """THE PAIR ASSERTION. `build-json.sh:26-34` hand-rolls what
-    `build-www.sh:26-27` delegates to `common.sh`, so a build that produced no
-    `dist/` reports one of two unrelated sentences depending on which site it
-    was. Both bash twins are driven here, in one fixture, so the disagreement is
-    recorded rather than inferred from reading.
+    `build-www.sh:26-27` delegates to `common.sh`, so a build that produced no `dist/` reports one of two unrelated sentences depending on which site it was. Both bash twins are driven here, in one fixture, so the disagreement is recorded rather than inferred from reading.
 
-    The hand-rolled half is the better one: it names the site, which is exactly
-    what `build-www.sh`'s dropped label argument was trying and failing to do.
+    The hand-rolled half is the better one: it names the site, which is exactly what `build-www.sh`'s dropped label argument was trying and failing to do.
     """
     root = fixture(tmp_path)
     json_side, _ = _run(root, "old")
@@ -352,11 +342,7 @@ def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> N
 def test_a_planted_defect_is_caught(tmp_path) -> None:
     """A gate that has never been seen to fail is not a gate.
 
-    The plant swaps `is_dir()` for `exists()` on the dist check, which is what a
-    reader "simplifying" the port would reach for. It is invisible on every
-    other case in this file and visible on exactly one: a `packages/json/dist`
-    that is a FILE rather than a directory, which `[[ ! -d ]]` rejects and
-    `exists()` accepts.
+    The plant swaps `is_dir()` for `exists()` on the dist check, which is what a reader "simplifying" the port would reach for. It is invisible on every other case in this file and visible on exactly one: a `packages/json/dist` that is a FILE rather than a directory, which `[[ ! -d ]]` rejects and `exists()` accepts.
     """
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(

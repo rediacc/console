@@ -1,28 +1,17 @@
 """Port of `.ci/scripts/test/gates/test-releaseversion-cd-retry-assert.sh`.
 
-Both-ways test for the artifact-version assertion's reachability in
-`.github/workflows/cd-v2.yml`.
+Both-ways test for the artifact-version assertion's reachability in `.github/workflows/cd-v2.yml`.
 
-WHAT THE ASSERTION IS FOR. assert-artifact-version.sh compares the version baked
-into the CI artifacts against the version CD is about to publish them under. It is
-the only thing standing between "these bytes were built as 1.2.16" and a GitHub
-Release labelled 1.2.17.
+WHAT THE ASSERTION IS FOR. assert-artifact-version.sh compares the version baked into the CI artifacts against the version CD is about to publish them under. It is the only thing standing between "these bytes were built as 1.2.16" and a GitHub Release labelled 1.2.17.
 
 WHAT WAS BROKEN. The step carried `retry_mode != 'true'`, excused by a comment
-claiming "retry uses the latest tag's version, which the artifacts already match by
-definition". They do not. Retry takes its VERSION from resolve-version.sh
---current, but its ARTIFACTS from resolve-ci-run.sh, which with no ci_run_id
-supplied picks the LATEST GREEN CI RUN ON MAIN -- not the run that cut that tag. A
-retry dispatched after any newer CI went green republishes those newer artifacts
-under the older tag, which is precisely the mismatch the assertion exists to catch,
+claiming "retry uses the latest tag's version, which the artifacts already match by definition". They do not. Retry takes its VERSION from resolve-version.sh --current, but its ARTIFACTS from resolve-ci-run.sh, which with no ci_run_id supplied picks the LATEST GREEN CI RUN ON MAIN -- not the run that cut that tag. A retry dispatched after any newer CI went green republishes those
+newer artifacts under the older tag, which is precisely the mismatch the assertion exists to catch,
 with the assertion switched off.
 
-This is a text test rather than a YAML-object test on purpose: the condition is a
-GitHub expression inside a folded scalar, so its meaning lives in the string either
+This is a text test rather than a YAML-object test on purpose: the condition is a GitHub expression inside a folded scalar, so its meaning lives in the string either
 way. The twin keeps awk to stay dependency-free; the port reimplements the same
-range extraction in Python and `test_the_extractor_matches_the_twins_awk` drives
-the twin's awk against the same file to prove the two agree, so the change of
-implementation is a claim this file has to earn rather than assume.
+range extraction in Python and `test_the_extractor_matches_the_twins_awk` drives the twin's awk against the same file to prove the two agree, so the change of implementation is a claim this file has to earn rather than assume.
 """
 
 import pathlib
@@ -62,9 +51,7 @@ def step_block(path: pathlib.Path, name: str = STEP_NAME) -> str:
 
 def test_the_extractor_matches_the_twins_awk(gate):
     """CONTROL FOR THE PORT ITSELF. The twin extracts with awk; this file
-    extracts with a Python loop. A port that changes the extractor and does not
-    compare it against the original has replaced a tested reader with an
-    untested one, and every assertion below would then be about the new reader's
+    extracts with a Python loop. A port that changes the extractor and does not compare it against the original has replaced a tested reader with an untested one, and every assertion below would then be about the new reader's
     idea of the step."""
     awk = harness.run(["awk", "-v", "name=" + STEP_NAME, AWK, str(WORKFLOW)])
     gate.assert_exit_code(0, awk.rc, "the twin's awk still runs")

@@ -2,24 +2,14 @@
 
 WHY A SECOND READING, WHEN `check:ci-doc-region-parity` ALREADY COMPARES THE BYTES.
 
-That gate re-renders the region from the SAME TypeScript provider that wrote it, so
-the two sides of its comparison share every assumption. It answers "has a human
-hand-edited the region", which is the question it was built for, and it cannot
-answer "does the region say what the manifest says": a provider that dropped the
-tombstone shard on the floor would render a smaller table, and the gate would
-re-render the same smaller table and call it a match.
+That gate re-renders the region from the SAME TypeScript provider that wrote it, so the two sides of its comparison share every assumption. It answers "has a human hand-edited the region", which is the question it was built for, and it cannot answer "does the region say what the manifest says": a provider that dropped the tombstone shard on the floor would render a smaller table,
+and the gate would re-render the same smaller table and call it a match.
 
-So this module reads `.ci/config/env-manifest.json` itself, in a different
-language, with no import from the emitter, and asserts the committed region against
-that. Two independent readings of one file is the only shape in which a wrong
-answer has to be wrong twice.
+So this module reads `.ci/config/env-manifest.json` itself, in a different language, with no import from the emitter, and asserts the committed region against that. Two independent readings of one file is the only shape in which a wrong answer has to be wrong twice.
 
 WHAT IT ASSERTS WHEN THERE IS NO REGION YET, WHICH IS NOT NOTHING.
 
-The emitter (`scripts/lib/doc-providers.ts`) and its region
-(`scripts/data/doc-registry.md`) are single-writer files during the tooling
-transformation, so this file can land before, with, or after them. It therefore
-splits its clauses:
+The emitter (`scripts/lib/doc-providers.ts`) and its region (`scripts/data/doc-registry.md`) are single-writer files during the tooling transformation, so this file can land before, with, or after them. It therefore splits its clauses:
 
   * the CONTRACT clauses run unconditionally against the manifest. They are the
     same refusals the provider makes -- shard key parity, a per-shard floor,
@@ -32,14 +22,10 @@ splits its clauses:
     generator errors on such a region, so a green here with one present would mean
     this module had stopped looking.
 
-There is no state in which every clause is skipped, which is the property that
-keeps a conditional test from becoming a decoration.
+There is no state in which every clause is skipped, which is the property that keeps a conditional test from becoming a decoration.
 
-NO COUNT IS WRITTEN DOWN ANYWHERE IN THIS FILE. Every total is derived and printed,
-never compared against a literal, because the manifest moved by tens of names in a
-single day while it was being built. A floor typed here would be a second thing to
-update and the first thing to go stale. The floors that ARE here are structural:
-"more than zero", "every shard more than zero", "the footer equals the rows".
+NO COUNT IS WRITTEN DOWN ANYWHERE IN THIS FILE. Every total is derived and printed, never compared against a literal, because the manifest moved by tens of names in a single day while it was being built. A floor typed here would be a second thing to update and the first thing to go stale. The floors that ARE here are structural: "more than zero", "every shard more than zero", "the
+footer equals the rows".
 """
 
 import json
@@ -90,9 +76,7 @@ def shard_of(manifest: dict) -> dict[str, str]:
 def contract_findings(manifest: dict) -> list[str]:
     """The refusals the emitter makes, restated against the data itself.
 
-    Each one is a way the region could shrink while every byte of it still matched
-    what the provider would emit, which is precisely the class the byte-comparison
-    gate cannot see.
+    Each one is a way the region could shrink while every byte of it still matched what the provider would emit, which is precisely the class the byte-comparison gate cannot see.
     """
     findings: list[str] = []
     defs = manifest.get("shard_definitions")
@@ -152,8 +136,7 @@ def expected_rows(manifest: dict) -> list[tuple[str, str, str]]:
 
     Sorted by the NAME in code point order. The emitter sorts by UTF-16 code unit,
     which differs from this only for characters outside the basic plane; an
-    environment variable name outside it would be a finding of its own, and the row
-    comparison below would report the disagreement rather than hide it.
+    environment variable name outside it would be a finding of its own, and the row comparison below would report the disagreement rather than hide it.
     """
     collisions = {c["name"]: c for c in manifest.get("collisions", []) if "name" in c}
     notes = manifest.get("notes", {})
@@ -205,8 +188,7 @@ def parse_rows(body: list[str]) -> list[tuple[str, ...]]:
 
     The separator row is `|---|---|---|`, and it survived a first version of this
     function that split on `" | "` -- it came back as a SINGLE cell reading
-    `---|---|---` and was reported as a row naming no variable. The failure was
-    loud rather than silent, which is the only reason it cost a minute.
+    `---|---|---` and was reported as a row naming no variable. The failure was loud rather than silent, which is the only reason it cost a minute.
     """
     rows: list[tuple[str, ...]] = []
     for line in body:
@@ -244,8 +226,7 @@ def test_the_manifest_holds_the_contract_the_region_is_rendered_from():
 def test_the_control_fires_on_every_contract_clause():
     """Both directions. A checker with no negative control flags the whole tree.
 
-    Each perturbation is applied to a COPY of the real manifest, so the clause is
-    proved against the shape the repository actually has rather than against a toy.
+    Each perturbation is applied to a COPY of the real manifest, so the clause is proved against the shape the repository actually has rather than against a toy.
     """
     base = load_manifest(read(MANIFEST_REL))
     assert contract_findings(base) == [], "the unperturbed manifest must be clean"

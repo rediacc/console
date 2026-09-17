@@ -3,8 +3,7 @@
 Ported from `.ci/scripts/quality/check-devbox-exec.sh`, which is NOT deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-The twin's header, carried whole because the incident, the "why static" argument
-and the scope limit are each load-bearing:
+The twin's header, carried whole because the incident, the "why static" argument and the scope limit are each load-bearing:
 
     WHAT WENT WRONG, measured 2026-08-26:
 
@@ -43,35 +42,20 @@ and the scope limit are each load-bearing:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`code_of` STRIPS WHOLE-LINE COMMENTS AND THE TWIN SAYS WHY, in a sentence kept at
-the function: "Every explanation of the WRONG shape in this repo lives in a
-comment, so a scan for that shape must read code only or it fails on its own
-documentation. (Learned the hard way by the editorconfig gate, which matched
-`binary` inside a PATH.)"
+`code_of` STRIPS WHOLE-LINE COMMENTS AND THE TWIN SAYS WHY, in a sentence kept at the function: "Every explanation of the WRONG shape in this repo lives in a comment, so a scan for that shape must read code only or it fails on its own documentation. (Learned the hard way by the editorconfig gate, which matched `binary` inside a PATH.)"
 
 THE REPORTED LINE NUMBERS ARE NUMBERS IN THE FILTERED STREAM, NOT IN THE FILE,
-and that is a TWIN DEFECT carried rather than repaired. `code_of "$DEVBOX" |
-grep -nE ...` numbers the lines grep actually received, and `code_of` has already
-removed every comment line, so a finding reported at line 40 sits somewhere below
-line 40 in the real file. Fixing it would change the gate's output and therefore
-its differential, so it is reproduced exactly and reported instead.
+and that is a TWIN DEFECT carried rather than repaired. `code_of "$DEVBOX" | grep -nE ...` numbers the lines grep actually received, and `code_of` has already removed every comment line, so a finding reported at line 40 sits somewhere below line 40 in the real file. Fixing it would change the gate's output and therefore its differential, so it is reproduced exactly and reported
+instead.
 
-THE ANTI-VACUITY FLOOR IS 10 CALL SITES and it is the only thing standing between
-a collapsed enumeration and a green B1. The twin's wording is carried verbatim
-because it names the failure mode rather than the symptom: "B1 SCANNED ALMOST
-NOTHING (%d sites) -- the enumeration broke, not the code".
+THE ANTI-VACUITY FLOOR IS 10 CALL SITES and it is the only thing standing between a collapsed enumeration and a green B1. The twin's wording is carried verbatim because it names the failure mode rather than the symptom: "B1 SCANNED ALMOST NOTHING (%d sites) -- the enumeration broke, not the code".
 
-THE FOUR CONTROLS ARE BUILT BY CONCATENATION, never by substituting into a copy
-of the real file, and the twin's reason is kept with them: "a substitution
-silently yields an identical copy when the targeted line is later reworded, and
-the control then passes against unmutated source."
+THE FOUR CONTROLS ARE BUILT BY CONCATENATION, never by substituting into a copy of the real file, and the twin's reason is kept with them: "a substitution silently yields an identical copy when the targeted line is later reworded, and the control then passes against unmutated source."
 
 COLOUR IS UNCONDITIONAL IN THE TWIN. It assigns `RED=$'\\033[0;31m'` with no tty
 test at all, so its `FAIL` lines carry escape sequences even into a pipe. The
 port uses the package logger's decision instead, which is a tty test; the
-difference is invisible to the differential because the comparator strips ANSI
-before it compares, and it is the better behaviour for a human piping the gate
-into a file. Named here so it is a decision rather than a drift.
+difference is invisible to the differential because the comparator strips ANSI before it compares, and it is the better behaviour for a human piping the gate into a file. Named here so it is a decision rather than a drift.
 """
 
 import os
@@ -104,13 +88,9 @@ MIN_SITES = 10
 def code_of(text: str) -> str:
     """`grep -vE '^[[:space:]]*#'`: whole-line comments removed.
 
-    Every explanation of the WRONG shape in this repo lives in a comment, so a
-    scan for that shape must read code only or it fails on its own
-    documentation. (Learned the hard way by the editorconfig gate, which matched
-    `binary` inside a PATH.)
+    Every explanation of the WRONG shape in this repo lives in a comment, so a scan for that shape must read code only or it fails on its own documentation. (Learned the hard way by the editorconfig gate, which matched `binary` inside a PATH.)
 
-    An INLINE comment is left alone, exactly as the twin leaves it: the pattern
-    is anchored at a command position, and a trailing `# ...` cannot be one.
+    An INLINE comment is left alone, exactly as the twin leaves it: the pattern is anchored at a command position, and a trailing `# ...` cannot be one.
     """
     return "\n".join(line for line in text.split("\n") if not re.match(r"^[ \t]*#", line))
 
@@ -118,10 +98,7 @@ def code_of(text: str) -> str:
 def grep_n(pattern: re.Pattern, text: str) -> list[str]:
     """`grep -nE`: `<line-number>:<line>` for every match, numbered from ONE.
 
-    THE NUMBERS ARE POSITIONS IN `text`, which the caller has already stripped of
-    comments. See the port notes: that is the twin's behaviour and it is a defect
-    carried rather than repaired, because repairing it would change the output
-    the differential compares.
+    THE NUMBERS ARE POSITIONS IN `text`, which the caller has already stripped of comments. See the port notes: that is the twin's behaviour and it is a defect carried rather than repaired, because repairing it would change the output the differential compares.
     """
     return [
         "%d:%s" % (number, line)

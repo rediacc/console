@@ -4,24 +4,13 @@
 
 THE BEHAVIOUR THAT MATTERS IS THE ABSENT-CREDENTIALS ONE. Regenerating narration
 costs real TTS GPU time, which is why this cache exists at all; but a developer
-without R2 credentials must still be able to run the pipeline, so both functions
-WARN and RETURN 0 rather than failing. Get that backwards and a fresh checkout
-either cannot generate tutorials at all, or silently re-pays for every mp3.
+without R2 credentials must still be able to run the pipeline, so both functions WARN and RETURN 0 rather than failing. Get that backwards and a fresh checkout either cannot generate tutorials at all, or silently re-pays for every mp3.
 
-Both directions are driven here with aws, curl and the network absent, and the
-sync scripts replaced by RECORDERS at the fixture root. No bucket is touched and
-no credential is read: the three CLOUDFLARE_R2_MEDIA_* variables are set to
-obvious placeholders in the credentials-present case.
+Both directions are driven here with aws, curl and the network absent, and the sync scripts replaced by RECORDERS at the fixture root. No bucket is touched and no credential is read: the three CLOUDFLARE_R2_MEDIA_* variables are set to obvious placeholders in the credentials-present case.
 
-WHY THE SEAM IS A FIXTURE TREE AND NOT A FAKE BINARY. The two functions call the
-sync scripts by ABSOLUTE path under `$ROOT_DIR`, not through PATH, so shadowing a
-name on PATH would shadow nothing. The recorder is written into
-`<fixture>/.ci/scripts/deploy/` and `ROOT_DIR` points at the fixture.
+WHY THE SEAM IS A FIXTURE TREE AND NOT A FAKE BINARY. The two functions call the sync scripts by ABSOLUTE path under `$ROOT_DIR`, not through PATH, so shadowing a name on PATH would shadow nothing. The recorder is written into `<fixture>/.ci/scripts/deploy/` and `ROOT_DIR` points at the fixture.
 
-THE OWNERSHIP ASSERTION replaced a byte-identity check against run.sh's copy.
-run.sh has no copy now, so the question became ownership: exactly one file defines
-each name, it is this module, run.sh and media.sh define neither, and
-media-entry.sh resolves both names here.
+THE OWNERSHIP ASSERTION replaced a byte-identity check against run.sh's copy. run.sh has no copy now, so the question became ownership: exactly one file defines each name, it is this module, run.sh and media.sh define neither, and media-entry.sh resolves both names here.
 
 NO `xdist_group`, for the reasons written out in test_gate_media_cuda.py: every
 case takes its own `mktemp -d`, nothing is bound, and `MEDIA_MODULE_DIR` is a
@@ -57,8 +46,7 @@ NO_CREDENTIALS = (
 def stage_sync_scripts(root: pathlib.Path, code: int = 0) -> pathlib.Path:
     """Replace both sync scripts with recorders under the FIXTURE root.
 
-    Returns the path of the call log. Truncated on every call, so a case reads
-    only its own invocations.
+    Returns the path of the call log. Truncated on every call, so a case reads only its own invocations.
     """
     deploy = root / ".ci" / "scripts" / "deploy"
     deploy.mkdir(parents=True, exist_ok=True)

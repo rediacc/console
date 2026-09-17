@@ -4,8 +4,7 @@ Ported from `.ci/scripts/quality/check-git-op-conditionals.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side
 until a committed differential ledger says otherwise.
 
-WHY THE TWIN EXISTS, carried over from its header because the archaeology is the
-half of a gate that cannot be recovered from the code:
+WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
   A git-identity assignment used later without checking whether it failed OR
   resolved to a KNOWN MISLEADING VALUE is a defect gates run git and observe
@@ -61,12 +60,8 @@ half of a gate that cannot be recovered from the code:
   business either -- scope stays "feeds a conditional", not "every git capture
   in the tree".
 
-The twin's gate header carries a BLOCKER about WIRING rather than about git, so
-it stays with the bash file: the step "runs before this lane's `- id: setup`
-step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting
-it into the region would move it below that guard and skip it whenever setup
-fails." A port inherits no registration, so nothing here re-states that as a live
-suppression.
+The twin's gate header carries a BLOCKER about WIRING rather than about git, so it stays with the bash file: the step "runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails." A port inherits no registration, so nothing here re-states
+that as a live suppression.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -74,70 +69,37 @@ PORT NOTES.
 
 THE SELF-EXEMPTION IS THE SUBTLE PART OF THIS PORT. The twin exempts its own
 file with `SELF_REL="${BASH_SOURCE[0]#"$ROOT"/}"`, because its header quotes the
-risky shapes verbatim as examples and its controls plant them in heredocs, and
-both match the extraction regex. That is the "gate about a rule accidentally
-judged by that same rule" trap, the same one check-toolchain-pins.sh documents
+risky shapes verbatim as examples and its controls plant them in heredocs, and both match the extraction regex. That is the "gate about a rule accidentally judged by that same rule" trap, the same one check-toolchain-pins.sh documents
 for itself.
 
-A PORT CANNOT INHERIT THAT LINE, because `__file__` here is
-`.ci/rediacc_ci/quality/git_op_conditionals.py`, which is not in the scan set at
-all -- the globs cover `.sh` under `.claude/hooks/` and `.ci/scripts/quality/`.
-The file that still needs exempting is the BASH TWIN, which is in the scan set
-and does still contain the fixtures. So the exemption is written out BY NAME in
+A PORT CANNOT INHERIT THAT LINE, because `__file__` here is `.ci/rediacc_ci/quality/git_op_conditionals.py`, which is not in the scan set at all -- the globs cover `.sh` under `.claude/hooks/` and `.ci/scripts/quality/`. The file that still needs exempting is the BASH TWIN, which is in the scan set and does still contain the fixtures. So the exemption is written out BY NAME in
 `EXEMPT_PATHS` below, with the reason, and the gate PRINTS it on every run. A
 quiet exemption is how a gate stops meaning what its name says; this one cannot
 be forgotten because it is in the output.
 
-WHEN THE TWIN IS FINALLY DELETED, `EXEMPT_PATHS` must be emptied in the same
-change. Left behind it would silently excuse a file that no longer exists, which
-costs nothing today and is exactly the kind of stale allowlist entry that
-survives for years.
+WHEN THE TWIN IS FINALLY DELETED, `EXEMPT_PATHS` must be emptied in the same change. Left behind it would silently excuse a file that no longer exists, which costs nothing today and is exactly the kind of stale allowlist entry that survives for years.
 
-THE GLOB SPELLINGS ARE ASYMMETRIC ON PURPOSE, and the twin pays six lines for
-it: `.claude/hooks/**/*.sh` and `.ci/scripts/quality/*.sh`. Git's default
-(non-`:(glob)`) pathspec uses wildmatch WITHOUT pathname mode, so `*` crosses
-`/` -- which means `**/*.sh` still demands a literal slash between the prefix
-and the filename, and `.ci/scripts/quality/` is FLAT. The `**` spelling matched
-ZERO files there while the gate reported "71 shell file(s) scanned", and it was
-caught only because a mutation-proof on the real defect the widening existed to
-catch still passed clean. `.claude/hooks` DOES have subdirectories, so `**/*.sh`
-was already correct there.
+THE GLOB SPELLINGS ARE ASYMMETRIC ON PURPOSE, and the twin pays six lines for it: `.claude/hooks/**/*.sh` and `.ci/scripts/quality/*.sh`. Git's default (non-`:(glob)`) pathspec uses wildmatch WITHOUT pathname mode, so `*` crosses `/` -- which means `**/*.sh` still demands a literal slash between the prefix and the filename, and `.ci/scripts/quality/` is FLAT. The `**` spelling
+matched ZERO files there while the gate reported "71 shell file(s) scanned", and it was caught only because a mutation-proof on the real defect the widening existed to catch still passed clean. `.claude/hooks` DOES have subdirectories, so `**/*.sh` was already correct there.
 
-THE PORT DOES NOT REIMPLEMENT WILDMATCH. It hands the same two pathspecs to the
-same `git ls-files`, twice each (tracked, then `--others --exclude-standard`),
-exactly as the twin does. Reimplementing git's matcher in Python would be a
-second matcher to keep in step with the first, and the whole finding above is
-what happens when a matcher's behaviour is assumed rather than measured.
+THE PORT DOES NOT REIMPLEMENT WILDMATCH. It hands the same two pathspecs to the same `git ls-files`, twice each (tracked, then `--others --exclude-standard`), exactly as the twin does. Reimplementing git's matcher in Python would be a second matcher to keep in step with the first, and the whole finding above is what happens when a matcher's behaviour is assumed rather than
+measured.
 
-UNTRACKED FILES ARE IN SCOPE HERE, unlike check-go-tool-path.sh. That is
-deliberate in the twin (`--others --exclude-standard` is spelled out) and it is
-right for this subject: a hook added but not yet committed is running on the
-developer's machine already.
+UNTRACKED FILES ARE IN SCOPE HERE, unlike check-go-tool-path.sh. That is deliberate in the twin (`--others --exclude-standard` is spelled out) and it is right for this subject: a hook added but not yet committed is running on the developer's machine already.
 
 `grep -o` CAN EMIT SEVERAL MATCHES FROM ONE LINE, all carrying that line's
 number, and the loop then re-reads the FULL line with `sed -n "${lineno}p"`. So
-two captures on one physical line are judged against the same guard text, and a
-`|| exit 0` at the end of the line clears BOTH. Preserved. The twin's own
-comment explains why the full line is re-read rather than using the matched
-text: `grep -oE` truncates at the closing paren of `$(...)`, which silently
-dropped a trailing `|| exit 0` on the very shape this gate exists to require and
-produced three false positives before it was caught.
+two captures on one physical line are judged against the same guard text, and a `|| exit 0` at the end of the line clears BOTH. Preserved. The twin's own comment explains why the full line is re-read rather than using the matched text: `grep -oE` truncates at the closing paren of `$(...)`, which silently dropped a trailing `|| exit 0` on the very shape this gate exists to require
+and produced three false positives before it was caught.
 
-NO FILE-WIDE EXEMPTION FOR THE BARE SHAPE, and this is a measured decision
-rather than an oversight. The twin's comment: "does a HEAD-literal comparison
-appear ANYWHERE in the file" was tried and PROVEN WRONG by the real defect it
-was meant to catch -- check-submodule-branches.sh has an unrelated
+NO FILE-WIDE EXEMPTION FOR THE BARE SHAPE, and this is a measured decision rather than an oversight. The twin's comment: "does a HEAD-literal comparison appear ANYWHERE in the file" was tried and PROVEN WRONG by the real defect it was meant to catch -- check-submodule-branches.sh has an unrelated
 `"$sm_branch" == "HEAD"` check on a DIFFERENT variable elsewhere in the file,
-which cleared the finding even with the real unguarded shape reintroduced
-verbatim. A mutation-proof caught this gate lying about its own coverage before
-it shipped. So the bare shape is banned outright.
+which cleared the finding even with the real unguarded shape reintroduced verbatim. A mutation-proof caught this gate lying about its own coverage before it shipped. So the bare shape is banned outright.
 
 THE GUARD SEARCHES ARE FILE-WIDE AND TEXTUAL, which over-clears on purpose. A
 `-z "$BRANCH"` anywhere in the file clears every `BRANCH=$(git ...)` in it, even
 one on a path the check never runs on, and a `"$BRANCH" == "HEAD"` inside a
-comment or a heredoc counts. For a gate whose false POSITIVE gets it suppressed,
-over-clearing is the right direction to err, and it is stated rather than
-discovered.
+comment or a heredoc counts. For a gate whose false POSITIVE gets it suppressed, over-clearing is the right direction to err, and it is stated rather than discovered.
 
 `[[:space:]]` IS NOT `\\s`; see `rediacc_ci.quality.npmrc` for the same note. The
 class is written out.
@@ -209,9 +171,7 @@ def head_literal_guard(varname: str) -> re.Pattern[str]:
 def empty_check_guard(varname: str) -> re.Pattern[str]:
     """`-z "$VAR"` or `-n "$VAR"`, anywhere in the file.
 
-    Sufficient for `symbolic-ref` and `branch --show-current`, both of which fail
-    closed to EMPTY on a detached checkout with no misleading literal to also
-    guard against.
+    Sufficient for `symbolic-ref` and `branch --show-current`, both of which fail closed to EMPTY on a detached checkout with no misleading literal to also guard against.
     """
     return re.compile(r'(-z|-n)%s+"\$%s"' % (SPACE, re.escape(varname)))
 
@@ -219,8 +179,7 @@ def empty_check_guard(varname: str) -> re.Pattern[str]:
 def scan_text(body: str, label: str) -> list[str]:
     """The twin's `scan_file`, as `<label>:<varname>` findings. Empty means clean.
 
-    Takes TEXT rather than a path so a test can drive it on a string, which is
-    the whole reason the ports expose their helpers. `label` is what the twin
+    Takes TEXT rather than a path so a test can drive it on a string, which is the whole reason the ports expose their helpers. `label` is what the twin
     prints, `${f#"$ROOT"/}` -- the repo-relative path.
     """
     findings: list[str] = []
@@ -336,9 +295,7 @@ def py_head_literal_guard(varname: str) -> re.Pattern[str]:
 def py_empty_check_guard(varname: str) -> re.Pattern[str]:
     """Python's `-z "$VAR"` / `-n "$VAR"`: any truthiness or None test on the name.
 
-    COMPOUND-TOLERANT, because bash's is: `(-z|-n)[[:space:]]+"$VAR"` matches
-    happily inside `[[ -z "$X" || ... ]]`, and the Python equivalent has to match
-    inside `if head_path and pathlib.Path(head_path).is_file():` the same way.
+    COMPOUND-TOLERANT, because bash's is: `(-z|-n)[[:space:]]+"$VAR"` matches happily inside `[[ -z "$X" || ... ]]`, and the Python equivalent has to match inside `if head_path and pathlib.Path(head_path).is_file():` the same way.
     """
     var = re.escape(varname)
     word = r"(?![0-9A-Za-z_])"
@@ -424,9 +381,7 @@ def scan_python_text(body: str, label: str) -> list[str]:
 def scan_file(path: pathlib.Path, label: str) -> list[str]:
     """`scan_text` over a file. An unreadable file is not a finding.
 
-    The twin's `cat "$f" 2>/dev/null || return 0` swallows a read error, and a
-    port that turned it into an error would report findings the twin never
-    reports -- on this repo's own tree, where a path in the index but deleted
+    The twin's `cat "$f" 2>/dev/null || return 0` swallows a read error, and a port that turned it into an error would report findings the twin never reports -- on this repo's own tree, where a path in the index but deleted
     from disk is an ordinary state.
     """
     try:
@@ -442,8 +397,7 @@ def scan_file(path: pathlib.Path, label: str) -> list[str]:
 def scan_files(root: pathlib.Path, globs: tuple[str, ...] = SCAN_GLOBS) -> list[str]:
     """Every file in scope, tracked and untracked, sorted and de-duplicated.
 
-    Four `git ls-files` invocations, matching the twin's two per glob. Sorted in
-    Python, which is C collation for these ASCII paths and therefore agrees with
+    Four `git ls-files` invocations, matching the twin's two per glob. Sorted in Python, which is C collation for these ASCII paths and therefore agrees with
     the `sort -u` the twin pipes into under LC_ALL=C.
     """
     seen: set[str] = set()
@@ -699,8 +653,7 @@ _PY_CONTROL_PASS_LINES = (
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 violation or control failure.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments
-    at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -815,9 +768,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. This gate's false POSITIVE is the
-    expensive one -- it flags correct code, gets suppressed, and then protects
-    nothing -- so the mirrors outnumber the plants on purpose.
+    BOTH DIRECTIONS FOR EVERY CONTROL. This gate's false POSITIVE is the expensive one -- it flags correct code, gets suppressed, and then protects nothing -- so the mirrors outnumber the plants on purpose.
     """
     ctl = Controls("git-op-conditionals", floor=30, verbose=True)
 

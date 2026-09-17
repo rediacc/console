@@ -3,36 +3,18 @@
 
 WHAT IS STUBBED, AND WHAT IS DELIBERATELY NOT.
 
-STUBBED, on a prepended scratch PATH: `gh`, `curl`, `aws`, `sleep`. Those are
-every external effect this program has. `gh` and `aws` and `curl` are recording
-fakes: each logs its exact argv to `$FAKE_LOG` and answers from a per-case
-fixture, so the CALL LOG is a first-class artifact of every case and is compared
-byte for byte alongside the two output streams. Without them a single test run
-would delete releases, tags, GHCR versions, deployments, Pages deployments,
-Workers, D1 databases, Turnstile widgets, R2 objects, branches, workflow runs,
-artifacts and caches from the real `rediacc` org. `sleep` is stubbed because
-`retry_with_backoff 3 2` otherwise costs six real seconds per failing delete and
-resolves through PATH on both sides, so one no-op answers for both.
+STUBBED, on a prepended scratch PATH: `gh`, `curl`, `aws`, `sleep`. Those are every external effect this program has. `gh` and `aws` and `curl` are recording fakes: each logs its exact argv to `$FAKE_LOG` and answers from a per-case fixture, so the CALL LOG is a first-class artifact of every case and is compared byte for byte alongside the two output streams. Without them a single
+test run would delete releases, tags, GHCR versions, deployments, Pages deployments, Workers, D1 databases, Turnstile widgets, R2 objects, branches, workflow runs, artifacts and caches from the real `rediacc` org. `sleep` is stubbed because `retry_with_backoff 3 2` otherwise costs six real seconds per failing delete and resolves through PATH on both sides, so one no-op answers for
+both.
 
 NOT STUBBED: `date`, `jq`, `sort`, `grep`. The port EXECUTES `date` and `sort`
 with the twin's argv, and the fake `gh` runs the REAL `jq` to apply whatever
-`--jq` filter it was handed -- so the bytes both sides receive from `gh` come out
-of the same jq the twin would have used, and the port's own jq reimplementations
-are checked against that binary directly in
-`test_jq_filters_agree_with_the_real_jq`.
+`--jq` filter it was handed -- so the bytes both sides receive from `gh` come out of the same jq the twin would have used, and the port's own jq reimplementations are checked against that binary directly in `test_jq_filters_agree_with_the_real_jq`.
 
-THE CALL LOG IS THE PRIMARY ARTIFACT. Almost every hazard in this program is a
-call that should or should not have been made: a dry run that deletes, a phase
-that fails open and issues no calls at all, a retry that fires three times
-instead of once, a `record_delete` that never happens. Text alone would miss all
-of them, and several of the cases below assert on the log while the two output
-streams are identically empty.
+THE CALL LOG IS THE PRIMARY ARTIFACT. Almost every hazard in this program is a call that should or should not have been made: a dry run that deletes, a phase that fails open and issues no calls at all, a retry that fires three times instead of once, a `record_delete` that never happens. Text alone would miss all of them, and several of the cases below assert on the log while the
+two output streams are identically empty.
 
-TIME IS NOT PINNED, AND THE FIXTURES ARE BUILT AROUND THAT. The two sides run
-seconds apart and each calls `date -u +%s` for itself, so every fixture
-timestamp is placed FAR from a decision boundary (days, or half-hours where the
-twin prints hours). `test_the_two_sides_agree_on_ages_that_are_not_near_a_
-boundary` is the control that this discipline is actually being followed.
+TIME IS NOT PINNED, AND THE FIXTURES ARE BUILT AROUND THAT. The two sides run seconds apart and each calls `date -u +%s` for itself, so every fixture timestamp is placed FAR from a decision boundary (days, or half-hours where the twin prints hours). `test_the_two_sides_agree_on_ages_that_are_not_near_a_ boundary` is the control that this discipline is actually being followed.
 
 K=5 LEDGER: `.ci/shadow/w7p6-cleanup-versions.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
@@ -298,9 +280,7 @@ def sides(
 ) -> tuple[int, bytes, bytes, list[str]]:
     """Run BOTH implementations over the same fakes and assert byte equality.
 
-    Returns the (shared) result so a case can go on to assert what the shared
-    behaviour actually was -- which is the half that stops two identically wrong
-    implementations from passing.
+    Returns the (shared) result so a case can go on to assert what the shared behaviour actually was -- which is the half that stops two identically wrong implementations from passing.
     """
     _EXERCISED.add(phase)
     fixture = fixture or {}
@@ -358,8 +338,7 @@ def cf_env(**overrides: str) -> dict:
 def ago(days: float) -> str:
     """An RFC3339 timestamp `days` in the past, deliberately off any boundary.
 
-    Called with halves (`ago(30.5)`) so that the whole-day figure the twin prints
-    is the same on both sides even though they compute it seconds apart.
+    Called with halves (`ago(30.5)`) so that the whole-day figure the twin prints is the same on both sides even though they compute it seconds apart.
     """
     when = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=days)
     return when.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -485,8 +464,7 @@ def test_arith_agrees_with_bash_on_words_bash_accepts(word: str) -> None:
 def test_bash_refuses_08_and_returns_false_without_aborting(word: str) -> None:
     """A refused word is FALSE plus a diagnostic, not a dead script.
 
-    This is the control behind `arith_cmp`: the port must take the same branch,
-    and the module docstring names the message text as the one divergence.
+    This is the control behind `arith_cmp`: the port must take the same branch, and the module docstring names the message text as the one divergence.
     """
     status, stderr = _bash_arith(word, "0")
     assert status == 1, word
@@ -522,10 +500,7 @@ _CORPUS = [
 def test_jq_filters_agree_with_the_real_jq(payload: list) -> None:
     """Every jq filter the port reimplements, against the binary it replaces.
 
-    `sort_by` is the interesting one, and the tie case in the corpus above is why:
-    the port's first version broke ties on the whole element (which is what jq's
-    `_sort_by_impl(map([f]))` reads like) and this test caught it. jq's sort is
-    STABLE on the key alone.
+    `sort_by` is the interesting one, and the tie case in the corpus above is why: the port's first version broke ties on the whole element (which is what jq's `_sort_by_impl(map([f]))` reads like) and this test caught it. jq's sort is STABLE on the key alone.
     """
     text = json.dumps(payload)
 
@@ -768,8 +743,7 @@ def test_phase_1_debug_output_is_identical_when_debug_is_true() -> None:
 def test_a_zero_padded_versions_value_is_octal_on_both_sides() -> None:
     """`--versions 010` keeps EIGHT, not ten, and does it silently.
 
-    An operator's own flag value, read by bash's arithmetic rules. The ninth and
-    tenth releases are outside the keep window on both sides.
+    An operator's own flag value, read by bash's arithmetic rules. The ninth and tenth releases are outside the keep window on both sides.
     """
     rows = [("v%d.0.0" % (20 - i), ago(90.5 + i)) for i in range(10)]
     result = sides(
@@ -788,8 +762,7 @@ def test_an_invalid_octal_versions_value_takes_the_same_branch_on_both_sides() -
 
     THE ONE NAMED DIVERGENCE. The decision, the exit code, the stdout and the
     entire call log are identical; only the text of the diagnostic differs,
-    because bash names a file and a line number that this port cannot honestly
-    claim. Asserted in both directions rather than skipped.
+    because bash names a file and a line number that this port cannot honestly claim. Asserted in both directions rather than skipped.
     """
     fixture = _releases(("v1.0.0", ago(0.5)))
     results = []
@@ -887,12 +860,8 @@ def test_phase_2_resolves_an_annotated_tag_with_no_tagger_date_in_two_more_calls
     """The fallback inside the fallback, and the only path that reaches
     `git/tags/<sha> --jq .object.sha`.
 
-    An annotated tag whose tagger date is missing needs the tag OBJECT resolved
-    to its target commit before the commit date can be read, so the twin makes
-    FOUR calls for that one tag. A port that reused the ref sha as the commit sha
-    would still produce the right date here and the wrong call log, which is why
-    this case exists: it was added after a planted defect of exactly that shape
-    failed to turn anything red.
+    An annotated tag whose tagger date is missing needs the tag OBJECT resolved to its target commit before the commit date can be read, so the twin makes FOUR calls for that one tag. A port that reused the ref sha as the commit sha would still produce the right date here and the wrong call log, which is why this case exists: it was added after a planted defect of exactly that
+    shape failed to turn anything red.
     """
     result = sides(
         "cleanup_tags",
@@ -930,12 +899,9 @@ def test_phase_2_resolves_an_annotated_tag_with_no_tagger_date_in_two_more_calls
 
 def test_phase_2_a_tag_object_with_no_tagger_date_yields_the_string_null() -> None:
     """`gh api --jq '.tagger.date'` on an object without one prints `null`, and
-    the twin tests for EMPTY, so the fallback is not taken and the four
-    characters travel on as the tag's date. `date -d null` then fails and the
-    tag is retained with a message that quotes it back.
+    the twin tests for EMPTY, so the fallback is not taken and the four characters travel on as the tag's date. `date -d null` then fails and the tag is retained with a message that quotes it back.
 
-    Reproduced, not repaired: it is the twin's behaviour, it errs toward keeping,
-    and it is the only reason `jq_text` renders a missing key as `null`.
+    Reproduced, not repaired: it is the twin's behaviour, it errs toward keeping, and it is the only reason `jq_text` renders a missing key as `null`.
     """
     result = sides(
         "cleanup_tags",
@@ -1424,8 +1390,7 @@ def test_phase_5b_does_not_charge_the_delete_budget() -> None:
     """HAZARD 3, and the budget is the only way to see it.
 
     `MAX_DELETES_PER_RUN=1` with TWO orphans: if the success arm called
-    `record_delete` like every other phase, the second delete would trip the
-    budget and print the deferral line. It does not, so both go.
+    `record_delete` like every other phase, the second delete would trip the budget and print the deferral line. It does not, so both go.
     """
     result = sides(
         "cleanup_preview_workers",
@@ -1641,10 +1606,7 @@ def test_phase_7b_says_none_found_when_only_the_production_widget_exists() -> No
 def test_the_two_sides_agree_on_ages_that_are_not_near_a_boundary() -> None:
     """The control for the whole time discipline in this file.
 
-    Both sides call `date -u +%s` for themselves, seconds apart. Every fixture
-    above sits at a half-day or half-hour offset so no printed whole number can
-    flip between the two runs. This case proves the discipline holds by driving
-    the one phase that prints BOTH an hours figure and a days figure.
+    Both sides call `date -u +%s` for themselves, seconds apart. Every fixture above sits at a half-day or half-hour offset so no printed whole number can flip between the two runs. This case proves the discipline holds by driving the one phase that prints BOTH an hours figure and a days figure.
     """
     for offset in (12.5 / 24, 6.25 / 24, 23.4 / 24):
         result = sides(
@@ -1946,8 +1908,7 @@ def test_phase_8f_leaves_channel_metadata_alone() -> None:
 
 def test_phase_8e_reads_a_null_upload_query_as_no_uploads() -> None:
     """`aws --query 'Uploads[]...'` prints `null` for an idle bucket, and
-    `null | length` is a jq ERROR. Inside the twin's `set +e` region that leaves
-    `mpu_count` EMPTY, which `-eq 0` reads as zero. A port that raised here would
+    `null | length` is a jq ERROR. Inside the twin's `set +e` region that leaves `mpu_count` EMPTY, which `-eq 0` reads as zero. A port that raised here would
     be louder than the twin on the ordinary case."""
     result = sides("cleanup_r2", fixture=r2_fixture(), env=R2_ENV)
     assert b"8e: no ongoing multipart uploads" in result[2]
@@ -2138,12 +2099,9 @@ def test_a_zero_padded_branch_age_unwinds_the_whole_run_on_both_sides() -> None:
     """HAZARD 8, and it is the most serious thing in this file.
 
     `BRANCH_MAX_AGE_DAYS=08` is an arithmetic EXPANSION error, not a comparison
-    error, so bash abandons every enclosing function frame: Phases 10, 11 and
-    12, the delete total and `Housekeeping complete` never run. The run ends on
-    the failed expansion's status with no phase named and no summary at all.
+    error, so bash abandons every enclosing function frame: Phases 10, 11 and 12, the delete total and `Housekeeping complete` never run. The run ends on the failed expansion's status with no phase named and no summary at all.
 
-    Compared side by side rather than through `sides()` because the diagnostic
-    itself is the port's one named divergence: bash names a file and a line.
+    Compared side by side rather than through `sides()` because the diagnostic itself is the port's one named divergence: bash names a file and a line.
     """
     fixture = {
         "gh": [rule("actions/caches", raw=_caches()), rule("", rc=1)],
@@ -2290,8 +2248,7 @@ def test_phase_10_gives_the_watchdog_its_own_shorter_retention_by_path() -> None
 
 def test_phase_10_warns_when_its_scan_window_can_never_reach_the_threshold() -> None:
     """THE VACUOUS-GREEN CHECK. This phase deleted nothing for the watchdog for
-    months while reporting success, because ten pages of runs never reached back
-    as far as the retention threshold. The warning fires only when the window was
+    months while reporting success, because ten pages of runs never reached back as far as the retention threshold. The warning fires only when the window was
     TRUNCATED, so a young low-volume workflow stays quiet."""
     result = sides(
         "cleanup_workflow_runs",
@@ -2534,9 +2491,7 @@ def test_phase_12_says_none_found_on_an_empty_listing() -> None:
 def test_a_failed_cache_listing_kills_the_run_with_an_arithmetic_error() -> None:
     """HAZARD 9, and it is a defect in the twin, reproduced rather than repaired.
 
-    `gh api ... | jq -s 'sort_by(...)' || echo "[]"`. The `||` covers the WHOLE
-    pipeline under pipefail, and `echo` APPENDS to what the pipeline already
-    wrote -- and `jq -s` writes `[]` even for an empty stream. So a gh that fails
+    `gh api ... | jq -s 'sort_by(...)' || echo "[]"`. The `||` covers the WHOLE pipeline under pipefail, and `echo` APPENDS to what the pipeline already wrote -- and `jq -s` writes `[]` even for an empty stream. So a gh that fails
     for ANY reason (a rate limit is the likely one) leaves the variable holding
     `[]\n[]`, two json values, and every later jq answers TWICE:
 
@@ -2545,11 +2500,7 @@ def test_a_failed_cache_listing_kills_the_run_with_an_arithmetic_error() -> None
 
     `[[ "0\n0" -eq 0 ]]` is an arithmetic syntax error, so the "No Actions cache
     entries found" early return is NOT taken; the next line's `$((total_bytes /
-    1024 / 1024))` is an arithmetic EXPANSION error, which unwinds every frame
-    including `run_all_phases`. Phase 12 is last, so the visible damage is small
-    -- the delete total and `Housekeeping complete` are lost and the run exits 1
-    -- but the nightly's only evidence is one line of bash arithmetic
-    diagnostics naming no phase at all.
+    1024 / 1024))` is an arithmetic EXPANSION error, which unwinds every frame including `run_all_phases`. Phase 12 is last, so the visible damage is small -- the delete total and `Housekeeping complete` are lost and the run exits 1 -- but the nightly's only evidence is one line of bash arithmetic diagnostics naming no phase at all.
 
     Compared side by side because the diagnostic text is the port's one named
     divergence; the exit code, stdout and call log are identical.
@@ -2580,8 +2531,7 @@ def test_a_failed_cache_listing_kills_the_run_with_an_arithmetic_error() -> None
 
 def test_run_all_phases_over_an_empty_world_is_identical_end_to_end() -> None:
     """Every phase, in order, with every API answering empty. This is the case
-    that pins the BLANK LINES -- `echo ""` puts them on STDOUT while every log
-    line goes to stderr, so a port that printed them to the wrong stream would
+    that pins the BLANK LINES -- `echo ""` puts them on STDOUT while every log line goes to stderr, so a port that printed them to the wrong stream would
     pass every per-phase case above and fail here."""
     result = sides(
         "run_all_phases",
@@ -2673,9 +2623,7 @@ def test_an_unset_gh_token_refuses_before_any_phase_runs() -> None:
 def test_every_phase_was_driven_by_at_least_one_case() -> None:
     """ZERO CASES FOR A PHASE IS A FAILURE, not a pass.
 
-    A file of 14 phases where a rename or a refactor quietly left one undriven
-    would still be all-green, and the green would mean nothing for that phase.
-    Runs last by name, and reads the set the harness accumulated.
+    A file of 14 phases where a rename or a refactor quietly left one undriven would still be all-green, and the green would mean nothing for that phase. Runs last by name, and reads the set the harness accumulated.
     """
     missing = sorted(set(PHASES) - _EXERCISED)
     assert not missing, (

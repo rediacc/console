@@ -2,34 +2,17 @@
 
 Both-ways test for the tag-fetch block in `.ci/scripts/ci/initialize.sh`.
 
-WHAT IT IS FOR. Tag-based versioning means the version IS the tag list. CI checks
-out shallow, so initialize.sh fetches tags with the app token right before it
-computes next_version.
+WHAT IT IS FOR. Tag-based versioning means the version IS the tag list. CI checks out shallow, so initialize.sh fetches tags with the app token right before it computes next_version.
 
-WHAT WAS BROKEN. The fetch ended in `2>/dev/null || true`. A failed or rate-limited
-fetch left whatever tags the checkout happened to bring, resolve-version.sh cannot
-tell a stale tag list from a current one, and next_version came out three lines
-later looking perfectly plausible and being wrong. That is the WRONG-VALUE case, and
-it is the one assert-artifact-version.sh structurally cannot catch: CD's label and
-CI's label both descend from this one command, so they agree with each other and
-disagree with reality.
+WHAT WAS BROKEN. The fetch ended in `2>/dev/null || true`. A failed or rate-limited fetch left whatever tags the checkout happened to bring, resolve-version.sh cannot tell a stale tag list from a current one, and next_version came out three lines later looking perfectly plausible and being wrong. That is the WRONG-VALUE case, and it is the one assert-artifact-version.sh
+structurally cannot catch: CD's label and CI's label both descend from this one command, so they agree with each other and disagree with reality.
 
-The block is EXTRACTED FROM THE REAL SCRIPT by its own anchors and run in a
-throwaway git repo -- initialize.sh as a whole needs submodules, secrets and a
-GitHub token, none of which this behaviour depends on. If the block is rewritten
-the anchors stop matching and `test_block_is_extractable` fails, rather than the
-gate silently testing nothing.
+The block is EXTRACTED FROM THE REAL SCRIPT by its own anchors and run in a throwaway git repo -- initialize.sh as a whole needs submodules, secrets and a GitHub token, none of which this behaviour depends on. If the block is rewritten the anchors stop matching and `test_block_is_extractable` fails, rather than the gate silently testing nothing.
 
-THE ONE REAL DIFFERENCE, AND IT IS A DEFECT THE PORT DOES NOT INHERIT. The twin's
-cases share one `$WORK` directory and depend on each other through it:
-`test_failed_fetch_redacts_the_token` asserts on `$WORK/run.log` WITHOUT RUNNING
-ANYTHING -- it reads the log the previous case happened to leave -- and
-`test_planted_swallowed_fetch_continues` reuses the `bin-badgit` shim built inside
-`test_failed_fetch_stops_the_run`. Run either one alone and it passes over an
+THE ONE REAL DIFFERENCE, AND IT IS A DEFECT THE PORT DOES NOT INHERIT. The twin's cases share one `$WORK` directory and depend on each other through it: `test_failed_fetch_redacts_the_token` asserts on `$WORK/run.log` WITHOUT RUNNING ANYTHING -- it reads the log the previous case happened to leave -- and `test_planted_swallowed_fetch_continues` reuses the `bin-badgit` shim built
+inside `test_failed_fetch_stops_the_run`. Run either one alone and it passes over an
 absent file or fails on a missing shim; reorder the two and the redaction case
-asserts against the wrong run. Each case here builds what it needs and drives its
-own run, which is why the redaction case is slower and why it is now actually
-testing the thing its name claims.
+asserts against the wrong run. Each case here builds what it needs and drives its own run, which is why the redaction case is slower and why it is now actually testing the thing its name claims.
 """
 
 import os
@@ -60,8 +43,7 @@ def _git() -> str:
 def extract_block(gate) -> str:
     """The twin's `extract_block`, awk range spelled as a scan.
 
-    An EMPTY extraction is a REFUSAL and not an empty runner: a runner built from
-    nothing exits 0 having done nothing, which would make four cases below pass
+    An EMPTY extraction is a REFUSAL and not an empty runner: a runner built from nothing exits 0 having done nothing, which would make four cases below pass
     for the wrong reason.
     """
     if not GATE.is_file():
@@ -154,8 +136,7 @@ def init_workdir(gate, directory):
 def bad_git_shim(directory):
     """A `git` that fails every fetch and LEAKS the credentialed URL on stderr.
 
-    Every other subcommand goes to the REAL git by ABSOLUTE PATH. Resolving it
-    through PATH would find this shim again and recurse forever.
+    Every other subcommand goes to the REAL git by ABSOLUTE PATH. Resolving it through PATH would find this shim again and recurse forever.
     """
     real_git = shutil.which("git")
     if not real_git:
@@ -249,8 +230,7 @@ def test_no_tags_after_a_good_fetch_stops_the_run(gate, tmp_path):
 
 def test_planted_swallowed_fetch_continues(gate, tmp_path):
     """THE CONTROL. Plant the pre-fix behaviour -- fetch failure swallowed, tag list
-    used regardless -- and prove the same failing fetch sails through. Without this,
-    `test_failed_fetch_stops_the_run` might be red for some unrelated reason.
+    used regardless -- and prove the same failing fetch sails through. Without this, `test_failed_fetch_stops_the_run` might be red for some unrelated reason.
     """
     gate.log_test("control: with the failure swallowed, the run continues on a stale tag list")
     seed_source_repo(gate, tmp_path / "src-stale", "v0.0.9")

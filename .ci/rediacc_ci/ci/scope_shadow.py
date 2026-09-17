@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/scope-shadow.sh` (588 lines).
 
-The scope engine, LIVE: it decides which CI jobs may skip. See the twin's own
-header for the contract, the three kill switches, the fail-open asymmetry
+The scope engine, LIVE: it decides which CI jobs may skip. See the twin's own header for the contract, the three kill switches, the fail-open asymmetry
 ("it NEVER writes `run_<key>=true`") and why the deciding plan is the baseline
 plan rather than the merge-base classify. None of that is restated here.
 
@@ -14,27 +13,17 @@ LIVE CALLER, not repointed: `.github/workflows/ci.yml:348`
 -----------------------------------------------------------------------------
 THE FIVE INLINE `node -e` PROGRAMS ARE NOT REWRITTEN, THEY ARE CARRIED
 -----------------------------------------------------------------------------
-`write_plan`, `emit_outputs`, the greenlight `pending` query, the greenlight
-`applied` rewrite and the conditions summary are each a JavaScript program the
-twin passes to `node -e`. They call into `skip-plan-reconcile.cjs`,
-`scope-map.cjs`, `scope-engine.cjs` and `greenlight.cjs`, which are the real
-decision logic and stay exactly where they are. Reimplementing them in Python
-would be porting the ENGINE, which this file is not, and would put a second
-reader of `JOB_SURFACES` and `CLOSURES` in the tree -- the precise drift the
-twin's `emit_outputs` refuses at :247-249.
+`write_plan`, `emit_outputs`, the greenlight `pending` query, the greenlight `applied` rewrite and the conditions summary are each a JavaScript program the twin passes to `node -e`. They call into `skip-plan-reconcile.cjs`, `scope-map.cjs`, `scope-engine.cjs` and `greenlight.cjs`, which are the real decision logic and stay exactly where they are. Reimplementing them in Python would
+be porting the ENGINE, which this file is not, and would put a second reader of `JOB_SURFACES` and `CLOSURES` in the tree -- the precise drift the twin's `emit_outputs` refuses at :247-249.
 
-So the five bodies below are byte-for-byte copies, generated out of the twin
-rather than retyped, and `test_ci_scope_shadow.py::test_the_five_node_programs
-_are_verbatim` re-reads the twin on every run and fails if either side moves.
+So the five bodies below are byte-for-byte copies, generated out of the twin rather than retyped, and `test_ci_scope_shadow.py::test_the_five_node_programs _are_verbatim` re-reads the twin on every run and fails if either side moves.
 
 -----------------------------------------------------------------------------
 `bounded` CALLS THE REAL `timeout(1)`, IT DOES NOT EMULATE ONE
 -----------------------------------------------------------------------------
 The twin is `bounded() { timeout "$SCOPE_TIMEOUT" "$@"; }`. A
 `subprocess.run(timeout=...)` would be an emulation that has to guess three
-things: 124 for a killed child, 125 plus `timeout: invalid time interval` for a
-malformed `SCOPE_SHADOW_TIMEOUT`, and 127 for a missing binary. Prefixing the
-real `timeout` gets all three for free and cannot drift from the twin. It is
+things: 124 for a killed child, 125 plus `timeout: invalid time interval` for a malformed `SCOPE_SHADOW_TIMEOUT`, and 127 for a missing binary. Prefixing the real `timeout` gets all three for free and cannot drift from the twin. It is
 also what makes `SCOPE_SHADOW_TIMEOUT=0.2` a usable lever in the differential.
 
 -----------------------------------------------------------------------------
@@ -42,23 +31,15 @@ also what makes `SCOPE_SHADOW_TIMEOUT=0.2` a usable lever in the differential.
 -----------------------------------------------------------------------------
 Identical shape to the already-ported sibling: `SUMMARY="${GITHUB_STEP_SUMMARY:-
 /dev/stdout}"` and `emit` is `printf '%s\\n' "$@" | tee -a "$SUMMARY"`, so with
-no summary file every line is written twice to the same fd. `_dual_write`
-reproduces that.
+no summary file every line is written twice to the same fd. `_dual_write` reproduces that.
 
-THE SAME RESIDUAL DIVERGENCE APPLIES AND IS NOT RE-DERIVED HERE: with
-`GITHUB_STEP_SUMMARY` unset AND stdout redirected to a regular file, the twin's
-own output is deterministically garbled by a kernel file-offset race between
-`tee -a /dev/stdout`'s reopened description and the inherited one. See
-`rediacc_ci.ci.scope_reconcile_shadow`'s docstring for the measurement. The
-branch is unreachable in production (`ci.yml:348` runs under Actions, which
-always sets `GITHUB_STEP_SUMMARY`), every differential case sets a real summary
-file, and the port duplicates cleanly instead.
+THE SAME RESIDUAL DIVERGENCE APPLIES AND IS NOT RE-DERIVED HERE: with `GITHUB_STEP_SUMMARY` unset AND stdout redirected to a regular file, the twin's own output is deterministically garbled by a kernel file-offset race between `tee -a /dev/stdout`'s reopened description and the inherited one. See `rediacc_ci.ci.scope_reconcile_shadow`'s docstring for the measurement. The branch is
+unreachable in production (`ci.yml:348` runs under Actions, which always sets `GITHUB_STEP_SUMMARY`), every differential case sets a real summary file, and the port duplicates cleanly instead.
 
 -----------------------------------------------------------------------------
 TWO REAL DEFECTS IN THE TWIN, REPRODUCED RATHER THAN FIXED
 -----------------------------------------------------------------------------
-Invariant 5: this file's twin is live at `ci.yml:348` and changing its bytes
-changes what CI skips. Both are pinned by tests.
+Invariant 5: this file's twin is live at `ci.yml:348` and changing its bytes changes what CI skips. Both are pinned by tests.
 
   1. A CRASHED OR TIMED-OUT `pending` QUERY IS REPORTED AS "NOTHING TO ASK"
      (`scope-shadow.sh:394-406`). The query is
@@ -95,13 +76,8 @@ changes what CI skips. Both are pinned by tests.
 -----------------------------------------------------------------------------
 ONE ORDERING DIFFERENCE THAT IS ARGUED, NOT ASSUMED
 -----------------------------------------------------------------------------
-`bounded node -e '<conditions>' plan.json | tee -a "$SUMMARY"` (:563-573) is the
-only place a node process's stdout is STREAMED through `tee` rather than
-redirected to a file first. `_conditions_block` collects that stdout and then
-writes it, so if node were to interleave a slow stdout with its own inherited
-stderr the two sides could order those bytes differently. It cannot here: the
-program is a single `process.stdout.write` of one JSON blob at the end, with no
-stderr on the success path. Stated because the general claim would be false.
+`bounded node -e '<conditions>' plan.json | tee -a "$SUMMARY"` (:563-573) is the only place a node process's stdout is STREAMED through `tee` rather than redirected to a file first. `_conditions_block` collects that stdout and then writes it, so if node were to interleave a slow stdout with its own inherited stderr the two sides could order those bytes differently. It cannot here:
+the program is a single `process.stdout.write` of one JSON blob at the end, with no stderr on the success path. Stated because the general claim would be false.
 
 K=5 LEDGER: `.ci/shadow/w7p6-scope-shadow.observations.jsonl`.
 """
@@ -151,9 +127,7 @@ def _console_root() -> pathlib.Path:
     """The twin's `SCRIPT_DIR/../..` root.
 
     This file is `<root>/.ci/rediacc_ci/ci/scope_shadow.py`; the twin is
-    `<root>/.ci/scripts/ci/scope-shadow.sh`. `paths.repo_root()` is deliberately
-    not used: it honours $REDIACC_CI_ROOT and the twin has no such override, so a
-    fixture pointing one side at a tree and not the other would diverge silently.
+    `<root>/.ci/scripts/ci/scope-shadow.sh`. `paths.repo_root()` is deliberately not used: it honours $REDIACC_CI_ROOT and the twin has no such override, so a fixture pointing one side at a tree and not the other would diverge silently.
     """
     return pathlib.Path(__file__).resolve().parents[3]
 
@@ -180,11 +154,9 @@ def greenlight_digest(text: str) -> str:
     """`greenlight_digest` (:326-374), transliterated from its awk.
 
     ONE LINE PER KEY instead of the raw trail; see the twin's comment at
-    :310-325 for why (~450 rows at eighteen keys truncated mid-line under the
-    old `head -c 3000`, so sixteen keys were simply absent).
+    :310-325 for why (~450 rows at eighteen keys truncated mid-line under the old `head -c 3000`, so sixteen keys were simply absent).
 
-    FOUR AWK BEHAVIOURS ARE REPRODUCED DELIBERATELY, and each one is a place a
-    Python rewrite naturally differs:
+    FOUR AWK BEHAVIOURS ARE REPRODUCED DELIBERATELY, and each one is a place a Python rewrite naturally differs:
 
       * THE FIRST RULE HAS NO `next` (:328-332). Every line starting with
         `greenlight[` updates `key` AND then falls through to the rules below,
@@ -198,9 +170,7 @@ def greenlight_digest(text: str) -> str:
       * `newest[key] = $1 " " row` reads `$1` from the ORIGINAL record, so the
         run id appears twice in the source line and once in the output.
 
-    `key` starts as awk's uninitialised "" so a trail row arriving before any
-    `greenlight[` header is counted under the empty key exactly as awk counts
-    it, rather than crashing.
+    `key` starts as awk's uninitialised "" so a trail row arriving before any `greenlight[` header is counted under the empty key exactly as awk counts it, rather than crashing.
     """
     order: list[str] = []
     seen: set[str] = set()
@@ -255,9 +225,7 @@ def greenlight_digest(text: str) -> str:
 def shallow_report(shallow: str, grafts: str) -> str:
     """`:148`. `rev-parse` says true but the graft list is empty -> say so.
 
-    Split out because the twin's own comment (:137-143) argues this line is what
-    tells a reader whether to trust everything below it, and a test can then
-    assert the sentence rather than a run producing it by accident.
+    Split out because the twin's own comment (:137-143) argues this line is what tells a reader whether to trust everything below it, and a test can then assert the sentence rather than a run producing it by accident.
     """
     if shallow == "true" and grafts == "0":
         return "false (empty graft list; rev-parse says true)"
@@ -303,8 +271,7 @@ def main(argv: list[str]) -> int:
     def tee_head(path: pathlib.Path, count: int) -> bool:
         """`head -c N "$path" | tee -a "$SUMMARY"`. False when `head` would fail.
 
-        RAW BYTES, no trailing newline added and none stripped: this is a
-        `cat`-shaped pipeline, not an `emit` call.
+        RAW BYTES, no trailing newline added and none stripped: this is a `cat`-shaped pipeline, not an `emit` call.
         """
         try:
             data = path.read_bytes()[:count]

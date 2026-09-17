@@ -2,20 +2,10 @@
 
 Sibling of `test_deploy_resolve_account_deploy_config.py`; see that file for
 why `/dev/stdout` is not used as `$GITHUB_OUTPUT`. The K=5 ledger is
-`.ci/shadow/w7p5a-resolve-backfill-commit.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-backfill-commit
---assert --k 5` -> "equivalence holds over 5 distinct trees").
+`.ci/shadow/w7p5a-resolve-backfill-commit.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-backfill-commit --assert --k 5` -> "equivalence holds over 5 distinct trees").
 
-EVERY CASE HERE RUNS AGAINST A THROWAWAY GIT REPOSITORY BUILT IN `tmp_path`,
-not against this checkout's own history. The twin never `cd`s -- it runs
-`git rev-list` / `git cat-file` / `git merge-base` against whatever repo the
-caller's cwd belongs to -- so a fixture repo with a controlled tag, a
-controlled `origin/main` (a plain ref, no real remote needed: `git
-update-ref refs/remotes/origin/main <sha>` is enough for `merge-base
---is-ancestor` to read it), and a controlled off-main commit is what lets
-this test assert the "reachable" and "not reachable from origin/main" arms
-deterministically, without depending on this repository's history staying
-shaped the way it happens to be shaped today.
+EVERY CASE HERE RUNS AGAINST A THROWAWAY GIT REPOSITORY BUILT IN `tmp_path`, not against this checkout's own history. The twin never `cd`s -- it runs `git rev-list` / `git cat-file` / `git merge-base` against whatever repo the caller's cwd belongs to -- so a fixture repo with a controlled tag, a controlled `origin/main` (a plain ref, no real remote needed: `git update-ref
+refs/remotes/origin/main <sha>` is enough for `merge-base --is-ancestor` to read it), and a controlled off-main commit is what lets this test assert the "reachable" and "not reachable from origin/main" arms deterministically, without depending on this repository's history staying shaped the way it happens to be shaped today.
 """
 
 from __future__ import annotations
@@ -49,8 +39,7 @@ def _build_repo(repo: pathlib.Path) -> dict[str, str]:
     """A tiny repo: two commits on `main` (tagged v1.0.0 at the tip, tracked as
     `origin/main`), and one commit on a feature branch never merged into it.
 
-    Returns the shas/tags a test needs, so a case reads as "which of these" rather
-    than re-deriving offsets into the fixture's own history.
+    Returns the shas/tags a test needs, so a case reads as "which of these" rather than re-deriving offsets into the fixture's own history.
     """
     repo.mkdir(parents=True, exist_ok=True)
     env = diff.env_for(

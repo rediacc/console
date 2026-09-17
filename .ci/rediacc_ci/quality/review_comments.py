@@ -104,35 +104,22 @@ LATENT DEFECT NOTED WHILE PORTING, NOT REPAIRED.
 -----------------------------------------------------------------------------
 
 `COMMENT_BODY=$(echo "$comment" | jq -r '.body' | head -c 100)` RUNS UNDER
-`set -o pipefail`. If `jq` were still writing when `head` closed the pipe, jq would
-die on SIGPIPE, pipefail would promote that to the assignment, and `set -e` would
-end the script mid-report. It does not fire today because a comment body is far
-smaller than the 64 KB pipe buffer, so jq finishes before head exits. The gate's
-OTHER excerpt, on the same surface, avoids the shape deliberately and says why:
-"Bash slice rather than `| head -c`: a summary is thousands of characters, and head
-closing the pipe early would SIGPIPE the upstream under pipefail." One of the two
-excerpts got the treatment and the other did not.
+`set -o pipefail`. If `jq` were still writing when `head` closed the pipe, jq would die on SIGPIPE, pipefail would promote that to the assignment, and `set -e` would end the script mid-report. It does not fire today because a comment body is far smaller than the 64 KB pipe buffer, so jq finishes before head exits. The gate's OTHER excerpt, on the same surface, avoids the shape
+deliberately and says why: "Bash slice rather than `| head -c`: a summary is thousands of characters, and head closing the pipe early would SIGPIPE the upstream under pipefail." One of the two excerpts got the treatment and the other did not.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TWO SHARED CONSTANTS MUST MATCH `review_report_replies.py`, and the bash pair
-duplicates them for the same reason: "That is what makes one reply clear both
+THE TWO SHARED CONSTANTS MUST MATCH `review_report_replies.py`, and the bash pair duplicates them for the same reason: "That is what makes one reply clear both
 gates; test-review-status.sh parses both files and fails if they drift apart." So
 they are duplicated here rather than imported, and both ports assert the agreement.
 
-`is_low_effort_reply` DEFAULTS TO 10 HERE AND TO 30 IN THE SIBLING. Same name,
-different default, on purpose: "min_chars defaults to 10, the floor a single inline
-thread has always used. A reply to the whole review summary answers many findings
-at once, so that caller passes a higher floor." A port that unified them would
-silently tighten one gate or loosen the other.
+`is_low_effort_reply` DEFAULTS TO 10 HERE AND TO 30 IN THE SIBLING. Same name, different default, on purpose: "min_chars defaults to 10, the floor a single inline thread has always used. A reply to the whole review summary answers many findings at once, so that caller passes a higher floor." A port that unified them would silently tighten one gate or loosen the other.
 
 `head -c 100` IS BYTES, and the bash slice `${SUMMARY_HEAD:0:120}` is bytes too
 under `LC_ALL=C`, which `scripts/lib/shadow-gate.ts` pins. Both are reproduced by
-slicing the UTF-8 ENCODING rather than the string, so a multi-byte character is cut
-the same way on both sides. Decoding back uses "replace", which is what a shell
-would hand to a terminal.
+slicing the UTF-8 ENCODING rather than the string, so a multi-byte character is cut the same way on both sides. Decoding back uses "replace", which is what a shell would hand to a terminal.
 
 `"$COMMENTS" == "[]"` IS A STRING COMPARISON on gh's raw stdout, not a check that
 the parsed array is empty. `gh api --paginate` prints exactly `[]` for an empty
@@ -205,9 +192,7 @@ GH_SLEEP_FACTOR = 3
 def is_low_effort_reply(reply: str, min_chars: int = INLINE_MIN_CHARS) -> bool:
     """True when the reply is a stock acknowledgement or shorter than `min_chars`.
 
-    NORMALIZED FIRST: lowercased, trimmed, trailing `.!?` removed, exactly as the
-    twin's three `sed`s do it. "Done." and "done" are therefore the same answer,
-    which is the point.
+    NORMALIZED FIRST: lowercased, trimmed, trailing `.!?` removed, exactly as the twin's three `sed`s do it. "Done." and "done" are therefore the same answer, which is the point.
     """
     normalized = TRAILING_PUNCT.sub("", reply.lower().strip())
     if normalized in LOW_EFFORT_PATTERNS:
@@ -218,8 +203,7 @@ def is_low_effort_reply(reply: str, min_chars: int = INLINE_MIN_CHARS) -> bool:
 def gh_json(what: str, argv: list[str], *, sleeper=time.sleep, binary: str = "gh") -> str | None:
     """`gh_json` from `.ci/scripts/lib/common.sh`: status AND parseable body, 3 tries.
 
-    Returns None after three failures, NEVER an empty list: "a gh failure produced
-    an empty review list ... and the gate printed 'No review comments found - OK'."
+    Returns None after three failures, NEVER an empty list: "a gh failure produced an empty review list ... and the gate printed 'No review comments found - OK'."
     """
     attempt = 1
     rc = 0
@@ -287,8 +271,7 @@ def clip(text: str, limit: int) -> str:
     """`head -c <limit>` and `${var:0:limit}`: BYTES, not characters.
 
     Both are byte operations under `LC_ALL=C`, which the differential pins, so the
-    port slices the UTF-8 encoding and decodes with "replace" -- which is what a
-    shell hands to a terminal when it cuts a multi-byte character in half.
+    port slices the UTF-8 encoding and decodes with "replace" -- which is what a shell hands to a terminal when it cuts a multi-byte character in half.
     """
     return text.encode("utf-8")[:limit].decode("utf-8", "replace")
 
@@ -296,9 +279,7 @@ def clip(text: str, limit: int) -> str:
 def inline_findings(comments: list[dict]) -> tuple[list[str], list[str], int]:
     """(unreplied lines, low-effort lines, original count) for surface 1.
 
-    TWO LISTS, NOT ONE, and the twin counts them differently (`/2` and `/3`)
-    because the low-effort entry carries a third explanatory line. Collapsing them
-    would change both printed counts.
+    TWO LISTS, NOT ONE, and the twin counts them differently (`/2` and `/3`) because the low-effort entry carries a third explanatory line. Collapsing them would change both printed counts.
     """
     replies = [c for c in comments if c.get("in_reply_to_id") is not None]
     originals = [c for c in comments if c.get("in_reply_to_id") is None]
@@ -336,9 +317,7 @@ def inline_findings(comments: list[dict]) -> tuple[list[str], list[str], int]:
 def newest_summary(comments: list[dict]) -> dict | None:
     """The newest github-actions comment that is a review SUMMARY.
 
-    THE BOOKKEEPING EXCLUSION IS NOT COSMETIC. `<!-- claude-reviewed: <sha> -->`
-    and `<!-- claude-review-attempt: ... -->` are STATE, and mistaking one for a
-    verdict awaiting an answer would block every PR the pipeline has touched.
+    THE BOOKKEEPING EXCLUSION IS NOT COSMETIC. `<!-- claude-reviewed: <sha> -->` and `<!-- claude-review-attempt: ... -->` are STATE, and mistaking one for a verdict awaiting an answer would block every PR the pipeline has touched.
     """
     matches = []
     for comment in comments:

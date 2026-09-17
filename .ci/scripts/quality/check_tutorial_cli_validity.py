@@ -1,43 +1,22 @@
 #!/usr/bin/env python3
 """Every `rdc` command a tutorial runs must exist, with the flags it passes.
 
-WHY THIS EXISTS. The tutorials are executable documentation: CI runs the whole
-sequence against real VMs, and a customer follows the same steps. When a command
-or a flag is renamed, the tutorial keeps naming the old one and nothing says so
-until the sequence runs, which is 20 minutes into a job that needs a provisioned
-cluster.
+WHY THIS EXISTS. The tutorials are executable documentation: CI runs the whole sequence against real VMs, and a customer follows the same steps. When a command or a flag is renamed, the tutorial keeps naming the old one and nothing says so until the sequence runs, which is 20 minutes into a job that needs a provisioned cluster.
 
-WHAT IT DOES NOT COVER, stated plainly because the gap is the interesting part.
-This finds a command or flag that does NOT EXIST. It cannot find one that exists
-and is refused. The defect that motivated it was the second kind: the rclone arm
-was retired, `rdc repo push my-app --to my-storage` still parses today because
-`--to` is still a flag, and the engine refuses it only once the ARGUMENT resolves
-to a storage remote. A flag-existence check goes green over that line. What
-caught it was CI running the sequence end to end.
+WHAT IT DOES NOT COVER, stated plainly because the gap is the interesting part. This finds a command or flag that does NOT EXIST. It cannot find one that exists and is refused. The defect that motivated it was the second kind: the rclone arm was retired, `rdc repo push my-app --to my-storage` still parses today because `--to` is still a flag, and the engine refuses it only once the
+ARGUMENT resolves to a storage remote. A flag-existence check goes green over that line. What caught it was CI running the sequence end to end.
 
 So this is not the gate for that defect. It is a cheaper gate for a neighbouring
 class that nothing covered either, and pretending otherwise would make it the
 kind of reassuring-but-blind check this repo keeps having to unlearn.
 
-RELATIONSHIP TO check:ci-tutorial-commands, which already existed and which I
-should have found before writing this. That gate validates the tutorial
+RELATIONSHIP TO check:ci-tutorial-commands, which already existed and which I should have found before writing this. That gate validates the tutorial
 STORYBOARDS (card.commandFull and teardownCommand) against the same tree; this
-one validates the tutorial SHELL SCRIPTS, which it does not read. Different
-surfaces, same idea, and neither can see a runtime refusal: that gate was green
-through the entire defect described above, because the failing line is
-structurally valid.
+one validates the tutorial SHELL SCRIPTS, which it does not read. Different surfaces, same idea, and neither can see a runtime refusal: that gate was green through the entire defect described above, because the failing line is structurally valid.
 
-THE ORACLE is packages/cli/scripts/command-tree.json, the exported Commander
-tree, not `rdc --help`. It needs no build, and check:ci-command-tree already
-proves it matches the shipped CLI, so a stale tree is somebody else's red rather
-than a silent pass here.
+THE ORACLE is packages/cli/scripts/command-tree.json, the exported Commander tree, not `rdc --help`. It needs no build, and check:ci-command-tree already proves it matches the shipped CLI, so a stale tree is somebody else's red rather than a silent pass here.
 
----- gate ----
-step: Tutorial CLI validity
-needs: none
-selftest: true
-lane: quality-content
----- end gate ----
+---- gate ---- step: Tutorial CLI validity needs: none selftest: true lane: quality-content ---- end gate ----
 """
 
 import json
@@ -169,10 +148,7 @@ def check(tree, scripts):
 def run_controls(tree):
     """Prove the rule fires on a bad flag and stays quiet on a good one.
 
-    The controls write REAL files into a temp dir rather than faking a path
-    object. A stub whose read_text signature merely resembles pathlib's is one
-    refactor away from diverging from the thing it stands in for, and it forced
-    an unused-argument suppression that this repo does not allow.
+    The controls write REAL files into a temp dir rather than faking a path object. A stub whose read_text signature merely resembles pathlib's is one refactor away from diverging from the thing it stands in for, and it forced an unused-argument suppression that this repo does not allow.
     """
     failures = []
     with tempfile.TemporaryDirectory() as tmp:

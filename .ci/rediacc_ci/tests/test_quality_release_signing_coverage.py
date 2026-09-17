@@ -1,23 +1,10 @@
 """`rediacc_ci.quality.release_signing_coverage` against the shell it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Two of this gate's
-three moving parts are not readable: a `sed` BRE with a bracket expression
-containing a space and a pipe, and an eleven-line `awk` program with a stateful
-`inarm` flag. Their behaviour on the awkward inputs -- an arm with no space
-around the pipe, an arm that is only `)`, a guard sitting after the `esac`, a
-second one-line case arm further down -- is decided by POSIX bracket-expression
-rules and by awk's `sub` semantics rather than by anything a reader could infer.
-A table of expected strings would be a table of what the PORT does, asserted
-against itself.
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Two of this gate's three moving parts are not readable: a `sed` BRE with a bracket expression containing a space and a pipe, and an eleven-line `awk` program with a stateful `inarm` flag. Their behaviour on the awkward inputs -- an arm with no space around the pipe, an arm that is only `)`, a guard sitting after the `esac`, a
+second one-line case arm further down -- is decided by POSIX bracket-expression rules and by awk's `sub` semantics rather than by anything a reader could infer. A table of expected strings would be a table of what the PORT does, asserted against itself.
 
-The bash fragments below are lifted from
-`.ci/scripts/quality/check-release-signing-coverage.sh` (the `formats_of` and
-`guarded_in` function bodies) and from `.ci/scripts/lib/gate-controls.sh`, with
-nothing changed but the substitution of their arguments. They are NOT the whole
-gate: the whole gate is what the committed shadow ledger
-`.ci/shadow/w7p2-signing-coverage.observations.jsonl` compares over five
-distinct trees. This file covers the seams that ledger cannot isolate, because
-a ledger row can only say the two sides agreed on THAT tree.
+The bash fragments below are lifted from `.ci/scripts/quality/check-release-signing-coverage.sh` (the `formats_of` and `guarded_in` function bodies) and from `.ci/scripts/lib/gate-controls.sh`, with nothing changed but the substitution of their arguments. They are NOT the whole gate: the whole gate is what the committed shadow ledger
+`.ci/shadow/w7p2-signing-coverage.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate, because a ledger row can only say the two sides agreed on THAT tree.
 """
 
 import contextlib
@@ -86,9 +73,7 @@ def test_formats_of_matches_the_sed_pipeline(tmp_path: pathlib.Path, content: st
 def test_the_format_table_exercises_both_directions() -> None:
     """A table of only-matching cases would prove the parser cannot say no.
 
-    Asserted rather than trusted: this is the control ON the table, and without
-    it a later edit that dropped every negative case would leave the file green
-    and vacuous.
+    Asserted rather than trusted: this is the control ON the table, and without it a later edit that dropped every negative case would leave the file green and vacuous.
     """
     parsed = [rsc.formats_of(c) for c in FORMAT_CASES]
     assert any(p for p in parsed), "no case parses; the table tests nothing"
@@ -174,9 +159,7 @@ gate_finish %d "subject line"
 def test_gate_tally_matches_gate_controls_sh(floor: int) -> None:
     """The port's local copy of the tally, byte for byte against the original.
 
-    BOTH STREAMS, SEPARATELY. `gate_check` writes passes to stdout and failures
-    to stderr, and `gate_finish` splits its verdict the same way. Merging them
-    would hide exactly the swap this comparison exists to catch.
+    BOTH STREAMS, SEPARATELY. `gate_check` writes passes to stdout and failures to stderr, and `gate_finish` splits its verdict the same way. Merging them would hide exactly the swap this comparison exists to catch.
     """
     code, out, err = diff.bash_streams(_TALLY_SCRIPT % floor)
 
@@ -197,9 +180,7 @@ def test_gate_tally_matches_gate_controls_sh(floor: int) -> None:
 def test_the_floor_message_is_the_battery_wording_not_the_file_wording() -> None:
     """`controls.py` says "file", `gate-controls.sh` says "battery".
 
-    Pinned because the two wordings are one word apart and a "unification" that
-    reached for the existing class would change what the shadow comparator's
-    refusal vocabulary matches on. See the port notes.
+    Pinned because the two wordings are one word apart and a "unification" that reached for the existing class would change what the shadow comparator's refusal vocabulary matches on. See the port notes.
     """
     tally = rsc.GateTally()
     buf = io.StringIO()
@@ -225,9 +206,7 @@ def test_the_exemption_order_is_bash_hash_order() -> None:
 def test_every_exemption_reason_survives_the_length_control() -> None:
     """The reasons are load-bearing prose; a truncation must fail the gate.
 
-    This is the mirror of the `carries a reason` control: it asserts the shipped
-    reasons pass it, so a port that had silently dropped them to placeholders
-    would be caught here rather than by a reader.
+    This is the mirror of the `carries a reason` control: it asserts the shipped reasons pass it, so a port that had silently dropped them to placeholders would be caught here rather than by a reader.
     """
     for fmt, reason in rsc.UNSIGNED_ON_PURPOSE:
         assert len(reason) > rsc.MIN_REASON_LEN, fmt
@@ -236,9 +215,7 @@ def test_every_exemption_reason_survives_the_length_control() -> None:
 def test_the_archaeology_the_reasons_carry_is_still_present() -> None:
     """Driver contract 5c, applied to the two strings a ratio cannot see.
 
-    The comment-byte ratio counts COMMENTS. These reasons are string literals,
-    so every dated measurement and upstream reference in them is invisible to
-    that audit and is asserted explicitly instead.
+    The comment-byte ratio counts COMMENTS. These reasons are string literals, so every dated measurement and upstream reference in them is invisible to that audit and is asserted explicitly instead.
     """
     reasons = dict(rsc.UNSIGNED_ON_PURPOSE)
     assert "field signature not found in type nfpm.ArchLinux" in reasons["archlinux"]
@@ -254,7 +231,6 @@ def test_the_archaeology_the_reasons_carry_is_still_present() -> None:
 def test_selftest_passes() -> None:
     """The gate's own plants and mirrors, driven from pytest.
 
-    Cheap, and it is the only thing that fails when someone edits a plant into
-    a shape that no longer fires.
+    Cheap, and it is the only thing that fails when someone edits a plant into a shape that no longer fires.
     """
     assert rsc.selftest() == 0

@@ -1,31 +1,16 @@
 """Differential: `rediacc_ci.infra.wait_for_vm_ssh` against its twin
 `.ci/scripts/infra/wait-for-vm-ssh.sh`.
 
-SAME TECHNIQUE AS `test_infra_verify_ssh.py`, and for the same reason: the
-subject is a retry loop around a network call, so requiring a reachable VM
-would mean the differential never ran anywhere. Stub `ssh` and `ssh-keyscan`
-sit on a scratch PATH, every external program records its argv into one shared
-log, and each case compares FIVE things -- exit code, stdout, stderr, the call
+SAME TECHNIQUE AS `test_infra_verify_ssh.py`, and for the same reason: the subject is a retry loop around a network call, so requiring a reachable VM would mean the differential never ran anywhere. Stub `ssh` and `ssh-keyscan` sit on a scratch PATH, every external program records its argv into one shared log, and each case compares FIVE things -- exit code, stdout, stderr, the call
 SEQUENCE, and the bytes of `~/.ssh/known_hosts`.
 
-`known_hosts` IS COMPARED, not just the exit code, because it is the subject's
-only durable side effect and the one thing a later step depends on. A port that
-announced "SSH-ready" and never ran `ssh-keyscan` would pass every stream
-comparison and leave every subsequent ssh in the job failing host-key
-verification.
+`known_hosts` IS COMPARED, not just the exit code, because it is the subject's only durable side effect and the one thing a later step depends on. A port that announced "SSH-ready" and never ran `ssh-keyscan` would pass every stream comparison and leave every subsequent ssh in the job failing host-key verification.
 
-PATH IS REPLACED, NEVER PREPENDED, and `$HOME` is per side. The PATH rule is
-carried over from the sibling file, where a prepend let the "no ssh on PATH"
+PATH IS REPLACED, NEVER PREPENDED, and `$HOME` is per side. The PATH rule is carried over from the sibling file, where a prepend let the "no ssh on PATH"
 case silently reach the machine's real ssh and try to resolve a hostname on the
-network while the comparison stayed green. `$HOME` has to be per side because
-both implementations APPEND to `~/.ssh/known_hosts`: one shared home would let
-the first side's key become part of the second side's expected file.
+network while the comparison stayed green. `$HOME` has to be per side because both implementations APPEND to `~/.ssh/known_hosts`: one shared home would let the first side's key become part of the second side's expected file.
 
-THE 36-ATTEMPT BUDGET IS DRIVEN IN FULL, not shortened, because there is no
-knob to shorten it with and inventing one would be a feature wearing a port's
-clothes. It costs milliseconds only because both implementations resolve
-`sleep` through PATH (the port EXECS it rather than calling `time.sleep`), so
-one stub serves both.
+THE 36-ATTEMPT BUDGET IS DRIVEN IN FULL, not shortened, because there is no knob to shorten it with and inventing one would be a feature wearing a port's clothes. It costs milliseconds only because both implementations resolve `sleep` through PATH (the port EXECS it rather than calling `time.sleep`), so one stub serves both.
 
 TWO REFUSALS DIVERGE IN TEXT AND ARE COMPARED BY SHAPE: `${VM_NET_BASE:?...}`
 and the `set -u` failure on `$USER`. Both are bash diagnostics carrying the
@@ -374,8 +359,7 @@ def test_vm_net_base_default_targets() -> None:
 
 def test_keyscan_failure_aborts_the_whole_run() -> None:
     """HAZARD 2, pinned. `ssh-keyscan` is the last command in the success
-    branch and is unguarded, so under `set -e` a non-zero exit kills the run --
-    after "SSH-ready" has already been printed, with no message of its own, and
+    branch and is unguarded, so under `set -e` a non-zero exit kills the run -- after "SSH-ready" has already been printed, with no message of its own, and
     without waiting for the remaining VM."""
     exit_code, _, stderr, calls, _ = _compare(
         "keyscan-fails",

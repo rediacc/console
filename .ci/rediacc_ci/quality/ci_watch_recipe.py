@@ -37,10 +37,7 @@ The twin's header, carried whole:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE SIGPIPE RACE THAT THIS GATE WAS BUILT AROUND CANNOT EXIST IN PYTHON, and
-that is worth stating precisely rather than deleting the paragraph that records
-it. The twin's comment, kept verbatim because it is the most expensive lesson in
-this file:
+THE SIGPIPE RACE THAT THIS GATE WAS BUILT AROUND CANNOT EXIST IN PYTHON, and that is worth stating precisely rather than deleting the paragraph that records it. The twin's comment, kept verbatim because it is the most expensive lesson in this file:
 
     NEVER `advice_only ... | grep -q` HERE. `grep -q` exits at its FIRST match
     and SIGPIPEs the upstream grep; under this file's own `set -o pipefail` that
@@ -67,33 +64,19 @@ this file:
     Command substitution reads the producer to completion, so there is no signal
     to race.
 
-This port reads each file into memory and filters it, which has no producer to
-kill. The LARGE-FILE CONTROL IS KEPT ANYWAY, at its full ~240 KB, because it is
-also a control on the DETECTOR and because deleting it would delete the record of
-why the detector is shaped this way. The twin's sizing note is kept with it.
+This port reads each file into memory and filters it, which has no producer to kill. The LARGE-FILE CONTROL IS KEPT ANYWAY, at its full ~240 KB, because it is also a control on the DETECTOR and because deleting it would delete the record of why the detector is shaped this way. The twin's sizing note is kept with it.
 
-CHECK D SHELLS OUT TO THE SAME HELPER, on purpose. `check_sanctioned_registry.py`
-already IS Python, and importing it here would mean re-implementing its argv
-contract and its module loading. The twin runs it as `python3 <path> <registry>
+CHECK D SHELLS OUT TO THE SAME HELPER, on purpose. `check_sanctioned_registry.py` already IS Python, and importing it here would mean re-implementing its argv contract and its module loading. The twin runs it as `python3 <path> <registry>
 <root>` and reads its combined output; so does this, which makes check D
 byte-identical by construction rather than by care.
 
-CHECK E EXECUTES THE REAL SCRIPT, also on purpose. `[ -x "$TRACE" ]` is a
-PERMISSION test, not an existence test, and the twin's message says "missing or
-not executable" for that reason: a gate script whose executable bit was stripped
-in a rebase is exactly the failure this arm catches. The port keeps
-`os.access(path, os.X_OK)`.
+CHECK E EXECUTES THE REAL SCRIPT, also on purpose. `[ -x "$TRACE" ]` is a PERMISSION test, not an existence test, and the twin's message says "missing or not executable" for that reason: a gate script whose executable bit was stripped in a rebase is exactly the failure this arm catches. The port keeps `os.access(path, os.X_OK)`.
 
-GIT DOES THE ENUMERATION. `scan_files` is `git ls-files` with three pathspecs,
-run as a subprocess rather than re-implemented, because git's pathspec matching
-is not fnmatch: with no `:(glob)` magic, `*` crosses a `/`, so `.claude/**/*.md`
-is not the recursive glob it looks like. A hand-rolled walk would quietly scan a
-different set, and the count in the success line would still read healthy.
+GIT DOES THE ENUMERATION. `scan_files` is `git ls-files` with three pathspecs, run as a subprocess rather than re-implemented, because git's pathspec matching is not fnmatch: with no `:(glob)` magic, `*` crosses a `/`, so `.claude/**/*.md` is not the recursive glob it looks like. A hand-rolled walk would quietly scan a different set, and the count in the success line would still
+read healthy.
 
 THE `${actors:-none}`-STYLE DETAIL IN CHECK D: the twin interpolates the helper's
-stdout into the pass line through `$(cat ...)`, which strips the trailing
-newline. Carried, because `ok   D. registry: 3 row(s) self-consistent` is the
-line a reader recognises.
+stdout into the pass line through `$(cat ...)`, which strips the trailing newline. Carried, because `ok D. registry: 3 row(s) self-consistent` is the line a reader recognises.
 """
 
 import os
@@ -150,10 +133,7 @@ def bash_block(text: str) -> str:
 
         awk '/^```bash$/ { inblk=1; next } /^```$/ { if (inblk) exit } inblk { print }'
 
-    `exit` on the closing fence, so a second block later in the file is never
-    read. That is the twin's behaviour and it matters: the skill's canonical
-    recipe is the first block, and a later example block must not be able to
-    satisfy check A on its behalf.
+    `exit` on the closing fence, so a second block later in the file is never read. That is the twin's behaviour and it matters: the skill's canonical recipe is the first block, and a later example block must not be able to satisfy check A on its behalf.
     """
     out: list[str] = []
     in_block = False
@@ -178,11 +158,7 @@ def advice_only(text: str) -> str:
 def hands_out_loop(text: str) -> bool:
     """Does this file hand out a hand-rolled watch loop?
 
-    Three conditions, all required, and the third is a NEGATIVE: a file that
-    mentions `run_attempt` anywhere is exempt, because that is the field a
-    correct reader uses and its presence means the author knew about the re-run
-    problem. The `run_attempt` test is against the WHOLE file, not the filtered
-    advice, exactly as the twin's `grep -q 'run_attempt' "$f"` is.
+    Three conditions, all required, and the third is a NEGATIVE: a file that mentions `run_attempt` anywhere is exempt, because that is the field a correct reader uses and its presence means the author knew about the re-run problem. The `run_attempt` test is against the WHOLE file, not the filtered advice, exactly as the twin's `grep -q 'run_attempt' "$f"` is.
     """
     statuses = [line for line in advice_only(text).split("\n") if STATUS_FIELD.search(line)]
     if not statuses:
@@ -217,8 +193,7 @@ def assert_skill(text: str) -> str | None:
 def scan_files(root: pathlib.Path) -> list[str]:
     """The tracked surfaces checks B and C read, minus the evidence file.
 
-    `git ls-files` with the twin's three pathspecs. See the port notes: git's
-    pathspec matching is not fnmatch, so this is delegated rather than rewritten.
+    `git ls-files` with the twin's three pathspecs. See the port notes: git's pathspec matching is not fnmatch, so this is delegated rather than rewritten.
     """
     proc = subprocess.run(
         ["git", "-C", str(root), "ls-files", *SCAN_PATHSPECS],
@@ -258,8 +233,7 @@ FIXTURE_DATA = (
 def fixture_big() -> str:
     """THE CONTROL THE OTHERS COULD NOT BE: a LARGE file with the hit EARLY.
 
-    The twin's sizing note, carried because the first draft of this control was
-    wrong in a way that looked right:
+    The twin's sizing note, carried because the first draft of this control was wrong in a way that looked right:
 
         IT MUST EXCEED THE PIPE BUFFER, IN BYTES -- not merely be "long". The
         first draft of this control was 2000 SHORT lines (~32 KB) and PASSED
@@ -272,10 +246,7 @@ def fixture_big() -> str:
         MUTATION -- revert hands_out_banned to the `| grep -q` form and this
         control goes red, which the 32 KB version did not.
 
-    A Python detector has no pipe and cannot race, so this control can no longer
-    fail for the original reason. It is kept at full size because it is still a
-    control on the DETECTOR over a realistic file, and because a control deleted
-    is a lesson deleted.
+    A Python detector has no pipe and cannot race, so this control can no longer fail for the original reason. It is kept at full size because it is still a control on the DETECTOR over a realistic file, and because a control deleted is a lesson deleted.
     """
     parts = ["padding %d\n" % i for i in range(1, 40)]
     parts.append("Poll it with `gh run watch 12345 --exit-status` until it finishes.\n")
@@ -455,9 +426,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions for every detector, over fixtures written by construction.
 
-    The over-broad direction carries as much weight as the detection direction:
-    three of the twin's own controls exist only to prove the detectors do NOT
-    fire on the sanctioned invocation, on JSON data, or on a test assertion.
+    The over-broad direction carries as much weight as the detection direction: three of the twin's own controls exist only to prove the detectors do NOT fire on the sanctioned invocation, on JSON data, or on a test assertion.
     """
     ctl = Controls("ci-watch-recipe", floor=22, verbose=True)
 

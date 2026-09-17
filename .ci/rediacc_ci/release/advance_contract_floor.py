@@ -1,36 +1,21 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/release/advance-contract-floor.sh`.
 
-Advances the release-contract-floor RATCHET to the oldest cli `.released`
-sentinel on R2, and commits the new value.
+Advances the release-contract-floor RATCHET to the oldest cli `.released` sentinel on R2, and commits the new value.
 
 Usage: advance_contract_floor.py   (no arguments; everything comes from the
 environment, exactly as the workflow block that used to hold this code did)
 
 WHY A RATCHET AT ALL. The release-state bijection gate
 (`Committed(v) <=> sentinel AND tag`) excludes tags older than the oldest
-`.released` sentinel on R2, because pre-contract releases never had one. That
-floor is DATA-DERIVED, so an accidental scrub of every cli sentinel would drop
-the floor to nothing and silently turn the gate into a no-op. Recording the
-observed floor in a committed file gives the gate a high-water mark that a
-scrub cannot walk backwards.
+`.released` sentinel on R2, because pre-contract releases never had one. That floor is DATA-DERIVED, so an accidental scrub of every cli sentinel would drop the floor to nothing and silently turn the gate into a no-op. Recording the observed floor in a committed file gives the gate a high-water mark that a scrub cannot walk backwards.
 
-MONOTONIC, AND THAT IS THE WHOLE SAFETY PROPERTY. It writes only when the
-observed oldest sentinel is STRICTLY NEWER than what the file already holds, so
-a retry or a no-op run leaves the tree clean and skips the commit entirely.
-`decide()` below is that rule as a pure function, so a test can drive every
-ordering without R2, a git remote, or a filesystem.
+MONOTONIC, AND THAT IS THE WHOLE SAFETY PROPERTY. It writes only when the observed oldest sentinel is STRICTLY NEWER than what the file already holds, so a retry or a no-op run leaves the tree clean and skips the commit entirely. `decide()` below is that rule as a pure function, so a test can drive every ordering without R2, a git remote, or a filesystem.
 
-THIS COMMITS AND PUSHES TO MAIN on an actual advance. The differential never
-lets a real `git` run: `git` is a recording fake on a scratch PATH in every case
-that reaches the write, and the fixture root is a temporary directory, never
-this checkout.
+THIS COMMITS AND PUSHES TO MAIN on an actual advance. The differential never lets a real `git` run: `git` is a recording fake on a scratch PATH in every case that reaches the write, and the fixture root is a temporary directory, never this checkout.
 
-`rsv_list_sentinels` IS NOT RE-PORTED. `core.release_state_validator.list_sentinels`
-already is that function, including its `tr '\\t' '\\n'` split (the aws
-`--output text` packing that makes there be records at all) and its two-stage
-sed-then-grep filter. Re-deriving it here would be a second answer to a question
-that has one. Two spellings differ and neither is reachable from this caller:
+`rsv_list_sentinels` IS NOT RE-PORTED. `core.release_state_validator.list_sentinels` already is that function, including its `tr '\\t' '\\n'` split (the aws `--output text` packing that makes there be records at all) and its two-stage sed-then-grep filter. Re-deriving it here would be a second answer to a question that has one. Two spellings differ and neither is reachable from
+this caller:
 
   * `RSV_BUCKET` is captured at SOURCE time from `${RELEASES_BUCKET:-...}`,
     while `release_state_validator.bucket()` reads it per call. Nothing between
@@ -42,23 +27,14 @@ that has one. Two spellings differ and neither is reachable from this caller:
 THE DEFECT THIS PORT REPRODUCES, AND IT IS THE VACUITY CLASS.
 `rsv_list_sentinels` swallows aws's stderr (`2>/dev/null`) and wraps its whole
 pipeline in `{ ... } || true`, so A FAILED PROBE IS INDISTINGUISHABLE FROM AN
-EMPTY BUCKET. Driven against the real twin on 2026-09-13 with an `aws` that
-exits 255: stdout is
+EMPTY BUCKET. Driven against the real twin on 2026-09-13 with an `aws` that exits 255: stdout is
 
     ::notice::no cli sentinels on R2; skipping ratchet advance
 
-and the exit code is 0. So expired credentials, a DNS fault and a genuinely
-scrubbed bucket all read as a green no-op on the script whose entire reason for
-existing is to defend against a scrub. It is reproduced rather than repaired
-because the acceptance rule for this wave is agreement with the live twin, and
-`release_state_validator.py` already records the same defect at the library
-level (its DEFECT 2). `PROBE_FAILURE_READS_AS_EMPTY_BUCKET` names it and the
-differential pins it in both directions.
+and the exit code is 0. So expired credentials, a DNS fault and a genuinely scrubbed bucket all read as a green no-op on the script whose entire reason for existing is to defend against a scrub. It is reproduced rather than repaired because the acceptance rule for this wave is agreement with the live twin, and `release_state_validator.py` already records the same defect at the
+library level (its DEFECT 2). `PROBE_FAILURE_READS_AS_EMPTY_BUCKET` names it and the differential pins it in both directions.
 
-A SECOND, SMALLER ONE, ALSO REPRODUCED. On an advance the FILE IS WRITTEN
-BEFORE `git config` runs, and every git call is unguarded under `set -e`. So a
-failing `git commit` or `git push` exits with git's status having ALREADY
-modified the working tree, leaving the ratchet half-applied for whatever runs
+A SECOND, SMALLER ONE, ALSO REPRODUCED. On an advance the FILE IS WRITTEN BEFORE `git config` runs, and every git call is unguarded under `set -e`. So a failing `git commit` or `git push` exits with git's status having ALREADY modified the working tree, leaving the ratchet half-applied for whatever runs
 next in that checkout. Driven: with a `git` that exits 3, the run ends rc=3 with
 the floor file already carrying the new version.
 
@@ -121,15 +97,9 @@ PROBE_FAILURE_READS_AS_EMPTY_BUCKET = True
 def console_root() -> pathlib.Path:
     """`cd "$(get_repo_root)"` (:44), from this file's own location.
 
-    `get_repo_root` derives from COMMON.SH's location
-    (`.ci/scripts/lib/../../..`), not from the caller's. This module sits at
-    `<root>/.ci/rediacc_ci/release/`, one level deeper than the twin, so
-    `parents[3]` lands on the same directory.
+    `get_repo_root` derives from COMMON.SH's location (`.ci/scripts/lib/../../..`), not from the caller's. This module sits at `<root>/.ci/rediacc_ci/release/`, one level deeper than the twin, so `parents[3]` lands on the same directory.
 
-    `rediacc_ci.paths.repo_root()` is deliberately not used: it honours
-    `$REDIACC_CI_ROOT` and neither the twin nor common.sh honours anything, so a
-    fixture that moved one and not the other would diverge for a reason that has
-    nothing to do with this script.
+    `rediacc_ci.paths.repo_root()` is deliberately not used: it honours `$REDIACC_CI_ROOT` and neither the twin nor common.sh honours anything, so a fixture that moved one and not the other would diverge for a reason that has nothing to do with this script.
     """
     return pathlib.Path(__file__).resolve().parents[3]
 
@@ -137,9 +107,7 @@ def console_root() -> pathlib.Path:
 def read_floor(text: str) -> str:
     """The committed floor, or `""`. `grep -E ... | head -1` (:55).
 
-    An absent file, an empty file, a file of comments and a file whose only
-    version is a prerelease all answer the same way, and the twin then prints
-    `<unset>` for all four. Pure so the four can be driven without a tree.
+    An absent file, an empty file, a file of comments and a file whose only version is a prerelease all answer the same way, and the twin then prints `<unset>` for all four. Pure so the four can be driven without a tree.
     """
     for line in text.split("\n"):
         if FLOOR_LINE_RE.match(line):
@@ -150,8 +118,7 @@ def read_floor(text: str) -> str:
 def newer_of(left: str, right: str) -> str:
     """`printf '%s\\n%s\\n' "$a" "$b" | sort -V | tail -1` (:61).
 
-    `sort -V` then `tail -1` is "the larger under version order", and on a tie
-    the two strings are equal anyway so which copy survives cannot be observed.
+    `sort -V` then `tail -1` is "the larger under version order", and on a tie the two strings are equal anyway so which copy survives cannot be observed.
     `rsv.version_key` is the `sort -V` key this repo already uses; both inputs
     here are strict semver or the `v0.0.0` literal.
     """
@@ -161,8 +128,7 @@ def newer_of(left: str, right: str) -> str:
 def decide(current: str, oldest: str) -> tuple[bool, str]:
     """The ratchet rule (:57-66). Returns `(should_advance, message)`.
 
-    THE WHOLE SAFETY PROPERTY IS HERE, so it is a pure function rather than
-    four branches tangled with I/O:
+    THE WHOLE SAFETY PROPERTY IS HERE, so it is a pure function rather than four branches tangled with I/O:
 
       no observed sentinel  -> never advance, and say so with the ::notice::
                                that this run saw nothing. (Which, per the
@@ -172,8 +138,7 @@ def decide(current: str, oldest: str) -> tuple[bool, str]:
                                is what a scrub cannot walk backwards.
       observed >  current   -> advance.
 
-    `current` is compared as `v0.0.0` when empty and PRINTED as `<unset>`, which
-    is the twin using two different defaults for one value.
+    `current` is compared as `v0.0.0` when empty and PRINTED as `<unset>`, which is the twin using two different defaults for one value.
     """
     if not oldest:
         return False, "::notice::no cli sentinels on R2; skipping ratchet advance"
@@ -198,9 +163,7 @@ def _require_cmd(cmd: str) -> bool:
 def _git(root: pathlib.Path, args: list[str]) -> int:
     """One `git` call with NEITHER stream redirected, like the twin.
 
-    `git push` writes its `To <remote>` / `* [new tag]` report to stderr, and a
-    port that captured it would swallow the only evidence the ratchet was
-    actually published.
+    `git push` writes its `To <remote>` / `* [new tag]` report to stderr, and a port that captured it would swallow the only evidence the ratchet was actually published.
     """
     return subprocess.run(["git", *args], cwd=str(root), check=False).returncode
 

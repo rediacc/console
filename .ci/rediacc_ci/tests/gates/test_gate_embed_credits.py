@@ -2,23 +2,13 @@
 
 Integration test for `scripts/gates/check-embed-credits.ts`.
 
-Verifies the gate accepts the real in-tree inventories and rejects a Dockerfile pin
-that has drifted from the lockfile and a hand-edited generated artifact, using the
-gate's `EMBED_CREDITS_*` path overrides to point at fixtures.
+Verifies the gate accepts the real in-tree inventories and rejects a Dockerfile pin that has drifted from the lockfile and a hand-edited generated artifact, using the gate's `EMBED_CREDITS_*` path overrides to point at fixtures.
 
-THE SUBMODULE-ABSENT PATH IS A REFUSAL HERE, NOT A SILENT `exit 0`. The twin's
-guard is `[[ ! -f private/renet/Dockerfile ]] && echo skipping && exit 0`, and that
-exit is worse than the skip it announces: `run-all.sh` scores a test that exits 0
+THE SUBMODULE-ABSENT PATH IS A REFUSAL HERE, NOT A SILENT `exit 0`. The twin's guard is `[[ ! -f private/renet/Dockerfile ]] && echo skipping && exit 0`, and that exit is worse than the skip it announces: `run-all.sh` scores a test that exits 0
 with no `PASS:` line as a FAILURE, so on a submodule-less tree the twin is red for
-a reason its own message calls a skip. The port refuses with the `git submodule
-update` line instead, which is the same verdict said usefully. On any tree that HAS
-the submodule -- CI, and this one -- the two agree case for case.
+a reason its own message calls a skip. The port refuses with the `git submodule update` line instead, which is the same verdict said usefully. On any tree that HAS the submodule -- CI, and this one -- the two agree case for case.
 
-WHY THE TWIN'S `setup_fixtures` HAS NO COUNTERPART HERE. It writes
-`bad-credits.go` and `missing.json` into a tempdir and NOTHING READS THEM: no case
-references `$FIXTURE_DIR`, both live cases build their own tempdir. Porting dead
-fixture-writing would carry the dead weight across, so it is dropped and named
-here, which is the finding rather than a silent omission.
+WHY THE TWIN'S `setup_fixtures` HAS NO COUNTERPART HERE. It writes `bad-credits.go` and `missing.json` into a tempdir and NOTHING READS THEM: no case references `$FIXTURE_DIR`, both live cases build their own tempdir. Porting dead fixture-writing would carry the dead weight across, so it is dropped and named here, which is the finding rather than a silent omission.
 """
 
 from rediacc_ci import paths

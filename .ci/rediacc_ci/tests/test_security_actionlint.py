@@ -21,24 +21,13 @@ TWO KINDS OF CASE, AND THE SPLIT IS THE POINT.
 
 WHY THE FIXTURE COPIES BOTH IMPLEMENTATIONS. Each side resolves the repository
 root from its OWN location -- the twin from `${BASH_SOURCE[0]}/../../..`,
-`paths.repo_root()` from `.ci/rediacc_ci/paths.py` -- and both then hard-code
-`.github/workflows` and `.ci/*/workflow` relative to it. There is no `$ROOT`
-seam on the bash side, so the only way to point both at a fixture is to put both
-INSIDE the fixture at their real relative paths.
+`paths.repo_root()` from `.ci/rediacc_ci/paths.py` -- and both then hard-code `.github/workflows` and `.ci/*/workflow` relative to it. There is no `$ROOT` seam on the bash side, so the only way to point both at a fixture is to put both INSIDE the fixture at their real relative paths.
 
-NOTHING IS NORMALISED. Every case below compares stdout, stderr, the exit code
-and the call log byte for byte, with one deliberate exception that is asserted
+NOTHING IS NORMALISED. Every case below compares stdout, stderr, the exit code and the call log byte for byte, with one deliberate exception that is asserted
 as a DIVERGENCE rather than hidden: under `CI=true` with stderr on a tty,
-`common.sh` emits colour and `rediacc_ci.log` does not
-(`test_log.py::test_ci_true_is_the_one_deliberate_divergence` pins the same
-decision). `test_ci_true_on_a_tty_is_the_one_inherited_divergence` asserts both
-sides of it here too, so a reader meeting it in the wild is meeting a decision.
+`common.sh` emits colour and `rediacc_ci.log` does not (`test_log.py::test_ci_true_is_the_one_deliberate_divergence` pins the same decision). `test_ci_true_on_a_tty_is_the_one_inherited_divergence` asserts both sides of it here too, so a reader meeting it in the wild is meeting a decision.
 
-ONE PATH THAT CANNOT BE DIFFERENTIALLY TESTED, named rather than skipped
-silently: the unsupported-architecture refusal reads `uname -m` in bash and
-`platform.machine()` in Python, and neither can be faked for the other (the
-Python call is a syscall, not a PATH lookup). The port's branch is exercised
-directly instead, and the two message strings are compared against the twin's
+ONE PATH THAT CANNOT BE DIFFERENTIALLY TESTED, named rather than skipped silently: the unsupported-architecture refusal reads `uname -m` in bash and `platform.machine()` in Python, and neither can be faked for the other (the Python call is a syscall, not a PATH lookup). The port's branch is exercised directly instead, and the two message strings are compared against the twin's
 bytes so a reworded twin reds this file.
 
 K=5 LEDGER: `.ci/shadow/w7p6-actionlint.observations.jsonl`.
@@ -235,9 +224,7 @@ def assert_agree(fx: pathlib.Path, **kwargs: object) -> tuple:
 def _workflow_hashes() -> dict[str, str]:
     """sha256 of every file the real run reads. A MISSING corpus is a failure.
 
-    `if targets: ...` was the shape to avoid: an empty dict compared against an
-    empty dict reports "nothing was mutated" having hashed nothing, which is the
-    vacuity this whole file exists to refuse.
+    `if targets: ...` was the shape to avoid: an empty dict compared against an empty dict reports "nothing was mutated" having hashed nothing, which is the vacuity this whole file exists to refuse.
     """
     targets = port.collect_targets(ROOT)
     assert len(targets) >= 20, (
@@ -250,46 +237,24 @@ def _workflow_hashes() -> dict[str, str]:
 def _warm_actionlint(env_extra: dict[str, str] | None = None) -> None:
     """Put actionlint in the shared cache BEFORE either side runs.
 
-    WITHOUT THIS THE TEST MEASURES RUN ORDER, NOT THE TWO IMPLEMENTATIONS. Both
-    sides fetch actionlint on a miss and both announce it
-    (`actionlint.sh:98`, `actionlint.py:322`), and `_run_real` runs the twin
-    first into a cache they SHARE. So on a host where actionlint is already
-    present neither fetches and the streams match, while on a host where it is
-    absent the twin pays for the download, prints
-    `✓ fetching actionlint 1.7.12 (amd64)`, and the port -- now finding it
-    cached -- prints nothing. One line of difference, produced entirely by which
-    subject went first.
+    WITHOUT THIS THE TEST MEASURES RUN ORDER, NOT THE TWO IMPLEMENTATIONS. Both sides fetch actionlint on a miss and both announce it (`actionlint.sh:98`, `actionlint.py:322`), and `_run_real` runs the twin first into a cache they SHARE. So on a host where actionlint is already present neither fetches and the streams match, while on a host where it is absent the twin pays for the
+    download, prints `✓ fetching actionlint 1.7.12 (amd64)`, and the port -- now finding it cached -- prints nothing. One line of difference, produced entirely by which subject went first.
 
-    That is what happened in CI run 34970782616, where
-    `test_the_real_repository_agrees_with_the_real_actionlint` failed on exactly
-    that line while both sides reported `actionlint clean across 29 workflow
-    file(s)`. A developer machine hides it because the cache is always warm.
+    That is what happened in CI run 34970782616, where `test_the_real_repository_agrees_with_the_real_actionlint` failed on exactly that line while both sides reported `actionlint clean across 29 workflow file(s)`. A developer machine hides it because the cache is always warm.
 
-    Warming explicitly makes the precondition the same on both hosts instead of
-    leaving it to luck. It is NOT a loss of coverage: the fetch path has its own
+    Warming explicitly makes the precondition the same on both hosts instead of leaving it to luck. It is NOT a loss of coverage: the fetch path has its own
     case (`assert "fetching actionlint" in old[2]`), which drives it against a
     scratch cache on purpose.
 
-    IT WARMS BY RUNNING A SUBJECT, NOT BY CALLING ensure_actionlint() IN-PROCESS,
-    and the difference is the whole fix. The cache is
+    IT WARMS BY RUNNING A SUBJECT, NOT BY CALLING ensure_actionlint() IN-PROCESS, and the difference is the whole fix. The cache is
     `${CI_TEMP:-${RUNNER_TEMP:-/tmp}}/actionlint-<version>` (actionlint.sh:55,
-    and common.sh exports CI_TEMP from RUNNER_TEMP at source time). An in-process
-    warm-up resolves that against PYTEST's environment, while the subjects get
-    `differential.env_for`, which carries only PATH/HOME/LC_ALL/LANG. On a
-    developer machine RUNNER_TEMP is unset in both, so the two agree by accident
+    and common.sh exports CI_TEMP from RUNNER_TEMP at source time). An in-process warm-up resolves that against PYTEST's environment, while the subjects get `differential.env_for`, which carries only PATH/HOME/LC_ALL/LANG. On a developer machine RUNNER_TEMP is unset in both, so the two agree by accident
     and the warm-up worked; on a GitHub runner RUNNER_TEMP is set for pytest and
-    absent from env_for, so the warm-up filled one cache and the subjects read
-    another. That is exactly how this case still failed in run 35009582358 after
-    a first attempt at fixing it -- the fix had the right idea and the wrong
-    environment, which is the same mistake this file is full of.
+    absent from env_for, so the warm-up filled one cache and the subjects read another. That is exactly how this case still failed in run 35009582358 after a first attempt at fixing it -- the fix had the right idea and the wrong environment, which is the same mistake this file is full of.
 
-    Running the port as a subprocess under the SAME env cannot get that wrong:
-    the cache is resolved by the code under test, from the environment the
-    measured runs will use, rather than recomputed here from a path this file
-    would have to guess.
+    Running the port as a subprocess under the SAME env cannot get that wrong: the cache is resolved by the code under test, from the environment the measured runs will use, rather than recomputed here from a path this file would have to guess.
 
-    A warm-up that cannot reach the network is left to the subjects, which then
-    BOTH fail to fetch and agree about that too.
+    A warm-up that cannot reach the network is left to the subjects, which then BOTH fail to fetch and agree about that too.
     """
     env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")
     env["PYTHONPATH"] = str(ROOT / ".ci")
@@ -348,8 +313,7 @@ def test_the_real_tree_argv_is_identical_including_order(tmp_path: pathlib.Path)
 
     THE ORDER IS THE ASSERTION. Both sides expand three separate globs and
     concatenate them without re-sorting; a port that merged them into one
-    `sorted()` would hand actionlint a `.yaml` file before a later `.yml` one and
-    still print an identical clean banner. Only the argv shows it.
+    `sorted()` would hand actionlint a `.yaml` file before a later `.yml` one and still print an identical clean banner. Only the argv shows it.
     """
     bindir = tmp_path / "bin"
     bindir.mkdir()
@@ -409,8 +373,7 @@ def test_the_out_of_tree_workflow_template_is_collected(fixture: pathlib.Path) -
     """`.ci/*/workflow/*.yml`, the coverage every other workflow gate misses.
 
     The fixture already carries one; a SECOND one under a different `.ci/*`
-    directory proves the middle `*` is expanded and sorted rather than hardcoded
-    to `breakpoint`.
+    directory proves the middle `*` is expanded and sorted rather than hardcoded to `breakpoint`.
     """
     _write(fixture / ".ci" / "aaa" / "workflow" / "vendored.yml", CLEAN_WORKFLOW % "vendored")
     old, _new, old_log, new_log = run_both(fixture)
@@ -448,9 +411,7 @@ def test_an_empty_template_glob_kills_the_twin_silently(fixture: pathlib.Path) -
     `collect_targets` ends with `for f in "$ROOT"/.ci/*/workflow/*.yml; do
     [[ -f "$f" ]] && echo "$f"; done`, so when that glob matches nothing the
     function returns 1 and `set -e` kills the script at the assignment: exit 1,
-    ZERO bytes on both streams, with two real workflow files sitting unlinted.
-    Exit 1 is also the code for "actionlint reported findings", so the CI reader
-    is sent looking for an expression error that does not exist.
+    ZERO bytes on both streams, with two real workflow files sitting unlinted. Exit 1 is also the code for "actionlint reported findings", so the CI reader is sent looking for an expression error that does not exist.
     """
     shutil.rmtree(fixture / ".ci" / "breakpoint")
     old, new, old_log, new_log = run_both(fixture)
@@ -464,10 +425,7 @@ def test_an_empty_template_glob_kills_the_twin_silently(fixture: pathlib.Path) -
 def test_the_exit_3_refusal_is_unreachable(fixture: pathlib.Path) -> None:
     """The corollary, stated as its own assertion so it cannot be forgotten.
 
-    Every tree splits two ways: the template glob matches (so the corpus is
-    non-empty and the count test passes) or it does not (so the script is
-    already dead). There is no third case, and therefore no input that reaches
-    the exit-3 message. Both directions are driven here.
+    Every tree splits two ways: the template glob matches (so the corpus is non-empty and the count test passes) or it does not (so the script is already dead). There is no third case, and therefore no input that reaches the exit-3 message. Both directions are driven here.
     """
     shutil.rmtree(fixture / ".github")
     with_template = run_both(fixture)[0]
@@ -498,9 +456,7 @@ def test_a_wrong_version_on_path_is_announced_then_the_cache_is_used(
 def test_a_silent_version_prints_the_twins_double_space(fixture: pathlib.Path) -> None:
     """`have` is empty and the message keeps the gap. Port note 2.
 
-    `--version` SUCCEEDS here and simply says nothing, which is the only way to
-    reach the empty-`have` message: a probe that FAILS kills the gate first, and
-    the case below is that one.
+    `--version` SUCCEEDS here and simply says nothing, which is the only way to reach the empty-`have` message: a probe that FAILS kills the gate first, and the case below is that one.
     """
     _write(
         fixture / "fake" / "bin" / "actionlint",
@@ -520,11 +476,7 @@ def test_a_failing_version_probe_kills_the_gate_silently(fixture: pathlib.Path) 
     """THE THIRD DEFECT, reproduced on both sides. Port note 10.
 
     `have="$(actionlint --version 2>/dev/null | head -1 | tr -d 'v')"` under
-    `set -euo pipefail`: the probe's non-zero status travels through the
-    command substitution and `set -e` ends the run. The status here is 3, which
-    is this gate's DOCUMENTED code for "nothing to check (vacuous)", so a broken
-    shim on PATH is reported to CI as an empty corpus, with no message at all
-    and three perfectly readable workflow files left unlinted.
+    `set -euo pipefail`: the probe's non-zero status travels through the command substitution and `set -e` ends the run. The status here is 3, which is this gate's DOCUMENTED code for "nothing to check (vacuous)", so a broken shim on PATH is reported to CI as an empty corpus, with no message at all and three perfectly readable workflow files left unlinted.
     """
     _write(
         fixture / "fake" / "bin" / "actionlint",
@@ -577,9 +529,7 @@ def test_a_checksum_mismatch_refuses_to_extract(fixture: pathlib.Path) -> None:
 def test_a_verified_download_is_extracted_and_run(fixture: pathlib.Path, tmp_path) -> None:
     """The whole acquisition path end to end, with a REAL tar and a REAL hash.
 
-    The tarball is built here and its sha256 is written into the fixture's own
-    `constants.sh`, so the case proves the verify-then-extract sequence rather
-    than skipping past it.
+    The tarball is built here and its sha256 is written into the fixture's own `constants.sh`, so the case proves the verify-then-extract sequence rather than skipping past it.
     """
     payload = tmp_path / "actionlint"
     _write(payload, FAKE_ACTIONLINT, mode=0o755)
@@ -679,8 +629,7 @@ def test_path_version_of_a_binary_that_cannot_run_is_126(tmp_path: pathlib.Path)
 def test_cache_dir_ignores_ci_temp_because_common_sh_overwrites_it(monkeypatch) -> None:
     """THE SECOND DEFECT, as a unit. The twin's own `${CI_TEMP:-...}` is dead.
 
-    Driven against the BASH too, below, so this is not just an assertion about
-    what the port chose to do.
+    Driven against the BASH too, below, so this is not just an assertion about what the port chose to do.
     """
     monkeypatch.delenv("CI_TEMP", raising=False)
     monkeypatch.delenv("RUNNER_TEMP", raising=False)

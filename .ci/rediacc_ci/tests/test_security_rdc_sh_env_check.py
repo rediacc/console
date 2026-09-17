@@ -1,26 +1,19 @@
 """Differential: `rediacc_ci.security.rdc_sh_env_check` against its twin
 `.ci/scripts/test/test-rdc-sh-env.sh` (gate `check:ci-rdc-sh-env`).
 
-THE GREEN RUN IS THE WEAKEST CASE, so most of this file is about the red ones.
-Both subjects pass on the real tree today, which proves only that two programs
-agree about an `rdc.sh` neither is currently catching out. Every case below
-therefore runs both against a FIXTURE TREE holding a MUTATED copy of `rdc.sh`,
-so each of the twin's eleven `fail` branches is actually reached and compared
-byte for byte -- ANSI escapes included, because those are what a reader of a CI
-log sees and what a "tidier" port would drop.
+THE GREEN RUN IS THE WEAKEST CASE, so most of this file is about the red ones. Both subjects pass on the real tree today, which proves only that two programs agree about an `rdc.sh` neither is currently catching out. Every case below therefore runs both against a FIXTURE TREE holding a MUTATED copy of `rdc.sh`, so each of the twin's eleven `fail` branches is actually reached and
+compared byte for byte -- ANSI escapes included, because those are what a reader of a CI log sees and what a "tidier" port would drop.
 
 HOW THE TWO SIDES ARE POINTED AT A FIXTURE, and it differs per side. The twin
 resolves `REPO_ROOT` from `${BASH_SOURCE[0]}`, so it is COPIED into the fixture
-and run from there. The port resolves it through `paths.repo_root()`, whose
-documented single override is `$REDIACC_CI_ROOT`, so it runs from the real tree
+and run from there. The port resolves it through `paths.repo_root()`, whose documented single override is `$REDIACC_CI_ROOT`, so it runs from the real tree
 with that variable set. Both then read the same mutated `rdc.sh`.
 
 NOTHING ON DISK IS MUTATED. Every fixture is built under pytest's `tmp_path`
 from `shutil.copy2` of the real files; the repository's own `rdc.sh` and the
 twin are only ever read.
 
-LAYER 2 RUNS THE REAL DEV PATH, which is the point: it execs a PATH-shimmed
-`node` and `curl` inside a throwaway ROOT_DIR, so no network and no build.
+LAYER 2 RUNS THE REAL DEV PATH, which is the point: it execs a PATH-shimmed `node` and `curl` inside a throwaway ROOT_DIR, so no network and no build.
 `node` must be on PATH or BOTH sides die at rc=1 with empty streams, which is
 itself asserted rather than skipped.
 
@@ -167,9 +160,7 @@ def test_an_extra_export_breaks_the_allowlist(tmp_path: pathlib.Path) -> None:
 def test_a_dead_surface_reference_still_prints_its_pass_line(tmp_path: pathlib.Path) -> None:
     """The twin's 1d PASS is UNCONDITIONAL (`test-rdc-sh-env.sh:84`).
 
-    A run that finds `RDC_BENCH` still referenced prints BOTH the failure and
-    "no removed token/mode surface". A port that "fixed" that would disagree
-    here, which is the whole reason this case exists.
+    A run that finds `RDC_BENCH` still referenced prints BOTH the failure and "no removed token/mode surface". A port that "fixed" that would disagree here, which is the whole reason this case exists.
     """
     fixture = build_fixture(tmp_path)
     mutate(fixture, "ref_file=", "# note: RDC_BENCH was here\nref_file=")
@@ -192,9 +183,7 @@ def test_a_missing_dev_config_export_is_only_caught_by_layer_two(
     """`grep -q 'export REDIACC_CONFIG=dev'` is a SUBSTRING match.
 
     `export REDIACC_CONFIG=devx` therefore satisfies check 1d, and only layer
-    2's dump inspection notices. It is also the case that exercises the
-    `grep -q ... && pass` shape: the second PASS line is simply absent, with no
-    early exit.
+    2's dump inspection notices. It is also the case that exercises the `grep -q ... && pass` shape: the second PASS line is simply absent, with no early exit.
     """
     fixture = build_fixture(tmp_path)
     mutate(fixture, "export REDIACC_CONFIG=dev", "export REDIACC_CONFIG=devx")
@@ -304,10 +293,7 @@ def test_exported_names_is_deduplicated_and_sorted() -> None:
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:
     """Delete the sentinel check from a COPY of the port.
 
-    That check is the entire reason this gate exists, and it is invisible on
-    every green run: a port that dropped it agrees with the twin on the real
-    tree and disagrees only against an `rdc.sh` that actually leaks, which is
-    exactly the fixture built here. The real port file on disk is never touched.
+    That check is the entire reason this gate exists, and it is invisible on every green run: a port that dropped it agrees with the twin on the real tree and disagrees only against an `rdc.sh` that actually leaks, which is exactly the fixture built here. The real port file on disk is never touched.
     """
     source = PORT.read_text(encoding="utf-8")
     anchor = """        leaks = grep_lines(text, re.compile("LEAKSENTINEL"))

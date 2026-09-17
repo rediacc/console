@@ -3,31 +3,15 @@
 
 RECORDING FAKES FOR `aws`, `curl` AND `sleep` ON A SCRATCH PATH, INSIDE A
 FIXTURE REPO. Nothing here reaches R2 or Cloudflare; every case pins a fixture
-endpoint, bucket and credential, and an on-disk directory stands in for the
-bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the
-"one real run" clause and says in as many words that the mocked parity ledger is
-a separate, achievable piece of work. This is that piece.
+endpoint, bucket and credential, and an on-disk directory stands in for the bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-WHY `sleep` IS FAKED RATHER THAN WAITED ON, and why that is EVIDENCE rather than
-a shortcut. Both retry loops in the twin call `sleep` as an external program,
-and so does the port. Putting a recording fake on PATH turns the retry SCHEDULE
-into call-log lines, so `test_the_upload_retry_schedule_is_fifteen_thirty_forty_five_sixty`
-can assert `sleep 15`, `sleep 30`, `sleep 45`, `sleep 60` in order instead of
-waiting 150 seconds to observe the same thing less precisely. A port that used
-`time.sleep` would make the schedule invisible here, which is exactly why the
-port does not.
+WHY `sleep` IS FAKED RATHER THAN WAITED ON, and why that is EVIDENCE rather than a shortcut. Both retry loops in the twin call `sleep` as an external program, and so does the port. Putting a recording fake on PATH turns the retry SCHEDULE into call-log lines, so `test_the_upload_retry_schedule_is_fifteen_thirty_forty_five_sixty` can assert `sleep 15`, `sleep 30`, `sleep 45`, `sleep
+60` in order instead of waiting 150 seconds to observe the same thing less precisely. A port that used `time.sleep` would make the schedule invisible here, which is exactly why the port does not.
 
-THE COPY ORDER IS NOT DETERMINISTIC ON EITHER SIDE. `xargs -P 8` and the port's
-`ThreadPoolExecutor(8)` both dispatch up to eight copies at once, so the call
-log's copy lines are compared as a MULTISET within each directory block.
-`_normalise` does that and nothing else: every non-copy line keeps its position,
-so a port that listed `apk` before `apt`, or purged before copying, still
-diverges. Proven by the planted defect at the bottom, which moves only the
-DIRECTORY order and is caught.
+THE COPY ORDER IS NOT DETERMINISTIC ON EITHER SIDE. `xargs -P 8` and the port's `ThreadPoolExecutor(8)` both dispatch up to eight copies at once, so the call log's copy lines are compared as a MULTISET within each directory block. `_normalise` does that and nothing else: every non-copy line keeps its position, so a port that listed `apk` before `apt`, or purged before copying,
+still diverges. Proven by the planted defect at the bottom, which moves only the DIRECTORY order and is caught.
 
-`/tmp/config` IS A FIXED PATH IN THE TWIN, so these cases cannot be given a
-private scratch file. Two guards, and the second one repairs a MEASURED flake
-rather than a theoretical one:
+`/tmp/config` IS A FIXED PATH IN THE TWIN, so these cases cannot be given a private scratch file. Two guards, and the second one repairs a MEASURED flake rather than a theoretical one:
 
   * an `xdist_group`, so nothing else in the same pytest invocation is writing
     it at the same time;
@@ -259,9 +243,7 @@ FIXED_TMP_LOCK = "/tmp/rediacc-simulate-promotion-differential.lock"
 def _fixed_tmp_guard():
     """Hold the machine-wide lock, and start from a clean `/tmp/config`.
 
-    REMOVING THE FILE IS NOT TIDINESS. A leftover from a previous case is what
-    the NEXT case's sed-fix step would rewrite and upload if its own download
-    failed, which would make one case silently change the meaning of another.
+    REMOVING THE FILE IS NOT TIDINESS. A leftover from a previous case is what the NEXT case's sed-fix step would rewrite and upload if its own download failed, which would make one case silently change the meaning of another.
     """
     with open(FIXED_TMP_LOCK, "a+") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX)
@@ -380,10 +362,7 @@ def run_both(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None, **kw)
 def _normalise(log: str) -> str:
     """Sort each maximal run of parallel copy lines; leave everything else alone.
 
-    THE COPIES ARE THE ONLY NON-DETERMINISTIC PART, and they are non-deterministic
-    on BOTH sides. Every other line keeps its position, so directory order,
-    the `s3 ls` that opens each block, the sed-fix downloads and uploads, the
-    retries and the purge are all compared as a SEQUENCE.
+    THE COPIES ARE THE ONLY NON-DETERMINISTIC PART, and they are non-deterministic on BOTH sides. Every other line keeps its position, so directory order, the `s3 ls` that opens each block, the sed-fix downloads and uploads, the retries and the purge are all compared as a SEQUENCE.
     """
     out: list[str] = []
     block: list[str] = []
@@ -599,10 +578,7 @@ def test_fact_the_secret_key_is_never_checked(tmp_path) -> None:
 def test_fact_the_empty_channel_floor_sits_behind_pipefail(tmp_path) -> None:
     """TWO ENDINGS FOR ONE INPUT, and which one you get depends on `aws`.
 
-    With an `aws s3 ls` that exits 0 on an empty prefix, the floor is reached and
-    prints its sentence. With one that exits 1, `pipefail` ends the run one line
-    earlier and the sentence never appears. BOTH are driven and BOTH agree,
-    because the port reproduces the structure rather than guessing.
+    With an `aws s3 ls` that exits 0 on an empty prefix, the floor is reached and prints its sentence. With one that exits 1, `pipefail` ends the run one line earlier and the sentence never appears. BOTH are driven and BOTH agree, because the port reproduces the structure rather than guessing.
     """
     assert port.THE_EMPTY_CHANNEL_FLOOR_SITS_BEHIND_PIPEFAIL is True
 
@@ -727,15 +703,9 @@ def test_a_key_outside_the_source_prefix_is_refused_rather_than_doubled(tmp_path
     """A DOUBLED DESTINATION IS WORSE THAN A FAILED COPY, so the guard refuses.
 
     `${src_key#"$SRC_PREFIX"}` on a key that does not carry the prefix is a
-    SILENT NO-OP, and the copy would then land at
-    `apt/pr-123-promoted/somewhere-else/stray`. The install tests that follow
-    would read a channel nobody wrote, so the run stops instead.
+    SILENT NO-OP, and the copy would then land at `apt/pr-123-promoted/somewhere-else/stray`. The install tests that follow would read a channel nobody wrote, so the run stops instead.
 
-    THE GUARD CANNOT BE REACHED THROUGH A REAL LISTING, since `aws s3 ls
-    <prefix>` only returns keys under that prefix. The fake supplies one anyway,
-    which is the same thing `test-simulate-promotion-serverside.sh` does and for
-    the same reason: an unreachable guard still has to be proved to work, or its
-    port is unchecked.
+    THE GUARD CANNOT BE REACHED THROUGH A REAL LISTING, since `aws s3 ls <prefix>` only returns keys under that prefix. The fake supplies one anyway, which is the same thing `test-simulate-promotion-serverside.sh` does and for the same reason: an unreachable guard still has to be proved to work, or its port is unchecked.
     """
     _root, old, new = run_both(tmp_path, FAKE_AWS_LS_ROGUE="1")
     _agree(old, new, "rogue-key")
@@ -750,9 +720,7 @@ def test_a_key_outside_the_source_prefix_is_refused_rather_than_doubled(tmp_path
 def test_a_copy_that_keeps_failing_ends_the_run_with_xargs_status(tmp_path) -> None:
     """THREE ATTEMPTS, TWO SLEEPS, THEN 123.
 
-    The status is 123, not 1: `xargs` reports "at least one invocation exited
-    1..125" that way and `set -e` passes it on. A port that returned 1 would
-    look right to a reader and wrong to a caller that switches on the code.
+    The status is 123, not 1: `xargs` reports "at least one invocation exited 1..125" that way and `set -e` passes it on. A port that returned 1 would look right to a reader and wrong to a caller that switches on the code.
     """
     _root, old, new = run_both(tmp_path, FAKE_AWS_FAIL_ON_KEY="apt/pr-123-promoted/rdc.deb")
     _agree(old, new, "copy-fails")
@@ -770,11 +738,7 @@ def test_a_copy_that_keeps_failing_ends_the_run_with_xargs_status(tmp_path) -> N
 def test_the_upload_retry_schedule_is_fifteen_thirty_forty_five_sixty(tmp_path) -> None:
     """`aws_s3_cp_retry` IS FIVE ATTEMPTS WITH 15/30/45/60-SECOND GAPS.
 
-    Only readable because `sleep` is an external program on both sides. The
-    fifth failure prints `aws s3 cp <args> failed after 5 attempts`, where
-    `<args>` is `$*`: the arguments the FUNCTION was given, WITHOUT the
-    `s3 cp --cli-read-timeout 0` prefix it adds. A port that echoed the full
-    argv would print a different sentence and pass every other case here.
+    Only readable because `sleep` is an external program on both sides. The fifth failure prints `aws s3 cp <args> failed after 5 attempts`, where `<args>` is `$*`: the arguments the FUNCTION was given, WITHOUT the `s3 cp --cli-read-timeout 0` prefix it adds. A port that echoed the full argv would print a different sentence and pass every other case here.
     """
     _root, old, new = run_both(tmp_path, FAKE_AWS_FAIL_ON_UPLOAD="1")
     _agree(old, new, "cp-retries")
@@ -829,11 +793,7 @@ def test_a_failing_aws_configure_stops_before_anything_is_listed(tmp_path) -> No
 def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     """PROVE THE DIFFERENTIAL CAN FIRE, and prove WHICH assertion fires.
 
-    The plant reverses the directory order. Every object still lands in the
-    right place, the same eleven URLs are purged, the exit code is 0 and every
-    printed line is present, so a set-compared stdout sees nothing. Only the
-    SEQUENCE of `s3 ls` calls in the normalised call log carries it, which is
-    also the proof that `_normalise` is not sorting more than the copies.
+    The plant reverses the directory order. Every object still lands in the right place, the same eleven URLs are purged, the exit code is 0 and every printed line is present, so a set-compared stdout sees nothing. Only the SEQUENCE of `s3 ls` calls in the normalised call log carries it, which is also the proof that `_normalise` is not sorting more than the copies.
     """
     root = fixture(tmp_path)
     old_proc, old_calls = _run(root, "old")

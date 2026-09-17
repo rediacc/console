@@ -2,8 +2,7 @@
 
 `.ci/media/pool.sh`, the render side of tutorial media.
 
-WHAT IS ACTUALLY WORTH ASSERTING HERE. Three of these four functions carry a
-property a reader cannot check by reading:
+WHAT IS ACTUALLY WORTH ASSERTING HERE. Three of these four functions carry a property a reader cannot check by reading:
 
   `_tutorial_render_pairs` forwards everything after its first two arguments to the
   readiness predicate VERBATIM. That is the whole reason the watch can ask a narrower
@@ -26,21 +25,12 @@ property a reader cannot check by reading:
   the case below is now the regression test, with the caller's report block reproduced
   verbatim so "the report is reached" is OBSERVED rather than inferred.
 
-All of it runs with node, npx and tsx absent: the renderer is a fake that records
-when it starts and stops, which is exactly the evidence the concurrency claim needs.
+All of it runs with node, npx and tsx absent: the renderer is a fake that records when it starts and stops, which is exactly the evidence the concurrency claim needs.
 
-TWO THINGS THE PORT REIMPLEMENTS, and both agree with the twin by construction.
-`max_overlap` is a running +1/-1 over the trace's S and E lines, identical arithmetic
-in either language. `compgen -G "<prefix>.*"` becomes `glob` over the same pattern:
-both ask "which files begin with this prefix and a dot", and both answer nothing
-rather than erroring when none do -- which matters, because the CLEAN-run case
-asserts exactly that emptiness.
+TWO THINGS THE PORT REIMPLEMENTS, and both agree with the twin by construction. `max_overlap` is a running +1/-1 over the trace's S and E lines, identical arithmetic in either language. `compgen -G "<prefix>.*"` becomes `glob` over the same pattern: both ask "which files begin with this prefix and a dot", and both answer nothing rather than erroring when none do -- which matters,
+because the CLEAN-run case asserts exactly that emptiness.
 
-WHY ONE CASE BYPASSES `media_run_module`. `_tutorial_auto_jobs` is asserted on its
-STREAM SEPARATION, and `media_run_module` returns a `RunResult` whose `.combined`
-would merge the very two streams under test. That case therefore builds its own
-`bash -c` with the same three sources and reads `.out` and `.err` apart, which is
-the same shell the helper would have built.
+WHY ONE CASE BYPASSES `media_run_module`. `_tutorial_auto_jobs` is asserted on its STREAM SEPARATION, and `media_run_module` returns a `RunResult` whose `.combined` would merge the very two streams under test. That case therefore builds its own `bash -c` with the same three sources and reads `.out` and `.err` apart, which is the same shell the helper would have built.
 
 NO `xdist_group`. `fake_bin` mutates PATH on this process and restores it in a
 `finally`; every case owns its own `mktemp -d`, nothing is bound, and
@@ -88,15 +78,9 @@ def run_pool(root, code: str, *, module_dir=None) -> harness.RunResult:
 def script_machine(bindir, cores: int, gib: int) -> None:
     """`_tutorial_auto_jobs` reads the machine through exactly two commands.
 
-    `nproc`, and an `awk` over /proc/meminfo. /proc/meminfo cannot be staged, so awk
-    is the injection point -- it is scripted to print the memory figure the case
-    wants, which is precisely what the real one would have printed.
+    `nproc`, and an `awk` over /proc/meminfo. /proc/meminfo cannot be staged, so awk is the injection point -- it is scripted to print the memory figure the case wants, which is precisely what the real one would have printed.
 
-    BOTH NOW REACH THE MACHINE THROUGH `.ci/media/portable.sh`'s seams
-    (`media_cpu_count` and `media_avail_mem_gb`) rather than being spelled inline,
-    and both fakes still work unchanged, which is the point: a seam that changed what
-    the module observes would be a rewrite wearing a refactor's clothes.
-    `media_avail_mem_gb` keeps the division INSIDE awk for exactly this reason -- the
+    BOTH NOW REACH THE MACHINE THROUGH `.ci/media/portable.sh`'s seams (`media_cpu_count` and `media_avail_mem_gb`) rather than being spelled inline, and both fakes still work unchanged, which is the point: a seam that changed what the module observes would be a rewrite wearing a refactor's clothes. `media_avail_mem_gb` keeps the division INSIDE awk for exactly this reason -- the
     fake prints GiB, and a shell-side divide would turn that into 0.
     """
     write_exec(bindir / "nproc", "#!/bin/bash\necho %d\n" % cores)
@@ -106,9 +90,7 @@ def script_machine(bindir, cores: int, gib: int) -> None:
 def script_renderer(bindir, trace, code: int = 0) -> None:
     """flock and nice become transparent passthroughs; npx becomes the renderer.
 
-    The real flock and nice would need a lock file and a priority change that prove
-    nothing here. The renderer records the moment it starts and the moment it stops,
-    and that trace is what makes the concurrency claim MEASURABLE instead of asserted.
+    The real flock and nice would need a lock file and a priority change that prove nothing here. The renderer records the moment it starts and the moment it stops, and that trace is what makes the concurrency claim MEASURABLE instead of asserted.
     """
     write_exec(bindir / "flock", '#!/bin/bash\nshift\nexec "$@"\n')
     write_exec(bindir / "nice", '#!/bin/bash\nshift 2\nexec "$@"\n')
@@ -138,10 +120,7 @@ def failure_files(directory, prefix: str) -> list:
 
 def test_every_moved_function_is_solely_owned_by_this_module(gate):
     """WHAT THIS REPLACED. Until the cutover run.sh carried its own copy of all four
-    and this compared the bodies byte for byte. run.sh has no copies now -- and this
-    module has DELIBERATELY diverged from what run.sh used to hold, because phase 2
-    fixed the `wait -n` defect here -- so byte-identity is not merely unmeasurable, it
-    is the wrong question.
+    and this compared the bodies byte for byte. run.sh has no copies now -- and this module has DELIBERATELY diverged from what run.sh used to hold, because phase 2 fixed the `wait -n` defect here -- so byte-identity is not merely unmeasurable, it is the wrong question.
     """
     gate.log_test("pool.sh must hold the ONLY definition of all four moved functions")
     media_verify.media_assert_module_owns(gate, "pool.sh", *MOVED)

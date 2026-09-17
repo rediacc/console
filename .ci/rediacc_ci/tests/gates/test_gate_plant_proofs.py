@@ -1,21 +1,12 @@
 """The gate test for `check:ci-plant-proofs`, which has no bash twin.
 
-NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name
-here and nothing to compare against. What it tests is the thing the selftest
-structurally cannot: the gate as a PROCESS, invoked the way CI invokes it,
-against copies of the REAL controls it is meant to police.
+NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name here and nothing to compare against. What it tests is the thing the selftest structurally cannot: the gate as a PROCESS, invoked the way CI invokes it, against copies of the REAL controls it is meant to police.
 
-WHY THAT DISTINCTION IS NOT PEDANTRY HERE, and this gate paid for it the same
-day it was written. Every selftest control passed against synthetic fixtures
+WHY THAT DISTINCTION IS NOT PEDANTRY HERE, and this gate paid for it the same day it was written. Every selftest control passed against synthetic fixtures
 while a target-only proof rule let ONE control's `grep` launder its NEIGHBOUR's
-plant. The synthetic fixtures had one plant each, so the case could not exist in
-them. It showed up on the first plant into the real
-`.ci/scripts/test/gates/test-run-sh.sh`, where three controls mutate the same
-copied file six logical lines apart -- the gate stayed GREEN with both proof
-lines deleted. That is the whole argument for driving real subjects.
+plant. The synthetic fixtures had one plant each, so the case could not exist in them. It showed up on the first plant into the real `.ci/scripts/test/gates/test-run-sh.sh`, where three controls mutate the same copied file six logical lines apart -- the gate stayed GREEN with both proof lines deleted. That is the whole argument for driving real subjects.
 
-NOTHING TRACKED IS EVER MUTATED. Every plant lands in a scratch git repository
-holding COPIES. Other sessions share this worktree.
+NOTHING TRACKED IS EVER MUTATED. Every plant lands in a scratch git repository holding COPIES. Other sessions share this worktree.
 """
 
 import json
@@ -116,9 +107,7 @@ def test_the_gate_is_green_on_the_real_tree(gate):
 def test_one_of_the_two_proofs_is_enough(gate):
     """The MUST-NOT-FIRE direction, on a real subject.
 
-    `test-run-sh.sh` control (b) carries both a pre-check and a post-check.
-    Either one on its own proves the plant landed, and a gate that demanded both
-    would be a gate authors route around.
+    `test-run-sh.sh` control (b) carries both a pre-check and a post-check. Either one on its own proves the plant landed, and a gate that demanded both would be a gate authors route around.
     """
     gate.log_test("NEGATIVE: strip the PRE-check only; the post-check still proves it")
     with harness.temp_dir() as tmp:

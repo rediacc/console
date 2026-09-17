@@ -1,25 +1,14 @@
 """`rediacc_ci.deploy.verify_edge_endpoints` against its bash twin.
 
-NO NETWORK, EVER, AND THAT IS THE WHOLE DESIGN PROBLEM THIS FILE SOLVES. The
-twin's eleven URLs are hard-coded production hostnames -- `edge.rediacc.com`,
-`releases.rediacc.com` and the three per-region account endpoints out of
-`regions.json` -- with no override knob anywhere. So the subject cannot be
-pointed at a local stub the way `wait_for_preview_worker` can be. What CAN be
-done is replace the CLIENT: a recording fake `curl` goes first on `PATH`, logs
-its exact argv to a file, and answers from a fixture directory. Both
-implementations are driven through the SAME fake, and every case compares four
-things:
+NO NETWORK, EVER, AND THAT IS THE WHOLE DESIGN PROBLEM THIS FILE SOLVES. The twin's eleven URLs are hard-coded production hostnames -- `edge.rediacc.com`, `releases.rediacc.com` and the three per-region account endpoints out of `regions.json` -- with no override knob anywhere. So the subject cannot be pointed at a local stub the way `wait_for_preview_worker` can be. What CAN be
+done is replace the CLIENT: a recording fake `curl` goes first on `PATH`, logs its exact argv to a file, and answers from a fixture directory. Both implementations are driven through the SAME fake, and every case compares four things:
 
   1. the exit code,
   2. stdout, byte for byte,
   3. stderr, byte for byte,
   4. the fake's CALL LOG, byte for byte.
 
-THE CALL LOG IS THE ASSERTION THAT MATTERS MOST, and it is the one a
-stdout-only differential would miss. A port that fetched the right URLs in the
-wrong ORDER, or dropped `-f` from one fetch, or stopped suppressing a stderr,
-would still print the same eleven OK lines on a healthy fixture. Comparing the
-argv sequence is what makes the happy-path case evidence rather than
+THE CALL LOG IS THE ASSERTION THAT MATTERS MOST, and it is the one a stdout-only differential would miss. A port that fetched the right URLs in the wrong ORDER, or dropped `-f` from one fetch, or stopped suppressing a stderr, would still print the same eleven OK lines on a healthy fixture. Comparing the argv sequence is what makes the happy-path case evidence rather than
 decoration.
 
 `cb=<digits>` IS THE ONE THING NORMALISED IN THE LOG. The twin busts the cache
@@ -28,18 +17,12 @@ be made to agree with the other and neither is supposed to. Only the digits
 after `cb=` are masked, so a port that dropped the cache-buster entirely, or
 put it on the wrong URL, still fails.
 
-THREE REAL DEFECTS IN THE TWIN ARE PINNED HERE RATHER THAN FIXED. Fixing a twin
-belongs to a later cutover box, and a test that quietly tolerated them would
+THREE REAL DEFECTS IN THE TWIN ARE PINNED HERE RATHER THAN FIXED. Fixing a twin belongs to a later cutover box, and a test that quietly tolerated them would
 let the next port "correct" one and diverge. They are FINDING 1 (a missing
-`regions.json` checks zero regions and still passes) and FINDING 2 (a non-200
-region reports `HTTP 404000`).
+`regions.json` checks zero regions and still passes) and FINDING 2 (a non-200 region reports `HTTP 404000`).
 
-FINDING 3 IS THE ONE PLACE THE PORT IS DELIBERATELY NOT FAITHFUL, and it has
-its own case below with the mechanism spelled out: a fractional
-`EDGE_RETRY_SLEEP` makes the twin report `Smoke test passed` and exit 0 on a
-deployment that failed. Reproducing a silent pass in a second language is not
-a port, so the port answers correctly and this file asserts the DIVERGENCE
-rather than pretending it away.
+FINDING 3 IS THE ONE PLACE THE PORT IS DELIBERATELY NOT FAITHFUL, and it has its own case below with the mechanism spelled out: a fractional `EDGE_RETRY_SLEEP` makes the twin report `Smoke test passed` and exit 0 on a deployment that failed. Reproducing a silent pass in a second language is not a port, so the port answers correctly and this file asserts the DIVERGENCE rather than
+pretending it away.
 
 K=5 LEDGER: `.ci/shadow/w7p6-verify-edge-endpoints.observations.jsonl`.
 """
@@ -209,8 +192,7 @@ def drive(
 
     EACH SIDE GETS ITS OWN FIXTURE DIRECTORY because the fake writes per-slug
     counter files into it; sharing one would make whichever side ran second see
-    a different sequence of answers, which is a test artifact rather than a
-    divergence.
+    a different sequence of answers, which is a test artifact rather than a divergence.
     """
     binary_dir = make_bin(tmp_path)
     runs: list[Run] = []
@@ -257,9 +239,7 @@ def fixture_tree(tmp_path: pathlib.Path, *, with_regions: bool) -> pathlib.Path:
     """A `.ci` skeleton both sides resolve their repo root inside.
 
     The twin resolves it from `${BASH_SOURCE[0]}` so it is COPIED here; the port
-    resolves it through `paths.repo_root()`, whose documented single override is
-    `$REDIACC_CI_ROOT`. Both then read (or fail to read) the same
-    `regions.json`.
+    resolves it through `paths.repo_root()`, whose documented single override is `$REDIACC_CI_ROOT`. Both then read (or fail to read) the same `regions.json`.
     """
     tree = tmp_path / "tree"
     (tree / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
@@ -362,8 +342,7 @@ def test_a_stale_worker_bundle_fails_the_redirect_table_fingerprint(
 
 def test_a_transport_failure_on_a_fingerprint_probe_is_a_000(tmp_path: pathlib.Path) -> None:
     """Inside `fetch_retry` the predicate runs in an `if`, so `set -e` is
-    SUSPENDED and curl's non-zero status becomes a retryable "000" rather than
-    an abort. The stable twin, whose identical probe is at top level, exits 7
+    SUSPENDED and curl's non-zero status becomes a retryable "000" rather than an abort. The stable twin, whose identical probe is at top level, exits 7
     instead; that asymmetry is asserted in the stable differential."""
 
     def mutate(d: pathlib.Path) -> None:
@@ -523,26 +502,19 @@ def test_a_fractional_retry_sleep_makes_the_twin_pass_without_running(
 ) -> None:
     """FINDING 3, REPRODUCED AND DELIBERATELY NOT MATCHED.
 
-    THE MECHANISM, driven down to a 25-line minimal case rather than reasoned
-    about. `fetch_retry`'s give-up branch is
+    THE MECHANISM, driven down to a 25-line minimal case rather than reasoned about. `fetch_retry`'s give-up branch is
 
         echo "  ${what}: still disagreeing after ... over \
              $(((EDGE_RETRIES - 1) * EDGE_RETRY_SLEEP))s of waiting" >&2
         return 1
 
     and bash arithmetic has no floats. With `EDGE_RETRY_SLEEP=0.01` the
-    expansion raises `arithmetic syntax error`, which aborts the FUNCTION
-    before its `return 1` ever runs. Every one of the six call sites invokes
-    `fetch_retry` under `||` or `if !`, and in that context bash suppresses the
-    exit-on-expansion-error and hands the caller status 0. So `fetch_retry`
-    reports SUCCESS for a check that just failed on every attempt, the caller
-    prints its `OK` line, and the run ends `Smoke test passed`, exit 0.
+    expansion raises `arithmetic syntax error`, which aborts the FUNCTION before its `return 1` ever runs. Every one of the six call sites invokes `fetch_retry` under `||` or `if !`, and in that context bash suppresses the exit-on-expansion-error and hands the caller status 0. So `fetch_retry` reports SUCCESS for a check that just failed on every attempt, the caller prints its `OK`
+    line, and the run ends `Smoke test passed`, exit 0.
 
     That is a gate that is green because it did not run, and it is the exact
     class this whole differential exists to catch, so the port does NOT
-    reproduce it: it renders the number with `float` and refuses correctly.
-    The assertion below is therefore an inequality, and it is the only one in
-    this file.
+    reproduce it: it renders the number with `float` and refuses correctly. The assertion below is therefore an inequality, and it is the only one in this file.
     """
 
     def mutate(d: pathlib.Path) -> None:
@@ -568,10 +540,7 @@ def test_a_fractional_retry_sleep_makes_the_twin_pass_without_running(
 def test_an_integer_retry_sleep_is_still_byte_identical(tmp_path: pathlib.Path) -> None:
     """The control for the case above, and the reason the divergence is narrow.
 
-    Every integer `EDGE_RETRY_SLEEP` -- including the production default of 5 --
-    must still render exactly as bash arithmetic renders it, with no decimal
-    point. Without this, "the port answers correctly" would be cover for a
-    reworded message on the path that actually runs in CI.
+    Every integer `EDGE_RETRY_SLEEP` -- including the production default of 5 -- must still render exactly as bash arithmetic renders it, with no decimal point. Without this, "the port answers correctly" would be cover for a reworded message on the path that actually runs in CI.
     """
 
     def mutate(d: pathlib.Path) -> None:
@@ -706,11 +675,7 @@ def test_a_missing_regions_json_checks_zero_regions_and_still_passes(
 ) -> None:
     """FINDING 1, REPRODUCED NOT FIXED.
 
-    `done < <(jq -r ... regions.json)` is a PROCESS SUBSTITUTION, whose exit
-    status the loop never sees and `set -e` never inspects. With `regions.json`
-    absent, jq writes one line to stderr, the loop body runs zero times, and the
-    smoke test prints `Smoke test passed` and exits 0 having verified no region
-    at all. That is the exact shape of a gate that is green because it did not
+    `done < <(jq -r ... regions.json)` is a PROCESS SUBSTITUTION, whose exit status the loop never sees and `set -e` never inspects. With `regions.json` absent, jq writes one line to stderr, the loop body runs zero times, and the smoke test prints `Smoke test passed` and exits 0 having verified no region at all. That is the exact shape of a gate that is green because it did not
     run.
     """
     tree = fixture_tree(tmp_path, with_regions=False)
@@ -739,8 +704,7 @@ def test_the_same_tree_with_regions_json_present_does_check_them(
 
 def test_version_unset_refuses_on_both_sides_reworded(tmp_path: pathlib.Path) -> None:
     """Exit code and the named variable agree; the wording does not, and is not
-    supposed to (the twin's carries bash's own `line 87:` prefix). This is the
-    ONLY path in the script where the bytes are allowed to differ, which is why
+    supposed to (the twin's carries bash's own `line 87:` prefix). This is the ONLY path in the script where the bytes are allowed to differ, which is why
     it is asserted narrowly here rather than through `assert_same`."""
     old, new = drive(tmp_path, env_extra={"VERSION": None})
     assert old.rc == 1
@@ -838,9 +802,7 @@ def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -
 
     That `sed` is invisible on every failing run and on every run against a
     non-Astro body; the only thing it changes is whether a HEALTHY deploy is
-    recognised. A port without it agrees with the twin on eight of the eleven
-    assertions and disagrees exactly where the twin's own header says the
-    subtlety lives.
+    recognised. A port without it agrees with the twin on eight of the eleven assertions and disagrees exactly where the twin's own header says the subtlety lives.
     """
     source = PORT_FILE.read_text(encoding="utf-8")
     anchor = 'comment = re.compile(r"<!--[^>]*-->")'
@@ -866,8 +828,7 @@ def test_a_port_that_forgot_the_cache_buster_is_caught_by_the_call_log(
     """The second control, aimed at the assertion nothing else covers.
 
     Dropping `?cb=` changes NO stdout byte and NO exit code on any fixture: the
-    fake answers the same either way. Only the recorded argv differs, which is
-    the whole reason the call log is compared.
+    fake answers the same either way. Only the recorded argv differs, which is the whole reason the call log is compared.
     """
     source = PORT_FILE.read_text(encoding="utf-8")
     anchor = 'about = probe("%s/about?cb=%s" % (EDGE, rnda), "410")'

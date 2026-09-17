@@ -1,8 +1,6 @@
 """`rediacc_ci.native` against the bash it replaced, and against the sequence it must keep.
 
-WHAT THESE CASES ARE FOR, since `.ci/scripts/quality/check_rdc_native.py` already drives
-the nine platform arms end to end in a subprocess. That gate proves the DELEGATION and the
-artefact names. These cases go at the parts a subprocess cannot reach cheaply:
+WHAT THESE CASES ARE FOR, since `.ci/scripts/quality/check_rdc_native.py` already drives the nine platform arms end to end in a subprocess. That gate proves the DELEGATION and the artefact names. These cases go at the parts a subprocess cannot reach cheaply:
 
   the seam        `plan()` is pure and total: every arm, every uname spelling, and both
                   refusal arms, without spawning an interpreter per row.
@@ -60,8 +58,7 @@ def test_plan_matches_the_deleted_bash(uname, want):
 def test_the_backup_name_is_what_the_cli_updater_looks_for():
     """`getOldBinaryPath()` in packages/cli/src/utils/platform.ts, and nothing else.
 
-    The windows arm is the whole case: `rdc.exe` must back up to `rdc.old.exe`, NOT to
-    `rdc.exe.old`. cleanupOldBinary() would silently leave the second one on disk forever.
+    The windows arm is the whole case: `rdc.exe` must back up to `rdc.old.exe`, NOT to `rdc.exe.old`. cleanupOldBinary() would silently leave the second one on disk forever.
     """
     assert native.plan(ROOT, HOME, "Linux", "x86_64").backup.endswith("/rdc.old")
     assert native.plan(ROOT, HOME, "Darwin", "arm64").backup.endswith("/rdc.old")
@@ -89,9 +86,7 @@ def test_an_unpinned_host_is_refused_by_name(system, machine, fragment):
 def test_the_seam_is_total_and_the_host_is_never_consulted(monkeypatch):
     """Passing both arguments must not read this machine's uname at all.
 
-    Without this, the gate's mac and win rows could be answered by the host's real Linux
-    uname and every one of them would still pass on a Linux box, which is the exact
-    vacuity the seam exists to remove.
+    Without this, the gate's mac and win rows could be answered by the host's real Linux uname and every one of them would still pass on a Linux box, which is the exact vacuity the seam exists to remove.
     """
     monkeypatch.setattr(native._host, "system", lambda: (_ for _ in ()).throw(AssertionError()))
     monkeypatch.setattr(native._host, "machine", lambda: (_ for _ in ()).throw(AssertionError()))
@@ -134,8 +129,7 @@ def test_system_without_print_plan_is_refused(tmp_path):
 def test_an_unknown_argument_is_refused_rather_than_ignored(tmp_path):
     """THE BEHAVIOUR CHANGE THIS PORT MADE, pinned so it is not quietly reverted.
 
-    `rdc.sh` did `shift` and never looked at `"$@"` again, so `./rdc.sh --native
-    --platform win` built for the local platform and said nothing about the flag.
+    `rdc.sh` did `shift` and never looked at `"$@"` again, so `./rdc.sh --native --platform win` built for the local platform and said nothing about the flag.
     """
     done = _run(["--platform", "win"], tmp_path)
     assert done.returncode == 2

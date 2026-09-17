@@ -3,17 +3,11 @@
 
 HOW THE TWO SIDES ARE POINTED AT A FIXTURE. Neither side takes a root override:
 the twin resolves `REPO_ROOT` from `${BASH_SOURCE[0]}` and the port from
-`__file__` (deliberately NOT `paths.repo_root()`, see the port's docstring), so
-BOTH are copied into the fixture root and run from there. That is also what the
-registered gate `.ci/scripts/test/proxies/proxy-ensure-nfpm.sh:13-21` does, and
+`__file__` (deliberately NOT `paths.repo_root()`, see the port's docstring), so BOTH are copied into the fixture root and run from there. That is also what the registered gate `.ci/scripts/test/proxies/proxy-ensure-nfpm.sh:13-21` does, and
 for the same reason it states: run in this checkout and the warm
-`.ci/cache/bin/nfpm` takes the early-exit branch, so the download and the
-checksum are never reached and the green proves only that a file existed.
+`.ci/cache/bin/nfpm` takes the early-exit branch, so the download and the checksum are never reached and the green proves only that a file existed.
 
-NOTHING IS NORMALIZED. Neither side emits a timestamp, a pid or a tempdir path:
-`curl -sfL` is silent, `sha256sum`'s `<file>: FAILED` line goes to the stdout the
-twin redirects to /dev/null, and the fixture's own absolute path appears
-identically on both sides. Byte comparison, both streams, separately.
+NOTHING IS NORMALIZED. Neither side emits a timestamp, a pid or a tempdir path: `curl -sfL` is silent, `sha256sum`'s `<file>: FAILED` line goes to the stdout the twin redirects to /dev/null, and the fixture's own absolute path appears identically on both sides. Byte comparison, both streams, separately.
 
 THE NETWORK IS NEVER TOUCHED, including by the real-tree case. `curl` is shimmed
 on PATH in every case here; the shim serves a locally built tarball or refuses.
@@ -176,12 +170,8 @@ def run_both(
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
     """The two sides, each from the SAME starting state.
 
-    The cache is snapshotted and restored between them, and that is not
-    housekeeping: the twin runs first and a successful cold-cache run LEAVES a
-    binary behind, so without the reset the port would take the warm-cache
-    branch and "agree" by printing the same directory for a completely
-    different reason. Caught by this file's own first run, which reported an
-    empty stderr against the twin's `fetching` line.
+    The cache is snapshotted and restored between them, and that is not housekeeping: the twin runs first and a successful cold-cache run LEAVES a binary behind, so without the reset the port would take the warm-cache branch and "agree" by printing the same directory for a completely different reason. Caught by this file's own first run, which reported an empty stderr against the
+    twin's `fetching` line.
     """
     cache = fixture / ".ci" / "cache"
     snapshot = fixture / ".cache-snapshot"
@@ -216,10 +206,7 @@ def assert_same(
 def test_real_tree_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None:
     """Both sides in THIS checkout, with a refusing `curl` so nothing downloads.
 
-    Whether the cache here is warm (both print the cache directory, exit 0) or
-    cold (both print the `fetching` line and exit 22 out of the shim), the two
-    sides must agree, and this is the only case that runs against the real
-    `.ci/config/constants.sh` in its real location.
+    Whether the cache here is warm (both print the cache directory, exit 0) or cold (both print the `fetching` line and exit 22 out of the shim), the two sides must agree, and this is the only case that runs against the real `.ci/config/constants.sh` in its real location.
     """
     shim = tmp_path / "bin"
     shim.mkdir(parents=True, exist_ok=True)
@@ -285,9 +272,7 @@ def test_a_failing_curl_exits_with_curls_own_status(tmp_path: pathlib.Path) -> N
 def test_a_checksum_mismatch_aborts_before_extracting(tmp_path: pathlib.Path) -> None:
     """The verification is `sha256sum -c`, and its stderr is the whole diagnostic.
 
-    `<file>: FAILED` goes to the stdout the twin sends to /dev/null (:70), so the
-    only visible line is coreutils' own WARNING. That is why the port calls
-    `sha256sum` rather than `hashlib`: the sentence is not this repo's to write.
+    `<file>: FAILED` goes to the stdout the twin sends to /dev/null (:70), so the only visible line is coreutils' own WARNING. That is why the port calls `sha256sum` rather than `hashlib`: the sentence is not this repo's to write.
     """
     fixture = build_fixture(tmp_path, curl=CURL_SERVE, pinned_sha="0" * 64)
     _make_payload(fixture / "payload.tar.gz", "9.9.9")
@@ -307,9 +292,7 @@ def test_an_unpinned_architecture_is_refused_through_a_path_shim(
 ) -> None:
     """This is the case that forces `uname -m` over `os.uname()` in the port.
 
-    `proxy-ensure-nfpm.sh:149-158` drives the refusal with a `uname` shim on
-    PATH. A port reading the raw syscall would ignore the shim, take the x86_64
-    arm, and try to download under the gate's own refusal case.
+    `proxy-ensure-nfpm.sh:149-158` drives the refusal with a `uname` shim on PATH. A port reading the raw syscall would ignore the shim, take the x86_64 arm, and try to download under the gate's own refusal case.
     """
     fixture = build_fixture(tmp_path, arch="riscv64")
     old, new = run_both(fixture)
@@ -338,12 +321,8 @@ def test_defect_1_a_warm_cache_is_never_checked_against_the_pin(
 ) -> None:
     """`ensure-nfpm.sh:42-45` asks the cached binary only whether it ANSWERS.
 
-    So a `.ci/cache/bin/nfpm` left from an older pin survives a bump in
-    `constants.sh` forever, and this measures it: the pin says 2.45.0, the cache
-    says 1.0.0-stale, and both sides exit 0 handing out the stale directory
-    without a single network call. Fixing this is outside the port's ownership
-    (it would change what two workflows and a registered gate do), so it is
-    reproduced and pinned here.
+    So a `.ci/cache/bin/nfpm` left from an older pin survives a bump in `constants.sh` forever, and this measures it: the pin says 2.45.0, the cache says 1.0.0-stale, and both sides exit 0 handing out the stale directory without a single network call. Fixing this is outside the port's ownership (it would change what two workflows and a registered gate do), so it is reproduced and
+    pinned here.
     """
     fixture = build_fixture(tmp_path, warm_version="1.0.0-stale", curl=CURL_REFUSE)
     old, new = run_both(fixture)
@@ -364,9 +343,7 @@ def test_defect_1_a_warm_cache_is_never_checked_against_the_pin(
 def test_defect_2_any_nfpm_on_path_wins_over_the_pin(tmp_path: pathlib.Path) -> None:
     """`ensure-nfpm.sh:38-41`, one rung earlier and with a wider door.
 
-    The registered gate strips nfpm from PATH before its own run
-    (`proxy-ensure-nfpm.sh:81-87`), which acknowledges the branch rather than
-    checking it.
+    The registered gate strips nfpm from PATH before its own run (`proxy-ensure-nfpm.sh:81-87`), which acknowledges the branch rather than checking it.
     """
     fixture = build_fixture(tmp_path, on_path_version="0.1.0-wrong", curl=CURL_REFUSE)
     old, new = run_both(fixture)
@@ -382,9 +359,7 @@ def test_defect_2_any_nfpm_on_path_wins_over_the_pin(tmp_path: pathlib.Path) -> 
 def test_a_missing_toolchain_env_is_constants_shs_own_refusal(tmp_path: pathlib.Path) -> None:
     """`constants.sh:30-31` prints and `return 1`s; the twin's `set -e` carries it.
 
-    The port reproduces it by SOURCING the same file in a bash child with both
-    streams inherited, which is why the message arrives on stderr identically
-    rather than being re-worded in Python.
+    The port reproduces it by SOURCING the same file in a bash child with both streams inherited, which is why the message arrives on stderr identically rather than being re-worded in Python.
     """
     fixture = build_fixture(tmp_path, drop_toolchain_env=True)
     old, new = run_both(fixture)
@@ -397,11 +372,7 @@ def test_a_missing_toolchain_env_is_constants_shs_own_refusal(tmp_path: pathlib.
 def test_unpinned_version_exits_1_without_forging_bash_text(tmp_path: pathlib.Path) -> None:
     """THE ONE NAMED DIVERGENCE, and both halves of it are asserted here.
 
-    With `NFPM_VERSION` gone, the twin dies at `:54` under `set -u` with bash's
-    own `line NN: NFPM_VERSION: unbound variable` -- an interpreter diagnostic
-    carrying a path and a line number, which a second language cannot produce
-    and `scripts/lib/shadow-gate.ts` files as CHATTER on both sides. The port
-    matches the exit code and the empty stdout and does NOT forge the sentence.
+    With `NFPM_VERSION` gone, the twin dies at `:54` under `set -u` with bash's own `line NN: NFPM_VERSION: unbound variable` -- an interpreter diagnostic carrying a path and a line number, which a second language cannot produce and `scripts/lib/shadow-gate.ts` files as CHATTER on both sides. The port matches the exit code and the empty stdout and does NOT forge the sentence.
     """
     fixture = build_fixture(tmp_path, drop_version_pin=True)
     old, new = run_both(fixture)
@@ -421,13 +392,9 @@ def test_a_planted_fix_of_defect_1_is_caught_by_the_differential(
 ) -> None:
     """Plant the "obvious improvement" and watch the differential go red.
 
-    The plant makes the warm-cache branch compare the cached binary's version
-    against the pin -- which is the RIGHT behaviour and the WRONG port, because
-    the twin does not do it. If this ever passes, the differential above has
-    stopped comparing anything.
+    The plant makes the warm-cache branch compare the cached binary's version against the pin -- which is the RIGHT behaviour and the WRONG port, because the twin does not do it. If this ever passes, the differential above has stopped comparing anything.
 
-    The real file is hashed before and after: the mutation lives in the fixture
-    copy only.
+    The real file is hashed before and after: the mutation lives in the fixture copy only.
     """
     before = hashlib.sha256(PORT.read_bytes()).hexdigest()
     source = PORT.read_text(encoding="utf-8")

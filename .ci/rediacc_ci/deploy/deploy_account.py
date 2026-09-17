@@ -3,21 +3,12 @@
 
 Deploys ONE region of the account Worker to Cloudflare: apply the D1 migrations
 for that region's database, then `wrangler deploy` against that region's config.
-Region and target select a wrangler config file by NAME
-(`wrangler.<region>.toml`, or `wrangler.edge-<region>.toml` when
-`--target edge`), and everything else the deploy needs -- the D1 database, the
-R2 bucket, the routes -- lives inside that file rather than in this script.
+Region and target select a wrangler config file by NAME (`wrangler.<region>.toml`, or `wrangler.edge-<region>.toml` when `--target edge`), and everything else the deploy needs -- the D1 database, the R2 bucket, the routes -- lives inside that file rather than in this script.
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (and `npm`, on the install
-branch) are the only external tools, so the differential
-(`.ci/rediacc_ci/tests/test_deploy_deploy_account.py`) puts RECORDING FAKES for
-both on a scratch PATH and points both sides at a fixture repo root.
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one
-real run" clause and says in as many words that the mocked parity ledger is a
-separate, achievable piece of work. This is that piece.
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (and `npm`, on the install branch) are the only external tools, so the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_account.py`) puts RECORDING FAKES for both on a scratch PATH and points both sides at a fixture repo root. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and
+says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE DATABASE NAME IS READ WITH grep/head/sed, NOT WITH A TOML PARSER, and that
-is a reproduction rather than a preference. The twin's line 50 is
+THE DATABASE NAME IS READ WITH grep/head/sed, NOT WITH A TOML PARSER, and that is a reproduction rather than a preference. The twin's line 50 is
 
     DB_NAME=$(grep 'database_name' "$CONFIG" | head -1 | sed 's/.*= *"\\(.*\\)"/\\1/' || true)
 
@@ -30,16 +21,11 @@ and every one of those three stages leaks into what gets migrated:
     passed through UNCHANGED, so the "could not read" guard below never fires
     and the whole line becomes the database name.
 
-Two of those are defects (see the two constants near the bottom of this
-docstring's section, `A_COMMENT_BECOMES_THE_DATABASE_NAME` and
-`THE_LAST_QUOTE_WINS`), both driven against the real twin and pinned in the
-differential in both directions. A `tomllib.load` port would produce a
-DIFFERENT database name on those inputs, which is exactly the thing a port may
-not do. So the pipeline is shelled out to the same three binaries.
+Two of those are defects (see the two constants near the bottom of this docstring's section, `A_COMMENT_BECOMES_THE_DATABASE_NAME` and `THE_LAST_QUOTE_WINS`), both driven against the real twin and pinned in the differential in both directions. A `tomllib.load` port would produce a DIFFERENT database name on those inputs, which is exactly the thing a port may not do. So the pipeline
+is shelled out to the same three binaries.
 
 TWO DIVERGENCES IN TEXT NOBODY PARSES, both the standard `${VAR:?msg}` shape
-this campaign has ruled on before (`deploy/set_www_worker_secrets.py`,
-`deploy/wait_for_preview_worker.py`, `deploy/delete_r2_channel.py`):
+this campaign has ruled on before (`deploy/set_www_worker_secrets.py`, `deploy/wait_for_preview_worker.py`, `deploy/delete_r2_channel.py`):
 
   1. `REGION="${ARG_REGION:?--region is required (eu, us)}"` (:21) is bash's own
      refusal and prints the SCRIPT PATH AS INVOKED and a bash LINE NUMBER:
@@ -112,9 +98,7 @@ THE_LAST_QUOTE_WINS = True
 def config_name(region: str, target: str) -> str:
     """`wrangler.edge-<region>.toml` or `wrangler.<region>.toml` (:24-29).
 
-    The comparison is against the literal `edge` and nothing else, so every
-    other target string -- including `Edge`, `edge ` and a typo -- selects the
-    PRODUCTION config. That is the twin's behaviour and it is not guarded there.
+    The comparison is against the literal `edge` and nothing else, so every other target string -- including `Edge`, `edge ` and a typo -- selects the PRODUCTION config. That is the twin's behaviour and it is not guarded there.
     """
     if target == EDGE_TARGET:
         return "wrangler.edge-%s.toml" % region
@@ -124,14 +108,9 @@ def config_name(region: str, target: str) -> str:
 def strip_newlines(token: str) -> str:
     """`printf '%s' "$TOKEN" | tr -d '\\r\\n'` (:41).
 
-    NOT shelled out, unlike the database-name pipeline, and the reason is that
-    this one is provably the same: `tr -d` deletes BYTES, and in UTF-8 the bytes
-    0x0D and 0x0A cannot appear inside a multi-byte sequence, so deleting the
-    two characters and deleting the two bytes agree for every input.
+    NOT shelled out, unlike the database-name pipeline, and the reason is that this one is provably the same: `tr -d` deletes BYTES, and in UTF-8 the bytes 0x0D and 0x0A cannot appear inside a multi-byte sequence, so deleting the two characters and deleting the two bytes agree for every input.
 
-    WHAT IT DOES NOT DO, and the twin does not either: an ACCOUNT ID carrying a
-    stray carriage return is passed through untouched, because only the token is
-    cleaned. Named in the differential rather than fixed.
+    WHAT IT DOES NOT DO, and the twin does not either: an ACCOUNT ID carrying a stray carriage return is passed through untouched, because only the token is cleaned. Named in the differential rather than fixed.
     """
     return token.replace("\r", "").replace("\n", "")
 
@@ -139,14 +118,9 @@ def strip_newlines(token: str) -> str:
 def needs_npm_install(worker_dir: pathlib.Path, env: dict[str, str]) -> bool:
     """`if ! command -v wrangler &>/dev/null && [[ ! -d "node_modules" ]]` (:45).
 
-    BOTH conditions, and the `!` binds to the `command -v` pipeline alone: an
-    install happens only when wrangler is absent from PATH AND the worker
-    directory has no `node_modules`. A machine with a global wrangler and no
-    local install therefore skips it, which is the CD workflow's own case.
+    BOTH conditions, and the `!` binds to the `command -v` pipeline alone: an install happens only when wrangler is absent from PATH AND the worker directory has no `node_modules`. A machine with a global wrangler and no local install therefore skips it, which is the CD workflow's own case.
 
-    `node_modules` is a RELATIVE path in the twin, tested after the `cd`, so it
-    is the worker directory's -- passed explicitly here rather than depending on
-    the process cwd.
+    `node_modules` is a RELATIVE path in the twin, tested after the `cd`, so it is the worker directory's -- passed explicitly here rather than depending on the process cwd.
     """
     if shutil.which("wrangler", path=env.get("PATH")) is not None:
         return False
@@ -156,18 +130,12 @@ def needs_npm_install(worker_dir: pathlib.Path, env: dict[str, str]) -> bool:
 def database_name(config: str) -> str:
     """`grep ... | head -1 | sed ...`, run as the same three binaries (:50).
 
-    STDERR IS INHERITED on all three, as the twin leaves it: a grep that cannot
-    open the file has already been ruled out by the `-f` check above, but a
-    read error mid-file is the only trace anyone would get.
+    STDERR IS INHERITED on all three, as the twin leaves it: a grep that cannot open the file has already been ruled out by the `-f` check above, but a read error mid-file is the only trace anyone would get.
 
-    `|| true` MAKES THE PIPELINE'S STATUS UNOBSERVABLE, including grep's 1 for
-    "no match" and the 141 a SIGPIPE from `head` leaves on a long file. Nothing
+    `|| true` MAKES THE PIPELINE'S STATUS UNOBSERVABLE, including grep's 1 for "no match" and the 141 a SIGPIPE from `head` leaves on a long file. Nothing
     is checked here either; the empty result is what the caller tests.
 
-    Bytes are decoded with `surrogateescape` so a config that is not valid UTF-8
-    reaches `wrangler` as the same bytes bash would have handed it. The one spot
-    where the two still differ is a diagnostic: Python renders an unpaired
-    surrogate on stderr as a backslash escape.
+    Bytes are decoded with `surrogateescape` so a config that is not valid UTF-8 reaches `wrangler` as the same bytes bash would have handed it. The one spot where the two still differ is a diagnostic: Python renders an unpaired surrogate on stderr as a backslash escape.
     """
     grep = subprocess.Popen(["grep", DB_NAME_NEEDLE, config], stdout=subprocess.PIPE)
     head = subprocess.Popen(["head", "-1"], stdin=grep.stdout, stdout=subprocess.PIPE)
@@ -197,8 +165,7 @@ def deploy_argv(config: str) -> list[str]:
 def _run(argv: list[str]) -> int:
     """One child with BOTH streams inherited, as the twin leaves them.
 
-    wrangler's own output is the entire visible result of a good run, and
-    capturing it would move it out of the workflow log.
+    wrangler's own output is the entire visible result of a good run, and capturing it would move it out of the workflow log.
     """
     return subprocess.run(argv, check=False).returncode
 

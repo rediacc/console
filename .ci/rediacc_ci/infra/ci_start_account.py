@@ -1,57 +1,36 @@
 """Port of `.ci/scripts/infra/ci-start-account.sh` (157 lines).
 
-Validates the three account-server secrets, sources the CI environment, writes
-`.ci/docker/ci/.env`, brings up the `account-server` compose service, waits for
-its health status, and re-checks that it is not in a restart loop.
+Validates the three account-server secrets, sources the CI environment, writes `.ci/docker/ci/.env`, brings up the `account-server` compose service, waits for its health status, and re-checks that it is not in a restart loop.
 
 LIVE CALLER OF THE TWIN, not repointed by this port:
   * `.github/workflows/ci.yml:740` -- `run: bash .ci/scripts/infra/ci-start-account.sh`
 
-WHAT MOVES AND WHAT DOES NOT. `.ci/scripts/infra/ci-env.sh` is SOURCED, not
-executed, and stays bash: `source_ci_env` (imported from the sibling elite port
-would create a package import in a file that must run standalone from a fixture,
-so it is duplicated deliberately -- see PORT NOTES) runs the real file under a
-real bash and imports its exported environment. Every `docker` call is shelled
-out to argument for argument.
+WHAT MOVES AND WHAT DOES NOT. `.ci/scripts/infra/ci-env.sh` is SOURCED, not executed, and stays bash: `source_ci_env` (imported from the sibling elite port would create a package import in a file that must run standalone from a fixture, so it is duplicated deliberately -- see PORT NOTES) runs the real file under a real bash and imports its exported environment. Every `docker` call
+is shelled out to argument for argument.
 
 PORT NOTES, each driven before it was written down.
 
-`source_ci_env` IS DUPLICATED FROM `ci_start_elite.py` ON PURPOSE. Both modules
-are executed as plain scripts from a fixture tree that holds only the two
-subjects (`python3 .ci/rediacc_ci/infra/ci_start_account.py`), with no
+`source_ci_env` IS DUPLICATED FROM `ci_start_elite.py` ON PURPOSE. Both modules are executed as plain scripts from a fixture tree that holds only the two subjects (`python3 .ci/rediacc_ci/infra/ci_start_account.py`), with no
 `rediacc_ci` package on `sys.path`; an import between them would make the
-differential's fixture a package problem instead of a behaviour comparison. The
-twin has the same duplication in the other direction -- both bash scripts
-`source` the same file rather than sharing a function.
+differential's fixture a package problem instead of a behaviour comparison. The twin has the same duplication in the other direction -- both bash scripts `source` the same file rather than sharing a function.
 
-THE THREE SECRET GUARDS RUN BEFORE ANYTHING ELSE AND BEFORE THE SOURCE (:29-43),
-which is why the port cannot hoist the `source` for convenience: on a host with
-no secrets the twin prints two lines and exits 1 having generated no keys,
-written no `.env` and started no container.
+THE THREE SECRET GUARDS RUN BEFORE ANYTHING ELSE AND BEFORE THE SOURCE (:29-43), which is why the port cannot hoist the `source` for convenience: on a host with no secrets the twin prints two lines and exits 1 having generated no keys, written no `.env` and started no container.
 
-CI-ENV.SH OVERWRITES THE PRODUCTION KEYS AND THE TWIN PUTS THEM BACK. ci-env.sh
-generates a throwaway Ed25519 pair (:51-62) only when `ACCOUNT_ED25519_PRIVATE_KEY`
-is empty -- which it never is here, since :29 already refused that case -- but
+CI-ENV.SH OVERWRITES THE PRODUCTION KEYS AND THE TWIN PUTS THEM BACK. ci-env.sh generates a throwaway Ed25519 pair (:51-62) only when `ACCOUNT_ED25519_PRIVATE_KEY` is empty -- which it never is here, since :29 already refused that case -- but
 it unconditionally re-exports `ACCOUNT_SERVER_API_KEY` (:83) from `${VAR:-...}`,
-so the value survives. The save/restore on :47-49 and :61-63 is therefore
-belt-and-braces in the current ci-env.sh and is reproduced exactly rather than
+so the value survives. The save/restore on :47-49 and :61-63 is therefore belt-and-braces in the current ci-env.sh and is reproduced exactly rather than
 reasoned away: a future ci-env.sh that stops honouring `${VAR:-}` would break
 the twin and the port identically.
 
 `CI_DOCKER_DIR` IS READ BACK FROM THE SOURCED ENVIRONMENT, not recomputed. The
 twin sets it on :22 and ci-env.sh then `export`s its own on :122; the twin's
-`.env` write on :78 uses whichever value is live after the source, which is
-ci-env.sh's. Both derive from the same `SCRIPT_DIR/../../..`, so they agree
+`.env` write on :78 uses whichever value is live after the source, which is ci-env.sh's. Both derive from the same `SCRIPT_DIR/../../..`, so they agree
 today; taking the sourced one keeps them agreeing if that ever stops being true.
 
 `grep -q "healthy"` MATCHES `unhealthy`, AND THIS PORT REPRODUCES THE MATCH.
 :106 pipes `docker inspect --format='{{.State.Health.Status}}'` into
-`grep -q "healthy"`, which is a SUBSTRING test: `echo unhealthy | grep -q
-healthy` succeeds (driven). A container docker has marked UNHEALTHY is therefore
-announced as "Account server is healthy" and the job proceeds. Whether that is
-reachable today is an arithmetic question about the compose file and about how
-long a `docker inspect` takes, not about this script. The measurement lives in
-`test_infra_ci_start_account.py::test_unhealthy_is_read_as_healthy`: the last
+`grep -q "healthy"`, which is a SUBSTRING test: `echo unhealthy | grep -q healthy` succeeds (driven). A container docker has marked UNHEALTHY is therefore announced as "Account server is healthy" and the job proceeds. Whether that is reachable today is an arithmetic question about the compose file and about how long a `docker inspect` takes, not about this script. The measurement
+lives in `test_infra_ci_start_account.py::test_unhealthy_is_read_as_healthy`: the last
 probe lands around t=191s on this host against an earliest-`unhealthy` of about
 t=200s, a nine-second margin a slower daemon erases. Fixing it is a change to a
 live CI step's pass/fail behaviour and is out of this port's file ownership; it
@@ -59,27 +38,17 @@ is pinned here, not silently corrected.
 
 THE PROGRESS LINE FIRES ON MULTIPLES OF 15 ONLY (:118). With `interval=3` that
 is every fifth iteration. `((elapsed % 15 == 0))` returns exit status 1 when the
-expression is zero, which under `set -e` would abort -- except that it is the
-condition of an `if`, which `set -e` exempts. Reproduced as a plain modulo test.
+expression is zero, which under `set -e` would abort -- except that it is the condition of an `if`, which `set -e` exempts. Reproduced as a plain modulo test.
 
-`docker compose ... logs account-server` FAILING ON THE FAILURE PATH SUPPRESSES
-THE `exit 1`. :128-132 is the command following the final `||`, so `set -e` is
-not relaxed inside it. Driven:
+`docker compose ... logs account-server` FAILING ON THE FAILURE PATH SUPPRESSES THE `exit 1`. :128-132 is the command following the final `||`, so `set -e` is not relaxed inside it. Driven:
 `bash -c 'set -e; f(){ return 1; }; f || { ./nope.sh; exit 1; }'` exits 127.
 Reproduced -- `main` returns the logs command's rc when it is non-zero.
 
-`\t` INSIDE THE TWIN'S DOUBLE QUOTES IS A LITERAL BACKSLASH-T, NOT A TAB, and
-this port had it wrong until the differential's argv record caught it. Bash does
-not process `\t` inside `"..."`, so `docker ps --format "table
+`\t` INSIDE THE TWIN'S DOUBLE QUOTES IS A LITERAL BACKSLASH-T, NOT A TAB, and this port had it wrong until the differential's argv record caught it. Bash does not process `\t` inside `"..."`, so `docker ps --format "table
 {{.Names}}\t{{.Status}}\t{{.Ports}}"` passes docker a format string containing
-two backslash-t sequences, which docker's own `table` directive then expands.
-A Python `"\t"` would have handed docker a real tab and quietly changed the
-column layout of a diagnostic nobody reads closely. The argument is a raw
-string here for that reason.
+two backslash-t sequences, which docker's own `table` directive then expands. A Python `"\t"` would have handed docker a real tab and quietly changed the column layout of a diagnostic nobody reads closely. The argument is a raw string here for that reason.
 
-THE HEALTH POLL IS A BUDGET, NOT A DEADLINE. Same arithmetic as the twin: 180s
-divided by a 3s interval is 60 probes, and the wall time the probes themselves
-consume is not counted against the budget.
+THE HEALTH POLL IS A BUDGET, NOT A DEADLINE. Same arithmetic as the twin: 180s divided by a 3s interval is 60 probes, and the wall time the probes themselves consume is not counted against the budget.
 
 Exit: 0 when the account server came up and is still running; the twin's own
 non-zero status otherwise.
@@ -119,8 +88,7 @@ def _console_root() -> pathlib.Path:
 def source_ci_env(ci_env_sh: pathlib.Path) -> tuple[int, dict[str, str]]:
     """Run the real bash `ci-env.sh` and return `(rc, exported environment)`.
 
-    stdout and stderr are INHERITED so ci-env.sh's `::add-mask::` directives and
-    its three-line summary land on this process's real streams in order.
+    stdout and stderr are INHERITED so ci-env.sh's `::add-mask::` directives and its three-line summary land on this process's real streams in order.
     """
     with tempfile.TemporaryDirectory() as td:
         dump = pathlib.Path(td) / "env.0"
@@ -157,8 +125,7 @@ def env_file_body(env: dict[str, str]) -> str:
     """The exact 8 lines the twin's `{ ... } >"$CI_DOCKER_DIR/.env"` writes (:69-78).
 
     Four of the seven values use `${VAR:-}` in the twin and three do not; with
-    `set -e` and no `set -u` both spellings yield the empty string for an unset
-    name, so the distinction is cosmetic and `dict.get(..., "")` covers both.
+    `set -e` and no `set -u` both spellings yield the empty string for an unset name, so the distinction is cosmetic and `dict.get(..., "")` covers both.
     """
     return "".join(
         "%s\n" % line
@@ -179,8 +146,7 @@ def _docker(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[st
     """`docker <args>`, treating a missing binary as bash's 127 rather than raising.
 
     The twin never probes for the binary; a missing one just makes every call
-    fail with bash's own "command not found", caught by the same guards that
-    catch a real failure.
+    fail with bash's own "command not found", caught by the same guards that catch a real failure.
     """
     try:
         return subprocess.run(["docker", *args], check=False, **kwargs)  # type: ignore[arg-type]
@@ -206,9 +172,7 @@ def _load_diagnostic() -> str:
 def health_status_says_healthy(inspect_stdout: str) -> bool:
     """`grep -q "healthy"` over `docker inspect --format='{{.State.Health.Status}}'`.
 
-    SUBSTRING, NOT EQUALITY, and deliberately so: this is the twin's behaviour.
-    `"unhealthy"` contains `"healthy"` and therefore returns True here, exactly
-    as it does in bash. See the module docstring.
+    SUBSTRING, NOT EQUALITY, and deliberately so: this is the twin's behaviour. `"unhealthy"` contains `"healthy"` and therefore returns True here, exactly as it does in bash. See the module docstring.
     """
     return any("healthy" in line for line in inspect_stdout.splitlines())
 

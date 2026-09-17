@@ -1,55 +1,27 @@
 """Port of `.ci/scripts/test/gates/test-trap-registry.sh`.
 
-Behavioural test for `.ci/scripts/quality/check-trap-registry.sh`, and for the
-corpus parser it shares with the Stop hook (`.claude/hooks/stop/wl_store.py`).
+Behavioural test for `.ci/scripts/quality/check-trap-registry.sh`, and for the corpus parser it shares with the Stop hook (`.claude/hooks/stop/wl_store.py`).
 
-WHAT IT GUARDS. `docs/agent-reference/TRAPS.md` is a REGISTRY, not prose: every
-`## ` entry names the instrument that enforces it, and the gate proves that
-pointer RESOLVES (F4) and is LIVE (F5). Presence alone would be worse than
-nothing, because the cheapest thing to name under a coverage gate is a check that
-cannot fire, and a gate demanding a name manufactures those at one per trap while
-reporting full coverage.
+WHAT IT GUARDS. `docs/agent-reference/TRAPS.md` is a REGISTRY, not prose: every `## ` entry names the instrument that enforces it, and the gate proves that pointer RESOLVES (F4) and is LIVE (F5). Presence alone would be worse than nothing, because the cheapest thing to name under a coverage gate is a check that cannot fire, and a gate demanding a name manufactures those at one per
+trap while reporting full coverage.
 
-THE SUBJECT IS CONTROL-FIRST, so the thing most worth testing is that its own
-controls are not decorative. It plants every one of its assertions against a
-fixture, requires each to red WITH THE MATCHING MESSAGE, requires two clean
-fixtures to stay green, and refuses to judge the real tree if any of them
-misbehaves. Two of those controls found real bugs in the gate while it was being
-written (an empty `Residue` collapsing because TAB is IFS whitespace in bash, and
-a manifest block scan that could not see a single-line entry), which is the
-argument for keeping them in front of every run rather than behind a flag.
+THE SUBJECT IS CONTROL-FIRST, so the thing most worth testing is that its own controls are not decorative. It plants every one of its assertions against a fixture, requires each to red WITH THE MATCHING MESSAGE, requires two clean fixtures to stay green, and refuses to judge the real tree if any of them misbehaves. Two of those controls found real bugs in the gate while it was
+being written (an empty `Residue` collapsing because TAB is IFS whitespace in bash, and a manifest block scan that could not see a single-line entry), which is the argument for keeping them in front of every run rather than behind a flag.
 
-THE PLANTS BELOW GO INTO A COPY OF THE REAL CORPUS, never the tracked file. A
-killed test must not strand a mutated TRAPS.md in a shared checkout, and this tree
-routinely holds other sessions' uncommitted work.
+THE PLANTS BELOW GO INTO A COPY OF THE REAL CORPUS, never the tracked file. A killed test must not strand a mutated TRAPS.md in a shared checkout, and this tree routinely holds other sessions' uncommitted work.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_real_tree_is_green_and_the_controls_fired`
-runs the subject seam-free, and every `--scan-only` case leaves the manifest, the
-dispatcher, the hook suite and `.claude/settings.json` REAL so a planted corpus is
-judged against live resolution sources. A battery step rewriting any of those
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_real_tree_is_green_and_the_controls_fired` runs the subject seam-free, and every `--scan-only` case leaves the manifest, the dispatcher, the hook suite and `.claude/settings.json` REAL so a planted corpus is judged against live resolution sources. A battery step rewriting any of those
 mid-scan is a divergence that would be blamed on this port. `REAL_TREE_TWIN = True`
 buys the serialisation, and it is honoured only because this module declares no
 `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
-NO `TWIN_TIMEOUT` DECLARED. Measured 2026-09-08: the twin takes 63s and this
-module takes comparable time, both far inside the 600s default. A declared
-timeout that nothing needs is a number that will be believed later.
+NO `TWIN_TIMEOUT` DECLARED. Measured 2026-09-08: the twin takes 63s and this module takes comparable time, both far inside the 600s default. A declared timeout that nothing needs is a number that will be believed later.
 
-TRAP_FLOOR IS READ, NEVER TYPED. The subject prints `N entries (floor F)` and the
-added shape case parses BOTH out of that one line. A copy of the floor here would
-be a third place it lives (it is already in `check-trap-registry.sh` and
-`.ci/rediacc_ci/quality/trap_registry.py`, whose agreement
-`.ci/rediacc_ci/tests/test_quality_trap_registry.py` asserts), and a third copy is
-the one that goes stale.
+TRAP_FLOOR IS READ, NEVER TYPED. The subject prints `N entries (floor F)` and the added shape case parses BOTH out of that one line. A copy of the floor here would be a third place it lives (it is already in `check-trap-registry.sh` and `.ci/rediacc_ci/quality/trap_registry.py`, whose agreement `.ci/rediacc_ci/tests/test_quality_trap_registry.py` asserts), and a third copy is the
+one that goes stale.
 
-TWO TWIN CASES ARE REWRITTEN RATHER THAN LIFTED, and both go the same way. The
-twin's two `wl_store` cases run a python heredoc that prints `PASS `/`FAIL ` lines
-and then asserts the merged text contains no `FAIL`. This port runs the same
-functions in the same nested interpreter and prints their RESULTS as JSON, so each
-of the twin's seven checks becomes an assertion with its own message. The
-difference matters: `assert_not_contains(out, "FAIL")` is also satisfied by an
-interpreter that printed nothing at all, so the port asserts the subprocess's exit
-code first and then compares values.
+TWO TWIN CASES ARE REWRITTEN RATHER THAN LIFTED, and both go the same way. The twin's two `wl_store` cases run a python heredoc that prints `PASS `/`FAIL ` lines and then asserts the merged text contains no `FAIL`. This port runs the same functions in the same nested interpreter and prints their RESULTS as JSON, so each of the twin's seven checks becomes an assertion with its own
+message. The difference matters: `assert_not_contains(out, "FAIL")` is also satisfied by an interpreter that printed nothing at all, so the port asserts the subprocess's exit code first and then compares values.
 """
 
 import json
@@ -80,10 +52,7 @@ GATE_TIMEOUT = 300
 def require_gate(gate) -> str:
     """The subject and its corpus, proved present before anything is claimed.
 
-    The twin asserts `-x` on the gate rather than `-f`, and that is the stronger
-    claim: a subject that lost its executable bit still reads fine and still runs
-    under an explicit `bash`, so a port checking only existence would pass a state
-    the twin refuses.
+    The twin asserts `-x` on the gate rather than `-f`, and that is the stronger claim: a subject that lost its executable bit still reads fine and still runs under an explicit `bash`, so a port checking only existence would pass a state the twin refuses.
     """
     if not GATE.is_file():
         gate.log_fail("gate not found: %s" % GATE_REL)
@@ -97,10 +66,7 @@ def require_gate(gate) -> str:
 def corpus_text(gate) -> str:
     """The real corpus, with ANTI-VACUITY on the read itself.
 
-    Every plant below is a transformation of this text, and a transformation of an
-    empty string produces a fixture that is also empty -- which the subject would
-    red on for the WRONG reason (the population floor), while each case's
-    message-matching assertion quietly failed to be about anything.
+    Every plant below is a transformation of this text, and a transformation of an empty string produces a fixture that is also empty -- which the subject would red on for the WRONG reason (the population floor), while each case's message-matching assertion quietly failed to be about anything.
     """
     require_gate(gate)
     text = CORPUS.read_text(encoding="utf-8")
@@ -115,8 +81,7 @@ def corpus_text(gate) -> str:
 def scan_corpus(gate, path) -> harness.RunResult:
     """`scan_corpus` from the twin: one corpus, every OTHER source left real.
 
-    `--scan-only` skips the subject's own control suite, which is what makes a
-    per-case scan affordable. Pointers still resolve against the live manifest,
+    `--scan-only` skips the subject's own control suite, which is what makes a per-case scan affordable. Pointers still resolve against the live manifest,
     package.json, dispatcher, hook suite and settings, so a plant is judged against
     the tree as it actually is.
     """
@@ -132,11 +97,9 @@ def scan_corpus(gate, path) -> harness.RunResult:
 def plant(gate, destination, transform) -> None:
     """Write `transform(real corpus)` to `destination`, refusing a no-op.
 
-    THE CONTROL ON THE CONTROL, and the twin has it for a reason: a plant that did
-    not land leaves an unmodified corpus, the gate correctly stays green, and the
+    THE CONTROL ON THE CONTROL, and the twin has it for a reason: a plant that did not land leaves an unmodified corpus, the gate correctly stays green, and the
     case reads as "the gate failed to catch it". `cmp -s` in the twin; a text
-    comparison here. Either way the message says the PLANT did not land, so the
-    reader looks at the anchor rather than at the subject.
+    comparison here. Either way the message says the PLANT did not land, so the reader looks at the anchor rather than at the subject.
     """
     original = corpus_text(gate)
     mutated = transform(original)
@@ -148,16 +111,9 @@ def plant(gate, destination, transform) -> None:
 def run_stop_hook_probe(gate, code: str, *args: str) -> dict:
     """Run `code` in a nested python3 with the Stop hook directory importable.
 
-    The twin's shape exactly -- `python3 - "$STOP_DIR" "$d"` from the repo root --
-    and a nested interpreter rather than an in-process import on purpose:
-    `wl_store` is the live Stop hook's module, and importing it into the pytest
-    process would put its module-level state beside every other test in the
-    session for the rest of the run.
+    The twin's shape exactly -- `python3 - "$STOP_DIR" "$d"` from the repo root -- and a nested interpreter rather than an in-process import on purpose: `wl_store` is the live Stop hook's module, and importing it into the pytest process would put its module-level state beside every other test in the session for the rest of the run.
 
-    THE EXIT CODE IS ASSERTED BEFORE THE OUTPUT IS READ. The twin's
-    `assert_not_contains "$out" "FAIL"` is also satisfied by an interpreter that
-    died before printing anything, and a crash that reads as a pass is the shape
-    this directory exists to refuse.
+    THE EXIT CODE IS ASSERTED BEFORE THE OUTPUT IS READ. The twin's `assert_not_contains "$out" "FAIL"` is also satisfied by an interpreter that died before printing anything, and a crash that reads as a pass is the shape this directory exists to refuse.
     """
     python3 = harness.require_tool(
         "python3", "install python3; the Stop hook's parser IS a python module"
@@ -218,10 +174,7 @@ print(json.dumps({"got": S.trap_prompt_lines(sys.argv[2] + "/filter")}))
 def test_real_tree_is_green_and_the_controls_fired(gate):
     """Seam-free: the real invocation, real corpus, real everything.
 
-    The three message assertions are the point. "the tree is clean" from a gate
-    whose own controls silently stopped firing is exactly the green this estate
-    refuses, so the verdict must state that the planted defects went red, that the
-    clean fixtures stayed green, and what the population actually was.
+    The three message assertions are the point. "the tree is clean" from a gate whose own controls silently stopped firing is exactly the green this estate refuses, so the verdict must state that the planted defects went red, that the clean fixtures stayed green, and what the population actually was.
     """
     bash = require_gate(gate)
     result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root(), timeout=GATE_TIMEOUT)
@@ -251,9 +204,7 @@ def test_real_tree_is_green_and_the_controls_fired(gate):
 def _drop_lines(text: str, exact: str) -> str:
     """The twin's `sed '/^<exact>$/d'`: drop every line EQUAL to `exact`.
 
-    A whole-line match, not a substring one. `Trap-Id: x` is a prefix of
-    `Trap-Id: x-and-more`, so a substring delete could take a second entry's
-    identity with it and the case would red for a reason it never claimed.
+    A whole-line match, not a substring one. `Trap-Id: x` is a prefix of `Trap-Id: x-and-more`, so a substring delete could take a second entry's identity with it and the case would red for a reason it never claimed.
     """
     lines = text.split("\n")
     return "\n".join(line for line in lines if line != exact)
@@ -301,9 +252,7 @@ def test_a_dangling_gate_pointer_is_caught(gate):
 def test_a_scheduled_but_unrun_gate_is_caught(gate):
     """F5: the pointer must be LIVE.
 
-    `build:packages` is a REAL manifest entry that is deliberately `gate: false` --
-    a prerequisite node that validates nothing. Naming it would be the cheapest way
-    to look covered, which is exactly what F5 exists to refuse.
+    `build:packages` is a REAL manifest entry that is deliberately `gate: false` -- a prerequisite node that validates nothing. Naming it would be the cheapest way to look covered, which is exactly what F5 exists to refuse.
     """
     with harness.temp_dir() as d:
         plant(
@@ -342,8 +291,7 @@ def _drop_entry(text: str, marker: str) -> str:
 
 def test_a_deleted_entry_is_caught(gate):
     """F1: the population floor. A corpus that is emptied, truncated or relocated
-    reds instead of passing vacuously -- which is the only signal an unratcheted
-    floor ever gives, and the reason the subject's own comment records the two
+    reds instead of passing vacuously -- which is the only signal an unratcheted floor ever gives, and the reason the subject's own comment records the two
     occasions it was left behind."""
     with harness.temp_dir() as d:
         plant(gate, d / "p.md", lambda text: _drop_entry(text, "git branch --merged"))
@@ -473,17 +421,11 @@ def test_the_real_corpus_is_over_its_own_floor(gate):
     """ADDED BY THE PORT: read the SHAPE out of the real verdict, do not just look
     for the words.
 
-    `test_real_tree_is_green_and_the_controls_fired` asserts the substring
-    `entries (floor`, which a gate printing `0 entries (floor 0)` would satisfy. The
-    numbers are parsed here instead, and both are DERIVED from the subject's own
-    output rather than typed: `TRAP_FLOOR` already lives in two files whose
-    agreement is asserted elsewhere, and a third copy here is the one that would go
+    `test_real_tree_is_green_and_the_controls_fired` asserts the substring `entries (floor`, which a gate printing `0 entries (floor 0)` would satisfy. The numbers are parsed here instead, and both are DERIVED from the subject's own output rather than typed: `TRAP_FLOOR` already lives in two files whose agreement is asserted elsewhere, and a third copy here is the one that would go
     stale.
 
     The floor is a RATCHET, so `entries == floor` is the normal, healthy state on
-    the day an entry is added and the number is bumped with it. What is refused is a
-    corpus that has fallen UNDER its own floor while the gate still reported green,
-    and a floor of zero, which would make the population claim vacuous.
+    the day an entry is added and the number is bumped with it. What is refused is a corpus that has fallen UNDER its own floor while the gate still reported green, and a floor of zero, which would make the population claim vacuous.
     """
     bash = require_gate(gate)
     result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root(), timeout=GATE_TIMEOUT)

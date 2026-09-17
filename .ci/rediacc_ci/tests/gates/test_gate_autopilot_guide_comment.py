@@ -1,15 +1,9 @@
 """Port of `.ci/scripts/test/gates/test-autopilot-guide-comment.sh`.
 
-Structurally a mirror of the label-guide port, because the module is a mirror of
-that poster: same marker discipline, same bot-only ownership, same
-create/update/no-op contract driven against a fake GitHub client and asserted on
-the call trace. What differs is the CONTENT half, where every documented fact is
-re-derived from the file it came from, so a rename in `autopilot.yml`,
-`autopilot-gate.sh` or `resolve-model-args.sh` turns this red instead of leaving
-a wrong comment sitting on every PR.
+Structurally a mirror of the label-guide port, because the module is a mirror of that poster: same marker discipline, same bot-only ownership, same create/update/no-op contract driven against a fake GitHub client and asserted on the call trace. What differs is the CONTENT half, where every documented fact is re-derived from the file it came from, so a rename in `autopilot.yml`,
+`autopilot-gate.sh` or `resolve-model-args.sh` turns this red instead of leaving a wrong comment sitting on every PR.
 
-THE NODE HARNESS IS THE TWIN'S, BYTE FOR BYTE, `@@RENDER@@` sentinel included.
-See the label-guide port's docstring for why a mock is never translated.
+THE NODE HARNESS IS THE TWIN'S, BYTE FOR BYTE, `@@RENDER@@` sentinel included. See the label-guide port's docstring for why a mock is never translated.
 
 WHERE THIS REIMPLEMENTS sed, grep AND awk, AND WHY THE ANSWERS AGREE:
 
@@ -31,8 +25,7 @@ WHERE THIS REIMPLEMENTS sed, grep AND awk, AND WHY THE ANSWERS AGREE:
     guide.
 
 NO `xdist_group`. The harness is written into pytest's own `tmp_path`; every
-other file this touches is read and never written. Nothing is bound and no
-module global is mutated.
+other file this touches is read and never written. Nothing is bound and no module global is mutated.
 """
 
 import json

@@ -1,25 +1,16 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/version/bump.sh`.
 
-Writes a version into every package manifest `.ci/config/constants.sh` lists,
-and prints the new version on STDOUT as its last line so a caller can capture
-it.
+Writes a version into every package manifest `.ci/config/constants.sh` lists, and prints the new version on STDOUT as its last line so a caller can capture it.
 
 Usage: bump.py [--auto | --patch | --minor | --major | --version X.Y.Z]
        [--dry-run] [--output <file>]
 
-WHAT IT ACTUALLY TOUCHES, WHICH IS ONE FILE. The twin's own header says
-"Updates version across all package files", and `VERSION_FILES_JSON`
-(`.ci/config/constants.sh:193-195`) holds exactly `packages/cli/package.json`.
-The root `package.json` is READ for the current version and never written.
-That asymmetry is the script, not a simplification of it, and it is why the
-differential uses a real file tree rather than stubs: the deliverable of this
-script is a mutated file, and a stub cannot show that the wrong file was
-written or that the right one was written twice.
+WHAT IT ACTUALLY TOUCHES, WHICH IS ONE FILE. The twin's own header says "Updates version across all package files", and `VERSION_FILES_JSON` (`.ci/config/constants.sh:193-195`) holds exactly `packages/cli/package.json`. The root `package.json` is READ for the current version and never written. That asymmetry is the script, not a simplification of it, and it is why the differential
+uses a real file tree rather than stubs: the deliverable of this script is a mutated file, and a stub cannot show that the wrong file was written or that the right one was written twice.
 
 THE TWIN IS BROKEN ON THIS REPOSITORY TODAY, REPRODUCED AND REPORTED RATHER
-THAN FIXED, on the same contract this box's siblings state: agreement with the
-twin is the deliverable and changing live behaviour is the operator's call.
+THAN FIXED, on the same contract this box's siblings state: agreement with the twin is the deliverable and changing live behaviour is the operator's call.
 
     $ bash .ci/scripts/version/bump.sh --dry-run --auto
     ✓ Current version: 0.0.0-dev
@@ -27,35 +18,21 @@ twin is the deliverable and changing live behaviour is the operator's call.
     $ echo $?
     1
 
-Every `package.json` in this repository carries the `0.0.0-dev` placeholder,
-because the version source of truth moved to git tags and is injected at build
-time (CLAUDE.md, "Versioning"). `increment_patch` splits that on `.` into
+Every `package.json` in this repository carries the `0.0.0-dev` placeholder, because the version source of truth moved to git tags and is injected at build time (CLAUDE.md, "Versioning"). `increment_patch` splits that on `.` into
 `0`, `0`, `0-dev` and evaluates `$((patch + 1))`; bash arithmetic reads `0-dev`
 as `0 - dev`, `dev` is not a variable, and `set -u` kills the script.
 
-WHICH FLAGS THAT ACTUALLY BREAKS, measured rather than assumed: `--auto` and
-`--patch` die, because they are the two that touch the PATCH field.
-`--minor` and `--major` survive by luck, because the placeholder's major and
-minor are plain `0` and the suffix rides along in a field neither of them
-evaluates. So the script silently works for two of its five flags and dies for
-two others, on the same input. `bash_arith` reproduces all of it, exit code and
+WHICH FLAGS THAT ACTUALLY BREAKS, measured rather than assumed: `--auto` and `--patch` die, because they are the two that touch the PATCH field. `--minor` and `--major` survive by luck, because the placeholder's major and minor are plain `0` and the suffix rides along in a field neither of them evaluates. So the script silently works for two of its five flags and dies for two
+others, on the same input. `bash_arith` reproduces all of it, exit code and
 wording included; only the script name and line number are the port's own,
 because they are true of the port.
 
-CONSTANTS ARE LITERALS WITH A DRIFT TEST, not a bash parser. `VERSION_FILES_JSON`
-and `CONSOLE_ROOT_DIR`'s default are reproduced below with their line
-references, and `test_constants_have_not_drifted` reads constants.sh and
-asserts they still match. A live parse would silently FOLLOW a change to the
-file list, and this gate's whole subject is which files get written, so a red
-test is the answer that gets read.
+CONSTANTS ARE LITERALS WITH A DRIFT TEST, not a bash parser. `VERSION_FILES_JSON` and `CONSOLE_ROOT_DIR`'s default are reproduced below with their line references, and `test_constants_have_not_drifted` reads constants.sh and asserts they still match. A live parse would silently FOLLOW a change to the file list, and this gate's whole subject is which files get written, so a red test
+is the answer that gets read.
 
-WHAT SOURCING constants.sh COSTS, reproduced because it fires before any
-argument is read. `.ci/config/constants.sh:20-33` refuses when
-`<root>/.devcontainer/toolchain.env` is not readable, and `set -e` on the
-`source` line kills the caller, so even `bump.sh --help` exits 1 on a checkout
+WHAT SOURCING constants.sh COSTS, reproduced because it fires before any argument is read. `.ci/config/constants.sh:20-33` refuses when `<root>/.devcontainer/toolchain.env` is not readable, and `set -e` on the `source` line kills the caller, so even `bump.sh --help` exits 1 on a checkout
 without it. The two `${VAR:?}` refusals further down constants.sh are NOT
-reproduced: they need a toolchain.env that exists but is incomplete, which
-nothing in this repository can produce.
+reproduced: they need a toolchain.env that exists but is incomplete, which nothing in this repository can produce.
 
 K=5 LEDGER: `.ci/shadow/w7p6-version-bump.observations.jsonl`.
 """
@@ -94,10 +71,7 @@ _TOKEN_RE = re.compile(r"\s*([A-Za-z_][A-Za-z_0-9]*|[0-9][0-9a-zA-Z]*|[-+])\s*")
 class BashFatalError(Exception):
     """A bash runtime death, carrying bash's own wording and exit status 1.
 
-    The script name and the line number are the PORT's, because they are true
-    of the program that printed the line. Every other byte agrees, and
-    `test_divergence_the_unbound_variable_line_names_the_port` pins both halves
-    so nobody later "fixes" one of them.
+    The script name and the line number are the PORT's, because they are true of the program that printed the line. Every other byte agrees, and `test_divergence_the_unbound_variable_line_names_the_port` pins both halves so nobody later "fixes" one of them.
     """
 
     def __init__(self, detail: str, line: int) -> None:
@@ -142,9 +116,7 @@ def constants_root(root: pathlib.Path, env: dict[str, str] | None = None) -> str
     """`CONSOLE_ROOT_DIR` (`.ci/config/constants.sh:76`).
 
     `${CONSOLE_ROOT_DIR:-$(cd "$(dirname constants.sh)/../.." && pwd)}`: an
-    environment value wins and is used AS WRITTEN, unresolved, while the
-    default is the physical path of the repository root. Both halves matter to
-    a caller that sets it to a relative path or a symlink.
+    environment value wins and is used AS WRITTEN, unresolved, while the default is the physical path of the repository root. Both halves matter to a caller that sets it to a relative path or a symlink.
     """
     e = dict(os.environ) if env is None else env
     return e.get("CONSOLE_ROOT_DIR") or str(root)
@@ -178,12 +150,8 @@ def usage_block(prog: str) -> str:
 def read_dot_fields(text: str, count: int) -> list[str]:
     """`IFS='.' read -r major minor patch <<<"$version"`.
 
-    `.` IS NOT AN IFS WHITESPACE CHARACTER, which makes this the opposite of a
-    tab split: every single `.` is its own delimiter, so runs of them produce
-    EMPTY fields and a leading `.` produces an empty first field. The last
-    variable absorbs the remainder including its delimiters, which is why
-    `1.2.3.4` yields a patch of `3.4` and not `3`. All four properties driven
-    against bash 5.3.
+    `.` IS NOT AN IFS WHITESPACE CHARACTER, which makes this the opposite of a tab split: every single `.` is its own delimiter, so runs of them produce EMPTY fields and a leading `.` produces an empty first field. The last variable absorbs the remainder including its delimiters, which is why `1.2.3.4` yields a patch of `3.4` and not `3`. All four properties driven against bash
+    5.3.
     """
     parts: list[str] = []
     rest = text
@@ -201,25 +169,16 @@ def read_dot_fields(text: str, count: int) -> list[str]:
 def bash_arith(expr_text: str, value: str, line: int) -> int:
     """`$((<name> + 1))` where the named variable holds `value`, under `set -u`.
 
-    BASH DOES NOT SUBSTITUTE THE VALUE, IT RE-EVALUATES IT. An identifier in an
-    arithmetic context has its VALUE parsed as a fresh arithmetic expression,
-    recursively, which is the whole reason `0.0.0-dev` is fatal here: `patch`
-    holds `0-dev`, that parses as `0 - dev`, `dev` is an unset name, and
-    `set -u` makes an unset name in arithmetic a fatal error rather than a zero.
+    BASH DOES NOT SUBSTITUTE THE VALUE, IT RE-EVALUATES IT. An identifier in an arithmetic context has its VALUE parsed as a fresh arithmetic expression, recursively, which is the whole reason `0.0.0-dev` is fatal here: `patch` holds `0-dev`, that parses as `0 - dev`, `dev` is an unset name, and `set -u` makes an unset name in arithmetic a fatal error rather than a zero.
 
-    Reproduced exactly for the three outcomes that are reachable from a
-    manifest version string:
+    Reproduced exactly for the three outcomes that are reachable from a manifest version string:
 
       * an empty value is 0 (the NAME is set, so `set -u` is satisfied)
       * a decimal, hex or octal literal is its value
       * the FIRST identifier encountered is fatal: "<ident>: unbound variable"
 
-    A leading-zero literal that is not octal ("08") is fatal with bash's own
-    "value too great for base" wording, which is also reproduced. Anything else
-    raises with bash 5.3's syntax-error wording as an APPROXIMATION, and that is
-    said out loud rather than claimed as a match: the exact error token bash
-    reports depends on how far its parser got, no manifest version can produce
-    one, and the differential does not drive it.
+    A leading-zero literal that is not octal ("08") is fatal with bash's own "value too great for base" wording, which is also reproduced. Anything else raises with bash 5.3's syntax-error wording as an APPROXIMATION, and that is said out loud rather than claimed as a match: the exact error token bash reports depends on how far its parser got, no manifest version can produce one,
+    and the differential does not drive it.
     """
     total = 0
     sign = 1
@@ -309,9 +268,7 @@ def is_semver(version: str) -> bool:
 def parse_argv(argv: list[str], *, dry_run_default: bool) -> Options:
     """The twin's hand-rolled loop (:44-93), including how it refuses.
 
-    `set_bump_type` (:34-41) is the reason `--patch --minor` is an error rather
-    than a last-flag-wins: two bump flags mean the caller does not know what it
-    is asking for, and this script writes a number into a manifest.
+    `set_bump_type` (:34-41) is the reason `--patch --minor` is an error rather than a last-flag-wins: two bump flags mean the caller does not know what it is asking for, and this script writes a number into a manifest.
     """
     opts = Options(dry_run=dry_run_default)
     i = 0
@@ -350,9 +307,7 @@ def parse_argv(argv: list[str], *, dry_run_default: bool) -> Options:
 def get_current_version(root_dir: str) -> tuple[int, str]:
     """`jq -r '.version' "$CONSOLE_ROOT_DIR/package.json"` (:108-110).
 
-    SHELLED OUT, like every other jq call in this package. Returns jq's exit
-    status alongside the text, because the twin's bare command substitution
-    under `set -e` dies with jq's OWN status: 2 for a file it cannot open, 5
+    SHELLED OUT, like every other jq call in this package. Returns jq's exit status alongside the text, because the twin's bare command substitution under `set -e` dies with jq's OWN status: 2 for a file it cannot open, 5
     for a file that is not JSON, and a caller reading the exit code can tell
     those apart.
     """
@@ -368,15 +323,9 @@ def get_current_version(root_dir: str) -> tuple[int, str]:
 def update_package_json(path: str, version: str, *, dry_run: bool) -> tuple[bool, int]:
     """`update_package_json` (:144-163). Returns (counted-as-updated, exit-code).
 
-    A MISSING FILE IS A WARNING THAT BECOMES A FAILURE LATER, not an immediate
-    stop: the twin returns 1, main counts it in `failed`, keeps going through
-    the rest of the list, and only then exits 1. So a two-file list with one
-    file missing still writes the other.
+    A MISSING FILE IS A WARNING THAT BECOMES A FAILURE LATER, not an immediate stop: the twin returns 1, main counts it in `failed`, keeps going through the rest of the list, and only then exits 1. So a two-file list with one file missing still writes the other.
 
-    THE PERMISSION SIDE EFFECT IS THE TWIN'S AND IS REPRODUCED. `mktemp` creates
-    0600 and `mv` carries that onto the manifest, so a package.json that was
-    0644 comes out 0600. Named here because it is invisible in the diff and
-    surprises whoever finds it.
+    THE PERMISSION SIDE EFFECT IS THE TWIN'S AND IS REPRODUCED. `mktemp` creates 0600 and `mv` carries that onto the manifest, so a package.json that was 0644 comes out 0600. Named here because it is invisible in the diff and surprises whoever finds it.
     """
     if not os.path.isfile(path):
         log.warn("File not found: %s" % path)

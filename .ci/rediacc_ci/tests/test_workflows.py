@@ -22,23 +22,16 @@ TWO DIFFERENTIALS, because the module replaces two different kinds of parser.
      other writers this session, and a golden over them would go stale on
      somebody else's commit.
 
-WHAT THE lanes.ts DIFFERENTIAL FOUND, and it is a real defect rather than a
-formatting difference. lanes.ts matches `runs-on` and `timeout-minutes` with
-regexes anchored `\\s*$` and does not strip trailing comments, so:
+WHAT THE lanes.ts DIFFERENTIAL FOUND, and it is a real defect rather than a formatting difference. lanes.ts matches `runs-on` and `timeout-minutes` with regexes anchored `\\s*$` and does not strip trailing comments, so:
 
     runs-on: ubuntu-latest  # Needs Docker for registry cache check
     timeout-minutes: 5 # CHECK 3: slim jobs must declare <= 14
 
-both parse to NOTHING -- an empty runner and a null timeout. Measured over the
-live corpus this session: 124 jobs, 8 with a runner lanes.ts cannot see and 3
+both parse to NOTHING -- an empty runner and a null timeout. Measured over the live corpus this session: 124 jobs, 8 with a runner lanes.ts cannot see and 3
 with a timeout it cannot see. The irony is worth recording: the comment it
 chokes on is the CHECK 3 annotation another gate reads.
 
-IT DOES NOT AFFECT PLACEMENT TODAY. `satisfies()` and `placeGate()` read only
-`submodules`, `node` and `tools`, and on those three plus the job id the two
-implementations agreed on all 124 live jobs. The divergence is latent, it is
-reported to the root driver rather than fixed here (lanes.ts is outside this
-session's write scope), and the fixture pins all three shapes so it cannot
+IT DOES NOT AFFECT PLACEMENT TODAY. `satisfies()` and `placeGate()` read only `submodules`, `node` and `tools`, and on those three plus the job id the two implementations agreed on all 124 live jobs. The divergence is latent, it is reported to the root driver rather than fixed here (lanes.ts is outside this session's write scope), and the fixture pins all three shapes so it cannot
 quietly become load-bearing.
 """
 
@@ -125,8 +118,7 @@ def roundtrip(value):
 def test_pyyaml_is_reachable_through_the_system_interpreter():
     """Without it every comparison below has nothing to compare against.
 
-    Also the measurement behind this module's central design decision: PyYAML is
-    available to `python3` and NOT to the interpreter running this suite.
+    Also the measurement behind this module's central design decision: PyYAML is available to `python3` and NOT to the interpreter running this suite.
     """
     probe = subprocess.run(
         ["python3", "-c", "import yaml; print(yaml.__version__)"],
@@ -142,10 +134,7 @@ def test_pyyaml_is_reachable_through_the_system_interpreter():
 def test_the_suites_own_interpreter_cannot_import_yaml():
     """THE REASON THE PARSER HAS NO DEPENDENCY, asserted rather than asserted-in-prose.
 
-    `uv tool install pytest` builds an isolated environment. If this ever starts
-    passing -- because the bootstrap grew `--with PyYAML` -- the constraint has
-    changed and the design decision above deserves re-examining. That is a
-    conversation, not a silent drift, so it is pinned here.
+    `uv tool install pytest` builds an isolated environment. If this ever starts passing -- because the bootstrap grew `--with PyYAML` -- the constraint has changed and the design decision above deserves re-examining. That is a conversation, not a silent drift, so it is pinned here.
     """
     with pytest.raises(ImportError):
         import yaml  # noqa: F401, PLC0415
@@ -154,9 +143,7 @@ def test_the_suites_own_interpreter_cannot_import_yaml():
 def test_the_corpus_is_derived_and_covers_every_tracked_workflow():
     """SET EQUALITY, not a hand-typed count. Section 6 of the driver contract.
 
-    The floor is `every tracked file under the three prefixes`, so a rename
-    re-keys it automatically and a collapsed glob is caught by the set being
-    empty rather than by a number somebody remembered to update.
+    The floor is `every tracked file under the three prefixes`, so a rename re-keys it automatically and a collapsed glob is caught by the set being empty rather than by a number somebody remembered to update.
     """
     files = corpus()
     assert files, "the corpus enumeration returned nothing"
@@ -176,10 +163,7 @@ def test_the_corpus_is_derived_and_covers_every_tracked_workflow():
 def test_every_tracked_workflow_parses_identically_to_pyyaml():
     """THE ACCEPTANCE FOR THIS MODULE.
 
-    Document to document, every file. Not a projection and not a sample: a
-    projection would let a difference hide in the half nobody compared, and this
-    parser's whole claim is that it can stand in for `yaml.safe_load` for the
-    eight gates that use it.
+    Document to document, every file. Not a projection and not a sample: a projection would let a difference hide in the half nobody compared, and this parser's whole claim is that it can stand in for `yaml.safe_load` for the eight gates that use it.
     """
     mismatched = []
     compared = 0
@@ -199,10 +183,7 @@ def test_every_tracked_workflow_parses_identically_to_pyyaml():
 def test_the_pyyaml_comparison_can_actually_fail():
     """CONTROL. A comparison that cannot fail is the failure this repo names most.
 
-    If `pyyaml_load` silently returned the parser's own answer -- or if
-    `roundtrip` flattened both sides to the same thing -- the case above would be
-    green over any corpus at all. A deliberately wrong document is fed through
-    the same comparison and must be reported as different.
+    If `pyyaml_load` silently returned the parser's own answer -- or if `roundtrip` flattened both sides to the same thing -- the case above would be green over any corpus at all. A deliberately wrong document is fed through the same comparison and must be reported as different.
     """
     path = corpus()[0]
     expected = pyyaml_load(path)
@@ -214,8 +195,7 @@ def test_the_pyyaml_comparison_can_actually_fail():
 def test_pyyaml_turns_the_on_key_into_a_boolean():
     """THE ONE DELIBERATE DIVERGENCE, measured in both directions.
 
-    PyYAML applies YAML 1.1 resolution to keys, so the `on:` block every workflow
-    opens with arrives as the key `True`. `check_secret_reachability.py:151`
+    PyYAML applies YAML 1.1 resolution to keys, so the `on:` block every workflow opens with arrives as the key `True`. `check_secret_reachability.py:151`
     carries a workaround; a consumer that forgets it finds no triggers and says
     nothing. This parser keeps keys as strings.
     """
@@ -251,11 +231,7 @@ def test_pyyaml_turns_the_on_key_into_a_boolean():
 def run_lanes_ts(path: pathlib.Path):
     """lanes.ts's own answer for `path`, or None when tsx is not installed.
 
-    None is a real possibility rather than a defensive habit: the CI lane that
-    runs this suite is `quality-static`, which lanes.ts itself reports as
-    `node: false` -- so there is no `node_modules` there and no tsx. The caller
-    below asserts the golden either way and uses the live answer only to prove
-    the golden is not stale.
+    None is a real possibility rather than a defensive habit: the CI lane that runs this suite is `quality-static`, which lanes.ts itself reports as `node: false` -- so there is no `node_modules` there and no tsx. The caller below asserts the golden either way and uses the live answer only to prove the golden is not stale.
     """
     script = (
         "import fs from 'node:fs';\n"
@@ -293,10 +269,7 @@ def run_lanes_ts(path: pathlib.Path):
 def test_lane_capabilities_match_the_lanes_ts_golden_on_every_agreed_field():
     """The four fields `satisfies()` and `placeGate()` actually read.
 
-    Compared for every job in the fixture, which exercises setup-workspace,
-    setup-go, `pip install ruff`, `pip install PyYAML`, `submodules: true`, a
-    targeted `git submodule update --init`, and the suppression of a targeted
-    entry once `*` is present.
+    Compared for every job in the fixture, which exercises setup-workspace, setup-go, `pip install ruff`, `pip install PyYAML`, `submodules: true`, a targeted `git submodule update --init`, and the suppression of a targeted entry once `*` is present.
     """
     golden = json.loads(GOLDEN.read_text(encoding="utf-8"))
     mine = [c.as_dict() for c in workflows.lane_capabilities(workflows.load_workflow(FIXTURE))]
@@ -309,11 +282,7 @@ def test_lane_capabilities_match_the_lanes_ts_golden_on_every_agreed_field():
 def test_the_golden_is_the_real_lanes_ts_answer_when_tsx_is_installed():
     """PROVES THE GOLDEN IS NOT STALE, and says so honestly when it cannot.
 
-    Not a skip: a skipped test reads exactly like a passing one in the count
-    `check_pytest.py` parses, and that gate refuses a run whose passes and
-    collections disagree. So the branch where tsx is absent asserts the ABSENCE
-    rather than passing blindly -- if tsx is installed and lanes.ts still could
-    not be run, that is a real failure and it is reported as one.
+    Not a skip: a skipped test reads exactly like a passing one in the count `check_pytest.py` parses, and that gate refuses a run whose passes and collections disagree. So the branch where tsx is absent asserts the ABSENCE rather than passing blindly -- if tsx is installed and lanes.ts still could not be run, that is a real failure and it is reported as one.
     """
     live = run_lanes_ts(FIXTURE)
     if live is None:
@@ -331,8 +300,7 @@ def test_the_golden_is_the_real_lanes_ts_answer_when_tsx_is_installed():
 def test_lanes_ts_loses_a_runner_that_carries_a_trailing_comment():
     """DIVERGENCE 1, both directions, from the golden.
 
-    Live measurement over the real corpus this session: 8 of 124 jobs have a
-    runner lanes.ts reports as ''. Two of them are plain `ubuntu-latest` with an
+    Live measurement over the real corpus this session: 8 of 124 jobs have a runner lanes.ts reports as ''. Two of them are plain `ubuntu-latest` with an
     explanatory comment (`ci.yml:89` and `:638`); the other six are
     `${{ matrix.os }}`-style expressions, which its single-token `(\\S+)` cannot
     match either.

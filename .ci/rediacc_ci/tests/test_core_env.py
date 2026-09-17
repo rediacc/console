@@ -1,20 +1,12 @@
 """`rediacc_ci.core.env` against real files, and against the bash it replaces.
 
 WHY THE COMPARISON IS AGAINST A LIVE `set -a; source` AND NOT A TABLE OF
-EXPECTED STRINGS. The module's contract is "what bash would have read, minus
-two named divergences". A table of hand-written expectations proves only that
+EXPECTED STRINGS. The module's contract is "what bash would have read, minus two named divergences". A table of hand-written expectations proves only that
 the author's belief about bash matches the author's code; running bash proves
-the belief. So the awkward cases go through `differential.bash_streams`, and the
-two DELIBERATE divergences (an unquoted `#`, and whitespace around a value) are
-the only places a case asserts a difference -- stated as a difference, with the
-bash answer written down next to it.
+the belief. So the awkward cases go through `differential.bash_streams`, and the two DELIBERATE divergences (an unquoted `#`, and whitespace around a value) are the only places a case asserts a difference -- stated as a difference, with the bash answer written down next to it.
 
-EVERY CASE HERE CARRIES ITS OTHER DIRECTION. That is not a style preference:
-a redaction test that only proves masking happens passes when the function
-returns the empty string, and a CRLF test that only proves no carriage return
-survives passes when the parser drops the value. Where the negative direction is
-not obvious from the assertion it is a separate `..._control_...` case, named so
-that deleting it is visible.
+EVERY CASE HERE CARRIES ITS OTHER DIRECTION. That is not a style preference: a redaction test that only proves masking happens passes when the function returns the empty string, and a CRLF test that only proves no carriage return survives passes when the parser drops the value. Where the negative direction is not obvious from the assertion it is a separate `..._control_...` case,
+named so that deleting it is visible.
 """
 
 import os
@@ -70,9 +62,7 @@ def _write(tmp_path, text: str, name: str = "dotenv", newline: str = "\n"):
 def _bash_source(path) -> dict[str, str]:
     """What `set -a; source <path>` puts in the environment, as a mapping.
 
-    The two-stage `env` diff is the reliable shape: bash's own variables are
-    numerous and not all of them are stable, so the BEFORE set is subtracted
-    rather than filtered by a name list that would go stale.
+    The two-stage `env` diff is the reliable shape: bash's own variables are numerous and not all of them are stable, so the BEFORE set is subtracted rather than filtered by a name list that would go stale.
     """
     script = (
         "env | sort > /tmp/.rediacc_before.$$\n"
@@ -115,9 +105,7 @@ def test_parse_agrees_with_bash_source_on_every_awkward_shape(tmp_path) -> None:
 def test_control_the_differential_can_fail(tmp_path) -> None:
     """A PLANTED DEFECT must make the comparison above red.
 
-    Without this, `test_parse_agrees_with_bash_source...` could be passing
-    because both sides return the same wrong thing, or because the comparison
-    loop iterates over nothing. The defect here is the classic one: split on the
+    Without this, `test_parse_agrees_with_bash_source...` could be passing because both sides return the same wrong thing, or because the comparison loop iterates over nothing. The defect here is the classic one: split on the
     LAST `=` instead of the first.
     """
     path = _write(tmp_path, AWKWARD)
@@ -175,9 +163,7 @@ def test_quotes_are_stripped_and_the_inner_text_kept() -> None:
 def test_single_quotes_keep_a_backslash_and_double_quotes_eat_one() -> None:
     """bash's rule, both directions in one case.
 
-    Inside single quotes nothing is special. Inside double quotes a backslash is
-    special before exactly `$`, a backtick, `"` and another backslash -- so
-    `\\n` stays two characters and `\\"` becomes one.
+    Inside single quotes nothing is special. Inside double quotes a backslash is special before exactly `$`, a backtick, `"` and another backslash -- so `\\n` stays two characters and `\\"` becomes one.
     """
     pairs = env.parse('A=\'lit\\n\'\nB="esc\\n"\nC="q\\"uote"\nD="d\\\\d"\n')
     assert pairs["A"] == "lit\\n"
@@ -196,8 +182,7 @@ def test_a_hash_inside_an_unquoted_value_is_kept(tmp_path) -> None:
     """DIVERGENCE 1, asserted AS a divergence with bash's answer alongside.
 
     bash ends the assignment at the space-preceded `#`; this keeps the whole
-    value. Writing the bash answer down here is what stops a future reader
-    "fixing" the divergence back without knowing it was chosen.
+    value. Writing the bash answer down here is what stops a future reader "fixing" the divergence back without knowing it was chosen.
     """
     text = "A=val#frag\nB=val # note\n"
     path = _write(tmp_path, text)
@@ -215,13 +200,9 @@ def test_whitespace_around_a_value_is_stripped(tmp_path) -> None:
 
     `A=  spaced  ` is not an assignment to bash at all. It is the command
     `spaced` with a TEMPORARY assignment prefix `A=`, so the variable exists
-    only for that command's environment and the shell keeps nothing. Measured
-    here rather than reasoned about, which is how the module docstring's claim
-    ("bash reads it as an empty assignment followed by an attempt to run
-    `value`") got its second half right and its first half wrong.
+    only for that command's environment and the shell keeps nothing. Measured here rather than reasoned about, which is how the module docstring's claim ("bash reads it as an empty assignment followed by an attempt to run `value`") got its second half right and its first half wrong.
 
-    The control is the key that IS in the bash mapping: without it, `"A" not in
-    theirs` would also pass if `_bash_source` returned nothing at all.
+    The control is the key that IS in the bash mapping: without it, `"A" not in theirs` would also pass if `_bash_source` returned nothing at all.
     """
     text = "A=  spaced  \nB=kept\n"
     path = _write(tmp_path, text)
@@ -249,21 +230,14 @@ def test_crlf_and_lf_files_parse_identically(tmp_path) -> None:
 def test_skipped_lines_on_a_crlf_file_carry_no_carriage_return() -> None:
     """CRLF reaches the DIAGNOSTIC path too, not just the values.
 
-    `skipped` reports the text of a line, and a reported line ending in an
-    invisible carriage return does not match what the reader sees in their
+    `skipped` reports the text of a line, and a reported line ending in an invisible carriage return does not match what the reader sees in their
     editor. Values are covered by `test_crlf_and_lf_files_parse_identically`;
     this is the other consumer of `_lines`.
 
-    WHAT THIS CASE MEASURED, since it changed the module. It was written to
-    catch the deletion of a `rstrip` in `_lines` and it did not, because
-    `str.splitlines()` had already consumed the carriage return: the rstrip was
-    dead code and is now gone. The case is kept because it still fails against
-    the mistake that is actually available -- reading lines with
-    `text.split("\n")`, which keeps the CR -- and because it is the only case
-    that looks at `skipped` on a Windows-written file at all.
+    WHAT THIS CASE MEASURED, since it changed the module. It was written to catch the deletion of a `rstrip` in `_lines` and it did not, because `str.splitlines()` had already consumed the carriage return: the rstrip was dead code and is now gone. The case is kept because it still fails against the mistake that is actually available -- reading lines with `text.split("\n")`, which
+    keeps the CR -- and because it is the only case that looks at `skipped` on a Windows-written file at all.
 
-    The LF file is the control: without it, an assertion that no CR appears
-    would also pass on an empty result.
+    The LF file is the control: without it, an assertion that no CR appears would also pass on an empty result.
     """
     assert env.skipped("GOOD=1\nBAD LINE\n") == [(2, "BAD LINE")]
     assert env.skipped("GOOD=1\r\nBAD LINE\r\n") == [(2, "BAD LINE")]
@@ -302,9 +276,7 @@ def test_a_missing_file_is_an_error_when_the_caller_says_so(tmp_path) -> None:
 def test_a_directory_in_place_of_a_file_raises(tmp_path) -> None:
     """Unreadable, in the one spelling that is unreadable even to root.
 
-    A chmod-000 case cannot fail for a process running as root, so the suite
-    would go quietly vacuous in a container that runs as uid 0. A directory
-    raises IsADirectoryError for everyone.
+    A chmod-000 case cannot fail for a process running as root, so the suite would go quietly vacuous in a container that runs as uid 0. A directory raises IsADirectoryError for everyone.
     """
     target = tmp_path / "adir"
     target.mkdir()
@@ -315,10 +287,7 @@ def test_a_directory_in_place_of_a_file_raises(tmp_path) -> None:
 def test_an_unreadable_file_raises_rather_than_reading_as_empty(tmp_path) -> None:
     """chmod 000. Guarded by an actual readability probe, never skipped.
 
-    Skipping would be the easy answer and it is the wrong one: a skip in a suite
-    whose whole subject is "absence must not be confused with failure" is itself
-    an absence confused with a pass. So the root case asserts the OTHER
-    invariant -- that a file root can read, this module also reads.
+    Skipping would be the easy answer and it is the wrong one: a skip in a suite whose whole subject is "absence must not be confused with failure" is itself an absence confused with a pass. So the root case asserts the OTHER invariant -- that a file root can read, this module also reads.
     """
     path = _write(tmp_path, "SECRETISH=value\n", "locked.env")
     path.chmod(0o000)
@@ -419,9 +388,7 @@ def test_get_verb_prints_the_value_and_exits_one_when_absent(tmp_path) -> None:
 def test_export_verb_round_trips_through_eval(tmp_path) -> None:
     """The `set -a; source` replacement, proved by USING it.
 
-    A value with a space, a single quote and a `$` is the shape that breaks a
-    naive emitter, and the round trip is the only assertion that catches all
-    three at once.
+    A value with a space, a single quote and a `$` is the shape that breaks a naive emitter, and the round trip is the only assertion that catches all three at once.
     """
     path = _write(tmp_path, "A=plain\nB='has space'\nC=\"do$notexpand\"\n")
     rc, out, err = _module(
@@ -471,8 +438,7 @@ def test_the_real_toolchain_pins_agree_with_toolchain_pairs() -> None:
 
     `.ci/scripts/lib/toolchain.sh:44` defines the ONLY lines it considers valid
     pins as `grep -E '^[A-Z][A-Z0-9_]*='`. This module must find at least those
-    keys with those values -- and the assertion that the corpus is non-empty is
-    what stops the whole case passing on a file that failed to load.
+    keys with those values -- and the assertion that the corpus is non-empty is what stops the whole case passing on a file that failed to load.
     """
     pins = paths.from_root(".devcontainer/toolchain.env")
     ours = env.read_pairs(pins, missing_ok=False)
@@ -510,8 +476,7 @@ def test_the_real_pins_file_has_no_unparsable_lines() -> None:
 def test_control_the_pins_corpus_is_a_real_env_file() -> None:
     """Guards the two cases above against a corpus that quietly became empty.
 
-    Derived from the file, not typed: every key the bash grep accepts must also
-    match this module's own key pattern. A zero-key file fails the first line.
+    Derived from the file, not typed: every key the bash grep accepts must also match this module's own key pattern. A zero-key file fails the first line.
     """
     text = paths.from_root(".devcontainer/toolchain.env").read_text(encoding="utf-8")
     found = set(re.findall(r"(?m)^([A-Z][A-Z0-9_]*)=", text))
@@ -533,9 +498,7 @@ def test_apply_defaults_to_the_process_environment(tmp_path) -> None:
 def test_unredacted_value_is_the_only_value_returning_helper() -> None:
     """The naming rule, asserted rather than trusted to review.
 
-    Every public name in the module is checked against the one that is allowed
-    to hand back a value. This is set-based: a NEW value-returning helper added
-    without the word `unredacted` in its name fails here.
+    Every public name in the module is checked against the one that is allowed to hand back a value. This is set-based: a NEW value-returning helper added without the word `unredacted` in its name fails here.
     """
     public = {name for name in dir(env) if not name.startswith("_")}
     value_returning = {name for name in public if "value" in name.lower()}

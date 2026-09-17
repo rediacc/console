@@ -1,40 +1,20 @@
 """Port of `.ci/scripts/test/gates/test-breakpoint-naming.sh`.
 
-Pins the tunnel-naming grammar produced by
-`.ci/breakpoint/scripts/derive-descriptor.sh`.
+Pins the tunnel-naming grammar produced by `.ci/breakpoint/scripts/derive-descriptor.sh`.
 
-WHY A GATE AND NOT A COMMENT, carried from the twin because it is the reason every
-assertion below is written as an EXACT string. The name is the only DURABLE channel
-breakpoint has. A session's state file lives on a runner that can vanish (force-cancel
-and infra loss both skip `if: always()` entirely), so cleanup cannot depend on it.
-What cleanup CAN depend on is that the tunnel name is a pure function of
-`$GITHUB_RUN_ID`: `reap-breakpoint-orphans.sh` lists Cloudflare's own objects, parses
-the run id back out of each name, and asks GitHub whether that run has finished. That
-machinery breaks SILENTLY if the grammar drifts by one byte -- the sweeper stops
-matching, no error anywhere, and orphaned tunnels accumulate until somebody notices
-the bill.
+WHY A GATE AND NOT A COMMENT, carried from the twin because it is the reason every assertion below is written as an EXACT string. The name is the only DURABLE channel breakpoint has. A session's state file lives on a runner that can vanish (force-cancel and infra loss both skip `if: always()` entirely), so cleanup cannot depend on it. What cleanup CAN depend on is that the tunnel
+name is a pure function of `$GITHUB_RUN_ID`: `reap-breakpoint-orphans.sh` lists Cloudflare's own objects, parses the run id back out of each name, and asks GitHub whether that run has finished. That machinery breaks SILENTLY if the grammar drifts by one byte -- the sweeper stops matching, no error anywhere, and orphaned tunnels accumulate until somebody notices the bill.
 
-WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md`
-records six `test-breakpoint-*.sh` subjects as unportable by any agent under the
-standard brief, and NOT on merit: plant-verifying one means temporarily writing under
-`.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching and which every
-batch brief lists as must-not-touch. The brief gives two ways out -- hand one batch
-owner that path explicitly, or exclude them in the derivation with the reason written
-down -- and adds "Do not silently drop them a fourth time." This is the first option
-taken: `.ci/breakpoint` is the driver's path, so the driver ports them.
+WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md` records six `test-breakpoint-*.sh` subjects as unportable by any agent under the standard brief, and NOT on merit: plant-verifying one means temporarily writing under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching and which every batch brief lists as must-not-touch. The brief
+gives two ways out -- hand one batch owner that path explicitly, or exclude them in the derivation with the reason written down -- and adds "Do not silently drop them a fourth time." This is the first option taken: `.ci/breakpoint` is the driver's path, so the driver ports them.
 
-WHAT THE PORT RESPELLS, and it is one thing. The twin publishes its three results as
-GLOBALS through a `derive()` helper, with a comment recording why: a function whose
-result is read back through command substitution runs in a SUBSHELL, so an exit code
-assigned inside it never reaches the caller, and the twin's first draft printed three
-green exit-code assertions that checked nothing. Python has no such hazard -- a
+WHAT THE PORT RESPELLS, and it is one thing. The twin publishes its three results as GLOBALS through a `derive()` helper, with a comment recording why: a function whose result is read back through command substitution runs in a SUBSHELL, so an exit code assigned inside it never reaches the caller, and the twin's first draft printed three green exit-code assertions that checked
+nothing. Python has no such hazard -- a
 function returns a value -- so `derive()` here returns the `RunResult` directly. The
-hazard the twin was guarding against cannot exist in this spelling, which is why the
-globals are not reproduced.
+hazard the twin was guarding against cannot exist in this spelling, which is why the globals are not reproduced.
 
 `env_replace=True` IS THE TWIN'S `env -i`, and it is load-bearing rather than tidy.
-`test_missing_run_id_refuses_and_invents_nothing` asserts what the subject does with
-NO `GITHUB_RUN_ID` in the environment, and this process may well be running under a
+`test_missing_run_id_refuses_and_invents_nothing` asserts what the subject does with NO `GITHUB_RUN_ID` in the environment, and this process may well be running under a
 real one; inheriting it would hand the subject the value whose absence is the case.
 
 NO `xdist_group`. Every case runs one short-lived `bash` with a replaced environment
@@ -61,9 +41,7 @@ LISTED_LABELS = ("rdc-ci", "rdc-dev", "rdc-demo")
 def derive(gate, tmp, *args: str) -> harness.RunResult:
     """Run the subject with a SCRUBBED environment and a private state dir.
 
-    The environment is replaced, not overlaid: see the module docstring. `PATH` is
-    carried over because the subject shells out, and `HOME`/`RUNNER_TEMP` point into
-    the caller's temp dir so nothing is written outside it.
+    The environment is replaced, not overlaid: see the module docstring. `PATH` is carried over because the subject shells out, and `HOME`/`RUNNER_TEMP` point into the caller's temp dir so nothing is written outside it.
     """
     if not os.access(DERIVE, os.X_OK):
         gate.log_fail(
@@ -211,9 +189,7 @@ def test_different_runs_get_different_names(gate):
 
 def test_dns_label_capped_at_63(gate):
     """An 80-digit run id is not realistic; the CAP is, and it has to be exercised by
-    an input that actually EXCEEDS it -- a 40-digit id produces a 49-octet label, so
-    the truncation branch never runs and the assertion is decorative. Over-long labels
-    are rejected by the DNS API with a message that does not point back here, so
+    an input that actually EXCEEDS it -- a 40-digit id produces a 49-octet label, so the truncation branch never runs and the assertion is decorative. Over-long labels are rejected by the DNS API with a message that does not point back here, so
     truncation must happen before the call."""
     with harness.temp_dir() as tmp:
         run = derive(gate, tmp, "--field", "hostname", "--label", "rdc-demo", "--run-id", "7" * 80)

@@ -1,16 +1,10 @@
 """`./run.sh setup` and `./run.sh setup --check`, ported from bash.
 
-WHAT MOVED. `setup()` at `.ci/legacy/run-legacy.sh:543-715` (173 lines) and
-`setup_check()` at `:719-817` (99 lines), plus the nine functions in
-`.ci/lib/setup.sh` (845 lines) they drive. 1,117 lines of bash, measured
-2026-09-09 with `wc -l` and `sed -n`.
+WHAT MOVED. `setup()` at `.ci/legacy/run-legacy.sh:543-715` (173 lines) and `setup_check()` at `:719-817` (99 lines), plus the nine functions in `.ci/lib/setup.sh` (845 lines) they drive. 1,117 lines of bash, measured 2026-09-09 with `wc -l` and `sed -n`.
 
-WHAT DID NOT MOVE, AND WHY THAT IS THE RIGHT SCOPE. Six of the fifteen phases
-live in `.ci/lib/local-common.sh` and `.ci/lib/devbox.sh`, which four other
+WHAT DID NOT MOVE, AND WHY THAT IS THE RIGHT SCOPE. Six of the fifteen phases live in `.ci/lib/local-common.sh` and `.ci/lib/devbox.sh`, which four other
 verbs also call. They are reached through `bridge.py`, so the same bytes run;
-see that module's header. This file owns the ORCHESTRATION -- which phase, in
-what order, fatal or not -- and `host.py` owns the nine that were only ever
-`setup`'s.
+see that module's header. This file owns the ORCHESTRATION -- which phase, in what order, fatal or not -- and `host.py` owns the nine that were only ever `setup`'s.
 
 THE TWO CONTRACTS THIS FILE IS JUDGED ON.
 
@@ -86,9 +80,7 @@ class Options:
 def parse_args(argv: list[str]) -> Options:
     """The `while [[ $# -gt 0 ]]` loop at `.ci/legacy/run-legacy.sh:549-581`.
 
-    ORDER-INSENSITIVE AND REPEAT-TOLERANT, exactly like the loop: `--check
-    --check` is `--check`, and `--pull --check` is the same as `--check --pull`.
-    The bash returns 0 immediately on `--help` without reading the rest, so a
+    ORDER-INSENSITIVE AND REPEAT-TOLERANT, exactly like the loop: `--check --check` is `--check`, and `--pull --check` is the same as `--check --pull`. The bash returns 0 immediately on `--help` without reading the rest, so a
     `--help` anywhere wins over a later unknown option; that is carried.
     """
     check = pull = False
@@ -113,19 +105,11 @@ def parse_args(argv: list[str]) -> Options:
 def reexec_with_docker_group(root: pathlib.Path, argv: list[str], env: dict[str, str]) -> None:
     """`reexec_with_docker_group`, `.ci/lib/local-common.sh:630`. Returns or EXECS.
 
-    After `usermod -aG docker` the current shell keeps the group set it was
-    created with, so `docker ps` keeps failing until the operator logs out. `sg`
-    runs a command with a group the user is entitled to but has not activated,
-    so re-executing ourselves under it fixes the problem in place.
+    After `usermod -aG docker` the current shell keeps the group set it was created with, so `docker ps` keeps failing until the operator logs out. `sg` runs a command with a group the user is entitled to but has not activated, so re-executing ourselves under it fixes the problem in place.
 
-    MEMBERSHIP IS READ FROM `getent group docker`, NOT FROM `id -nG`, and the
-    bash's comment at `:626-628` is the reason: "id reports the CURRENT process's
-    groups, which is exactly the stale information we are working around, so it
-    would answer 'no' in the one case that matters".
+    MEMBERSHIP IS READ FROM `getent group docker`, NOT FROM `id -nG`, and the bash's comment at `:626-628` is the reason: "id reports the CURRENT process's groups, which is exactly the stale information we are working around, so it would answer 'no' in the one case that matters".
 
-    PORTED RATHER THAN BRIDGED, because it is the one call that cannot be
-    bridged: it must `exec`, and a bridged `exec` would replace the bash child
-    and leave this process waiting on it.
+    PORTED RATHER THAN BRIDGED, because it is the one call that cannot be bridged: it must `exec`, and a bridged `exec` would replace the bash child and leave this process waiting on it.
     """
     if env.get("REDIACC_DOCKER_GROUP_REEXEC"):
         return
@@ -161,13 +145,9 @@ def _devbox_facts(root: pathlib.Path, env: dict[str, str]) -> dict[str, str]:
 
     SEVEN QUESTIONS, ONE PROCESS. The bash asks each of them with its own
     function call inside one already-sourced shell; a Python port that bridged
-    each one separately would pay the whole prelude seven times, which on this
-    host is about 0.2s each. Behaviour is identical, so this is the one place the
-    port is deliberately not a line-for-line transcription.
+    each one separately would pay the whole prelude seven times, which on this host is about 0.2s each. Behaviour is identical, so this is the one place the port is deliberately not a line-for-line transcription.
 
-    EVERY VALUE IS A STRING AND AN ABSENT ONE IS "", never a raised error: this
-    is a REPORT, and a report that dies because one row could not be computed is
-    worse than a report with one row missing. `devbox_base_port` in particular is
+    EVERY VALUE IS A STRING AND AN ABSENT ONE IS "", never a raised error: this is a REPORT, and a report that dies because one row could not be computed is worse than a report with one row missing. `devbox_base_port` in particular is
     allowed to fail; see `_port_block_row`.
     """
     _, out = bridge.capture(DEVBOX_FACTS, root, env)
@@ -182,13 +162,8 @@ def _devbox_facts(root: pathlib.Path, env: dict[str, str]) -> dict[str, str]:
 def _port_block_row(facts: dict[str, str], constants: dict[str, str]) -> str:
     """The `port block` row. NEVER counted against `pending`.
 
-    THE `'?'` FALLBACK WAS A LANDMINE and the bash records it at
-    `.ci/legacy/run-legacy.sh:783-789`: run.sh is `set -euo pipefail` and
-    `$(('?' + N))` is an arithmetic syntax error, so the printf never ran and
-    `setup_check` ABORTED, surfacing as a gate failure that named the wrong
-    cause entirely. Python has no such trap here, and the guard is kept anyway:
-    a non-numeric answer takes the "unavailable" arm, which is what the bash
-    MEANT to do.
+    THE `'?'` FALLBACK WAS A LANDMINE and the bash records it at `.ci/legacy/run-legacy.sh:783-789`: run.sh is `set -euo pipefail` and `$(('?' + N))` is an arithmetic syntax error, so the printf never ran and `setup_check` ABORTED, surfacing as a gate failure that named the wrong cause entirely. Python has no such trap here, and the guard is kept anyway: a non-numeric answer takes
+    the "unavailable" arm, which is what the bash MEANT to do.
     """
     base = facts.get("base_port", "")
     if base.isdigit():
@@ -203,13 +178,9 @@ def _port_block_row(facts: dict[str, str], constants: dict[str, str]) -> str:
 def check(ctx: Ctx, constants: dict[str, str]) -> int:
     """`setup_check()`, `.ci/legacy/run-legacy.sh:719`. 0 nothing to do, 1 pending.
 
-    REPORT ONLY. Nothing here writes, installs, pulls or starts anything, which
-    is the contract `.ci/rediacc_ci/quality/setup_idempotency.py` check B drives
-    against the real command.
+    REPORT ONLY. Nothing here writes, installs, pulls or starts anything, which is the contract `.ci/rediacc_ci/quality/setup_idempotency.py` check B drives against the real command.
 
-    EVERY ROW GOES TO STDOUT and every heading to stderr, because that is where
-    the bash's `printf` and `log_step` respectively put them. It reads like a
-    detail and it is not: `check:ci-setup-idempotency` greps this output.
+    EVERY ROW GOES TO STDOUT and every heading to stderr, because that is where the bash's `printf` and `log_step` respectively put them. It reads like a detail and it is not: `check:ci-setup-idempotency` greps this output.
     """
     pending = 0
     facts = _devbox_facts(ctx.root, ctx.env)
@@ -310,12 +281,8 @@ def check(ctx: Ctx, constants: dict[str, str]) -> int:
 def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
     """`setup()`'s body after argument parsing. `.ci/legacy/run-legacy.sh:591`.
 
-    THE PHASE ORDER IS `phases.PHASES` AND NOTHING ELSE. This function is written
-    as a straight line rather than a loop over the table on purpose: each phase's
-    failure message is different, three of them are conditional, and a loop with a
-    per-phase callback table would be the same code with an indirection that makes
-    the order harder to read, not easier. `phases.plan()` is the machine-readable
-    statement of the same order and the tests compare the two.
+    THE PHASE ORDER IS `phases.PHASES` AND NOTHING ELSE. This function is written as a straight line rather than a loop over the table on purpose: each phase's failure message is different, three of them are conditional, and a loop with a per-phase callback table would be the same code with an indirection that makes the order harder to read, not easier. `phases.plan()` is the
+    machine-readable statement of the same order and the tests compare the two.
     """
     # THE CONDITIONALS COME FROM `phases.plan`, NOT FROM A SECOND COPY HERE. `.gitmodules` and the credential-drift pair were written out twice while this function was first drafted, which is two predicates that can disagree about the same question: the table would then describe a run nobody performs, and `check:ci-setup-port-parity` A1 would still pass because it compares NAMES
     # and not conditions. One evaluation, consulted twice.
@@ -414,10 +381,7 @@ def _bool_word(value: bool) -> str:
 def _credential_drift(ctx: Ctx) -> None:
     """The advisory drift report. `.ci/legacy/run-legacy.sh:672-684`. Never fatal.
 
-    ADVISORY BY DECISION, not by omission: "blocking a developer's bootstrap on a
-    credential only an ops owner can rotate strands the one person who cannot fix
-    it". It compares IDENTIFIERS against `rotation-manifest.json`, never secrets,
-    and never contacts a provider.
+    ADVISORY BY DECISION, not by omission: "blocking a developer's bootstrap on a credential only an ops owner can rotate strands the one person who cannot fix it". It compares IDENTIFIERS against `rotation-manifest.json`, never secrets, and never contacts a provider.
     """
     if ctx.env.get("SKIP_ENV_DRIFT_CHECK") == "1":
         return
@@ -436,10 +400,7 @@ def _credential_drift(ctx: Ctx) -> None:
 def main(argv: list[str] | None = None) -> int:
     """The verb entry point. `argv` is everything after `setup`.
 
-    THE RE-EXEC HAPPENS FIRST, exactly as `.ci/legacy/run-legacy.sh:547` does it,
-    and before argument parsing: a bad flag under a stale docker group should
-    still be reported by the process that can see docker, not by the one that
-    cannot.
+    THE RE-EXEC HAPPENS FIRST, exactly as `.ci/legacy/run-legacy.sh:547` does it, and before argument parsing: a bad flag under a stale docker group should still be reported by the process that can see docker, not by the one that cannot.
     """
     args = list(sys.argv[1:] if argv is None else argv)
     root = paths.repo_root()

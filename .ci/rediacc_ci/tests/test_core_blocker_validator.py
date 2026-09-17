@@ -1,14 +1,9 @@
 """`rediacc_ci.core.blocker_validator` against the live `blocker-validator.sh`.
 
-THE TWIN IS LIVE HERE, NOT FROZEN. `.ci/scripts/lib/blocker-validator.sh` is
-still sourced by eight real call sites (listed in the port's docstring), so
-running the real file is strictly better than a frozen copy: a copy could agree
+THE TWIN IS LIVE HERE, NOT FROZEN. `.ci/scripts/lib/blocker-validator.sh` is still sourced by eight real call sites (listed in the port's docstring), so running the real file is strictly better than a frozen copy: a copy could agree
 with the port while both had drifted away from what those gates execute.
 
-THE BASH DRIVERS ARE STRINGS IN THIS FILE and not scripts under `.ci/`. Ruling 7
-freezes the tracked `.sh` count, and a driver is exactly the kind of file that
-gets added without anyone deciding to. It is also the honest place for it: the
-driver is part of the TEST, not part of the tree under test.
+THE BASH DRIVERS ARE STRINGS IN THIS FILE and not scripts under `.ci/`. Ruling 7 freezes the tracked `.sh` count, and a driver is exactly the kind of file that gets added without anyone deciding to. It is also the honest place for it: the driver is part of the TEST, not part of the tree under test.
 
 WHAT IS COMPARED AND WHAT IS NOT.
   * Byte for byte, streams separate, exit code included: every SINGLE-failure
@@ -19,16 +14,10 @@ WHAT IS COMPARED AND WHAT IS NOT.
     behaviour 4 in the port's docstring), so comparing order here would pin an
     accident.
 
-TWO DIVERGENCES ARE ASSERTED AS DIVERGENCES rather than smoothed over, because a
-test that expected them to match would be a test nobody could make pass:
-`test_the_twin_leaks_a_python_traceback_and_the_port_cannot` and the exit-code
-wording it carries. Both are described at the assertions.
+TWO DIVERGENCES ARE ASSERTED AS DIVERGENCES rather than smoothed over, because a test that expected them to match would be a test nobody could make pass: `test_the_twin_leaks_a_python_traceback_and_the_port_cannot` and the exit-code wording it carries. Both are described at the assertions.
 
 THE PLANTED DEFECTS ARE REAL AND THEY RUN ON A COPY.
-`test_a_planted_defect_in_the_port_is_caught` loads a MUTATED copy of
-`blocker_validator.py` out of a tmpdir under a different module name and requires
-the comparison to go red, then re-asserts the on-disk sha256 of the real module.
-Nothing under `.ci/` is ever written by this file.
+`test_a_planted_defect_in_the_port_is_caught` loads a MUTATED copy of `blocker_validator.py` out of a tmpdir under a different module name and requires the comparison to go red, then re-asserts the on-disk sha256 of the real module. Nothing under `.ci/` is ever written by this file.
 """
 
 import hashlib
@@ -211,10 +200,7 @@ def test_a_missing_file_is_empty_tables_and_success(tmp_path):
 def test_a_directory_is_also_empty_tables_and_success(tmp_path):
     """`[[ ! -f ]]` is true for a directory, and so is `not Path.is_file()`.
 
-    Written as its own case because the obvious Python transliteration is
-    `Path.exists()`, which is FALSE here and would send a directory into the
-    reader, where it becomes an IsADirectoryError and a refusal the twin never
-    makes.
+    Written as its own case because the obvious Python transliteration is `Path.exists()`, which is FALSE here and would send a directory into the reader, where it becomes an IsADirectoryError and a refusal the twin never makes.
     """
     target = tmp_path / "a-directory"
     target.mkdir()
@@ -237,8 +223,7 @@ def test_verify_agrees_byte_for_byte(listfile, case, cc, text):
 def test_verify_agrees_as_a_multiset_when_more_than_one_entry_fails(listfile, case, cc, text):
     """ORDER IS NOT COMPARED HERE, and the reason is in the port's docstring.
 
-    Multiplicity IS compared: sorting both sides' lines and requiring equality
-    refuses "three occurrences equals one", which a set would allow.
+    Multiplicity IS compared: sorting both sides' lines and requiring equality refuses "three occurrences equals one", which a set would allow.
     """
     path = listfile(text)
     old, new = both_verify(path, cc)
@@ -255,10 +240,7 @@ def test_verify_agrees_as_a_multiset_when_more_than_one_entry_fails(listfile, ca
 def test_verify_under_ci_moves_the_head_line_to_stdout_on_both_sides(listfile):
     """`CI=true` turns `x <m>` on stderr into `::error::<m>` on stdout.
 
-    THE STREAM SWAP IS THE SUBJECT, so the two streams are never merged. This is
-    the exact gap a W7 P4 cutover differential found in `profiler_coverage.py`:
-    same words, same exit code, different stream, and the annotation is what
-    surfaces a finding in the Actions UI.
+    THE STREAM SWAP IS THE SUBJECT, so the two streams are never merged. This is the exact gap a W7 P4 cutover differential found in `profiler_coverage.py`: same words, same exit code, different stream, and the annotation is what surfaces a finding in the Actions UI.
     """
     path = listfile("# BLOCKER: tbd\nA-1\n")
     env = diff.env_for(CI="true")
@@ -307,9 +289,7 @@ def test_reason_agrees_byte_for_byte(case, reason):
 def test_the_floor_is_a_reference_and_not_a_copy():
     """`BLOCKER_MIN_LENGTH` must BE the canonical, not equal a literal 30.
 
-    A literal would pass an equality test today and drift the first time the
-    canonical moved, which is the whole failure mode the 2026-09-09 collapse was
-    performed to remove.
+    A literal would pass an equality test today and drift the first time the canonical moved, which is the whole failure mode the 2026-09-09 collapse was performed to remove.
     """
     assert bv.BLOCKER_MIN_LENGTH is allowlist.MIN_REASON_LENGTH
     text = pathlib.Path(paths.from_root(PORT)).read_text(encoding="utf-8")
@@ -343,10 +323,7 @@ def test_the_port_carries_no_phrase_table():
 def test_frame_writes_exactly_what_the_canonical_verify_rows_writes(tmp_path):
     """The two writers of the RS protocol, compared on real bytes.
 
-    `frame()` is a transcription of `allowlist.main`'s `verify-rows` writer
-    because that writer is welded to `sys.stdin`/`sys.stdout` inside a CLI verb.
-    A transcription that nothing compares is a copy waiting to drift, so this
-    runs the REAL module as a subprocess and requires the bytes to match.
+    `frame()` is a transcription of `allowlist.main`'s `verify-rows` writer because that writer is welded to `sys.stdin`/`sys.stdout` inside a CLI verb. A transcription that nothing compares is a copy waiting to drift, so this runs the REAL module as a subprocess and requires the bytes to match.
     """
     listpath = str(tmp_path / "list")
     rows = "A-1\t\nA-2\ttbd\nA-3\t%s\n" % GOOD
@@ -371,9 +348,7 @@ def test_frame_writes_exactly_what_the_canonical_verify_rows_writes(tmp_path):
 def test_frame_and_replay_round_trip_a_forged_sentinel(capsys):
     """A BLOCKER reason that CONTAINS an RS line must not open a frame.
 
-    This is the whole argument for a counted frame over a sentinel: the reason is
-    text somebody writes, and a forged frame would let one rejection hide inside
-    another rejection's message.
+    This is the whole argument for a counted frame over a sentinel: the reason is text somebody writes, and a forged frame would let one rejection hide inside another rejection's message.
     """
     forged = "head line\n%s99\nsmuggled body\ntail line" % bv.BLOCKER_VALIDATOR_RS
     assert bv.replay_frames(bv.frame([forged])) is True
@@ -396,10 +371,7 @@ def test_frame_and_replay_round_trip_a_forged_sentinel(capsys):
 def test_replay_agrees_with_the_twins_reader(tmp_path, case, stream):
     """`_blocker_emit` and `replay_frames`, on the same bytes.
 
-    The `empty` case is the one that matters: it is what proves the twin's
-    zero-frame refusal is unreachable. A here-string appends a newline, so the
-    reader sees ONE empty, unframed line and answers "unframed output ... : "
-    rather than "reported a failure but emitted no message".
+    The `empty` case is the one that matters: it is what proves the twin's zero-frame refusal is unreachable. A here-string appends a newline, so the reader sees ONE empty, unframed line and answers "unframed output ... : " rather than "reported a failure but emitted no message".
     """
     target = tmp_path / "framed"
     target.write_text(stream, encoding="utf-8")
@@ -430,12 +402,9 @@ def test_the_twin_leaks_a_python_traceback_and_the_port_cannot(tmp_path):
 
     THE PORT CANNOT REPRODUCE THIS BY CONSTRUCTION. The traceback belongs to a
     CHILD `python3 -m rediacc_ci.core.allowlist` that the port does not spawn;
-    fabricating one would be inventing output rather than porting it. The
-    divergence is pinned in both directions so neither side can change quietly.
+    fabricating one would be inventing output rather than porting it. The divergence is pinned in both directions so neither side can change quietly.
 
-    THE DEFECT IS THE TWIN'S AND IT IS NOT FIXED HERE: `.ci/scripts/lib/` is not
-    this box's to edit. It is the same class as the `bws-env.sh` traceback leak
-    found in the previous wave of this workstream.
+    THE DEFECT IS THE TWIN'S AND IT IS NOT FIXED HERE: `.ci/scripts/lib/` is not this box's to edit. It is the same class as the `bws-env.sh` traceback leak found in the previous wave of this workstream.
     """
     target = tmp_path / "bad-utf8"
     target.write_bytes(b"# BLOCKER: %s\n\xff\xfe-entry\n" % GOOD.encode())
@@ -460,8 +429,7 @@ def test_the_twin_leaks_a_python_traceback_and_the_port_cannot(tmp_path):
 def test_the_broken_reader_raises_rather_than_returning_empty_tables(tmp_path):
     """The port's in-process signal for the twin's `return 1`.
 
-    Every bash caller invokes `parse_blockered_list` bare, under the `errexit`
-    those gates run with, so `return 1` takes the script down. An exception is
+    Every bash caller invokes `parse_blockered_list` bare, under the `errexit` those gates run with, so `return 1` takes the script down. An exception is
     the same contract; returning empty tables would be the vacuity the twin's own
     "Refusing to report zero entries" line exists to refuse.
     """
@@ -481,9 +449,7 @@ def _digest(rel: str) -> str:
 def _load_mutated(tmp_path, old: str, new: str, name: str):
     """Load a MUTATED COPY of the port under a fresh module name.
 
-    The copy lives in a tmpdir and the real file is never opened for writing, so
-    an aborted test cannot leave the tree broken. The copy still imports the real
-    `rediacc_ci.core.allowlist`, which is the point: only the transport moves.
+    The copy lives in a tmpdir and the real file is never opened for writing, so an aborted test cannot leave the tree broken. The copy still imports the real `rediacc_ci.core.allowlist`, which is the point: only the transport moves.
     """
     source = pathlib.Path(paths.from_root(PORT)).read_text(encoding="utf-8")
     assert old in source, "the plant did not land: %r is not in the port" % old
@@ -498,8 +464,7 @@ def _load_mutated(tmp_path, old: str, new: str, name: str):
 def test_a_planted_defect_in_the_port_is_caught(tmp_path):
     """THE CONTROL FOR EVERY CASE ABOVE. A real mutation must be visible.
 
-    Three plants, one per behaviour the corpus claims to prove, and each is a
-    change a careless port would genuinely make.
+    Three plants, one per behaviour the corpus claims to prove, and each is a change a careless port would genuinely make.
     """
     before = _digest(PORT)
 

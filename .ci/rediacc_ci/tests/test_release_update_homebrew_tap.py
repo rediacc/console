@@ -1,32 +1,15 @@
 """Differential: `rediacc_ci.release.update_homebrew_tap` against its twin
 `.ci/scripts/release/update-homebrew-tap.sh`.
 
-NEITHER SIDE EVER SEES THE REAL TREE, and that is not a convenience here. The
-twin resolves its root through `get_repo_root` (common.sh:205-210), which takes
-no override, so run from this checkout it would `sed` the live
-`private/homebrew-tap/Formula/rediacc-cli.rb`, `git commit` inside that
-submodule and `git push origin HEAD:main`. Every case therefore copies BOTH
-subjects into a throwaway fixture tree at their real relative depths, one tree
-per side, and puts recording fakes for `git`, `curl` and `gh` on a PATH that
-contains no real copy of any of the three. `_assert_no_real_tool` proves the
-shadowing rather than assuming it.
+NEITHER SIDE EVER SEES THE REAL TREE, and that is not a convenience here. The twin resolves its root through `get_repo_root` (common.sh:205-210), which takes no override, so run from this checkout it would `sed` the live `private/homebrew-tap/Formula/rediacc-cli.rb`, `git commit` inside that submodule and `git push origin HEAD:main`. Every case therefore copies BOTH subjects into a
+throwaway fixture tree at their real relative depths, one tree per side, and puts recording fakes for `git`, `curl` and `gh` on a PATH that contains no real copy of any of the three. `_assert_no_real_tool` proves the shadowing rather than assuming it.
 
-`gh` IS STUBBED EVEN THOUGH THIS SCRIPT NEVER CALLS IT, deliberately. The fake
-exits 91 and records, and `test_gh_is_never_invoked` asserts the call log holds
-no `gh` line. A future edit that reaches for `gh pr create` instead of
-`git push` would otherwise reach the real, authenticated `gh` on this machine
-on its first run.
+`gh` IS STUBBED EVEN THOUGH THIS SCRIPT NEVER CALLS IT, deliberately. The fake exits 91 and records, and `test_gh_is_never_invoked` asserts the call log holds no `gh` line. A future edit that reaches for `gh pr create` instead of `git push` would otherwise reach the real, authenticated `gh` on this machine on its first run.
 
-THE CALL LOG IS COMPARED, NOT JUST THE STREAMS, for the reason the sibling port
-records: the observable effect is a set of mutations, and two implementations
-can print identical text while committing to different repositories. THE
-FORMULA FILE IS COMPARED TOO, byte for byte, because the whole point of the awk
-state machine is putting the right checksum in the right platform block and
-nothing on stdout would show it going wrong.
+THE CALL LOG IS COMPARED, NOT JUST THE STREAMS, for the reason the sibling port records: the observable effect is a set of mutations, and two implementations can print identical text while committing to different repositories. THE FORMULA FILE IS COMPARED TOO, byte for byte, because the whole point of the awk state machine is putting the right checksum in the right platform block
+and nothing on stdout would show it going wrong.
 
-FOUR DISTINCT FAKE CHECKSUMS, one per platform, so a slot mix-up is visible at
-a glance instead of needing a diff. `test_planted_slot_swap_is_caught` plants
-exactly that mix-up and drives it red.
+FOUR DISTINCT FAKE CHECKSUMS, one per platform, so a slot mix-up is visible at a glance instead of needing a diff. `test_planted_slot_swap_is_caught` plants exactly that mix-up and drives it red.
 """
 
 from __future__ import annotations
@@ -336,10 +319,7 @@ def run_both(tmp_path: pathlib.Path, args: list[str], **kw):
 def _norm(text: str, root: pathlib.Path, tmpdir: str) -> str:
     """Mask what CANNOT agree, and nothing else.
 
-    Two things: the per-side fixture root, and the random component `mktemp -d`
-    (twin) or `tempfile.mkdtemp` (port) invents inside the per-side TMPDIR. The
-    mask is anchored to that TMPDIR rather than to `/tmp`, so a real absolute
-    path leaking from anywhere else is still compared.
+    Two things: the per-side fixture root, and the random component `mktemp -d` (twin) or `tempfile.mkdtemp` (port) invents inside the per-side TMPDIR. The mask is anchored to that TMPDIR rather than to `/tmp`, so a real absolute path leaking from anywhere else is still compared.
     """
     masked = text.replace(str(root), "<tree>")
     return re.sub(re.escape(tmpdir) + r"/[^/\t\n \"']+", "<scratch>", masked)
@@ -730,10 +710,7 @@ def test_a_missing_git_bot_name_kills_the_run_after_the_formula_was_written(
     tmp_path: pathlib.Path,
 ) -> None:
     """A REAL LATENT DEFECT, REPRODUCED RATHER THAN REPAIRED.
-    `.ci/config/constants.sh:164-166` deliberately does NOT declare
-    GIT_BOT_NAME / GIT_BOT_EMAIL, and `set -u` makes reading an undeclared one
-    fatal. So `--push` on a machine without the org variables rewrites the
-    formula, stages it, and then dies -- leaving the submodule dirty with an
+    `.ci/config/constants.sh:164-166` deliberately does NOT declare GIT_BOT_NAME / GIT_BOT_EMAIL, and `set -u` makes reading an undeclared one fatal. So `--push` on a machine without the org variables rewrites the formula, stages it, and then dies -- leaving the submodule dirty with an
     uncommitted change and no message explaining why."""
     old = _run(tmp_path, "old", ["--version", "2.5.0", "--push"])
     new = _run(tmp_path, "new", ["--version", "2.5.0", "--push"])
@@ -761,8 +738,7 @@ def test_github_pat_installs_the_insteadof_rewrite_before_anything_else(
 
 def test_gh_is_never_invoked(tmp_path: pathlib.Path) -> None:
     """A CONTROL ON THE STUB, not on the script. `gh` is on the PATH as a fake
-    that records and exits 91, so if either side ever reached for it the call
-    log would say so and the run would fail loudly rather than silently
+    that records and exits 91, so if either side ever reached for it the call log would say so and the run would fail loudly rather than silently
     authenticating against the real account."""
     old, new = run_both(
         tmp_path, ["--version", "2.5.0", "--push"], GIT_BOT_NAME="B", GIT_BOT_EMAIL="b@e"
@@ -820,8 +796,7 @@ def test_the_fixture_matches_the_real_formulas_shape() -> None:
 
 def test_planted_slot_swap_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted where a port would fail INVISIBLY: the two mac
-    checksums are swapped, so every stream is byte-identical, every git call is
-    identical, and the only evidence is the formula file. Driven red, then the
+    checksums are swapped, so every stream is byte-identical, every git call is identical, and the only evidence is the formula file. Driven red, then the
     source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

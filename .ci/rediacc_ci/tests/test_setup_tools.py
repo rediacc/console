@@ -1,16 +1,9 @@
 """The install table, asserted against the tree it claims to describe.
 
-WHAT THESE TESTS ARE FOR, beyond re-running the module's own selftest. The
-selftest drives `audit` over SYNTHETIC tables, which proves the assertions fire
-and do not fire. It cannot prove that the SHIPPED table still describes this
-repository, because a synthetic corpus is not this repository. The tests below
-close that half: they read `.devcontainer/toolchain.env`, `toolchain.TOOL_KEYS`
-and the tree's own bash enumerations, and require the table to agree with all
-three.
+WHAT THESE TESTS ARE FOR, beyond re-running the module's own selftest. The selftest drives `audit` over SYNTHETIC tables, which proves the assertions fire and do not fire. It cannot prove that the SHIPPED table still describes this repository, because a synthetic corpus is not this repository. The tests below close that half: they read `.devcontainer/toolchain.env`,
+`toolchain.TOOL_KEYS` and the tree's own bash enumerations, and require the table to agree with all three.
 
-THE DIVISION IS DELIBERATE. If a pin is renamed, the selftest stays green and
-these go red, which is the correct split of blame: the assertions still work, the
-data no longer matches the world.
+THE DIVISION IS DELIBERATE. If a pin is renamed, the selftest stays green and these go red, which is the correct split of blame: the assertions still work, the data no longer matches the world.
 """
 
 from __future__ import annotations
@@ -31,10 +24,7 @@ MODULE = "rediacc_ci.setup.tools"
 def run_module(*args: str, root: str | None = None) -> subprocess.CompletedProcess[str]:
     """Drive the module as a program, with stdout and stderr kept SEPARATE.
 
-    A subprocess and not a `main([])` call, because the exit code and the stream
-    each line lands on are part of this gate's contract and neither survives an
-    in-process call. `PYTHONDONTWRITEBYTECODE` matches how the shadow ledger runs
-    the Python side, so a stray `__pycache__` never makes a fixture tree dirty.
+    A subprocess and not a `main([])` call, because the exit code and the stream each line lands on are part of this gate's contract and neither survives an in-process call. `PYTHONDONTWRITEBYTECODE` matches how the shadow ledger runs the Python side, so a stray `__pycache__` never makes a fixture tree dirty.
     """
     env = {
         "PATH": "/usr/bin:/bin:/usr/local/bin",
@@ -64,9 +54,7 @@ def test_the_shipped_table_audits_clean() -> None:
 def test_every_pinned_tool_has_a_row() -> None:
     """The corpus-derived direction: TOOL_KEYS -> table.
 
-    Written as a set difference rather than a loop so the failure message names
-    every missing tool at once. A loop reports the first and hides the rest,
-    which turns one fix into several rounds.
+    Written as a set difference rather than a loop so the failure message names every missing tool at once. A loop reports the first and hides the rest, which turns one fix into several rounds.
     """
     named = {row.name for row in tools.TOOLS}
     assert set(toolchain.TOOL_KEYS) - named == set()
@@ -85,10 +73,7 @@ def test_every_pin_key_a_row_names_exists_in_the_pins_file() -> None:
 def test_the_pytest_row_exists_and_is_pinned_and_repo_provisioned() -> None:
     """The row the drafted enumeration omitted. driver contract section 5d.
 
-    Three separate assertions rather than one compound, because each failure
-    means something different: absent is the recorded gap reopening, a wrong pin
-    is W6 inventing a version W1 already chose, and a missing `repo` arm is a
-    table telling a developer to `pip install` on a host with no pip.
+    Three separate assertions rather than one compound, because each failure means something different: absent is the recorded gap reopening, a wrong pin is W6 inventing a version W1 already chose, and a missing `repo` arm is a table telling a developer to `pip install` on a host with no pip.
     """
     row = next((r for r in tools.TOOLS if r.name == "pytest"), None)
     assert row is not None
@@ -134,10 +119,7 @@ def test_row_names_are_unique() -> None:
 def test_no_row_writes_a_version_down() -> None:
     """A row names a KEY; it must never carry a value.
 
-    The check is crude on purpose and errs toward refusing: any bare dotted
-    number in an install line or a purpose is treated as a pinned version written
-    in the wrong place. The exception list is EXPLICIT, so a new one has to be
-    argued rather than absorbed.
+    The check is crude on purpose and errs toward refusing: any bare dotted number in an install line or a purpose is treated as a pinned version written in the wrong place. The exception list is EXPLICIT, so a new one has to be argued rather than absorbed.
     """
     allowed = {
         "22",  # the node major, which is part of the nodesource URL and the brew formula
@@ -161,9 +143,7 @@ def test_no_row_writes_a_version_down() -> None:
 def test_the_table_covers_ensure_host_tools() -> None:
     """`.ci/lib/local-common.sh:590` names four tools; all four must be rows.
 
-    Read from the FILE rather than restated here, so a tool added to the bash
-    loop and not to the table is a red. That is the whole point of consolidating
-    six enumerations: the table has to be a superset, provably.
+    Read from the FILE rather than restated here, so a tool added to the bash loop and not to the table is a red. That is the whole point of consolidating six enumerations: the table has to be a superset, provably.
     """
     text = paths.from_root(".ci", "lib", "local-common.sh").read_text(encoding="utf-8")
     match = re.search(r"for tool in ([a-z0-9 ]+); do", text)
@@ -186,10 +166,7 @@ def test_the_table_covers_the_toolchain_acquire_arms() -> None:
 def test_selftest_passes_and_prints_controls() -> None:
     """Exit 0 with ZERO control lines is a failure, so both are asserted.
 
-    The count is compared against the module's own case list rather than a
-    literal, for the reason the driver contract gives in section 6: a hand-typed
-    count is re-typed the day a control is added, and a re-typed count is one
-    nobody re-derives.
+    The count is compared against the module's own case list rather than a literal, for the reason the driver contract gives in section 6: a hand-typed count is re-typed the day a control is added, and a re-typed count is one nobody re-derives.
     """
     result = run_module("--selftest")
     assert result.returncode == 0
@@ -224,9 +201,7 @@ def test_install_plan_refuses_an_unknown_manager() -> None:
 def test_report_never_gates() -> None:
     """`--report` answers a question a developer asks before setup, so it is 0.
 
-    Pinned by a test because the temptation to make it red when something is
-    missing is real, and yielding to it would make the one command a person runs
-    on a fresh machine look like a failure.
+    Pinned by a test because the temptation to make it red when something is missing is real, and yielding to it would make the one command a person runs on a fresh machine look like a failure.
     """
     result = run_module("--report")
     assert result.returncode == 0
@@ -332,8 +307,7 @@ def test_detect_manager_returns_a_known_name_or_nothing() -> None:
 def test_probe_version_returns_none_rather_than_an_empty_string() -> None:
     """None, never "". Two empty strings compare equal and would read as agreement.
 
-    The same argument `normalize_version` makes for raising instead of yielding
-    "": vacuity inside the very comparison the value exists for.
+    The same argument `normalize_version` makes for raising instead of yielding "": vacuity inside the very comparison the value exists for.
     """
     absent = tools.Tool(
         name="definitely-not-a-real-binary-93bf",

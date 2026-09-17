@@ -1,37 +1,20 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/autopilot/sweep-campaigns.sh`.
 
-Finds the open PRs whose autopilot CAMPAIGN is still open, so the 2-hourly
-sweeper can re-dispatch them. PR list and comment dumps in, PR numbers out, one
-per line, ascending.
+Finds the open PRs whose autopilot CAMPAIGN is still open, so the 2-hourly sweeper can re-dispatch them. PR list and comment dumps in, PR numbers out, one per line, ascending.
 
-THE TRUST RULE IS THE PRODUCT, and it is why this is testable offline. A
-campaign is believed only when `state-comment.sh select` accepts the comment:
-its author must equal the autopilot bot AND its body must start with the exact
-header. Console is public, so a lookalike comment claiming `campaign: open` is
-the obvious way to make the sweeper dispatch rounds against a PR nobody armed.
-The port does not re-implement that check -- it CALLS the same
-`state-comment.sh`, twice per PR (`select`, then `fields`), exactly as the twin
-does, so there is still one reader and one writer of that format.
+THE TRUST RULE IS THE PRODUCT, and it is why this is testable offline. A campaign is believed only when `state-comment.sh select` accepts the comment: its author must equal the autopilot bot AND its body must start with the exact header. Console is public, so a lookalike comment claiming `campaign: open` is the obvious way to make the sweeper dispatch rounds against a PR nobody
+armed. The port does not re-implement that check -- it CALLS the same `state-comment.sh`, twice per PR (`select`, then `fields`), exactly as the twin does, so there is still one reader and one writer of that format.
 
-WHY THE SIBLING STAYS BASH. `state-comment.sh` is not ported yet, and
-re-implementing its `select`/`fields` here would create a SECOND parser of the
-state comment, which is the specific thing its own header says must not happen
-("autopilot-gate.sh reads the metadata line through state-comment.sh instead of
-re-parsing it"). The port therefore resolves it the way the twin's `SCRIPT_DIR`
-does, relative to its own file, and spawns it.
+WHY THE SIBLING STAYS BASH. `state-comment.sh` is not ported yet, and re-implementing its `select`/`fields` here would create a SECOND parser of the state comment, which is the specific thing its own header says must not happen ("autopilot-gate.sh reads the metadata line through state-comment.sh instead of re-parsing it"). The port therefore resolves it the way the twin's
+`SCRIPT_DIR` does, relative to its own file, and spawns it.
 
 "COULD NOT LOOK" IS NOT "NOT ARMED". A PR with no comment dump is skipped with
 a warning and does NOT count as scanned; the summary reports the scanned count
-separately for exactly that reason. Preserved verbatim, including the fact that
-a sweep over an empty PR list prints `0 open campaign(s) across 0 scanned PR(s)`
-and exits 0. That is the twin's documented "an empty sweep is a normal, quiet
-result", so the port keeps it -- but a reader should know that this line is also
-what a completely broken input produces, and it is the summary, not the exit
-code, that tells the two apart.
+separately for exactly that reason. Preserved verbatim, including the fact that a sweep over an empty PR list prints `0 open campaign(s) across 0 scanned PR(s)` and exits 0. That is the twin's documented "an empty sweep is a normal, quiet result", so the port keeps it -- but a reader should know that this line is also what a completely broken input produces, and it is the summary,
+not the exit code, that tells the two apart.
 
-WHERE jq IS SPAWNED AND WHERE IT IS NOT, which is a rule this wave applies to
-all four ports:
+WHERE jq IS SPAWNED AND WHERE IT IS NOT, which is a rule this wave applies to all four ports:
 
   SPAWNED   over the `--prs` file, because that file comes from outside and its
             PARSE ERROR is the observable. jq's own text ("jq: parse error:
@@ -43,15 +26,11 @@ all four ports:
             fidelity, and spawning jq three more times per PR to read three
             fields would be a port that got slower than its twin.
 
-`sort -n` IS REPRODUCED, NOT DELEGATED, and the tie-break is the part worth
-naming: GNU `sort -n` without `-s` falls back to a whole-line byte comparison
+`sort -n` IS REPRODUCED, NOT DELEGATED, and the tie-break is the part worth naming: GNU `sort -n` without `-s` falls back to a whole-line byte comparison
 for equal keys, so the port sorts on `(numeric, line)` rather than on the number
-alone. A duplicate PR number in the input is therefore scanned twice by both
-implementations, in the same order.
+alone. A duplicate PR number in the input is therefore scanned twice by both implementations, in the same order.
 
-Exit: 0 (an empty sweep is normal), 2 usage, 1 a missing --prs/--comments-dir,
-and whatever `jq` or `state-comment.sh` exited with when either failed -- under
-the twin's `set -euo pipefail` those statuses propagate, and so do they here.
+Exit: 0 (an empty sweep is normal), 2 usage, 1 a missing --prs/--comments-dir, and whatever `jq` or `state-comment.sh` exited with when either failed -- under the twin's `set -euo pipefail` those statuses propagate, and so do they here.
 
 K=5 LEDGER: `.ci/shadow/w7p6-sweep-campaigns.observations.jsonl`.
 """
@@ -84,12 +63,9 @@ PRS_PROGRAM = """(if type == "array" then . else [] end)
 def script_dir() -> pathlib.Path:
     """The twin's `SCRIPT_DIR`: `.ci/scripts/autopilot`.
 
-    Derived from THIS file's location (`.ci/rediacc_ci/autopilot/x.py`, so three
-    parents up is the repository root), matching the twin's own
+    Derived from THIS file's location (`.ci/rediacc_ci/autopilot/x.py`, so three parents up is the repository root), matching the twin's own
     `dirname "${BASH_SOURCE[0]}"`. `rediacc_ci.paths.repo_root()` is deliberately
-    not used: it honours `$REDIACC_CI_ROOT`, the twin honours nothing, and a
-    fixture that moved one and not the other would diverge for a reason that has
-    nothing to do with this script.
+    not used: it honours `$REDIACC_CI_ROOT`, the twin honours nothing, and a fixture that moved one and not the other would diverge for a reason that has nothing to do with this script.
     """
     return pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "autopilot"
 
@@ -101,11 +77,7 @@ def state_comment() -> str:
 def jq_r(program: str, path: str) -> tuple[int, str]:
     """`jq -r '<program>' <path>`. (exit, stdout).
 
-    STDERR IS INHERITED, NOT CAPTURED, which is what the twin's unredirected jq
-    does: its parse error lands on this process's fd 2 in real time, in the
-    right order relative to anything already flushed there. Capturing and
-    re-emitting would work only as long as every log call flushes, and would put
-    the test in charge of an ordering the subject should own.
+    STDERR IS INHERITED, NOT CAPTURED, which is what the twin's unredirected jq does: its parse error lands on this process's fd 2 in real time, in the right order relative to anything already flushed there. Capturing and re-emitting would work only as long as every log call flushes, and would put the test in charge of an ordering the subject should own.
     """
     proc = subprocess.run(
         ["jq", "-r", program, path],
@@ -119,8 +91,7 @@ def jq_r(program: str, path: str) -> tuple[int, str]:
 def sort_numeric(lines: list[str]) -> list[str]:
     """`LC_ALL=C sort -n`, including GNU sort's last-resort byte comparison.
 
-    A line jq could not have produced (it only emits numbers here) sorts as 0,
-    which is what `sort -n` does with an unparseable key.
+    A line jq could not have produced (it only emits numbers here) sorts as 0, which is what `sort -n` does with an unparseable key.
     """
 
     def key(line: str) -> tuple[float, str]:
@@ -135,10 +106,7 @@ def sort_numeric(lines: list[str]) -> list[str]:
 def pr_numbers(prs_path: str) -> tuple[int, list[str]]:
     """The `jq | sort -n` pipeline. (exit, numbers).
 
-    Under `set -o pipefail` the pipeline carries jq's status, because `sort`
-    always exits 0. A non-zero status here takes the twin down with `set -e`,
-    so the caller propagates rather than continuing with an empty list -- an
-    unreadable PR list is not an empty one.
+    Under `set -o pipefail` the pipeline carries jq's status, because `sort` always exits 0. A non-zero status here takes the twin down with `set -e`, so the caller propagates rather than continuing with an empty list -- an unreadable PR list is not an empty one.
     """
     code, out = jq_r(PRS_PROGRAM, prs_path)
     if code != 0:
@@ -150,8 +118,7 @@ def pr_numbers(prs_path: str) -> tuple[int, list[str]]:
 def raw_field(payload: str, field: str) -> str:
     """`jq -r '.<field>' <<<"$payload"`, for JSON this script's own child wrote.
 
-    EMPTY INPUT IS NOT AN ERROR: `jq -r '.found' <<<""` prints nothing and exits
-    0, so a child that printed nothing yields the empty string here rather than
+    EMPTY INPUT IS NOT AN ERROR: `jq -r '.found' <<<""` prints nothing and exits 0, so a child that printed nothing yields the empty string here rather than
     an exception. That path is what makes `!= "true"` skip the PR instead of
     crashing the sweep.
     """
@@ -177,8 +144,7 @@ def jq_raw(value: Any) -> str:
 def run_state_comment(args: list[str]) -> subprocess.CompletedProcess[str]:
     """`"$SCRIPT_DIR/state-comment.sh" <args>`, with stderr INHERITED.
 
-    Only stdout is captured, because only stdout is what the twin captures with
-    `$( )`. The child's diagnostics go to this process's fd 2 untouched.
+    Only stdout is captured, because only stdout is what the twin captures with `$( )`. The child's diagnostics go to this process's fd 2 untouched.
     """
     return subprocess.run(
         [state_comment(), *args],

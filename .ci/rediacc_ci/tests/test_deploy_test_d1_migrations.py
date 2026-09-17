@@ -3,27 +3,15 @@
 
 A RECORDING FAKE FOR `npx` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing
 here reaches Cloudflare; every case pins a fixture token, account and D1 state
-file. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the
-"one real run" clause and says in as many words that the mocked parity ledger is
-a separate, achievable piece of work. This is that piece.
+file. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-`clone-d1.sh` IS THE REAL SCRIPT, COPIED INTO THE FIXTURE AND RUN BY BOTH SIDES.
-It is not stubbed, because the twin invokes it and so does the port, and running
-the same bytes on both sides is what makes the comparison about the two callers
-rather than about a stub. It reaches `npx wrangler d1 export` and
-`d1 execute`, which the same fake `npx` models: an export writes a small SQL
+`clone-d1.sh` IS THE REAL SCRIPT, COPIED INTO THE FIXTURE AND RUN BY BOTH SIDES. It is not stubbed, because the twin invokes it and so does the port, and running the same bytes on both sides is what makes the comparison about the two callers rather than about a stub. It reaches `npx wrangler d1 export` and `d1 execute`, which the same fake `npx` models: an export writes a small SQL
 file, an execute reports success, and `PRAGMA foreign_key_check` answers with an
-empty result set. Its own output is therefore part of what the two sides are
-compared on.
+empty result set. Its own output is therefore part of what the two sides are compared on.
 
-THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE, for the reason the
-module under test spells out: what the run PRINTS is `::group::` directives and
-one summary line, while the observable effect is the ordered `npx wrangler d1`
-invocations, one clone per region, and the bytes of the generated
-`wrangler-migration-test.toml`.
+THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE, for the reason the module under test spells out: what the run PRINTS is `::group::` directives and one summary line, while the observable effect is the ordered `npx wrangler d1` invocations, one clone per region, and the bytes of the generated `wrangler-migration-test.toml`.
 
-BOTH SIDES GET THEIR OWN D1 STATE FILE, because a run creates and deletes
-databases in it.
+BOTH SIDES GET THEIR OWN D1 STATE FILE, because a run creates and deletes databases in it.
 """
 
 from __future__ import annotations
@@ -368,8 +356,7 @@ def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
 
 def test_edge_databases_are_tested_before_stable_ones(tmp_path) -> None:
     """THE ORDERING IS THE TWIN'S HEADER'S WHOLE POINT: edge is the soak
-    environment, so a regression must surface there before it can propagate to
-    stable on the next promotion. A port that concatenated the two lists the
+    environment, so a regression must surface there before it can propagate to stable on the next promotion. A port that concatenated the two lists the
     other way round would print the same four groups and exit 0."""
     _root, old, new = run_both(tmp_path)
     _agree(old, new, "edge-first")
@@ -398,8 +385,7 @@ def test_the_generated_config_is_byte_identical_and_removed_after_each_region(
     tmp_path,
 ) -> None:
     """The file is written, used and removed inside one iteration, so nothing
-    survives a successful run. `clone-d1.sh` is what makes this checkable: it
-    runs BETWEEN the write and the apply, and a port that wrote the file later
+    survives a successful run. `clone-d1.sh` is what makes this checkable: it runs BETWEEN the write and the apply, and a port that wrote the file later
     would change the order of the calls around it."""
     root, old, new = run_both(tmp_path)
     _agree(old, new, "generated-config")
@@ -435,8 +421,7 @@ def test_the_cleanup_trap_deletes_every_clone_and_says_so(tmp_path) -> None:
 
 def test_a_delete_that_fails_is_reported_as_failed_not_as_deleted(tmp_path) -> None:
     """THE TWIN'S OWN COMMENT CALLS THIS A REPAIR: the old form swallowed
-    stderr, ignored the status and printed `Deleted $db` unconditionally, so a
-    clone left behind announced itself as cleaned up. The warning's WORDING is
+    stderr, ignored the status and printed `Deleted $db` unconditionally, so a clone left behind announced itself as cleaned up. The warning's WORDING is
     part of it, and is asserted whole."""
     _root, old, new = run_both(tmp_path, FAKE_D1_DELETE_FAILS="1")
     _agree(old, new, "delete-fails")
@@ -457,11 +442,7 @@ def test_fact_an_unreadable_regions_json_is_a_green_run_that_tested_nothing(
     """THE VACUITY DEFECT, and it is the reason this port carries a named
     constant for it.
 
-    `< <(jq ...)` is a PROCESS SUBSTITUTION, so neither `set -e` nor `pipefail`
-    can see jq's failure. With `regions.json` gone both lists are empty, the
-    loop runs zero times, and the run reports success. Reproduced, not repaired:
-    adding a floor changes what the release pipeline accepts, which is a
-    cutover-box decision.
+    `< <(jq ...)` is a PROCESS SUBSTITUTION, so neither `set -e` nor `pipefail` can see jq's failure. With `regions.json` gone both lists are empty, the loop runs zero times, and the run reports success. Reproduced, not repaired: adding a floor changes what the release pipeline accepts, which is a cutover-box decision.
     """
     assert port.AN_EMPTY_REGION_LIST_IS_A_GREEN_RUN is True
 
@@ -484,10 +465,7 @@ def test_fact_the_workspace_takes_over_after_the_first_region(tmp_path) -> None:
     """ITERATION 1 RESOLVES AGAINST THE REPO ROOT AND 2..N AGAINST
     `$GITHUB_WORKSPACE`.
 
-    The loop `cd workers/www` relatively and then `cd "$WORKSPACE"`, so a
-    workspace that is NOT the repository root splits the run in two. Driven with
-    a second tree that has its own `workers/www`: the first region's config
-    lands under the repo root and every later one under the workspace.
+    The loop `cd workers/www` relatively and then `cd "$WORKSPACE"`, so a workspace that is NOT the repository root splits the run in two. Driven with a second tree that has its own `workers/www`: the first region's config lands under the repo root and every later one under the workspace.
     """
     assert port.THE_WORKSPACE_TAKES_OVER_AFTER_THE_FIRST_REGION is True
 
@@ -512,11 +490,7 @@ def test_fact_the_uuid_guard_only_fires_for_valid_json_without_a_uuid(tmp_path) 
     """TWO INPUTS, TWO DIFFERENT ENDINGS, and only one of them reaches the
     guard's own sentence.
 
-    With `FAKE_D1_INFO_HAS_NO_UUID` the JSON parses and has no `uuid`, so jq
-    prints nothing, all three stages exit 0, and `Failed to get UUID` is
-    printed. With a `d1 info` that EXITS NON-ZERO the pipeline fails under
-    `pipefail`, the assignment fails, and `set -e` ends the run with wrangler's
-    status and no message from this script at all.
+    With `FAKE_D1_INFO_HAS_NO_UUID` the JSON parses and has no `uuid`, so jq prints nothing, all three stages exit 0, and `Failed to get UUID` is printed. With a `d1 info` that EXITS NON-ZERO the pipeline fails under `pipefail`, the assignment fails, and `set -e` ends the run with wrangler's status and no message from this script at all.
     """
     assert port.THE_UUID_GUARD_IS_ONLY_FOR_VALID_JSON_WITHOUT_A_UUID is True
 
@@ -599,11 +573,7 @@ def test_a_missing_tool_refuses_with_the_same_bytes(tmp_path, tool) -> None:
 def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     """PROVE THE DIFFERENTIAL CAN FIRE, and prove WHICH assertion fires.
 
-    The plant reverses the concatenation so stable clones are tested before edge
-    ones. That is the ONE ordering the twin's header argues for, and it changes
-    NOTHING about the exit code: the same four regions are tested, the same four
-    databases are cleaned up, and the summary line is identical. Only the call
-    log and the group headers see it.
+    The plant reverses the concatenation so stable clones are tested before edge ones. That is the ONE ordering the twin's header argues for, and it changes NOTHING about the exit code: the same four regions are tested, the same four databases are cleaned up, and the summary line is identical. Only the call log and the group headers see it.
     """
     root = fixture(tmp_path)
     old_proc, old_calls = _run(root, "old")
@@ -699,9 +669,7 @@ def test_the_argv_builders_match_the_twins_words() -> None:
 def test_the_mktemp_mask_hides_only_the_random_suffix() -> None:
     """A MASK THAT SWALLOWED MORE THAN THE SUFFIX WOULD MAKE `_agree` VACUOUS.
 
-    Both halves, because either alone is satisfiable by a broken pattern: the
-    mask DOES collapse two different `mktemp -d` directories to one string, and
-    it does NOT touch the filename after it, a `/tmp` path of any other shape, or
+    Both halves, because either alone is satisfiable by a broken pattern: the mask DOES collapse two different `mktemp -d` directories to one string, and it does NOT touch the filename after it, a `/tmp` path of any other shape, or
     the `--output=` flag that carries it.
     """
     a = "call: npx wrangler d1 export db --remote --output=/tmp/tmp.KSwRwsYJRr/export.sql"
@@ -721,11 +689,9 @@ def test_the_guard_table_and_the_literal_reads_cannot_drift() -> None:
     """`require_env` READS `os.environ` WITH LITERAL KEYS so the env-registry
     scanner can see them, and `REQUIRED_ENV` is the table it must agree with.
 
-    Two claims, because either one alone is satisfiable by a broken file: the
-    table names exactly the two variables the twin guards, IN ORDER, and the
+    Two claims, because either one alone is satisfiable by a broken file: the table names exactly the two variables the twin guards, IN ORDER, and the
     function's SOURCE contains a literal `os.environ.get("<name>"` for each of
-    them. A future edit that folds the reads back into a loop over the table
-    passes the first assertion and fails the second, which is the whole point.
+    them. A future edit that folds the reads back into a loop over the table passes the first assertion and fails the second, which is the whole point.
     """
     assert [name for name, _ in port.REQUIRED_ENV] == [
         "CLOUDFLARE_API_TOKEN",

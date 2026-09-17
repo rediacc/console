@@ -1,29 +1,19 @@
 """`rediacc_ci.ci.set_image_tags` against its bash twin.
 
-WHAT IS DRIVEN FOR REAL AND WHAT IS FIXTURED. Every case with an explicit
-`IMAGE_TAG` runs against the REAL checkout, because that arm reads nothing from
-the tree: `derive-image-tag.sh --version X` validates X and prints it. The
+WHAT IS DRIVEN FOR REAL AND WHAT IS FIXTURED. Every case with an explicit `IMAGE_TAG` runs against the REAL checkout, because that arm reads nothing from the tree: `derive-image-tag.sh --version X` validates X and prints it. The
 auto-derive arm reads `git tag -l 'v*' --sort=-v:refname`, whose answer is
-whatever this repository happens to be tagged at, so it runs inside a DISPOSABLE
-one-commit repository built under `tmp_path` and carrying exactly the tags the
+whatever this repository happens to be tagged at, so it runs inside a DISPOSABLE one-commit repository built under `tmp_path` and carrying exactly the tags the
 case needs.
 
-HOW BOTH SIDES ARE POINTED AT THE FIXTURE, since it is the mechanism the whole
-file rests on. `get_repo_root` (common.sh:205) resolves three directories up
+HOW BOTH SIDES ARE POINTED AT THE FIXTURE, since it is the mechanism the whole file rests on. `get_repo_root` (common.sh:205) resolves three directories up
 from the common.sh THAT WAS SOURCED, so a fixture that carries its own
-`.ci/scripts/lib/common.sh` and reaches the twin through
-`<fixture>/.ci/scripts/ci/set-image-tags.sh` sends the twin to the fixture. The
-port resolves through `paths.repo_root()`, which honours `$REDIACC_CI_ROOT`.
-Both scripts are SYMLINKS to the real files -- bash does not resolve symlinks in
+`.ci/scripts/lib/common.sh` and reaches the twin through `<fixture>/.ci/scripts/ci/set-image-tags.sh` sends the twin to the fixture. The port resolves through `paths.repo_root()`, which honours `$REDIACC_CI_ROOT`. Both scripts are SYMLINKS to the real files -- bash does not resolve symlinks in
 `${BASH_SOURCE[0]}`, so the twin under test is the real, unmodified twin, and a
 change to it cannot be missed by this file.
 
-`assert_scratch` re-derives `git rev-parse --show-toplevel` before any fixture is
-written to, and refuses anything inside `/home/developer/console`.
+`assert_scratch` re-derives `git rev-parse --show-toplevel` before any fixture is written to, and refuses anything inside `/home/developer/console`.
 
-WHAT IS NORMALISED, and it is one token. `derive_image_tag` prints
-`<program>: line 81: ...` for a tag build with no `GITHUB_REF_NAME`, and the
-program is a `.sh` on one side and a `.py` on the other. `strip_prog` replaces
+WHAT IS NORMALISED, and it is one token. `derive_image_tag` prints `<program>: line 81: ...` for a tag build with no `GITHUB_REF_NAME`, and the program is a `.sh` on one side and a `.py` on the other. `strip_prog` replaces
 that one token; the LINE NUMBER is compared, because a drifting line number is
 the silent failure the pin exists to catch.
 
@@ -228,8 +218,7 @@ def test_with_no_initialize_tags_only_the_sibling_writes(tmp_path: pathlib.Path)
 def test_one_override_present_and_one_absent(tmp_path: pathlib.Path) -> None:
     """`[[ -n "$WEB_TAG" ]] && echo` with WEB set and RENET empty. Both arms, one run.
 
-    Also the `set -e` question: the failing `[[ -n "" ]]` must NOT end the script,
-    so the trailing log line has to be there.
+    Also the `set -e` question: the failing `[[ -n "" ]]` must NOT end the script, so the trailing log line has to be there.
     """
     old, new, files = run_both(
         tmp_path, env_extra={"IMAGE_TAG": "v1.2.3", "WEB_TAG": "web-abc", "RENET_TAG": ""}
@@ -319,11 +308,7 @@ def test_an_unwritable_github_env_dies_in_the_sibling_and_the_port_dies_louder(
 ) -> None:
     """A KNOWN DIVERGENCE, and it belongs to `derive_image_tag`, not to this port.
 
-    The unwritable target is reached by the SIBLING first (it writes TAG,
-    WEB_TAG and RENET_TAG before this script appends anything), so
-    `set-image-tags.sh`'s own line 33 is unreachable in this case and what the
-    two sides are really being compared on is `derive-image-tag.sh:134` against
-    `derive_image_tag.write_github_env`:
+    The unwritable target is reached by the SIBLING first (it writes TAG, WEB_TAG and RENET_TAG before this script appends anything), so `set-image-tags.sh`'s own line 33 is unreachable in this case and what the two sides are really being compared on is `derive-image-tag.sh:134` against `derive_image_tag.write_github_env`:
 
         $ IMAGE_TAG=v1.2.3 GITHUB_ENV=/nope/x.txt bash .ci/scripts/ci/set-image-tags.sh
         <path>/derive-image-tag.sh: line 134: /nope/x.txt: No such file or directory
@@ -335,12 +320,8 @@ def test_an_unwritable_github_env_dies_in_the_sibling_and_the_port_dies_louder(
         exit=1
 
     The STATUS agrees; the stderr does not, and a traceback where the twin
-    prints one line reads as a crash in the porting harness rather than as a bad
-    path. `derive_image_tag.py` is another wave's file and is not repaired from
-    here, so the disagreement is PINNED instead of hidden: when
-    `write_github_env` and `write_github_output` learn to catch OSError, this
-    test goes red, and the fix is to delete the two `assert` lines about the
-    traceback and call `assert_identical` like every other case in this file.
+    prints one line reads as a crash in the porting harness rather than as a bad path. `derive_image_tag.py` is another wave's file and is not repaired from here, so the disagreement is PINNED instead of hidden: when `write_github_env` and `write_github_output` learn to catch OSError, this test goes red, and the fix is to delete the two `assert` lines about the traceback and call
+    `assert_identical` like every other case in this file.
     """
     old, new, files = run_both(
         tmp_path,
@@ -366,12 +347,8 @@ def test_the_scripts_own_append_names_its_own_line_when_it_fails(
 ) -> None:
     """`append_override` directly, because the differential cannot reach it.
 
-    Twin line 33 is only ever reached when the sibling has ALREADY appended
-    three names to the same file, so any target that breaks this append breaks
-    the sibling's first. The branch is still real -- a target removed or
-    remounted read-only between the two writes, or a full disk -- and without a
-    test it is a code path nobody has ever run. Driven here as a unit, since a
-    differential cannot produce the state.
+    Twin line 33 is only ever reached when the sibling has ALREADY appended three names to the same file, so any target that breaks this append breaks the sibling's first. The branch is still real -- a target removed or remounted read-only between the two writes, or a full disk -- and without a test it is a code path nobody has ever run. Driven here as a unit, since a differential
+    cannot produce the state.
     """
     target = str(tmp_path / "gone" / "env.txt")
     with pytest.raises(SystemExit) as refusal:
@@ -394,10 +371,7 @@ def test_colour_is_emitted_on_a_terminal_by_both_sides(tmp_path: pathlib.Path) -
 def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
     """The two `>>"$GITHUB_ENV"` appends, re-derived from the twin.
 
-    Without this the port would keep printing `line 33` after someone inserted a
-    line above it, and every differential above would still pass: both sides
-    would be wrong together only until the twin moved, and then the failure
-    would name a byte difference instead of the reason for it.
+    Without this the port would keep printing `line 33` after someone inserted a line above it, and every differential above would still pass: both sides would be wrong together only until the twin moved, and then the failure would name a byte difference instead of the reason for it.
     """
     with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as handle:
         lines = handle.read().split("\n")

@@ -1,30 +1,18 @@
 r"""check:ci-env-file-adoption -- `set -a; source <envfile>` must not come back.
 
 WHY THIS EXISTS. `set -a; source "$f"` does two things nobody at the call site
-asked for. It EXECUTES the file, so a `$(...)` in a value runs -- and these files
-hold ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, ACCOUNT_JWT_SECRET
-and ACCOUNT_SERVER_API_KEY. And it lets the FILE overwrite the SHELL, so every
-override this repo ships through the environment -- a workflow `env:` block, a
+asked for. It EXECUTES the file, so a `$(...)` in a value runs -- and these files hold ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, ACCOUNT_JWT_SECRET and ACCOUNT_SERVER_API_KEY. And it lets the FILE overwrite the SHELL, so every override this repo ships through the environment -- a workflow `env:` block, a
 GITHUB_ENV append, `RUSTFS_PORT=9101 ./script` -- is discarded in favour of a line
 written to disk months ago, silently.
 
-`rediacc_ci.core.env` is the replacement and `scripts/lib/env-file.sh` is the bash
-shim over it.
+`rediacc_ci.core.env` is the replacement and `scripts/lib/env-file.sh` is the bash shim over it.
 
-WHY THE SHIM LIVES UNDER `scripts/lib/` AND NOT `.ci/lib/`, WHICH IS WHERE ITS
-SIBLINGS ARE. Ruling 7 makes `.ci` and `.claude` single-language:
-`check_language_policy.COVERED_ROOTS` is `(".ci", ".claude")` and its
-`baseline_additions` refuses a NEW tracked `.sh` under either. The first cut of
-this work put the shim at `.ci/lib/env-file.sh` beside `find-port.sh` and
+WHY THE SHIM LIVES UNDER `scripts/lib/` AND NOT `.ci/lib/`, WHICH IS WHERE ITS SIBLINGS ARE. Ruling 7 makes `.ci` and `.claude` single-language: `check_language_policy.COVERED_ROOTS` is `(".ci", ".claude")` and its `baseline_additions` refuses a NEW tracked `.sh` under either. The first cut of this work put the shim at `.ci/lib/env-file.sh` beside `find-port.sh` and
 `age-check.sh`, and `check:ci-language-policy` went rc=1 with `2 NEW bash
 file(s)`; the registration was unwound rather than allowlisted.
 
-A bash shim for bash callers cannot itself be Python, so the choice was an
-allowlist entry or a different address. `scripts/` is not a covered root, and the
-shim already serves callers on both sides of the line -- `scripts/dev/deploy-bench.sh`
-and `programs/backup-storage/start-local-plane.sh` were never under `.ci` at all --
-so a shared location is the better description of what it is, not merely the legal
-one. No exemption was added to any allowlist for this gate or for the shim.
+A bash shim for bash callers cannot itself be Python, so the choice was an allowlist entry or a different address. `scripts/` is not a covered root, and the shim already serves callers on both sides of the line -- `scripts/dev/deploy-bench.sh` and `programs/backup-storage/start-local-plane.sh` were never under `.ci` at all -- so a shared location is the better description of what
+it is, not merely the legal one. No exemption was added to any allowlist for this gate or for the shim.
 
 THREE CHECKS, because two of them can pass while the thing is broken:
 
@@ -54,15 +42,8 @@ THREE CHECKS, because two of them can pass while the thing is broken:
      that did nothing at all, because "the variable still holds the value I
      exported" is also what happens when nothing reads the file.
 
-ONE EXEMPTION DISAPPEARED IN THE PORT, and it is worth saying why rather than
-letting the list quietly shrink by one. The bash predecessor had to exempt
-ITSELF: it wrote `set -a` fixtures to prove its own matcher fired on all three
-spellings, and the sweep read those literals in its own source. This module has
-the same fixtures and needs no exemption, because the sweep scans `*.sh` and this
-is not one. That is a real reduction in exempted surface, not an accounting
-change -- the alternative the predecessor named was obfuscating the literal so the
-sweep could not see it, which would have disarmed the control that keeps the
-matcher honest.
+ONE EXEMPTION DISAPPEARED IN THE PORT, and it is worth saying why rather than letting the list quietly shrink by one. The bash predecessor had to exempt ITSELF: it wrote `set -a` fixtures to prove its own matcher fired on all three spellings, and the sweep read those literals in its own source. This module has the same fixtures and needs no exemption, because the sweep scans `*.sh`
+and this is not one. That is a real reduction in exempted surface, not an accounting change -- the alternative the predecessor named was obfuscating the literal so the sweep could not see it, which would have disarmed the control that keeps the matcher honest.
 """
 
 from __future__ import annotations
@@ -178,10 +159,7 @@ def _sh(script, *args, env=None, cwd=None):
 def _scan_set(root):
     """Tracked AND untracked-not-ignored shell files.
 
-    `git ls-files` alone would leave a brand new script invisible to this sweep
-    until somebody committed it, which is exactly the window in which a `set -a`
-    gets written. `--others --exclude-standard` adds the new files without
-    dragging in node_modules or anything else .gitignore already refuses.
+    `git ls-files` alone would leave a brand new script invisible to this sweep until somebody committed it, which is exactly the window in which a `set -a` gets written. `--others --exclude-standard` adds the new files without dragging in node_modules or anything else .gitignore already refuses.
     """
     seen = set()
     for extra in ([], ["--others", "--exclude-standard"]):

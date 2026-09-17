@@ -1,22 +1,12 @@
 """Port of `.ci/scripts/test/gates/test-ci-trace-branch.sh`.
 
-ci-trace must be able to read a branch that has NO open PR, and the read must
-stay OPT-IN. Measured 2026-08-25 against Console CI run 32903007256 (b4b5797e on
-main) while that run was still in_progress: a branch tracer that answered from
-the PR query alone reported nothing at all.
+ci-trace must be able to read a branch that has NO open PR, and the read must stay OPT-IN. Measured 2026-08-25 against Console CI run 32903007256 (b4b5797e on main) while that run was still in_progress: a branch tracer that answered from the PR query alone reported nothing at all.
 
-HERMETIC: `gh` is shimmed, so this gate never touches the network. A gate that
-needs GitHub to be up is a gate that gets skipped on somebody else's outage.
+HERMETIC: `gh` is shimmed, so this gate never touches the network. A gate that needs GitHub to be up is a gate that gets skipped on somebody else's outage.
 
-WHAT THIS GATE CANNOT SEE, carried over unchanged: it does not prove the GraphQL
-field selection is still valid against the live schema. A deprecation surfaces at
-runtime as `unreadable`, which at least says so, but this gate stays green
-through it.
+WHAT THIS GATE CANNOT SEE, carried over unchanged: it does not prove the GraphQL field selection is still valid against the live schema. A deprecation surfaces at runtime as `unreadable`, which at least says so, but this gate stays green through it.
 
-THE FAKE `gh` IS THE TWIN'S. `with_fake_gh` in test-helpers.sh cats ONE file for
-every call, which cannot tell the PR query from the branch query, and telling
-them apart is the entire subject here. So the twin writes its own router and this
-module writes the same one from a template.
+THE FAKE `gh` IS THE TWIN'S. `with_fake_gh` in test-helpers.sh cats ONE file for every call, which cannot tell the PR query from the branch query, and telling them apart is the entire subject here. So the twin writes its own router and this module writes the same one from a template.
 
 TWO PLACES WHERE `$0` HAD TO BECOME "THIS MODULE", and they are not cosmetic:
 
@@ -29,8 +19,7 @@ TWO PLACES WHERE `$0` HAD TO BECOME "THIS MODULE", and they are not cosmetic:
     without handling the state. Two files do that now, the twin and this module,
     so both are excluded BY PATH and the exclusion is printed in the pass line.
 
-THE SWEEP IS A READ, NEVER A WRITE. The twin records that an earlier version
-wrote a probe file under `.ci/scripts/quality/` to exercise the untracked half of
+THE SWEEP IS A READ, NEVER A WRITE. The twin records that an earlier version wrote a probe file under `.ci/scripts/quality/` to exercise the untracked half of
 the enumeration and that check-pool-writer-safety correctly rejected it; the
 probe lives in a temp directory here for the same reason.
 

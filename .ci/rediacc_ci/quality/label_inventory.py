@@ -66,8 +66,7 @@ THE THREE ALLOWLIST ENTRIES CARRY THEIR OWN BLOCKER REASONS, verbatim:
     creates it immediately before its first use, and the same ordering trap
     applies in both directions.
 
-THE ARCHAEOLOGY THAT GETS TIDIED OUT, AND MUST NOT BE. The twin was FIXED at
-commit 96355d3b5 on 2026-09-06, and the fix is one `|| true`:
+THE ARCHAEOLOGY THAT GETS TIDIED OUT, AND MUST NOT BE. The twin was FIXED at commit 96355d3b5 on 2026-09-06, and the fix is one `|| true`:
 
     `|| true` IS LOAD-BEARING, and its absence disarmed the floor below. grep
     exits 1 when the file declares no labels, `set -e` killed the script HERE, and
@@ -76,9 +75,7 @@ commit 96355d3b5 on 2026-09-06, and the fix is one `|| true`:
     2026-09-06 with LABEL_INVENTORY_LABELS_FILE pointed at an empty file: exit 1,
     zero bytes on both streams.
 
-Zero bytes on both streams is the shape worth remembering: it looks exactly like a
-gate failing for a real reason. The Python port cannot reproduce the defect, which
-is why the note has to survive as prose.
+Zero bytes on both streams is the shape worth remembering: it looks exactly like a gate failing for a real reason. The Python port cannot reproduce the defect, which is why the note has to survive as prose.
 
 THE DESCRIPTION CAP IS A CREATE-TIME RULE, so it fails late and elsewhere:
 
@@ -142,8 +139,7 @@ SECTION (c) EXISTS BECAUSE NAMES WERE NEVER THE WHOLE CONTRACT:
     The description is documentation that ships to every human who opens the label
     picker, and it was the one part of the label nothing checked.
 
-AND THE SWALLOWED-FAILURE NOTE ON THAT COMPARISON, which is the reason it has an
-exit code of its own:
+AND THE SWALLOWED-FAILURE NOTE ON THAT COMPARISON, which is the reason it has an exit code of its own:
 
     `|| true` here would make a CRASHED comparator indistinguishable from "the
     labels agree" -- empty output either way, and the gate would report a clean tree
@@ -165,34 +161,21 @@ exit code of its own:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE EMBEDDED PYTHON HEREDOC BECOMES ORDINARY FUNCTIONS, and its exit-code contract
-becomes an exception. The twin runs a `python3 - <<'PY'` child and captures
+THE EMBEDDED PYTHON HEREDOC BECOMES ORDINARY FUNCTIONS, and its exit-code contract becomes an exception. The twin runs a `python3 - <<'PY'` child and captures
 `drift_rc` separately so that a crash cannot read as agreement; here the same
-distinction is `DriftUnreadableError`, raised where that child exits 1, and the caller
-turns it into the identical message and exit. The shape of the guarantee is what
-matters: an unreadable comparison is never a clean tree.
+distinction is `DriftUnreadableError`, raised where that child exits 1, and the caller turns it into the identical message and exit. The shape of the guarantee is what matters: an unreadable comparison is never a clean tree.
 
 `length()` IN awk IS BYTES UNDER `LC_ALL=C`, which `scripts/lib/shadow-gate.ts`
 pins for both sides, while Python's `len()` counts CHARACTERS. Every description in
 this repo is ASCII, so the two agree today; a description with a non-ASCII
-character would be measured differently, and the port would under-report rather
-than over-report. Stated rather than silently normalised, because normalising it
-would make the port disagree with the twin on a real file.
+character would be measured differently, and the port would under-report rather than over-report. Stated rather than silently normalised, because normalising it would make the port disagree with the twin on a real file.
 
-THE UNQUOTING ORDER IS OBSERVABLE AND IS PRESERVED. The twin strips the `- name:`
-prefix, then a surrounding pair of double quotes, then a surrounding pair of single
-quotes, and only THEN trailing whitespace. So `- name: "x"  ` keeps its quotes: the
-`^"(.*)"$` anchor fails while the trailing spaces are still there. That is a bug in
-the twin and it is carried, because "fixing" it changes which names reconcile.
+THE UNQUOTING ORDER IS OBSERVABLE AND IS PRESERVED. The twin strips the `- name:` prefix, then a surrounding pair of double quotes, then a surrounding pair of single quotes, and only THEN trailing whitespace. So `- name: "x" ` keeps its quotes: the `^"(.*)"$` anchor fails while the trailing spaces are still there. That is a bug in the twin and it is carried, because "fixing" it
+changes which names reconcile.
 
-`gh` IS SHELLED OUT TO, once for the name list and once for the JSON, exactly as
-the twin does it, and the single-label re-read is a third call. A failed call is
-never folded into "fine": the name read refuses outright, and the re-read reports
-"could not probe" (2), which REPORTS the finding rather than dropping it.
+`gh` IS SHELLED OUT TO, once for the name list and once for the JSON, exactly as the twin does it, and the single-label re-read is a third call. A failed call is never folded into "fine": the name read refuses outright, and the re-read reports "could not probe" (2), which REPORTS the finding rather than dropping it.
 
-THE ALLOWLIST IS PRINTED, NOT SILENT. `log_info` names every allowlisted label that
-is legitimately absent on every run, so the debt stays visible. That is the
-house rule about quiet exemptions, and the twin already follows it.
+THE ALLOWLIST IS PRINTED, NOT SILENT. `log_info` names every allowlisted label that is legitimately absent on every run, so the debt stays visible. That is the house rule about quiet exemptions, and the twin already follows it.
 """
 
 import json
@@ -250,10 +233,7 @@ DRIFT_FIELD = re.compile(r"^\s*(description|color):\s*(.*)$")
 class DriftUnreadableError(RuntimeError):
     """The drift comparison could not run.
 
-    A DISTINCT TYPE, not a returned empty list, because those are exactly the two
-    things the twin's `drift_rc` exists to keep apart: "the comparison ran and
-    found nothing" and "the comparison never ran". Collapsing them is the
-    swallowed-failure class check-swallowed-failures.sh already caught twice.
+    A DISTINCT TYPE, not a returned empty list, because those are exactly the two things the twin's `drift_rc` exists to keep apart: "the comparison ran and found nothing" and "the comparison never ran". Collapsing them is the swallowed-failure class check-swallowed-failures.sh already caught twice.
     """
 
 
@@ -278,10 +258,7 @@ def declared_labels(text: str) -> list[str]:
 def desc_over_cap(text: str, cap: int = DESC_CAP) -> list[tuple[str, int]]:
     """Every declared description longer than `cap`, as (name, length).
 
-    THE NAME IS WHATEVER `- name:` WAS SEEN LAST, exactly as the awk program
-    carries it in a variable across records. A description line with no preceding
-    name is therefore attributed to the empty string rather than skipped, which is
-    the twin's behaviour on a malformed file.
+    THE NAME IS WHATEVER `- name:` WAS SEEN LAST, exactly as the awk program carries it in a variable across records. A description line with no preceding name is therefore attributed to the empty string rather than skipped, which is the twin's behaviour on a malformed file.
     """
     out: list[tuple[str, int]] = []
     name = ""
@@ -301,9 +278,7 @@ def desc_over_cap(text: str, cap: int = DESC_CAP) -> list[tuple[str, int]]:
 def drift(live_json: str, labels_text: str) -> list[tuple[str, str, str]]:
     """Declared labels whose live description or colour disagrees.
 
-    Raises `DriftUnreadableError` where the twin's child exits 1. Absence is section
-    (a)'s job, not this one's, so a declared label missing from the live list is
-    skipped here rather than reported twice.
+    Raises `DriftUnreadableError` where the twin's child exits 1. Absence is section (a)'s job, not this one's, so a declared label missing from the live list is skipped here rather than reported twice.
     """
     try:
         parsed = json.loads(live_json)
@@ -367,11 +342,7 @@ def url_encode(name: str) -> str:
 def probe_label(name: str, env: dict[str, str] | None = None) -> int:
     """0 exists, 1 confirmed absent, 2 could not probe.
 
-    THREE OUTCOMES, NOT TWO, and that is the whole design. "Could not probe" is
-    not "absent": a 403, a 500 or a network error says nothing about the label. In
-    injected mode there is no API to re-read, so the injected list stands as its
-    own authority and the probe reports "could not" (which REPORTS the finding,
-    preserving the offline test seam).
+    THREE OUTCOMES, NOT TWO, and that is the whole design. "Could not probe" is not "absent": a 403, a 500 or a network error says nothing about the label. In injected mode there is no API to re-read, so the injected list stands as its own authority and the probe reports "could not" (which REPORTS the finding, preserving the offline test seam).
     """
     environ = os.environ if env is None else env
     probe_file = environ.get(PROBE_FILE_ENV)
@@ -411,8 +382,7 @@ def _which(name: str) -> str | None:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 when the inventory reconciles, 1 otherwise.
 
-    NEVER 0 ON A FAILED READ. Every path that cannot see the live list refuses,
-    because "empty" would make direction (b) vacuously clean.
+    NEVER 0 ON A FAILED READ. Every path that cannot see the live list refuses, because "empty" would make direction (b) vacuously clean.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -650,8 +620,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions on every reader, and on the three-outcome probe.
 
-    THE FLOOR IS DERIVED from the case corpus, so a case that stops running turns
-    the suite red rather than quietly shortening it.
+    THE FLOOR IS DERIVED from the case corpus, so a case that stops running turns the suite red rather than quietly shortening it.
     """
     declared_cases = [
         ("a plain declaration", "- name: alpha\n  color: fff\n", ["alpha"]),

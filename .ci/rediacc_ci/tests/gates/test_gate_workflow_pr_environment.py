@@ -1,37 +1,22 @@
 """Port of `.ci/scripts/test/gates/test-workflow-pr-environment.sh`.
 
-Both-ways test for the pr-environment rule in
-`.ci/scripts/quality/check-workflows.sh`.
+Both-ways test for the pr-environment rule in `.ci/scripts/quality/check-workflows.sh`.
 
-THE BUG IT GUARDS. A job-level `environment:` makes GitHub create the environment
-OBJECT and a deployment record. ci.yml's deploy-preview job declared
+THE BUG IT GUARDS. A job-level `environment:` makes GitHub create the environment OBJECT and a deployment record. ci.yml's deploy-preview job declared
 `pr-${{ github.event.pull_request.number }}`, and CI can never clean the objects
-up: deleting one needs Administration:write, which check-no-app-admin-perm.sh
-deliberately forbids the CI App from holding, so a leaked token cannot delete
-`edge` or `stable`. 25 empty `pr-*` shells accumulated on /deployments and had to
-be removed by hand on 2026-09-03.
+up: deleting one needs Administration:write, which check-no-app-admin-perm.sh deliberately forbids the CI App from holding, so a leaked token cannot delete `edge` or `stable`. 25 empty `pr-*` shells accumulated on /deployments and had to be removed by hand on 2026-09-03.
 
-THE POSITIVE CONTROL IS THE HISTORICAL DEFECT, VERBATIM: the exact three lines
-removed from ci.yml, not a synthetic mutation. That text is what created the 25. A
-rule that cannot reject it would not have caught the thing it exists for.
+THE POSITIVE CONTROL IS THE HISTORICAL DEFECT, VERBATIM: the exact three lines removed from ci.yml, not a synthetic mutation. That text is what created the 25. A rule that cannot reject it would not have caught the thing it exists for.
 
 AND THE SCALAR FORM, which is the case that decides whether this rule is real.
 `environment: pr-${{ ... }}` on one line is equally valid GitHub and would sail
-past a rule that only looked at a `name:` key. This repo has already shipped a
-workflow rule that was born VACUOUS (an awk `\\b` that matched nothing while
-reporting "All workflows are clean"), so the half that is easy to omit is the
-half asserted first.
+past a rule that only looked at a `name:` key. This repo has already shipped a workflow rule that was born VACUOUS (an awk `\\b` that matched nothing while reporting "All workflows are clean"), so the half that is easy to omit is the half asserted first.
 
-NO "the real tree passes" CASE, deliberately, and the twin says why: check:ci-workflows
-runs this very rule over the real .github/workflows on every pre-push and every CI
-run, so a copy here asserts nothing new, and it is not free -- the full scan took
-that battery from ~2s to 21.6s under the lane's contention, which
-check:ci-gate-manifest correctly refused. The real-tree verdict belongs to the
+NO "the real tree passes" CASE, deliberately, and the twin says why: check:ci-workflows runs this very rule over the real .github/workflows on every pre-push and every CI run, so a copy here asserts nothing new, and it is not free -- the full scan took that battery from ~2s to 21.6s under the lane's contention, which check:ci-gate-manifest correctly refused. The real-tree verdict
+belongs to the
 gate; this file's job is the two directions the gate cannot show by passing.
 
-NO `xdist_group`. Each case gets its own `mktemp -d` fixture directory, and the
-subject is driven with a per-subprocess environment rather than by mutating this
-one.
+NO `xdist_group`. Each case gets its own `mktemp -d` fixture directory, and the subject is driven with a per-subprocess environment rather than by mutating this one.
 """
 
 from rediacc_ci.tests.gates import harness, workflow_rule
@@ -95,15 +80,9 @@ def test_the_fixture_directory_is_what_is_judged(gate):
 
     Every case here claims a verdict about a fixture tree, and every one of those
     claims rests on `WORKFLOW_INLINE_ONLY=1` actually emptying GITHUB_YAMLS so the
-    banned-pattern scans become no-ops and `WORKFLOW_DIR` is the only thing
-    judged. If that switch stopped working, the rule would be reading the REAL
-    `.github/workflows` -- which is clean, and has to stay clean, so the passing
-    cases would keep passing for a reason that has nothing to do with their
-    fixtures.
+    banned-pattern scans become no-ops and `WORKFLOW_DIR` is the only thing judged. If that switch stopped working, the rule would be reading the REAL `.github/workflows` -- which is clean, and has to stay clean, so the passing cases would keep passing for a reason that has nothing to do with their fixtures.
 
-    Two directories, one violating and one clean, driven through the same
-    incantation in the same process. A verdict that TRACKS the directory is the
-    only evidence that the directory is what was read.
+    Two directories, one violating and one clean, driven through the same incantation in the same process. A verdict that TRACKS the directory is the only evidence that the directory is what was read.
     """
     with harness.temp_dir() as root:
         bad = root / "bad"

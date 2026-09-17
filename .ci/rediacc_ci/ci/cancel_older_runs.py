@@ -1,33 +1,23 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/cancel-older-runs.sh` (124 lines).
 
-Force-cancel the CI runs on this branch that started before this one. The twin's
-header owns the contract (it replaced the concurrency group's slow normal-cancel
+Force-cancel the CI runs on this branch that started before this one. The twin's header owns the contract (it replaced the concurrency group's slow normal-cancel
 and the serializing Queue gate); it is not restated here beyond what the code
 needs.
 
 LIVE CALLER, not repointed. The bash twin stays the registered gate; this module
-is its verified-equivalent alternative, and the cutover is a separate, later,
-driver-only step.
+is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
-Ledger: `.ci/shadow/w7p6-cancel-older-runs.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-cancel-older-runs --assert
---k 5`).
+Ledger: `.ci/shadow/w7p6-cancel-older-runs.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-cancel-older-runs --assert --k 5`).
 
 -----------------------------------------------------------------------------
 THE TWIN CAN ONLY FAIL FOR TWO REASONS, AND NEITHER IS "IT DID NOT CANCEL"
 -----------------------------------------------------------------------------
-Read the exit codes rather than the log lines. `GITHUB_REPOSITORY not set` and
-`GH_TOKEN not set` exit 1. EVERY other outcome the script names -- the current
-run could not be fetched, the run JSON could not be parsed, the listing call
-failed on every poll, both cancel endpoints refused for every older run, the
-timeout expired with older runs still in progress -- ends `exit 0`.
+Read the exit codes rather than the log lines. `GITHUB_REPOSITORY not set` and `GH_TOKEN not set` exit 1. EVERY other outcome the script names -- the current run could not be fetched, the run JSON could not be parsed, the listing call failed on every poll, both cancel endpoints refused for every older run, the timeout expired with older runs still in progress -- ends `exit 0`.
 
-That is defensible as a best-effort pre-step and it is reproduced verbatim, but
-it means a green from this script is not a claim that anything was cancelled.
+That is defensible as a best-effort pre-step and it is reproduced verbatim, but it means a green from this script is not a claim that anything was cancelled.
 Driven 2026-09-14 with a recording fake `gh`; the four probes are in
-`test_ci_cancel_older_runs.py`. Reported to the driver, not repaired here:
-`.ci/scripts/ci/` is not this writer's to change.
+`test_ci_cancel_older_runs.py`. Reported to the driver, not repaired here: `.ci/scripts/ci/` is not this writer's to change.
 
 -----------------------------------------------------------------------------
 THREE BEHAVIOURS OF THE TWIN THAT ARE NOT IN ITS HEADER, ALL DRIVEN
@@ -42,23 +32,15 @@ line pipes that into `jq`. Under `set -euo pipefail` a jq parse error is fatal:
     jq: parse error: Invalid numeric literal at line 1, column 4
     rc=5
 
-So the one script that otherwise cannot fail exits 5, with jq's raw text and no
-sentence of its own, whenever `gh` emits a deprecation warning on stderr
-alongside a perfectly good body. Reproduced exactly, by running the SAME `jq`
-and propagating its stderr and its status.
+So the one script that otherwise cannot fail exits 5, with jq's raw text and no sentence of its own, whenever `gh` emits a deprecation warning on stderr alongside a perfectly good body. Reproduced exactly, by running the SAME `jq` and propagating its stderr and its status.
 
-QUIRK 2 -- A MALFORMED `--timeout` REMOVES THE TIMEOUT ENTIRELY AND THE LOOP
-NEVER ENDS. `[[ $ELAPSED -ge $TIMEOUT ]]` is bash arithmetic on an unquoted
-word, so `--timeout 1abc` is an arithmetic SYNTAX error, `[[ ]]` answers false,
-and the only exit the loop has is unreachable:
+QUIRK 2 -- A MALFORMED `--timeout` REMOVES THE TIMEOUT ENTIRELY AND THE LOOP NEVER ENDS. `[[ $ELAPSED -ge $TIMEOUT ]]` is bash arithmetic on an unquoted word, so `--timeout 1abc` is an arithmetic SYNTAX error, `[[ ]]` answers false, and the only exit the loop has is unreachable:
 
     $ timeout 4 bash .ci/scripts/ci/cancel-older-runs.sh --timeout 1abc \\
         --poll-interval 1     # with an older run always present
     rc=124   (killed by `timeout`, i.e. it was still going)
 
-`--timeout abc` takes the other arm: under `set -u` a bare identifier is an
-UNBOUND VARIABLE and the script dies at the twin's line 92 with exit 1.
-`_bash_ge` below reproduces both, including the twin's message text.
+`--timeout abc` takes the other arm: under `set -u` a bare identifier is an UNBOUND VARIABLE and the script dies at the twin's line 92 with exit 1. `_bash_ge` below reproduces both, including the twin's message text.
 
 QUIRK 3 -- `force_cancel_run` LEAKS THE API RESPONSE BODY ONTO STDOUT.
 `gh api -X POST ... 2>/dev/null` redirects stderr only, so the `{}` GitHub
@@ -69,14 +51,9 @@ child exactly as bash does.
 -----------------------------------------------------------------------------
 WHY THIS SHELLS OUT TO `jq` AND `sleep` INSTEAD OF USING `json` AND `time`
 -----------------------------------------------------------------------------
-Both are the twin's own choice of tool and both are observable. `json.loads`
-raises a Python message with a Python traceback where the twin prints jq's
+Both are the twin's own choice of tool and both are observable. `json.loads` raises a Python message with a Python traceback where the twin prints jq's
 sentence and exits 5; `time.sleep` accepts a float where `sleep zz` prints
-coreutils' two-line diagnostic and takes the script down with exit 1. Emulating
-either means guessing bytes that the real binary already produces, so the real
-binary is what runs. The jq PROGRAMS are the twin's, copied rather than
-rewritten, and `test_the_jq_programs_are_the_twins` re-reads the twin to prove
-it.
+coreutils' two-line diagnostic and takes the script down with exit 1. Emulating either means guessing bytes that the real binary already produces, so the real binary is what runs. The jq PROGRAMS are the twin's, copied rather than rewritten, and `test_the_jq_programs_are_the_twins` re-reads the twin to prove it.
 """
 
 from __future__ import annotations
@@ -136,8 +113,7 @@ class BashArithError(Exception):
 def _bash_ge(left: int, right_word: str) -> bool:
     """`[[ $ELAPSED -ge $TIMEOUT ]]` where the right side is an unquoted word.
 
-    Only the right side needs the emulation: the left is `$(($(date +%s) -
-    START_TIME))`, an integer this program computed.
+    Only the right side needs the emulation: the left is `$(($(date +%s) - START_TIME))`, an integer this program computed.
 
     THE THREE ARMS, IN THE ORDER BASH TAKES THEM:
       * empty word            -> 0. `[[ "" -ge 0 ]]` is true, not an error.
@@ -150,10 +126,7 @@ def _bash_ge(left: int, right_word: str) -> bool:
 
     THE CAVEAT, STATED RATHER THAN DISCOVERED. bash resolves a SET identifier
     recursively, so `TIMEOUT=PATH` would evaluate `$PATH` as arithmetic. This
-    treats every identifier as unset, because reaching that arm at all requires
-    `--timeout <name-of-an-exported-variable>` and the honest reproduction of
-    the recursive case is a full arithmetic evaluator. `0x10` and `010` (hex and
-    octal in bash) are likewise not special-cased and land in the syntax-error
+    treats every identifier as unset, because reaching that arm at all requires `--timeout <name-of-an-exported-variable>` and the honest reproduction of the recursive case is a full arithmetic evaluator. `0x10` and `010` (hex and octal in bash) are likewise not special-cased and land in the syntax-error
     arm; both are named here so the gap is a recorded decision.
     """
     word = right_word.strip()
@@ -176,11 +149,8 @@ def _bash_ge(left: int, right_word: str) -> bool:
 def not_found(binary: str, line: int) -> str:
     """What bash writes when a command in `$PATH` does not exist.
 
-    `<script>: line <N>: <binary>: command not found`, and the status is 127.
-    Not cosmetic here: the twin has NO `require_cmd`, so a missing `gh` reaches
-    line 57, its message is captured by `2>&1` INTO the run body, and the script
-    reports `Failed to fetch current run info: ...command not found` and exits 0.
-    A missing tool is a PASS. Found by driving both sides on a PATH without `gh`
+    `<script>: line <N>: <binary>: command not found`, and the status is 127. Not cosmetic here: the twin has NO `require_cmd`, so a missing `gh` reaches line 57, its message is captured by `2>&1` INTO the run body, and the script reports `Failed to fetch current run info: ...command not found` and exits 0. A missing tool is a PASS. Found by driving both sides on a PATH without
+    `gh`
     (2026-09-14); the port raised FileNotFoundError and exited 1 until this
     existed, which is a louder answer than the twin's and therefore a divergence.
     """
@@ -192,10 +162,7 @@ def jq(
 ) -> subprocess.CompletedProcess[str]:
     """`echo "$payload" | jq <args> '<program>'`, with the twin's newline.
 
-    `echo` appends one, so the input does too. stderr is CAPTURED rather than
-    discarded because the twin does not redirect it for these three calls, and
-    QUIRK 1 is precisely jq's stderr reaching the user. `line` is the twin's own
-    line number, needed only for the missing-binary message.
+    `echo` appends one, so the input does too. stderr is CAPTURED rather than discarded because the twin does not redirect it for these three calls, and QUIRK 1 is precisely jq's stderr reaching the user. `line` is the twin's own line number, needed only for the missing-binary message.
     """
     try:
         return subprocess.run(
@@ -215,8 +182,7 @@ def jq_or_die(program: str, payload: str, *, args: tuple[str, ...] = (), line: i
     """Run jq, or reproduce `set -euo pipefail` killing the script.
 
     The twin's `X=$(echo "$Y" | jq ...)` is a plain assignment, so `set -e`
-    applies and `pipefail` hands it jq's status. Command substitution then
-    strips trailing newlines, which `rstrip("\\n")` does.
+    applies and `pipefail` hands it jq's status. Command substitution then strips trailing newlines, which `rstrip("\\n")` does.
     """
     proc = jq(program, payload, args=args, line=line)
     if proc.returncode != 0:
@@ -229,18 +195,12 @@ def jq_or_die(program: str, payload: str, *, args: tuple[str, ...] = (), line: i
 def gh_capture(args: list[str], *, merge_stderr: bool, line: int) -> tuple[int, str]:
     """`$(gh api ... 2>&1)` or `$(gh api ... 2>/dev/null)`.
 
-    `merge_stderr` picks between the twin's two spellings: :57 merges (which is
-    QUIRK 1's cause) and :98 discards. Trailing newlines are stripped by command
-    substitution in both.
+    `merge_stderr` picks between the twin's two spellings: :57 merges (which is QUIRK 1's cause) and :98 discards. Trailing newlines are stripped by command substitution in both.
 
     THE MERGE IS `stderr=STDOUT`, NOT `stdout + stderr`, AND THE DIFFERENCE IS
     OBSERVABLE. `2>&1` points both descriptors at ONE pipe, so the bytes arrive
     in the order the child wrote them; concatenating two separately captured
-    buffers puts all of stdout first regardless. A `gh` that writes a warning
-    BEFORE its body then produces `warning\\nbody` under bash and `body\\nwarning`
-    under the naive version -- and since the next thing that happens is a jq
-    parse error, the two report different line numbers for the same failure.
-    Caught by `test_quirk_1_is_reachable_from_a_gh_warning_beside_a_perfectly
+    buffers puts all of stdout first regardless. A `gh` that writes a warning BEFORE its body then produces `warning\\nbody` under bash and `body\\nwarning` under the naive version -- and since the next thing that happens is a jq parse error, the two report different line numbers for the same failure. Caught by `test_quirk_1_is_reachable_from_a_gh_warning_beside_a_perfectly
     _good_body`.
     """
     try:
@@ -260,9 +220,7 @@ def gh_capture(args: list[str], *, merge_stderr: bool, line: int) -> tuple[int, 
 def force_cancel_run(repository: str, run_id: str, run_number: str) -> None:
     """`force_cancel_run` (twin :74-85). force-cancel, then cancel, then warn.
 
-    STDOUT IS INHERITED, NOT CAPTURED. That is QUIRK 3 and it is the twin's
-    behaviour, not an oversight in this port: `gh api -X POST` writes GitHub's
-    response body to the script's stdout because only stderr is redirected.
+    STDOUT IS INHERITED, NOT CAPTURED. That is QUIRK 3 and it is the twin's behaviour, not an oversight in this port: `gh api -X POST` writes GitHub's response body to the script's stdout because only stderr is redirected.
     """
     for endpoint, message in (
         ("force-cancel", "Force-cancelled run #%s" % run_number),
@@ -292,8 +250,7 @@ def force_cancel_run(repository: str, run_id: str, run_number: str) -> None:
 def sleep_like_bash(interval: str, line: int) -> None:
     """`sleep "$POLL_INTERVAL"`, the real binary.
 
-    A bad interval is coreutils' own two-line diagnostic and a non-zero status,
-    which `set -e` turns into the script's exit code. Driven:
+    A bad interval is coreutils' own two-line diagnostic and a non-zero status, which `set -e` turns into the script's exit code. Driven:
 
         sleep: invalid time interval 'zz'
         Try 'sleep --help' for more information.

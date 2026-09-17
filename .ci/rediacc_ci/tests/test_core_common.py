@@ -1,15 +1,8 @@
 """`rediacc_ci.core.common` against the live `.ci/scripts/lib/common.sh`.
 
-THE TWIN IS LIVE, AND IT IS THE MOST LIVE FILE IN THE TREE: 208 files source
-`.ci/scripts/lib/common.sh` (re-derived 2026-09-10). Every comparison below
-sources the real file, so a change to it turns these red rather than leaving a
-port drifting quietly beside it.
+THE TWIN IS LIVE, AND IT IS THE MOST LIVE FILE IN THE TREE: 208 files source `.ci/scripts/lib/common.sh` (re-derived 2026-09-10). Every comparison below sources the real file, so a change to it turns these red rather than leaving a port drifting quietly beside it.
 
-WHAT IS COMPARED. Both sides run through their own CLI, with stdout and stderr
-kept SEPARATE, because the twin's whole logging contract is that messages go to
-stderr and data goes to stdout. A harness that merged them could not tell a
-correct port from one that put a diagnostic on the data stream, which is
-consequence 1 of the incident `rediacc_ci.log`'s docstring records.
+WHAT IS COMPARED. Both sides run through their own CLI, with stdout and stderr kept SEPARATE, because the twin's whole logging contract is that messages go to stderr and data goes to stdout. A harness that merged them could not tell a correct port from one that put a diagnostic on the data stream, which is consequence 1 of the incident `rediacc_ci.log`'s docstring records.
 
 FOUR CLASSES OF TEST, and the second and third are the ones that matter:
 
@@ -218,8 +211,7 @@ def test_parse_args_stores_an_injection_rather_than_running_it():
 
     The twin used `eval "$key=\\"$value\\""` until 2026-09-06, which EXECUTED a
     value carrying `;`. `printf -v` stores the bytes. A dict cannot execute
-    anything, so the port has the property structurally -- and the test drives
-    the bash too, because the property that matters is the twin's.
+    anything, so the port has the property structurally -- and the test drives the bash too, because the property that matters is the twin's.
     """
     payload = '--foo=a"; PROOF=INJECTED; :"'
     rc, out, _err = twin(
@@ -245,9 +237,7 @@ def test_ci_env_agrees_with_the_twins_exported_variables():
 def test_the_twins_require_input_passes_on_an_empty_path_list():
     """QUIRK 1. The anti-vacuity helper, passing vacuously.
 
-    If this ever goes red, `.ci/scripts/lib/common.sh` has been repaired and
-    `REQUIRE_INPUT_VACUOUS_IS_A_PASS` plus this module's divergence should be
-    retired in the same change.
+    If this ever goes red, `.ci/scripts/lib/common.sh` has been repaired and `REQUIRE_INPUT_VACUOUS_IS_A_PASS` plus this module's divergence should be retired in the same change.
     """
     rc, out, err = twin("require_input -f 'missing {}' 'why'\necho reached")
     assert (rc, out, err) == (0, "reached\n", "")
@@ -274,8 +264,7 @@ def test_the_twins_parse_args_kills_the_script_on_a_non_identifier_key():
 def test_the_twins_get_repo_root_moves_the_callers_shell():
     """QUIRK 5. The final `cd` is not in a subshell.
 
-    LATENT rather than live: every real call site spells it `"$(get_repo_root)"`.
-    Pinned so the latency is a recorded fact rather than an assumption.
+    LATENT rather than live: every real call site spells it `"$(get_repo_root)"`. Pinned so the latency is a recorded fact rather than an assumption.
     """
     rc, out, _err = twin('cd /\necho "before=$PWD"\nget_repo_root >/dev/null\necho "after=$PWD"')
     assert rc == 0

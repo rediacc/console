@@ -1,30 +1,17 @@
 """`rediacc_ci.quality.run_external_gate` against its bash twin.
 
-ALL THREE STATES OF THE FLAG ARE DRIVEN, plus the two the flag can be in by
-accident. `hard` and `soft` are the two this wrapper ever legitimately sees --
-`skip` is expressed in the step's `if:` and never reaches the script -- so the
-cases below cover: hard/pass, hard/fail, soft/pass, soft/fail, UNSET (must be
-hard, because a wiring break disabling a blocking gate silently is the failure
-this wrapper exists to prevent), EMPTY (same), and an unrecognised value
-including the literal `skip` (must refuse, exit 2).
+ALL THREE STATES OF THE FLAG ARE DRIVEN, plus the two the flag can be in by accident. `hard` and `soft` are the two this wrapper ever legitimately sees -- `skip` is expressed in the step's `if:` and never reaches the script -- so the cases below cover: hard/pass, hard/fail, soft/pass, soft/fail, UNSET (must be hard, because a wiring break disabling a blocking gate silently is the
+failure this wrapper exists to prevent), EMPTY (same), and an unrecognised value including the literal `skip` (must refuse, exit 2).
 
-THE EXIT CODE IS THE ASSERTION, not the prose, because the exit code is what
-decides red versus green. Three of the cases exist only to pin codes a port can
-plausibly get wrong: 127 for a command that is not on PATH, 126 for a file that
-is there but not executable, and 143 for a child killed by SIGTERM -- which
-`subprocess` reports as `-15` and every shell reports as `128 + 15`. A port
-passing the negative number through would turn a killed gate into something
-other than a failure.
+THE EXIT CODE IS THE ASSERTION, not the prose, because the exit code is what decides red versus green. Three of the cases exist only to pin codes a port can plausibly get wrong: 127 for a command that is not on PATH, 126 for a file that is there but not executable, and 143 for a child killed by SIGTERM -- which `subprocess` reports as `-15` and every shell reports as `128 + 15`. A
+port passing the negative number through would turn a killed gate into something other than a failure.
 
-THREE MESSAGE-TEXT DIVERGENCES ARE EXPECTED AND MASKED RATHER THAN IGNORED, one
-per case: the `$0` in the usage line, the spawn-failure wording, and bash's own
-`Terminated` job-control notice, which has no Python equivalent. Each masking
+THREE MESSAGE-TEXT DIVERGENCES ARE EXPECTED AND MASKED RATHER THAN IGNORED, one per case: the `$0` in the usage line, the spawn-failure wording, and bash's own `Terminated` job-control notice, which has no Python equivalent. Each masking
 site says which divergence it is covering; nothing is compared loosely except
 those three.
 
 K=5 LEDGER: `.ci/shadow/w7p6-run-external-gate.observations.jsonl`, recorded
-against a disposable scratch git repo built OUTSIDE this checkout (this repo's
-working tree is not clean and `shadow-gate.ts --record` refuses a dirty tree).
+against a disposable scratch git repo built OUTSIDE this checkout (this repo's working tree is not clean and `shadow-gate.ts --record` refuses a dirty tree).
 """
 
 from __future__ import annotations
@@ -271,8 +258,7 @@ def test_a_non_executable_file_exits_126_on_both_sides(tmp_path: pathlib.Path) -
 
 def test_a_signalled_child_reports_128_plus_n(tmp_path: pathlib.Path) -> None:
     """DIVERGENCE 3, and the one exit-code translation this port has to do by
-    hand: `subprocess` says -15, every shell says 143. A port passing the
-    negative through would misreport a killed gate. bash's own `Terminated`
+    hand: `subprocess` says -15, every shell says 143. A port passing the negative through would misreport a killed gate. bash's own `Terminated`
     notice is masked out of stderr; the code is not."""
     del tmp_path
     old, new = run_both(["bash", "-c", "kill -TERM $$"], mode="hard")

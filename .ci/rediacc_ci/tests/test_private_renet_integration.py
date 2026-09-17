@@ -1,40 +1,24 @@
 """Differential: `.ci/rediacc_ci/private/renet_integration.py` against its twin
 `.ci/scripts/private/renet-integration.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-THE REAL `private/renet/scripts/ci-test.sh` IS NEVER INVOKED. It is the renet
-submodule's full integration suite: Docker isolated networks, CRIU
-checkpoint/restore, proxy, router and datastore tests, and CI runs it under
-`sudo` for KVM. A suite that reached it would take many minutes, would need root
-and a Docker daemon, and would SKIP on a checkout without the submodule -- and a
-skip here is exactly the vacuity this campaign exists to avoid. The fixture
-supplies its own recording `ci-test.sh`, which appends its cwd and full argv to
-a log and exits with a canned status.
+THE REAL `private/renet/scripts/ci-test.sh` IS NEVER INVOKED. It is the renet submodule's full integration suite: Docker isolated networks, CRIU checkpoint/restore, proxy, router and datastore tests, and CI runs it under `sudo` for KVM. A suite that reached it would take many minutes, would need root and a Docker daemon, and would SKIP on a checkout without the submodule -- and a
+skip here is exactly the vacuity this campaign exists to avoid. The fixture supplies its own recording `ci-test.sh`, which appends its cwd and full argv to a log and exits with a canned status.
 
-WHAT IS COMPARED, AND WHY THE CALL LOG IS ONE OF THE FOUR. Every case compares
-the exit code, stdout, stderr, and the CALL LOG. The log carries the child's
-ARGV because `$NO_CLEANUP` is expanded UNQUOTED in the twin, so the difference
-between "no arguments" and "one empty argument" is invisible on every stream and
-visible only to the child. It carries the child's CWD because neither subject
-`cd`s, and that absence can only be observed from inside the child.
+WHAT IS COMPARED, AND WHY THE CALL LOG IS ONE OF THE FOUR. Every case compares the exit code, stdout, stderr, and the CALL LOG. The log carries the child's ARGV because `$NO_CLEANUP` is expanded UNQUOTED in the twin, so the difference between "no arguments" and "one empty argument" is invisible on every stream and visible only to the child. It carries the child's CWD because
+neither subject `cd`s, and that absence can only be observed from inside the child.
 
-PATH IS REPLACED, NEVER PREPENDED. `_binder` builds the entire PATH out of named
-tools, so nothing the fixture forgot can be silently supplied by the host.
+PATH IS REPLACED, NEVER PREPENDED. `_binder` builds the entire PATH out of named tools, so nothing the fixture forgot can be silently supplied by the host.
 
 THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
 the file it is running; the port composes the same prefix from `sys.argv[0]` and
-its own live frame. Those can never be equal, so `_mask` collapses exactly that
-prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
+its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
 
 THE ONE THING THIS FILE ASSERTS THAT IS NOT AN EQUALITY.
 `test_the_missing_ci_arm_is_a_real_hole` pins BOTH subjects at exit 0 with a
 missing submodule under `CI=true`. That is a defect in the twin, reproduced
-rather than fixed, and the test is written so that the day someone gives the
-twin the CI arm `common.sh:488-502` already provides, this goes red and names
-the decision instead of letting the port drift silently.
+rather than fixed, and the test is written so that the day someone gives the twin the CI arm `common.sh:488-502` already provides, this goes red and names the decision instead of letting the port drift silently.
 """
 
 import pathlib
@@ -102,12 +86,9 @@ def _fixture(
 ) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because each subject derives the console root from its own location
-    (`BASH_SOURCE` / `__file__`, then three directories up). Driving the tracked
-    files with a `cwd` would point both at the REAL repository.
+    Copies, because each subject derives the console root from its own location (`BASH_SOURCE` / `__file__`, then three directories up). Driving the tracked files with a `cwd` would point both at the REAL repository.
 
-    `marker` is the shape of `private/renet/scripts/ci-test.sh`. Four, because
-    the guard here tests `-f` (unlike `run-renet.sh`'s `-e`):
+    `marker` is the shape of `private/renet/scripts/ci-test.sh`. Four, because the guard here tests `-f` (unlike `run-renet.sh`'s `-e`):
 
       "script"  a working recording fake
       "none"    absent, so the guard decides
@@ -116,8 +97,7 @@ def _fixture(
                 and never reaches exec. This is the case that distinguishes
                 `-f` from `-e`.
 
-    `results` is the shape of `private/renet/test-results.xml`: absent, a file,
-    or a DIRECTORY of that name, which also fails `-f` and must not be reported.
+    `results` is the shape of `private/renet/test-results.xml`: absent, a file, or a DIRECTORY of that name, which also fails `-f` and must not be reported.
     """
     root = tmp_path.resolve() / "tree"
     (root / ".ci" / "scripts" / "private").mkdir(parents=True)
@@ -294,8 +274,7 @@ def test_the_recording_suite_is_actually_reached(tmp_path):
 def test_the_empty_flag_expands_to_zero_words_not_one(tmp_path):
     """`"$CI_TEST" $NO_CLEANUP` is UNQUOTED, so the default run passes NO
     arguments. A port appending an empty string would send `argc=1` with an
-    empty argument, which no stream can show and which a suite parsing its own
-    argv would see. Both subjects are asserted, because the claim is about the
+    empty argument, which no stream can show and which a suite parsing its own argv would see. Both subjects are asserted, because the claim is about the
     pair."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
@@ -308,16 +287,11 @@ def test_the_empty_flag_expands_to_zero_words_not_one(tmp_path):
 def test_the_missing_ci_arm_is_a_real_hole(tmp_path):
     """A DEFECT IN THE TWIN, PINNED RATHER THAN FIXED.
 
-    `.github/workflows/ct-tests.yml:1762` runs this script as the step "Run
-    integration tests". With `private/renet/scripts/ci-test.sh` absent it prints
+    `.github/workflows/ct-tests.yml:1762` runs this script as the step "Run integration tests". With `private/renet/scripts/ci-test.sh` absent it prints
     one warning and exits 0 -- under `CI=true` as well, because unlike
-    `run-renet.sh` and `run-account.sh` this script does not use, or reproduce,
-    `common.sh:488-502`'s `require_submodule` CI arm. So the step reports green
-    having run no integration test at all.
+    `run-renet.sh` and `run-account.sh` this script does not use, or reproduce, `common.sh:488-502`'s `require_submodule` CI arm. So the step reports green having run no integration test at all.
 
-    Both subjects are asserted at exit 0 because the port must not diverge. The
-    day the twin grows the CI arm, this test goes red and points at the
-    paragraph in `renet_integration.py` that records the decision.
+    Both subjects are asserted at exit 0 because the port must not diverge. The day the twin grows the CI arm, this test goes red and points at the paragraph in `renet_integration.py` that records the decision.
     """
     root = _fixture(tmp_path, marker="none")
     binder = _binder(tmp_path)

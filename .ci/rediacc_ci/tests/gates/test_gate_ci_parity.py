@@ -1,41 +1,19 @@
 """Port of `.ci/scripts/test/gates/test-ci-parity.sh`.
 
-Subject: `scripts/gates/check-ci-parity.ts`, the meta-gate whose promise is that
-the local gate set and the CI quality surface agree in BOTH directions -- a local
-run catches CI failures before a push, and nothing runs locally that CI never
+Subject: `scripts/gates/check-ci-parity.ts`, the meta-gate whose promise is that the local gate set and the CI quality surface agree in BOTH directions -- a local run catches CI failures before a push, and nothing runs locally that CI never
 enforces. It replaced two gates that each covered one direction; the third
-relation (locally-run, never CI-run) had no gate at all, which is
-rediacc/console#549.
+relation (locally-run, never CI-run) had no gate at all, which is rediacc/console#549.
 
-WHY CASE 3 IS THE IMPORTANT ONE, transcribed from the twin because it is the
-reason the whole file exists. The analysis this gate came from first reported
-ZERO findings, because it matched whole workflow FILE TEXT for `npm run <key>`
-and a step NAME contained the literal `npm run ci`. That made the entire gate set
-look CI-executed and the reverse direction vacuously empty -- a gate built that
-way reports perfect parity forever. `test_step_name_is_not_an_invocation` pins
-the defect as a regression case, on a fixture whose step name names the very gate
-its `run:` block does not run.
+WHY CASE 3 IS THE IMPORTANT ONE, transcribed from the twin because it is the reason the whole file exists. The analysis this gate came from first reported ZERO findings, because it matched whole workflow FILE TEXT for `npm run <key>` and a step NAME contained the literal `npm run ci`. That made the entire gate set look CI-executed and the reverse direction vacuously empty -- a gate
+built that way reports perfect parity forever. `test_step_name_is_not_an_invocation` pins the defect as a regression case, on a fixture whose step name names the very gate its `run:` block does not run.
 
-HOW IT IS DRIVEN, and why the port is a transcription rather than a
-reimplementation. Every case builds a throwaway repository under a temp dir and
-points the subject at it through `CI_PARITY_ROOT` / `CI_PARITY_MANIFEST`. The
-subject stays the real TypeScript gate, invoked exactly as the twin invokes it,
-so what is being compared between the two sides is the FIXTURE and the
-ASSERTIONS, never two independent reimplementations of the detector. No tracked
-file is written by any case here.
+HOW IT IS DRIVEN, and why the port is a transcription rather than a reimplementation. Every case builds a throwaway repository under a temp dir and points the subject at it through `CI_PARITY_ROOT` / `CI_PARITY_MANIFEST`. The subject stays the real TypeScript gate, invoked exactly as the twin invokes it, so what is being compared between the two sides is the FIXTURE and the
+ASSERTIONS, never two independent reimplementations of the detector. No tracked file is written by any case here.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP even though no case writes the
-tree. `gates.lock.json` records `reads: ["tree:repo"]` for `gate-test:ci-parity`,
-and `real_tree_admission` in `test_twin_parity.py` reads that lock: a twin in the
-real-tree set that does NOT declare `REAL_TREE_TWIN` is refused, because the
-parity driver runs the twin itself and would then overlap the battery with no
-isolation declared to either scheduler. The declaration is honoured only while
-this module names no `XDIST_GROUP` of its own, which the same function checks.
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP even though no case writes the tree. `gates.lock.json` records `reads: ["tree:repo"]` for `gate-test:ci-parity`, and `real_tree_admission` in `test_twin_parity.py` reads that lock: a twin in the real-tree set that does NOT declare `REAL_TREE_TWIN` is refused, because the parity driver runs the twin itself and would then overlap the
+battery with no isolation declared to either scheduler. The declaration is honoured only while this module names no `XDIST_GROUP` of its own, which the same function checks.
 
-THE FIXTURE IS A REAL GIT REPOSITORY, not a directory of files, and that is not
-tidiness: `loadScripts()` in the subject derives its tracked set from
-`git ls-files`, so a fixture with no index exercises a code path the gate does
-not have and every case would fail for the wrong reason.
+THE FIXTURE IS A REAL GIT REPOSITORY, not a directory of files, and that is not tidiness: `loadScripts()` in the subject derives its tracked set from `git ls-files`, so a fixture with no index exercises a code path the gate does not have and every case would fail for the wrong reason.
 """
 
 import json
@@ -91,9 +69,7 @@ GOOD_BLOCKER = (
 def require_npx() -> str:
     """The `npx` binary, or a LOUD refusal naming the fix.
 
-    A missing toolchain is a FAILURE and never a skip: `npx tsx` is how the
-    subject is executed, so without it not one case below has run, and an
-    unrunnable case folded into "fine" is the vacuity this directory refuses.
+    A missing toolchain is a FAILURE and never a skip: `npx tsx` is how the subject is executed, so without it not one case below has run, and an unrunnable case folded into "fine" is the vacuity this directory refuses.
     """
     return harness.require_tool(
         "npx",
@@ -104,13 +80,9 @@ def require_npx() -> str:
 def scaffold(root: pathlib.Path, steps: str, scripts: str = SCRIPTS_ALPHA) -> None:
     """The parity surface every case shares.
 
-    `ci.yml`'s `quality` job calls `ci-quality.yml`, which is where the fixture's
-    steps go, reached by `uses:` iteration exactly as the real surface is -- so
-    `test_parity_surface_is_computed_not_named` gets its shape for free.
+    `ci.yml`'s `quality` job calls `ci-quality.yml`, which is where the fixture's steps go, reached by `uses:` iteration exactly as the real surface is -- so `test_parity_surface_is_computed_not_named` gets its shape for free.
 
-    BOTH ENTRY JOBS ARE PRESENT. `paritySurface()` returns the EMPTY surface when
-    one is missing and the preflight then refuses, so a fixture without
-    `review-gate` would make every case refuse instead of assert.
+    BOTH ENTRY JOBS ARE PRESENT. `paritySurface()` returns the EMPTY surface when one is missing and the preflight then refuses, so a fixture without `review-gate` would make every case refuse instead of assert.
     """
     for sub in (".github/workflows", ".ci/scripts/quality", ".ci/policy", "scripts"):
         (root / sub).mkdir(parents=True, exist_ok=True)
@@ -136,9 +108,7 @@ def scaffold(root: pathlib.Path, steps: str, scripts: str = SCRIPTS_ALPHA) -> No
 def git_init(root: pathlib.Path) -> None:
     """`git init` + `git add -A`, with the tool probed rather than assumed.
 
-    An empty tracked set silently stops `python3 -m <module>` resolving in the
-    subject, which is the one thing that set is for, so this is not optional
-    scaffolding.
+    An empty tracked set silently stops `python3 -m <module>` resolving in the subject, which is the one thing that set is for, so this is not optional scaffolding.
     """
     git = harness.require_tool("git", "install git; the fixture must be a real repository")
     harness.run([git, "-C", str(root), "init", "--quiet"])
@@ -156,9 +126,7 @@ def exempt(root: pathlib.Path, body: str) -> None:
 def run_gate(root: pathlib.Path) -> harness.RunResult:
     """Drive the real subject against the fixture.
 
-    The streams are merged by the CALLER through `.combined`, mirroring the
-    twin's `2>&1`: these assertions are about which message appeared, and the
-    twin makes no claim about which stream carried it.
+    The streams are merged by the CALLER through `.combined`, mirroring the twin's `2>&1`: these assertions are about which message appeared, and the twin makes no claim about which stream carried it.
     """
     return harness.run(
         [require_npx(), "tsx", str(GATE)],
@@ -477,9 +445,7 @@ def test_test_dir_gates_are_swept_in(gate):
 
 def test_ported_python_gates_are_swept_in(gate):
     """THE WIDENING THIS SUITE DID NOT PIN. On 2026-09-08 `GATE_SHAPED` went from
-    `check-[\\w.-]+\\.sh` to `check[-_][\\w.-]+\\.(?:sh|py)`, because W7 P4 repoints
-    these very workflow lines at Python ports and the old spelling stopped judging
-    a gate the moment it was ported -- silently, since a matcher that stops
+    `check-[\\w.-]+\\.sh` to `check[-_][\\w.-]+\\.(?:sh|py)`, because W7 P4 repoints these very workflow lines at Python ports and the old spelling stopped judging a gate the moment it was ported -- silently, since a matcher that stops
     matching reports nothing."""
     with harness.temp_dir() as d:
         scaffold(
@@ -585,8 +551,7 @@ def test_parity_surface_is_computed_not_named(gate):
 
 def test_external_wrapper_is_transparent(gate):
     """`run-external-gate.sh` executes its arguments and only changes what a
-    failure MEANS (soft on schedule, hard on a PR). The resolver must see through
-    it to the wrapped gate, or every external gate's CI pointer breaks the moment
+    failure MEANS (soft on schedule, hard on a PR). The resolver must see through it to the wrapped gate, or every external gate's CI pointer breaks the moment
     it adopts the wrapper."""
     with harness.temp_dir() as d:
         scaffold(
@@ -648,11 +613,7 @@ def test_battery_equality_is_enforced(gate):
 def test_the_subject_and_its_seams_still_exist(gate):
     """ADDED BY THE PORT, and it is the case that keeps every other one honest.
 
-    Every case above points the subject at a fixture through two environment
-    variables. If the subject were renamed, or either seam removed, `npx tsx`
-    would fail identically for all 23 cases and several of them EXPECT a non-zero
-    exit -- so a subject that no longer exists would satisfy them. Naming the
-    seams in the source is the cheap refutation of that.
+    Every case above points the subject at a fixture through two environment variables. If the subject were renamed, or either seam removed, `npx tsx` would fail identically for all 23 cases and several of them EXPECT a non-zero exit -- so a subject that no longer exists would satisfy them. Naming the seams in the source is the cheap refutation of that.
     """
     if not GATE.is_file():
         gate.log_fail(

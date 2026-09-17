@@ -1,21 +1,12 @@
 """Differential: `rediacc_ci.setup.install_deps` against its twin
 `.ci/scripts/setup/install-deps.sh`.
 
-NOTHING HERE RUNS A REAL `npm ci`. A recording fake `npm` sits on a scratch
-PATH, logs its exact argv AND the directory it was called in, echoes the same
-under a `call: ` prefix, and exits with whatever the environment tells it to.
-The one thing this script does is decide which `npm` runs where and with which
-flags, so the CALL LOG is the primary evidence and the two streams are the
-secondary.
+NOTHING HERE RUNS A REAL `npm ci`. A recording fake `npm` sits on a scratch PATH, logs its exact argv AND the directory it was called in, echoes the same under a `call: ` prefix, and exits with whatever the environment tells it to. The one thing this script does is decide which `npm` runs where and with which flags, so the CALL LOG is the primary evidence and the two streams are
+the secondary.
 
-WHY THE DIRECTORY IS PART OF EVERY LOGGED CALL. The root install and the three
-account installs are the same two words -- `npm ci` -- and differ only in the
-working directory. A log that recorded argv alone could not tell a run that
-installed the root four times from a correct one, which is precisely the
-regression a port could introduce by dropping the subshell `cd`.
+WHY THE DIRECTORY IS PART OF EVERY LOGGED CALL. The root install and the three account installs are the same two words -- `npm ci` -- and differ only in the working directory. A log that recorded argv alone could not tell a run that installed the root four times from a correct one, which is precisely the regression a port could introduce by dropping the subshell `cd`.
 
-`sleep` AND `uname` ARE FAKED ON BOTH SIDES, SYMMETRICALLY, and that needs
-saying because the two mechanisms look different:
+`sleep` AND `uname` ARE FAKED ON BOTH SIDES, SYMMETRICALLY, and that needs saying because the two mechanisms look different:
 
   * bash resolves `sleep` and `uname` through PATH, so the fakes are executables
     in the stub directory.
@@ -25,14 +16,11 @@ saying because the two mechanisms look different:
     because `proc.retry_with_backoff` binds `time.sleep` as a default argument
     at import time.
 
-Both fakes write the SAME `sleep\\t<seconds>` line into the same call log, so the
-backoff schedule is compared rather than waited for. Without them each failing
+Both fakes write the SAME `sleep\\t<seconds>` line into the same call log, so the backoff schedule is compared rather than waited for. Without them each failing
 case would cost 30 real seconds per side; with them the schedule itself is an
 assertion (`10` then `20`, never a third).
 
-THE LEDGER LINE. `shadow-gate.ts` classifies any line starting with `→ ` or
-`✓ ` as CHATTER before `--finding-re` is ever consulted, and this script reports
-almost entirely through `log_step`/`log_info`. The fake's `call: npm [...] ...`
+THE LEDGER LINE. `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is ever consulted, and this script reports almost entirely through `log_step`/`log_info`. The fake's `call: npm [...] ...`
 line on stdout is what gives the shadow ledger something to compare; see
 `.ci/shadow/w7p6-install-deps.observations.jsonl`.
 """
@@ -164,8 +152,7 @@ def _tree(tmp_path: pathlib.Path) -> pathlib.Path:
 
     Both implementations derive the repo root from their OWN location -- the twin
     from `common.sh` three directories up, the port from `paths.py` two up -- so
-    placing the copies at their real relative paths makes `tmp_path/tree` the
-    root for both, with no environment variable involved.
+    placing the copies at their real relative paths makes `tmp_path/tree` the root for both, with no environment variable involved.
     """
     tree = tmp_path / "tree"
     if tree.exists():
@@ -318,9 +305,7 @@ def test_a_failing_npm_retries_three_times_on_the_10_20_schedule(
     tmp_path: pathlib.Path,
 ) -> None:
     """THREE ATTEMPTS AND TWO SLEEPS, never three: `common.sh:225` sleeps only
-    when another attempt is coming. Both error lines are asserted, in order --
-    the helper's `Command failed after 3 attempts` and then the caller's
-    `Failed to install dependencies after retries`. A port that printed only the
+    when another attempt is coming. Both error lines are asserted, in order -- the helper's `Command failed after 3 attempts` and then the caller's `Failed to install dependencies after retries`. A port that printed only the
     caller's would lose the attempt count."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_NPM_RC="1")
     assert old.returncode == 1
@@ -345,16 +330,12 @@ def test_a_127_from_a_missing_npm_is_retried_like_any_other_failure(
     tmp_path: pathlib.Path,
 ) -> None:
     """Fact 5: there is no `require_cmd npm`, so an absent binary spends 30
-    seconds of backoff and then reports a registry-shaped message. Driven by
-    dropping `npm` from the stub PATH entirely.
+    seconds of backoff and then reports a registry-shaped message. Driven by dropping `npm` from the stub PATH entirely.
 
     THE ONE DIVERGENCE IN THE WHOLE PAIR IS PINNED HERE, AS A PREFIX. Bash writes
     `<script>: line 60: npm: command not found`; the port writes
-    `npm: command not found`. The prefix names a bash file and a line number that
-    do not exist on the Python side, so it is stripped from the twin's bytes and
-    the REMAINDER is required to match exactly -- three occurrences, in the same
-    positions, interleaved with the same warn lines. Asserting equality of the
-    stripped text rather than a substring is what stops this test from passing if
+    `npm: command not found`. The prefix names a bash file and a line number that do not exist on the Python side, so it is stripped from the twin's bytes and the REMAINDER is required to match exactly -- three occurrences, in the same positions, interleaved with the same warn lines. Asserting equality of the stripped text rather than a substring is what stops this test from
+    passing if
     the port ever went silent on the missing-binary path."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], drop="npm")
     assert old.returncode == 1
@@ -401,9 +382,7 @@ def test_all_three_account_trees_are_installed_in_order(tmp_path: pathlib.Path) 
 
 def test_the_account_trees_never_receive_ignore_scripts(tmp_path: pathlib.Path) -> None:
     """FACT 1, THE ONE THAT MATTERS. The flag exists, per the twin's own header,
-    to avoid native-module rebuilds on Windows -- and `run_account_ci` is a bare
-    `npm ci`, so the three account trees run their lifecycle scripts on exactly
-    the platform the flag was added for. Asserted under BOTH triggers at once: an
+    to avoid native-module rebuilds on Windows -- and `run_account_ci` is a bare `npm ci`, so the three account trees run their lifecycle scripts on exactly the platform the flag was added for. Asserted under BOTH triggers at once: an
     explicit `--ignore-scripts` and a Windows `uname`."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -451,8 +430,7 @@ def test_account_only_skips_the_root_and_its_node_modules_check(
     tmp_path: pathlib.Path,
 ) -> None:
     """`node_modules` is deliberately ABSENT here. The check at
-    install-deps.sh:68 lives inside the `WANT_ROOT` guard, so `--account-only`
-    never asks -- which is right, and is also the reason nothing verifies the
+    install-deps.sh:68 lives inside the `WANT_ROOT` guard, so `--account-only` never asks -- which is right, and is also the reason nothing verifies the
     account trees produced anything either."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--account-only"], accounts=ACCOUNT_ALL, node_modules=False
@@ -517,8 +495,7 @@ def test_both_halves_switched_off_still_reports_npm_install_complete(
     by flag and the account half by flag; no file test is involved and no
     subprocess runs. The script prints `npm install complete` and exits 0.
 
-    THE CALL LOG BEING EMPTY IS THE ASSERTION. Nothing in the script counts
-    installs, so there is no number in the output a reader could notice
+    THE CALL LOG BEING EMPTY IS THE ASSERTION. Nothing in the script counts installs, so there is no number in the output a reader could notice
     collapsing -- which is why the emptiness has to be asserted from outside."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,

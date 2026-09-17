@@ -1,22 +1,13 @@
 r"""`rediacc_ci.quality.drill_verdicts` against the harness it drives.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-drill-verdicts.observations.jsonl` drives the whole gate over
-five distinct trees, each carrying a differently-mutated `scripts/drills/lib.sh`.
-What a ledger row cannot isolate is the DRIVER: a `bash -c` subshell that sets
-eight variables, sources a library under `set +eu`, and hands back
-`<rc>|<stdout>`. If the driver stops working, EVERY assertion in this gate
-either fails loudly (good) or, in the shape this repo keeps finding, passes
-vacuously.
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-drill-verdicts.observations.jsonl` drives the whole gate over five distinct trees, each carrying a differently-mutated `scripts/drills/lib.sh`. What a ledger row cannot isolate is the DRIVER: a `bash -c` subshell that sets eight variables, sources a library under `set +eu`, and hands back `<rc>|<stdout>`. If the driver
+stops working, EVERY assertion in this gate either fails loudly (good) or, in the shape this repo keeps finding, passes vacuously.
 
-So the cases below drive the REAL `scripts/drills/lib.sh` and assert on its real
-output, in both directions per verdict.
+So the cases below drive the REAL `scripts/drills/lib.sh` and assert on its real output, in both directions per verdict.
 
 THE UNREACHABLE PROBE IS ASSERTED AS UNREACHABLE, not quietly ignored. The twin
 checks `[[ "${probe%%|*}" == "97" ]]` against a capture that is EMPTY whenever
-the subshell exits 97, so the branch cannot fire. That is a defect in the twin,
-carried by the port, and pinned here so it stays a known dead branch rather than
-becoming a surprise.
+the subshell exits 97, so the branch cannot fire. That is a defect in the twin, carried by the port, and pinned here so it stays a known dead branch rather than becoming a surprise.
 """
 
 import pathlib
@@ -92,9 +83,7 @@ def test_an_undrivable_harness_yields_an_empty_capture_not_97(tmp_path: pathlib.
 def test_the_bash_subshell_agrees_with_the_twins() -> None:
     """The port's runner against the twin's, over the same harness.
 
-    Not "does the Python compute the right answer" but "does the same shell code
-    run": the subject here IS bash, and a driver that diverged would test a
-    different harness than the one the drills use.
+    Not "does the Python compute the right answer" but "does the same shell code run": the subject here IS bash, and a driver that diverged would test a different harness than the one the drills use.
     """
     root = str(paths.repo_root())
     twin = (

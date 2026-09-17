@@ -1,26 +1,12 @@
 """`rediacc_ci.quality.script_exec_bit` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-script-exec-bit.sh` over a
-git fixture with stdout and stderr captured SEPARATELY, and its bytes are compared
-against the port's. Same recipe as the committed ledger,
-`.ci/shadow/w7p2-script-exec-bit.observations.jsonl`.
+A bash child runs the REAL `.ci/scripts/quality/check-script-exec-bit.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-script-exec-bit.observations.jsonl`.
 
-THE FIXTURE IS A REAL GIT REPOSITORY, and that is not incidental: this gate reads
-the INDEX mode, not the filesystem mode, because "the index is what CI checks
-out". A fixture built as a plain directory would make both implementations
-enumerate zero paths and agree perfectly about nothing, which is the both-empty
-trap `scripts/lib/shadow-gate.ts` names as rule 2.
+THE FIXTURE IS A REAL GIT REPOSITORY, and that is not incidental: this gate reads the INDEX mode, not the filesystem mode, because "the index is what CI checks out". A fixture built as a plain directory would make both implementations enumerate zero paths and agree perfectly about nothing, which is the both-empty trap `scripts/lib/shadow-gate.ts` names as rule 2.
 
-BOTH DIRECTIONS, EVERY CASE. The corpus carries an offender (must fire), an
-executable script (must stay quiet), a reference inside a comment (must stay
-quiet), and a `../decoy.sh` in a subdirectory (must stay quiet, and is the case
-whose first version in the twin could not fail because the correct and the broken
-behaviour deduped to the same set).
+BOTH DIRECTIONS, EVERY CASE. The corpus carries an offender (must fire), an executable script (must stay quiet), a reference inside a comment (must stay quiet), and a `../decoy.sh` in a subdirectory (must stay quiet, and is the case whose first version in the twin could not fail because the correct and the broken behaviour deduped to the same set).
 
-WHAT IS ALSO ASSERTED HERE AND NOWHERE ELSE: that the port's REFUSAL status is 2
-and not 1. The twin distinguishes "the control could not fire" from "the tree has
-offenders", and a port that collapsed them would make an unrunnable gate read as
-a failing tree, which is the direction that gets a gate deleted.
+WHAT IS ALSO ASSERTED HERE AND NOWHERE ELSE: that the port's REFUSAL status is 2 and not 1. The twin distinguishes "the control could not fire" from "the tree has offenders", and a port that collapsed them would make an unrunnable gate read as a failing tree, which is the direction that gets a gate deleted.
 """
 
 import pathlib
@@ -39,9 +25,7 @@ MODULE = "script_exec_bit"
 def build(tmp_path: pathlib.Path, files: dict[str, tuple[str, int]]) -> pathlib.Path:
     """A sealed git specimen holding BOTH implementations plus `files`.
 
-    `files` maps a repo-relative path to (text, octal mode). The MODE is the
-    subject of this gate, so it is explicit at every call site rather than
-    inherited from the umask.
+    `files` maps a repo-relative path to (text, octal mode). The MODE is the subject of this gate, so it is explicit at every call site rather than inherited from the umask.
     """
     src = pathlib.Path(diff.repo())
     root = tmp_path / "fixture"
@@ -149,11 +133,7 @@ def test_differential(tmp_path, files, want_exit):
 def test_colour_is_unconditional_on_both_sides():
     """The twin colours with no tty test, so the port must too.
 
-    This is the ONE place the difference would be invisible: `rediacc_ci.log`
-    decides colour by `isatty`, and a port that used it would emit no escapes off
-    a terminal. Every differential above runs off a pipe, so it would agree with
-    a twin that also emitted none. The twin emits them ANYWAY, which is why this
-    asserts the escape count is non-zero rather than merely equal.
+    This is the ONE place the difference would be invisible: `rediacc_ci.log` decides colour by `isatty`, and a port that used it would emit no escapes off a terminal. Every differential above runs off a pipe, so it would agree with a twin that also emitted none. The twin emits them ANYWAY, which is why this asserts the escape count is non-zero rather than merely equal.
     """
     assert gate.RED.startswith("\033[")
     assert gate.RED == "\033[31m", "the twin uses 31m, not common.sh's 0;31m"
@@ -169,11 +149,8 @@ def test_refusal_status_is_two():
 def test_dirname_of_a_root_file_is_a_dot():
     """The one-character difference that made every root reference unmatchable.
 
-    `dirname caller.yml` is `.` in the shell and `""` in Python, so the naive port
-    produced `/victim.sh`, an absolute path matching nothing in any index. The
-    gate would then have reported a clean tree for exactly the class of file the
-    2026-08-20 incident was about. Pinned here as well as in the selftest because
-    it is a silent-blindness defect, and those are the ones worth two controls.
+    `dirname caller.yml` is `.` in the shell and `""` in Python, so the naive port produced `/victim.sh`, an absolute path matching nothing in any index. The gate would then have reported a clean tree for exactly the class of file the 2026-08-20 incident was about. Pinned here as well as in the selftest because it is a silent-blindness defect, and those are the ones worth two
+    controls.
     """
     assert gate.resolve("caller.yml", "./victim.sh") == "victim.sh"
     assert gate.resolve("a/b.yml", "./victim.sh") == "a/victim.sh"

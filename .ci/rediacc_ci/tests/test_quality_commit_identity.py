@@ -1,14 +1,8 @@
 """`rediacc_ci.quality.commit_identity` against the jq and grep it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-commit-identity.observations.jsonl` drives the whole gate over
-five distinct trees: one unattributed commit, three from two addresses, an empty
-list, a list at the 250 page cap, and a null committer with a resolved author.
-(Those rows were recorded 2026-09-06, before the 250 cap was replaced by a
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-commit-identity.observations.jsonl` drives the whole gate over five distinct trees: one unattributed commit, three from two addresses, an empty list, a list at the 250 page cap, and a null committer with a resolved author. (Those rows were recorded 2026-09-06, before the 250 cap was replaced by a
 completeness check against the PR's own commit count; the row named for the cap
-records what the pair did THEN, and is history rather than a live assertion.)
-What a ledger row cannot isolate is the four small readings the verdict rests on,
-and each of them is a place where jq and Python disagree if nobody looks:
+records what the pair did THEN, and is history rather than a live assertion.) What a ledger row cannot isolate is the four small readings the verdict rests on, and each of them is a place where jq and Python disagree if nobody looks:
 
   * `.author.login` on a NULL author is `null`, not an error. That null IS the
     finding, so a port that raised there would turn every offending PR into a
@@ -95,8 +89,7 @@ def _jq(program: str, payload: str, *extra: str) -> str:
 def test_a_null_author_is_null_in_jq_and_not_an_error() -> None:
     """The projection the twin runs must SURVIVE an unattributed commit.
 
-    If `.author.login` raised, the twin would die on exactly the PRs it exists
-    to judge, and the port must have the same tolerance rather than a wider one.
+    If `.author.login` raised, the twin would die on exactly the PRs it exists to judge, and the port must have the same tolerance rather than a wider one.
     """
     out = _jq(".author.login", '{"author":null}')
     assert out == "null\n"
@@ -186,11 +179,9 @@ def test_the_shape_filter_matches_the_twins_grep() -> None:
 def test_the_endpoints_and_the_projection_still_match_the_twin() -> None:
     """The three strings that decide WHAT this gate reads, checked against the twin.
 
-    Read from the twin's source rather than remembered, because a change to any
-    of them silently re-scopes the gate. The compare endpoint is here by name:
+    Read from the twin's source rather than remembered, because a change to any of them silently re-scopes the gate. The compare endpoint is here by name:
     reverting it to `pulls/{n}/commits` would reintroduce the 250 cap that made
-    this gate unable to report on a 254-commit PR, and that regression would
-    otherwise be invisible to every other test in this file.
+    this gate unable to report on a 254-commit PR, and that regression would otherwise be invisible to every other test in this file.
     """
     body = TWIN.read_text(encoding="utf-8")
     assert 'api "repos/${repo}/compare/${base}...${head}?per_page=100" --paginate' in body
@@ -202,10 +193,7 @@ def test_the_endpoints_and_the_projection_still_match_the_twin() -> None:
 def test_the_metadata_line_is_read_the_way_bash_reads_it() -> None:
     """`read -r base head total` against `parse_meta`, run through real bash.
 
-    The interesting case is a FOURTH field: `read` hands the whole remainder to
-    the last variable, so `1 2` is not the number 1. A port that split on
-    whitespace and took `fields[2]` would accept it and judge a PR against the
-    wrong total.
+    The interesting case is a FOURTH field: `read` hands the whole remainder to the last variable, so `1 2` is not the number 1. A port that split on whitespace and took `fields[2]` would accept it and judge a PR against the wrong total.
     """
     for line in ("b h 254", "b h many", "b h", "b h 1 2", "", "   "):
         proc = subprocess.run(

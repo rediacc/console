@@ -1,12 +1,9 @@
 """Differential: `.ci/rediacc_ci/build/pack_cli_npm.py` against its twin
 `.ci/scripts/build/pack-cli-npm.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-WHAT IS COMPARED, AND WHY IT IS SEVEN THINGS. This script's product is a file on
-disk, so exit code and stdout describe barely half of it. Every case compares:
+WHAT IS COMPARED, AND WHY IT IS SEVEN THINGS. This script's product is a file on disk, so exit code and stdout describe barely half of it. Every case compares:
 
   1. the exit code, which is where DEFECT 1 lives (a silent 2 where the
      unreachable `else` intended a 1 with a message);
@@ -26,27 +23,14 @@ disk, so exit code and stdout describe barely half of it. Every case compares:
      a port that wrote it differently would be caught here rather than in a
      release.
 
-PATH IS REPLACED, NEVER PREPENDED. This host has a real `npm` and a real `jq`,
-and `packages/cli` in the real checkout is one `get_repo_root` away from any
-fixture that gets its root wrong. A prepended PATH would leave a subject that
-mis-derived its root running a REAL `npm pack` against the live tree. `_binder`
-therefore builds the ENTIRE PATH out of named tools plus the two fakes, and
-asserts that anything it was asked to exclude really is absent -- a control on
-the control, because a probe that cannot fire looks exactly like a subject that
-cannot fail.
+PATH IS REPLACED, NEVER PREPENDED. This host has a real `npm` and a real `jq`, and `packages/cli` in the real checkout is one `get_repo_root` away from any fixture that gets its root wrong. A prepended PATH would leave a subject that mis-derived its root running a REAL `npm pack` against the live tree. `_binder` therefore builds the ENTIRE PATH out of named tools plus the two
+fakes, and asserts that anything it was asked to exclude really is absent -- a control on the control, because a probe that cannot fire looks exactly like a subject that cannot fail.
 
 `LC_ALL=C` ON BOTH SIDES, deliberately, and it is not boilerplate: the twin's
-tarball choice is `ls | head -1`, whose order is `LC_COLLATE`'s, and the port
-sorts by code point. The two agree under C. Pinning it makes the comparison
-measure the port instead of the developer's locale, and `select_tarball`'s
-docstring says the same thing from the other side.
+tarball choice is `ls | head -1`, whose order is `LC_COLLATE`'s, and the port sorts by code point. The two agree under C. Pinning it makes the comparison measure the port instead of the developer's locale, and `select_tarball`'s docstring says the same thing from the other side.
 
 THE TWO DELIBERATE DIVERGENCES ARE TESTED, NOT HIDDEN:
-`test_a_missing_packages_cli_names_the_program_that_could_not_proceed` masks the
-`<path>: line <n>: ` prefix and compares the rest, and
-`test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text` asserts the exit
-codes match AND that the coreutils diagnostic does not, so the difference is a
-recorded decision rather than an absence.
+`test_a_missing_packages_cli_names_the_program_that_could_not_proceed` masks the `<path>: line <n>: ` prefix and compares the rest, and `test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text` asserts the exit codes match AND that the coreutils diagnostic does not, so the difference is a recorded decision rather than an absence.
 """
 
 import json
@@ -145,18 +129,11 @@ def _fixture(
 ) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because each subject derives the console root from its own location
-    (`BASH_SOURCE`/`__file__`, then three directories up). Driving the TRACKED
-    files with a `cwd` would point them at the real repository, and the version
-    injection would then rewrite `packages/cli/package.json` in the live tree.
+    Copies, because each subject derives the console root from its own location (`BASH_SOURCE`/`__file__`, then three directories up). Driving the TRACKED files with a `cwd` would point them at the real repository, and the version injection would then rewrite `packages/cli/package.json` in the live tree.
 
-    `.resolve()` on the root is load-bearing: bash's `cd X && pwd` reports the
-    LOGICAL path it was handed while `pathlib.resolve()` follows symlinks, and
-    the root appears in `cd` diagnostics. Handing both subjects an
-    already-resolved root makes them agree for the right reason.
+    `.resolve()` on the root is load-bearing: bash's `cd X && pwd` reports the LOGICAL path it was handed while `pathlib.resolve()` follows symlinks, and the root appears in `cd` diagnostics. Handing both subjects an already-resolved root makes them agree for the right reason.
 
-    `seeded` pre-creates names in OUT_DIR, which is how the stale-tarball half of
-    DEFECT 2 is reached without waiting for a second run.
+    `seeded` pre-creates names in OUT_DIR, which is how the stale-tarball half of DEFECT 2 is reached without waiting for a second run.
     """
     root = where.resolve() / "tree"
     (root / ".ci" / "scripts" / "build").mkdir(parents=True)
@@ -354,8 +331,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
 def test_the_fakes_are_actually_reached(tmp_path):
     """ANTI-VACUITY. Every comparison above is worthless if `npm pack` never ran.
 
-    Also pins the CWD, which is the twin's own header incident: the script has to
-    be inside `packages/cli` when it packs, however it was invoked.
+    Also pins the CWD, which is the twin's own header incident: the script has to be inside `packages/cli` when it packs, however it was invoked.
     """
     root = _fixture(tmp_path / "v")
     out = _run(PORT_REL, root, version="1.2.3")
@@ -371,8 +347,7 @@ def test_the_fakes_are_actually_reached(tmp_path):
 
 def test_the_placeholder_really_skips_jq(tmp_path):
     """CONTROL for the case above, in the other direction: `0.0.0-dev` must call
-    NO jq at all. A port that injected unconditionally would satisfy every
-    positive assertion in this file and would dirty `package.json` on every dev
+    NO jq at all. A port that injected unconditionally would satisfy every positive assertion in this file and would dirty `package.json` on every dev
     build."""
     root = _fixture(tmp_path / "s")
     out = _run(PORT_REL, root)
@@ -385,13 +360,9 @@ def test_the_placeholder_really_skips_jq(tmp_path):
 def test_the_dead_else_branch_is_dead_in_both(tmp_path):
     """DEFECT 1, pinned in BOTH implementations.
 
-    `npm pack` produced nothing, which is the ONE failure the twin wrote a
-    message for. Under `set -euo pipefail` the message never prints: the
+    `npm pack` produced nothing, which is the ONE failure the twin wrote a message for. Under `set -euo pipefail` the message never prints: the
     `CLI_PKG="$(ls ... | head -1)"` assignment carries `ls`'s exit 2 and errexit
-    kills the script before the `if`. So the observable is exit 2 and total
-    silence, in both. If either half ever changes, this reds here rather than on
-    somebody's release day. Reported, not fixed -- the repair is a cutover-box
-    decision.
+    kills the script before the `if`. So the observable is exit 2 and total silence, in both. If either half ever changes, this reds here rather than on somebody's release day. Reported, not fixed -- the repair is a cutover-box decision.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("d-%s" % subject.name))
@@ -407,14 +378,9 @@ def test_the_dead_else_branch_is_dead_in_both(tmp_path):
 def test_a_failing_jq_is_announced_as_a_success_in_both(tmp_path):
     """DEFECT 3, pinned in BOTH implementations, and the reason this file exists.
 
-    `set -e` does not fire on a failing member of an AND-OR list, so a jq that
-    dies leaves `package.json` untouched, leaves an EMPTY `package.json.tmp`
-    behind, prints `✓ Injected version 9.9.9 into package.json` anyway, packs the
-    uninjected manifest and exits 0.
+    `set -e` does not fire on a failing member of an AND-OR list, so a jq that dies leaves `package.json` untouched, leaves an EMPTY `package.json.tmp` behind, prints `✓ Injected version 9.9.9 into package.json` anyway, packs the uninjected manifest and exits 0.
 
-    Four separate assertions rather than one, because each is a different half of
-    the lie and a port could get any one of them right by accident. Reported, not
-    fixed -- the repair is a cutover-box decision.
+    Four separate assertions rather than one, because each is a different half of the lie and a port could get any one of them right by accident. Reported, not fixed -- the repair is a cutover-box decision.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("j-%s" % subject.name))
@@ -440,10 +406,7 @@ def test_a_failing_jq_is_announced_as_a_success_in_both(tmp_path):
 def test_a_stale_tarball_is_aliased_over_this_runs_own(tmp_path):
     """DEFECT 2, demonstrated rather than asserted in prose, in BOTH.
 
-    `OUT_DIR` defaults to `/tmp/cli-npm` and nothing cleans it, so the previous
-    run's `rediacc-cli-0.10.0.tgz` is still there when this run packs 0.9.0.
-    `ls | head -1` sorts `1` before `9`, so the alias every install path fetches
-    gets the OLD tarball and the script reports success naming it.
+    `OUT_DIR` defaults to `/tmp/cli-npm` and nothing cleans it, so the previous run's `rediacc-cli-0.10.0.tgz` is still there when this run packs 0.9.0. `ls | head -1` sorts `1` before `9`, so the alias every install path fetches gets the OLD tarball and the script reports success naming it.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("t-%s" % subject.name), seeded=("rediacc-cli-0.10.0.tgz",))
@@ -461,9 +424,7 @@ def test_a_missing_packages_cli_names_the_program_that_could_not_proceed(tmp_pat
 
     Both subjects fail the `cd` and exit 1. bash's diagnostic names the script
     and its line; the port's names the port and its line. Everything after that
-    prefix -- `cd: <dir>: No such file or directory` -- is compared byte for
-    byte, and the two paths are asserted to be DIFFERENT so this test still means
-    something if someone ever makes the port print the twin's path.
+    prefix -- `cd: <dir>: No such file or directory` -- is compared byte for byte, and the two paths are asserted to be DIFFERENT so this test still means something if someone ever makes the port print the twin's path.
     """
     root_a = _fixture(tmp_path / "ma")
     shutil.rmtree(root_a / "packages")
@@ -488,8 +449,7 @@ def test_a_missing_packages_cli_names_the_program_that_could_not_proceed(tmp_pat
 def mkdir_is_gnu() -> bool:
     """Is the `mkdir` on PATH GNU coreutils, or a reimplementation?
 
-    ASKED, because the answer decides what the case below may assert and it is
-    NOT the same on every machine that runs this suite:
+    ASKED, because the answer decides what the case below may assert and it is NOT the same on every machine that runs this suite:
 
         GNU coreutils 9.7 (the CI runner)
             mkdir: cannot create directory 'denied/out': Permission denied
@@ -509,17 +469,13 @@ def test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text(tmp_path):
     """DIVERGENCE 2, pinned rather than asserted away -- and it depends on WHICH
     coreutils is installed, which is the part this case used to get wrong.
 
-    `mkdir -p` on an unwritable parent: the exit code is the script's and agrees.
-    The diagnostic belongs to coreutils, and the port SYNTHESISES GNU's wording,
-    so whether the two texts differ is a property of the host's mkdir:
+    `mkdir -p` on an unwritable parent: the exit code is the script's and agrees. The diagnostic belongs to coreutils, and the port SYNTHESISES GNU's wording, so whether the two texts differ is a property of the host's mkdir:
 
         GNU coreutils 9.7 (the CI runner)  -> identical; the divergence is CLOSED
         uutils coreutils 0.8.0 (here)      -> different; the divergence is REAL
 
     An unconditional `!=` therefore passed on every machine in this tree and
-    failed in CI run 34970782616 with its own message -- "the coreutils
-    diagnostic and the port's now match, so this divergence is closed" -- which
-    was true where it ran and false where it was written.
+    failed in CI run 34970782616 with its own message -- "the coreutils diagnostic and the port's now match, so this divergence is closed" -- which was true where it ran and false where it was written.
 
     The port's own text is asserted EXACTLY either way, so a port that drifted
     from GNU's wording still reds here on any host.
@@ -561,8 +517,7 @@ def test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text(tmp_path):
 def test_select_tarball_is_the_twins_ordering():
     """The pure half of DEFECT 2, driven directly against the SHELL's own answer.
 
-    A constant copied out of the port cannot contradict the port, so the expected
-    order comes from bash running the twin's actual pipeline over the same names
+    A constant copied out of the port cannot contradict the port, so the expected order comes from bash running the twin's actual pipeline over the same names
     under `LC_ALL=C`.
     """
     names = [

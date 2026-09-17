@@ -5,32 +5,23 @@ sourced and never executed.
 -----------------------------------------------------------------------------
 WHY THERE IS NO CLI TWIN HERE, AND WHY THAT IS NOT A GAP
 -----------------------------------------------------------------------------
-`.ci/scripts/infra/ci-env.sh` is on the language-policy allowlist with this
-reason, and it is still true:
+`.ci/scripts/infra/ci-env.sh` is on the language-policy allowlist with this reason, and it is still true:
 
     BLOCKER: sourced only, by ci-start-account.sh and ci-start-elite.sh, to
     export variables into the CALLER's shell -- same contract as the already-
     exempted inject-env.sh and .ci/docker/service/env.sh, a child process
     cannot mutate its parent's environment in any language
 
-Checked again for this port rather than taken from the allowlist: the only two
-`source`/`.` call sites in the tree are `ci-start-account.sh:31` and
-`ci-start-elite.sh:29`, and the two ports of THOSE scripts
-(`infra/ci_start_account.py`, `infra/ci_start_elite.py:123-158`) run the real
+Checked again for this port rather than taken from the allowlist: the only two `source`/`.` call sites in the tree are `ci-start-account.sh:31` and `ci-start-elite.sh:29`, and the two ports of THOSE scripts (`infra/ci_start_account.py`, `infra/ci_start_elite.py:123-158`) run the real
 bash file through `bash -c '. "$1"; env -0'` and read the exported set back.
 Nothing runs it as a program.
 
-So this module follows what the tree already does with a sourced-only twin:
-`.ci/scripts/test/proxies/proxy-lib.sh` is ported as the `core.proxyx` library,
-and `.ci/scripts/lib/common.sh` as `core.common` plus `core.review_budget` --
-pure functions plus a small verb CLI whose only job is to give the shadow
+So this module follows what the tree already does with a sourced-only twin: `.ci/scripts/test/proxies/proxy-lib.sh` is ported as the `core.proxyx` library, and `.ci/scripts/lib/common.sh` as `core.common` plus `core.review_budget` -- pure functions plus a small verb CLI whose only job is to give the shadow
 differential a surface to drive. `configure()` is the whole contract; `apply()`
 performs the two writes and the printing; the verbs below exist so a differential
 can compare the RESULT of sourcing the twin against the result of calling this.
 
-THE CUTOVER THIS ENABLES, stated so nobody mistakes the shape for a dead end:
-`ci_start_elite.py` and `ci_start_account.py` currently shell out to bash to get
-this environment. When the cutover box lands they can call `configure()` and
+THE CUTOVER THIS ENABLES, stated so nobody mistakes the shape for a dead end: `ci_start_elite.py` and `ci_start_account.py` currently shell out to bash to get this environment. When the cutover box lands they can call `configure()` and
 drop the `bash -c` hop; that is not this box's call.
 
 -----------------------------------------------------------------------------
@@ -43,26 +34,17 @@ WHAT "EQUIVALENT" MEANS FOR A SOURCED SCRIPT: FOUR OBSERVABLES, NOT ONE
   4. stdout: up to eight `::add-mask::` directives and the three summary lines,
      in order.
 
-All four are compared by `test_infra_ci_env.py`. Comparing only the exit code
-would compare nothing at all: this script has no verdict.
+All four are compared by `test_infra_ci_env.py`. Comparing only the exit code would compare nothing at all: this script has no verdict.
 
 -----------------------------------------------------------------------------
 `node`, `openssl` AND `jq` ARE SPAWNED, NOT REIMPLEMENTED
 -----------------------------------------------------------------------------
-The same argument this wave keeps making, and here it has teeth. The Ed25519
-and X25519 keys are DER (`pkcs8`/`spki`) base64 produced by node's own crypto,
-and the account server verifies signatures made with them. A Python
-reimplementation would have to re-derive the exact encoding, and the first byte
-it got wrong would produce a key that looks perfectly well-formed and does not
-verify. `KEYGEN_PROGRAM` below is the twin's node program character for
-character (asserted against the twin's source by
-`test_the_node_programs_are_the_twins_own_text`), the two are handed to the same
-`node`, and the two fields come back out through the same `jq -r`.
+The same argument this wave keeps making, and here it has teeth. The Ed25519 and X25519 keys are DER (`pkcs8`/`spki`) base64 produced by node's own crypto, and the account server verifies signatures made with them. A Python reimplementation would have to re-derive the exact encoding, and the first byte it got wrong would produce a key that looks perfectly well-formed and does not
+verify. `KEYGEN_PROGRAM` below is the twin's node program character for character (asserted against the twin's source by `test_the_node_programs_are_the_twins_own_text`), the two are handed to the same `node`, and the two fields come back out through the same `jq -r`.
 
 `openssl rand` likewise: `-base64 48` and `-hex 32` are the twin's, and the
 `tr -d '/+=' | cut -c1-64` half is the only piece done in Python -- it is pure
-text, and `strip_and_cut` is driven against the real bash pipeline in the tests
-rather than trusted.
+text, and `strip_and_cut` is driven against the real bash pipeline in the tests rather than trusted.
 
 -----------------------------------------------------------------------------
 THREE THINGS THE TWIN DOES THAT LOOK LIKE BUGS. ONE IS.
@@ -113,14 +95,11 @@ TWO SMALLER FAITHFULNESS NOTES
 -----------------------------------------------------------------------------
 `set -e` LEAKS INTO THE CALLER. The twin's line 15 runs in the sourcing shell
 and stays set after it returns. `ci_start_elite.py` already documents that; a
-Python caller of `configure()` has no such side effect, which is a difference in
-the port's favour and is listed here rather than hidden.
+Python caller of `configure()` has no such side effect, which is a difference in the port's favour and is listed here rather than hidden.
 
-THE `.env` HEADER LINE IS COPIED WITH ITS PUNCTUATION AS FOUND. It reads
-`# Auto-generated by ci-env.sh - do not edit` in the twin with an em dash where
+THE `.env` HEADER LINE IS COPIED WITH ITS PUNCTUATION AS FOUND. It reads `# Auto-generated by ci-env.sh - do not edit` in the twin with an em dash where
 the hyphen is here; the byte sequence is reproduced verbatim in `ENV_HEADER`
-because docker compose reads that file and a differential compares it. It is
-quoted, not authored.
+because docker compose reads that file and a differential compares it. It is quoted, not authored.
 
 K=5 LEDGER: `.ci/shadow/w7p6-ci-env.observations.jsonl`.
 """
@@ -221,8 +200,7 @@ SUMMARY = (
 class ToolFailedError(Exception):
     """`node` or `jq` exited non-zero inside a PLAIN assignment.
 
-    The twin's `set -e` ends the sourcing shell with that exact status, so the
-    status travels with the exception rather than being flattened to 1.
+    The twin's `set -e` ends the sourcing shell with that exact status, so the status travels with the exception rather than being flattened to 1.
     """
 
     def __init__(self, code: int, what: str) -> None:
@@ -234,11 +212,7 @@ class ToolFailedError(Exception):
 class Config:
     """What sourcing the twin leaves behind: the four observables.
 
-    `masks` and `summary` are kept APART rather than as one stdout list because
-    they straddle the two writes: the twin prints the mask directives at :94-109
-    and the summary at :172-175, with the `.env` write between them. A run whose
-    `.env` write fails has therefore already printed the masks and never prints
-    the summary, and a port holding one flat list could not reproduce that.
+    `masks` and `summary` are kept APART rather than as one stdout list because they straddle the two writes: the twin prints the mask directives at :94-109 and the summary at :172-175, with the `.env` write between them. A run whose `.env` write fails has therefore already printed the masks and never prints the summary, and a port holding one flat list could not reproduce that.
     """
 
     __slots__ = ("env_file", "env_file_path", "exported", "github_env", "masks", "summary")
@@ -268,12 +242,8 @@ class Config:
 def console_root() -> pathlib.Path:
     """The twin's `SCRIPT_DIR/../../..` from `.ci/scripts/infra/`.
 
-    This module sits one directory deeper (`.ci/rediacc_ci/infra/`), so the same
-    root is `parents[3]` here where the twin's is `parents[2]` of its own
-    directory. `rediacc_ci.paths.repo_root()` is deliberately NOT used, for the
-    reason `ci_start_elite.py:110-119` already records: it honours
-    `$REDIACC_CI_ROOT` and the twin has no such override, so a fixture pointing
-    one at a tree and not the other would diverge silently.
+    This module sits one directory deeper (`.ci/rediacc_ci/infra/`), so the same root is `parents[3]` here where the twin's is `parents[2]` of its own directory. `rediacc_ci.paths.repo_root()` is deliberately NOT used, for the reason `ci_start_elite.py:110-119` already records: it honours `$REDIACC_CI_ROOT` and the twin has no such override, so a fixture pointing one at a tree and
+    not the other would diverge silently.
     """
     return pathlib.Path(__file__).resolve().parents[3]
 
@@ -281,10 +251,7 @@ def console_root() -> pathlib.Path:
 def _capture(argv: list[str], what: str) -> str:
     """Run `argv`, return stdout with trailing newlines stripped.
 
-    `$( )` strips trailing newlines and stderr is INHERITED, so node's and jq's
-    own diagnostics reach fd 2 exactly as they do in the twin. A non-zero exit
-    raises, because both call sites are plain assignments. A missing binary is
-    127, which is bash's status for command-not-found.
+    `$( )` strips trailing newlines and stderr is INHERITED, so node's and jq's own diagnostics reach fd 2 exactly as they do in the twin. A non-zero exit raises, because both call sites are plain assignments. A missing binary is 127, which is bash's status for command-not-found.
     """
     try:
         proc = subprocess.run(argv, stdout=subprocess.PIPE, check=False)
@@ -298,9 +265,7 @@ def _capture(argv: list[str], what: str) -> str:
 def _capture_soft(argv: list[str]) -> str:
     """`$(openssl ... )` inside an `export VAR=` -- FAILURE IS SILENT.
 
-    Hazard (b) in the module docstring. A non-zero exit, and a binary that is
-    not there at all, both yield the empty string and let the run continue,
-    because `export`'s own status is what `set -e` sees.
+    Hazard (b) in the module docstring. A non-zero exit, and a binary that is not there at all, both yield the empty string and let the run continue, because `export`'s own status is what `set -e` sees.
     """
     try:
         proc = subprocess.run(argv, stdout=subprocess.PIPE, check=False)
@@ -315,13 +280,9 @@ def strip_and_cut(text: str) -> str:
     """`tr -d '/+=' | cut -c1-64`, on one line of openssl output.
 
     `tr` deletes the three characters anywhere; `cut -c1-64` then takes the
-    first 64 CHARACTERS OF EACH LINE. `openssl rand -base64 48` emits exactly
-    one 64-character line, so the result is at most 64 characters and usually
-    fewer -- the twin's name for this value is a 64-character key and it is
-    not one, which is cosmetic and preserved.
+    first 64 CHARACTERS OF EACH LINE. `openssl rand -base64 48` emits exactly one 64-character line, so the result is at most 64 characters and usually fewer -- the twin's name for this value is a 64-character key and it is not one, which is cosmetic and preserved.
 
-    Driven against the real pipeline in `test_strip_and_cut_agrees_with_the_
-    bash_pipeline` rather than trusted.
+    Driven against the real pipeline in `test_strip_and_cut_agrees_with_the_ bash_pipeline` rather than trusted.
     """
     return "\n".join(
         line.translate({ord(c): None for c in STRIP_CHARS})[:CUT_COLUMNS]
@@ -332,8 +293,7 @@ def strip_and_cut(text: str) -> str:
 def keypair(curve: str) -> tuple[str, str]:
     """`node -e "<KEYGEN_PROGRAM>"` then `jq -r .private` / `jq -r .public`.
 
-    Two `jq` invocations over one node run, exactly as the twin: the JSON is
-    produced once and indexed twice.
+    Two `jq` invocations over one node run, exactly as the twin: the JSON is produced once and indexed twice.
     """
     keys = _capture(["node", "-e", KEYGEN_PROGRAM % curve], "node")
     private = _jq(".private", keys)
@@ -360,8 +320,7 @@ def _jq(program: str, stdin_text: str) -> str:
 def persisted_block(view: dict[str, str]) -> str:
     """The `<<ENVBLOCK` heredoc, expanded. No trailing newline, like `$( )`.
 
-    `view` is the caller's environment WITH this script's exports applied. An
-    absent name expands to the empty string: the twin runs `set -e` and never
+    `view` is the caller's environment WITH this script's exports applied. An absent name expands to the empty string: the twin runs `set -e` and never
     `set -u`, so `${ACCOUNT_ED25519_PUBLIC_KEY}` on the export-without-
     assignment path is empty rather than an error. See hazard (a).
     """
@@ -377,9 +336,7 @@ def persisted_block(view: dict[str, str]) -> str:
 def configure(env: dict[str, str] | None = None, root: pathlib.Path | None = None) -> Config:
     """Everything sourcing the twin does, minus the two writes and the printing.
 
-    Returns the four observables. `exported` holds ONLY the names the twin
-    leaves in the environment, so a name it marks for export without assigning
-    is absent here too (hazard (a)).
+    Returns the four observables. `exported` holds ONLY the names the twin leaves in the environment, so a name it marks for export without assigning is absent here too (hazard (a)).
     """
     src = dict(os.environ) if env is None else dict(env)
     console = console_root() if root is None else pathlib.Path(root)
@@ -465,9 +422,7 @@ def configure(env: dict[str, str] | None = None, root: pathlib.Path | None = Non
 def apply(env: dict[str, str] | None = None, root: pathlib.Path | None = None) -> Config:
     """`configure`, then the two writes and the printing, in the twin's order.
 
-    The `.env` write comes FIRST, then `$GITHUB_ENV`, then the summary -- and
-    the `::add-mask::` directives were already emitted before either, which is
-    what makes them effective for the values the summary then prints.
+    The `.env` write comes FIRST, then `$GITHUB_ENV`, then the summary -- and the `::add-mask::` directives were already emitted before either, which is what makes them effective for the values the summary then prints.
     """
     src = dict(os.environ) if env is None else dict(env)
     config = configure(src, root)

@@ -1,15 +1,9 @@
 r"""Port of `.ci/scripts/test/gates/test-review-status.sh`.
 
-Both-ways test for `.ci/scripts/review/review-status.sh` -- the script behind
-the `Review Complete` check-run -- and, from the second half onward, for the two
-top-level review-hygiene gates it shells out to.
+Both-ways test for `.ci/scripts/review/review-status.sh` -- the script behind the `Review Complete` check-run -- and, from the second half onward, for the two top-level review-hygiene gates it shells out to.
 
-WHY THIS CLASS NEEDS A GATE. The thing being replaced (`Review Gate` inside
-Console CI) was green for months while asserting nothing about the review it is
-named after: it runs on `pull_request`, before any review can have happened, and
-its three scripts never look at a SHA. A successor that is merely *shaped* like a
-check is worthless -- so every conclusion this script can reach is driven here
-against planted state, in BOTH directions:
+WHY THIS CLASS NEEDS A GATE. The thing being replaced (`Review Gate` inside Console CI) was green for months while asserting nothing about the review it is named after: it runs on `pull_request`, before any review can have happened, and its three scripts never look at a SHA. A successor that is merely *shaped* like a check is worthless -- so every conclusion this script can reach
+is driven here against planted state, in BOTH directions:
 
   - Too quiet: a stale marker, an unreviewed head, a failed review run, or a
     failing hygiene script must produce conclusion=failure. If any of those
@@ -20,19 +14,12 @@ against planted state, in BOTH directions:
     to run again, so the marker can NEVER advance. Failing there would make the
     PR permanently unmergeable. It must pass, with a warning.
 
-GitHub is stubbed with a routing fake `gh` that applies the script's own --jq
-expressions to fixture JSON, so the real jq/sed extraction is exercised rather
-than reimplemented. Every write (check-run POST/PATCH) is captured and asserted
-on, including WHICH SHA it was anchored to.
+GitHub is stubbed with a routing fake `gh` that applies the script's own --jq expressions to fixture JSON, so the real jq/sed extraction is exercised rather than reimplemented. Every write (check-run POST/PATCH) is captured and asserted on, including WHICH SHA it was anchored to.
 
 --------------------------------------------------------------------------
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP
 --------------------------------------------------------------------------
-Read from the lock rather than inferred from the fixtures, which would mislead:
-almost every case here builds a temp world and would suggest no isolation is
-needed. `gates.lock.json` declares `gate-test:review-status` with
-`reads: ["tree:repo"]`, and it is right. Seven cases read tracked files with no
-seam at all:
+Read from the lock rather than inferred from the fixtures, which would mislead: almost every case here builds a temp world and would suggest no isolation is needed. `gates.lock.json` declares `gate-test:review-status` with `reads: ["tree:repo"]`, and it is right. Seven cases read tracked files with no seam at all:
 
   * `test_real_gate_constants_parseable` sed-parses the real
     `claude-review-gate.sh` and sources the real `.ci/scripts/lib/common.sh`.
@@ -48,27 +35,20 @@ seam at all:
     `test_review_report_count_is_shared_and_unqualified` parse constants out of
     the two real hygiene gates and `common.sh`.
 
-Every temp-world case also RUNS the real `review-status.sh`,
-`check-review-comments.sh`, `check-review-report-replies.sh` and
-`claude-review-gate.sh` off the tracked tree. A battery step rewriting any of
-those mid-sweep is a divergence that would be blamed on this port.
+Every temp-world case also RUNS the real `review-status.sh`, `check-review-comments.sh`, `check-review-report-replies.sh` and `claude-review-gate.sh` off the tracked tree. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on this port.
 
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
 this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in
 `test_twin_parity.py`, where an own group silently makes the opt-in vacuous.
 
-NO `TWIN_TIMEOUT`. The twin was MEASURED at 75s on this machine (most of it
-wall-clock spent in `common.sh`'s retry backoff on the deliberately-unreadable-API
-cases, `user` time is only 7s), which is inside the driver's 600s default even
+NO `TWIN_TIMEOUT`. The twin was MEASURED at 75s on this machine (most of it wall-clock spent in `common.sh`'s retry backoff on the deliberately-unreadable-API cases, `user` time is only 7s), which is inside the driver's 600s default even
 with the port driven serially after it. A declaration here would be a guess
 dressed as a measurement.
 
 --------------------------------------------------------------------------
 DOES ANY SUBJECT SELF-SCAN? ONE DOES, AND IT CANNOT SEE THIS FILE
 --------------------------------------------------------------------------
-Asked before a fixture was written, because a subject that can see this source
-turns a literal transcription into a tree-wide red for whoever runs the gate
-next. Three sweeps in this file walk directories rather than named files:
+Asked before a fixture was written, because a subject that can see this source turns a literal transcription into a tree-wide red for whoever runs the gate next. Three sweeps in this file walk directories rather than named files:
 
   * `test_no_ci_job_references_review_complete` greps `.github/workflows` with
     `--include='*.yml'`. This file is neither.
@@ -84,8 +64,7 @@ next. Three sweeps in this file walk directories rather than named files:
   * `test_findings_fence_key_is_shared_with_the_pipeline` and
     `test_report_prefix_is_shared_with_the_pipeline` grep three NAMED files.
 
-So the fixtures are written out literally, exactly as the twin writes them, and
-the port's diff can be read against its original.
+So the fixtures are written out literally, exactly as the twin writes them, and the port's diff can be read against its original.
 """
 
 import json
@@ -419,9 +398,7 @@ def pr_size(t, additions: int, deletions: int) -> None:
 class Run:
     """`LAST_OUT` and `LAST_RC`, handed back instead of set as globals.
 
-    The twin keeps both in shell globals because a shell function cannot return
-    two things. Nothing else about the contract changes: `out` is the MERGED
-    stream, because every `run_*` helper in the twin captures `2>&1`.
+    The twin keeps both in shell globals because a shell function cannot return two things. Nothing else about the contract changes: `out` is the MERGED stream, because every `run_*` helper in the twin captures `2>&1`.
     """
 
     def __init__(self, out: str, rc: int) -> None:
@@ -463,10 +440,7 @@ def posted(gate, t, expr: str) -> str:
     """`posted <TEMP> <jq-path>` -- field of the captured check-run payload.
 
     `sed -n '/^METHOD=/,$p' | sed '1d'`: everything from the FIRST `METHOD=`
-    line onward, minus that line. Transcribed rather than simplified, because
-    `test_retryable_head_with_a_stale_marker_still_fails` carries a comment
-    explaining that a second capture in one directory makes this unparseable,
-    and a tidier reader would quietly change which world that case describes.
+    line onward, minus that line. Transcribed rather than simplified, because `test_retryable_head_with_a_stale_marker_still_fails` carries a comment explaining that a second capture in one directory makes this unparseable, and a tidier reader would quietly change which world that case describes.
     """
     capture = t / "capture.txt"
     if not capture.is_file():
@@ -483,9 +457,7 @@ def posted(gate, t, expr: str) -> str:
 def captured_method(t) -> str:
     """`sed -n 's/^METHOD=\\([A-Z]*\\) .*/\\1/p' | tail -n 1`.
 
-    `[ -f ]` guard, not an assumption: a test that asserts NOTHING was posted
-    leaves no capture file at all, and erroring on the missing path would make
-    "correctly silent" look like a harness fault.
+    `[ -f ]` guard, not an assumption: a test that asserts NOTHING was posted leaves no capture file at all, and erroring on the missing path would make "correctly silent" look like a harness fault.
     """
     capture = t / "capture.txt"
     if not capture.is_file():
@@ -513,10 +485,7 @@ def captured_paths(t) -> str:
 def source_common(gate, snippet: str) -> harness.RunResult:
     """`source .ci/scripts/lib/common.sh` and run one line against it.
 
-    A SUBPROCESS per call, like the twin's own `source`-in-the-test-file, and for
-    a reason the twin does not have to state: sourcing a shell library cannot
-    happen in-process here at all, and shelling out keeps every helper probe in a
-    process that dies with the case.
+    A SUBPROCESS per call, like the twin's own `source`-in-the-test-file, and for a reason the twin does not have to state: sourcing a shell library cannot happen in-process here at all, and shelling out keeps every helper probe in a process that dies with the case.
     """
     bash = require_bash(gate)
     return harness.run([bash, "-c", 'source "$1"; shift; %s' % snippet, "_", os.fspath(COMMON)])
@@ -858,11 +827,7 @@ def test_cap_reached_warns_instead_of_deadlocking(gate):
 
 def test_cap_reached_by_spent_attempts_alone(gate):
     """THE SHAPE THAT ACTUALLY HAPPENED, and that the case above cannot see. PR
-    #553 hit its cap with ZERO posted reports and THREE spent attempts -- three
-    reviews that burned their turn budget and posted nothing. review-status.sh
-    counted posted reports alone, read 0/3, concluded the cap was NOT reached,
-    and posted a REQUIRED failure, leaving a green, ready, thread-clean PR
-    permanently unmergeable: exactly what the guard above exists to prevent. The
+    #553 hit its cap with ZERO posted reports and THREE spent attempts -- three reviews that burned their turn budget and posted nothing. review-status.sh counted posted reports alone, read 0/3, concluded the cap was NOT reached, and posted a REQUIRED failure, leaving a green, ready, thread-clean PR permanently unmergeable: exactly what the guard above exists to prevent. The
     sibling case passes under EITHER numerator, because 3 posted reports look
     identical to both."""
     with harness.temp_dir() as t:
@@ -997,10 +962,7 @@ def review_complete_hits(root) -> list[str]:
     """`grep -rn "Review Complete" <root> --include='*.yml'` and the three
     filters the twin applies to it, transcribed one for one.
 
-    Python's `re`/`str` rather than `grep -E`: CLAUDE.md records that ugrep's
-    `-E` returns silent false zeros when `^` is alternated with a negated class,
-    and a filter chain that quietly drops everything would make this gate read
-    clean for the worst possible reason.
+    Python's `re`/`str` rather than `grep -E`: CLAUDE.md records that ugrep's `-E` returns silent false zeros when `^` is alternated with a negated class, and a filter chain that quietly drops everything would make this gate read clean for the worst possible reason.
     """
     hits = []
     for path in sorted(pathlib.Path(root).rglob("*.yml")):
@@ -1703,11 +1665,7 @@ def marker_issue_comment(id_: int, created: str) -> dict:
 
 def run_report_gate(gate, t, *, head_ref: str = "", publish_root: str = "", **env) -> Run:
     """PIN THE BRANCH. The reply gate fans out per epic by reading
-    agent/pr/<branch>.md from the CHECKOUT, so with no pin it read whatever
-    branch the developer happened to be on: on a branch that declares epics,
-    every flat-path assertion below silently inverted, because the planted bare
-    "**Claude finished" fixture does not match a per-epic header. A test must not
-    depend on the tree it is running in. Callers that want the fan-out set
+    agent/pr/<branch>.md from the CHECKOUT, so with no pin it read whatever branch the developer happened to be on: on a branch that declares epics, every flat-path assertion below silently inverted, because the planted bare "**Claude finished" fixture does not match a per-epic header. A test must not depend on the tree it is running in. Callers that want the fan-out set
     `head_ref` to a branch whose snapshot they planted."""
     # The CALL is the assertion, not the value: it proves bash exists and that the three bash subjects are on disk. The gate below is invoked by its own shebang, so nothing here needs the interpreter path any more.
     require_bash(gate)
@@ -1745,14 +1703,9 @@ def test_report_prefix_is_shared_with_the_pipeline(gate):
 
 def test_per_epic_fanout_gates_every_epic_not_just_the_newest(gate):
     """THE PIN ABOVE HAS A COST, AND THIS PAYS IT. Pinning PR_HEAD_REF to a
-    branch with no snapshot makes every flat-path test deterministic, but it
-    would also hide a fan-out that had stopped working entirely: with zero epics
-    the gate takes the flat path, which is exactly what those tests assert. So
-    drive the OTHER side here, with a snapshot the test plants itself.
+    branch with no snapshot makes every flat-path test deterministic, but it would also hide a fan-out that had stopped working entirely: with zero epics the gate takes the flat path, which is exactly what those tests assert. So drive the OTHER side here, with a snapshot the test plants itself.
 
-    WORKLIST_PUBLISH_ROOT points review_epic_ids() at the fixture, so this reads
-    the planted snapshot and never the real tree's. It is the same override
-    --publish honours, for the same reason: a test must not write into, or read
+    WORKLIST_PUBLISH_ROOT points review_epic_ids() at the fixture, so this reads the planted snapshot and never the real tree's. It is the same override --publish honours, for the same reason: a test must not write into, or read
     its answer out of, the working tree another session is using."""
     with harness.temp_dir() as t:
         setup_comments(gate, t)
@@ -2045,10 +1998,7 @@ def parse_threshold(text: str, name: str) -> str:
     """The module-level `<name> = <digits>` assignment, or "".
 
     PYTHON SPELLING, not bash's `<name>=<digits>`: the constants moved into the
-    modules with the port, and a parser left on the bash spelling matches nothing
-    and returns "" for both sides. The callers below turn "" into a failure
-    precisely so that a parser which has stopped parsing cannot masquerade as two
-    thresholds that agree.
+    modules with the port, and a parser left on the bash spelling matches nothing and returns "" for both sides. The callers below turn "" into a failure precisely so that a parser which has stopped parsing cannot masquerade as two thresholds that agree.
     """
     prefix = name + " = "
     for line in text.splitlines():
@@ -2063,8 +2013,7 @@ def parse_threshold(text: str, name: str) -> str:
 
 def test_reply_thresholds_match_across_both_gates(gate):
     """Anti-drift for the property above: the shared rule is spelled out in two
-    files, so the thresholds must be asserted equal. If one file is tuned and the
-    other is not, a reply can satisfy one gate and not the other, and the
+    files, so the thresholds must be asserted equal. If one file is tuned and the other is not, a reply can satisfy one gate and not the other, and the
     property test above would start failing for a reason nobody could see."""
     comments_src = REVIEW_COMMENTS_SRC.read_text(encoding="utf-8")
     replies_src = REPORT_REPLIES_SRC.read_text(encoding="utf-8")
@@ -2094,10 +2043,7 @@ def test_reply_thresholds_match_across_both_gates(gate):
 def review_report_count_defs(root) -> list[str]:
     """`grep -rlE '^review_report_count\\(\\)' <root>`, sorted.
 
-    A FUNCTION rather than an inline sweep so that
-    `test_this_module_is_outside_the_review_report_count_sweep` can point the
-    SAME code at this directory. A control that re-implements the sweep it is
-    controlling proves nothing about the sweep.
+    A FUNCTION rather than an inline sweep so that `test_this_module_is_outside_the_review_report_count_sweep` can point the SAME code at this directory. A control that re-implements the sweep it is controlling proves nothing about the sweep.
     """
     found = []
     for path in sorted(pathlib.Path(root).rglob("*")):
@@ -2170,10 +2116,7 @@ def test_review_report_count_is_shared_and_unqualified(gate):
 def test_this_module_is_outside_the_review_report_count_sweep(gate):
     """ADDED BY THE PORT, and the docstring explains why it has to exist.
 
-    `test_review_report_count_is_shared_and_unqualified` runs a RECURSIVE sweep
-    and asserts it finds exactly ONE file. This module is not under its root
-    today, so the fixtures above are written literally. That is a claim about a
-    scan root, and a claim is worth a control: this points the SAME sweep
+    `test_review_report_count_is_shared_and_unqualified` runs a RECURSIVE sweep and asserts it finds exactly ONE file. This module is not under its root today, so the fixtures above are written literally. That is a claim about a scan root, and a claim is worth a control: this points the SAME sweep
     function at the directory these ports live in and requires it to find
     NOTHING. A widened scan root, or a `.sh` file appearing beside these ports
     with that definition in it, reds HERE by name instead of reddening
@@ -2541,11 +2484,9 @@ def test_head_exhaustion_does_not_deadlock_the_pr(gate):
 def test_retryable_head_with_a_stale_marker_still_fails(gate):
     """CONTROL for the case above, in its OWN temp dir because `posted` parses
     the single capture file from the first METHOD= line onward -- a second
-    run_status in the same directory appends a second check-run payload and makes
-    it unparseable. One run per world, like every other case here.
+    run_status in the same directory appends a second check-run payload and makes it unparseable. One run per world, like every other case here.
 
-    One attempt fewer, so the head is still retryable and a stale marker is a
-    real failure again. Without this the new guard could swallow every stale head
+    One attempt fewer, so the head is still retryable and a stale marker is a real failure again. Without this the new guard could swallow every stale head
     and nothing would notice."""
     with harness.temp_dir() as t:
         setup(gate, t)

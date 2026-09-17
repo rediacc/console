@@ -1,41 +1,21 @@
 """Port of `.ci/scripts/release/reprobe-r2-sentinel.sh`.
 
-Re-reads R2 after a sentinel write and asserts the sentinel is really there.
-The writer short-circuits when a sentinel already exists and swallows several
-"nothing to do" cases, so trusting its exit code alone would let a backfill
-report success while the drift the operator ran it for is still present. This
-probes the live bucket instead.
+Re-reads R2 after a sentinel write and asserts the sentinel is really there. The writer short-circuits when a sentinel already exists and swallows several "nothing to do" cases, so trusting its exit code alone would let a backfill report success while the drift the operator ran it for is still present. This probes the live bucket instead.
 
 THE PROBE LIBRARY IS SHARED, NOT RE-DERIVED. The twin sources
 `.ci/scripts/lib/release-state-validator.sh` and calls `rsv_sentinel_exists`;
-this calls `rediacc_ci.core.release_state_validator.sentinel_exists`, which is
-that function's already-verified port, down to grepping the captured stderr for
-`404|Not Found|NoSuchKey` because the aws CLI returns 254 for both a 404 and an
-auth failure and the exit code genuinely cannot tell them apart.
+this calls `rediacc_ci.core.release_state_validator.sentinel_exists`, which is that function's already-verified port, down to grepping the captured stderr for `404|Not Found|NoSuchKey` because the aws CLI returns 254 for both a 404 and an auth failure and the exit code genuinely cannot tell them apart.
 
-AND THE THIRD STATE IS DELIBERATELY FOLDED HERE, which is worth saying out loud
-because the library went to some trouble to keep it separate. `sentinel_exists`
+AND THE THIRD STATE IS DELIBERATELY FOLDED HERE, which is worth saying out loud because the library went to some trouble to keep it separate. `sentinel_exists`
 answers YES / NO / UNKNOWN; the twin's `if rsv_sentinel_exists ...; then` is a
 two-way branch, so rc=1 (genuinely absent) and rc=2 (could not tell) both land
-in the `else` and both print `::error::... NOT present after write`. That is
-lossy, and the loss is SAFE IN THIS ONE CALLER: an unanswered probe here fails
-the job, which is the direction a post-write assertion must err in. The port
-reproduces the fold rather than improving on it, and the library still logs its
-own "this is NOT evidence that it is missing" line to stderr on the UNKNOWN
-path, so the distinction survives where a reader can see it.
+in the `else` and both print `::error::... NOT present after write`. That is lossy, and the loss is SAFE IN THIS ONE CALLER: an unanswered probe here fails the job, which is the direction a post-write assertion must err in. The port reproduces the fold rather than improving on it, and the library still logs its own "this is NOT evidence that it is missing" line to stderr on the
+UNKNOWN path, so the distinction survives where a reader can see it.
 
-ENV IS EXPORTED BY MUTATING `os.environ`, not by building a dict to hand to
-`subprocess`, because the `aws` calls happen two layers down inside the shared
-library, which reads `os.environ` itself. The twin's three `export` lines have
-exactly that reach: they set the process environment every later `aws` child
-inherits.
+ENV IS EXPORTED BY MUTATING `os.environ`, not by building a dict to hand to `subprocess`, because the `aws` calls happen two layers down inside the shared library, which reads `os.environ` itself. The twin's three `export` lines have exactly that reach: they set the process environment every later `aws` child inherits.
 
-ONE PRECONDITION HAS NO PORT: the twin's library refuses to load on bash older
-than 4.0 (associative arrays), printing four lines and returning 1 at source
-time -- BEFORE `require_cmd aws`. Python has no equivalent precondition, so on a
-bash 3.2 host the two sides diverge at the first line. Named rather than
-simulated: inventing a version refusal the port does not actually have would be
-a fiction, and the CI runners are all bash 5.
+ONE PRECONDITION HAS NO PORT: the twin's library refuses to load on bash older than 4.0 (associative arrays), printing four lines and returning 1 at source time -- BEFORE `require_cmd aws`. Python has no equivalent precondition, so on a bash 3.2 host the two sides diverge at the first line. Named rather than simulated: inventing a version refusal the port does not actually have
+would be a fiction, and the CI runners are all bash 5.
 """
 
 from __future__ import annotations

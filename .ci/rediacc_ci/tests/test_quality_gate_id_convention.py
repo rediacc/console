@@ -1,17 +1,9 @@
 """`rediacc_ci.quality.gate_id_convention` against the twin's own embedded program.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger
-`.ci/shadow/w7p2-gate-id-convention.observations.jsonl` drives the whole gate over
-five distinct trees: a direct gates/ script under the wrong id, the 2026-08-08
-alias shape, a missing lock, a missing corpus directory, and a reader seeing less
-than the corpus. What a ledger row cannot isolate is that this gate's ENTIRE
-logic already existed as Python, inside a heredoc, and a port of it can drift in
-exactly the way the thing it replaced drifted: silently, in the narrowing
-direction, while the green line still reads healthy.
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-gate-id-convention.observations.jsonl` drives the whole gate over five distinct trees: a direct gates/ script under the wrong id, the 2026-08-08 alias shape, a missing lock, a missing corpus directory, and a reader seeing less than the corpus. What a ledger row cannot isolate is that this gate's ENTIRE logic already
+existed as Python, inside a heredoc, and a port of it can drift in exactly the way the thing it replaced drifted: silently, in the narrowing direction, while the green line still reads healthy.
 
-So the twin's heredoc is EXTRACTED from its source and run as a subprocess over
-the same inputs, and the two are compared line for line. That is a stronger check
-than any hand-written expectation, because it fails when either side changes.
+So the twin's heredoc is EXTRACTED from its source and run as a subprocess over the same inputs, and the two are compared line for line. That is a stronger check than any hand-written expectation, because it fails when either side changes.
 
 The alias resolver is also driven directly on the shapes the header argues about:
 the one-hop unwind that must resolve, the `ci: { test: ... }` mention that must
@@ -32,8 +24,7 @@ TWIN = paths.from_root(".ci", "scripts", "quality", "check-gate-id-convention.sh
 def twin_program() -> str:
     """The `evaluate` heredoc, lifted out of the twin.
 
-    Read rather than copied: the point of a differential port is that a change
-    to the twin reds this test instead of drifting past it.
+    Read rather than copied: the point of a differential port is that a change to the twin reds this test instead of drifting past it.
     """
     body = TWIN.read_text(encoding="utf-8")
     start = body.index('    python3 - "$1" "$2" "$3" <<\'PY\'\n')
@@ -155,8 +146,7 @@ def test_the_planted_control_entry_still_fires_against_the_real_lock(
     """CONTROL 1's plant, run against the REAL lock and the REAL package.json.
 
     This is the control the gate itself runs on every invocation; asserting it
-    here means a change to either real file that made the plant stop firing is a
-    test failure rather than a gate that quietly cannot detect its own defect.
+    here means a change to either real file that made the plant stop firing is a test failure rather than a gate that quietly cannot detect its own defect.
     """
     root = paths.repo_root()
     entries = json.loads((root / gi.LOCK_REL).read_text(encoding="utf-8"))

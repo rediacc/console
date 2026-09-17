@@ -3,9 +3,7 @@
 Sibling of `test_deploy_resolve_account_deploy_config.py`; see that file for
 why `/dev/stdout` is not used as `$GITHUB_OUTPUT` and why the missing-env-var
 path is checked for exit code and substance, not bytes. The K=5 ledger is
-`.ci/shadow/w7p5a-resolve-www-deploy-target.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-www-deploy-target
---assert --k 5` -> "equivalence holds over 5 distinct trees").
+`.ci/shadow/w7p5a-resolve-www-deploy-target.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-www-deploy-target --assert --k 5` -> "equivalence holds over 5 distinct trees").
 
 BOTH VALID PATHS ARE BYTE-IDENTICAL, deliberately, same reasoning as the
 `resolve_account_deploy_config` sibling: pure computation, four `key=value`

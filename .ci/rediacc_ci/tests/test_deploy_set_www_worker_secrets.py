@@ -1,28 +1,14 @@
 """Differential: `rediacc_ci.deploy.set_www_worker_secrets` against its twin
 `.ci/scripts/deploy/set-www-worker-secrets.sh`.
 
-A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the
-fake logs its exact argv AND the bytes on its stdin, and every case uses fixture
-values two characters long. `.ci/shadow/w7p5a-status.json` records this path as
-blocked only for the "one real run" clause and says in as many words that the
-mocked parity ledger is a separate, achievable piece of work. This is that
-piece.
+A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
+is that piece.
 
-THE DOCUMENT IS THE ONLY EVIDENCE ON THE HAPPY PATH, and that is what makes this
-script different from its preview sibling. The twin prints NOTHING of its own
-when it succeeds: there is no closing `log_info`, so stdout carries wrangler's
-line and stderr is empty. A port that sent an empty document, or the wrong
-Worker name, would produce byte-identical streams and exit 0. Every case that
-reaches wrangler therefore asserts the recorded stdin, and
-`test_the_bulk_call_and_its_document_are_pinned_in_full` pins it against literal
-bytes rather than against the port's own builders.
+THE DOCUMENT IS THE ONLY EVIDENCE ON THE HAPPY PATH, and that is what makes this script different from its preview sibling. The twin prints NOTHING of its own when it succeeds: there is no closing `log_info`, so stdout carries wrangler's line and stderr is empty. A port that sent an empty document, or the wrong Worker name, would produce byte-identical streams and exit 0. Every
+case that reaches wrangler therefore asserts the recorded stdin, and `test_the_bulk_call_and_its_document_are_pinned_in_full` pins it against literal bytes rather than against the port's own builders.
 
-TWO STALENESS ALARMS RE-DERIVE THE TWIN'S OWN LISTS, because `KEYS` and
-`REQUIRED_NONEMPTY` are copies: the day a twenty-fifth secret or a fourteenth
-guard lands in the twin, the alarm fails instead of the port quietly sending a
-document one key short. A third test asserts the two SIBLING scripts really are
-different where they look the same, since "the preview file with a longer list"
-is the assumption that would port this one wrong.
+TWO STALENESS ALARMS RE-DERIVE THE TWIN'S OWN LISTS, because `KEYS` and `REQUIRED_NONEMPTY` are copies: the day a twenty-fifth secret or a fourteenth guard lands in the twin, the alarm fails instead of the port quietly sending a document one key short. A third test asserts the two SIBLING scripts really are different where they look the same, since "the preview file with a longer
+list" is the assumption that would port this one wrong.
 """
 
 from __future__ import annotations
@@ -320,9 +306,7 @@ def test_divergence_a_missing_worker_name_is_bashs_own_unbound_variable(
     tmp_path: pathlib.Path,
 ) -> None:
     """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED" BY
-    ACCIDENT. bash's refusal names the bash FILE and a bash LINE NUMBER, and then
-    the twin's own message, which already begins with the script name: the name
-    is printed twice. The port prints the `VAR: message` half. Same stream, same
+    ACCIDENT. bash's refusal names the bash FILE and a bash LINE NUMBER, and then the twin's own message, which already begins with the script name: the name is printed twice. The port prints the `VAR: message` half. Same stream, same
     status, no call from either."""
     old, new, old_calls, new_calls = run_both(tmp_path, drop_env=("WORKER_NAME",))
     assert old.returncode == new.returncode == 1
@@ -428,11 +412,7 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on a DROPPED KEY, which is the failure this script
-    can suffer in production: `SELLER_VAT_NUMBER` missing from the document means
-    the Worker's zod schema rejects the config and every request 500s, or the
-    field silently disappears from issued invoices. Nothing on either stream
-    shows it -- this twin prints nothing at all when it succeeds -- and the exit
-    code is 0 either way. Driven red, then the source is confirmed byte-identical
+    can suffer in production: `SELLER_VAT_NUMBER` missing from the document means the Worker's zod schema rejects the config and every request 500s, or the field silently disappears from issued invoices. Nothing on either stream shows it -- this twin prints nothing at all when it succeeds -- and the exit code is 0 either way. Driven red, then the source is confirmed byte-identical
     and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('    ("SELLER_VAT_NUMBER", "seller_vat"),\n', "", 1)

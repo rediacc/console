@@ -1,9 +1,6 @@
 """Every blocker-reason implementation in this tree, and what each one is allowed to be.
 
-WHY THIS MODULE EXISTS, AND WHY `test_core_allowlist.py` CANNOT DO ITS JOB.
-`test_core_allowlist` proves that `rediacc_ci.core.allowlist` reproduces the two
-shared readers BYTE FOR BYTE over a frozen corpus. That is a strong claim and it
-has a hole with a precise shape, recorded in `agent/PLAN-tooling-transformation.md`:
+WHY THIS MODULE EXISTS, AND WHY `test_core_allowlist.py` CANNOT DO ITS JOB. `test_core_allowlist` proves that `rediacc_ci.core.allowlist` reproduces the two shared readers BYTE FOR BYTE over a frozen corpus. That is a strong claim and it has a hole with a precise shape, recorded in `agent/PLAN-tooling-transformation.md`:
 
     nothing asserts a phrase present in the BASH or TS list but absent from the
     Python canonical, because test_core_allowlist.py:370 generates its corpus
@@ -11,8 +8,7 @@ has a hole with a precise shape, recorded in `agent/PLAN-tooling-transformation.
 
 A CORPUS GENERATED FROM THE SUBJECT CANNOT SEE THE SUBJECT BEING SHORT. Drop a
 phrase from `LOW_EFFORT_PHRASES` and the golden suite loses one test case; the
-remaining cases all still agree, the counts all still match, and every test is
-green. The missing phrase is now silently allowed by every gate in the tree.
+remaining cases all still agree, the counts all still match, and every test is green. The missing phrase is now silently allowed by every gate in the tree.
 
 So this module asserts the OTHER direction, once per implementation:
 
@@ -36,8 +32,7 @@ So this module asserts the OTHER direction, once per implementation:
      distinct real reason in the frozen corpus, and compares the verdict AND the
      message digest.
 
-WHAT IS DELIBERATELY NOT RE-ASSERTED HERE, because it already exists and a second
-implementation of a check is the same defect this module is about:
+WHAT IS DELIBERATELY NOT RE-ASSERTED HERE, because it already exists and a second implementation of a check is the same defect this module is about:
 
   * `bp_phrases` is a subset of the canonical, and the vendored file's own
     innocence -- `.ci/scripts/test/gates/test-breakpoint-portability.sh:357-441`,
@@ -47,8 +42,7 @@ implementation of a check is the same defect this module is about:
   * byte compatibility of the two readers with the canonical over the frozen
     corpus -- `test_core_allowlist.py`.
 
-THE VENDORED FILE IS NEVER OPENED FOR WRITING HERE. It is read, and only to name
-it in the inventory.
+THE VENDORED FILE IS NEVER OPENED FOR WRITING HERE. It is read, and only to name it in the inventory.
 """
 
 import hashlib
@@ -120,10 +114,7 @@ def _text(rel: str) -> str:
 def bash_array(text: str, name: str) -> list[str]:
     """The elements of `readonly <name>=( ... )`, in order.
 
-    The SAME shape `.ci/scripts/test/gates/test-breakpoint-portability.sh:504`
-    parses, deliberately: if this extractor and that one ever disagree about what
-    the file says, the subset proof over there is reading something this equality
-    proof is not.
+    The SAME shape `.ci/scripts/test/gates/test-breakpoint-portability.sh:504` parses, deliberately: if this extractor and that one ever disagree about what the file says, the subset proof over there is reading something this equality proof is not.
     """
     match = re.search(
         r"^readonly %s=\(\n(.*?)^\)$" % re.escape(name), text, re.MULTILINE | re.DOTALL
@@ -141,13 +132,9 @@ def bash_int(text: str, name: str) -> int | None:
 def quoted_phrase_hits(text: str) -> int:
     """How many canonical phrases appear in `text` as a QUOTED literal.
 
-    QUOTED, not substring. A substring test cannot express a phrase that is a
-    PREFIX of another -- the table itself has real pairs shaped exactly like
-    this, one entry a shorter prefix of a longer sibling -- illustrated here
+    QUOTED, not substring. A substring test cannot express a phrase that is a PREFIX of another -- the table itself has real pairs shaped exactly like this, one entry a shorter prefix of a longer sibling -- illustrated here
     with words that are NOT table entries, so this docstring cannot trip its
-    own detector: `"cat"` occurs inside `"category"`, and `"an"` inside almost
-    anything. Requiring the surrounding quote characters makes each hit an
-    element of a list rather than a coincidence of prose.
+    own detector: `"cat"` occurs inside `"category"`, and `"an"` inside almost anything. Requiring the surrounding quote characters makes each hit an element of a list rather than a coincidence of prose.
     """
     total = 0
     for phrase in allowlist.LOW_EFFORT_PHRASES:
@@ -196,9 +183,7 @@ def files_carrying_a_table() -> dict[str, int]:
 def test_the_set_of_files_carrying_a_phrase_table_is_the_known_set():
     """A SIXTH copy appearing anywhere in the tree fails here, by name.
 
-    This is the test that would have caught `swallowed_failures.py`, which held a
-    verbatim copy for three days while a docstring two directories away insisted
-    there were four implementations and named a different four.
+    This is the test that would have caught `swallowed_failures.py`, which held a verbatim copy for three days while a docstring two directories away insisted there were four implementations and named a different four.
     """
     found = files_carrying_a_table()
     expected = {CANONICAL, BASH_MIRROR, VENDORED} | set(SIBLING_LOW_EFFORT_REPLY_RULE)
@@ -242,9 +227,7 @@ def test_the_inventory_detector_would_find_a_planted_table():
 def test_the_bash_mirror_is_exactly_the_canonical_tables():
     """SET EQUALITY, BOTH DIRECTIONS. This is the assertion the goldens cannot make.
 
-    The goldens build their reason corpus from `LOW_EFFORT_PHRASES`, so a phrase
-    that exists in the bash array and NOT in the canonical produces no test case
-    at all and is invisible to every one of them. Here it is a named failure.
+    The goldens build their reason corpus from `LOW_EFFORT_PHRASES`, so a phrase that exists in the bash array and NOT in the canonical produces no test case at all and is invisible to every one of them. Here it is a named failure.
     """
     text = _text(BASH_MIRROR)
     phrases = bash_array(text, "LOW_EFFORT_BLOCKER_PATTERNS")
@@ -311,8 +294,7 @@ def test_the_bash_extractor_reports_a_planted_divergence():
 def test_the_bash_mirror_is_not_read_by_the_bash_validator():
     """The mirror's whole justification is that it is DATA, not the rule.
 
-    If a future edit wires `validate_blocker_quality` back onto the array, the
-    file becomes a second implementation again and the equality test above turns
+    If a future edit wires `validate_blocker_quality` back onto the array, the file becomes a second implementation again and the equality test above turns
     from a guarantee into a hope somebody re-runs it.
     """
     text = _text(BASH_MIRROR)
@@ -355,9 +337,7 @@ def ts_own_tables(text: str) -> list[str]:
 def test_the_typescript_client_declares_no_rule_of_its_own():
     """THE STRONGEST FORM of "no TS-side phrase is missing from the canonical".
 
-    Until 2026-09-09 this file held 54 phrases, 7 substrings, a 30-character floor
-    and four message bodies, under a comment asking the next author to keep them in
-    sync with bash by hand. Nothing asserted that the comment had been obeyed.
+    Until 2026-09-09 this file held 54 phrases, 7 substrings, a 30-character floor and four message bodies, under a comment asking the next author to keep them in sync with bash by hand. Nothing asserted that the comment had been obeyed.
     """
     text = _text(TS_CLIENT)
     findings = ts_own_tables(text)
@@ -404,11 +384,7 @@ def test_the_typescript_table_detector_would_find_a_planted_table():
 def test_the_python_clients_declare_no_rule_of_their_own():
     """The two Python gates that used to hold copies, and the one that may.
 
-    `plan_housekeeping.parse_allowlist` is NOT collapsed and is not expected to be:
-    it enforces a 40-character floor, consumes one reason per entry, and does not
-    reset on a blank line. Three deliberate differences, asserted as differences by
-    `test_quality_plan_housekeeping.py:267` and `:277`. Averaging them away to fit a
-    collapse would change that gate's verdicts.
+    `plan_housekeeping.parse_allowlist` is NOT collapsed and is not expected to be: it enforces a 40-character floor, consumes one reason per entry, and does not reset on a blank line. Three deliberate differences, asserted as differences by `test_quality_plan_housekeeping.py:267` and `:277`. Averaging them away to fit a collapse would change that gate's verdicts.
     """
     for rel in (
         ".ci/rediacc_ci/quality/swallowed_failures.py",
@@ -475,11 +451,7 @@ REASON_FILE = ".deps-upgrade-blocklist"
 def _cases() -> list[tuple[str, str]]:
     """Every phrase, every substring, their normalisation variants, and real reasons.
 
-    NOT generated from one side only. The phrase families come from the canonical
-    (there is nowhere else to get them now), but the REAL family is read out of the
-    frozen corpus, which is a byte copy of the tree's actual lists, and the
-    normalisation family exists because deleting the trailing-punctuation strip
-    left every other case green when it was measured.
+    NOT generated from one side only. The phrase families come from the canonical (there is nowhere else to get them now), but the REAL family is read out of the frozen corpus, which is a byte copy of the tree's actual lists, and the normalisation family exists because deleting the trailing-punctuation strip left every other case green when it was measured.
     """
     cases: list[tuple[str, str]] = []
     for index, phrase in enumerate(allowlist.LOW_EFFORT_PHRASES):
@@ -506,14 +478,9 @@ def _cases() -> list[tuple[str, str]]:
 def test_the_live_typescript_client_agrees_with_the_canonical():
     """The REAL `validateBlockerQuality`, not a recorded copy of it.
 
-    `test_core_allowlist` compares the canonical against TypeScript bytes RECORDED
-    in a golden. That catches a regression in the canonical and cannot see drift in
-    the TypeScript, because the golden does not change when the TypeScript does.
-    Measured on 2026-09-09: a planted `+ 'PLANT'` inside the TS normaliser left all
-    53 of those tests green.
+    `test_core_allowlist` compares the canonical against TypeScript bytes RECORDED in a golden. That catches a regression in the canonical and cannot see drift in the TypeScript, because the golden does not change when the TypeScript does. Measured on 2026-09-09: a planted `+ 'PLANT'` inside the TS normaliser left all 53 of those tests green.
 
-    NOT A SKIP when tsx is missing. A skip is indistinguishable from a pass in the
-    count `check_pytest.py` reconciles, so the absent branch ASSERTS the absence.
+    NOT A SKIP when tsx is missing. A skip is indistinguishable from a pass in the count `check_pytest.py` reconciles, so the absent branch ASSERTS the absence.
     """
     cases = _cases()
     for case_id, reason in cases:
@@ -587,9 +554,7 @@ def test_the_live_typescript_client_agrees_with_the_canonical():
 def test_the_contract_the_typescript_client_reads_is_complete():
     """Every field the client needs, and no template with an unresolvable field.
 
-    A `contract` missing `templates` would make the client throw, which is loud. A
-    contract whose template names a field no caller supplies throws only on the
-    code path that renders it, which is the one a passing tree never takes.
+    A `contract` missing `templates` would make the client throw, which is loud. A contract whose template names a field no caller supplies throws only on the code path that renders it, which is the one a passing tree never takes.
     """
     payload = json.loads(
         subprocess.run(
@@ -644,9 +609,7 @@ def test_the_contract_the_typescript_client_reads_is_complete():
 def test_a_reason_that_looks_like_a_template_is_not_substituted(reason):
     """THE INJECTION CASE. One pass over the TEMPLATE, values never rescanned.
 
-    A `replace()` chain would splice the entry id into the middle of somebody's
-    prose, and the two languages would then disagree about the bytes for a reason
-    that is perfectly legal to write.
+    A `replace()` chain would splice the entry id into the middle of somebody's prose, and the two languages would then disagree about the bytes for a reason that is perfectly legal to write.
     """
     rejection = allowlist.validate_reason("ENTRY-42", reason, "FILE")
     assert rejection is not None

@@ -2,57 +2,34 @@
 
 Regression test for a bash defect that was silently disarming four gates.
 
-WHAT BROKE. Under `set -e`, the arithmetic COMMAND `((x++))` exits NON-ZERO when the
-value it evaluates to is zero. Post-increment evaluates to the OLD value, so the very
-first `((x++))` on a counter starting at 0 evaluates to 0, exits 1, and `set -e` kills
-the script on the spot:
+WHAT BROKE. Under `set -e`, the arithmetic COMMAND `((x++))` exits NON-ZERO when the value it evaluates to is zero. Post-increment evaluates to the OLD value, so the very first `((x++))` on a counter starting at 0 evaluates to 0, exits 1, and `set -e` kills the script on the spot:
 
     $ bash -c 'set -euo pipefail; w=0; echo before; ((w++)); echo after'
     before
     $                       # "after" never prints, exit status 1
 
-Every affected script begins `set -euo pipefail` and counts findings from 0, so each
-one died at its FIRST finding. Twelve occurrences across four gates:
-`check-workflows.sh` (3), `check-submodule-branches.sh` (7), `check-compose-env.sh`
-(1), `check-commands.sh` (1).
+Every affected script begins `set -euo pipefail` and counts findings from 0, so each one died at its FIRST finding. Twelve occurrences across four gates: `check-workflows.sh` (3), `check-submodule-branches.sh` (7), `check-compose-env.sh` (1), `check-commands.sh` (1).
 
-WHY IT HID. The scripts still EXITED NON-ZERO, so the gates still went red and nobody
-saw a false green. What was lost is everything after the first finding: the remaining
-findings, the counts, and the summary line.
+WHY IT HID. The scripts still EXITED NON-ZERO, so the gates still went red and nobody saw a false green. What was lost is everything after the first finding: the remaining findings, the counts, and the summary line.
 
-THE SEVERE ONE is `check-submodule-branches.sh`'s unreplied-review-comment counter.
-That increment sat in a bare counting loop with no log line before it, inside a
+THE SEVERE ONE is `check-submodule-branches.sh`'s unreplied-review-comment counter. That increment sat in a bare counting loop with no log line before it, inside a
 function whose ONLY output is `echo "$unreplied_count"` at the end. So the first
-unreplied comment killed the subshell before it echoed anything: the function could
-report 0, and it could die, but it could never report a real count.
+unreplied comment killed the subshell before it echoed anything: the function could report 0, and it could die, but it could never report a real count.
 
 WHAT THIS MODULE DOES. It does not re-implement the loop. It extracts the REAL
 function text out of the REAL gate script and runs it against a PATH-shimmed `gh`, so
-the code under test is the code that ships. Then it does the same with the PRE-FIX
-text recovered from git, which is the control.
+the code under test is the code that ships. Then it does the same with the PRE-FIX text recovered from git, which is the control.
 
-THE CONTROL'S FIRST BRANCH IS UNEXERCISED ON THIS TREE, and that is worth saying
-plainly rather than discovering it in CI. `HEAD` no longer contains the buggy
-increment, so `test_prefix_version_could_not_count_at_all` takes its second arm on
-every run here, exactly as the twin does. The first arm -- recover the old text,
-build a harness from it, prove it echoes nothing -- is carried faithfully and has
-never run in this checkout. If it ever fires, it is because somebody reintroduced
-`((unreplied_count++))` into a commit, which is itself the finding.
+THE CONTROL'S FIRST BRANCH IS UNEXERCISED ON THIS TREE, and that is worth saying plainly rather than discovering it in CI. `HEAD` no longer contains the buggy increment, so `test_prefix_version_could_not_count_at_all` takes its second arm on every run here, exactly as the twin does. The first arm -- recover the old text, build a harness from it, prove it echoes nothing -- is
+carried faithfully and has never run in this checkout. If it ever fires, it is because somebody reintroduced `((unreplied_count++))` into a commit, which is itself the finding.
 
-ONE DELIBERATE ADDITION over the twin. Where the twin's second arm prints two `INFO`
-lines and returns having asserted NOTHING, this port asserts the thing those lines
-assume: that `HEAD` really is free of the buggy increment. A bash test may return
+ONE DELIBERATE ADDITION over the twin. Where the twin's second arm prints two `INFO` lines and returns having asserted NOTHING, this port asserts the thing those lines assume: that `HEAD` really is free of the buggy increment. A bash test may return
 without a `PASS:` line; a ported test may not (`conftest.py` here refuses a green
-that recorded no control), and inventing a decorative pass to satisfy that refusal
-would be exactly the vacuity it exists to catch. So the arm makes a real claim.
+that recorded no control), and inventing a decorative pass to satisfy that refusal would be exactly the vacuity it exists to catch. So the arm makes a real claim.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Two of its cases read the working
-tree directly: the extraction reads `.ci/scripts/quality/check-submodule-branches.sh`
-line by line, and the structural sweep greps every `.sh` under
-`.ci/scripts/quality/` and `.ci/scripts/security/`. A battery step rewriting one of
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Two of its cases read the working tree directly: the extraction reads `.ci/scripts/quality/check-submodule-branches.sh` line by line, and the structural sweep greps every `.sh` under `.ci/scripts/quality/` and `.ci/scripts/security/`. A battery step rewriting one of
 those mid-sweep is a flake that would be blamed on this port. `REAL_TREE_TWIN = True`
-is what buys the serialisation, and it is honoured only because this module declares
-no `XDIST_GROUP` of its own.
+is what buys the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own.
 """
 
 import json
@@ -97,13 +74,8 @@ EXTRACT_RANGES = (
 def sed_range(source: str, start: re.Pattern[str], end: re.Pattern[str]) -> str:
     """`sed -n '/start/,/end/p'`, semantics included rather than approximated.
 
-    RE-IMPLEMENTED RATHER THAN SHELLED OUT, and the semantics are the part worth
-    stating because getting them subtly wrong is how an extraction quietly returns
-    less than it should. sed opens a range on the first line matching `start`, keeps
-    printing until a LATER line matches `end`, prints that line too, and then becomes
-    eligible to open the range again. The `end` pattern is never tested against the
-    same line that opened the range, which is why `is_low_effort_reply()` does not
-    terminate on its own line. An unterminated range runs to end of input.
+    RE-IMPLEMENTED RATHER THAN SHELLED OUT, and the semantics are the part worth stating because getting them subtly wrong is how an extraction quietly returns less than it should. sed opens a range on the first line matching `start`, keeps printing until a LATER line matches `end`, prints that line too, and then becomes eligible to open the range again. The `end` pattern is never
+    tested against the same line that opened the range, which is why `is_low_effort_reply()` does not terminate on its own line. An unterminated range runs to end of input.
     """
     out: list[str] = []
     inside = False
@@ -131,8 +103,7 @@ def gh_shim(bindir: pathlib.Path) -> pathlib.Path:
 def build_harness(source: str, out: pathlib.Path) -> pathlib.Path:
     """`build_harness`. A runnable script around the function text taken from `source`.
 
-    Extracting rather than copying is the point: if somebody rewrites the loop, this
-    test follows them.
+    Extracting rather than copying is the point: if somebody rewrites the loop, this test follows them.
     """
     parts = [
         "#!/bin/bash",

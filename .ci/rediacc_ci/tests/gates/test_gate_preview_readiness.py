@@ -2,33 +2,19 @@
 
 Unit test for `.ci/scripts/deploy/wait-for-preview-worker.sh`.
 
-WHAT THIS GUARDS. The preview readiness probe gates smoke-test-preview.ts. If it
-reports "ready" while the worker is still flapping, the smoke test gets a cold
-worker and the PR goes red for a reason that has nothing to do with the PR. That
-happened in runs 30968082228 and 30995469629: the probe logged ready at
-10:26:41.557 and the smoke test got HTTP 500 from the very same server-info URL 1.3
-seconds later.
+WHAT THIS GUARDS. The preview readiness probe gates smoke-test-preview.ts. If it reports "ready" while the worker is still flapping, the smoke test gets a cold worker and the PR goes red for a reason that has nothing to do with the PR. That happened in runs 30968082228 and 30995469629: the probe logged ready at 10:26:41.557 and the smoke test got HTTP 500 from the very same
+server-info URL 1.3 seconds later.
 
-WHY THE STREAK IS THE FIX AND NOT THE ENDPOINT. Two earlier commits already tried
-changing WHICH endpoint is probed -- 8b7840ed4 added the server-info probe,
-cefa43ca7 corrected the body it greps for -- and the failure returned both times,
-because a SINGLE success cannot distinguish "up" from "flapping". The deployment
-flaps by construction: deploy-www.sh deletes and recreates the per-PR D1 database on
-every push, and server-info touches D1 while /health does not.
+WHY THE STREAK IS THE FIX AND NOT THE ENDPOINT. Two earlier commits already tried changing WHICH endpoint is probed -- 8b7840ed4 added the server-info probe, cefa43ca7 corrected the body it greps for -- and the failure returned both times, because a SINGLE success cannot distinguish "up" from "flapping". The deployment flaps by construction: deploy-www.sh deletes and recreates the
+per-PR D1 database on every push, and server-info touches D1 while /health does not.
 
 The load-bearing case is `test_streak_is_load_bearing`: it re-runs the flapping
 case with `REQUIRED_STREAK=1`, the pre-fix behaviour, and demands that it PASSES.
-Without that, the flapping case failing would prove nothing about why -- it could
-be the stub, the URL, or the budget.
+Without that, the flapping case failing would prove nothing about why -- it could be the stub, the URL, or the budget.
 
-THE STUB IS A PYTHON `http.server` RATHER THAN THE TWIN'S NODE SCRIPT, and it runs
-IN THIS PROCESS on a thread. Two things follow, both improvements on the twin. The
-twin backgrounds `node stub.cjs`, polls for a port file for up to five seconds, and
+THE STUB IS A PYTHON `http.server` RATHER THAN THE TWIN'S NODE SCRIPT, and it runs IN THIS PROCESS on a thread. Two things follow, both improvements on the twin. The twin backgrounds `node stub.cjs`, polls for a port file for up to five seconds, and
 `kill`s the pid on the way out; a case that raised before `stop_stub` leaked the
-process, and its ONE shared `$STUB_PID` meant a leak from one case was inherited by
-the next. Here the server's lifetime is a context manager, so a raising body still
-tears it down, and the port is read off the socket rather than off a file that has
-to be waited for. The RESPONSE BEHAVIOUR -- /health always fine, server-info
+process, and its ONE shared `$STUB_PID` meant a leak from one case was inherited by the next. Here the server's lifetime is a context manager, so a raising body still tears it down, and the port is read off the socket rather than off a file that has to be waited for. The RESPONSE BEHAVIOUR -- /health always fine, server-info
 steady/flap/late -- is unchanged, including the `n %% 3 == 1` flap cadence that is
 what keeps the streak from reaching 2.
 """
@@ -140,9 +126,7 @@ def test_flapping_worker_is_not_ready(gate):
 
 def test_streak_is_load_bearing(gate):
     """ANTI-VACUITY. Same stub, same URL, same budget -- only REQUIRED_STREAK drops
-    to 1, which is exactly what this script did before the fix. If this does NOT
-    pass, the flapping case above is failing for some other reason and proves
-    nothing about the streak.
+    to 1, which is exactly what this script did before the fix. If this does NOT pass, the flapping case above is failing for some other reason and proves nothing about the streak.
     """
     result = probe(gate, "flap", {"REQUIRED_STREAK": "1"})
     gate.assert_eq(
@@ -162,8 +146,7 @@ def test_slow_worker_still_becomes_ready(gate):
 
 def test_override_does_not_need_a_pr_number(gate):
     """PREVIEW_URL_OVERRIDE exists so this script is testable without being copied
-    through sed. It has to work with PR_NUMBER unset, or the tests above are quietly
-    exercising a different code path than CI does.
+    through sed. It has to work with PR_NUMBER unset, or the tests above are quietly exercising a different code path than CI does.
     """
     with stub("steady") as url:
         result = run_wait(
@@ -188,8 +171,7 @@ def test_pr_number_still_required_without_override(gate):
 
 def test_ci_defaults_are_still_strict(gate):
     """The knobs are test-only. If someone weakens the DEFAULTS, CI silently goes
-    back to sampling one probe, and every test above would still pass because they
-    all set their own values.
+    back to sampling one probe, and every test above would still pass because they all set their own values.
     """
     if not WAIT_SCRIPT.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(WAIT_SCRIPT))

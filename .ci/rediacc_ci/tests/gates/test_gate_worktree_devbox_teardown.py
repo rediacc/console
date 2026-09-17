@@ -2,37 +2,22 @@
 
 `worktree remove` must tear the devbox down BEFORE it deletes the directory.
 
-THE BUG THIS PINS. The container is found by a label whose VALUE is the worktree's
-absolute path (`com.rediacc.devbox.worktree`, `.ci/lib/devbox.sh`).
-`remove_worktree` killed tmux, deleted the directory and deleted the branch, and
-never stopped the devbox. After the directory is gone, `devbox_worktree()`
-(`cd "$path" && pwd -P`) yields nothing, the filter becomes
+THE BUG THIS PINS. The container is found by a label whose VALUE is the worktree's absolute path (`com.rediacc.devbox.worktree`, `.ci/lib/devbox.sh`). `remove_worktree` killed tmux, deleted the directory and deleted the branch, and never stopped the devbox. After the directory is gone, `devbox_worktree()` (`cd "$path" && pwd -P`) yields nothing, the filter becomes
 `label=...worktree=`, `docker ps -aq` matches nothing, and teardown reports
 "No devbox container for this worktree" and returns 0. The container is orphaned
 with nothing able to name it again.
 
-ORDER IS THE INVARIANT, NOT PRESENCE. A teardown that runs AFTER
-`git worktree remove` looks identical in a call log that only asks "was devbox
-remove called?", and it leaks every time. So this asserts the SEQUENCE.
+ORDER IS THE INVARIANT, NOT PRESENCE. A teardown that runs AFTER `git worktree remove` looks identical in a call log that only asks "was devbox remove called?", and it leaks every time. So this asserts the SEQUENCE.
 
-HERMETIC: git, docker and run.sh are all shimmed. Nothing here touches a real
-worktree or a real container.
+HERMETIC: git, docker and run.sh are all shimmed. Nothing here touches a real worktree or a real container.
 
-WHAT THIS CANNOT SEE: it drives the LIFTED `remove_worktree` body, so it does not
-prove that `prune` reaches the same function, nor that `devbox_remove` actually
-removes anything. `devbox.sh`'s own gates own that.
+WHAT THIS CANNOT SEE: it drives the LIFTED `remove_worktree` body, so it does not prove that `prune` reaches the same function, nor that `devbox_remove` actually removes anything. `devbox.sh`'s own gates own that.
 
 WHERE THE PORT REIMPLEMENTS THE TWIN. The lift. The twin extracts the two real
 function bodies with `sed -n '/^name() {/,/^}/p'` -- column-0 opener to column-0
-closer. `lift()` below is that same rule expressed as a regex, and it is asserted
-rather than assumed: an empty lift is a LOUD failure naming the function whose
-shape moved, which is what stops the harness from running an empty file and
-reporting that no call was made in the wrong order. Running the SHIPPED body, and
-not a copy of it, is the point of the lift in either language.
+closer. `lift()` below is that same rule expressed as a regex, and it is asserted rather than assumed: an empty lift is a LOUD failure naming the function whose shape moved, which is what stops the harness from running an empty file and reporting that no call was made in the wrong order. Running the SHIPPED body, and not a copy of it, is the point of the lift in either language.
 
-NO `xdist_group`. Every case builds its own harness directory under pytest's
-`tmp_path`, shims PATH for one `bash -c` subprocess only, and writes nothing in the
-repository.
+NO `xdist_group`. Every case builds its own harness directory under pytest's `tmp_path`, shims PATH for one `bash -c` subprocess only, and writes nothing in the repository.
 """
 
 import os
@@ -206,8 +191,7 @@ def test_control_ordering_can_fail(gate, tmp_path: pathlib.Path):
 
 def test_the_lift_really_found_both_shipped_bodies(gate):
     """PORT-ONLY. `lift()` refuses an empty match, but nothing above proves the
-    text it returned is the FUNCTION rather than a one-line stub that happens to
-    match the anchors. A body that no longer calls the devbox teardown at all
+    text it returned is the FUNCTION rather than a one-line stub that happens to match the anchors. A body that no longer calls the devbox teardown at all
     would satisfy `test_no_docker_keeps_todays_behaviour` on its own."""
     gate.log_test("the lifted bodies are the shipped ones")
     removal = lift(gate, "remove_worktree")

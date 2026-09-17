@@ -1,39 +1,19 @@
 """Differential: `rediacc_ci.deploy.upload_to_r2` against its twin
 `.ci/scripts/deploy/upload-to-r2.sh`.
 
-A RECORDING FAKE `aws` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here
-reaches R2, and nothing here reads or writes the real checkout: every case builds
-a throwaway tree holding the twin, the two bash libraries it sources, the port,
-and a `dist/` of its own, then runs both sides against it.
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one
-real production run" clause and says in as many words that a mocked parity ledger
-is separate, achievable work. This is that work.
+A RECORDING FAKE `aws` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2, and nothing here reads or writes the real checkout: every case builds a throwaway tree holding the twin, the two bash libraries it sources, the port, and a `dist/` of its own, then runs both sides against it. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real
+production run" clause and says in as many words that a mocked parity ledger is separate, achievable work. This is that work.
 
 WHY THE FIXTURE HAS TO BE A WHOLE TREE. Both sides resolve the repository root
 from their OWN location (`common.sh`'s `../../..` and the port's `../../..`), and
-the port additionally reads `write_once_guard` out of the twin's text at run time.
-Run either from a scratch directory and it would walk back to this checkout.
-`.ci/config/constants.sh` and `.devcontainer/toolchain.env` are copied too,
-because constants.sh `exit 1`s without the latter.
+the port additionally reads `write_once_guard` out of the twin's text at run time. Run either from a scratch directory and it would walk back to this checkout. `.ci/config/constants.sh` and `.devcontainer/toolchain.env` are copied too, because constants.sh `exit 1`s without the latter.
 
-THE FAKE ECHOES ITS OWN ARGV ONTO STDERR, and that is not decoration. Every line
-this program prints goes through `log_step`/`log_info`, which the shadow-gate
-classifier treats as CHATTER before any `--finding-re` sees it, so a ledger built
-on message text would record `VACUOUS_BOTH_EMPTY` for every row. With the fake
-echoing `call: aws ...`, the compared finding set becomes the literal set of
-external calls the run made, which is the observable that actually matters here.
-It also means the streams being compared below CARRY the call sequence, in order,
-interleaved with the script's own lines, so a port that made the right calls in
-the wrong order fails on stderr rather than needing a second artifact.
+THE FAKE ECHOES ITS OWN ARGV ONTO STDERR, and that is not decoration. Every line this program prints goes through `log_step`/`log_info`, which the shadow-gate classifier treats as CHATTER before any `--finding-re` sees it, so a ledger built on message text would record `VACUOUS_BOTH_EMPTY` for every row. With the fake echoing `call: aws ...`, the compared finding set becomes the
+literal set of external calls the run made, which is the observable that actually matters here. It also means the streams being compared below CARRY the call sequence, in order, interleaved with the script's own lines, so a port that made the right calls in the wrong order fails on stderr rather than needing a second artifact.
 
-The file log is still kept, and it holds the one thing the stream cannot: the
-CONTENT written to `cli/<channel>/latest.json` and to `cli/versions.json`. Two
-implementations can make identical calls and upload a different retention list.
+The file log is still kept, and it holds the one thing the stream cannot: the CONTENT written to `cli/<channel>/latest.json` and to `cli/versions.json`. Two implementations can make identical calls and upload a different retention list.
 
-`aws s3 cp ... - 2>/dev/null` (`r2_get`) and `aws s3 rm ... 2>/dev/null`
-(`r2_rm`) discard stderr on BOTH sides, so those two calls appear in the file log
-and not on the stream. That is the twin's behaviour, not a gap in the harness,
-and `test_a_failed_tracker_read_is_silent_on_both_streams` pins it.
+`aws s3 cp ... - 2>/dev/null` (`r2_get`) and `aws s3 rm ... 2>/dev/null` (`r2_rm`) discard stderr on BOTH sides, so those two calls appear in the file log and not on the stream. That is the twin's behaviour, not a gap in the harness, and `test_a_failed_tracker_read_is_silent_on_both_streams` pins it.
 """
 
 from __future__ import annotations
@@ -244,8 +224,7 @@ def _run(
 
 def run_both(tmp_path: pathlib.Path, tree: dict[str, str] | None = None, **kw):
     """BOTH SIDES RUN AGAINST ONE TREE, which is a correctness requirement rather
-    than a saving: the upload order is the SHELL'S GLOB ORDER over `dist/cli`, and
-    two trees holding the same names can be enumerated differently. Neither side
+    than a saving: the upload order is the SHELL'S GLOB ORDER over `dist/cli`, and two trees holding the same names can be enumerated differently. Neither side
     writes into `dist/`, and the two call logs have different names."""
     root = fixture(tmp_path, tree)
     old, old_calls = _run(root, "old", **kw)
@@ -289,8 +268,7 @@ IMMUTABLE = "public, max-age=31536000, immutable"
 
 def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
     """THE WHOLE SEQUENCE ON A RELEASE CHANNEL: one sentinel probe, two immutable
-    versioned copies, two mutable channel copies, the manifest, `latest.json`
-    LAST, then the tracker read and write. The tracker's uploaded BYTES are
+    versioned copies, two mutable channel copies, the manifest, `latest.json` LAST, then the tracker read and write. The tracker's uploaded BYTES are
     asserted because they are jq's pretty-printer's, not `json.dumps`'s."""
     root = fixture(tmp_path)
     old, old_calls = _run(root, "old")
@@ -329,9 +307,7 @@ def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
 def test_the_binary_order_is_the_shells_glob_order(tmp_path: pathlib.Path) -> None:
     """WHY THE PORT ASKS bash FOR THE GLOB. `for binary in "$CLI_DIR"/rdc-*`
     expands through `strcoll`, which is LOCALE dependent; `sorted(glob.glob())`
-    is codepoint order. Under `C.UTF-8` here they agree, and the control below
-    proves this fixture would notice if they did not: an uppercase name sorts
-    BEFORE every lowercase one by codepoint and AFTER some of them under a
+    is codepoint order. Under `C.UTF-8` here they agree, and the control below proves this fixture would notice if they did not: an uppercase name sorts BEFORE every lowercase one by codepoint and AFTER some of them under a
     dictionary collation, which is the disagreement a locale change produces."""
     tree = dict(DEFAULT_TREE)
     tree["dist/cli/rdc-Windows-x64.exe"] = "windows binary\n"
@@ -443,8 +419,7 @@ def test_sealed_with_binaries_skips_the_prefix_but_still_moves_the_pointer(
     tmp_path: pathlib.Path,
 ) -> None:
     """GUARD ANSWER 10, an idempotent rerun of a published version. The immutable
-    prefix is NOT rewritten (the immutable-URL promise) and the channel pointers
-    still refresh, which is the whole reason the guard returns a code instead of
+    prefix is NOT rewritten (the immutable-URL promise) and the channel pointers still refresh, which is the whole reason the guard returns a code instead of
     aborting."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, SENTINEL_EXISTS="true", PREFIX_KEYCOUNT="16"
@@ -476,15 +451,11 @@ def test_sealed_but_empty_refuses_loudly_and_stops_the_run(tmp_path: pathlib.Pat
 
 def test_defect_an_unanswered_count_reads_as_sealed_but_empty(tmp_path: pathlib.Path) -> None:
     """DEFECT 2, PINNED. `rsv_binary_count` cannot answer (AccessDenied), says so,
-    and returns non-zero WITHOUT printing a count, exactly so its caller aborts
-    instead of acting on a fabricated 0 (`release-state-validator.sh:161-166`).
-    The abort never happens, because the twin consumes the guard's status with
+    and returns non-zero WITHOUT printing a count, exactly so its caller aborts instead of acting on a fabricated 0 (`release-state-validator.sh:161-166`). The abort never happens, because the twin consumes the guard's status with
     `|| guard_rc=$?` and that suppresses errexit inside the function. The empty
-    count then reads as zero and the operator is told to scrub the sentinel of a
-    healthy sealed release.
+    count then reads as zero and the operator is told to scrub the sentinel of a healthy sealed release.
 
-    Reproduced rather than repaired: agreement with the live twin is this wave's
-    deliverable, and the fix is a cutover-box decision. If it is ever repaired,
+    Reproduced rather than repaired: agreement with the live twin is this wave's deliverable, and the fix is a cutover-box decision. If it is ever repaired,
     this test goes red and names the port that must follow."""
     old, new, old_calls, new_calls = run_both(tmp_path, SENTINEL_EXISTS="true", FAKE_LIST_RC="255")
     assert old.returncode == 1
@@ -499,8 +470,7 @@ def test_defect_an_unanswered_count_reads_as_sealed_but_empty(tmp_path: pathlib.
 
 def test_the_guard_refuses_loudly_when_the_twins_text_is_gone(tmp_path: pathlib.Path) -> None:
     """THE ONE STATE THE TWIN CANNOT BE IN, so there is nothing to diverge from:
-    the port reads the guard out of the twin, so a missing twin means the guard
-    cannot run. A `command not found` from bash would read as flake, so the
+    the port reads the guard out of the twin, so a missing twin means the guard cannot run. A `command not found` from bash would read as flake, so the
     refusal names the file and says why the function is not Python."""
     root = fixture(tmp_path)
     (root / ".ci" / "scripts" / "deploy" / TWIN.name).unlink()
@@ -516,8 +486,7 @@ def test_the_guard_refuses_loudly_when_the_twins_text_is_gone(tmp_path: pathlib.
 
 def test_the_retention_window_prunes_and_deletes(tmp_path: pathlib.Path) -> None:
     """22 known versions plus a new one: three fall out of the 20-entry window,
-    and each pruned prefix gets one `aws s3 rm --recursive`. The tracker written
-    back is jq's bytes, asserted in full because a `json.dumps` port would upload
+    and each pruned prefix gets one `aws s3 rm --recursive`. The tracker written back is jq's bytes, asserted in full because a `json.dumps` port would upload
     a different file while printing the same lines."""
     tracker = "[%s]" % ",".join('"9.9.%d"' % index for index in range(22))
     old, new, old_calls, new_calls = run_both(
@@ -556,10 +525,7 @@ def test_defect_a_failed_tracker_read_resets_the_retention_window(
     tmp_path: pathlib.Path,
 ) -> None:
     """DEFECT 3, PINNED. `r2_get` is `... 2>/dev/null || echo ""`, so an expired
-    token and an absent object are one empty string. A 22-entry tracker comes
-    back as a one-entry tracker, exit 0, no warning, and the 21 versions that
-    vanished are never passed to `cleanup_old_versions`, so their prefixes are
-    orphaned until the nightly sweep.
+    token and an absent object are one empty string. A 22-entry tracker comes back as a one-entry tracker, exit 0, no warning, and the 21 versions that vanished are never passed to `cleanup_old_versions`, so their prefixes are orphaned until the nightly sweep.
 
     Reproduced rather than repaired, for the reason in the docstring."""
     tracker = "[%s]" % ",".join('"9.9.%d"' % index for index in range(22))
@@ -579,8 +545,7 @@ def test_defect_a_failed_tracker_read_resets_the_retention_window(
 
 def test_a_failed_tracker_read_is_silent_on_both_streams(tmp_path: pathlib.Path) -> None:
     """`2>/dev/null` ON BOTH SIDES. aws's own explanation of the failure is
-    discarded, which is why the fake's `call:` marker for `r2_get` appears in the
-    file log and NOT on stderr. Asserted so a later reader does not mistake the
+    discarded, which is why the fake's `call:` marker for `r2_get` appears in the file log and NOT on stderr. Asserted so a later reader does not mistake the
     absence for a hole in the harness."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "stable"), FAKE_GET_RC="255"
@@ -597,13 +562,9 @@ def test_defect_a_malformed_tracker_is_overwritten_with_an_empty_file(
     """DEFECT 4, PINNED, AND IT DESTROYS DATA. A `cli/versions.json` that is not
     valid JSON makes the first jq fail. Nothing stops: the three pipelines live
     inside `CLI_PRUNED=$(update_versions_tracker ...)`, and bash does not apply
-    errexit inside a command substitution whose value is assigned. `updated` is
-    empty, the next two jq calls on empty input succeed producing nothing, and
-    the tracker is REPLACED WITH AN EMPTY BODY. One `jq: parse error` scrolls
-    past, `R2 upload complete` prints, and the run exits 0.
+    errexit inside a command substitution whose value is assigned. `updated` is empty, the next two jq calls on empty input succeed producing nothing, and the tracker is REPLACED WITH AN EMPTY BODY. One `jq: parse error` scrolls past, `R2 upload complete` prints, and the run exits 0.
 
-    Reproduced rather than repaired, for the reason in the docstring. This is the
-    test that would have gone red for a port that simply raised on a non-zero
+    Reproduced rather than repaired, for the reason in the docstring. This is the test that would have gone red for a port that simply raised on a non-zero
     `jq`, which is what a careful reader writes first."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -621,9 +582,7 @@ def test_defect_a_malformed_tracker_is_overwritten_with_an_empty_file(
 
 def test_a_failing_tracker_write_does_still_abort_the_run(tmp_path: pathlib.Path) -> None:
     """THE OTHER HALF OF DEFECT 4, AND THE ASYMMETRY IS THE POINT. A command
-    substitution takes the status of its LAST command, so the closing `r2_put`
-    IS the assignment's status and errexit fires on it, while every jq above it
-    is swallowed. Driven with an `aws` that fails everything, so the run dies at
+    substitution takes the status of its LAST command, so the closing `r2_put` IS the assignment's status and errexit fires on it, while every jq above it is swallowed. Driven with an `aws` that fails everything, so the run dies at
     the first upload rather than the tracker; the narrower case is that the
     tracker write is the one command in that function whose failure is fatal."""
     old, new, old_calls, new_calls = run_both(
@@ -635,8 +594,7 @@ def test_a_failing_tracker_write_does_still_abort_the_run(tmp_path: pathlib.Path
 
 def test_without_jq_version_tracking_is_skipped_with_a_warning(tmp_path: pathlib.Path) -> None:
     """`command -v jq &>/dev/null` guards the whole tracker update, so a machine
-    without jq still uploads and still refreshes the pointers. The port uses
-    `shutil.which`, which differs from `command -v` only for a shell FUNCTION or
+    without jq still uploads and still refreshes the pointers. The port uses `shutil.which`, which differs from `command -v` only for a shell FUNCTION or
     alias named jq, and a script bash spawns cannot inherit either."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "stable"), drop="jq"
@@ -715,12 +673,9 @@ def test_the_env_spellings_that_do_not_skip(tmp_path: pathlib.Path, spelling: st
 
 def test_defect_an_empty_cli_dir_publishes_a_channel_pointer(tmp_path: pathlib.Path) -> None:
     """DEFECT 1, PINNED. `dist/cli/` exists and holds nothing. No binary and no
-    manifest is uploaded, and `latest.json` is written anyway, so every installer
-    on the channel resolves to a version with zero bytes behind it. The summary
-    prints `Artifacts uploaded: 0` on the next line and nothing acts on it.
+    manifest is uploaded, and `latest.json` is written anyway, so every installer on the channel resolves to a version with zero bytes behind it. The summary prints `Artifacts uploaded: 0` on the next line and nothing acts on it.
 
-    Reproduced rather than repaired, for the reason in the docstring. This is the
-    same harm the bump-none block at the top of the twin prevents, arriving by a
+    Reproduced rather than repaired, for the reason in the docstring. This is the same harm the bump-none block at the top of the twin prevents, arriving by a
     different door."""
     old, new, old_calls, new_calls = run_both(tmp_path, tree={})
     assert old.returncode == 0
@@ -734,8 +689,7 @@ def test_defect_an_empty_cli_dir_publishes_a_channel_pointer(tmp_path: pathlib.P
 
 def test_the_uploaded_counter_ignores_every_channel_upload(tmp_path: pathlib.Path) -> None:
     """`((UPLOADED++))` SITS ONLY IN THE TWO IMMUTABLE LOOPS. A `pr-N` run that
-    uploads two binaries, a manifest, a pointer and two tarballs reports
-    `Artifacts uploaded: 1`. Not a divergence, a property of the twin, and pinned
+    uploads two binaries, a manifest, a pointer and two tarballs reports `Artifacts uploaded: 1`. Not a divergence, a property of the twin, and pinned
     because a port that "fixed" the count would look more correct and be wrong."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "pr-9")
@@ -952,8 +906,7 @@ def test_divergence_a_flag_without_a_value_is_bashs_unbound_variable(
 
 def test_the_constants_are_the_twins_constants() -> None:
     """`BUCKET_DEFAULT` and `MAX_RELEASE_VERSIONS` are copies of
-    `.ci/config/constants.sh`, which the port deliberately does not source. They
-    are re-derived here so a change there turns this red instead of silently
+    `.ci/config/constants.sh`, which the port deliberately does not source. They are re-derived here so a change there turns this red instead of silently
     pointing the port at a different bucket."""
     source = CONSTANTS.read_text(encoding="utf-8")
     bucket = re.search(
@@ -1117,8 +1070,7 @@ def test_parse_args_is_the_twins_parser() -> None:
 
 def test_bash_glob_is_bashs_answer_including_the_literal_miss(tmp_path: pathlib.Path) -> None:
     """WITHOUT `nullglob` AN UNMATCHED PATTERN EXPANDS TO ITSELF, and the twin
-    relies on it: `[[ -f "$binary" ]] || continue` is what discards the literal.
-    `glob.glob` returns `[]`, so a port using it would agree by accident here and
+    relies on it: `[[ -f "$binary" ]] || continue` is what discards the literal. `glob.glob` returns `[]`, so a port using it would agree by accident here and
     disagree the day someone adds a `shopt`."""
     (tmp_path / "rdc-b").write_text("b", encoding="utf-8")
     (tmp_path / "rdc-a").write_text("a", encoding="utf-8")
@@ -1137,8 +1089,7 @@ def test_bash_glob_is_bashs_answer_including_the_literal_miss(tmp_path: pathlib.
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """PLANTED ON THE IMMUTABLE CACHE-CONTROL, the field whose loss is invisible
-    on both streams and in both exit codes: a versioned binary served with
-    `no-cache` costs every installer a full origin fetch, and nothing says so.
+    on both streams and in both exit codes: a versioned binary served with `no-cache` costs every installer a full origin fetch, and nothing says so.
     Driven red, then the source is confirmed byte-identical and green again."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

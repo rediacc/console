@@ -1,16 +1,9 @@
 """Port of `.ci/scripts/test/gates/test-untagged-commit-branch.sh`.
 
-`block_untagged_commit` must know WHICH BRANCH it is judging, including when HEAD
-is detached.
+`block_untagged_commit` must know WHICH BRANCH it is judging, including when HEAD is detached.
 
-WHY THE TWIN EXISTS. The guard validates a `PR-TASK:` id against
-`agent/pr/<branch>.md`, and it resolved `<branch>` with
-`git rev-parse --abbrev-ref HEAD`. That prints the literal string `HEAD` when
-detached, so the snapshot path became `agent/pr/HEAD.md`, nothing was found, and a
-TYPO'D id -- the case the guard was extended for -- sailed straight through.
-Detached is not exotic: it is EVERY `pull_request` checkout and every halted
-rebase. Measured 2026-08-27, the suite case asserting a typo is refused returned 0
-in CI while passing on every developer machine, for exactly this reason.
+WHY THE TWIN EXISTS. The guard validates a `PR-TASK:` id against `agent/pr/<branch>.md`, and it resolved `<branch>` with `git rev-parse --abbrev-ref HEAD`. That prints the literal string `HEAD` when detached, so the snapshot path became `agent/pr/HEAD.md`, nothing was found, and a TYPO'D id -- the case the guard was extended for -- sailed straight through. Detached is not exotic:
+it is EVERY `pull_request` checkout and every halted rebase. Measured 2026-08-27, the suite case asserting a typo is refused returned 0 in CI while passing on every developer machine, for exactly this reason.
 
 WHAT THE PORT DOES DIFFERENTLY, and why the two still agree.
 
@@ -30,14 +23,9 @@ WHAT THE PORT DOES DIFFERENTLY, and why the two still agree.
     the rebase really halted) are what keep that rebuild honest: a case expecting
     exit 0 would also pass if the detach or the rebase silently did not happen.
 
-NO `xdist_group`. Every case runs in its own `tempfile.mkdtemp()` git repository,
-drives the guard as a subprocess with an explicit environment, and mutates no
-module global and no path inside the real tree. Two of these running at once
-share nothing.
+NO `xdist_group`. Every case runs in its own `tempfile.mkdtemp()` git repository, drives the guard as a subprocess with an explicit environment, and mutates no module global and no path inside the real tree. Two of these running at once share nothing.
 
-THE ENVIRONMENT IS SCRUBBED PER CALL. `PR_HEAD_REF` and `GITHUB_HEAD_REF` are
-removed unless a case sets one, because a real CI run exports those very names and
-would otherwise decide these cases for us.
+THE ENVIRONMENT IS SCRUBBED PER CALL. `PR_HEAD_REF` and `GITHUB_HEAD_REF` are removed unless a case sets one, because a real CI run exports those very names and would otherwise decide these cases for us.
 """
 
 import json
@@ -96,8 +84,7 @@ def make_repo(gate, root: pathlib.Path) -> pathlib.Path:
 def run_guard(repo: pathlib.Path, task_id: str, env_key: str = "", env_value: str = "") -> int:
     """The guard's EXIT CODE for a `git commit` carrying `task_id`.
 
-    Driven the way the Bash tool drives it: the hook payload on stdin, cwd inside
-    the fixture, `CLAUDE_PROJECT_DIR` naming it.
+    Driven the way the Bash tool drives it: the hook payload on stdin, cwd inside the fixture, `CLAUDE_PROJECT_DIR` naming it.
     """
     command = 'git commit -m "feat: x\n\nPR-TASK: %s"' % task_id
     payload = json.dumps({"tool_input": {"command": command}})

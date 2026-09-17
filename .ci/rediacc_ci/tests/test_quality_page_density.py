@@ -3,42 +3,22 @@
 
 THE SUBJECT IS A LAUNCHER, so what is under test is the LAUNCH: which binary,
 with exactly which argv, from which working directory, after which stdout
-line. The real `scripts/gates/check-page-density.ts` is never run here -- it
-drives three routes across four viewports in a Playwright container and takes
-minutes -- and it does not need to be, because it is TypeScript and is
-identical on both sides of this comparison by construction.
+line. The real `scripts/gates/check-page-density.ts` is never run here -- it drives three routes across four viewports in a Playwright container and takes minutes -- and it does not need to be, because it is TypeScript and is identical on both sides of this comparison by construction.
 
-THE SEAM IS PATH, populated with recording stubs for `npx`, `node` and
-`docker` (ruling 7's shape, as in `test_pr_sync_epic_block.py`). Each stub
-prints its own name, its argv and its cwd, so a divergence in ANY of the three
-things the launcher decides shows up as a text difference rather than as a
-silent pass. The cwd line is not decoration: the twin `cd`s to
-`SCRIPT_DIR/../../..` and the port to `paths.repo_root()`, and those are two
-independent derivations of the same directory that could drift apart without
-any other assertion here noticing.
+THE SEAM IS PATH, populated with recording stubs for `npx`, `node` and `docker` (ruling 7's shape, as in `test_pr_sync_epic_block.py`). Each stub prints its own name, its argv and its cwd, so a divergence in ANY of the three things the launcher decides shows up as a text difference rather than as a silent pass. The cwd line is not decoration: the twin `cd`s to `SCRIPT_DIR/../../..`
+and the port to `paths.repo_root()`, and those are two independent derivations of the same directory that could drift apart without any other assertion here noticing.
 
-DOCKER ABSENCE IS SIMULATED BY OMITTING THE STUB, never by an environment
-flag, because `command -v docker` / `shutil.which("docker")` is the branch
-under test. The real docker on this machine is out of PATH for every case.
+DOCKER ABSENCE IS SIMULATED BY OMITTING THE STUB, never by an environment flag, because `command -v docker` / `shutil.which("docker")` is the branch under test. The real docker on this machine is out of PATH for every case.
 
-TWO CASES ASSERT AGREEMENT ON EXIT CODE AND SUBSTANCE RATHER THAN BYTES, and
-they are the two the port's docstring names as divergences: a missing `node`
-and a missing `npx` both produce bash's own `<script>: line NN: ...` text,
-which carries a line number no port should reproduce. Everything else in this
-file is byte-for-byte.
+TWO CASES ASSERT AGREEMENT ON EXIT CODE AND SUBSTANCE RATHER THAN BYTES, and they are the two the port's docstring names as divergences: a missing `node` and a missing `npx` both produce bash's own `<script>: line NN: ...` text, which carries a line number no port should reproduce. Everything else in this file is byte-for-byte.
 
 K=5 LEDGER: `.ci/shadow/w7p6-page-density.observations.jsonl` -- five
-distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct
-trees". Recorded in a disposable scratch repo outside this checkout (dirty
+distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty
 tree; `--record` refuses one) with the same recording stubs on PATH, varying
 the branch across trees: REDIACC_SMOKE_NO_DOCKER=1, docker absent, two
 different playwright versions, and a failing node.
 
-BEYOND THE STUBS, THE REAL THING WAS DRIVEN ONCE, 2026-09-10: `npm run
-check:ci-page-density` (the registered gate, the bash twin) and `python3 -m
-rediacc_ci.quality.page_density` both pulled the real
-`mcr.microsoft.com/playwright:v1.61.1-noble` container, ran the real gate and
-exited 0 with BYTE-IDENTICAL stdout and stderr.
+BEYOND THE STUBS, THE REAL THING WAS DRIVEN ONCE, 2026-09-10: `npm run check:ci-page-density` (the registered gate, the bash twin) and `python3 -m rediacc_ci.quality.page_density` both pulled the real `mcr.microsoft.com/playwright:v1.61.1-noble` container, ran the real gate and exited 0 with BYTE-IDENTICAL stdout and stderr.
 """
 
 from __future__ import annotations
@@ -112,9 +92,7 @@ def _run(
 ) -> tuple[subprocess.CompletedProcess[str], list[str]]:
     """Run one side. Returns its streams AND the stub call log.
 
-    The log is a separate artifact from stdout on purpose: `node`'s recording
-    never reaches stdout (see STUB's QUIET note), so without it the
-    image-derivation cases would assert nothing about how node was invoked.
+    The log is a separate artifact from stdout on purpose: `node`'s recording never reaches stdout (see STUB's QUIET note), so without it the image-derivation cases would assert nothing about how node was invoked.
     """
     runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
     log = pathlib.Path(env["STUB_LOG"])
@@ -316,8 +294,7 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY. Drop `--ipc=host` from the docker argv -- the exact edit a
-    reader who did not know why it was there would make, and one that turns a
-    passing gate into a Chromium crash inside the container. Driven red, then
+    reader who did not know why it was there would make, and one that turns a passing gate into a Chromium crash inside the container. Driven red, then
     the source is restored byte-identical and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('        "--ipc=host",\n', "")

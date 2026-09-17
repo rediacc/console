@@ -1,14 +1,10 @@
 """`rediacc_ci.quality.trap_registry` against the awk parser it replaces.
 
-WHY A DIFFERENTIAL ON THE PARSER. It is a fence-tracking state machine whose
-whole reason for existing is that a `## ` inside a fenced example in a trap body
-must not become a phantom entry, and trap bodies routinely carry markdown
-examples. A table of expected entries would be a table of what the port does.
-Running the twin's awk on the same corpus is the only comparison that can fail
+WHY A DIFFERENTIAL ON THE PARSER. It is a fence-tracking state machine whose whole reason for existing is that a `## ` inside a fenced example in a trap body must not become a phantom entry, and trap bodies routinely carry markdown examples. A table of expected entries would be a table of what the port does. Running the twin's awk on the same corpus is the only comparison that can
+fail
 for the right reason.
 
-The whole gate, including F6's twenty-one planted controls, is covered by
-`.ci/shadow/w7p2-trap-registry.observations.jsonl` over five distinct trees.
+The whole gate, including F6's twenty-one planted controls, is covered by `.ci/shadow/w7p2-trap-registry.observations.jsonl` over five distinct trees.
 """
 
 import pathlib
@@ -24,10 +20,7 @@ TWIN = pathlib.Path(".ci/scripts/quality/check-trap-registry.sh")
 def _awk_program() -> str:
     """The `parse_corpus` awk body, extracted from the twin at run time.
 
-    Extracted rather than copied so this test breaks LOUDLY when the twin's
-    parser is edited, which is exactly when it should be re-read. Sliced between
-    markers rather than by line number, because a line number churns when a
-    paragraph moves above it.
+    Extracted rather than copied so this test breaks LOUDLY when the twin's parser is edited, which is exactly when it should be re-read. Sliced between markers rather than by line number, because a line number churns when a paragraph moves above it.
     """
     text = TWIN.read_text(encoding="utf-8")
     start = text.index("parse_corpus() {")
@@ -81,10 +74,7 @@ def test_parser_matches_the_twins_awk(tmp_path: pathlib.Path, corpus: str) -> No
 def test_the_floor_is_the_twins_number() -> None:
     """A divergence here is invisible to the differential.
 
-    Every fixture in the shadow ledger sets `TRAP_FLOOR` explicitly, so the
-    DEFAULT is the one value the two implementations can disagree about without
-    any recorded row noticing. It moved 75 -> 76 -> 77 within one session on
-    2026-09-06, which is precisely why this assertion exists.
+    Every fixture in the shadow ledger sets `TRAP_FLOOR` explicitly, so the DEFAULT is the one value the two implementations can disagree about without any recorded row noticing. It moved 75 -> 76 -> 77 within one session on 2026-09-06, which is precisely why this assertion exists.
     """
     text = TWIN.read_text(encoding="utf-8")
     marker = 'TRAP_FLOOR="${TRAP_FLOOR:-'
@@ -96,10 +86,7 @@ def test_the_floor_is_the_twins_number() -> None:
 def test_the_summary_count_is_the_twins_boolean() -> None:
     """The twin prints a BOOLEAN where its message says "finding(s)".
 
-    `scan` in bash ends with `[ "$errors" -eq 0 ]` on purpose (a shell return is
-    mod 256), and `main` then prints that status as the count. The port carries
-    the bug rather than the intent, because a port that changed it would be
-    non-equivalent to the gate CI runs. This assertion is the record of that
+    `scan` in bash ends with `[ "$errors" -eq 0 ]` on purpose (a shell return is mod 256), and `main` then prints that status as the count. The port carries the bug rather than the intent, because a port that changed it would be non-equivalent to the gate CI runs. This assertion is the record of that
     decision; delete it in the same change that fixes both files.
     """
     text = TWIN.read_text(encoding="utf-8")

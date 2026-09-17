@@ -1,24 +1,15 @@
 """Port of `.ci/scripts/release/resolve-backfill-commit.sh`.
 
-Resolves (and sanity-checks) the commit SHA a backfilled release sentinel
-records: either the operator-supplied `INPUT_SHA`, or the commit a version
-tag points at, then verifies that commit is reachable from `origin/main`.
+Resolves (and sanity-checks) the commit SHA a backfilled release sentinel records: either the operator-supplied `INPUT_SHA`, or the commit a version tag points at, then verifies that commit is reachable from `origin/main`.
 
-GIT IS SHELLED OUT TO, NOT REIMPLEMENTED. `git rev-list`, `git cat-file` and
-`git merge-base --is-ancestor` are exactly the twin's own three probes, run
+GIT IS SHELLED OUT TO, NOT REIMPLEMENTED. `git rev-list`, `git cat-file` and `git merge-base --is-ancestor` are exactly the twin's own three probes, run
 with the SAME arguments against whatever git repository the process's cwd
-belongs to (this port never `cd`s, matching the twin, which also never does).
-Reimplementing tag resolution or ancestry testing in Python would be a
+belongs to (this port never `cd`s, matching the twin, which also never does). Reimplementing tag resolution or ancestry testing in Python would be a
 second, independent opinion about the repository's object graph; shelling out
-to the one git binary both sides already trust is what keeps the two
-implementations looking at the same answer.
+to the one git binary both sides already trust is what keeps the two implementations looking at the same answer.
 
 MESSAGE TEXT IS BYTE-IDENTICAL ON PURPOSE, unlike the `${VAR:?msg}` twins in
-this box. Every message a human or a workflow log actually reads here is an
-explicit `echo`/`::error::` line the twin author already chose carefully (see
-the twin's own long comment on the two-different-failures distinction for
-`INPUT_SHA`) rather than a bash diagnostic wrapper, so there is nothing to
-reword: this port reproduces them exactly.
+this box. Every message a human or a workflow log actually reads here is an explicit `echo`/`::error::` line the twin author already chose carefully (see the twin's own long comment on the two-different-failures distinction for `INPUT_SHA`) rather than a bash diagnostic wrapper, so there is nothing to reword: this port reproduces them exactly.
 """
 
 from __future__ import annotations

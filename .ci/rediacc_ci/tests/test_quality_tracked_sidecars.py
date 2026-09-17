@@ -1,15 +1,8 @@
 """`rediacc_ci.quality.tracked_sidecars` against the python heredoc it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. This gate's parser IS a
-Python heredoc inside the bash twin, so the two implementations can be run
-against the same input and compared for real rather than against a table of what
-the port happens to do. That is the strongest form this test can take, and it is
-available only because the twin already shelled out to python3.
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. This gate's parser IS a Python heredoc inside the bash twin, so the two implementations can be run against the same input and compared for real rather than against a table of what the port happens to do. That is the strongest form this test can take, and it is available only because the twin already shelled out to python3.
 
-What this file does NOT cover, because the committed shadow ledger
-`.ci/shadow/w7p2-tracked-sidecars.observations.jsonl` covers it over five
-distinct trees: the whole gate, the `git ls-files` enumeration and the output
-shape. This file covers the seams that ledger cannot isolate.
+What this file does NOT cover, because the committed shadow ledger `.ci/shadow/w7p2-tracked-sidecars.observations.jsonl` covers it over five distinct trees: the whole gate, the `git ls-files` enumeration and the output shape. This file covers the seams that ledger cannot isolate.
 """
 
 import subprocess
@@ -68,8 +61,7 @@ def test_control_is_an_or_not_an_and() -> None:
     """One dud pattern must not disarm the whole control.
 
     The twin sets `control_hit=1` if ANY pattern self-matches. An AND looks
-    stronger and would be a different gate: a single unbalanced bracket would
-    then fail the control rather than being the one dud it is.
+    stronger and would be a different gate: a single unbalanced bracket would then fail the control rather than being the one dud it is.
     """
     assert mod.control_fires([".waiter-*"]) is True
     assert mod.control_fires([]) is False
@@ -78,8 +70,7 @@ def test_control_is_an_or_not_an_and() -> None:
 def test_ls_files_status_is_returned_not_swallowed(tmp_path) -> None:
     """A failed enumeration must be distinguishable from an empty one.
 
-    This is the whole point of the function: `2>/dev/null || true` there would
-    make a broken index read exactly like a clean tree.
+    This is the whole point of the function: `2>/dev/null || true` there would make a broken index read exactly like a clean tree.
     """
     status, text = mod.ls_files(".claude/hooks/stop/.sessions", tmp_path)
     assert status != 0, "a directory that is not a git repo must not report success"

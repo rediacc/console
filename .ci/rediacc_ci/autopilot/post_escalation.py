@@ -1,27 +1,15 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/autopilot/post-escalation.sh`.
 
-Posts ONE escalation comment on the PR and latches the loop with the
-`autopilot-blocked` label. Every way an autopilot campaign can stop ends here,
-which is the whole reason the script exists: before it, an escalating round
-painted the job red and applied a wordless label, so the operator's first signal
-was "nothing is happening any more" and the model's reason -- the entire payload
-of an escalation -- stayed in a run log nobody was told to open.
+Posts ONE escalation comment on the PR and latches the loop with the `autopilot-blocked` label. Every way an autopilot campaign can stop ends here, which is the whole reason the script exists: before it, an escalating round painted the job red and applied a wordless label, so the operator's first signal was "nothing is happening any more" and the model's reason -- the entire
+payload of an escalation -- stayed in a run log nobody was told to open.
 
-THE BODY IS THE PRODUCT. Almost nothing this script does is visible in its exit
-code: the words an operator reads at the moment a campaign stops are the output,
-and `--dry-run` exists so those words can be exercised offline. The differential
-therefore compares the BODY BYTES that would have gone to GitHub, not just the
-verdict, on every case.
+THE BODY IS THE PRODUCT. Almost nothing this script does is visible in its exit code: the words an operator reads at the moment a campaign stops are the output, and `--dry-run` exists so those words can be exercised offline. The differential therefore compares the BODY BYTES that would have gone to GitHub, not just the verdict, on every case.
 
 -----------------------------------------------------------------------------
 TWO WRITES, IN ORDER, AND THE ORDER IS THE LATCH
 -----------------------------------------------------------------------------
-The comment goes first, the label second. A failed comment write means `set -e`
-ends the run before the label is applied, so the loop is NOT latched and the
-next round retries -- which is right, because a latch with no explanation
-attached is exactly the silent stop this script was built to end. `--no-label`
-skips only the second write, and the dry-run message says which of the two
+The comment goes first, the label second. A failed comment write means `set -e` ends the run before the label is applied, so the loop is NOT latched and the next round retries -- which is right, because a latch with no explanation attached is exactly the silent stop this script was built to end. `--no-label` skips only the second write, and the dry-run message says which of the two
 behaviours it would have taken.
 
 -----------------------------------------------------------------------------
@@ -29,17 +17,14 @@ MODEL TEXT NEVER BECOMES SHELL, AND THE PORT KEEPS THAT PROPERTY STRUCTURALLY
 -----------------------------------------------------------------------------
 The reason and the patch are extracted with `jq` straight into a file and the
 comment is posted with `-F body=@<file>`. Nothing model-authored is ever
-interpolated into a command line, here or in the twin. In Python the argv is a
-list, so the property holds by construction, but the FILE is kept rather than
+interpolated into a command line, here or in the twin. In Python the argv is a list, so the property holds by construction, but the FILE is kept rather than
 switched to `-f body=<text>`: a 20 KB patch as an argv value is a length limit
 waiting to truncate an escalation.
 
 -----------------------------------------------------------------------------
 `jq` IS SPAWNED, THREE TIMES, FOR THE REASON THIS WAVE KEEPS REPEATING
 -----------------------------------------------------------------------------
-The `--verdict` file is `autopilot-push.sh --verdict-out`, it comes from outside,
-and a truncated one is a real shape. When it is truncated the observable is JQ's
-parse error, JQ's exit code (5, measured on 1.8.1) and a PARTIALLY WRITTEN body
+The `--verdict` file is `autopilot-push.sh --verdict-out`, it comes from outside, and a truncated one is a real shape. When it is truncated the observable is JQ's parse error, JQ's exit code (5, measured on 1.8.1) and a PARTIALLY WRITTEN body
 file -- because the twin's `{ ... } >"$work/body.md"` group has the file open
 while jq runs. None of that is reproducible by hand, so the three jq programs
 are handed to jq, with their stdout pointed at the same open handle.
@@ -51,14 +36,9 @@ are handed to jq, with their stdout pointed at the same open handle.
   empty reason.
 
 -----------------------------------------------------------------------------
-THE FENCE IS SIZED TO THE CONTENT, and this is a security property, not a
-typographic one. A proposed patch touching a markdown file can itself contain a
+THE FENCE IS SIZED TO THE CONTENT, and this is a security property, not a typographic one. A proposed patch touching a markdown file can itself contain a
 ``` run; a fixed three-backtick fence would CLOSE early and the remainder of the
-patch -- untrusted, model-authored text -- would be promoted from a code block
-into live markdown. CommonMark closes a fence only on a run at least as long as
-the opening one, so the twin measures the longest backtick run in the patch and
-opens with one longer. `longest_backtick_run` below is that measurement,
-exported so the differential can drive it without a PR.
+patch -- untrusted, model-authored text -- would be promoted from a code block into live markdown. CommonMark closes a fence only on a run at least as long as the opening one, so the twin measures the longest backtick run in the patch and opens with one longer. `longest_backtick_run` below is that measurement, exported so the differential can drive it without a PR.
 
   `{ grep -oE '`+' || true; }` IS NOT DECORATION: a patch with no backticks is
   the common case, grep exits 1 on no match, and `pipefail` would turn the
@@ -66,30 +46,19 @@ exported so the differential can drive it without a PR.
   equivalent statement is that "no matches" yields 0 and never an error.
 
 -----------------------------------------------------------------------------
-ONE HAZARD, REPORTED RATHER THAN REPAIRED, and it is the same shape
-`update_state.py` reports: `--verdict` is checked with `[[ -n && -s ]]`, never
+ONE HAZARD, REPORTED RATHER THAN REPAIRED, and it is the same shape `update_state.py` reports: `--verdict` is checked with `[[ -n && -s ]]`, never
 with `require_file`. A MISTYPED VERDICT PATH IS THEREFORE SILENT -- the script
-falls through to `--reason`, or to the step class, and posts an escalation whose
-reason is missing entirely. That is the model's own words going quietly absent
-at the one moment they matter. Fixing it means changing a live workflow step's
-contract, which is the cutover box's call rather than this one's. Pinned by
-`test_a_mistyped_verdict_path_is_silent`.
+falls through to `--reason`, or to the step class, and posts an escalation whose reason is missing entirely. That is the model's own words going quietly absent at the one moment they matter. Fixing it means changing a live workflow step's contract, which is the cutover box's call rather than this one's. Pinned by `test_a_mistyped_verdict_path_is_silent`.
 
 A SECOND, SMALLER ONE, ALSO PRESERVED: `--steps` pairs are compared with
 `${pair#*=} == "failure"`, and `${pair#*=}` returns the WHOLE token when there
 is no `=` in it. So the bare word `failure` in the steps list matches, and
 `${pair%%=*}` then hands `failure` to the step-class map, which has no entry for
-it and echoes it back. The comment then reads "The round failed in failure."
-Pinned by `test_a_bare_failure_token_names_itself`.
+it and echoes it back. The comment then reads "The round failed in failure." Pinned by `test_a_bare_failure_token_names_itself`.
 
-`gh_retry` IS TRANSLITERATED, NOT IMPORTED, sleeps included. See
-`update_state.py`'s docstring for the reasoning and the prior copies:
-`core.ghx` classifies failures and raises typed errors instead of looping three
-times with a `log_warn` between attempts, so a port built on it would produce
-different output on the paths a differential cannot reach.
+`gh_retry` IS TRANSLITERATED, NOT IMPORTED, sleeps included. See `update_state.py`'s docstring for the reasoning and the prior copies: `core.ghx` classifies failures and raises typed errors instead of looping three times with a `log_warn` between attempts, so a port built on it would produce different output on the paths a differential cannot reach.
 
-Exit: 0 posted or dry-run, 1 refused or a write failed, 2 usage, and jq's own
-status when the verdict will not parse.
+Exit: 0 posted or dry-run, 1 refused or a write failed, 2 usage, and jq's own status when the verdict will not parse.
 
 K=5 LEDGER: `.ci/shadow/w7p6-post-escalation.observations.jsonl`.
 """
@@ -173,8 +142,7 @@ def failed_class(steps: str) -> str:
         word `failure` matches the test, and `${pair%%=*}` then hands `failure`
         to the map as a key. See the module docstring.
 
-    An empty pair (a doubled comma, a trailing one) is skipped, which is why a
-    steps string of `,,,` is not an error.
+    An empty pair (a doubled comma, a trailing one) is skipped, which is why a steps string of `,,,` is not an error.
     """
     if not steps:
         return NO_FAILURE
@@ -195,13 +163,9 @@ def failed_class(steps: str) -> str:
 def longest_backtick_run(patch: bytes) -> int:
     """`jq -r .escalation.patch | { grep -oE '`+' || true; } | awk '...'`.
 
-    Returns the length of the longest run of backticks in the patch, or 0 when
-    there is none -- the `|| true` case, which is the COMMON case and must never
-    be an error.
+    Returns the length of the longest run of backticks in the patch, or 0 when there is none -- the `|| true` case, which is the COMMON case and must never be an error.
 
-    Measured in BYTES on purpose: a backtick is one byte in UTF-8 and grep -o
-    counts bytes, so there is no locale question here, unlike `state-comment.sh`'s
-    line cap.
+    Measured in BYTES on purpose: a backtick is one byte in UTF-8 and grep -o counts bytes, so there is no locale question here, unlike `state-comment.sh`'s line cap.
     """
     longest = 0
     for match in BACKTICK_RUN_RE.finditer(patch.decode("utf-8", "surrogateescape")):
@@ -224,9 +188,7 @@ def fence_for(longest: int) -> bytes:
 def gh_retry(what: str, args: list[str]) -> tuple[bool, bytes]:
     """`gh_retry <what> -- <gh args...>`. Returns (ok, stdout bytes).
 
-    The exit status is ALWAYS checked and a failure is never turned into an
-    empty answer (`.ci/scripts/lib/common.sh:392-397`). Both call sites here
-    redirect stdout to /dev/null, so the bytes are returned only for symmetry
+    The exit status is ALWAYS checked and a failure is never turned into an empty answer (`.ci/scripts/lib/common.sh:392-397`). Both call sites here redirect stdout to /dev/null, so the bytes are returned only for symmetry
     with the other ports; what matters is the boolean and the stderr replay.
     """
     rc = 0
@@ -268,10 +230,7 @@ def gh_retry(what: str, args: list[str]) -> tuple[bool, bytes]:
 def _jq_into(handle, program: str, path: str) -> int:
     """`jq -r '<program>' "$VERDICT"` with stdout pointed at the open body file.
 
-    STDERR IS INHERITED so jq's own diagnostic lands on fd 2 in real time, and
-    the handle is FLUSHED first so the bytes this process has already written
-    stay ahead of the child's -- the twin has one shared file descriptor and no
-    such ordering problem.
+    STDERR IS INHERITED so jq's own diagnostic lands on fd 2 in real time, and the handle is FLUSHED first so the bytes this process has already written stay ahead of the child's -- the twin has one shared file descriptor and no such ordering problem.
     """
     handle.flush()
     proc = subprocess.run(["jq", "-r", program, path], stdout=handle, check=False)
@@ -291,9 +250,7 @@ def _jq_capture(program: str, path: str) -> tuple[int, bytes]:
 def _usable_verdict(path: str) -> bool:
     """`[[ -n "$VERDICT" && -s "$VERDICT" ]]`. THE HAZARD, preserved.
 
-    `-s` is TRUE for a non-empty file OR a directory, and FALSE for a path that
-    does not exist -- so a mistyped path is silently "no verdict" rather than a
-    refusal. See the module docstring.
+    `-s` is TRUE for a non-empty file OR a directory, and FALSE for a path that does not exist -- so a mistyped path is silently "no verdict" rather than a refusal. See the module docstring.
     """
     if not path:
         return False
@@ -306,9 +263,7 @@ def _usable_verdict(path: str) -> bool:
 def build_body(handle, args: dict[str, str], klass: str) -> int:
     """The `{ ... } >"$work/body.md"` group, in order. Returns an exit code.
 
-    A NON-ZERO RETURN LEAVES A PARTIALLY WRITTEN BODY, exactly as the twin's
-    `set -e` does: the redirection is already open, so whatever printf and jq
-    emitted before the failure is on disk. Nothing downstream reads it in that
+    A NON-ZERO RETURN LEAVES A PARTIALLY WRITTEN BODY, exactly as the twin's `set -e` does: the redirection is already open, so whatever printf and jq emitted before the failure is on disk. Nothing downstream reads it in that
     case, but a port that buffered and discarded would leave a different file
     behind, and this file is the one artifact an operator is handed.
     """

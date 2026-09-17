@@ -1,9 +1,6 @@
 """Port of `.ci/scripts/autopilot/finish.sh`.
 
-The deterministic finish line: everything past "CI is green" that needs no
-model invocation (03-v2-autonomy.md sections 2 and 9 -- ready-flip, review-gate
-rerun and done-detection are all zero-model-cost paths). Three subcommands,
-each with its own exit vocabulary:
+The deterministic finish line: everything past "CI is green" that needs no model invocation (03-v2-autonomy.md sections 2 and 9 -- ready-flip, review-gate rerun and done-detection are all zero-model-cost paths). Three subcommands, each with its own exit vocabulary:
 
     check-done    PURE. A fixture in, `{"done":bool,"missing":[...]}` out on
                   STDOUT, exit 0 done / 1 not done / 1 no fixture / 2 usage.
@@ -14,72 +11,40 @@ each with its own exit vocabulary:
                   head. Bounded by the review cap, which the review pipeline
                   enforces; this script never loops.
 
-FAIL CLOSED IS THE FIRST THING BOTH WRITES DO. `AUTOPILOT_ALLOW_PUSH` absent is
-OFF, and the refusal (`stage-flag-disabled`) happens BEFORE any `gh` call, so a
-misconfigured stage cannot even read. The order is preserved exactly: usage
-check, then the flag, then the network.
+FAIL CLOSED IS THE FIRST THING BOTH WRITES DO. `AUTOPILOT_ALLOW_PUSH` absent is OFF, and the refusal (`stage-flag-disabled`) happens BEFORE any `gh` call, so a misconfigured stage cannot even read. The order is preserved exactly: usage check, then the flag, then the network.
 
 -----------------------------------------------------------------------------
 `jq` IS STILL `jq`, ALL THREE TIMES, AND THAT IS THE POINT OF THIS PORT
 -----------------------------------------------------------------------------
-`check-done`'s verdict is printed to STDOUT and read by the caller, so its
-bytes are the interface: `jq -c`'s compact spacing, its key order
-(`done` then `missing`, in program order, not sorted) and its trailing
-newline. The program itself is also a piece of REASONING that a rewrite would
-quietly change, and the twin says so in a comment this port keeps in one piece:
+`check-done`'s verdict is printed to STDOUT and read by the caller, so its bytes are the interface: `jq -c`'s compact spacing, its key order (`done` then `missing`, in program order, not sorted) and its trailing newline. The program itself is also a piece of REASONING that a rewrite would quietly change, and the twin says so in a comment this port keeps in one piece:
 
     NOT `.draft // true | not`: jq treats false as empty for `//`, which would
     read a non-draft PR as a draft. A missing draft field still fails closed
     (not done).
 
-So `DONE_PROGRAM` below is the twin's program, character for character, handed
-to the same `jq`. A `json`-based reimplementation would have to re-derive
+So `DONE_PROGRAM` below is the twin's program, character for character, handed to the same `jq`. A `json`-based reimplementation would have to re-derive
 `//`'s falsy rule, `has()` versus `==`, and the `to_entries` ordering, and the
 first one it got wrong would flip a PR to done.
 
 -----------------------------------------------------------------------------
 WHAT `MISSING` MEANS, AND WHY THE ORDER MATTERS
 -----------------------------------------------------------------------------
-`missing` names every unmet condition so a stalled babysit is diagnosable from
-the decision line alone. It comes out of `to_entries` over the intermediate
-object, so it is always a subset of, and in the order of,
-`[ci_green, not_draft, reviewed, threads_resolved]`. That is a contract with
-whoever reads the line, and it is asserted in the differential rather than left
-to jq.
+`missing` names every unmet condition so a stalled babysit is diagnosable from the decision line alone. It comes out of `to_entries` over the intermediate object, so it is always a subset of, and in the order of, `[ci_green, not_draft, reviewed, threads_resolved]`. That is a contract with whoever reads the line, and it is asserted in the differential rather than left to jq.
 
 -----------------------------------------------------------------------------
-`_gh_probe` IS COPIED IN, NOT IMPORTED, for the reason
-`quality/submodule_branches.py:128-137` already records: `core.ghx` classifies
-failures, raises typed errors and does NOT retry three times with a `log_warn`
-between attempts, so a port built on it would produce different output on the
-paths a differential cannot reach. The twin sources `common.sh`, which this
-port does not, so the 3-attempt loop, the `sleep $((attempt * 3))` backoff, the
-JSON validation and both message strings are transliterated here. When `ghx`
-grows a `_gh_probe`-compatible entry point, this copy is the first thing that
-should go.
+`_gh_probe` IS COPIED IN, NOT IMPORTED, for the reason `quality/submodule_branches.py:128-137` already records: `core.ghx` classifies failures, raises typed errors and does NOT retry three times with a `log_warn` between attempts, so a port built on it would produce different output on the paths a differential cannot reach. The twin sources `common.sh`, which this port does not, so
+the 3-attempt loop, the `sleep $((attempt * 3))` backoff, the JSON validation and both message strings are transliterated here. When `ghx` grows a `_gh_probe`-compatible entry point, this copy is the first thing that should go.
 
-`jq -e` IS NOT `json.loads`: it exits 1 when the last output value is `null` or
-`false`, so a `gh` call that exits 0 with the body `null` is UNUSABLE and gets
-retried. `_json_usable` implements jq's rule.
+`jq -e` IS NOT `json.loads`: it exits 1 when the last output value is `null` or `false`, so a `gh` call that exits 0 with the body `null` is UNUSABLE and gets retried. `_json_usable` implements jq's rule.
 
 -----------------------------------------------------------------------------
-THE PIPELINES IN `rerun-review` ARE `pipefail` PIPELINES, and their exit codes
-are not this script's inventions. `gh_json ... | jq -r '.sha'` fails with 1
-when the probe gives up (jq is perfectly happy with empty input) and with JQ's
-code, 5, when the body cannot be indexed. `set -e` then ends the run with that
+THE PIPELINES IN `rerun-review` ARE `pipefail` PIPELINES, and their exit codes are not this script's inventions. `gh_json ... | jq -r '.sha'` fails with 1 when the probe gives up (jq is perfectly happy with empty input) and with JQ's code, 5, when the body cannot be indexed. `set -e` then ends the run with that
 number and no message of this script's own. Both are reproduced; neither is
-smoothed into a friendly refusal, because a workflow step that branches on 5
-versus 1 today would stop working.
+smoothed into a friendly refusal, because a workflow step that branches on 5 versus 1 today would stop working.
 
 -----------------------------------------------------------------------------
-ONE HAZARD, REPORTED RATHER THAN REPAIRED. `check-done`'s fixture is read with
-`require_file`, but the two write paths take `--pr` as a NUMBER and never
-validate it: `finish.sh ready-flip --pr 'x y' --repo r/c` reaches `gh` as a
-single argument `x y`, which `gh` refuses with its own message after the stage
-flag has already been checked. That is a bad-input path with a confusing
-diagnostic, not a security hole (nothing is interpolated into a shell), and
-fixing it means changing a live workflow step's contract, which is the cutover
-box's call rather than this one's.
+ONE HAZARD, REPORTED RATHER THAN REPAIRED. `check-done`'s fixture is read with `require_file`, but the two write paths take `--pr` as a NUMBER and never validate it: `finish.sh ready-flip --pr 'x y' --repo r/c` reaches `gh` as a single argument `x y`, which `gh` refuses with its own message after the stage flag has already been checked. That is a bad-input path with a confusing
+diagnostic, not a security hole (nothing is interpolated into a shell), and fixing it means changing a live workflow step's contract, which is the cutover box's call rather than this one's.
 
 K=5 LEDGER: `.ci/shadow/w7p6-finish.observations.jsonl`.
 """
@@ -152,10 +117,7 @@ def gh_probe(
 ) -> tuple[bool, bytes]:
     """`common.sh`'s `_gh_probe`, transliterated. (ok, stdout bytes).
 
-    Three attempts, a `log_warn` between them, a 3-then-6-second backoff, and
-    the captured stderr replayed indented four spaces on final failure --
-    including GNU sed's refusal to invent a final newline the input did not
-    have.
+    Three attempts, a `log_warn` between them, a 3-then-6-second backoff, and the captured stderr replayed indented four spaces on final failure -- including GNU sed's refusal to invent a final newline the input did not have.
     """
     rc = 0
     err = b""
@@ -216,9 +178,7 @@ def _jq(args: list[str], stdin: bytes | None = None) -> tuple[int, bytes]:
 def check_done(fixture: str) -> tuple[int, bytes]:
     """`check-done`. Returns (exit code, the verdict line to print).
 
-    The verdict is printed by the caller BEFORE the exit code is decided,
-    because the twin prints it before testing `.done` and a stalled babysit is
-    diagnosed from that line.
+    The verdict is printed by the caller BEFORE the exit code is decided, because the twin prints it before testing `.done` and a stalled babysit is diagnosed from that line.
     """
     rc, verdict = _jq(["-c", DONE_PROGRAM, fixture])
     if rc != 0:

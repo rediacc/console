@@ -1,42 +1,23 @@
 """Differential: `.ci/rediacc_ci/private/run_account.py` against its twin
-`.ci/scripts/private/run-account.sh`, the registered gate
-`check:ci-account-server`.
+`.ci/scripts/private/run-account.sh`, the registered gate `check:ci-account-server`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-NO REAL `npm` IS EVER INVOKED. `npm ci` in `private/account` is a full clean
-install of that submodule's dependency tree, and `npm run test` is its whole
-vitest suite. A test that shelled out to either would take minutes, would need
-the network, and would SKIP on a checkout without the submodule -- which is the
-exact failure the twin's CI arm exists to prevent. `npm` is a recording fake on
-a scratch PATH: it appends its cwd and full argv to a log, writes canned bytes
-to BOTH streams, and exits with a status chosen per subcommand.
+NO REAL `npm` IS EVER INVOKED. `npm ci` in `private/account` is a full clean install of that submodule's dependency tree, and `npm run test` is its whole vitest suite. A test that shelled out to either would take minutes, would need the network, and would SKIP on a checkout without the submodule -- which is the exact failure the twin's CI arm exists to prevent. `npm` is a recording
+fake on a scratch PATH: it appends its cwd and full argv to a log, writes canned bytes to BOTH streams, and exits with a status chosen per subcommand.
 
-WHAT IS COMPARED, AND WHY THE CALL LOG IS ONE OF THE FOUR. Every case compares
-the exit code, stdout, stderr, and the CALL LOG. The log carries each `npm`
-invocation's CWD because `cd "$ACCOUNT_DIR"` is the only thing that points npm
+WHAT IS COMPARED, AND WHY THE CALL LOG IS ONE OF THE FOUR. Every case compares the exit code, stdout, stderr, and the CALL LOG. The log carries each `npm` invocation's CWD because `cd "$ACCOUNT_DIR"` is the only thing that points npm
 at the right package, and a port that used a `cwd=` argument for one call and
-not the other would print an identical transcript while installing into the
-console root. It carries the ARGV because `ci` and `run test` are different
-claims about what happened.
+not the other would print an identical transcript while installing into the console root. It carries the ARGV because `ci` and `run test` are different claims about what happened.
 
 THE CALL LOG IS ALSO WHERE THE TWIN'S ORDERING DEFECT STAYS VISIBLE.
-`run-account.sh deploy` and `run-account.sh bogus` both run `npm ci` BEFORE the
-stage is validated, so a refusal costs a full dependency install.
-`test_an_unknown_stage_still_pays_for_npm_ci` asserts that on BOTH sides: it is
-reproduced, not fixed, and moving the validation earlier in the port would show
-up here as a missing call rather than as a silent improvement.
+`run-account.sh deploy` and `run-account.sh bogus` both run `npm ci` BEFORE the stage is validated, so a refusal costs a full dependency install. `test_an_unknown_stage_still_pays_for_npm_ci` asserts that on BOTH sides: it is reproduced, not fixed, and moving the validation earlier in the port would show up here as a missing call rather than as a silent improvement.
 
-PATH IS REPLACED, NEVER PREPENDED, and this host HAS a real `npm`. A prepend
-would leave the "npm is missing" case silently consulting it, and `_binder`
-asserts the exclusion really took.
+PATH IS REPLACED, NEVER PREPENDED, and this host HAS a real `npm`. A prepend would leave the "npm is missing" case silently consulting it, and `_binder` asserts the exclusion really took.
 
 THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
 the file it is running; the port composes the same prefix from `sys.argv[0]` and
-its own live frame. Those can never be equal, so `_mask` collapses exactly that
-prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
+its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
 """
 
 import pathlib
@@ -104,13 +85,9 @@ def _fixture(
 ) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because each subject derives the console root from its own location
-    (`BASH_SOURCE` / `__file__`, then three directories up). Driving the tracked
-    files with a `cwd` would point both at the REAL repository and the npm fake
-    would run in the real `private/account`.
+    Copies, because each subject derives the console root from its own location (`BASH_SOURCE` / `__file__`, then three directories up). Driving the tracked files with a `cwd` would point both at the REAL repository and the npm fake would run in the real `private/account`.
 
-    `account` takes the four shapes the `-f "$ACCOUNT_DIR/package.json"` guard
-    can meet:
+    `account` takes the four shapes the `-f "$ACCOUNT_DIR/package.json"` guard can meet:
 
       "package"  a real package.json
       "none"     the directory exists and is empty (an uninitialised submodule)
@@ -148,8 +125,7 @@ def _binder(
 ) -> str:
     """The COMPLETE PATH for one case: named real tools, plus the fake `npm`.
 
-    `npm` is one of "ok" (a recording fake) and "missing" (absent from PATH
-    entirely), which is the arm where bash writes its own `command not found`.
+    `npm` is one of "ok" (a recording fake) and "missing" (absent from PATH entirely), which is the arm where bash writes its own `command not found`.
     """
     binder = tmp_path.resolve() / "bin"
     if binder.exists():
@@ -191,9 +167,7 @@ def _run(
 ) -> dict[str, object]:
     """Drive one subject from a NEUTRAL cwd and collect all four observables.
 
-    Neutral, because both subjects `cd` into the account directory and the
-    recorded cwd is what proves it. Starting inside the fixture would make the
-    `cd` unobservable.
+    Neutral, because both subjects `cd` into the account directory and the recorded cwd is what proves it. Starting inside the fixture would make the `cd` unobservable.
     """
     cwd = tmp_path.resolve() / "elsewhere"
     cwd.mkdir(exist_ok=True)
@@ -348,10 +322,7 @@ def test_the_recording_npm_is_actually_reached(tmp_path):
 def test_the_ci_arm_is_the_reason_the_guard_exists(tmp_path):
     """A missing submodule under CI must be FATAL on both sides.
 
-    The twin spells out why: `check:ci-account-server` is a gate in
-    `ci-quality.yml`, and an exit 0 here would report the account suite as
-    passing while it never ran. This is the single assertion in the file whose
-    failure would mean the gate had become vacuous.
+    The twin spells out why: `check:ci-account-server` is a gate in `ci-quality.yml`, and an exit 0 here would report the account suite as passing while it never ran. This is the single assertion in the file whose failure would mean the gate had become vacuous.
     """
     root = _fixture(tmp_path, account="none")
     binder = _binder(tmp_path)
@@ -368,9 +339,7 @@ def test_the_ci_arm_is_the_reason_the_guard_exists(tmp_path):
 
 def test_the_local_arm_is_a_silent_pass_and_that_is_the_hole(tmp_path):
     """THE COMPLEMENT, and a REAL HOLE IN THE LOCAL GATE, pinned rather than
-    fixed. `npm run check:ci-account-server` on a checkout without the submodule
-    prints two warnings and exits 0, so the gate reports success having run
-    nothing. The twin says why in its own comment, and closing it is a
+    fixed. `npm run check:ci-account-server` on a checkout without the submodule prints two warnings and exits 0, so the gate reports success having run nothing. The twin says why in its own comment, and closing it is a
     cutover-box decision, not a port's."""
     root = _fixture(tmp_path, account="none")
     binder = _binder(tmp_path)
@@ -397,9 +366,7 @@ def test_the_stage_runs_when_the_submodule_is_there(tmp_path):
 def test_an_unknown_stage_still_pays_for_npm_ci(tmp_path):
     """A DEFECT IN THE TWIN, PINNED RATHER THAN FIXED.
 
-    `cd`, then `npm ci`, THEN the `case`. So `run-account.sh bogus` and
-    `run-account.sh deploy` each perform a full clean install of the account
-    server's dependency tree and only then refuse. Both subjects are asserted,
+    `cd`, then `npm ci`, THEN the `case`. So `run-account.sh bogus` and `run-account.sh deploy` each perform a full clean install of the account server's dependency tree and only then refuse. Both subjects are asserted,
     because the port must not quietly improve on it; the day the twin's
     validation moves above the install, this goes red and names the decision.
     """
@@ -417,8 +384,7 @@ def test_an_unknown_stage_still_pays_for_npm_ci(tmp_path):
 
 def test_deploy_refuses_with_all_five_lines_and_names_the_real_script(tmp_path):
     """The refusal is the feature: it exists because this stage once published
-    an orphan worker from `private/account`'s local-dev wrangler.toml. All five
-    lines are contract, and the last one is the route a caller must take
+    an orphan worker from `private/account`'s local-dev wrangler.toml. All five lines are contract, and the last one is the route a caller must take
     instead."""
     root = _fixture(tmp_path, node_modules=True)
     binder = _binder(tmp_path)

@@ -1,28 +1,16 @@
 """Differential: `.ci/rediacc_ci/infra/ci_stop.py` against its twin `ci-stop.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that -- and it is the
-same argument `.ci/rediacc_ci/tests/gates/test_twin_parity.py` makes for the gate
-ports, applied to a non-gate script that has no gate harness to hang from.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that -- and it is the same argument `.ci/rediacc_ci/tests/gates/test_twin_parity.py` makes for the gate ports, applied to a non-gate script that has no gate harness to
+hang from.
 
-HOW DOCKER IS FAKED, AND WHY IT IS A FAKE RATHER THAN A MOCK. The subject shells
-out to `docker`, so the seam that matters is PATH. Each case puts a recording
-`docker` on PATH ahead of any real one and compares the ARGV SEQUENCE both sides
-produced, not just their stdout. Two implementations can print identical text
+HOW DOCKER IS FAKED, AND WHY IT IS A FAKE RATHER THAN A MOCK. The subject shells out to `docker`, so the seam that matters is PATH. Each case puts a recording `docker` on PATH ahead of any real one and compares the ARGV SEQUENCE both sides produced, not just their stdout. Two implementations can print identical text
 while calling different commands, and for a teardown script the commands ARE the
-behaviour: a port that printed "Force removing" and never ran `docker rm` would
-pass a stdout-only comparison and leave the container up.
+behaviour: a port that printed "Force removing" and never ran `docker rm` would pass a stdout-only comparison and leave the container up.
 
-ANTI-VACUITY. `test_the_fake_is_actually_reached` fails if the recording docker
-was never invoked at all. Without it every comparison below is "two programs that
-did nothing agree", which is the cleanest-looking green in this file.
+ANTI-VACUITY. `test_the_fake_is_actually_reached` fails if the recording docker was never invoked at all. Without it every comparison below is "two programs that did nothing agree", which is the cleanest-looking green in this file.
 
 THE ONE DELIBERATE DIVERGENCE IS TESTED, NOT HIDDEN.
-`test_no_docker_diverges_and_that_is_the_point` asserts the twin's vacuous exit 0
-and the port's exit 77 in the SAME case, so the difference is a recorded decision
-rather than a surprise the next reader has to rediscover. A port that quietly
-changed an exit code would otherwise look exactly like this one.
+`test_no_docker_diverges_and_that_is_the_point` asserts the twin's vacuous exit 0 and the port's exit 77 in the SAME case, so the difference is a recorded decision rather than a surprise the next reader has to rediscover. A port that quietly changed an exit code would otherwise look exactly like this one.
 """
 
 import os
@@ -70,10 +58,7 @@ sys.exit(VERB_RC)
 def _fixture(tmp_path: pathlib.Path, *, compose_dir: bool, backend_state: bool) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because each subject derives the console root from its own location
-    (`BASH_SOURCE`/`__file__` then three directories up). Driving the tracked
-    files with a `cwd` would point them at the real repository and this test
-    would delete the real `.backend-state`.
+    Copies, because each subject derives the console root from its own location (`BASH_SOURCE`/`__file__` then three directories up). Driving the tracked files with a `cwd` would point them at the real repository and this test would delete the real `.backend-state`.
     """
     root = tmp_path / "tree"
     (root / ".ci" / "scripts" / "infra").mkdir(parents=True)
@@ -122,9 +107,7 @@ NEEDED = ("bash", "sh", "python3", "dirname", "grep", "rm", "cat", "env", "uname
 def _bin_without_docker(where: pathlib.Path) -> pathlib.Path:
     """A PATH that can run both subjects and CANNOT find docker.
 
-    THE ASSERTION AT THE BOTTOM IS THE CONTROL. An earlier draft set PATH to an
-    empty directory, which removed `bash` as well: the twin then failed to launch
-    at all and the case "proved" a divergence that was really a missing shell.
+    THE ASSERTION AT THE BOTTOM IS THE CONTROL. An earlier draft set PATH to an empty directory, which removed `bash` as well: the twin then failed to launch at all and the case "proved" a divergence that was really a missing shell.
     """
     binder = where / "nodocker-bin"
     binder.mkdir(exist_ok=True)
@@ -154,10 +137,7 @@ def _run(
 ) -> tuple[subprocess.CompletedProcess[str], list[str]]:
     """Drive one subject against a freshly generated fake docker.
 
-    THE BINDER IS PER-SUBJECT, not shared. Both sides of a differential run with
-    the same knobs but must record into DIFFERENT logs, and the log path is baked
-    into the fake, so one shared binder would have the two subjects appending to
-    one file and the comparison would be of a list against itself.
+    THE BINDER IS PER-SUBJECT, not shared. Both sides of a differential run with the same knobs but must record into DIFFERENT logs, and the log path is baked into the fake, so one shared binder would have the two subjects appending to one file and the comparison would be of a list against itself.
     """
     log = root.parent / ("dockerlog-%s.txt" % subject.name)
     log.write_text("", encoding="utf-8")
@@ -265,11 +245,7 @@ def test_compose_runs_in_the_compose_directory(tmp_path):
 def test_no_docker_diverges_and_that_is_the_point(tmp_path):
     """THE ONE DELIBERATE DIVERGENCE, asserted in BOTH directions.
 
-    With no `docker` on PATH the twin prints its whole transcript, removes
-    nothing, and exits 0 -- a teardown that reports success having torn nothing
-    down. The port answers 77 (CANNOT RUN) and names the fix. This test exists so
-    that the difference is a decision on the record: if either half ever changes,
-    it reds here rather than in a CI job that quietly stopped cleaning up.
+    With no `docker` on PATH the twin prints its whole transcript, removes nothing, and exits 0 -- a teardown that reports success having torn nothing down. The port answers 77 (CANNOT RUN) and names the fix. This test exists so that the difference is a decision on the record: if either half ever changes, it reds here rather than in a CI job that quietly stopped cleaning up.
     """
     root_a = _fixture(tmp_path / "e", compose_dir=True, backend_state=True)
     old, _ = _run(TWIN, root_a, docker=False)

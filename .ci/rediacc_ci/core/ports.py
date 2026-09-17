@@ -1,68 +1,41 @@
 """Port availability and the deterministic per-worktree port block.
 
-PORTED FROM `.ci/lib/find-port.sh`, which delegated here and is now DELETED
-(W7P5-b): a shim is a delay, not an exit. Its three callers -- `.ci/lib/
-devbox.sh`, `.ci/lib/account.sh` and `.ci/lib/service.sh` -- name this module
-directly, and `.ci/rediacc_ci/tests/test_core_ports.py` carries the assertion
-that devbox.sh really reaches it rather than having grown a local copy.
-The original header said what it was for in two lines: find an available port
+PORTED FROM `.ci/lib/find-port.sh`, which delegated here and is now DELETED (W7P5-b): a shim is a delay, not an exit. Its three callers -- `.ci/lib/ devbox.sh`, `.ci/lib/account.sh` and `.ci/lib/service.sh` -- name this module directly, and `.ci/rediacc_ci/tests/test_core_ports.py` carries the assertion that devbox.sh really reaches it rather than having grown a local copy. The
+original header said what it was for in two lines: find an available port
 for test infrastructure, and avoid the conflicts that appear when several
-worktrees run at once or the conventional port is already taken. Everything
-below is the reasoning that accumulated under those two lines.
+worktrees run at once or the conventional port is already taken. Everything below is the reasoning that accumulated under those two lines.
 
 --------------------------------------------------------------------------
 WHY A DERIVED SLOT AND NOT A SCAN FROM A BASE
 --------------------------------------------------------------------------
-A scan-from-a-base allocator gives a worktree a different port after every
-reboot, which breaks bookmarks and makes "which checkout am I looking at?"
-unanswerable. `derive_slot` and `find_port_block` instead derive a STABLE slot
+A scan-from-a-base allocator gives a worktree a different port after every reboot, which breaks bookmarks and makes "which checkout am I looking at?" unanswerable. `derive_slot` and `find_port_block` instead derive a STABLE slot
 from a key -- the worktree's absolute path -- then fall back through
-slot-aligned candidates, so the fallback stays block-aligned instead of
-colliding with a neighbour's block.
+slot-aligned candidates, so the fallback stays block-aligned instead of colliding with a neighbour's block.
 
-Walking ALL slots rather than giving up after the derived one is deliberate:
-a busy machine still gets a devbox.
+Walking ALL slots rather than giving up after the derived one is deliberate: a busy machine still gets a devbox.
 
 --------------------------------------------------------------------------
 WHY THE DIGEST IS SHA-256 TRUNCATED TO 8 HEX DIGITS
 --------------------------------------------------------------------------
-The bash original computed `sha256(key) | cut -c1-8` and reduced it modulo the
-slot count, with the comment "first 8 hex digits are plenty of entropy for
-<1k slots". That is preserved EXACTLY here, byte for byte in its effect,
-because the value is user-visible: it decides the port a bookmark points at.
-A "better" hash would silently move every existing worktree's devbox.
+The bash original computed `sha256(key) | cut -c1-8` and reduced it modulo the slot count, with the comment "first 8 hex digits are plenty of entropy for <1k slots". That is preserved EXACTLY here, byte for byte in its effect, because the value is user-visible: it decides the port a bookmark points at. A "better" hash would silently move every existing worktree's devbox.
 
-The bash file carried `_sha256sum_portable`, which chose `sha256sum` when
-present and `shasum -a 256` otherwise -- the macOS fallback. Python's
-`hashlib` makes that whole function disappear, and its disappearance is the
-single clearest argument for the port: the portability branch existed only
-because bash has no hash function.
+The bash file carried `_sha256sum_portable`, which chose `sha256sum` when present and `shasum -a 256` otherwise -- the macOS fallback. Python's `hashlib` makes that whole function disappear, and its disappearance is the single clearest argument for the port: the portability branch existed only because bash has no hash function.
 
-`_sha256sum_portable` also carried a correction worth keeping, because it
-records a comment that was WRONG and was fixed by measurement. It said the
+`_sha256sum_portable` also carried a correction worth keeping, because it records a comment that was WRONG and was fixed by measurement. It said the
 function must not depend on `local-common.sh` because find-port.sh is sourced
-standalone by `check-account-probes.sh`. It is not. The gate that sourced it
-standalone was `.ci/scripts/quality/check-setup-idempotency.sh`, whose control C
+standalone by `check-account-probes.sh`. It is not. The gate that sourced it standalone was `.ci/scripts/quality/check-setup-idempotency.sh`, whose control C
 ran `bash -c "source '$fp'; derive_slot ..."`; check-account-probes.sh sources
-`.ci/lib/account.sh`, and account.sh was what pulled find-port.sh in. Both call
-sites now run this module directly (control C through PYTHONPATH, which is what
-the shim was setting anyway) and the shim is deleted. The constraint is real
-either way -- this module must stay importable on its own -- and the
-misattribution is recorded so nobody re-derives it from the wrong gate.
+`.ci/lib/account.sh`, and account.sh was what pulled find-port.sh in. Both call sites now run this module directly (control C through PYTHONPATH, which is what the shim was setting anyway) and the shim is deleted. The constraint is real either way -- this module must stay importable on its own -- and the misattribution is recorded so nobody re-derives it from the wrong gate.
 
 --------------------------------------------------------------------------
 WHY THE PROBE STILL SHELLS OUT TO ss / lsof / netstat
 --------------------------------------------------------------------------
-This is the one place where a "pure Python" port would have been a behaviour
-change dressed as a cleanup, so it is argued rather than assumed.
+This is the one place where a "pure Python" port would have been a behaviour change dressed as a cleanup, so it is argued rather than assumed.
 
 The obvious Python spelling is to bind a socket and see whether it fails. That
 asks a DIFFERENT QUESTION. `ss -tlnH "sport = :N"` reports a listener on ANY
 address; a bind probe on 127.0.0.1 succeeds while something listens on
-0.0.0.0, and a bind probe on 0.0.0.0 fails against a listener on 127.0.0.1 on
-some platforms and not others. Either direction produces a devbox that starts
-and then cannot be reached, which is precisely the failure the block allocator
-exists to prevent.
+0.0.0.0, and a bind probe on 0.0.0.0 fails against a listener on 127.0.0.1 on some platforms and not others. Either direction produces a devbox that starts and then cannot be reached, which is precisely the failure the block allocator exists to prevent.
 
 So the probe order is preserved exactly as the original had it:
 
@@ -73,10 +46,7 @@ So the probe order is preserved exactly as the original had it:
               alternation
     none      cannot determine, ASSUME THE PORT IS FREE
 
-That last rung is a fail-OPEN, and the original chose it: with no tool at all,
-refusing every port would make the devbox unstartable on a machine where it
-would in fact work. Docker's own bind is the backstop. It is written down here
-so the next reader knows it was a decision and not an oversight.
+That last rung is a fail-OPEN, and the original chose it: with no tool at all, refusing every port would make the devbox unstartable on a machine where it would in fact work. Docker's own bind is the backstop. It is written down here so the next reader knows it was a decision and not an oversight.
 
 --------------------------------------------------------------------------
 COMMAND-LINE ENTRY POINT (what the bash shim calls)
@@ -88,15 +58,9 @@ COMMAND-LINE ENTRY POINT (what the bash shim calls)
     python3 -m rediacc_ci.core.ports find-consecutive-free <n> [start] [end]
     python3 -m rediacc_ci.core.ports find-port-block <key> [start] [end] [block]
 
-Every verb prints a bare number on stdout and exits 0, or prints nothing and
-exits 1, which is exactly what the bash functions did. `is-port-in-use` is the
-exception and carries the meaning in the exit code alone, as the bash
-predicate did.
+Every verb prints a bare number on stdout and exits 0, or prints nothing and exits 1, which is exactly what the bash functions did. `is-port-in-use` is the exception and carries the meaning in the exit code alone, as the bash predicate did.
 
-`find-port-block` is a SINGLE verb rather than a loop the shim drives, for the
-reason in the subpackage docstring: the block search probes up to
-`slots x block` ports, and one interpreter per probe would cost tens of
-seconds.
+`find-port-block` is a SINGLE verb rather than a loop the shim drives, for the reason in the subpackage docstring: the block search probes up to `slots x block` ports, and one interpreter per probe would cost tens of seconds.
 """
 
 from __future__ import annotations
@@ -123,10 +87,7 @@ def derive_slot(key: str, slots: int = DEFAULT_SLOTS) -> int:
     """A stable slot index in [0, slots) derived from an arbitrary key.
 
     sha256 of the key; the first 8 hex digits are plenty of entropy for fewer
-    than a thousand slots. Identical in result to the bash
-    `printf '%s' "$key" | sha256sum | cut -c1-8` followed by `$((0x... % n))`:
-    no trailing newline is hashed, the digest is lowercase hex, and the modulo
-    is taken over the truncated value rather than the whole digest.
+    than a thousand slots. Identical in result to the bash `printf '%s' "$key" | sha256sum | cut -c1-8` followed by `$((0x... % n))`: no trailing newline is hashed, the digest is lowercase hex, and the modulo is taken over the truncated value rather than the whole digest.
     """
     digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:DIGEST_HEX_DIGITS]
     return int(digest, 16) % slots
@@ -135,9 +96,7 @@ def derive_slot(key: str, slots: int = DEFAULT_SLOTS) -> int:
 def is_port_in_use(port: int) -> bool:
     """True when something is LISTENING on `port`, by the same probe bash used.
 
-    See the module docstring for why this is not a socket bind. The final rung
-    -- no tool available -- returns False, i.e. assume free, matching the bash
-    `return 1`.
+    See the module docstring for why this is not a socket bind. The final rung -- no tool available -- returns False, i.e. assume free, matching the bash `return 1`.
     """
     if proc.which("ss"):
         # -H suppresses the header so a match is a real row rather than the
@@ -159,8 +118,7 @@ def find_available_port(
 ) -> int | None:
     """The first free port in [start_port, end_port], or None.
 
-    None rather than an exception because the bash twin returned exit 1 and
-    every caller already handles "no port".
+    None rather than an exception because the bash twin returned exit 1 and every caller already handles "no port".
     """
     for port in range(start_port, end_port + 1):
         if not is_port_in_use(port):
@@ -177,8 +135,7 @@ def find_preferred_port(
 
     The bash defaults for the fallback window were `preferred+1` and
     `preferred+999`, computed at call time from the preferred port; they are
-    reproduced here rather than turned into constants, because they are
-    RELATIVE to the argument.
+    reproduced here rather than turned into constants, because they are RELATIVE to the argument.
     """
     if fallback_start is None:
         fallback_start = preferred_port + 1
@@ -196,26 +153,15 @@ def find_consecutive_free_ports(
 ) -> int | None:
     """The first base in [range_start, range_end] with `count` consecutive free ports.
 
-    NEW IN THE PORT, AND IT IS A FIX RATHER THAN AN ADDITION, so it is argued
-    here. `.ci/lib/account.sh::account_allocate_ports` needs three consecutive
-    ports and did it with a bash loop over `seq 4800 5799` calling
-    `is_port_in_use` up to three times per candidate. That was ~5.7 ms per probe
+    NEW IN THE PORT, AND IT IS A FIX RATHER THAN AN ADDITION, so it is argued here. `.ci/lib/account.sh::account_allocate_ports` needs three consecutive ports and did it with a bash loop over `seq 4800 5799` calling `is_port_in_use` up to three times per candidate. That was ~5.7 ms per probe
     while the probe was bash. Once the probe delegates to Python it is ~66 ms,
-    measured on this host, because each call starts an interpreter -- so the
-    worst case went from about 17 seconds to about 200. One verb that does the
+    measured on this host, because each call starts an interpreter -- so the worst case went from about 17 seconds to about 200. One verb that does the
     whole scan in one process removes the interpreter-per-probe cost entirely;
     the loop is the same loop.
 
-    THE SEARCH WINDOW IS DELIBERATELY ASYMMETRIC and matches the bash exactly:
-    `base` ranges over [range_start, range_end], and the ports it CHECKS are
-    base .. base+count-1, which may run past range_end. The bash `for candidate
-    in $(seq $START $END)` then testing `candidate+1` and `candidate+2` had the
-    same shape, and preserving it is the point of a port.
+    THE SEARCH WINDOW IS DELIBERATELY ASYMMETRIC and matches the bash exactly: `base` ranges over [range_start, range_end], and the ports it CHECKS are base .. base+count-1, which may run past range_end. The bash `for candidate in $(seq $START $END)` then testing `candidate+1` and `candidate+2` had the same shape, and preserving it is the point of a port.
 
-    Equivalent to the whole of the bash block it replaces, including the
-    `find_preferred_port` that ran first: a candidate below the first free port
-    cannot start a free run, so scanning from `range_start` reaches the same
-    base.
+    Equivalent to the whole of the bash block it replaces, including the `find_preferred_port` that ran first: a candidate below the first free port cannot start a free run, so scanning from `range_start` reaches the same base.
     """
     for base in range(range_start, range_end + 1):
         if not any(is_port_in_use(base + offset) for offset in range(count)):
@@ -231,10 +177,7 @@ def find_port_block(
 ) -> int | None:
     """The base port of a free, slot-aligned block of `block` consecutive ports.
 
-    Tries the slot `key` derives to first, then every other slot in order, so a
-    busy machine still gets a block rather than a refusal. Returns None when the
-    range cannot hold a single block, or when every block has something
-    listening in it -- the two `return 1` cases in the bash twin.
+    Tries the slot `key` derives to first, then every other slot in order, so a busy machine still gets a block rather than a refusal. Returns None when the range cannot hold a single block, or when every block has something listening in it -- the two `return 1` cases in the bash twin.
     """
     slots = (range_end - range_start + 1) // block
     if slots < 1:

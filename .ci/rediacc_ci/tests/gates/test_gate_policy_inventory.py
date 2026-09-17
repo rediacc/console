@@ -1,10 +1,8 @@
 """The Python policy seam and the inventory gate that keeps it honest.
 
-TWO SUBJECTS, and they are deliberately in one file because neither is worth
-much without the other. `rediacc_ci.policy_paths` is the Python twin of
+TWO SUBJECTS, and they are deliberately in one file because neither is worth much without the other. `rediacc_ci.policy_paths` is the Python twin of
 `scripts/lib/policy-paths.ts`; `.ci/scripts/quality/check_policy_inventory.py` is
-what stops the two from drifting apart, which is the ONLY thing that makes
-writing the list twice acceptable.
+what stops the two from drifting apart, which is the ONLY thing that makes writing the list twice acceptable.
 
 WHAT IS PINNED HERE, and what is pinned elsewhere on purpose:
 
@@ -26,9 +24,7 @@ WHAT IS PINNED HERE, and what is pinned elsewhere on purpose:
     between exit 1 and exit 2.
 
 The three-way SET equality (directory == TypeScript == Python) is NOT re-asserted
-here. It is the gate's whole verdict, it runs in CI as a gate, and restating it
-in a test would make the same claim twice and leave the impression it was checked
-twice.
+here. It is the gate's whole verdict, it runs in CI as a gate, and restating it in a test would make the same claim twice and leave the impression it was checked twice.
 """
 
 import pathlib

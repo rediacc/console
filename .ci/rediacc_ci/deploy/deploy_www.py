@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/deploy-www.sh`.
 
-Deploys the www marketing Worker to Cloudflare. Two lanes, chosen by whether
-`--name` was passed:
+Deploys the www marketing Worker to Cloudflare. Two lanes, chosen by whether `--name` was passed:
 
   * PRODUCTION (no `--name`): one `npx wrangler deploy` against
     `workers/www/wrangler.toml` as it stands. No D1 is involved; the account API
@@ -12,32 +11,18 @@ Deploys the www marketing Worker to Cloudflare. Two lanes, chosen by whether
     `wrangler.preview.toml` naming that database, apply the account migrations
     to it, deploy, and remove the generated config.
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (and `npm` on the install
-branch), `jq` and `sed` are the external tools, so the differential
-(`.ci/rediacc_ci/tests/test_deploy_deploy_www.py`) puts a RECORDING FAKE for
-`npx`/`npm` on a scratch PATH and points both sides at a fixture repo root
-through `$REDIACC_CI_ROOT`. `.ci/shadow/w7p5a-status.json` records this path as
-blocked only for the "one real run" clause and says in as many words that the
-mocked parity ledger is a separate, achievable piece of work. This is that
-piece.
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (and `npm` on the install branch), `jq` and `sed` are the external tools, so the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_www.py`) puts a RECORDING FAKE for `npx`/`npm` on a scratch PATH and points both sides at a fixture repo root through `$REDIACC_CI_ROOT`. `.ci/shadow/w7p5a-status.json` records this path as blocked
+only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS THE PRIMARY EVIDENCE, as it was for the promote ports. Almost
 everything printed is `log_step`/`log_info`, which is chatter by any classifier;
-the observable effect of a run is WHICH `npx wrangler` subcommands were invoked,
-in what order, with what arguments, plus the exact bytes of the generated
-`wrangler.preview.toml`.
+the observable effect of a run is WHICH `npx wrangler` subcommands were invoked, in what order, with what arguments, plus the exact bytes of the generated `wrangler.preview.toml`.
 
 -----------------------------------------------------------------------------
 THE EM DASH IN THE GENERATED TOML IS WRITTEN AS `\\u2014`, ON PURPOSE
 -----------------------------------------------------------------------------
-The twin's heredoc carries one U+2014 in a comment inside the emitted file
-(twin :123). The house rule bans em dashes in authored text and
-`check:ci-em-dash-surfaces` scans `.ci/rediacc_ci/**/*.py` for the literal
-character, so spelling it out here would be a NEW finding in a shrink-only
-baseline. The escape produces the identical byte sequence in the emitted TOML
-and leaves no em dash in this file's own text. The differential asserts the
-generated file is byte-identical between the two sides, which is what makes the
-escape safe rather than a quiet edit.
+The twin's heredoc carries one U+2014 in a comment inside the emitted file (twin :123). The house rule bans em dashes in authored text and `check:ci-em-dash-surfaces` scans `.ci/rediacc_ci/**/*.py` for the literal character, so spelling it out here would be a NEW finding in a shrink-only baseline. The escape produces the identical byte sequence in the emitted TOML and leaves no em
+dash in this file's own text. The differential asserts the generated file is byte-identical between the two sides, which is what makes the escape safe rather than a quiet edit.
 
 -----------------------------------------------------------------------------
 `jq` AND `sed` ARE CALLED, NOT REIMPLEMENTED
@@ -85,19 +70,13 @@ twin; changing what a deploy creates is a cutover-box decision.
 -----------------------------------------------------------------------------
 THE UUID IS LOOKED UP TWICE AND THE SECOND LOOKUP IS THE LOAD-BEARING ONE
 -----------------------------------------------------------------------------
-The first `get_d1_uuid` only decides whether to delete. After `d1 create` the
-lookup runs again and an empty answer is fatal, which is the ONE place this
-script refuses on its own account rather than on a child's exit status. Every
-other failure path is a bare `set -e` on an unguarded `npx`.
+The first `get_d1_uuid` only decides whether to delete. After `d1 create` the lookup runs again and an empty answer is fatal, which is the ONE place this script refuses on its own account rather than on a child's exit status. Every other failure path is a bare `set -e` on an unguarded `npx`.
 
 -----------------------------------------------------------------------------
 ONE DIVERGENCE, IN TEXT NOBODY PARSES
 -----------------------------------------------------------------------------
 An argument whose flag is not a valid shell identifier (`--foo.bar=x`) is
-`printf -v`'s own failure inside `common.sh:341`, exit 2, and bash names
-common.sh's path and line. This port prints `deploy-www.sh: printf: ...` with
-the same status, on the same stream, following `deploy/deploy_account.py` and
-`autopilot/sweep_collect.py`.
+`printf -v`'s own failure inside `common.sh:341`, exit 2, and bash names common.sh's path and line. This port prints `deploy-www.sh: printf: ...` with the same status, on the same stream, following `deploy/deploy_account.py` and `autopilot/sweep_collect.py`.
 
 K=5 LEDGER: `.ci/shadow/w7p6-deploy-www.observations.jsonl`.
 """
@@ -203,10 +182,7 @@ migrations_dir = "../../private/account/drizzle"
 def strip_newlines(token: str) -> str:
     """`printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d '\\r\\n'` (twin :32).
 
-    NOT shelled out. `tr -d` deletes BYTES, and in UTF-8 neither 0x0D nor 0x0A
-    can appear inside a multi-byte sequence, so deleting the two characters and
-    deleting the two bytes agree for every input. Same ruling and same wording
-    as `deploy/deploy_account.py`, which carries the identical line.
+    NOT shelled out. `tr -d` deletes BYTES, and in UTF-8 neither 0x0D nor 0x0A can appear inside a multi-byte sequence, so deleting the two characters and deleting the two bytes agree for every input. Same ruling and same wording as `deploy/deploy_account.py`, which carries the identical line.
 
     ONLY THE TOKEN IS CLEANED. `CLOUDFLARE_ACCOUNT_ID` with a stray carriage
     return is passed to children untouched, exactly as in the twin.
@@ -217,9 +193,7 @@ def strip_newlines(token: str) -> str:
 def db_name_for(worker_name: str) -> str:
     """`PR_NUM="${ARG_NAME#pr-}"; DB_NAME="account-db-pr-${PR_NUM}"` (twin :64-65).
 
-    `removeprefix` IS the `#` expansion: it strips only when the prefix is
-    present and leaves everything else alone. That is fact 3 in the module
-    docstring, and it is why `--name staging` is accepted.
+    `removeprefix` IS the `#` expansion: it strips only when the prefix is present and leaves everything else alone. That is fact 3 in the module docstring, and it is why `--name staging` is accepted.
     """
     return DB_NAME_TEMPLATE % worker_name.removeprefix(NAME_PREFIX)
 
@@ -296,13 +270,9 @@ def get_d1_uuid(db_name: str) -> str:
       3. `jq` printed nothing, either because `.uuid` was absent or because jq
          itself failed (`2>/dev/null || true` again).
 
-    Command substitution strips ALL trailing newlines from each stage, so the
-    caller's `[[ -n "$DB_UUID" ]]` sees the empty string in all three cases and
-    a bare UUID otherwise.
+    Command substitution strips ALL trailing newlines from each stage, so the caller's `[[ -n "$DB_UUID" ]]` sees the empty string in all three cases and a bare UUID otherwise.
 
-    `echo "$output" | sed ...` APPENDS A NEWLINE that `output` may not have had.
-    That is reproduced, because a final line without one would otherwise not be
-    a line to `sed`.
+    `echo "$output" | sed ...` APPENDS A NEWLINE that `output` may not have had. That is reproduced, because a final line without one would otherwise not be a line to `sed`.
     """
     info = subprocess.run(
         info_argv(db_name),
@@ -338,9 +308,7 @@ def _run(argv: list[str]) -> int:
     """One child with BOTH streams inherited, as the twin leaves them.
 
     wrangler's own output is the entire visible result of a good run; capturing
-    it would move it out of the workflow log. Python's buffers are flushed first
-    so the `log_step` line that precedes a call cannot land after the call's
-    output.
+    it would move it out of the workflow log. Python's buffers are flushed first so the `log_step` line that precedes a call cannot land after the call's output.
     """
     sys.stdout.flush()
     sys.stderr.flush()

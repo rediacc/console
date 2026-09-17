@@ -1,29 +1,15 @@
 """Differential: `rediacc_ci.release.reprobe_r2_sentinel` against its twin
 `.ci/scripts/release/reprobe-r2-sentinel.sh`.
 
-BOTH SIDES RUN IN THE REAL CHECKOUT, unlike the fixture-tree siblings in this
-directory, and that is safe here for one reason: this script resolves nothing
-relative to the repo root and writes nothing. Its entire observable is one
-`aws s3api head-object` call, and the only thing that has to be faked is `aws`.
-It is faked on a scratch PATH whose shadowing is PROVEN by
-`test_the_fake_aws_shadows_any_real_one` rather than assumed, because the whole
-point of the fake is that no real R2 endpoint is ever contacted.
+BOTH SIDES RUN IN THE REAL CHECKOUT, unlike the fixture-tree siblings in this directory, and that is safe here for one reason: this script resolves nothing relative to the repo root and writes nothing. Its entire observable is one `aws s3api head-object` call, and the only thing that has to be faked is `aws`. It is faked on a scratch PATH whose shadowing is PROVEN by
+`test_the_fake_aws_shadows_any_real_one` rather than assumed, because the whole point of the fake is that no real R2 endpoint is ever contacted.
 
-THE FAKE ECHOES ITS OWN ARGV into a call log, and the call log is compared as
-strictly as the streams are. Two implementations can print identical text while
-probing different buckets, keys or endpoints, and stdout here is one line long,
+THE FAKE ECHOES ITS OWN ARGV into a call log, and the call log is compared as strictly as the streams are. Two implementations can print identical text while probing different buckets, keys or endpoints, and stdout here is one line long,
 so the streams alone are a weak claim. The same log is what the K=5 shadow
-ledger (`.ci/shadow/w7p6-reprobe-r2-sentinel.observations.jsonl`) turns into
-comparable findings: `shadow-gate.ts` classifies `✓ `-led lines as CHATTER
-before any `--finding-re` sees them, and the success path prints nothing else,
-so without a `call: ` line on stdout every row would read VACUOUS_BOTH_EMPTY.
+ledger (`.ci/shadow/w7p6-reprobe-r2-sentinel.observations.jsonl`) turns into comparable findings: `shadow-gate.ts` classifies `✓ `-led lines as CHATTER before any `--finding-re` sees them, and the success path prints nothing else, so without a `call: ` line on stdout every row would read VACUOUS_BOTH_EMPTY.
 
-THE THREE PROBE OUTCOMES ARE ALL DRIVEN, because the twin's two-way `if` folds
-three of them: sealed (`aws` exits 0), genuinely absent (a 404 in stderr) and
-COULD-NOT-TELL (any other failure, e.g. bad credentials). The last one is the
-interesting case and the one place the two sides are not byte-identical, for a
-reason that belongs to neither: see `test_unknown_probe_diverges_only_by_the_
-log_error_marker` below.
+THE THREE PROBE OUTCOMES ARE ALL DRIVEN, because the twin's two-way `if` folds three of them: sealed (`aws` exits 0), genuinely absent (a 404 in stderr) and COULD-NOT-TELL (any other failure, e.g. bad credentials). The last one is the interesting case and the one place the two sides are not byte-identical, for a reason that belongs to neither: see
+`test_unknown_probe_diverges_only_by_the_ log_error_marker` below.
 """
 
 from __future__ import annotations
@@ -216,16 +202,11 @@ def test_unknown_probe_diverges_only_by_the_log_error_marker(tmp_path: pathlib.P
 
     THE ONE BYTE-LEVEL DIVERGENCE IN THIS PAIR, and it belongs to neither
     subject. The twin sources `common.sh`, whose `log_error` prefixes `✗ `;
-    `rediacc_ci.core.release_state_validator._log_error` deliberately drops that
-    marker (its own docstring says so, because it is a colour-conditional
-    decoration the shared library has no stream to decide against). The finding
+    `rediacc_ci.core.release_state_validator._log_error` deliberately drops that marker (its own docstring says so, because it is a colour-conditional decoration the shared library has no stream to decide against). The finding
     TEXT, the indented aws stderr, the exit code and the call log are identical;
-    only the two-byte marker differs, which `shadow-gate.ts` strips as a
-    severity MARKER before comparing anyway.
+    only the two-byte marker differs, which `shadow-gate.ts` strips as a severity MARKER before comparing anyway.
 
-    Asserted explicitly here rather than normalised away silently, so that the
-    day someone gives the library its marker back this case says which half
-    changed.
+    Asserted explicitly here rather than normalised away silently, so that the day someone gives the library its marker back this case says which half changed.
     """
     old, new = run_both(tmp_path, mode="unknown", VERSION="v1.1.2")
     assert old[0] == 1
@@ -270,20 +251,13 @@ def test_missing_aws_refuses_identically(tmp_path: pathlib.Path) -> None:
     from `common.sh:log_error` on one side and `rediacc_ci.log.error` on the
     other and those two DO agree.
 
-    THE REAL PATH, WITH THE STUB DIRECTORY REMOVED, rather than an empty one.
-    An empty PATH does not test `require_cmd`: it kills the twin four lines
+    THE REAL PATH, WITH THE STUB DIRECTORY REMOVED, rather than an empty one. An empty PATH does not test `require_cmd`: it kills the twin four lines
     earlier at `$(dirname "${BASH_SOURCE[0]}")` with `dirname: command not
-    found`, which is what this case asserted on its first run and is a defect in
-    the HARNESS rather than in either subject.
+    found`, which is what this case asserted on its first run and is a defect in the HARNESS rather than in either subject.
 
-    AND WITH `aws` MASKED OUT OF IT. This used to read "`aws` genuinely is not
-    installed here, which the premise below proves, so the real PATH is already
-    the without-aws case" -- true of this tree's machines, false of a GitHub
-    runner, which ships the CLI at /usr/local/bin/aws. On such a host the case
+    AND WITH `aws` MASKED OUT OF IT. This used to read "`aws` genuinely is not installed here, which the premise below proves, so the real PATH is already the without-aws case" -- true of this tree's machines, false of a GitHub runner, which ships the CLI at /usr/local/bin/aws. On such a host the case
     was not exercising the `require_cmd` refusal it documents; it was running a
-    real aws. Measured in CI run 34970782616. `pathmask` removes exactly that
-    one command and keeps everything else the directory provided, so `dirname`
-    and friends still resolve and the harness defect above stays fixed.
+    real aws. Measured in CI run 34970782616. `pathmask` removes exactly that one command and keeps everything else the directory provided, so `dirname` and friends still resolve and the harness defect above stays fixed.
     """
     masked = pathmask.path_without("aws", tmp_path, base=os.environ.get("PATH", "/usr/bin:/bin"))
     pathmask.assert_absent("aws", masked)
@@ -368,8 +342,7 @@ def test_an_empty_variable_refuses_like_an_unset_one(tmp_path: pathlib.Path) -> 
 def test_the_product_list_is_still_one_element_on_both_sides() -> None:
     """`cli` is the only product with `.released` sentinels today.
 
-    Pinned on BOTH sides, so adding a product to one and not the other is a
-    red test rather than a silently half-probed release.
+    Pinned on BOTH sides, so adding a product to one and not the other is a red test rather than a silently half-probed release.
     """
     assert port.PRODUCTS == ("cli",)
     text = TWIN.read_text(encoding="utf-8")

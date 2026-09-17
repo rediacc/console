@@ -1,17 +1,10 @@
 """Differential: `rediacc_ci.pr.sync_epic_block` against its twin
 `.ci/scripts/pr/sync-epic-block.sh`.
 
-A DISPOSABLE LOCAL GIT REPO (never GitHub), on the same strategy as
-`test_review_epic_context.py`: real commits, an `agent/pr/<branch>.md`
-snapshot the twin reads by convention, `git rev-parse --show-toplevel`
-resolving the fixture root rather than this checkout's.
+A DISPOSABLE LOCAL GIT REPO (never GitHub), on the same strategy as `test_review_epic_context.py`: real commits, an `agent/pr/<branch>.md` snapshot the twin reads by convention, `git rev-parse --show-toplevel` resolving the fixture root rather than this checkout's.
 
-A RECORDING FAKE `gh`, written as Python per ruling 7, seam is PATH. The seam
-matters here for a reason `ci-stop-elite`'s fake docker also proved: `gh pr
-edit` is NOT stdout/stderr-redirected by either subject, so a fake that stays
-silent on success would hide a port that swallowed that pass-through --
-`test_gh_edit_stdout_is_not_swallowed` exists to catch exactly that class,
-after it was confirmed present in a first draft of the port (both `stdout`
+A RECORDING FAKE `gh`, written as Python per ruling 7, seam is PATH. The seam matters here for a reason `ci-stop-elite`'s fake docker also proved: `gh pr edit` is NOT stdout/stderr-redirected by either subject, so a fake that stays silent on success would hide a port that swallowed that pass-through -- `test_gh_edit_stdout_is_not_swallowed` exists to catch exactly that class, after
+it was confirmed present in a first draft of the port (both `stdout`
 and `stderr` were passed `capture_output=True` for the edit call, silently
 eating gh's own URL line; fixed to inherit both, matching the twin).
 
@@ -244,8 +237,7 @@ def test_gh_pr_edit_replaces_existing_block_and_url_passes_through(tmp_path: pat
 
 def test_gh_edit_stdout_is_not_swallowed(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY for the pass-through requirement. `gh pr edit`'s own
-    stdout (the PR URL) must appear BEFORE the final checkmark line on both
-    sides -- a port that captured and discarded it would still exit 0 and
+    stdout (the PR URL) must appear BEFORE the final checkmark line on both sides -- a port that captured and discarded it would still exit 0 and
     print the checkmark, passing every other assertion in this file."""
     repo = _repo(tmp_path)
     _snapshot(repo, "0906-1", "- [x] a\n")
@@ -280,11 +272,7 @@ def test_gh_pr_edit_failure_propagates(tmp_path: pathlib.Path) -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY. Flip `line == BEGIN` to `line.startswith(BEGIN)` in the
-    marker-strip helper -- a plausible-looking "more lenient" rewrite that
-    breaks exact-line equality, which the twin's own header calls out
-    explicitly ("exact-line equality on the markers (not a substring
-    match)"). Driven red on a body whose begin marker has trailing content
-    on the same line as real prose containing the marker text, then the
+    marker-strip helper -- a plausible-looking "more lenient" rewrite that breaks exact-line equality, which the twin's own header calls out explicitly ("exact-line equality on the markers (not a substring match)"). Driven red on a body whose begin marker has trailing content on the same line as real prose containing the marker text, then the
     source is restored byte-identical and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

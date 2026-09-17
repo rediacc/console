@@ -1,28 +1,18 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/infra/docker-pull-ghcr.sh`.
 
-Authenticate to GHCR, pull ONE named image, log out again. The twin's header
-sells the logout as "preserves other Docker credentials", which is what
-`docker logout ghcr.io` does that deleting `~/.docker/config.json` would not.
+Authenticate to GHCR, pull ONE named image, log out again. The twin's header sells the logout as "preserves other Docker credentials", which is what `docker logout ghcr.io` does that deleting `~/.docker/config.json` would not.
 
 -----------------------------------------------------------------------------
 THE SHARED GHCR-AUTH LOGIC WITH `ci-pull-images.sh`, AND WHY NO HELPER IS BEING
 INVENTED HERE
 -----------------------------------------------------------------------------
-`.ci/scripts/infra/ci-pull-images.sh` (ported beside this file as
-`rediacc_ci.infra.ci_pull_images`) runs the same login/pull/logout dance. The
-duplication is REAL and it is not shared today: `.ci/scripts/lib/common.sh` is
-772 lines and contains no `ghcr`, no `docker login`, and no registry helper at
-all (grepped 2026-09-13, zero hits). Both twins open-code it.
+`.ci/scripts/infra/ci-pull-images.sh` (ported beside this file as `rediacc_ci.infra.ci_pull_images`) runs the same login/pull/logout dance. The duplication is REAL and it is not shared today: `.ci/scripts/lib/common.sh` is 772 lines and contains no `ghcr`, no `docker login`, and no registry helper at all (grepped 2026-09-13, zero hits). Both twins open-code it.
 
-So this port open-codes it too. Factoring a `core.ghcr` on the Python side only
-would give the port a structure its twin does not have, and the differential
-would then be comparing two differently-shaped programs -- which is how a port
-starts "agreeing" for reasons unrelated to the subject. Naming the duplication
+So this port open-codes it too. Factoring a `core.ghcr` on the Python side only would give the port a structure its twin does not have, and the differential would then be comparing two differently-shaped programs -- which is how a port starts "agreeing" for reasons unrelated to the subject. Naming the duplication
 is the deliverable; removing it is a cutover decision for a later box.
 
-FOUR LIVE DIFFERENCES BETWEEN THE TWO TWINS, none of them cosmetic, all of them
-preserved on both Python sides:
+FOUR LIVE DIFFERENCES BETWEEN THE TWO TWINS, none of them cosmetic, all of them preserved on both Python sides:
 
   1. THIS script calls `require_cmd docker`; `ci-pull-images.sh` does not, so
      the two behave differently on a runner with no docker (a one-line refusal
@@ -39,8 +29,7 @@ preserved on both Python sides:
 THE `:latest` LADDER IS THE INTERESTING PART, AND IT HAS THREE ARMS, NOT TWO
 -----------------------------------------------------------------------------
 Reached only when `CI` is NON-EMPTY (`[[ -n "${CI:-}" ]]`, so `CI=0` and `CI=1`
-both count -- this is NOT `is_ci`, which compares against the literal `true`)
-and the image ends in `:latest`:
+both count -- this is NOT `is_ci`, which compares against the literal `true`) and the image ends in `:latest`:
 
     USE_CI_IMAGES=true   -> three error lines, exit 1. The build produced a
                             CI-tagged image and something asked for latest, so
@@ -53,16 +42,12 @@ and the image ends in `:latest`:
                             arm, because the comparison is against the exact
                             literal.
 
-`*":latest"` is a GLOB SUFFIX, not a tag parse, so `ghcr.io/x/notlatest` does
-not match and `ghcr.io/x/y:notlatest` does not either, while a bare `:latest`
-would. Reproduced with `str.endswith`, which is the same test.
+`*":latest"` is a GLOB SUFFIX, not a tag parse, so `ghcr.io/x/notlatest` does not match and `ghcr.io/x/y:notlatest` does not either, while a bare `:latest` would. Reproduced with `str.endswith`, which is the same test.
 
 -----------------------------------------------------------------------------
 ARGUMENT PARSING IS common.sh's `parse_args`, QUIRKS INCLUDED
 -----------------------------------------------------------------------------
-`rediacc_ci.core.common.parse_args` is the port of that function and is reused
-rather than re-derived, so this file inherits the two behaviours 53 bash callers
-already live with:
+`rediacc_ci.core.common.parse_args` is the port of that function and is reused rather than re-derived, so this file inherits the two behaviours 53 bash callers already live with:
 
   * `--image -x` CONSUMES `-x` as the value, because the lookahead excludes only
     tokens starting with `--` (QUIRK 4 in `core.common`).
@@ -70,19 +55,14 @@ already live with:
     what `[[ "$QUIET" == "true" ]]` wants; `--quiet false` is the string
     `"false"` and drops the flag.
 
-`--quiet` DOES NOT MEAN QUIET HERE, ONLY FOR DOCKER. It adds `--quiet` to
-`docker pull` and changes nothing about this script's own three `log_step`
-lines. Pinned by `test_quiet_only_reaches_docker_and_not_the_log_lines`.
+`--quiet` DOES NOT MEAN QUIET HERE, ONLY FOR DOCKER. It adds `--quiet` to `docker pull` and changes nothing about this script's own three `log_step` lines. Pinned by `test_quiet_only_reaches_docker_and_not_the_log_lines`.
 
 -----------------------------------------------------------------------------
 ONE LATENT PORTABILITY HAZARD IN THE TWIN, REPORTED RATHER THAN REPAIRED
 -----------------------------------------------------------------------------
 `PULL_ARGS=()` followed by `docker pull "${PULL_ARGS[@]}" "$IMAGE"` expands an
 EMPTY array under `set -u`. bash 4.4+ treats that as zero words; bash 4.3 and
-earlier (which is what ships as `/bin/bash` on stock macOS, 3.2) raise
-`PULL_ARGS[@]: unbound variable` and the script dies before pulling anything.
-Every CI runner here is bash 5, so it is latent. Not repaired: the twin stays
-live and a one-for-one port does not get to change the twin's argv.
+earlier (which is what ships as `/bin/bash` on stock macOS, 3.2) raise `PULL_ARGS[@]: unbound variable` and the script dies before pulling anything. Every CI runner here is bash 5, so it is latent. Not repaired: the twin stays live and a one-for-one port does not get to change the twin's argv.
 
 Exit: 0 on a completed pull; 1 for a missing `--image`, a `:latest` violation, a
 missing token, a missing actor, or a missing `docker`; otherwise docker's own
@@ -134,9 +114,7 @@ def resolve(args: dict[str, str], env: dict[str, str]) -> tuple[str, str, str, s
     """Lines 25-28 -> (image, token, actor, quiet).
 
     `${ARG_TOKEN:-${GITHUB_TOKEN:-}}` is a nested COLON default, so an
-    `--token ''` on the command line falls through to the environment rather
-    than winning as an empty value. Exported so the differential can drive the
-    precedence ladder without spawning docker.
+    `--token ''` on the command line falls through to the environment rather than winning as an empty value. Exported so the differential can drive the precedence ladder without spawning docker.
     """
     image = args.get("ARG_IMAGE") or ""
     token = args.get("ARG_TOKEN") or env.get("GITHUB_TOKEN") or ""
@@ -148,9 +126,7 @@ def resolve(args: dict[str, str], env: dict[str, str]) -> tuple[str, str, str, s
 def latest_verdict(image: str, env: dict[str, str]) -> tuple[list[str], list[str]]:
     """Lines 40-55 -> (error lines, warning lines). Both empty means proceed.
 
-    Returned as two lists instead of printed, because this ladder is the half of
-    the script with real branching and no network, and a caller that can ASSERT
-    on it is worth more than one that can only read stderr.
+    Returned as two lists instead of printed, because this ladder is the half of the script with real branching and no network, and a caller that can ASSERT on it is worth more than one that can only read stderr.
     """
     if not env.get("CI"):
         return [], []

@@ -1,13 +1,8 @@
 """Differential: `rediacc_ci.infra.ci_pull_images` against its twin
 `.ci/scripts/infra/ci-pull-images.sh`.
 
-A RECORDING FAKE `docker` ON A PREPENDED PATH, the seam
-`rediacc_ci.tests.test_infra_docker_prepull` established. It is not a convenience here, it is
-the only safe way to run this subject at all: the twin's second line is
-`docker login ghcr.io --password-stdin`, and a case that reached the real binary
-would WRITE A CREDENTIAL into the developer's `~/.docker/config.json`, then pull
-two multi-hundred-megabyte images, then LOG THE MACHINE OUT of ghcr.io. Four
-independent things keep the real one out of reach:
+A RECORDING FAKE `docker` ON A PREPENDED PATH, the seam `rediacc_ci.tests.test_infra_docker_prepull` established. It is not a convenience here, it is the only safe way to run this subject at all: the twin's second line is `docker login ghcr.io --password-stdin`, and a case that reached the real binary would WRITE A CREDENTIAL into the developer's `~/.docker/config.json`, then pull
+two multi-hundred-megabyte images, then LOG THE MACHINE OUT of ghcr.io. Four independent things keep the real one out of reach:
 
   1. the stub directory is FIRST on PATH and `shutil.which("docker", path=...)`
      is asserted to resolve to the fake, in `test_the_fake_docker_is_the_docker`
@@ -22,28 +17,17 @@ independent things keep the real one out of reach:
   4. every case uses a fixture token and the actor `fixture-actor`, so nothing
      that could authenticate anywhere is ever on a command line.
 
-THE CALL LOG IS THE PRIMARY ARTIFACT, and for this script more than most. The
-observable effect is a SEQUENCE of five docker invocations plus a rewrite of
-`~/.docker/config.json`, and two implementations can print byte-identical text
+THE CALL LOG IS THE PRIMARY ARTIFACT, and for this script more than most. The observable effect is a SEQUENCE of five docker invocations plus a rewrite of `~/.docker/config.json`, and two implementations can print byte-identical text
 while making different calls: a port that pulled `renet` from the hard-coded
-`ghcr.io/rediacc` instead of `$DOCKER_REGISTRY`, or that logged out before the
-config scrub, prints exactly what a correct one prints. Every case compares the
-log, and the login case compares the BYTES ON DOCKER'S STDIN as well, because
-`--password-stdin` is where the token goes and `echo` appends a newline.
+`ghcr.io/rediacc` instead of `$DOCKER_REGISTRY`, or that logged out before the config scrub, prints exactly what a correct one prints. Every case compares the log, and the login case compares the BYTES ON DOCKER'S STDIN as well, because `--password-stdin` is where the token goes and `echo` appends a newline.
 
 THE CREDENTIAL-CLEANUP HAZARD IS PINNED, NOT FIXED.
-`test_a_failing_pull_skips_the_credential_cleanup_on_both_sides` asserts that
-BOTH sides walk away from a failed pull with no `docker logout` and no config
+`test_a_failing_pull_skips_the_credential_cleanup_on_both_sides` asserts that BOTH sides walk away from a failed pull with no `docker logout` and no config
 scrub. That is the twin's behaviour and the port reproduces it; the test exists
-so that the day someone adds the missing `trap ... EXIT` they have to change
-this file and read the reason.
+so that the day someone adds the missing `trap ... EXIT` they have to change this file and read the reason.
 
-ONE NAMED DIVERGENCE, and it is the missing-docker case. The twin has no
-`require_cmd docker`, so bash itself prints
-`<script>: line 49: docker: command not found` -- a message naming a line number
-the port does not have. `test_a_missing_docker_is_127_on_both_sides_with_a_named_text_divergence`
-asserts the exit STATUS is 127 on both, that both say `command not found`, and
-that the texts differ only in that prefix.
+ONE NAMED DIVERGENCE, and it is the missing-docker case. The twin has no `require_cmd docker`, so bash itself prints `<script>: line 49: docker: command not found` -- a message naming a line number the port does not have. `test_a_missing_docker_is_127_on_both_sides_with_a_named_text_divergence` asserts the exit STATUS is 127 on both, that both say `command not found`, and that the
+texts differ only in that prefix.
 
 K=5 LEDGER: `.ci/shadow/w7p6-ci-pull-images.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
@@ -104,12 +88,7 @@ CURATED = ("dirname", "uname")
 def _stub_bin(base: pathlib.Path, *, with_docker: bool = True) -> str:
     """A directory holding the fake, prepended to the real PATH.
 
-    PREPENDED rather than curated down to a symlink farm, because both sides
-    genuinely need the real `jq` and the real `grep`: this script scrubs
-    `~/.docker/config.json` with jq and filters `docker images` with grep, and
-    the port RUNS both binaries rather than reimplementing them. The safety
-    property is therefore RESOLUTION ORDER, and it is asserted rather than
-    assumed.
+    PREPENDED rather than curated down to a symlink farm, because both sides genuinely need the real `jq` and the real `grep`: this script scrubs `~/.docker/config.json` with jq and filters `docker images` with grep, and the port RUNS both binaries rather than reimplementing them. The safety property is therefore RESOLUTION ORDER, and it is asserted rather than assumed.
 
     `with_docker=False` IS THE ONE CASE THAT CANNOT PREPEND, because the real
     PATH holds a real docker on any host that can build anything here.
@@ -165,8 +144,7 @@ def _run(subject: pathlib.Path, base: pathlib.Path, extra: dict[str, str]):
 def _sides(name: str, *, seed=None, **extra: str):
     """Both subjects, one fixture shape, two private trees.
 
-    `seed` is called with the case's base directory before the subject runs, so
-    a case can plant a `~/.docker/config.json` for BOTH sides identically.
+    `seed` is called with the case's base directory before the subject runs, so a case can plant a `~/.docker/config.json` for BOTH sides identically.
     """
     results = []
     bases = []
@@ -392,8 +370,7 @@ def test_a_failing_logout_is_swallowed_and_the_run_still_succeeds() -> None:
 def test_the_ghcr_entry_is_scrubbed_out_of_the_docker_config_and_others_survive() -> None:
     """The `jq 'del(.auths["ghcr.io"])'` rewrite, compared as FILE BYTES.
 
-    Both sides run the same jq, so this asserts the port drives it with the same
-    filter and the same move -- and, more importantly, that it does not reach
+    Both sides run the same jq, so this asserts the port drives it with the same filter and the same move -- and, more importantly, that it does not reach
     for `json.dumps`, which would reformat a file a human later reads.
     """
 
@@ -426,8 +403,7 @@ def test_a_config_without_a_ghcr_entry_is_left_valid() -> None:
 
 def test_an_unparseable_config_is_left_exactly_as_it_was() -> None:
     """`jq ... >tmp && mv tmp cfg || rm -f tmp`: a jq that fails must NOT leave
-    the truncated temporary in place of the user's file. The `>` truncates the
-    temporary BEFORE jq runs, so a port that moved unconditionally would replace
+    the truncated temporary in place of the user's file. The `>` truncates the temporary BEFORE jq runs, so a port that moved unconditionally would replace
     a broken config with an empty one."""
 
     def seed(base: pathlib.Path) -> None:
@@ -448,9 +424,7 @@ def test_no_docker_config_at_all_is_not_an_error() -> None:
 
 def test_a_missing_docker_is_127_on_both_sides_with_a_named_text_divergence() -> None:
     """THE ONE NAMED DIVERGENCE. There is no `require_cmd docker` in this twin
-    (unlike `docker-pull-ghcr.sh`), so bash's own `command not found` is the
-    message, and it carries `<script>: line 49: `. Everything that a caller can
-    act on -- the status, the words, the absence of any further work -- is
+    (unlike `docker-pull-ghcr.sh`), so bash's own `command not found` is the message, and it carries `<script>: line 49: `. Everything that a caller can act on -- the status, the words, the absence of any further work -- is
     asserted equal; only the prefix differs."""
     results = []
     with tempfile.TemporaryDirectory() as td:

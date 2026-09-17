@@ -1,10 +1,8 @@
 """Security audit with allowlist support, ported from `.ci/scripts/security/audit.sh`.
 
-PORTED FROM `.ci/scripts/security/audit.sh` (541 lines), which is the LIVE
-registered gate `check:ci-security-audit` and is not touched by this file. Both
+PORTED FROM `.ci/scripts/security/audit.sh` (541 lines), which is the LIVE registered gate `check:ci-security-audit` and is not touched by this file. Both
 implementations exist; `.ci/rediacc_ci/tests/test_security_audit.py` is the
-differential that says they agree on both streams, the exit code and the exact
-argv of every external command, and `.ci/shadow/w7p6-audit.observations.jsonl`
+differential that says they agree on both streams, the exit code and the exact argv of every external command, and `.ci/shadow/w7p6-audit.observations.jsonl`
 is the K=5 ledger. Cutover is a later, driver-only step.
 
 WHAT THE GATE DOES, in the order it does it, because the order is the contract:
@@ -20,20 +18,14 @@ WHAT THE GATE DOES, in the order it does it, because the order is the contract:
   4. pass 3, the strict stale sweep: an allowlisted advisory that now has a fix,
      or has stopped firing altogether, fails unless it carries a BLOCKER.
 
-FOUR LIBRARIES ARE NOT RE-PORTED HERE, because they already are. The twin
-`source`s `emit-advisory.sh`, `blocker-validator.sh`, `release-age.sh` and
+FOUR LIBRARIES ARE NOT RE-PORTED HERE, because they already are. The twin `source`s `emit-advisory.sh`, `blocker-validator.sh`, `release-age.sh` and
 `age-check.sh`; the last three are themselves SHIMS that shell out to
-`rediacc_ci.core.allowlist` / `.release_age` / `.age`, and the first has a port
-at `rediacc_ci.core.advisory`. So this file imports the same four modules the
-twin ultimately reaches, and the differential measures THIS file rather than
-re-measuring them: `test_core_advisory.py`, `test_core_blocker_validator.py`,
-`test_core_release_age.py` and `test_core_age.py` own those.
+`rediacc_ci.core.allowlist` / `.release_age` / `.age`, and the first has a port at `rediacc_ci.core.advisory`. So this file imports the same four modules the twin ultimately reaches, and the differential measures THIS file rather than re-measuring them: `test_core_advisory.py`, `test_core_blocker_validator.py`, `test_core_release_age.py` and `test_core_age.py` own those.
 
 --------------------------------------------------------------------------
 DEFECT 1, MEASURED: AN EMPTY `npm audit` REPORT IS A PASS, NOT A REFUSAL
 --------------------------------------------------------------------------
-`run_audit` validates with `jq empty "$output"`, and `jq empty` on a ZERO-BYTE
-file exits 0, because a stream of no JSON values is a valid stream:
+`run_audit` validates with `jq empty "$output"`, and `jq empty` on a ZERO-BYTE file exits 0, because a stream of no JSON values is a valid stream:
 
     $ : > empty.json && jq empty empty.json ; echo $?
     0
@@ -41,20 +33,13 @@ file exits 0, because a stream of no JSON values is a valid stream:
     [0]                                   # NOTHING on stdout, exit 0
 
 The empty output then flows into `prod_total=$(jq ...)`, which is the empty
-string, and `[[ "" -gt 0 ]]` is bash arithmetic on an empty value, which is 0.
-Measured: the gate prints `No production vulnerabilities`, then `Security audit
-passed`, and exits 0 having audited nothing. Every way `npm audit --json` can
-produce an empty file (a killed child that wrote no bytes before the signal, a
-registry error handled quietly by a future npm, a full disk) therefore reads as
-a clean tree. This port REPRODUCES it, and `test_security_audit.py` pins it as a
-fact about the twin rather than fixing it here: the fix belongs to the twin, and
-a port that refused where the twin passes would fail its own differential.
+string, and `[[ "" -gt 0 ]]` is bash arithmetic on an empty value, which is 0. Measured: the gate prints `No production vulnerabilities`, then `Security audit passed`, and exits 0 having audited nothing. Every way `npm audit --json` can produce an empty file (a killed child that wrote no bytes before the signal, a registry error handled quietly by a future npm, a full disk)
+therefore reads as a clean tree. This port REPRODUCES it, and `test_security_audit.py` pins it as a fact about the twin rather than fixing it here: the fix belongs to the twin, and a port that refused where the twin passes would fail its own differential.
 
 --------------------------------------------------------------------------
 DEFECT 2, MEASURED: A NON-NUMERIC ALLOWLIST ENTRY KILLS THE GATE SILENTLY
 --------------------------------------------------------------------------
-`get_advisory_fix_info` interpolates the entry into `($id | tonumber)`, and
-`tonumber` on a non-numeric string is a RUNTIME error, which is jq exit 5:
+`get_advisory_fix_info` interpolates the entry into `($id | tonumber)`, and `tonumber` on a non-numeric string is a RUNTIME error, which is jq exit 5:
 
     $ jq -c --arg id "GHSA-xxxx" '.a | select(. == ($id|tonumber))' x.json
     jq: error (at x.json:1): string ("GHSA-xxxx") cannot be parsed as a number
@@ -63,53 +48,31 @@ DEFECT 2, MEASURED: A NON-NUMERIC ALLOWLIST ENTRY KILLS THE GATE SILENTLY
 
 The stderr is swallowed by the call's own `2>/dev/null`, and `set -o pipefail`
 then hands the 5 to `info=$(get_advisory_fix_info ...)`. In
-`should_defer_advisory` that is harmless, because the function is only ever
-reached as an `if` condition and `set -e` is suspended there. In
-`check_stale_entries` it is NOT: that function is called plainly at
-`audit.sh:528`, so `set -e` fires and the whole gate dies with exit 5, no
-message on either stream, at the very end of a run that has already done its
-network work. An allowlist keyed by GHSA id rather than by npm advisory source
-id is the obvious way to arrive there, and the allowlist header only asks for
-"advisory source ID (from npm audit --json)" in a comment. Reproduced here, and
-driven on both sides by
-`test_a_non_numeric_allowlist_entry_kills_both_sides_with_exit_5`.
+`should_defer_advisory` that is harmless, because the function is only ever reached as an `if` condition and `set -e` is suspended there. In `check_stale_entries` it is NOT: that function is called plainly at `audit.sh:528`, so `set -e` fires and the whole gate dies with exit 5, no message on either stream, at the very end of a run that has already done its network work. An
+allowlist keyed by GHSA id rather than by npm advisory source id is the obvious way to arrive there, and the allowlist header only asks for "advisory source ID (from npm audit --json)" in a comment. Reproduced here, and driven on both sides by `test_a_non_numeric_allowlist_entry_kills_both_sides_with_exit_5`.
 
 --------------------------------------------------------------------------
 DEFECT 3, MEASURED: TAB IS IFS WHITESPACE, SO AN EMPTY FIELD SHIFTS THE REST
 --------------------------------------------------------------------------
 `load_advisory_details` reads three `@tsv` fields with
 `IFS=$'\\t' read -r ADV_VULN_RANGE[$s] ADV_PATCHED_VERSION[$s] ADV_DESC_PREVIEW[$s]`,
-and TAB IS IFS WHITESPACE in bash, so consecutive tabs collapse into one
-delimiter and leading tabs are stripped:
+and TAB IS IFS WHITESPACE in bash, so consecutive tabs collapse into one delimiter and leading tabs are stripped:
 
     $ IFS=$'\\t' read -r a b c <<< $'\\t1.2.3\\tdesc'; echo "a=[$a] b=[$b] c=[$c]"
     a=[1.2.3] b=[desc] c=[]
 
-A GitHub advisory with an EMPTY `vulnerable_version_range` and a real
-`first_patched_version` -- which is what the Advisory Database returns for
-several npm entries -- therefore renders as
-`Affected: 1.2.3  ->  Patched in: <the description>`. The patched version is
-printed as the affected range and the description as the patched version. Same
-collapse in `build_advisory_map` for an advisory with an empty severity or url.
-`bash_read_fields` below reproduces the splitting rule exactly, so the port
-prints the same wrong line, and `test_an_empty_vulnerable_range_shifts_the_fields`
-pins it.
+A GitHub advisory with an EMPTY `vulnerable_version_range` and a real `first_patched_version` -- which is what the Advisory Database returns for several npm entries -- therefore renders as `Affected: 1.2.3 -> Patched in: <the description>`. The patched version is printed as the affected range and the description as the patched version. Same collapse in `build_advisory_map` for an
+advisory with an empty severity or url. `bash_read_fields` below reproduces the splitting rule exactly, so the port prints the same wrong line, and `test_an_empty_vulnerable_range_shifts_the_fields` pins it.
 
 --------------------------------------------------------------------------
 DEFECT 4: `No production vulnerabilities` PRINTS EVEN WHEN THERE ARE SOME
 --------------------------------------------------------------------------
-`log_success "No production vulnerabilities"` at `audit.sh:462` sits OUTSIDE the
-`if [[ "$prod_total" -gt 0 ]]` block, so a run that has just printed
-`Allowed production vulnerabilities: 10 (see .ci/policy/.audit-prod-allowlist)`
-follows it with a green line claiming there are none. Cosmetic, loud, and
-reproduced verbatim.
+`log_success "No production vulnerabilities"` at `audit.sh:462` sits OUTSIDE the `if [[ "$prod_total" -gt 0 ]]` block, so a run that has just printed `Allowed production vulnerabilities: 10 (see .ci/policy/.audit-prod-allowlist)` follows it with a green line claiming there are none. Cosmetic, loud, and reproduced verbatim.
 
 --------------------------------------------------------------------------
 DEFECT 5: A WRONG-SHAPED (BUT VALID) REPORT IS A PASS WITH A jq ERROR ON stderr
 --------------------------------------------------------------------------
-`build_advisory_map` feeds its loop from a PROCESS SUBSTITUTION,
-`while ... done < <(jq -r '...' "$audit_json")`, whose exit status bash discards.
-A document that parses but has no `.vulnerabilities` object makes that jq exit 5
+`build_advisory_map` feeds its loop from a PROCESS SUBSTITUTION, `while ... done < <(jq -r '...' "$audit_json")`, whose exit status bash discards. A document that parses but has no `.vulnerabilities` object makes that jq exit 5
 with `jq: error (at audit-prod.json:1): null (null) has no keys` on stderr, and
 the run continues with an empty advisory map, `total // 0` supplying 0, and a
 green verdict. Reproduced, message and line number included; see `jq_error`.
@@ -136,20 +99,10 @@ so the fallback writes the BARE GHSA SLUG into `<cache>/<slug>.json`:
 
 SECOND, THAT FILE IS NOT JSON, AND THE READER IS UNGUARDED. `load_advisory_details`
 does `details=$(jq -r '...' "$cache" 2>/dev/null)`; jq answers
-`parse error: Invalid numeric literal` and exits 5, the `2>/dev/null` eats the
-message, and the assignment is a plain command under `set -e` in a function
-called plainly from `build_advisory_map`, which is called plainly from `main`.
-The gate exits 5 having printed nothing about it.
+`parse error: Invalid numeric literal` and exits 5, the `2>/dev/null` eats the message, and the assignment is a plain command under `set -e` in a function called plainly from `build_advisory_map`, which is called plainly from `main`. The gate exits 5 having printed nothing about it.
 
-WHAT THAT COSTS, and it is not hypothetical: `gh api` fails for a 404 on an
-advisory the Advisory Database has not published under that slug, for any
-network fault, and -- exactly the case the gate header's BLOCKER is written
-about -- for the anonymous 60/hr rate limit when GH_TOKEN is absent. Any one
-of those turns the whole security audit into `exit 5`, silently, AFTER the two
-`npm audit` round trips have already run. Measured end to end in the fixture:
-one advisory whose fetch fails, twin stops after
-`-> Auditing all dependencies (allowlist for dev-only)` with empty stderr and
-exit 5.
+WHAT THAT COSTS, and it is not hypothetical: `gh api` fails for a 404 on an advisory the Advisory Database has not published under that slug, for any network fault, and -- exactly the case the gate header's BLOCKER is written about -- for the anonymous 60/hr rate limit when GH_TOKEN is absent. Any one of those turns the whole security audit into `exit 5`, silently, AFTER the two
+`npm audit` round trips have already run. Measured end to end in the fixture: one advisory whose fetch fails, twin stops after `-> Auditing all dependencies (allowlist for dev-only)` with empty stderr and exit 5.
 
 REPRODUCED ON BOTH COUNTS, and it is the single most uncomfortable thing in this
 file: `_fetch_one` writes the slug rather than `{}`, and `load_advisory_details`
@@ -172,21 +125,11 @@ WHAT DIVERGES, DELIBERATELY, AND WHERE THE DIFFERENTIAL SAYS SO
     so does this file. The two paths differ by construction and the differential
     normalises exactly that substring, nothing else.
 
-WHAT IS SHELLED OUT AND WHAT IS RE-IMPLEMENTED, since the line is not obvious:
-`npm`, `gh`, `sleep` and `date` are SPAWNED, because the twin spawns them and
-three of the four are the thing under test. `jq` and `grep` are RE-IMPLEMENTED
-in Python, because they are pure text transforms with no side effects, and a
-port that shelled out to them would be measuring jq rather than this gate.
-`test_security_audit.py` pins both re-implementations against the REAL tools on
-this host, so a jq or ugrep upgrade that changes an answer goes red here rather
-than silently at a call site.
+WHAT IS SHELLED OUT AND WHAT IS RE-IMPLEMENTED, since the line is not obvious: `npm`, `gh`, `sleep` and `date` are SPAWNED, because the twin spawns them and three of the four are the thing under test. `jq` and `grep` are RE-IMPLEMENTED in Python, because they are pure text transforms with no side effects, and a port that shelled out to them would be measuring jq rather than this
+gate. `test_security_audit.py` pins both re-implementations against the REAL tools on this host, so a jq or ugrep upgrade that changes an answer goes red here rather than silently at a call site.
 
-`sleep` LOOKS ODD IN PYTHON AND IS THE RIGHT CALL. `time.sleep(10)` would be the
-obvious spelling and would hide the retry ladder from every observer: the twin's
-`sleep` is `/usr/bin/sleep`, so a recording fake on a scratch PATH sees it, and
-the differential can therefore assert that the port sleeps exactly as many times
-as the twin does, in the same places, without waiting 20 real seconds to find
-out.
+`sleep` LOOKS ODD IN PYTHON AND IS THE RIGHT CALL. `time.sleep(10)` would be the obvious spelling and would hide the retry ladder from every observer: the twin's `sleep` is `/usr/bin/sleep`, so a recording fake on a scratch PATH sees it, and the differential can therefore assert that the port sleeps exactly as many times as the twin does, in the same places, without waiting 20 real
+seconds to find out.
 """
 
 from __future__ import annotations
@@ -249,13 +192,9 @@ DATE_BIN = "date"
 class Die(Exception):  # noqa: N818 -- not an Error; it is bash's `set -e`, named for it
     """A `set -e` death: a plain command failed and bash exited with its status.
 
-    NOT an error type of this gate. It is the twin's control flow made explicit,
-    because Python has no `set -e` and the alternative -- returning a status from
-    every helper and checking it -- is how a port loses one of them. `main`
-    catches it and returns the status, which is what bash would have exited with.
+    NOT an error type of this gate. It is the twin's control flow made explicit, because Python has no `set -e` and the alternative -- returning a status from every helper and checking it -- is how a port loses one of them. `main` catches it and returns the status, which is what bash would have exited with.
 
-    Every raise site names the twin's line number, so a reader can check the
-    claim that the failure is unguarded there.
+    Every raise site names the twin's line number, so a reader can check the claim that the failure is unguarded there.
     """
 
     def __init__(self, status: int) -> None:
@@ -270,8 +209,7 @@ def _flush() -> None:
     """stdout and stderr before every spawn that inherits them.
 
     Bash writes each `echo` with a syscall; Python buffers a pipe. Without this
-    the child's output overtakes the `log_info` line that announced it, and the
-    differential reports a reordering that exists only in the buffering.
+    the child's output overtakes the `log_info` line that announced it, and the differential reports a reordering that exists only in the buffering.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -289,15 +227,9 @@ def spawn(
 ) -> subprocess.CompletedProcess:
     """One external command, with bash's missing-binary behaviour.
 
-    Returns a CompletedProcess whose returncode is 127 (or 126) when the binary
-    could not be executed, which is what the shell would have handed back.
+    Returns a CompletedProcess whose returncode is 127 (or 126) when the binary could not be executed, which is what the shell would have handed back.
 
-    `err_to_stdout` is for the ONE call site the twin writes as
-    `npm audit signatures 2>&1`: the redirection is applied in the forked child
-    BEFORE the failed exec, so bash's own `command not found` follows the
-    redirection onto stdout. Printing it to stderr instead would be a
-    one-line-on-the-wrong-stream difference of exactly the kind
-    `differential.py` refuses to merge away.
+    `err_to_stdout` is for the ONE call site the twin writes as `npm audit signatures 2>&1`: the redirection is applied in the forked child BEFORE the failed exec, so bash's own `command not found` follows the redirection onto stdout. Printing it to stderr instead would be a one-line-on-the-wrong-stream difference of exactly the kind `differential.py` refuses to merge away.
     """
     _flush()
     try:
@@ -315,12 +247,8 @@ def spawn(
 def capture(argv: list[str], *, line: int | None, quiet_err: bool) -> tuple[str, int]:
     """`$(cmd)`: stdout with EVERY trailing newline stripped, plus the status.
 
-    `quiet_err` is the call site's `2>/dev/null`, and it also decides whether
-    bash's own `command not found` is visible: bash writes that diagnostic in
-    the forked child AFTER the redirections are applied, so the call site's own
-    `2>/dev/null` eats it. Reproducing that silence matters more than the
-    message, because a port that starts printing where the twin was quiet fails
-    the differential on a line nobody asked for.
+    `quiet_err` is the call site's `2>/dev/null`, and it also decides whether bash's own `command not found` is visible: bash writes that diagnostic in the forked child AFTER the redirections are applied, so the call site's own `2>/dev/null` eats it. Reproducing that silence matters more than the message, because a port that starts printing where the twin was quiet fails the
+    differential on a line nobody asked for.
     """
     _flush()
     try:
@@ -345,15 +273,12 @@ def capture(argv: list[str], *, line: int | None, quiet_err: bool) -> tuple[str,
 def bash_read_fields(line: str, count: int) -> list[str]:
     """`IFS=$'\\t' read -r a b c ...` over one line. See DEFECT 3.
 
-    TAB IS IFS WHITESPACE, so this is NOT `line.split("\\t")`: leading and
-    trailing tabs are stripped, runs of tabs delimit ONCE, and the last variable
-    absorbs the remainder including any tabs inside it. Measured:
+    TAB IS IFS WHITESPACE, so this is NOT `line.split("\\t")`: leading and trailing tabs are stripped, runs of tabs delimit ONCE, and the last variable absorbs the remainder including any tabs inside it. Measured:
 
         $ IFS=$'\\t' read -r a b c <<< $'\\t1.2.3\\tdesc'
         a=[1.2.3] b=[desc] c=[]
 
-    Missing fields are the empty string, which is what an unset `read` variable
-    holds.
+    Missing fields are the empty string, which is what an unset `read` variable holds.
     """
     body = line.strip("\t")
     fields = [part for part in body.split("\t") if part != ""] if body else []
@@ -387,8 +312,7 @@ def tsv(fields: list[object]) -> str:
 def jq_tostring(value: object) -> str:
     """How jq -r renders one value: strings raw, everything else as JSON.
 
-    Integral floats print without a fractional part, which is jq's number
-    formatting and NOT Python's: `json.dumps(10.0)` is `10.0` and jq prints `10`.
+    Integral floats print without a fractional part, which is jq's number formatting and NOT Python's: `json.dumps(10.0)` is `10.0` and jq prints `10`.
     """
     if isinstance(value, str):
         return value
@@ -404,10 +328,7 @@ def jq_tostring(value: object) -> str:
 def jq_print(value: object) -> str:
     """How jq WITHOUT `-r` renders one value: a string keeps its quotes.
 
-    Used for `jq '.metadata.vulnerabilities.total // 0'`, which the twin does not
-    pass `-r`. Unreachable for a well-formed report, where the field is a number,
-    and kept distinct anyway because `"10"` and `10` are different bytes in the
-    `Allowed production vulnerabilities:` line.
+    Used for `jq '.metadata.vulnerabilities.total // 0'`, which the twin does not pass `-r`. Unreachable for a well-formed report, where the field is a number, and kept distinct anyway because `"10"` and `10` are different bytes in the `Allowed production vulnerabilities:` line.
     """
     if isinstance(value, str):
         return json.dumps(value, ensure_ascii=False)
@@ -417,9 +338,7 @@ def jq_print(value: object) -> str:
 class JqError(Exception):
     """A jq RUNTIME error: the message jq writes and the exit 5 it returns.
 
-    Carries the rendered message WITHOUT the `jq: error (at file:line): ` prefix,
-    because the prefix needs the document's end line and that is known only where
-    the document was read.
+    Carries the rendered message WITHOUT the `jq: error (at file:line): ` prefix, because the prefix needs the document's end line and that is known only where the document was read.
     """
 
 
@@ -471,8 +390,7 @@ def jq_index0(value: object) -> object:
 
     Split out from `jq_index` because an OBJECT is the interesting case: `.[0]`
     on `{"a":1}` is `Cannot index object with number`, not the object's first
-    value. A port that reused the iterator here would silently succeed where jq
-    fails, and the caller silences jq's stderr, so nobody would ever see it.
+    value. A port that reused the iterator here would silently succeed where jq fails, and the caller silences jq's stderr, so nobody would ever see it.
     """
     if value is None:
         return None
@@ -511,9 +429,7 @@ def jq_sort_key(value: object) -> tuple:
 def jq_error(path: str, end_line: int, message: str) -> str:
     """`jq: error (at <file>:<line>): <message>`.
 
-    THE LINE IS WHERE THE DOCUMENT ENDS, not where the fault is. Measured against
-    jq 1.8.1 over a five-line object: the error names line 5. That is why
-    `documents()` returns the end line with every value.
+    THE LINE IS WHERE THE DOCUMENT ENDS, not where the fault is. Measured against jq 1.8.1 over a five-line object: the error names line 5. That is why `documents()` returns the end line with every value.
     """
     return "jq: error (at %s:%d): %s" % (path, end_line, message)
 
@@ -521,14 +437,9 @@ def jq_error(path: str, end_line: int, message: str) -> str:
 def documents(path: str) -> list[tuple[object, int]]:
     """Every JSON value in a file, with the line each one ENDS on.
 
-    jq reads a STREAM of values, not one document, which is why `jq empty` on a
-    zero-byte file succeeds (DEFECT 1) and why a file holding two objects makes
-    every later filter print two lines. Raises ValueError for text jq would
-    reject, which is the only distinction `jq empty`'s caller needs.
+    jq reads a STREAM of values, not one document, which is why `jq empty` on a zero-byte file succeeds (DEFECT 1) and why a file holding two objects makes every later filter print two lines. Raises ValueError for text jq would reject, which is the only distinction `jq empty`'s caller needs.
 
-    BOUNDARY, STATED: Python's parser accepts `NaN` and `Infinity`, which jq
-    rejects. No `npm audit --json` output contains either, and no test claims
-    agreement there.
+    BOUNDARY, STATED: Python's parser accepts `NaN` and `Infinity`, which jq rejects. No `npm audit --json` output contains either, and no test claims agreement there.
     """
     text = pathlib.Path(path).read_text(encoding="utf-8")
     decoder = json.JSONDecoder()
@@ -547,8 +458,7 @@ def documents(path: str) -> list[tuple[object, int]]:
 def jq_empty(path: str) -> bool:
     """`jq empty "$file"`. True when jq would exit 0.
 
-    AN EMPTY FILE IS TRUE. That is DEFECT 1, and it is reproduced rather than
-    tightened: this function answers what jq answers.
+    AN EMPTY FILE IS TRUE. That is DEFECT 1, and it is reproduced rather than tightened: this function answers what jq answers.
     """
     try:
         documents(path)
@@ -579,11 +489,7 @@ def program_advisories(document: object) -> list[str]:
 def program_advisory_map(document: object) -> list[str]:
     """The `unique_by(.source) | @tsv` program at audit.sh:100-104.
 
-    `unique_by` is `[group_by(f)[] | .[0]]`: sorted by the key, one row per
-    distinct key, and the row kept is the FIRST in input order among equals --
-    which is why two `via` objects sharing a source (npm emits exactly that for
-    a vulnerability reached through two packages) contribute one row and it is
-    the earlier one.
+    `unique_by` is `[group_by(f)[] | .[0]]`: sorted by the key, one row per distinct key, and the row kept is the FIRST in input order among equals -- which is why two `via` objects sharing a source (npm emits exactly that for a vulnerability reached through two packages) contribute one row and it is the earlier one.
     """
     rows: list[dict] = []
     for _key, entry in jq_to_entries(jq_index(document, "vulnerabilities")):
@@ -611,9 +517,7 @@ def program_advisory_map(document: object) -> list[str]:
 def program_details(document: object) -> str:
     """The GHSA-detail program at audit.sh:144-149, as one `@tsv` row.
 
-    The three `gsub`s are jq REGEX substitutions, so `\\n+` collapses a run of
-    newlines to ONE space and `\\*\\*|##|\\`` deletes the three markdown noises.
-    `.[0:240]` slices CODEPOINTS, which Python string slicing also does.
+    The three `gsub`s are jq REGEX substitutions, so `\\n+` collapses a run of newlines to ONE space and `\\*\\*|##|\\`` deletes the three markdown noises. `.[0:240]` slices CODEPOINTS, which Python string slicing also does.
     """
     first = jq_index0(jq_index(document, "vulnerabilities"))
     vuln_range = jq_alt(jq_index(first, "vulnerable_version_range"), "")
@@ -630,15 +534,10 @@ def program_details(document: object) -> str:
 def program_fix_info(document: object, advisory_id: str) -> list[str]:
     """`get_advisory_fix_info`'s program, as the lines jq -c would print.
 
-    `($id | tonumber)` is the one place a data-driven value reaches jq's
-    arithmetic, and it is DEFECT 2: a non-numeric id raises here exactly as jq
-    raises there.
+    `($id | tonumber)` is the one place a data-driven value reaches jq's arithmetic, and it is DEFECT 2: a non-numeric id raises here exactly as jq raises there.
 
     `select(.value.via[] | objects | select(.source == $n))` emits the entry ONCE
-    PER MATCHING via object, because `select`'s condition is a stream and `if`
-    iterates it. An entry whose via list matches twice therefore prints twice,
-    and `head -1` keeps the first -- so the duplicate is invisible unless the two
-    rows differ, which they cannot, being the same entry.
+    PER MATCHING via object, because `select`'s condition is a stream and `if` iterates it. An entry whose via list matches twice therefore prints twice, and `head -1` keeps the first -- so the duplicate is invisible unless the two rows differ, which they cannot, being the same entry.
     """
     try:
         number = float(advisory_id) if advisory_id.strip() else None
@@ -687,9 +586,7 @@ def _jq_equal(value: object, number: float) -> bool:
 class Audit:
     """One run. The twin's shell globals, scoped to an object.
 
-    ONE INSTANCE PER PROCESS in production, exactly as the twin has one shell,
-    and a fresh one per test -- which is the capability bash cannot offer and the
-    reason a second case cannot inherit the first's advisory map.
+    ONE INSTANCE PER PROCESS in production, exactly as the twin has one shell, and a fresh one per test -- which is the capability bash cannot offer and the reason a second case cannot inherit the first's advisory map.
     """
 
     def __init__(self) -> None:
@@ -718,10 +615,7 @@ class Audit:
     def run_audit(self, output: str, *args: str) -> None:
         """`run_audit <output> [npm args...]` (audit.sh:57-77).
 
-        The redirection happens BEFORE the exec, so a missing or exploding npm
-        still leaves a zero-byte file behind -- which `jq empty` then accepts.
-        That is DEFECT 1's delivery mechanism and it is reproduced by opening the
-        file for writing before spawning.
+        The redirection happens BEFORE the exec, so a missing or exploding npm still leaves a zero-byte file behind -- which `jq empty` then accepts. That is DEFECT 1's delivery mechanism and it is reproduced by opening the file for writing before spawning.
         """
         with open(output, "w", encoding="utf-8") as handle:
             proc = spawn(["npm", "audit", "--json", *args], line=61, stdout=handle)
@@ -747,22 +641,13 @@ class Audit:
     def get_advisories(self, path: str) -> list[str]:
         """`get_advisories` (audit.sh:80-82). Empty on ANY failure.
 
-        `2>/dev/null || echo ""` means a jq runtime error produces one empty line
-        on stdout, and the caller's `for advisory in $list` then iterates zero
-        times -- indistinguishable from the empty-list success. Returning `[]`
-        here is that same nothing, without inventing a blank word.
+        `2>/dev/null || echo ""` means a jq runtime error produces one empty line on stdout, and the caller's `for advisory in $list` then iterates zero times -- indistinguishable from the empty-list success. Returning `[]` here is that same nothing, without inventing a blank word.
 
-        THE RESULT IS WORD-SPLIT, not line-split, because both call sites are
-        `for advisory in $prod_advisories_list` with the variable UNQUOTED. For
+        THE RESULT IS WORD-SPLIT, not line-split, because both call sites are `for advisory in $prod_advisories_list` with the variable UNQUOTED. For
         the numeric ids npm emits the two are the same list; for a `.source`
-        that was a string with a space in it they are not, and bash would see
-        two advisories where the file has one. Reproduced rather than tidied.
+        that was a string with a space in it they are not, and bash would see two advisories where the file has one. Reproduced rather than tidied.
 
-        BOUNDARY, STATED: a MULTI-DOCUMENT report where one document errors and
-        another does not. jq prints the good document's lines and still exits 0
-        (measured on jq 1.8.1), while this returns nothing for the whole file.
-        `npm audit --json` writes exactly one document, and no test claims
-        agreement there.
+        BOUNDARY, STATED: a MULTI-DOCUMENT report where one document errors and another does not. jq prints the good document's lines and still exits 0 (measured on jq 1.8.1), while this returns nothing for the whole file. `npm audit --json` writes exactly one document, and no test claims agreement there.
         """
         try:
             out: list[str] = []
@@ -775,9 +660,7 @@ class Audit:
     def build_advisory_map(self, audit_json: str) -> None:
         """`build_advisory_map` (audit.sh:87-107).
 
-        The jq here is NOT silenced and its failure is NOT fatal: it feeds the
-        loop through a process substitution, so bash discards the status and the
-        run continues with whatever the loop managed to read. See DEFECT 5.
+        The jq here is NOT silenced and its failure is NOT fatal: it feeds the loop through a process substitution, so bash discards the status and the run continues with whatever the loop managed to read. See DEFECT 5.
         """
         lines: list[str] = []
         try:
@@ -812,12 +695,8 @@ class Audit:
     def fetch_advisory_details_parallel(self) -> None:
         """`fetch_advisory_details_parallel` (audit.sh:112-134).
 
-        THE QUEUE IS NOT DEDUPLICATED, and that is the twin: the `-f` cache test
-        runs over every value BEFORE any fetch starts, so two advisory ids sharing
-        one GHSA (npm emits that whenever the same CVE is reached through two
-        packages) queue the SAME slug twice and two `gh api` calls race to write
-        the same file. Harmless, because both write the same bytes, and
-        reproduced because the call log is part of what the differential compares.
+        THE QUEUE IS NOT DEDUPLICATED, and that is the twin: the `-f` cache test runs over every value BEFORE any fetch starts, so two advisory ids sharing one GHSA (npm emits that whenever the same CVE is reached through two packages) queue the SAME slug twice and two `gh api` calls race to write the same file. Harmless, because both write the same bytes, and reproduced because
+        the call log is part of what the differential compares.
         """
         os.makedirs(ADVISORY_CACHE_DIR, exist_ok=True)
         queue = []
@@ -840,10 +719,7 @@ class Audit:
     def _fetch_one(self, slug: str) -> None:
         """One `xargs` worker: `gh api /advisories/<slug>`, `{}` on any failure.
 
-        BOTH STREAMS ARE REDIRECTED at the twin's call site, so a missing `gh`
-        binary is silent and lands in the same fallback as an HTTP 404 or a rate
-        limit. That is the shape the gate header's BLOCKER is about: without
-        GH_TOKEN the anonymous 60/hr limit turns most of these into the fallback.
+        BOTH STREAMS ARE REDIRECTED at the twin's call site, so a missing `gh` binary is silent and lands in the same fallback as an HTTP 404 or a rate limit. That is the shape the gate header's BLOCKER is about: without GH_TOKEN the anonymous 60/hr limit turns most of these into the fallback.
 
         THE FALLBACK WRITES THE SLUG, NOT `{}`, AND THAT IS NOT A TYPO HERE. It
         is DEFECT 6: `xargs -I {}` rewrites the `{}` inside the worker script's
@@ -870,9 +746,7 @@ class Audit:
     def load_advisory_details(self) -> None:
         """`load_advisory_details` (audit.sh:137-153).
 
-        Reads three fields out of one `@tsv` row with the collapsing `read` of
-        DEFECT 3, so an advisory whose vulnerable range is empty prints its
-        patched version as the range.
+        Reads three fields out of one `@tsv` row with the collapsing `read` of DEFECT 3, so an advisory whose vulnerable range is empty prints its patched version as the range.
         """
         for source, slug in list(self.ghsa.items()):
             if not slug:
@@ -898,9 +772,7 @@ class Audit:
     def get_advisory_fix_info(self, advisory_id: str, audit_json: str) -> dict | None:
         """`get_advisory_fix_info` (audit.sh:183-205). None when jq printed nothing.
 
-        RAISES `Die(5)` FOR A NON-NUMERIC ID, which is DEFECT 2: jq exits 5,
-        `pipefail` promotes it through `head -1`, and the caller decides whether
-        `set -e` is live. `should_defer_advisory` catches it (the twin is inside
+        RAISES `Die(5)` FOR A NON-NUMERIC ID, which is DEFECT 2: jq exits 5, `pipefail` promotes it through `head -1`, and the caller decides whether `set -e` is live. `should_defer_advisory` catches it (the twin is inside
         an `if`); `check_stale_entries` does not (the twin is not).
         """
         try:
@@ -921,9 +793,7 @@ class Audit:
 
         `grep -qE "^${pkg//./\\.}([[:space:]]|$)"`: dots are escaped and NOTHING
         else is, so a package name carrying a regex metacharacter is matched as a
-        pattern on both sides. `[[:space:]]` is the POSIX class, which for a
-        one-line-at-a-time grep means space or tab (the newline is not part of
-        the line).
+        pattern on both sides. `[[:space:]]` is the POSIX class, which for a one-line-at-a-time grep means space or tab (the newline is not part of the line).
         """
         if not pkg or not os.path.isfile(DEPS_BLOCKLIST):
             return False
@@ -937,9 +807,7 @@ class Audit:
     def version_publish_epoch(self, pkg: str, version: str) -> str:
         """`version_publish_epoch` (audit.sh:229-239). Empty string on failure.
 
-        An empty `version` asks for `.modified`, the package's most recent
-        publish, which the twin uses as a proxy for the in-range patch behind a
-        `fixAvailable: true`.
+        An empty `version` asks for `.modified`, the package's most recent publish, which the twin uses as a proxy for the in-range patch behind a `fixAvailable: true`.
         """
         times, status = capture(["npm", "view", pkg, "time", "--json"], line=None, quiet_err=True)
         if status != 0:
@@ -962,11 +830,7 @@ class Audit:
     def should_defer_advisory(self, advisory_id: str, audit_json: str) -> bool:
         """`should_defer_advisory` (audit.sh:243-276). Sets `defer_reason`.
 
-        `set -e` IS SUSPENDED FOR THIS WHOLE FUNCTION in the twin, because both
-        call sites are `if should_defer_advisory ...`. The `Die` that
-        `get_advisory_fix_info` raises for a non-numeric id is therefore caught
-        here and turned back into "no info", which is what bash does with the
-        failed assignment.
+        `set -e` IS SUSPENDED FOR THIS WHOLE FUNCTION in the twin, because both call sites are `if should_defer_advisory ...`. The `Die` that `get_advisory_fix_info` raises for a non-numeric id is therefore caught here and turned back into "no info", which is what bash does with the failed assignment.
         """
         self.defer_reason = ""
         try:
@@ -1015,11 +879,7 @@ class Audit:
     ) -> None:
         """`check_stale_entries` (audit.sh:281-331).
 
-        THE ZERO-VULNERABILITY GUARD IS THE INTERESTING PART. With no
-        vulnerabilities in the report the function says NOTHING about a missing
-        advisory, because a genuinely clean tree and an audit that returned
-        nothing useful look identical from here -- and condemning every entry at
-        once on the second is how a whole allowlist gets deleted for an outage.
+        THE ZERO-VULNERABILITY GUARD IS THE INTERESTING PART. With no vulnerabilities in the report the function says NOTHING about a missing advisory, because a genuinely clean tree and an audit that returned nothing useful look identical from here -- and condemning every entry at once on the second is how a whole allowlist gets deleted for an outage.
         """
         total_vulns = "0"
         try:
@@ -1109,9 +969,7 @@ class Audit:
     def clean_tuf_cache(self) -> None:
         """`clean_tuf_cache` (audit.sh:366-372).
 
-        Some CI images ship a stale Sigstore TUF cache without the newer npm
-        registry signing keys, and the only cure is deleting it before
-        verification.
+        Some CI images ship a stale Sigstore TUF cache without the newer npm registry signing keys, and the only cure is deleting it before verification.
         """
         npm_cache, status = capture(["npm", "config", "get", "cache"], line=None, quiet_err=True)
         if status != 0:
@@ -1324,10 +1182,7 @@ class Audit:
     def _metadata(self, path: str, field: str) -> str:
         """`jq '.metadata.vulnerabilities.<field> // 0' <path>` (audit.sh:418-420).
 
-        NOT SILENCED and NOT GUARDED in the twin, so a jq runtime error prints and
-        kills the run through `set -e`. Multiple documents print multiple lines,
-        which is why this returns the joined TEXT rather than a number: the twin
-        keeps a string too, and hands it to bash arithmetic later.
+        NOT SILENCED and NOT GUARDED in the twin, so a jq runtime error prints and kills the run through `set -e`. Multiple documents print multiple lines, which is why this returns the joined TEXT rather than a number: the twin keeps a string too, and hands it to bash arithmetic later.
         """
         out = []
         try:
@@ -1366,9 +1221,7 @@ class Audit:
 def describe_fix(fix_type: str, is_major: str, fix_version: str, fix_value: str) -> str:
     """`describe_fix` (audit.sh:156-180). Pure, so the tests drive it directly.
 
-    The four arms are the four shapes `fixAvailable` takes in `npm audit --json`:
-    absent (null), a boolean, an object naming the upgrade, and -- the arm that
-    exists because npm has changed this field's type before -- anything else.
+    The four arms are the four shapes `fixAvailable` takes in `npm audit --json`: absent (null), a boolean, an object naming the upgrade, and -- the arm that exists because npm has changed this field's type before -- anything else.
     """
     if fix_type == "null":
         return "no fix information in npm audit output"
@@ -1391,13 +1244,9 @@ def _field(info: dict, name: str, *, default: str = "", empty: bool = False) -> 
 
     `// empty` yields the empty string in a command substitution; `// "null"`
     yields the four characters `null`; a bare `.pkg` yields `null` on a missing
-    key, because `jq -r` renders null as the word. The default is therefore
-    spelled at every call site rather than guessed here.
+    key, because `jq -r` renders null as the word. The default is therefore spelled at every call site rather than guessed here.
 
-    ONLY `null` AND `false` ARE ABSENT, which is jq's rule and not Python's: an
-    EMPTY STRING is truthy in jq, so `"" // "unknown"` is the empty string. A
-    port that used `or` here would print `unknown` for a package literally named
-    the empty string, which is unreachable but is also not what the twin does.
+    ONLY `null` AND `false` ARE ABSENT, which is jq's rule and not Python's: an EMPTY STRING is truthy in jq, so `"" // "unknown"` is the empty string. A port that used `or` here would print `unknown` for a package literally named the empty string, which is unreachable but is also not what the twin does.
     """
     value = info.get(name)
     if value is None or value is False:
@@ -1417,13 +1266,9 @@ def _jq_length(value: object) -> int:
 def _arith_gt(text: str, floor: int) -> bool:
     """`[[ "$text" -gt <floor> ]]`, for the values jq can actually produce.
 
-    THE EMPTY STRING IS ZERO. That is not a convenience: it is the mechanism of
-    DEFECT 1, where an empty audit report makes `prod_total` empty and the gate
-    concludes there are no vulnerabilities.
+    THE EMPTY STRING IS ZERO. That is not a convenience: it is the mechanism of DEFECT 1, where an empty audit report makes `prod_total` empty and the gate concludes there are no vulnerabilities.
 
-    BOUNDARY, STATED: bash would evaluate a non-numeric value as an ARITHMETIC
-    EXPRESSION (a bare word is a variable name, `0x10` is 16). No jq output
-    reaching this function can be either, and no test claims agreement there.
+    BOUNDARY, STATED: bash would evaluate a non-numeric value as an ARITHMETIC EXPRESSION (a bare word is a variable name, `0x10` is 16). No jq output reaching this function can be either, and no test claims agreement there.
     """
     stripped = text.strip()
     if not stripped:

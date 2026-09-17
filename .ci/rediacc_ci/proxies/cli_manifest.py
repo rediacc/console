@@ -1,23 +1,11 @@
 """Port of `.ci/scripts/test/proxies/proxy-cli-manifest.sh`.
 
-Local proxy for `.ci/scripts/build/generate-cli-manifest.sh`, one of the
-release-path CI scripts the bash wave found with no test of any kind. The
-manifest it writes is what `rdc update` fetches to decide which binary to
-download and what sha256 to verify it against, so this proxy runs the REAL
-generator against a synthetic dist directory (six fake binaries with six
-`.sha256` sidecars, plus one deliberately malformed sidecar) in a throwaway
-tmpdir. Nothing is written inside the checkout. The subject itself stays bash
-and unported -- only the proxy that drives it is ported here.
+Local proxy for `.ci/scripts/build/generate-cli-manifest.sh`, one of the release-path CI scripts the bash wave found with no test of any kind. The manifest it writes is what `rdc update` fetches to decide which binary to download and what sha256 to verify it against, so this proxy runs the REAL generator against a synthetic dist directory (six fake binaries with six `.sha256`
+sidecars, plus one deliberately malformed sidecar) in a throwaway tmpdir. Nothing is written inside the checkout. The subject itself stays bash and unported -- only the proxy that drives it is ported here.
 
-BOTH DIRECTIONS, preserved from the twin: the five well-formed platform/arch
-keys must be produced with the right URL and hash, a missing `--version` and
-an unknown flag must both be refused, and the malformed sidecar's entry must
-be OMITTED rather than emitted with a bad hash.
+BOTH DIRECTIONS, preserved from the twin: the five well-formed platform/arch keys must be produced with the right URL and hash, a missing `--version` and an unknown flag must both be refused, and the malformed sidecar's entry must be OMITTED rather than emitted with a bad hash.
 
-THE ONE HAZARD IS PRINTED, NOT RULED ON, exactly as in the bash twin: an input
-directory with no `.sha256` files makes the subject exit 0 with an empty
-`binaries` manifest, and fixing that means editing the subject, which this
-file does not own.
+THE ONE HAZARD IS PRINTED, NOT RULED ON, exactly as in the bash twin: an input directory with no `.sha256` files makes the subject exit 0 with an empty `binaries` manifest, and fixing that means editing the subject, which this file does not own.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-cli-manifest.observations.jsonl`.
 """

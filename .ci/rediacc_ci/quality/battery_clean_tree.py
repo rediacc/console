@@ -5,37 +5,24 @@ deleted; see `rediacc_ci.quality.__init__` for why both copies live and for the
 phase-5 decision that retires the twin.
 
 -----------------------------------------------------------------------------
-RETARGETED 2026-09-09 (W7P3-BAT), FROM `.ci/scripts/test/run-all.sh` ONTO
-`.ci/rediacc_ci/battery.py`.
+RETARGETED 2026-09-09 (W7P3-BAT), FROM `.ci/scripts/test/run-all.sh` ONTO `.ci/rediacc_ci/battery.py`.
 -----------------------------------------------------------------------------
 
-THE SUBJECT MOVED, SO THE GATE MOVED WITH IT. `battery.py` replaces
-`run-all.sh` as the runner, and this gate exists only to police the runner's
-tracked-tree snapshot. Left pointed at the bash file it would have gone one of
-two ways once that file was deleted, and both are worse than a red: it would
-have REFUSED (`CANNOT VERIFY`, exit 1) and read as a bug in the deletion, or --
+THE SUBJECT MOVED, SO THE GATE MOVED WITH IT. `battery.py` replaces `run-all.sh` as the runner, and this gate exists only to police the runner's tracked-tree snapshot. Left pointed at the bash file it would have gone one of two ways once that file was deleted, and both are worse than a red: it would have REFUSED (`CANNOT VERIFY`, exit 1) and read as a bug in the deletion, or --
 if anyone had "fixed" the refusal by treating an absent subject as clean -- it
-would have passed forever while policing nothing. Retargeting is what keeps the
-control alive across the replacement.
+would have passed forever while policing nothing. Retargeting is what keeps the control alive across the replacement.
 
-WHAT DID NOT CHANGE, deliberately: the gate still EXTRACTS the live guard by
-name rather than copying it, still refuses when the extraction finds nothing,
-still plants the historical defect first to prove the instrument can fire, and
-still asserts BOTH directions (quiet on a clean tree, loud on a dirty one). The
-extraction language is the only thing that changed, because the subject is now
-Python.
+WHAT DID NOT CHANGE, deliberately: the gate still EXTRACTS the live guard by name rather than copying it, still refuses when the extraction finds nothing, still plants the historical defect first to prove the instrument can fire, and still asserts BOTH directions (quiet on a clean tree, loud on a dirty one). The extraction language is the only thing that changed, because the
+subject is now Python.
 
 THE PLANT IS THE SAME DEFECT IN THE NEW LANGUAGE. `PREFIX_GUARD` below is a
 `tree_state` that shells the snapshot out to `bash -c 'set -euo pipefail; git
 status --porcelain | grep -v ...'` under `check=True`. That is not a synthetic
-failure: it is the exact pre-fix pipeline, and the realistic way a Python
-rewrite reintroduces it is by handing the whole thing back to bash. On a CLEAN
+failure: it is the exact pre-fix pipeline, and the realistic way a Python rewrite reintroduces it is by handing the whole thing back to bash. On a CLEAN
 tree the grep matches nothing, pipefail carries the 1 out of bash, `check=True`
 raises, and the snapshot aborts -- the 2026-09-03 incident, reproduced.
 
-THE HISTORY BELOW IS THE TWIN'S AND IS CARRIED WHOLE, because the incident IS
-the gate and a summary of it would be a different gate. Read `run-all.sh` in it
-as "the runner", which is now `battery.py`.
+THE HISTORY BELOW IS THE TWIN'S AND IS CARRIED WHOLE, because the incident IS the gate and a summary of it would be a different gate. Read `run-all.sh` in it as "the runner", which is now `battery.py`.
 
   check:ci-battery-clean-tree -- the runner's tree guard must survive a CLEAN
   checkout.
@@ -70,86 +57,49 @@ as "the runner", which is now `battery.py`.
 
   Exit 1 on a guard that cannot survive a clean tree, 2 on a failed control.
 
-THE EXIT-2 PROMISE IS NOT KEPT BY EITHER SIDE. The header says "2 on a failed
-control", and the only exits the twin can reach are 0 and 1: the control failure
-goes through `fail`, which increments the same `FAIL` counter every other check
-uses, and the epilogue exits 1. Carried unchanged, because changing it would
-change the verdict, and reported.
+THE EXIT-2 PROMISE IS NOT KEPT BY EITHER SIDE. The header says "2 on a failed control", and the only exits the twin can reach are 0 and 1: the control failure goes through `fail`, which increments the same `FAIL` counter every other check uses, and the epilogue exits 1. Carried unchanged, because changing it would change the verdict, and reported.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE GUARD IS EXTRACTED, NEVER COPIED, and the twin says why in its own words:
-"a copy keeps passing after run-all.sh changes, which is the failure this whole
-battery exists to prevent. If the extraction finds nothing the gate REFUSES
-rather than reporting a clean tree guard that it never saw." That refusal is
-this gate's anti-vacuity rule and it is preserved exactly: an absent or renamed
-`tree_state` exits 1 with `CANNOT VERIFY`, never 0.
+THE GUARD IS EXTRACTED, NEVER COPIED, and the twin says why in its own words: "a copy keeps passing after run-all.sh changes, which is the failure this whole battery exists to prevent. If the extraction finds nothing the gate REFUSES rather than reporting a clean tree guard that it never saw." That refusal is this gate's anti-vacuity rule and it is preserved exactly: an absent or
+renamed `tree_state` exits 1 with `CANNOT VERIFY`, never 0.
 
 THE PYTHON TERMINATOR IS `^\S`, AND IT IS THE ANALOGUE OF THE BASH `^}`. A
-Python function ends where the next COLUMN-1 statement begins, so the extractor
-consumes indented lines and blank lines and stops at the first flush-left one --
-including a flush-left `#` comment, which is what actually follows `tree_state`
-in battery.py. Trailing blank lines are dropped so the extracted text ends at
-the last line of the body, which is what makes the `CANNOT VERIFY` comparison
-and the drive result stable.
+Python function ends where the next COLUMN-1 statement begins, so the extractor consumes indented lines and blank lines and stops at the first flush-left one -- including a flush-left `#` comment, which is what actually follows `tree_state` in battery.py. Trailing blank lines are dropped so the extracted text ends at the last line of the body, which is what makes the `CANNOT
+VERIFY` comparison and the drive result stable.
 
-THE ONE-LINE CASE IS KEPT, and it is not hypothetical here either: `def
-tree_state(root): return ...` is legal Python and would otherwise swallow the
-whole rest of the file, exactly as the bash draft swallowed everything after a
+THE ONE-LINE CASE IS KEPT, and it is not hypothetical here either: `def tree_state(root): return ...` is legal Python and would otherwise swallow the whole rest of the file, exactly as the bash draft swallowed everything after a
 one-line `tree_state() { ...; }`. `SELF_CLOSING_RE` is applied to the definition
 line only and tests for code after the colon.
 
-THE GIT-STATUS SANITY CHECK HAD TO BE RE-KEYED WITH THE SUBJECT, and this is
-the trap in the retarget. The twin looked for the literal substring `git
-status`, which is right for a shell pipeline and WRONG for an argv list:
-battery.py spells it `["git", "status", "--porcelain"]`, where the two words are
-separated by `", "`. A gate carried over unchanged would have refused on a
-perfectly good guard. `GIT_STATUS_RE` therefore admits up to eight non-word
-characters between the two tokens, which covers both spellings and still refuses
-a `tree_state` that reads something else entirely (`git diff --name-only` has no
-`status` in it at all).
+THE GIT-STATUS SANITY CHECK HAD TO BE RE-KEYED WITH THE SUBJECT, and this is the trap in the retarget. The twin looked for the literal substring `git status`, which is right for a shell pipeline and WRONG for an argv list: battery.py spells it `["git", "status", "--porcelain"]`, where the two words are separated by `", "`. A gate carried over unchanged would have refused on a
+perfectly good guard. `GIT_STATUS_RE` therefore admits up to eight non-word characters between the two tokens, which covers both spellings and still refuses a `tree_state` that reads something else entirely (`git diff --name-only` has no `status` in it at all).
 
-`python3` IS PROBED FOR ON BOTH SIDES, and this is the one place the retarget
-adds a refusal the twin did not have. The subject is now Python, so the drive is
+`python3` IS PROBED FOR ON BOTH SIDES, and this is the one place the retarget adds a refusal the twin did not have. The subject is now Python, so the drive is
 `python3 <driver>`; without a probe an absent interpreter surfaces as an OSError
-in the port and a `command not found` in the twin, which is a divergence in the
-one case where the two must agree. Both sides now refuse by name with the fix in
-the message.
+in the port and a `command not found` in the twin, which is a divergence in the one case where the two must agree. Both sides now refuse by name with the fix in the message.
 
-THE DRIVER CATCHES AND PRINTS `ERR:<type>: <message>`, rather than letting the
-traceback out. A traceback carries the driver's own path, and the driver lives
-in a `mktemp` directory, so the failure detail would differ between two runs of
-the SAME implementation -- and every twin comparison of a red would be noise.
-The marker is deterministic and still names the exception.
+THE DRIVER CATCHES AND PRINTS `ERR:<type>: <message>`, rather than letting the traceback out. A traceback carries the driver's own path, and the driver lives in a `mktemp` directory, so the failure detail would differ between two runs of the SAME implementation -- and every twin comparison of a red would be noise. The marker is deterministic and still names the exception.
 
-`$(...)` STRIPS TRAILING NEWLINES, AND THAT IS LOAD-BEARING TWICE. The extracted
-guard is compared against `-z`, and the drive result is compared against the
+`$(...)` STRIPS TRAILING NEWLINES, AND THAT IS LOAD-BEARING TWICE. The extracted guard is compared against `-z`, and the drive result is compared against the
 literal string `"rc=0 out="` -- a comparison that a single trailing newline would
 break. `_capture` therefore rstrips "\n" and nothing else, which is exactly what
 the shell does; stripping whitespace would additionally eat the trailing space of
 a `git status --porcelain` line and make two different guards look identical.
 
 `out="$(python3 "$TMP/drive.py" 2>&1)"` MERGES THE TWO STREAMS. That is the
-`2>&1` anti-pattern this repo warns about, and here it is deliberate and
-correct: the whole POINT is to capture the abort, which prints on stderr when it
-prints at all, next to the guard's stdout. Reproduced with
+`2>&1` anti-pattern this repo warns about, and here it is deliberate and correct: the whole POINT is to capture the abort, which prints on stderr when it prints at all, next to the guard's stdout. Reproduced with
 `stderr=subprocess.STDOUT` rather than by reading the two and concatenating,
 because interleaving order would differ.
 
-NEITHER SIDE PROBES FOR `git`. The twin shells out to `git init`, `git config`,
-`git add` and `git commit` with no `command -v git` in front of them, so on a
-host without git the failure is four unexplained non-zero exits and a `CANNOT
-VERIFY`-shaped red that names the wrong thing. A probe is NOT added here: it
-would change the verdict in exactly the case where the two implementations would
-otherwise agree, which is the one thing a port may not do. Reported instead.
+NEITHER SIDE PROBES FOR `git`. The twin shells out to `git init`, `git config`, `git add` and `git commit` with no `command -v git` in front of them, so on a host without git the failure is four unexplained non-zero exits and a `CANNOT VERIFY`-shaped red that names the wrong thing. A probe is NOT added here: it would change the verdict in exactly the case where the two
+implementations would otherwise agree, which is the one thing a port may not do. Reported instead.
 
 `pass` AND `fail` BOTH WRITE TO STDOUT, including the failures. That is unusual
 for this repo -- `rediacc_ci.log` refuses to put messages on stdout -- and it is
-the twin's contract: a caller reading this gate's stdout sees the whole tally.
-`print()` is used for them rather than `log`, exactly as `npmrc.py` does for the
-data its twin echoes.
+the twin's contract: a caller reading this gate's stdout sees the whole tally. `print()` is used for them rather than `log`, exactly as `npmrc.py` does for the data its twin echoes.
 """
 
 import os
@@ -218,10 +168,7 @@ def extract_guard(text: str) -> str:
         /^def tree_state\\(/  { print; if (one-liner) exit; inside = 1; next }
         inside               { if ($0 ~ /^[^ \\t]/) exit; print }
 
-    Returns "" when there is no definition, which is what makes the caller's
-    refusal reachable. Trailing blank lines are dropped, because a Python body
-    ends at its last statement while the blank lines before the next top-level
-    statement belong to neither.
+    Returns "" when there is no definition, which is what makes the caller's refusal reachable. Trailing blank lines are dropped, because a Python body ends at its last statement while the blank lines before the next top-level statement belong to neither.
     """
     out: list[str] = []
     inside = False
@@ -244,9 +191,7 @@ def extract_guard(text: str) -> str:
 def _capture(argv: list[str], cwd: str | None = None, merge: bool = False) -> tuple[int, str]:
     """Run a command, return (rc, output with trailing newlines stripped).
 
-    `merge` puts stderr onto stdout, reproducing `2>&1` INSIDE the child rather
-    than by concatenating two captured buffers, so the interleaving is the
-    child's. See the port notes.
+    `merge` puts stderr onto stdout, reproducing `2>&1` INSIDE the child rather than by concatenating two captured buffers, so the interleaving is the child's. See the port notes.
 
     THE RSTRIP IS `"\\n"` AND NOT `.strip()`. `$(...)` removes trailing newlines
     and nothing else; a `git status --porcelain` line can end in a meaningful
@@ -267,8 +212,7 @@ def _capture(argv: list[str], cwd: str | None = None, merge: bool = False) -> tu
 def make_repo(directory: str, dirty: bool) -> None:
     """make_repo <dir> <dirty:0|1> -- a one-commit repository, optionally edited.
 
-    An UNTRACKED file in both, because the guard filters `??` and that filtering
-    is exactly what makes the clean case produce no output at all.
+    An UNTRACKED file in both, because the guard filters `??` and that filtering is exactly what makes the clean case produce no output at all.
     """
     path = pathlib.Path(directory)
     path.mkdir(parents=True, exist_ok=True)
@@ -286,15 +230,9 @@ def make_repo(directory: str, dirty: bool) -> None:
 def drive(tmp: str, src: str, repo: str) -> str:
     """drive <guard-source> <repo> -> "rc=<n> out=<value>".
 
-    The generated driver is DRIVER_HEAD + the extracted definition + DRIVER_TAIL,
-    and the twin generates the same bytes from the same three pieces. The repo
-    arrives as `sys.argv[1]` rather than as an interpolated literal, so a path
-    holding a quote cannot rewrite the driver.
+    The generated driver is DRIVER_HEAD + the extracted definition + DRIVER_TAIL, and the twin generates the same bytes from the same three pieces. The repo arrives as `sys.argv[1]` rather than as an interpolated literal, so a path holding a quote cannot rewrite the driver.
 
-    `src` IS RSTRIPPED OF NEWLINES HERE, and that is a parity requirement rather
-    than tidiness: on the twin's side `src` arrives through `$(...)`, which has
-    already eaten them, so a port that kept one would generate a driver one byte
-    different from the twin's for the same guard.
+    `src` IS RSTRIPPED OF NEWLINES HERE, and that is a parity requirement rather than tidiness: on the twin's side `src` arrives through `$(...)`, which has already eaten them, so a port that kept one would generate a driver one byte different from the twin's for the same guard.
     """
     script = pathlib.Path(tmp) / "drive.py"
     script.write_text(DRIVER_HEAD + src.rstrip("\n") + DRIVER_TAIL, encoding="utf-8")
@@ -308,9 +246,7 @@ def drive(tmp: str, src: str, repo: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 a guard that cannot survive a clean tree.
 
-    `--selftest` is intercepted BEFORE the extraction and before any repository
-    is built. The twin takes no arguments at all, so no caller can be passing
-    this string today.
+    `--selftest` is intercepted BEFORE the extraction and before any repository is built. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -429,10 +365,7 @@ _LIVE_GUARD = (
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants would
-    happily refuse a correct battery.py, and the mirrors below (the live guard, a
-    one-line def, a body whose blank lines run on into a comment) are the half
-    that proves it does not.
+    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants would happily refuse a correct battery.py, and the mirrors below (the live guard, a one-line def, a body whose blank lines run on into a comment) are the half that proves it does not.
     """
     ctl = Controls("battery-clean-tree", floor=24, verbose=True)
 

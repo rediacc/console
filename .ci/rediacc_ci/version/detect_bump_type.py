@@ -1,28 +1,14 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/version/detect-bump-type.sh`.
 
-Decides the version bump a release takes -- `major`, `minor` or `patch` -- from
-the labels of the PRs that release CONTAINS, printing exactly one word on
-stdout.
+Decides the version bump a release takes -- `major`, `minor` or `patch` -- from the labels of the PRs that release CONTAINS, printing exactly one word on stdout.
 
-Usage: detect_bump_type.py [--verbose]
-Environment: GITHUB_REPOSITORY, GH_TOKEN, DETECT_BUMP_MAX_COMMITS (default 50).
+Usage: detect_bump_type.py [--verbose] Environment: GITHUB_REPOSITORY, GH_TOKEN, DETECT_BUMP_MAX_COMMITS (default 50).
 
-THE CLASS OF BUG THIS SCRIPT IS THE FIX FOR, and therefore the class this port
-must not reintroduce: the previous implementation grepped `(#123)` out of the
-HEAD commit TITLE, a shape that only a squash merge produces. This repo
-rebase-merges, so 0 of the last 60 commits carried it, every release silently
-took the "no PR numbers found" path, and `bump-major`/`bump-minor` were
-declared, documented and INERT. A wrong answer here is invisible: `patch` is
-also what a working lookup usually returns. That is why the differential
-compares the fake `gh` CALL LOG and not only the printed word -- a `patch` from
-a fallback and a `patch` from a lookup are different verdicts.
+THE CLASS OF BUG THIS SCRIPT IS THE FIX FOR, and therefore the class this port must not reintroduce: the previous implementation grepped `(#123)` out of the HEAD commit TITLE, a shape that only a squash merge produces. This repo rebase-merges, so 0 of the last 60 commits carried it, every release silently took the "no PR numbers found" path, and `bump-major`/`bump-minor` were
+declared, documented and INERT. A wrong answer here is invisible: `patch` is also what a working lookup usually returns. That is why the differential compares the fake `gh` CALL LOG and not only the printed word -- a `patch` from a fallback and a `patch` from a lookup are different verdicts.
 
-FAIL OPEN AND SMALL, PRESERVED EXACTLY. Every error path prints `patch` and
-exits 0: a missed minor is a version number, an invented major is a statement
-to every consumer of the version stream. Nine distinct fallback reasons exist
-and all nine are reproduced, including their `--verbose` text, because the
-reason is the only way to tell a real `patch` from a degraded one.
+FAIL OPEN AND SMALL, PRESERVED EXACTLY. Every error path prints `patch` and exits 0: a missed minor is a version number, an invented major is a statement to every consumer of the version stream. Nine distinct fallback reasons exist and all nine are reproduced, including their `--verbose` text, because the reason is the only way to tell a real `patch` from a degraded one.
 
 GIT IS SHELLED OUT TO, NOT REIMPLEMENTED -- `git tag -l 'v*' --sort=-v:refname`,
 `git merge-base --is-ancestor`, `git log --format=%H`, `git rev-parse HEAD`,
@@ -32,8 +18,7 @@ the differential builds REAL git repositories and lets one git binary answer for
 both sides. `--sort=-v:refname` in particular is git's own version collation,
 which is not `sorted()` and not `sort -V`.
 
-THE TWO-LEVEL LOOP'S QUIRKS ARE REPRODUCED, not tidied, because each is
-reachable from real API output:
+THE TWO-LEVEL LOOP'S QUIRKS ARE REPRODUCED, not tidied, because each is reachable from real API output:
 
   * `pr_num="${row%% *}"` then `labels="${labels# }"` strips exactly ONE space,
     so a label list is split on the FIRST space only.
@@ -45,9 +30,7 @@ reachable from real API output:
     current commit's rows, so a bump-minor on a later commit is never even
     looked up. The call log is the only place that shows it.
 
-NO FALLBACK FOR A MISSING common.sh, matching the twin: this script sources the
-library unconditionally (unlike `mark-production.sh`, which branches), so a
-checkout without it dies in bash before this script's first line of logic. That
+NO FALLBACK FOR A MISSING common.sh, matching the twin: this script sources the library unconditionally (unlike `mark-production.sh`, which branches), so a checkout without it dies in bash before this script's first line of logic. That
 case is not modelled here, and there is nothing to model: it is a bash `source`
 error, not a behaviour of this script.
 
@@ -88,9 +71,7 @@ def pulls_path(repo: str, sha: str) -> str:
 def split_row(row: str) -> tuple[str, str]:
     """`pr_num="${row%% *}"` / `labels="${labels# }"`.
 
-    Split on the FIRST space, then strip exactly one leading space from the
-    remainder. A row with no space at all yields the whole row as the number and
-    an empty label list, which is what the twin's parameter expansions produce.
+    Split on the FIRST space, then strip exactly one leading space from the remainder. A row with no space at all yields the whole row as the number and an empty label list, which is what the twin's parameter expansions produce.
     """
     pr_num = row.split(" ", 1)[0]
     labels = row[len(pr_num) :].removeprefix(" ")
@@ -100,10 +81,7 @@ def split_row(row: str) -> tuple[str, str]:
 def has_label(labels: str, wanted: str) -> bool:
     """`grep -qx "<wanted>" <<<"${labels//,/$'\\n'}"`.
 
-    Commas become newlines and the match is anchored to a WHOLE line, so this is
-    exact-segment membership: `bump-majority` and `xbump-major` do not match.
-    Splitting on newlines too is not decoration -- a label name carrying one
-    would produce two lines through the twin's here-string.
+    Commas become newlines and the match is anchored to a WHOLE line, so this is exact-segment membership: `bump-majority` and `xbump-major` do not match. Splitting on newlines too is not decoration -- a label name carrying one would produce two lines through the twin's here-string.
     """
     return wanted in labels.replace(",", "\n").split("\n")
 
@@ -130,19 +108,10 @@ def _git(args: list[str]) -> subprocess.CompletedProcess[str]:
 class Detector:
     """The script, with `verbose_log` and `fallback_patch` as methods.
 
-    `fallback_patch` raises `_FallbackPatchError` rather than calling
-    `sys.exit`, so the one place that prints the verdict is `run()` -- the
-    twin's `exit 0` from inside a function is the same single exit, spelled the
-    way bash spells it.
+    `fallback_patch` raises `_FallbackPatchError` rather than calling `sys.exit`, so the one place that prints the verdict is `run()` -- the twin's `exit 0` from inside a function is the same single exit, spelled the way bash spells it.
 
-    THE THREE ENVIRONMENT READS ARE DIRECT `os.environ` LOOKUPS, not an
-    injected mapping, and that is deliberate. `check:ci-python-env-registry`
-    derives a module's declared inputs by walking the AST for `os.environ`
-    subscripts and `.get` calls, so a `self.env` indirection would hide
-    GITHUB_REPOSITORY, GH_TOKEN and DETECT_BUMP_MAX_COMMITS from the one gate
-    whose job is to notice undeclared inputs. Nothing needed the seam: the
-    differential drives both sides through a real process environment, which is
-    what the twin reads too.
+    THE THREE ENVIRONMENT READS ARE DIRECT `os.environ` LOOKUPS, not an injected mapping, and that is deliberate. `check:ci-python-env-registry` derives a module's declared inputs by walking the AST for `os.environ` subscripts and `.get` calls, so a `self.env` indirection would hide GITHUB_REPOSITORY, GH_TOKEN and DETECT_BUMP_MAX_COMMITS from the one gate whose job is to notice
+    undeclared inputs. Nothing needed the seam: the differential drives both sides through a real process environment, which is what the twin reads too.
     """
 
     class _FallbackPatchError(Exception):
@@ -163,12 +132,7 @@ class Detector:
     def commit_range(self) -> tuple[list[str], str]:
         """The twin's tag selection, and its two different answers.
 
-        A usable tag: scan `<tag>..HEAD`, and an EMPTY range means nothing new
-        since the last release, which is `patch` rather than "look further". No
-        usable tag: HEAD ALONE, never a blind window of history, because
-        `initialize.sh` calls this BEFORE its own `git fetch --tags` and an
-        unbounded `git log -n 50` would re-read PRs a previous release already
-        consumed.
+        A usable tag: scan `<tag>..HEAD`, and an EMPTY range means nothing new since the last release, which is `patch` rather than "look further". No usable tag: HEAD ALONE, never a blind window of history, because `initialize.sh` calls this BEFORE its own `git fetch --tags` and an unbounded `git log -n 50` would re-read PRs a previous release already consumed.
         """
         max_commits = os.environ.get("DETECT_BUMP_MAX_COMMITS") or DEFAULT_MAX_COMMITS
         tags = _git(["tag", "-l", "v*", "--sort=-v:refname"])
@@ -197,8 +161,7 @@ class Detector:
 
         The labels ride along in the same response, so this is one call per
         commit rather than one per commit plus one per PR, and `merged_at !=
-        null` is load-bearing: an OPEN PR can also contain the commit, and an
-        unmerged PR's label describes a release that has not happened.
+        null` is load-bearing: an OPEN PR can also contain the commit, and an unmerged PR's label describes a release that has not happened.
         """
         repo = os.environ.get("GITHUB_REPOSITORY", "")
         found_major = False

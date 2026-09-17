@@ -1,65 +1,33 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/set-preview-worker-secrets.sh`.
 
-Pushes fifteen runtime secrets into the per-PR preview Worker `pr-<PR_NUMBER>`
-in ONE `wrangler secret bulk` call. The twin's own header carries the reason
-the call is bulk and not fifteen `secret put`s: each `put` mints a new Worker
-version, and on an assets-bound Worker a new version disassociates the static
-assets the deploy just uploaded. One bulk call sets them all against a single
-version.
+Pushes fifteen runtime secrets into the per-PR preview Worker `pr-<PR_NUMBER>` in ONE `wrangler secret bulk` call. The twin's own header carries the reason the call is bulk and not fifteen `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded. One bulk call sets them all against a
+single version.
 
-SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS, and this port
-keeps that property end to end. `argv` is visible in `ps` and in some log
+SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS, and this port keeps that property end to end. `argv` is visible in `ps` and in some log
 surfaces; the value only ever travels env -> `jq --arg` -> the pipe into
 `wrangler`, exactly as the twin routes it.
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` is the only external tool that
-carries a credential, so the differential
-(`.ci/rediacc_ci/tests/test_deploy_set_preview_worker_secrets.py`) puts a
-RECORDING FAKE `npx` on a scratch PATH that logs its exact argv AND THE BYTES ON
-ITS STDIN. The stdin log is the main evidence for this script: the observable
-effect of the program is the JSON document handed to `wrangler`, and two
-implementations can print an identical `✓ Set 15 secrets` line while writing a
-different key set, a different key ORDER, or a differently escaped value.
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` is the only external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_set_preview_worker_secrets.py`) puts a RECORDING FAKE `npx` on a scratch PATH that logs its exact argv AND THE BYTES ON ITS STDIN. The stdin log is the main evidence for this script: the observable effect of the program is the
+JSON document handed to `wrangler`, and two implementations can print an identical `✓ Set 15 secrets` line while writing a different key set, a different key ORDER, or a differently escaped value.
 
-`jq` IS CALLED, NOT REIMPLEMENTED, and here the reason is stronger than the one
-`cf_purge_urls.py` gives for the same choice. The bytes on wrangler's stdin ARE
-the contract, and `json.dumps` differs from jq on inputs a secret can really
-contain: jq emits raw UTF-8 where `json.dumps` defaults to `\\uXXXX` escapes,
-and jq escapes U+007F where Python does not. A secret is opaque bytes chosen by
-someone else, so "probably the same" is not a property this port may assume.
-The same binary, the same argv, the same document.
+`jq` IS CALLED, NOT REIMPLEMENTED, and here the reason is stronger than the one `cf_purge_urls.py` gives for the same choice. The bytes on wrangler's stdin ARE the contract, and `json.dumps` differs from jq on inputs a secret can really contain: jq emits raw UTF-8 where `json.dumps` defaults to `\\uXXXX` escapes, and jq escapes U+007F where Python does not. A secret is opaque bytes
+chosen by someone else, so "probably the same" is not a property this port may assume. The same binary, the same argv, the same document.
 
-PIPEFAIL IS REPRODUCED, NOT APPROXIMATED. The twin's one pipeline is
-`jq -n ... | npx wrangler secret bulk`, under `set -o pipefail`, so the run's
-status is the RIGHTMOST non-zero one: wrangler's when wrangler fails, jq's when
-only jq fails. `main` therefore runs both sides even when jq fails, and folds
-the two statuses in that order.
+PIPEFAIL IS REPRODUCED, NOT APPROXIMATED. The twin's one pipeline is `jq -n ... | npx wrangler secret bulk`, under `set -o pipefail`, so the run's status is the RIGHTMOST non-zero one: wrangler's when wrangler fails, jq's when only jq fails. `main` therefore runs both sides even when jq fails, and folds the two statuses in that order.
 
-THE ONE CASE THE SEQUENTIAL PIPE CANNOT REPRODUCE, said out loud rather than
-left to be discovered. In bash the two halves run CONCURRENTLY, so a `wrangler`
-that exited 0 WITHOUT draining its stdin would kill jq with SIGPIPE, and
-pipefail would end the run at 141 with no closing line. Here jq always finishes
-first, so the same wrangler produces a clean exit 0. It is unreachable with the
-real tool, which reads the document it was given before deciding anything, and
-reproducing it would mean writing a second process supervisor to model a
-failure mode that has never occurred.
+THE ONE CASE THE SEQUENTIAL PIPE CANNOT REPRODUCE, said out loud rather than left to be discovered. In bash the two halves run CONCURRENTLY, so a `wrangler` that exited 0 WITHOUT draining its stdin would kill jq with SIGPIPE, and pipefail would end the run at 141 with no closing line. Here jq always finishes first, so the same wrangler produces a clean exit 0. It is unreachable
+with the real tool, which reads the document it was given before deciding anything, and reproducing it would mean writing a second process supervisor to model a failure mode that has never occurred.
 
 ONE DIVERGENCE, in text nobody parses. `: "${PR_NUMBER:?PR_NUMBER is required}"`
 (:38) is bash's own refusal, and it prints the bash FILE and a bash LINE NUMBER:
 
     .ci/scripts/deploy/set-preview-worker-secrets.sh: line 38: PR_NUMBER: PR_NUMBER is required
 
-A port cannot honestly print a line number in a file it is not. `MISSING_PR_NUMBER`
-carries the `VAR: message` half, on the same stream, with the same exit status 1.
-Identical ruling to `deploy/wait_for_preview_worker.py` and
-`deploy/delete_r2_channel.py`, and the differential asserts BOTH sides of it so
-it cannot be "fixed" into agreement by accident.
+A port cannot honestly print a line number in a file it is not. `MISSING_PR_NUMBER` carries the `VAR: message` half, on the same stream, with the same exit status 1. Identical ruling to `deploy/wait_for_preview_worker.py` and `deploy/delete_r2_channel.py`, and the differential asserts BOTH sides of it so it cannot be "fixed" into agreement by accident.
 
 `:?` IS AN UNSET-OR-EMPTY TEST, not an unset test, so `PR_NUMBER=` refuses
-exactly as an absent one does. Driven in the differential, because a port
-testing `"PR_NUMBER" in os.environ` would sail past the empty case and then
-write fifteen production secrets to a Worker literally named `pr-`.
+exactly as an absent one does. Driven in the differential, because a port testing `"PR_NUMBER" in os.environ` would sail past the empty case and then write fifteen production secrets to a Worker literally named `pr-`.
 
 TWO OBSERVATIONS ABOUT THE TWIN, NEITHER OF THEM REPAIRED HERE (this wave's
 acceptance rule is agreement with the live twin; a repair is a cutover-box
@@ -185,9 +153,7 @@ def check_nonempty(env: dict[str, str], worker: str) -> None:
 def jq_filter() -> str:
     """The object constructor (:87-103), rebuilt from `KEYS`.
 
-    Whitespace inside a jq program does not reach the output, so this is the
-    twin's filter in meaning rather than in indentation. What MUST match is the
-    key list and its order, and that is `KEYS`, which the differential re-derives
+    Whitespace inside a jq program does not reach the output, so this is the twin's filter in meaning rather than in indentation. What MUST match is the key list and its order, and that is `KEYS`, which the differential re-derives
     from the twin's source.
     """
     body = ", ".join("%s: $%s" % (key, var) for key, var in KEYS)
@@ -198,9 +164,7 @@ def jq_argv(env: dict[str, str]) -> list[str]:
     """`jq -n --arg ... '{...}'` (:71-103), as an argv a test can pin.
 
     Every value is read as `"${NAME:-}"`, so an absent variable becomes the
-    empty string rather than an error: the eleven guards above have already
-    refused the ones that must not be empty, and the other four are legitimately
-    absent.
+    empty string rather than an error: the eleven guards above have already refused the ones that must not be empty, and the other four are legitimately absent.
     """
     argv = ["jq", "-n"]
     for key, var in KEYS:
@@ -212,8 +176,7 @@ def jq_argv(env: dict[str, str]) -> list[str]:
 def _jq(argv: list[str]) -> tuple[int, str]:
     """The left half of the pipe: stdout captured, stderr INHERITED.
 
-    jq's diagnostics are the only explanation a workflow log would get if the
-    document could not be built, so they are not captured here either.
+    jq's diagnostics are the only explanation a workflow log would get if the document could not be built, so they are not captured here either.
     """
     proc = subprocess.run(argv, stdout=subprocess.PIPE, text=True, check=False)
     return proc.returncode, proc.stdout

@@ -1,9 +1,6 @@
 """Every ported gate test and its bash twin must reach the SAME VERDICT on THIS tree.
 
-WHY THIS FILE IS THE POINT OF THE PORT. A migration that changes a verdict is not a
-migration, it is a regression wearing one. The only way to know a port still says
-what the original said is to run BOTH, on the same tree, in the same run -- which is
-also why invariant 5 forbids deleting a twin in the change that ports it. A twin kept
+WHY THIS FILE IS THE POINT OF THE PORT. A migration that changes a verdict is not a migration, it is a regression wearing one. The only way to know a port still says what the original said is to run BOTH, on the same tree, in the same run -- which is also why invariant 5 forbids deleting a twin in the change that ports it. A twin kept
 but never driven is a twin that quietly rots; a twin driven on every run is a
 control.
 
@@ -27,14 +24,9 @@ WHAT IS COMPARED, and why it is not "did they both exit 0".
      AT RUNTIME. Still corpus-derived -- it moves when the twin moves -- and never
      typed here.
 
-THE CONTROL COUNTS COME FROM A LEDGER, not from parsing pytest's output. The port
-runs in a subprocess with `$GATE_HARNESS_LEDGER` pointing at a scratch file, and
-`Harness` appends one JSON row per recorded control. Parsing "N passed" would count
-TEST FUNCTIONS, which is the number that says nothing about whether they asserted.
+THE CONTROL COUNTS COME FROM A LEDGER, not from parsing pytest's output. The port runs in a subprocess with `$GATE_HARNESS_LEDGER` pointing at a scratch file, and `Harness` appends one JSON row per recorded control. Parsing "N passed" would count TEST FUNCTIONS, which is the number that says nothing about whether they asserted.
 
-ANTI-VACUITY. Discovering zero ported modules is a FAILURE, not an empty parametrize
-that reports green having compared nothing. `test_the_registry_is_not_empty` is that
-refusal, and it prints the shape so a collapse is visible rather than silent.
+ANTI-VACUITY. Discovering zero ported modules is a FAILURE, not an empty parametrize that reports green having compared nothing. `test_the_registry_is_not_empty` is that refusal, and it prints the shape so a collapse is visible rather than silent.
 """
 
 import datetime
@@ -103,24 +95,15 @@ MODULE_OBJECTS: dict[str, object] = {}
 def real_tree_admission(module: object, twin: str, unsafe: set[str]) -> str | None:
     """None when this module may drive its real-tree twin, else why not.
 
-    THE BLANKET REFUSAL THIS REPLACES was correct about the danger and wrong
-    about the remedy. It refused EVERY ported twin in the real-tree set, so the
-    isolation machinery existed (`group_for` already returns `REAL_TREE_GROUP`)
-    and the parity driver forbade using it -- leaving 27 of the 51 remaining
-    twins, the largest blocked group in W7 P3, unportable by policy rather than
-    by any technical obstacle. Those 27 include the instruments this whole slice
-    is measured by: `test-ci-parity.sh`, `test-language-policy.sh`,
-    `test-gate-anti-vacuity.sh`, `test-dead-bash.sh`.
+    THE BLANKET REFUSAL THIS REPLACES was correct about the danger and wrong about the remedy. It refused EVERY ported twin in the real-tree set, so the isolation machinery existed (`group_for` already returns `REAL_TREE_GROUP`) and the parity driver forbade using it -- leaving 27 of the 51 remaining twins, the largest blocked group in W7 P3, unportable by policy rather than by any
+    technical obstacle. Those 27 include the instruments this whole slice is measured by: `test-ci-parity.sh`, `test-language-policy.sh`, `test-gate-anti-vacuity.sh`, `test-dead-bash.sh`.
 
     An opt-in replaces it, and it is deliberately TWO conditions rather than
     one. A module that merely declares `REAL_TREE_TWIN = True` has stated an
     intention; what makes it safe is landing in `REAL_TREE_GROUP`, which is what
-    actually serialises it against the battery. Accepting the declaration alone
-    would be the vacuous shape -- a promise checked against itself.
+    actually serialises it against the battery. Accepting the declaration alone would be the vacuous shape -- a promise checked against itself.
 
-    The reverse drift is refused too: declaring the attribute for a twin that is
-    NOT in the real-tree set takes a serialisation slot nothing needs, and an
-    opt-in that costs nothing to over-claim stops meaning anything.
+    The reverse drift is refused too: declaring the attribute for a twin that is NOT in the real-tree set takes a serialisation slot nothing needs, and an opt-in that costs nothing to over-claim stops meaning anything.
     """
     declared = bool(getattr(module, REAL_TREE_ATTR, False))
     is_real_tree = os.path.basename(twin) in unsafe
@@ -154,21 +137,12 @@ MODULES = ported_modules()
 def real_tree_tests() -> set[str]:
     """Gate tests that touch the REAL tree while they run, from both sources.
 
-    WHY THIS EXISTS, and it is the constraint the remaining batches will hit. Driving
-    a bash twin from inside `check:ci-pytest` makes that gate a participant in the
-    battery's isolation contract WITHOUT declaring anything to either scheduler. Four
-    of the 148 write into the real tree (one of them rewrites CLAUDE.md and
+    WHY THIS EXISTS, and it is the constraint the remaining batches will hit. Driving a bash twin from inside `check:ci-pytest` makes that gate a participant in the battery's isolation contract WITHOUT declaring anything to either scheduler. Four of the 148 write into the real tree (one of them rewrites CLAUDE.md and
     scripts/data/doc-registry.md and restores them) and about twenty read it; a
-    parity run overlapping one of those is the `cp: cannot stat` / grep-exit-2 flake
-    that run-all.sh's W/S/T schedule exists to prevent, and it would be blamed on the
-    port.
+    parity run overlapping one of those is the `cp: cannot stat` / grep-exit-2 flake that run-all.sh's W/S/T schedule exists to prevent, and it would be blamed on the port.
 
-    THE UNION ITSELF NOW LIVES IN `rediacc_ci.xdist_groups`, and this is a call into
-    it rather than a copy of it. The parallel scheduler asks the SAME question this
-    test asks -- which twins may not run beside another -- and two implementations of
-    one question is two answers, the expensive half being that both look right. The
-    reasons for the two sources, and for the anti-vacuity refusal on their union, are
-    written there.
+    THE UNION ITSELF NOW LIVES IN `rediacc_ci.xdist_groups`, and this is a call into it rather than a copy of it. The parallel scheduler asks the SAME question this test asks -- which twins may not run beside another -- and two implementations of one question is two answers, the expensive half being that both look right. The reasons for the two sources, and for the anti-vacuity
+    refusal on their union, are written there.
     """
     return xdist_groups.real_tree_twins(xdist_groups.lock_path())
 
@@ -176,29 +150,16 @@ def real_tree_tests() -> set[str]:
 def bash_cases(twin_source: str) -> set[str]:
     """Function names the twin both DECLARES and CALLS.
 
-    Declared-but-never-called is dead code in a shell script, and pinning a port
-    against a case the twin does not run would demand coverage of something nothing
-    covers. Requiring both halves is also how this notices a twin whose bottom-of-file
-    call list lost an entry.
+    Declared-but-never-called is dead code in a shell script, and pinning a port against a case the twin does not run would demand coverage of something nothing covers. Requiring both halves is also how this notices a twin whose bottom-of-file call list lost an entry.
 
-    A CALL IS NOT ALWAYS A BARE NAME ON ITS OWN LINE, and requiring that was a hole
-    that failed OPEN. This predicate was a bare-name-on-its-own-line match, so a twin invoking its cases
-    as `test_mapping_form_is_caught "$D/mapping"` or `with_temp_dir test_flags_runner`
-    matched nothing at all. Measured 2026-09-07 across the 130 twins that declare
-    cases: 43 had at least one case invisible here, and 16 saw ZERO. A twin seeing
+    A CALL IS NOT ALWAYS A BARE NAME ON ITS OWN LINE, and requiring that was a hole that failed OPEN. This predicate was a bare-name-on-its-own-line match, so a twin invoking its cases as `test_mapping_form_is_caught "$D/mapping"` or `with_temp_dir test_flags_runner` matched nothing at all. Measured 2026-09-07 across the 130 twins that declare cases: 43 had at least one case
+    invisible here, and 16 saw ZERO. A twin seeing
     zero does not fail; it falls through to the flat-twin floor (the twin's runtime
-    `PASS:` count), so the SET comparison this module exists to perform silently did
-    not happen for those 16, `test-ci-parity.sh` (22 cases) among them.
+    `PASS:` count), so the SET comparison this module exists to perform silently did not happen for those 16, `test-ci-parity.sh` (22 cases) among them.
 
-    The two error directions are not symmetric, which is why widening is right.
-    Over-admitting demands the port cover a case the twin does not run: noisy, and it
-    fails CLOSED. Under-admitting drops the set check entirely and fails OPEN. So a
-    name is called when it appears as a WORD on any line that is neither its own
-    declaration nor a whole-line comment.
+    The two error directions are not symmetric, which is why widening is right. Over-admitting demands the port cover a case the twin does not run: noisy, and it fails CLOSED. Under-admitting drops the set check entirely and fails OPEN. So a name is called when it appears as a WORD on any line that is neither its own declaration nor a whole-line comment.
 
-    Widening was checked against the ports before landing: it adds zero newly-required
-    cases that any of the 53 current ports lacks, so it strengthens the check without
-    reclassifying existing work.
+    Widening was checked against the ports before landing: it adds zero newly-required cases that any of the 53 current ports lacks, so it strengthens the check without reclassifying existing work.
     """
     declared = set(BASH_FN_RE.findall(twin_source))
     lines = twin_source.splitlines()
@@ -218,17 +179,11 @@ def bash_cases(twin_source: str) -> set[str]:
 def run_port(module_path: pathlib.Path, ledger: pathlib.Path, timeout: int):
     """(returncode, control count) for the ported module, run on its own.
 
-    A SUBPROCESS and not an in-process re-run: the module is already being collected
-    by the outer session, and re-entering it here would double every side effect and
-    make the ledger a sum of two runs.
+    A SUBPROCESS and not an in-process re-run: the module is already being collected by the outer session, and re-entering it here would double every side effect and make the ledger a sum of two runs.
 
-    NO `-p no:cacheprovider`, and the reason is a trap worth writing down. Disabling
-    that plugin UNREGISTERS the `cache_dir` ini key, and this repo's pyproject sets
+    NO `-p no:cacheprovider`, and the reason is a trap worth writing down. Disabling that plugin UNREGISTERS the `cache_dir` ini key, and this repo's pyproject sets
     both `cache_dir` and `--strict-config`; the nested pytest then exits 4 with
-    "Unknown config option: cache_dir" and collects nothing. It was found by this
-    very test refusing to call that a pass, which is the whole argument for comparing
-    verdicts rather than trusting a green. The nested run therefore shares the
-    outer run's cache directory, which is gitignored and per-worktree already.
+    "Unknown config option: cache_dir" and collects nothing. It was found by this very test refusing to call that a pass, which is the whole argument for comparing verdicts rather than trusting a green. The nested run therefore shares the outer run's cache directory, which is gitignored and per-worktree already.
     """
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", "-q", str(module_path)],
@@ -279,10 +234,7 @@ class _Stub:
 def test_a_changed_hash_forces_a_re_drive_and_an_unchanged_one_does_not(gate, tmp_path):
     """The skip's whole contract, in both directions.
 
-    THIS IS THE CONTROL THE SKIP WAS NOT ALLOWED TO LAND WITHOUT. A reuse rule
-    that is too eager stops proving a differential that has changed -- silently,
-    and reported as a pass. Every clause that can defeat a reuse is therefore
-    shown defeating one, and the permissive case is shown permitting.
+    THIS IS THE CONTROL THE SKIP WAS NOT ALLOWED TO LAND WITHOUT. A reuse rule that is too eager stops proving a differential that has changed -- silently, and reported as a pass. Every clause that can defeat a reuse is therefore shown defeating one, and the permissive case is shown permitting.
     """
     led = tmp_path / "obs.jsonl"
 
@@ -366,19 +318,13 @@ def test_record_parity_writes_a_hash_keyed_row_and_never_raises(gate, tmp_path, 
     IT MUST KEY ON BOTH SIDES. A future skip reads these hashes to decide whether
     a differential still needs re-proving; a row that pinned only one side would
     let a change on the other go unnoticed, which is the exact hole the skip must
-    not have. So the control changes each side in turn and requires the key to
-    move -- and requires the OTHER side's key to hold, because a digest that
-    moved for both would prove nothing about which side it tracks.
+    not have. So the control changes each side in turn and requires the key to move -- and requires the OTHER side's key to hold, because a digest that moved for both would prove nothing about which side it tracks.
 
-    AND IT MUST NEVER RAISE. A ledger that can fail a parity test turns a
-    bookkeeping problem into what reads as a behavioural divergence, the
-    confusion this whole module exists to prevent. `record_parity` swallows
+    AND IT MUST NEVER RAISE. A ledger that can fail a parity test turns a bookkeeping problem into what reads as a behavioural divergence, the confusion this whole module exists to prevent. `record_parity` swallows
     everything; nothing asserted that until now, so the `except` was as
     unfalsifiable as the controls this gate estate keeps finding.
 
-    THE LEDGER IS REDIRECTED, NOT MOCKED. `paths.from_root` is repointed at
-    `tmp_path`, so the real writer runs -- its `mkdir`, its `open("a")`, its JSON
-    -- against a scratch root. A fake writer would control the test's own code.
+    THE LEDGER IS REDIRECTED, NOT MOCKED. `paths.from_root` is repointed at `tmp_path`, so the real writer runs -- its `mkdir`, its `open("a")`, its JSON -- against a scratch root. A fake writer would control the test's own code.
     """
     twin_rel = "scripts/twin.sh"
     twin = tmp_path / "scripts" / "twin.sh"
@@ -533,8 +479,7 @@ def last_agreement(name: str, ledger: pathlib.Path | None = None) -> dict | None
 
     LAST, NOT ANY. A subject that agreed on Monday and diverged on Tuesday must
     not be skippable because Monday's row is still in the file; the ledger is
-    append-only, so "has it ever agreed" is the wrong question and "what did it
-    do most recently" is the right one.
+    append-only, so "has it ever agreed" is the wrong question and "what did it do most recently" is the right one.
     """
     path = ledger_path(ledger)
     found = None
@@ -560,14 +505,8 @@ def may_reuse(name: str, twin_sha: str, port_sha: str, ledger: pathlib.Path | No
     """True when this exact pair has already been PROVEN equal, so re-driving it
     would re-prove a differential nothing has changed.
 
-    THE TRADE-OFF, STATED WHERE IT IS MADE. `check:ci-pytest` costs 1879s and
-    1661s of that is one subject -- `test-claude-hooks` -- driving its twin and
-    its port serially inside one test. Reusing an agreement makes that cost land
-    once per CHANGE instead of once per COMMIT. What is given up is real: a
-    commit touching neither side no longer re-proves their equality, so a
-    divergence caused by something OUTSIDE both files (an interpreter bump, a
-    changed shared helper, an environment difference) survives longer before a
-    run notices it. The key covers only the two files it hashes.
+    THE TRADE-OFF, STATED WHERE IT IS MADE. `check:ci-pytest` costs 1879s and 1661s of that is one subject -- `test-claude-hooks` -- driving its twin and its port serially inside one test. Reusing an agreement makes that cost land once per CHANGE instead of once per COMMIT. What is given up is real: a commit touching neither side no longer re-proves their equality, so a divergence
+    caused by something OUTSIDE both files (an interpreter bump, a changed shared helper, an environment difference) survives longer before a run notices it. The key covers only the two files it hashes.
 
     THREE THINGS DEFEAT IT, each for its own reason:
       * no row, or an unreadable/corrupt ledger -- nothing has been proven.
@@ -591,23 +530,12 @@ def may_reuse(name: str, twin_sha: str, port_sha: str, ledger: pathlib.Path | No
 def record_parity(name: str, twin: str, module_path: pathlib.Path, agreed: bool) -> None:
     """Append one observation keyed by the sha256 of BOTH sides.
 
-    RECORDING ONLY. This does NOT skip anything, and that restraint is the whole
-    point of landing it now. The expensive half of `check:ci-pytest` is one
-    subject re-proving a differential it has already proven -- `test-claude-hooks`
-    costs 1661s of a 1879s run because parity drives its twin and its port
-    serially inside one test. Skipping on a hash match would fix that, and it is
-    ALSO a coverage decision: it means CI stops re-proving parity on commits that
-    touch neither side. That call is the operator's and is parked as a worklist
-    deferral, so this lays the evidence and stops short of acting on it.
+    RECORDING ONLY. This does NOT skip anything, and that restraint is the whole point of landing it now. The expensive half of `check:ci-pytest` is one subject re-proving a differential it has already proven -- `test-claude-hooks` costs 1661s of a 1879s run because parity drives its twin and its port serially inside one test. Skipping on a hash match would fix that, and it is ALSO
+    a coverage decision: it means CI stops re-proving parity on commits that touch neither side. That call is the operator's and is parked as a worklist deferral, so this lays the evidence and stops short of acting on it.
 
-    The shape deliberately mirrors `.ci/shadow/*.observations.jsonl`, which
-    already answers the same question for the quality gates -- "has this pair been
-    proven equivalent, and against which trees" -- so a future skip has a
-    precedent to follow rather than a new mechanism to invent.
+    The shape deliberately mirrors `.ci/shadow/*.observations.jsonl`, which already answers the same question for the quality gates -- "has this pair been proven equivalent, and against which trees" -- so a future skip has a precedent to follow rather than a new mechanism to invent.
 
-    NEVER RAISES. A ledger that can fail a parity test would make a bookkeeping
-    problem look like a behavioural divergence, which is precisely the confusion
-    this module exists to prevent.
+    NEVER RAISES. A ledger that can fail a parity test would make a bookkeeping problem look like a behavioural divergence, which is precisely the confusion this module exists to prevent.
     """
     try:
         row = {

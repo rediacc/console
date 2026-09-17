@@ -1,20 +1,15 @@
 """`rediacc_ci.quality.compose_env` against the three shell pipelines it replaces.
 
-WHY EVERY CASE HERE IS A DIFFERENTIAL. This gate is three extraction pipelines
-and one set comparison, and all three pipelines are PCRE and sed:
+WHY EVERY CASE HERE IS A DIFFERENTIAL. This gate is three extraction pipelines and one set comparison, and all three pipelines are PCRE and sed:
 
     grep -ohP '\\$\\{[A-Z0-9_]+'                             the references
     grep -ohP '...:-[^}]+\\}' | grep -vP ':-\\}$' | grep -oP  the safe defaults
     sed -n '/<<ENVBLOCK/,/^ENVBLOCK/p' | grep -oP            the persisted set
 
-sed's RANGE semantics are the part nobody reproduces correctly from memory: the
-start line never closes its own range, a range restarts, and an unterminated one
-runs to end of file. Asserting the Python against a table of expected lists would
-assert it against whatever the author believed sed does. Running sed is the only
-version of this test that can be wrong in the author's favour and still fail.
+sed's RANGE semantics are the part nobody reproduces correctly from memory: the start line never closes its own range, a range restarts, and an unterminated one runs to end of file. Asserting the Python against a table of expected lists would assert it against whatever the author believed sed does. Running sed is the only version of this test that can be wrong in the author's
+favour and still fail.
 
-The whole gate is compared end to end by
-`.ci/shadow/w7p2-compose-env.observations.jsonl` over five distinct trees.
+The whole gate is compared end to end by `.ci/shadow/w7p2-compose-env.observations.jsonl` over five distinct trees.
 """
 
 import pathlib

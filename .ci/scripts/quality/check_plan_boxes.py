@@ -22,14 +22,8 @@ WHY A LEDGER AND NOT A GREP. Two reasons, both measured on this tree.
 
 WHAT IS ASSERTED (agent/PLAN-plan-file-lifecycle.md's G-A0..G-A6):
 
-THE `G-` PREFIX IS LOAD-BEARING, ADOPTED 2026-09-08 (box X0.1). Three id schemes
-collided on the same-looking token, and two adjacent plan boxes ended up pointing at
-OPPOSITE FILES because of it: `A5`/`A6` here are GATE RULES, while
-`docs/ci-overhaul/04-decisions.md` section A item 6 (`:22-23`, "Do not stick on what
-I say. Better ideas are welcomed") is an OPERATOR RULING. W12 P2.7 cited "A5 in
-04-decisions.md", where `grep -cE 'A5'` on that file returns 0 -- it meant this file
-all along. So gate rules are `G-A<n>`, operator decisions are `D-A<n>`, and a bare
-`A5` is now wrong in both directions rather than ambiguous in both.
+THE `G-` PREFIX IS LOAD-BEARING, ADOPTED 2026-09-08 (box X0.1). Three id schemes collided on the same-looking token, and two adjacent plan boxes ended up pointing at OPPOSITE FILES because of it: `A5`/`A6` here are GATE RULES, while `docs/ci-overhaul/04-decisions.md` section A item 6 (`:22-23`, "Do not stick on what I say. Better ideas are welcomed") is an OPERATOR RULING. W12 P2.7
+cited "A5 in 04-decisions.md", where `grep -cE 'A5'` on that file returns 0 -- it meant this file all along. So gate rules are `G-A<n>`, operator decisions are `D-A<n>`, and a bare `A5` is now wrong in both directions rather than ambiguous in both.
 
   G-A0  every plan on disk has a ledger entry whose status, owner, open/done counts and
       task signatures match, and every ledger entry names a plan that exists.
@@ -55,44 +49,20 @@ all along. So gate rules are `G-A<n>`, operator decisions are `D-A<n>`, and a ba
       a refusal to judge when the parser resolves NOTHING from a tree that plainly
       contains checkbox lines.
 
-G-A1..G-A5 NEED A BASE, so they run in quality-branch (pull_request only). When there is
-no base, or the base predates the ledger, they are SKIPPED and the summary says so --
-a skip must never read as a clean result.
+G-A1..G-A5 NEED A BASE, so they run in quality-branch (pull_request only). When there is no base, or the base predates the ledger, they are SKIPPED and the summary says so -- a skip must never read as a clean result.
 
 THE DEADLOCK THAT USED TO EXIST, AND THE AMNESTY IT BOUGHT, REMOVED 2026-09-09 (W12
-P2.7a). The housekeeping gate once DEMANDED deletion past delete_days while G-A5
-REFUSED it before, so the two were kept complements over one number in
-.ci/config/plan-lifecycle.json -- and G-A1 stood down for age-retired plans for the
-same reason. That bargain is over: `.ci/scripts/quality/check-plan-housekeeping.sh:51`
-now reads "THE REMEDY IS NO LONGER 'DELETE IT', AND THAT WORD IS GONE ON PURPOSE",
-and the third door, compaction, keeps the plan AT ITS OWN PATH with its box lines
-byte-identical (wl_planrec.py property 2). Nothing the housekeeping gate demands now
-destroys a box, so nothing needs an exemption from G-A1 or G-A5.
+P2.7a). The housekeeping gate once DEMANDED deletion past delete_days while G-A5 REFUSED it before, so the two were kept complements over one number in .ci/config/plan-lifecycle.json -- and G-A1 stood down for age-retired plans for the same reason. That bargain is over: `.ci/scripts/quality/check-plan-housekeeping.sh:51` now reads "THE REMEDY IS NO LONGER 'DELETE IT', AND THAT WORD
+IS GONE ON PURPOSE", and the third door, compaction, keeps the plan AT ITS OWN PATH with its box lines byte-identical (wl_planrec.py property 2). Nothing the housekeeping gate demands now destroys a box, so nothing needs an exemption from G-A1 or G-A5.
 
-WHAT THE AMNESTY WAS ACTUALLY DOING, measured end to end on a scratch tree the day it
-was removed: a 41-day-old plan deleted wholesale, carrying ONE open box that survived
-nowhere, exited 0 and printed "21 box(es) open at <base> all survive at HEAD" over a
-base that held 22. Not merely permitted -- ASSERTED to be fine. The two gates still
-share the one number, because the message names the housekeeping window when it quotes
-the compaction remedy, and two copies of `33` would still be two copies.
+WHAT THE AMNESTY WAS ACTUALLY DOING, measured end to end on a scratch tree the day it was removed: a 41-day-old plan deleted wholesale, carrying ONE open box that survived nowhere, exited 0 and printed "21 box(es) open at <base> all survive at HEAD" over a base that held 22. Not merely permitted -- ASSERTED to be fine. The two gates still share the one number, because the message
+names the housekeeping window when it quotes the compaction remedy, and two copies of `33` would still be two copies.
 
-TASK SIGNATURES are the first 8 hex of sha256 over `wl_planfid._norm(task)[:120]` --
-EXACTLY the key the parser already dedups on. Not the raw text: re-wrapping a line must
-be free, and rewriting what it says must not be. That choice is what lets the later
-transition rule ask "did this box survive?" as set membership rather than as a
-token-overlap guess.
+TASK SIGNATURES are the first 8 hex of sha256 over `wl_planfid._norm(task)[:120]` -- EXACTLY the key the parser already dedups on. Not the raw text: re-wrapping a line must be free, and rewriting what it says must not be. That choice is what lets the later transition rule ask "did this box survive?" as set membership rather than as a token-overlap guess.
 
-REGENERATE with `--update`. The ledger is committed, so a stale one is a red with a
-one-command fix, and the regeneration is what makes the base-vs-head comparison
-meaningful later: G-A1 reads the BASE ledger via `git show`, which no working tree can
-rewrite.
+REGENERATE with `--update`. The ledger is committed, so a stale one is a red with a one-command fix, and the regeneration is what makes the base-vs-head comparison meaningful later: G-A1 reads the BASE ledger via `git show`, which no working tree can rewrite.
 
----- gate ----
-step: Plan checkbox ledger
-needs: none
-selftest: true
-lane: quality-branch
----- end gate ----
+---- gate ---- step: Plan checkbox ledger needs: none selftest: true lane: quality-branch ---- end gate ----
 """
 
 from __future__ import annotations
@@ -147,9 +117,7 @@ FINISHED = PF.FINISHED_STATES
 def _lifecycle() -> dict:
     """warn_days / delete_days / archive_dir, shared with the housekeeping gate.
 
-    Not inlined. G-A5 REFUSES a deletion that gate DEMANDS, so the two predicates
-    must be complements over one number or a plan can be simultaneously
-    must-delete and must-not-delete.
+    Not inlined. G-A5 REFUSES a deletion that gate DEMANDS, so the two predicates must be complements over one number or a plan can be simultaneously must-delete and must-not-delete.
     """
     try:
         return json.loads(LIFECYCLE.read_text(encoding="utf-8"))
@@ -170,8 +138,7 @@ def sig(task: str) -> str:
     UNCHANGED ON PURPOSE. The ledger committed at the base ref is keyed by this
     function, and G-A1's whole claim to be unforgeable is that it reads that
     committed record; re-keying it would make every historical box look deleted
-    at once. Move tolerance lives in `loose_sig`, which is computed from git's
-    own copy of the base plan TEXT, so it is exactly as unforgeable.
+    at once. Move tolerance lives in `loose_sig`, which is computed from git's own copy of the base plan TEXT, so it is exactly as unforgeable.
     """
     return hashlib.sha256(PFID._norm(task)[:120].encode("utf-8")).hexdigest()[:8]
 
@@ -179,16 +146,10 @@ def sig(task: str) -> str:
 def loose_sig(task: str) -> str:
     """`sig` with directory prefixes stripped from the paths the box cites.
 
-    A box's identity is the TASK, not the spelling of the paths in it. Without
-    this, moving a cited file re-signs every box that cites it and G-A1 reports
-    the move as a DELETION, offering three remedies (tick it, mark it `[?]`,
-    archive the plan) of which none is true and all three falsify the record.
-    Measured 2026-09-09: moving 125 gates from `scripts/` to `scripts/gates/`
-    reddened four boxes across three plans that way.
+    A box's identity is the TASK, not the spelling of the paths in it. Without this, moving a cited file re-signs every box that cites it and G-A1 reports the move as a DELETION, offering three remedies (tick it, mark it `[?]`, archive the plan) of which none is true and all three falsify the record. Measured 2026-09-09: moving 125 gates from `scripts/` to `scripts/gates/` reddened
+    four boxes across three plans that way.
 
-    `_norm` cannot do this itself -- it is shared with the Stop hook's task
-    matching, where a cited directory is real evidence about which file a claim
-    means. The discrimination lost here is two boxes whose first 120 normalised
+    `_norm` cannot do this itself -- it is shared with the Stop hook's task matching, where a cited directory is real evidence about which file a claim means. The discrimination lost here is two boxes whose first 120 normalised
     characters differ ONLY by a directory prefix; the basename stays, so
     everything else is kept.
     """
@@ -219,8 +180,7 @@ def raw_box_lines(root: Path) -> int:
 
     The anti-vacuity oracle, and the only thing that can tell "there are no boxes" apart
     from "the parser stopped seeing them". It is deliberately dumber than plan_boxes --
-    it counts the fenced sample and the prose too -- so it is only ever compared as
-    `plainly non-zero`, never for equality.
+    it counts the fenced sample and the prose too -- so it is only ever compared as `plainly non-zero`, never for equality.
     """
     n = 0
     for rel, _s, _l in CK.plan_records(root):
@@ -291,10 +251,7 @@ def diff_problems(scanned: dict, ledger: dict) -> list[str]:
 def base_ref() -> str | None:
     """The commit this branch diverged from, or None when there is no base.
 
-    CI hands us `GITHUB_BASE_REF` (a branch name on a `pull_request` event and
-    nothing at all on `push`), so the merge-base is computed rather than assumed:
-    diffing against the tip of main would attribute every commit main gained
-    since the branch started to this branch.
+    CI hands us `GITHUB_BASE_REF` (a branch name on a `pull_request` event and nothing at all on `push`), so the merge-base is computed rather than assumed: diffing against the tip of main would attribute every commit main gained since the branch started to this branch.
 
     None is not a failure. G-A0 and G-A6 read only the working tree and still run;
     the transition rules simply have nothing to compare against, and say so.
@@ -320,10 +277,7 @@ def _git(*args: str) -> str | None:
 def base_ledger(base: str) -> tuple[dict, str | None]:
     """The ledger AS OF the base commit. This is what makes G-A1 unforgeable.
 
-    G-A0 forces the head ledger to match the head tree, so a session that deletes a
-    box must regenerate it -- and then the head ledger agrees with the tree and
-    says nothing. The BASE ledger is read out of git, which a working tree cannot
-    rewrite, so the two together make "did this box survive?" answerable.
+    G-A0 forces the head ledger to match the head tree, so a session that deletes a box must regenerate it -- and then the head ledger agrees with the tree and says nothing. The BASE ledger is read out of git, which a working tree cannot rewrite, so the two together make "did this box survive?" answerable.
     """
     raw = _git("show", f"{base}:{LEDGER.relative_to(ROOT)}")
     if raw is None:
@@ -339,10 +293,7 @@ def base_ledger(base: str) -> tuple[dict, str | None]:
 def renames_into_archive(base: str) -> tuple[set[str], list[str]]:
     """({new archive paths that are byte-identical renames}, {problems}).
 
-    A2a. `git diff --find-renames -M100%` compares TREES, not commits, which is
-    the whole reason the two-commit dodge cannot work: editing a plan and then
-    archiving it in a separate commit still leaves the net content different from
-    base, so the similarity is below 100 and it reports R09x rather than R100.
+    A2a. `git diff --find-renames -M100%` compares TREES, not commits, which is the whole reason the two-commit dodge cannot work: editing a plan and then archiving it in a separate commit still leaves the net content different from base, so the similarity is below 100 and it reports R09x rather than R100.
     """
     out = _git("diff", "--name-status", "--find-renames", "-M100%", f"{base}...HEAD")
     if out is None:
@@ -398,8 +349,7 @@ def _added_plans(base: str) -> set[str]:
 def _content_age_days(rel: str, base: str) -> int | None:
     """Days since the newest commit that CHANGED this file, as of the base.
 
-    Content age, not "last commit touching the path": otherwise moving a plan
-    would reset its clock and archiving would become a way to cheat the age gate.
+    Content age, not "last commit touching the path": otherwise moving a plan would reset its clock and archiving would become a way to cheat the age gate.
     """
     when = _git("log", "-1", "--format=%cI", base, "--", rel)
     if not when or not when.strip():
@@ -416,10 +366,7 @@ def _content_age_days(rel: str, base: str) -> int | None:
 def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
     """G-A1..G-A5. Returns (problems, boxes_compared).
 
-    G-A1 is the load-bearing one and it subsumes most of the cheats: deleting a box
-    line, un-checkboxing it, rewriting its text, fencing it, or renaming the plan
-    out of the glob all end the same way -- a signature that was open at base has
-    no legal home at head.
+    G-A1 is the load-bearing one and it subsumes most of the cheats: deleting a box line, un-checkboxing it, rewriting its text, fencing it, or renaming the plan out of the glob all end the same way -- a signature that was open at base has no legal home at head.
     """
     problems: list[str] = []
     ledger, err = base_ledger(base)
@@ -562,11 +509,8 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
 def selftest() -> int:
     """Control-first: every verdict below is meaningless if these do not fire.
 
-    C-FENCE is the load-bearing one. It plants the exact defect that motivated the
-    parser choice -- a fenced code sample and a line of prose about the grammar, beside
-    one real box -- and then plants the NAIVE implementation and requires it to get the
-    answer WRONG. A defect detector that cannot detect the historical defect is broken,
-    and saying so is cheaper than a clean run that means nothing.
+    C-FENCE is the load-bearing one. It plants the exact defect that motivated the parser choice -- a fenced code sample and a line of prose about the grammar, beside one real box -- and then plants the NAIVE implementation and requires it to get the answer WRONG. A defect detector that cannot detect the historical defect is broken, and saying so is cheaper than a clean run that
+    means nothing.
     """
     bad = 0
     fixture = (

@@ -1,8 +1,7 @@
 """No OTLP/Pyroscope credential may be baked into a built artifact.
 
 Ported from `.ci/scripts/quality/check-no-otlp-creds.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live until a differential
-ledger row exists over K distinct trees.
+see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees.
 
 WHAT THE TWIN ENFORCES, carried from its own header because the list IS the gate:
 
@@ -20,8 +19,7 @@ WHAT THE TWIN ENFORCES, carried from its own header because the list IS the gate
 
     Exits 0 on success, 1 on leak, 2 on setup error (e.g. no binaries to check).
 
-THE `|| true` THAT WAS REMOVED, kept here word for word because it is the whole
-reason check 1 is written the long way round:
+THE `|| true` THAT WAS REMOVED, kept here word for word because it is the whole reason check 1 is written the long way round:
 
     FAIL LOUDLY. This used to end in `|| true`, so a `go version -m` failure (a
     corrupt binary, a toolchain mismatch, a path that is not a Go binary at all)
@@ -34,51 +32,28 @@ reason check 1 is written the long way round:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TWO SKIPS ARE WARNINGS, NOT REFUSALS, AND THAT IS THE TWIN'S DECISION. With
-no renet binary and no CLI bundle this gate prints four `log_warn` lines and
-exits 0, having inspected nothing. A fresh checkout is exactly that state. The
-port does not "improve" it into an anti-vacuity refusal: changing a green into a
-red is a different gate, and the shadow differential would score the improvement
-as NEW_SIDE_NOISY, correctly. It is reported as a twin finding instead.
+THE TWO SKIPS ARE WARNINGS, NOT REFUSALS, AND THAT IS THE TWIN'S DECISION. With no renet binary and no CLI bundle this gate prints four `log_warn` lines and exits 0, having inspected nothing. A fresh checkout is exactly that state. The port does not "improve" it into an anti-vacuity refusal: changing a green into a red is a different gate, and the shadow differential would score
+the improvement as NEW_SIDE_NOISY, correctly. It is reported as a twin finding instead.
 
-`go version -m` IS INVOKED, NOT REIMPLEMENTED. Parsing `.go.buildinfo` in Python
-would be a second implementation of a format the Go toolchain owns, and the two
+`go version -m` IS INVOKED, NOT REIMPLEMENTED. Parsing `.go.buildinfo` in Python would be a second implementation of a format the Go toolchain owns, and the two
 would drift the first time the format moved. The twin shells out; so does this.
-A MISSING `go` IS EXIT 2 AND A LOUD MESSAGE, which is the twin's behaviour and
-also the house rule: a missing tool is a failure with the fix in the message.
+A MISSING `go` IS EXIT 2 AND A LOUD MESSAGE, which is the twin's behaviour and also the house rule: a missing tool is a failure with the fix in the message.
 
-STDERR PASSTHROUGH KEEPS ITS INDENT. On a `go version -m` failure the twin does
-`sed 's/^/    /' "$buildinfo_err" >&2` -- four spaces, raw, NOT through log_error.
-That matters to `scripts/lib/shadow-gate.ts`: an indented line under a finding is
-compared as part of that finding, so re-routing it through the logger would add a
-`✗ ` and change the finding text. It is printed the same way here.
+STDERR PASSTHROUGH KEEPS ITS INDENT. On a `go version -m` failure the twin does `sed 's/^/ /' "$buildinfo_err" >&2` -- four spaces, raw, NOT through log_error. That matters to `scripts/lib/shadow-gate.ts`: an indented line under a finding is compared as part of that finding, so re-routing it through the logger would add a `✗ ` and change the finding text. It is printed the same way
+here.
 
 THE EMPTY-BUILDINFO CHECK IS `${buildinfo//[[:space:]]/}`, not `-z`. A Go binary
-always reports at least its module path, so output that is only whitespace means
-the probe returned nothing usable. Reproduced with an explicit POSIX space class
-rather than Python's `\\s`, which additionally matches U+00A0 and U+2028 and would
-therefore call a slightly different set of outputs "empty".
+always reports at least its module path, so output that is only whitespace means the probe returned nothing usable. Reproduced with an explicit POSIX space class rather than Python's `\\s`, which additionally matches U+00A0 and U+2028 and would therefore call a slightly different set of outputs "empty".
 
-`strings | grep -B1 -A1 | grep -Eq` IS DECOMPOSED, ON PURPOSE. `strings` is
-invoked as a subprocess because reimplementing it would change which byte runs
+`strings | grep -B1 -A1 | grep -Eq` IS DECOMPOSED, ON PURPOSE. `strings` is invoked as a subprocess because reimplementing it would change which byte runs
 count as printable; the two greps are done in Python over its output. The context
-window is one line either side of every `otlpUser`/`otlpPass` hit, unioned and
-de-duplicated the way grep does it, and the `--` group separators grep prints are
+window is one line either side of every `otlpUser`/`otlpPass` hit, unioned and de-duplicated the way grep does it, and the `--` group separators grep prints are
 irrelevant because they cannot match `^[A-Za-z0-9+/=]{20,}$`.
 
-A MISSING `strings` BINARY IS SILENT IN BOTH. The twin writes `2>/dev/null` and
-lets the pipeline produce nothing, so an absent `strings` turns check 2 off
-without a word. Reproduced (FileNotFoundError is swallowed to an empty output)
-and reported as a twin finding, because a security check that disables itself
-when a tool is missing is the "unknown folded into fine" shape.
+A MISSING `strings` BINARY IS SILENT IN BOTH. The twin writes `2>/dev/null` and lets the pipeline produce nothing, so an absent `strings` turns check 2 off without a word. Reproduced (FileNotFoundError is swallowed to an empty output) and reported as a twin finding, because a security check that disables itself when a tool is missing is the "unknown folded into fine" shape.
 
-THE `find` ORDER IS READDIR ORDER IN BOTH, and is not sorted here even though
-sorting would be tidier. The twin's `find -print0` hands back directory order and
-prints one `inspecting <name>...` line per binary in that order. Those lines are
-chatter to the comparator and the findings are compared as a multiset, so the
-order is not load-bearing -- but a port that sorted would print a different
-sequence to a human diffing the two side by side, which is the cheapest review
-this port gets.
+THE `find` ORDER IS READDIR ORDER IN BOTH, and is not sorted here even though sorting would be tidier. The twin's `find -print0` hands back directory order and prints one `inspecting <name>...` line per binary in that order. Those lines are chatter to the comparator and the findings are compared as a multiset, so the order is not load-bearing -- but a port that sorted would print a
+different sequence to a human diffing the two side by side, which is the cheapest review this port gets.
 
 CASE 1 OF THE `cd`: the twin does `cd "$REPO_ROOT"` and then uses absolute paths
 for everything. There is nothing left for the cd to affect, so it has no analogue
@@ -135,8 +110,7 @@ NO_RENET_HINT = (
 def renet_binaries(root: pathlib.Path) -> list[pathlib.Path]:
     """Every renet binary the twin would inspect, in the twin's order.
 
-    `private/renet/bin/renet` first when it is a regular file, then
-    `find private/bin -maxdepth 1 -type f -name 'renet-*'` in readdir order. Not
+    `private/renet/bin/renet` first when it is a regular file, then `find private/bin -maxdepth 1 -type f -name 'renet-*'` in readdir order. Not
     sorted; see the port notes.
     """
     found: list[pathlib.Path] = []
@@ -158,8 +132,7 @@ def renet_binaries(root: pathlib.Path) -> list[pathlib.Path]:
 def buildinfo_findings(binary: str, buildinfo: str) -> list[str]:
     """Check 1 over one binary's `go version -m` output. Empty means clean.
 
-    Returned as a list rather than logged in place so a test can assert on the
-    decision without capturing a stream.
+    Returned as a list rather than logged in place so a test can assert on the decision without capturing a stream.
     """
     findings: list[str] = []
     if OTLP_USER_RE.search(buildinfo):
@@ -172,9 +145,7 @@ def buildinfo_findings(binary: str, buildinfo: str) -> list[str]:
 def base64_near_symbol(text: str) -> bool:
     """Check 2's decision: `grep -B1 -A1 <symbol> | grep -Eq <base64 line>`.
 
-    `text` is `strings <binary>` output. The context window is one line either
-    side of each hit, unioned and de-duplicated exactly as grep does, because
-    grep merges overlapping context rather than repeating a line.
+    `text` is `strings <binary>` output. The context window is one line either side of each hit, unioned and de-duplicated exactly as grep does, because grep merges overlapping context rather than repeating a line.
     """
     lines = text.split("\n")
     window: set[int] = set()
@@ -189,9 +160,7 @@ def base64_near_symbol(text: str) -> bool:
 def strings_output(binary: pathlib.Path) -> str:
     """`strings <binary> 2>/dev/null`, with an absent `strings` reduced to "".
 
-    THE SWALLOW IS THE TWIN'S, not a convenience. See the port notes: check 2
-    turns itself off when the binary is missing, and that is reported as a twin
-    finding rather than repaired here.
+    THE SWALLOW IS THE TWIN'S, not a convenience. See the port notes: check 2 turns itself off when the binary is missing, and that is reported as a twin finding rather than repaired here.
     """
     try:
         completed = subprocess.run(
@@ -221,8 +190,7 @@ def bundle_has_literal(path: pathlib.Path) -> bool:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 clean, 1 leak, 2 setup error (no `go` to probe with).
 
-    `--selftest` is intercepted BEFORE any real scan, which is the addition the
-    twin does not have. The twin takes no arguments, so no caller passes it.
+    `--selftest` is intercepted BEFORE any real scan, which is the addition the twin does not have. The twin takes no arguments, so no caller passes it.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -323,10 +291,7 @@ def _have_go() -> bool:
 def selftest() -> int:
     """Plant each violation, prove it fires; remove it, prove it does not.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. The decision functions are exercised
-    directly rather than through a subprocess, because the parts worth pinning
-    are the three matchers and the grep-context union, and driving them through
-    `go version -m` would test the Go toolchain instead.
+    BOTH DIRECTIONS FOR EVERY CONTROL. The decision functions are exercised directly rather than through a subprocess, because the parts worth pinning are the three matchers and the grep-context union, and driving them through `go version -m` would test the Go toolchain instead.
     """
     ctl = Controls("no-otlp-creds", floor=16, verbose=True)
 

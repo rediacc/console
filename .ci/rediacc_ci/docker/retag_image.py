@@ -1,20 +1,12 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/docker/retag-image.sh`.
 
-Promotes a CI-tagged image to a release version with
-`docker buildx imagetools create -t <dst> <src>`, which copies the whole
-multi-arch manifest without pulling a single layer. Drives one image, one full
-image path, or every name in `PUBLISH_IMAGES`.
+Promotes a CI-tagged image to a release version with `docker buildx imagetools create -t <dst> <src>`, which copies the whole multi-arch manifest without pulling a single layer. Drives one image, one full image path, or every name in `PUBLISH_IMAGES`.
 
-`--skip-if-exists` COMPARES DIGESTS, NOT EXISTENCE, and the twin's comment says
-why in the sharpest terms in this directory: a destination tag left over from a
-PREVIOUS failed release at the same version would otherwise "silently lock the
-new image out of promotion", and the symptom is post-publish pull tests reading
-the OLD version. So the skip fires only when `<dst>` and `<src>` resolve to the
+`--skip-if-exists` COMPARES DIGESTS, NOT EXISTENCE, and the twin's comment says why in the sharpest terms in this directory: a destination tag left over from a PREVIOUS failed release at the same version would otherwise "silently lock the new image out of promotion", and the symptom is post-publish pull tests reading the OLD version. So the skip fires only when `<dst>` and `<src>`
+resolve to the
 same `{{.Manifest.Digest}}`, and an unreadable SOURCE falls THROUGH to the retag
-rather than skipping. Both halves are reproduced, and both have their own case
-in the differential, because either one inverted turns an idempotent retry into
-a silent no-op.
+rather than skipping. Both halves are reproduced, and both have their own case in the differential, because either one inverted turns an idempotent retry into a silent no-op.
 
 `--image` VERSUS `--image-path` IS DECIDED BY A SLASH, INSIDE `retag_image`.
 The twin does not pass a mode through; it looks for `/` in the name it was
@@ -25,17 +17,9 @@ handed. Two consequences it never states, both kept and both pinned:
   * `--image-path server` (no slash) is treated as RELATIVE and gets the
     registry prefixed, so `--image-path` does not always bypass it either.
 
-`basename` IS bash's, NOT `os.path.basename`. They disagree on a trailing
-slash: `basename a/b/` is `b`, `os.path.basename("a/b/")` is `""`. An empty
-label would print `Re-tagging : a -> b`, so `_basename` strips trailing slashes
-first and `test_basename_matches_bash_on_trailing_slashes` checks it against the
-real tool.
+`basename` IS bash's, NOT `os.path.basename`. They disagree on a trailing slash: `basename a/b/` is `b`, `os.path.basename("a/b/")` is `""`. An empty label would print `Re-tagging : a -> b`, so `_basename` strips trailing slashes first and `test_basename_matches_bash_on_trailing_slashes` checks it against the real tool.
 
-THE SUMMARY LINE IS `log_info` EVEN WHEN THINGS FAILED, so a run that promoted
-nothing prints a green tick beside `0 succeeded, 2 failed` and only the exit
-code says otherwise. That is the twin's, and `cleanup-staging.sh` one directory
-over does the opposite (`log_error` on the failing summary), so the two are
-inconsistent with each other. Reproduced, and recorded as
+THE SUMMARY LINE IS `log_info` EVEN WHEN THINGS FAILED, so a run that promoted nothing prints a green tick beside `0 succeeded, 2 failed` and only the exit code says otherwise. That is the twin's, and `cleanup-staging.sh` one directory over does the opposite (`log_error` on the failing summary), so the two are inconsistent with each other. Reproduced, and recorded as
 `test_defect_the_failing_summary_is_still_a_green_tick`.
 """
 
@@ -186,9 +170,7 @@ def parse_args(argv: list[str]) -> Options:
 def validate(opts: Options) -> None:
     """The five checks at :92-113, IN ORDER, because the order is observable.
 
-    `--from` and `--to` are demanded BEFORE the target-selection checks, so
-    `retag-image.sh --all --image api` with no tags reports the missing `--from`
-    rather than the mutual exclusion.
+    `--from` and `--to` are demanded BEFORE the target-selection checks, so `retag-image.sh --all --image api` with no tags reports the missing `--from` rather than the mutual exclusion.
     """
     if not opts.from_tag:
         raise Refusal("--from is required")
@@ -235,9 +217,7 @@ def _docker(args: list[str], *, line: int | None, **kwargs) -> int:
 def digest_of(ref: str) -> str:
     """`$(docker buildx imagetools inspect <ref> --format '<fmt>' 2>/dev/null || true)`.
 
-    Empty on ANY failure, including a missing binary, because both the twin's
-    `2>/dev/null` and its `|| true` are unconditional. Command substitution
-    strips trailing newlines.
+    Empty on ANY failure, including a missing binary, because both the twin's `2>/dev/null` and its `|| true` are unconditional. Command substitution strips trailing newlines.
     """
     _flush()
     try:

@@ -24,19 +24,14 @@ WHAT EACH GROUP OF CASES GUARDS.
                   the thing doing the work, rather than the file happening to
                   have no empty values in it today.
 
-THE DEFECT ALL OF IT IS ABOUT, restated because it is easy to lose. Measured
-2026-08-26 on a fresh shell, recorded at `.ci/scripts/lib/toolchain.sh:98-105`:
-`toolchain_pin_for` returned "" with exit code 0, and the empty string reached a
-download URL as
+THE DEFECT ALL OF IT IS ABOUT, restated because it is easy to lose. Measured 2026-08-26 on a fresh shell, recorded at `.ci/scripts/lib/toolchain.sh:98-105`: `toolchain_pin_for` returned "" with exit code 0, and the empty string reached a download URL as
 
     .../releases/download/v/shellcheck-v.linux.aarch64.tar.xz  -> curl 404
 
-The 404 names GitHub rather than the missing pin. And the other half, at
-`.ci/config/constants.sh:49-58`: the Node floor used to be COMPOSED as
+The 404 names GitHub rather than the missing pin. And the other half, at `.ci/config/constants.sh:49-58`: the Node floor used to be COMPOSED as
 "${NODE_VERSION}.0.0", which silently read 22.0.0 while both manifests said
 >=22.13.0, so a machine on Node 22.4 passed `./run.sh setup` and failed inside
-npm. A default is what both look like on the day it is wrong, which is why
-`pin()` has none and why these cases assert the raise rather than a fallback.
+npm. A default is what both look like on the day it is wrong, which is why `pin()` has none and why these cases assert the raise rather than a fallback.
 """
 
 import hashlib
@@ -114,8 +109,7 @@ def _version_corpus() -> tuple[str, ...]:
 
     Corpus-derived rather than fixed: bumping a pin re-keys the comparison cases
     with the real numbers this repo compares, and a pin whose value is not a
-    version (a checksum) drops out by failing to parse rather than by being
-    listed.
+    version (a checksum) drops out by failing to parse rather than by being listed.
     """
     extra = []
     for value in _live_pins().values():
@@ -183,9 +177,7 @@ def test_every_tool_pin_matches_the_bash() -> None:
 def test_node_floor_is_on_the_pinned_major() -> None:
     """The assertion `.ci/config/constants.sh:67` makes, made here too.
 
-    A floor under a major that CI does not install is a floor nobody could
-    satisfy. Both numbers are read from the pins file, so this is a real
-    consistency check and not a restatement of either.
+    A floor under a major that CI does not install is a floor nobody could satisfy. Both numbers are read from the pins file, so this is a real consistency check and not a restatement of either.
     """
     assert toolchain.same_major(toolchain.node_floor(), toolchain.node_major())
 
@@ -194,8 +186,7 @@ def test_node_floor_is_stricter_than_the_bare_major() -> None:
     """The 22.0.0 defect, asserted as a property rather than as a number.
 
     constants.sh used to COMPOSE the floor as "${NODE_VERSION}.0.0". If it ever
-    does again, the floor becomes exactly the major with zeros and this fails --
-    without this file naming 22.13.0 anywhere.
+    does again, the floor becomes exactly the major with zeros and this fails -- without this file naming 22.13.0 anywhere.
     """
     floor = toolchain.node_floor()
     composed = "%s.0.0" % toolchain.node_major()
@@ -357,9 +348,7 @@ def _sort_v_says_ordered(a: str, b: str) -> bool:
 def test_compare_agrees_with_sort_v_over_the_whole_corpus() -> None:
     """The differential. Every ordered pair, against GNU sort's version compare.
 
-    Run as ONE case over the product rather than parametrized, because the corpus
-    is derived from the pins file and a parametrized id list would be recomputed
-    at collection time on every run of a suite that has hundreds of pairs.
+    Run as ONE case over the product rather than parametrized, because the corpus is derived from the pins file and a parametrized id list would be recomputed at collection time on every run of a suite that has hundreds of pairs.
     """
     disagreements = [
         (a, b)
@@ -372,11 +361,7 @@ def test_compare_agrees_with_sort_v_over_the_whole_corpus() -> None:
 def test_the_corpus_would_catch_a_string_compare() -> None:
     """THE PLANTED DEFECT. The obvious wrong implementation must FAIL this corpus.
 
-    Without this the differential above proves only that two implementations
-    agree, not that the corpus can tell a right one from a wrong one. `22.13.0`
-    vs `22.9.0` is the shape: '1' sorts before '9', so as strings the newer
-    release reads as older, and a floor of 22.13.0 admits exactly what it was
-    raised to exclude.
+    Without this the differential above proves only that two implementations agree, not that the corpus can tell a right one from a wrong one. `22.13.0` vs `22.9.0` is the shape: '1' sorts before '9', so as strings the newer release reads as older, and a floor of 22.13.0 admits exactly what it was raised to exclude.
     """
     corpus = _version_corpus()
     caught = [(a, b) for a, b in _pairs() if (a <= b) is not (toolchain.compare(a, b) <= 0)]
@@ -399,11 +384,9 @@ def test_multi_digit_fields_order_by_value_not_by_character() -> None:
 def test_missing_trailing_fields_are_zeros_not_unknown() -> None:
     """`22` == `22.0.0`, and the divergence from sort -V is deliberate.
 
-    `sort -V` orders `22` BEFORE `22.0.0` (a shorter field list sorts first). For
-    the question every caller actually asks -- `at_least(current, floor)` -- the
+    `sort -V` orders `22` BEFORE `22.0.0` (a shorter field list sorts first). For the question every caller actually asks -- `at_least(current, floor)` -- the
     two agree, because both directions of an equal pair satisfy `>=`. Treating
-    them as equal is what lets NODE_VERSION, which is a bare major, be compared
-    against a full version without every call site remembering to pad it.
+    them as equal is what lets NODE_VERSION, which is a bare major, be compared against a full version without every call site remembering to pad it.
     """
     assert toolchain.compare("22", "22.0.0") == 0
     assert toolchain.at_least("22", "22.0.0")
@@ -444,9 +427,7 @@ def test_cli_value_prints_the_pin() -> None:
 def test_cli_value_refuses_an_absent_key_with_nothing_on_stdout() -> None:
     """The contract a bash caller depends on: `v="$(...)" || die` must see "".
 
-    A diagnostic printed on stdout would be captured INTO the variable and then
-    interpolated into whatever the value was for, which is the 404-naming-GitHub
-    failure with extra steps.
+    A diagnostic printed on stdout would be captured INTO the variable and then interpolated into whatever the value was for, which is the 404-naming-GitHub failure with extra steps.
     """
     result = _module("value", "NO_SUCH_VERSION")
     assert result.returncode == 1
@@ -481,11 +462,7 @@ def test_cli_pairs_is_safe_for_github_env() -> None:
 def test_the_empty_pin_guard_is_what_produces_the_refusal(tmp_path) -> None:
     """Disable the guard in a COPY and the empty pin walks straight through.
 
-    This is the case that stops the refusal tests above from being satisfied by
-    a pins file that simply has no empty values in it. Same shape as control C in
-    `.ci/scripts/quality/check-setup-idempotency.sh` and as
-    `test_shim_delegation_is_real_not_a_reimplementation` next door: mutate the
-    implementation, and require the observable behaviour to change.
+    This is the case that stops the refusal tests above from being satisfied by a pins file that simply has no empty values in it. Same shape as control C in `.ci/scripts/quality/check-setup-idempotency.sh` and as `test_shim_delegation_is_real_not_a_reimplementation` next door: mutate the implementation, and require the observable behaviour to change.
     """
     root = tmp_path / "fixture-root"
     (root / ".ci").mkdir(parents=True)
@@ -519,9 +496,7 @@ def test_constants_sh_still_refuses_an_unset_floor() -> None:
     """The bash half of the same contract, asserted against the live file.
 
     `${NODE_VERSION_MIN:?...}` is the reason an unset pin is fatal there. If that
-    `:?` is ever softened to `:-`, this module's Python guard would be the only
-    thing left refusing, and the shell path -- which is what `./run.sh setup` and
-    `rdc.sh` actually take -- would go back to defaulting.
+    `:?` is ever softened to `:-`, this module's Python guard would be the only thing left refusing, and the shell path -- which is what `./run.sh setup` and `rdc.sh` actually take -- would go back to defaulting.
     """
     text = paths.from_root(CONSTANTS).read_text(encoding="utf-8")
     assert "${NODE_VERSION_MIN:?" in text
@@ -601,8 +576,7 @@ PROBE_CASES = _probe_cases()
 def test_probe_version_matches_the_twin(tmp_path: pathlib.Path, tool: str, body: str) -> None:
     """`toolchain_probe_version` and `probe_version` agree on stdout AND rc.
 
-    Both sides are handed the SAME stub binary by absolute path, so the only
-    thing under comparison is the extract-and-normalise pipeline.
+    Both sides are handed the SAME stub binary by absolute path, so the only thing under comparison is the extract-and-normalise pipeline.
     """
     binary = _stub_dir(tmp_path, tool, body)
     rc, out, _err = _bash(
@@ -615,8 +589,7 @@ def test_probe_version_matches_the_twin(tmp_path: pathlib.Path, tool: str, body:
 def test_the_probe_corpus_reaches_both_outcomes() -> None:
     """ANTI-VACUITY. Some fixtures must yield a version and some must yield none.
 
-    A corpus in which every case refused would pass the differential above while
-    proving only that both sides can say no.
+    A corpus in which every case refused would pass the differential above while proving only that both sides can say no.
     """
     answers = {"yes": 0, "no": 0}
     for _tool, body in PROBE_CASES:
@@ -644,9 +617,7 @@ CHECK_TOOLS = (*tuple(PROBE_FIXTURES), "cargo")
 def test_check_matches_the_twin(tmp_path: pathlib.Path, tool: str, present: bool) -> None:
     """`toolchain_check` and `check` agree on the binary, the message and the rc.
 
-    The message text is compared VERBATIM, not just the exit code, because
-    `.ci/legacy/run-legacy.sh:406` re-runs this purely to show the operator what
-    it said.
+    The message text is compared VERBATIM, not just the exit code, because `.ci/legacy/run-legacy.sh:406` re-runs this purely to show the operator what it said.
     """
     if present and tool in PROBE_FIXTURES:
         _stub_dir(tmp_path, tool, PROBE_FIXTURES[tool][0])
@@ -662,9 +633,7 @@ def test_check_matches_the_twin(tmp_path: pathlib.Path, tool: str, present: bool
 def test_check_reaches_every_one_of_its_five_refusals(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY for the case above: all five refusal texts must be produced.
 
-    Five distinct messages exist in the twin (:131, :135, :139, :143, :149/:153)
-    and a differential that only ever saw one of them would be one case wearing
-    a parametrize decorator.
+    Five distinct messages exist in the twin (:131, :135, :139, :143, :149/:153) and a differential that only ever saw one of them would be one case wearing a parametrize decorator.
     """
     (tmp_path / "bin").mkdir(parents=True, exist_ok=True)
     path_env = "%s:%s" % (tmp_path / "bin", SYSTEM_PATH)
@@ -709,8 +678,7 @@ def test_lane_matches_the_twin(env: dict) -> None:
 
     An EMPTY `$GITHUB_ACTIONS` is not `ci` and an empty `$REDIACC_NPM_RUNTIME`
     is not `devbox`; `[[ -n ... ]]` and `${x:-host}` both treat empty as unset,
-    which is the distinction `os.environ.get(...) or ...` reproduces and a
-    `in os.environ` test would not.
+    which is the distinction `os.environ.get(...) or ...` reproduces and a `in os.environ` test would not.
     """
     overrides = {"GITHUB_ACTIONS": None, "REDIACC_NPM_RUNTIME": None}
     overrides.update(env)
@@ -746,15 +714,10 @@ def test_report_matches_the_twin(
 ) -> None:
     """`toolchain_report --verify` and `report(True)` agree on the table AND rc.
 
-    The FUNCTION's rc is correct on both sides. What is broken is the twin's
-    SCRIPT dispatch, which is pinned separately below.
+    The FUNCTION's rc is correct on both sides. What is broken is the twin's SCRIPT dispatch, which is pinned separately below.
 
-    THE REAL $PATH IS TAKEN FROM `diff.BASE_ENV`, not from `os.environ`, and
-    monkeypatch does the save-and-restore. Both choices are deliberate: reading
-    `os.environ["PATH"]` here would add an undeclared environment input to a
-    test module (`check:ci-python-env-registry` says so, and it is right), and a
-    hand-rolled try/finally restore leaks the value on any exception raised
-    before the finally arms.
+    THE REAL $PATH IS TAKEN FROM `diff.BASE_ENV`, not from `os.environ`, and monkeypatch does the save-and-restore. Both choices are deliberate: reading `os.environ["PATH"]` here would add an undeclared environment input to a test module (`check:ci-python-env-registry` says so, and it is right), and a hand-rolled try/finally restore leaks the value on any exception raised before
+    the finally arms.
     """
     (tmp_path / "bin").mkdir(parents=True, exist_ok=True)
     if path_env == "STUBS":
@@ -801,8 +764,7 @@ def test_constants_file_is_the_one_the_twin_computes() -> None:
 def test_checksums_reads_the_live_constants_file() -> None:
     """Both SHA families, both operating systems, resolved out of constants.sh.
 
-    ANTI-VACUITY: an empty table would satisfy "every key matches the pattern",
-    so the count and the specific keys are asserted.
+    ANTI-VACUITY: an empty table would satisfy "every key matches the pattern", so the count and the specific keys are asserted.
     """
     table = toolchain.checksums(env={})
     for key in (
@@ -822,10 +784,7 @@ def test_checksums_reads_the_live_constants_file() -> None:
 def test_checksums_agree_with_what_bash_resolves() -> None:
     """The values, read the other way: source constants.sh and print them.
 
-    Two parsers of one file is the drift this compares away. A regex that
-    quietly stopped matching would give an empty table here and a full one in
-    bash, and the acquisition would then refuse with "no checksum for ..." for a
-    constant that is plainly present.
+    Two parsers of one file is the drift this compares away. A regex that quietly stopped matching would give an empty table here and a full one in bash, and the acquisition would then refuse with "no checksum for ..." for a constant that is plainly present.
     """
     for key, value in sorted(toolchain.checksums(env={}).items()):
         rc, out, _err = _bash(
@@ -866,9 +825,7 @@ def test_os_name_refuses_an_unsupported_system() -> None:
 def test_sha256_of_agrees_with_the_shell(tmp_path: pathlib.Path) -> None:
     """`hashlib` against `_toolchain_sha256sum`, on real bytes.
 
-    This is the function whose bash counterpart needed a two-branch portability
-    shim because macOS has no `sha256sum`. Proving the two agree is what lets
-    that shim die rather than be translated.
+    This is the function whose bash counterpart needed a two-branch portability shim because macOS has no `sha256sum`. Proving the two agree is what lets that shim die rather than be translated.
     """
     sample = tmp_path / "blob"
     sample.write_bytes(b"the quick brown fox\n" * 5000)
@@ -881,8 +838,7 @@ def test_sha256_of_agrees_with_the_shell(tmp_path: pathlib.Path) -> None:
 def test_the_download_urls_are_the_twins() -> None:
     """The two asset URLs, built by bash and by Python from the same inputs.
 
-    A URL is the one thing in the acquisition path that cannot be unit-tested by
-    running it, so it is compared against the string the twin interpolates.
+    A URL is the one thing in the acquisition path that cannot be unit-tested by running it, so it is compared against the string the twin interpolates.
     """
     for want, os_key, arch in (
         ("3.13.1", "linux", "amd64"),
@@ -910,8 +866,7 @@ def test_the_download_urls_are_the_twins() -> None:
 def test_the_arch_tables_disagree_because_the_upstreams_do() -> None:
     """shfmt publishes amd64/arm64; shellcheck publishes x86_64/aarch64.
 
-    Collapsing the two tables would 404 on one of the two projects, and the 404
-    would name GitHub rather than the wrong arch spelling.
+    Collapsing the two tables would 404 on one of the two projects, and the 404 would name GitHub rather than the wrong arch spelling.
     """
     assert toolchain.SHFMT_ARCH["x86_64"] == "amd64"
     assert toolchain.SHELLCHECK_ARCH["x86_64"] == "x86_64"
@@ -927,8 +882,7 @@ def test_download_shfmt_refuses_rather_than_downloading_unverified(
 ) -> None:
     """No checksum for this os/arch means REFUSE, and name the constant to add.
 
-    THE MESSAGE NAMES THE CONSTANT, not the arch, because that is the difference
-    between something a reader can act on and something they have to decode.
+    THE MESSAGE NAMES THE CONSTANT, not the arch, because that is the difference between something a reader can act on and something they have to decode.
     """
     binary, messages = toolchain.download_shfmt(
         "3.13.1",
@@ -970,10 +924,7 @@ def test_download_shfmt_refuses_a_checksum_mismatch(
 ) -> None:
     """The MISMATCH branch, with a real digest in the `actual` line.
 
-    DEFECT 2 in the module docstring is exactly that the twin can print this
-    headline with an EMPTY `actual` when there is no hashing tool at all.
-    `hashlib` cannot be absent, so `actual` is always a real digest here, and
-    this case pins that.
+    DEFECT 2 in the module docstring is exactly that the twin can print this headline with an EMPTY `actual` when there is no hashing tool at all. `hashlib` cannot be absent, so `actual` is always a real digest here, and this case pins that.
     """
 
     def fake_curl(_url: str, target: pathlib.Path) -> bool:
@@ -1008,8 +959,7 @@ def test_download_shfmt_installs_a_matching_download(
 ) -> None:
     """The CONTROL for the case above: a correct hash must install and chmod +x.
 
-    Without this, a `download_shfmt` that refused unconditionally would pass
-    every refusal case in this file.
+    Without this, a `download_shfmt` that refused unconditionally would pass every refusal case in this file.
     """
     payload = b"#!/bin/sh\necho v3.13.1\n"
 
@@ -1120,8 +1070,7 @@ def _race(tmp_path: pathlib.Path, body: str) -> tuple[list[int], pathlib.Path]:
 def test_a_fixed_temp_path_loses_the_race(tmp_path: pathlib.Path) -> None:
     """CONTROL, and it must come first: the planted OLD shape has to break here.
 
-    If this passes, the harness is not producing a real window and the case
-    below proves nothing.
+    If this passes, the harness is not producing a real window and the case below proves nothing.
     """
     codes, _ = _race(tmp_path, 'old_shape "$CACHE" "$CACHE/shfmt"')
     assert any(rc != 0 for rc in codes), (
@@ -1148,8 +1097,7 @@ def test_acquire_returns_a_path_binary_at_the_pin_without_installing(
 ) -> None:
     """A PATH binary AT THE PIN always wins, so nothing is downloaded.
 
-    That is what makes a developer's own install honoured and stops CI
-    re-downloading on every invocation.
+    That is what makes a developer's own install honoured and stops CI re-downloading on every invocation.
     """
     binary = _stub_dir(tmp_path, "shfmt", 'printf "v%s\\n"' % toolchain.pin_for("shfmt"))
     monkeypatch.setenv("PATH", "%s:%s" % (binary.parent, SYSTEM_PATH))
@@ -1187,9 +1135,7 @@ def test_acquire_refuses_an_empty_pin() -> None:
 def test_defect_1_toolchain_sh_verify_cannot_fail() -> None:
     """DRIVEN, not read: six MISMATCH rows and exit 0. See the module docstring.
 
-    RED WHEN THE TWIN IS FIXED. Adding `exit` to the `--verify` arm (or moving
-    the dispatch block to the end of the file) makes this case fail, which is
-    when the finding closes with evidence rather than being forgotten.
+    RED WHEN THE TWIN IS FIXED. Adding `exit` to the `--verify` arm (or moving the dispatch block to the end of the file) makes this case fail, which is when the finding closes with evidence rather than being forgotten.
     """
     shell_env = diff.env_for(PATH=SYSTEM_PATH)
     rc, out, _err = diff.bash_streams(
@@ -1207,9 +1153,7 @@ def test_defect_1_toolchain_sh_verify_cannot_fail() -> None:
 def test_defect_1_has_a_live_variant_on_env() -> None:
     """`--env` with no pins file: exit 0 and ZERO bytes, into $GITHUB_ENV.
 
-    Two live call sites, `.github/workflows/ci-quality.yml:171` and `:1897`.
-    Run against a COPY of the library under a fake root, so the real pins file
-    is never touched.
+    Two live call sites, `.github/workflows/ci-quality.yml:171` and `:1897`. Run against a COPY of the library under a fake root, so the real pins file is never touched.
     """
     with tempfile.TemporaryDirectory() as scratch:
         fake = pathlib.Path(scratch, ".ci", "scripts", "lib")
@@ -1228,9 +1172,7 @@ def test_defect_1_has_a_live_variant_on_env() -> None:
 def test_defect_1_the_port_does_not_reproduce_the_always_zero_exit() -> None:
     """`... core.toolchain verify` MUST exit 1 where the twin exits 0.
 
-    The defect is in the twin's SCRIPT DISPATCH, not in the library function,
-    and this module is the library. Reproducing an always-green exit here would
-    be porting a vacuity into the replacement.
+    The defect is in the twin's SCRIPT DISPATCH, not in the library function, and this module is the library. Reproducing an always-green exit here would be porting a vacuity into the replacement.
     """
     proc = subprocess.run(
         [sys.executable, "-m", "rediacc_ci.core.toolchain", "verify"],
@@ -1247,9 +1189,7 @@ def test_defect_1_the_port_does_not_reproduce_the_always_zero_exit() -> None:
 def test_defect_2_both_checksum_call_sites_still_swallow_the_helpers_message() -> None:
     """`| _toolchain_sha256sum -c - >/dev/null 2>&1` at :344 and :429.
 
-    The helper exists so that "a verifier that cannot run must not read as a
-    verifier that failed" (:264-265), and both callers discard the message that
-    would say which of the two it was.
+    The helper exists so that "a verifier that cannot run must not read as a verifier that failed" (:264-265), and both callers discard the message that would say which of the two it was.
     """
     text = paths.from_root(SHIM).read_text(encoding="utf-8")
     swallowed = re.findall(r"\| _toolchain_sha256sum -c - >/dev/null 2>&1", text)
@@ -1262,8 +1202,7 @@ def test_defect_2_the_headline_still_says_mismatch_with_no_verifier(
 ) -> None:
     """DRIVEN with neither `sha256sum` nor `shasum` reachable.
 
-    The distinguishing line survives only via the SECOND, unredirected call
-    inside the `actual` line, so it lands out of order and `actual` is empty
+    The distinguishing line survives only via the SECOND, unredirected call inside the `actual` line, so it lands out of order and `actual` is empty
     while the headline still says MISMATCH.
     """
     sandbox = tmp_path / "bin"
@@ -1317,8 +1256,7 @@ def test_defect_2_the_headline_still_says_mismatch_with_no_verifier(
 def test_defect_3_the_darwin_comments_are_stale() -> None:
     """Both constants the twin's comments tell a reader to ADD already exist.
 
-    Documentation only: no behaviour is wrong. Pinned so that whoever rewrites
-    the comments can see that this case was the reason.
+    Documentation only: no behaviour is wrong. Pinned so that whoever rewrites the comments can see that this case was the reason.
     """
     twin = paths.from_root(SHIM).read_text(encoding="utf-8")
     assert "Only the LINUX_* pair exists in constants.sh today" in twin
@@ -1362,9 +1300,7 @@ def test_a_planted_defect_makes_the_probe_differential_fail(
 ) -> None:
     """A MUTATED COPY must disagree with the twin on a case the real one passes.
 
-    THE REAL FILE IS NEVER TOUCHED: the whole package is copied under
-    `tmp_path`, mutated there, run in a child interpreter, and the real file's
-    sha256 is re-asserted at the end.
+    THE REAL FILE IS NEVER TOUCHED: the whole package is copied under `tmp_path`, mutated there, run in a child interpreter, and the real file's sha256 is re-asserted at the end.
     """
     real = paths.from_root(".ci/rediacc_ci/core/toolchain.py")
     before = hashlib.sha256(real.read_bytes()).hexdigest()
@@ -1451,9 +1387,7 @@ def test_a_planted_defect_makes_the_probe_differential_fail(
 def _module_cli(args: list[str], **env: str) -> subprocess.CompletedProcess:
     """`python3 -m rediacc_ci.core.toolchain <args>` with an EXPLICIT environment.
 
-    The environment is replaced rather than extended, for the reason
-    `differential.env_for` gives: a case that inherits the developer's shell
-    passes or fails depending on whether they happen to export $CI_TEMP.
+    The environment is replaced rather than extended, for the reason `differential.env_for` gives: a case that inherits the developer's shell passes or fails depending on whether they happen to export $CI_TEMP.
     """
     base = {
         "PATH": SYSTEM_PATH,
@@ -1516,8 +1450,7 @@ def test_cli_report_refuses_rather_than_printing_a_table_of_blanks(
 ) -> None:
     """A missing pins file is rc 2, matching `toolchain_load || return 2` at :186.
 
-    Driven against a COPY of the package under a fake root, so the real pins
-    file is never moved. `$REDIACC_CI_ROOT` is the same seam `paths` documents
+    Driven against a COPY of the package under a fake root, so the real pins file is never moved. `$REDIACC_CI_ROOT` is the same seam `paths` documents
     for exactly this.
     """
     root = tmp_path / "fakeroot"
@@ -1554,11 +1487,7 @@ def test_cli_report_refuses_rather_than_printing_a_table_of_blanks(
 def test_the_temp_name_mask_hides_the_temp_and_nothing_else() -> None:
     """`differential.mask_toolchain_tmp` is load-bearing in two differentials.
 
-    It is the one token those comparisons deliberately stop checking, so it has
-    to be narrow. The second half is the control: a mask that swallowed the
-    version, the URL or the real binary's name would make both differentials
-    pass on a genuine divergence, which is worse than the drift it was added to
-    absorb.
+    It is the one token those comparisons deliberately stop checking, so it has to be narrow. The second half is the control: a mask that swallowed the version, the URL or the real binary's name would make both differentials pass on a genuine divergence, which is worse than the drift it was added to absorb.
     """
     assert (
         diff.mask_toolchain_tmp("/c/rediacc-toolchain/shfmt-3.13.1/shfmt.1R2NkECK")

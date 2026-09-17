@@ -3,36 +3,18 @@
 
 WHY THIS EXISTS, and it is a fix that had no gate. syncpack's DEFAULT `source` is
 package.json's `workspaces`. `private/account` is a SUBMODULE and is not a workspace,
-so every versionGroup pin in `.syncpackrc.json` silently stopped at that boundary --
-including an OpenTelemetry lockstep pin whose whole purpose is to stop the packages
-drifting apart. The submodule's ranges matched only because a human had set them, and
-`check:version` reported no issues the entire time, because a manifest it never reads
-cannot mismatch anything.
+so every versionGroup pin in `.syncpackrc.json` silently stopped at that boundary -- including an OpenTelemetry lockstep pin whose whole purpose is to stop the packages drifting apart. The submodule's ranges matched only because a human had set them, and `check:version` reported no issues the entire time, because a manifest it never reads cannot mismatch anything.
 
-That was found by hand on 2026-09-03 and fixed by hand. This gate is what stops it
-returning: `source` is now explicit, and an explicit list rots the moment somebody adds
-a package.json without thinking about it.
+That was found by hand on 2026-09-03 and fixed by hand. This gate is what stops it returning: `source` is now explicit, and an explicit list rots the moment somebody adds a package.json without thinking about it.
 
-THE RULE. Every TRACKED package.json that declares dependencies must be either matched
-by a `source` glob or listed in .ci/config/syncpack-source-exclusions.json with a
-substantive BLOCKER reason. A manifest with no dependencies is out of scope by
-construction -- there is nothing for a pin to constrain.
+THE RULE. Every TRACKED package.json that declares dependencies must be either matched by a `source` glob or listed in .ci/config/syncpack-source-exclusions.json with a substantive BLOCKER reason. A manifest with no dependencies is out of scope by construction -- there is nothing for a pin to constrain.
 
-WHY AN EXCLUSION LIST RATHER THAN A HEURISTIC. Several manifests genuinely should not be
-covered: two are tutorial sample apps whose versions are part of the lesson text, four
-are independently deployed Workers, and one is the account portal's own React tree,
-which is a real convergence with a 33-dependency blast radius rather than an oversight.
-The point of the list is to make that distinction VISIBLE -- an omission and a decision
-look identical in a config file, and this gate is what tells them apart.
+WHY AN EXCLUSION LIST RATHER THAN A HEURISTIC. Several manifests genuinely should not be covered: two are tutorial sample apps whose versions are part of the lesson text, four are independently deployed Workers, and one is the account portal's own React tree, which is a real convergence with a 33-dependency blast radius rather than an oversight. The point of the list is to make
+that distinction VISIBLE -- an omission and a decision look identical in a config file, and this gate is what tells them apart.
 
 Exit 1 on any uncovered manifest or unusable reason, 2 on a failed control.
 
----- gate ----
-step: syncpack source coverage
-needs: submodules
-selftest: true
-lane: quality-code
----- end gate ----
+---- gate ---- step: syncpack source coverage needs: submodules selftest: true lane: quality-code ---- end gate ----
 """
 
 from __future__ import annotations
@@ -58,12 +40,8 @@ MIN_REASON_CHARS = 40
 def _glob_re(g: str) -> re.Pattern[str]:
     """A glob where `*` does NOT cross a path separator and `**` does.
 
-    NOT fnmatch, and a control caught why: fnmatch's `*` matches `/`, so
-    `packages/*/package.json` "matched" `packages/json/templates/x/app/package.json`
-    -- this gate would have reported a manifest as COVERED that syncpack never reads,
-    which is precisely the silent over-coverage it exists to prevent. A gate whose own
-    matcher is more generous than the tool it audits reports a clean tree for files
-    nobody scans.
+    NOT fnmatch, and a control caught why: fnmatch's `*` matches `/`, so `packages/*/package.json` "matched" `packages/json/templates/x/app/package.json` -- this gate would have reported a manifest as COVERED that syncpack never reads, which is precisely the silent over-coverage it exists to prevent. A gate whose own matcher is more generous than the tool it audits reports a clean
+    tree for files nobody scans.
     """
     out, i = [], 0
     while i < len(g):

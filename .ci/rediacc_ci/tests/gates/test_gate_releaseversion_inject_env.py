@@ -2,26 +2,15 @@
 
 Both-ways test for `.ci/scripts/version/inject-env.sh --strict`.
 
-WHAT THE GUARD IS FOR. `--strict` is the one guard in the repo against a build
-stamping a placeholder or bogus version into an artifact that CD will later
-publish under a real tag.
+WHAT THE GUARD IS FOR. `--strict` is the one guard in the repo against a build stamping a placeholder or bogus version into an artifact that CD will later publish under a real tag.
 
-WHAT WAS BROKEN. It had ZERO callers -- referenced only by a comment in
-`.ci/config/constants.sh` and by its own header -- while every build boundary
+WHAT WAS BROKEN. It had ZERO callers -- referenced only by a comment in `.ci/config/constants.sh` and by its own header -- while every build boundary
 spelled `|| '0.0.0-dev'` or `${CLI_VERSION:-0.0.0-dev}` inline instead. A guard
-nothing calls cannot fire. On top of that it compared the resolved version
-against the literal string "0.0.0-dev" and nothing else, so an EMPTY version, or
-a resolver that exited 0 printing nothing, sailed straight through the strictest
-setting the script has.
+nothing calls cannot fire. On top of that it compared the resolved version against the literal string "0.0.0-dev" and nothing else, so an EMPTY version, or a resolver that exited 0 printing nothing, sailed straight through the strictest setting the script has.
 
-The empty-resolver case gets a fixture: inject-env.sh finds resolve-version.sh
-next to itself, so the only way to plant "resolver succeeds but prints nothing"
-is to run a copy with a planted sibling.
+The empty-resolver case gets a fixture: inject-env.sh finds resolve-version.sh next to itself, so the only way to plant "resolver succeeds but prints nothing" is to run a copy with a planted sibling.
 
-WHAT THIS MODULE READS FROM THE REAL TREE, and why that is safe for the parity
-driver: the reachability case READS four release-path build boundaries and
-writes nowhere in them. The falsifying half builds its own stripped copies under
-`tmp_path`, exactly as the twin does.
+WHAT THIS MODULE READS FROM THE REAL TREE, and why that is safe for the parity driver: the reachability case READS four release-path build boundaries and writes nowhere in them. The falsifying half builds its own stripped copies under `tmp_path`, exactly as the twin does.
 """
 
 from rediacc_ci import paths

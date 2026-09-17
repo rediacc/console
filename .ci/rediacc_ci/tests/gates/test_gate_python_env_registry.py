@@ -1,20 +1,13 @@
 """The gate test for `check:ci-python-env-registry`, which has no bash twin.
 
-NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name
-here. What this file tests is the thing a selftest structurally cannot: the gate
-as a PROCESS, invoked the way CI invokes it -- by path, through `_cipath`, with
-its own argv parsing and its own exit codes -- and once against the REAL tree
-and the REAL registry.
+NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name here. What this file tests is the thing a selftest structurally cannot: the gate as a PROCESS, invoked the way CI invokes it -- by path, through `_cipath`, with its own argv parsing and its own exit codes -- and once against the REAL tree and the REAL registry.
 
 WHY BOTH TAMPER DIRECTIONS ARE DRIVEN AS A PROCESS AND NOT ONLY IN THE SELFTEST.
-The selftest calls `run()` and `write_baseline()` directly, so every one of its
-controls would still pass if `main()` mis-parsed `--write` `-baseline`, if the
-entry point imported the wrong module, or if a refusal returned 1 from a
+The selftest calls `run()` and `write_baseline()` directly, so every one of its controls would still pass if `main()` mis-parsed `--write` `-baseline`, if the entry point imported the wrong module, or if a refusal returned 1 from a
 function whose value `main()` discarded. Those are the failures that make a gate
 green for a reason that has nothing to do with the tree.
 
-THE REAL TREE IS NEVER MUTATED. Every tamper below happens inside a temporary
-git repository the test builds, reached through `$REDIACC_CI_ROOT`. Other
+THE REAL TREE IS NEVER MUTATED. Every tamper below happens inside a temporary git repository the test builds, reached through `$REDIACC_CI_ROOT`. Other
 sessions share this worktree; a registry that is wrong for a second is a
 registry some other session's run read.
 """

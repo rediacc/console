@@ -1,10 +1,6 @@
 """`rediacc_ci.ci.dispatch_watchdog` against its bash twin.
 
-BOTH SIDES ARE DRIVEN THROUGH ONE RECORDING FAKE `gh` on a scratch PATH, and
-the fake is not a convenience: every path of this script either reads the
-GitHub API or DISPATCHES A WORKFLOW RUN, so there is no invocation a test could
-safely let reach GitHub. The fake logs its own argv as `call: gh ...` on stderr
-and answers from five environment variables:
+BOTH SIDES ARE DRIVEN THROUGH ONE RECORDING FAKE `gh` on a scratch PATH, and the fake is not a convenience: every path of this script either reads the GitHub API or DISPATCHES A WORKFLOW RUN, so there is no invocation a test could safely let reach GitHub. The fake logs its own argv as `call: gh ...` on stderr and answers from five environment variables:
 
     FAKE_GH_API_STDOUT   the `gh api` body, on stdout
     FAKE_GH_API_STDERR   a `gh api` diagnostic, on stderr
@@ -12,26 +8,18 @@ and answers from five environment variables:
     FAKE_GH_RUN_STDERR   a `gh workflow run` diagnostic
     FAKE_GH_RUN_RC       the `gh workflow run` exit status
 
-THE TWO SUBCOMMANDS ANSWER SEPARATELY because the twin treats their streams
-differently: `gh api`'s stderr passes straight through to the script's own,
+THE TWO SUBCOMMANDS ANSWER SEPARATELY because the twin treats their streams differently: `gh api`'s stderr passes straight through to the script's own,
 while `try_dispatch` captures `gh workflow run`'s two streams MERGED and hides
-them entirely on success. A single-answer fake would make those two facts
-indistinguishable.
+them entirely on success. A single-answer fake would make those two facts indistinguishable.
 
-The `call:` line is also what makes a shadow-gate ledger possible for this
-pair. `shadow-gate.ts` classifies `→ ` and `✓ ` as CHATTER before any
-`--finding-re` is consulted, and a successful dispatch reports ONLY through
-`log_info`, so no message-text regex could ever produce a finding on the happy
-path. The ledger is recorded with `--finding-re '^call: '`.
+The `call:` line is also what makes a shadow-gate ledger possible for this pair. `shadow-gate.ts` classifies `→ ` and `✓ ` as CHATTER before any `--finding-re` is consulted, and a successful dispatch reports ONLY through `log_info`, so no message-text regex could ever produce a finding on the happy path. The ledger is recorded with `--finding-re '^call: '`.
 
-ONE NORMALISATION, AND ONLY ONE. Defect C's octal abort makes bash print
-`((: 08: value too great for base (error token is "08")` naming a line of the
+ONE NORMALISATION, AND ONLY ONE. Defect C's octal abort makes bash print `((: 08: value too great for base (error token is "08")` naming a line of the
 twin. `strip_bash_arith` removes exactly that line and nothing else; the case
 that uses it asserts the removed line was really there.
 
 The K=5 ledger is `.ci/shadow/w7p6-dispatch-watchdog.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-watchdog --assert
---k 5`).
+(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-watchdog --assert --k 5`).
 """
 
 from __future__ import annotations
@@ -103,8 +91,7 @@ def bindir(tmp_path_factory) -> pathlib.Path:
 def nogh(tmp_path_factory) -> pathlib.Path:
     """A PATH that has every tool BUT `gh`, for the require_cmd refusal.
 
-    Built by symlink rather than by pruning `/usr/bin` off PATH, because that
-    would also remove bash and turn a refusal into a 127 from the harness.
+    Built by symlink rather than by pruning `/usr/bin` off PATH, because that would also remove bash and turn a refusal into a 127 from the harness.
     """
     root = tmp_path_factory.mktemp("dispatch-watchdog-nogh")
     for tool in TOOLS_WITHOUT_GH:
@@ -159,9 +146,7 @@ def strip_bash_arith(stderr: str) -> str:
 def test_an_explicit_head_ref_needs_no_lookup_at_all(bindir: pathlib.Path) -> None:
     """Both `--pr-number` and `--head-ref` given: zero `gh api` calls.
 
-    A successful dispatch is SILENT about the call it made, because
-    `try_dispatch` captures both of its streams. The absence of `gh api` in the
-    output is therefore the assertion.
+    A successful dispatch is SILENT about the call it made, because `try_dispatch` captures both of its streams. The absence of `gh api` in the output is therefore the assertion.
     """
     old = assert_identical(
         bindir,
@@ -520,8 +505,7 @@ def test_a_bad_pending_rerun_is_refused(bindir: pathlib.Path, bad: str) -> None:
 def test_an_empty_pending_rerun_is_accepted_as_false(bindir: pathlib.Path) -> None:
     """`${2:-false}` defaults on UNSET **or empty**, so `''` is not a refusal.
 
-    The one-character difference between `:-` and `-` decides this, and a port
-    that read `argv[i + 1]` straight would refuse an input the twin accepts.
+    The one-character difference between `:-` and `-` decides this, and a port that read `argv[i + 1]` straight would refuse an input the twin accepts.
     """
     old = assert_identical(
         bindir,

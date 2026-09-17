@@ -1,19 +1,12 @@
 """`rediacc_ci.ci.assert_install_methods_complete` against its bash twin.
 
-Three things are compared per case, not two: stdout, stderr, the exit code AND
-the bytes appended to `$GITHUB_STEP_SUMMARY`. The summary is the script's real
-product -- it is the table a human reads in the Actions UI -- so a port that
-got the verdict right and the table wrong would pass a stream-only comparison.
-Each side writes its OWN summary file so the two cannot contaminate each other.
+Three things are compared per case, not two: stdout, stderr, the exit code AND the bytes appended to `$GITHUB_STEP_SUMMARY`. The summary is the script's real product -- it is the table a human reads in the Actions UI -- so a port that got the verdict right and the table wrong would pass a stream-only comparison. Each side writes its OWN summary file so the two cannot contaminate
+each other.
 
-`$GITHUB_STEP_SUMMARY` is a real file under `tmp_path`, never `/dev/stdout`:
-appending to `/dev/stdout` reopens the description and races the inherited one,
-which garbles both sides differently and would make the comparison a coin flip.
+`$GITHUB_STEP_SUMMARY` is a real file under `tmp_path`, never `/dev/stdout`: appending to `/dev/stdout` reopens the description and races the inherited one, which garbles both sides differently and would make the comparison a coin flip.
 
 The K=5 ledger is
-`.ci/shadow/w7p6-assert-install-methods-complete.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-install-methods-complete
---assert --k 5`).
+`.ci/shadow/w7p6-assert-install-methods-complete.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-install-methods-complete --assert --k 5`).
 """
 
 from __future__ import annotations
@@ -103,9 +96,7 @@ def test_all_six_platforms_green(tmp_path: pathlib.Path) -> None:
 def test_the_platform_table_still_matches_the_twins(tmp_path: pathlib.Path) -> None:
     """The label|suffix pairs are a COPY of the twin's array. Re-read the twin.
 
-    Parsed out of the bash rather than restated, so the port and the test
-    cannot drift together away from the file CI runs. `tmp_path` is unused
-    here and kept for signature symmetry with the rest of the file.
+    Parsed out of the bash rather than restated, so the port and the test cannot drift together away from the file CI runs. `tmp_path` is unused here and kept for signature symmetry with the rest of the file.
     """
     del tmp_path
     with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
@@ -207,10 +198,7 @@ def test_an_empty_summary_variable_is_also_dev_null(tmp_path: pathlib.Path) -> N
 def test_an_unwritable_summary_refuses_before_judging_anything(tmp_path: pathlib.Path) -> None:
     """REWORDED, NOT BYTE-IDENTICAL, and the only such case in this file.
 
-    The twin dies at its first redirect under `set -e` with a bare shell
-    diagnostic carrying a bash line number. Both sides must exit 1, print
-    nothing to stdout, name the path and name the OS error, and neither may
-    reach the verdict lines.
+    The twin dies at its first redirect under `set -e` with a bare shell diagnostic carrying a bash line number. Both sides must exit 1, print nothing to stdout, name the path and name the OS error, and neither may reach the verdict lines.
     """
     unwritable = str(tmp_path / "nonexistent-dir" / "summary.md")
     old, new, _, _ = run_both(tmp_path, all_green(), summary=unwritable)

@@ -2,27 +2,17 @@
 
 Both-ways test for `scripts/gates/check-embed-arch-parity.ts`.
 
-The gate exists because arm64 criu silently became a different version from amd64
-criu and every existing gate stayed green: nothing carried an architecture
-dimension, so a per-arch divergence was structurally invisible. A gate for that
+The gate exists because arm64 criu silently became a different version from amd64 criu and every existing gate stayed green: nothing carried an architecture dimension, so a per-arch divergence was structurally invisible. A gate for that
 class is worthless unless it demonstrably FIRES, so every defect class below is
-planted into a fixture lockfile and asserted to fail, and the real lockfile is
-asserted to pass.
+planted into a fixture lockfile and asserted to fail, and the real lockfile is asserted to pass.
 
 WHAT THE PORT CHANGES, AND WHAT IT DELIBERATELY DOES NOT. The twin builds each
 mutant lockfile with `jq <filter> <real lockfile>`; the port loads the real
-lockfile with `json` and applies the same edit as a dict operation. That drops a
-dependency on `jq` being installed, and it makes each mutation READABLE as what it
-does rather than as a filter string. What it does NOT change is the SOURCE: every
-fixture is still derived from the REAL `private/renet/embed-assets.lock.json`, so a
-lockfile that grows a new component grows a new fixture on its own, and a
-hand-typed fixture cannot drift away from the thing being guarded.
+lockfile with `json` and applies the same edit as a dict operation. That drops a dependency on `jq` being installed, and it makes each mutation READABLE as what it does rather than as a filter string. What it does NOT change is the SOURCE: every fixture is still derived from the REAL `private/renet/embed-assets.lock.json`, so a lockfile that grows a new component grows a new
+fixture on its own, and a hand-typed fixture cannot drift away from the thing being guarded.
 
-THE SUBMODULE-ABSENT PATH IS A REFUSAL HERE, NOT A PASS, and that is the one place
-this port disagrees with its twin on purpose. The twin logs
-`log_pass "renet submodule absent, skipping"` and returns, which folds "could not
-check" into "checked and fine" -- the exact shape this directory exists to refuse.
-The port fails loudly with the fix line instead. This CANNOT diverge the verdict on
+THE SUBMODULE-ABSENT PATH IS A REFUSAL HERE, NOT A PASS, and that is the one place this port disagrees with its twin on purpose. The twin logs `log_pass "renet submodule absent, skipping"` and returns, which folds "could not check" into "checked and fine" -- the exact shape this directory exists to refuse. The port fails loudly with the fix line instead. This CANNOT diverge the
+verdict on
 any tree that has the submodule, which is every tree CI runs on and this one; on a
 tree without it the port is the stricter of the two, which is the safe direction.
 """
@@ -132,12 +122,9 @@ def test_rejects_empty_lockfile(gate, tmp_path):
 
 def test_the_mutations_are_still_reachable(gate):
     """PORT-ONLY. Every case above edits a NAMED component out of the real
-    lockfile, and a rename would turn each of those edits into a KeyError that
-    pytest renders as an ERROR rather than as a finding about arch parity.
+    lockfile, and a rename would turn each of those edits into a KeyError that pytest renders as an ERROR rather than as a finding about arch parity.
 
-    This says which names the fixtures depend on, in one place, so a lockfile that
-    drops `criu`, `k3s` or `zot` reds here with a sentence a reader can act on
-    instead of five stack traces.
+    This says which names the fixtures depend on, in one place, so a lockfile that drops `criu`, `k3s` or `zot` reds here with a sentence a reader can act on instead of five stack traces.
     """
     data = real_lockfile(gate)
     components = data.get("components", {})

@@ -4,8 +4,7 @@ Ported from `.ci/scripts/quality/check-agent-browser-exit.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live and for the
 phase-5 decision that retires the twin.
 
-THE TWIN'S OWN HEADER, carried over because the measurement IS the gate and a
-paraphrase of it would be a different gate:
+THE TWIN'S OWN HEADER, carried over because the measurement IS the gate and a paraphrase of it would be a different gate:
 
   `agent-browser open` has an EXIT CODE THAT DEPENDS ON WHETHER STDOUT IS A TTY.
 
@@ -48,69 +47,36 @@ PORT NOTES.
 THE LAST LINE OF A FILE WITH NO TRAILING NEWLINE IS NOT SCANNED, and that is
 the twin's behaviour rather than a shortcut taken here. `while IFS= read -r
 line; do ... done <"$f"` runs its body only when `read` SUCCEEDS, and `read`
-returns non-zero at EOF even though it has already assigned the partial line.
-Measured in this tree:
+returns non-zero at EOF even though it has already assigned the partial line. Measured in this tree:
 
     printf 'a\nb' > f; n=0
     while IFS= read -r l; do n=$((n+1)); echo "GOT[$n]=$l"; done < f
     -> GOT[1]=a, final n=1
 
-So `b` is invisible to the scanner. `_read_lines` reproduces exactly that by
-splitting on "\n" and DROPPING the final element unconditionally: for a file
-ending in a newline that element is the empty string and dropping it is
-correct, and for a file that does not it is the unscanned last line. Both cases
-therefore agree with bash. This is reported as a defect in the twin rather than
-silently repaired, because repairing it would change the verdict on a real file
-and the port's job is to keep the verdict.
+So `b` is invisible to the scanner. `_read_lines` reproduces exactly that by splitting on "\n" and DROPPING the final element unconditionally: for a file ending in a newline that element is the empty string and dropping it is correct, and for a file that does not it is the unscanned last line. Both cases therefore agree with bash. This is reported as a defect in the twin rather
+than silently repaired, because repairing it would change the verdict on a real file and the port's job is to keep the verdict.
 
-`set -o errexit` IS NOT SEEN, for the same reason. The eligibility test is
-`grep -qE '^[[:space:]]*set[[:space:]]+-[a-z]*e'`, which requires the `e` to sit
-inside the option CLUSTER: `-e`, `-euo` and `-ex` all match because `[a-z]*` can
-be empty or `u`/`x`-and-friends up to an `e`, while `-o errexit` puts a SPACE
-between the dash and the `e` and `[a-z]*` cannot cross it. A script written with
-the long form dies exactly the same way and this gate never looks at it. Carried
+`set -o errexit` IS NOT SEEN, for the same reason. The eligibility test is `grep -qE '^[[:space:]]*set[[:space:]]+-[a-z]*e'`, which requires the `e` to sit inside the option CLUSTER: `-e`, `-euo` and `-ex` all match because `[a-z]*` can be empty or `u`/`x`-and-friends up to an `e`, while `-o errexit` puts a SPACE between the dash and the `e` and `[a-z]*` cannot cross it. A script
+written with the long form dies exactly the same way and this gate never looks at it. Carried
 unchanged; reported.
 
 `[[:space:]]` IS NOT `\s`. POSIX space is exactly [ \t\n\v\f\r]; Python's `\s`
-on a str pattern also matches U+00A0 and U+2028, so a line indented with a
-non-breaking space would be seen by the port and not by grep. The class is
-written out rather than abbreviated, the same way `rediacc_ci.quality.npmrc`
-does it and for the same reason.
+on a str pattern also matches U+00A0 and U+2028, so a line indented with a non-breaking space would be seen by the port and not by grep. The class is written out rather than abbreviated, the same way `rediacc_ci.quality.npmrc` does it and for the same reason.
 
 THE SKIP LIST TESTS THE RAW LINE, NOT THE STRIPPED ONE. Only the comment test
 uses the leading-whitespace-stripped form (`${line#"${line%%[![:space:]]*}"}`);
-`|| true`, `&&`, `if `, `! agent-browser` and `$(` are all matched against the
-line as read. That distinction is invisible in practice and is preserved because
-guessing which one a shell `case` was looking at is exactly the sort of detail a
-"tidy" rewrite gets wrong.
+`|| true`, `&&`, `if `, `! agent-browser` and `$(` are all matched against the line as read. That distinction is invisible in practice and is preserved because guessing which one a shell `case` was looking at is exactly the sort of detail a "tidy" rewrite gets wrong.
 
-`*'&&'*` SKIPS ANY LINE CONTAINING `&&` ANYWHERE, which is broader than the
-header's "a `&&`/`||` chain" promises. `cd "$dir" && agent-browser open "$URL"`
-is skipped, and under `set -e` that line still kills the script: an AND-list's
-status is its LAST command's, and a failing last command in a `&&` list is not
-in a context that suppresses errexit. A real false negative, carried unchanged
-and reported.
+`*'&&'*` SKIPS ANY LINE CONTAINING `&&` ANYWHERE, which is broader than the header's "a `&&`/`||` chain" promises. `cd "$dir" && agent-browser open "$URL"` is skipped, and under `set -e` that line still kills the script: an AND-list's status is its LAST command's, and a failing last command in a `&&` list is not in a context that suppresses errexit. A real false negative, carried
+unchanged and reported.
 
-THE STATUS IS MADE BOOLEAN, THE COUNT IS NOT RETURNED. The twin ends both
-scanners with `[ "$hits" -eq 0 ]` and says why in as many words: "NOT `return
-"$hits"`. A shell return is taken mod 256, so exactly 256 findings would return
-0 and read as a clean scan." Python has no such wrap, but the shape is kept --
-the scanners return their findings and the caller decides -- so the reason
-survives next to the code it explains.
+THE STATUS IS MADE BOOLEAN, THE COUNT IS NOT RETURNED. The twin ends both scanners with `[ "$hits" -eq 0 ]` and says why in as many words: "NOT `return "$hits"`. A shell return is taken mod 256, so exactly 256 findings would return 0 and read as a clean scan." Python has no such wrap, but the shape is kept -- the scanners return their findings and the caller decides -- so the
+reason survives next to the code it explains.
 
-SELF-EXCLUSION IS BY EXACT FILENAME AND APPLIES ONLY TO THE SHELL HALF. The
-twin's `grep -vF 'check-agent-browser-exit.sh'` removes itself from `scan`'s
-corpus, because it carries the pattern in its own fixtures and in its own error
-text. `scan_js` needs no equivalent: it only looks at `*.js`, `*.mjs`, `*.cjs`
-and `*.ts`, and neither the twin nor this module is one of those. THIS FILE IS
-LIKEWISE INVISIBLE TO BOTH HALVES, being `.py`, which is worth stating because a
-reader who notices the literal `execFileSync('agent-browser', ...)` in the
-selftest below will otherwise wonder whether the gate reads itself.
+SELF-EXCLUSION IS BY EXACT FILENAME AND APPLIES ONLY TO THE SHELL HALF. The twin's `grep -vF 'check-agent-browser-exit.sh'` removes itself from `scan`'s corpus, because it carries the pattern in its own fixtures and in its own error text. `scan_js` needs no equivalent: it only looks at `*.js`, `*.mjs`, `*.cjs` and `*.ts`, and neither the twin nor this module is one of those. THIS
+FILE IS LIKEWISE INVISIBLE TO BOTH HALVES, being `.py`, which is worth stating because a reader who notices the literal `execFileSync('agent-browser', ...)` in the selftest below will otherwise wonder whether the gate reads itself.
 
-ORDER MATTERS AND IS PRESERVED: the JS half runs FIRST and exits before the
-shell half is reached. A tree with both defects reports only the JavaScript one,
-which is a property of the twin's control flow and would silently change if the
-two scans were merged into one report.
+ORDER MATTERS AND IS PRESERVED: the JS half runs FIRST and exits before the shell half is reached. A tree with both defects reports only the JavaScript one, which is a property of the twin's control flow and would silently change if the two scans were merged into one report.
 """
 
 import os
@@ -160,9 +126,7 @@ RECOVERY = ".stdout"
 def _read_lines(text: str) -> list[str]:
     """The lines bash's `while IFS= read -r line` would actually deliver.
 
-    The final element of the split is dropped ALWAYS: it is the empty string for
-    a file ending in a newline, and the unscanned partial last line for a file
-    that does not end in one. See the port notes for the measurement.
+    The final element of the split is dropped ALWAYS: it is the empty string for a file ending in a newline, and the unscanned partial last line for a file that does not end in one. See the port notes for the measurement.
     """
     parts = text.split("\n")
     return parts[:-1]
@@ -177,20 +141,11 @@ def _corpus(root: str, suffixes: tuple[str, ...], prune: tuple[str, ...]) -> lis
     """`grep -rl <needle> --include=... | grep -v ... | sort`, as a path list.
 
     SORTED BY BYTES, not by locale. The differential harness pins LC_ALL=C
-    precisely so `sort` is byte order, and a Python sort over str is the same
-    thing for the ASCII paths this repo has. Encoding the key makes that explicit
-    rather than true by accident.
+    precisely so `sort` is byte order, and a Python sort over str is the same thing for the ASCII paths this repo has. Encoding the key makes that explicit rather than true by accident.
 
-    A MISSING ROOT IS AN EMPTY CORPUS, not an error, matching the twin's
-    `2>/dev/null` on the grep. That is not a vacuity hole being copied blindly:
-    the twin's controls drive `scan` against a directory that does not exist on
-    purpose, so the behaviour is load-bearing for its own self-test.
+    A MISSING ROOT IS AN EMPTY CORPUS, not an error, matching the twin's `2>/dev/null` on the grep. That is not a vacuity hole being copied blindly: the twin's controls drive `scan` against a directory that does not exist on purpose, so the behaviour is load-bearing for its own self-test.
 
-    `prune` IS NOW A TUPLE OF DIRECTORY NAMES handed to `paths.walk_tree`, which
-    also prunes `.git`, `node_modules` and `.claude/worktrees` for every caller.
-    The last of those is why this changed: a peer's sibling checkout under
-    `.claude/worktrees/` is invisible to git and was not invisible to `os.walk`,
-    so this corpus was silently scanning a second copy of the repository.
+    `prune` IS NOW A TUPLE OF DIRECTORY NAMES handed to `paths.walk_tree`, which also prunes `.git`, `node_modules` and `.claude/worktrees` for every caller. The last of those is why this changed: a peer's sibling checkout under `.claude/worktrees/` is invisible to git and was not invisible to `os.walk`, so this corpus was silently scanning a second copy of the repository.
     """
     out: list[str] = []
     for dirpath, dirnames, filenames in paths.walk_tree(root, exclude_dirs=prune):
@@ -213,8 +168,7 @@ def _report(root: str, path: str, number: int, line: str) -> str:
     """One finding, in the twin's two-line `printf '  %s:%d\\n    %s\\n'` shape.
 
     The path is made relative with `${f#"$root"/}`, which is a PREFIX strip and
-    not a path computation: a file that is not under `root` keeps its full name,
-    which is what the twin does and is the harmless case.
+    not a path computation: a file that is not under `root` keeps its full name, which is what the twin does and is the harmless case.
     """
     rel = path.removeprefix(root.rstrip("/") + "/")
     return "  %s:%d\n    %s" % (rel, number, _strip_leading(line))
@@ -223,8 +177,7 @@ def _report(root: str, path: str, number: int, line: str) -> str:
 def scan(root: str) -> list[str]:
     """Shell scripts under `set -e` whose control flow trusts that exit status.
 
-    Returns the findings rather than a boolean, so a test can assert on the
-    decision without capturing a stream. The twin's `[ "$hits" -eq 0 ]` becomes
+    Returns the findings rather than a boolean, so a test can assert on the decision without capturing a stream. The twin's `[ "$hits" -eq 0 ]` becomes
     `not scan(root)` at the call site; see the port notes for why the count is
     never the return value on either side.
     """
@@ -263,8 +216,7 @@ def scan_js(root: str) -> list[str]:
     """JS/TS callers that exec agent-browser through a THROWING exec and discard
     the child's stdout.
 
-    See the module docstring for the 2026-08-31 CI red (run 33430885467, job
-    99616335703) this half was written for.
+    See the module docstring for the 2026-08-31 CI red (run 33430885467, job 99616335703) this half was written for.
     """
     hits: list[str] = []
     for path in _corpus(root, JS_SUFFIXES, JS_PRUNE):
@@ -318,9 +270,7 @@ def _write(path: pathlib.Path, *lines: str) -> None:
 def inline_controls() -> int:
     """The twin's own controls, run BEFORE the real scan. 0 green, 1 red.
 
-    A gate nobody has watched fail is not a gate. These are carried across
-    unchanged, including the two `echo "  PASS  control: ..."` lines they print
-    on stdout, because a harness reading this gate's output would notice their
+    A gate nobody has watched fail is not a gate. These are carried across unchanged, including the two `echo " PASS control: ..."` lines they print on stdout, because a harness reading this gate's output would notice their
     absence. `--selftest` below is the ADDITION; this is the preserved half.
     """
     ctl = pathlib.Path(tempfile.mkdtemp())
@@ -410,10 +360,7 @@ def inline_controls() -> int:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 violation.
 
-    `--selftest` is intercepted BEFORE the inline controls and before any real
-    scan, matching every other port in this package. The twin takes no arguments
-    at all and would ignore the string entirely, so no caller can be passing it
-    today and the differential never hands it to the old side.
+    `--selftest` is intercepted BEFORE the inline controls and before any real scan, matching every other port in this package. The twin takes no arguments at all and would ignore the string entirely, so no caller can be passing it today and the differential never hands it to the old side.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -466,10 +413,7 @@ _BAD_SH = '#!/usr/bin/env bash\nset -euo pipefail\nagent-browser open "$URL" >/d
 def selftest() -> int:
     """Plant each violation, prove it fires; remove it, prove it does not.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. A scanner with only positive plants will
-    happily flag every call site in the tree, and the mirrors below (`|| true`,
-    a comment, a captured status, a file with no `set -e`, a JS caller that
-    recovers `.stdout`) are the half that proves it does not.
+    BOTH DIRECTIONS FOR EVERY CONTROL. A scanner with only positive plants will happily flag every call site in the tree, and the mirrors below (`|| true`, a comment, a captured status, a file with no `set -e`, a JS caller that recovers `.stdout`) are the half that proves it does not.
     """
     ctl = Controls("agent-browser-exit", floor=26, verbose=True)
 

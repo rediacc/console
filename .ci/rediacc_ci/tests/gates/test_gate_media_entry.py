@@ -2,16 +2,10 @@
 
 Tests for `.ci/media/media-entry.sh` -- the one entry point for the media pipeline.
 
-THE ASSERTION THIS FILE EXISTS FOR IS THE DELEGATION. Before the cutover run.sh
-carried its own copy of the media surface, and the twin compared the two dispatch
-trees as SETS in both directions. That comparison is spent: phase 2 deleted
-run.sh's arms, so one of the two sets is empty by construction and comparing them
-would agree with itself forever. What replaces it is the thing the mirror was a
-proxy for: a sandbox repo, a REAL `./run.sh` invocation, a marker planted inside
-the module function's own body, once per routed verb.
+THE ASSERTION THIS FILE EXISTS FOR IS THE DELEGATION. Before the cutover run.sh carried its own copy of the media surface, and the twin compared the two dispatch trees as SETS in both directions. That comparison is spent: phase 2 deleted run.sh's arms, so one of the two sets is empty by construction and comparing them would agree with itself forever. What replaces it is the thing
+the mirror was a proxy for: a sandbox repo, a REAL `./run.sh` invocation, a marker planted inside the module function's own body, once per routed verb.
 
-Everything runs with docker, node, npm, nvcc, aws and ssh absent -- the chain needs
-`uname` and `dirname` and nothing else.
+Everything runs with docker, node, npm, nvcc, aws and ssh absent -- the chain needs `uname` and `dirname` and nothing else.
 
 WHERE THIS REIMPLEMENTS grep, sed, sort AND awk, AND WHY THE ANSWERS AGREE.
 
@@ -36,15 +30,11 @@ WHERE THIS REIMPLEMENTS grep, sed, sort AND awk, AND WHY THE ANSWERS AGREE.
   one regex with a capture group for the basename. The sed pair only strips what the
   group already excludes, so the capture is the same string with one fewer pass.
 
-WHY THE ROUTE TABLE IS DRIVEN ROW BY ROW AND FLOORED AT 16. A table that lost rows
-would still pass every row it kept, which is the composition failure a count of
-green cases cannot see. The floor is the twin's, unchanged.
+WHY THE ROUTE TABLE IS DRIVEN ROW BY ROW AND FLOORED AT 16. A table that lost rows would still pass every row it kept, which is the composition failure a count of green cases cannot see. The floor is the twin's, unchanged.
 
 NO `xdist_group`. The sandbox repo is built under pytest's own `tmp_path` and every
 write lands inside it; the only process-wide state touched is `os.environ["PATH"]`,
-which `harness.fake_bin` restores in a `finally`. The one case that sources the REAL
-`media-entry.sh` does so in a FRESH `bash -c` with every routed verb replaced by a
-stub, so nothing it can reach runs in this process or in the checkout.
+which `harness.fake_bin` restores in a `finally`. The one case that sources the REAL `media-entry.sh` does so in a FRESH `bash -c` with every routed verb replaced by a stub, so nothing it can reach runs in this process or in the checkout.
 """
 
 import re
@@ -154,8 +144,7 @@ growth_luma() { echo "growth_luma: $*"; }
 def dispatched_media_functions(text: str) -> list[str]:
     """`grep -oE ... | sort -u` over a DISPATCH REGION, never a whole file.
 
-    Fed the dispatch region because run.sh both defines and calls these names, and
-    a definition is not a route.
+    Fed the dispatch region because run.sh both defines and calls these names, and a definition is not a route.
     """
     return sorted(set(DISPATCHED_RE.findall(text)))
 
@@ -172,8 +161,7 @@ def run_dispatch_region(source: str) -> str:
 def drive_entry(argv: str) -> harness.RunResult:
     """Source the REAL entry point, override every verb, then dispatch.
 
-    No fixture root: the entry point resolves ROOT_DIR from its own location, which
-    is the real repo, and every verb it would reach is replaced above. Nothing runs.
+    No fixture root: the entry point resolves ROOT_DIR from its own location, which is the real repo, and every verb it would reach is replaced above. Nothing runs.
     """
     return harness.run(
         [

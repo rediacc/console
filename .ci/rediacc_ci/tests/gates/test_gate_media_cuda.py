@@ -2,37 +2,21 @@
 
 `.ci/media/cuda.sh`, the flash-attn accelerator probe.
 
-This is the ONE function in the media pipeline whose behaviour depends on
-hardware, and it is therefore the one most likely to be edited on a machine that
-HAS a GPU and never exercised on one that does not. All four of its exits are
-driven here with no GPU, no CUDA toolkit, no torch and no PyPI: a scripted
-`python` fake answers the two questions the function asks it, `nvcc` is present or
-absent BY NAME, and `pip` records what it was asked to install without installing
-anything.
+This is the ONE function in the media pipeline whose behaviour depends on hardware, and it is therefore the one most likely to be edited on a machine that HAS a GPU and never exercised on one that does not. All four of its exits are driven here with no GPU, no CUDA toolkit, no torch and no PyPI: a scripted `python` fake answers the two questions the function asks it, `nvcc` is
+present or absent BY NAME, and `pip` records what it was asked to install without installing anything.
 
 THE OWNERSHIP ASSERTION IS THE OTHER HALF. It used to be byte-identity against
 run.sh's copy; run.sh has no copy any more, so what it asserts now is that this
-module is the ONLY definition of the function, that run.sh and media.sh no longer
-carry one, and that sourcing media-entry.sh resolves the name to this file's body.
-There is no verb that reaches this function -- it is called from venv.sh, three
-levels below `www tutorials generate` -- so the chain probe other media tests use
-does not apply here, and the mutation control instead re-runs a real behaviour
+module is the ONLY definition of the function, that run.sh and media.sh no longer carry one, and that sourcing media-entry.sh resolves the name to this file's body. There is no verb that reaches this function -- it is called from venv.sh, three levels below `www tutorials generate` -- so the chain probe other media tests use does not apply here, and the mutation control instead
+re-runs a real behaviour
 case against a deliberately altered COPY of this module.
 
 WHY A SCRIPTED `python` AND NOT THE RECORDING FAKE. The function asks python two
 questions and both are `python -c`; the four exits differ ONLY in how those two
-answer, which a uniform fake cannot express. The scripted fake matches on the
-argument text, which is what makes "flash_attn imports but torch has no CUDA" a
-distinguishable state from "neither".
+answer, which a uniform fake cannot express. The scripted fake matches on the argument text, which is what makes "flash_attn imports but torch has no CUDA" a distinguishable state from "neither".
 
-NO `xdist_group`, and this one is worth stating rather than assuming, because the
-media harness is the part of this suite most likely to need one. `fake_bin`
-mutates PATH ON THIS PROCESS and restores it in a `finally`, so two of these
-running in ONE worker would be fine and two in two workers are independent
-processes. Nothing is bound, no fixed path is written (every case takes its own
-`mktemp -d`), and `MEDIA_MODULE_DIR` is a per-call ARGUMENT in the port rather
-than the environment variable it is in bash, which removes the one module-global
-the twin does mutate.
+NO `xdist_group`, and this one is worth stating rather than assuming, because the media harness is the part of this suite most likely to need one. `fake_bin` mutates PATH ON THIS PROCESS and restores it in a `finally`, so two of these running in ONE worker would be fine and two in two workers are independent processes. Nothing is bound, no fixed path is written (every case takes
+its own `mktemp -d`), and `MEDIA_MODULE_DIR` is a per-call ARGUMENT in the port rather than the environment variable it is in bash, which removes the one module-global the twin does mutate.
 """
 
 import stat
@@ -55,9 +39,7 @@ BASE_SPEC = "python pip +cat +chmod +uname"
 def script_python(bindir, flash_attn_imports: str, torch_cuda_answer: str) -> None:
     """Replace the recording `python` fake with one that answers the two probes.
 
-    A uniform fake cannot do this: `import flash_attn` and the
-    `torch.cuda.is_available()` query are both `python -c`, and the four exits
-    differ only in how those two answer.
+    A uniform fake cannot do this: `import flash_attn` and the `torch.cuda.is_available()` query are both `python -c`, and the four exits differ only in how those two answer.
     """
     target = bindir / "python"
     target.write_text(

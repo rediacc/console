@@ -1,27 +1,16 @@
 #!/usr/bin/env python3
 """check:ci-pathspec-scope -- a `git ls-files` pathspec must not use `**/`.
 
----- gate ----
-step: Pathspec scope
-needs: none
-why: a count floor cannot tell the two spellings apart, so only a shape check sees it
----- end gate ----
+---- gate ---- step: Pathspec scope needs: none why: a count floor cannot tell the two spellings apart, so only a shape check sees it ---- end gate ----
 
-THE DEFECT, measured 2026-09-06. Two gates enumerated their corpus with
-`git ls-files '.ci/**/*.sh'`. Git's DEFAULT pathspec matching is wildmatch WITHOUT
-`WM_PATHNAME`, so `*` already crosses `/`. That makes `.ci/*.sh` reach every depth,
+THE DEFECT, measured 2026-09-06. Two gates enumerated their corpus with `git ls-files '.ci/**/*.sh'`. Git's DEFAULT pathspec matching is wildmatch WITHOUT `WM_PATHNAME`, so `*` already crosses `/`. That makes `.ci/*.sh` reach every depth,
 while `.ci/**/*.sh` demands a literal slash after `.ci/` and therefore silently skips
-every script sitting directly under `.ci/`. `.ci/bootstrap.sh` was the first file in
-the repo to occupy that class, so nothing had exposed it before.
+every script sitting directly under `.ci/`. `.ci/bootstrap.sh` was the first file in the repo to occupy that class, so nothing had exposed it before.
 
-WHY A COUNT FLOOR CANNOT CATCH THIS, which is the whole reason this gate exists. Both
-spellings return 453 tracked files today. They differ only on the files one of them
-cannot see, so an anti-vacuity floor on the corpus SIZE reads clean under either. The
-scanner skips files and still reports success, which is the exact failure this repo's
-gates are built to refuse. Only a check on the pathspec SHAPE can see it.
+WHY A COUNT FLOOR CANNOT CATCH THIS, which is the whole reason this gate exists. Both spellings return 453 tracked files today. They differ only on the files one of them cannot see, so an anti-vacuity floor on the corpus SIZE reads clean under either. The scanner skips files and still reports success, which is the exact failure this repo's gates are built to refuse. Only a check on
+the pathspec SHAPE can see it.
 
-`:(glob)` MAGIC IS THE ONE LEGITIMATE USE. Prefixing a pathspec with `:(glob)` turns on
-WM_PATHNAME, under which `**` means what people expect and `*` stops crossing `/`. A
+`:(glob)` MAGIC IS THE ONE LEGITIMATE USE. Prefixing a pathspec with `:(glob)` turns on WM_PATHNAME, under which `**` means what people expect and `*` stops crossing `/`. A
 pathspec that opts in that way is correct and is left alone; the bug is `**` under the
 DEFAULT semantics, where it is not a wildcard for depth but a demand for a slash.
 """

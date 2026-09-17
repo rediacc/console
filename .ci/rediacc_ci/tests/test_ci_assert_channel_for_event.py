@@ -1,11 +1,7 @@
 """`rediacc_ci.ci.assert_channel_for_event` against its bash twin.
 
-The twin takes argv and nothing else: no subprocess, no file, no network, no
-env beyond the colour decision. So both sides are driven DIRECTLY with the same
-arguments under the same tiny environment, and stdout, stderr and the exit code
-are compared byte-for-byte. There are no recording fakes here because there is
-nothing to fake -- inventing one would prove a stub works, not that the port
-does.
+The twin takes argv and nothing else: no subprocess, no file, no network, no env beyond the colour decision. So both sides are driven DIRECTLY with the same arguments under the same tiny environment, and stdout, stderr and the exit code are compared byte-for-byte. There are no recording fakes here because there is nothing to fake -- inventing one would prove a stub works, not that
+the port does.
 
 TWO NORMALISATIONS, BOTH NARROW AND BOTH STATED:
 
@@ -15,8 +11,7 @@ TWO NORMALISATIONS, BOTH NARROW AND BOTH STATED:
   * NOTHING ELSE. Every other case asserts raw equality of both streams.
 
 The K=5 ledger is `.ci/shadow/w7p6-assert-channel-for-event.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-channel-for-event
---assert --k 5`).
+(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-channel-for-event --assert --k 5`).
 """
 
 from __future__ import annotations
@@ -100,8 +95,7 @@ def test_the_pr_anchor_is_end_of_string_not_end_of_line() -> None:
 
     This is the one place a naive Python port diverges silently: bash's `$` in
     `[[ =~ ^pr-[0-9]+$ ]]` anchors at end of STRING, while Python's `$` also
-    matches before a trailing newline, so `re.match(r"pr-[0-9]+$", "pr-1\\n")`
-    succeeds where bash refuses. `fullmatch` is what closes it.
+    matches before a trailing newline, so `re.match(r"pr-[0-9]+$", "pr-1\\n")` succeeds where bash refuses. `fullmatch` is what closes it.
     """
     assert_identical("pull_request", "pr-1\n", expect_exit=1)
 
@@ -164,9 +158,7 @@ def twin_text() -> str:
 def test_the_case_arms_still_match_the_twins() -> None:
     """A NEW arm in the twin must break this port, not slip past it.
 
-    The port turns the twin's `case` into a dict plus two branches, which is a
-    COPY of a control-flow table. Re-read the twin rather than restating it: a
-    sixth event arm added there is a rule the port would silently not have.
+    The port turns the twin's `case` into a dict plus two branches, which is a COPY of a control-flow table. Re-read the twin rather than restating it: a sixth event arm added there is a rule the port would silently not have.
     """
     text = twin_text()
     arms = re.findall(r"^    ([a-z_*|]+)\)$", text, re.MULTILINE)
@@ -198,12 +190,8 @@ def test_no_color_suppresses_colour_on_both_sides_on_a_terminal() -> None:
 def test_the_echo_e_divergence_is_pinned_not_repaired() -> None:
     """common.sh logs with `echo -e`; this module formats the message as data.
 
-    A channel containing a literal backslash-t makes the twin emit a TAB and
-    the port emit two characters. `log.py` states the decision ("A SECOND
-    DIVERGENCE, and this one is a bug being dropped rather than a decision"),
-    so the assertion here is that they DISAGREE, in exactly this way and
-    nowhere else. If a future reader "fixes" the port to match, this test says
-    what they have re-imported.
+    A channel containing a literal backslash-t makes the twin emit a TAB and the port emit two characters. `log.py` states the decision ("A SECOND DIVERGENCE, and this one is a bug being dropped rather than a decision"), so the assertion here is that they DISAGREE, in exactly this way and nowhere else. If a future reader "fixes" the port to match, this test says what they have
+    re-imported.
     """
     old, new = run_both("schedule", "dryrun-a\\tb")
     assert old[0] == new[0] == 1

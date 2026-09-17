@@ -1,30 +1,18 @@
 """Differential: `rediacc_ci.autopilot.resolve_model_args` against its twin
 `.ci/scripts/autopilot/resolve-model-args.sh`.
 
-BESPOKE SUBPROCESS COMPARISON rather than `differential.bash_streams`, for one
-reason: this subject writes a THIRD output nobody's stdout or stderr shows, the
-`args<<HEREDOC` block it appends to `$GITHUB_OUTPUT`. That file is what the
-workflow actually consumes -- stdout is for a human reading the log -- so a
-comparison that checked only the two streams would be checking the half that
-does not matter. Every case here compares FOUR things: exit code, stdout,
-stderr, and the bytes of `$GITHUB_OUTPUT`.
+BESPOKE SUBPROCESS COMPARISON rather than `differential.bash_streams`, for one reason: this subject writes a THIRD output nobody's stdout or stderr shows, the `args<<HEREDOC` block it appends to `$GITHUB_OUTPUT`. That file is what the workflow actually consumes -- stdout is for a human reading the log -- so a comparison that checked only the two streams would be checking the half
+that does not matter. Every case here compares FOUR things: exit code, stdout, stderr, and the bytes of `$GITHUB_OUTPUT`.
 
 STREAMS ARE NEVER MERGED. The `::notice` lines go to stdout and the closing
 summary goes to stderr, which is precisely the asymmetry a `2>&1` would erase;
 see `differential.py`'s header on the 2026-09-06 stream-swap incident.
 
-THE INPUT SPACE IS ENUMERATED, NOT SAMPLED. `--effort` and `--effort-var` each
-have five distinct shapes (absent, empty, the literal `default`, a member of
-the allowlist, and junk), the `--effort` flag has a sixth (present with no
-value, which the twin's `parse_args` turns into the string `true`), and the two
-interact: a REJECTED dispatch effort must still let the variable through, which
-is the one behaviour an `elif` would silently break. So the cross-product is
-driven whole, both modes, rather than three hand-picked cases.
+THE INPUT SPACE IS ENUMERATED, NOT SAMPLED. `--effort` and `--effort-var` each have five distinct shapes (absent, empty, the literal `default`, a member of the allowlist, and junk), the `--effort` flag has a sixth (present with no value, which the twin's `parse_args` turns into the string `true`), and the two interact: a REJECTED dispatch effort must still let the variable through,
+which is the one behaviour an `elif` would silently break. So the cross-product is driven whole, both modes, rather than three hand-picked cases.
 
 K=5 LEDGER: `.ci/shadow/w7p6-resolve-model-args.observations.jsonl`, recorded
-against a disposable scratch git repository built outside this checkout: this
-checkout's own working tree is never clean, and `shadow-gate.ts --record`
-refuses a dirty tree with no override.
+against a disposable scratch git repository built outside this checkout: this checkout's own working tree is never clean, and `shadow-gate.ts --record` refuses a dirty tree with no override.
 """
 
 from __future__ import annotations
@@ -134,9 +122,7 @@ def test_effort_cross_product() -> None:
 def test_rejected_dispatch_effort_still_lets_the_variable_through() -> None:
     """The `if` that must not become an `elif`.
 
-    A typo'd dispatch effort must not also disable the standing setting, and
-    both notices must appear. Asserted on the twin's own output so the property
-    is pinned to the SUBJECT rather than to the port's reading of it.
+    A typo'd dispatch effort must not also disable the standing setting, and both notices must appear. Asserted on the twin's own output so the property is pinned to the SUBJECT rather than to the port's reading of it.
     """
     _, stdout, _, gh = _compare(
         "junk-dispatch-good-var",
@@ -158,8 +144,7 @@ def test_dispatch_beats_the_variable() -> None:
 def test_turn_budget_differs_by_mode() -> None:
     """CONTROL, both directions: `fix` is 80 turns and anything else is 60.
 
-    Without the second half a port that always printed 80 would pass every
-    positive assertion in this file.
+    Without the second half a port that always printed 80 would pass every positive assertion in this file.
     """
     _, fix_out, _, _ = _compare("turns-fix", ["--model", "m", "--mode", "fix"])
     _, rev_out, _, _ = _compare("turns-review", ["--model", "m", "--mode", "review-response"])
@@ -196,12 +181,9 @@ def test_no_github_output_is_a_no_op() -> None:
 
 def test_the_comparison_can_actually_fail() -> None:
     """ANTI-VACUITY. Every assertion above compares the twin with the port; if
-    the harness could not tell two different programs apart, all of it would be
-    green over any port at all.
+    the harness could not tell two different programs apart, all of it would be green over any port at all.
 
-    So drive the TWIN against ITSELF with one input changed and require the
-    same comparison to report a difference. A mutated copy of the port would be
-    a better control still, but it would also be a second implementation this
+    So drive the TWIN against ITSELF with one input changed and require the same comparison to report a difference. A mutated copy of the port would be a better control still, but it would also be a second implementation this
     file then has to maintain; changing the input is enough to prove the
     comparator's eyes work, and it cannot rot.
     """
@@ -215,8 +197,7 @@ def test_the_comparison_can_actually_fail() -> None:
 def test_pure_helpers_are_exercised_directly() -> None:
     """The exported pure functions, without a subprocess.
 
-    `resolve_effort` is where the whole decision lives, so it gets both
-    directions: something that must resolve, and something that must NOT.
+    `resolve_effort` is where the whole decision lives, so it gets both directions: something that must resolve, and something that must NOT.
     """
     assert rma.resolve_effort("high", "")[0] == "high"
     assert rma.resolve_effort("", "max")[0] == "max"

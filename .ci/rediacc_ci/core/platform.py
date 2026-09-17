@@ -1,10 +1,6 @@
 """Which OS and which architecture, in the exact spellings this repo's URLs use.
 
-WHAT IT REPLACES. FOURTEEN `case "$(uname -s)"` blocks and TWELVE
-`case "$(uname -m)"` blocks, spread across twelve tracked files, agreeing about
-nothing except that they all start from uname. Enumerated with
-`git grep -n 'case "$(uname -s)"' -- '*.sh'` on 2026-09-06, private/ excluded
-(the numbers in the first draft of this docstring were guessed from a partial
+WHAT IT REPLACES. FOURTEEN `case "$(uname -s)"` blocks and TWELVE `case "$(uname -m)"` blocks, spread across twelve tracked files, agreeing about nothing except that they all start from uname. Enumerated with `git grep -n 'case "$(uname -s)"' -- '*.sh'` on 2026-09-06, private/ excluded (the numbers in the first draft of this docstring were guessed from a partial
 grep and were wrong in both directions; these are the grep's):
 
   OS, 14 sites
@@ -37,65 +33,37 @@ grep and were wrong in both directions; these are the grep's):
   plus .ci/breakpoint/lib/breakpoint-common.sh:156, which cases on a variable
   it filled from uname a line earlier: x64 | arm64 | unknown.
 
-THREE SPELLINGS OF THE SAME TWO ARCHITECTURES, and every one of them is right:
-they are the names three different UPSTREAMS publish their assets under. So this
-module does NOT invent a fourth. `ARCH_NAMES` below is a table keyed by the
-consumer, with the file and line each row was read from, and `arch_for()` is how
-a caller says which of the three it needs. A helper that returned one "normalized
-arch" would be a fourth scheme that every call site then has to translate, which
-is how a fourth scheme starts.
+THREE SPELLINGS OF THE SAME TWO ARCHITECTURES, and every one of them is right: they are the names three different UPSTREAMS publish their assets under. So this module does NOT invent a fourth. `ARCH_NAMES` below is a table keyed by the consumer, with the file and line each row was read from, and `arch_for()` is how a caller says which of the three it needs. A helper that returned
+one "normalized arch" would be a fourth scheme that every call site then has to translate, which is how a fourth scheme starts.
 
-TWO SPELLINGS OF THE OS, for the same reason and with the same treatment. The
-download URLs want `linux | darwin | windows`, and this repo's OWN artefact names
-want `linux | mac | win` (`rdc-mac-arm64`, `rdc-win-x64.exe`). `OS_NAMES` carries
+TWO SPELLINGS OF THE OS, for the same reason and with the same treatment. The download URLs want `linux | darwin | windows`, and this repo's OWN artefact names want `linux | mac | win` (`rdc-mac-arm64`, `rdc-win-x64.exe`). `OS_NAMES` carries
 both and `os_for()` selects; `os_name()` is the asset spelling, because that is
 what every third-party URL in the tree asks for.
 
-`.ci/scripts/lib/common.sh:64` is a THIRD spelling (`macos`, `windows`) and it is
-deliberately NOT a row here, because it also carries a fail-open default arm --
-an unrecognised uname yields the string `unknown` rather than a refusal, and
-every caller then compares against a value that reads like an answer. Adopting it
-would import that behaviour. Reported to the driver rather than reproduced.
+`.ci/scripts/lib/common.sh:64` is a THIRD spelling (`macos`, `windows`) and it is deliberately NOT a row here, because it also carries a fail-open default arm -- an unrecognised uname yields the string `unknown` rather than a refusal, and every caller then compares against a value that reads like an answer. Adopting it would import that behaviour. Reported to the driver rather than
+reproduced.
 
 --------------------------------------------------------------------------
 THE DEFECT THIS MODULE IS SHAPED BY
 --------------------------------------------------------------------------
-`toolchain.sh` used to hardcode the literal string `linux` into both of its
-download URLs while deriving only the ARCH from uname. On an arm64 Mac that was
-not a 404, which is what made it dangerous: `uname -m` says arm64, the ARM64
-checksum is present and matches, so a LINUX binary downloads, VERIFIES, gets
-chmod +x, and fails much later with "cannot execute binary file" from a gate that
-has no idea it installed another OS's tool. `_toolchain_os` (toolchain.sh:303)
+`toolchain.sh` used to hardcode the literal string `linux` into both of its download URLs while deriving only the ARCH from uname. On an arm64 Mac that was not a 404, which is what made it dangerous: `uname -m` says arm64, the ARM64 checksum is present and matches, so a LINUX binary downloads, VERIFIES, gets chmod +x, and fails much later with "cannot execute binary file" from a
+gate that has no idea it installed another OS's tool. `_toolchain_os` (toolchain.sh:303)
 and `uv_target` (bootstrap.sh:91) are the bash fixes; `os_name()` and
-`uv_target()` here are the same decision in one place, and `uv_target()` is
-checked byte for byte against the bash in the tests.
+`uv_target()` here are the same decision in one place, and `uv_target()` is checked byte for byte against the bash in the tests.
 
-The sibling defect is `sha256sum`, which does not exist on macOS -- it is
-`shasum -a 256` there. Verifying with the bare GNU name on a Mac does not report
-"cannot verify", it reports a checksum MISMATCH that never happened, and the
+The sibling defect is `sha256sum`, which does not exist on macOS -- it is `shasum -a 256` there. Verifying with the bare GNU name on a Mac does not report "cannot verify", it reports a checksum MISMATCH that never happened, and the
 caller's `|| { refuse }` arm fires for a reason that is not true. THREE copies of
-that shim exist in the tree today (`_toolchain_sha256sum` at toolchain.sh:282,
-`sha256_of` at bootstrap.sh:123, `_sha256sum` at local-common.sh:37), each
-carrying a comment pointing at the other two. `sha256_command()` here is what a
-caller needs to stop writing a fourth: it returns the ARGV, so the caller spawns
-it, and it RAISES when neither tool exists rather than returning something that
-reads as a verifier.
+that shim exist in the tree today (`_toolchain_sha256sum` at toolchain.sh:282, `sha256_of` at bootstrap.sh:123, `_sha256sum` at local-common.sh:37), each carrying a comment pointing at the other two. `sha256_command()` here is what a caller needs to stop writing a fourth: it returns the ARGV, so the caller spawns it, and it RAISES when neither tool exists rather than returning
+something that reads as a verifier.
 
 --------------------------------------------------------------------------
 WINDOWS IS NEVER A NATIVE TARGET
 --------------------------------------------------------------------------
-Linux, WSL and macOS run this repo's toolchain directly. Windows does not, and
-the reason is recorded in run.ps1's own header rather than invented here: the
-toolchain is provisioned INSIDE WSL by `.ci/bootstrap.sh` and `./run.sh setup`,
-so the Windows entry points (`run.cmd` -> `run.ps1`) exist only to re-enter WSL
+Linux, WSL and macOS run this repo's toolchain directly. Windows does not, and the reason is recorded in run.ps1's own header rather than invented here: the toolchain is provisioned INSIDE WSL by `.ci/bootstrap.sh` and `./run.sh setup`, so the Windows entry points (`run.cmd` -> `run.ps1`) exist only to re-enter WSL
 with `--cd` and propagate the exit code. `require_native_host()` therefore
-refuses on Windows and names those two files, instead of letting a gate discover
-it by failing at `sha256sum` or at a path separator.
+refuses on Windows and names those two files, instead of letting a gate discover it by failing at `sha256sum` or at a path separator.
 
-WSL IS LINUX, not a fourth OS. `os_name()` answers `linux` under WSL, because
-every download URL, every checksum key and every binary is the Linux one. WSL-ness
-is a SEPARATE question, answered separately, because what it changes is advice
-and not artifacts.
+WSL IS LINUX, not a fourth OS. `os_name()` answers `linux` under WSL, because every download URL, every checksum key and every binary is the Linux one. WSL-ness is a SEPARATE question, answered separately, because what it changes is advice and not artifacts.
 
 --------------------------------------------------------------------------
 WSL DETECTION IS EVIDENCE, NOT A GUESS
@@ -115,16 +83,10 @@ WSL DETECTION IS EVIDENCE, NOT A GUESS
 
 Both are matched case-insensitively against `microsoft` and `wsl`.
 
-$WSL_DISTRO_NAME and $WSL_INTEROP are recorded in `env_signals` and are
-DELIBERATELY NOT sufficient on their own. An environment variable is a claim: it
-is inherited by anything the shell spawns, it survives an `ssh` from a WSL host
-into a Linux VM, and `wsl.exe -- env` propagates it in the other direction. /proc
-is the kernel answering about itself. So `is_wsl` is decided by /proc alone, and
-the env vars are carried for the diagnostic they are good at -- naming the distro
-in a message.
+$WSL_DISTRO_NAME and $WSL_INTEROP are recorded in `env_signals` and are DELIBERATELY NOT sufficient on their own. An environment variable is a claim: it is inherited by anything the shell spawns, it survives an `ssh` from a WSL host into a Linux VM, and `wsl.exe -- env` propagates it in the other direction. /proc is the kernel answering about itself. So `is_wsl` is decided by /proc
+alone, and the env vars are carried for the diagnostic they are good at -- naming the distro in a message.
 
-`proc_root` is a parameter so the tests can plant both files and assert on WHICH
-signal fired, in both directions, without needing a WSL host or a non-WSL one.
+`proc_root` is a parameter so the tests can plant both files and assert on WHICH signal fired, in both directions, without needing a WSL host or a non-WSL one.
 
 --------------------------------------------------------------------------
 COMMAND-LINE ENTRY POINT (what a bash caller can reach)
@@ -233,8 +195,7 @@ SHA256_COMMANDS = (("sha256sum",), ("shasum", "-a", "256"))
 class PlatformError(RuntimeError):
     """This host is not one the repo has a pinned answer for.
 
-    A distinct type so a caller can tell "no build exists for you" from any other
-    failure without matching a message string.
+    A distinct type so a caller can tell "no build exists for you" from any other failure without matching a message string.
     """
 
 
@@ -245,19 +206,14 @@ class UnsupportedPlatformError(PlatformError):
 class MissingToolError(PlatformError):
     """A tool the caller cannot proceed without is on no PATH entry.
 
-    SEPARATE FROM UnsupportedPlatformError on purpose. "macOS has no sha256sum" is a
-    supported platform missing one binary, and reporting it as an unsupported
-    platform is how the original defect read: a verifier that could not run
-    reported as a verifier that had failed.
+    SEPARATE FROM UnsupportedPlatformError on purpose. "macOS has no sha256sum" is a supported platform missing one binary, and reporting it as an unsupported platform is how the original defect read: a verifier that could not run reported as a verifier that had failed.
     """
 
 
 def os_name(system: str | None = None) -> str:
     """linux | darwin | windows, from `uname -s`. Raises UnsupportedPlatformError.
 
-    WSL answers `linux`, deliberately: every artefact it downloads is the Linux
-    one. Ask `detect_wsl()` when the question is about advice rather than about
-    a URL.
+    WSL answers `linux`, deliberately: every artefact it downloads is the Linux one. Ask `detect_wsl()` when the question is about advice rather than about a URL.
     """
     raw = _stdlib_platform.system() if system is None else system
     for prefix, name in SYSTEM_PREFIXES:
@@ -272,9 +228,7 @@ def os_name(system: str | None = None) -> str:
 def os_for(scheme: str, system: str | None = None) -> str:
     """This host's OS in one consumer's spelling. Raises UnsupportedPlatformError.
 
-    `scheme` is required and has no default, exactly as in `arch_for()`: `darwin`
-    and `mac` name the same system and are not interchangeable, and a default
-    would put the wrong one into either a download URL or an artefact name.
+    `scheme` is required and has no default, exactly as in `arch_for()`: `darwin` and `mac` name the same system and are not interchangeable, and a default would put the wrong one into either a download URL or an artefact name.
     """
     if scheme not in OS_NAMES:
         raise UnsupportedPlatformError(
@@ -286,9 +240,7 @@ def os_for(scheme: str, system: str | None = None) -> str:
 def exe_suffix(system: str | None = None) -> str:
     """`.exe` on Windows, empty elsewhere. Raises UnsupportedPlatformError.
 
-    The other half of the `sea` spelling. `.ci/lib/local-common.sh:795` and
-    `.ci/scripts/infra/build-renet.sh:32` each derive this from their own
-    MINGW/MSYS/CYGWIN case, which is two copies of one fact.
+    The other half of the `sea` spelling. `.ci/lib/local-common.sh:795` and `.ci/scripts/infra/build-renet.sh:32` each derive this from their own MINGW/MSYS/CYGWIN case, which is two copies of one fact.
     """
     return EXE_SUFFIXES[os_name(system)]
 
@@ -296,8 +248,7 @@ def exe_suffix(system: str | None = None) -> str:
 def machine_key(machine: str | None = None) -> str:
     """`uname -m` folded to x86_64 | aarch64. Raises UnsupportedPlatformError.
 
-    The refusal is the important half. Every bash `case` in the tree ends its
-    arch block with an explicit failure and a message that says "add a checksum
+    The refusal is the important half. Every bash `case` in the tree ends its arch block with an explicit failure and a message that says "add a checksum
     rather than downloading unverified"; falling through to a default would
     download an asset for an architecture nobody recorded a hash for.
     """
@@ -316,8 +267,7 @@ def arch_for(scheme: str, machine: str | None = None) -> str:
 
     `scheme` is required and has no default, for the same reason `pin()` has no
     `default=`: the three spellings are not interchangeable, and a default would
-    hand `x86_64` to a caller building a shfmt URL that needs `amd64`. The 404
-    would name GitHub.
+    hand `x86_64` to a caller building a shfmt URL that needs `amd64`. The 404 would name GitHub.
     """
     if scheme not in ARCH_NAMES:
         raise UnsupportedPlatformError(
@@ -329,10 +279,7 @@ def arch_for(scheme: str, machine: str | None = None) -> str:
 def uv_target(system: str | None = None, machine: str | None = None) -> tuple[str, str]:
     """(target triple, checksum-key suffix) for the uv release asset.
 
-    Byte for byte what `uv_target` in `.ci/bootstrap.sh:91` prints, split into
-    the two fields that file reads with `read -r triple sfx` (bootstrap.sh:172).
-    The suffix completes the pins-file key: `UV_SHA256_<suffix>`, which is the
-    form `.devcontainer/toolchain.env` records all four of them under.
+    Byte for byte what `uv_target` in `.ci/bootstrap.sh:91` prints, split into the two fields that file reads with `read -r triple sfx` (bootstrap.sh:172). The suffix completes the pins-file key: `UV_SHA256_<suffix>`, which is the form `.devcontainer/toolchain.env` records all four of them under.
     """
     name = os_name(system)
     if name not in UV_OS_TRIPLES:
@@ -352,10 +299,7 @@ def uv_checksum_key(system: str | None = None, machine: str | None = None) -> st
 class WslEvidence:
     """What the kernel said, and which file said it.
 
-    An object rather than a bool because "is this WSL" is only half the answer a
-    caller needs: a message that says WHICH signal fired is the difference
-    between a developer trusting the detection and re-checking it by hand. Slots
-    rather than a dataclass to match `age.Verdict` next door.
+    An object rather than a bool because "is this WSL" is only half the answer a caller needs: a message that says WHICH signal fired is the difference between a developer trusting the detection and re-checking it by hand. Slots rather than a dataclass to match `age.Verdict` next door.
     """
 
     __slots__ = ("distro", "env_signals", "signals")
@@ -387,13 +331,9 @@ class WslEvidence:
 def detect_wsl(proc_root: pathlib.Path | str = "/", env: dict[str, str] | None = None):
     """Read the kernel's own strings and report which ones name WSL.
 
-    `proc_root` is a parameter so a test can plant `proc/version` and
-    `proc/sys/kernel/osrelease` under a tmpdir and assert on WHICH signal fired,
-    in both directions, on any host. Without that the case could only be written
-    as "whatever this machine is", which asserts nothing.
+    `proc_root` is a parameter so a test can plant `proc/version` and `proc/sys/kernel/osrelease` under a tmpdir and assert on WHICH signal fired, in both directions, on any host. Without that the case could only be written as "whatever this machine is", which asserts nothing.
 
-    An unreadable file is not a signal and not an error: /proc is absent on
-    macOS, and `detect_wsl()` there must answer "not WSL" rather than raise.
+    An unreadable file is not a signal and not an error: /proc is absent on macOS, and `detect_wsl()` there must answer "not WSL" rather than raise.
     """
     import os  # noqa: PLC0415 -- stdlib os is used by this function alone
 
@@ -423,9 +363,7 @@ def runs_natively(system: str | None = None) -> bool:
 def require_native_host(system: str | None = None) -> str:
     """The OS name, or a refusal that names the WSL launchers. Raises.
 
-    The refusal exists so a Windows caller is told the ONE thing that helps --
-    go in through run.cmd, which re-enters WSL -- rather than discovering it as
-    a missing `sha256sum`, a `.exe` that is not there, or a path separator.
+    The refusal exists so a Windows caller is told the ONE thing that helps -- go in through run.cmd, which re-enters WSL -- rather than discovering it as a missing `sha256sum`, a `.exe` that is not there, or a path separator.
     """
     name = os_name(system)
     if name not in NATIVE_OSES:
@@ -441,14 +379,11 @@ def require_native_host(system: str | None = None) -> str:
 def sha256_command(env: dict[str, str] | None = None) -> list[str]:
     """The argv of a working sha256 tool. Raises MissingToolError when there is none.
 
-    THE ARGV, not the digest, because the three bash copies this replaces are all
-    invoked in different shapes -- `... -c -` against a planted line, `... file |
-    cut -d' ' -f1`, and a pipeline stdin form -- and a function that computed a
+    THE ARGV, not the digest, because the three bash copies this replaces are all invoked in different shapes -- `... -c -` against a planted line, `... file | cut -d' ' -f1`, and a pipeline stdin form -- and a function that computed a
     digest would serve none of them. Python callers should use `hashlib`; this is
     for the shell.
 
-    RAISES rather than returning `["sha256sum"]` and hoping. That distinction is
-    the entire defect: on macOS the bare GNU name is "command not found", the
+    RAISES rather than returning `["sha256sum"]` and hoping. That distinction is the entire defect: on macOS the bare GNU name is "command not found", the
     caller's `|| { checksum MISMATCH }` arm fires, and a download is refused for
     a mismatch that never happened.
     """
@@ -465,9 +400,7 @@ def sha256_command(env: dict[str, str] | None = None) -> list[str]:
 def report(system: str | None = None, machine: str | None = None) -> list[str]:
     """`key: value` lines for a doctor output. Never raises.
 
-    Every answer is caught individually: a host with no `shasum` must still be
-    able to print its OS and its architecture, and a report that dies on its
-    third line is the least useful thing to hand someone diagnosing a host.
+    Every answer is caught individually: a host with no `shasum` must still be able to print its OS and its architecture, and a report that dies on its third line is the least useful thing to hand someone diagnosing a host.
     """
     lines = []
     for key, fetch in (

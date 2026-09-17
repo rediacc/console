@@ -1,36 +1,18 @@
 """Port of `.ci/scripts/test/gates/test-gate-skip-announcer.sh`.
 
-`.ci/scripts/quality/announce-gate-skips.sh` is the step that makes a label-held
-gate VISIBLE.
+`.ci/scripts/quality/announce-gate-skips.sh` is the step that makes a label-held gate VISIBLE.
 
-The thing under test is an INSTRUMENT, so every case here is really a question
-about the instrument rather than about the gates it announces: can it fire
-(skip), can it stay quiet when it should (hard), does it fail closed when the
-wiring breaks (unset), and does it refuse rather than guess when the wiring is
-wrong (unknown mode)? An announcer that silently announced nothing would restore
-exactly the invisible skip it exists to remove, so the QUIET-direction cases are
-the load-bearing ones here, not filler.
+The thing under test is an INSTRUMENT, so every case here is really a question about the instrument rather than about the gates it announces: can it fire (skip), can it stay quiet when it should (hard), does it fail closed when the wiring breaks (unset), and does it refuse rather than guess when the wiring is wrong (unknown mode)? An announcer that silently announced nothing would
+restore exactly the invisible skip it exists to remove, so the QUIET-direction cases are the load-bearing ones here, not filler.
 
-STREAMS ARE MERGED, matching the twin's `2>&1`. The announcer writes its
-annotation to stdout and its refusals to stderr, and every case asserts on "what
-a reader of the step log sees", which is the merged text. Splitting them would
-change the claim rather than sharpen it.
+STREAMS ARE MERGED, matching the twin's `2>&1`. The announcer writes its annotation to stdout and its refusals to stderr, and every case asserts on "what a reader of the step log sees", which is the merged text. Splitting them would change the claim rather than sharpen it.
 
-THE WORKFLOW SEAM IS PRESERVED. `test_workflow_wiring_covers_every_held_gate`
-reads `$GATE_SKIP_WORKFLOW` when set, exactly as the twin does, so the wiring
-assertion can be proven able to fire against a mutated COPY. Mutating the real
-workflow to test the test is how a shared tree loses somebody's uncommitted work.
+THE WORKFLOW SEAM IS PRESERVED. `test_workflow_wiring_covers_every_held_gate` reads `$GATE_SKIP_WORKFLOW` when set, exactly as the twin does, so the wiring assertion can be proven able to fire against a mutated COPY. Mutating the real workflow to test the test is how a shared tree loses somebody's uncommitted work.
 
-WHAT THE PORT REIMPLEMENTS. The twin counts wiring with `grep -c` and extracts
-announced gate names with `grep -oE ... | sed`. This does both in Python `re`.
-The two agree because the patterns are literal substrings and one bounded
-character class, with no anchors involved -- and Python is used rather than grep
-deliberately, since the house note about ugrep's silent false zeros bites exactly
-the alternated-anchor shape a hand-translated version would reach for.
+WHAT THE PORT REIMPLEMENTS. The twin counts wiring with `grep -c` and extracts announced gate names with `grep -oE ... | sed`. This does both in Python `re`. The two agree because the patterns are literal substrings and one bounded character class, with no anchors involved -- and Python is used rather than grep deliberately, since the house note about ugrep's silent false zeros
+bites exactly the alternated-anchor shape a hand-translated version would reach for.
 
-NO `xdist_group`. Nothing is bound, nothing module-global is mutated: the two
-environment variables the cases vary are passed per-subprocess through the
-harness's env OVERLAY rather than set on this process.
+NO `xdist_group`. Nothing is bound, nothing module-global is mutated: the two environment variables the cases vary are passed per-subprocess through the harness's env OVERLAY rather than set on this process.
 """
 
 import os
@@ -57,10 +39,7 @@ def run_announcer(gate, mode: str | None, expected: int, label: str, *args: str)
     """Drive the announcer and refuse an unexpected exit code. Returns merged output.
 
     `mode=None` IS the twin's `env -u GATE_SKIP_MODE` case, which is the whole
-    point of that case: a wiring break where the variable never reaches the step
-    must read as "the gates ran", never as "the gates were held". The variable is
-    removed from the overlay rather than set to the empty string, because those
-    are different states to the script under test.
+    point of that case: a wiring break where the variable never reaches the step must read as "the gates ran", never as "the gates were held". The variable is removed from the overlay rather than set to the empty string, because those are different states to the script under test.
     """
     if not (ANNOUNCER.is_file() and os.access(ANNOUNCER, os.X_OK)):
         gate.log_fail(

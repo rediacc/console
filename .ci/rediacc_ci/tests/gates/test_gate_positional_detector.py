@@ -4,9 +4,7 @@ Both-ways test for `scripts/lib/positional-cli-detector.ts`.
 
 The detector decides which `rdc ...` examples in docs, help text and locale strings
 teach the WRONG syntax. It backs four consumers: two ESLint rules
-(i18n/no-positional-cli-syntax, custom/no-positional-cli-syntax-source),
-scripts/gen/validate-cli-examples.ts, and
-packages/www/scripts/validate-docs-cli-usage.js.
+(i18n/no-positional-cli-syntax, custom/no-positional-cli-syntax-source), scripts/gen/validate-cli-examples.ts, and packages/www/scripts/validate-docs-cli-usage.js.
 
 It has to be tested in BOTH directions, because it can fail in both:
 
@@ -19,18 +17,10 @@ It has to be tested in BOTH directions, because it can fail in both:
     false. A validator that reds on correct output blocks the work it exists to
     protect.
 
-WHAT THE PORT CHANGES. The twin writes a driver that loops the whole table inside
-Node and prints ONE `PASS: positional detector: 12/12 cases` at the end, so a case
-that stopped being exercised is invisible in the output and only the total moves.
-Here the driver returns the flagged/not-flagged answer PER CASE as JSON and the
-Python side records one control each, which means the transcript names every case
-and the count is derived from the table rather than typed into a message. The
-TABLE ITSELF IS UNCHANGED, case for case and reason for reason, because that table
-IS the specification the twin pinned.
+WHAT THE PORT CHANGES. The twin writes a driver that loops the whole table inside Node and prints ONE `PASS: positional detector: 12/12 cases` at the end, so a case that stopped being exercised is invisible in the output and only the total moves. Here the driver returns the flagged/not-flagged answer PER CASE as JSON and the Python side records one control each, which means the
+transcript names every case and the count is derived from the table rather than typed into a message. The TABLE ITSELF IS UNCHANGED, case for case and reason for reason, because that table IS the specification the twin pinned.
 
-`test_the_case_table_is_not_empty` is the refusal that makes the loop mean
-something: a driver that returned zero rows would satisfy "no mismatches" while
-comparing nothing.
+`test_the_case_table_is_not_empty` is the refusal that makes the loop mean something: a driver that returned zero rows would satisfy "no mismatches" while comparing nothing.
 """
 
 import json
@@ -114,8 +104,7 @@ def scan_all(gate) -> dict[str, bool]:
 
 def test_the_case_table_is_not_empty(gate):
     """PORT-ONLY anti-vacuity. A table that emptied, or a driver that returned no
-    rows, makes `test_detector_both_ways` report "no mismatches" having compared
-    nothing. Both halves are checked, because either one alone can go quiet.
+    rows, makes `test_detector_both_ways` report "no mismatches" having compared nothing. Both halves are checked, because either one alone can go quiet.
     """
     if not CASES:
         gate.log_fail("the case table is EMPTY, so the both-ways case below compares nothing")

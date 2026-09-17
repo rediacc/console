@@ -1,9 +1,6 @@
 """The phase sequence of `./run.sh setup`, as data, plus the reader that proves it.
 
-THE ORDER IS THE SPECIFICATION, not the set. `.ci/rediacc_ci/setup/tools.py:196`
-says it for the install table -- "ORDER IS THE DEPENDENCY ORDER a fresh machine
-needs, not alphabetical" -- and `setup()` is where that order is actually
-executed. Two of its edges are load-bearing and both were paid for:
+THE ORDER IS THE SPECIFICATION, not the set. `.ci/rediacc_ci/setup/tools.py:196` says it for the install table -- "ORDER IS THE DEPENDENCY ORDER a fresh machine needs, not alphabetical" -- and `setup()` is where that order is actually executed. Two of its edges are load-bearing and both were paid for:
 
   * the compiler comes before anything reached through npm, because
     `npm run install:natives` runs node-gyp (`.ci/lib/setup.sh:234-239`);
@@ -12,11 +9,7 @@ executed. Two of its edges are load-bearing and both were paid for:
     otherwise fails with "Cannot determine the required Go version", a message
     that never mentions submodules (`.ci/legacy/run-legacy.sh:616-622`).
 
-`.ci/rediacc_ci/quality/setup_idempotency.py:608` (check G) already refuses the
-second of those in the bash. This table is what lets the same claim be made
-about the Python, and `PHASE_KEY` is deliberately the BASH FUNCTION NAME rather
-than a friendly label: a translation table between the two sides is exactly
-where a reordering hides, so there is none.
+`.ci/rediacc_ci/quality/setup_idempotency.py:608` (check G) already refuses the second of those in the bash. This table is what lets the same claim be made about the Python, and `PHASE_KEY` is deliberately the BASH FUNCTION NAME rather than a friendly label: a translation table between the two sides is exactly where a reordering hides, so there is none.
 
 TWO READERS, ASKING DIFFERENT QUESTIONS, AND BOTH ARE NEEDED.
 
@@ -31,8 +24,7 @@ TWO READERS, ASKING DIFFERENT QUESTIONS, AND BOTH ARE NEEDED.
                       traced run of the bash.
 
 A gate that only ran the first would pass a port that dropped a conditional; a
-gate that only ran the second would pass a port that dropped a phase nobody's
-fixture happened to enable. `shadow_driver.py` runs both.
+gate that only ran the second would pass a port that dropped a phase nobody's fixture happened to enable. `shadow_driver.py` runs both.
 """
 
 from __future__ import annotations
@@ -52,17 +44,12 @@ SETUP_BODY_FILE = (".ci", "legacy", "run-legacy.sh")
 class Phase:
     """One step of `setup()`.
 
-    `key` is the bash callee's own name, or for the two phases the bash spells
-    inline, the distinctive token of the command it runs. `fatal` records
-    whether `setup()` writes `|| return 1` after it, which is not decoration:
-    `setup_git_identity` is called WITHOUT it at
-    `.ci/legacy/run-legacy.sh:650` while `setup_git_credentials` on the very next
-    line has it, and that asymmetry is a decision the bash made on purpose.
+    `key` is the bash callee's own name, or for the two phases the bash spells inline, the distinctive token of the command it runs. `fatal` records whether `setup()` writes `|| return 1` after it, which is not decoration: `setup_git_identity` is called WITHOUT it at `.ci/legacy/run-legacy.sh:650` while `setup_git_credentials` on the very next line has it, and that asymmetry is a
+    decision the bash made on purpose.
 
     `condition` names the thing that has to be true for the phase to run at all,
     or "" for the unconditional ones. It is prose for the reader; `plan()` holds
-    the executable form, because a predicate expressed as a string is a
-    predicate nobody can test.
+    the executable form, because a predicate expressed as a string is a predicate nobody can test.
     """
 
     key: str
@@ -115,11 +102,9 @@ DEFINED_BUT_UNCALLED: tuple[str, ...] = ("setup_docker_probe",)
 def function_body(text: str, name: str) -> str:
     """The body of `<name>() {`, closing brace included. "" when absent.
 
-    THE SAME EXTRACTOR `.ci/rediacc_ci/quality/setup_idempotency.py:240` USES,
-    reimplemented rather than imported for one reason: importing a quality gate
+    THE SAME EXTRACTOR `.ci/rediacc_ci/quality/setup_idempotency.py:240` USES, reimplemented rather than imported for one reason: importing a quality gate
     from a runtime module makes the gate a dependency of the thing it judges. The
-    two are compared against each other by this package's tests instead, which
-    is the check that catches a divergence without creating the cycle.
+    two are compared against each other by this package's tests instead, which is the check that catches a divergence without creating the cycle.
     """
     start = re.compile(r"^%s\(\) \{" % re.escape(name))
     out: list[str] = []
@@ -137,17 +122,14 @@ def function_body(text: str, name: str) -> str:
 def function_body_python(text: str, name: str) -> str:
     """The body of a top-level `def <name>(`, by INDENTATION. "" when absent.
 
-    THE PYTHON TWIN OF `function_body`, and it is a separate function rather than
-    a mode flag because the two languages disagree about where a body ends: bash
+    THE PYTHON TWIN OF `function_body`, and it is a separate function rather than a mode flag because the two languages disagree about where a body ends: bash
     ends at a `}` in column zero, Python ends at the next line that is neither
     blank nor indented. A shared implementation with a `language=` argument would
     be two functions wearing one name.
 
-    BY TEXT AND NOT BY `ast`, deliberately. The caller wants SOURCE ORDER of
-    textual mentions inside a function, including the ones inside comments so it
+    BY TEXT AND NOT BY `ast`, deliberately. The caller wants SOURCE ORDER of textual mentions inside a function, including the ones inside comments so it
     can strip them itself; an AST has already thrown the comments away, so a
-    reader could not tell whether a comment-only mention was excluded on purpose
-    or lost by the parser.
+    reader could not tell whether a comment-only mention was excluded on purpose or lost by the parser.
     """
     start = re.compile(r"^def %s\(" % re.escape(name))
     out: list[str] = []
@@ -168,11 +150,7 @@ def function_body_python(text: str, name: str) -> str:
 def strip_comments(body: str) -> str:
     """Comments out, LOAD-BEARING and not tidiness.
 
-    `setup_idempotency.py:127` records the defect this prevents: its first
-    version "matched 'private/renet/go.mod' inside the comment that explains the
-    ordering and concluded the real, correctly-ordered code was broken". The
-    `setup()` body is roughly two thirds comment by line count, and several of
-    those comments name phases in an order the code does not use.
+    `setup_idempotency.py:127` records the defect this prevents: its first version "matched 'private/renet/go.mod' inside the comment that explains the ordering and concluded the real, correctly-ordered code was broken". The `setup()` body is roughly two thirds comment by line count, and several of those comments name phases in an order the code does not use.
     """
     return "\n".join(re.sub(r"[ \t]*#.*$", "", line) for line in body.split("\n"))
 
@@ -180,8 +158,7 @@ def strip_comments(body: str) -> str:
 def from_source(root: pathlib.Path) -> list[str]:
     """The phase keys the bash `setup()` contains, in source order.
 
-    A key is counted at its FIRST occurrence, so a phase named again in a later
-    line (a message that mentions `ensure_deps`, say) does not move it. Comments
+    A key is counted at its FIRST occurrence, so a phase named again in a later line (a message that mentions `ensure_deps`, say) does not move it. Comments
     are stripped first; see `strip_comments`.
     """
     path = root.joinpath(*SETUP_BODY_FILE)
@@ -217,12 +194,9 @@ def plan(
                                      [[ -f "$ROOT_DIR/private/account/.env" ]]`
         devbox_up                   `[[ "$do_start" != true ]]` returns early
 
-    NOTE THE THIRD IS A `return 0`, NOT A SKIP. Under `--no-start` the bash
-    prints "Host prepared." and returns, so `devbox_up` is the only phase after
-    the branch and dropping it is the whole of the difference. Written as a
+    NOTE THE THIRD IS A `return 0`, NOT A SKIP. Under `--no-start` the bash prints "Host prepared." and returns, so `devbox_up` is the only phase after the branch and dropping it is the whole of the difference. Written as a
     conditional here because there is nothing after it; a phase added below
-    `devbox_up` later would have to become an early exit instead, and this
-    comment is the warning.
+    `devbox_up` later would have to become an early exit instead, and this comment is the warning.
     """
     keys: list[str] = []
     for phase in PHASES:
@@ -242,10 +216,6 @@ def plan(
 def describe(keys: list[str]) -> list[str]:
     """One `NN key` line per phase, ordinal included.
 
-    THE ORDINAL IS THE POINT. A differential that compares an unordered set of
-    phase names passes a port that installs go before jq, which is exactly the
-    trap `.ci/rediacc_ci/setup/tools.py:196-200` warns about. Numbering each line
-    turns the order into part of the value being compared, so a swap changes two
-    lines and the multiset comparison catches it.
+    THE ORDINAL IS THE POINT. A differential that compares an unordered set of phase names passes a port that installs go before jq, which is exactly the trap `.ci/rediacc_ci/setup/tools.py:196-200` warns about. Numbering each line turns the order into part of the value being compared, so a swap changes two lines and the multiset comparison catches it.
     """
     return ["%02d %s" % (index, key) for index, key in enumerate(keys, start=1)]

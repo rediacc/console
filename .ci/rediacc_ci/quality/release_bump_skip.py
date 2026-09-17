@@ -3,76 +3,45 @@
 Ported from `.ci/scripts/quality/check-release-bump-skip.sh`, which is not
 deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHY THIS EXISTS. Two gates already cover neighbouring ground and neither touches
-this: `check-ci-workflow-invariants.sh` asserts the WIRING in ci.yml (that the
-decision is declared once, threaded, and not re-decided in
-finalize-release-sentinel), and `test-skip-release-channel-pointer.sh` proves the
-UPLOAD script's guard branches correctly. Nothing drove `dispatch-release.sh`'s own
-decision branch, so "Finalize Release emitted the skip signal for the right reason"
-was unobservable by construction. Release gates could say a release succeeded or
+WHY THIS EXISTS. Two gates already cover neighbouring ground and neither touches this: `check-ci-workflow-invariants.sh` asserts the WIRING in ci.yml (that the decision is declared once, threaded, and not re-decided in finalize-release-sentinel), and `test-skip-release-channel-pointer.sh` proves the UPLOAD script's guard branches correctly. Nothing drove `dispatch-release.sh`'s own
+decision branch, so "Finalize Release emitted the skip signal for the right reason" was unobservable by construction. Release gates could say a release succeeded or
 was absent; they could not say WHY.
 
-That distinction is not academic here. A bump-none merge and a broken decision both
-produce "no release". They are indistinguishable from the outside, and the only
-thing that tells them apart is the signal this script emits:
+That distinction is not academic here. A bump-none merge and a broken decision both produce "no release". They are indistinguishable from the outside, and the only thing that tells them apart is the signal this script emits:
 
     release SKIPPED: #576 carries 'bump-none'
     ::notice title=Release skipped::...earns no release...
     decision: skip
 
-Observed live on 2026-08-26 (run 32961178698, job 98165911876) after merging PR
-#576. This gate keeps that observable.
+Observed live on 2026-08-26 (run 32961178698, job 98165911876) after merging PR #576. This gate keeps that observable.
 
-THE DIRECTION THAT MATTERS MOST is not "does it skip" -- it is that the signal must
-NOT appear when the commit is releasing. A skip notice on a releasing path would
-tell a reader the opposite of what happened, and `dispatch-release.sh`'s whole
-doctrine is that a silently withheld release is worse than an extra one.
+THE DIRECTION THAT MATTERS MOST is not "does it skip" -- it is that the signal must NOT appear when the commit is releasing. A skip notice on a releasing path would tell a reader the opposite of what happened, and `dispatch-release.sh`'s whole doctrine is that a silently withheld release is worse than an extra one.
 
-HERMETIC: `gh` is shimmed, so this never touches the network and can run in any
-lane. WHAT IT CANNOT SEE: whether the workflow actually CALLS the script (that is
-check-ci-workflow-invariants.sh's subject), and whether a real run's log retains
-the line (only a live bump-none merge shows that).
+HERMETIC: `gh` is shimmed, so this never touches the network and can run in any lane. WHAT IT CANNOT SEE: whether the workflow actually CALLS the script (that is check-ci-workflow-invariants.sh's subject), and whether a real run's log retains the line (only a live bump-none merge shows that).
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
 THIS GATE MERGES STDOUT AND STDERR, AND THAT IS DELIBERATE RATHER THAN LAZY.
-`rediacc_ci.proc.run` refuses to merge -- its docstring says "never merges
-streams", for the 2026-09-06 stream-swap reason recorded in
-`.ci/scripts/lib/emit-advisory.sh:22-52` -- so this module reaches for
-`subprocess` directly instead of quietly weakening the shared helper. The reason
-is that the SUBJECT here is a blob: the twin runs `bash "$SUT" --decide-only 2>&1`
-and every assertion below is a `grep` over the combined text, because
-`dispatch-release.sh` splits the same decision across both streams (the notice on
-stdout, the reasoning on stderr) and an assertion on one stream alone would pass
+`rediacc_ci.proc.run` refuses to merge -- its docstring says "never merges streams", for the 2026-09-06 stream-swap reason recorded in `.ci/scripts/lib/emit-advisory.sh:22-52` -- so this module reaches for `subprocess` directly instead of quietly weakening the shared helper. The reason is that the SUBJECT here is a blob: the twin runs `bash "$SUT" --decide-only 2>&1` and every
+assertion below is a `grep` over the combined text, because `dispatch-release.sh` splits the same decision across both streams (the notice on stdout, the reasoning on stderr) and an assertion on one stream alone would pass
 while the signal went to the other. Reproducing the merge is reproducing the
 contract; using `proc.run` and concatenating afterwards would produce a
-DIFFERENT interleaving, which the failure path prints as its first six lines and
-the shadow comparator would then read as a genuine finding difference.
+DIFFERENT interleaving, which the failure path prints as its first six lines and the shadow comparator would then read as a genuine finding difference.
 
 THE GH SHIM IS BUILT AS A FILE, NOT AS A PYTHON MOCK. The subject is a bash
 script that resolves `gh` through PATH; a mock inside this process would test
-nothing about it. The shim's text is carried over byte for byte, including the
-heredoc quoting, because `rows` reaches it as heredoc BODY and a change in
-quoting would start expanding `$` in a label.
+nothing about it. The shim's text is carried over byte for byte, including the heredoc quoting, because `rows` reaches it as heredoc BODY and a change in quoting would start expanding `$` in a label.
 
-THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the
-one archaeology token this file would otherwise drop. Its two `# shellcheck
+THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the one archaeology token this file would otherwise drop. Its two `# shellcheck
 source=` / `# BLOCKER:` lines record that `log_error`, `log_info` and
-`get_repo_root` are used throughout, and that the BLOCKER exists because
-`check-python-gate-deps` and shellcheck would otherwise read the source line as
-unused. In the port `log_*` comes from `rediacc_ci.log` and the root from
-`rediacc_ci.paths.repo_root()`, so there is no source line and no suppression to
-justify -- but the FACT that these three helpers are the gate's only dependency on
-the shared bash library is what makes the twin cheap to retire, and that is worth
-keeping.
+`get_repo_root` are used throughout, and that the BLOCKER exists because `check-python-gate-deps` and shellcheck would otherwise read the source line as unused. In the port `log_*` comes from `rediacc_ci.log` and the root from `rediacc_ci.paths.repo_root()`, so there is no source line and no suppression to justify -- but the FACT that these three helpers are the gate's only
+dependency on the shared bash library is what makes the twin cheap to retire, and that is worth keeping.
 
-THE EMPTY-ROWS CASE IS NOT AN EMPTY SHIM. `printf '%s\\n' "$rows"` with an empty
-`rows` writes ONE BLANK LINE, so case 5 ("no merged PR at all") drives the script
+THE EMPTY-ROWS CASE IS NOT AN EMPTY SHIM. `printf '%s\\n' "$rows"` with an empty `rows` writes ONE BLANK LINE, so case 5 ("no merged PR at all") drives the script
 with a single empty line of API output rather than with nothing. That is a real
-difference -- a script that reads line-by-line sees one iteration -- and it is
-reproduced exactly rather than tidied into an empty body.
+difference -- a script that reads line-by-line sees one iteration -- and it is reproduced exactly rather than tidied into an empty body.
 """
 
 import os
@@ -280,16 +249,10 @@ fi
 def selftest() -> int:
     """Prove the gate fires on a broken decision and stays quiet on a working one.
 
-    THE PLANT IS IN THE SUBJECT, NOT IN THE GATE, which is the only place it can
-    be: this gate's whole claim is about what `dispatch-release.sh` prints, so a
-    control that mutated the gate would prove nothing about that claim. The
-    `RELEASE_DECIDE_SCRIPT` seam exists for exactly this and is used for nothing
+    THE PLANT IS IN THE SUBJECT, NOT IN THE GATE, which is the only place it can be: this gate's whole claim is about what `dispatch-release.sh` prints, so a control that mutated the gate would prove nothing about that claim. The `RELEASE_DECIDE_SCRIPT` seam exists for exactly this and is used for nothing
     else.
 
-    The fake subject is asserted to be a WORKING one first. Without that, every
-    plant below would "fire" against a subject that was broken to begin with, and
-    the suite would be green while testing nothing -- the same vacuity the gate
-    itself is written against.
+    The fake subject is asserted to be a WORKING one first. Without that, every plant below would "fire" against a subject that was broken to begin with, and the suite would be green while testing nothing -- the same vacuity the gate itself is written against.
     """
     ctl = Controls("release-bump-skip", floor=7, verbose=True)
 

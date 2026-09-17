@@ -1,13 +1,9 @@
 """Differential: `.ci/rediacc_ci/build/build_linux_packages.py` against its twin
 `.ci/scripts/build/build-linux-packages.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-WHAT IS COMPARED. This script produces no output of its own on the happy path --
-it is eight delegations and nothing else -- so a stdout comparison would be a
-comparison of two empty strings. Every case compares:
+WHAT IS COMPARED. This script produces no output of its own on the happy path -- it is eight delegations and nothing else -- so a stdout comparison would be a comparison of two empty strings. Every case compares:
 
   1. the exit code, which on failure is `build-linux-pkg.sh`'s own;
   2. stdout and stderr, separately, which carry the delegate's output verbatim;
@@ -19,25 +15,13 @@ comparison of two empty strings. Every case compares:
   4. `dist/packages/` afterwards, by name, so a port that delegated correctly and
      forgot the `mkdir -p` shows up.
 
-THE DELEGATE IS A FAKE, AND IT HAS TO BE. The real
-`.ci/scripts/build/build-linux-pkg.sh` runs nfpm, reads `constants.sh`, and on
-the release path imports a GPG key and SIGNS things. It is also a DIFFERENT
-file, not this wave's port target. The fixture therefore puts a recording stub
-at that exact path -- the path is part of what is under test, since the twin
-addresses it repo-root-relatively -- and both subjects call the same stub.
+THE DELEGATE IS A FAKE, AND IT HAS TO BE. The real `.ci/scripts/build/build-linux-pkg.sh` runs nfpm, reads `constants.sh`, and on the release path imports a GPG key and SIGNS things. It is also a DIFFERENT file, not this wave's port target. The fixture therefore puts a recording stub at that exact path -- the path is part of what is under test, since the twin addresses it
+repo-root-relatively -- and both subjects call the same stub.
 
-PATH IS REPLACED, NEVER PREPENDED. Nothing here needs `nfpm` or `npm`, but the
-subject `cd`s to a root it derives itself, and a subject that derived the WRONG
-root would find the real `.ci/scripts/build/build-linux-pkg.sh` and run a real
-nfpm build. `_binder` builds the ENTIRE PATH from named tools so that cannot
-happen, and asserts every exclusion really took.
+PATH IS REPLACED, NEVER PREPENDED. Nothing here needs `nfpm` or `npm`, but the subject `cd`s to a root it derives itself, and a subject that derived the WRONG root would find the real `.ci/scripts/build/build-linux-pkg.sh` and run a real nfpm build. `_binder` builds the ENTIRE PATH from named tools so that cannot happen, and asserts every exclusion really took.
 
 THE ONE DELIBERATE DIVERGENCE IS TESTED, NOT HIDDEN.
-`test_an_unset_next_version_names_the_program_that_refused` masks the
-`<path>: line <n>: ` prefix bash and the port each put on their own refusal, and
-compares the rest byte for byte -- then asserts the two unmasked strings DIFFER,
-so the test still means something if someone makes the port print the twin's
-path. Same treatment for a missing delegate in
+`test_an_unset_next_version_names_the_program_that_refused` masks the `<path>: line <n>: ` prefix bash and the port each put on their own refusal, and compares the rest byte for byte -- then asserts the two unmasked strings DIFFER, so the test still means something if someone makes the port print the twin's path. Same treatment for a missing delegate in
 `test_a_missing_delegate_agrees_on_127_and_not_on_the_diagnostic`.
 """
 
@@ -116,15 +100,9 @@ def _fixture(
 ) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because each subject derives the console root from its own location
-    (`BASH_SOURCE`/`__file__`, then three directories up). Driving the TRACKED
-    files with a `cwd` would point them at the real repository, where the
-    delegate is the REAL build-linux-pkg.sh and `dist/packages` is real output.
+    Copies, because each subject derives the console root from its own location (`BASH_SOURCE`/`__file__`, then three directories up). Driving the TRACKED files with a `cwd` would point them at the real repository, where the delegate is the REAL build-linux-pkg.sh and `dist/packages` is real output.
 
-    `binaries` are created under `dist/cli/`, which is the only thing the musl
-    decision looks at. Note the twin never checks that the glibc binaries exist
-    either -- that is `build-linux-pkg.sh`'s job -- so a fixture with an EMPTY
-    tuple is a legitimate case and not a broken one.
+    `binaries` are created under `dist/cli/`, which is the only thing the musl decision looks at. Note the twin never checks that the glibc binaries exist either -- that is `build-linux-pkg.sh`'s job -- so a fixture with an EMPTY tuple is a legitimate case and not a broken one.
     """
     root = where.resolve() / "tree"
     (root / ".ci" / "scripts" / "build").mkdir(parents=True)
@@ -284,8 +262,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
 
 def test_the_delegate_is_actually_reached_eight_times(tmp_path):
     """ANTI-VACUITY. Every comparison above is worthless if the delegate never
-    ran, and this also pins the MATRIX and the CWD: eight invocations, in the
-    twin's nesting order, all from the repository root.
+    ran, and this also pins the MATRIX and the CWD: eight invocations, in the twin's nesting order, all from the repository root.
     """
     root = _fixture(tmp_path / "v")
     out = _run(PORT_REL, root)
@@ -312,8 +289,7 @@ def test_the_delegate_is_actually_reached_eight_times(tmp_path):
 
 def test_a_failure_stops_the_matrix_rather_than_collecting(tmp_path):
     """CONTROL in the other direction: after a failing delegate, NOTHING else
-    runs. A port that ran all eight and reported at the end would satisfy every
-    positive assertion in this file and would keep packaging against a binary an
+    runs. A port that ran all eight and reported at the end would satisfy every positive assertion in this file and would keep packaging against a binary an
     earlier step had already refused."""
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("s-%s" % subject.name))
@@ -326,11 +302,7 @@ def test_a_failure_stops_the_matrix_rather_than_collecting(tmp_path):
 def test_the_musl_substitution_only_touches_apk(tmp_path):
     """The Alpine fallback, named rather than left inside a call log.
 
-    With all four binaries present, exactly the two `apk` invocations must carry
-    `rdc-linux-musl-*` and the other six must not. A port that substituted for
-    every format would produce six packages containing a musl binary for glibc
-    distributions, and the call-log comparison above would pass on both sides
-    only if BOTH were wrong.
+    With all four binaries present, exactly the two `apk` invocations must carry `rdc-linux-musl-*` and the other six must not. A port that substituted for every format would produce six packages containing a musl binary for glibc distributions, and the call-log comparison above would pass on both sides only if BOTH were wrong.
     """
     root = _fixture(
         tmp_path / "m",
@@ -350,9 +322,7 @@ def test_the_musl_substitution_only_touches_apk(tmp_path):
 
 def test_the_glibc_fallback_is_real_and_silent(tmp_path):
     """The other half of the same decision, and the one the twin's own header
-    calls out: with no musl binary, `apk` packages the GLIBC binary and says
-    nothing about it. Pinned in both, because a `.apk` holding a glibc binary
-    installs cleanly on Alpine and fails at exec time.
+    calls out: with no musl binary, `apk` packages the GLIBC binary and says nothing about it. Pinned in both, because a `.apk` holding a glibc binary installs cleanly on Alpine and fails at exec time.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("g-%s" % subject.name))
@@ -372,10 +342,7 @@ def test_an_unset_next_version_names_the_program_that_refused(tmp_path):
     """THE ONE DELIBERATE DIVERGENCE, asserted in both directions with the
     `<path>: line <n>: ` prefix masked.
 
-    `:?` fires on unset AND on empty, so both are driven. The twin's own message
-    text -- which embeds `build-linux-packages.sh:` a second time, producing a
-    line that reads as though the filename appears twice -- is reproduced
-    verbatim, and that is what the masked comparison checks.
+    `:?` fires on unset AND on empty, so both are driven. The twin's own message text -- which embeds `build-linux-packages.sh:` a second time, producing a line that reads as though the filename appears twice -- is reproduced verbatim, and that is what the masked comparison checks.
     """
     for version in (None, ""):
         root_a = _fixture(tmp_path / ("ua-%s" % (version is None)))
@@ -402,9 +369,7 @@ def test_an_unset_next_version_names_the_program_that_refused(tmp_path):
 def test_a_missing_delegate_agrees_on_127_and_not_on_the_diagnostic(tmp_path):
     """Same treatment for the other interpreter-owned message.
 
-    `build-linux-pkg.sh` absent: bash reports "No such file or directory" against
-    its own path and line and exits 127. The port takes the same status and
-    prints the same shape against its own. The status is what the workflow step
+    `build-linux-pkg.sh` absent: bash reports "No such file or directory" against its own path and line and exits 127. The port takes the same status and prints the same shape against its own. The status is what the workflow step
     branches on, so it is asserted equal; the text is asserted DIFFERENT so the
     divergence stays visible.
     """
@@ -423,9 +388,7 @@ def test_a_missing_delegate_agrees_on_127_and_not_on_the_diagnostic(tmp_path):
 
 def test_binary_for_is_the_twins_parameter_expansion():
     """The pure half, driven against BASH's own `${binary/rdc-linux-/...}` rather
-    than against a constant: a constant copied out of the port cannot contradict
-    the port. Only the SUBSTITUTION is compared here -- the `-f` test needs a
-    filesystem and is covered above.
+    than against a constant: a constant copied out of the port cannot contradict the port. Only the SUBSTITUTION is compared here -- the `-f` test needs a filesystem and is covered above.
     """
     for binary in ("dist/cli/rdc-linux-x64", "dist/cli/rdc-linux-arm64", "rdc-linux-rdc-linux-x"):
         expected = subprocess.run(
@@ -441,12 +404,8 @@ def test_binary_for_is_the_twins_parameter_expansion():
 def test_invocations_is_lazy_so_the_f_test_happens_per_pair(tmp_path):
     """`invocations()` is a GENERATOR on purpose, and this is what that buys.
 
-    The twin evaluates `[[ -f "$musl_binary" ]]` immediately before the
-    invocation it decides. A musl binary that appears midway through the run --
-    which a delegate could plausibly produce -- therefore changes the LATER apk
-    decision and not the earlier one. A list comprehension would resolve all
-    eight against the filesystem as it stood at the start, which is a different
-    program on exactly that input.
+    The twin evaluates `[[ -f "$musl_binary" ]]` immediately before the invocation it decides. A musl binary that appears midway through the run -- which a delegate could plausibly produce -- therefore changes the LATER apk decision and not the earlier one. A list comprehension would resolve all eight against the filesystem as it stood at the start, which is a different program on
+    exactly that input.
     """
     cli = tmp_path / "dist" / "cli"
     cli.mkdir(parents=True)

@@ -1,46 +1,26 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/housekeeping/cleanup-pr-environments.sh`.
 
-Deletes the empty `pr-N` ENVIRONMENT OBJECTS GitHub leaves behind after a PR
-closes. Its already-ported sibling `cleanup_github_deployments.py` deletes the
+Deletes the empty `pr-N` ENVIRONMENT OBJECTS GitHub leaves behind after a PR closes. Its already-ported sibling `cleanup_github_deployments.py` deletes the
 deployment RECORDS inside an environment, which needs only `deployments:write`;
-the object itself needs `Administration:write`, which no CI token here carries,
-so this one is an OPERATOR-RUN script and not a workflow step.
+the object itself needs `Administration:write`, which no CI token here carries, so this one is an OPERATOR-RUN script and not a workflow step.
 
 Usage: cleanup_pr_environments.py --repo <owner/repo> [--dry-run]
 
-THE THREE REFUSALS ARE THE POINT and are reproduced exactly, because GitHub
-cannot restore a deleted environment: only names matching `^pr-[0-9]+$` are
-ever touched, an environment whose PR is still OPEN is skipped, and an
-environment that still holds deployment records is skipped and reported.
+THE THREE REFUSALS ARE THE POINT and are reproduced exactly, because GitHub cannot restore a deleted environment: only names matching `^pr-[0-9]+$` are ever touched, an environment whose PR is still OPEN is skipped, and an environment that still holds deployment records is skipped and reported.
 
-`set -e` IS ON, AND THE TWIN DOES NOT LOOK LIKE IT. The twin's own line 28 is
-`set -uo pipefail` -- deliberately without `-e` -- and then line 32 sources
-`common.sh`, whose line 11 is `set -euo pipefail`. Sourcing runs in the caller's
-shell, so `-e` is switched back on for every line after the source. Driven, not
-inferred. That single fact is what produces DEFECT 1 below, and a port that
-implemented the script the author appears to have written would disagree with
-the script that actually runs.
+`set -e` IS ON, AND THE TWIN DOES NOT LOOK LIKE IT. The twin's own line 28 is `set -uo pipefail` -- deliberately without `-e` -- and then line 32 sources `common.sh`, whose line 11 is `set -euo pipefail`. Sourcing runs in the caller's shell, so `-e` is switched back on for every line after the source. Driven, not inferred. That single fact is what produces DEFECT 1 below, and a
+port that implemented the script the author appears to have written would disagree with the script that actually runs.
 
-STREAMS: NOTHING IS EVER WRITTEN TO STDOUT. Every message is `log_step` /
-`log_warn` / `log_info`, all of which write to stderr (common.sh:35-49), and the
-DELETE call is redirected on both streams. Only the environment listing's stdout
-is read, and it is captured.
+STREAMS: NOTHING IS EVER WRITTEN TO STDOUT. Every message is `log_step` / `log_warn` / `log_info`, all of which write to stderr (common.sh:35-49), and the DELETE call is redirected on both streams. Only the environment listing's stdout is read, and it is captured.
 
-THE ARGUMENT PARSER IS NOT RE-IMPLEMENTED: `rediacc_ci.core.common.parse_args`
-is the port of `parse_args` (common.sh:324-353) and carries its four rules and
-both live quirks, including `--dry-run false` meaning NOT a dry run.
+THE ARGUMENT PARSER IS NOT RE-IMPLEMENTED: `rediacc_ci.core.common.parse_args` is the port of `parse_args` (common.sh:324-353) and carries its four rules and both live quirks, including `--dry-run false` meaning NOT a dry run.
 
-THE `sort -t- -k2 -n` ORDER IS REPRODUCED WITH ITS TIE-BREAK, not approximated.
-GNU sort compares the numeric key first and falls back to a byte-wise
-comparison of the WHOLE LINE when the keys tie, so `pr-2`, `pr-010`, `pr-10`
+THE `sort -t- -k2 -n` ORDER IS REPRODUCED WITH ITS TIE-BREAK, not approximated. GNU sort compares the numeric key first and falls back to a byte-wise comparison of the WHOLE LINE when the keys tie, so `pr-2`, `pr-010`, `pr-10`
 sorts to exactly that order (driven against real `sort`; `010` and `10` tie at
-10 and `pr-010` wins the byte comparison). A port that sorted on the integer
-alone would agree on every realistic input and disagree there.
+10 and `pr-010` wins the byte comparison). A port that sorted on the integer alone would agree on every realistic input and disagree there.
 
-TWO DEFECTS IN THE TWIN, REPRODUCED AND REPORTED RATHER THAN FIXED, on the same
-contract this box's sibling states: agreement with the twin is the deliverable,
-and changing live behaviour is the operator's call.
+TWO DEFECTS IN THE TWIN, REPRODUCED AND REPORTED RATHER THAN FIXED, on the same contract this box's sibling states: agreement with the twin is the deliverable, and changing live behaviour is the operator's call.
 
   1. "NO PR-N ENVIRONMENTS FOUND" IS UNREACHABLE, AND THE NORMAL CASE EXITS 1
      IN SILENCE. `envs="$(gh api ... | grep -E '^pr-[0-9]+$' | sort ...)"`: when
@@ -96,9 +76,7 @@ def sort_key(name: str) -> tuple[int, str]:
     """`sort -t- -k2 -n`, tie-break included.
 
     Field 2 of `pr-<n>` split on `-` is the number; `-n` compares it
-    numerically, and GNU sort's last-resort comparison breaks a tie by
-    comparing the entire line byte-wise. Only names that already matched
-    PR_ENV_RE reach this, so the numeric field always parses.
+    numerically, and GNU sort's last-resort comparison breaks a tie by comparing the entire line byte-wise. Only names that already matched PR_ENV_RE reach this, so the numeric field always parses.
     """
     return (int(name.split("-", 1)[1]), name)
 
@@ -111,10 +89,7 @@ def select_environments(names: list[str]) -> list[str]:
 def pipeline_status(gh_rc: int, matched: int) -> int:
     """`pipefail`: the status of the RIGHTMOST command that failed.
 
-    gh -> grep -> sort. `sort` cannot fail here, and `grep` fails with 1 exactly
-    when it matched nothing, so a listing that returned nothing usable reports
-    1 even when `gh` itself failed with something else -- and a listing that DID
-    match reports gh's own code. Both driven against real bash.
+    gh -> grep -> sort. `sort` cannot fail here, and `grep` fails with 1 exactly when it matched nothing, so a listing that returned nothing usable reports 1 even when `gh` itself failed with something else -- and a listing that DID match reports gh's own code. Both driven against real bash.
     """
     if matched == 0:
         return 1
@@ -138,9 +113,7 @@ def _gh_silent(args: list[str]) -> int:
 def _substitution(proc: subprocess.CompletedProcess[str], fallback: str) -> str:
     """`$(cmd 2>/dev/null || echo <fallback>)`.
 
-    Both halves write to the same captured stdout, so a command that printed
-    something AND failed contributes both, exactly as bash concatenates them,
-    and command substitution then strips every trailing newline.
+    Both halves write to the same captured stdout, so a command that printed something AND failed contributes both, exactly as bash concatenates them, and command substitution then strips every trailing newline.
     """
     text = proc.stdout
     if proc.returncode != 0:

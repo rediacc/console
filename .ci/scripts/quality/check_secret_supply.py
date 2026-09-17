@@ -2,17 +2,9 @@
 """Entry point for the secret-supply gate.
 
 The logic lives in `rediacc_ci.quality.secret_supply`; this file exists so the
-registry can invoke it BY PATH, for the parity-tokenizer reason recorded in
-`gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring. The
-`---- gate ----` header is HERE and not on the module, because `gate-bind` reads
-the file package.json names.
+registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring. The `---- gate ----` header is HERE and not on the module, because `gate-bind` reads the file package.json names.
 
----- gate ----
-step: Secret supply
-needs: none
-lane: quality-static
-selftest: true
-why: a name the env manifest declares vault-supplied that no vault holds is a
+---- gate ---- step: Secret supply needs: none lane: quality-static selftest: true why: a name the env manifest declares vault-supplied that no vault holds is a
      credential whose supply is unstated, and nothing in this tree could name
      that set. Only the FIRST line of this field survives the parser, so the
      rest is for a human: the same file carries the truncation spec for

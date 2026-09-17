@@ -1,25 +1,16 @@
 #!/usr/bin/env python3
 """check:ci-schema-call-sites -- every schema-constrained model call retries exhaustion.
 
-WHY THIS EXISTS. `retry_schema_exhaustion` turns "the model could not produce an object
-matching the schema" into one retry instead of a hard failure. On 2026-09-05 a sweep
-added it to the judge call sites one at a time and MISSED THE FIFTH -- the one in
-wl_shapedup.py -- and the commit that found it says so in its own subject: "the fifth
-schema-constrained call site". Five examples checked individually is not the same claim
-as the set being uniform, and the fifth is exactly what an example-based sweep drops.
+WHY THIS EXISTS. `retry_schema_exhaustion` turns "the model could not produce an object matching the schema" into one retry instead of a hard failure. On 2026-09-05 a sweep added it to the judge call sites one at a time and MISSED THE FIFTH -- the one in wl_shapedup.py -- and the commit that found it says so in its own subject: "the fifth schema-constrained call site". Five
+examples checked individually is not the same claim as the set being uniform, and the fifth is exactly what an example-based sweep drops.
 
 THE INVARIANT. A function that builds a `--json-schema` model invocation must route its
 subprocess through `retry_schema_exhaustion`. Not "most of them"; the whole set,
-enumerated from the source, so a SIXTH site is covered the day it is written with no
-edit here.
+enumerated from the source, so a SIXTH site is covered the day it is written with no edit here.
 
-Blind spot, stated: this proves the helper is CALLED in the same function, not that its
-result is used correctly. A site that calls it and discards `proc` passes here.
+Blind spot, stated: this proves the helper is CALLED in the same function, not that its result is used correctly. A site that calls it and discards `proc` passes here.
 
----- gate ----
-step: Schema call sites
-needs: none
-why: a per-site sweep added the retry to four judge call sites and missed the fifth in
+---- gate ---- step: Schema call sites needs: none why: a per-site sweep added the retry to four judge call sites and missed the fifth in
      wl_shapedup.py, because five examples are not a property over the set
 ---- end gate ----
 """
@@ -49,9 +40,7 @@ MIN_SITES = 4
 def sites(src: str) -> list[tuple[str, int, bool]]:
     """(name, line, routed) for each TOP-LEVEL function that builds a schema call.
 
-    Top-level only, deliberately: the inner `_call` closures carry the argv, and the
-    OUTER function is where the retry wraps them. Reporting the closure would name the
-    wrong line and invite the fix in the wrong place.
+    Top-level only, deliberately: the inner `_call` closures carry the argv, and the OUTER function is where the retry wraps them. Reporting the closure would name the wrong line and invite the fix in the wrong place.
     """
     try:
         tree = ast.parse(src)

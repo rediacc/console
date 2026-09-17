@@ -1,19 +1,11 @@
 """Port of `.ci/scripts/test/gates/test-media-docs.sh`.
 
-Tests that the media folder's own DOCUMENTATION stays true, and that its coverage
-probe stays honest.
+Tests that the media folder's own DOCUMENTATION stays true, and that its coverage probe stays honest.
 
-WHY DOCUMENTATION NEEDS A GATE HERE MORE THAN ANYWHERE ELSE IN THIS TREE. These
-files carry an unusual amount of prose, on purpose: several of the paragraphs are
-the only surviving record of an incident. Prose that dense decays in one specific
-way a reader cannot catch -- a path that was true when it was written and is not
-true now. Phase 3 alone moved four files, and every comment naming `.ci/docker/tts`
-became a lie the moment it did.
+WHY DOCUMENTATION NEEDS A GATE HERE MORE THAN ANYWHERE ELSE IN THIS TREE. These files carry an unusual amount of prose, on purpose: several of the paragraphs are the only surviving record of an incident. Prose that dense decays in one specific way a reader cannot catch -- a path that was true when it was written and is not true now. Phase 3 alone moved four files, and every comment
+naming `.ci/docker/tts` became a lie the moment it did.
 
-Three subjects, in the twin's order: the dangling `.ci/` path scan, the coverage
-probe (that it measures, that its seam does not perturb, and that it names modules
-no test drives), and `.ci/docs/r2-media-setup.md`'s function homes and commit
-citations.
+Three subjects, in the twin's order: the dangling `.ci/` path scan, the coverage probe (that it measures, that its seam does not perturb, and that it names modules no test drives), and `.ci/docs/r2-media-setup.md`'s function homes and commit citations.
 
 Nothing here needs docker, node, npm, nvcc, aws, ssh, a GPU or a network.
 
@@ -48,20 +40,11 @@ WHERE THIS REIMPLEMENTS grep, sed, sort, comm AND awk, AND WHY THE ANSWERS AGREE
   reimplemented. An ancestry predicate written in Python would be a second answer to
   a question git already answers.
 
-WHAT IS NOT PORTED, AND WHY IT IS NOT A GAP. The twin's `|| true` on its grep is a
-bash-specific defence: without it, a file naming no `.ci/` path makes grep exit 1,
-`pipefail` carries that out, and `set -e` kills the caller with an empty stderr.
-Python has no such hazard, but the CASE that proves the hazard is closed is kept
-verbatim -- a file with no `.ci` path must leave the scan alive and return an empty
-result -- because what the case really asserts is "the scan survives a file with
-nothing in it", and that claim is language-independent.
+WHAT IS NOT PORTED, AND WHY IT IS NOT A GAP. The twin's `|| true` on its grep is a bash-specific defence: without it, a file naming no `.ci/` path makes grep exit 1, `pipefail` carries that out, and `set -e` kills the caller with an empty stderr. Python has no such hazard, but the CASE that proves the hazard is closed is kept verbatim -- a file with no `.ci` path must leave the
+scan alive and return an empty result -- because what the case really asserts is "the scan survives a file with nothing in it", and that claim is language-independent.
 
-NO `xdist_group`, WITH ONE THING WORTH SAYING OUT LOUD. Two cases execute
-`.ci/scripts/test/gates/test-media-r2.sh` and `.ci/media/coverage.sh`, which are
-real programs in the checkout, but both are READ-ONLY with respect to the tree: the
-r2 twin builds its fixtures under its own `mktemp -d`, and the coverage probe writes
-only to the trace file it is handed. Nothing here writes into the repository, so
-there is no state for two workers to share.
+NO `xdist_group`, WITH ONE THING WORTH SAYING OUT LOUD. Two cases execute `.ci/scripts/test/gates/test-media-r2.sh` and `.ci/media/coverage.sh`, which are real programs in the checkout, but both are READ-ONLY with respect to the tree: the r2 twin builds its fixtures under its own `mktemp -d`, and the coverage probe writes only to the trace file it is handed. Nothing here writes
+into the repository, so there is no state for two workers to share.
 """
 
 import pathlib
@@ -103,8 +86,7 @@ def dangling_ci_paths(*files: pathlib.Path) -> list[str]:
 
     GLOBS ARE NOT PATHS. `test-media-*.sh` appears in several headers as the NAME OF
     A SET; a token containing `*` is dropped rather than resolved, because the
-    alternative is either a false finding on every one of them or an exception list
-    that grows with the prose.
+    alternative is either a false finding on every one of them or an exception list that grows with the prose.
     """
     findings = []
     for path in files:
@@ -128,8 +110,7 @@ def dangling_ci_paths(*files: pathlib.Path) -> list[str]:
 def doc_media_functions(doc: pathlib.Path) -> list[str]:
     """Every shell function DEFINED in `.ci/media` that `doc` names inside backticks.
 
-    Derived from BOTH sides, so a renamed function drops out of the set instead of
-    becoming a stale exception nobody removes.
+    Derived from BOTH sides, so a renamed function drops out of the set instead of becoming a stale exception nobody removes.
     """
     defined: set[str] = set()
     for module in sorted((ROOT / ".ci" / "media").glob("*.sh")):
@@ -163,9 +144,7 @@ def doc_commit_tokens(doc: pathlib.Path) -> list[str]:
 def non_ancestor_commits(repo: pathlib.Path, doc: pathlib.Path) -> list[str]:
     """Every cited token that is not an ancestor of HEAD in `repo`.
 
-    Unresolvable and merely-unreachable collapse into one finding on purpose: from a
-    reader's seat, "git cannot show me this" and "git shows me something on no
-    branch" are the same broken citation.
+    Unresolvable and merely-unreachable collapse into one finding on purpose: from a reader's seat, "git cannot show me this" and "git shows me something on no branch" are the same broken citation.
     """
     git = harness.require_tool("git", "install git")
     dead = []

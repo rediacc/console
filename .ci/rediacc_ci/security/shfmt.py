@@ -5,14 +5,11 @@ W7P6 wave 28. The bash twin stays the LIVE registered gate
 (`check:ci-shell-format`, step "Shell format"); this module is its
 VERIFIED-EQUIVALENT ALTERNATIVE, proved on both streams by
 `.ci/rediacc_ci/tests/test_security_shfmt.py` and by the K=5 shadow ledger
-`.ci/shadow/w7p6-shfmt.observations.jsonl`. Nothing is repointed at this file.
-Cutover is a separate, later, driver-only step.
+`.ci/shadow/w7p6-shfmt.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
-WHAT IT DOES. Acquires shfmt AT THE PIN through `rediacc_ci.core.toolchain`
-(the already-landed port of `.ci/scripts/lib/toolchain.sh`), refuses to report a
+WHAT IT DOES. Acquires shfmt AT THE PIN through `rediacc_ci.core.toolchain` (the already-landed port of `.ci/scripts/lib/toolchain.sh`), refuses to report a
 verdict if fewer than `${SHFMT_MIN_FILES:-200}` shell scripts are visible, then
-runs `shfmt -i 4 -ci -d` over four deliberately-asymmetric scopes: all of `.ci`,
-all of `.claude`, `./run.sh` alone, and `scripts/dev` plus `scripts/docker`.
+runs `shfmt -i 4 -ci -d` over four deliberately-asymmetric scopes: all of `.ci`, all of `.claude`, `./run.sh` alone, and `scripts/dev` plus `scripts/docker`.
 
 REAL RUNS OR STUBS: BOTH.
 
@@ -34,21 +31,15 @@ REAL RUNS OR STUBS: BOTH.
 THE ONE NAMED DIVERGENCE, AND IT IS THE INTERESTING ONE: FILE ORDER.
 
 The twin enumerates with `find <root> -name '*.sh' -type f -exec shfmt ... {} +`
-and POSIX leaves find's traversal order UNSPECIFIED. That is not theoretical
-here. Measured 2026-09-14 on this host:
+and POSIX leaves find's traversal order UNSPECIFIED. That is not theoretical here. Measured 2026-09-14 on this host:
 
     $ find --version | head -1
     bfs 4.1.1
 
-`bfs` is a breadth-first drop-in for find. GNU findutils, which is what
-`ubuntu-latest` runs in CI, is depth-first pre-order in readdir order. Over
-`.ci` alone the two produce the SAME 300-odd files in a VISIBLY different
-sequence (`.ci/tutorials/lib/*.sh` lands at position 11 under one and position
-120 under the other). So the twin's output ORDER is a property of whichever
-`find` is installed, not a property of the gate.
+`bfs` is a breadth-first drop-in for find. GNU findutils, which is what `ubuntu-latest` runs in CI, is depth-first pre-order in readdir order. Over `.ci` alone the two produce the SAME 300-odd files in a VISIBLY different sequence (`.ci/tutorials/lib/*.sh` lands at position 11 under one and position 120 under the other). So the twin's output ORDER is a property of whichever `find`
+is installed, not a property of the gate.
 
-This port therefore enumerates in BYTE ORDER, which is deterministic everywhere,
-and the differential:
+This port therefore enumerates in BYTE ORDER, which is deterministic everywhere, and the differential:
 
   * compares exit code and stderr BYTE FOR BYTE;
   * compares the non-diff stdout lines BYTE FOR BYTE, in order;
@@ -59,37 +50,22 @@ and the differential:
 
 Nothing else is normalised.
 
-A DEFECT IN THE TWIN, REPRODUCED NOT REPAIRED. Under `set -e`, a scope whose
-`find ... -exec shfmt` reports differences ABORTS THE WHOLE SCRIPT, so the three
-scopes after the first failing one are NEVER CHECKED and the operator is never
-told. Measured on this tree 2026-09-14: `.ci` alone reports 36 diffs, the run
-exits 1 after `info: Checking .ci/**/*.sh`, and `.claude`, `./run.sh`,
-`scripts/dev` and `scripts/docker` produce no output at all. A reader who fixes
-the 36 `.ci` findings discovers the next scope's findings only on the next run.
+A DEFECT IN THE TWIN, REPRODUCED NOT REPAIRED. Under `set -e`, a scope whose `find ... -exec shfmt` reports differences ABORTS THE WHOLE SCRIPT, so the three scopes after the first failing one are NEVER CHECKED and the operator is never told. Measured on this tree 2026-09-14: `.ci` alone reports 36 diffs, the run exits 1 after `info: Checking .ci/**/*.sh`, and `.claude`,
+`./run.sh`, `scripts/dev` and `scripts/docker` produce no output at all. A reader who fixes the 36 `.ci` findings discovers the next scope's findings only on the next run.
 Reproduced exactly (this port stops at the same place with the same bytes);
 fixing it is a cutover-box decision, not a port's.
 
-A SECOND, SMALLER ONE: `log_error()`/`log_info()`/`log_success()` here
-interpolate `"$1"`, not `"$*"`, so `log_error a b` silently drops `b` -- the same
-shape as the 2026-09-06 emit-advisory defect. Every call site in this twin
-passes exactly one argument, so it is latent rather than live. Reproduced by
-giving this port's helpers one parameter each.
+A SECOND, SMALLER ONE: `log_error()`/`log_info()`/`log_success()` here interpolate `"$1"`, not `"$*"`, so `log_error a b` silently drops `b` -- the same shape as the 2026-09-06 emit-advisory defect. Every call site in this twin passes exactly one argument, so it is latent rather than live. Reproduced by giving this port's helpers one parameter each.
 
-WHY NOT `rediacc_ci.log`. This twin does NOT source `common.sh`. It defines its
-own `error: `/`info: `/`success: ` logger with a DIFFERENT colour rule (colour
+WHY NOT `rediacc_ci.log`. This twin does NOT source `common.sh`. It defines its own `error: `/`info: `/`success: ` logger with a DIFFERENT colour rule (colour
 unless `CI=true`, with no tty test at all, so a developer piping this gate into
-a file gets escape sequences) and a different stream split (`info` and `success`
-on STDOUT, `error` on stderr). The house logger is a port of common.sh's logger
-and would be wrong on all three counts, so the twin's shape is reproduced here
-and named rather than silently upgraded.
+a file gets escape sequences) and a different stream split (`info` and `success` on STDOUT, `error` on stderr). The house logger is a port of common.sh's logger and would be wrong on all three counts, so the twin's shape is reproduced here and named rather than silently upgraded.
 
 `require_cmd` / `require_var` ARE NOT CALLED HERE, so the multi-argument
 `require_cmd` defect (`common.sh:141-148` binds `local cmd="$1"` and ignores the
-rest) does not apply. Checked, and recorded so the next reader does not repeat
-the check.
+rest) does not apply. Checked, and recorded so the next reader does not repeat the check.
 
-ONE MORE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours
-`$REDIACC_CI_ROOT` and the twin's `SCRIPT_DIR/../../..` does not.
+ONE MORE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin's `SCRIPT_DIR/../../..` does not.
 """
 
 from __future__ import annotations
@@ -124,9 +100,7 @@ NC = "\033[0m"
 def colours() -> tuple[str, str, str]:
     """`if [[ "${CI:-}" == "true" ]]` (:22-26). NO tty test, deliberately.
 
-    Read straight from `os.environ` at the call site rather than through a
-    captured `env` dict: an alias is how a gate ends up reading a snapshot taken
-    before the value it cares about was set.
+    Read straight from `os.environ` at the call site rather than through a captured `env` dict: an alias is how a gate ends up reading a snapshot taken before the value it cares about was set.
     """
     if os.environ.get("CI", "") == "true":
         return "", "", ""
@@ -156,23 +130,13 @@ def log_info(message: str) -> None:
 def shell_files(root: pathlib.Path) -> list[str]:
     """Every `*.sh` regular file under `root`, in BYTE order. See the docstring.
 
-    `-type f` and NOT following symlinks, both directions: a symlink to a script
-    is not a regular file to `find -P`, and a symlinked directory is not
+    `-type f` and NOT following symlinks, both directions: a symlink to a script is not a regular file to `find -P`, and a symlinked directory is not
     descended into. `os.scandir` with `follow_symlinks=False` answers both the
     same way.
 
-    FIXED 2026-09-15: was a hand-rolled `os.scandir` stack that did not exclude
-    `.claude/worktrees/` (sibling CHECKOUTS of this repository for isolated
-    sub-agent sessions, git-excluded via `.git/info/exclude:11` so invisible to
-    git and to CI, but not to a raw directory walk). A peer's worktree turned
-    `test_security_shfmt` and `test_gate_vacuity_floors::test_shfmt_accepts_the_real_corpus`
-    red on 2026-09-13 over files that are not in the repository at all. Landed
-    on both sides at once, as it had to be: `-not -path './.claude/worktrees/*'`
-    on `.ci/scripts/security/shfmt.sh:72` and `:104` (the bash twin
-    `check:ci-shell-format` actually runs), and `paths.walk_tree` here -- a
-    one-sided fix would have made this port's real-tree differential in
-    `test_security_shfmt.py` report the (now intended) difference from the twin
-    as a MISMATCH.
+    FIXED 2026-09-15: was a hand-rolled `os.scandir` stack that did not exclude `.claude/worktrees/` (sibling CHECKOUTS of this repository for isolated sub-agent sessions, git-excluded via `.git/info/exclude:11` so invisible to git and to CI, but not to a raw directory walk). A peer's worktree turned `test_security_shfmt` and
+    `test_gate_vacuity_floors::test_shfmt_accepts_the_real_corpus` red on 2026-09-13 over files that are not in the repository at all. Landed on both sides at once, as it had to be: `-not -path './.claude/worktrees/*'` on `.ci/scripts/security/shfmt.sh:72` and `:104` (the bash twin `check:ci-shell-format` actually runs), and `paths.walk_tree` here -- a one-sided fix would have made
+    this port's real-tree differential in `test_security_shfmt.py` report the (now intended) difference from the twin as a MISMATCH.
     """
     found: list[str] = []
     for dirpath, _dirnames, filenames in paths.walk_tree(root):
@@ -189,15 +153,9 @@ def shell_files(root: pathlib.Path) -> list[str]:
 def floor_count() -> int:
     """`find .ci .claude scripts -name '*.sh' -type f 2>/dev/null | wc -l`.
 
-    RELATIVE to the current directory, because `main` has already reproduced the
-    twin's `cd "$ROOT_DIR"`. That `cd` is load-bearing and not a tidiness: every
-    scope below is named RELATIVELY, so the paths shfmt prints in its diff
-    headers are `.ci/lib/account.sh`, not absolute. Handing shfmt an absolute
-    path changes the bytes of every diff header it emits.
+    RELATIVE to the current directory, because `main` has already reproduced the twin's `cd "$ROOT_DIR"`. That `cd` is load-bearing and not a tidiness: every scope below is named RELATIVELY, so the paths shfmt prints in its diff headers are `.ci/lib/account.sh`, not absolute. Handing shfmt an absolute path changes the bytes of every diff header it emits.
 
-    A ROOT THAT DOES NOT EXIST IS SKIPPED, not fatal: `find` writes
-    "No such file or directory" to the stderr the twin sends to /dev/null and
-    still walks the roots it can reach.
+    A ROOT THAT DOES NOT EXIST IS SKIPPED, not fatal: `find` writes "No such file or directory" to the stderr the twin sends to /dev/null and still walks the roots it can reach.
     """
     total = 0
     for name in FLOOR_ROOTS:
@@ -214,9 +172,7 @@ def floor_count() -> int:
 def run_shfmt(binary: str, targets: list[str]) -> int:
     """`shfmt -i 4 -ci -d <targets>`, streams INHERITED. Returns its exit code.
 
-    Inherited rather than captured so a large diff reaches the caller's stdout
-    exactly as the twin's does, and so shfmt's own parse errors stay on stderr
-    instead of being reordered into stdout by a buffer of ours.
+    Inherited rather than captured so a large diff reaches the caller's stdout exactly as the twin's does, and so shfmt's own parse errors stay on stderr instead of being reordered into stdout by a buffer of ours.
     """
     if not targets:
         # `find` with no match runs the `-exec ... +` command ZERO times and exits 0. Passing an empty list to shfmt would make it read STDIN.
@@ -230,9 +186,7 @@ def run_shfmt(binary: str, targets: list[str]) -> int:
 def check_scope(binary: str, relative: str) -> int:
     """One `find <relative> ... -exec shfmt ... {} +` scope, RELATIVE to cwd.
 
-    RETURNS 1, NOT shfmt's OWN CODE, on a failing scope. Under `set -e` the twin
-    exits with FIND's status, and find reports "an -exec command failed" as
-    exactly 1 regardless of what the child returned. The direct `./run.sh` call
+    RETURNS 1, NOT shfmt's OWN CODE, on a failing scope. Under `set -e` the twin exits with FIND's status, and find reports "an -exec command failed" as exactly 1 regardless of what the child returned. The direct `./run.sh` call
     has no find in front of it and therefore does return shfmt's own code; that
     asymmetry is the twin's and is reproduced in `main`.
     """

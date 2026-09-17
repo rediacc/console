@@ -1,12 +1,9 @@
 """The mutation runner itself must keep working.
 
 Ported from `.ci/scripts/quality/check-mutate-check.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live until a differential
-ledger row exists over K distinct trees. Its gate header registers it as step
-"Mutation runner self-test", needs none, selftest true.
+see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "Mutation runner self-test", needs none, selftest true.
 
-WHAT THIS DOES AND DOES NOT PROTECT, carried whole from the twin because the
-distinction is the entire reason the gate is small:
+WHAT THIS DOES AND DOES NOT PROTECT, carried whole from the twin because the distinction is the entire reason the gate is small:
 
     It does NOT force anyone to run a mutation for every new test case; that is
     not gateable (see the rebuttal in agent/PLAN-promote-mutation-runner.md,
@@ -24,8 +21,7 @@ distinction is the entire reason the gate is small:
     the runner's logic collapsed into "always succeed", scenarios 2, 3 and 4 would
     all fail this gate. If it collapsed into "always fail", scenario 1 would.
 
-THE FOUR VERDICTS, and the twin's reason for each, kept at the scenario that
-asserts it:
+THE FOUR VERDICTS, and the twin's reason for each, kept at the scenario that asserts it:
 
   1. red-then-green. The good case; the ONLY exit 0.
   2. THE VERDICT THIS TOOL EXISTS FOR. Case 901 is red in both directions, so its
@@ -49,46 +45,25 @@ PORT NOTES.
 
 THE RUNNER IS DRIVEN, NEVER REIMPLEMENTED. This gate's subject is a bash program
 and its four exit codes; a Python reimplementation of mutate-check.sh would be a
-second instrument and this gate would then certify the wrong one. Every scenario
-is a subprocess, and the twin's `2>&1` capture is reproduced by merging the
-child's two streams into one string -- which is the ONE place in this package
-where merging is correct, because the captured text is the gate's INPUT rather
-than its output.
+second instrument and this gate would then certify the wrong one. Every scenario is a subprocess, and the twin's `2>&1` capture is reproduced by merging the child's two streams into one string -- which is the ONE place in this package where merging is correct, because the captured text is the gate's INPUT rather than its output.
 
 `ok` AND `FAIL` CARRY RAW ESCAPES, UNCONDITIONALLY, and that is the twin's
 behaviour rather than an oversight to fix. `printf '  \\033[0;32mok\\033[0m   %s\\n'`
-has no tty test at all, so this gate writes colour into a pipe and into a CI log.
-`scripts/lib/shadow-gate.ts` strips ANSI before comparing, so the escapes cost
+has no tty test at all, so this gate writes colour into a pipe and into a CI log. `scripts/lib/shadow-gate.ts` strips ANSI before comparing, so the escapes cost
 nothing there; they are carried because a port that removed them would print
 different BYTES to a human diffing the two, and reported as a twin finding.
 
-THE FAILURE LINE IS NOT A FINDING TO THE COMPARATOR, and knowing that is what
-keeps this port honest. `bad()` prints `  FAIL <label>` with ONE space, while
-`scripts/lib/shadow-gate.ts`'s marker is `/^FAIL\\s\\s+/` (two or more) or
-`/^FAIL:/`. So a failing scenario's line is classified as CHATTER, and the only
-compared finding this gate emits is the final `✗ N mutate-check.sh self-test(s)
-failed`. That is why the differential fixtures vary the NUMBER of failing
-scenarios rather than which one fails: the number is the only thing the ledger
-can see. Stated here so nobody reads a passing differential as proof that the
-per-scenario labels agree.
+THE FAILURE LINE IS NOT A FINDING TO THE COMPARATOR, and knowing that is what keeps this port honest. `bad()` prints ` FAIL <label>` with ONE space, while `scripts/lib/shadow-gate.ts`'s marker is `/^FAIL\\s\\s+/` (two or more) or `/^FAIL:/`. So a failing scenario's line is classified as CHATTER, and the only compared finding this gate emits is the final `✗ N mutate-check.sh
+self-test(s) failed`. That is why the differential fixtures vary the NUMBER of failing scenarios rather than which one fails: the number is the only thing the ledger can see. Stated here so nobody reads a passing differential as proof that the per-scenario labels agree.
 
-THE DETAIL BLOCK IS `sed 's/^/       /' | head -12`: seven spaces, twelve lines,
-on STDOUT. Reproduced exactly, including the truncation, because those lines land
-under a chatter header and any of them shaped like `<file>.<ext>:<line>:` is
-promoted to a finding by the comparator's path-line rule.
+THE DETAIL BLOCK IS `sed 's/^/ /' | head -12`: seven spaces, twelve lines, on STDOUT. Reproduced exactly, including the truncation, because those lines land under a chatter header and any of them shaped like `<file>.<ext>:<line>:` is promoted to a finding by the comparator's path-line rule.
 
-`grep -qE '^\\s+echo "  (PASS|FAIL): '` IS SCANNED LINE BY LINE with an explicit
-POSIX space class. `grep` applies the pattern per line, so `\\s` can never reach a
+`grep -qE '^\\s+echo " (PASS|FAIL): '` IS SCANNED LINE BY LINE with an explicit POSIX space class. `grep` applies the pattern per line, so `\\s` can never reach a
 newline there; Python's `\\s` on a str would additionally match U+00A0 and U+2028,
 so the class is written out rather than abbreviated.
 
-ONE DELIBERATE DIVERGENCE, named rather than hidden: if the runner exists but is
-NOT EXECUTABLE, bash reports 126 with its own "Permission denied" text captured
-into the scenario output, while this port raises OSError and reports 126 with an
-empty output. The twin's own precondition loop tests `-f`, not `-x`, so both
-implementations reach that state the same way. No fixture in the ledger exercises
-it, and it is written down because an undocumented divergence is the kind a later
-reader takes for a defect in the port.
+ONE DELIBERATE DIVERGENCE, named rather than hidden: if the runner exists but is NOT EXECUTABLE, bash reports 126 with its own "Permission denied" text captured into the scenario output, while this port raises OSError and reports 126 with an empty output. The twin's own precondition loop tests `-f`, not `-x`, so both implementations reach that state the same way. No fixture in the
+ledger exercises it, and it is written down because an undocumented divergence is the kind a later reader takes for a defect in the port.
 """
 
 import os
@@ -124,10 +99,7 @@ RC_TWO = "eq2"
 def rc_ok(mode: str, rc: int) -> bool:
     """Does `rc` satisfy the scenario's exit-code condition?
 
-    Exported so `--selftest` can drive all three modes in both directions without
-    a subprocess. A KeyError-free `raise` on an unknown mode is deliberate: a
-    typo'd mode that silently answered False would turn a control into a
-    permanent red nobody could explain.
+    Exported so `--selftest` can drive all three modes in both directions without a subprocess. A KeyError-free `raise` on an unknown mode is deliberate: a typo'd mode that silently answered False would turn a control into a permanent red nobody could explain.
     """
     if mode == RC_ZERO:
         return rc == 0
@@ -143,8 +115,7 @@ def scenario_passed(mode: str, rc: int, out: str, needle: str) -> bool:
 
     `grep -qF` is a FIXED-STRING search, not a regex, so the needle is compared
     with `in` rather than compiled. That matters for "does not detect this
-    defect", which contains no metacharacter today and would silently become a
-    pattern the day someone added one.
+    defect", which contains no metacharacter today and would silently become a pattern the day someone added one.
     """
     return rc_ok(mode, rc) and needle in out
 
@@ -152,9 +123,7 @@ def scenario_passed(mode: str, rc: int, out: str, needle: str) -> bool:
 def indented_result_lines(text: str) -> bool:
     """Scenario 5: does the fixture suite still print INDENTED result lines?
 
-    The whole reason the fixture indents is that the runner's first bug was a
-    `^FAIL` that matched nothing. A fixture tidied to print flush-left would make
-    scenario 1 pass while the regression it guards went unguarded.
+    The whole reason the fixture indents is that the runner's first bug was a `^FAIL` that matched nothing. A fixture tidied to print flush-left would make scenario 1 pass while the regression it guards went unguarded.
     """
     return any(INDENTED_RESULT_RE.match(line) for line in text.split("\n"))
 
@@ -162,10 +131,7 @@ def indented_result_lines(text: str) -> bool:
 class _Tally:
     """The twin's `ok` / `bad` pair and its FAILED counter, transliterated.
 
-    Not `rediacc_ci.controls.Controls`: these strings are the gate's OUTPUT
-    CONTRACT and `scripts/lib/shadow-gate.ts` compares them against the bash
-    twin's, so a nicer wording here is a false mismatch there. The same decision,
-    and the same reasoning, as `rediacc_ci.quality.staging_tag_guard._GateTally`.
+    Not `rediacc_ci.controls.Controls`: these strings are the gate's OUTPUT CONTRACT and `scripts/lib/shadow-gate.ts` compares them against the bash twin's, so a nicer wording here is a false mismatch there. The same decision, and the same reasoning, as `rediacc_ci.quality.staging_tag_guard._GateTally`.
     """
 
     def __init__(self) -> None:
@@ -188,10 +154,7 @@ def run_scenario(
 ) -> tuple[int, str]:
     """One `"$RUNNER" ... 2>&1` capture. Returns (exit code, merged output).
 
-    MERGING IS CORRECT HERE and nowhere else in this package: the merged text is
-    what the twin greps, so splitting the streams would change which scenarios
-    pass. `rediacc_ci.tests.differential` never merges, because there the streams
-    are the thing under test.
+    MERGING IS CORRECT HERE and nowhere else in this package: the merged text is what the twin greps, so splitting the streams would change which scenarios pass. `rediacc_ci.tests.differential` never merges, because there the streams are the thing under test.
     """
     environ = dict(os.environ)
     if env_extra:
@@ -218,8 +181,7 @@ def run_scenario(
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 when all five scenarios hold, 1 otherwise.
 
-    `--selftest` is intercepted BEFORE any real scan, which is the addition the
-    twin does not have. The twin takes no arguments, so no caller passes it.
+    `--selftest` is intercepted BEFORE any real scan, which is the addition the twin does not have. The twin takes no arguments, so no caller passes it.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -328,8 +290,7 @@ def selftest() -> int:
 
     THE DECISION FUNCTIONS, NOT THE SUBPROCESSES. Driving the real runner here
     would re-run the gate and prove only that the gate agrees with itself; what
-    is worth pinning is the three exit-code modes, the fixed-string match, and
-    the indentation rule, each in BOTH directions.
+    is worth pinning is the three exit-code modes, the fixed-string match, and the indentation rule, each in BOTH directions.
     """
     ctl = Controls("mutate-check", floor=18, verbose=True)
 

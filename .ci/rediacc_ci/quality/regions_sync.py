@@ -3,80 +3,41 @@
 Ported from `.ci/scripts/quality/check-regions-sync.sh`, which is not deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHY. `packages/shared/src/regions/index.ts` imports `./data.json` and its comment
-says it is "a copy of the root regions.json kept in sync by the build process".
-There is no such build process. The two files are identical today only because
-somebody copied one onto the other by hand, and nothing would have said so if they
-had drifted.
+WHY. `packages/shared/src/regions/index.ts` imports `./data.json` and its comment says it is "a copy of the root regions.json kept in sync by the build process". There is no such build process. The two files are identical today only because somebody copied one onto the other by hand, and nothing would have said so if they had drifted.
 
-The drift is silent in the worst direction: `data.json` is the BAKED-IN fallback
-the CLI uses when it cannot fetch the live list, and it cannot fetch the live list
+The drift is silent in the worst direction: `data.json` is the BAKED-IN fallback the CLI uses when it cannot fetch the live list, and it cannot fetch the live list
 -- `region-discovery.ts` points at `${SITE_URL}/regions.json`, which returns 404
-(measured 2026-08-26). So the fallback is not a fallback, it is the ONLY path, and
-a stale copy of it would be what every user actually gets while the root file
-looked authoritative.
+(measured 2026-08-26). So the fallback is not a fallback, it is the ONLY path, and a stale copy of it would be what every user actually gets while the root file looked authoritative.
 
-This gate does not invent the sync process the comment describes. It makes the
-comment's PROMISE enforceable, which is the cheaper and more honest half: the
-files may be maintained by hand, but they can no longer diverge unnoticed.
+This gate does not invent the sync process the comment describes. It makes the comment's PROMISE enforceable, which is the cheaper and more honest half: the files may be maintained by hand, but they can no longer diverge unnoticed.
 
-WHAT IT CANNOT SEE: whether either file's CONTENT is correct, and whether the live
-endpoint serves anything at all. The 404 is a separate, larger finding.
+WHAT IT CANNOT SEE: whether either file's CONTENT is correct, and whether the live endpoint serves anything at all. The 404 is a separate, larger finding.
 
 -----------------------------------------------------------------------------
 PORT NOTES. What changed, what did not, and the one thing that is now weaker.
 -----------------------------------------------------------------------------
 
-THE COMPARISON IS OVER PARSED JSON, NOT BYTES, and that is carried across
-verbatim because it is a decision rather than an implementation: formatting
-differences are not drift, and failing on them would train people to reformat
-rather than to reconcile. The bash twin achieved it by shelling out to
+THE COMPARISON IS OVER PARSED JSON, NOT BYTES, and that is carried across verbatim because it is a decision rather than an implementation: formatting differences are not drift, and failing on them would train people to reformat rather than to reconcile. The bash twin achieved it by shelling out to
 `python3 -c "json.dumps(json.load(...), sort_keys=True)"` twice. The port calls
-`json.load` directly, which removes two subprocesses and, more usefully, removes
-the class of failure where the interpreter that parses the file is not the
-interpreter the gate is running under.
+`json.load` directly, which removes two subprocesses and, more usefully, removes the class of failure where the interpreter that parses the file is not the interpreter the gate is running under.
 
-`require_cmd python3` IS GONE, AND ITS DISAPPEARANCE IS NOT A LOSS. The twin
-checks for python3 TWICE -- once through `require_cmd` at the top and once again
-through `command -v` just before `norm()` is defined -- because a comparison that
-cannot run is not a pass. In a Python program the interpreter is a precondition of
-reaching line one, so the check has nothing left to guard. The SECOND copy of it
-in the twin is worth naming: it is dead code even in bash, since `require_cmd`
-already exited. It is not reproduced.
+`require_cmd python3` IS GONE, AND ITS DISAPPEARANCE IS NOT A LOSS. The twin checks for python3 TWICE -- once through `require_cmd` at the top and once again through `command -v` just before `norm()` is defined -- because a comparison that cannot run is not a pass. In a Python program the interpreter is a precondition of reaching line one, so the check has nothing left to guard.
+The SECOND copy of it in the twin is worth naming: it is dead code even in bash, since `require_cmd` already exited. It is not reproduced.
 
-THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the
-one archaeology token this file would otherwise drop. Its two `# shellcheck
+THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the one archaeology token this file would otherwise drop. Its two `# shellcheck
 source=` / `# BLOCKER:` lines record that `log_error`, `log_info` and
-`get_repo_root` are used throughout, and that the BLOCKER exists because
-`check-python-gate-deps` and shellcheck would otherwise read the source line as
-unused. In the port `log_*` comes from `rediacc_ci.log` and the root from
-`rediacc_ci.paths.repo_root()`, so there is no source line and no suppression to
-justify -- but the FACT that these three helpers are the gate's only dependency on
-the shared bash library is what makes the twin cheap to retire, and that is worth
-keeping.
+`get_repo_root` are used throughout, and that the BLOCKER exists because `check-python-gate-deps` and shellcheck would otherwise read the source line as unused. In the port `log_*` comes from `rediacc_ci.log` and the root from `rediacc_ci.paths.repo_root()`, so there is no source line and no suppression to justify -- but the FACT that these three helpers are the gate's only
+dependency on the shared bash library is what makes the twin cheap to retire, and that is worth keeping.
 
-THE EXIT-STATUS BEHAVIOUR ON A NON-DICT, NON-LIST ROOT IS PRESERVED EXACTLY, and
-it is the ugly corner of the original. The twin computes
+THE EXIT-STATUS BEHAVIOUR ON A NON-DICT, NON-LIST ROOT IS PRESERVED EXACTLY, and it is the ugly corner of the original. The twin computes
 
     len(d.get('regions', d)) if isinstance(d,(dict,list)) else 0
 
-and a top-level JSON *list* satisfies the isinstance test, then dies on
-`.get` with an AttributeError. Under `set -e` the assignment carries that failure
-out and the script exits non-zero having printed a traceback and no verdict. The
-port reproduces the same expression rather than "fixing" it, because the fix is a
-behaviour change and this file's job is to keep the verdict. The traceback TEXT
-differs between the two -- it names different files -- but a crash is not a
-verdict on either side, and `scripts/lib/shadow-gate.ts` classifies neither as a
-finding.
+and a top-level JSON *list* satisfies the isinstance test, then dies on `.get` with an AttributeError. Under `set -e` the assignment carries that failure out and the script exits non-zero having printed a traceback and no verdict. The port reproduces the same expression rather than "fixing" it, because the fix is a behaviour change and this file's job is to keep the verdict. The
+traceback TEXT differs between the two -- it names different files -- but a crash is not a verdict on either side, and `scripts/lib/shadow-gate.ts` classifies neither as a finding.
 
-THE DIFF PRINTED ON DIVERGENCE. The twin ends with
-`diff <(printf '%s\n' "$a") <(printf '%s\n' "$b") | head -20`. Both operands are
-ONE line -- `json.dumps` with no indent -- so the output is always the four-line
-normal-format hunk `1c1`, `< a`, `---`, `> b`, and `head -20` never truncates
-anything. The port emits those four lines literally rather than reaching for
-difflib, which produces a different format for the same fact. The `head -20` is
-carried as a cap anyway, so a future multi-line normalization cannot turn a
-divergence report into a screenful.
+THE DIFF PRINTED ON DIVERGENCE. The twin ends with `diff <(printf '%s\n' "$a") <(printf '%s\n' "$b") | head -20`. Both operands are ONE line -- `json.dumps` with no indent -- so the output is always the four-line normal-format hunk `1c1`, `< a`, `---`, `> b`, and `head -20` never truncates anything. The port emits those four lines literally rather than reaching for difflib, which
+produces a different format for the same fact. The `head -20` is carried as a cap anyway, so a future multi-line normalization cannot turn a divergence report into a screenful.
 """
 
 import json
@@ -108,11 +69,9 @@ def normalize(path: pathlib.Path) -> str:
     """The file's JSON, canonically re-serialized. Raises on invalid JSON.
 
     `sort_keys=True` is what makes this a comparison of CONTENT: it sorts every
-    mapping recursively, so two files that disagree only about key order compare
-    equal, which is the whole point of not comparing bytes.
+    mapping recursively, so two files that disagree only about key order compare equal, which is the whole point of not comparing bytes.
 
-    Deliberately no `indent`: the result is one line, and the divergence report
-    below depends on that.
+    Deliberately no `indent`: the result is one line, and the divergence report below depends on that.
     """
     with path.open(encoding="utf-8") as handle:
         return json.dumps(json.load(handle), sort_keys=True)
@@ -121,10 +80,7 @@ def normalize(path: pathlib.Path) -> str:
 def region_count(path: pathlib.Path) -> int:
     """How many regions the root file declares.
 
-    The expression is the twin's, character for character in meaning, including
-    the AttributeError a top-level list produces. See the module docstring: the
-    corner is preserved rather than repaired, because repairing it would change
-    the verdict on an input the twin refuses.
+    The expression is the twin's, character for character in meaning, including the AttributeError a top-level list produces. See the module docstring: the corner is preserved rather than repaired, because repairing it would change the verdict on an input the twin refuses.
     """
     with path.open(encoding="utf-8") as handle:
         data = json.load(handle)
@@ -202,8 +158,7 @@ def main(argv: list[str] | None = None) -> int:
 def unified_hunk(left: str, right: str) -> list[str]:
     """`diff` normal format for two ONE-LINE strings.
 
-    Written out rather than delegated to difflib because difflib's formats
-    (`unified_diff`, `ndiff`, `context_diff`) all render this fact differently
+    Written out rather than delegated to difflib because difflib's formats (`unified_diff`, `ndiff`, `context_diff`) all render this fact differently
     from `diff`, and the twin's readers have seen `1c1` for as long as the gate
     has existed. Four lines, always, for the one shape this can produce.
     """
@@ -213,15 +168,9 @@ def unified_hunk(left: str, right: str) -> list[str]:
 def selftest() -> int:
     """Plant a defect in BOTH directions and require the gate to notice.
 
-    A control that only proves the gate FIRES is half a control: a gate that
-    always fires is as useless as one that never does, and it is the direction a
-    reviewer waves through because red looks like diligence. So every case below
-    has its mirror.
+    A control that only proves the gate FIRES is half a control: a gate that always fires is as useless as one that never does, and it is the direction a reviewer waves through because red looks like diligence. So every case below has its mirror.
 
-    Built by CONSTRUCTION in a tempdir, never by mutating the real region files:
-    `check-control-vacuity.sh` classifies a control built by in-place substitution
-    as one that must additionally prove the plant landed, and the cheaper answer
-    is to not build controls that way.
+    Built by CONSTRUCTION in a tempdir, never by mutating the real region files: `check-control-vacuity.sh` classifies a control built by in-place substitution as one that must additionally prove the plant landed, and the cheaper answer is to not build controls that way.
     """
     # floor=10 rather than 0: the floor is the only thing that catches a selftest
     # whose cases stopped executing, and a default of zero is a floor that cannot fail. See rediacc_ci.controls for the five drifted copies that taught it.

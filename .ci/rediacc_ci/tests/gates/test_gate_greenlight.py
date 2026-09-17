@@ -2,26 +2,15 @@ r"""Port of `.ci/scripts/test/gates/test-greenlight.sh`.
 
 Unit test for the cross-PR greenlight engine, `.ci/scripts/ci/greenlight.cjs`.
 
-WHAT THIS GUARDS. The engine lets a PR skip test-renet (90 minutes) or the
-account E2E suite on evidence that some OTHER run, on any branch, already
-executed that exact job green over byte-identical inputs. A false refusal costs
-one full CI round. A false GREENLIGHT merges untested code, so every rule that
-narrows the evidence is asserted here with a CONTROL that produces the opposite
-outcome: an engine hardcoded to "always greenlight" and one hardcoded to "never
-greenlight" both fail this file.
+WHAT THIS GUARDS. The engine lets a PR skip test-renet (90 minutes) or the account E2E suite on evidence that some OTHER run, on any branch, already executed that exact job green over byte-identical inputs. A false refusal costs one full CI round. A false GREENLIGHT merges untested code, so every rule that narrows the evidence is asserted here with a CONTROL that produces the
+opposite outcome: an engine hardcoded to "always greenlight" and one hardcoded to "never greenlight" both fail this file.
 
-THE RULE THAT CARRIES THE MOST WEIGHT is rule 1, intent versus outcome: a
-SKIPPED job must never count as evidence. Without it a reduced run whose renet
-job was skipped would greenlight the next PR, which would skip it too, and the
-suite would go unrun forever while every check stayed green.
+THE RULE THAT CARRIES THE MOST WEIGHT is rule 1, intent versus outcome: a SKIPPED job must never count as evidence. Without it a reduced run whose renet job was skipped would greenlight the next PR, which would skip it too, and the suite would go unrun forever while every check stayed green.
 
 --------------------------------------------------------------------------
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP
 --------------------------------------------------------------------------
-Read from the lock rather than guessed from the fixtures, because the fixtures
-mislead: most cases here are pure JSON in a tempdir and would suggest this port
-needs no isolation at all. `gates.lock.json` declares `gate-test:greenlight` with
-`reads: ["tree:repo"]`, and four cases earn it:
+Read from the lock rather than guessed from the fixtures, because the fixtures mislead: most cases here are pure JSON in a tempdir and would suggest this port needs no isolation at all. `gates.lock.json` declares `gate-test:greenlight` with `reads: ["tree:repo"]`, and four cases earn it:
 
   * `test_declared_closure_paths_exist` runs `git ls-tree HEAD` for all 428
     declared closure entries of the REAL table.
@@ -32,8 +21,7 @@ needs no isolation at all. `gates.lock.json` declares `gate-test:greenlight` wit
     read the real `.ci/scripts/ci/scope-shadow.sh`, and
     `test_the_trail_digest_names_every_key` extracts a shell function out of it.
 
-A battery step rewriting `scope-shadow.sh` or the engine mid-sweep is a
-divergence that would be blamed on this port.
+A battery step rewriting `scope-shadow.sh` or the engine mid-sweep is a divergence that would be blamed on this port.
 
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
 this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in
@@ -42,8 +30,7 @@ this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in
 --------------------------------------------------------------------------
 DOES THE SUBJECT SELF-SCAN? NO, AND IT WAS MEASURED RATHER THAN ASSUMED
 --------------------------------------------------------------------------
-Two of the sweeps here could in principle see this file, so both were checked
-before a fixture was written:
+Two of the sweeps here could in principle see this file, so both were checked before a fixture was written:
 
   * The closure table. `CLOSURES` declares 78 distinct `paths` entries; none is
     under `.ci/rediacc_ci`, and the eight `.ci/scripts/test/*` entries are named
@@ -109,8 +96,7 @@ def node_eval(gate, script: str, *args: str, env=None, cwd=None) -> harness.RunR
 def ev(gate, payload: str) -> dict:
     """`ev <json>` -- drive the PURE core over an injected fixture.
 
-    No network, no git, no clock: the whole decision is a function of its
-    argument.
+    No network, no git, no clock: the whole decision is a function of its argument.
     """
     result = node_eval(gate, EV_JS, os.fspath(ENGINE), payload)
     if result.rc != 0:
@@ -130,8 +116,7 @@ def jget(verdict: dict, field: str) -> str:
 
     The twin's helper prints a string field verbatim and JSON-encodes anything
     else, so `greenlit` reads "true"/"false", an absent `runId` reads "null", and
-    a trail reads as its JSON array. Preserved exactly, because every assertion
-    below is written against those spellings.
+    a trail reads as its JSON array. Preserved exactly, because every assertion below is written against those spellings.
     """
     value = verdict[field]
     if isinstance(value, str):
@@ -174,8 +159,7 @@ def captured(result: harness.RunResult) -> str:
     """`$( ... )`: stdout with trailing newlines stripped, stderr discarded.
 
     Every CLI case in the twin is `out="$(... 2>/dev/null)"`, and several assert
-    `out` is EMPTY. Comparing against `""` only means the same thing here if the
-    trailing newline is stripped the way command substitution strips it.
+    `out` is EMPTY. Comparing against `""` only means the same thing here if the trailing newline is stripped the way command substitution strips it.
     """
     return result.out.rstrip("\n")
 
@@ -886,8 +870,7 @@ def extract_digest_fn(gate) -> str:
 def run_digest(gate, fn_file, raw_file) -> str:
     """Source the extracted function and call it, exactly as the twin does.
 
-    BLOCKER: the function under test is defined in scope-shadow.sh, which cannot
-    be sourced whole because sourcing it runs the scope engine.
+    BLOCKER: the function under test is defined in scope-shadow.sh, which cannot be sourced whole because sourcing it runs the scope engine.
     """
     bash = harness.require_tool("bash", "install bash; greenlight_digest IS a shell function")
     result = harness.run(

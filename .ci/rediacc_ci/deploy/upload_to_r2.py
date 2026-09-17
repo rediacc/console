@@ -1,43 +1,24 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/upload-to-r2.sh`.
 
-Uploads the release artifacts to R2: the CLI binaries to the immutable versioned
-prefix `cli/v<V>/` and to the mutable channel prefix `cli/<channel>/`, the npm
-tarballs to `npm/<channel>/`, the two channel pointers (`manifest.json` and
-`latest.json`), then trims the retention window recorded in `cli/versions.json`.
+Uploads the release artifacts to R2: the CLI binaries to the immutable versioned prefix `cli/v<V>/` and to the mutable channel prefix `cli/<channel>/`, the npm tarballs to `npm/<channel>/`, the two channel pointers (`manifest.json` and `latest.json`), then trims the retention window recorded in `cli/versions.json`.
 
 --------------------------------------------------------------------------
 `write_once_guard` IS NOT PORTED. IT IS CALLED, AS BASH, FROM THE TWIN ITSELF
 --------------------------------------------------------------------------
-The sentinel-aware write guard is the one function in this file that decides
-whether a SEALED release may be overwritten, and its three answers (0 proceed,
-10 skip, `exit 1` refuse) are the difference between an idempotent rerun and the
-`sealed-but-empty` state that burned v1.1.16 and v1.1.17. A Python
-reimplementation of it would be, in `write_once_guard_check.py`'s words, "a
-second instrument certifying itself": the harness that proves the guard correct
-would then be checking a copy rather than the guard.
+The sentinel-aware write guard is the one function in this file that decides whether a SEALED release may be overwritten, and its three answers (0 proceed, 10 skip, `exit 1` refuse) are the difference between an idempotent rerun and the `sealed-but-empty` state that burned v1.1.16 and v1.1.17. A Python reimplementation of it would be, in `write_once_guard_check.py`'s words, "a
+second instrument certifying itself": the harness that proves the guard correct would then be checking a copy rather than the guard.
 
 So this port does what that harness does. `extract_guard` applies the same
 `sed -n '/^write_once_guard()/,/^}/p'` range to the twin's own text, and
-`Uploader.write_once_guard` sources `common.sh` (for the real `log_info`/`log_error`)
-and the real `.ci/scripts/lib/release-state-validator.sh` beside it, then calls
-the extracted function. The bytes on stderr, the `aws s3api` calls it makes and
-the code it returns are the twin's, because they ARE the twin's.
+`Uploader.write_once_guard` sources `common.sh` (for the real `log_info`/`log_error`) and the real `.ci/scripts/lib/release-state-validator.sh` beside it, then calls the extracted function. The bytes on stderr, the `aws s3api` calls it makes and the code it returns are the twin's, because they ARE the twin's.
 
 IT IS INVOKED THROUGH `|| rc=$?`, AND THAT IS LOAD BEARING, NOT STYLE. The twin
 writes `write_once_guard ... || guard_rc=$?`, and a function whose status is
-consumed by a `||` list runs with errexit SUPPRESSED THROUGHOUT ITS BODY. That
-suppression is what produces defect 2 below. A runner that called the function
-bare would abort where the twin continues, and the two would disagree on exactly
-the path that matters most.
+consumed by a `||` list runs with errexit SUPPRESSED THROUGHOUT ITS BODY. That suppression is what produces defect 2 below. A runner that called the function bare would abort where the twin continues, and the two would disagree on exactly the path that matters most.
 
-`RELEASES_BUCKET` AND `DRY_RUN` REACH THE CHILD THROUGH THE ENVIRONMENT rather
-than by sourcing `.ci/config/constants.sh`. constants.sh hard-requires
-`.devcontainer/toolchain.env` and `return 1 2>/dev/null || exit 1`s without it,
-which would make the guard's availability depend on a file the guard does not
-read. The two values it needs are computed here from the same defaults
-(`BUCKET_DEFAULT`, `MAX_RELEASE_VERSIONS`) and pinned against constants.sh by
-`test_the_constants_are_the_twins_constants`.
+`RELEASES_BUCKET` AND `DRY_RUN` REACH THE CHILD THROUGH THE ENVIRONMENT rather than by sourcing `.ci/config/constants.sh`. constants.sh hard-requires `.devcontainer/toolchain.env` and `return 1 2>/dev/null || exit 1`s without it, which would make the guard's availability depend on a file the guard does not read. The two values it needs are computed here from the same defaults
+(`BUCKET_DEFAULT`, `MAX_RELEASE_VERSIONS`) and pinned against constants.sh by `test_the_constants_are_the_twins_constants`.
 
 --------------------------------------------------------------------------
 THREE OTHER PROGRAMS ARE SPAWNED, EACH FOR A MEASURED REASON
@@ -58,66 +39,37 @@ THREE OTHER PROGRAMS ARE SPAWNED, EACH FOR A MEASURED REASON
     `bash_glob` asks bash.
   * `bash`, for the guard, as above.
 
-`basename` IS THE ONE EXTERNAL THE PORT DOES NOT SPAWN. `os.path.basename`
-differs from the binary only for a path with a trailing slash or an empty
-argument, and every argument here is a glob expansion of `<dir>/rdc-*`, which
-can be neither.
+`basename` IS THE ONE EXTERNAL THE PORT DOES NOT SPAWN. `os.path.basename` differs from the binary only for a path with a trailing slash or an empty argument, and every argument here is a glob expansion of `<dir>/rdc-*`, which can be neither.
 
 --------------------------------------------------------------------------
 FOUR DEFECTS IN THE TWIN, ALL REPRODUCED RATHER THAN REPAIRED
 --------------------------------------------------------------------------
-This wave's acceptance rule is agreement with the LIVE twin, so each is carried,
-named as a constant so a test can pin it, and reported to the driver.
+This wave's acceptance rule is agreement with the LIVE twin, so each is carried, named as a constant so a test can pin it, and reported to the driver.
 
-DEFECT 1, `AN_EMPTY_CLI_DIR_PUBLISHES_A_POINTER`. A `dist/cli/` that EXISTS and
-holds no `rdc-*` and no `manifest.json` uploads nothing, then still writes
+DEFECT 1, `AN_EMPTY_CLI_DIR_PUBLISHES_A_POINTER`. A `dist/cli/` that EXISTS and holds no `rdc-*` and no `manifest.json` uploads nothing, then still writes
 `cli/<channel>/latest.json` = `{"version":"<V>"}` and prints
-`CLI: uploaded to cli/v<V>/ + cli/<channel>/`. Every installer and every
-auto-updater on that channel then resolves to a version with zero binaries. The
-summary prints `Artifacts uploaded: 0` on the line below and nothing acts on it.
-This is the same harm the bump-none guard at the top of the same file exists to
-prevent, arriving by a different door. Driven 2026-09-13.
+`CLI: uploaded to cli/v<V>/ + cli/<channel>/`. Every installer and every auto-updater on that channel then resolves to a version with zero binaries. The summary prints `Artifacts uploaded: 0` on the line below and nothing acts on it. This is the same harm the bump-none guard at the top of the same file exists to prevent, arriving by a different door. Driven 2026-09-13.
 
-DEFECT 2, `AN_UNANSWERED_COUNT_READS_AS_SEALED_BUT_EMPTY`. When the sentinel
-exists and `rsv_binary_count` CANNOT ANSWER (AccessDenied, a 5xx, an expired
-token), the guard reports the release as corrupt and tells the operator to run
-`scripts/dev/scrub-sentinel.sh v<V> --execute`, which destroys the sentinel of a
-perfectly healthy sealed release. The library goes to explicit trouble to avoid
-this: its own comment at `release-state-validator.sh:161-166` says the `|| echo
-0` was removed because "callers run under `set -e`, so a failed probe now aborts
-them instead of feeding them a fabricated zero". The abort never happens here,
+DEFECT 2, `AN_UNANSWERED_COUNT_READS_AS_SEALED_BUT_EMPTY`. When the sentinel exists and `rsv_binary_count` CANNOT ANSWER (AccessDenied, a 5xx, an expired token), the guard reports the release as corrupt and tells the operator to run `scripts/dev/scrub-sentinel.sh v<V> --execute`, which destroys the sentinel of a perfectly healthy sealed release. The library goes to explicit trouble
+to avoid this: its own comment at `release-state-validator.sh:161-166` says the `|| echo 0` was removed because "callers run under `set -e`, so a failed probe now aborts them instead of feeding them a fabricated zero". The abort never happens here,
 because `write_once_guard ... || guard_rc=$?` suppresses errexit inside the
 function, so `bin_count` is the empty string, `[[ "" -gt 0 ]]` is false, and the
-refusal path runs. The one call site the library names in its header is the one
-where its protection does not hold. Driven 2026-09-13.
+refusal path runs. The one call site the library names in its header is the one where its protection does not hold. Driven 2026-09-13.
 
-DEFECT 3, `A_FAILED_TRACKER_READ_RESETS_THE_WINDOW`. `r2_get` is
-`aws s3 cp ... - 2>/dev/null || echo ""`, so "the tracker does not exist yet",
-"the credentials expired" and "R2 answered 500" are one empty string.
-`update_versions_tracker` then treats it as `[]` and OVERWRITES `versions.json`
+DEFECT 3, `A_FAILED_TRACKER_READ_RESETS_THE_WINDOW`. `r2_get` is `aws s3 cp ... - 2>/dev/null || echo ""`, so "the tracker does not exist yet", "the credentials expired" and "R2 answered 500" are one empty string. `update_versions_tracker` then treats it as `[]` and OVERWRITES `versions.json`
 with a single-element list. Driven 2026-09-13 against a 22-entry tracker: the
-file came back as `["1.2.3"]`, no warning, exit 0, and the 21 versions that fell
-out were never passed to `cleanup_old_versions`, so their prefixes are orphaned
-on R2 until the nightly sweep. aws's own explanation is discarded by the
-`2>/dev/null`.
+file came back as `["1.2.3"]`, no warning, exit 0, and the 21 versions that fell out were never passed to `cleanup_old_versions`, so their prefixes are orphaned on R2 until the nightly sweep. aws's own explanation is discarded by the `2>/dev/null`.
 
-DEFECT 4, `A_MALFORMED_TRACKER_IS_OVERWRITTEN_EMPTY`, and this one destroys data.
-A `cli/versions.json` that is not valid JSON (truncated, half-downloaded, or
-hand-edited) makes the first jq fail. Nothing stops, because
+DEFECT 4, `A_MALFORMED_TRACKER_IS_OVERWRITTEN_EMPTY`, and this one destroys data. A `cli/versions.json` that is not valid JSON (truncated, half-downloaded, or hand-edited) makes the first jq fail. Nothing stops, because
 `CLI_PRUNED=$(update_versions_tracker ...)` is an ASSIGNMENT and bash does not
-apply errexit inside a command substitution whose value is assigned. Measured on
-bash 5.3.9, 2026-09-13, isolated from this script:
+apply errexit inside a command substitution whose value is assigned. Measured on bash 5.3.9, 2026-09-13, isolated from this script:
 
     $ bash -c 'set -e; f(){ false; echo body; }; V=$(f); echo "rc=$? V=[$V]"'
     rc=0 V=[body]
     $ bash -c 'set -e; f(){ false; echo body; }; f; echo unreachable'
     (exits 1, prints nothing)
 
-So `updated` is empty, the next two jq calls on empty input succeed producing
-nothing, and `r2_put ""` UPLOADS AN EMPTY `cli/versions.json`. Driven end to end
-on the twin: one `jq: parse error: Invalid literal at line 1, column 7` scrolls
-past in the log, the retention history is gone, the run prints
-`R2 upload complete` and exits 0. Same root cause family as defect 2: a caller's
+So `updated` is empty, the next two jq calls on empty input succeed producing nothing, and `r2_put ""` UPLOADS AN EMPTY `cli/versions.json`. Driven end to end on the twin: one `jq: parse error: Invalid literal at line 1, column 7` scrolls past in the log, the retention history is gone, the run prints `R2 upload complete` and exits 0. Same root cause family as defect 2: a caller's
 syntax silently switching errexit off for a whole function body.
 
 --------------------------------------------------------------------------
@@ -197,10 +149,7 @@ GUARD_END = re.compile(r"^\}")
 class BashExitError(Exception):
     """`set -e` ending the run on a command the twin does not guard.
 
-    `aws s3 cp` (both directions) and the closing `r2_put` of the tracker update
-    are unguarded, so the failing program's own stderr is the only explanation the
-    caller gets and its status becomes the script's. The three `jq` pipelines are
-    NOT in that set: see defect 4.
+    `aws s3 cp` (both directions) and the closing `r2_put` of the tracker update are unguarded, so the failing program's own stderr is the only explanation the caller gets and its status becomes the script's. The three `jq` pipelines are NOT in that set: see defect 4.
     """
 
     def __init__(self, code: int) -> None:
@@ -211,8 +160,7 @@ class BashExitError(Exception):
 class UsageError(Exception):
     """`log_error ...; exit 1` from the argument parser, and its bash cousins.
 
-    `logged` decides which stream shape the message takes. For the two
-    `--x is required` refusals and `Unknown option:` it goes through `log_error`,
+    `logged` decides which stream shape the message takes. For the two `--x is required` refusals and `Unknown option:` it goes through `log_error`,
     so it gains the `common.sh` glyph; for `$2: unbound variable` it does not,
     because bash's own `set -u` refusal is not a `log_error` call.
     """
@@ -228,11 +176,7 @@ def repo_root() -> str:
 
     The twin resolves `.ci/scripts/lib/../../..` from `common.sh`'s own
     directory; this file sits at `.ci/rediacc_ci/deploy/`, also three directories
-    under the root, so the arithmetic is identical. `abspath` and NOT `realpath`,
-    because bash's `cd` is logical and a checkout reached through a symlink keeps
-    the symlinked spelling on both sides. `paths.repo_root()` is deliberately not
-    used: it resolves symlinks and honours `$REDIACC_CI_ROOT`, and the twin does
-    neither.
+    under the root, so the arithmetic is identical. `abspath` and NOT `realpath`, because bash's `cd` is logical and a checkout reached through a symlink keeps the symlinked spelling on both sides. `paths.repo_root()` is deliberately not used: it resolves symlinks and honours `$REDIACC_CI_ROOT`, and the twin does neither.
     """
     return os.path.abspath(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
@@ -256,12 +200,8 @@ def skip_release_requested(value: str) -> bool:
 def skip_banner(version: str, channel: str) -> list[str]:
     """The bump-none refusal block (:114-135), as the lines it echoes to STDOUT.
 
-    STDOUT and exit 0, not stderr and not an error: the twin's own closing
-    sentence says this is "the intended outcome of a bump-none merge, not an
-    error", and a port that logged it as a warning would make a correct build
-    look broken. The `cli/v<V>/` line's padding is the twin's, fixed regardless
-    of how long the version is, so it is misaligned for every version and
-    identical to the byte.
+    STDOUT and exit 0, not stderr and not an error: the twin's own closing sentence says this is "the intended outcome of a bump-none merge, not an error", and a port that logged it as a warning would make a correct build look broken. The `cli/v<V>/` line's padding is the twin's, fixed regardless of how long the version is, so it is misaligned for every version and identical to the
+    byte.
     """
     return [
         "",
@@ -342,9 +282,7 @@ def r2_path(kind: str, channel: str, rest: str) -> str:
 def extract_guard(text: str) -> str:
     """`sed -n '/^write_once_guard()/,/^}/p'`, range semantics and all.
 
-    A sed range RE-ARMS after it closes, so a second `write_once_guard()` further
-    down would be appended rather than ignored. Reproduced, because the point of
-    extracting rather than reimplementing is that the bytes are the twin's.
+    A sed range RE-ARMS after it closes, so a second `write_once_guard()` further down would be appended rather than ignored. Reproduced, because the point of extracting rather than reimplementing is that the bytes are the twin's.
     """
     out: list[str] = []
     inside = False
@@ -367,8 +305,7 @@ def guard_runner_source(common_sh: str, validator_sh: str, guard: str) -> str:
     """The bash the guard is called from, assembled once so a test can read it.
 
     `|| rc=$?` REPRODUCES THE TWIN'S CALL CONTEXT, which suppresses errexit
-    inside the function body and is what makes defect 2 reachable. A bare call
-    would abort where the twin continues.
+    inside the function body and is what makes defect 2 reachable. A bare call would abort where the twin continues.
     """
     return ('source %s\nsource %s\n%s\nrc=0\nwrite_once_guard "$1" "$2" || rc=$?\nexit $rc\n') % (
         _quote(common_sh),
@@ -386,10 +323,7 @@ def _flush() -> None:
     """Empty Python's buffers before a child inherits the descriptor.
 
     NOT HOUSEKEEPING. bash's `echo` writes through immediately; Python
-    block-buffers stdout when it is a pipe. Without this the `log_step` line that
-    precedes a call can land AFTER the child's own output, byte-identical content
-    in a different order, with an identical call log and identical exits. Every
-    spawn in this file goes through here.
+    block-buffers stdout when it is a pipe. Without this the `log_step` line that precedes a call can land AFTER the child's own output, byte-identical content in a different order, with an identical call log and identical exits. Every spawn in this file goes through here.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -437,12 +371,9 @@ class Uploader:
     ) -> None:
         """`echo "$content" | aws s3 cp - ...`.
 
-        `quiet` is the one caller that writes `r2_put ... >/dev/null`
-        (`update_versions_tracker`, whose whole stdout is captured by
+        `quiet` is the one caller that writes `r2_put ... >/dev/null` (`update_versions_tracker`, whose whole stdout is captured by
         `CLI_PRUNED=$( )` and must not gain aws's). Every other caller INHERITS
-        stdout, so aws writes to the script's own stream in real time rather than
-        through a buffer here, which is what keeps the interleaving with stderr
-        the twin's.
+        stdout, so aws writes to the script's own stream in real time rather than through a buffer here, which is what keeps the interleaving with stderr the twin's.
         """
         full_dest = "s3://%s/%s" % (self.bucket, dest)
         if self.dry_run:
@@ -465,8 +396,7 @@ class Uploader:
     def r2_rm(self, path: str) -> None:
         """`aws s3 rm ... 2>/dev/null || true`: stderr discarded, status ignored.
 
-        A deletion that fails is therefore invisible AND unretried, because the
-        version has already left the tracker by the time this runs.
+        A deletion that fails is therefore invisible AND unretried, because the version has already left the tracker by the time this runs.
         """
         if self.dry_run:
             log.info("[DRY-RUN] Would delete: s3://%s/%s" % (self.bucket, path))
@@ -481,10 +411,7 @@ class Uploader:
     def r2_get(self, path: str) -> str:
         """`$(aws s3 cp ... - 2>/dev/null || echo "")`, defect 3 included.
 
-        The `|| echo ""` appends a newline on failure, and `$( )` then strips
-        every trailing newline, so a FAILED read is indistinguishable from an
-        absent object. A partial read followed by a failure keeps the partial
-        bytes, which is reproduced rather than tidied.
+        The `|| echo ""` appends a newline on failure, and `$( )` then strips every trailing newline, so a FAILED read is indistinguishable from an absent object. A partial read followed by a failure keeps the partial bytes, which is reproduced rather than tidied.
         """
         _flush()
         proc = subprocess.run(
@@ -504,8 +431,7 @@ class Uploader:
     def write_once_guard(self, prefix: str, context: str) -> int:
         """Call the twin's OWN `write_once_guard`, as bash. See the docstring.
 
-        Returns the guard's status: 0 proceed, 10 skip, 1 the guard's `exit 1`.
-        The twin's `exit 1` kills the whole script, so the caller must too.
+        Returns the guard's status: 0 proceed, 10 skip, 1 the guard's `exit 1`. The twin's `exit 1` kills the whole script, so the caller must too.
         """
         twin = os.path.join(self.root, ".ci", "scripts", "deploy", SELF)
         common_sh = os.path.join(self.root, ".ci", "scripts", "lib", "common.sh")
@@ -583,9 +509,7 @@ class Uploader:
     def cleanup_old_versions(self, prefix: str, pruned_versions: str) -> None:
         """`cleanup_old_versions` (:354-366).
 
-        `<<<"$pruned_versions"` appends a newline, so every line including the
-        last reaches the loop body. An empty string returns before the log_step,
-        which is why a run with nothing to prune prints no cleanup section.
+        `<<<"$pruned_versions"` appends a newline, so every line including the last reaches the loop body. An empty string returns before the log_step, which is why a run with nothing to prune prints no cleanup section.
         """
         if not pruned_versions:
             return
@@ -605,11 +529,9 @@ def _read(path: str) -> str:
 def _jq(argv: list[str], stdin: str) -> str:
     """One `echo "$x" | jq ...`, with `$( )`'s newline strip. DEFECT 4 lives here.
 
-    THE EXIT STATUS IS IGNORED, WHICH IS NOT AN OVERSIGHT AND NOT A CHOICE. It is
-    what the twin does, for the reason in the module docstring: all three jq
+    THE EXIT STATUS IS IGNORED, WHICH IS NOT AN OVERSIGHT AND NOT A CHOICE. It is what the twin does, for the reason in the module docstring: all three jq
     pipelines sit inside `CLI_PRUNED=$(update_versions_tracker ...)`, and bash
-    does not apply errexit to a command inside a command substitution whose value
-    is being assigned. Measured on bash 5.3.9, 2026-09-13:
+    does not apply errexit to a command inside a command substitution whose value is being assigned. Measured on bash 5.3.9, 2026-09-13:
 
         $ bash -c 'set -e; f(){ false; echo body; }; V=$(f); echo "rc=$? V=[$V]"'
         rc=0 V=[body]
@@ -628,9 +550,7 @@ def _jq(argv: list[str], stdin: str) -> str:
 def bash_glob(directory: str, pattern: str) -> list[str]:
     """`for x in "$directory"/<pattern>`, asked of bash itself.
 
-    Returns bash's expansion INCLUDING the literal unmatched pattern when nothing
-    matches, because that is what the twin iterates and `[[ -f ]] || continue` is
-    what filters it. See the docstring for why this is not `sorted(glob.glob())`.
+    Returns bash's expansion INCLUDING the literal unmatched pattern when nothing matches, because that is what the twin iterates and `[[ -f ]] || continue` is what filters it. See the docstring for why this is not `sorted(glob.glob())`.
     """
     _flush()
     proc = subprocess.run(
@@ -650,11 +570,9 @@ def parse_args(argv: list[str], argv0: str) -> dict[str, str]:
     """The `while [[ $# -gt 0 ]]` parser (:35-70), including its two refusals.
 
     THE TWO REFUSALS RAISE; `--help` DOES NOT. `Unknown option:` and
-    `$2: unbound variable` are both `UsageError` and differ only in `logged`,
-    which decides whether the message gains `common.sh`'s `✗ ` glyph. `--help`
+    `$2: unbound variable` are both `UsageError` and differ only in `logged`, which decides whether the message gains `common.sh`'s `✗ ` glyph. `--help`
     fills the `help` key and RETURNS, because the twin's `echo ...; exit 0` is a
-    success and returning keeps that visible in the type rather than hiding a
-    zero exit inside an exception.
+    success and returning keeps that visible in the type rather than hiding a zero exit inside an exception.
     """
     parsed = {
         "version": "",

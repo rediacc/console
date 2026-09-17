@@ -1,9 +1,6 @@
 """The bash this port deliberately does NOT own, reached through one seam.
 
-WHY A BRIDGE AND NOT MORE PORT. `setup()` calls fifteen things. Nine of them are
-`.ci/lib/setup.sh` and are ported in `host.py`. The other six live in
-`.ci/lib/local-common.sh` and `.ci/lib/devbox.sh`, which this box does not touch
-and which other verbs (`devbox`, `account`, `service`, `rdc.sh`) still call:
+WHY A BRIDGE AND NOT MORE PORT. `setup()` calls fifteen things. Nine of them are `.ci/lib/setup.sh` and are ported in `host.py`. The other six live in `.ci/lib/local-common.sh` and `.ci/lib/devbox.sh`, which this box does not touch and which other verbs (`devbox`, `account`, `service`, `rdc.sh`) still call:
 
     check_node_version      .ci/lib/local-common.sh:418
     ensure_host_tools       .ci/lib/local-common.sh:587
@@ -12,25 +9,16 @@ and which other verbs (`devbox`, `account`, `service`, `rdc.sh`) still call:
     ensure_docker_installed .ci/lib/local-common.sh:669
     devbox_*                .ci/lib/devbox.sh
 
-Porting those here would either DUPLICATE them, which is how two
-implementations drift, or move them, which is a different box with a much larger
-blast radius. So `setup` calls the same shell functions the same way, and the
-behaviour of those six is not merely preserved, it is IDENTICAL: the same bytes
-run. That is a stronger claim than any differential could make about a rewrite,
+Porting those here would either DUPLICATE them, which is how two implementations drift, or move them, which is a different box with a much larger blast radius. So `setup` calls the same shell functions the same way, and the behaviour of those six is not merely preserved, it is IDENTICAL: the same bytes run. That is a stronger claim than any differential could make about a rewrite,
 and it is the honest scope of "port the setup verb".
 
-THE ENTRYPOINT IS ALWAYS THE SAME SHELL PROGRAM. Sourcing `run-legacy.sh` pulls
-in `constants.sh`, `toolchain.sh`, `local-common.sh`, `service.sh` and
-`setup.sh` in that order and defines nothing else, because that file ends with
+THE ENTRYPOINT IS ALWAYS THE SAME SHELL PROGRAM. Sourcing `run-legacy.sh` pulls in `constants.sh`, `toolchain.sh`, `local-common.sh`, `service.sh` and `setup.sh` in that order and defines nothing else, because that file ends with
 `if [[ "${BASH_SOURCE[0]}" == "${0}" ]]`. `devbox.sh` is sourced on top, exactly
 as the `setup()` arm does at `.ci/legacy/run-legacy.sh:583`.
 
 STREAMS ARE NOT CAPTURED BY DEFAULT. `ensure_deps` compiles native modules and
 `devbox_up` prints a probed route table; both take minutes and both are the
-thing an operator watches. A bridge that captured them would turn a live install
-into a silent hang, so `call()` inherits the streams and only `capture()` does
-not. The two are different functions rather than a flag, because a flag is a
-thing a caller gets wrong once and never notices.
+thing an operator watches. A bridge that captured them would turn a live install into a silent hang, so `call()` inherits the streams and only `capture()` does not. The two are different functions rather than a flag, because a flag is a thing a caller gets wrong once and never notices.
 """
 
 from __future__ import annotations
@@ -62,10 +50,7 @@ CONSTANT_NAMES = (
 class BridgeError(RuntimeError):
     """The shell preamble itself failed, so no verdict about the call is possible.
 
-    Distinct from "the bridged function returned non-zero", which is an ordinary
-    result and is returned as an exit code. This is the harness fault: bash is
-    missing, `run-legacy.sh` moved, `constants.sh` refused to load. A caller that
-    treated the two the same would report a broken checkout as a missing tool.
+    Distinct from "the bridged function returned non-zero", which is an ordinary result and is returned as an exit code. This is the harness fault: bash is missing, `run-legacy.sh` moved, `constants.sh` refused to load. A caller that treated the two the same would report a broken checkout as a missing tool.
     """
 
 
@@ -93,12 +78,8 @@ def call(body: str, root: pathlib.Path, env: dict[str, str] | None = None) -> in
 def capture(body: str, root: pathlib.Path, env: dict[str, str] | None = None) -> tuple[int, str]:
     """Run `body`, return `(rc, stdout)`. STDERR IS INHERITED, not captured.
 
-    A bridged function's stdout is its VALUE (`devbox_url` prints a URL,
-    `devbox_base_port` prints a number) and its stderr is its LOG, because every
-    `log_*` in `.ci/scripts/lib/common.sh:35-54` writes to stderr. Capturing both
-    would merge a value with the progress text around it, which is the exact
-    defect `rediacc_ci.log`'s header records. So stderr goes straight through to
-    the operator and only stdout comes back.
+    A bridged function's stdout is its VALUE (`devbox_url` prints a URL, `devbox_base_port` prints a number) and its stderr is its LOG, because every `log_*` in `.ci/scripts/lib/common.sh:35-54` writes to stderr. Capturing both would merge a value with the progress text around it, which is the exact defect `rediacc_ci.log`'s header records. So stderr goes straight through to the
+    operator and only stdout comes back.
     """
     proc = subprocess.run(
         _program(body, root),
@@ -114,12 +95,9 @@ def capture(body: str, root: pathlib.Path, env: dict[str, str] | None = None) ->
 def constants(root: pathlib.Path, env: dict[str, str] | None = None) -> dict[str, str]:
     """`CONSTANT_NAMES` as `constants.sh` defines them. Raises BridgeError.
 
-    A REFUSAL AND NOT A DEFAULT, and that is the whole reason this function
-    exists rather than a table of literals in Python. `.ci/lib/setup.sh:44-51`
+    A REFUSAL AND NOT A DEFAULT, and that is the whole reason this function exists rather than a table of literals in Python. `.ci/lib/setup.sh:44-51`
     records what a default costs here: `${NODE_VERSION_MIN:-22.0.0}` "applied
-    exactly when .ci/config/constants.sh had not been sourced", and 22.0.0 is
-    LOOSER than the repo's real floor, so the unsourced path "silently accepted a
-    Node this repo does not support and reported 'already present' for it".
+    exactly when .ci/config/constants.sh had not been sourced", and 22.0.0 is LOOSER than the repo's real floor, so the unsourced path "silently accepted a Node this repo does not support and reported 'already present' for it".
     """
     body = "\n".join('printf "%%s=%%s\\n" %s "${%s:-}"' % (name, name) for name in CONSTANT_NAMES)
     rc, out = capture(body, root, env)

@@ -1,11 +1,7 @@
 """One parser for this repository's allow/block lists, and the BLOCKER contract.
 
-WHAT IS BEING CONSOLIDATED. `docs/agent-reference/suppressions.md` describes a
-single convention: every escape-hatch entry in this tree carries a substantive
-`# BLOCKER: <reason>` above it (or inline after it), a blank line ends the group,
-and the reason is held to a 30-character floor plus a banned-phrase list. There
-are FOUR implementations of that one convention in the tree today, and they do
-not have the same capabilities:
+WHAT IS BEING CONSOLIDATED. `docs/agent-reference/suppressions.md` describes a single convention: every escape-hatch entry in this tree carries a substantive `# BLOCKER: <reason>` above it (or inline after it), a blank line ends the group, and the reason is held to a 30-character floor plus a banned-phrase list. There are FOUR implementations of that one convention in the tree
+today, and they do not have the same capabilities:
 
   .ci/scripts/lib/blocker-validator.sh   parse_blockered_list + verify_all_blockers
                                          5 gates and 1 gate test source it
@@ -16,13 +12,9 @@ not have the same capabilities:
                                          "the same grammar as .profiler-coverage-allowlist"
   .ci/scripts/quality/check-plan-housekeeping.sh:361  a fourth, inline, hand-rolled
 
-This module is the one implementation. It is byte-compatible with the two shared
-readers on every list in the tree -- proved, not asserted, by
-`.ci/rediacc_ci/tests/test_core_allowlist.py`, which runs both of them over a
-frozen corpus taken from the real lists and compares the bytes.
+This module is the one implementation. It is byte-compatible with the two shared readers on every list in the tree -- proved, not asserted, by `.ci/rediacc_ci/tests/test_core_allowlist.py`, which runs both of them over a frozen corpus taken from the real lists and compares the bytes.
 
-THE TWO PROJECTIONS, because the two readers do not return the same thing and a
-port that picked one would silently be wrong about the other:
+THE TWO PROJECTIONS, because the two readers do not return the same thing and a port that picked one would silently be wrong about the other:
 
   records  ordered, one row per entry line, WITH the line number.
            `parseBlockeredList` returns exactly this.
@@ -31,39 +23,26 @@ port that picked one would silently be wrong about the other:
            bash ASSOCIATIVE ARRAYS and an associative array cannot hold two rows
            for one key.
 
-The difference is not academic. `.ci-parity-exempt` is direction-tagged, so its
-entry lines read `ci-only  <path>` and the shared parsers both take the FIRST
-whitespace token as the key. Nine entry lines in that file collapse to ONE key
+The difference is not academic. `.ci-parity-exempt` is direction-tagged, so its entry lines read `ci-only <path>` and the shared parsers both take the FIRST whitespace token as the key. Nine entry lines in that file collapse to ONE key
 under the bash reader; `scripts/gates/check-ci-parity.ts:751` carries a comment about
-having to correct for it. A caller that needs per-entry reasons must use
-`records`, and this module makes the choice visible instead of leaving it to
-whichever reader happened to be reachable from the language the gate was in.
+having to correct for it. A caller that needs per-entry reasons must use `records`, and this module makes the choice visible instead of leaving it to whichever reader happened to be reachable from the language the gate was in.
 
-A MISSING LIST IS AN ERROR HERE, AND IT IS NOT IN EITHER READER. Both of them
-open with the same shape:
+A MISSING LIST IS AN ERROR HERE, AND IT IS NOT IN EITHER READER. Both of them open with the same shape:
 
     [[ ! -f "$file" ]] && return 0                    (bash)
     if (!fs.existsSync(filePath)) return [];          (TypeScript)
 
-so a gate handed a path that does not exist gets an empty allowlist, suppresses
-nothing, finds nothing to complain about, and reports green. "Empty" and
-"absent" produce the same colour and only one of them is correct. `parse_file`
+so a gate handed a path that does not exist gets an empty allowlist, suppresses nothing, finds nothing to complain about, and reports green. "Empty" and "absent" produce the same colour and only one of them is correct. `parse_file`
 raises `ListNotFoundError`; a caller that genuinely wants the permissive
 behaviour writes `missing_ok=True` at the call site, where a reviewer sees it.
 
-AND THE PATHS RESOLVE FROM THE REPO ROOT, NOT FROM cwd. `audit.sh` used to pass
-the bare string `".audit-prod-allowlist"`, which was only correct while the gate
+AND THE PATHS RESOLVE FROM THE REPO ROOT, NOT FROM cwd. `audit.sh` used to pass the bare string `".audit-prod-allowlist"`, which was only correct while the gate
 ran from the root; the same call from a subdirectory finds nothing and, per the
-paragraph above, that nothing is indistinguishable from an empty list. Use
-`load(name)`, which goes through `rediacc_ci.paths.from_root`.
+paragraph above, that nothing is indistinguishable from an empty list. Use `load(name)`, which goes through `rediacc_ci.paths.from_root`.
 
-The lists themselves moved to `.ci/policy/` on 2026-09-06 at b80552370, and
-`audit.sh` now reads them through the seam. `load(name)` still takes the BARE
-name: the directory is the seam's business, not the caller's, which is the whole
-point of having one.
+The lists themselves moved to `.ci/policy/` on 2026-09-06 at b80552370, and `audit.sh` now reads them through the seam. `load(name)` still takes the BARE name: the directory is the seam's business, not the caller's, which is the whole point of having one.
 
-KNOWN CROSS-LANGUAGE HAZARDS, recorded because they are real and the goldens
-cannot see them (no list in the tree exercises any of them today):
+KNOWN CROSS-LANGUAGE HAZARDS, recorded because they are real and the goldens cannot see them (no list in the tree exercises any of them today):
 
   * `${#normalized}` in bash counts BYTES under LC_ALL=C, `normalized.length` in
     TypeScript counts UTF-16 code units, and `len()` here counts code points.
@@ -77,9 +56,7 @@ cannot see them (no list in the tree exercises any of them today):
     mangled before it is normalized. This one is a live defect in the bash
     reader rather than a difference of opinion; see the test module.
 
-Nothing in here is imported by the bash or TypeScript readers, and neither of
-them is deleted -- `.ci/rediacc_ci/core/__init__.py` states that contract for
-every module in this subpackage.
+Nothing in here is imported by the bash or TypeScript readers, and neither of them is deleted -- `.ci/rediacc_ci/core/__init__.py` states that contract for every module in this subpackage.
 """
 
 import json
@@ -263,14 +240,9 @@ def _render(kind: str, **fields: str) -> str:
 def contract() -> dict:
     """Everything a non-Python client needs to render the same verdicts.
 
-    THIS IS THE COLLAPSE. `scripts/lib/blocker-validator.ts` used to carry its own
-    copy of both tables, the floor and all four messages, under a comment asking
-    the next author to keep them in sync by hand. It now asks for this dict once
-    per process and renders from it, so there is one place the rule is written.
+    THIS IS THE COLLAPSE. `scripts/lib/blocker-validator.ts` used to carry its own copy of both tables, the floor and all four messages, under a comment asking the next author to keep them in sync by hand. It now asks for this dict once per process and renders from it, so there is one place the rule is written.
 
-    `version` is here so a client that finds a shape it does not understand can
-    refuse loudly instead of reading a missing key as an empty list. An empty
-    phrase table would make every low-effort reason pass.
+    `version` is here so a client that finds a shape it does not understand can refuse loudly instead of reading a missing key as an empty list. An empty phrase table would make every low-effort reason pass.
     """
     return {
         "version": 1,
@@ -285,9 +257,7 @@ def contract() -> dict:
 class ListNotFoundError(FileNotFoundError):
     """The list file is not there.
 
-    A named type rather than a bare FileNotFoundError so a caller can tell "your
-    allowlist path is wrong" apart from any other missing file its own work
-    touched, and so a test can assert on it without matching a message.
+    A named type rather than a bare FileNotFoundError so a caller can tell "your allowlist path is wrong" apart from any other missing file its own work touched, and so a test can assert on it without matching a message.
     """
 
 
@@ -322,12 +292,8 @@ def _patterns(comment_char: str) -> tuple[re.Pattern, re.Pattern, re.Pattern]:
 def parse_text(text: str, comment_char: str = "#") -> list[Entry]:
     """The grammar, on a string. `records` order, one row per entry LINE.
 
-    SPLIT ON "\\n" AND NOTHING ELSE. `str.splitlines()` is the obvious call and
-    it also breaks on \\r, \\x0b, \\x0c, \\x1c-\\x1e, \\x85, \\u2028 and \\u2029, none of
-    which either reader treats as a line boundary. A list carrying one of those
-    bytes inside a reason would then be parsed into more entries here than in
-    the thing this is supposed to agree with, and the goldens would be the only
-    place it showed up.
+    SPLIT ON "\\n" AND NOTHING ELSE. `str.splitlines()` is the obvious call and it also breaks on \\r, \\x0b, \\x0c, \\x1c-\\x1e, \\x85, \\u2028 and \\u2029, none of which either reader treats as a line boundary. A list carrying one of those bytes inside a reason would then be parsed into more entries here than in the thing this is supposed to agree with, and the goldens would be
+    the only place it showed up.
     """
     blocker_re, comment_re, inline_re = _patterns(comment_char)
     entries: list[Entry] = []
@@ -369,9 +335,7 @@ def parse_file(
     """Parse a list file. Raises `ListNotFoundError` unless `missing_ok`.
 
     `missing_ok=True` reproduces what both shared readers do unconditionally. It
-    is spelled out at the call site on purpose: a gate that wants "no file means
-    no suppressions" is making a claim, and the claim should be visible in the
-    diff rather than inherited from a library's default.
+    is spelled out at the call site on purpose: a gate that wants "no file means no suppressions" is making a claim, and the claim should be visible in the diff rather than inherited from a library's default.
     """
     p = pathlib.Path(path)
     if not p.is_file():
@@ -394,9 +358,7 @@ def load(
 ) -> list[Entry]:
     """Parse a list named RELATIVE TO THE REPO ROOT, never to cwd.
 
-    The reason this exists rather than callers writing `parse_file(".audit-...")`
-    is `audit.sh:327`, which does exactly that in bash and is correct only while
-    the gate is invoked from the root.
+    The reason this exists rather than callers writing `parse_file(".audit-...")` is `audit.sh:327`, which does exactly that in bash and is correct only while the gate is invoked from the root.
     """
     return parse_file(paths.from_root(name, root=root), comment_char, missing_ok=missing_ok)
 
@@ -423,8 +385,7 @@ def render_pairs(entries: list[Entry]) -> str:
     Sorted on the rendered LINE rather than on the key, because that is what
     `LC_ALL=C sort` does to the bash reader's output and the two only coincide
     while the separator sorts below every character a key can contain. TAB is
-    0x09, so they do coincide -- but the comparison is written the way the thing
-    it is compared against is written, not the way that happens to work.
+    0x09, so they do coincide -- but the comparison is written the way the thing it is compared against is written, not the way that happens to work.
     """
     rows = ["%s\t%s\n" % (k, v) for k, v in pairs(entries).items()]
     rows.sort(key=lambda row: row.encode("utf-8"))
@@ -491,8 +452,7 @@ def validate_reason(entry: str, reason: str, file: str) -> Rejection | None:
 def missing_reason(entry: str, file: str) -> str:
     """The message `verify_all_blockers` prints for an entry with no reason.
 
-    The literal `'# BLOCKER: ...'` is hardcoded in both readers even when the
-    file's comment character is `//`, so it is hardcoded here too. Reproducing a
+    The literal `'# BLOCKER: ...'` is hardcoded in both readers even when the file's comment character is `//`, so it is hardcoded here too. Reproducing a
     wart is the job; diverging from it would make this module's output something
     a gate could not adopt without changing its own expected text.
     """
@@ -502,8 +462,7 @@ def missing_reason(entry: str, file: str) -> str:
 def verify(entries: list[Entry], file: str) -> list[str]:
     """Every failure message, in entry order. Empty list means the file is clean.
 
-    THE ENTRIES WITHOUT A REASON ARE REPORTED, not skipped. That is the half of
-    the contract a reader could quietly drop and still look correct: an entry
+    THE ENTRIES WITHOUT A REASON ARE REPORTED, not skipped. That is the half of the contract a reader could quietly drop and still look correct: an entry
     with an empty reason parses fine, appears in both projections, and is only a
     finding because something asks.
     """

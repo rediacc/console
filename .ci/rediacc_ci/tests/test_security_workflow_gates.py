@@ -1,27 +1,16 @@
 """Differential: `rediacc_ci.security.workflow_gates` against its twin
 `.ci/scripts/security/check-workflow-gates.sh` (`check:ci-workflow-gates`).
 
-THE COMPARISON IS BYTE FOR BYTE ON BOTH STREAMS, and that is affordable here in
-a way it usually is not: 788 of the twin's 1108 lines were ALREADY Python, sitting
-in six `python3 - <<'PYEOF'` heredocs, so the port transcribes them rather than
-rewording them. Anything short of byte equality would therefore be a
-transcription error, not a legitimate rewrite. Two cases are exempted by name
-below, each with its own test saying why.
+THE COMPARISON IS BYTE FOR BYTE ON BOTH STREAMS, and that is affordable here in a way it usually is not: 788 of the twin's 1108 lines were ALREADY Python, sitting in six `python3 - <<'PYEOF'` heredocs, so the port transcribes them rather than rewording them. Anything short of byte equality would therefore be a transcription error, not a legitimate rewrite. Two cases are exempted by
+name below, each with its own test saying why.
 
-WHY A FIXTURE TREE AND NOT ONLY THE REAL REPO. The real tree is green, and a
-differential over two silent gates proves nothing (`scripts/lib/shadow-gate.ts`
-calls that `VACUOUS_BOTH_EMPTY` and refuses it). Every case here builds a tree
-that makes a specific check FAIL, and `test_the_real_repository_agrees` is the
-one clean-tree case, kept because the six checks read seven different real
-inputs there that no fixture reproduces.
+WHY A FIXTURE TREE AND NOT ONLY THE REAL REPO. The real tree is green, and a differential over two silent gates proves nothing (`scripts/lib/shadow-gate.ts` calls that `VACUOUS_BOTH_EMPTY` and refuses it). Every case here builds a tree that makes a specific check FAIL, and `test_the_real_repository_agrees` is the one clean-tree case, kept because the six checks read seven different
+real inputs there that no fixture reproduces.
 
 WHY THE TWIN IS COPIED INTO THE FIXTURE. Both sides resolve the repository root
 from their OWN location -- `${BASH_SOURCE[0]}/../../..` in the twin
-(`check-workflow-gates.sh:57-58`), `paths.repo_root()` in the port -- and CHECKS
-5 and 6 read `$ROOT_DIR` rather than `$WORKFLOWS_DIR`. Pointing only
-`WORKFLOWS_DIR` at a fixture would leave those two checks running against the
-REAL repository underneath every case. Copying both implementations to the same
-relative paths inside the fixture is what makes all six checks fixture-scoped.
+(`check-workflow-gates.sh:57-58`), `paths.repo_root()` in the port -- and CHECKS 5 and 6 read `$ROOT_DIR` rather than `$WORKFLOWS_DIR`. Pointing only `WORKFLOWS_DIR` at a fixture would leave those two checks running against the REAL repository underneath every case. Copying both implementations to the same relative paths inside the fixture is what makes all six checks
+fixture-scoped.
 
 K=5 LEDGER: `.ci/shadow/w7p6-workflow-gates.observations.jsonl`.
 """
@@ -144,13 +133,8 @@ jobs:
 def build_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     """A tree both implementations resolve as their own repository root.
 
-    THE BASELINE IS GREEN, and that took a correction. The first version of this
-    helper wrote only the two workflows a case needed, which left CHECK 3 blind
-    (no ubuntu-slim job) and CHECK 4 blind (no registry) under EVERY case: both
-    sides agreed, so `assert_same` passed, and every exit code was 1 for reasons
-    that had nothing to do with the case. `test_the_baseline_fixture_is_green` is
-    the control that keeps it honest, so a test asserting rc 0 or rc 1 is
-    asserting something about its own subject.
+    THE BASELINE IS GREEN, and that took a correction. The first version of this helper wrote only the two workflows a case needed, which left CHECK 3 blind (no ubuntu-slim job) and CHECK 4 blind (no registry) under EVERY case: both sides agreed, so `assert_same` passed, and every exit code was 1 for reasons that had nothing to do with the case. `test_the_baseline_fixture_is_green`
+    is the control that keeps it honest, so a test asserting rc 0 or rc 1 is asserting something about its own subject.
     """
     fx = tmp_path / "tree"
     for rel in (TWIN_REL, *PACKAGE_FILES):
@@ -180,9 +164,7 @@ def wf(fx: pathlib.Path, name: str, body: str) -> pathlib.Path:
 def _env(fx: pathlib.Path, side: str, extra: dict[str, str]) -> dict[str, str]:
     """REPLACES the caller's environment; see `differential.BASE_ENV`.
 
-    `REDIACC_CI_ROOT` is deliberately absent: it is the one seam the port has and
-    the twin does not, and a differential that set it would be comparing two
-    different roots.
+    `REDIACC_CI_ROOT` is deliberately absent: it is the one seam the port has and the twin does not, and a differential that set it would be comparing two different roots.
     """
     env = {
         "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
@@ -234,9 +216,7 @@ def assert_same(old: tuple[int, str, str], new: tuple[int, str, str]) -> None:
 def test_the_baseline_fixture_is_green(tmp_path: pathlib.Path) -> None:
     """THE CONTROL FOR EVERY OTHER FIXTURE CASE.
 
-    Without it, a case that asserts exit 1 proves nothing: the tree might have
-    been failing CHECK 3 and CHECK 4 for want of a slim job and a registry, which
-    is exactly what the first version of this file did.
+    Without it, a case that asserts exit 1 proves nothing: the tree might have been failing CHECK 3 and CHECK 4 for want of a slim job and a registry, which is exactly what the first version of this file did.
     """
     fx = build_fixture(tmp_path)
     old, new = run_both(fx)
@@ -250,11 +230,7 @@ def test_the_baseline_fixture_is_green(tmp_path: pathlib.Path) -> None:
 def test_the_real_repository_agrees() -> None:
     """The only clean-tree case, and the only one that reads all seven real inputs.
 
-    `.github/workflows`, `.github/external-callers.yml`, `private/*/.github/
-    workflows`, `.ci/breakpoint/workflow`, `watchdog-monitor.yml` and the two
-    submodule caller files are none of them reproducible in a fixture. Both sides
-    must agree on the info lines too, which carry the counts (`2 external caller
-    call-site(s)`, `11 sparse Bitwarden-fetching job(s)`) that would collapse
+    `.github/workflows`, `.github/external-callers.yml`, `private/*/.github/ workflows`, `.ci/breakpoint/workflow`, `watchdog-monitor.yml` and the two submodule caller files are none of them reproducible in a fixture. Both sides must agree on the info lines too, which carry the counts (`2 external caller call-site(s)`, `11 sparse Bitwarden-fetching job(s)`) that would collapse
     silently if a glob stopped matching.
     """
     results = []
@@ -343,11 +319,7 @@ def test_check1_accepts_every_documented_override(tmp_path: pathlib.Path) -> Non
 def test_check1_walks_and_check3_does_not(tmp_path: pathlib.Path) -> None:
     """The twin's own divergence: `os.walk` at :164 against `os.listdir` at :527.
 
-    A workflow in a SUBDIRECTORY is audited for the always() rule and invisible
-    to the slim-timeout rule. Blast radius on the real tree is zero -- GitHub
-    itself only reads `.github/workflows/*.yml`, and `find .github/workflows
-    -mindepth 1 -type d` counts 0 -- so this is reachable only through a fixture,
-    and it is pinned rather than repaired because repairing it means editing a
+    A workflow in a SUBDIRECTORY is audited for the always() rule and invisible to the slim-timeout rule. Blast radius on the real tree is zero -- GitHub itself only reads `.github/workflows/*.yml`, and `find .github/workflows -mindepth 1 -type d` counts 0 -- so this is reachable only through a fixture, and it is pinned rather than repaired because repairing it means editing a
     registered gate.
     """
     fx = build_fixture(tmp_path)
@@ -406,8 +378,7 @@ def test_check2_a_reading_an_undeclared_secret(tmp_path: pathlib.Path) -> None:
 def test_check2_a_comment_is_not_a_use(tmp_path: pathlib.Path) -> None:
     """`:256-258`. A whole-line `# ... secrets.X ...` must not count as a read.
 
-    The negative control for `strip_comment_lines`: with the comment counted as a
-    use, CHECK 2 would demand a declaration for something nothing reads.
+    The negative control for `strip_comment_lines`: with the comment counted as a use, CHECK 2 would demand a declaration for something nothing reads.
     """
     fx = build_fixture(tmp_path)
     wf(
@@ -426,9 +397,7 @@ def test_check2_a_comment_is_not_a_use(tmp_path: pathlib.Path) -> None:
 def test_check2_a_trailing_comment_still_counts_as_a_use(tmp_path: pathlib.Path) -> None:
     """The other half, and it is the twin's real behaviour, not an oversight.
 
-    Only `lstrip().startswith('#')` is blanked, so `run: echo  # secrets.GHOST`
-    is still a read. Pinned so a port that blanked from the first `#` onward
-    would be caught.
+    Only `lstrip().startswith('#')` is blanked, so `run: echo # secrets.GHOST` is still a read. Pinned so a port that blanked from the first `#` onward would be caught.
     """
     fx = build_fixture(tmp_path)
     wf(
@@ -504,12 +473,8 @@ def test_check2_secrets_inherit_skips_the_secret_arm(tmp_path: pathlib.Path) -> 
 def test_check2_on_parsed_as_the_boolean_true(tmp_path: pathlib.Path) -> None:
     """YAML 1.1 turns a bare `on:` key into `True`; `workflow_call` looks under both.
 
-    NO `import yaml` HERE. pyyaml is not installed for the interpreter running
-    pytest (`.ci/bootstrap.sh doctor` resolves pytest out of a uv tool
-    environment), while the `python3` both sides are spawned as does have it.
-    Importing it at test level turned this case into a `ModuleNotFoundError`
-    that read like a port defect. The boolean fold is asserted through the real
-    parse, in the subprocess, by proving the contract arms fired at all.
+    NO `import yaml` HERE. pyyaml is not installed for the interpreter running pytest (`.ci/bootstrap.sh doctor` resolves pytest out of a uv tool environment), while the `python3` both sides are spawned as does have it. Importing it at test level turned this case into a `ModuleNotFoundError` that read like a port defect. The boolean fold is asserted through the real parse, in the
+    subprocess, by proving the contract arms fired at all.
     """
     fx = build_fixture(tmp_path)
     old, new = run_both(fx)
@@ -601,9 +566,7 @@ def test_a_non_numeric_ceiling_is_a_traceback_on_both_sides(tmp_path: pathlib.Pa
     `int(sys.argv[2])` at `:520` has no guard, so `SLIM_TIMEOUT_MAX=abc` kills
     the heredoc with a `ValueError` and bash then blames "ubuntu-slim timeout
     violations" for what is a configuration error. Both sides do exactly that;
-    only the traceback's own file and line differ, which they must, so this case
-    compares the exit code and the bash-level lines and asserts the traceback
-    exists on both rather than pretending it is the same text.
+    only the traceback's own file and line differ, which they must, so this case compares the exit code and the bash-level lines and asserts the traceback exists on both rather than pretending it is the same text.
     """
     fx = build_fixture(tmp_path)
     _slim(fx, "    timeout-minutes: 14\n")
@@ -646,9 +609,7 @@ def ec_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
 def run_ec(fx: pathlib.Path, **extra: str) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
     """CHECK 4 with everything resolved explicitly.
 
-    The baseline tree would derive the same three values, but naming them here
-    keeps the CHECK 4 cases readable and exercises the override seam the twin
-    documents at `:104-119`.
+    The baseline tree would derive the same three values, but naming them here keeps the CHECK 4 cases readable and exercises the override seam the twin documents at `:104-119`.
     """
     return run_both(
         fx,
@@ -707,8 +668,7 @@ def test_check4_stands_down_on_a_fixture_tree_with_no_registry(tmp_path: pathlib
     """`:110-119`: the registry is derived ONLY when WORKFLOWS_DIR is the default.
 
     So the directory has to be a genuinely different one; passing the default
-    path explicitly still takes the real-tree branch, which is what the first
-    version of this case did.
+    path explicitly still takes the real-tree branch, which is what the first version of this case did.
     """
     fx = build_fixture(tmp_path)
     alt = fx / "elsewhere" / "workflows"
@@ -746,9 +706,7 @@ def test_check5_is_vacuous_and_therefore_fails(tmp_path: pathlib.Path) -> None:
 def test_check5_ignores_a_yaml_extension(tmp_path: pathlib.Path) -> None:
     """`:894` globs `*.yml` only, while CHECKS 1/2/3 accept both extensions.
 
-    Measured: 0 `.yaml` files under `.github/workflows` or
-    `.ci/breakpoint/workflow` today, so the hole is latent rather than live --
-    and GitHub does accept `.yaml`, so it is a hole. Pinned, not repaired.
+    Measured: 0 `.yaml` files under `.github/workflows` or `.ci/breakpoint/workflow` today, so the hole is latent rather than live -- and GitHub does accept `.yaml`, so it is a hole. Pinned, not repaired.
     """
     fx = build_fixture(tmp_path)
     (fx / ".github" / "workflows" / "bws.yml").rename(fx / ".github" / "workflows" / "bws.yaml")
@@ -841,16 +799,9 @@ def test_check6_continue_on_error_alone_is_not_enough(tmp_path: pathlib.Path) ->
 def test_check6_a_named_checkout_is_exempt(tmp_path: pathlib.Path) -> None:
     """FIXED 2026-09-10 in BOTH SIDES. This test used to pin the defect.
 
-    The exemption used to read the step's NAME: the name list was built as
-    `step.get("name") or str(step.get("uses"))`, so a checkout step lost the
-    exemption the moment it carried a `name:` that did not itself contain the
-    string `actions/checkout`. Measured on the real tree at the time: of the 144
-    `actions/checkout` steps under `.github/workflows`, 139 are unnamed (exempt by
-    the `uses:` fallback) and 5 are named (not exempt). `watchdog-monitor.yml`'s own
-    checkout is one of the 139, which is the only reason the gate was green: a single
-    ordinary edit (`name: Checkout`) turned this registered gate red on the one
-    workflow it exists to guard, with a message telling the author to move the
-    checkout AFTER the monitor, which would leave the monitor's own scripts off disk.
+    The exemption used to read the step's NAME: the name list was built as `step.get("name") or str(step.get("uses"))`, so a checkout step lost the exemption the moment it carried a `name:` that did not itself contain the string `actions/checkout`. Measured on the real tree at the time: of the 144 `actions/checkout` steps under `.github/workflows`, 139 are unnamed (exempt by the
+    `uses:` fallback) and 5 are named (not exempt). `watchdog-monitor.yml`'s own checkout is one of the 139, which is the only reason the gate was green: a single ordinary edit (`name: Checkout`) turned this registered gate red on the one workflow it exists to guard, with a message telling the author to move the checkout AFTER the monitor, which would leave the monitor's own
+    scripts off disk.
 
     Both sides now decide on `uses:` and nothing else, so the named form passes.
     """
@@ -882,10 +833,7 @@ def test_check6_a_name_that_merely_says_checkout_is_not_exempt(
 ) -> None:
     """THE NEGATIVE CONTROL FOR THE FIX, and the reason it is a fix and not a widening.
 
-    A `run:` step called "actions/checkout" satisfied the OLD substring test and
-    walked straight through the exemption. It has no `uses:` at all, so it cannot
-    put anything on disk and it is exactly the sort of step the check exists to
-    catch. Now it is caught.
+    A `run:` step called "actions/checkout" satisfied the OLD substring test and walked straight through the exemption. It has no `uses:` at all, so it cannot put anything on disk and it is exactly the sort of step the check exists to catch. Now it is caught.
     """
     fx = build_fixture(tmp_path)
     wf(
@@ -922,11 +870,7 @@ def test_check6_a_non_checkout_uses_is_not_exempt(tmp_path: pathlib.Path) -> Non
 def test_check6_a_non_string_step_name(tmp_path: pathlib.Path) -> None:
     """FIXED 2026-09-10 in BOTH SIDES: `name: 5` used to be a TypeError.
 
-    YAML gives back an int, the old code put it in the name list unconverted, and
-    `"actions/checkout" in name` raised `TypeError: argument of type 'int' is not a
-    container or iterable`. The heredoc died, bash saw a non-zero exit and printed
-    "move the step after the monitor" -- ordering advice for a crash. The step is now
-    labelled '5' and reported as the ordinary offender it is.
+    YAML gives back an int, the old code put it in the name list unconverted, and `"actions/checkout" in name` raised `TypeError: argument of type 'int' is not a container or iterable`. The heredoc died, bash saw a non-zero exit and printed "move the step after the monitor" -- ordering advice for a crash. The step is now labelled '5' and reported as the ordinary offender it is.
     """
     fx = build_fixture(tmp_path)
     wf(
@@ -948,11 +892,9 @@ def test_check2_a_workflow_that_is_not_a_mapping(tmp_path: pathlib.Path) -> None
     """FIXED 2026-09-10: an UNRECORDED DIVERGENCE, found while testing CHECK 6.
 
     CHECK 2's (b)/(c) loop guarded with `(doc or {})`, which covers an EMPTY file and
-    not one whose YAML parses to a scalar. The twin died with `AttributeError: 'str'
-    object has no attribute 'get'` and then printed "Reusable-workflow contract
+    not one whose YAML parses to a scalar. The twin died with `AttributeError: 'str' object has no attribute 'get'` and then printed "Reusable-workflow contract
     violations (see above)" about a crash; the port already carried an `isinstance`
-    guard and passed. Two implementations, two different answers, and no case in this
-    file exercised it. The twin now carries the same guard.
+    guard and passed. Two implementations, two different answers, and no case in this file exercised it. The twin now carries the same guard.
 
     CHECK 6 still fails the run, because watchdog-monitor.yml is the file being
     mangled; the subject here is that CHECK 2 agrees and neither side tracebacks.
@@ -971,18 +913,11 @@ def test_check6_an_unparseable_watchdog_says_so_instead_of_crashing(
     """FIXED 2026-09-10 in BOTH SIDES. This test used to pin the traceback.
 
     `doc = yaml.safe_load(...)` was followed straight by `doc.get("jobs")` with no
-    `None` guard and no `isinstance` guard (CHECK 5 has had both all along), and the
-    load itself was unprotected. Of the five ways the monitor anchor can go missing,
-    THREE ended in a traceback -- empty document and non-mapping document raised
-    `AttributeError`, a syntax error raised `yaml.YAMLError` -- and only two (a dict
+    `None` guard and no `isinstance` guard (CHECK 5 has had both all along), and the load itself was unprotected. Of the five ways the monitor anchor can go missing, THREE ended in a traceback -- empty document and non-mapping document raised `AttributeError`, a syntax error raised `yaml.YAMLError` -- and only two (a dict
     with no jobs, a renamed step) reached the check's own message. Bash printed its
-    generic fix line on top of each, so the operator was told to reorder a step in a
-    file that has no steps.
+    generic fix line on top of each, so the operator was told to reorder a step in a file that has no steps.
 
-    All three now report their cause and still exit 1, and because neither side
-    tracebacks any more this case can be compared with the ordinary `assert_same`
-    rather than through `_without_traceback`: the two tracebacks quoted different
-    files and different line numbers, so the strict comparison was unreachable here.
+    All three now report their cause and still exit 1, and because neither side tracebacks any more this case can be compared with the ordinary `assert_same` rather than through `_without_traceback`: the two tracebacks quoted different files and different line numbers, so the strict comparison was unreachable here.
     """
     fx = build_fixture(tmp_path)
     shapes = [
@@ -1088,8 +1023,7 @@ def test_env_treats_an_exported_empty_value_as_unset() -> None:
 def test_the_exemption_list_is_a_list_not_a_set_literal() -> None:
     """`:302-306`: drained to `{}` a set literal becomes an empty DICT.
 
-    The endgame for `DECLARED_UNUSED_OK` is empty, so the empty form has to be
-    the safe one. This asserts the shape survives, in the port and in the twin.
+    The endgame for `DECLARED_UNUSED_OK` is empty, so the empty form has to be the safe one. This asserts the shape survives, in the port and in the twin.
     """
     assert isinstance(workflow_gates._DECLARED_UNUSED_OK, list)
     body = TWIN.read_text(encoding="utf-8")
@@ -1105,12 +1039,8 @@ def test_a_planted_regression_of_the_checkout_exemption_is_caught(
 ) -> None:
     """Plant the OLD defect back into the port and prove the comparison sees it.
 
-    Until 2026-09-10 this test ran the other way round: it planted the obvious
-    REPAIR (exempt on `uses:`) and proved the port then diverged from a twin that
-    matched on the name. The bug is fixed in both sides now, so the tempting change
-    is the reverse one -- somebody "restoring" the old substring test -- and that is
-    what is planted here. Either way the claim is the same: a port may reword, never
-    change which things it objects to.
+    Until 2026-09-10 this test ran the other way round: it planted the obvious REPAIR (exempt on `uses:`) and proved the port then diverged from a twin that matched on the name. The bug is fixed in both sides now, so the tempting change is the reverse one -- somebody "restoring" the old substring test -- and that is what is planted here. Either way the claim is the same: a port may
+    reword, never change which things it objects to.
 
     The real file is hashed before and after; the mutation lives only in the
     fixture's copy.

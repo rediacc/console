@@ -1,8 +1,6 @@
 """Asking `docker` something, where "missing" and "refused" are different answers.
 
-THE ONE RULE THIS MODULE EXISTS FOR. "Docker does not work here" is three
-different facts with three different next actions, and every spelling in this
-tree flattens them to one:
+THE ONE RULE THIS MODULE EXISTS FOR. "Docker does not work here" is three different facts with three different next actions, and every spelling in this tree flattens them to one:
 
     ABSENT        no `docker` on PATH at all          -> install it, or skip
     UNREACHABLE   the CLI runs, no engine answers     -> start the engine
@@ -11,14 +9,8 @@ tree flattens them to one:
     FAILED        the engine answered and the COMMAND failed
                                                       -> a real finding
 
-`.ci/lib/setup.sh:565-571` records why the first two must not be merged, and it
-is the sharpest case in the repo: "Docker Desktop puts a `docker` shim on PATH
-that EXISTS but cannot reach an engine, so `command -v docker` succeeds and the
-real problem is a WSL-integration toggle in a Windows GUI, which no error
-further down would ever name." `.ci/lib/local-common.sh:673-679` records why the
-third is separate: "Distinguish 'no docker' from 'docker installed, user not in
-the group'", and it then re-execs under `sg docker` rather than reporting a
-failure at all.
+`.ci/lib/setup.sh:565-571` records why the first two must not be merged, and it is the sharpest case in the repo: "Docker Desktop puts a `docker` shim on PATH that EXISTS but cannot reach an engine, so `command -v docker` succeeds and the real problem is a WSL-integration toggle in a Windows GUI, which no error further down would ever name." `.ci/lib/local-common.sh:673-679`
+records why the third is separate: "Distinguish 'no docker' from 'docker installed, user not in the group'", and it then re-execs under `sg docker` rather than reporting a failure at all.
 
 ------------------------------------------------------------------------------
 MEASUREMENT 1: THE EXIT CODE ALONE CANNOT TELL YOU WHICH OF THE FOUR IT IS.
@@ -29,31 +21,18 @@ Measured on this host, docker 29.7.2, 2026-09-06:
     DOCKER_HOST=unix:///nonexistent/docker.sock docker ps        -> exit 1
     docker frobnicate                                            -> exit 1
 
-An unreachable daemon and a command that does not exist produce the SAME code.
-So classification here reads STDERR, and the marker table below is built from
-that run rather than from memory. The exit code remains the verdict -- non-zero
-is always a failure -- and the markers only choose which kind, so a docker
-release that rewords its messages degrades this to FAILED and never to "fine".
+An unreachable daemon and a command that does not exist produce the SAME code. So classification here reads STDERR, and the marker table below is built from that run rather than from memory. The exit code remains the verdict -- non-zero is always a failure -- and the markers only choose which kind, so a docker release that rewords its messages degrades this to FAILED and never to
+"fine".
 
 ------------------------------------------------------------------------------
 MEASUREMENT 2: `docker info` WRITES A FULL, HEALTHY-LOOKING REPORT TO STDOUT
 WHILE FAILING.
 ------------------------------------------------------------------------------
-Same run: with an unreachable daemon, `docker info` exits 1 and still prints the
-entire CLIENT section on stdout -- version, plugins, contexts -- ending with a
-bare `Server:` line and nothing under it. So a probe written as "did it print
-anything" answers YES for a machine with no engine. That shape is not
-hypothetical here: `.ci/legacy/run-legacy.sh:766-768` and `.ci/lib/devbox.sh:76`
-both branch on `docker version` output-or-status, and the only reason they are
-correct is that they happen to redirect to /dev/null and test the status.
+Same run: with an unreachable daemon, `docker info` exits 1 and still prints the entire CLIENT section on stdout -- version, plugins, contexts -- ending with a bare `Server:` line and nothing under it. So a probe written as "did it print anything" answers YES for a machine with no engine. That shape is not hypothetical here: `.ci/legacy/run-legacy.sh:766-768` and
+`.ci/lib/devbox.sh:76` both branch on `docker version` output-or-status, and the only reason they are correct is that they happen to redirect to /dev/null and test the status.
 
-Which is the same rule the sibling module states for `gh`: check the status
-before you use the output. `DockerResult.stdout` is a property that RAISES the
-classified error unless the call succeeded, so a caller cannot write
-`docker_info().stdout.splitlines()` and receive a client-only report as though
-it described a running engine. `.stdout_raw` holds the bytes for diagnostics and
-`.stderr` is always readable, because the sentence naming the socket is the only
-useful thing a failed docker call produces.
+Which is the same rule the sibling module states for `gh`: check the status before you use the output. `DockerResult.stdout` is a property that RAISES the classified error unless the call succeeded, so a caller cannot write `docker_info().stdout.splitlines()` and receive a client-only report as though it described a running engine. `.stdout_raw` holds the bytes for diagnostics and
+`.stderr` is always readable, because the sentence naming the socket is the only useful thing a failed docker call produces.
 
 ------------------------------------------------------------------------------
 MEASUREMENT 3: THE OBVIOUS `client_version` SPELLING FORCES YOU TO SKIP THE CHECK.
@@ -61,27 +40,18 @@ MEASUREMENT 3: THE OBVIOUS `client_version` SPELLING FORCES YOU TO SKIP THE CHEC
     DOCKER_HOST=unix:///nope.sock docker version --format '{{.Client.Version}}'
         -> prints "29.7.2", exits 1
 
-The right answer on stdout, and a non-zero exit, at once. `.ci/lib/setup.sh:583`
-wraps the Server variant of that call in `|| echo 'version unknown'`, which is
-correct there and is also the reason the pattern spreads: the only way to use
-this call is to ignore its status. So `client_version()` below uses
-`docker --version` instead, which contacts no daemon and exits 0 offline
-(measured), and the status check survives. A module whose own helpers have to
-break its rule has not got a rule.
+The right answer on stdout, and a non-zero exit, at once. `.ci/lib/setup.sh:583` wraps the Server variant of that call in `|| echo 'version unknown'`, which is correct there and is also the reason the pattern spreads: the only way to use this call is to ignore its status. So `client_version()` below uses `docker --version` instead, which contacts no daemon and exits 0 offline
+(measured), and the status check survives. A module whose own helpers have to break its rule has not got a rule.
 
 ------------------------------------------------------------------------------
 EXIT 77 IS "COULD NOT RUN", AND IT IS NEVER A VERDICT.
 ------------------------------------------------------------------------------
-The convention is this repo's, not an invention: `scripts/ci-runner/pool.ts:80-89`
-defines it ("Exit code a gate uses to say 'I could not run' ... 1 is a finding,
-2 is usage, 124 is a timeout, 127 is not-found"), `.ci/scripts/quality/
-check-python-lint.sh:191` established it for ruff, `.ci/scripts/security/
-shfmt.sh:52-60` adopted it, and `.ci/rediacc_ci/check_pytest.py:124` names it
+The convention is this repo's, not an invention: `scripts/ci-runner/pool.ts:80-89` defines it ("Exit code a gate uses to say 'I could not run' ... 1 is a finding, 2 is usage, 124 is a timeout, 127 is not-found"), `.ci/scripts/quality/ check-python-lint.sh:191` established it for ruff, `.ci/scripts/security/ shfmt.sh:52-60` adopted it, and `.ci/rediacc_ci/check_pytest.py:124` names
+it
 `EXIT_CANNOT_RUN = 77`. The ci-runner classifies 77 as BLOCKED: counted, named,
 recorded in the push receipt and warned about, but not a claim about the code.
 
-`main("require-ready")` below is the entry point a shell gate uses, and the
-mapping is deliberate and asserted:
+`main("require-ready")` below is the entry point a shell gate uses, and the mapping is deliberate and asserted:
 
     ready                      -> 0
     absent / unreachable / denied -> 77 with the reason and the fix on stderr
@@ -174,10 +144,7 @@ class DockerUnreachableError(DockerError):
 class DockerPermissionDeniedError(DockerError):
     """The engine is up and this user cannot talk to it.
 
-    Its own class because the fix is neither "install docker" nor "start
-    docker": `.ci/lib/local-common.sh:630-653` re-execs the whole run under
-    `sg docker` for exactly this case, and reporting it as unreachable would
-    send the operator to restart a healthy daemon.
+    Its own class because the fix is neither "install docker" nor "start docker": `.ci/lib/local-common.sh:630-653` re-execs the whole run under `sg docker` for exactly this case, and reporting it as unreachable would send the operator to restart a healthy daemon.
     """
 
 
@@ -211,10 +178,7 @@ _ERROR_CLASSES = {
 class DockerResult:
     """What a docker call did, with the success check in front of the output.
 
-    `.stdout` RAISES unless the call succeeded. MEASUREMENT 2 in the module
-    docstring is the reason: a failing `docker info` prints a full client report,
-    so the plain-attribute version of this class would hand a caller a
-    healthy-looking document produced by a machine with no engine.
+    `.stdout` RAISES unless the call succeeded. MEASUREMENT 2 in the module docstring is the reason: a failing `docker info` prints a full client report, so the plain-attribute version of this class would hand a caller a healthy-looking document produced by a machine with no engine.
     """
 
     __slots__ = ("argv", "duration", "returncode", "stderr", "stdout_raw", "timed_out")
@@ -262,10 +226,7 @@ class DockerResult:
     def cannot_run(self) -> bool:
         """Is this failure a "no verdict" rather than a finding?
 
-        The single predicate a gate keys its exit code on. FAILED and TIMED_OUT
-        are excluded: a command that reached the engine and failed is a result,
-        and a timeout is a genuine breakage (`proc` maps it to 124 for the same
-        reason).
+        The single predicate a gate keys its exit code on. FAILED and TIMED_OUT are excluded: a command that reached the engine and failed is a result, and a timeout is a genuine breakage (`proc` maps it to 124 for the same reason).
         """
         return self.failure in (FAILURE_ABSENT, FAILURE_UNREACHABLE, FAILURE_DENIED)
 
@@ -292,9 +253,7 @@ class DockerResult:
 
         `docker info --format '{{.ServerVersion}}'` against a dead engine prints
         NOTHING and exits 1 (measured). The exit code catches that here; this
-        refusal catches the version of it where a future docker exits 0 with an
-        empty field, which is the same class of bug that put an empty signing key
-        into a production build (docs/dev-environments.md:102-110).
+        refusal catches the version of it where a future docker exits 0 with an empty field, which is the same class of bug that put an empty signing key into a production build (docs/dev-environments.md:102-110).
         """
         text = self.stdout.strip()
         if not text:
@@ -323,9 +282,7 @@ class DockerResult:
         """One JSON object PER LINE, which is what `--format '{{json .}}'` emits.
 
         NOT a JSON array. `docker ps --format '{{json .}}'` prints newline
-        delimited objects, so `json.loads` over the whole body fails as soon as
-        there are two containers -- and passes with zero or one, which is how
-        that bug reaches production having been tested.
+        delimited objects, so `json.loads` over the whole body fails as soon as there are two containers -- and passes with zero or one, which is how that bug reaches production having been tested.
         """
         out = []
         for line in self.lines():
@@ -365,11 +322,7 @@ def docker(
 ) -> DockerResult:
     """Run `docker <args>`, bounded. Never raises for a non-zero exit.
 
-    `host` sets DOCKER_HOST for this call only, which is how every repo in this
-    product is addressed: each one has its own daemon at
-    `/var/run/rediacc/docker-<networkId>.sock`. Passing it here rather than
-    exporting it means two repos can be queried from one process without either
-    of them inheriting the other's socket.
+    `host` sets DOCKER_HOST for this call only, which is how every repo in this product is addressed: each one has its own daemon at `/var/run/rediacc/docker-<networkId>.sock`. Passing it here rather than exporting it means two repos can be queried from one process without either of them inheriting the other's socket.
     """
     environ = dict(os.environ if env is None else env)
     environ.update(NONINTERACTIVE)
@@ -396,16 +349,9 @@ def client_version(env: dict[str, str] | None = None) -> str:
     """The CLI's own version string, e.g. "29.7.2". Works with no daemon.
 
     `docker --version`, NOT `docker version --format '{{.Client.Version}}'`. See
-    MEASUREMENT 3: the second one prints the right answer and exits 1 when the
-    daemon is down, so the only way to use it is to ignore the exit code, and a
-    helper that has to ignore exit codes cannot be the one that teaches callers
-    not to. `docker --version` contacts no daemon and exits 0 offline (measured
-    2026-09-06), so the status check survives.
+    MEASUREMENT 3: the second one prints the right answer and exits 1 when the daemon is down, so the only way to use it is to ignore the exit code, and a helper that has to ignore exit codes cannot be the one that teaches callers not to. `docker --version` contacts no daemon and exits 0 offline (measured 2026-09-06), so the status check survives.
 
-    THE LINE IS PARSED AND THE PARSE IS CHECKED. "Docker version 29.7.2, build
-    a7dcaa6" is prose, and a caller comparing prose against a version number gets
-    a wrong answer rather than an error. An unparseable line raises instead of
-    being handed back whole.
+    THE LINE IS PARSED AND THE PARSE IS CHECKED. "Docker version 29.7.2, build a7dcaa6" is prose, and a caller comparing prose against a version number gets a wrong answer rather than an error. An unparseable line raises instead of being handed back whole.
     """
     result = docker(["--version"], env=env, timeout=10)
     line = result.value("docker version line")
@@ -425,18 +371,11 @@ def client_version(env: dict[str, str] | None = None) -> str:
 def state(env: dict[str, str] | None = None, *, host: str | None = None) -> str:
     """Which of the four situations this machine is in. One probe, four answers.
 
-    `docker version` rather than `docker info` as the probe, for two reasons.
-    It is what `.ci/lib/local-common.sh:633`, `.ci/lib/devbox.sh:76` and
-    `.ci/legacy/run-legacy.sh:766` already use, so this reports the same thing
+    `docker version` rather than `docker info` as the probe, for two reasons. It is what `.ci/lib/local-common.sh:633`, `.ci/lib/devbox.sh:76` and `.ci/legacy/run-legacy.sh:766` already use, so this reports the same thing
     they act on; and `docker info` is the slower call, which matters when the
     engine is dead and the timeout is what you are waiting for.
 
-    STATE_UNKNOWN is real and is not a synonym for unreachable: a timeout, or a
-    stderr this module cannot classify, means the question was not answered. It
-    is grouped into CANNOT_RUN_STATES because acting on an unanswered probe is
-    the failure this whole module exists to prevent, but it is REPORTED
-    separately so a message can say "I could not tell" instead of inventing a
-    cause.
+    STATE_UNKNOWN is real and is not a synonym for unreachable: a timeout, or a stderr this module cannot classify, means the question was not answered. It is grouped into CANNOT_RUN_STATES because acting on an unanswered probe is the failure this whole module exists to prevent, but it is REPORTED separately so a message can say "I could not tell" instead of inventing a cause.
     """
     if which_docker(env) is None:
         return STATE_ABSENT
@@ -487,8 +426,7 @@ def cannot_run_reason(env: dict[str, str] | None = None, *, host: str | None = N
 
     Deliberately returns None for READY rather than a boolean, so a caller writes
     `reason = cannot_run_reason(); if reason: ...` and has the text in hand at
-    the moment it decides. Two calls -- one to ask, one to explain -- is how a
-    gate ends up printing advice for a state it is no longer in.
+    the moment it decides. Two calls -- one to ask, one to explain -- is how a gate ends up printing advice for a state it is no longer in.
     """
     current = state(env, host=host)
     if current == STATE_READY:
@@ -515,10 +453,7 @@ def require_ready(env: dict[str, str] | None = None, *, host: str | None = None)
 def server_version(env: dict[str, str] | None = None, *, host: str | None = None) -> str:
     """The ENGINE's version. Raises when there is no engine; never "unknown".
 
-    `.ci/lib/setup.sh:583` spells this `|| echo 'version unknown'`, which is
-    right for a log line and wrong for anything a program then compares. Here the
-    absence of an engine is an exception, so it cannot be compared against a
-    version number by accident.
+    `.ci/lib/setup.sh:583` spells this `|| echo 'version unknown'`, which is right for a log line and wrong for anything a program then compares. Here the absence of an engine is an exception, so it cannot be compared against a version number by accident.
     """
     return docker(
         ["version", "--format", "{{.Server.Version}}"], env=env, host=host, timeout=15
@@ -533,10 +468,7 @@ def containers(
 ) -> list[dict]:
     """`docker ps` as dicts. RAISES when the engine cannot be asked; [] means none.
 
-    The same rule as `ghx.pr_list`: there is no return value meaning "I could not
-    ask". `scripts/dev/worktree.sh:201-202` guards this call with two `return 1`s
-    that make an unreachable daemon and an empty container list the same answer,
-    which is safe there only because the caller's next step is a no-op either way.
+    The same rule as `ghx.pr_list`: there is no return value meaning "I could not ask". `scripts/dev/worktree.sh:201-202` guards this call with two `return 1`s that make an unreachable daemon and an empty container list the same answer, which is safe there only because the caller's next step is a no-op either way.
     """
     args = ["ps", "--format", "{{json .}}"]
     if all_states:
@@ -571,8 +503,7 @@ def main(argv: list[str]) -> int:
         unknown                          -> 77, saying it could not classify
         a command that ran and failed    -> 1, because that IS a verdict
 
-    `state` prints one word on stdout and always exits 0, for a caller that wants
-    to branch in shell without a subshell full of pattern matching.
+    `state` prints one word on stdout and always exits 0, for a caller that wants to branch in shell without a subshell full of pattern matching.
     """
     if not argv:
         print("usage: python3 -m rediacc_ci.core.dockerx <verb> [args]", file=sys.stderr)

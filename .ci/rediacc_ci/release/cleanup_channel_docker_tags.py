@@ -1,34 +1,16 @@
 """Port of `.ci/scripts/release/cleanup-channel-docker-tags.sh`.
 
-Deletes the staging channel Docker tag after cd-v2.yml has retagged its images
-to the released semver. Non-critical by design: every outcome is written to the
-step summary and the script still exits 0, because a channel tag left behind in
-GHCR is harmless.
+Deletes the staging channel Docker tag after cd-v2.yml has retagged its images to the released semver. Non-critical by design: every outcome is written to the step summary and the script still exits 0, because a channel tag left behind in GHCR is harmless.
 
-THE `staging-` GUARD IS REPRODUCED, NOT ROUTED AROUND, and the twin's header is
-emphatic about why. `cleanup-staging.sh` accepts only `staging-*` tags
+THE `staging-` GUARD IS REPRODUCED, NOT ROUTED AROUND, and the twin's header is emphatic about why. `cleanup-staging.sh` accepts only `staging-*` tags
 deliberately, so a stray call cannot delete a real one; `CHANNEL` is `edge` or
-`stable`, so the guard rejects it every single release. That is a KNOWN GAP with
-its own summary text, not a token-scope problem, and a port that widened the
-guard to "make the cleanup work" would remove the safety rail the twin exists to
-respect. The first branch below therefore never calls anything at all, which is
-the branch production actually takes.
+`stable`, so the guard rejects it every single release. That is a KNOWN GAP with its own summary text, not a token-scope problem, and a port that widened the guard to "make the cleanup work" would remove the safety rail the twin exists to respect. The first branch below therefore never calls anything at all, which is the branch production actually takes.
 
-THE THREE OUTCOMES ARE THREE DIFFERENT SUMMARY BLOCKS, and the summary file is
-the whole observable of this script: stdout and stderr carry only whatever
-`cleanup-staging.sh` itself prints. So the port appends line by line with an
-open-append-close per line, exactly as the twin's repeated `>>` redirects do,
-rather than buffering the block and writing once. `GITHUB_STEP_SUMMARY` is
-routinely pointed at `/dev/stdout` when this is run by hand, and a buffered
-write would reorder the block against the subprocess's own inherited output.
+THE THREE OUTCOMES ARE THREE DIFFERENT SUMMARY BLOCKS, and the summary file is the whole observable of this script: stdout and stderr carry only whatever `cleanup-staging.sh` itself prints. So the port appends line by line with an open-append-close per line, exactly as the twin's repeated `>>` redirects do, rather than buffering the block and writing once. `GITHUB_STEP_SUMMARY` is
+routinely pointed at `/dev/stdout` when this is run by hand, and a buffered write would reorder the block against the subprocess's own inherited output.
 
-`cleanup-staging.sh` IS FORWARDED TO RATHER THAN REIMPLEMENTED, the same
-reasoning `rediacc_ci.release.backfill_write_sentinel` records for the sentinel
-writer: it is a whole separate contract (GHCR package resolution, the
-`PUBLISH_IMAGES` table from `constants.sh`, `gh api --method DELETE`) that
-already has one implementation. Its stdout and stderr are INHERITED, not
-captured, because the twin does not capture them either -- the reader of a CI
-log sees the delete's own output interleaved with the summary block.
+`cleanup-staging.sh` IS FORWARDED TO RATHER THAN REIMPLEMENTED, the same reasoning `rediacc_ci.release.backfill_write_sentinel` records for the sentinel writer: it is a whole separate contract (GHCR package resolution, the `PUBLISH_IMAGES` table from `constants.sh`, `gh api --method DELETE`) that already has one implementation. Its stdout and stderr are INHERITED, not captured,
+because the twin does not capture them either -- the reader of a CI log sees the delete's own output interleaved with the summary block.
 """
 
 from __future__ import annotations
@@ -91,11 +73,9 @@ def is_staging_tag(channel: str) -> bool:
 def _delete_channel_tag(channel: str) -> bool:
     """Run the twin's `elif`: true when `cleanup-staging.sh --tag <channel>` exits 0.
 
-    A MISSING SCRIPT IS THE `else` BRANCH, not a traceback. Under bash a
-    `command not found` inside an `elif` is a non-zero status like any other and
+    A MISSING SCRIPT IS THE `else` BRANCH, not a traceback. Under bash a `command not found` inside an `elif` is a non-zero status like any other and
     falls through to the failure summary; `FileNotFoundError` here would instead
-    abort before the summary was written, which is the one difference that would
-    change what a reader of the step summary sees.
+    abort before the summary was written, which is the one difference that would change what a reader of the step summary sees.
     """
     try:
         proc = subprocess.run([_CLEANUP_STAGING, "--tag", channel], check=False)

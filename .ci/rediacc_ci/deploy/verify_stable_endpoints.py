@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/verify-stable-endpoints.sh`.
 
-Post-deploy verification for the stable environment. Same shape as
-`verify_edge_endpoints`, one channel over, with two structural differences the
-twin's header states and this port carries:
+Post-deploy verification for the stable environment. Same shape as `verify_edge_endpoints`, one channel over, with two structural differences the twin's header states and this port carries:
 
   * NO RETRY LOOP. Every assertion samples the surface exactly ONCE. The edge
     twin grew `fetch_retry` on 2026-08-08 after a single unlucky sample failed
@@ -13,11 +11,7 @@ twin's header states and this port carries:
     0. The edge twin's identical-looking loop emits `::error::` and sets a
     failure flag.
 
-WHY `curl` AND `jq` ARE SHELLED OUT TO rather than replaced by `urllib` and
-`json`: the full argument is in `verify_edge_endpoints`'s docstring and applies
-verbatim. In one line, every URL here is a hard-coded production hostname with
-no override knob, so a fake `curl` on `PATH` is the ONLY way either
-implementation can be driven off-production, and a port using `urllib` could
+WHY `curl` AND `jq` ARE SHELLED OUT TO rather than replaced by `urllib` and `json`: the full argument is in `verify_edge_endpoints`'s docstring and applies verbatim. In one line, every URL here is a hard-coded production hostname with no override knob, so a fake `curl` on `PATH` is the ONLY way either implementation can be driven off-production, and a port using `urllib` could
 never be compared against the twin at all.
 
 THE ONE PLACE `set -e` IS OBSERVABLE, and it is a real defect rather than a
@@ -26,12 +20,9 @@ a TOP-LEVEL assignment under `set -e`, so a transport failure kills the script
 with curl's own exit code and NO `::error::` annotation at all. Driven:
 `bash -c 'set -eu; S=$(curl -sI -o /dev/null -w "%{http_code}"
 http://127.0.0.1:19999/x 2>/dev/null); echo "[$S]"'` exits 7 and prints
-nothing. The edge twin cannot do this because the identical code sits inside a
-`fetch_retry` predicate, where `set -e` is suspended. Reproduced here, not
-fixed: see FINDING 4 in the differential.
+nothing. The edge twin cannot do this because the identical code sits inside a `fetch_retry` predicate, where `set -e` is suspended. Reproduced here, not fixed: see FINDING 4 in the differential.
 
-Exit: 0 verification complete, 1 any assertion failed, or curl's own exit code
-on a transport failure (see above).
+Exit: 0 verification complete, 1 any assertion failed, or curl's own exit code on a transport failure (see above).
 """
 
 from __future__ import annotations
@@ -56,9 +47,7 @@ NOSNIFF = edge.NOSNIFF
 def _status_or_die(url: str) -> str:
     """`S=$(curl -sI -o /dev/null -w '%{http_code}' <url>)` under `set -e`.
 
-    RAISES `_TransportError` when curl itself fails, because at top level
-    under `set -e` that is a script-killing event in the twin and NOT a route
-    to the `::error::` branch below. See the module docstring.
+    RAISES `_TransportError` when curl itself fails, because at top level under `set -e` that is a script-killing event in the twin and NOT a route to the `::error::` branch below. See the module docstring.
     """
     proc = subprocess.run(
         ["curl", "-sI", "-o", "/dev/null", "-w", "%{http_code}", url],
@@ -194,8 +183,7 @@ def _verify() -> int:
 def _region_domains() -> list[str]:
     """`done < <(jq -r '.regions[] | .domain' regions.json)`.
 
-    `.domain`, NOT `.edgeDomain`: that one field is the entire difference
-    between this loop and the edge twin's. A failing jq yields zero domains and
+    `.domain`, NOT `.edgeDomain`: that one field is the entire difference between this loop and the edge twin's. A failing jq yields zero domains and
     no error, exactly as in the edge port; see FINDING 1 in the differential.
     """
     _rc, out = edge.jq_run(["-r", ".regions[] | .domain", "regions.json"])

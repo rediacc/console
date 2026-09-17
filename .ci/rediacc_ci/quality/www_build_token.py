@@ -3,27 +3,16 @@
 Ported from `.ci/scripts/quality/check-www-build-token.sh`, which is not deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-THE DEFECT, twice. `packages/www/src/pages/[lang]/downloads.astro` fetches the
-latest release from the GitHub API at BUILD time and deliberately THROWS rather
-than shipping a downloads page with nothing on it. Unauthenticated, that call is
-capped at 60/hour per runner IP -- which is SHARED -- so the build dies with
+THE DEFECT, twice. `packages/www/src/pages/[lang]/downloads.astro` fetches the latest release from the GitHub API at BUILD time and deliberately THROWS rather than shipping a downloads page with nothing on it. Unauthenticated, that call is capped at 60/hour per runner IP -- which is SHARED -- so the build dies with
 
     latest-release: GitHub responded 403 rate limit exceeded
 
 for reasons that have nothing to do with the commit under test.
-`packages/www/src/utils/latest-release.ts:20-22` already sends the token as a
-Bearer header the moment it is set, and downloads.astro:35 prints "Set
-GITHUB_TOKEN if this is rate limiting" in the very error that fails the build. The
-fix is one line of `env:`.
+`packages/www/src/utils/latest-release.ts:20-22` already sends the token as a Bearer header the moment it is set, and downloads.astro:35 prints "Set GITHUB_TOKEN if this is rate limiting" in the very error that fails the build. The fix is one line of `env:`.
 
-WHY A GATE AND NOT A THIRD CAREFUL COMMENT. It was found and fixed twice, at
-ci-quality.yml and cd-deploy-worker.yml, each time with a thorough comment naming
-run 32223128728 -- and the THIRD call site, ci-build-docker.yml, was left behind
-both times and reddened job 99839065246 months later. Two prose comments did not
-find the third site. A rule that enumerates them does.
+WHY A GATE AND NOT A THIRD CAREFUL COMMENT. It was found and fixed twice, at ci-quality.yml and cd-deploy-worker.yml, each time with a thorough comment naming run 32223128728 -- and the THIRD call site, ci-build-docker.yml, was left behind both times and reddened job 99839065246 months later. Two prose comments did not find the third site. A rule that enumerates them does.
 
-THE GENERAL SHAPE, and this repo hit it twice in one day: a fix applied at two of
-three call sites is a fix with a live hole. The nfpm checksum was the same story
+THE GENERAL SHAPE, and this repo hit it twice in one day: a fix applied at two of three call sites is a fix with a live hole. The nfpm checksum was the same story
 that morning (ci.yml verified before extracting; two siblings piped straight into
 tar).
 
@@ -31,38 +20,19 @@ tar).
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TWIN CARRIES A DEAD FILTER, AND THE PORT CARRIES IT TOO. `find_sites` pipes
-its `grep -rnE` through `grep -v '^\\s*#'` and then through
-`grep -vE ':[0-9]+: *#'`. The first of those can never match anything: every line
-`grep -n` produces begins with the FILE PATH, so a `^\\s*#` test is asking whether
-a filename starts with a hash. Only the second filter does the job both were
-written for -- dropping a call site that is inside a YAML comment. The dead one is
-reproduced here, as a predicate applied to the same composed `path:line:text`
-string, rather than dropped, for two reasons. It is a difference in behaviour
-nowhere and a difference in RECORD everywhere: deleting it would make the next
-reader believe the gate never tried to filter commented lines twice. And a port
-whose first act is to remove a line it judged useless is a port whose verdict
-nobody can check against the original. It is reported as a finding instead of
-silently repaired.
+THE TWIN CARRIES A DEAD FILTER, AND THE PORT CARRIES IT TOO. `find_sites` pipes its `grep -rnE` through `grep -v '^\\s*#'` and then through `grep -vE ':[0-9]+: *#'`. The first of those can never match anything: every line `grep -n` produces begins with the FILE PATH, so a `^\\s*#` test is asking whether a filename starts with a hash. Only the second filter does the job both were
+written for -- dropping a call site that is inside a YAML comment. The dead one is reproduced here, as a predicate applied to the same composed `path:line:text` string, rather than dropped, for two reasons. It is a difference in behaviour nowhere and a difference in RECORD everywhere: deleting it would make the next reader believe the gate never tried to filter commented lines
+twice. And a port whose first act is to remove a line it judged useless is a port whose verdict nobody can check against the original. It is reported as a finding instead of silently repaired.
 
-THE MISSING LINES ARE NOT MARKED, AND THAT MATTERS TO THE COMPARATOR. The twin
-prints its findings as `  MISSING  <file>:<line> builds www without GITHUB_TOKEN`
+THE MISSING LINES ARE NOT MARKED, AND THAT MATTERS TO THE COMPARATOR. The twin prints its findings as ` MISSING <file>:<line> builds www without GITHUB_TOKEN`
 with no severity glyph, so `scripts/lib/shadow-gate.ts` classifies them as chatter
 and a differential over this gate reports VACUOUS_BOTH_EMPTY -- both sides exit 1
 with zero RECOGNISED findings. That is the comparator behaving correctly and
-saying so: its VACUOUS message names both causes, "plant one" and "the finding
-extractor does not recognise this gate's output (pass --finding-re)". The
-differential for this pair therefore runs with `--finding-re '^ *MISSING '`. The
-text is kept byte-identical to the twin's precisely so that ONE `--finding-re`
-serves both sides.
+saying so: its VACUOUS message names both causes, "plant one" and "the finding extractor does not recognise this gate's output (pass --finding-re)". The differential for this pair therefore runs with `--finding-re '^ *MISSING '`. The text is kept byte-identical to the twin's precisely so that ONE `--finding-re` serves both sides.
 
-THE FLOOR IS THE INTERESTING PART OF THIS GATE. Three call sites exist today, and
-finding none means the spellings moved -- at which point a green asserts nothing,
-which is the exact failure the gate is written against. The floor is carried at
-the same value with the same message. It is a hand-typed count and contract
+THE FLOOR IS THE INTERESTING PART OF THIS GATE. Three call sites exist today, and finding none means the spellings moved -- at which point a green asserts nothing, which is the exact failure the gate is written against. The floor is carried at the same value with the same message. It is a hand-typed count and contract
 section 6 says a floor should be set-based or corpus-derived; that is a real
-finding about this gate, and it is NOT fixed here, because changing the floor
-changes the verdict and a port that changes the verdict is not a port.
+finding about this gate, and it is NOT fixed here, because changing the floor changes the verdict and a port that changes the verdict is not a port.
 """
 
 import pathlib
@@ -101,8 +71,7 @@ def find_sites(directory: pathlib.Path) -> list[tuple[pathlib.Path, int, str]]:
 
     ONLY `*.yml`, matching the twin's `"$1"/*.yml` glob exactly. That glob is not
     recursive and does not match `.yaml`; both facts are behaviour, and a port
-    that quietly widened either would report call sites the twin never saw and
-    read as a regression in the workflows rather than in the gate.
+    that quietly widened either would report call sites the twin never saw and read as a regression in the workflows rather than in the gate.
 
     Files are visited in sorted order so two runs over one directory produce the
     findings in the same order. The shell's glob is already sorted under LC_ALL=C,
@@ -131,11 +100,7 @@ def find_sites(directory: pathlib.Path) -> list[tuple[pathlib.Path, int, str]]:
 def covered(path: pathlib.Path, line: int) -> bool:
     """Does a GITHUB_TOKEN appear in this step's env block?
 
-    `sed -n "L,L+25p"` is INCLUSIVE at both ends, so the window is 26 lines
-    starting at the call site itself. Off by one here would make the gate
-    disagree with its twin about a step whose `env:` sits exactly 25 lines down,
-    which is the only place the two could ever differ, so the arithmetic is
-    spelled out rather than left to a slice that reads naturally.
+    `sed -n "L,L+25p"` is INCLUSIVE at both ends, so the window is 26 lines starting at the call site itself. Off by one here would make the gate disagree with its twin about a step whose `env:` sits exactly 25 lines down, which is the only place the two could ever differ, so the arithmetic is spelled out rather than left to a slice that reads naturally.
     """
     text = path.read_text(encoding="utf-8", errors="replace").split("\n")
     window = text[line - 1 : line + COVER_WINDOW]
@@ -146,13 +111,8 @@ def audit(directory: pathlib.Path) -> tuple[list[str], int, int]:
     """(missing lines, total call sites, uncovered count).
 
     The twin returns this as TEXT with a `__TOTAL__=n __BAD__=n` trailer parsed
-    back out by parameter expansion, and its comment says why the parsing is not
-    done with sed: `check:ci-control-vacuity` classifies any inline substitution
-    as a control built by mutation and then demands proof the plant landed. That
-    whole dance exists because bash has one return channel. A tuple has three,
-    so the trailer, the parsing and the reason for avoiding sed all disappear
-    together -- which is why this note exists, since the constraint that shaped
-    the original is invisible in the result.
+    back out by parameter expansion, and its comment says why the parsing is not done with sed: `check:ci-control-vacuity` classifies any inline substitution as a control built by mutation and then demands proof the plant landed. That whole dance exists because bash has one return channel. A tuple has three, so the trailer, the parsing and the reason for avoiding sed all disappear
+    together -- which is why this note exists, since the constraint that shaped the original is invisible in the result.
     """
     missing: list[str] = []
     total = 0
@@ -166,8 +126,7 @@ def audit(directory: pathlib.Path) -> tuple[list[str], int, int]:
 def run_controls() -> int:
     """CONTROL, before the real run. A gate that cannot fire is worse than no gate.
 
-    Returns 0 when the controls hold, 1 when they do not. Built by CONSTRUCTION in
-    a tempdir: two one-step workflows differing ONLY in the property under test.
+    Returns 0 when the controls hold, 1 when they do not. Built by CONSTRUCTION in a tempdir: two one-step workflows differing ONLY in the property under test.
     """
     with tempfile.TemporaryDirectory() as tmp:
         workflows = pathlib.Path(tmp) / "wf"
@@ -261,10 +220,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Plant a defect the gate must fire on, and its mirror it must stay quiet for.
 
-    The gate's own inline controls already prove one direction against a
-    constructed pair. This proves the DECISION function on top of them -- the
-    floor, the uncovered branch, the window edge -- which the inline controls
-    never reach because they only ever call `audit`.
+    The gate's own inline controls already prove one direction against a constructed pair. This proves the DECISION function on top of them -- the floor, the uncovered branch, the window edge -- which the inline controls never reach because they only ever call `audit`.
     """
     ctl = Controls("www-build-token", floor=9, verbose=True)
 

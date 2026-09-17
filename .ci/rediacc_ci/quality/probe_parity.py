@@ -1,8 +1,7 @@
 r"""A capability probe must exercise the operations its CONSUMER depends on.
 
 Ported from `.ci/scripts/quality/check-probe-parity.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live side by side until a
-committed differential ledger says otherwise.
+see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
 
 WHY THIS EXISTS, in the twin's own words, because the incident is the design:
 
@@ -35,8 +34,7 @@ WHY THIS EXISTS, in the twin's own words, because the incident is the design:
     tautology over nothing, which is the exact vacuity this repo keeps paying
     for.
 
-COMMENT LINES ARE STRIPPED FROM THE PROBE FIRST, and the twin records why that
-is not a detail:
+COMMENT LINES ARE STRIPPED FROM THE PROBE FIRST, and the twin records why that is not a detail:
 
     The first version of this gate did not strip them, so it happily counted the
     `keyctl pipe` appearing inside the preflight's own explanatory comment and
@@ -45,9 +43,7 @@ is not a detail:
     defect it audits, found by running the planted-defect proof, which is the
     only reason it is not still there.
 
-THE ARCHAEOLOGY THAT GETS TIDIED OUT, AND MUST NOT BE. The twin was FIXED at
-commit 96355d3b5 on 2026-09-06, and the fix is two `|| true` suffixes that look
-like noise:
+THE ARCHAEOLOGY THAT GETS TIDIED OUT, AND MUST NOT BE. The twin was FIXED at commit 96355d3b5 on 2026-09-06, and the fix is two `|| true` suffixes that look like noise:
 
     `|| true` IS LOAD-BEARING on BOTH extractions. grep exits 1 on no match and
     pipefail promotes that to the pipeline, so `set -e` killed the script at the
@@ -55,12 +51,8 @@ like noise:
     below, which exist for precisely the extraction-broke case. Reproduced
     2026-09-06 against an empty consumer file: exit 1 with no control message.
 
-That is the whole shape of the bug class this port must not lose: the handler
-written for the empty-input case was UNREACHABLE, because the language killed
-the program one line above it. The Python port cannot reproduce the defect (an
-empty `re.findall` is an empty list, not a fatal status), which is exactly why
-the note has to survive as prose: a reader who deletes it from the twin will
-delete the reason the twin's own control can fire at all.
+That is the whole shape of the bug class this port must not lose: the handler written for the empty-input case was UNREACHABLE, because the language killed the program one line above it. The Python port cannot reproduce the defect (an empty `re.findall` is an empty list, not a fatal status), which is exactly why the note has to survive as prose: a reader who deletes it from the
+twin will delete the reason the twin's own control can fire at all.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -68,45 +60,31 @@ PORT NOTES.
 
 THE EXEMPTION LIST IS PRINTED NOWHERE AND THAT IS CARRIED, NOT FIXED. The twin's
 `EXEMPT_VERBS=("unlink" "purge" "revoke")` is silent: a consumer verb it forgives
-never appears in any line of output, so a reader of a green run cannot see which
-operations were excused. The port keeps that behaviour because the differential
+never appears in any line of output, so a reader of a green run cannot see which operations were excused. The port keeps that behaviour because the differential
 compares finding sets and a new line would be a divergence; it is reported as a
 finding against the twin rather than repaired here.
 
 `sort -u` IS UNDER `LC_ALL=C`, which `scripts/lib/shadow-gate.ts` pins for both
-sides (`buildEnv`). Python's `sorted()` on `str` is code-point order, which
-agrees with C collation for the `[a-z]` alphabet these verbs are drawn from. The
-regexes admit nothing else, so the two orders cannot diverge here.
+sides (`buildEnv`). Python's `sorted()` on `str` is code-point order, which agrees with C collation for the `[a-z]` alphabet these verbs are drawn from. The regexes admit nothing else, so the two orders cannot diverge here.
 
-THE `sed` COMMENT STRIP REPLACES ONLY THE FIRST MATCH PER LINE, which is what
-`s///` without `g` means, and the leftmost match of `[[:space:]]*#.*$` starts at
+THE `sed` COMMENT STRIP REPLACES ONLY THE FIRST MATCH PER LINE, which is what `s///` without `g` means, and the leftmost match of `[[:space:]]*#.*$` starts at
 the whitespace RUN preceding the first `#`. `re.sub(..., count=1)` is the same
 rule. A `#` inside a quoted shell string is therefore treated as a comment by
 both sides, identically; that is a known imprecision of the twin, not of the
 port.
 
-THE PROBE PATTERN HAS THE ALTERNATED-ANCHOR SHAPE (`(^|[^-[:alnum:]_])`) THAT THE
-HOUSE RULES WARN CAN RETURN SILENT FALSE ZEROS UNDER `-E`. Probed 2026-09-06
-against this exact pattern and a three-line specimen, using `/usr/bin/grep`, which
-is GNU grep 3.12 and is what a SCRIPT resolves `grep` to on this host: it matched
-`keyctl add` at line start and ` keyctl pipe` mid-line and rejected
-`xkeyctl show`. So the twin is not affected. The port reproduces the
-leading-character capture (the matched text includes the boundary character, which
+THE PROBE PATTERN HAS THE ALTERNATED-ANCHOR SHAPE (`(^|[^-[:alnum:]_])`) THAT THE HOUSE RULES WARN CAN RETURN SILENT FALSE ZEROS UNDER `-E`. Probed 2026-09-06 against this exact pattern and a three-line specimen, using `/usr/bin/grep`, which is GNU grep 3.12 and is what a SCRIPT resolves `grep` to on this host: it matched `keyctl add` at line start and ` keyctl pipe` mid-line and
+rejected `xkeyctl show`. So the twin is not affected. The port reproduces the leading-character capture (the matched text includes the boundary character, which
 `awk '{print $NF}'` then discards) so that a future divergence shows up as a
 differing verb set rather than as a silently narrower scan.
 
-MEASURE grep WITH `/usr/bin/grep`, NEVER AT AN INTERACTIVE PROMPT. A Claude Code
-shell defines `grep` as a FUNCTION wrapping a bundled ugrep 7.8.4 with
+MEASURE grep WITH `/usr/bin/grep`, NEVER AT AN INTERACTIVE PROMPT. A Claude Code shell defines `grep` as a FUNCTION wrapping a bundled ugrep 7.8.4 with
 `-G --ignore-files --hidden -I --exclude-dir=.git ...`; a script sees GNU grep
-3.12. The two disagree on `\x27`, on binary-file reporting and on which files are
-searched, and a probe run at the prompt is a statement about the wrapper rather
-than about the gate. This cost two wrong port notes in this same wave.
+3.12. The two disagree on `\x27`, on binary-file reporting and on which files are searched, and a probe run at the prompt is a statement about the wrapper rather than about the gate. This cost two wrong port notes in this same wave.
 
 THE EM DASHES IN THE TWIN'S MESSAGES ARE EMITTED AS `—` ESCAPES. The house
 rule forbids an em dash in authored text; the twin's message bytes are not
-authored here, they are REPRODUCED, and the differential compares finding text.
-Writing the escape keeps this file free of the character while keeping the two
-sides byte-identical.
+authored here, they are REPRODUCED, and the differential compares finding text. Writing the escape keeps this file free of the character while keeping the two sides byte-identical.
 """
 
 import pathlib
@@ -143,8 +121,7 @@ COMMENT_STRIP = re.compile(r"[ \t\v\f\r]*#.*$")
 def consumer_verbs(text: str) -> list[str]:
     """Every `keyctl` verb the consumer invokes, sorted and deduplicated.
 
-    Returns a LIST rather than a set so a caller can see the order the twin's
-    `sort -u` produces, which is the order the banner line prints.
+    Returns a LIST rather than a set so a caller can see the order the twin's `sort -u` produces, which is the order the banner line prints.
     """
     verbs: set[str] = set()
     for call in CONSUMER_CALL.findall(text):
@@ -157,9 +134,7 @@ def consumer_verbs(text: str) -> list[str]:
 def probe_verbs(text: str) -> list[str]:
     """Every `keyctl` verb the probe invokes, comments stripped first.
 
-    The strip is the gate: see the module docstring for the version that counted
-    a `keyctl pipe` living inside the preflight's own comment and certified a
-    probe whose read-back had been deleted.
+    The strip is the gate: see the module docstring for the version that counted a `keyctl pipe` living inside the preflight's own comment and certified a probe whose read-back had been deleted.
     """
     verbs: set[str] = set()
     for line in text.split("\n"):
@@ -176,9 +151,7 @@ def probe_verbs(text: str) -> list[str]:
 def missing_verbs(consumer: list[str], probe: list[str], exempt=EXEMPT_VERBS) -> list[str]:
     """Consumer verbs the probe never exercises, minus the exemptions.
 
-    ORDER IS THE CONSUMER'S ORDER, not sorted separately, because the twin walks
-    `$consumer_verbs` (already sorted) and appends, so the finding line reads in
-    that order and the differential compares the whole line.
+    ORDER IS THE CONSUMER'S ORDER, not sorted separately, because the twin walks `$consumer_verbs` (already sorted) and appends, so the finding line reads in that order and the differential compares the whole line.
     """
     return [verb for verb in consumer if verb not in exempt and verb not in probe]
 
@@ -187,8 +160,7 @@ def _read(path: pathlib.Path) -> str:
     """File text, decoding replacement rather than raising.
 
     grep does not stop at a bad byte and neither does this; a source file with a
-    stray latin-1 byte is a portability defect somewhere else, not a reason this
-    gate cannot report.
+    stray latin-1 byte is a portability defect somewhere else, not a reason this gate cannot report.
     """
     return path.read_bytes().decode("utf-8", "replace")
 
@@ -197,10 +169,7 @@ def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 on parity, 1 on a missing input, an empty extraction
     or a real gap.
 
-    `--selftest` is intercepted BEFORE any real read, per the anti-vacuity rule:
-    a control that runs after the scan cannot stop the scan's verdict being
-    reported. The twin documents itself as taking no arguments ("Usage:
-    check-probe-parity.sh") and ignores any it is given.
+    `--selftest` is intercepted BEFORE any real read, per the anti-vacuity rule: a control that runs after the scan cannot stop the scan's verdict being reported. The twin documents itself as taking no arguments ("Usage: check-probe-parity.sh") and ignores any it is given.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -266,11 +235,8 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions for every rule, over synthetic text.
 
-    A GATE WITH ONLY POSITIVE CONTROLS WILL HAPPILY FLAG THE WHOLE TREE, so each
-    extractor is exercised on something it must catch AND on something it must
-    ignore. The floor is not a hand-typed count of assertions: it is derived from
-    the corpus below, so adding a case raises it automatically and deleting one
-    that stopped running turns the suite red rather than quietly shortening it.
+    A GATE WITH ONLY POSITIVE CONTROLS WILL HAPPILY FLAG THE WHOLE TREE, so each extractor is exercised on something it must catch AND on something it must ignore. The floor is not a hand-typed count of assertions: it is derived from the corpus below, so adding a case raises it automatically and deleting one that stopped running turns the suite red rather than quietly shortening
+    it.
     """
     # The corpus, as (label, text, expected) triples. The FLOOR is len(corpus) plus the fixed structural checks, computed at the end.
     consumer_cases = [

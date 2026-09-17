@@ -3,30 +3,14 @@
 The only R2-mutating step of the backfill workflow, wrapped in a DRY_RUN
 preview so it stays trivially safe to re-run. `dry_run=true` prints the exact
 writer invocation and touches nothing; only an explicit `DRY_RUN=false`
-(already gated on a typed confirmation input upstream) reaches
-`.ci/scripts/deploy/write-release-sentinel.sh`, which is `blocked` in
-`.ci/shadow/w7p5a-status.json` (it needs `aws` and live R2 credentials) and
-therefore stays bash forever.
+(already gated on a typed confirmation input upstream) reaches `.ci/scripts/deploy/write-release-sentinel.sh`, which is `blocked` in `.ci/shadow/w7p5a-status.json` (it needs `aws` and live R2 credentials) and therefore stays bash forever.
 
-FORWARDS TO THE BLOCKED SCRIPT RATHER THAN REIMPLEMENTING IT, same reasoning
-as `rediacc_ci.deploy.upload_media_to_r2`'s forwarding shim: the writer is a
-whole separate contract (payload shape, idempotent readback, `aws`/`jq`
-requirements) that already has one implementation, and re-deriving it here
-would be a second one to keep in sync. Unlike that sibling this is not a bare
-`os.execv`: the twin prints its own "→ writing sentinel(s) ..." line BEFORE
-invoking the writer (it is the last statement in the script, not an `exec`),
-so this port does the same -- a normal `subprocess.run` with inherited
-stdout/stderr, exiting with the writer's own return code.
+FORWARDS TO THE BLOCKED SCRIPT RATHER THAN REIMPLEMENTING IT, same reasoning as `rediacc_ci.deploy.upload_media_to_r2`'s forwarding shim: the writer is a whole separate contract (payload shape, idempotent readback, `aws`/`jq` requirements) that already has one implementation, and re-deriving it here would be a second one to keep in sync. Unlike that sibling this is not a bare
+`os.execv`: the twin prints its own "→ writing sentinel(s) ..." line BEFORE invoking the writer (it is the last statement in the script, not an `exec`), so this port does the same -- a normal `subprocess.run` with inherited stdout/stderr, exiting with the writer's own return code.
 
-`printf '%q'` IS REPRODUCED WITH `shlex.quote`, not with a hand-rolled quoter.
-For every value these three flags carry (a stripped semver, `edge`/`stable`,
-a git SHA) both quoting schemes leave the string bare -- verified directly
+`printf '%q'` IS REPRODUCED WITH `shlex.quote`, not with a hand-rolled quoter. For every value these three flags carry (a stripped semver, `edge`/`stable`, a git SHA) both quoting schemes leave the string bare -- verified directly
 with `bash -c 'printf "%q" "1.1.2"'` et al. against `shlex.quote` for the same
-inputs. Reaching for a fancier reproduction of `%q`'s full escaping grammar
-(control characters, embedded quotes) would be solving a problem neither side
-of this differential can actually hit: VERSION/CHANNEL/COMMIT_SHA are not
-free-form operator text, they are the workflow's own semver/channel/sha
-inputs.
+inputs. Reaching for a fancier reproduction of `%q`'s full escaping grammar (control characters, embedded quotes) would be solving a problem neither side of this differential can actually hit: VERSION/CHANNEL/COMMIT_SHA are not free-form operator text, they are the workflow's own semver/channel/sha inputs.
 """
 
 from __future__ import annotations

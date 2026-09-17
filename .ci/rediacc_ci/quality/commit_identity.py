@@ -3,8 +3,7 @@
 Ported from `.ci/scripts/quality/check-commit-identity.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-The twin's header, carried whole because the measurement, the oracle argument
-and the rejected alternative are each load-bearing:
+The twin's header, carried whole because the measurement, the oracle argument and the rejected alternative are each load-bearing:
 
     THE DEFECT, measured 2026-09-03 on rediacc/console#585 before the history
     rewrite: 30 of 42 commits carried `muhammed@rediacc.com`, an address not
@@ -76,44 +75,23 @@ and the rejected alternative are each load-bearing:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE PAYLOAD IS ONE COMPACT JSON OBJECT PER LINE, and both the count and the
-verdict depend on that. The twin counts commits with `grep -c .`, which counts
-LINES, and then feeds the same text to `jq` as a stream of values. Those two
+THE PAYLOAD IS ONE COMPACT JSON OBJECT PER LINE, and both the count and the verdict depend on that. The twin counts commits with `grep -c .`, which counts LINES, and then feeds the same text to `jq` as a stream of values. Those two
 readings only agree while gh emits one object per line, which it does; a pretty
-printed payload would make the completeness refusal fire on every PR. The port
-parses line by line for the same reason, so the two implementations disagree in
-the same way if that ever changes rather than one of them silently coping.
+printed payload would make the completeness refusal fire on every PR. The port parses line by line for the same reason, so the two implementations disagree in the same way if that ever changes rather than one of them silently coping.
 
-`.author.login` ON A NULL AUTHOR IS null, NOT AN ERROR. jq indexes null with a
-string and yields null, which is what lets the twin's projection
+`.author.login` ON A NULL AUTHOR IS null, NOT AN ERROR. jq indexes null with a string and yields null, which is what lets the twin's projection
 `{sha, author: .author.login, ...}` run at all over an unattributed commit. The
-port reproduces it with a `None`-tolerant lookup rather than a `try`, because
-the null IS the finding and swallowing it in an exception handler would be one
-step from swallowing the finding.
+port reproduces it with a `None`-tolerant lookup rather than a `try`, because the null IS the finding and swallowing it in an exception handler would be one step from swallowing the finding.
 
-`gh_retry` IS REPRODUCED, sleeps included, for the reasons recorded in
-`common.sh:418-432`: nine call sites were spelled `$(gh api ... || echo "[]")`
-and a rate limit then produced the same value as "this PR is clean". The gate is
-merge-blocking, so a swallowed failure there is a silent green on the check that
-is supposed to stop the merge.
+`gh_retry` IS REPRODUCED, sleeps included, for the reasons recorded in `common.sh:418-432`: nine call sites were spelled `$(gh api ... || echo "[]")` and a rate limit then produced the same value as "this PR is clean". The gate is merge-blocking, so a swallowed failure there is a silent green on the check that is supposed to stop the merge.
 
-`--refresh` IS PORTED IN FULL even though CI never runs it, and its two traps are
-carried as comments where they bite. The first is the shape filter: `gh api
-user/emails` fails with 404 here and prints its JSON error body to STDOUT, so
-`2>/dev/null` does not suppress it and `|| true` swallows the exit code, and the
+`--refresh` IS PORTED IN FULL even though CI never runs it, and its two traps are carried as comments where they bite. The first is the shape filter: `gh api user/emails` fails with 404 here and prints its JSON error body to STDOUT, so `2>/dev/null` does not suppress it and `|| true` swallows the exit code, and the
 first run of that function wrote `{"message":"Not` and `Found","documentation_url":...}`
-into the cache as two "emails". The second is the anti-vacuity refusal: an empty
-cache would make the local guard refuse every commit, which reads as the guard
-being broken rather than the cache being empty.
+into the cache as two "emails". The second is the anti-vacuity refusal: an empty cache would make the local guard refuse every commit, which reads as the guard being broken rather than the cache being empty.
 
-THE GENERATED FILE'S `$comment` IS DATA, NOT PROSE, and is carried byte for byte.
-It is the only thing standing between the next reader and hand-editing a cache
-whose whole value is that it is derived.
+THE GENERATED FILE'S `$comment` IS DATA, NOT PROSE, and is carried byte for byte. It is the only thing standing between the next reader and hand-editing a cache whose whole value is that it is derived.
 
-`require_cmd jq` IS CARRIED for the same reason as in the autopilot port: this
-module parses with `json`, but its twin refuses without jq, and a port that ran
-where its twin refuses would disagree about the only machine where the question
-is interesting. It is the first thing W7 phase 5 should delete when the twin dies.
+`require_cmd jq` IS CARRIED for the same reason as in the autopilot port: this module parses with `json`, but its twin refuses without jq, and a port that ran where its twin refuses would disagree about the only machine where the question is interesting. It is the first thing W7 phase 5 should delete when the twin dies.
 """
 
 import json
@@ -176,8 +154,7 @@ def require_cmd(name: str) -> bool:
 def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
     """`gh_retry <what> -- <gh args...>`. Returns (ok, stdout with trailing newlines cut).
 
-    The exit status is ALWAYS checked. A caller that substituted a default here
-    would reintroduce the defect this helper exists to end.
+    The exit status is ALWAYS checked. A caller that substituted a default here would reintroduce the defect this helper exists to end.
     """
     rc = 0
     stderr = ""
@@ -207,9 +184,7 @@ def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
 def gh_plain(args: list[str]) -> tuple[int, str]:
     """A single `gh` call with stderr DISCARDED, for the `--refresh` probes.
 
-    Separate from `gh_retry` because `refresh_identity` deliberately does NOT
-    retry: it is an interactive command, and its two calls each have their own
-    handling for the failure.
+    Separate from `gh_retry` because `refresh_identity` deliberately does NOT retry: it is an interactive command, and its two calls each have their own handling for the failure.
     """
     try:
         proc = subprocess.run(
@@ -228,8 +203,7 @@ def valid_emails(text: str) -> list[str]:
     where `2>/dev/null` cannot reach it and `|| true` swallows the status. The
     first run of `--refresh` wrote `{"message":"Not` and
     `Found","documentation_url":...}` into the cache as two "emails". CLAUDE.md
-    records the identical trap with curl: a 404 is silent and its body becomes
-    the value.
+    records the identical trap with curl: a 404 is silent and its body becomes the value.
     """
     return [line for line in text.split("\n") if EMAIL_RE.match(line)]
 
@@ -237,10 +211,7 @@ def valid_emails(text: str) -> list[str]:
 def parse_payload(payload: str) -> list[dict]:
     """One compact JSON object per line. Unparseable lines are DROPPED, not raised.
 
-    Dropping matches the twin: `jq` reading a stream stops at a malformed value,
-    and the surrounding `$( )` would then hand the gate a short list. Both
-    implementations therefore under-report identically rather than one crashing,
-    which is the property the differential needs.
+    Dropping matches the twin: `jq` reading a stream stops at a malformed value, and the surrounding `$( )` would then hand the gate a short list. Both implementations therefore under-report identically rather than one crashing, which is the property the differential needs.
     """
     out: list[dict] = []
     for line in payload.split("\n"):
@@ -265,9 +236,7 @@ def parse_meta(meta: str) -> tuple[str, str, int] | None:
 
     None means the line was not three usable fields, which the caller turns into
     a refusal. The twin's guard is `-z "$base" || -z "$head" || ! "$total" =~
-    ^[0-9]+$`, so a missing field and a non-numeric count are the same outcome
-    on both sides -- and NEITHER is allowed to become a count of zero, which
-    would make the completeness check pass over an empty read.
+    ^[0-9]+$`, so a missing field and a non-numeric count are the same outcome on both sides -- and NEITHER is allowed to become a count of zero, which would make the completeness check pass over an empty read.
     """
     fields = meta.split()
     if len(fields) < 3:
@@ -282,9 +251,7 @@ def parse_meta(meta: str) -> tuple[str, str, int] | None:
 def unattributed(rows: list[dict]) -> list[str]:
     """`jq -r 'select(.author == null or .committer == null) | "    \\(.sha[0:7]) ..."' | sort -u`.
 
-    Sorted and DEDUPLICATED, as `sort -u` is. The four-space indent is part of
-    the string in the twin, not applied later, so it is part of it here too:
-    those lines are what the comparator attaches to the header above them.
+    Sorted and DEDUPLICATED, as `sort -u` is. The four-space indent is part of the string in the twin, not applied later, so it is part of it here too: those lines are what the comparator attaches to the header above them.
     """
     lines = {
         "    %s  %s <%s>" % (str(row.get("sha", ""))[0:7], row.get("name"), row.get("email"))
@@ -297,8 +264,7 @@ def unattributed(rows: list[dict]) -> list[str]:
 def email_tally(rows: list[dict]) -> list[tuple[int, str]]:
     """`jq -r 'select(.author == null) | .email' | sort | uniq -c | sort -rn`.
 
-    Only `.author`, NOT `.committer`: the summary is about which ADDRESS is
-    unlinked, and a null committer with a resolved author is a different defect.
+    Only `.author`, NOT `.committer`: the summary is about which ADDRESS is unlinked, and a null committer with a resolved author is a different defect.
     `sort -rn` is descending by count; ties keep `uniq -c`'s order, which is the
     ascending email order `sort` produced.
     """
@@ -327,9 +293,7 @@ def probe_failed() -> int:
 def judge_pr(repo: str, pr: str, label: str) -> int:
     """Print offenders and return 1 when any commit is unattributed.
 
-    Returns 2 for a probe failure, which the caller turns into `probe_failed()`.
-    Three outcomes rather than two, because "could not read" must never be
-    folded into either verdict.
+    Returns 2 for a probe failure, which the caller turns into `probe_failed()`. Three outcomes rather than two, because "could not read" must never be folded into either verdict.
     """
     ok, meta = gh_retry(
         "PR metadata for %s#%s" % (label, pr),
@@ -557,9 +521,7 @@ def _row(sha: str, author, committer, email: str, name: str) -> str:
 def selftest() -> int:
     """Both directions for the oracle, the two floors and the shape filter.
 
-    The mirror matters as much as the plant here: this gate reds a merge, so a
-    port that flagged an ATTRIBUTED commit would be worse than one that missed
-    an unattributed one.
+    The mirror matters as much as the plant here: this gate reds a merge, so a port that flagged an ATTRIBUTED commit would be worse than one that missed an unattributed one.
     """
     ctl = Controls("commit-identity", floor=22, verbose=True)
 

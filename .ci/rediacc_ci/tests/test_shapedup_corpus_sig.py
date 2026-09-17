@@ -1,25 +1,13 @@
 """The Stop hook's duplication cache must watch exactly what the counter reads.
 
-`.claude/hooks/stop/wl_shapedup.py` hashes mtime+size over `CORPUS_GLOBS` to decide
-whether `scripts/gates/check-shape-duplication.ts` needs re-running, and the counter reads
-`FAMILIES`. The two are separate literals in different languages, and nothing made them
-agree.
+`.claude/hooks/stop/wl_shapedup.py` hashes mtime+size over `CORPUS_GLOBS` to decide whether `scripts/gates/check-shape-duplication.ts` needs re-running, and the counter reads `FAMILIES`. The two are separate literals in different languages, and nothing made them agree.
 
-WHY DRIFT HERE IS SILENT AND ONE-SIDED. If the signature is NARROWER than the counter's
-corpus, editing a file the counter reads does not move the hash, the hook serves a
-CACHED verdict, and the rule is quietly answering about the tree as it was. That is
-worse than a stale answer being late: `wl_shapedup.py`'s own header claims "any edit
-moves it, so this can make the rule LATE by nothing and can never silently switch it
-off", and a narrower signature makes that claim false. Wider is merely wasteful -- the
-counter re-runs when it need not.
+WHY DRIFT HERE IS SILENT AND ONE-SIDED. If the signature is NARROWER than the counter's corpus, editing a file the counter reads does not move the hash, the hook serves a CACHED verdict, and the rule is quietly answering about the tree as it was. That is worse than a stale answer being late: `wl_shapedup.py`'s own header claims "any edit moves it, so this can make the rule LATE by
+nothing and can never silently switch it off", and a narrower signature makes that claim false. Wider is merely wasteful -- the counter re-runs when it need not.
 
 MEASURED 2026-09-08. A sweep for extension-shaped `.sh` matchers flagged the signature
 as missing the Python half; it was not, because the counter's `FAMILIES` is bash-only
-too. The finding was conditional on a widening that was measured (62 new shapes at 3+
-copies, one of them sixteen copies of the shared entry-point scaffold) and then
-REVERTED, because landing that red on a shared tree is a wave rather than a line. So
-the two lists are correct today and will be wrong the moment one of them moves alone --
-which is exactly what this pins.
+too. The finding was conditional on a widening that was measured (62 new shapes at 3+ copies, one of them sixteen copies of the shared entry-point scaffold) and then REVERTED, because landing that red on a shared tree is a wave rather than a line. So the two lists are correct today and will be wrong the moment one of them moves alone -- which is exactly what this pins.
 """
 
 import re

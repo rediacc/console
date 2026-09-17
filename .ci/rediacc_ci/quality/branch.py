@@ -3,9 +3,7 @@
 Ported from `.ci/scripts/quality/check-branch.sh`, which is NOT deleted; see
 `rediacc_ci.quality.__init__` for why both copies live.
 
-DETECTION ONLY. This module never rewrites history, never moves a ref, and never
-publishes anything. The twin's header says why, and it is the reason the gate has
-the shape it has:
+DETECTION ONLY. This module never rewrites history, never moves a ref, and never publishes anything. The twin's header says why, and it is the reason the gate has the shape it has:
 
     WHY IT ONLY REPORTS. It used to `git rebase origin/<base>` and then republish
     the branch from CI, so the bot rewrote contributors' branches out from under
@@ -38,8 +36,7 @@ the shape it has:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE FETCH REFSPEC IS SPELLED OUT, and the twin's paragraph explaining it is
-carried at the call site because it is the kind of line a tidy-up deletes:
+THE FETCH REFSPEC IS SPELLED OUT, and the twin's paragraph explaining it is carried at the call site because it is the kind of line a tidy-up deletes:
 
     AN EXPLICIT REFSPEC, because every line below reads `origin/${BASE_BRANCH}`
     and a bare `git fetch origin <branch>` does not promise to write it. The
@@ -50,17 +47,10 @@ carried at the call site because it is the kind of line a tidy-up deletes:
     while the explicit form creates it. This works today because the checkout
     above names a branch; spelling it out means it keeps working if that changes.
 
-A FAILED FETCH TAKES THE GATE DOWN WITH GIT'S OWN WORDS, in both implementations.
-The twin runs the fetch under `set -e` with stderr inherited, so a missing remote
-ref prints `fatal: couldn't find remote ref ...` and the gate exits with git's
-status. This module does the same, deliberately: forging a friendlier message
-would replace git's diagnostic, which is the only text that says WHICH ref was
-missing, and a port that summarised it would be caught by the differential
-anyway. It is also the reason `run_git` here inherits stderr rather than
-capturing it.
+A FAILED FETCH TAKES THE GATE DOWN WITH GIT'S OWN WORDS, in both implementations. The twin runs the fetch under `set -e` with stderr inherited, so a missing remote ref prints `fatal: couldn't find remote ref ...` and the gate exits with git's status. This module does the same, deliberately: forging a friendlier message would replace git's diagnostic, which is the only text that
+says WHICH ref was missing, and a port that summarised it would be caught by the differential anyway. It is also the reason `run_git` here inherits stderr rather than capturing it.
 
-THE `|| echo "0"` THAT USED TO END THE REV-LIST IS THE BUG THIS GATE CARRIES A
-SCAR FROM, and the twin's words are kept verbatim at the branch:
+THE `|| echo "0"` THAT USED TO END THE REV-LIST IS THE BUG THIS GATE CARRIES A SCAR FROM, and the twin's words are kept verbatim at the branch:
 
     FAIL LOUDLY. This used to end in `|| echo "0"`, and 0 is the same value the
     gate reads as "up-to-date" two lines down, where it exits 0. So a missing
@@ -68,34 +58,19 @@ SCAR FROM, and the twin's words are kept verbatim at the branch:
     reported the branch as current and let the merge proceed. The fetch above has
     to have succeeded for the ref to exist, so a failure here is a real breakage.
 
-`git merge-tree --write-tree` IS A PROBE, NOT A PROOF, and the twin's own reading
-of it is carried at the case statement: exit 0 clean, exit 1 conflicts, anything
+`git merge-tree --write-tree` IS A PROBE, NOT A PROOF, and the twin's own reading of it is carried at the case statement: exit 0 clean, exit 1 conflicts, anything
 else means the probe itself could not run (e.g. unrelated histories), which is
-reported as UNKNOWN rather than silently as clean. Measured while porting: a
-`--orphan` branch against a populated base gives exit 128 and
-`fatal: refusing to merge unrelated histories`, which is the third arm and is
-therefore exercised by the differential rather than reasoned about.
+reported as UNKNOWN rather than silently as clean. Measured while porting: a `--orphan` branch against a populated base gives exit 128 and `fatal: refusing to merge unrelated histories`, which is the third arm and is therefore exercised by the differential rather than reasoned about.
 
-THE THIRD ARM'S DETAIL LINES GO TO STDERR AND ARE THEREFORE FINDINGS. The twin
-writes `sed 's/^/    /' "$MERGE_TREE_OUT" >&2` under a `log_warn`, so the
-indented git diagnostic attaches to the warning above it. The conflict arm's
-detail lines go to STDOUT under an `echo`, where nothing is carrying them, so
-they are progress rather than findings. That asymmetry is the twin's and is
+THE THIRD ARM'S DETAIL LINES GO TO STDERR AND ARE THEREFORE FINDINGS. The twin writes `sed 's/^/ /' "$MERGE_TREE_OUT" >&2` under a `log_warn`, so the indented git diagnostic attaches to the warning above it. The conflict arm's detail lines go to STDOUT under an `echo`, where nothing is carrying them, so they are progress rather than findings. That asymmetry is the twin's and is
 reproduced stream for stream; moving either one would change what the gate is
 understood to be objecting to.
 
-`git log --oneline ... | head -5` IS FIVE LINES, NOT A SIGPIPE DANCE. The twin
-runs it under `set -o pipefail`, which in principle means `head` exiting early
-could make the pipeline report 141 and abort the gate. Measured on a fixture
-eight commits behind: the producer finishes into the 64 KB pipe buffer long
-before `head` closes it, so the shape never fires at these sizes. It is named
-here because the same shape DID fire in check-ci-watch-recipe.sh, where the
+`git log --oneline ... | head -5` IS FIVE LINES, NOT A SIGPIPE DANCE. The twin runs it under `set -o pipefail`, which in principle means `head` exiting early could make the pipeline report 141 and abort the gate. Measured on a fixture eight commits behind: the producer finishes into the 64 KB pipe buffer long before `head` closes it, so the shape never fires at these sizes. It is
+named here because the same shape DID fire in check-ci-watch-recipe.sh, where the
 producer was megabytes; the port takes the first five lines and cannot race.
 
-THE PRINTED RECIPE IS DATA, NOT DECORATION. Sixteen lines of it name
-`/branch-rebase` and three `worklist.py --git` verbs. It is carried byte for
-byte, on stdout, because a reader following it is the whole point of the gate
-exiting 1 rather than rebasing anything itself.
+THE PRINTED RECIPE IS DATA, NOT DECORATION. Sixteen lines of it name `/branch-rebase` and three `worklist.py --git` verbs. It is carried byte for byte, on stdout, because a reader following it is the whole point of the gate exiting 1 rather than rebasing anything itself.
 """
 
 import os
@@ -124,8 +99,7 @@ def run_git(args: list[str], root: pathlib.Path, capture_stderr: bool = True):
     """`git <args>` in `root`. Returns the CompletedProcess.
 
     `capture_stderr=False` INHERITS stderr, which is what the fetch needs: git's
-    own diagnostic is the only text that says which ref was missing, and the
-    twin lets it through untouched.
+    own diagnostic is the only text that says which ref was missing, and the twin lets it through untouched.
     """
     return subprocess.run(
         ["git", *args],
@@ -139,10 +113,7 @@ def run_git(args: list[str], root: pathlib.Path, capture_stderr: bool = True):
 def fetch_refspec(base: str) -> str:
     """`+refs/heads/<base>:refs/remotes/origin/<base>`, the explicit form.
 
-    A function rather than an inline f-string so the selftest can assert the
-    shape without running a fetch: the whole point of the twin's paragraph is
-    that a bare `git fetch origin <branch>` is NOT this, and the difference is
-    one line nobody re-reads.
+    A function rather than an inline f-string so the selftest can assert the shape without running a fetch: the whole point of the twin's paragraph is that a bare `git fetch origin <branch>` is NOT this, and the difference is one line nobody re-reads.
     """
     return "+refs/heads/%s:refs/remotes/origin/%s" % (base, base)
 
@@ -150,8 +121,7 @@ def fetch_refspec(base: str) -> str:
 def indent(text: str, width: int = 4) -> list[str]:
     """`sed 's/^/    /'` over a captured stream, as a list of lines.
 
-    The trailing newline is dropped the way sed's line-oriented reading does, so
-    an output ending in `\\n` does not produce a final line of four spaces.
+    The trailing newline is dropped the way sed's line-oriented reading does, so an output ending in `\\n` does not produce a final line of four spaces.
     """
     if text == "":
         return []
@@ -164,9 +134,7 @@ def recipe(base: str, head: str) -> list[str]:
     """The sixteen-line REBASE LOCALLY block, in the twin's order and spacing.
 
     `${HEAD_BRANCH:+ (branch: X)}` is bash's "expand only if non-empty", so an
-    unset GITHUB_HEAD_REF prints the banner with no parenthetical at all rather
-    than an empty one. Carried, because a `(branch: )` in a CI log reads as a
-    bug in the gate.
+    unset GITHUB_HEAD_REF prints the banner with no parenthetical at all rather than an empty one. Carried, because a `(branch: )` in a CI log reads as a bug in the gate.
     """
     suffix = " (branch: %s)" % head if head else ""
     return [
@@ -202,8 +170,7 @@ def recipe(base: str, head: str) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 up-to-date or not a PR, 1 behind or unanswerable.
 
-    `--selftest` is intercepted BEFORE the fetch, so the controls never touch a
-    remote.
+    `--selftest` is intercepted BEFORE the fetch, so the controls never touch a remote.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -313,8 +280,7 @@ def main(argv: list[str] | None = None) -> int:
 def _git(root: pathlib.Path, *args: str) -> None:
     """A quiet git for fixture construction. Raises on failure, on purpose.
 
-    A fixture that half-built is worse than no fixture: every assertion below it
-    would then be measuring a repository nobody described.
+    A fixture that half-built is worse than no fixture: every assertion below it would then be measuring a repository nobody described.
     """
     subprocess.run(
         ["git", *args],
@@ -328,11 +294,7 @@ def _git(root: pathlib.Path, *args: str) -> None:
 def _fixture(root: pathlib.Path, *, behind: int, conflict: bool) -> pathlib.Path:
     """A repository whose HEAD is `behind` commits behind its own `main`.
 
-    `origin` is the repository ITSELF (`git remote add origin .`), which is not a
-    trick: the gate only ever reads `refs/remotes/origin/<base>`, and fetching a
-    local branch into that namespace produces exactly the state a real PR
-    checkout has. It also keeps the fixture self-contained, so no assertion here
-    depends on a second directory that a reader cannot see.
+    `origin` is the repository ITSELF (`git remote add origin .`), which is not a trick: the gate only ever reads `refs/remotes/origin/<base>`, and fetching a local branch into that namespace produces exactly the state a real PR checkout has. It also keeps the fixture self-contained, so no assertion here depends on a second directory that a reader cannot see.
     """
     root.mkdir(parents=True, exist_ok=True)
     _git(root, "init", "-q", "-b", "main", ".")
@@ -361,9 +323,7 @@ def _fixture(root: pathlib.Path, *, behind: int, conflict: bool) -> pathlib.Path
 def _run(root: pathlib.Path, **env: str) -> int:
     """Drive `main([])` against `root` with a controlled environment.
 
-    Every GITHUB_* variable is set or removed explicitly, because a developer
-    machine can carry one from a previous shell and the whole gate branches on
-    the first of them.
+    Every GITHUB_* variable is set or removed explicitly, because a developer machine can carry one from a previous shell and the whole gate branches on the first of them.
     """
     keys = ("GITHUB_EVENT_NAME", "GITHUB_BASE_REF", "GITHUB_HEAD_REF", paths.ROOT_ENV)
     saved = {k: os.environ.get(k) for k in keys}
@@ -385,9 +345,7 @@ def _run(root: pathlib.Path, **env: str) -> int:
 def selftest() -> int:
     """Both directions for every arm, over real repositories built by construction.
 
-    A gate that only proved "behind reds" would pass with the up-to-date arm
-    deleted, so each red below has a green beside it: behind against level,
-    conflicting against clean, unrelated against related, PR against non-PR.
+    A gate that only proved "behind reds" would pass with the up-to-date arm deleted, so each red below has a green beside it: behind against level, conflicting against clean, unrelated against related, PR against non-PR.
     """
     ctl = Controls("branch", floor=16, verbose=True)
 

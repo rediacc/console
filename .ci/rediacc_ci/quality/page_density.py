@@ -1,32 +1,16 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/quality/page-density.sh`.
 
-THE REGISTERED GATE IS `check:ci-page-density`, wired at `package.json:266`
-(`"check:ci-page-density": ".ci/scripts/quality/page-density.sh"`), declared in
-`scripts/ci-runner/manifest.ts:4082-4094` with `gate: true`, `slow: true` and
-`leaves: ['.ci/scripts/quality/page-density.sh']`, and run in CI as the step
-named "Page density" in job `quality-www-build` of
-`.github/workflows/ci-quality.yml`. The twin's own `# ---- gate ----` header
-agrees (`step: Page density`, `needs: node`, `selftest: true`, `lane:
-quality-www-build`, `slow: true`). THE BASH TWIN REMAINS THE CALL SITE: this
-port is an alternative proven equivalent, and moving the npm script onto it is
-a separate, later, explicitly tracked step. Nothing here edits package.json,
-the manifest or the workflow.
+THE REGISTERED GATE IS `check:ci-page-density`, wired at `package.json:266` (`"check:ci-page-density": ".ci/scripts/quality/page-density.sh"`), declared in `scripts/ci-runner/manifest.ts:4082-4094` with `gate: true`, `slow: true` and `leaves: ['.ci/scripts/quality/page-density.sh']`, and run in CI as the step named "Page density" in job `quality-www-build` of
+`.github/workflows/ci-quality.yml`. The twin's own `# ---- gate ----` header agrees (`step: Page density`, `needs: node`, `selftest: true`, `lane: quality-www-build`, `slow: true`). THE BASH TWIN REMAINS THE CALL SITE: this port is an alternative proven equivalent, and moving the npm script onto it is a separate, later, explicitly tracked step. Nothing here edits package.json, the
+manifest or the workflow.
 
-WHAT THE SCRIPT ACTUALLY IS: a launcher, not a gate. All the judging lives in
-`scripts/gates/check-page-density.ts`, which is TypeScript and is NOT being
-ported. What is ported is the decision of WHERE that gate runs -- inside the
-official Playwright container by default, directly against a local Chromium
+WHAT THE SCRIPT ACTUALLY IS: a launcher, not a gate. All the judging lives in `scripts/gates/check-page-density.ts`, which is TypeScript and is NOT being ported. What is ported is the decision of WHERE that gate runs -- inside the official Playwright container by default, directly against a local Chromium
 when `REDIACC_SMOKE_NO_DOCKER=1` or when docker is absent -- and the derivation
-of the image tag from the installed playwright package rather than a hand-typed
-pin, which is the twin's stated reason for existing.
+of the image tag from the installed playwright package rather than a hand-typed pin, which is the twin's stated reason for existing.
 
-`exec`, NOT `subprocess.run`, ON BOTH FINAL BRANCHES. The twin's last statement
-is `exec` in every path, so argv, stdin, stdout, stderr, signals and the exit
-status all belong to the child. `os.execvp` is the same shape, for the same
-reason `rediacc_ci.deploy.upload_media_to_r2` gives: a subprocess wrapper is a
-second process watching the first, and it leaves a stray parent behind when the
-caller signals what it believes is the gate.
+`exec`, NOT `subprocess.run`, ON BOTH FINAL BRANCHES. The twin's last statement is `exec` in every path, so argv, stdin, stdout, stderr, signals and the exit status all belong to the child. `os.execvp` is the same shape, for the same reason `rediacc_ci.deploy.upload_media_to_r2` gives: a subprocess wrapper is a second process watching the first, and it leaves a stray parent behind
+when the caller signals what it believes is the gate.
 
 TWO DOCUMENTED DIVERGENCES, BOTH IN MESSAGE TEXT ONLY, NEVER IN EXIT CODE:
 
@@ -46,19 +30,13 @@ TWO DOCUMENTED DIVERGENCES, BOTH IN MESSAGE TEXT ONLY, NEVER IN EXIT CODE:
 
 NODE'S STDERR IS INHERITED, NOT CAPTURED, because `$(...)` captures stdout
 only. A port that used `capture_output=True` would swallow whatever node says
-about a broken playwright install -- which is precisely the failure this line
-exists to surface -- and would still exit with the same code, so nothing else
-in the differential would notice. `test_node_stderr_is_not_swallowed` is the
-control for that.
+about a broken playwright install -- which is precisely the failure this line exists to surface -- and would still exit with the same code, so nothing else in the differential would notice. `test_node_stderr_is_not_swallowed` is the control for that.
 
 TRAILING NEWLINES ARE STRIPPED THE WAY COMMAND SUBSTITUTION STRIPS THEM:
 `rstrip("\\n")`, not `.strip()`. `$(...)` removes trailing newlines and nothing
 else, so a version string with a leading space would keep it on both sides.
 
-`REPO_ROOT` is `paths.repo_root()`, which is `<file>/../../..` exactly as the
-twin's `SCRIPT_DIR/../../..` is, plus the package-wide `$REDIACC_CI_ROOT`
-override the twin has no equivalent for. That override is the only way the two
-roots can differ, and it exists so a harness can point the whole program at a
+`REPO_ROOT` is `paths.repo_root()`, which is `<file>/../../..` exactly as the twin's `SCRIPT_DIR/../../..` is, plus the package-wide `$REDIACC_CI_ROOT` override the twin has no equivalent for. That override is the only way the two roots can differ, and it exists so a harness can point the whole program at a
 fixture; see `paths.py`'s docstring.
 
 K=5 LEDGER: `.ci/shadow/w7p6-page-density.observations.jsonl`.
@@ -97,9 +75,7 @@ def docker_argv(root: str, image: str) -> list[str]:
     """The twin's final `docker run` invocation, token for token.
 
     `--ipc=host` is load-bearing and the twin says why in a comment kept here:
-    Chromium crashes on the default 64MB `/dev/shm` in a container. The bind
-    mount uses the SAME path inside and outside so any path the gate prints is
-    meaningful on the host.
+    Chromium crashes on the default 64MB `/dev/shm` in a container. The bind mount uses the SAME path inside and outside so any path the gate prints is meaningful on the host.
     """
     return [
         "docker",
@@ -135,9 +111,7 @@ def _exec(argv: list[str]) -> int:
 def playwright_version(env: dict[str, str] | None = None) -> str:
     """`node -p "require('playwright/package.json').version"`, stdout only.
 
-    Raises SystemExit with node's own exit code on failure, matching `set -e`
-    on a failed command substitution. node's stderr is INHERITED so its
-    diagnostic reaches the caller unaltered.
+    Raises SystemExit with node's own exit code on failure, matching `set -e` on a failed command substitution. node's stderr is INHERITED so its diagnostic reaches the caller unaltered.
     """
     try:
         proc = subprocess.run(

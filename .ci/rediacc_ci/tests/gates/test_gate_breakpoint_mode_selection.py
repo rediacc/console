@@ -3,44 +3,23 @@
 Pins the security property of `.ci/breakpoint/scripts/select-mode.sh`:
 NAMED MODE NEVER SILENTLY DEGRADES TO QUICK MODE.
 
-quick and named are not two grades of the same thing. In quick mode the random
-`*.trycloudflare.com` URL is the ONLY thing protecting a runner that holds the repo
-source and, with debug-shell on, an interactive shell. In named mode the hostname is
-derived from a public run id, so it is guessable by anyone reading the Actions tab, and
-Cloudflare Access -- not obscurity -- is the control.
+quick and named are not two grades of the same thing. In quick mode the random `*.trycloudflare.com` URL is the ONLY thing protecting a runner that holds the repo source and, with debug-shell on, an interactive shell. In named mode the hostname is derived from a public run id, so it is guessable by anyone reading the Actions tab, and Cloudflare Access -- not obscurity -- is the
+control.
 
-So a named-mode request that cannot be honoured has exactly one correct outcome: fail,
-loudly, with EMPTY STDOUT. Falling back would drop authentication at the moment nobody
-is looking, and the caller downstream would happily start a tunnel on the word it read.
-Empty stdout is asserted directly for that reason: a caller doing
+So a named-mode request that cannot be honoured has exactly one correct outcome: fail, loudly, with EMPTY STDOUT. Falling back would drop authentication at the moment nobody is looking, and the caller downstream would happily start a tunnel on the word it read. Empty stdout is asserted directly for that reason: a caller doing
 `MODE=$(select-mode.sh)` with a half-failed script must get nothing rather than
 something.
 
-The reverse also matters and is asserted here: an explicit `--mode quick` stays quick
-even when named-mode credentials are sitting in the environment. A silent upgrade
-creates Cloudflare-side objects the operator did not ask for and does not know to clean
-up.
+The reverse also matters and is asserted here: an explicit `--mode quick` stays quick even when named-mode credentials are sitting in the environment. A silent upgrade creates Cloudflare-side objects the operator did not ask for and does not know to clean up.
 
-The last-wins quirk of `parse_args` (`--mode named --mode quick` gives quick) is pinned
-too, not because it is good, but because `breakpoint-common.sh` documents it as
-deliberate and something must fail if a future edit makes repeated flags accumulate
-instead.
+The last-wins quirk of `parse_args` (`--mode named --mode quick` gives quick) is pinned too, not because it is good, but because `breakpoint-common.sh` documents it as deliberate and something must fail if a future edit makes repeated flags accumulate instead.
 
-WHAT THE PORT RESPELLS. The twin publishes its three results as GLOBALS, with a comment
-recording why: reading the result back through command substitution would run the helper
-in a SUBSHELL and throw the exit code away, which is how an exit-code assertion silently
-compares 0 against 0. Python has no such hazard, so `select_mode()` returns the result.
-STDERR IS LOWERCASED, and that IS carried over: the real message shouts "FALLING BACK TO
-QUICK MODE" in capitals, so a case-sensitive check for the lowercase spelling would pass
+WHAT THE PORT RESPELLS. The twin publishes its three results as GLOBALS, with a comment recording why: reading the result back through command substitution would run the helper in a SUBSHELL and throw the exit code away, which is how an exit-code assertion silently compares 0 against 0. Python has no such hazard, so `select_mode()` returns the result. STDERR IS LOWERCASED, and that
+IS carried over: the real message shouts "FALLING BACK TO QUICK MODE" in capitals, so a case-sensitive check for the lowercase spelling would pass
 while the script fell back.
 
-WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md`
-records six `test-breakpoint-*.sh` subjects as unportable by any agent under the
-standard brief and NOT on merit, because plant-verifying one means temporarily writing
-under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The
-brief's two ways out are to hand one batch owner that path explicitly or to exclude
-them in the derivation with the reason recorded, and it adds "Do not silently drop them
-a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
+WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md` records six `test-breakpoint-*.sh` subjects as unportable by any agent under the standard brief and NOT on merit, because plant-verifying one means temporarily writing under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The brief's two ways out are to hand one batch owner
+that path explicitly or to exclude them in the derivation with the reason recorded, and it adds "Do not silently drop them a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
 
 NO `xdist_group`. Every case runs one short-lived `bash` with a replaced environment
 whose `HOME` and `RUNNER_TEMP` point into its own `mktemp -d`; the subjects are only
@@ -211,13 +190,8 @@ def test_invalid_mode_rejected(gate):
 def test_named_never_falls_back_to_quick(gate):
     """THERE IS NO ESCAPE HATCH.
 
-    This replaces a test for `--allow-fallback`, a flag that let named mode silently
-    become quick mode. The flag was removed, and this proves the REMOVAL rather than
-    merely deleting its test: a deleted test and a removed feature look identical in a
-    diff, and only one of them is safe. The old flag carried its own refusal for
-    debug-shell/desktop sessions, which was the tell -- the guard existed because the
-    downgrade was already known to be dangerous, and it narrowed the blast radius
-    instead of removing it.
+    This replaces a test for `--allow-fallback`, a flag that let named mode silently become quick mode. The flag was removed, and this proves the REMOVAL rather than merely deleting its test: a deleted test and a removed feature look identical in a diff, and only one of them is safe. The old flag carried its own refusal for debug-shell/desktop sessions, which was the tell -- the
+    guard existed because the downgrade was already known to be dangerous, and it narrowed the blast radius instead of removing it.
     """
     source = SELECT.read_text(encoding="utf-8")
     mentions = [line for line in source.splitlines() if "allow-fallback" in line]
@@ -260,11 +234,8 @@ def test_named_never_falls_back_to_quick(gate):
 
 def test_named_refuses_too_short_a_duration(gate):
     """Regression test for a real session. Named mode fronts the box with Cloudflare
-    Access, whose one-time-PIN login is TWO email round trips. Teardown deletes the
-    Access application the instant the timer expires, so run 30259141278 (duration 5)
-    died mid-login and Cloudflare answered `That account does not have access.` -- which
-    blames the policy, the one component that was correct. The operator went looking for
-    a permissions bug that did not exist. This guard turns a misleading runtime failure
+    Access, whose one-time-PIN login is TWO email round trips. Teardown deletes the Access application the instant the timer expires, so run 30259141278 (duration 5) died mid-login and Cloudflare answered `That account does not have access.` -- which blames the policy, the one component that was correct. The operator went looking for a permissions bug that did not exist. This guard
+    turns a misleading runtime failure
     into an accurate refusal before anything is built."""
     bash = harness.require_tool("bash", "install bash; the subject is a bash script")
 

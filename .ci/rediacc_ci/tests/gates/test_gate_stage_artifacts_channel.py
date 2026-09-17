@@ -1,15 +1,10 @@
 """Port of `.ci/scripts/test/gates/test-stage-artifacts-channel.sh`.
 
-Unit test for the channel gating of the APT/RPM metadata assertions in
-`.ci/scripts/release/validate-stage-artifacts.sh`.
+Unit test for the channel gating of the APT/RPM metadata assertions in `.ci/scripts/release/validate-stage-artifacts.sh`.
 
-WHAT BROKE. The script asserted APT and RPM repository metadata unconditionally.
-That metadata is CHANNEL-SCOPED and is built by cd-stage.yml's "Build package
+WHAT BROKE. The script asserted APT and RPM repository metadata unconditionally. That metadata is CHANNEL-SCOPED and is built by cd-stage.yml's "Build package
 repositories" step, which self-gates on `inputs.channel != ''`. The channel is
-empty for any event that is not push or pull_request -- i.e. for the nightly,
-deliberately, so a scheduled run cannot orphan ~5 GB of R2 bytes. So on every
-nightly the metadata was correctly absent and the validator failed the stage
-anyway:
+empty for any event that is not push or pull_request -- i.e. for the nightly, deliberately, so a scheduled run cannot orphan ~5 GB of R2 bytes. So on every nightly the metadata was correctly absent and the validator failed the stage anyway:
 
   run 30237524399 (2026-07-27), Stage Artifacts:
     ##[error]No APT metadata files found
@@ -17,14 +12,9 @@ anyway:
 
 One of the three breaks behind twelve consecutive red nightlies.
 
-THE DANGEROUS DIRECTION. A channel gate is a WEAKENED CHECK, and the whole reason
-this bug survived is that nobody was watching a weakened signal. So the tests that
-matter most here are the ones proving the skip is NARROW: the assertions must still
-fire on a real release channel, and every other artifact assertion must still fire
-when the channel is empty.
+THE DANGEROUS DIRECTION. A channel gate is a WEAKENED CHECK, and the whole reason this bug survived is that nobody was watching a weakened signal. So the tests that matter most here are the ones proving the skip is NARROW: the assertions must still fire on a real release channel, and every other artifact assertion must still fire when the channel is empty.
 
-THE PORT BUILDS ITS FIXTURE PER TEST rather than once per file. The twin shares one
-`$FIXTURE` and each case re-seeds it, which is the only isolation a flat shell
+THE PORT BUILDS ITS FIXTURE PER TEST rather than once per file. The twin shares one `$FIXTURE` and each case re-seeds it, which is the only isolation a flat shell
 script can offer; a fixture here is cheap and removes the ordering coupling
 entirely. No case's inputs change, so no case's verdict changes.
 """
@@ -46,9 +36,7 @@ COMMON_SRC = paths.from_root(".ci", "scripts", "lib", "common.sh")
 class Stage:
     """A fixture repo root holding the validator, its lib, and a staged dist/.
 
-    `get_repo_root()` resolves from the SCRIPT's own path (.ci/scripts/lib -> up 3),
-    not from cwd, so the fixture has to mirror the tree layout rather than just being
-    a directory with a dist/ in it.
+    `get_repo_root()` resolves from the SCRIPT's own path (.ci/scripts/lib -> up 3), not from cwd, so the fixture has to mirror the tree layout rather than just being a directory with a dist/ in it.
     """
 
     def __init__(self, root: pathlib.Path) -> None:

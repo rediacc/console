@@ -1,17 +1,10 @@
 """Differential: `rediacc_ci.deploy.deploy_edge` against its twin
 `.ci/scripts/deploy/deploy-edge.sh`.
 
-RECORDING FAKE `npx` AND `npm` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT.
-Nothing here reaches Cloudflare and nothing installs anything. The root is made
-to agree across the two implementations the same way the `deploy_account`
-differential does it, and for the same reason: the twin's `get_repo_root`
-resolves from a COPY of `common.sh` inside `tmp_path`, and the port's
-`common.repo_root()` is pointed at the same directory with `$REDIACC_CI_ROOT`.
-`test_the_copied_twin_is_the_real_twin` keeps the copy honest.
+RECORDING FAKE `npx` AND `npm` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT. Nothing here reaches Cloudflare and nothing installs anything. The root is made to agree across the two implementations the same way the `deploy_account` differential does it, and for the same reason: the twin's `get_repo_root` resolves from a COPY of `common.sh` inside `tmp_path`, and the port's
+`common.repo_root()` is pointed at the same directory with `$REDIACC_CI_ROOT`. `test_the_copied_twin_is_the_real_twin` keeps the copy honest.
 
-THIS SCRIPT IS NOT ITS SIBLING WITH THE MIGRATIONS REMOVED, and three tests
-exist only to hold that line, because "the account file, shorter" is the
-assumption that would port it wrong:
+THIS SCRIPT IS NOT ITS SIBLING WITH THE MIGRATIONS REMOVED, and three tests exist only to hold that line, because "the account file, shorter" is the assumption that would port it wrong:
 
   * `test_every_argument_is_ignored` drives `--foo.bar x`, which exits 2 in the
     account sibling and exits 0 here, because there is no `parse_args` call.
@@ -21,9 +14,7 @@ assumption that would port it wrong:
     condition from the twin's own source, so the day the two files are
     harmonised this fails rather than the port quietly keeping the old shape.
 
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one
-real run" clause and says in as many words that the mocked parity ledger is a
-separate, achievable piece of work. This is that piece.
+`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 """
 
 from __future__ import annotations

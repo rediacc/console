@@ -1,40 +1,17 @@
 """Differential: `rediacc_ci.deploy.promote_r2_to_stable` against its twin
 `.ci/scripts/deploy/promote-r2-to-stable.sh`.
 
-RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO,
-exactly as the hotfix sibling's differential does and for the same reasons.
+RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO, exactly as the hotfix sibling's differential does and for the same reasons.
 Nothing here reaches R2 or Cloudflare; every case pins a fixture endpoint,
-bucket and credential. `.ci/shadow/w7p5a-status.json` records this path as
-blocked only for the "one real run" clause and says in as many words that the
-mocked parity ledger is a separate, achievable piece of work. This is that
-piece.
+bucket and credential. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS ALMOST THE ONLY EVIDENCE FOR THIS SCRIPT. It prints five
-`Promoting ...` lines and one closing line, none of them derived from what
-moved. The ENTIRE observable effect is twelve `aws` invocations and the ordered
-exclude/include lists they carry, and the ORDER of those invocations is the
-whole design: metadata after bytes, signatures after the metadata they hash. Two
-implementations can print identical stdout while uploading `Release*` before
-`Packages*`, so `test_the_phase_order_is_bytes_then_metadata_then_signatures`
-asserts the sequence directly rather than trusting the byte comparison to have
-covered it.
+THE CALL LOG IS ALMOST THE ONLY EVIDENCE FOR THIS SCRIPT. It prints five `Promoting ...` lines and one closing line, none of them derived from what moved. The ENTIRE observable effect is twelve `aws` invocations and the ordered exclude/include lists they carry, and the ORDER of those invocations is the whole design: metadata after bytes, signatures after the metadata they hash. Two
+implementations can print identical stdout while uploading `Release*` before `Packages*`, so `test_the_phase_order_is_bytes_then_metadata_then_signatures` asserts the sequence directly rather than trusting the byte comparison to have covered it.
 
-WHAT THE `aws` FAKE MODELS AND WHAT IT DOES NOT. It is a model of the AWS CLI,
-not the AWS CLI. `aws` IS NOT INSTALLED IN THIS SANDBOX (`command -v aws` is
-empty), so nothing here is checked against the real tool. The differential's
-evidence is independent of that: both implementations go through the SAME fake,
-so the argv, the exit code and the two streams are real evidence about the port.
-The modelled part -- which local files each filtered sync moves -- exists to
-make the include/exclude arithmetic visible, and the one test that relies on it
-(`test_defect_phase_filtered_files_are_purged_but_never_uploaded`) says so in
-its own docstring and rests the load-bearing half on the argv rather than on the
-model.
+WHAT THE `aws` FAKE MODELS AND WHAT IT DOES NOT. It is a model of the AWS CLI, not the AWS CLI. `aws` IS NOT INSTALLED IN THIS SANDBOX (`command -v aws` is empty), so nothing here is checked against the real tool. The differential's evidence is independent of that: both implementations go through the SAME fake, so the argv, the exit code and the two streams are real evidence about
+the port. The modelled part -- which local files each filtered sync moves -- exists to make the include/exclude arithmetic visible, and the one test that relies on it (`test_defect_phase_filtered_files_are_purged_but_never_uploaded`) says so in its own docstring and rests the load-bearing half on the argv rather than on the model.
 
-`/tmp/promote-<dir>` IS A FIXED PATH IN THE TWIN, so these cases cannot be given
-a private temporary directory: they clean those exact five paths before every
-side of every case, and the module carries the same `xdist_group` as the hotfix
-differential so the two land on the SAME xdist worker and cannot run
-concurrently.
+`/tmp/promote-<dir>` IS A FIXED PATH IN THE TWIN, so these cases cannot be given a private temporary directory: they clean those exact five paths before every side of every case, and the module carries the same `xdist_group` as the hotfix differential so the two land on the SAME xdist worker and cannot run concurrently.
 """
 
 from __future__ import annotations
@@ -228,9 +205,7 @@ PATH_MINIMUM = ("jq", "uname", "dirname", "basename", "tr", "find", "wc", "sed",
 def _clean_fixed_tmp() -> None:
     """Remove the five paths the twin hard-codes.
 
-    NOT TIDINESS. A leftover `/tmp/promote-apk` is promoted to `stable/` by the
-    next run (`STALE_TMP_IS_PROMOTED`), so without this a failed case would
-    silently change the meaning of every case after it.
+    NOT TIDINESS. A leftover `/tmp/promote-apk` is promoted to `stable/` by the next run (`STALE_TMP_IS_PROMOTED`), so without this a failed case would silently change the meaning of every case after it.
     """
     for path in FIXED_TMP_PATHS:
         shutil.rmtree(path, ignore_errors=True)
@@ -386,9 +361,7 @@ def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
 def test_the_phase_order_is_bytes_then_metadata_then_signatures(tmp_path) -> None:
     """THE ENTIRE DESIGN OF THIS SCRIPT IS AN ORDER, so the order is asserted.
 
-    A port that emitted the same twelve syncs in a different sequence would pass
-    a stdout comparison and would reintroduce the exact race the twin's header
-    describes: a client seeing `Release` before the `Packages` it hashes.
+    A port that emitted the same twelve syncs in a different sequence would pass a stdout comparison and would reintroduce the exact race the twin's header describes: a client seeing `Release` before the `Packages` it hashes.
     """
     _root, old, new, old_calls, new_calls = run_both(tmp_path)
     _agree(old, new, "phase-order", old_calls, new_calls)
@@ -415,14 +388,8 @@ def test_the_rewrites_happen_before_phase_two_uploads_them(tmp_path) -> None:
     then uploads it once; a port that uploaded first and rewrote afterwards would
     print the same six lines and reintroduce the second race the header names.
 
-    THE INVARIANT IS "BEFORE PHASE 2", NOT "BEFORE PHASE 1", and that was measured
-    rather than assumed. Moving `_rewrite` to sit between phase 1 and phase 2
-    changes NOTHING observable, because all four rewrite targets (`install.sh`,
-    `install.ps1`, `*.repo`, `*.conf`) are in the phase-1 exclude list and so were
-    never going to be uploaded by phase 1. Driven 2026-09-13: that plant left all
-    25 cases green, and the plant that moves the rewrite past phase 2 reds eight
-    of them. Written down because a reader could otherwise take this case for a
-    guarantee about a position it does not constrain.
+    THE INVARIANT IS "BEFORE PHASE 2", NOT "BEFORE PHASE 1", and that was measured rather than assumed. Moving `_rewrite` to sit between phase 1 and phase 2 changes NOTHING observable, because all four rewrite targets (`install.sh`, `install.ps1`, `*.repo`, `*.conf`) are in the phase-1 exclude list and so were never going to be uploaded by phase 1. Driven 2026-09-13: that plant
+    left all 25 cases green, and the plant that moves the rewrite past phase 2 reds eight of them. Written down because a reader could otherwise take this case for a guarantee about a position it does not constrain.
     """
     _root, old, new, old_calls, new_calls = run_both(tmp_path)
     _agree(old, new, "rewrites", old_calls, new_calls)
@@ -438,9 +405,7 @@ def test_the_rewrites_happen_before_phase_two_uploads_them(tmp_path) -> None:
 def test_an_absent_rewrite_target_does_not_end_the_run(tmp_path) -> None:
     """`[[ -f "$f" ]] && sed_in_place ...` IS EXEMPT FROM `set -e`.
 
-    The opposite reading is plausible and would make this port refuse a channel
-    the twin publishes, so it is driven rather than reasoned about. All three
-    rewrite targets are removed from the bucket.
+    The opposite reading is plausible and would make this port refuse a channel the twin publishes, so it is driven rather than reasoned about. All three rewrite targets are removed from the bucket.
     """
     stripped = {
         k: v
@@ -459,13 +424,9 @@ def test_an_absent_rewrite_target_does_not_end_the_run(tmp_path) -> None:
 def test_defect_phase_filtered_files_are_purged_but_never_uploaded(tmp_path) -> None:
     """A FILE EXCLUDED IN PHASE 1 AND NAMED BY NO PHASE-2 INCLUDE IS DROPPED.
 
-    THE LOAD-BEARING HALF IS THE ARGV, NOT THE FAKE'S FILE MOVING. `cli`'s
-    phase-1 call carries `--exclude latest*.yml` and its single phase-2 call
-    carries `--exclude *` followed by five `--include`s, none of which is a
+    THE LOAD-BEARING HALF IS THE ARGV, NOT THE FAKE'S FILE MOVING. `cli`'s phase-1 call carries `--exclude latest*.yml` and its single phase-2 call carries `--exclude *` followed by five `--include`s, none of which is a
     `.yml`; `rpm`'s phase 1 carries `--exclude repodata/*` and neither phase-2
-    arm names `comps.xml`. Under ANY reading of the filter semantics those two
-    files cannot be uploaded, and both are nonetheless in the purge body, which
-    is built from the DOWNLOAD listing.
+    arm names `comps.xml`. Under ANY reading of the filter semantics those two files cannot be uploaded, and both are nonetheless in the purge body, which is built from the DOWNLOAD listing.
     """
     assert port.PHASE_FILTERED_FILES_ARE_PURGED_BUT_NEVER_UPLOADED is True
     assert port.PURGE_LIST_IS_BUILT_FROM_THE_DOWNLOAD is True
@@ -552,9 +513,7 @@ def test_defect_the_vacuity_floor_runs_after_the_uploads(tmp_path) -> None:
 def test_each_required_variable_refuses_with_the_same_status(tmp_path, missing) -> None:
     """THE ONE NAMED DIVERGENCE, and it is in text nobody parses.
 
-    `EDGE_VERSION` is included deliberately: it is used only in the closing log
-    line, so a port that treated it as optional would print `edge v -> stable` on
-    a run the twin refuses outright.
+    `EDGE_VERSION` is included deliberately: it is used only in the closing log line, so a port that treated it as optional would print `edge v -> stable` on a run the twin refuses outright.
     """
     root = fixture(tmp_path)
     old, old_calls = _run(root, "old", drop_env=(missing,))
@@ -633,11 +592,7 @@ def test_no_cloudflare_credential_warns_and_still_exits_zero(tmp_path) -> None:
 def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     """PROVE THE DIFFERENTIAL CAN FIRE, and prove WHICH assertion fires.
 
-    The plant reverses the two `apt` phase-2 arms, which is the ONE defect this
-    script exists to prevent: `Release`/`InRelease` uploaded before the
-    `Packages` they hash, so a client fetching in the window gets a signature
-    over bytes that are not there yet. Every printed byte and the exit code are
-    unchanged.
+    The plant reverses the two `apt` phase-2 arms, which is the ONE defect this script exists to prevent: `Release`/`InRelease` uploaded before the `Packages` they hash, so a client fetching in the window gets a signature over bytes that are not there yet. Every printed byte and the exit code are unchanged.
     """
     root = fixture(tmp_path)
     target = root / ".ci" / "rediacc_ci" / "deploy" / PORT_FILE.name
@@ -752,10 +707,7 @@ def test_the_purge_script_is_still_the_bash_one_and_still_exists() -> None:
 def test_every_variable_is_read_with_a_literal_os_environ_get() -> None:
     """THE DIRECT-READ DISCIPLINE, ASSERTED RATHER THAN REMEMBERED.
 
-    `check:ci-python-env-registry` derives a module's inputs from its AST, and a
-    read routed through `dict(os.environ)` or a local alias is invisible to it.
-    Both directions: every name `environment()` returns must appear as a literal
-    `os.environ.get("NAME"` in the source, and there must be no extra ones.
+    `check:ci-python-env-registry` derives a module's inputs from its AST, and a read routed through `dict(os.environ)` or a local alias is invisible to it. Both directions: every name `environment()` returns must appear as a literal `os.environ.get("NAME"` in the source, and there must be no extra ones.
     """
     source = PORT_FILE.read_text(encoding="utf-8")
     names = set(port.environment())

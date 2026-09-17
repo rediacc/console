@@ -1,22 +1,13 @@
 """`rediacc_ci.quality.staging_tag_guard` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-staging-tag-guard.sh` over
-a fixture -- pointed there with the twin's own `STAGING_GUARD_ROOT` seam, which
-is why the twin does not have to be copied -- with stdout and stderr captured
-SEPARATELY, and its bytes are compared against the port's.
+A bash child runs the REAL `.ci/scripts/quality/check-staging-tag-guard.sh` over a fixture -- pointed there with the twin's own `STAGING_GUARD_ROOT` seam, which is why the twin does not have to be copied -- with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's.
 
-STDOUT IS COMPARED BYTE FOR BYTE HERE, and that is not the usual bar. This gate's
-output IS its tally: `  ok    <label>` lines and a `✓ <subject>: N control(s)
-passed` verdict, all of it interpolated from the same subject string that appears
-in the FAILING verdict, where it carries a ✗ and is therefore a compared finding.
-The first draft of this port enriched that subject with a scanned-file count and
+STDOUT IS COMPARED BYTE FOR BYTE HERE, and that is not the usual bar. This gate's output IS its tally: ` ok <label>` lines and a `✓ <subject>: N control(s) passed` verdict, all of it interpolated from the same subject string that appears in the FAILING verdict, where it carries a ✗ and is therefore a compared finding. The first draft of this port enriched that subject with a
+scanned-file count and
 the shadow differential refused all three trees with MISMATCH_FINDINGS; the rows
-are in `.ci/shadow/w7p2-stagingtag.observations.jsonl` and those tree ids stay
-disqualified. Comparing the bytes here is what stops that returning.
+are in `.ci/shadow/w7p2-stagingtag.observations.jsonl` and those tree ids stay disqualified. Comparing the bytes here is what stops that returning.
 
-The committed ledger records the same comparison over K distinct trees, three of
-which embed BOTH implementations so that the tree id really is the content the
-disqualification rule assumes it is.
+The committed ledger records the same comparison over K distinct trees, three of which embed BOTH implementations so that the tree id really is the content the disqualification rule assumes it is.
 """
 
 import pathlib
@@ -153,11 +144,7 @@ def test_a_colon_in_a_caller_path_yields_a_verdict_on_both_sides(
     """A truncated path must fail its control, not raise out of main().
 
     `${hit%%:*}` splits the grep hit at its FIRST colon, so a caller named
-    `a:b.sh` collapses to `.../release/a` on both sides. The twin hands that to
-    `grep -qE`, which prints `No such file or directory`, exits non-zero, leaves
-    `guarded` at 0 and still reaches a verdict. This port called `read_text` on
-    it and died with an uncaught FileNotFoundError -- the same exit status by
-    accident, no verdict, and a stack trace where the twin prints a control.
+    `a:b.sh` collapses to `.../release/a` on both sides. The twin hands that to `grep -qE`, which prints `No such file or directory`, exits non-zero, leaves `guarded` at 0 and still reaches a verdict. This port called `read_text` on it and died with an uncaught FileNotFoundError -- the same exit status by accident, no verdict, and a stack trace where the twin prints a control.
     Measured 2026-09-06; the `try/except OSError` in `main` is what this pins.
     """
     root = build(tmp_path, {".ci/scripts/release/a:b.sh": UNGUARDED})
@@ -212,10 +199,7 @@ def test_grep_hits_scopes_py_to_ci_scripts(tmp_path: pathlib.Path) -> None:
 
     Scanning ALL of `.ci` for `.py` (a literal reading of
     agent/PLAN-w7p4w-docker-cutover.md §3's "add `--include='*.py'`") turned 1
-    real call site into 18 at widening time: `.ci/rediacc_ci` is this package's
-    own implementation/tests/regex-constants tree and is full of self-referential
-    mentions of this exact needle. This pins the fix: a `.py` file under
-    `.ci/scripts` is read, the SAME needle under `.ci/rediacc_ci` is not.
+    real call site into 18 at widening time: `.ci/rediacc_ci` is this package's own implementation/tests/regex-constants tree and is full of self-referential mentions of this exact needle. This pins the fix: a `.py` file under `.ci/scripts` is read, the SAME needle under `.ci/rediacc_ci` is not.
     """
     root = build(
         tmp_path,

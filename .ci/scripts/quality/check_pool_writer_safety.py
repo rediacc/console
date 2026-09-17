@@ -7,30 +7,16 @@ own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 8b). See DRIVEN, below.
 
-WHY AN ENTRY POINT AT ALL, rather than registering the module. `check_npmrc.py`
-states both measured reasons. A port cannot be run by path (nothing puts `.ci`
-on `sys.path`, hence the insert below), and `python3 -m rediacc_ci.quality.pool_writer_safety`
-works but is the wrong registration: `check:ci-parity`'s tokenizer cannot read
-`-m` and resolves the leaves to `[python3]`.
+WHY AN ENTRY POINT AT ALL, rather than registering the module. `check_npmrc.py` states both measured reasons. A port cannot be run by path (nothing puts `.ci` on `sys.path`, hence the insert below), and `python3 -m rediacc_ci.quality.pool_writer_safety` works but is the wrong registration: `check:ci-parity`'s tokenizer cannot read `-m` and resolves the leaves to `[python3]`.
 
-THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. It was extracted from
-`.ci/scripts/quality/check-pool-writer-safety.sh` PROGRAMMATICALLY, de-commented, and diffed
+THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. It was extracted from `.ci/scripts/quality/check-pool-writer-safety.sh` PROGRAMMATICALLY, de-commented, and diffed
 as an ordered list of WHOLE LINES against the block in this docstring; the diff
-is empty over 5 line(s). The twin carried exactly these fields, in this
-order: `step`, `needs`, `selftest`. NO `id:`, NO `emit:`, NO `lane:`, and the absences are the twin's. This gate's
-step sits INSIDE a `# >>> gate-bind` region in `ci-quality.yml` (job
-quality-static), so it is emitted rather than hand-written, which is why it
-carries no `emit: false` and no blocker to justify one.
-The pilot lost `emit: false` plus a blocker off a header and SEVEN GATES PASSED
-ANYWAY, because `emit: false` suppresses only the three workflow-region checks
-(`gate-bind.ts:1724`) while the registration assertions above them still ran.
+is empty over 5 line(s). The twin carried exactly these fields, in this order: `step`, `needs`, `selftest`. NO `id:`, NO `emit:`, NO `lane:`, and the absences are the twin's. This gate's step sits INSIDE a `# >>> gate-bind` region in `ci-quality.yml` (job quality-static), so it is emitted rather than hand-written, which is why it carries no `emit: false` and no blocker to justify
+one. The pilot lost `emit: false` plus a blocker off a header and SEVEN GATES PASSED ANYWAY, because `emit: false` suppresses only the three workflow-region checks (`gate-bind.ts:1724`) while the registration assertions above them still ran.
 
-THE RESOLVED NEED SET DOES NOT MOVE, verified by CALLING `bind()` on both files
-and comparing every bound field except `file` and `run`, not by reading them.
+THE RESOLVED NEED SET DOES NOT MOVE, verified by CALLING `bind()` on both files and comparing every bound field except `file` and `run`, not by reading them.
 `bind()` unions declared needs with `inferredNeeds(source)`; the twin infers
-nothing from its body and this two-import entry point infers nothing, because
-`inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`).
-Both sides bind to `needs: []`, which is what `needs: none` declares.
+nothing from its body and this two-import entry point infers nothing, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both sides bind to `needs: []`, which is what `needs: none` declares.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -41,34 +27,17 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, EMPTY on both sides
     stderr: BYTE-IDENTICAL, 139 bytes, sha256 1db167600d8704fa...
 
-NO NORMALISATION WAS APPLIED and none was needed. The twin was run TWICE against
-an unchanged tree FIRST, to establish that its own output is byte-stable against
+NO NORMALISATION WAS APPLIED and none was needed. The twin was run TWICE against an unchanged tree FIRST, to establish that its own output is byte-stable against
 itself; it is, on both streams.
 
-DRIVEN RED AS WELL, which is the half that matters.
-NO REAL-TREE PLANT WAS NEEDED, because this gate offers two seams both
-implementations honour: `POOL_SAFETY_GATES_DIR` and `POOL_SAFETY_RUNNER`. The
-fixture is a `cp -r` of the real gate battery and runner into /tmp -- copied,
-never symlinked, because `mutate-check.sh:122` resolves symlinks with
-`realpath --relative-to` and a symlinked fixture makes a runner write the real
-tree, after which twin and port "agree" by both reading one corrupted tree.
-Into that copy goes one unregistered real-tree writer,
-`test-__gate_probe_pool_writer.sh`. BOTH DIRECTIONS were driven on the SAME
+DRIVEN RED AS WELL, which is the half that matters. NO REAL-TREE PLANT WAS NEEDED, because this gate offers two seams both implementations honour: `POOL_SAFETY_GATES_DIR` and `POOL_SAFETY_RUNNER`. The fixture is a `cp -r` of the real gate battery and runner into /tmp -- copied, never symlinked, because `mutate-check.sh:122` resolves symlinks with `realpath --relative-to` and a
+symlinked fixture makes a runner write the real tree, after which twin and port "agree" by both reading one corrupted tree. Into that copy goes one unregistered real-tree writer, `test-__gate_probe_pool_writer.sh`. BOTH DIRECTIONS were driven on the SAME
 fixture: with the plant both sides exit 1 and name it; with the plant deleted
-and nothing else changed both sides exit 0 with byte-identical streams, so the
-red is attributable to the plant and not to the fixture.
-Both sides -> exit 1, stdout EMPTY on both sides, stderr 563 bytes, sha256 136adf7621296d01....
+and nothing else changed both sides exit 0 with byte-identical streams, so the red is attributable to the plant and not to the fixture. Both sides -> exit 1, stdout EMPTY on both sides, stderr 563 bytes, sha256 136adf7621296d01....
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-pool-writer-safety.sh` is NOT deleted
-by this change. It stays on disk as the differential twin that
-`.ci/rediacc_ci/tests/test_quality_pool_writer_safety.py` compares this port against, and
-deleting it is W7 P5's job in a later change.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-pool-writer-safety.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_pool_writer_safety.py` compares this port against, and deleting it is W7 P5's job in a later change.
 
----- gate ----
-step: Pool-registered tests do not write the real tree
-needs: none
-selftest: true
----- end gate ----
+---- gate ---- step: Pool-registered tests do not write the real tree needs: none selftest: true ---- end gate ----
 """
 
 import sys

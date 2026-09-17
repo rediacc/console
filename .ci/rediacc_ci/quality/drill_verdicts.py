@@ -33,53 +33,31 @@ WHY THIS EXISTS, in the twin's own words, because the incident is the whole gate
       4. --selftest with no failure -> refuses, because a planted failure that
                                   goes unnoticed means the accounting is broken
 
-THE SUBSHELL RUNS WITH `set +eu` AND THE REASON IS CARRIED: "these libraries are
-not written to be sourced under strict flags, and a half-loaded library would
-leave the function undefined -- which would make every assertion below pass
-VACUOUSLY, i.e. exactly the defect this gate exists to catch, committed by the
-gate itself."
+THE SUBSHELL RUNS WITH `set +eu` AND THE REASON IS CARRIED: "these libraries are not written to be sourced under strict flags, and a half-loaded library would leave the function undefined -- which would make every assertion below pass VACUOUSLY, i.e. exactly the defect this gate exists to catch, committed by the gate itself."
 
-THE HARNESS IS ASKED FOR BOTH HALVES: "Returns `<exit-code>|<stdout>` so callers
-can assert on BOTH. Asserting only on the exit code is what let the original
-defect through."
+THE HARNESS IS ASKED FOR BOTH HALVES: "Returns `<exit-code>|<stdout>` so callers can assert on BOTH. Asserting only on the exit code is what let the original defect through."
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
 THE PROBE'S `== "97"` BRANCH IS UNREACHABLE, IN BOTH IMPLEMENTATIONS, AND THAT
-IS A REPORTED TWIN DEFECT. `declare -F drill_summary >/dev/null || exit 97`
-leaves the subshell BEFORE its `printf`, so the command substitution captures
+IS A REPORTED TWIN DEFECT. `declare -F drill_summary >/dev/null || exit 97` leaves the subshell BEFORE its `printf`, so the command substitution captures
 the EMPTY STRING, not `97|`. `"${probe%%|*}"` on an empty string is the empty
-string, which is never equal to `97`, so the "Could not load drill_summary"
-message can never be printed. The condition that actually catches an
-undrivable harness is `assert_verdict`'s later `[[ -z "$result" ]]` guard, whose
-own comment says as much: "A gate whose probe failed must not be able to look
-like a gate whose probe returned nothing interesting."
+string, which is never equal to `97`, so the "Could not load drill_summary" message can never be printed. The condition that actually catches an undrivable harness is `assert_verdict`'s later `[[ -z "$result" ]]` guard, whose own comment says as much: "A gate whose probe failed must not be able to look like a gate whose probe returned nothing interesting."
 
-The port reproduces the dead branch rather than repairing it, because repairing
-it would emit two lines the twin never emits and the differential would score
-that as a mismatch. It is named here and in the final report instead.
+The port reproduces the dead branch rather than repairing it, because repairing it would emit two lines the twin never emits and the differential would score that as a mismatch. It is named here and in the final report instead.
 
-THE RUNNER IS BASH, AND IT HAS TO BE. The subject is a bash function in
-`scripts/drills/lib.sh` that reads eight shell variables and writes a formatted
+THE RUNNER IS BASH, AND IT HAS TO BE. The subject is a bash function in `scripts/drills/lib.sh` that reads eight shell variables and writes a formatted
 table; there is nothing to reimplement in Python and reimplementing it would
-mean this gate no longer tested the harness the drills actually use. So the port
-drives the same subshell through `bash -c` and does the ASSERTIONS in Python.
+mean this gate no longer tested the harness the drills actually use. So the port drives the same subshell through `bash -c` and does the ASSERTIONS in Python.
 
-THE COLOUR VARIABLES COME FROM common.sh IN BOTH, and the source is CONDITIONAL
-here for one reason: `drill_summary` interpolates `$RED`, `$GREEN`, `$YELLOW`
-and `$NC` through `printf %b`, and in the twin those are in scope because the
-gate itself sourced `common.sh` before defining `run_summary`. A `bash -c` child
-starts with none of them, and under `set +u` they would expand to empty, which
-is what a non-tty run produces anyway. Sourcing `common.sh` when it is present
+THE COLOUR VARIABLES COME FROM common.sh IN BOTH, and the source is CONDITIONAL here for one reason: `drill_summary` interpolates `$RED`, `$GREEN`, `$YELLOW` and `$NC` through `printf %b`, and in the twin those are in scope because the gate itself sourced `common.sh` before defining `run_summary`. A `bash -c` child starts with none of them, and under `set +u` they would expand to
+empty, which is what a non-tty run produces anyway. Sourcing `common.sh` when it is present
 makes the two byte-identical on a terminal as well; making it conditional lets
 the selftest point the gate at a fixture root that has no `.ci` tree at all.
 
-`tr '\n' ' ' <<<"$out" | tail -c 200` IS A BYTE TAIL, and the herestring's own
-trailing newline becomes a trailing SPACE before the cut. Both details are
-reproduced: without the added space the 200-byte window lands one byte earlier
-and the two implementations print different text for the same failure.
+`tr '\n' ' ' <<<"$out" | tail -c 200` IS A BYTE TAIL, and the herestring's own trailing newline becomes a trailing SPACE before the cut. Both details are reproduced: without the added space the 200-byte window lands one byte earlier and the two implementations print different text for the same failure.
 """
 
 import os
@@ -134,10 +112,7 @@ fi
 def run_summary(root: pathlib.Path, count: str, failures: str, selftest: str = "0") -> str:
     """Drive `drill_summary` with the counters set directly. Returns `rc|stdout`.
 
-    The EMPTY STRING is a real answer and means the subshell died before its
-    printf, which is the only way a caller learns the harness could not be
-    driven. See the port notes for why the `97` it exits with never reaches
-    anybody.
+    The EMPTY STRING is a real answer and means the subshell died before its printf, which is the only way a caller learns the harness could not be driven. See the port notes for why the `97` it exits with never reaches anybody.
     """
     env = dict(os.environ)
     env.update(
@@ -163,10 +138,7 @@ def run_summary(root: pathlib.Path, count: str, failures: str, selftest: str = "
 def tail_summary(out: str) -> str:
     """`tr '\\n' ' ' <<<"$out" | tail -c 200`, both details included.
 
-    The herestring appends a newline that `tr` turns into a trailing SPACE, so
-    the 200-byte window is taken from a string one byte longer than `$out`. A
-    port that dropped that space would print a different first character for
-    every long failure.
+    The herestring appends a newline that `tr` turns into a trailing SPACE, so the 200-byte window is taken from a string one byte longer than `$out`. A port that dropped that space would print a different first character for every long failure.
     """
     flattened = (out + "\n").replace("\n", " ")
     raw = flattened.encode("utf-8", "surrogateescape")
@@ -176,8 +148,7 @@ def tail_summary(out: str) -> str:
 class Case:
     """One row of the verdict table, named so the four reads like a spec.
 
-    `forbid` is the half that catches the 2026-08-05 defect: the summary of a
-    run that asserted nothing must not contain the word a dashboard greps for.
+    `forbid` is the half that catches the 2026-08-05 defect: the summary of a run that asserted nothing must not contain the word a dashboard greps for.
     """
 
     def __init__(
@@ -223,11 +194,7 @@ CASES: tuple[Case, ...] = (
 def assert_verdict(root: pathlib.Path, case: Case) -> bool:
     """Drive one case and report. True when it held.
 
-    THE EMPTY-CAPTURE BRANCH COMES FIRST, and the twin's reason is carried: "An
-    empty capture means the subshell died before its printf, i.e. the harness
-    could not be driven at all. Say that, rather than letting it fall through to
-    the rc comparison below and surface as the cryptic 'expected exit 0, got '.
-    A gate whose probe failed must not be able to look like a gate whose probe
+    THE EMPTY-CAPTURE BRANCH COMES FIRST, and the twin's reason is carried: "An empty capture means the subshell died before its printf, i.e. the harness could not be driven at all. Say that, rather than letting it fall through to the rc comparison below and surface as the cryptic 'expected exit 0, got '. A gate whose probe failed must not be able to look like a gate whose probe
     returned nothing interesting."
     """
     result = run_summary(root, case.count, case.fails, case.selftest)
@@ -262,9 +229,7 @@ def assert_verdict(root: pathlib.Path, case: Case) -> bool:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 on an absent harness or any failed case.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin documents itself
-    as taking no arguments ("Usage: check-drill-verdicts.sh") and ignores any it
-    is given.
+    `--selftest` is intercepted BEFORE any real scan. The twin documents itself as taking no arguments ("Usage: check-drill-verdicts.sh") and ignores any it is given.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -343,9 +308,7 @@ _VACUOUS_LIB = plant(
 def selftest() -> int:
     """Plant each way the harness can lie, prove the gate refuses; then unplant.
 
-    BOTH DIRECTIONS FOR EVERY CASE. This gate's four assertions are a decision
-    TABLE, and a table has rows that must fire and rows that must not: case 2
-    exists precisely because a harness hard-wired to SKIPPED would satisfy
+    BOTH DIRECTIONS FOR EVERY CASE. This gate's four assertions are a decision TABLE, and a table has rows that must fire and rows that must not: case 2 exists precisely because a harness hard-wired to SKIPPED would satisfy
     case 1. Every plant below therefore has the good harness as its mirror.
     """
     ctl = Controls("drill-verdicts", floor=16, verbose=True)

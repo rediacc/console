@@ -3,24 +3,15 @@
 
 Clone a D1 database from source to target: export the source, wrap the dump in
 `PRAGMA defer_foreign_keys=ON` / `foreign_keys=OFF` because D1 exports tables
-alphabetically rather than in FK dependency order, import into the target, and
-verify FK integrity afterwards.
+alphabetically rather than in FK dependency order, import into the target, and verify FK integrity afterwards.
 
-LIVE CALLERS, NOT REPOINTED. `.github/workflows/edge-clone-d1.yml:78` runs the
-bash twin, and so does `.ci/scripts/deploy/test-d1-migrations.sh:114` (whose own
-port, `deploy/test_d1_migrations.py`, deliberately invokes the BASH twin for the
-reason its docstring gives). This module is the twin's verified-equivalent
+LIVE CALLERS, NOT REPOINTED. `.github/workflows/edge-clone-d1.yml:78` runs the bash twin, and so does `.ci/scripts/deploy/test-d1-migrations.sh:114` (whose own port, `deploy/test_d1_migrations.py`, deliberately invokes the BASH twin for the reason its docstring gives). This module is the twin's verified-equivalent
 alternative; the cutover is a separate, later, driver-only step.
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) and `sqlite3` are
-the only two programs that could, and the differential
-(`.ci/rediacc_ci/tests/test_deploy_clone_d1.py`) puts a RECORDING FAKE for each
-on a scratch PATH. `.ci/shadow/w7p5a-status.json` records this path as blocked
-only for the "one real run" clause and says in as many words that the mocked
-parity ledger is a separate, achievable piece of work. This is that piece.
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) and `sqlite3` are the only two programs that could, and the differential (`.ci/rediacc_ci/tests/test_deploy_clone_d1.py`) puts a RECORDING FAKE for each on a scratch PATH. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger
+is a separate, achievable piece of work. This is that piece.
 
-Ledger: `.ci/shadow/w7p6-clone-d1.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-clone-d1 --assert --k 5`).
+Ledger: `.ci/shadow/w7p6-clone-d1.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-clone-d1 --assert --k 5`).
 
 -----------------------------------------------------------------------------
 `grep`, `sed`, `wc`, `du`, `cut`, `jq` AND `mktemp` ARE CALLED, NOT REIMPLEMENTED
@@ -56,56 +47,39 @@ Seven small programs, one rule, and it is about agreement rather than laziness.
 -----------------------------------------------------------------------------
 DEFECT A -- `--sanitize` CANNOT WORK. ITS SQL FILE WAS DELETED IN APRIL
 -----------------------------------------------------------------------------
-Twin :117 reads `"$SCRIPT_DIR/sanitize-d1.sql"`. That file was DELETED on
-2026-04-06 by commit 57b61098c (152 lines removed, `.ci/scripts/deploy/
-sanitize-d1.sql`), and nothing has recreated it:
+Twin :117 reads `"$SCRIPT_DIR/sanitize-d1.sql"`. That file was DELETED on 2026-04-06 by commit 57b61098c (152 lines removed, `.ci/scripts/deploy/ sanitize-d1.sql`), and nothing has recreated it:
 
     $ git show --stat 57b61098c | grep -i sanitize
      .ci/scripts/deploy/sanitize-d1.sql                 |   152 -
     $ ls .ci/scripts/deploy/sanitize-d1.sql
     ls: cannot access '.ci/scripts/deploy/sanitize-d1.sql': No such file or directory
 
-The ONLY caller that passes `--sanitize` is `.github/workflows/edge-clone-d1.yml:78`,
-so that workflow's clone step has been unable to complete for five months. It
-FAILS CLOSED, which is the one piece of good news: the input redirection cannot
-be opened, `set -e` ends the run before the import, and no unsanitised data
-reaches the target. The comment above it -- "The target D1 never sees real PII"
--- is true only because the target sees nothing at all. Reproduced here, not
-repaired: recreating a deleted 152-line SQL file is not a port's decision.
+The ONLY caller that passes `--sanitize` is `.github/workflows/edge-clone-d1.yml:78`, so that workflow's clone step has been unable to complete for five months. It FAILS CLOSED, which is the one piece of good news: the input redirection cannot be opened, `set -e` ends the run before the import, and no unsanitised data reaches the target. The comment above it -- "The target D1 never
+sees real PII" -- is true only because the target sees nothing at all. Reproduced here, not repaired: recreating a deleted 152-line SQL file is not a port's decision.
 
 -----------------------------------------------------------------------------
 DEFECT B -- A FAILED FK VERIFICATION IS REPORTED AS ZERO VIOLATIONS
 -----------------------------------------------------------------------------
-Step 5 is the script's whole safety claim, and it cannot fail for any reason
-other than a violation it actually managed to read:
+Step 5 is the script's whole safety claim, and it cannot fail for any reason other than a violation it actually managed to read:
 
     FK_RESULT=$(npx wrangler d1 execute ... --json 2>/dev/null || true)
     FK_COUNT=$(echo "$FK_RESULT" | jq '.[0].results | length' 2>/dev/null || echo "0")
     if [[ "$FK_COUNT" -gt 0 ]]; then ... fi
     log_info "FK integrity check passed (0 violations)"
 
-`2>/dev/null || true` discards both wrangler's message and its status, so an
-expired token, a network failure or a wrangler crash all yield an empty
-`FK_RESULT`. `jq` on empty input then prints NOTHING and exits 0 -- so the `||
-echo "0"` fallback never even fires -- and `[[ "" -gt 0 ]]` is false without
-error. Driven 2026-09-14:
+`2>/dev/null || true` discards both wrangler's message and its status, so an expired token, a network failure or a wrangler crash all yield an empty `FK_RESULT`. `jq` on empty input then prints NOTHING and exits 0 -- so the `|| echo "0"` fallback never even fires -- and `[[ "" -gt 0 ]]` is false without error. Driven 2026-09-14:
 
     $ FK_RESULT=""; FK_COUNT=$(echo "$FK_RESULT" | jq '.[0].results | length' 2>/dev/null || echo "0")
     $ echo "[$FK_COUNT]"; [[ "$FK_COUNT" -gt 0 ]] && echo gt || echo notgt
     []
     notgt
 
-The run then prints `✓ FK integrity check passed (0 violations)` and exits 0.
-This is the "an API call that failed folded into the check passed" shape, on the
-step whose entire job is to notice corruption. Reproduced here, not repaired.
+The run then prints `✓ FK integrity check passed (0 violations)` and exits 0. This is the "an API call that failed folded into the check passed" shape, on the step whose entire job is to notice corruption. Reproduced here, not repaired.
 
 -----------------------------------------------------------------------------
 DEFECT C -- THE HEADER PROMISES A GUARD ON `CLOUDFLARE_ACCOUNT_ID` THAT IS ABSENT
 -----------------------------------------------------------------------------
-The twin's header says `Requires: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID`
-and then calls `require_var` on the first one only (:54). A run with the account
-id missing gets past the guard and fails later inside wrangler, in wrangler's
-words. Reproduced here, not repaired.
+The twin's header says `Requires: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID` and then calls `require_var` on the first one only (:54). A run with the account id missing gets past the guard and fails later inside wrangler, in wrangler's words. Reproduced here, not repaired.
 
 -----------------------------------------------------------------------------
 DEFECT D -- TWO `BLOCKER:` COMMENTS DESCRIBE A VALUE THIS SCRIPT NEVER BUILDS
@@ -114,21 +88,16 @@ Both shellcheck suppressions (:142, :149) justify the unquoted `$CONFIG_FLAG`
 with "may be empty OR `--env=X` depending on cloneSource". Nothing in this file
 builds `--env=X` and there is no `cloneSource` here: the only assignment is
 `CONFIG_FLAG="--config $WRANGLER_CONFIG"` (:61). The suppression is correct
-about the mechanism (word-splitting is genuinely wanted) and stale about the
-value, which is the shape the BLOCKER-liveness convention exists to catch.
+about the mechanism (word-splitting is genuinely wanted) and stale about the value, which is the shape the BLOCKER-liveness convention exists to catch.
 
 AND `--wrangler-config` HAS NO CALLER AT ALL. `edge-clone-d1.yml` passes
 `--source/--target/--sanitize`; `test-d1-migrations.sh` passes
-`--source/--target`. The flag, its documented usage line, and both BLOCKER
-comments are all about a code path nothing exercises.
+`--source/--target`. The flag, its documented usage line, and both BLOCKER comments are all about a code path nothing exercises.
 
 -----------------------------------------------------------------------------
 WHAT IS BYTE-IDENTICAL, AND THE THREE THINGS THAT ARE NOT
 -----------------------------------------------------------------------------
-Every message this script emits is its own literal string passed through
-`common.sh`'s logger, so all of them are reproduced byte for byte on stderr with
-the same marker glyph, and the generated `import.sql` is reproduced byte for
-byte because the two `sed` scripts that build it are the twin's own.
+Every message this script emits is its own literal string passed through `common.sh`'s logger, so all of them are reproduced byte for byte on stderr with the same marker glyph, and the generated `import.sql` is reproduced byte for byte because the two `sed` scripts that build it are the twin's own.
 
 THREE DIVERGENCES, all of them a bash DIAGNOSTIC carrying a bash line number:
 
@@ -139,11 +108,7 @@ THREE DIVERGENCES, all of them a bash DIAGNOSTIC carrying a bash line number:
      surrounding `log_info` still prints with an empty count. Same ruling.
   3. `cd`-style failures on the temporary directory, same ruling.
 
-A FOURTH, SMALLER ONE, STATED RATHER THAN HIDDEN: `$CONFIG_FLAG` unquoted is
-subject to bash's pathname expansion as well as its word splitting. This port
-splits on whitespace and does not glob. No caller passes the flag at all (DEFECT
-D), and a `--wrangler-config` value containing `*` would be a wrangler path that
-does not exist either way.
+A FOURTH, SMALLER ONE, STATED RATHER THAN HIDDEN: `$CONFIG_FLAG` unquoted is subject to bash's pathname expansion as well as its word splitting. This port splits on whitespace and does not glob. No caller passes the flag at all (DEFECT D), and a `--wrangler-config` value containing `*` would be a wrangler path that does not exist either way.
 """
 
 from __future__ import annotations
@@ -215,9 +180,7 @@ THE_BLOCKER_COMMENTS_NAME_A_VALUE_THAT_IS_NEVER_BUILT = True
 class BashExitError(Exception):
     """`set -e` ending the run, or an explicit `exit N`.
 
-    Carries the status the twin would exit with. The EXIT trap still runs, which
-    is why every raise below passes through the `finally` that removes the
-    temporary directory.
+    Carries the status the twin would exit with. The EXIT trap still runs, which is why every raise below passes through the `finally` that removes the temporary directory.
     """
 
     def __init__(self, code: int) -> None:
@@ -230,9 +193,7 @@ def parse_argv(argv: list[str]) -> tuple[str, str, str, bool]:
 
     Returns `(source, target, wrangler_config, sanitize)`.
 
-    LAST FLAG WINS, because each arm assigns rather than appends: `--source a
-    --source b` clones `b`. That is bash's behaviour here and it is reproduced
-    rather than turned into an error.
+    LAST FLAG WINS, because each arm assigns rather than appends: `--source a --source b` clones `b`. That is bash's behaviour here and it is reproduced rather than turned into an error.
 
     A FLAG WITH NO VALUE raises `BashExitError(1)` after printing this port's
     stand-in for bash's `$2: unbound variable`; divergence 1 in the module
@@ -275,11 +236,9 @@ def config_flag_words(wrangler_config: str) -> list[str]:
     """`CONFIG_FLAG=""` or `CONFIG_FLAG="--config $WRANGLER_CONFIG"` (twin :59-62),
     expanded UNQUOTED at both call sites.
 
-    The unquoted expansion is what makes an empty value contribute NO argument
-    rather than an empty one, which is the whole reason the twin carries two
+    The unquoted expansion is what makes an empty value contribute NO argument rather than an empty one, which is the whole reason the twin carries two
     `# shellcheck disable=SC2086` lines. Word splitting is on the default IFS, so
-    a run of whitespace is one separator and leading or trailing whitespace
-    contributes nothing.
+    a run of whitespace is one separator and leading or trailing whitespace contributes nothing.
     """
     if not wrangler_config:
         return []
@@ -330,8 +289,7 @@ def _run(argv: list[str], **kwargs) -> int:
 
     FLUSHED FIRST, ALWAYS: Python's `print` is block-buffered against a pipe
     while the child writes straight to the inherited descriptor, so without this
-    the port's own lines land out of real order regardless of when they were
-    printed.
+    the port's own lines land out of real order regardless of when they were printed.
     """
     _flush()
     return subprocess.run(argv, check=False, **kwargs).returncode
@@ -348,11 +306,7 @@ def _capture(argv: list[str], **kwargs) -> tuple[int, str]:
 def _open_for_redirect(path: str):
     """`< "$path"` on a simple command, under `set -e`.
 
-    bash does not run the command at all when the redirection cannot be opened:
-    it prints its own diagnostic and the command's status is 1, which `set -e`
-    turns into the script's. This raises `BashExitError(1)` after printing the
-    same three facts in its own sentence, which is divergence 2 in the module
-    docstring.
+    bash does not run the command at all when the redirection cannot be opened: it prints its own diagnostic and the command's status is 1, which `set -e` turns into the script's. This raises `BashExitError(1)` after printing the same three facts in its own sentence, which is divergence 2 in the module docstring.
     """
     try:
         return open(path, "rb")
@@ -364,9 +318,7 @@ def _open_for_redirect(path: str):
 def make_temp_dir() -> str:
     """`TMPDIR="$(mktemp -d)"` (twin :56).
 
-    THE REAL `mktemp`, not `tempfile.mkdtemp`, so the directory name has the
-    same shape on both sides and the differential's mask for the random suffix
-    can stay narrow. It honours `$TMPDIR` exactly as the twin's does.
+    THE REAL `mktemp`, not `tempfile.mkdtemp`, so the directory name has the same shape on both sides and the differential's mask for the random suffix can stay narrow. It honours `$TMPDIR` exactly as the twin's does.
     """
     status, path = _capture(["mktemp", "-d"])
     if status or not path:
@@ -377,9 +329,7 @@ def make_temp_dir() -> str:
 def wc_lines(path: str) -> str:
     """`$(wc -l <path)` inside a message, which is a COMMAND SUBSTITUTION.
 
-    A redirection that cannot be opened there does NOT end the run: the
-    enclosing command is `log_info`, which succeeds, so bash prints its own
-    complaint and the message interpolates an empty string. Both halves are
+    A redirection that cannot be opened there does NOT end the run: the enclosing command is `log_info`, which succeeds, so bash prints its own complaint and the message interpolates an empty string. Both halves are
     reproduced; only the wording of the complaint diverges.
     """
     try:
@@ -395,10 +345,7 @@ def wc_lines(path: str) -> str:
 def export_line_report(export_sql: str) -> str:
     """`Exported $(wc -l <f) lines ($(du -h f | cut -f1))` (twin :107).
 
-    BOTH SUBSTITUTIONS ARE UNGUARDED IN THE TWIN, and a failing one does not end
-    the run: the enclosing command is `log_info`, which succeeds. So a missing
-    file yields bash's own redirection complaint on stderr and the message
-    `Exported  lines ()`. Divergence 2 is only the WORDING of that complaint.
+    BOTH SUBSTITUTIONS ARE UNGUARDED IN THE TWIN, and a failing one does not end the run: the enclosing command is `log_info`, which succeeds. So a missing file yields bash's own redirection complaint on stderr and the message `Exported lines ()`. Divergence 2 is only the WORDING of that complaint.
     """
     lines = wc_lines(export_sql)
 
@@ -412,10 +359,7 @@ def export_line_report(export_sql: str) -> str:
 def run_export(source_db: str, tmpdir: str) -> int:
     """The retry loop (twin :92-101). Returns the LAST attempt's status.
 
-    `>"$TMPDIR/export.log" 2>&1` merges both streams into the log, which is what
-    makes the redaction possible at all: the pre-signed URL can arrive on either
-    one. The loop breaks on the first success, and the warning between attempts
-    names the attempt number so a retry is visible in the job log.
+    `>"$TMPDIR/export.log" 2>&1` merges both streams into the log, which is what makes the redaction possible at all: the pre-signed URL can arrive on either one. The loop breaks on the first success, and the warning between attempts names the attempt number so a retry is visible in the job log.
     """
     export_rc = 0
     for attempt in range(1, EXPORT_ATTEMPTS + 1):
@@ -443,9 +387,7 @@ def run_export(source_db: str, tmpdir: str) -> int:
 def sanitize(tmpdir: str, root: str) -> None:
     """Step 1.5 (twin :110-122), which cannot complete; see DEFECT A.
 
-    Three `sqlite3` invocations and an `rm -f`, all unguarded, so the first one
-    that fails ends the run with its own status. The second reads a file that
-    has not existed since April: bash's redirection error, then `set -e`.
+    Three `sqlite3` invocations and an `rm -f`, all unguarded, so the first one that fails ends the run with its own status. The second reads a file that has not existed since April: bash's redirection error, then `set -e`.
     """
     log.step("Sanitizing data via local sqlite3")
     try:
@@ -484,10 +426,7 @@ def sanitize(tmpdir: str, root: str) -> None:
 def build_import_sql(tmpdir: str) -> None:
     """Steps 2 and 3 (twin :126-138).
 
-    The strip is IN PLACE on `export.sql` and runs whether or not `--sanitize`
-    was asked for. The DROP statements are generated FROM the stripped file, so
-    a table the strip removed cannot be dropped, and the dump is then appended
-    whole. Order inside `import.sql` is: two pragmas, every DROP, the dump, one
+    The strip is IN PLACE on `export.sql` and runs whether or not `--sanitize` was asked for. The DROP statements are generated FROM the stripped file, so a table the strip removed cannot be dropped, and the dump is then appended whole. Order inside `import.sql` is: two pragmas, every DROP, the dump, one
     pragma.
     """
     export_sql = os.path.join(tmpdir, "export.sql")
@@ -511,11 +450,7 @@ def build_import_sql(tmpdir: str) -> None:
 def verify_fk(target_db: str, config_words: list[str]) -> None:
     """Step 5 (twin :148-158). DEFECT B lives here, whole.
 
-    `2>/dev/null || true` on the wrangler call and `2>/dev/null || echo "0"` on
-    the jq call mean the only observable outcome of a failed verification is the
-    success line. Reproduced exactly, including the fact that on empty input
-    `jq` prints nothing and exits 0, so the `|| echo "0"` fallback does not fire
-    and `FK_COUNT` is the empty string rather than `0`.
+    `2>/dev/null || true` on the wrangler call and `2>/dev/null || echo "0"` on the jq call mean the only observable outcome of a failed verification is the success line. Reproduced exactly, including the fact that on empty input `jq` prints nothing and exits 0, so the `|| echo "0"` fallback does not fire and `FK_COUNT` is the empty string rather than `0`.
     """
     log.step("Verifying foreign key integrity")
     _, fk_result = _capture(fk_check_argv(target_db, config_words), stderr=subprocess.DEVNULL)
@@ -572,8 +507,7 @@ class BashUnboundError(Exception):
 def bash_arithmetic_gt_zero(text: str) -> bool:
     """`[[ "$FK_COUNT" -gt 0 ]]`, which is ARITHMETIC EVALUATION under `set -u`.
 
-    Five behaviours, all probed against real bash on 2026-09-14 rather than
-    reasoned about, because three of them are surprising:
+    Five behaviours, all probed against real bash on 2026-09-14 rather than reasoned about, because three of them are surprising:
 
         [$v]      exit  output
         [null]    1     bash: line 1: null: unbound variable        <- FATAL
@@ -585,19 +519,10 @@ def bash_arithmetic_gt_zero(text: str) -> bool:
         []        0     -> FALSE
         [-2]      0     -> FALSE
 
-    THE FATAL ROWS ARE THE POINT. A bare word is a VARIABLE REFERENCE, and an
-    unset one under `set -u` ends the script with exit 1 and no message of the
-    script's own -- so a `jq` program that ever emitted `null` here would turn a
-    clone into a hard failure rather than a verdict. It cannot today: `jq
-    length` prints a number or the pipeline fails and `|| echo "0"` supplies
-    one. Reproduced anyway, because the next person to edit that jq program
-    should not have to rediscover it.
+    THE FATAL ROWS ARE THE POINT. A bare word is a VARIABLE REFERENCE, and an unset one under `set -u` ends the script with exit 1 and no message of the script's own -- so a `jq` program that ever emitted `null` here would turn a clone into a hard failure rather than a verdict. It cannot today: `jq length` prints a number or the pipeline fails and `|| echo "0"` supplies one.
+    Reproduced anyway, because the next person to edit that jq program should not have to rediscover it.
 
-    THE TWO NON-FATAL ERROR ROWS ARE REPRODUCED WITH THEIR DIAGNOSTIC, minus
-    bash's own `<file>: line <n>:` prefix, because the zero-padded-octal class
-    has bitten this campaign four times and a silent FALSE would hide it a
-    fifth. The residual case (a non-numeric value that does not start with a
-    digit and names no variable, e.g. `+`) evaluates FALSE here with no
+    THE TWO NON-FATAL ERROR ROWS ARE REPRODUCED WITH THEIR DIAGNOSTIC, minus bash's own `<file>: line <n>:` prefix, because the zero-padded-octal class has bitten this campaign four times and a silent FALSE would hide it a fifth. The residual case (a non-numeric value that does not start with a digit and names no variable, e.g. `+`) evaluates FALSE here with no
     message, where bash prints an `arithmetic syntax error`; it is unreachable
     from `jq length` and from this script's `|| echo "0"` fallback.
     """

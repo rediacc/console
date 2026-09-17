@@ -1,21 +1,11 @@
 """`rediacc_ci.version.resolve_version` against its bash twin.
 
-Sibling of `test_release_check_existing_release.py` for the git-fixture
-strategy: real git tags in a disposable local repo, never GitHub. `git tag`
-needs no remote at all, so this fixture is simpler than that sibling's --
-one `git init` plus a run of `git tag -a` calls.
+Sibling of `test_release_check_existing_release.py` for the git-fixture strategy: real git tags in a disposable local repo, never GitHub. `git tag` needs no remote at all, so this fixture is simpler than that sibling's -- one `git init` plus a run of `git tag -a` calls.
 
-Both invocations run with `cwd` set to the SCRATCH repo (so `git tag -l` acts
-on IT, not this checkout), so the twin path and PYTHONPATH must be ABSOLUTE --
-relative to this checkout, not to the scratch cwd, exactly as in
-`test_release_check_existing_release.py`.
+Both invocations run with `cwd` set to the SCRATCH repo (so `git tag -l` acts on IT, not this checkout), so the twin path and PYTHONPATH must be ABSOLUTE -- relative to this checkout, not to the scratch cwd, exactly as in `test_release_check_existing_release.py`.
 
-THE ONE BASH-SEMANTICS CASE WORTH A DEDICATED TEST: a tag with more than three
-dotted components (`v1.2.3.4`) folds the fourth into PATCH re-joined with '.'
-via bash's `read` with too few variable names, rather than being dropped. If
-the port ever "simplified" this to a 3-way split, `test_extra_dotted_component`
-is the one that would catch it, and it is exercised for both directions (a
-component present, and PATCH bumped on top of it).
+THE ONE BASH-SEMANTICS CASE WORTH A DEDICATED TEST: a tag with more than three dotted components (`v1.2.3.4`) folds the fourth into PATCH re-joined with '.' via bash's `read` with too few variable names, rather than being dropped. If the port ever "simplified" this to a 3-way split, `test_extra_dotted_component` is the one that would catch it, and it is exercised for both
+directions (a component present, and PATCH bumped on top of it).
 
 K=5 LEDGER: `.ci/shadow/w7p6-resolve-version.observations.jsonl`, recorded
 against a disposable scratch git repo built OUTSIDE this checkout (this repo's

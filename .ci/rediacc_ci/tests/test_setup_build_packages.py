@@ -1,11 +1,7 @@
 """Differential: `rediacc_ci.setup.build_packages` against its twin
 `.ci/scripts/setup/build-packages.sh`.
 
-NOTHING HERE RUNS A REAL BUILD. A recording fake `npm` on a scratch PATH logs
-its argv and, when the fixture asks it to, creates `packages/shared/dist` the
-way a real build would. `rm` is NOT faked: the deletion is half of what this
-script does and the only way to check it is to let it happen in a fixture tree
-and look at what survived.
+NOTHING HERE RUNS A REAL BUILD. A recording fake `npm` on a scratch PATH logs its argv and, when the fixture asks it to, creates `packages/shared/dist` the way a real build would. `rm` is NOT faked: the deletion is half of what this script does and the only way to check it is to let it happen in a fixture tree and look at what survived.
 
 THREE KINDS OF EVIDENCE, AND ALL THREE ARE NEEDED:
 
@@ -21,17 +17,10 @@ THREE KINDS OF EVIDENCE, AND ALL THREE ARE NEEDED:
      or too much, would be byte-identical on both streams. Every case below
      snapshots `packages/` after each side and compares the two snapshots.
 
-THE GLOB IS THE PART A TRANSCRIPTION GETS WRONG. Bash expands
-`packages/shared/*.tsbuildinfo` before `rm` runs and, with no match and no
-`nullglob`, hands the PATTERN to `rm` as a literal operand that `-f` then
-swallows. `test_no_tsbuildinfo_files_is_a_silent_no_op` drives exactly that, and
-`test_a_dotfile_tsbuildinfo_survives_both` drives the case where the two glob
+THE GLOB IS THE PART A TRANSCRIPTION GETS WRONG. Bash expands `packages/shared/*.tsbuildinfo` before `rm` runs and, with no match and no `nullglob`, hands the PATTERN to `rm` as a literal operand that `-f` then swallows. `test_no_tsbuildinfo_files_is_a_silent_no_op` drives exactly that, and `test_a_dotfile_tsbuildinfo_survives_both` drives the case where the two glob
 implementations could plausibly disagree and do not.
 
-THE LEDGER LINE. `shadow-gate.ts` classifies `→ ` and `✓ ` lines as CHATTER
-before `--finding-re` is consulted, and three of this script's four messages are
-exactly those, so the fake's `call: npm ...` on stdout is what the shadow ledger
-compares. See `.ci/shadow/w7p6-build-packages.observations.jsonl`.
+THE LEDGER LINE. `shadow-gate.ts` classifies `→ ` and `✓ ` lines as CHATTER before `--finding-re` is consulted, and three of this script's four messages are exactly those, so the fake's `call: npm ...` on stdout is what the shadow ledger compares. See `.ci/shadow/w7p6-build-packages.observations.jsonl`.
 """
 
 from __future__ import annotations
@@ -124,10 +113,7 @@ def _tree(tmp_path: pathlib.Path) -> pathlib.Path:
 def _layout(tree: pathlib.Path, spec: dict[str, str]) -> None:
     """Rebuild `packages/` from scratch, so both sides start identically.
 
-    `spec` maps a path relative to the tree root to what it should be:
-    `dir`, `file`, or `link:<target>`. Written as data rather than as a pile of
-    boolean flags because the interesting cases are about the TYPE of
-    `packages/shared/dist`, not about its presence.
+    `spec` maps a path relative to the tree root to what it should be: `dir`, `file`, or `link:<target>`. Written as data rather than as a pile of boolean flags because the interesting cases are about the TYPE of `packages/shared/dist`, not about its presence.
     """
     shutil.rmtree(tree / "packages", ignore_errors=True)
     shutil.rmtree(tree / "keepsake", ignore_errors=True)
@@ -147,10 +133,7 @@ def _layout(tree: pathlib.Path, spec: dict[str, str]) -> None:
 def _snapshot(tree: pathlib.Path) -> list[str]:
     """Every surviving path under `packages/` and `keepsake/`, with its type.
 
-    Sorted, relative, and typed. `keepsake/` is in the snapshot because the
-    symlink case needs to prove the TARGET survived: `rm -rf` on a symlink
-    removes the link, and a port that followed it would delete a directory
-    outside `packages/` with no output difference at all.
+    Sorted, relative, and typed. `keepsake/` is in the snapshot because the symlink case needs to prove the TARGET survived: `rm -rf` on a symlink removes the link, and a port that followed it would delete a directory outside `packages/` with no output difference at all.
     """
     out: list[str] = []
     for base in ("packages", "keepsake"):
@@ -281,9 +264,7 @@ def test_debug_1_is_not_debug_true(tmp_path: pathlib.Path) -> None:
 
 def test_a_build_that_emits_nothing_warns_and_exits_zero(tmp_path: pathlib.Path) -> None:
     """THE VACUITY CLASS, IN THE SCRIPT WHOSE JOB IS TO BUILD. The script deletes
-    `packages/shared/dist`, runs a build that produces nothing, finds the
-    directory gone, calls that `(may be expected)` and exits 0. That is exactly
-    the tsbuildinfo no-op the wipe eleven lines above exists to prevent, and it
+    `packages/shared/dist`, runs a build that produces nothing, finds the directory gone, calls that `(may be expected)` and exits 0. That is exactly the tsbuildinfo no-op the wipe eleven lines above exists to prevent, and it
     is reported as a warning nobody greps for."""
     old3, new3 = run_both(tmp_path, emit=False)
     old = old3[0]
@@ -314,9 +295,7 @@ def test_a_failing_build_stops_before_the_verification(tmp_path: pathlib.Path) -
 
 def test_no_tsbuildinfo_files_is_a_silent_no_op(tmp_path: pathlib.Path) -> None:
     """With no match, bash hands `rm` the PATTERN as a literal operand and `-f`
-    swallows the resulting error: nothing is printed and the exit code is
-    untouched. The port globs to an empty list, which is the same outcome by a
-    different route -- and the route matters, because a port that passed the
+    swallows the resulting error: nothing is printed and the exit code is untouched. The port globs to an empty list, which is the same outcome by a different route -- and the route matters, because a port that passed the
     unexpanded pattern to `Path.unlink` would raise."""
     old3, new3 = run_both(
         tmp_path,

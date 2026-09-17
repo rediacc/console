@@ -1,36 +1,25 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/detect-pointer-bump.sh` (208 lines).
 
-Detect a "pointer bump only" PR head: content provably identical to a commit
-that already passed full CI, differing only in submodule gitlinks that moved to
-tree-identical commits now on the submodules' main. When it fires, `ci.yml`
-skips the expensive jobs and the run goes green in minutes, honestly, because
-the proof is content identity rather than trust. Any doubt on any step degrades
+Detect a "pointer bump only" PR head: content provably identical to a commit that already passed full CI, differing only in submodule gitlinks that moved to tree-identical commits now on the submodules' main. When it fires, `ci.yml` skips the expensive jobs and the run goes green in minutes, honestly, because the proof is content identity rather than trust. Any doubt on any step
+degrades
 to `pointer_bump_only=false`.
 
 The twin's header owns the three-step proof and the D9 root cause; neither is
 restated here.
 
-LIVE CALLER, NOT REPOINTED. `initialize.sh` runs the bash twin after submodule
-init, and `.ci/rediacc_ci/ci/initialize.py` invokes the same bash file. This
-module is the twin's verified-equivalent alternative, and the cutover is a
-separate, later, driver-only step.
+LIVE CALLER, NOT REPOINTED. `initialize.sh` runs the bash twin after submodule init, and `.ci/rediacc_ci/ci/initialize.py` invokes the same bash file. This module is the twin's verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
-NOT A REGISTERED GATE. It carries no `---- gate ----` header (checked with
-`scripts/lib/gate-header.ts`'s own OPEN pattern, not by eye), so nothing in
+NOT A REGISTERED GATE. It carries no `---- gate ----` header (checked with `scripts/lib/gate-header.ts`'s own OPEN pattern, not by eye), so nothing in
 `scripts/ci-runner` selects it; it is a workflow STEP that writes two outputs.
 This port carries no header either, for the same reason.
 
-Ledger: `.ci/shadow/w7p6-detect-pointer-bump.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-detect-pointer-bump --assert
---k 5`).
+Ledger: `.ci/shadow/w7p6-detect-pointer-bump.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-detect-pointer-bump --assert --k 5`).
 
 -----------------------------------------------------------------------------
 `git`, `gh`, `jq` AND `sed` ARE CALLED, NOT REIMPLEMENTED
 -----------------------------------------------------------------------------
-Every fact this script rules on comes out of one of those four, and three of
-them are doing something a Python library would do DIFFERENTLY rather than
-identically:
+Every fact this script rules on comes out of one of those four, and three of them are doing something a Python library would do DIFFERENTLY rather than identically:
 
   * `git` is the whole subject. `diff-tree -r --raw`'s exact field layout,
     `rev-parse --verify --quiet`'s silence, and `^`/`^2`/`^{commit}`'s
@@ -47,25 +36,15 @@ identically:
 
 TWO THINGS ARE REIMPLEMENTED, both pure text, both unit-tested against the
 semantics they copy: `awk '{print $N}'` (Python's `str.split()` has awk's exact
-default-FS behaviour) and the `grep -vE '^:160000 160000 ' | grep -q .`
-predicate, which is a line test with no regex left in it once the anchor is
-read as a prefix.
+default-FS behaviour) and the `grep -vE '^:160000 160000 ' | grep -q .` predicate, which is a line test with no regex left in it once the anchor is read as a prefix.
 
 -----------------------------------------------------------------------------
 DEFECT A -- THE `HEAD is not a pointer-only commit` GUARD IS UNREACHABLE ON THE
 ONLY EVENT THIS SCRIPT RUNS FOR
 -----------------------------------------------------------------------------
-D9's fix resolves the walk's starting commit from the EVENT payload, because on
-a `pull_request` event `git rev-parse HEAD` names the synthetic
-`refs/pull/N/merge` commit rather than the branch tip. The fix was applied to
-`current` (:90-112) and NOT to `head_sha` (:119), which is still
-`git rev-parse HEAD`.
+D9's fix resolves the walk's starting commit from the EVENT payload, because on a `pull_request` event `git rev-parse HEAD` names the synthetic `refs/pull/N/merge` commit rather than the branch tip. The fix was applied to `current` (:90-112) and NOT to `head_sha` (:119), which is still `git rev-parse HEAD`.
 
-So on a real PR event `current` is the branch tip and `head_sha` is the merge
-commit, and they are NEVER equal. The comparison at :138 therefore cannot be
-true on the first iteration, and a PR whose tip is an ordinary commit -- the
-common case, the one this guard was written for -- falls out of the loop with
-`baseline` still empty and reports
+So on a real PR event `current` is the branch tip and `head_sha` is the merge commit, and they are NEVER equal. The comparison at :138 therefore cannot be true on the first iteration, and a PR whose tip is an ordinary commit -- the common case, the one this guard was written for -- falls out of the loop with `baseline` still empty and reports
 
     pointer_bump_only=false -- no baseline within 5 commits
 
@@ -73,18 +52,13 @@ instead of
 
     pointer_bump_only=false -- HEAD is not a pointer-only commit
 
-Same verdict, wrong reason, and the wrong reason is the one an operator reads
-when asking why the fast path did not fire. Driven in the differential
-(`test_defect_a_...`) against both implementations.
+Same verdict, wrong reason, and the wrong reason is the one an operator reads when asking why the fast path did not fire. Driven in the differential (`test_defect_a_...`) against both implementations.
 
 -----------------------------------------------------------------------------
 DEFECT B -- STEP 3 STILL COMPARES AGAINST `HEAD`, WHICH IS D9's OTHER HALF
 -----------------------------------------------------------------------------
 `net=$(git diff-tree -r --raw "$baseline" HEAD)` (:157) and the `${baseline}
-..HEAD` reasoning around it use `HEAD`, not `$current`. On a `pull_request`
-event `HEAD` is the merge of the branch tip WITH the target branch, so the net
-diff carries every change that landed on main since the branch point. Unless
-main has not moved at all, the net diff is not gitlink-only and the run reports
+..HEAD` reasoning around it use `HEAD`, not `$current`. On a `pull_request` event `HEAD` is the merge of the branch tip WITH the target branch, so the net diff carries every change that landed on main since the branch point. Unless main has not moved at all, the net diff is not gitlink-only and the run reports
 
     pointer_bump_only=false -- net diff vs baseline is not gitlink-only
 
@@ -103,24 +77,15 @@ Every other doubt in this script degrades to `pointer_bump_only=false` and exit
         awk -v p="$sm_path" '$2 == p {print $1}')
     [[ -n "$sm_key" ]] || no_fast_path "no .gitmodules entry for $sm_path"
 
-`git config --get-regexp` exits 1 when it matches nothing, `pipefail` promotes
-that to the pipeline's status, the status becomes the ASSIGNMENT's, and `set -e`
-ends the script -- with exit 1, no message of its own, and the guard on the very
-next line never consulted. The guard can only ever fire when `.gitmodules`
-contains at least one submodule path and none of them is this one.
+`git config --get-regexp` exits 1 when it matches nothing, `pipefail` promotes that to the pipeline's status, the status becomes the ASSIGNMENT's, and `set -e` ends the script -- with exit 1, no message of its own, and the guard on the very next line never consulted. The guard can only ever fire when `.gitmodules` contains at least one submodule path and none of them is this one.
 
-The twin's own comment at :167-169 records fixing the neighbouring version of
-this ("with `-r` an empty lookup exits 0, so the no-entry error could never
-fire"). The remaining half is the case where the file is missing or empty, which
-is exactly the state a removed-but-not-cleaned submodule leaves behind.
-Reproduced here, not repaired.
+The twin's own comment at :167-169 records fixing the neighbouring version of this ("with `-r` an empty lookup exits 0, so the no-entry error could never fire"). The remaining half is the case where the file is missing or empty, which is exactly the state a removed-but-not-cleaned submodule leaves behind. Reproduced here, not repaired.
 
 -----------------------------------------------------------------------------
 DEFECT D -- A NON-NUMERIC CHECK-RUNS ANSWER IS A HARD EXIT TOO
 -----------------------------------------------------------------------------
 `[[ "${green:-0}" -ge 1 ]]` (:154) is ARITHMETIC EVALUATION, so a BARE WORD in
-that string is a VARIABLE REFERENCE. Under `set -u` an unset one ends the
-script. Driven 2026-09-14 through the twin with a `gh` stub answering `null`:
+that string is a VARIABLE REFERENCE. Under `set -u` an unset one ends the script. Driven 2026-09-14 through the twin with a `gh` stub answering `null`:
 
     <twin>: line 154: null: unbound variable
     rc=1, stdout empty
@@ -129,23 +94,16 @@ Exit 1, nothing on stdout, and no message of the script's own -- against exit 0
 with a reason, which is what every other doubt in this file produces. Not
 reachable through today's `gh --jq '[...] | length'`, which answers with a
 number or exits non-zero; one shape change in that jq program away, and the
-same class as DEFECT C. A MALFORMED NUMBER is different and benign: `08` and
-`1a` draw bash's `value too great for base` complaint, evaluate FALSE, and the
-run carries on to the ordinary refusal. Both halves are reproduced.
+same class as DEFECT C. A MALFORMED NUMBER is different and benign: `08` and `1a` draw bash's `value too great for base` complaint, evaluate FALSE, and the run carries on to the ordinary refusal. Both halves are reproduced.
 
 -----------------------------------------------------------------------------
 WHAT IS BYTE-IDENTICAL, AND THE TWO THINGS THAT ARE NOT
 -----------------------------------------------------------------------------
 Every `pointer_bump_only=` line, every `no_fast_path` reason, the proof string,
 the three step-summary lines and both `key=value` pairs on stdout are this
-script's own literal strings and are reproduced byte for byte on the same
-stream.
+script's own literal strings and are reproduced byte for byte on the same stream.
 
-TWO DIVERGENCES, both a bash DIAGNOSTIC carrying a bash line number: an
-`--output` file that cannot be appended to, and DEFECT D's `unbound variable`.
-Each prints the same words on the same stream with the same exit status, minus
-the `<file>: line <n>:` prefix, and the differential normalises exactly that
-prefix and nothing else. DEFECT C's `set -e` exit needs no divergence at all:
+TWO DIVERGENCES, both a bash DIAGNOSTIC carrying a bash line number: an `--output` file that cannot be appended to, and DEFECT D's `unbound variable`. Each prints the same words on the same stream with the same exit status, minus the `<file>: line <n>:` prefix, and the differential normalises exactly that prefix and nothing else. DEFECT C's `set -e` exit needs no divergence at all:
 bash prints nothing there, and neither does this.
 """
 
@@ -222,8 +180,7 @@ class BashUnboundError(Exception):
 class BashExitError(Exception):
     """`set -e`, or the guarded `exit 0` at twin :123.
 
-    `code` is the status the twin would leave with. DEFECT C is the only path
-    that reaches this with a non-zero code and no message.
+    `code` is the status the twin would leave with. DEFECT C is the only path that reaches this with a non-zero code and no message.
     """
 
     def __init__(self, code: int) -> None:
@@ -234,8 +191,7 @@ class BashExitError(Exception):
 def short(sha: str) -> str:
     """`${sha:0:7}`, which is a SUBSTRING and not `git rev-parse --short`.
 
-    The difference matters for an empty or malformed value: bash slices whatever
-    is there and produces a shorter string rather than failing.
+    The difference matters for an empty or malformed value: bash slices whatever is there and produces a shorter string rather than failing.
     """
     return sha[:7]
 
@@ -248,8 +204,7 @@ def _flush() -> None:
 def git(args: list[str], *, quiet_stderr: bool = False) -> tuple[int, str]:
     """One `git` call as `$(...)`: stdout captured, trailing newlines stripped.
 
-    stderr is INHERITED unless the caller asked for `2>/dev/null`, because the
-    twin lets git explain itself on every call that is not explicitly silenced.
+    stderr is INHERITED unless the caller asked for `2>/dev/null`, because the twin lets git explain itself on every call that is not explicitly silenced.
     """
     _flush()
     proc = subprocess.run(
@@ -264,10 +219,7 @@ def git(args: list[str], *, quiet_stderr: bool = False) -> tuple[int, str]:
 def gh_api(args: list[str], token: str) -> tuple[int, str]:
     """`GH_TOKEN="${VAR:-}" gh api ... 2>/dev/null` (twin :149, :178, :189).
 
-    THE ASSIGNMENT IS UNCONDITIONAL IN THE TWIN, so `GH_TOKEN` is exported as
-    the EMPTY STRING when the source variable is unset, which is not the same as
-    leaving it out: `gh` sees a set-but-empty token and refuses differently from
-    how it refuses with no token at all. Reproduced.
+    THE ASSIGNMENT IS UNCONDITIONAL IN THE TWIN, so `GH_TOKEN` is exported as the EMPTY STRING when the source variable is unset, which is not the same as leaving it out: `gh` sees a set-but-empty token and refuses differently from how it refuses with no token at all. Reproduced.
     """
     _flush()
     env = dict(os.environ)
@@ -301,10 +253,7 @@ def has_non_gitlink(raw: str) -> bool:
 def awk_field(text: str, index: int) -> str:
     """`awk '{print $N}'` on a single line, with awk's default FS.
 
-    awk's default field splitting is on runs of blanks and tabs with leading and
-    trailing runs ignored, which is exactly `str.split()`. A field past the end
-    prints EMPTY rather than erroring, which is the behaviour the twin leans on
-    when a `diff-tree` line is malformed.
+    awk's default field splitting is on runs of blanks and tabs with leading and trailing runs ignored, which is exactly `str.split()`. A field past the end prints EMPTY rather than erroring, which is the behaviour the twin leans on when a `diff-tree` line is malformed.
     """
     fields = text.split()
     return fields[index - 1] if 0 < index <= len(fields) else ""
@@ -313,9 +262,7 @@ def awk_field(text: str, index: int) -> str:
 def read_tab_pair(line: str) -> tuple[str, str]:
     """`IFS=$'\\t' read -r meta sm_path` (twin :163).
 
-    TAB IS IFS WHITESPACE, so bash strips leading and trailing runs of it and
-    treats an interior run as ONE delimiter. The last variable takes the rest of
-    the line, so a path containing a tab would arrive whole.
+    TAB IS IFS WHITESPACE, so bash strips leading and trailing runs of it and treats an interior run as ONE delimiter. The last variable takes the rest of the line, so a path containing a tab would arrive whole.
     """
     stripped = line.strip("\t")
     if not stripped:
@@ -329,8 +276,7 @@ def read_tab_pair(line: str) -> tuple[str, str]:
 def submodule_key(config_lines: str, sm_path: str) -> str:
     """`awk -v p="$sm_path" '$2 == p {print $1}'` over `--get-regexp` output.
 
-    EVERY MATCHING LINE IS PRINTED, not just the first, so two `.gitmodules`
-    entries pointing at one path would produce a two-line value. Reproduced,
+    EVERY MATCHING LINE IS PRINTED, not just the first, so two `.gitmodules` entries pointing at one path would produce a two-line value. Reproduced,
     because the caller then does `${sm_key%.path}` on the whole thing.
     """
     keys = [
@@ -350,8 +296,7 @@ class Outputs:
     """`write_output` (twin :46-53): the pair goes to stdout ALWAYS, and to
     `$OUTPUT_FILE` as well when `--output` named one.
 
-    THE FILE IS APPENDED TO, never truncated, because the caller's `$GITHUB_OUTPUT`
-    already holds other steps' pairs.
+    THE FILE IS APPENDED TO, never truncated, because the caller's `$GITHUB_OUTPUT` already holds other steps' pairs.
     """
 
     def __init__(self, output_file: str) -> None:
@@ -377,19 +322,13 @@ class Outputs:
 def resolve_current(event_path: str, is_shallow: bool) -> str:
     """Twin :90-112: the branch tip out of the event payload, or "".
 
-    THE WHOLE OF D9's FIX LIVES HERE. On a `pull_request` event
-    `actions/checkout` hands over the synthetic two-parent `refs/pull/N/merge`
+    THE WHOLE OF D9's FIX LIVES HERE. On a `pull_request` event `actions/checkout` hands over the synthetic two-parent `refs/pull/N/merge`
     commit, so `git rev-parse HEAD` names a MERGE commit, `${current}^2`
-    resolves on the very first iteration and the walk aborts before it has
-    looked at anything. `github.event.pull_request.head.sha` is the real branch
-    tip.
+    resolves on the very first iteration and the walk aborts before it has looked at anything. `github.event.pull_request.head.sha` is the real branch tip.
 
-    NO `--depth` ON A FULL CLONE, and the twin's comment measures why: one such
-    line took a complete checkout from 2467 reachable commits to 114 and wrote a
-    graft, which broke a topology gate several steps later in the same job.
+    NO `--depth` ON A FULL CLONE, and the twin's comment measures why: one such line took a complete checkout from 2467 reachable commits to 114 and wrote a graft, which broke a topology gate several steps later in the same job.
 
-    Every failure here yields "", which sends the caller back to
-    `git rev-parse HEAD`: the OLD behaviour, which fails closed to
+    Every failure here yields "", which sends the caller back to `git rev-parse HEAD`: the OLD behaviour, which fails closed to
     `pointer_bump_only=false` rather than fast-pathing something unverified.
     """
     if not event_path or not os.access(event_path, os.R_OK):
@@ -427,8 +366,7 @@ def commit_exists(sha: str) -> bool:
 def is_shallow_clone() -> bool:
     """`[[ -f "$(git rev-parse --git-dir)/shallow" ]]` (twin :66).
 
-    A FAILING `rev-parse` LEAVES AN EMPTY SUBSTITUTION, so the test becomes
-    `-f /shallow`, which is false. The twin therefore treats "not a git
+    A FAILING `rev-parse` LEAVES AN EMPTY SUBSTITUTION, so the test becomes `-f /shallow`, which is false. The twin therefore treats "not a git
     repository" as "not shallow" and carries on to fail later; reproduced.
     """
     _, git_dir = git(["rev-parse", "--git-dir"])
@@ -441,12 +379,8 @@ def find_baseline(current: str, head_sha: str) -> tuple[str, str]:
     A reason is `no_fast_path`'s argument; the caller raises with it rather than
     this function exiting, so the walk stays testable without a subprocess.
 
-    THE LOOP RUNS AT MOST `WALK_CAP` TIMES and the FIRST non-pointer commit ends
-    it. `head_sha` is compared rather than re-read on every iteration, which the
-    twin hoisted deliberately: an unguarded `$(git rev-parse HEAD)` inside the
-    loop would yield "" on failure, read as "not HEAD", and let the walk
-    continue past the commit it exists to stop at. DEFECT A is about WHICH
-    commit `head_sha` names, not about the hoist.
+    THE LOOP RUNS AT MOST `WALK_CAP` TIMES and the FIRST non-pointer commit ends it. `head_sha` is compared rather than re-read on every iteration, which the twin hoisted deliberately: an unguarded `$(git rev-parse HEAD)` inside the loop would yield "" on failure, read as "not HEAD", and let the walk continue past the commit it exists to stop at. DEFECT A is about WHICH commit
+    `head_sha` names, not about the hoist.
     """
     baseline = ""
     for _ in range(WALK_CAP):
@@ -492,8 +426,7 @@ def repo_slug(sm_url: str) -> str:
 def verify_moves(net: str, pat_token: str) -> str:
     """Step 3's loop (twin :163-197). Returns the proof string.
 
-    Raises `FastPathRefusedError` for every doubt, and `BashExitError` for the one
-    that is not a doubt but a hard exit (DEFECT C).
+    Raises `FastPathRefusedError` for every doubt, and `BashExitError` for the one that is not a doubt but a hard exit (DEFECT C).
     """
     proof = ""
     for line in net.split("\n"):
@@ -721,11 +654,7 @@ def _at_least_one(green: str) -> bool:
         [null]    1     `bash: line 154: null: unbound variable`   <- FATAL
         [a b]     1     `bash: line 154: a: unbound variable`      <- FATAL
 
-    DEFECT D LIVES IN THE LAST TWO ROWS. A bare word is a VARIABLE REFERENCE,
-    and an unset one under `set -u` ends the script with exit 1, NO
-    `pointer_bump_only` pair on stdout at all, and no message of the script's
-    own -- so the caller gets a failed step rather than the fail-safe `false`
-    every other doubt in this file produces. `gh --jq '... | length'` answers
+    DEFECT D LIVES IN THE LAST TWO ROWS. A bare word is a VARIABLE REFERENCE, and an unset one under `set -u` ends the script with exit 1, NO `pointer_bump_only` pair on stdout at all, and no message of the script's own -- so the caller gets a failed step rather than the fail-safe `false` every other doubt in this file produces. `gh --jq '... | length'` answers
     with a number today, and `gh` exits non-zero when it cannot, so the row is
     not reachable through the current call; it is one shape change in the
     reducing jq program away, and it is the same class as DEFECT C.

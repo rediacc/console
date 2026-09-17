@@ -1,8 +1,6 @@
 """policy_paths.py -- the Python twin of `scripts/lib/policy-paths.ts`.
 
-WHY A TWIN AND NOT A CLIENT. `scripts/lib/policy-paths.ts` already answers
-"where does a suppression policy file live", and it has a CLI, so a Python
-caller could shell out to `tsx` for the answer. Three reasons it must not:
+WHY A TWIN AND NOT A CLIENT. `scripts/lib/policy-paths.ts` already answers "where does a suppression policy file live", and it has a CLI, so a Python caller could shell out to `tsx` for the answer. Three reasons it must not:
 
   1. COST. `go_deps.py`, `plan_housekeeping.py` and `profiler_coverage.py` need
      the path at module import. A node startup per gate, to join two strings,
@@ -15,14 +13,8 @@ caller could shell out to `tsx` for the answer. Three reasons it must not:
   3. AVAILABILITY. A Python gate must answer on a tree where `node_modules` has
      not been installed. The TS CLI cannot.
 
-SO THE LISTS ARE WRITTEN TWICE, AND THAT IS A LIABILITY. It is the liability
-`check:ci-policy-inventory` exists to hold: it asserts three-way set equality
-between this file's POLICY_FILES, the TypeScript file's POLICY_FILES, and the
-`.ci/policy/` directory itself, in BOTH directions per pair. Divergence is not
-prevented here, it is made loud there. That gate also carries the reason the
-inventory is load-bearing rather than tidy: `.language-policy-allowlist` landed
-on 2026-09-07 in the directory and in NEITHER list, reached by a hardcoded join
-that bypassed both seams, and nothing was red for a day.
+SO THE LISTS ARE WRITTEN TWICE, AND THAT IS A LIABILITY. It is the liability `check:ci-policy-inventory` exists to hold: it asserts three-way set equality between this file's POLICY_FILES, the TypeScript file's POLICY_FILES, and the `.ci/policy/` directory itself, in BOTH directions per pair. Divergence is not prevented here, it is made loud there. That gate also carries the reason
+the inventory is load-bearing rather than tidy: `.language-policy-allowlist` landed on 2026-09-07 in the directory and in NEITHER list, reached by a hardcoded join that bypassed both seams, and nothing was red for a day.
 
 THE THREE RULES ARE THE TWIN'S, VERBATIM IN INTENT.
 
@@ -50,9 +42,7 @@ THE THREE RULES ARE THE TWIN'S, VERBATIM IN INTENT.
 EVERY ENVIRONMENT OVERRIDE STAYS IN FRONT OF THE SEAM. `LANGUAGE_POLICY_ALLOWLIST`,
 `RUNNER_ADVICE_ALLOWLIST`, `PLAN_HK_ALLOWLIST` and `PROFILER_COVERAGE_ALLOWLIST`
 are read by their gates and short-circuit the call; none of them is read here.
-An override consulted INSIDE the seam would be a second live location, which is
-rule 3 defeated by the back door, and it would also cost a `os.environ` read on
-a function whose whole contract is that it reads nothing.
+An override consulted INSIDE the seam would be a second live location, which is rule 3 defeated by the back door, and it would also cost a `os.environ` read on a function whose whole contract is that it reads nothing.
 """
 
 import os
@@ -109,9 +99,7 @@ _VALID = frozenset(POLICY_FILES)
 class UnknownPolicyFileError(ValueError):
     """A name that is not one of POLICY_FILES.
 
-    A distinct type, not a bare ValueError, so a caller's control can assert on
-    the refusal without matching a message string -- the same argument
-    `rediacc_ci.paths.RootError` makes one module over.
+    A distinct type, not a bare ValueError, so a caller's control can assert on the refusal without matching a message string -- the same argument `rediacc_ci.paths.RootError` makes one module over.
     """
 
 
@@ -136,9 +124,7 @@ def policy_rel(name: str) -> str:
 
     For the callers that hold a relative path and join it themselves later
     (`root / BLOCKLIST_REL` in go_deps, `${VAR:-<rel>}` semantics in
-    profiler_coverage) or print it in a message. Returning an absolute path to
-    those would change what they write into fixtures and what they show a
-    reader, for no gain.
+    profiler_coverage) or print it in a message. Returning an absolute path to those would change what they write into fixtures and what they show a reader, for no gain.
 
     A pure string join, like everything else here. Raises on an unknown name.
     """
@@ -150,9 +136,7 @@ def policy_rel(name: str) -> str:
 def policy_path(name: str, root: str | os.PathLike[str] | None = None) -> pathlib.Path:
     """Absolute path of one policy file. A PURE JOIN: no stat, no readdir.
 
-    `root` defaults to the repository this package lives in. Tests pass a
-    fixture root, and the join being pure is what lets that fixture be
-    completely empty -- see this module's docstring, rule 1.
+    `root` defaults to the repository this package lives in. Tests pass a fixture root, and the join being pure is what lets that fixture be completely empty -- see this module's docstring, rule 1.
 
     Raises UnknownPolicyFileError on an unknown name, naming the valid set.
     """

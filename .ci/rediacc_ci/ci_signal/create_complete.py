@@ -1,18 +1,11 @@
 """Port of `.ci/scripts/signal/create-complete.sh`.
 
-Writes the completion-signal file a CI job coordinator waits on. Eight
-`ct-tests.yml` jobs call it (`ct-tests.yml:419,569,735,889,1049,1266,1449,1628`)
+Writes the completion-signal file a CI job coordinator waits on. Eight `ct-tests.yml` jobs call it (`ct-tests.yml:419,569,735,889,1049,1266,1449,1628`)
 as `--name "<suite>" --status ${{ job.status }}`, and the backend job blocks
-until those files appear. It is a workflow `run:` target, NOT a registered
-`check:ci-*` gate: `grep -n create-complete package.json` matches nothing, so
-there is no gate id to cite here and no manifest entry to keep in step.
+until those files appear. It is a workflow `run:` target, NOT a registered `check:ci-*` gate: `grep -n create-complete package.json` matches nothing, so there is no gate id to cite here and no manifest entry to keep in step.
 
-WHAT IT CLOSES. The twin is 44 lines of which 25 are `parse_args`, `CI_TEMP`
-and two log helpers borrowed from `.ci/scripts/lib/common.sh`, i.e. the exact
-surface `rediacc_ci.core.common` and `rediacc_ci.log` already own and already
-prove. Porting it removes the last reason `signal/` had to source a 500-line
-library to write two files, and it puts the flag contract under a differential
-instead of under a usage comment.
+WHAT IT CLOSES. The twin is 44 lines of which 25 are `parse_args`, `CI_TEMP` and two log helpers borrowed from `.ci/scripts/lib/common.sh`, i.e. the exact surface `rediacc_ci.core.common` and `rediacc_ci.log` already own and already prove. Porting it removes the last reason `signal/` had to source a 500-line library to write two files, and it puts the flag contract under a
+differential instead of under a usage comment.
 
 THE FLAG CONTRACT, from the twin's own header:
 
@@ -21,19 +14,11 @@ THE FLAG CONTRACT, from the twin's own header:
             from `get_temp_dir()`: `$RUNNER_TEMP`, else `$TMPDIR`, else `/tmp`.
   --status  Job status. Default `success`.
 
-It writes TWO files, not one: `complete-<name>.txt` and a generic
-`complete.txt`, both holding `<status>`. The generic one is the "simple cases"
-convenience the twin's last line calls it, and it means two jobs sharing an
-output directory overwrite each other's `complete.txt`. That is the twin's
-behaviour and it is reproduced rather than corrected -- every live caller
-passes a distinct `--name` and reads `complete-<name>.txt`.
+It writes TWO files, not one: `complete-<name>.txt` and a generic `complete.txt`, both holding `<status>`. The generic one is the "simple cases" convenience the twin's last line calls it, and it means two jobs sharing an output directory overwrite each other's `complete.txt`. That is the twin's behaviour and it is reproduced rather than corrected -- every live caller passes a
+distinct `--name` and reads `complete-<name>.txt`.
 
-MESSAGE TEXT IS BYTE-IDENTICAL, INCLUDING THE `.sh` IN THE USAGE LINE. Both
-strings a human ever reads here (`Usage: create-complete.sh ...` and `Created
-completion signal: ...`) are explicit `log_error`/`log_info` arguments the twin
-author chose, so the port reproduces them exactly, `.sh` and all: the name in
-that line is the name of the step a workflow author greps for, and rewriting it
-to `.py` would make the two implementations answer differently for no gain
+MESSAGE TEXT IS BYTE-IDENTICAL, INCLUDING THE `.sh` IN THE USAGE LINE. Both strings a human ever reads here (`Usage: create-complete.sh ...` and `Created completion signal: ...`) are explicit `log_error`/`log_info` arguments the twin author chose, so the port reproduces them exactly, `.sh` and all: the name in that line is the name of the step a workflow author greps for, and
+rewriting it to `.py` would make the two implementations answer differently for no gain
 while the bash twin is still the live call site.
 
 TWO DIVERGENCES, BOTH NAMED RATHER THAN HIDDEN:

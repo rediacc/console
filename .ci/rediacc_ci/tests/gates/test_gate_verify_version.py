@@ -2,32 +2,17 @@
 
 Tests for `verify_version()` in `.ci/scripts/test/test-install-methods.sh`.
 
-WHY THIS EXISTS. On 2026-08-07 release run 31154305287 published CLI binaries
-built as 1.2.16 under the label 1.2.17. Two guards passed silently, and
-underneath both sat this one primitive, whose whole body was
+WHY THIS EXISTS. On 2026-08-07 release run 31154305287 published CLI binaries built as 1.2.16 under the label 1.2.17. Two guards passed silently, and underneath both sat this one primitive, whose whole body was
 
     echo "$output" | grep -q "$expected"
 
-which reports success in three situations where nothing was verified: an EMPTY
-expectation (`grep -q ""` matches any line), EMPTY output (a binary that did not
-run, or whose output was discarded by `|| true`), and a SUBSTRING match, so
-1.2.1 "verified" against a binary reporting 1.2.16. The dots are regex wildcards
-on top of that.
+which reports success in three situations where nothing was verified: an EMPTY expectation (`grep -q ""` matches any line), EMPTY output (a binary that did not run, or whose output was discarded by `|| true`), and a SUBSTRING match, so 1.2.1 "verified" against a binary reporting 1.2.16. The dots are regex wildcards on top of that.
 
-The rule being pinned: there is ALWAYS a version, or it fails. A caller that
-genuinely cannot determine one must SKIP visibly, never hand an empty string to
-this and take the pass.
+The rule being pinned: there is ALWAYS a version, or it fails. A caller that genuinely cannot determine one must SKIP visibly, never hand an empty string to this and take the pass.
 
-WHY THE SUBJECT IS EXTRACTED RATHER THAN SOURCED, unchanged from the twin:
-sourcing the whole script would run its argument parsing. The extraction is by
-ANCHOR, so a rename breaks this file loudly instead of leaving it exercising a
-copy pasted in here -- and an extraction that comes back EMPTY is a refusal, not
-a suite that passes over nothing.
+WHY THE SUBJECT IS EXTRACTED RATHER THAN SOURCED, unchanged from the twin: sourcing the whole script would run its argument parsing. The extraction is by ANCHOR, so a rename breaks this file loudly instead of leaving it exercising a copy pasted in here -- and an extraction that comes back EMPTY is a refusal, not a suite that passes over nothing.
 
-WHY EACH CALL IS ITS OWN `bash -c`. The bash twin evals the function into its
-own shell once. A Python port has no shell to eval into, so each call is a
-process, and the function text is re-injected each time. That is slower and
-strictly more honest: no case can leave state behind for the next one.
+WHY EACH CALL IS ITS OWN `bash -c`. The bash twin evals the function into its own shell once. A Python port has no shell to eval into, so each call is a process, and the function text is re-injected each time. That is slower and strictly more honest: no case can leave state behind for the next one.
 """
 
 import re

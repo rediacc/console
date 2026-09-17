@@ -2,17 +2,10 @@
 """A hook that CALLS a shared-lib function it never sourced fails at runtime, not at
 review time -- and the failure looks like success.
 
-WHY THIS EXISTS. check-hook-integrity.sh proves every guard has a case that expects it
-to BLOCK/WARN and a case that expects it to stay SILENT. Neither direction tells you
-whether the guard actually evaluated its real logic or crashed before reaching it: a
-guard that calls an undefined function dies with `bash: <name>: command not found` on
-stderr, and the "expect non-empty output" half of a warn/block assertion cannot tell
-that crash apart from a real warning -- both are just non-empty text.
+WHY THIS EXISTS. check-hook-integrity.sh proves every guard has a case that expects it to BLOCK/WARN and a case that expects it to stay SILENT. Neither direction tells you whether the guard actually evaluated its real logic or crashed before reaching it: a guard that calls an undefined function dies with `bash: <name>: command not found` on stderr, and the "expect non-empty output"
+half of a warn/block assertion cannot tell that crash apart from a real warning -- both are just non-empty text.
 
-PROVEN, not theorised. This session renamed `hook_scan_target` (the function
-warn-stale-index.sh:30 calls from its sourced lib/command-scan.sh) to
-`hook_scan_target_RENAMED`, ran warn-stale-index.sh's own real "expect a warning"
-test input, and got:
+PROVEN, not theorised. This session renamed `hook_scan_target` (the function warn-stale-index.sh:30 calls from its sourced lib/command-scan.sh) to `hook_scan_target_RENAMED`, ran warn-stale-index.sh's own real "expect a warning" test input, and got:
     warn-stale-index.sh: line 30: hook_scan_target: command not found
 which is non-empty, so the existing "warn" assertion shape (`[ -n "$out" ]`) would have
 PASSED that case even though the guard never ran its real logic. Restored immediately;
@@ -22,21 +15,12 @@ WHAT IT CHECKS. Every guard under .claude/hooks/**/*.sh that sources a `lib/*.sh
 via the repo's one sourcing idiom (`source "$(dirname "${BASH_SOURCE[0]}")/lib/X.sh"`)
 must have every identifier it calls as a bare statement -- `name ...` at the start of a
 line or after `&&`/`||`/`;`/`$(` -- resolve to a function DEFINED either in the guard
-itself or in a lib it actually sources. An identifier that is not locally resolvable
-but IS a function name defined SOMEWHERE ELSE in the .claude/hooks tree is flagged: a
-coincidental collision with an ordinary shell word is vanishingly unlikely given this
-tree's function names (`hook_scan_target`, `_hook_wrapper_payload`, ...), and a real
-typo/rename/dropped-source produces exactly that shape.
+itself or in a lib it actually sources. An identifier that is not locally resolvable but IS a function name defined SOMEWHERE ELSE in the .claude/hooks tree is flagged: a coincidental collision with an ordinary shell word is vanishingly unlikely given this tree's function names (`hook_scan_target`, `_hook_wrapper_payload`, ...), and a real typo/rename/dropped-source produces
+exactly that shape.
 
-WHAT IT DOES NOT DO. It does not execute anything, and it follows sourcing ONE level
-(the guard's own file plus whatever it directly sources) -- the same honest scoping
-disclosure check_python_gate_deps.py makes for Python imports.
+WHAT IT DOES NOT DO. It does not execute anything, and it follows sourcing ONE level (the guard's own file plus whatever it directly sources) -- the same honest scoping disclosure check_python_gate_deps.py makes for Python imports.
 
----- gate ----
-step: Guard feature completeness
-needs: none
-selftest: true
----- end gate ----
+---- gate ---- step: Guard feature completeness needs: none selftest: true ---- end gate ----
 """
 
 import pathlib
@@ -114,12 +98,9 @@ HEREDOC_OPEN_RE = re.compile(r"<<-?\s*(['\"]?)(\w+)\1")
 def strip_noise(text: str) -> str:
     """Drop heredoc bodies and full-line comments before scanning for calls.
 
-    PROVEN NECESSARY, not precautionary: this gate's own first real run flagged
-    warn-remote-drift.sh over the word "fail" inside the comment `# Bounded fetch of
+    PROVEN NECESSARY, not precautionary: this gate's own first real run flagged warn-remote-drift.sh over the word "fail" inside the comment `# Bounded fetch of
     just this branch; fail open on timeout or any error.` -- the `;` mid-comment read
-    as a statement separator. Heredoc bodies are the same risk (human prose, not
-    bash), so both are stripped the same way rather than patched as one-off
-    exceptions.
+    as a statement separator. Heredoc bodies are the same risk (human prose, not bash), so both are stripped the same way rather than patched as one-off exceptions.
     """
     lines = text.split("\n")
     out = []

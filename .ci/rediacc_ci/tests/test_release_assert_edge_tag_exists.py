@@ -1,29 +1,16 @@
 """Differential: `rediacc_ci.release.assert_edge_tag_exists` against its twin
 `.ci/scripts/release/assert-edge-tag-exists.sh`.
 
-RECORDING FAKE `gh` AND `aws` ON A SCRATCH PATH, the seam every port in this box
-uses. Nothing here reaches GitHub or R2. That matters more than usual: this
-machine has a logged-in `gh`, and the twin's very first probe is
-`gh api repos/<repo>/git/ref/tags/<tag>` against whatever `$GITHUB_REPOSITORY`
+RECORDING FAKE `gh` AND `aws` ON A SCRATCH PATH, the seam every port in this box uses. Nothing here reaches GitHub or R2. That matters more than usual: this machine has a logged-in `gh`, and the twin's very first probe is `gh api repos/<repo>/git/ref/tags/<tag>` against whatever `$GITHUB_REPOSITORY`
 names. Every case pins `GITHUB_REPOSITORY=acme/widget` and a fake endpoint as
 well, so even a leak would not name the real repository or a real bucket.
 
-THE CALL LOG IS COMPARED, NOT JUST THE STREAMS, because the observable question
-is WHICH oracles were consulted. Three independent probes that all run even
-after one has failed is the design (`judge ... || true`), and a port that
-short-circuited on the first failure would print a plausible subset of the same
-lines. Only the call log shows it.
+THE CALL LOG IS COMPARED, NOT JUST THE STREAMS, because the observable question is WHICH oracles were consulted. Three independent probes that all run even after one has failed is the design (`judge ... || true`), and a port that short-circuited on the first failure would print a plausible subset of the same lines. Only the call log shows it.
 
-BOTH ANTI-VACUITY DIRECTIONS ARE DRIVEN. `absent` (a real 404) and `unknown:` (a
-403, a 5xx, `NoCredentials`) exit 1 with DIFFERENT advice, and the whole script
-exists to keep them apart -- `test_a_403_...` and `test_a_404_...` assert that
-the two remediation blocks are not interchangeable.
+BOTH ANTI-VACUITY DIRECTIONS ARE DRIVEN. `absent` (a real 404) and `unknown:` (a 403, a 5xx, `NoCredentials`) exit 1 with DIFFERENT advice, and the whole script exists to keep them apart -- `test_a_403_...` and `test_a_404_...` assert that the two remediation blocks are not interchangeable.
 
 THE SILENT-EXIT DEFECT IS PINNED, NOT PAPERED OVER.
-`test_defect_bare_version_flag_exits_1_in_total_silence` drives the twin with a
-bare `--version` and asserts zero bytes on both streams with exit 1, then
-asserts the port agrees. If someone repairs the twin, this test goes red and
-names the port that must follow.
+`test_defect_bare_version_flag_exits_1_in_total_silence` drives the twin with a bare `--version` and asserts zero bytes on both streams with exit 1, then asserts the port agrees. If someone repairs the twin, this test goes red and names the port that must follow.
 """
 
 from __future__ import annotations
@@ -295,8 +282,7 @@ def test_a_403_is_could_not_tell_and_gets_the_opposite_advice(
     tmp_path: pathlib.Path,
 ) -> None:
     """THE POINT OF THE WHOLE SCRIPT. A probe that could not run must not be
-    filed as an absence: the advice for an absence is "cut the release and
-    backfill the sentinel", and giving that to an operator whose release is fine
+    filed as an absence: the advice for an absence is "cut the release and backfill the sentinel", and giving that to an operator whose release is fine
     is what the twin's own comment records as having cost real cycles."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -395,8 +381,7 @@ def test_a_mixture_of_absent_and_unknown_takes_the_could_not_tell_advice(
     tmp_path: pathlib.Path,
 ) -> None:
     """When BOTH states are present the could-not-tell block wins, because an
-    unknown means nothing can be concluded about the release at all -- so the
-    "cut the release" advice would be unsound even though something really is
+    unknown means nothing can be concluded about the release at all -- so the "cut the release" advice would be unsound even though something really is
     missing."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -531,12 +516,9 @@ def test_help_goes_to_stdout_with_exit_0(tmp_path: pathlib.Path) -> None:
 def test_defect_bare_version_flag_exits_1_in_total_silence(tmp_path: pathlib.Path) -> None:
     """THE DEFECT, PINNED IN BOTH DIRECTIONS. `--version` with no value hits
     `shift 2` with one argument left; `set -e` (inherited from common.sh:11,
-    which this script sources despite its own `set -uo pipefail`) kills the run
-    before the `if [[ -z "$VERSION" ]]` written to handle exactly this case.
+    which this script sources despite its own `set -uo pipefail`) kills the run before the `if [[ -z "$VERSION" ]]` written to handle exactly this case.
 
-    Zero bytes on both streams with exit 1 is indistinguishable from a probe
-    genuinely refusing to promote, on a script whose whole purpose is to be a
-    LOUD no-op. Reproduced because the acceptance rule for this wave is
+    Zero bytes on both streams with exit 1 is indistinguishable from a probe genuinely refusing to promote, on a script whose whole purpose is to be a LOUD no-op. Reproduced because the acceptance rule for this wave is
     agreement with the live twin; if someone repairs the twin, this test goes
     red and names the port that must follow.
     """
@@ -571,11 +553,7 @@ def test_divergence_common_sh_interprets_backslash_escapes_in_probe_text(
     tmp_path: pathlib.Path,
 ) -> None:
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. common.sh's loggers use `echo -e`, which interprets
-    backslash escapes IN THE MESSAGE, and the COULD NOT TELL line interpolates
-    the probe's own output into that message. `rediacc_ci.log` formats the
-    message as data (see its module docstring), so a literal backslash-n in an
-    API error becomes a newline through the twin and stays two characters here.
+    "FIXED" BY ACCIDENT. common.sh's loggers use `echo -e`, which interprets backslash escapes IN THE MESSAGE, and the COULD NOT TELL line interpolates the probe's own output into that message. `rediacc_ci.log` formats the message as data (see its module docstring), so a literal backslash-n in an API error becomes a newline through the twin and stays two characters here.
     """
     old, new, _oc, _nc = run_both(
         tmp_path,
@@ -639,11 +617,7 @@ def test_judge_counts_the_two_states_separately() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the one thing whose omission a reader would not
-    notice: the `unknown` arm classified as a pass. That is exactly the "a check
-    that did not run reads as a green" failure this script exists to prevent,
-    and the mutant's exit code changes from 1 to 0 while two of its three OK
-    lines stay identical. Driven red, then the source is confirmed
-    byte-identical and green.
+    notice: the `unknown` arm classified as a pass. That is exactly the "a check that did not run reads as a green" failure this script exists to prevent, and the mutant's exit code changes from 1 to 0 while two of its three OK lines stay identical. Driven red, then the source is confirmed byte-identical and green.
     """
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

@@ -1,28 +1,16 @@
 """Differential: `rediacc_ci.release.install_script_check` against its twin
 `.ci/scripts/test/test-install-script.sh` (gate `test:install-script`).
 
-THE TWIN STOPS AT THE FIRST FAILURE -- its `log_fail` is an immediate `exit 1`
--- so a green run says nothing about the thirteen assertions behind whichever
-one fired. Every case below therefore mutates a COPY of
-`packages/www/public/install.sh` so that exactly one chosen assertion is the one
-reached, and compares both sides byte for byte from there.
+THE TWIN STOPS AT THE FIRST FAILURE -- its `log_fail` is an immediate `exit 1` -- so a green run says nothing about the thirteen assertions behind whichever one fired. Every case below therefore mutates a COPY of `packages/www/public/install.sh` so that exactly one chosen assertion is the one reached, and compares both sides byte for byte from there.
 
-THE COLOUR QUIRK IS PINNED HERE, IN BOTH DIRECTIONS, because it is the part of
-this pair a reader is most likely to "fix". `test-install-script.sh:26-33` sets
-`RED`/`GREEN`/`NC` and then every `log_pass` runs AFTER a
-`source "$INSTALL_SH"`, which reassigns those same three names -- to escapes on
-a tty and to EMPTY STRINGS otherwise (`install.sh:62-72`). So the twin's own
-constants are dead, and the observable rule is install.sh's. Both sides are run
-twice: through a pipe, where neither may emit an escape, and under a pty, where
-both must.
+THE COLOUR QUIRK IS PINNED HERE, IN BOTH DIRECTIONS, because it is the part of this pair a reader is most likely to "fix". `test-install-script.sh:26-33` sets `RED`/`GREEN`/`NC` and then every `log_pass` runs AFTER a `source "$INSTALL_SH"`, which reassigns those same three names -- to escapes on a tty and to EMPTY STRINGS otherwise (`install.sh:62-72`). So the twin's own constants
+are dead, and the observable rule is install.sh's. Both sides are run twice: through a pipe, where neither may emit an escape, and under a pty, where both must.
 
 HOW THE TWO SIDES ARE POINTED AT A FIXTURE: the twin resolves `ROOT_DIR` from
 `${BASH_SOURCE[0]}` and is COPIED into the fixture; the port resolves it through
 `paths.repo_root()` and takes `$REDIACC_CI_ROOT`.
 
-WHAT IS NORMALIZED, AND IT IS ONLY THIS: `mktemp` paths. Two of the twin's
-messages embed `$HOME`, which is a fresh `mktemp -d` per case, so the two sides
-cannot agree on those bytes. Nothing else is masked.
+WHAT IS NORMALIZED, AND IT IS ONLY THIS: `mktemp` paths. Two of the twin's messages embed `$HOME`, which is a fresh `mktemp -d` per case, so the two sides cannot agree on those bytes. Nothing else is masked.
 
 K=5 LEDGER: `.ci/shadow/w7p6-install-script.observations.jsonl`.
 """
@@ -107,8 +95,7 @@ def _run(subject: pathlib.Path, fixture: pathlib.Path) -> subprocess.CompletedPr
 def _run_on_a_pty(subject: pathlib.Path, fixture: pathlib.Path) -> str:
     """Both streams, through a real pty, so `[ -t 1 ]` is true in the child.
 
-    `pty.spawn` copies the child's output onto ITS OWN stdout, so the spawn runs
-    in a helper process whose stdout this call captures.
+    `pty.spawn` copies the child's output onto ITS OWN stdout, so the spawn runs in a helper process whose stdout this call captures.
     """
     argv, env = _argv(subject, fixture)
     helper = "import pty,sys; sys.exit(pty.spawn(%r))" % (argv,)
@@ -280,10 +267,7 @@ def test_the_nojq_shim_hides_jq_and_keeps_the_rest(tmp_path: pathlib.Path) -> No
 def test_colours_are_install_shs_own_palette() -> None:
     """`colours()` is `install.sh:62-72`, and the ESCAPES are read from it.
 
-    Comparing `colours()` against `os.isatty(1)` alone would be circular -- that
-    is its implementation. The non-circular half is the palette: the three
-    literals are lifted out of `install.sh` itself, so a change there reds this
-    rather than silently re-colouring the gate.
+    Comparing `colours()` against `os.isatty(1)` alone would be circular -- that is its implementation. The non-circular half is the palette: the three literals are lifted out of `install.sh` itself, so a change there reds this rather than silently re-colouring the gate.
     """
     text = INSTALL_SH.read_text(encoding="utf-8")
     for literal in ("RED='\\033[0;31m'", "GREEN='\\033[0;32m'", "NC='\\033[0m'"):
@@ -315,11 +299,7 @@ def test_mode_matches_real_stat(tmp_path: pathlib.Path) -> None:
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:
     """Delete the 0600 assertion from a COPY of the port.
 
-    The config holds an account server and an update channel and is written by
-    a `curl | bash` installer, so its mode is a real security property. A port
-    that dropped the check agrees with the twin on every tree where install.sh
-    still chmods correctly -- which is every tree except the fixture built here.
-    The real port file is never touched.
+    The config holds an account server and an update channel and is written by a `curl | bash` installer, so its mode is a real security property. A port that dropped the check agrees with the twin on every tree where install.sh still chmods correctly -- which is every tree except the fixture built here. The real port file is never touched.
     """
     source = PORT.read_text(encoding="utf-8")
     anchor = """    perms = _mode(config)

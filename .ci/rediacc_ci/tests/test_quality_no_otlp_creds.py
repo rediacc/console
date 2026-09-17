@@ -1,23 +1,14 @@
 """`rediacc_ci.quality.no_otlp_creds` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-no-otlp-creds.sh` over a
-fixture with stdout and stderr captured SEPARATELY, and its bytes are compared
-against the port's. THE TWIN HAS NO ENVIRONMENT SEAM -- it resolves the repo root
+A bash child runs the REAL `.ci/scripts/quality/check-no-otlp-creds.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. THE TWIN HAS NO ENVIRONMENT SEAM -- it resolves the repo root
 from `get_repo_root`, i.e. from `.ci/scripts/lib/common.sh`'s own location -- so
-unlike `test_quality_staging_tag_guard.py` the twin has to be COPIED into the
-fixture. That is the same recipe the committed ledger uses
-(`.ci/shadow/w7p2-otlp-creds.observations.jsonl`), and it is what makes the tree
-id in those rows a claim about both implementations rather than about one.
+unlike `test_quality_staging_tag_guard.py` the twin has to be COPIED into the fixture. That is the same recipe the committed ledger uses (`.ci/shadow/w7p2-otlp-creds.observations.jsonl`), and it is what makes the tree id in those rows a claim about both implementations rather than about one.
 
 BOTH STREAMS ARE COMPARED BYTE FOR BYTE HERE. This gate writes everything through
 `log_*`, so every line is on stderr and stdout is empty; asserting on both is what
-would catch a stream swap, which is the 2026-09-06 incident
-`rediacc_ci.tests.differential` was shaped by.
+would catch a stream swap, which is the 2026-09-06 incident `rediacc_ci.tests.differential` was shaped by.
 
-THE FIXTURES ARE ALL NON-CLEAN ON PURPOSE. A clean tree makes this gate print
-`✓` lines only, and two implementations that both print nothing have proved
-nothing about each other. Every case below produces at least one warning or one
-error on both sides.
+THE FIXTURES ARE ALL NON-CLEAN ON PURPOSE. A clean tree makes this gate print `✓` lines only, and two implementations that both print nothing have proved nothing about each other. Every case below produces at least one warning or one error on both sides.
 """
 
 import os
@@ -41,8 +32,7 @@ def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
     """A specimen repo holding BOTH implementations plus `files`.
 
     The bash library goes in whole because the twin sources `common.sh`; the
-    Python package goes in by named module rather than wholesale so a sibling
-    agent's half-written file cannot change what this test runs.
+    Python package goes in by named module rather than wholesale so a sibling agent's half-written file cannot change what this test runs.
     """
     src = pathlib.Path(diff.repo())
     root = tmp_path / "fixture"
@@ -132,8 +122,7 @@ def test_the_twin_prints_a_doubled_glyph_and_the_port_reproduces_it(
 ) -> None:
     """`log_info "✓ ..."` prefixes a SECOND ✓. A twin defect, carried not fixed.
 
-    Pinned so nobody "tidies" the port into printing one glyph, which would be a
-    compared-line difference against the twin for a purely cosmetic gain.
+    Pinned so nobody "tidies" the port into printing one glyph, which would be a compared-line difference against the twin for a purely cosmetic gain.
     """
     root = build(tmp_path, {"packages/cli/dist/cli-bundle.cjs": RUNTIME})
     (_, _, old_err), (_, _, new_err) = run_both(root)

@@ -1,23 +1,12 @@
 r"""`rediacc_ci.quality.config_migrations` against the shell it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Three of this gate's
-decisions are made by shell constructs whose behaviour is not inferable from
-reading them: a two-stage `grep -oE | grep -oE` whose second stage anchors to the
-FIRST stage's output, a `find | sort` whose order is byte order and not numeric,
-and -- most consequentially -- an assignment under `set -euo pipefail` whose
-failure kills the script BEFORE the error message written to handle it. A table
-of expected strings would be a table of what the PORT does, asserted against
-itself.
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Three of this gate's decisions are made by shell constructs whose behaviour is not inferable from reading them: a two-stage `grep -oE | grep -oE` whose second stage anchors to the FIRST stage's output, a `find | sort` whose order is byte order and not numeric, and -- most consequentially -- an assignment under `set -euo
+pipefail` whose failure kills the script BEFORE the error message written to handle it. A table of expected strings would be a table of what the PORT does, asserted against itself.
 
-The committed ledger `.ci/shadow/w7p2-config-migrations.observations.jsonl`
-compares the WHOLE gate over five distinct trees, with `npx` stubbed so the
-round-trip path is deterministic. It cannot show that the "Could not parse"
-message is unreachable, because on such a tree BOTH sides print nothing. This
-file proves that with bash.
+The committed ledger `.ci/shadow/w7p2-config-migrations.observations.jsonl` compares the WHOLE gate over five distinct trees, with `npx` stubbed so the round-trip path is deterministic. It cannot show that the "Could not parse" message is unreachable, because on such a tree BOTH sides print nothing. This file proves that with bash.
 
 THE FRAGMENTS BELOW ARE LIFTED FROM
-`.ci/scripts/quality/check-config-migrations.sh` lines 45-69 with the variables
-substituted and nothing else changed.
+`.ci/scripts/quality/check-config-migrations.sh` lines 45-69 with the variables substituted and nothing else changed.
 """
 
 import pathlib
@@ -53,9 +42,7 @@ VERSION_CASES = [
 def test_version_pipeline_matches_grep(tmp_path: pathlib.Path, text: str) -> None:
     """`grep -oE 'CURRENT_SCHEMA_VERSION = [0-9]+' | grep -oE '[0-9]+$'`.
 
-    Run WITHOUT `set -e`, so the shell reports the empty result instead of dying
-    on it. The dying is the subject of the next test, and conflating the two
-    would make this one pass for the wrong reason.
+    Run WITHOUT `set -e`, so the shell reports the empty result instead of dying on it. The dying is the subject of the next test, and conflating the two would make this one pass for the wrong reason.
     """
     (tmp_path / "index.ts").write_text(text + "\n", encoding="utf-8")
     code, out, err = diff.bash_streams(
@@ -73,13 +60,9 @@ def test_the_unparseable_runner_dies_before_its_error_message(
 ) -> None:
     """The dead-code path, proven with bash rather than asserted from reading.
 
-    Under `set -euo pipefail` the ASSIGNMENT carries the pipeline's status, so a
-    runner with no constant exits 1 having printed NOTHING -- the
-    `log_error "Could not parse CURRENT_SCHEMA_VERSION from ..."` beneath it is
-    unreachable. The port reproduces the silence.
+    Under `set -euo pipefail` the ASSIGNMENT carries the pipeline's status, so a runner with no constant exits 1 having printed NOTHING -- the `log_error "Could not parse CURRENT_SCHEMA_VERSION from ..."` beneath it is unreachable. The port reproduces the silence.
 
-    BOTH DIRECTIONS: the parseable rows in the table must reach the marker, or
-    this test would pass against a script that always died.
+    BOTH DIRECTIONS: the parseable rows in the table must reach the marker, or this test would pass against a script that always died.
     """
     (tmp_path / "index.ts").write_text(text + "\n", encoding="utf-8")
     code, out, err = diff.bash_streams(
@@ -143,11 +126,7 @@ def test_coverage_loop_matches_bash(
 def test_fixture_files_matches_find_and_sort(tmp_path: pathlib.Path) -> None:
     """`find <dir> -maxdepth 1 -name 'v*-sample.json' | sort`.
 
-    THE ORDER IS BYTE ORDER, NOT NUMERIC, and that is the assertion worth having:
-    `-` is 0x2D and `0` is 0x30, so `v1-sample.json` sorts before
-    `v10-sample.json`, which sorts before `v2-sample.json`. A port that sorted
-    numerically would print its round-trip results in a different order for the
-    rest of time.
+    THE ORDER IS BYTE ORDER, NOT NUMERIC, and that is the assertion worth having: `-` is 0x2D and `0` is 0x30, so `v1-sample.json` sorts before `v10-sample.json`, which sorts before `v2-sample.json`. A port that sorted numerically would print its round-trip results in a different order for the rest of time.
 
     `-maxdepth 1` is the other half: a nested fixture is invisible to both.
     """
@@ -176,9 +155,7 @@ def test_fixture_files_matches_find_and_sort(tmp_path: pathlib.Path) -> None:
 def test_an_empty_and_an_absent_fixtures_dir_are_both_empty(tmp_path: pathlib.Path) -> None:
     """The two WARNING paths, which are also this gate's vacuity hole.
 
-    Neither is a failure in the twin: a repository with no fixtures at all
-    reports success having round-tripped nothing. Pinned as a named control so
-    the debt is on the record rather than inferred from the absence of a test.
+    Neither is a failure in the twin: a repository with no fixtures at all reports success having round-tripped nothing. Pinned as a named control so the debt is on the record rather than inferred from the absence of a test.
     """
     empty = tmp_path / "empty"
     empty.mkdir()
@@ -194,10 +171,7 @@ def test_the_embedded_tsx_is_byte_identical_to_the_heredoc() -> None:
 
     THIS IS THE ONE PLACE A PORT MAY NOT REWORD. Everything else in this gate is
     a message a port is allowed to rephrase; the heredoc is a PROGRAM whose
-    output the gate then re-emits line by line, so a single changed character
-    changes the findings. Read out of the shell file at test time rather than
-    pasted here, so the assertion cannot rot into a comparison of two stale
-    copies.
+    output the gate then re-emits line by line, so a single changed character changes the findings. Read out of the shell file at test time rather than pasted here, so the assertion cannot rot into a comparison of two stale copies.
     """
     sh = (
         (
@@ -219,12 +193,7 @@ def test_the_embedded_tsx_is_byte_identical_to_the_heredoc() -> None:
 def test_the_scratch_file_lands_in_the_repository() -> None:
     """`.config-migrations-check.tmp.ts` sits in packages/cli, not in a tempdir.
 
-    Asserted rather than commented because it is a real property with a real
-    cost: the working tree is DIRTY for the duration of the run, and a `kill -9`
-    between the write and the trap leaves the file behind. The path is
-    load-bearing -- the generated program resolves
-    `src/__tests__/fixtures/config` against its own working directory -- so this
-    is carried, not repaired.
+    Asserted rather than commented because it is a real property with a real cost: the working tree is DIRTY for the duration of the run, and a `kill -9` between the write and the trap leaves the file behind. The path is load-bearing -- the generated program resolves `src/__tests__/fixtures/config` against its own working directory -- so this is carried, not repaired.
     """
     assert cm.TMP_SCRIPT_NAME == ".config-migrations-check.tmp.ts"
     assert not pathlib.Path(cm.TMP_SCRIPT_NAME).is_absolute()
@@ -233,8 +202,6 @@ def test_the_scratch_file_lands_in_the_repository() -> None:
 def test_selftest_is_green() -> None:
     """The port's own plants and mirrors, driven from pytest.
 
-    Not redundant with running `--selftest` from the shell: this is the call that
-    fails the pytest suite when a control is deleted, which is the failure mode
-    the flag on its own cannot catch (nobody runs it).
+    Not redundant with running `--selftest` from the shell: this is the call that fails the pytest suite when a control is deleted, which is the failure mode the flag on its own cannot catch (nobody runs it).
     """
     assert cm.selftest() == 0

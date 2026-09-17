@@ -1,23 +1,14 @@
 """`rediacc_ci.quality.mutate_check` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-mutate-check.sh` over a
-fixture with stdout and stderr captured SEPARATELY, and its bytes are compared
-against the port's. The twin has no environment seam -- it resolves its root from
+A bash child runs the REAL `.ci/scripts/quality/check-mutate-check.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. The twin has no environment seam -- it resolves its root from
 its OWN location, `$(dirname "${BASH_SOURCE[0]}")/../../..` -- so it is copied
-into the fixture along with the real mutation runner and its miniature suite.
-Same recipe as the committed ledger,
-`.ci/shadow/w7p2-mutate-check.observations.jsonl`.
+into the fixture along with the real mutation runner and its miniature suite. Same recipe as the committed ledger, `.ci/shadow/w7p2-mutate-check.observations.jsonl`.
 
-WHAT THE LEDGER CANNOT SEE, AND THIS FILE CAN. `bad()` prints `  FAIL <label>`
+WHAT THE LEDGER CANNOT SEE, AND THIS FILE CAN. `bad()` prints ` FAIL <label>`
 with ONE space, and `scripts/lib/shadow-gate.ts`'s marker needs `FAIL:` or two
-spaces, so every per-scenario failure line is CHATTER to the comparator and the
-only compared finding is the final count. Byte comparison here is therefore
-strictly stronger than the differential: it pins WHICH scenario failed, not just
-how many.
+spaces, so every per-scenario failure line is CHATTER to the comparator and the only compared finding is the final count. Byte comparison here is therefore strictly stronger than the differential: it pins WHICH scenario failed, not just how many.
 
-EVERY FIXTURE BELOW IS RED ON PURPOSE. A green run prints only `ok` lines, which
-the comparator reads as chatter, and two implementations that both say nothing
-have proved nothing about each other.
+EVERY FIXTURE BELOW IS RED ON PURPOSE. A green run prints only `ok` lines, which the comparator reads as chatter, and two implementations that both say nothing have proved nothing about each other.
 """
 
 import pathlib
@@ -141,8 +132,7 @@ def test_port_and_twin_agree_byte_for_byte(
 def test_the_control_case_is_green_on_both_sides(tmp_path: pathlib.Path) -> None:
     """Scenario 1 is the ONLY one that may exit 0, so an untouched fixture is green.
 
-    This is the mirror the parametrized cases above need: a gate that reported
-    failures for everything would satisfy all five of them.
+    This is the mirror the parametrized cases above need: a gate that reported failures for everything would satisfy all five of them.
     """
     root = build(tmp_path)
     (old_exit, old_out, _), (new_exit, new_out, _) = run_both(root)

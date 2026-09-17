@@ -1,13 +1,8 @@
 """`rediacc_ci.quality.swallowed_failures` against the awk scanner it replaces.
 
-WHY A DIFFERENTIAL. This gate is one 150-line awk program with four rules, a
-two-pass line folder and a 12-line lookahead window, and its own history is a
-version that died on all 42 files while printing "OK: no gate captures a
-probe...". Comparing the port against the real awk on the same input is the only
-form of this test that can fail for the right reason.
+WHY A DIFFERENTIAL. This gate is one 150-line awk program with four rules, a two-pass line folder and a 12-line lookahead window, and its own history is a version that died on all 42 files while printing "OK: no gate captures a probe...". Comparing the port against the real awk on the same input is the only form of this test that can fail for the right reason.
 
-The whole gate is covered by
-`.ci/shadow/w7p2-swallowed-failures.observations.jsonl` over five distinct trees.
+The whole gate is covered by `.ci/shadow/w7p2-swallowed-failures.observations.jsonl` over five distinct trees.
 """
 
 import pathlib
@@ -26,9 +21,7 @@ TWIN = pathlib.Path(".ci/scripts/quality/check-swallowed-failures.sh")
 def _awk_program() -> str:
     """The `awk -v file="$1" '<program>'` body, as text.
 
-    Sliced between the two markers rather than by line number: a line number
-    churns the day a paragraph moves above it, and this file's header is edited
-    often.
+    Sliced between the two markers rather than by line number: a line number churns the day a paragraph moves above it, and this file's header is edited often.
     """
     text = TWIN.read_text(encoding="utf-8")
     start = text.index('    awk -v file="$1" \'')

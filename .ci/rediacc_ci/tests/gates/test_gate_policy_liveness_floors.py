@@ -2,38 +2,22 @@
 
 Test for the PER-PROBE INPUT FLOORS in `scripts/gates/check-suppression-liveness.ts`.
 
-THE HOLE THIS CLOSES. The gate's anti-vacuity guard keys on `entriesChecked` across
-the WHOLE run (`isVacuous` in `scripts/lib/suppression-liveness.ts`), so it only
-fires when the run asserted nothing AT ALL. The failure that actually happens is
-one list going empty while the other eleven stay full: the total stays healthy, the
-report still prints "every suppression entry is still load-bearing", and the probe
-over the emptied list has quietly stopped being a check. Measured on the real tree
-2026-09-06: 12 probes, 87 entries, of which the largest single probe is 28 --
-emptying any one of the others leaves a total that looks entirely normal.
+THE HOLE THIS CLOSES. The gate's anti-vacuity guard keys on `entriesChecked` across the WHOLE run (`isVacuous` in `scripts/lib/suppression-liveness.ts`), so it only fires when the run asserted nothing AT ALL. The failure that actually happens is one list going empty while the other eleven stay full: the total stays healthy, the report still prints "every suppression entry is still
+load-bearing", and the probe over the emptied list has quietly stopped being a check. Measured on the real tree 2026-09-06: 12 probes, 87 entries, of which the largest single probe is 28 -- emptying any one of the others leaves a total that looks entirely normal.
 
 TWO FLOORS, TWO SHAPES, and each is proven in both directions:
 
     ENTRIES   the file is there but has been emptied   -> BELOW FLOOR
     PRESENCE  the file is not where the probe looks    -> MISSING FILE
 
-The presence floor only applies to a FULL CHECKOUT, because the gate's own fixtures
-are deliberately partial. That predicate is the thing most likely to rot into a
-check that cannot fail, so it is asserted in BOTH directions: the same missing file
-must be red in a full-shaped root and silent in a partial one, with nothing else
-changed between the two runs.
+The presence floor only applies to a FULL CHECKOUT, because the gate's own fixtures are deliberately partial. That predicate is the thing most likely to rot into a check that cannot fail, so it is asserted in BOTH directions: the same missing file must be red in a full-shaped root and silent in a partial one, with nothing else changed between the two runs.
 
-WHERE THE PORT REIMPLEMENTS THE TWIN, and it is one place worth naming. The twin
-reads the census back with two `awk` programs -- one summing the ` entries  floor `
-rows, one pulling the ` probe(s), ` roll-up -- and asserts the two agree. That
-self-consistency check is the reason the census cannot drift from the run it
-describes, and a hard-coded 87 would be a hand-typed floor that reds on the next
-legitimate edit. The port does the same arithmetic with two regexes over the same
+WHERE THE PORT REIMPLEMENTS THE TWIN, and it is one place worth naming. The twin reads the census back with two `awk` programs -- one summing the ` entries floor ` rows, one pulling the ` probe(s), ` roll-up -- and asserts the two agree. That self-consistency check is the reason the census cannot drift from the run it describes, and a hard-coded 87 would be a hand-typed floor that
+reds on the next legitimate edit. The port does the same arithmetic with two regexes over the same
 text. Both read the SAME two shapes out of the SAME output; neither knows the
 number in advance.
 
-NO `xdist_group`. Each case builds a complete fixture root under `mkdtemp`, points
-`SUPPRESSION_LIVENESS_ROOT` at it, and removes it afterwards. The two cases that
-run against the real tree only READ it.
+NO `xdist_group`. Each case builds a complete fixture root under `mkdtemp`, points `SUPPRESSION_LIVENESS_ROOT` at it, and removes it afterwards. The two cases that run against the real tree only READ it.
 """
 
 import pathlib
@@ -78,10 +62,7 @@ def make_full_fixture(gate, base: pathlib.Path) -> pathlib.Path:
     """A fixture that is FULL-SHAPED and GREEN, so every case changes exactly one thing.
 
     Each probe's file is present and satisfies its floor; the oracles are mostly
-    left unavailable on purpose (no `packages/`, no `go.mod`, not a git repo) so
-    those probes SKIP rather than condemn copied entries whose supporting tree is
-    not here. Two probes run for real -- `deps` against the root `package.json`, and
-    `parity-exempt` against the copied workflow tree -- which is what keeps the run
+    left unavailable on purpose (no `packages/`, no `go.mod`, not a git repo) so those probes SKIP rather than condemn copied entries whose supporting tree is not here. Two probes run for real -- `deps` against the root `package.json`, and `parity-exempt` against the copied workflow tree -- which is what keeps the run
     from being vacuous and the baseline from being green for the wrong reason.
     """
     _require_tools(gate)

@@ -43,8 +43,7 @@ WHY THIS EXISTS, in the twin's own words, because the incident is the design:
     gate fails loudly rather than going quietly blind to the defect it was built
     for.
 
-THE THREE-WAY CONTROL IS NOT BELT-AND-BRACES, and the measured table is the whole
-argument:
+THE THREE-WAY CONTROL IS NOT BELT-AND-BRACES, and the measured table is the whole argument:
 
     The config moved from `ruff.toml` into the root pyproject.toml and the
     `--config` arguments came out, because both ruff and pytest DISCOVER a root
@@ -138,35 +137,20 @@ EXE001 IS INVISIBLE FROM HERE, so the property is checked directly:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE PIN IS ASSIGNED TWICE IN THE TWIN AND THE SECOND ONE WINS. It sources
-`.ci/scripts/lib/toolchain.sh`, calls `toolchain_load` (which exports
-`RUFF_VERSION` from `.devcontainer/toolchain.env`), and then immediately writes
+THE PIN IS ASSIGNED TWICE IN THE TWIN AND THE SECOND ONE WINS. It sources `.ci/scripts/lib/toolchain.sh`, calls `toolchain_load` (which exports `RUFF_VERSION` from `.devcontainer/toolchain.env`), and then immediately writes
 `RUFF_VERSION="0.16.1"` over it. Because `toolchain_pin_for ruff` reads the
-CURRENT value of that variable, the literal is what `toolchain_check` compares
-against, not the pins file. The two agree today (`.devcontainer/toolchain.env:32`
+CURRENT value of that variable, the literal is what `toolchain_check` compares against, not the pins file. The two agree today (`.devcontainer/toolchain.env:32`
 says `RUFF_VERSION=0.16.1`), so the redundancy is invisible; the day someone bumps
-the pins file and not this line, the gate keeps demanding the old version and says
-nothing about why. Reproduced, and reported as a defect rather than repaired.
+the pins file and not this line, the gate keeps demanding the old version and says nothing about why. Reproduced, and reported as a defect rather than repaired.
 
-`enumerate_py` IS ONE FUNCTION FOR A REASON, carried verbatim: "It is a function
-specifically so the control cannot drift from the thing it guards: an earlier draft
-of control 3 ran its own copy of this query, which meant editing the real
-enumeration left the control green -- a check that cannot fail, introduced by the
-very commit that was fixing one."
+`enumerate_py` IS ONE FUNCTION FOR A REASON, carried verbatim: "It is a function specifically so the control cannot drift from the thing it guards: an earlier draft of control 3 ran its own copy of this query, which meant editing the real enumeration left the control green -- a check that cannot fail, introduced by the very commit that was fixing one."
 
 COLOUR HERE IS DECIDED BY `CI`, NOT BY isatty. The twin writes
 `if [[ "${CI:-}" == "true" ]]; then RED="" ... else RED=$'\033[0;31m'`, so a
-developer piping this gate into a file still gets escapes. That is one of the nine
-disagreeing colour conventions `rediacc_ci.log` documents, and it is reproduced
-rather than corrected: using the logger would change the bytes on every non-CI run
-and the differential would mismatch on every tree.
+developer piping this gate into a file still gets escapes. That is one of the nine disagreeing colour conventions `rediacc_ci.log` documents, and it is reproduced rather than corrected: using the logger would change the bytes on every non-CI run and the differential would mismatch on every tree.
 
-`ruff` IS RESOLVED, NOT ASSUMED, in the twin's three-rung order: `$RUFF_BIN`, then
-a PATH binary AT THE PIN, then `uvx ruff@<pin>`. The middle rung is the one with
-history: "This branch used to accept whatever `ruff` was on PATH, so a host
-carrying 0.5.0 linted with it while CI used the pinned version and the two
-disagreed silently -- the same defect already fixed for shfmt and shellcheck, left
-behind here because the class was swept incompletely."
+`ruff` IS RESOLVED, NOT ASSUMED, in the twin's three-rung order: `$RUFF_BIN`, then a PATH binary AT THE PIN, then `uvx ruff@<pin>`. The middle rung is the one with history: "This branch used to accept whatever `ruff` was on PATH, so a host carrying 0.5.0 linted with it while CI used the pinned version and the two disagreed silently -- the same defect already fixed for shfmt and
+shellcheck, left behind here because the class was swept incompletely."
 
 THE MODE SCAN READS `git ls-files -s` AND THEN `awk '{print $1, $4}'`, so a path
 containing whitespace is truncated identically on both sides. Carried.
@@ -230,9 +214,7 @@ def is_work_tree(root: str) -> bool:
 def enumerate_py(root: str) -> list[str]:
     """The ONE enumerator, used by the real list AND by control 3.
 
-    `git ls-files --cached --others --exclude-standard -- '*.py' ':!:private/**'`,
-    then `[ -e "$f" ]`: "a tracked file deleted in the working tree (rm without
-    git rm) is still listed and would make ruff fail on a path that is not there."
+    `git ls-files --cached --others --exclude-standard -- '*.py' ':!:private/**'`, then `[ -e "$f" ]`: "a tracked file deleted in the working tree (rm without git rm) is still listed and would make ruff fail on a path that is not there."
     """
     proc = _run(
         [
@@ -288,8 +270,7 @@ def _which(name: str) -> str | None:
 def control_verdict(output: str) -> str:
     """The three assertions over the control run's output. "" means the control fired.
 
-    Returns the twin's own `control_bad` string, semicolon-joined in the same
-    order, because that string is printed and therefore compared.
+    Returns the twin's own `control_bad` string, semicolon-joined in the same order, because that string is printed and therefore compared.
     """
     bad = ""
     if "F821" not in output:
@@ -306,8 +287,7 @@ def control_verdict(output: str) -> str:
 def unformatted_paths(format_out: str) -> str:
     """The `-->` paths out of `ruff format --check`, ANSI stripped, sorted unique.
 
-    Returns a SPACE-TERMINATED string, as `tr '\\n' ' '` produces, because the
-    trailing space lands in the printed command and the differential compares it.
+    Returns a SPACE-TERMINATED string, as `tr '\\n' ' '` produces, because the trailing space lands in the printed command and the differential compares it.
     """
     names: set[str] = set()
     for line in ANSI.sub("", format_out).split("\n"):
@@ -320,8 +300,7 @@ def unformatted_paths(format_out: str) -> str:
 def mode_findings(root: str) -> tuple[list[str], int]:
     """EXE001/EXE002 against the GIT MODE, not the disk mode.
 
-    Returns (message lines, files seen). The count is the anti-vacuity half: "A
-    scan that sees nothing cannot fail, so its silence proves nothing."
+    Returns (message lines, files seen). The count is the anti-vacuity half: "A scan that sees nothing cannot fail, so its silence proves nothing."
     """
     red, _green, nc = colours()
     proc = _run(["git", "-C", root, "ls-files", "-s", "--", "*.py", ":!:private/**"])
@@ -583,10 +562,7 @@ def _rmtree(path: pathlib.Path) -> None:
 def selftest() -> int:
     """Both directions on the control verdict, the format parser and the mode rule.
 
-    THE CONTROL VERDICT IS THE PIECE MOST WORTH ASSERTING, because it is the thing
-    that decides whether any other verdict means anything. All four of its states
-    are exercised: fires on each missing rule, and stays SILENT on the exact output
-    this repo's configuration produces.
+    THE CONTROL VERDICT IS THE PIECE MOST WORTH ASSERTING, because it is the thing that decides whether any other verdict means anything. All four of its states are exercised: fires on each missing rule, and stays SILENT on the exact output this repo's configuration produces.
     """
     verdict_cases = [
         ("this repo's config output is accepted", "a.py:1:1: F821 x\na.py:1:1: ARG001 y\n", ""),

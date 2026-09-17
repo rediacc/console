@@ -1,16 +1,11 @@
 """`rediacc_ci.quality.plan_housekeeping` against the sed and bash it replaces.
 
 WHAT THE SHADOW LEDGER ALREADY PROVES:
-`.ci/shadow/w7p2-plan-housekeeping.observations.jsonl` drives both
-implementations end to end over five distinct committed git trees, each built
+`.ci/shadow/w7p2-plan-housekeeping.observations.jsonl` drives both implementations end to end over five distinct committed git trees, each built
 with per-file `GIT_COMMITTER_DATE` so the age instrument answers differently per
-plan: an over-age plan, a second one plus a plan in the warn band, an allowlist
-entry that suppresses nothing, an expired entry beside a thin BLOCKER and a
-dangling path, and a compacted record whose blob does not resolve.
+plan: an over-age plan, a second one plus a plan in the warn band, an allowlist entry that suppresses nothing, an expired entry beside a thin BLOCKER and a dangling path, and a compacted record whose blob does not resolve.
 
-WHAT THE LEDGER CANNOT ISOLATE is the four text readers, and three of them
-decide an EXEMPTION, which is the only thing in this gate that can turn a red
-into a green:
+WHAT THE LEDGER CANNOT ISOLATE is the four text readers, and three of them decide an EXEMPTION, which is the only thing in this gate that can turn a red into a green:
 
   * `record_blob` and `record_status`, two `sed -n '1,10s/.../\\1/p'` programs
     whose two anchors were each paid for. A trailing `.*` accepted a 41-hex
@@ -146,9 +141,7 @@ def test_display_status_scans_the_whole_file_unlike_the_exemption_reader(
 ) -> None:
     """The two readers ARE different on purpose, and that is worth pinning.
 
-    The DISPLAY status is only printed, so it scans the whole file because some
-    plans put their header low. The EXEMPTION reader must agree with
-    `wl_planrec.parse` exactly, so it does not.
+    The DISPLAY status is only printed, so it scans the whole file because some plans put their header low. The EXEMPTION reader must agree with `wl_planrec.parse` exactly, so it does not.
     """
     body = "# t\n%sStatus: executing\n" % FILLER
     path = _write(tmp_path, body)
@@ -276,8 +269,7 @@ def test_allowlist_parser_agrees_with_the_twin_loop(tmp_path: pathlib.Path, text
 def test_a_tab_only_line_is_malformed_not_blank(tmp_path: pathlib.Path) -> None:
     """`${line// /}` STRIPS SPACES AND NOT TABS, so a tab-only line is an entry.
 
-    Reproduced rather than tidied. A fixture full of spaces would never show it,
-    which is exactly why it is asserted against the real loop here.
+    Reproduced rather than tidied. A fixture full of spaces would never show it, which is exactly why it is asserted against the real loop here.
     """
     text = "# BLOCKER: %s\n\t\n" % GOOD
     want_exempt, want_problems = _bash_allowlist(tmp_path, text)
@@ -304,8 +296,7 @@ def test_is_shallow_is_dead_in_the_twin_and_therefore_absent_here() -> None:
 
     `is_shallow()` is defined at `check-plan-housekeeping.sh:275` and called
     nowhere; the live logic reads the graft list per plan, which is the third
-    iteration the header describes. If a future edit gives it a caller, this
-    test fails and whoever ports the twin next has to decide deliberately.
+    iteration the header describes. If a future edit gives it a caller, this test fails and whoever ports the twin next has to decide deliberately.
     """
     text = TWIN.read_text(encoding="utf-8")
     assert "is_shallow()" in text, "the twin no longer defines is_shallow"
@@ -332,19 +323,11 @@ def test_the_config_mirror_equals_wl_planrec_record_states_both_directions() -> 
 
     THE ORIGIN IS THE HOOK CONSTANT, not the config. `check_plan_record.py`
     imports `R.RECORD_STATES` by name (`:1405`) and cannot drift; the
-    housekeeping pair CANNOT import it, because that gate must stay runnable in
-    a checkout with no `.claude/`, which is the only reason a config exists at
-    all. So the config is a mirror, and this is the comparison that makes it one
-    rather than a fourth copy.
+    housekeeping pair CANNOT import it, because that gate must stay runnable in a checkout with no `.claude/`, which is the only reason a config exists at all. So the config is a mirror, and this is the comparison that makes it one rather than a fourth copy.
 
-    BOTH DIRECTIONS, and the reverse is the interesting one: a state added to
-    the hook and not to the config makes a plan a record in `check:ci-plan-record`
-    and an OFFENDER in `check:ci-plan-housekeeping`, on a clock, with no way for
-    the author to tell which reader is wrong.
+    BOTH DIRECTIONS, and the reverse is the interesting one: a state added to the hook and not to the config makes a plan a record in `check:ci-plan-record` and an OFFENDER in `check:ci-plan-housekeeping`, on a clock, with no way for the author to tell which reader is wrong.
 
-    NOT SKIPPED WHEN THE HOOKS ARE ABSENT WITHOUT SAYING SO. `pytest.skip` prints
-    the reason, which is the difference between "checked and equal" and "not
-    checked".
+    NOT SKIPPED WHEN THE HOOKS ARE ABSENT WITHOUT SAYING SO. `pytest.skip` prints the reason, which is the difference between "checked and equal" and "not checked".
     """
     stop = paths.CI_DIR.parent / ".claude" / "hooks" / "stop"
     if not (stop / "wl_planrec.py").is_file():
@@ -367,20 +350,13 @@ def test_the_config_mirror_equals_wl_planrec_record_states_both_directions() -> 
 def test_neither_twin_hard_types_the_alternation_any_more() -> None:
     """The point of the config is that the word appears in ONE place.
 
-    A twin that reads the config AND keeps its old literal still works, and the
-    literal is then a copy waiting to be edited by someone who greps for the
-    word. This asserts the copies are gone from both twins rather than merely
-    inert.
+    A twin that reads the config AND keeps its old literal still works, and the literal is then a copy waiting to be edited by someone who greps for the word. This asserts the copies are gone from both twins rather than merely inert.
     """
 
     def code_only(text: str, comment: str) -> str:
         """The file with its comment lines dropped.
 
-        BOTH TWINS QUOTE THE OLD LITERAL IN A COMMENT, on purpose: the archaeology
-        of why the vocabulary moved is the most useful thing in either file. A
-        raw substring check reads that prose as a live copy and reds for a reason
-        that has nothing to do with the code, which is the shape of a control
-        that fires on its own fixture.
+        BOTH TWINS QUOTE THE OLD LITERAL IN A COMMENT, on purpose: the archaeology of why the vocabulary moved is the most useful thing in either file. A raw substring check reads that prose as a live copy and reds for a reason that has nothing to do with the code, which is the shape of a control that fires on its own fixture.
         """
         return "\n".join(ln for ln in text.split("\n") if not ln.lstrip().startswith(comment))
 
@@ -402,11 +378,9 @@ def test_neither_twin_hard_types_the_alternation_any_more() -> None:
 def test_an_empty_vocabulary_matches_nothing_rather_than_the_empty_status() -> None:
     """The failure mode a naive `"|".join([])` produces.
 
-    The empty alternation `()` matches `Status:` with nothing after it, so a
-    plan whose header is a bare `Status:` would be reported as a record whose
+    The empty alternation `()` matches `Status:` with nothing after it, so a plan whose header is a bare `Status:` would be reported as a record whose
     status is the empty string, and `record_status(path) == "compacted"` would be
-    False while `record_status(path)` was truthy nowhere. Cheaper to make the
-    empty vocabulary unmatchable and refuse in `main()`.
+    False while `record_status(path)` was truthy nowhere. Cheaper to make the empty vocabulary unmatchable and refuse in `main()`.
     """
     assert hk._status_re(()).match("Status: compacted") is None
     assert hk._status_re(()).match("Status: ") is None
@@ -417,9 +391,7 @@ def test_an_empty_vocabulary_matches_nothing_rather_than_the_empty_status() -> N
 def test_record_states_reads_nothing_rather_than_guessing(tmp_path: pathlib.Path) -> None:
     """An unreadable or key-less config yields (), never a default vocabulary.
 
-    () is the SAFE direction: nothing is a record, so nothing is exempt and every
-    aged plan stays on the clock. A hard-coded fallback would exempt plans
-    because a file failed to parse.
+    () is the SAFE direction: nothing is a record, so nothing is exempt and every aged plan stays on the clock. A hard-coded fallback would exempt plans because a file failed to parse.
     """
     missing = tmp_path / "nope.json"
     assert hk.record_states(missing) == ()

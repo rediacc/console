@@ -1,25 +1,15 @@
 """`rediacc_ci.quality.pool_writer_safety` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-pool-writer-safety.sh` over
-a fixture with stdout and stderr captured SEPARATELY, and its bytes are compared
-against the port's. The twin has TWO environment seams of its own --
-`POOL_SAFETY_GATES_DIR` and `POOL_SAFETY_LOCK` -- so the gate battery and the
+A bash child runs the REAL `.ci/scripts/quality/check-pool-writer-safety.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. The twin has TWO environment seams of its own -- `POOL_SAFETY_GATES_DIR` and `POOL_SAFETY_LOCK` -- so the gate battery and the
 registration are pointed at the fixture; the twin itself is copied in anyway,
-because the committed ledger
-(`.ci/shadow/w7p2-pool-writer.observations.jsonl`) records a tree id that has to
-be a claim about BOTH implementations.
+because the committed ledger (`.ci/shadow/w7p2-pool-writer.observations.jsonl`) records a tree id that has to be a claim about BOTH implementations.
 
-RETARGETED 2026-09-09 (W7P3-BAT) WITH ITS SUBJECT. The registration used to be
-the `WRITER_TESTS` / `WRITER_TESTS_FALLBACK` arrays in
+RETARGETED 2026-09-09 (W7P3-BAT) WITH ITS SUBJECT. The registration used to be the `WRITER_TESTS` / `WRITER_TESTS_FALLBACK` arrays in
 `.ci/scripts/test/run-all.sh`; `battery.py` replaced that runner and classifies
 from `scripts/ci-runner/gates.lock.json`'s `mutex: ["tree:..."]` declarations
-instead, so the seam is now `POOL_SAFETY_LOCK` and the fixtures are JSON. The
-three defects below are unchanged and still pinned, because they are properties
-of the GATE and not of the file it reads.
+instead, so the seam is now `POOL_SAFETY_LOCK` and the fixtures are JSON. The three defects below are unchanged and still pinned, because they are properties of the GATE and not of the file it reads.
 
-THE THREE STACKED DEFECTS THIS GATE CARRIES ARE EACH PINNED HERE, because they
-are the reason the twin has the shape it has and every one of them was a green
-that meant nothing:
+THE THREE STACKED DEFECTS THIS GATE CARRIES ARE EACH PINNED HERE, because they are the reason the twin has the shape it has and every one of them was a green that meant nothing:
 
   1. `log_fail` did not exist in common.sh, so all THREE anti-vacuity refusals
      exited 127 instead of refusing. `test_a_lock_declaring_no_writers_refuses`
@@ -86,8 +76,7 @@ def lock_text(*registered: str) -> str:
 
     One non-gate-test entry is always present, because `run` is a command line in
     the general case and the parser has to pick the WORD that names the script; a
-    fixture holding only gate tests could not catch a parser that took the whole
-    string.
+    fixture holding only gate tests could not catch a parser that took the whole string.
     """
     entries: list[dict[str, object]] = [
         {
@@ -203,9 +192,7 @@ def test_a_reads_declaration_is_not_a_writer_registration(tmp_path: pathlib.Path
     """The half of the retarget that could silently re-open the old hole.
 
     `reads` releases a test to run BESIDE other scanners; only `mutex` puts it in
-    the serial W chain. A parser that accepted either would look correct on every
-    positive case above and would bless exactly the misclassification this gate
-    exists for.
+    the serial W chain. A parser that accepted either would look correct on every positive case above and would bless exactly the misclassification this gate exists for.
     """
     lock = json.dumps(
         [
@@ -306,9 +293,7 @@ def test_scan_text(text: str, hits: int) -> None:
 def test_safe_beats_taint_when_one_target_names_both() -> None:
     """The propagation ORDER, which no single-variable case can pin.
 
-    Measured 2026-09-06: planting the swap left all the other controls and all
-    five recorded shadow rows green, because every one of them references exactly
-    one kind of variable. A control that cannot fail is not a control.
+    Measured 2026-09-06: planting the swap left all the other controls and all five recorded shadow rows green, because every one of them references exactly one kind of variable. A control that cannot fail is not a control.
     """
     both = _TEMP + _SEED + 'cp "$SRC" "$TMP/${REPO_ROOT}.log"\n'
     assert gate.scan_text(both, "t.sh") == []
@@ -357,9 +342,7 @@ def test_a_lock_that_declares_nothing_parses_empty() -> None:
 def test_the_live_lock_still_declares_the_historical_writers() -> None:
     """Every fixture above is synthetic. This one reads the REAL declaration.
 
-    A parser that agreed with all of them while reading the live lock as empty
-    would look perfect here and refuse on every real run, and the retarget is
-    exactly the change that could have caused it.
+    A parser that agreed with all of them while reading the live lock as empty would look perfect here and refuse on every real run, and the retarget is exactly the change that could have caused it.
     """
     live = pathlib.Path(diff.repo()) / "scripts" / "ci-runner" / "gates.lock.json"
     declared = set(gate.registered_writers(live.read_text(encoding="utf-8")))

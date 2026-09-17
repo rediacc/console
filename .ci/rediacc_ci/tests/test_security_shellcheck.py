@@ -18,17 +18,13 @@ TWO KINDS OF CASE.
   of 40 would produce different bytes on a real tree while passing every
   stdout comparison a single-batch fixture could make.
 
-EVERY GIT OPERATION IS `git -C <scratch>` AND NEVER A `cd`, and `_git` asserts
-that `rev-parse --show-toplevel` resolves inside the scratch directory before it
-runs anything. The repository this test file lives in normally holds several
+EVERY GIT OPERATION IS `git -C <scratch>` AND NEVER A `cd`, and `_git` asserts that `rev-parse --show-toplevel` resolves inside the scratch directory before it runs anything. The repository this test file lives in normally holds several
 sessions' uncommitted work; a stray `git add -A` in the wrong tree is not
 recoverable.
 
-WHAT IS NORMALISED: the scratch tool-cache path, which is per-side by
-construction so that a download in one side cannot satisfy the other. Nothing
+WHAT IS NORMALISED: the scratch tool-cache path, which is per-side by construction so that a download in one side cannot satisfy the other. Nothing
 else. In particular the bash-4 block's `grep -r` order is NOT normalised, and
-is instead confined to single-file fixtures for the reason given in the port's
-module docstring.
+is instead confined to single-file fixtures for the reason given in the port's module docstring.
 
 K=5 LEDGER: `.ci/shadow/w7p6-shellcheck.observations.jsonl`.
 """
@@ -111,10 +107,7 @@ def pin() -> str:
 def _git(scratch: pathlib.Path, *args: str) -> str:
     """`git -C <scratch> ...`, with the toplevel guard fired FIRST.
 
-    The guard is not decoration. `git add -A` and `git commit` in this
-    repository would sweep several other sessions' uncommitted work into an
-    index nobody asked for, and the check that the toplevel resolves inside
-    `scratch` is the one thing standing between this fixture and that.
+    The guard is not decoration. `git add -A` and `git commit` in this repository would sweep several other sessions' uncommitted work into an index nobody asked for, and the check that the toplevel resolves inside `scratch` is the one thing standing between this fixture and that.
     """
     resolved = subprocess.run(
         ["git", "-C", str(scratch), "rev-parse", "--show-toplevel"],
@@ -319,8 +312,7 @@ def test_a_clean_fixture_passes_and_batches_once(fixture: pathlib.Path) -> None:
 def test_the_batch_size_is_forty(fixture: pathlib.Path) -> None:
     """`xargs -n 40`. The boundaries are OBSERVABLE in the real tool's output.
 
-    45 scripts on top of the fixture's own, so the last batch is a short one and
-    a port that chunked by 50 would show one invocation where there are two.
+    45 scripts on top of the fixture's own, so the last batch is a short one and a port that chunked by 50 would show one invocation where there are two.
     """
     for i in range(45):
         _write(fixture / "scripts" / ("gen%02d.sh" % i), TRIVIAL_SH)
@@ -386,10 +378,7 @@ def test_two_deleted_files_are_listed_space_separated(fixture: pathlib.Path) -> 
 def test_deleting_the_last_sorted_file_kills_the_gate(fixture: pathlib.Path) -> None:
     """THE SECOND DEFECT, reproduced on both sides. See the port's docstring.
 
-    `scripts/one.sh` sorts last in this fixture. Deleting it makes the twin
-    print its "skipping" line and then die at the FILTERING assignment, with
-    exit 1 and not one file linted. Exit 1 is also "shellcheck reported
-    findings", so the CI reader is told the tree is dirty when it was never read.
+    `scripts/one.sh` sorts last in this fixture. Deleting it makes the twin print its "skipping" line and then die at the FILTERING assignment, with exit 1 and not one file linted. Exit 1 is also "shellcheck reported findings", so the CI reader is told the tree is dirty when it was never read.
     """
     files = sorted(_git(fixture, "ls-files", "*.sh").split())
     assert files[-1] == "scripts/one.sh", files
@@ -405,9 +394,7 @@ def test_deleting_the_last_sorted_file_kills_the_gate(fixture: pathlib.Path) -> 
 def test_a_path_with_a_space_is_the_one_named_divergence(fixture: pathlib.Path) -> None:
     """NOT a reproduction. xargs re-splits the path; this port does not.
 
-    Written down as a disagreement rather than hidden, because the twin's
-    behaviour is plainly wrong and re-deriving xargs' quoting rules to be wrong
-    in the same way would be a worse port. No such path exists in this tree
+    Written down as a disagreement rather than hidden, because the twin's behaviour is plainly wrong and re-deriving xargs' quoting rules to be wrong in the same way would be a worse port. No such path exists in this tree
     today; the day one does, the difference is already documented and tested.
     """
     _write(fixture / "scripts" / "has space.sh", TRIVIAL_SH)
@@ -446,11 +433,7 @@ def test_a_gitignored_script_is_not_checked(fixture: pathlib.Path) -> None:
 def test_the_empty_corpus_refusal_is_reachable(tmp_path: pathlib.Path) -> None:
     """A work tree with the two implementations and NOTHING else tracked.
 
-    Built by hand rather than from the shared fixture because the only way to
-    reach an empty `git ls-files '*.sh'` is for the twins themselves to be
-    invisible to it, and the twin resolves its root from its own location. So
-    the twins live inside the tree and `.gitignore` hides them: `git ls-files`
-    lists no tracked `.sh`, and `--others --exclude-standard` honours the ignore.
+    Built by hand rather than from the shared fixture because the only way to reach an empty `git ls-files '*.sh'` is for the twins themselves to be invisible to it, and the twin resolves its root from its own location. So the twins live inside the tree and `.gitignore` hides them: `git ls-files` lists no tracked `.sh`, and `--others --exclude-standard` honours the ignore.
     """
     fx = tmp_path / "empty"
     fx.mkdir()
@@ -566,8 +549,7 @@ def test_echo_e_mangles_a_backslash_in_a_matched_line(fixture: pathlib.Path) -> 
     """THE DEFECT, both sides. `echo -e` re-expands the SOURCE line's escapes.
 
     The matched line contains a literal backslash-n; the report shows a real
-    newline in the middle of the finding, so the `path:line:` prefix and the
-    rest of the source line end up on different lines of the output.
+    newline in the middle of the finding, so the `path:line:` prefix and the rest of the source line end up on different lines of the output.
     """
     _build(fixture, "#!/bin/bash\ndeclare -A m # printf 'a\\nb'\n")
     old = assert_agree(fixture)
@@ -581,8 +563,7 @@ def test_echo_e_backslash_c_truncates_the_whole_report(fixture: pathlib.Path) ->
     """The worst of the four: every finding after a `\\c` silently disappears.
 
     The `declare -A` section comes first and carries the `\\c`; the `coproc`
-    section that follows it is found, assembled, and then thrown away by
-    `echo -e`. So the operator is told about one construct and not the other,
+    section that follows it is found, assembled, and then thrown away by `echo -e`. So the operator is told about one construct and not the other,
     with nothing indicating that anything was dropped.
     """
     _build(fixture, "#!/bin/bash\ndeclare -A m # \\c\ncoproc p { echo hi; }\n")
@@ -636,8 +617,7 @@ def test_echo_e_expands_the_separators_and_stops_at_backslash_c() -> None:
 def test_echo_e_agrees_with_bash_on_every_case_above() -> None:
     """The assertion above is only worth as much as BASH agreeing with it.
 
-    Drives the real `echo -e` for each case, so the unescaper is pinned to the
-    behaviour it is reproducing rather than to one reading of the manual.
+    Drives the real `echo -e` for each case, so the unescaper is pinned to the behaviour it is reproducing rather than to one reading of the manual.
     """
     for text in ("a\\nb", "a\\tb", "a\\\\b", "a\\cb", "a\\qb", "\\x41", "\\0101"):
         rc, out, _err = differential.bash_streams(

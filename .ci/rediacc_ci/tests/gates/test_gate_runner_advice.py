@@ -1,61 +1,34 @@
 r"""Port of `.ci/scripts/test/gates/test-runner-advice.sh`.
 
-Tests for `.ci/scripts/quality/check_runner_advice.py`: a job whose own profile
-says it fits ubuntu-slim must actually be on ubuntu-slim, and a job already on
-slim must not be sitting at slim's edge.
+Tests for `.ci/scripts/quality/check_runner_advice.py`: a job whose own profile says it fits ubuntu-slim must actually be on ubuntu-slim, and a job already on slim must not be sitting at slim's edge.
 
-Driven through the gate's env seams (`RUNNER_ADVICE_BASELINE`, `_WORKFLOW_DIR`,
-`_ALLOWLIST`) against temp fixtures, so no tracked baseline, workflow or
-allowlist is touched. Two cases are the exception and they are the load-bearing
-ones: the awk/python parity case runs the REAL `report.awk` and requires the
-REAL `classify()` to reproduce its verdict token, and the last case runs the
-gate SEAM-FREE against the real tree.
+Driven through the gate's env seams (`RUNNER_ADVICE_BASELINE`, `_WORKFLOW_DIR`, `_ALLOWLIST`) against temp fixtures, so no tracked baseline, workflow or allowlist is touched. Two cases are the exception and they are the load-bearing ones: the awk/python parity case runs the REAL `report.awk` and requires the REAL `classify()` to reproduce its verdict token, and the last case runs
+the gate SEAM-FREE against the real tree.
 
-Every fire case has its control: the same fixture, one thing changed, and the
-opposite verdict asserted. A gate that cannot be made to fire is not a gate, and
-a gate that fires on everything is not one either.
+Every fire case has its control: the same fixture, one thing changed, and the opposite verdict asserted. A gate that cannot be made to fire is not a gate, and a gate that fires on everything is not one either.
 
 --------------------------------------------------------------------------
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP
 --------------------------------------------------------------------------
-Read from the lock, not from a guess about the fixtures. `gates.lock.json`
-declares `gate-test:runner-advice` with `reads: ["tree:repo"]`, and it is right
-to: `test_real_tree_seam_free` runs the gate with NO seams at all, so it reads
-the tracked `.ci/policy/runner-profile-baseline.json`, the real
+Read from the lock, not from a guess about the fixtures. `gates.lock.json` declares `gate-test:runner-advice` with `reads: ["tree:repo"]`, and it is right to: `test_real_tree_seam_free` runs the gate with NO seams at all, so it reads the tracked `.ci/policy/runner-profile-baseline.json`, the real
 `.github/workflows` and the real allowlist; `test_awk_and_python_agree_on_the_verdict`
 runs the real `report.awk`; and `test_real_allowlist_blockers_are_substantive`
-runs the real `.ci/policy/.runner-advice-allowlist` through the real shared
-validator. A battery step rewriting any of those mid-sweep would be a divergence
-blamed on this port.
+runs the real `.ci/policy/.runner-advice-allowlist` through the real shared validator. A battery step rewriting any of those mid-sweep would be a divergence blamed on this port.
 
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
-this module declares no `XDIST_GROUP` of its own -- see `real_tree_admission` in
-`test_twin_parity.py`, where an own-group declaration makes the opt-in vacuous.
+this module declares no `XDIST_GROUP` of its own -- see `real_tree_admission` in `test_twin_parity.py`, where an own-group declaration makes the opt-in vacuous.
 
 --------------------------------------------------------------------------
 WHY THE MODULE-LEVEL CASES STILL SHELL OUT TO python3
 --------------------------------------------------------------------------
-Four twin cases load `check_runner_advice.py` through `importlib` and, in two of
-them, REPLACE `module.harvest` with a stub. Doing that in-process would mutate a
-module global inside the pytest worker, which is exactly the condition that
-obliges a port to declare its own `XDIST_GROUP` -- and an own group would cancel
-the real-tree opt-in above. Running each snippet in a fresh `python3 -` keeps the
-mutation inside a process that dies with the case, so the two requirements do not
-fight. It also keeps the port's diff readable against the twin, whose heredocs
-are carried across verbatim.
+Four twin cases load `check_runner_advice.py` through `importlib` and, in two of them, REPLACE `module.harvest` with a stub. Doing that in-process would mutate a module global inside the pytest worker, which is exactly the condition that obliges a port to declare its own `XDIST_GROUP` -- and an own group would cancel the real-tree opt-in above. Running each snippet in a fresh
+`python3 -` keeps the mutation inside a process that dies with the case, so the two requirements do not fight. It also keeps the port's diff readable against the twin, whose heredocs are carried across verbatim.
 
 --------------------------------------------------------------------------
 DOES THE SUBJECT SELF-SCAN? NO
 --------------------------------------------------------------------------
-Asked before a fixture was written, because a subject that can see this file
-turns a literal transcription into a tree-wide red for whoever runs the gate
-next. `check_runner_advice.py` reads exactly three inputs: a JSON baseline, a
-directory of `*.yml` workflows, and a line-oriented allowlist. It never walks a
-source tree, and none of those three can resolve to `.ci/rediacc_ci/**`. The
-fixtures are therefore written out literally, as the twin writes them.
-`test_real_tree_seam_free` carries the twin's own control for the other
-direction: if a fixture name ever leaks into the seam-free run, that case fails
-by name here rather than reddening the gate elsewhere.
+Asked before a fixture was written, because a subject that can see this file turns a literal transcription into a tree-wide red for whoever runs the gate next. `check_runner_advice.py` reads exactly three inputs: a JSON baseline, a directory of `*.yml` workflows, and a line-oriented allowlist. It never walks a source tree, and none of those three can resolve to `.ci/rediacc_ci/**`.
+The fixtures are therefore written out literally, as the twin writes them. `test_real_tree_seam_free` carries the twin's own control for the other direction: if a fixture name ever leaks into the seam-free run, that case fails by name here rather than reddening the gate elsewhere.
 """
 
 import datetime
@@ -161,8 +134,7 @@ def require_python(gate) -> str:
 def run_gate(gate, baseline_path, workflow_dir, allowlist) -> harness.RunResult:
     """`run_gate <baseline> <workflow-dir> <allowlist>`, merged streams.
 
-    The twin captures `2>&1` into `LAST_OUT` and asserts on the merged text, so
-    every caller below reads `.combined` for the same reason.
+    The twin captures `2>&1` into `LAST_OUT` and asserts on the merged text, so every caller below reads `.combined` for the same reason.
     """
     python3 = require_python(gate)
     return harness.run(
@@ -178,8 +150,7 @@ def run_gate(gate, baseline_path, workflow_dir, allowlist) -> harness.RunResult:
 def run_inline(gate, script: str, *args: str) -> harness.RunResult:
     """`python3 - "$GATE" <args> <<'PY'`, one throwaway interpreter per call.
 
-    `sys.argv[1]` is the gate path on the far side, exactly as in the twin, so a
-    snippet carried across needs no index rewriting.
+    `sys.argv[1]` is the gate path on the far side, exactly as in the twin, so a snippet carried across needs no index rewriting.
     """
     python3 = require_python(gate)
     return harness.run([python3, "-", os.fspath(GATE), *args], stdin=script)
@@ -188,9 +159,7 @@ def run_inline(gate, script: str, *args: str) -> harness.RunResult:
 def workflow(directory, runner: str) -> None:
     """`workflow <dir> <runner-for-waster>` -- five jobs, one of which is the subject.
 
-    The other four exist so the baseline clears the vacuity floor with records
-    that must stay SILENT: a CPU-bound job, a job already on slim, a job too
-    close to the time cap, and a job whose runner is chosen at dispatch time.
+    The other four exist so the baseline clears the vacuity floor with records that must stay SILENT: a CPU-bound job, a job already on slim, a job too close to the time cap, and a job whose runner is chosen at dispatch time.
     """
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "fixture.yml").write_text(
@@ -447,8 +416,7 @@ def test_empty_baseline_refuses(gate):
 
 def test_pristine_baseline_warns_and_passes(gate):
     """THE BOOTSTRAP EXCEPTION. Without it the gate is unsatisfiable: it goes red
-    on an unseeded baseline, the seed can only come from a run whose profiled
-    jobs finished, and this gate failing ~5 minutes in is what stops them
+    on an unseeded baseline, the seed can only come from a run whose profiled jobs finished, and this gate failing ~5 minutes in is what stops them
     finishing. Two rounds of that yielded 3 jobs against a floor of 5."""
     with harness.temp_dir() as d:
         workflow(d / "wf", "ubuntu-latest")
@@ -861,10 +829,7 @@ def synth_tsv(out, tier, cceil, mceil, label, src, hint, n, cpu, mem, env: str =
       #META  tier cpu_milli mem_bytes interval_s start_ms runner_label cpu_src mem_src
              container_hint runner_env
       S      t_ms cpu_milli mem_bytes rx_bytes   tx_bytes disk_ws_kb   disk_tmp_kb
-    RAM is walked by one byte per sample so the degenerate-series finding (all
-    readings identical) does not fire on a synthetic capture. `env` defaults to
-    empty, which writes a 10-field META -- the pre-2026-08-09 shape, kept as a
-    fixture so the back-compat default is exercised rather than assumed.
+    RAM is walked by one byte per sample so the degenerate-series finding (all readings identical) does not fire on a synthetic capture. `env` defaults to empty, which writes a 10-field META -- the pre-2026-08-09 shape, kept as a fixture so the back-compat default is exercised rather than assumed.
     """
     t = 1700000000000
     head = ["#META", str(tier), str(cceil), str(mceil), "10", str(t), label, src, src, hint]
@@ -901,8 +866,7 @@ print(module.classify(module.parse_row(sys.argv[2])))
 def run_report_awk(gate, d, name, args):
     """`awk -v wall_s=... -f report.awk <tsv>`, returning (result, machine-row-path).
 
-    The sample count is `args[6]`: the twin reads its 7th positional after the
-    shift, over the same `tier cceil mceil label src hint SAMPLES cpu mem` tail.
+    The sample count is `args[6]`: the twin reads its 7th positional after the shift, over the same `tier cceil mceil label src hint SAMPLES cpu mem` tail.
     """
     awk = harness.require_tool("awk", "install gawk or mawk; report.awk is an awk program")
     if not REPORT_AWK.is_file():
@@ -958,8 +922,7 @@ def assert_parity(gate, d, name, want, *args) -> None:
 
 def test_awk_and_python_agree_on_the_verdict(gate):
     """THE COHERENCE CASE. Two implementations of the same thresholds, in two
-    languages, in two files. The panel's advisory and this gate's verdict are
-    only the same claim for as long as these agree, and nothing else in the tree
+    languages, in two files. The panel's advisory and this gate's verdict are only the same claim for as long as these agree, and nothing else in the tree
     would notice them drifting apart."""
     with harness.temp_dir() as d:
         assert_parity(
@@ -1254,10 +1217,7 @@ def test_real_allowlist_blockers_are_substantive(gate):
 
 def test_real_tree_seam_free(gate):
     """THE LOAD-BEARING CASE. No env seams: the real baseline, the real
-    .github/workflows, the real allowlist. Two outcomes are correct here and the
-    test asserts WHICH one it got rather than accepting any exit code: once the
-    baseline is seeded the gate passes, and until it is, the vacuity floor must
-    refuse. Anything else -- a crash, a silent 0 over an empty baseline -- fails
+    .github/workflows, the real allowlist. Two outcomes are correct here and the test asserts WHICH one it got rather than accepting any exit code: once the baseline is seeded the gate passes, and until it is, the vacuity floor must refuse. Anything else -- a crash, a silent 0 over an empty baseline -- fails
     this case."""
     python3 = require_python(gate)
     # The seams must be ABSENT, not merely unset in this process: `harness.run` overlays os.environ, so a `RUNNER_ADVICE_*` inherited from an outer shell would silently make this case seam-BEARING and its name a lie.

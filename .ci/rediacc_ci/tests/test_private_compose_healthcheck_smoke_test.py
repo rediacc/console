@@ -1,48 +1,26 @@
 """Differential: `.ci/rediacc_ci/private/compose_healthcheck_smoke_test.py`
 against its twin `.ci/scripts/private/compose-healthcheck-smoke-test.sh`.
 
-WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
-code is correct", it is "the new code says what the old code said". Only running
-BOTH, on the same fixture, in the same run, can support that.
+WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-NOTHING REAL IS EVER INVOKED, AND THE NEAR-MISS THAT PROVES IT MATTERS. The twin
-registers a worker VM with the `rdc` CLI, provisions renet on it, creates a
-2 GB repo, applies a template, brings it up and then polls a Docker healthcheck
-over ssh. On this machine `rdc` IS on PATH: `/home/developer/.local/bin/rdc` is
-a symlink to the repository's own `rdc.sh`, and during exploratory work a
-PREPENDED scratch PATH let one probe fall through to it, which ran
-`npm install` and `npm rebuild` inside the live checkout before failing. That is
-why PATH here is REPLACED AND NEVER PREPENDED, why the real name is asserted
-unreachable on every scratch PATH, and why `_binder` treats a probe it cannot
-prove absent as a harness failure rather than a passing case.
+NOTHING REAL IS EVER INVOKED, AND THE NEAR-MISS THAT PROVES IT MATTERS. The twin registers a worker VM with the `rdc` CLI, provisions renet on it, creates a 2 GB repo, applies a template, brings it up and then polls a Docker healthcheck over ssh. On this machine `rdc` IS on PATH: `/home/developer/.local/bin/rdc` is a symlink to the repository's own `rdc.sh`, and during exploratory
+work a PREPENDED scratch PATH let one probe fall through to it, which ran `npm install` and `npm rebuild` inside the live checkout before failing. That is why PATH here is REPLACED AND NEVER PREPENDED, why the real name is asserted unreachable on every scratch PATH, and why `_binder` treats a probe it cannot prove absent as a harness failure rather than a passing case.
 
-ALL FIVE EXTERNALS ARE RECORDING FAKES: `rdc`, `ssh`, `date`, `sleep`, `whoami`.
-Each appends its full argv to a shared JSONL log and returns canned bytes and a
-canned status.
+ALL FIVE EXTERNALS ARE RECORDING FAKES: `rdc`, `ssh`, `date`, `sleep`, `whoami`. Each appends its full argv to a shared JSONL log and returns canned bytes and a canned status.
 
-THE CLOCK AND THE SLEEP ARE FAKES FOR A SECOND REASON, not just isolation. The
-twin's window is `TIMEOUT_SECS` seconds of real time with a real `sleep 5`
+THE CLOCK AND THE SLEEP ARE FAKES FOR A SECOND REASON, not just isolation. The twin's window is `TIMEOUT_SECS` seconds of real time with a real `sleep 5`
 between probes; a differential that honoured that would take minutes per case
-and would be switched off. `date` here is a STEPPED COUNTER driven from a
-fixture list, so "the healthcheck converged on the third probe" and "the window
-closed with the container still starting" are both exact, instant and
-reproducible.
+and would be switched off. `date` here is a STEPPED COUNTER driven from a fixture list, so "the healthcheck converged on the third probe" and "the window closed with the container still starting" are both exact, instant and reproducible.
 
 WHAT IS COMPARED, AND WHY THE CALL LOG IS THE MOST IMPORTANT OF THE FOUR. Every
 case compares exit code, stdout, stderr AND the recorded argv of every external.
-Almost everything this script does is a side effect on a remote machine, and
-none of it appears on any stream: the four REMOTE PROGRAMS are multi-line shell
-sent as ONE ssh argument each, and a port that reflowed the indentation, dropped
+Almost everything this script does is a side effect on a remote machine, and none of it appears on any stream: the four REMOTE PROGRAMS are multi-line shell sent as ONE ssh argument each, and a port that reflowed the indentation, dropped
 a `2>/dev/null`, or word-split `sudo ss -tlnp 'sport = :5432' 2>&1` into three
-arguments would produce byte-identical output and talk to the VM differently.
-`test_the_four_remote_programs_survive_as_single_arguments` compares them
-character for character.
+arguments would produce byte-identical output and talk to the VM differently. `test_the_four_remote_programs_survive_as_single_arguments` compares them character for character.
 
 THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
 the file it is running; the port composes the same prefix from `sys.argv[0]` and
-its own live frame. Those can never be equal, so `_mask` collapses exactly that
-prefix on both sides, and `test_the_mask_does_not_hide_the_message` pins that it
-collapses nothing else.
+its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides, and `test_the_mask_does_not_hide_the_message` pins that it collapses nothing else.
 """
 
 import json
@@ -180,10 +158,7 @@ def _mask(text: str, root: pathlib.Path, tmp: pathlib.Path) -> str:
 def _fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
-    Copies, because the twin sources `../lib/common.sh` relative to its own
-    `BASH_SOURCE`, and because both subjects put their own path into every bash
-    diagnostic they emit. Driving the tracked files directly would name the real
-    checkout in output the differential then has to mask more aggressively.
+    Copies, because the twin sources `../lib/common.sh` relative to its own `BASH_SOURCE`, and because both subjects put their own path into every bash diagnostic they emit. Driving the tracked files directly would name the real checkout in output the differential then has to mask more aggressively.
     """
     root = tmp_path.resolve() / "tree"
     (root / ".ci" / "scripts" / "private").mkdir(parents=True, exist_ok=True)
@@ -207,10 +182,7 @@ def _binder(
 ) -> str:
     """The COMPLETE PATH for one case: named real tools, plus the five fakes.
 
-    `absent` names fakes to LEAVE OUT, which is how every `command not found`
-    arm is driven. EACH EXCLUSION IS ASSERTED, because a probe that cannot fire
-    is indistinguishable from a subject that cannot fail -- and because this
-    machine has a real `rdc` that a leaky PATH would reach.
+    `absent` names fakes to LEAVE OUT, which is how every `command not found` arm is driven. EACH EXCLUSION IS ASSERTED, because a probe that cannot fire is indistinguishable from a subject that cannot fail -- and because this machine has a real `rdc` that a leaky PATH would reach.
     """
     rc = rc or {}
     replies = replies if replies is not None else _replies()
@@ -267,9 +239,7 @@ def _run(
 ) -> dict[str, object]:
     """Drive one subject from a NEUTRAL cwd and collect all four observables.
 
-    Output is captured as BYTES and decoded with `surrogateescape`, so a remote
-    reply that is not valid UTF-8 survives the harness intact instead of raising
-    inside it.
+    Output is captured as BYTES and decoded with `surrogateescape`, so a remote reply that is not valid UTF-8 survives the harness intact instead of raising inside it.
     """
     cwd = tmp_path.resolve() / "elsewhere"
     cwd.mkdir(exist_ok=True)
@@ -573,8 +543,7 @@ def test_port_and_twin_agree(tmp_path, binder_kw, run_kw):
 
 def test_every_external_is_reached_in_the_same_order(tmp_path):
     """ANTI-VACUITY, and the strongest claim in the file. Every comparison above
-    is worthless if the orchestration never happened, and a port that printed
-    the same log lines while talking to nothing would satisfy a stdout-only
+    is worthless if the orchestration never happened, and a port that printed the same log lines while talking to nothing would satisfy a stdout-only
     comparison exactly."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
@@ -617,10 +586,7 @@ def test_every_external_is_reached_in_the_same_order(tmp_path):
 
 def test_the_four_remote_programs_survive_as_single_arguments(tmp_path):
     """THE CONTRACT NO STREAM CAN SHOW. Each remote program is multi-line shell
-    carrying quotes, `$` and a pipe, and each must reach ssh as ONE argument
-    after five fixed options. A port that reflowed one line of it, or let the
-    LOCAL shell expand `$sock`, would print exactly the same transcript and run
-    a different program on the VM. Compared character for character, from both
+    carrying quotes, `$` and a pipe, and each must reach ssh as ONE argument after five fixed options. A port that reflowed one line of it, or let the LOCAL shell expand `$sock`, would print exactly the same transcript and run a different program on the VM. Compared character for character, from both
     subjects, on the arm where all four are sent."""
     root = _fixture(tmp_path)
     binder = _binder(
@@ -699,8 +665,7 @@ def test_a_container_that_never_converges_is_the_failure_this_exists_for(tmp_pat
 
 def test_the_app_assertion_is_a_second_independent_verdict(tmp_path):
     """`db` healthy and `app` not running is a DIFFERENT regression class from
-    the healthcheck itself, and the twin reports it with no diagnostic dump at
-    all. A port that folded the two into one check would still exit 1 here and
+    the healthcheck itself, and the twin reports it with no diagnostic dump at all. A port that folded the two into one check would still exit 1 here and
     would have lost the distinction."""
     root = _fixture(tmp_path)
     binder = _binder(
@@ -717,8 +682,7 @@ def test_the_app_assertion_is_a_second_independent_verdict(tmp_path):
 def test_the_exit_trap_runs_on_every_path_including_the_happy_one(tmp_path):
     """`trap cleanup EXIT` plus one hand-called pre-clean. Four `rdc repo
     down`/`delete` calls and TWO "Cleanup (best-effort)" lines on a healthy run;
-    two calls and one line when the run dies before the pre-clean. A port that
-    cleaned up only on failure would leave a 2 GB repo on the VM after every
+    two calls and one line when the run dies before the pre-clean. A port that cleaned up only on failure would leave a 2 GB repo on the VM after every
     green run."""
     root = _fixture(tmp_path)
 
@@ -739,8 +703,7 @@ def test_the_exit_trap_runs_on_every_path_including_the_happy_one(tmp_path):
 def test_the_environment_block_dies_before_the_trap_is_installed(tmp_path):
     """ORDERING THAT ONLY THE CALL LOG CAN SHOW. `VM_WORKERS="   "` collapses to
     an empty array and `${WORKER_IDS[0]}` is a `set -u` violation, and it happens
-    ABOVE `trap cleanup EXIT`, so NOTHING is cleaned up and no `rdc` runs at all.
-    A port that installed its trap at the top of `main` would run two pointless
+    ABOVE `trap cleanup EXIT`, so NOTHING is cleaned up and no `rdc` runs at all. A port that installed its trap at the top of `main` would run two pointless
     `rdc` calls against a machine it never registered."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
@@ -757,23 +720,16 @@ def test_a_zero_padded_timeout_is_read_as_octal_and_that_is_a_defect(tmp_path):
 
     `deadline=$(($(date +%s) + TIMEOUT_SECS))` evaluates the variable as an
     ARITHMETIC EXPRESSION, so a leading zero selects base 8: `TIMEOUT_SECS=060`
-    is a 48-second window, not a 60-second one, while the log line one row above
-    still prints `timeout 060s`. Measured against a 10-second-per-read clock: 4
-    probes at `060` against 5 at `60`.
+    is a 48-second window, not a 60-second one, while the log line one row above still prints `timeout 060s`. Measured against a 10-second-per-read clock: 4 probes at `060` against 5 at `60`.
 
-    THE CLOCK STEP IS 10 HERE AND NOT THE FIXTURE DEFAULT OF 20, and the reason
-    is a control that failed to fire. At 20 seconds a 48-second window and a
-    60-second one both admit exactly 2 probes, so the first draft of this test
-    "passed" the octal read and the plain one identically and proved nothing
-    about either. A step that cannot resolve the difference it is measuring is a
-    broken instrument, not a clean result.
+    THE CLOCK STEP IS 10 HERE AND NOT THE FIXTURE DEFAULT OF 20, and the reason is a control that failed to fire. At 20 seconds a 48-second window and a 60-second one both admit exactly 2 probes, so the first draft of this test "passed" the octal read and the plain one identically and proved nothing about either. A step that cannot resolve the difference it is measuring is a broken
+    instrument, not a clean result.
 
     THE DIAGNOSTIC DUMP ALSO CONTAINS `name=^db$`, which is the second way this
     count goes wrong: filtering on that string alone silently adds one to every
     total. The poll program is the one WITHOUT the `=== $sock ===` echo.
 
-    A caller who writes `060` for tidiness gets a window 20 percent shorter than
-    the one the transcript claims, and the transcript will not say so. Both
+    A caller who writes `060` for tidiness gets a window 20 percent shorter than the one the transcript claims, and the transcript will not say so. Both
     subjects are asserted; the day the twin quotes the variable or validates it,
     this goes red and names the decision.
     """
@@ -806,15 +762,11 @@ def test_an_invalid_timeout_token_does_not_stop_the_run_where_it_should(tmp_path
 
     `set -e` does NOT fire on an arithmetic expansion error inside an assignment
     IN A SCRIPT FILE. So `TIMEOUT_SECS=12abc` prints `value too great for base`,
-    leaves `deadline` UNSET, carries on, and dies one line later on
-    `deadline: unbound variable` -- two diagnostics for one cause, the second of
-    which names a variable the caller never heard of.
+    leaves `deadline` UNSET, carries on, and dies one line later on `deadline: unbound variable` -- two diagnostics for one cause, the second of which names a variable the caller never heard of.
 
-    Confirmed 2026-09-14 to be file-specific: the identical fragment run through
-    `bash -c` exits at the first diagnostic. An unset identifier
+    Confirmed 2026-09-14 to be file-specific: the identical fragment run through `bash -c` exits at the first diagnostic. An unset identifier
     (`TIMEOUT_SECS=abc`) is a `set -u` violation instead and IS fatal at once,
-    and the asymmetry is asserted in the same test because a port that treated
-    both the same would pass either half alone.
+    and the asymmetry is asserted in the same test because a port that treated both the same would pass either half alone.
     """
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
@@ -844,9 +796,7 @@ def test_an_invalid_timeout_token_does_not_stop_the_run_where_it_should(tmp_path
 
 def test_the_poll_fallback_is_appended_not_substituted(tmp_path):
     """`$(_ssh ... 2>/dev/null || echo "ssh-error|")` captures the whole AND-OR
-    list, so an ssh that PRINTS and then FAILS contributes both. The resulting
-    two-line state splits into `starting` and `1\\nssh-error|`, and the streak
-    the transcript reports therefore contains a newline. Ugly, real, and the
+    list, so an ssh that PRINTS and then FAILS contributes both. The resulting two-line state splits into `starting` and `1\\nssh-error|`, and the streak the transcript reports therefore contains a newline. Ugly, real, and the
     exact shape a port that used the fallback as an else-branch would miss."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, replies=_replies(poll=[("starting|1\n", "", 4)]))
@@ -858,15 +808,9 @@ def test_the_poll_fallback_is_appended_not_substituted(tmp_path):
 
 def test_a_missing_ssh_is_silently_indistinguishable_from_a_failing_one(tmp_path):
     """Bash performs `2>/dev/null` BEFORE the command lookup fails, so during
-    POLLING `command not found` is discarded along with everything else ssh
-    would have said, and the `||` arm reports `ssh-error`. Nothing in the
-    transcript says the binary was missing.
+    POLLING `command not found` is discarded along with everything else ssh would have said, and the `||` arm reports `ssh-error`. Nothing in the transcript says the binary was missing.
 
-    THE DIAGNOSTIC DUMP HAS NO SUCH REDIRECTION, so there the same missing
-    binary IS reported, twice. That asymmetry is the assertion: five silent
-    lookups followed by two loud ones. Counting rather than testing for absence
-    is deliberate -- a bare `not in` over the whole transcript was the first
-    draft, and it failed on the two lines it should have been counting.
+    THE DIAGNOSTIC DUMP HAS NO SUCH REDIRECTION, so there the same missing binary IS reported, twice. That asymmetry is the assertion: five silent lookups followed by two loud ones. Counting rather than testing for absence is deliberate -- a bare `not in` over the whole transcript was the first draft, and it failed on the two lines it should have been counting.
     """
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, absent=("ssh",))
@@ -889,8 +833,7 @@ def test_a_missing_ssh_is_silently_indistinguishable_from_a_failing_one(tmp_path
 
 def test_the_log_glyph_is_doubled_on_both_success_lines(tmp_path):
     """A COSMETIC DEFECT IN THE TWIN, PINNED RATHER THAN FIXED. `log_info`
-    already prefixes U+2713, and both call sites pass a second one in the
-    message, so the transcript reads `<check> <check> db reached healthy`. A
+    already prefixes U+2713, and both call sites pass a second one in the message, so the transcript reads `<check> <check> db reached healthy`. A
     port that tidied it would be nicer and would not be the same script."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
@@ -902,9 +845,7 @@ def test_the_log_glyph_is_doubled_on_both_success_lines(tmp_path):
 
 def test_only_the_config_ssh_set_stdout_is_discarded(tmp_path):
     """`>/dev/null` appears exactly once, on `rdc config ssh set`. Every other
-    `rdc` call's stdout reaches the caller, and the two cleanup calls have their
-    STDERR discarded instead. Three different redirection shapes in one script,
-    and a port that used one shape everywhere would look identical on the happy
+    `rdc` call's stdout reaches the caller, and the two cleanup calls have their STDERR discarded instead. Three different redirection shapes in one script, and a port that used one shape everywhere would look identical on the happy
     path and hide a credential error on the first call."""
     root = _fixture(tmp_path)
     binder = _binder(

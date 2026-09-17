@@ -2,19 +2,10 @@
 
 Both-ways test for `.ci/scripts/security/check-ci-workflow-invariants.sh`.
 
-THE METHOD IS THE POINT: a static check that has never been watched FAILING is
-indistinguishable from `true`. So the invariant is proven in both directions -- the
-real `ci.yml` passes, and a workflow with the invariant broken must exit 1 with the
-pinned diagnostic.
+THE METHOD IS THE POINT: a static check that has never been watched FAILING is indistinguishable from `true`. So the invariant is proven in both directions -- the real `ci.yml` passes, and a workflow with the invariant broken must exit 1 with the pinned diagnostic.
 
-The strongest case here is not a synthetic mutation, it is HISTORY: commit
-`6584a8795` is the real `main` whose `validate-install` lacked the channel
-condition, and it produced "Version mismatch: expected '1.2.27', got '1.2.26'" on
-nightlies 32323997586 and 32208001410. If the gate cannot reject that exact file,
-it would not have caught the bug it exists for. That case is SKIPPED rather than
-failed when the commit is unreachable (a shallow clone), because a missing object
-is not evidence of a working gate -- and the skip is printed, not folded into the
-green.
+The strongest case here is not a synthetic mutation, it is HISTORY: commit `6584a8795` is the real `main` whose `validate-install` lacked the channel condition, and it produced "Version mismatch: expected '1.2.27', got '1.2.26'" on nightlies 32323997586 and 32208001410. If the gate cannot reject that exact file, it would not have caught the bug it exists for. That case is SKIPPED
+rather than failed when the commit is unreachable (a shallow clone), because a missing object is not evidence of a working gate -- and the skip is printed, not folded into the green.
 
 WHERE THE PORT REIMPLEMENTS THE TWIN. Two places, both mechanical:
 
@@ -31,9 +22,7 @@ WHERE THE PORT REIMPLEMENTS THE TWIN. Two places, both mechanical:
   * THE VACUITY FIXTURE. The twin builds it with `grep -v "docker_tag:"`. The port
     filters the same lines in Python. Same file, no pipeline.
 
-NO `xdist_group`. Each case writes its fixtures into pytest's own `tmp_path` and
-drives the gate as a subprocess with `WORKFLOW_FILE` pointing there. Nothing in
-the repository is written, and the one case that reads `git` reads it read-only.
+NO `xdist_group`. Each case writes its fixtures into pytest's own `tmp_path` and drives the gate as a subprocess with `WORKFLOW_FILE` pointing there. Nothing in the repository is written, and the one case that reads `git` reads it read-only.
 """
 
 import pathlib
@@ -66,10 +55,7 @@ def verdict(result: harness.RunResult) -> str:
 def drop_condition_from_validate_install(source: str) -> tuple[str, int]:
     """The scoped mutation, and the count of lines it cut.
 
-    SCOPED to the `validate-install` block on purpose. A blanket filter would also
-    strip `validate-promote`'s identical condition -- two lines match in `ci.yml` --
-    so the mutation would be broader than this test's own framing and could then
-    pass for the wrong reason.
+    SCOPED to the `validate-install` block on purpose. A blanket filter would also strip `validate-promote`'s identical condition -- two lines match in `ci.yml` -- so the mutation would be broader than this test's own framing and could then pass for the wrong reason.
     """
     out: list[str] = []
     in_job = False

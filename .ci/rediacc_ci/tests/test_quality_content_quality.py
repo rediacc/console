@@ -1,10 +1,6 @@
 """`rediacc_ci.quality.content_quality` against the shell it replaces.
 
-WHAT IS WORTH TESTING HERE, and it is not "does it find the phrase". The shadow
-ledger `.ci/shadow/w7p2-content-quality.observations.jsonl` drives the whole gate
-end to end over five distinct trees. What a ledger row cannot isolate is the
-three pieces of shell that decide WHICH LINES ARE EVEN LOOKED AT, each of which
-can narrow silently and leave the gate green:
+WHAT IS WORTH TESTING HERE, and it is not "does it find the phrase". The shadow ledger `.ci/shadow/w7p2-content-quality.observations.jsonl` drives the whole gate end to end over five distinct trees. What a ledger row cannot isolate is the three pieces of shell that decide WHICH LINES ARE EVEN LOOKED AT, each of which can narrow silently and leave the gate green:
 
   * the awk exemption program, five rules whose ORDER is the semantics
   * `${line// /}`, which deletes spaces and not whitespace, and therefore
@@ -12,9 +8,7 @@ can narrow silently and leave the gate green:
   * `${#p}` and `${line_text:0:117}`, which count BYTES under LC_ALL=C and
     CHARACTERS under a UTF-8 locale
 
-So every case below runs the REAL awk or the REAL bash and compares. A test that
-only asserted against the Python would agree with a port that had quietly
-widened the frontmatter rule to swallow the whole document.
+So every case below runs the REAL awk or the REAL bash and compares. A test that only asserted against the Python would agree with a port that had quietly widened the frontmatter rule to swallow the whole document.
 """
 
 import pathlib
@@ -27,10 +21,7 @@ from rediacc_ci.tests import differential as diff
 def _joined(*rows: str) -> str:
     """`"\n".join(rows)` behind a call. The rows stay one per line.
 
-    A helper rather than a literal join because ruff's FLY002 rewrites a join
-    over a LITERAL list into an f-string, and a ten-line shell fixture written
-    as one f-string is unreadable. Passing the rows as arguments keeps the
-    fixture legible and gives the linter nothing static to fold.
+    A helper rather than a literal join because ruff's FLY002 rewrites a join over a LITERAL list into an f-string, and a ten-line shell fixture written as one f-string is unreadable. Passing the rows as arguments keeps the fixture legible and gives the linter nothing static to fold.
     """
     return "\n".join(rows)
 

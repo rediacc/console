@@ -1,54 +1,26 @@
 """Port of `.ci/scripts/test/gates/test-scope-baseline-attest.sh`.
 
-Unit test for VERIFY-AT-READ baseline attestation in the CI scope engine:
-`.ci/scripts/ci/scope-engine.cjs` (`attestPlan` + `createRepoIo` + the fenced walk).
+Unit test for VERIFY-AT-READ baseline attestation in the CI scope engine: `.ci/scripts/ci/scope-engine.cjs` (`attestPlan` + `createRepoIo` + the fenced walk).
 
-WHAT THIS GUARDS. A baseline is the claim "this ancestor already ran the whole suite
-green, so the delta since is all that needs running". Everything a reduced round skips
-rests on that claim. The plan artifact alone cannot support it: a plan states INTENT,
-and a run whose watchdog rerun skipped half the fleet leaves behind a plan that looks
-identical to an honest one.
+WHAT THIS GUARDS. A baseline is the claim "this ancestor already ran the whole suite green, so the delta since is all that needs running". Everything a reduced round skips rests on that claim. The plan artifact alone cannot support it: a plan states INTENT, and a run whose watchdog rerun skipped half the fleet leaves behind a plan that looks identical to an honest one.
 
-So nobody writes a `reconciled` marker and nobody is trusted to. The READER downloads
-the plan, fetches THAT run's per-job outcomes from the Jobs API, runs the existing pure
-`reconcile()` itself, and only then may set the flag. The self-declared field in the
-downloaded bytes is DELETED before anything reads it, which is why case (c) plants a
-self-declared reconciled flag in the artifact and still expects a refusal.
+So nobody writes a `reconciled` marker and nobody is trusted to. The READER downloads the plan, fetches THAT run's per-job outcomes from the Jobs API, runs the existing pure `reconcile()` itself, and only then may set the flag. The self-declared field in the downloaded bytes is DELETED before anything reads it, which is why case (c) plants a self-declared reconciled flag in the
+artifact and still expects a refusal.
 
-THE WALK IS FENCED, NOT COUNTED (candidate C). A fixed candidate count lost twice in
-one night (limit 5 vs a green 7 back on run 30478917957, limit 20 vs a green 23 back
-after a twelve-run red streak), each time manufacturing a "no baseline" verdict
-indistinguishable from a considered one. The walk's domain is now the commits the PR
-owns (`rev-list head ^mergeParent`), run lookups ride ONE paginated branch listing so a
-red candidate costs zero API calls, green attestation attempts are bounded by
-`GREEN_ATTEST_BUDGET`, and `DEFAULT_CANDIDATE_LIMIT` survives only as a safety valve.
-Cases (n) through (t) prove each bound in BOTH directions, and (r) is the cost lock:
-run listing must scale with PAGES, never with candidates, or candidate C silently
-degrades back into the per-commit walk it replaced.
+THE WALK IS FENCED, NOT COUNTED (candidate C). A fixed candidate count lost twice in one night (limit 5 vs a green 7 back on run 30478917957, limit 20 vs a green 23 back after a twelve-run red streak), each time manufacturing a "no baseline" verdict indistinguishable from a considered one. The walk's domain is now the commits the PR owns (`rev-list head ^mergeParent`), run lookups
+ride ONE paginated branch listing so a red candidate costs zero API calls, green attestation attempts are bounded by `GREEN_ATTEST_BUDGET`, and `DEFAULT_CANDIDATE_LIMIT` survives only as a safety valve. Cases (n) through (t) prove each bound in BOTH directions, and (r) is the cost lock: run listing must scale with PAGES, never with candidates, or candidate C silently degrades back
+into the per-commit walk it replaced.
 
-POLARITY: fail-open. Every refusal here costs one full CI round, never a red check.
-That is the opposite of the reconciler's polarity and is the reason the reconciler's
-verdict is safe to consume from this side.
+POLARITY: fail-open. Every refusal here costs one full CI round, never a red check. That is the opposite of the reconciler's polarity and is the reason the reconciler's verdict is safe to consume from this side.
 
-Every planted defect is PAIRED with the control that proves the mechanism can still say
-yes, because a gate stuck at "refuse" would pass every failure case in this file while
-being exactly as broken as one stuck at "accept".
+Every planted defect is PAIRED with the control that proves the mechanism can still say yes, because a gate stuck at "refuse" would pass every failure case in this file while being exactly as broken as one stuck at "accept".
 
-WHY THE HARNESS STAYS JAVASCRIPT, verbatim from the twin. It is not a fixture, it is a
-MODEL of git and gh: `rev-list` honours `--max-count` and `^fence` exclusion, and the
-branch run listing paginates at 100 per page exactly as the Actions API does. The mock
-used to return every candidate whatever the caller asked for, and walk depth was
-invisible to the entire suite until it stopped. Re-expressing that model in Python
-would be a SECOND model of the same two tools, and the expensive half of two models is
-that both look right. The port therefore writes the same `harness.js` into pytest's
-`tmp_path` and drives it with node, which also keeps every scenario's mutation string
-byte-identical to the twin's.
+WHY THE HARNESS STAYS JAVASCRIPT, verbatim from the twin. It is not a fixture, it is a MODEL of git and gh: `rev-list` honours `--max-count` and `^fence` exclusion, and the branch run listing paginates at 100 per page exactly as the Actions API does. The mock used to return every candidate whatever the caller asked for, and walk depth was invisible to the entire suite until it
+stopped. Re-expressing that model in Python would be a SECOND model of the same two tools, and the expensive half of two models is that both look right. The port therefore writes the same `harness.js` into pytest's `tmp_path` and drives it with node, which also keeps every scenario's mutation string byte-identical to the twin's.
 
 WHAT THE PORT DOES CHANGE. The twin reads result fields through an `rget` helper that
 evaluates a JS expression in a nested `node`; here the harness's JSON is parsed by
-Python once per scenario and read as data. Streams stay SEPARATE, as the twin keeps
-them: two cases assert stderr is EMPTY, and an engine that throws instead of answering
-must be visible as an exit code rather than folded into stdout.
+Python once per scenario and read as data. Streams stay SEPARATE, as the twin keeps them: two cases assert stderr is EMPTY, and an engine that throws instead of answering must be visible as an exit code rather than folded into stdout.
 """
 
 import json
@@ -322,8 +294,7 @@ def drive(tmp_path: pathlib.Path, mutation: str = "", *, engine_default_limit: b
     """Run one scenario. `mutation` is a JS statement over the fixture `f`.
 
     A NON-ZERO EXIT IS RETURNED, NOT RAISED. Six cases assert `rc == 0` explicitly,
-    because "the engine answered at all" is a separate claim from "it answered this",
-    and an exception escaping into `initialize` is the failure those cases exist for.
+    because "the engine answered at all" is a separate claim from "it answered this", and an exception escaping into `initialize` is the failure those cases exist for.
     """
     env = {"ENGINE": str(ENGINE), "MAP": str(MAP), "RECONCILE": str(RECONCILE)}
     if engine_default_limit:
@@ -533,11 +504,9 @@ def test_corrupt_plan_bytes_read_as_no_plan(gate, tmp_path):
 
 def test_reduced_baseline_refused_before_any_jobs_call(gate, tmp_path):
     """(i) Case 1: evidence does not chain across reduced rounds, so asking the Jobs API
-    about a reduced plan would be a round trip spent on a foregone conclusion. This
-    asserts the ORDERING, which bounds the cost of every attestation.
+    about a reduced plan would be a round trip spent on a foregone conclusion. This asserts the ORDERING, which bounds the cost of every attestation.
 
-    THE MUTATION SETS A SKIPPED KEY, not just the mode label, and since 2026-08-05 that
-    is the load-bearing half: coverage is read per key, so a plan whose every key still
+    THE MUTATION SETS A SKIPPED KEY, not just the mode label, and since 2026-08-05 that is the load-bearing half: coverage is read per key, so a plan whose every key still
     ran is full coverage whatever its label says."""
     scope_reduced = (
         'f.plans["1001"].mode = "reduced";'
@@ -618,8 +587,7 @@ def test_second_green_run_on_the_same_sha_is_found(gate, tmp_path):
 
 def test_multi_page_jobs_payload_is_merged(gate, tmp_path):
     """`gh api --paginate` on the Jobs API (an OBJECT-shaped endpoint) concatenates one
-    JSON object PER PAGE. A plain JSON.parse succeeds today and starts throwing the
-    moment a run exceeds per_page jobs, which reads as jobs-unreadable and would
+    JSON object PER PAGE. A plain JSON.parse succeeds today and starts throwing the moment a run exceeds per_page jobs, which reads as jobs-unreadable and would
     silently pin CI to full forever: D9's exact failure shape."""
     sc = drive(
         tmp_path,
@@ -652,8 +620,7 @@ def test_multi_page_jobs_payload_is_merged(gate, tmp_path):
 
 def test_fixture_shape_is_asserted_not_assumed(gate, tmp_path):
     """(l) Every silence assertion above rests on the healthy fixture really covering
-    every planned key. Assert that with the RECONCILER's own table and matcher, not by
-    eye: a fixture that matched nothing would make 'full-green-attested' unreachable and
+    every planned key. Assert that with the RECONCILER's own table and matcher, not by eye: a fixture that matched nothing would make 'full-green-attested' unreachable and
     'planned-job-missing' universal, and half this file would still look like it passed."""
     result = shape(tmp_path)
     gate.assert_eq(
@@ -711,8 +678,7 @@ def test_walk_depth_honours_the_explicit_valve(gate, tmp_path):
 
 def test_deep_green_regression_no_fixed_count(gate, tmp_path):
     """(n) THE REGRESSION FOR THE TWO INCIDENTS, fire-proofed against the PRE-CHANGE
-    engine before it landed: with 29 red ancestors and the only attested green at depth
-    30, the old DEFAULT_CANDIDATE_LIMIT of 20 answered candidates_seen 20, baseline
+    engine before it landed: with 29 red ancestors and the only attested green at depth 30, the old DEFAULT_CANDIDATE_LIMIT of 20 answered candidates_seen 20, baseline
     null, mode full, reason baseline:none-usable (measured 2026-07-30)."""
     deep = (
         "f.candidates = [];"

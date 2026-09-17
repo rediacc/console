@@ -1,8 +1,6 @@
 """`rediacc_ci.quality.review_cap_coherence` against the shell it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Three of this gate's
-moving parts are shell semantics rather than logic, and every one of them has
-already produced a wrong answer in a draft of this port:
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Three of this gate's moving parts are shell semantics rather than logic, and every one of them has already produced a wrong answer in a draft of this port:
 
   * `out="$( ... )"` STRIPS trailing newlines. The port returned
     `subprocess.stdout` unchanged, so the finding read "(got: GUARD_MISSED\\n"
@@ -13,14 +11,9 @@ already produced a wrong answer in a draft of this port:
   * `awk '/anchor/{f=1} f{print} f&&/^fi$/{exit}'` prints the terminating line
     and THEN exits, which is what makes the extracted block parseable.
 
-A table of expected strings would be a table of what the port does, asserted
-against itself. The bash fragments below are lifted from
-`.ci/scripts/quality/check-review-cap-coherence.sh` with nothing changed but the
-substitution of their arguments.
+A table of expected strings would be a table of what the port does, asserted against itself. The bash fragments below are lifted from `.ci/scripts/quality/check-review-cap-coherence.sh` with nothing changed but the substitution of their arguments.
 
-They are NOT the whole gate: the whole gate is what the committed shadow ledger
-`.ci/shadow/w7p2-reviewcap.observations.jsonl` compares over five distinct
-trees. This file covers the seams that ledger cannot isolate.
+They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-reviewcap.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate.
 """
 
 import pathlib
@@ -96,10 +89,7 @@ RUN_CASES = [
 def test_run_guard_matches_the_bash_subrun(status: str, why: str) -> None:
     """The behavioural half, run for real on both sides.
 
-    THE ASSERTION IS ON THE WHOLE STRING, not on a substring. A substring test
-    is exactly what let the missing `rstrip` through: `"GUARD_MISSED" in out`
-    was true for both `GUARD_MISSED` and `GUARD_MISSED\\n`, and the difference
-    was only visible once the value was interpolated into a finding.
+    THE ASSERTION IS ON THE WHOLE STRING, not on a substring. A substring test is exactly what let the missing `rstrip` through: `"GUARD_MISSED" in out` was true for both `GUARD_MISSED` and `GUARD_MISSED\\n`, and the difference was only visible once the value was interpolated into a finding.
     """
     guard = rcc.extract_guard(status)
     code, out, err = diff.bash_streams(_GUARD_RUN % guard)
@@ -116,9 +106,7 @@ def test_the_run_table_exercises_both_verdicts() -> None:
 def test_the_stripped_result_is_what_the_finding_interpolates() -> None:
     """The regression itself, as its own case rather than folded into a table.
 
-    The finding text is `(got: %s)`. With a trailing newline the closing paren
-    lands on the next line, which the shadow comparator reads as a DIFFERENT
-    finding. That is how this was caught, and this is what stops it returning.
+    The finding text is `(got: %s)`. With a trailing newline the closing paren lands on the next line, which the shadow comparator reads as a DIFFERENT finding. That is how this was caught, and this is what stops it returning.
     """
     broken = rcc._STATUS.replace("warnings+=(", "failures+=(")
     findings = rcc.evaluate(rcc._GATE, broken, rcc._LIB)
@@ -199,8 +187,7 @@ def test_the_splice_case_is_really_a_splice() -> None:
 
     A definition on line 1 of the status script vanishes because the gate's
     last line is glued to it. This is the twin's behaviour; the port keeps it
-    and it is reported rather than fixed, because fixing it would change the
-    verdict and a port does not get to do that.
+    and it is reported rather than fixed, because fixing it would change the verdict and a port does not get to do that.
     """
     gate = "#!/bin/bash\necho a"
     status = "review_cap_for() {\n    echo 3\n}"
@@ -243,10 +230,7 @@ def test_the_numerator_table_exercises_both_directions() -> None:
 def test_the_control_mutation_still_matches_the_real_review_status() -> None:
     """The gate refuses when the mutant cannot be planted, so the string matters.
 
-    Asserted against the REAL file rather than the fixture, because this is the
-    one part of the gate that rots silently: an unrelated edit to
-    review-status.sh's numerator line turns the whole gate into a refusal, and
-    the message it prints then blames the gate rather than the edit.
+    Asserted against the REAL file rather than the fixture, because this is the one part of the gate that rots silently: an unrelated edit to review-status.sh's numerator line turns the whole gate into a refusal, and the message it prints then blames the gate rather than the edit.
     """
     status = paths.repo_root() / rcc.STATUS_REL
     assert status.is_file(), status

@@ -1,35 +1,22 @@
 """Differential: `rediacc_ci.autopilot.state_comment` against its twin
 `.ci/scripts/autopilot/state-comment.sh`.
 
-NO NETWORK STUB IS NEEDED HERE AND THAT IS WORTH SAYING OUT LOUD. All three
-subcommands are pure and offline: `select` reads a JSON file, `render` writes to
-stdout, `fields` reads a body back. The write half of the state comment lives in
-`update-state.sh` (`test_autopilot_update_state.py` stubs `gh` for it), and the
-one-comment-per-PR upsert is the composition of the two: `select` finds the id,
-`render` rebuilds the body, `update-state.sh` POSTs when there was no id and
-PATCHes when there was.
+NO NETWORK STUB IS NEEDED HERE AND THAT IS WORTH SAYING OUT LOUD. All three subcommands are pure and offline: `select` reads a JSON file, `render` writes to stdout, `fields` reads a body back. The write half of the state comment lives in `update-state.sh` (`test_autopilot_update_state.py` stubs `gh` for it), and the one-comment-per-PR upsert is the composition of the two: `select`
+finds the id, `render` rebuilds the body, `update-state.sh` POSTs when there was no id and PATCHes when there was.
 
-SO THE UPSERT IS COVERED FROM BOTH ENDS: this file drives `select`'s three
-outcomes exhaustively -- a trusted comment exists, none does, and the lookup
-itself cannot be believed -- and the third is the one that matters most. A
+SO THE UPSERT IS COVERED FROM BOTH ENDS: this file drives `select`'s three outcomes exhaustively -- a trusted comment exists, none does, and the lookup itself cannot be believed -- and the third is the one that matters most. A
 failed lookup that returned `{"found":false}` would be indistinguishable from
-"no state comment yet", and every flaky read would POST ANOTHER state comment
-until the loop had several memories. `jq` exits 5 and `set -e` ends the run
+"no state comment yet", and every flaky read would POST ANOTHER state comment until the loop had several memories. `jq` exits 5 and `set -e` ends the run
 instead; `test_a_malformed_comments_file_is_an_error_not_an_empty_answer` pins
 it.
 
-THE BYTES ARE THE INTERFACE, not a rendering. The next round's carry-over parser
-reads this round's output back, so a changed blank line changes what survives a
+THE BYTES ARE THE INTERFACE, not a rendering. The next round's carry-over parser reads this round's output back, so a changed blank line changes what survives a
 round; `autopilot-gate.sh` reads `fields`'s compact JSON with `--argjson`, so a
-changed key order or a string where a number belongs is a gate misreading a
-round cap. Every case therefore compares raw stdout bytes, stderr bytes and the
-exit code.
+changed key order or a string where a number belongs is a gate misreading a round cap. Every case therefore compares raw stdout bytes, stderr bytes and the exit code.
 
 BOTH LOCALES ARE DRIVEN, deliberately. `cap_line` is `${#line}` and
 `${line:0:400}`, which count CHARACTERS under a UTF-8 LC_CTYPE and BYTES under
-C. That is a divergence in the twin, not in the port, and
-`test_the_line_cap_is_locale_dependent_in_the_twin` asserts both sides agree
-under each -- which is the only way to port it without silently choosing a side.
+C. That is a divergence in the twin, not in the port, and `test_the_line_cap_is_locale_dependent_in_the_twin` asserts both sides agree under each -- which is the only way to port it without silently choosing a side.
 
 K=5 LEDGER: `.ci/shadow/w7p6-state-comment.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
@@ -464,8 +451,7 @@ def test_an_absent_or_empty_entries_file_appends_nothing() -> None:
 
 def test_the_line_cap_is_locale_dependent_in_the_twin() -> None:
     """A DIVERGENCE IN THE TWIN, reproduced rather than chosen against. bash
-    counts characters under a UTF-8 LC_CTYPE and bytes under C, so the same
-    ledger line caps at a different point depending on how the step was invoked.
+    counts characters under a UTF-8 LC_CTYPE and bytes under C, so the same ledger line caps at a different point depending on how the step was invoked.
     Both are driven; the port resolves the locale the same way bash does."""
     long_ascii = "x" * 500
     # 404 characters, 405 bytes: over the cap either way, and the two rules cut it in DIFFERENT places, which is the whole point of driving both.
@@ -607,8 +593,7 @@ def test_an_unknown_subcommand_and_no_subcommand_both_refuse() -> None:
 
 def test_a_directory_as_the_body_warns_five_times_and_renders_empty() -> None:
     """gawk WARNS on a directory argument and continues; `render` reads the body
-    six times (five metadata fields plus the carry-over walk) and every one of
-    them warns. The count is asserted so a gawk that rewords this turns the test
+    six times (five metadata fields plus the carry-over walk) and every one of them warns. The count is asserted so a gawk that rewords this turns the test
     red instead of the port diverging silently."""
     (code, stdout, stderr), _ = _sides(
         "body-dir", [*RENDER_BASE, "--body", "olddir"], dirs=("olddir",)
@@ -624,8 +609,7 @@ def test_a_directory_as_the_body_warns_five_times_and_renders_empty() -> None:
 
 def test_an_unreadable_body_is_fatal_for_render_and_survivable_for_fields() -> None:
     """`set -e` DOES NOT REACH INTO `$( )` (`inherit_errexit` is off), so the
-    five metadata reads swallow gawk's fatal and fall back to the sentinel, while
-    the top-level carry-over walk ends the run with gawk's status.
+    five metadata reads swallow gawk's fatal and fall back to the sentinel, while the top-level carry-over walk ends the run with gawk's status.
 
     That asymmetry is the twin's, and a port that "tidied" it would either turn a
     readable-enough body into a hard failure or let an unreadable one render."""
@@ -666,23 +650,17 @@ def test_an_unreadable_body_is_fatal_for_render_and_survivable_for_fields() -> N
 def test_a_directory_as_an_entries_file_is_the_one_named_divergence() -> None:
     """THE ONLY PLACE THE TWO SIDES DIFFER, and it is one line on fd 2.
 
-    A directory passes `-s`, bash opens it (Linux allows that) and `read` then
-    fails, so the twin prints BASH'S OWN diagnostic naming state-comment.sh's own
-    path and line number -- a message no port can emit without lying about where
+    A directory passes `-s`, bash opens it (Linux allows that) and `read` then fails, so the twin prints BASH'S OWN diagnostic naming state-comment.sh's own path and line number -- a message no port can emit without lying about where
     it came from. Exit code and stdout are identical; the port is silent.
 
-    Asserted as EXACTLY that difference, so if the twin ever starts refusing here
-    this test goes red rather than the port drifting.
+    Asserted as EXACTLY that difference, so if the twin ever starts refusing here this test goes red rather than the port drifting.
 
     THE DIAGNOSTIC'S WORD ORDER IS BASH'S, NOT OURS, and 5.3 changed it:
 
         bash 5.3.9   read: 0: read error: Is a directory
         bash 5.2.37  read: read error: 0: Is a directory
 
-    The failing file descriptor moved from after the phrase to before it. The
-    literal `read error: Is a directory` that used to be spelled here is the 5.3
-    tail, so this passed on every machine in this tree and failed in CI run
-    34970782616, which is ubuntu-24.04 and therefore bash 5.2. Asked of the
+    The failing file descriptor moved from after the phrase to before it. The literal `read error: Is a directory` that used to be spelled here is the 5.3 tail, so this passed on every machine in this tree and failed in CI run 34970782616, which is ubuntu-24.04 and therefore bash 5.2. Asked of the
     running bash now."""
     (twin_code, twin_out, twin_err), (port_code, port_out, port_err) = _sides(
         "entries-dir",

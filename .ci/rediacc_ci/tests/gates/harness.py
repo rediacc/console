@@ -1,41 +1,18 @@
 """`.ci/scripts/test/lib/test-helpers.sh`, ported to Python, vocabulary intact.
 
-WHY THE VOCABULARY IS PRESERVED RATHER THAN TRANSLATED. 131 of the 148 gate tests
-source that file and speak its words -- `log_pass`, `assert_eq`, `with_fake_bin`,
-`ok`/`no`/`tally_finish` -- at something over a thousand call sites. The helper file
-itself already argues this case once, in the header of its tally block: three tests
-carried a byte-identical `ok`/`no` tally, and the consolidation deliberately moved the
-VOCABULARY into the library instead of rewriting a hundred call sites onto the older
-`log_pass` spelling, because "rewriting them all is not a consolidation, it is a
-rewrite with its own defect budget". The same argument applies with more force here,
-where the rewrite also changes language. A port that renames every assertion is a port
-whose diff cannot be read against its original, and a diff nobody can read is how a
-verdict changes without anyone noticing.
+WHY THE VOCABULARY IS PRESERVED RATHER THAN TRANSLATED. 131 of the 148 gate tests source that file and speak its words -- `log_pass`, `assert_eq`, `with_fake_bin`, `ok`/`no`/`tally_finish` -- at something over a thousand call sites. The helper file itself already argues this case once, in the header of its tally block: three tests carried a byte-identical `ok`/`no` tally, and the
+consolidation deliberately moved the VOCABULARY into the library instead of rewriting a hundred call sites onto the older `log_pass` spelling, because "rewriting them all is not a consolidation, it is a rewrite with its own defect budget". The same argument applies with more force here, where the rewrite also changes language. A port that renames every assertion is a port whose
+diff cannot be read against its original, and a diff nobody can read is how a verdict changes without anyone noticing.
 
-So `assert_eq(actual, expected, msg)` keeps its argument ORDER, and
-`assert_exit_code(expected, actual, msg)` keeps its OPPOSITE order, because that is
-what the bash pair does and swapping one of them silently inverts every use.
+So `assert_eq(actual, expected, msg)` keeps its argument ORDER, and `assert_exit_code(expected, actual, msg)` keeps its OPPOSITE order, because that is what the bash pair does and swapping one of them silently inverts every use.
 
-WHY NOT BARE `assert`. Two reasons, and the first is the honest one: ruff's
-per-file S101 exemption in this repo is scoped to `**/tests/test_*.py`, which does
-NOT match a file one directory deeper (`tests/gates/test_*.py`). Rather than widen
-a repo-wide suppression to accommodate a subdirectory, the port uses the assertion
-vocabulary it was going to use anyway. The second reason is the one that would
-still hold if the glob matched: a bare `assert` is invisible to the tally, and the
-tally is what makes "this test exited 0 having asserted nothing" a FAILURE here, the
-same way `run-all.sh` makes it one for the bash side.
+WHY NOT BARE `assert`. Two reasons, and the first is the honest one: ruff's per-file S101 exemption in this repo is scoped to `**/tests/test_*.py`, which does NOT match a file one directory deeper (`tests/gates/test_*.py`). Rather than widen a repo-wide suppression to accommodate a subdirectory, the port uses the assertion vocabulary it was going to use anyway. The second reason is
+the one that would still hold if the glob matched: a bare `assert` is invisible to the tally, and the tally is what makes "this test exited 0 having asserted nothing" a FAILURE here, the same way `run-all.sh` makes it one for the bash side.
 
-THE ANTI-VACUITY CONTRACT, restated in code rather than in memory. `run-all.sh`
-scores a bash gate test that exits 0 without emitting one `PASS:` line as a FAILURE
-("exited 0 but made no assertions"). `conftest.py` in this directory enforces the
-identical rule for every ported test, from the tally this module keeps. A ported
-test that stops asserting therefore reds instead of getting quieter.
+THE ANTI-VACUITY CONTRACT, restated in code rather than in memory. `run-all.sh` scores a bash gate test that exits 0 without emitting one `PASS:` line as a FAILURE ("exited 0 but made no assertions"). `conftest.py` in this directory enforces the identical rule for every ported test, from the tally this module keeps. A ported test that stops asserting therefore reds instead of
+getting quieter.
 
-THE LEDGER. When `$GATE_HARNESS_LEDGER` names a file, every recorded control is
-appended to it as one JSON object per line. `test_twin_parity.py` uses that to
-compare the port's control count against the twin's `PASS:` line count on the same
-tree, which is the only floor here that is not hand-typed: it is derived from the
-bash original, and it moves when the original moves.
+THE LEDGER. When `$GATE_HARNESS_LEDGER` names a file, every recorded control is appended to it as one JSON object per line. `test_twin_parity.py` uses that to compare the port's control count against the twin's `PASS:` line count on the same tree, which is the only floor here that is not hand-typed: it is derived from the bash original, and it moves when the original moves.
 """
 
 import contextlib
@@ -65,12 +42,9 @@ def _colours_on() -> bool:
 def describe_exit(code: int) -> str:
     """`"143 (KILLED by SIGTERM)"` rather than `"143"`.
 
-    THREE ENCODINGS OF THE SAME EVENT, and a reader should not have to know
-    which one they are holding. `subprocess` reports a signal as a NEGATIVE
+    THREE ENCODINGS OF THE SAME EVENT, and a reader should not have to know which one they are holding. `subprocess` reports a signal as a NEGATIVE
     returncode; a shell reports the same death as 128+n; and an ordinary exit is
-    neither. 160 is outside the band deliberately -- 128+32 is past the last real
-    signal, so a plain exit status of 159 or above is left alone rather than
-    renamed into a signal that does not exist.
+    neither. 160 is outside the band deliberately -- 128+32 is past the last real signal, so a plain exit status of 159 or above is left alone rather than renamed into a signal that does not exist.
     """
     if code < 0:
         number = -code
@@ -88,10 +62,7 @@ def describe_exit(code: int) -> str:
 class GateAssertionError(AssertionError):
     """What `log_fail` raises. An AssertionError so pytest reports it as a failure.
 
-    `log_fail` in bash prints and calls `exit 1`, halting the test file at the
-    first failure for a clean diagnostic. Raising has the same effect inside one
-    pytest test function, and a better one across the file: the remaining tests
-    still run, so one broken subject does not hide the state of the others.
+    `log_fail` in bash prints and calls `exit 1`, halting the test file at the first failure for a clean diagnostic. Raising has the same effect inside one pytest test function, and a better one across the file: the remaining tests still run, so one broken subject does not hide the state of the others.
     """
 
 
@@ -100,9 +71,7 @@ class RunResult:
 
     SEPARATE ON PURPOSE, and `combined` is offered rather than assumed. Several of
     the bash twins redirect `2>&1` into one log and assert on the merged text; those
-    ports use `.combined`. Everything else reads `.out` or `.err`, which is what
-    catches the two defects a merge hides: progress text written to stdout, and a
-    wrapper that swallows one stream entirely.
+    ports use `.combined`. Everything else reads `.out` or `.err`, which is what catches the two defects a merge hides: progress text written to stdout, and a wrapper that swallows one stream entirely.
     """
 
     def __init__(self, rc: int, out: str, err: str) -> None:
@@ -130,17 +99,11 @@ def run(
     """Drive a real command. `env` OVERLAYS os.environ rather than replacing it.
 
     The overlay is the important half. `env=` on subprocess REPLACES the whole
-    environment, so a fixture that meant to set one variable silently drops PATH,
-    HOME and everything else, and the failure arrives as "command not found" in a
-    test that has nothing to do with PATH.
+    environment, so a fixture that meant to set one variable silently drops PATH, HOME and everything else, and the failure arrives as "command not found" in a test that has nothing to do with PATH.
 
     `env_replace=True` IS THE `env -i` CASE, and it is opt-in by name because it
-    is exactly the mistake the overlay defaults exist to prevent. Two twins need
-    it for a real reason rather than for tidiness: `test-ci-complete-tiers.sh`
-    drives assert-ci-complete.sh under `env -i` so that a `RESULT_*` variable the
-    fixture did NOT set reads as `<unset>` -- which is the case that catches a
-    renamed job -- and it cannot do that while this process's own environment is
-    inherited, because a real CI run exports those very names. Callers pass the
+    is exactly the mistake the overlay defaults exist to prevent. Two twins need it for a real reason rather than for tidiness: `test-ci-complete-tiers.sh` drives assert-ci-complete.sh under `env -i` so that a `RESULT_*` variable the fixture did NOT set reads as `<unset>` -- which is the case that catches a renamed job -- and it cannot do that while this process's own environment
+    is inherited, because a real CI run exports those very names. Callers pass the
     WHOLE environment they want, PATH included; nothing is added back for them.
     """
     merged = dict(env or {}) if env_replace else dict(os.environ)
@@ -164,14 +127,9 @@ def require_tool(name: str, fix: str) -> str:
 
     WHY THIS IS NOT LEFT TO subprocess. `subprocess.run(["git", ...])` on a host
     with no git raises `FileNotFoundError: [Errno 2] No such file or directory:
-    'git'`, which pytest renders as an ERROR inside whatever helper happened to
-    call it. That reads as flake, names no remedy, and points at the test rather
-    than at the machine. Probing first turns it into an assertion failure that
-    says which binary is missing and what to run.
+    'git'`, which pytest renders as an ERROR inside whatever helper happened to call it. That reads as flake, names no remedy, and points at the test rather than at the machine. Probing first turns it into an assertion failure that says which binary is missing and what to run.
 
-    A missing tool is a FAILURE and never a skip: a case that cannot run has not
-    been checked, and "not checked" folded into "fine" is the shape this whole
-    directory exists to refuse.
+    A missing tool is a FAILURE and never a skip: a case that cannot run has not been checked, and "not checked" folded into "fine" is the shape this whole directory exists to refuse.
     """
     found = shutil.which(name)
     if not found:
@@ -188,13 +146,9 @@ def require_python_module(interpreter: str, module: str, fix: str) -> None:
     THE CASE THIS EXISTS FOR IS NOT HYPOTHETICAL. `check-workflow-gates.sh` opens
     with its own pyyaml bootstrap because "pyyaml is absent from ubuntu-slim by
     default"; a test that LIFTS one of its python bodies out and runs it directly
-    bypasses that bootstrap and gets `ModuleNotFoundError: No module named 'yaml'`
-    -- from a nested interpreter, rendered as an exit code, in a case whose
-    message is about workflow ordering. Probing first names the missing module and
-    the remedy instead.
+    bypasses that bootstrap and gets `ModuleNotFoundError: No module named 'yaml'` -- from a nested interpreter, rendered as an exit code, in a case whose message is about workflow ordering. Probing first names the missing module and the remedy instead.
 
-    NOT A SKIP. A case that could not import its dependency has not been checked,
-    and unchecked folded into fine is the shape this directory refuses.
+    NOT A SKIP. A case that could not import its dependency has not been checked, and unchecked folded into fine is the shape this directory refuses.
     """
     probe = subprocess.run(
         [interpreter, "-c", "import %s" % module],
@@ -213,10 +167,7 @@ def require_python_module(interpreter: str, module: str, fix: str) -> None:
 def temp_dir():
     """`with_temp_dir`. Nests safely; removed on the way out, exception or not.
 
-    The bash version binds the path into an EXIT trap because a shell function
-    cannot otherwise clean up after an `exit` from inside itself. A context
-    manager has that property natively, which is why this is the one helper whose
-    shape changes: the trap was scaffolding for a language feature Python has.
+    The bash version binds the path into an EXIT trap because a shell function cannot otherwise clean up after an `exit` from inside itself. A context manager has that property natively, which is why this is the one helper whose shape changes: the trap was scaffolding for a language feature Python has.
     """
     path = pathlib.Path(tempfile.mkdtemp())
     try:
@@ -234,10 +185,7 @@ def _write_exec(path: pathlib.Path, body: str) -> None:
 def fake_gh(output_file: os.PathLike[str] | str):
     """`with_fake_gh`. Shims `gh` on PATH with a script that cats `output_file`.
 
-    Yields the bin directory. PATH is restored on the way out, including when the
-    body raises -- the bash original restores it only on the success path, which is
-    survivable there because `log_fail` exits the process, and is not survivable
-    here because the next test would inherit the shim.
+    Yields the bin directory. PATH is restored on the way out, including when the body raises -- the bash original restores it only on the success path, which is survivable there because `log_fail` exits the process, and is not survivable here because the next test would inherit the shim.
     """
     with temp_dir() as bindir:
         _write_exec(bindir / "gh", '#!/bin/bash\ncat "%s"\n' % os.fspath(output_file))
@@ -259,10 +207,7 @@ class FakeBin:
     def record(self, name: str) -> str:
         """`fake_bin_record`. Every invocation of `name`, one line per call.
 
-        Empty output means it was never called, which is a claim worth asserting on
-        its own -- "nvcc was never invoked" is the whole point of the CUDA module's
-        skip path, and it is only visible because the recorder distinguishes "no
-        file" from "an empty file".
+        Empty output means it was never called, which is a claim worth asserting on its own -- "nvcc was never invoked" is the whole point of the CUDA module's skip path, and it is only visible because the recorder distinguishes "no file" from "an empty file".
         """
         path = self.records / name
         if not path.is_file():
@@ -277,21 +222,15 @@ class FakeBin:
 def fake_bin(spec: str):
     """`with_fake_bin`. PATH holds ONLY what `spec` names, for the body's duration.
 
-    The denylist argument from the bash original applies verbatim and is the whole
-    design: shadowing the handful of binaries a test means to avoid proves nothing
-    about the ones nobody thought to name, and the interesting failure is exactly
-    a module quietly reaching for `curl` on a machine that happens to have it.
-    Emptying PATH and re-admitting by name inverts the burden, so a new dependency
-    announces itself as "command not found" inside the test.
+    The denylist argument from the bash original applies verbatim and is the whole design: shadowing the handful of binaries a test means to avoid proves nothing about the ones nobody thought to name, and the interesting failure is exactly a module quietly reaching for `curl` on a machine that happens to have it. Emptying PATH and re-admitting by name inverts the burden, so a new
+    dependency announces itself as "command not found" inside the test.
 
     `spec` tokens, unchanged:
         name        a fake that RECORDS its argv and exits 0
         name!<n>    a fake that records its argv and exits <n>
         +name       the REAL binary, resolved from the caller's PATH and symlinked
 
-    The bash version runs the body in a SUBSHELL so the outer PATH is never
-    touched. Python has no subshell, so PATH is saved and restored in a `finally`,
-    which covers the case the subshell was protecting against: a raising body.
+    The bash version runs the body in a SUBSHELL so the outer PATH is never touched. Python has no subshell, so PATH is saved and restored in a `finally`, which covers the case the subshell was protecting against: a raising body.
     """
     with temp_dir() as root:
         bindir = root / "bin"
@@ -337,10 +276,7 @@ def fake_bin(spec: str):
 class Harness:
     """One gate test's running tally, speaking test-helpers.sh's vocabulary.
 
-    An OBJECT and not module globals, for the reason `Controls` is one: two tests in
-    one pytest process must not share a counter, and a counter that survives between
-    tests turns "this test asserted nothing" into "some earlier test asserted
-    something", which is the vacuity this whole file exists to refuse.
+    An OBJECT and not module globals, for the reason `Controls` is one: two tests in one pytest process must not share a counter, and a counter that survives between tests turns "this test asserted nothing" into "some earlier test asserted something", which is the vacuity this whole file exists to refuse.
     """
 
     def __init__(self, module: str, test: str, *, ledger: str | None = None) -> None:
@@ -405,15 +341,11 @@ class Harness:
 
     def assert_exit_code(self, expected: int, actual: int, msg: str = "") -> None:
         """`assert_exit_code <expected> <actual>`. EXPECTED FIRST -- the opposite
-        of `assert_eq`, and it is that way in bash. Normalising the two would flip
-        the meaning of every existing call site silently, which is worse than the
-        inconsistency.
+        of `assert_eq`, and it is that way in bash. Normalising the two would flip the meaning of every existing call site silently, which is worse than the inconsistency.
 
-        A SIGNAL IS NAMED, NOT LEFT AS A NUMBER. `got 143` reads as a verdict the
-        subject chose and sends the reader looking for the branch that returned
+        A SIGNAL IS NAMED, NOT LEFT AS A NUMBER. `got 143` reads as a verdict the subject chose and sends the reader looking for the branch that returned
         it; there is no such branch, because 143 is 128+15 and something killed
-        it. This helper is used across the whole gate-test estate, so the naming
-        belongs here rather than at each call site.
+        it. This helper is used across the whole gate-test estate, so the naming belongs here rather than at each call site.
         """
         self.assertions += 1
         if actual != expected:
@@ -457,9 +389,7 @@ class Harness:
     def tally_finish(self, subject: str) -> None:
         """`tally_finish`, byte-identical verdict lines, raising instead of returning 1.
 
-        The bash callers `exit` on its status so a caller that forgets cannot report
-        green by falling off the end. A pytest test cannot fall off the end into a
-        pass either, because the fixture's teardown refuses a zero-control test.
+        The bash callers `exit` on its status so a caller that forgets cannot report green by falling off the end. A pytest test cannot fall off the end into a pass either, because the fixture's teardown refuses a zero-control test.
         """
         print()
         if self.tally_fails == 0:
@@ -482,27 +412,18 @@ class Harness:
 def block_from(text: str, opener: str) -> list[str]:
     """The lines from the first one STARTING WITH `opener` through the closing `}`.
 
-    SHARED BECAUSE FIVE GATE TESTS CARRIED THE SAME NINE LINES, and unlike an
-    assertion message there is nothing per-case in them. The five are
-    `test_gate_installmethods_container_version.py`, `..._linuxpkg_idiom.py`,
-    `..._manifest.py`, `test_gate_preview_worker_reaping.py` and
+    SHARED BECAUSE FIVE GATE TESTS CARRIED THE SAME NINE LINES, and unlike an assertion message there is nothing per-case in them. The five are `test_gate_installmethods_container_version.py`, `..._linuxpkg_idiom.py`, `..._manifest.py`, `test_gate_preview_worker_reaping.py` and
     `test_gate_watchdog_supersession.py`; they pull a bash function body, a bash
     function body, a bash function body, `cleanup_preview_workers()` and an
-    `async function hasNewerRun` respectively, which is the whole of the variation
-    and it is an ARGUMENT. `check:ci-shape-duplication` reported the loop as four
-    overlapping findings the moment the gate-test family entered its corpus.
+    `async function hasNewerRun` respectively, which is the whole of the variation and it is an ARGUMENT. `check:ci-shape-duplication` reported the loop as four overlapping findings the moment the gate-test family entered its corpus.
 
     `awk "/^name\\(\\) \\{/,/^\\}/"` in the bash twins. It matches a line-anchored
     `}` and nothing cleverer, because the subjects are shell and JavaScript files
     formatted with the closing brace in column 1; a brace counter would be a second
     thing to be wrong about.
 
-    IT RETURNS EMPTY RATHER THAN REFUSING, and that is deliberate. Every caller has
-    its own refusal sentence naming what it was looking for and why its absence
-    makes that file check nothing -- the per-case content this repo keeps duplicated
-    on purpose. Folding those five sentences into one generic "block not found"
-    would make each red harder to read, which is the opposite of the trade this
-    extraction is for.
+    IT RETURNS EMPTY RATHER THAN REFUSING, and that is deliberate. Every caller has its own refusal sentence naming what it was looking for and why its absence makes that file check nothing -- the per-case content this repo keeps duplicated on purpose. Folding those five sentences into one generic "block not found" would make each red harder to read, which is the opposite of the
+    trade this extraction is for.
     """
     body: list[str] = []
     collecting = False
@@ -519,16 +440,10 @@ def block_from(text: str, opener: str) -> list[str]:
 def watchdog_subject(gate, watchdog):
     """The watchdog module path, refusing loudly if it or node is missing.
 
-    SHARED BECAUSE IT WAS BYTE-IDENTICAL IN THREE FILES, not because three files happened
-    to look alike. `test_gate_watchdog_classifier_chain.py`, `..._log_capture.py` and
-    `..._supersession.py` each carried the same four lines with the same message and the
-    same tool hint -- the shape `check:ci-shape-duplication` reports as `148f0bece7dd`
-    once the gate-test family enters its corpus. Unlike an assertion message, which is
-    the per-case content this repo deliberately keeps duplicated, this says nothing
-    specific to any of the three, so there is nothing lost by having one copy.
+    SHARED BECAUSE IT WAS BYTE-IDENTICAL IN THREE FILES, not because three files happened to look alike. `test_gate_watchdog_classifier_chain.py`, `..._log_capture.py` and `..._supersession.py` each carried the same four lines with the same message and the same tool hint -- the shape `check:ci-shape-duplication` reports as `148f0bece7dd` once the gate-test family enters its corpus.
+    Unlike an assertion message, which is the per-case content this repo deliberately keeps duplicated, this says nothing specific to any of the three, so there is nothing lost by having one copy.
 
-    It takes `watchdog` rather than reading a module constant, so a caller pointing at a
-    fixture copy still gets the refusal rather than silently checking the real file.
+    It takes `watchdog` rather than reading a module constant, so a caller pointing at a fixture copy still gets the refusal rather than silently checking the real file.
     """
     if not watchdog.is_file():
         gate.log_fail("subject under test is missing: %s" % watchdog)

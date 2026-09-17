@@ -1,23 +1,12 @@
 """Differential: `rediacc_ci.deploy.promote_docker_to_stable_hotfix` against its
 twin `.ci/scripts/deploy/promote-docker-to-stable-hotfix.sh`.
 
-A RECORDING FAKE `docker` ON A SCRATCH PATH. Nothing here reaches GHCR: the fake
-logs its exact argv and answers from the environment, and no case names a real
-credential. `.ci/shadow/w7p5a-status.json` records this path as blocked only for
-the "one real run" clause and says in as many words that the mocked parity
-ledger is a separate, achievable piece of work. This is that piece.
+A RECORDING FAKE `docker` ON A SCRATCH PATH. Nothing here reaches GHCR: the fake logs its exact argv and answers from the environment, and no case names a real credential. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS THE EVIDENCE HERE, MORE THAN THE STREAMS, and the fake is built
-to make that true rather than to hide it: its stdout line is CONSTANT, not
-derived from the reference it was handed. So a port that promoted stable
-BACKWARDS onto edge, or that tagged `:latest`, would produce identical stdout,
-identical stderr and an identical exit code, and only the recorded argv catches
-it. `test_planted_defect_is_caught_only_by_the_call_log` plants exactly that and
-shows all three agreeing while the log does not.
+THE CALL LOG IS THE EVIDENCE HERE, MORE THAN THE STREAMS, and the fake is built to make that true rather than to hide it: its stdout line is CONSTANT, not derived from the reference it was handed. So a port that promoted stable BACKWARDS onto edge, or that tagged `:latest`, would produce identical stdout, identical stderr and an identical exit code, and only the recorded argv
+catches it. `test_planted_defect_is_caught_only_by_the_call_log` plants exactly that and shows all three agreeing while the log does not.
 
-BOTH DIRECTIONS ARE DRIVEN. A partial failure is compared as carefully as the
-happy path, because the interesting property of this script is WHICH images are
-already promoted when it stops.
+BOTH DIRECTIONS ARE DRIVEN. A partial failure is compared as carefully as the happy path, because the interesting property of this script is WHICH images are already promoted when it stops.
 """
 
 from __future__ import annotations
@@ -88,9 +77,7 @@ def _bin(root: pathlib.Path, *, drop: str = "", docker_body: str = FAKE_DOCKER) 
 def fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     """A throwaway repository holding both implementations.
 
-    BOTH SIDES ARE COPIED IN rather than invoked from this checkout, because each
-    resolves its own neighbours from its own location. A test that ran the real
-    files would drive them against the real tree.
+    BOTH SIDES ARE COPIED IN rather than invoked from this checkout, because each resolves its own neighbours from its own location. A test that ran the real files would drive them against the real tree.
     """
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
@@ -150,9 +137,7 @@ def run_both(tmp_path: pathlib.Path, args: list[str] | None = None, **kw):
 def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> None:
     """THE THREE STREAMS ARE COMPARED SEPARATELY, plus the call log.
 
-    `2>&1` is the reflex and it destroys the defect class these tests exist for:
-    a message moving between stdout and stderr is invisible once the two are
-    merged.
+    `2>&1` is the reflex and it destroys the defect class these tests exist for: a message moving between stdout and stderr is invisible once the two are merged.
     """
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}\n"
@@ -226,8 +211,7 @@ def test_a_missing_docker_refuses_before_any_call(tmp_path) -> None:
 
 def test_extra_arguments_are_ignored_by_both(tmp_path) -> None:
     """NOT AN ACADEMIC CASE. `--dry-run` looks like it would be honoured and is
-    not: the twin parses no argv at all, so a caller reaching for a safety flag
-    gets a real promotion. Recorded as agreement rather than as a wish.
+    not: the twin parses no argv at all, so a caller reaching for a safety flag gets a real promotion. Recorded as agreement rather than as a wish.
     """
     old, new, old_calls, new_calls = run_both(tmp_path, ["--dry-run", "extra"])
     _agree(old, new, "argv", old_calls, new_calls)
@@ -241,11 +225,7 @@ def test_extra_arguments_are_ignored_by_both(tmp_path) -> None:
 def test_the_ports_own_lines_interleave_with_dockers_in_the_twins_order(tmp_path) -> None:
     """A PIPE, NOT A TERMINAL, because that is where the divergence lives.
 
-    Python block-buffers stdout against a pipe and flushes at exit, while the
-    docker child writes straight to the inherited descriptor. Without
-    `port._flush` the three `Promoting ...` lines all arrive AFTER the three
-    `Created:` lines, with byte-identical content in the wrong order. Both exits
-    are 0 and the call log is identical, so this comparison is the only witness.
+    Python block-buffers stdout against a pipe and flushes at exit, while the docker child writes straight to the inherited descriptor. Without `port._flush` the three `Promoting ...` lines all arrive AFTER the three `Created:` lines, with byte-identical content in the wrong order. Both exits are 0 and the call log is identical, so this comparison is the only witness.
     """
     root = fixture(tmp_path)
     env = {
@@ -283,10 +263,7 @@ def test_the_ports_own_lines_interleave_with_dockers_in_the_twins_order(tmp_path
 def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     """PROVE THE DIFFERENTIAL CAN FIRE, and prove WHICH assertion fires.
 
-    The plant swaps `-t <dst>` and `<src>`, which is the mistake that promotes
-    stable backwards onto edge. Every printed byte and the exit code are
-    unchanged by it, so this test also demonstrates that a streams-only
-    comparison would have called the defective port equivalent.
+    The plant swaps `-t <dst>` and `<src>`, which is the mistake that promotes stable backwards onto edge. Every printed byte and the exit code are unchanged by it, so this test also demonstrates that a streams-only comparison would have called the defective port equivalent.
     """
     root = fixture(tmp_path)
     target = root / ".ci" / "rediacc_ci" / "deploy" / PORT_FILE.name
@@ -314,8 +291,7 @@ def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
 def test_defect_no_post_promotion_verification(tmp_path) -> None:
     """A docker THAT DOES NOTHING AND EXITS 0 produces a clean promotion report.
 
-    The fake is replaced by one that records nothing and touches nothing. Both
-    implementations print the same seven-line success and exit 0. That is the
+    The fake is replaced by one that records nothing and touches nothing. Both implementations print the same seven-line success and exit 0. That is the
     twin's behaviour and the port reproduces it; repairing it is a cutover-box
     decision, not this one's.
     """

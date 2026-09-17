@@ -2,8 +2,7 @@
 
 The supersession verdict in `.ci/scripts/ci/watchdog-monitor.cjs`.
 
-WHAT BROKE. Measured on real traffic 2026-07-30, watchdog run 30534675663
-monitoring console run 30530991847 on branch 0730-2:
+WHAT BROKE. Measured on real traffic 2026-07-30, watchdog run 30534675663 monitoring console run 30530991847 on branch 0730-2:
 
   [0m] Run: in_progress | Jobs: 10 done, 7 running, 0 queued, 0 failed, 2 cancelled
   [logs] captured the full log for "Quality / Content" (61415 bytes) before any retry
@@ -12,19 +11,13 @@ monitoring console run 30530991847 on branch 0730-2:
   [1m] Run: in_progress | Jobs: 19 done, 1 running, 0 queued, 0 failed, 11 cancelled
   Workflow externally cancelled (11/19 jobs cancelled) - exiting
 
-A push created run 30534726467 fifteen seconds before that first poll, which
-cancelled 30530991847 by concurrency group. The watchdog treated the superseded
-jobs as failures: it spent a billed Workers AI classification and called
-core.setFailed, so step 4 concluded FAILURE for a run nobody broke.
+A push created run 30534726467 fifteen seconds before that first poll, which cancelled 30530991847 by concurrency group. The watchdog treated the superseded jobs as failures: it spent a billed Workers AI classification and called core.setFailed, so step 4 concluded FAILURE for a run nobody broke.
 
 WHY THE EXISTING GUARD COULD NOT SAVE IT. The mass-cancellation check only fires
 once `cancelled >= completed / 2`. During a supersession the jobs flip a few at a
-time, so on the first poll the ratio is nowhere near met (2 of 10 here), and by
-the time it is met setFailed has already stuck to the step. A ratio cannot
-express "something newer replaced me".
+time, so on the first poll the ratio is nowhere near met (2 of 10 here), and by the time it is met setFailed has already stuck to the step. A ratio cannot express "something newer replaced me".
 
-BOTH DIRECTIONS MATTER, and this gate is deliberately lopsided about which is
-worse:
+BOTH DIRECTIONS MATTER, and this gate is deliberately lopsided about which is worse:
   - Too loud (the old behaviour): every superseded run reports red, and the
     classifier is billed for it.
   - Too quiet (the danger the fix introduces): a genuine failure gets waved
@@ -83,8 +76,7 @@ def verdict(gate, failed: int, cancelled: int, newer: str) -> str:
 def first_line_with(gate, needle: str) -> int:
     """1-based line number of the LAST line containing `needle`, or 0.
 
-    The twin takes `| tail -1` for both anchors, so the comparison is between the
-    last call site of each. Same choice here.
+    The twin takes `| tail -1` for both anchors, so the comparison is between the last call site of each. Same choice here.
     """
     found = 0
     for index, line in enumerate(subject(gate).read_text(encoding="utf-8").splitlines(), start=1):
@@ -118,8 +110,7 @@ def test_the_measured_incident_is_now_quiet(gate):
 
 def test_a_real_failure_still_fires_even_with_a_newer_run(gate):
     """THE CONTROL, FIRE DIRECTION, and the single most important case in this
-    module. Pushing a fix while the old run is still red is the NORMAL way this
-    situation arises, so "a newer run exists" must never on its own excuse a
+    module. Pushing a fix while the old run is still red is the NORMAL way this situation arises, so "a newer run exists" must never on its own excuse a
     failure. If this ever returns "superseded", the watchdog has gone blind."""
     gate.assert_eq(
         verdict(gate, 1, 2, "true"),

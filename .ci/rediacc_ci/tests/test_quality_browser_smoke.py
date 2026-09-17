@@ -3,43 +3,21 @@
 
 THE SUBJECT IS A LAUNCHER, so what is under test is the LAUNCH: which binary,
 with exactly which argv, from which working directory, after which stdout
-line. The real `scripts/gates/check-browser-smoke.ts` is never run here -- it
-drives six routes in a real Chromium inside a Playwright container and takes
-minutes -- and it does not need to be, because it is TypeScript and is
-identical on both sides of this comparison by construction.
+line. The real `scripts/gates/check-browser-smoke.ts` is never run here -- it drives six routes in a real Chromium inside a Playwright container and takes minutes -- and it does not need to be, because it is TypeScript and is identical on both sides of this comparison by construction.
 
-THE SEAM IS PATH, populated with recording stubs for `npx`, `node`, `docker`
-and `id` (ruling 7's shape, as in `test_pr_sync_epic_block.py`). Each stub
-prints its own name, its argv and its cwd, so a divergence in ANY of the four
-things the launcher decides shows up as a text difference rather than as a
-silent pass. The cwd line is not decoration: the twin `cd`s to
-`SCRIPT_DIR/../../..` and the port to `paths.repo_root()`, and those are two
-independent derivations of the same directory that could drift apart without
-any other assertion here noticing.
+THE SEAM IS PATH, populated with recording stubs for `npx`, `node`, `docker` and `id` (ruling 7's shape, as in `test_pr_sync_epic_block.py`). Each stub prints its own name, its argv and its cwd, so a divergence in ANY of the four things the launcher decides shows up as a text difference rather than as a silent pass. The cwd line is not decoration: the twin `cd`s to
+`SCRIPT_DIR/../../..` and the port to `paths.repo_root()`, and those are two independent derivations of the same directory that could drift apart without any other assertion here noticing.
 
-DOCKER ABSENCE IS SIMULATED BY OMITTING THE STUB, never by an environment
-flag, because `command -v docker` / `shutil.which("docker")` is the branch
-under test. The real docker on this machine is out of PATH for every case.
-`id` absence is simulated the same way, and that case is the reproduced defect
-below.
+DOCKER ABSENCE IS SIMULATED BY OMITTING THE STUB, never by an environment flag, because `command -v docker` / `shutil.which("docker")` is the branch under test. The real docker on this machine is out of PATH for every case. `id` absence is simulated the same way, and that case is the reproduced defect below.
 
-`id` GETS PER-ARGUMENT STUB OUTPUT (`STUB_ID_STDOUT_U` and `STUB_ID_STDOUT_G`,
-deliberately DIFFERENT numbers) so that a port which called `id -g` twice, or
-which assembled `gid:uid`, fails rather than passing on a coincidence. A single
-shared value would have made `-u 1000:1000` unfalsifiable.
+`id` GETS PER-ARGUMENT STUB OUTPUT (`STUB_ID_STDOUT_U` and `STUB_ID_STDOUT_G`, deliberately DIFFERENT numbers) so that a port which called `id -g` twice, or which assembled `gid:uid`, fails rather than passing on a coincidence. A single shared value would have made `-u 1000:1000` unfalsifiable.
 
 THE REPRODUCED DEFECT HAS ITS OWN CASE.
-`test_missing_id_yields_a_bare_colon_on_both_sides` drives the TWIN with `id`
-off PATH and asserts the twin itself hands docker `-u :` while exiting 0. That
-assertion is on the BASH side first: if bash ever started aborting there, the
+`test_missing_id_yields_a_bare_colon_on_both_sides` drives the TWIN with `id` off PATH and asserts the twin itself hands docker `-u :` while exiting 0. That assertion is on the BASH side first: if bash ever started aborting there, the
 case would fail loudly rather than quietly testing a port behaviour nothing
 mirrors any more.
 
-THREE CASES ASSERT AGREEMENT ON EXIT CODE AND SUBSTANCE RATHER THAN BYTES, and
-they are the three the port's docstring names as divergences: a missing `node`,
-a missing `npx` and a missing `id` all produce bash's own
-`<script>: line NN: ...` text, which carries a line number no port should
-reproduce. Everything else in this file is byte-for-byte.
+THREE CASES ASSERT AGREEMENT ON EXIT CODE AND SUBSTANCE RATHER THAN BYTES, and they are the three the port's docstring names as divergences: a missing `node`, a missing `npx` and a missing `id` all produce bash's own `<script>: line NN: ...` text, which carries a line number no port should reproduce. Everything else in this file is byte-for-byte.
 
 TWO CASES PIN THE DIFFERENCES FROM THE NEAR-IDENTICAL SIBLING
 `page-density.sh`: the mount target is `/work` and NOT the host path, and there
@@ -47,35 +25,22 @@ is no `-e CI=true`. Both are the exact edits a reader who had just read the
 sibling would make, and neither would break any other assertion here.
 
 K=5 LEDGER: `.ci/shadow/w7p6-browser-smoke.observations.jsonl` -- five
-distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct
-trees". Recorded in a disposable scratch repo outside this checkout (dirty
+distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty
 tree; `--record` refuses one) with recording stubs of the same shape on PATH,
 varying the branch across trees: REDIACC_SMOKE_NO_DOCKER=1, docker absent, the
-docker path at playwright 1.55.0, the docker path at 1.61.1 with different
-ids, and a failing node.
+docker path at playwright 1.55.0, the docker path at 1.61.1 with different ids, and a failing node.
 
-THE MISSING-`id` CASE IS DELIBERATELY NOT IN THE LEDGER, and the reason is
-worth stating so its absence does not read as an oversight. shadow-gate
-compares normalized finding TEXT, and on that path the two sides legitimately
-differ in text: bash emits `<script>: line 50: id: command not found` and the
-port emits `browser-smoke.py: id: command not found`. Recording it would enter
-a MISMATCH row, which DISQUALIFIES that tree permanently -- the tree id is the
-content of both implementations, so it can never be cleared by re-running. The
-substance of that path (exit code, both stderr lines, the resulting `-u :`,
-the docker argv) is asserted instead by
-`test_missing_id_yields_a_bare_colon_on_both_sides`, which compares the two
-sides directly and does not have to go through a text fingerprint.
+THE MISSING-`id` CASE IS DELIBERATELY NOT IN THE LEDGER, and the reason is worth stating so its absence does not read as an oversight. shadow-gate compares normalized finding TEXT, and on that path the two sides legitimately differ in text: bash emits `<script>: line 50: id: command not found` and the port emits `browser-smoke.py: id: command not found`. Recording it would enter a
+MISMATCH row, which DISQUALIFIES that tree permanently -- the tree id is the content of both implementations, so it can never be cleared by re-running. The substance of that path (exit code, both stderr lines, the resulting `-u :`, the docker argv) is asserted instead by `test_missing_id_yields_a_bare_colon_on_both_sides`, which compares the two sides directly and does not have to
+go through a text fingerprint.
 
 BEYOND THE STUBS, THE REAL THING WAS DRIVEN ON BOTH BRANCHES, 2026-09-14, and
 this is the part the stubs cannot vouch for. `REDIACC_SMOKE_NO_DOCKER=1 bash
 .ci/scripts/quality/browser-smoke.sh` and `REDIACC_SMOKE_NO_DOCKER=1
 PYTHONPATH=.ci python3 -m rediacc_ci.quality.browser_smoke` both ran the real
-`scripts/gates/check-browser-smoke.ts` against a real Chromium over all six
-routes and exited 0 with BYTE-IDENTICAL stdout and stderr. Then the same pair
+`scripts/gates/check-browser-smoke.ts` against a real Chromium over all six routes and exited 0 with BYTE-IDENTICAL stdout and stderr. Then the same pair
 with no escape hatch, so both went through the container: both pulled
-`mcr.microsoft.com/playwright:v1.61.1-noble` (the tag derived from the
-installed package, not typed), ran the gate inside it as the invoking user and
-exited 0, again byte-identical on both streams.
+`mcr.microsoft.com/playwright:v1.61.1-noble` (the tag derived from the installed package, not typed), ran the gate inside it as the invoking user and exited 0, again byte-identical on both streams.
 """
 
 from __future__ import annotations
@@ -162,10 +127,7 @@ def _run(
 ) -> tuple[subprocess.CompletedProcess[str], list[str]]:
     """Run one side. Returns its streams AND the stub call log.
 
-    The log is a separate artifact from stdout on purpose: neither `node`'s nor
-    `id`'s recording reaches stdout (see STUB's QUIET note), so without it the
-    image-derivation and the `-u` cases would assert nothing about how those two
-    were invoked.
+    The log is a separate artifact from stdout on purpose: neither `node`'s nor `id`'s recording reaches stdout (see STUB's QUIET note), so without it the image-derivation and the `-u` cases would assert nothing about how those two were invoked.
     """
     runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
     log = pathlib.Path(env["STUB_LOG"])
@@ -261,8 +223,7 @@ def test_docker_absent_prints_the_note_then_execs_npx(tmp_path: pathlib.Path) ->
 
 def test_docker_present_derives_the_image_and_execs_docker(tmp_path: pathlib.Path) -> None:
     """The whole point of the script: the tag comes from the installed
-    playwright package, never from a hand-typed pin. The full docker argv is
-    asserted token for token, because every token in it was put there for a
+    playwright package, never from a hand-typed pin. The full docker argv is asserted token for token, because every token in it was put there for a
     reason the twin states."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ("npx", "node", "docker", "id"), STUB_NODE_STDOUT="1.55.0"
@@ -386,8 +347,7 @@ def test_id_stderr_is_not_swallowed_and_its_exit_code_is_ignored(
     tmp_path: pathlib.Path,
 ) -> None:
     """The asymmetry the port's docstring names: `$(id -u)` sits inside an
-    argument list, so `set -e` cannot see its status. `id` printing a value and
-    THEN failing must still yield that value, and its stderr must still reach
+    argument list, so `set -e` cannot see its status. `id` printing a value and THEN failing must still yield that value, and its stderr must still reach
     the caller."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -408,14 +368,9 @@ def test_id_stderr_is_not_swallowed_and_its_exit_code_is_ignored(
 
 def test_missing_id_yields_a_bare_colon_on_both_sides(tmp_path: pathlib.Path) -> None:
     """REPRODUCED DEFECT (`browser-smoke.sh:51`). With `id` off PATH, bash's
-    `set -euo pipefail` does NOT abort: a failed command substitution inside an
-    argument list is not a failed command. The twin prints `id: command not
-    found` twice, substitutes the empty string for both, and hands docker a
-    literal `-u :`.
+    `set -euo pipefail` does NOT abort: a failed command substitution inside an argument list is not a failed command. The twin prints `id: command not found` twice, substitutes the empty string for both, and hands docker a literal `-u :`.
 
-    The twin's behaviour is asserted FIRST. If bash ever started aborting here
-    this case fails on the old side, rather than quietly testing a port
-    behaviour that no longer mirrors anything.
+    The twin's behaviour is asserted FIRST. If bash ever started aborting here this case fails on the old side, rather than quietly testing a port behaviour that no longer mirrors anything.
 
     Text diverges (bash's prefix carries a line number), so agreement is on the
     exit code, the docker argv and the stderr shape."""
@@ -520,8 +475,7 @@ def test_id_value_strips_only_trailing_newlines() -> None:
 
 def test_planted_defect_ipc_host(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY. Drop `--ipc=host` from the docker argv -- the exact edit a
-    reader who did not know why it was there would make, and one that turns a
-    passing gate into a Chromium crash inside the container. Driven red, then
+    reader who did not know why it was there would make, and one that turns a passing gate into a Chromium crash inside the container. Driven red, then
     the source is restored byte-identical and re-verified green."""
     _plant(
         tmp_path,
@@ -534,8 +488,7 @@ def test_planted_defect_ipc_host(tmp_path: pathlib.Path) -> None:
 
 def test_planted_defect_getuid_instead_of_id(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY for the reproduced defect. Replace the `id` shell-out with
-    `os.getuid()`, which is what a reviewer would call an improvement. The port
-    then stops calling `id` at all, so the call log loses two entries and the
+    `os.getuid()`, which is what a reviewer would call an improvement. The port then stops calling `id` at all, so the call log loses two entries and the
     missing-`id` path silently repairs itself."""
     _plant(
         tmp_path,
@@ -571,9 +524,7 @@ def _plant(
     """Run one plant: mutate a COPY, prove the differential goes red, prove the
     on-disk port is byte-identical afterwards and still agrees with the twin.
 
-    The mutation is never written to `PORT`. A plant that edited the real file
-    and restored it would leave the tree wrong if the assertion in between
-    raised, and this tree has no safety net.
+    The mutation is never written to `PORT`. A plant that edited the real file and restored it would leave the tree wrong if the assertion in between raised, and this tree has no safety net.
     """
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(old_text, new_text)

@@ -1,12 +1,8 @@
 """Differential: `rediacc_ci.autopilot.review_reply` against its twin
 `.ci/scripts/autopilot/review-reply.sh`.
 
-THE FAKE `gh` IS A SAFETY CONTROL, NOT A CONVENIENCE, and this subject is the
-one where that is literal: `apply`'s success path posts a comment into a review
-thread and marks that thread RESOLVED. GitHub undoes neither. The thread id
-comes out of a model-authored verdict, and a global GraphQL node id names a
-thread on any pull request in any repository the token can reach. So a case that
-reached the real binary could post fixture text onto somebody's PR.
+THE FAKE `gh` IS A SAFETY CONTROL, NOT A CONVENIENCE, and this subject is the one where that is literal: `apply`'s success path posts a comment into a review thread and marks that thread RESOLVED. GitHub undoes neither. The thread id comes out of a model-authored verdict, and a global GraphQL node id names a thread on any pull request in any repository the token can reach. So a
+case that reached the real binary could post fixture text onto somebody's PR.
 
 Four things stop that, and the first is asserted rather than assumed:
 
@@ -18,18 +14,10 @@ Four things stop that, and the first is asserted rather than assumed:
   4. the fake RECORDS every argv, so a case that somehow produced no call log
      fails rather than passing quietly.
 
-THE CALL LOG IS THE ARTIFACT FOR `apply`, and it is compared whole. Everything
-this subcommand does to the world is two GraphQL mutations per entry: which
-mutation, which thread id, and the exact body bytes. A port that replied with
-the right text to the wrong thread would print an identical summary line.
-`test_model_text_travels_as_an_argv_value_not_as_shell` is the case that reads
-the recorded argv back and checks a `$(...)` in a reply body arrived literal.
+THE CALL LOG IS THE ARTIFACT FOR `apply`, and it is compared whole. Everything this subcommand does to the world is two GraphQL mutations per entry: which mutation, which thread id, and the exact body bytes. A port that replied with the right text to the wrong thread would print an identical summary line. `test_model_text_travels_as_an_argv_value_not_as_shell` is the case that
+reads the recorded argv back and checks a `$(...)` in a reply body arrived literal.
 
-FOR `plan` THE ARTIFACT IS STDOUT (or `--out`), and the two skip reasons are
-driven SEPARATELY. `malformed-id` and `unknown-thread` fail for different
-reasons -- the first is a shape check, the second is "the payload is the round's
-whole world" -- and a port that collapsed them would still pass a test that only
-ever fed it garbage.
+FOR `plan` THE ARTIFACT IS STDOUT (or `--out`), and the two skip reasons are driven SEPARATELY. `malformed-id` and `unknown-thread` fail for different reasons -- the first is a shape check, the second is "the payload is the round's whole world" -- and a port that collapsed them would still pass a test that only ever fed it garbage.
 
 K=5 LEDGER: `.ci/shadow/w7p6-review-reply.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
@@ -386,16 +374,11 @@ def test_the_body_is_capped_and_the_cap_is_configurable() -> None:
 def test_a_multi_line_disposition_is_silently_dropped() -> None:
     """DEFECT 1, LIVE, PRESERVED AND PINNED. See the port's docstring.
 
-    jq's `s` flag is single-line ANCHOR mode (`^` -> `\\A`, `$` -> `\\Z`), not
-    dotall -- the dotall flag is `m`. So `.*` still stops at the first newline,
-    the anchored `$` cannot match, and `capture` yields NOTHING, which drops the
-    entry from the stream entirely: not replied, not skipped, `flagged` false,
-    and no warning on stderr.
+    jq's `s` flag is single-line ANCHOR mode (`^` -> `\\A`, `$` -> `\\Z`), not dotall -- the dotall flag is `m`. So `.*` still stops at the first newline, the anchored `$` cannot match, and `capture` yields NOTHING, which drops the entry from the stream entirely: not replied, not skipped, `flagged` false, and no warning on stderr.
 
     THAT CONTRADICTS THE TWIN'S OWN HEADER ("Anything else lands in skipped[]
     with a reason and raises flagged -- never silently"). A model writing a
-    two-line answer gets exactly the silence that sentence promises cannot
-    happen. Asserted as the twin BEHAVES rather than as it is documented, and
+    two-line answer gets exactly the silence that sentence promises cannot happen. Asserted as the twin BEHAVES rather than as it is documented, and
     this test is what will go red when somebody repairs it."""
     fixtures = {
         "verdict.json": verdict("thread T_acme1: first line\nsecond line\n\nthird"),
@@ -431,8 +414,7 @@ def test_the_threads_fixture_is_accepted_in_both_spellings() -> None:
 def test_a_bare_array_threads_fixture_is_refused_by_jq() -> None:
     """DEFECT 2, LATENT, PRESERVED AND PINNED. See the port's docstring.
 
-    `.threads` on an ARRAY is an ERROR in jq, not `null`, so `(.threads // .)`
-    never falls through and the bare-array spelling the comment promises exits 5
+    `.threads` on an ARRAY is an ERROR in jq, not `null`, so `(.threads // .)` never falls through and the bare-array spelling the comment promises exits 5
     with a jq diagnostic and no plan. Latent because the only caller
     (`.github/workflows/autopilot.yml:817`) passes `review-payload.sh`'s object,
     so this is documentation of a capability that was never there."""
@@ -602,8 +584,7 @@ def test_nothing_planned_touches_nothing() -> None:
 
 def test_apply_replies_then_resolves_each_thread_in_order() -> None:
     """TWO mutations per entry, reply FIRST. Resolving first would leave a
-    resolved thread with no answer in it if the reply failed, which is exactly
-    the state `check-resolved-threads.sh` cannot tell from a human having dealt
+    resolved thread with no answer in it if the reply failed, which is exactly the state `check-resolved-threads.sh` cannot tell from a human having dealt
     with it."""
     code, _out, err, calls, _ = _sides(
         "apply-two", APPLY_ARGV, fixtures=APPLY_FIXTURES, env=PUSH_ON

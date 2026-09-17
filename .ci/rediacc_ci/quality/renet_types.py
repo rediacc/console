@@ -3,29 +3,16 @@
 Ported from `.ci/scripts/quality/check-renet-types.sh`, which is not deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHAT THE TWIN DOES. It builds `renet` from the `private/renet` submodule,
-regenerates the contract into a temporary directory, and compares each
-generated file against the committed copy in
-`packages/shared/src/renet-contract/data`, IGNORING the version line. A
-difference means the committed contract is stale: the CLI would then be typed
-against a renet that no longer exists.
+WHAT THE TWIN DOES. It builds `renet` from the `private/renet` submodule, regenerates the contract into a temporary directory, and compares each generated file against the committed copy in `packages/shared/src/renet-contract/data`, IGNORING the version line. A difference means the committed contract is stale: the CLI would then be typed against a renet that no longer exists.
 
-THE LIST IS THE GATE, and the twin's own comment says why in the one place it
-was learned the hard way: "Adding a generated file to the generator is NOT
-enough: this list is what the gate actually compares. license-tiers.generated.ts
-was generated into TEMP_DIR and silently ignored until it was added here, which
-would have let it go stale forever while the gate reported 'up-to-date'." A
-seventh generated file added tomorrow is invisible to this gate until someone
-edits `FILES`, and that is a real blind spot which is preserved rather than
-quietly widened, because widening it would change the verdict.
+THE LIST IS THE GATE, and the twin's own comment says why in the one place it was learned the hard way: "Adding a generated file to the generator is NOT enough: this list is what the gate actually compares. license-tiers.generated.ts was generated into TEMP_DIR and silently ignored until it was added here, which would have let it go stale forever while the gate reported
+'up-to-date'." A seventh generated file added tomorrow is invisible to this gate until someone edits `FILES`, and that is a real blind spot which is preserved rather than quietly widened, because widening it would change the verdict.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE SUBMODULE GUARD IS A THREE-WAY BRANCH, NOT A TWO-WAY ONE, and collapsing it
-is how a gate becomes vacuous. `require_submodule` in `.ci/scripts/lib/common.sh`
-answers:
+THE SUBMODULE GUARD IS A THREE-WAY BRANCH, NOT A TWO-WAY ONE, and collapsing it is how a gate becomes vacuous. `require_submodule` in `.ci/scripts/lib/common.sh` answers:
 
     marker present          -> run
     marker absent, CI=true  -> HARD FAILURE, exit 1, three lines that name the
@@ -34,37 +21,19 @@ answers:
     marker absent, locally  -> warn and return 1, and the caller's `|| exit 0`
                                turns that into a skip
 
-The middle rung is the one that matters. common.sh states it: "a gate that
-silently skips is worse than no gate at all. check:ci-renet rides on this, and
-it carries govulncheck (Go CVE scanning), deadcode and golangci-lint -- all
-three would report success while checking nothing." The port carries all three
-rungs, including the local skip, because a port that hardened the skip into a
-failure would break a fresh clone without `--recursive`, and a port that dropped
-the CI rung would make the gate vacuous in the one place it must not be.
+The middle rung is the one that matters. common.sh states it: "a gate that silently skips is worse than no gate at all. check:ci-renet rides on this, and it carries govulncheck (Go CVE scanning), deadcode and golangci-lint -- all three would report success while checking nothing." The port carries all three rungs, including the local skip, because a port that hardened the skip into
+a failure would break a fresh clone without `--recursive`, and a port that dropped the CI rung would make the gate vacuous in the one place it must not be.
 
-THE MARKER IS `go.mod`, NOT THE DIRECTORY. An uninitialised submodule leaves an
-EMPTY directory behind, which satisfies a directory test while proving nothing
-about content.
+THE MARKER IS `go.mod`, NOT THE DIRECTORY. An uninitialised submodule leaves an EMPTY directory behind, which satisfies a directory test while proving nothing about content.
 
-`grep -v` ON A MISSING FILE LEAKS ITS ERROR, and the port leaks the same bytes.
-`compare_ignoring_version` runs both greps inside process substitutions, and the
-`2>/dev/null` on the enclosing `diff` does NOT cover them: measured, a missing
-committed file prints `grep: <path>: No such file or directory` on the gate's
-own stderr and the comparison then reports "differ", so the file lands in the
-STALE list. The port emits the identical line. It is a twin defect -- the
-message reads as a crash when it means "this generated file has never been
-committed" -- and it is reported rather than repaired, because repairing it
-would change what the gate prints.
+`grep -v` ON A MISSING FILE LEAKS ITS ERROR, and the port leaks the same bytes. `compare_ignoring_version` runs both greps inside process substitutions, and the `2>/dev/null` on the enclosing `diff` does NOT cover them: measured, a missing committed file prints `grep: <path>: No such file or directory` on the gate's own stderr and the comparison then reports "differ", so the file
+lands in the STALE list. The port emits the identical line. It is a twin defect -- the message reads as a crash when it means "this generated file has never been committed" -- and it is reported rather than repaired, because repairing it would change what the gate prints.
 
-A FILE THE GENERATOR DID NOT PRODUCE IS SKIPPED ENTIRELY. `if [[ -f
-"$TEMP_DIR/$file" ]] && ...` means a generator that stopped emitting one of the
+A FILE THE GENERATOR DID NOT PRODUCE IS SKIPPED ENTIRELY. `if [[ -f "$TEMP_DIR/$file" ]] && ...` means a generator that stopped emitting one of the
 six is NOT reported as stale; the file simply drops out of the comparison. That
 is the second blind spot in the same loop and it is likewise preserved.
 
-`go` MISSING IS THE ONE DELIBERATE DIVERGENCE IN WORDING. Under `set -e` the
-twin dies with bash's own `go: command not found` and exit 127, a message the
-gate never wrote. The port cannot produce that string without pretending to be
-a shell, so it prints its own line naming the same fix and returns the same 127.
+`go` MISSING IS THE ONE DELIBERATE DIVERGENCE IN WORDING. Under `set -e` the twin dies with bash's own `go: command not found` and exit 127, a message the gate never wrote. The port cannot produce that string without pretending to be a shell, so it prints its own line naming the same fix and returns the same 127.
 The exit code is what any caller reads; the text differs and is stated here so
 nobody reports it as a regression.
 """
@@ -106,18 +75,12 @@ VERSION_MARKER = "_VERSION = "
 def strip_version_lines(path: pathlib.Path) -> tuple[list[str], str | None]:
     """The file's lines minus the version lines, plus grep's error if it failed.
 
-    A MISSING FILE IS AN EMPTY STREAM, NOT A FAILURE, and getting that wrong is
-    a divergence this port shipped in a draft. `grep -v PAT missing` writes its
-    diagnostic to stderr and produces NO output, and the process substitution
-    around it still presents a readable, empty file to `diff`. So two missing
-    files compare EQUAL: `diff -q` sees two empty streams and exits 0. The draft
+    A MISSING FILE IS AN EMPTY STREAM, NOT A FAILURE, and getting that wrong is a divergence this port shipped in a draft. `grep -v PAT missing` writes its diagnostic to stderr and produces NO output, and the process substitution around it still presents a readable, empty file to `diff`. So two missing files compare EQUAL: `diff -q` sees two empty streams and exits 0. The draft
     returned a sentinel and treated either side's absence as "differ", which
     disagreed with the twin on exactly that case; the pytest differential caught
     it on the both-missing row of its table.
 
-    Returns the error TEXT rather than raising, because the twin does not raise:
-    it lets grep write to stderr and lets the comparison fall out of the byte
-    content. The caller reproduces both halves of that.
+    Returns the error TEXT rather than raising, because the twin does not raise: it lets grep write to stderr and lets the comparison fall out of the byte content. The caller reproduces both halves of that.
     """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -133,9 +96,7 @@ def strip_version_lines(path: pathlib.Path) -> tuple[list[str], str | None]:
 def compare_ignoring_version(committed: pathlib.Path, generated: pathlib.Path) -> bool:
     """True when the two files agree once their version lines are removed.
 
-    `diff -q <(grep -v ...) <(grep -v ...) >/dev/null 2>&1` -- a boolean, with
-    the DIFFERENCE itself thrown away. That is why the gate's failure message
-    can only name the file and not say what changed, and it is carried as is.
+    `diff -q <(grep -v ...) <(grep -v ...) >/dev/null 2>&1` -- a boolean, with the DIFFERENCE itself thrown away. That is why the gate's failure message can only name the file and not say what changed, and it is carried as is.
     """
     left, left_err = strip_version_lines(committed)
     right, right_err = strip_version_lines(generated)
@@ -150,8 +111,7 @@ def compare_ignoring_version(committed: pathlib.Path, generated: pathlib.Path) -
 def _require_submodule(marker: pathlib.Path, label: str) -> bool:
     """`require_submodule` from `.ci/scripts/lib/common.sh`. True to proceed.
 
-    Raises SystemExit(1) on the CI rung, exactly as the bash function's `exit 1`
-    does: it is not a return value there, and a port that returned False would
+    Raises SystemExit(1) on the CI rung, exactly as the bash function's `exit 1` does: it is not a return value there, and a port that returned False would
     let a caller ignore it.
     """
     if marker.exists():
@@ -181,8 +141,7 @@ def _describe(root: pathlib.Path) -> str:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 fresh, 1 stale, 0 when the submodule is absent locally.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no
-    arguments at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -260,13 +219,8 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    THE PURE HALF ONLY, AND THAT IS A DECISION. The end-to-end path builds a Go
-    binary, which needs a toolchain and tens of seconds, and a selftest that
-    silently degrades when `go` is missing would be the vacuity this package
-    exists to refuse. The comparison logic -- the part that decides the verdict
-    -- is pure, so it is driven directly here, and the whole gate is proven
-    end to end by the committed shadow ledger
-    `.ci/shadow/w7p2-renet-types.observations.jsonl` over five distinct trees.
+    THE PURE HALF ONLY, AND THAT IS A DECISION. The end-to-end path builds a Go binary, which needs a toolchain and tens of seconds, and a selftest that silently degrades when `go` is missing would be the vacuity this package exists to refuse. The comparison logic -- the part that decides the verdict -- is pure, so it is driven directly here, and the whole gate is proven end to end
+    by the committed shadow ledger `.ci/shadow/w7p2-renet-types.observations.jsonl` over five distinct trees.
     """
     ctl = Controls("renet-types", floor=18, verbose=True)
 

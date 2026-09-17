@@ -3,31 +3,16 @@
 Ported from `.ci/scripts/quality/check-release-signing-coverage.sh`, which is
 not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHY THE TWIN EXISTS, carried over from its own header because the incident IS
-the specification. On 2026-09-05 a deb shipped UNSIGNED and green: the signing
+WHY THE TWIN EXISTS, carried over from its own header because the incident IS the specification. On 2026-09-05 a deb shipped UNSIGNED and green: the signing
 setup was guarded by `[[ -n "${RELEASE_GPG_PRIVATE_KEY:-}" ]]`, the org secret
-behind it had been deleted, and an empty value is indistinguishable from "no
-signing wanted". That was fixed for deb and rpm. A class sweep the next day
-found the SAME shape one branch over in apk, which had shipped unsigned for the
-same reason and was fixed reactively too.
+behind it had been deleted, and an empty value is indistinguishable from "no signing wanted". That was fixed for deb and rpm. A class sweep the next day found the SAME shape one branch over in apk, which had shipped unsigned for the same reason and was fixed reactively too.
 
-Fixing formats one at a time as they are noticed is the actual defect. This gate
-asks the structural question instead: `build-linux-pkg.sh` accepts N formats, and
-EACH one must either refuse to ship unsigned when the caller demands signing, or
-appear in `UNSIGNED_ON_PURPOSE` below as a deliberate, reasoned exception. A
-fifth format added tomorrow fails here before it can ship unsigned.
+Fixing formats one at a time as they are noticed is the actual defect. This gate asks the structural question instead: `build-linux-pkg.sh` accepts N formats, and EACH one must either refuse to ship unsigned when the caller demands signing, or appear in `UNSIGNED_ON_PURPOSE` below as a deliberate, reasoned exception. A fifth format added tomorrow fails here before it can ship
+unsigned.
 
-WHAT IT CANNOT DO, unchanged by the port: it does not verify a real signature on
-a real artifact. That needs the release key, which is a secret and is
-deliberately not available to a quality job. It checks that the REFUSAL exists.
-`check:ci-release-key-canonical` covers the key's usability, and
-`test-linux-packages.sh` signs real packages in CI.
+WHAT IT CANNOT DO, unchanged by the port: it does not verify a real signature on a real artifact. That needs the release key, which is a secret and is deliberately not available to a quality job. It checks that the REFUSAL exists. `check:ci-release-key-canonical` covers the key's usability, and `test-linux-packages.sh` signs real packages in CI.
 
-EVERY EXEMPTION STATES A TESTED CONSTRAINT, not a guess, because the first
-archlinux reason was a guess and it was WRONG: it said "no signature block in
-nfpm.yaml", which reads as an omission someone could fix by adding one. Adding
-one fails at config load. The two constraints are different in kind and the
-difference was measured, not reasoned:
+EVERY EXEMPTION STATES A TESTED CONSTRAINT, not a guess, because the first archlinux reason was a guess and it was WRONG: it said "no signature block in nfpm.yaml", which reads as an omission someone could fix by adding one. Adding one fails at config load. The two constraints are different in kind and the difference was measured, not reasoned:
 
     archlinux  nfpm CANNOT sign it, `field signature not found in type
                nfpm.ArchLinux`
@@ -36,15 +21,10 @@ difference was measured, not reasoned:
 
 A reason that has not been run is a reason that can be wrong for months.
 
-AND THE OBVIOUS FIX FOR archlinux IS A BREAKING CHANGE, which no amount of local
-testing would have shown. pacman.conf(5) defines SigLevel Optional, what Arch
+AND THE OBVIOUS FIX FOR archlinux IS A BREAKING CHANGE, which no amount of local testing would have shown. pacman.conf(5) defines SigLevel Optional, what Arch
 ships as LocalFileSigLevel, as "Signatures are checked if present; absence of a
-signature is not an error. An invalid signature is a fatal error, as is a
-signature from a key not in the keyring." So publishing a detached .sig signed
-by a key no user holds converts a working `pacman -U` into a hard failure. The
-keyring rollout has to land BEFORE the first signed artifact, which is how Arch
-Linux ARM and Chaotic-AUR both do it. apk has no such trap: an unsigned .apk
-already needs --allow-untrusted, so signing it is strictly an improvement.
+signature is not an error. An invalid signature is a fatal error, as is a signature from a key not in the keyring." So publishing a detached .sig signed by a key no user holds converts a working `pacman -U` into a hard failure. The keyring rollout has to land BEFORE the first signed artifact, which is how Arch Linux ARM and Chaotic-AUR both do it. apk has no such trap: an unsigned
+.apk already needs --allow-untrusted, so signing it is strictly an improvement.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -52,36 +32,19 @@ PORT NOTES.
 
 THE EXEMPTION ORDER IS BASH'S HASH ORDER, MEASURED, NOT INVENTED. The twin
 iterates `"${!UNSIGNED_ON_PURPOSE[@]}"` over an associative array, and bash
-returns those keys in the order its hash table happens to hold them, which on
-GNU bash 5.3.9 is `archlinux`, then `apk` -- NOT the order the literal is
-written in. `UNSIGNED_ON_PURPOSE` below is a tuple in that measured order, so a
-human diffing the two implementations' stdout side by side sees the same four
-control lines in the same four places. The shadow comparator would score either
+returns those keys in the order its hash table happens to hold them, which on GNU bash 5.3.9 is `archlinux`, then `apk` -- NOT the order the literal is written in. `UNSIGNED_ON_PURPOSE` below is a tuple in that measured order, so a human diffing the two implementations' stdout side by side sees the same four control lines in the same four places. The shadow comparator would score
+either
 order EQUIVALENT; a reviewer would stop reading.
 
-THE TALLY IS A LOCAL COPY OF `gate-controls.sh`, AND THAT IS DELIBERATE.
-`rediacc_ci.controls.Controls` counts the same things but prints a DIFFERENT
-contract: no two-space indent, no `✓ <subject>:` prefix on the verdict, and a
-different floor message ("the file is not being executed as written" versus
-"the battery is not being executed as written"). Those strings are the twin's
-observable output, and the differential compares output, so the port reproduces
-`gate-controls.sh` rather than reusing the class. `GateTally` below is the
-wanted helper: it belongs in the package next to `Controls`, and this port is
-not allowed to put it there.
+THE TALLY IS A LOCAL COPY OF `gate-controls.sh`, AND THAT IS DELIBERATE. `rediacc_ci.controls.Controls` counts the same things but prints a DIFFERENT contract: no two-space indent, no `✓ <subject>:` prefix on the verdict, and a different floor message ("the file is not being executed as written" versus "the battery is not being executed as written"). Those strings are the twin's
+observable output, and the differential compares output, so the port reproduces `gate-controls.sh` rather than reusing the class. `GateTally` below is the wanted helper: it belongs in the package next to `Controls`, and this port is not allowed to put it there.
 
-THE ROOT IS RESOLVED THE TWIN'S WAY, AND `$REDIACC_CI_ROOT` IS NOT CONSULTED.
-The twin reads `$SIGNING_COVERAGE_ROOT`, then `git rev-parse --show-toplevel`,
-then the literal `.`. Honouring the package-wide override as well would let one
-environment point the two implementations at two different trees while a
-reviewer read one verdict, which is the exact failure `paths.repo_root()`'s
-docstring warns about from the other direction. One name, the twin's.
+THE ROOT IS RESOLVED THE TWIN'S WAY, AND `$REDIACC_CI_ROOT` IS NOT CONSULTED. The twin reads `$SIGNING_COVERAGE_ROOT`, then `git rev-parse --show-toplevel`, then the literal `.`. Honouring the package-wide override as well would let one environment point the two implementations at two different trees while a reviewer read one verdict, which is the exact failure
+`paths.repo_root()`'s docstring warns about from the other direction. One name, the twin's.
 
 THE PARSE IS THE GATE'S BLIND SPOT, AND IT IS PRESERVED. `formats_of` reads the
 FIRST line in the builder that looks like `<lowercase names>) ;;` and treats it
-as the validation case. That is a positional assumption: a builder that grew an
-earlier one-line case arm would have its format list read from the wrong place.
-The twin's floor (`MIN_FORMATS`) catches the collapse-to-nothing case and not
-this one. Carried unchanged, because widening it would change the verdict.
+as the validation case. That is a positional assumption: a builder that grew an earlier one-line case arm would have its format list read from the wrong place. The twin's floor (`MIN_FORMATS`) catches the collapse-to-nothing case and not this one. Carried unchanged, because widening it would change the verdict.
 """
 
 import os
@@ -164,9 +127,7 @@ _ARM_TAIL = re.compile(r"\)%s*$" % SPACE)
 def formats_of(text: str) -> list[str]:
     """The formats the builder ACCEPTS, read from its own validation case.
 
-    Read from the builder rather than duplicated here: a list that can drift is
-    a list that will. The pipeline is four shell stages and is reproduced stage
-    by stage, because each one has an edge a "sensible" rewrite loses:
+    Read from the builder rather than duplicated here: a list that can drift is a list that will. The pipeline is four shell stages and is reproduced stage by stage, because each one has an edge a "sensible" rewrite loses:
 
         sed -n 's/^\\s*\\([a-z |]*\\))\\s*;;\\s*$/\\1/p'  every matching line
         head -1                                         the FIRST one only
@@ -174,10 +135,7 @@ def formats_of(text: str) -> list[str]:
         tr '|' '\\n'                                     split on the pipe
         grep -v '^$'                                    drop empties
 
-    `tr -d ' '` is the stage worth naming: it deletes the space character and
-    nothing else, so a tab between two format names would survive into the
-    format name itself and the gate would look for a format called `deb\\trpm`.
-    That is the twin's behaviour and it is preserved rather than tidied.
+    `tr -d ' '` is the stage worth naming: it deletes the space character and nothing else, so a tab between two format names would survive into the format name itself and the gate would look for a format called `deb\\trpm`. That is the twin's behaviour and it is preserved rather than tidied.
     """
     for line in text.split("\n"):
         match = _CASE_ONELINE.match(line)
@@ -192,13 +150,9 @@ def formats_of(text: str) -> list[str]:
 def guarded_in(fmt: str, text: str) -> str:
     """Does `fmt`'s OWN case arm contain the signing guard? "yes" or "no".
 
-    Returned as the twin's two strings rather than as a bool, because those
-    strings are what the control compares and what a failure prints.
+    Returned as the twin's two strings rather than as a bool, because those strings are what the control compares and what a failure prints.
 
-    READING "IS RELEASE_SIGNING_REQUIRED ANYWHERE AFTER THE ARM" IS WHAT THE
-    FIRST DRAFT DID, and it was wrong in BOTH directions: the guard sits INSIDE
-    the arm, so the arm line is read before anything arms, and a later arm
-    inherits an earlier arm's guard. The scan is scoped to the arm body,
+    READING "IS RELEASE_SIGNING_REQUIRED ANYWHERE AFTER THE ARM" IS WHAT THE FIRST DRAFT DID, and it was wrong in BOTH directions: the guard sits INSIDE the arm, so the arm line is read before anything arms, and a later arm inherits an earlier arm's guard. The scan is scoped to the arm body,
     `<formats>)` through `;;`.
     """
     inarm = False
@@ -220,12 +174,8 @@ def guarded_in(fmt: str, text: str) -> str:
 class GateTally:
     """`.ci/scripts/lib/gate-controls.sh`, reproduced byte for byte.
 
-    Extracted in bash on 2026-09-06 after `check:ci-shape-duplication` caught
-    the same five lines at three copies (check-release-key-canonical,
-    check-release-signing-coverage, check-staging-tag-guard) and was right to.
-    This class is the fourth copy and it is here under protest: see the port
-    notes for why `rediacc_ci.controls.Controls` cannot be used instead, and
-    treat this as the request for a `GateTally` beside it.
+    Extracted in bash on 2026-09-06 after `check:ci-shape-duplication` caught the same five lines at three copies (check-release-key-canonical, check-release-signing-coverage, check-staging-tag-guard) and was right to. This class is the fourth copy and it is here under protest: see the port notes for why `rediacc_ci.controls.Controls` cannot be used instead, and treat this as the
+    request for a `GateTally` beside it.
 
     THE OUTPUT CONTRACT, which is the whole reason it is a copy:
 
@@ -236,10 +186,7 @@ class GateTally:
         stderr on failure     "✗ <subject>: <F> of <N> control(s) failed"
         stdout on success     "✓ <subject>: <N> control(s) passed"
 
-    The floor message is deliberately NOT the one in `controls.py`. "the battery
-    is not being executed as written" is the phrase the shadow comparator's
-    refusal vocabulary matches, so changing a word here changes how a
-    differential classifies the run.
+    The floor message is deliberately NOT the one in `controls.py`. "the battery is not being executed as written" is the phrase the shadow comparator's refusal vocabulary matches, so changing a word here changes how a differential classifies the run.
     """
 
     def __init__(self) -> None:
@@ -258,8 +205,7 @@ class GateTally:
     def finish(self, minimum: int, subject: str) -> bool:
         """`gate_finish`. True when green.
 
-        A battery that did not run is not a green one, which is why the floor is
-        here and not left to each caller to remember.
+        A battery that did not run is not a green one, which is why the floor is here and not left to each caller to remember.
         """
         if self.count < minimum:
             print(
@@ -281,9 +227,7 @@ class GateTally:
 def resolve_root() -> str:
     """`${SIGNING_COVERAGE_ROOT:-$(git rev-parse --show-toplevel || echo .)}`.
 
-    Three rungs, the twin's, and `$REDIACC_CI_ROOT` is not one of them. See the
-    port notes: an environment that pointed the two implementations at two
-    different trees would produce a differential nobody could interpret.
+    Three rungs, the twin's, and `$REDIACC_CI_ROOT` is not one of them. See the port notes: an environment that pointed the two implementations at two different trees would produce a differential nobody could interpret.
     """
     override = os.environ.get("SIGNING_COVERAGE_ROOT")
     if override:
@@ -305,8 +249,7 @@ def resolve_root() -> str:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 violation.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no
-    arguments at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -406,9 +349,7 @@ esac
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will
-    happily flag a correct builder, and the mirrors below are the half that
-    proves it does not.
+    BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct builder, and the mirrors below are the half that proves it does not.
     """
     ctl = Controls("release-signing-coverage", floor=20, verbose=True)
 

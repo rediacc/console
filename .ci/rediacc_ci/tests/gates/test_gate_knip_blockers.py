@@ -1,40 +1,25 @@
 """Port of `.ci/scripts/test/gates/test-knip-blockers.sh`.
 
-Behavioural test for `scripts/gates/check-knip-blockers.ts`, the validator that holds
-knip's suppression arrays to the repo-wide BLOCKER convention.
+Behavioural test for `scripts/gates/check-knip-blockers.ts`, the validator that holds knip's suppression arrays to the repo-wide BLOCKER convention.
 
-WHAT IT GUARDS. `knip.jsonc`'s `ignore`, `ignoreDependencies`, `ignoreBinaries`
-and `ignoreUnresolved` arrays are the one place in the tree where a name can be
-made invisible to dead-code analysis by typing it. The convention is that every
-such entry carries a substantive `// BLOCKER:` reason, so a suppression cannot
-become permanent by being quiet. `entry` / `project` globs are CONFIGURATION and
+WHAT IT GUARDS. `knip.jsonc`'s `ignore`, `ignoreDependencies`, `ignoreBinaries` and `ignoreUnresolved` arrays are the one place in the tree where a name can be made invisible to dead-code analysis by typing it. The convention is that every such entry carries a substantive `// BLOCKER:` reason, so a suppression cannot become permanent by being quiet. `entry` / `project` globs are
+CONFIGURATION and
 are exempt; the exemption is a case here rather than a comment, because an
 exemption nothing tests is an exemption that will silently widen.
 
-STALENESS IS NOT THIS GATE'S JOB, and the twin says so out loud: an ignore entry
-that no longer suppresses anything is reported by knip itself under
-`--treat-config-hints-as-errors`. Two gates asking different questions.
+STALENESS IS NOT THIS GATE'S JOB, and the twin says so out loud: an ignore entry that no longer suppresses anything is reported by knip itself under `--treat-config-hints-as-errors`. Two gates asking different questions.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_accepts_real_config` drives
-the validator seam-free over the REAL `knip.jsonc` at the repo root, and the
-validator additionally shells out to `git grep` across the working tree and the
-`private/account` submodule to collect `@public` tags. A battery step rewriting
-either mid-read is a divergence that would be blamed on this port.
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_accepts_real_config` drives the validator seam-free over the REAL `knip.jsonc` at the repo root, and the validator additionally shells out to `git grep` across the working tree and the `private/account` submodule to collect `@public` tags. A battery step rewriting either mid-read is a divergence that would be blamed on this
+port.
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured only because
 this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in
 `test_twin_parity.py`.
 
-THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from a real
-`npx tsx scripts/gates/check-knip-blockers.ts` run. The fixtures are the twin's, string
+THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from a real `npx tsx scripts/gates/check-knip-blockers.ts` run. The fixtures are the twin's, string
 for string.
 
-ADDED BY THE PORT: `test_the_real_config_declares_a_non_trivial_corpus`. The twin's
-real-config case asserts only that the validator exits 0, which a validator that
-parsed ZERO entries would also do -- and a line-based JSONC walk over four
-hand-written regexes is exactly the kind of reader that can stop matching after a
-reformat. The added case reads the count the validator prints and refuses a corpus
-that has collapsed, so the shape is visible on every run instead of the verdict
-alone.
+ADDED BY THE PORT: `test_the_real_config_declares_a_non_trivial_corpus`. The twin's real-config case asserts only that the validator exits 0, which a validator that parsed ZERO entries would also do -- and a line-based JSONC walk over four hand-written regexes is exactly the kind of reader that can stop matching after a reformat. The added case reads the count the validator prints
+and refuses a corpus that has collapsed, so the shape is visible on every run instead of the verdict alone.
 """
 
 import os
@@ -64,9 +49,7 @@ CORPUS_FLOOR = 10
 def require_subject(gate) -> str:
     """The subject and its interpreter, proved present before anything is claimed.
 
-    A missing `npx` is a LOUD failure carrying the fix, never a skip: a case that
-    could not run has not been checked, and unchecked folded into fine is the shape
-    this directory refuses.
+    A missing `npx` is a LOUD failure carrying the fix, never a skip: a case that could not run has not been checked, and unchecked folded into fine is the shape this directory refuses.
     """
     if not SUBJECT.is_file():
         gate.log_fail("subject under test is missing: %s" % SUBJECT_REL)
@@ -78,11 +61,7 @@ def require_subject(gate) -> str:
 def run_validator(gate, *args: str) -> harness.RunResult:
     """`npx tsx scripts/gates/check-knip-blockers.ts [...]`, from the repo root.
 
-    The twin captures `2>&1` and asserts on the merged text, so callers read
-    `.combined` for the same reason. It matters here beyond fidelity: npm prints
-    an `Unknown project config "minimum-release-age"` warning to stderr on every
-    `npx` invocation in this repo, so a port reading only `.out` would be fine and
-    a port reading only `.err` would be matching npm's noise.
+    The twin captures `2>&1` and asserts on the merged text, so callers read `.combined` for the same reason. It matters here beyond fidelity: npm prints an `Unknown project config "minimum-release-age"` warning to stderr on every `npx` invocation in this repo, so a port reading only `.out` would be fine and a port reading only `.err` would be matching npm's noise.
     """
     npx = require_subject(gate)
     return harness.run([npx, "tsx", SUBJECT_REL, *args], cwd=paths.repo_root())
@@ -91,9 +70,7 @@ def run_validator(gate, *args: str) -> harness.RunResult:
 def run_validator_with_config(gate, config_content: str) -> harness.RunResult:
     """`run_validator_with_config` from the twin: a temp knip.jsonc, then the gate.
 
-    The twin binds its `mktemp -d` into a RETURN trap because a shell function has
-    no other way to clean up after itself. `harness.temp_dir()` has that property
-    natively, so the context manager is the whole difference.
+    The twin binds its `mktemp -d` into a RETURN trap because a shell function has no other way to clean up after itself. `harness.temp_dir()` has that property natively, so the context manager is the whole difference.
     """
     with harness.temp_dir() as d:
         config = d / "knip.jsonc"
@@ -104,9 +81,7 @@ def run_validator_with_config(gate, config_content: str) -> harness.RunResult:
 def validated_count(gate, output: str) -> int:
     """The number of suppression entries the validator says it read.
 
-    ANTI-VACUITY: an output with no count at all is a FAILURE. "exit 0" from a
-    validator that printed nothing recognisable is not evidence that it validated
-    anything, and treating it as such is exactly how a gate passes without running.
+    ANTI-VACUITY: an output with no count at all is a FAILURE. "exit 0" from a validator that printed nothing recognisable is not evidence that it validated anything, and treating it as such is exactly how a gate passes without running.
     """
     match = VALIDATED_RE.search(output)
     if not match:
@@ -233,11 +208,7 @@ def test_entry_project_exempt(gate):
 def test_the_real_config_declares_a_non_trivial_corpus(gate):
     """ADDED BY THE PORT: print the shape, so a collapse is visible rather than silent.
 
-    `test_accepts_real_config` asserts exit 0 and nothing else, and exit 0 is also
-    what a validator that parsed ZERO entries returns. The reader is a line-based
-    JSONC walk over four hand-written regexes -- put an array on one line, change
-    the quoting, let a formatter through, and `keyOpenArray` stops matching while
-    the gate keeps reporting green over a corpus of nothing.
+    `test_accepts_real_config` asserts exit 0 and nothing else, and exit 0 is also what a validator that parsed ZERO entries returns. The reader is a line-based JSONC walk over four hand-written regexes -- put an array on one line, change the quoting, let a formatter through, and `keyOpenArray` stops matching while the gate keeps reporting green over a corpus of nothing.
 
     So the count is READ from the validator's own verdict line and required to be
     non-trivial. Zero is a failure; so is a number that has fallen under the floor.

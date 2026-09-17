@@ -1,20 +1,11 @@
 r"""`rediacc_ci.quality.audit_coverage` against the shell it replaces.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The decisions in this
-gate are made by two greps whose semantics differ (`auditService\.recordOperation`
-is a BRE with an escaped dot, `'cli\.[a-z._]+[a-z_]'` is an ERE), by a `case`
-whose arm ORDER decides the mapping, and by a five-stage pipeline with a stage in
-it that does nothing. A table of expected strings would be a table of what the
-PORT does, asserted against itself.
+WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The decisions in this gate are made by two greps whose semantics differ (`auditService\.recordOperation` is a BRE with an escaped dot, `'cli\.[a-z._]+[a-z_]'` is an ERE), by a `case` whose arm ORDER decides the mapping, and by a five-stage pipeline with a stage in it that does nothing. A table of expected strings would be a
+table of what the PORT does, asserted against itself.
 
-The committed ledger `.ci/shadow/w7p2-audit-coverage.observations.jsonl` compares
-the WHOLE gate over five distinct trees. It cannot isolate WHICH stage of the
-phase-5 pipeline dropped a line, and it cannot show that the `grep -v 'audit.ts'`
-stage is inert, because on any tree the twin and the port are inert together.
-This file takes those seams one at a time.
+The committed ledger `.ci/shadow/w7p2-audit-coverage.observations.jsonl` compares the WHOLE gate over five distinct trees. It cannot isolate WHICH stage of the phase-5 pipeline dropped a line, and it cannot show that the `grep -v 'audit.ts'` stage is inert, because on any tree the twin and the port are inert together. This file takes those seams one at a time.
 
-THE FRAGMENTS BELOW ARE LIFTED FROM `.ci/scripts/quality/check-audit-coverage.sh`
-lines 161-194 with the variables substituted and nothing else changed.
+THE FRAGMENTS BELOW ARE LIFTED FROM `.ci/scripts/quality/check-audit-coverage.sh` lines 161-194 with the variables substituted and nothing else changed.
 """
 
 import pathlib
@@ -85,11 +76,7 @@ FUNCTION_LINE_CASES = [
 def test_function_name_pipeline_matches_grep(tmp_path: pathlib.Path, line: str) -> None:
     """`grep -rhE | grep -v 'audit.ts' | grep -oE | sed | sort -u`, stage for stage.
 
-    THE `grep -v` STAGE IS TESTED HERE AND NOWHERE ELSE. On a real tree it never
-    fires, which is exactly the defect: it was written to exclude a FILE and it
-    filters LINES. The last two cases in the table are the only inputs on which
-    it does anything at all, and they are inputs a real source file would have to
-    go out of its way to produce.
+    THE `grep -v` STAGE IS TESTED HERE AND NOWHERE ELSE. On a real tree it never fires, which is exactly the defect: it was written to exclude a FILE and it filters LINES. The last two cases in the table are the only inputs on which it does anything at all, and they are inputs a real source file would have to go out of its way to produce.
     """
     src = tmp_path / "src" / "commands"
     src.mkdir(parents=True)
@@ -110,11 +97,7 @@ def test_function_name_pipeline_matches_grep(tmp_path: pathlib.Path, line: str) 
 def test_the_audit_service_exclusion_is_inert(tmp_path: pathlib.Path) -> None:
     """Pinned as a DECISION: `audit.ts`'s own literals ARE scanned.
 
-    The twin's comment promises the scan runs "excluding tests and the audit
-    service itself". `-h` has already removed the filenames, so the `grep -v`
-    that was supposed to do it cannot. Asserted directly, so that a later
-    "improvement" has to delete a named control rather than quietly dropping
-    findings the twin reports.
+    The twin's comment promises the scan runs "excluding tests and the audit service itself". `-h` has already removed the filenames, so the `grep -v` that was supposed to do it cannot. Asserted directly, so that a later "improvement" has to delete a named control rather than quietly dropping findings the twin reports.
     """
     services = tmp_path / "src" / "services" / "core"
     services.mkdir(parents=True)
@@ -133,10 +116,7 @@ def test_phase_four_does_not_exclude_tests_while_phase_five_does(tmp_path: pathl
     """The two phases disagree about `__tests__`, and the live tree shows it.
 
     Phase 5 passes `--exclude-dir=__tests__`; phase 4's `grep -rl` does not. So a
-    test fixture importing SFTPClient is reported as a "new command file that may
-    need audit logging". That is not hypothetical: running the twin on this
-    repository today warns about
-    `packages/cli/src/commands/__tests__/repo-sync-dispatch.test.ts`.
+    test fixture importing SFTPClient is reported as a "new command file that may need audit logging". That is not hypothetical: running the twin on this repository today warns about `packages/cli/src/commands/__tests__/repo-sync-dispatch.test.ts`.
     """
     cmds = tmp_path / "src" / "commands" / "__tests__"
     cmds.mkdir(parents=True)
@@ -210,9 +190,7 @@ AUDIT_CALL_CASES = [
 def test_audit_call_substring_matches_grep_q(tmp_path: pathlib.Path, text: str) -> None:
     r"""`grep -q 'auditService\.recordOperation'`: a BRE whose dot is escaped.
 
-    The `auditServiceXrecordOperation` row is the one that matters. An unescaped
-    dot would match it, and a port that used `re.search("auditService.record...")`
-    would silently accept a file that never calls the audit service.
+    The `auditServiceXrecordOperation` row is the one that matters. An unescaped dot would match it, and a port that used `re.search("auditService.record...")` would silently accept a file that never calls the audit service.
     """
     target = tmp_path / "f.ts"
     target.write_text(text + "\n", encoding="utf-8")
@@ -229,8 +207,6 @@ def test_audit_call_substring_matches_grep_q(tmp_path: pathlib.Path, text: str) 
 def test_selftest_is_green() -> None:
     """The port's own plants and mirrors, driven from pytest.
 
-    Not redundant with running `--selftest` from the shell: this is the call that
-    fails the pytest suite when a control is deleted, which is the failure mode
-    the flag on its own cannot catch (nobody runs it).
+    Not redundant with running `--selftest` from the shell: this is the call that fails the pytest suite when a control is deleted, which is the failure mode the flag on its own cannot catch (nobody runs it).
     """
     assert ac.selftest() == 0

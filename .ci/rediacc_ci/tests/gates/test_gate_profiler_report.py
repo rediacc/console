@@ -1,48 +1,26 @@
 """Port of `.ci/scripts/test/gates/test-profiler-report.sh`.
 
-Tests for the profiler's aggregation: `.ci/scripts/ci/profiler/report.awk` via
-`.ci/scripts/ci/profiler/panel.sh`, plus the sampler's own two hard refusals.
+Tests for the profiler's aggregation: `.ci/scripts/ci/profiler/report.awk` via `.ci/scripts/ci/profiler/panel.sh`, plus the sampler's own two hard refusals.
 
-Driven entirely from SYNTHETIC sample files, so it needs no runner, no cgroup and
-no elapsed time. That is the point: the shapes worth testing are the ones a real
-run almost never produces on demand, a sampler that died at sample two, a CPU
-series that is all zeros, a host leak, a 350-minute job.
+Driven entirely from SYNTHETIC sample files, so it needs no runner, no cgroup and no elapsed time. That is the point: the shapes worth testing are the ones a real run almost never produces on demand, a sampler that died at sample two, a CPU series that is all zeros, a host leak, a 350-minute job.
 
-EVERY ANTI-VACUITY ASSERTION CARRIES ITS CONTROL. A checker that cannot fire is
-worth nothing, and a "the profile is clean" that is really "the checker is broken"
-is precisely the failure this tool exists to prevent, so each FAIL case is paired
+EVERY ANTI-VACUITY ASSERTION CARRIES ITS CONTROL. A checker that cannot fire is worth nothing, and a "the profile is clean" that is really "the checker is broken" is precisely the failure this tool exists to prevent, so each FAIL case is paired
 with the near-identical PASS case it was derived from.
 
 `GITHUB_STEP_SUMMARY` IS PINNED, NOT INHERITED, and this is the seam the twin
 records paying for. panel.sh reads `SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"`
-and GitHub Actions ALWAYS sets that variable, so on a runner the panel wrote to
-the step-summary FILE while the helper captured stdout and asserted against "".
-The suite passed locally (variable unset) and failed in CI for that reason alone.
-An unset variable is not a neutral default.
+and GitHub Actions ALWAYS sets that variable, so on a runner the panel wrote to the step-summary FILE while the helper captured stdout and asserted against "". The suite passed locally (variable unset) and failed in CI for that reason alone. An unset variable is not a neutral default.
 
-WHERE THIS REIMPLEMENTS printf, grep -c AND wc, AND WHY THE ANSWERS AGREE. The
-fixture writers are the twin's `printf` format strings with the same field order
-and the same tab separators, written through Python's `%` with the same
-specifiers. The two row counts are `grep -c '^| [0-9][0-9]-'` and
+WHERE THIS REIMPLEMENTS printf, grep -c AND wc, AND WHY THE ANSWERS AGREE. The fixture writers are the twin's `printf` format strings with the same field order and the same tab separators, written through Python's `%` with the same specifiers. The two row counts are `grep -c '^| [0-9][0-9]-'` and
 `grep -c '^| [0-9][0-9]*-'`, which count matching LINES; the Python forms count
 lines matching the same anchored patterns. `${#PANEL_OUT}` is a character count in
-bash and `len()` is a character count in Python, and the panel is ASCII apart from
-its box drawing, so the 1 MiB ceiling means the same thing on both sides.
+bash and `len()` is a character count in Python, and the panel is ASCII apart from its box drawing, so the 1 MiB ceiling means the same thing on both sides.
 
-THE THREE LIVE CASES ARE NOT SIMULATED. `test_sampler_rejects_host_leak` drives
-the real sampler against a fake cgroup tree, `test_sampler_produces_a_real_profile`
-captures six real seconds on THIS machine, and
-`test_sampler_reads_a_real_containers_ceiling` proves the premise the whole
-advisor rests on against a kernel that is actually enforcing a quota. The last one
-keeps the twin's THREE-WAY structure exactly, including its two SKIP-shaped passes,
-because narrowing it to the docker branch would turn the strongest proof into a
-silent skip the day this suite moves to ubuntu-slim (which has no docker, and which
-IS the container whose ceiling we care about).
+THE THREE LIVE CASES ARE NOT SIMULATED. `test_sampler_rejects_host_leak` drives the real sampler against a fake cgroup tree, `test_sampler_produces_a_real_profile` captures six real seconds on THIS machine, and `test_sampler_reads_a_real_containers_ceiling` proves the premise the whole advisor rests on against a kernel that is actually enforcing a quota. The last one keeps the
+twin's THREE-WAY structure exactly, including its two SKIP-shaped passes, because narrowing it to the docker branch would turn the strongest proof into a silent skip the day this suite moves to ubuntu-slim (which has no docker, and which IS the container whose ceiling we care about).
 
 NO `xdist_group`. Every case writes only into pytest's own `tmp_path`; panel.sh and
-the sampler are executed read-only, and the one docker invocation mounts the
-sampler's directory read-only and its own scratch directory read-write. Nothing is
-bound and no module global is mutated.
+the sampler are executed read-only, and the one docker invocation mounts the sampler's directory read-only and its own scratch directory read-write. Nothing is bound and no module global is mutated.
 """
 
 import pathlib

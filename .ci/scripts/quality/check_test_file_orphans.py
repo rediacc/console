@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Every test/control file must be REACHED by something that CI runs.
 
-THE DEFECT THIS CLOSES, paid for on 2026-08-23. `.claude/hooks/stop/
-test-teammate-idle.py` was added with 20 controls, passed 20/20 when invoked by
-hand, was committed, and ran NOWHERE. Its only mention anywhere else in the tree
-was inside a code comment. Both existing wiring gates were green throughout:
+THE DEFECT THIS CLOSES, paid for on 2026-08-23. `.claude/hooks/stop/ test-teammate-idle.py` was added with 20 controls, passed 20/20 when invoked by hand, was committed, and ran NOWHERE. Its only mention anywhere else in the tree was inside a code comment. Both existing wiring gates were green throughout:
 
   * `check-ci-parity.ts` compares the MANIFEST against the CI workflow surface.
     A file absent from the manifest is absent from both sides, so the two agree
@@ -12,10 +9,7 @@ was inside a code comment. Both existing wiring gates were green throughout:
   * `check_gate_reachability_coverage.py` asks whether every MANIFEST
     registration is reachable. It cannot ask about a file that never registered.
 
-Both answer "is what we declared wired up?". Neither answers "is there anything
-here we forgot to declare?" -- and that second question is the one an orphan
-fails. A test nobody runs is worse than no test: it reports 20/20 to whoever
-runs it by hand, and it is counted as coverage in review.
+Both answer "is what we declared wired up?". Neither answers "is there anything here we forgot to declare?" -- and that second question is the one an orphan fails. A test nobody runs is worse than no test: it reports 20/20 to whoever runs it by hand, and it is counted as coverage in review.
 
 WHAT COUNTS AS REACHED, deliberately generous. This gate is not trying to model
 the runner; it is trying to catch a file with NO path to CI at all. There are
@@ -27,20 +21,11 @@ three ways in, and they are checked in this order:
   3. its basename appears outside itself, on a non-comment line, in a shell
      script, a workflow, or package.json (referencing_files).
 
-That admits a reference from an unreachable caller -- but a caller that is itself
-unreachable is a manifest problem, which is precisely what the other two gates DO
-see. The gaps are complementary on purpose.
+That admits a reference from an unreachable caller -- but a caller that is itself unreachable is a manifest problem, which is precisely what the other two gates DO see. The gaps are complementary on purpose.
 
-ANTI-VACUITY. Zero discovered files is a failure, not a pass: a glob that stops
-matching would otherwise report success having checked nothing. The success line
-prints the counts so a collapse is visible rather than silent.
+ANTI-VACUITY. Zero discovered files is a failure, not a pass: a glob that stops matching would otherwise report success having checked nothing. The success line prints the counts so a collapse is visible rather than silent.
 
----- gate ----
-step: Test-file orphan check
-needs: none
-selftest: true
-lane: quality-security
----- end gate ----
+---- gate ---- step: Test-file orphan check needs: none selftest: true lane: quality-security ---- end gate ----
 """
 
 import json
@@ -90,18 +75,11 @@ LOCK = REPO / "scripts" / "ci-runner" / "gates.lock.json"
 def manifest_tokens():
     """Every file path the gate manifest names, as a set of strings.
 
-    THE THIRD WAY OF BEING REACHED, and the one this gate got by accident until
-    2026-09-06. `scripts/ci-runner` was simply a REF_DIR, so "wired into the gate
-    manifest" was decided by whether the basename appeared as text anywhere in a
-    5,700-line TypeScript literal. That is the same shape of reader that shipped
-    wrong twice in this repo -- see `_manifest_entries` in
-    .claude/hooks/stop/wl_reggate.py (259 of 261 entries seen, found 2026-08-20)
-    and check-gate-id-convention.sh (373 of 420, found 2026-09-06). A text match
+    THE THIRD WAY OF BEING REACHED, and the one this gate got by accident until 2026-09-06. `scripts/ci-runner` was simply a REF_DIR, so "wired into the gate manifest" was decided by whether the basename appeared as text anywhere in a 5,700-line TypeScript literal. That is the same shape of reader that shipped wrong twice in this repo -- see `_manifest_entries` in
+    .claude/hooks/stop/wl_reggate.py (259 of 261 entries seen, found 2026-08-20) and check-gate-id-convention.sh (373 of 420, found 2026-09-06). A text match
     is not a registration; it happens to agree with one most of the time.
 
-    PROVED EQUIVALENT BEFORE THE SWAP, which is the only thing that makes a drain
-    a drain rather than a silent re-scoping. Both readers were run over the live
-    tree at commit ac817a647 on 2026-09-06:
+    PROVED EQUIVALENT BEFORE THE SWAP, which is the only thing that makes a drain a drain rather than a silent re-scoping. Both readers were run over the live tree at commit ac817a647 on 2026-09-06:
 
         checked: 164
         OLD orphan set size: 0      NEW orphan set size: 0
@@ -111,18 +89,12 @@ def manifest_tokens():
     115 of the 164 files depended on that directory alone, so this was not a
     cosmetic swap; every one of them is covered structurally now.
 
-    THREE FIELDS, deliberately, and `ci.test` is the arguable one. It declares
-    which CI job covers a gate rather than what the gate runs -- check-gate-id-
-    convention.sh says so at length and refuses to police it. Including it here
-    is still right, because this gate asks the strictly weaker question "does
-    ANYTHING point at this file", and its own header calls that generosity a
-    design choice: a reference from an unreachable caller is a manifest problem,
-    which the other two wiring gates DO see.
+    THREE FIELDS, deliberately, and `ci.test` is the arguable one. It declares which CI job covers a gate rather than what the gate runs -- check-gate-id- convention.sh says so at length and refuses to police it. Including it here is still right, because this gate asks the strictly weaker question "does ANYTHING point at this file", and its own header calls that generosity a design
+    choice: a reference from an unreachable caller is a manifest problem, which the other two wiring gates DO see.
 
     And the worry is empirically empty anyway, which is worth recording so the
     next reader does not re-litigate it: all 13 `ci.kind == "test"` entries name
-    a path that `run` or `leaves` already contributes, so `ci.test` widens the
-    token set by exactly nothing today. Re-measure rather than trust:
+    a path that `run` or `leaves` already contributes, so `ci.test` widens the token set by exactly nothing today. Re-measure rather than trust:
 
         python3 -c "import json;d=json.load(open('scripts/ci-runner/gates.lock.json'));
         rl={w for e in d for v in [e.get('run')]+(e.get('leaves') or [])
@@ -164,11 +136,7 @@ def manifest_reached(name, toks):
 def registration_route_selfcheck(toks):
     """Prove the registration route can answer BOTH ways, on every invocation.
 
-    This route decides 148 of the 176 subjects, so if `manifest_reached` ever
-    answered True unconditionally -- a token set containing "" would do it, and
-    so would a looser suffix rule -- this gate would report a clean tree while
-    checking nothing, which is the exact shape its own header exists to catch in
-    other files. The discovery floor below does not cover this: it proves files
+    This route decides 148 of the 176 subjects, so if `manifest_reached` ever answered True unconditionally -- a token set containing "" would do it, and so would a looser suffix rule -- this gate would report a clean tree while checking nothing, which is the exact shape its own header exists to catch in other files. The discovery floor below does not cover this: it proves files
     were FOUND, not that the verdict on them can vary.
 
     Two directions, both cheap:
@@ -205,17 +173,10 @@ def registration_route_selfcheck(toks):
 def collected_roots():
     """The pytest roots, read from pyproject.toml's `testpaths`.
 
-    A SECOND WAY OF BEING REACHED, and without it this gate is wrong about an
-    entire testing style. Everywhere else in this repo a test file is wired by
-    something NAMING it -- a workflow step, a package.json key, a case list in
-    test-hooks.sh -- so "nothing mentions you" is a sound proxy for "nothing runs
-    you". pytest does not work that way: it COLLECTS by convention from the roots
+    A SECOND WAY OF BEING REACHED, and without it this gate is wrong about an entire testing style. Everywhere else in this repo a test file is wired by something NAMING it -- a workflow step, a package.json key, a case list in test-hooks.sh -- so "nothing mentions you" is a sound proxy for "nothing runs you". pytest does not work that way: it COLLECTS by convention from the roots
     the ini names, and a correctly wired pytest file is mentioned nowhere.
 
-    Adding the two pytest roots to SEARCH_DIRS on 2026-09-06 therefore reported
-    all eight of them as orphans at once -- eight files that a green
-    `check:ci-pytest` had just collected and passed. Eight simultaneous findings
-    of the same shape is a gate being wrong, not a tree being broken.
+    Adding the two pytest roots to SEARCH_DIRS on 2026-09-06 therefore reported all eight of them as orphans at once -- eight files that a green `check:ci-pytest` had just collected and passed. Eight simultaneous findings of the same shape is a gate being wrong, not a tree being broken.
 
     Read from the ini rather than restated, so the two cannot drift; a root that
     disappears from `testpaths` stops conferring reachability the same day.
@@ -242,8 +203,7 @@ def discover():
 def referencing_files(name):
     """Files that mention `name`, excluding the file itself.
 
-    `git grep -l` rather than a Python walk: it honours .gitignore, so a stale
-    copy in an untracked scratch directory cannot make an orphan look reached.
+    `git grep -l` rather than a Python walk: it honours .gitignore, so a stale copy in an untracked scratch directory cannot make an orphan look reached.
     """
     try:
         r = subprocess.run(

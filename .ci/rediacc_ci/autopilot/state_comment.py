@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/autopilot/state-comment.sh`.
 
-The autopilot state comment: ONE comment per PR, authored by the autopilot app,
-PATCH-updated in place, in plain visible text (03-v2-autonomy.md section 3 --
-HTML comments are stripped from prompts and agent mode inlines no thread text at
-all, so this comment is the ONLY state channel the loop has). Three subcommands:
+The autopilot state comment: ONE comment per PR, authored by the autopilot app, PATCH-updated in place, in plain visible text (03-v2-autonomy.md section 3 -- HTML comments are stripped from prompts and agent mode inlines no thread text at all, so this comment is the ONLY state channel the loop has). Three subcommands:
 
     select   PURE. A JSON array of {id, author, body} in, the newest TRUSTED
              match out as `{"found":true,"id":N,"body":...}` or `{"found":false}`.
@@ -21,13 +18,9 @@ WHERE THE IDEMPOTENCY ACTUALLY LIVES, because it is NOT in this file
 The one-comment-per-PR property is a THREE-PART contract and only two parts are
 here. `select` finds the existing comment; `render` rebuilds its whole body from
 the old one; `update-state.sh` then POSTs or PATCHes depending on whether an id
-was found (`update_state.endpoint_for`). So the upsert is: select -> render ->
-patch, and this script owns the two halves that never touch the network.
+was found (`update_state.endpoint_for`). So the upsert is: select -> render -> patch, and this script owns the two halves that never touch the network.
 
-That split is why `select`'s three cases are worth exhaustive coverage: a
-comment that exists, one that does not, and a LOOKUP THAT CANNOT BE BELIEVED.
-The third one is the interesting case and the twin has an answer for it that a
-reimplementation would lose --
+That split is why `select`'s three cases are worth exhaustive coverage: a comment that exists, one that does not, and a LOOKUP THAT CANNOT BE BELIEVED. The third one is the interesting case and the twin has an answer for it that a reimplementation would lose --
 
   THE COMMENTS FILE IS UNTRUSTED, AND `select` IS THE TRUST BOUNDARY. console is
   public and anyone can post a lookalike. A comment counts only when its author
@@ -46,20 +39,14 @@ reimplementation would lose --
   round with a flaky read would post ANOTHER state comment and the loop would
   have several memories.
 
-`jq` IS SPAWNED for `select` and `fields`, deliberately, and this is the wave's
-standing rule rather than a shortcut. `select`'s program encodes the trust rule
+`jq` IS SPAWNED for `select` and `fields`, deliberately, and this is the wave's standing rule rather than a shortcut. `select`'s program encodes the trust rule
 (`startswith`, `sort_by(.id)`, `.[-1]`) and its output bytes are the interface;
-`fields`'s `-cn --arg/--argjson` construction is where `rounds_max` becomes a
-NUMBER and `campaign` stays a STRING, which `autopilot-gate.sh` then reads with
-`--argjson`. A Python `json.dumps` would have to re-derive jq's key order and
-compact spacing, and the first character it got wrong would be read by a gate.
+`fields`'s `-cn --arg/--argjson` construction is where `rounds_max` becomes a NUMBER and `campaign` stays a STRING, which `autopilot-gate.sh` then reads with `--argjson`. A Python `json.dumps` would have to re-derive jq's key order and compact spacing, and the first character it got wrong would be read by a gate.
 
 -----------------------------------------------------------------------------
 WHAT IS RE-IMPLEMENTED INSTEAD OF SPAWNED, AND WHY
 -----------------------------------------------------------------------------
-The three awk programs (the metadata reader, the carry-over section walk, the
-ledger compactor) are transliterated into Python, the way `submodule_prs.py`
-transliterated its own awk. They are small state machines over exact-match lines
+The three awk programs (the metadata reader, the carry-over section walk, the ledger compactor) are transliterated into Python, the way `submodule_prs.py` transliterated its own awk. They are small state machines over exact-match lines
 with no locale-sensitive collation, and holding them as Python makes the
 carry-over rule -- the anti-tamper rule -- readable at the place it is enforced.
 
@@ -82,39 +69,26 @@ carry-over rule -- the anti-tamper rule -- readable at the place it is enforced.
 THE LINE CAP IS LOCALE-DEPENDENT, AND THIS IS A REAL DIVERGENCE IN THE TWIN
 -----------------------------------------------------------------------------
 `cap_line` is `((${#line} > 400))` and `${line:0:400}`, and bash counts
-CHARACTERS under a UTF-8 LC_CTYPE and BYTES under C/POSIX. Measured on bash
-5.3.9 with a 399-`a` string plus one `e-acute`:
+CHARACTERS under a UTF-8 LC_CTYPE and BYTES under C/POSIX. Measured on bash 5.3.9 with a 399-`a` string plus one `e-acute`:
 
     LC_ALL=C        ${#line} = 401, the cap truncates at 401 bytes
     LC_ALL=C.utf8   ${#line} = 400, the cap does not fire at all
 
-So the same ledger line is capped differently depending on how the workflow's
-step happens to be invoked. The port reproduces the twin rather than choosing a
-side: `char_semantics()` resolves LC_ALL/LC_CTYPE/LANG exactly as a C program's
-`setlocale(LC_CTYPE, "")` does and reports which rule applies, and the
-differential drives BOTH locales. Choosing one would be a behaviour change
+So the same ledger line is capped differently depending on how the workflow's step happens to be invoked. The port reproduces the twin rather than choosing a side: `char_semantics()` resolves LC_ALL/LC_CTYPE/LANG exactly as a C program's `setlocale(LC_CTYPE, "")` does and reports which rule applies, and the differential drives BOTH locales. Choosing one would be a behaviour change
 smuggled in as a port, and the choice belongs to the cutover box.
 
 -----------------------------------------------------------------------------
 EVERY CARRIED-OVER VALUE IS RE-VALIDATED ON READ AND ON WRITE
 -----------------------------------------------------------------------------
-`normalize_field` collapses anything unrecognised to the field's sentinel:
-campaign is one of three literals, model matches a tight identifier shape,
-rounds_max and sig_count are small integers, last_sig is exactly the eight
-lowercase hex the gate emits. It is applied to values read back from a previous
-body AND to values passed in as arguments, so there is no path by which an
-unvalidated string reaches the rendered line. These values flow into a MODEL
-SELECTION and a ROUND CAP, so a surprise value must fail closed rather than
-propagate.
+`normalize_field` collapses anything unrecognised to the field's sentinel: campaign is one of three literals, model matches a tight identifier shape, rounds_max and sig_count are small integers, last_sig is exactly the eight lowercase hex the gate emits. It is applied to values read back from a previous body AND to values passed in as arguments, so there is no path by which an
+unvalidated string reaches the rendered line. These values flow into a MODEL SELECTION and a ROUND CAP, so a surprise value must fail closed rather than propagate.
 
   `normalize_field` ON AN UNKNOWN FIELD NAME EXITS 2 rather than passing the
   value through. Unreachable from the CLI (the five names are hardcoded at every
   call site) and kept because the alternative is a typo that silently disables a
   validator. Exported and unit-driven.
 
-Exit: 0, 2 on usage / an unknown subcommand / an unknown field name, 1 when
-`require_file` refuses the comments file, and jq's or gawk's own status when
-either fails.
+Exit: 0, 2 on usage / an unknown subcommand / an unknown field name, 1 when `require_file` refuses the comments file, and jq's or gawk's own status when either fails.
 
 K=5 LEDGER: `.ci/shadow/w7p6-state-comment.observations.jsonl`.
 """
@@ -191,15 +165,9 @@ _CHAR_SEMANTICS: bool | None = None
 def char_semantics() -> bool:
     """Does bash count CHARACTERS in `${#line}` here, or BYTES?
 
-    Resolved the way a C program resolves it: `setlocale(LC_CTYPE, "")` honours
-    LC_ALL, then LC_CTYPE, then LANG, and falls back to the C locale when the
-    named one is not installed -- which is exactly bash's own fallback. The
-    answer is the CODESET: UTF-8 means characters, anything else (C, POSIX,
-    ANSI_X3.4-1968) means bytes.
+    Resolved the way a C program resolves it: `setlocale(LC_CTYPE, "")` honours LC_ALL, then LC_CTYPE, then LANG, and falls back to the C locale when the named one is not installed -- which is exactly bash's own fallback. The answer is the CODESET: UTF-8 means characters, anything else (C, POSIX, ANSI_X3.4-1968) means bytes.
 
-    The previous LC_CTYPE is restored, so importing this module does not change
-    the locale of a process that only wanted to call a helper. Cached, because
-    bash resolves it once at startup too.
+    The previous LC_CTYPE is restored, so importing this module does not change the locale of a process that only wanted to call a helper. Cached, because bash resolves it once at startup too.
     """
     global _CHAR_SEMANTICS  # noqa: PLW0603
     if _CHAR_SEMANTICS is None:
@@ -263,14 +231,9 @@ def _awk_read(path: str) -> tuple[bool, list[bytes]]:
     """gawk's handling of ONE file argument, as records. (ok, records).
 
     A DIRECTORY is a WARNING and an empty read (gawk exits 0); anything else that
-    will not open is FATAL (gawk exits 2), which the caller turns into its own
-    status. Both messages are gawk 5.3.2's, reproduced so the observable is the
-    same string on both sides -- and asserted in the differential, so a gawk that
-    rewords them turns the test red rather than diverging quietly.
+    will not open is FATAL (gawk exits 2), which the caller turns into its own status. Both messages are gawk 5.3.2's, reproduced so the observable is the same string on both sides -- and asserted in the differential, so a gawk that rewords them turns the test red rather than diverging quietly.
 
-    Records are newline-separated and the FINAL UNTERMINATED LINE IS A RECORD,
-    which is awk's rule and NOT `while read`'s. The two appear in the same script
-    and the difference is load-bearing: `append_entries` uses `read` and drops a
+    Records are newline-separated and the FINAL UNTERMINATED LINE IS A RECORD, which is awk's rule and NOT `while read`'s. The two appear in the same script and the difference is load-bearing: `append_entries` uses `read` and drops a
     final unterminated line; this drops nothing.
     """
     try:
@@ -293,14 +256,11 @@ def _awk_read(path: str) -> tuple[bool, list[bytes]]:
 def state_field_raw(records: list[bytes], name: str) -> str:
     """The metadata-line awk (state-comment.sh:118-126), over already-read records.
 
-    Only the FIRST `state: ` line counts -- the twin's `exit` -- so a body
-    carrying a second one (appended by anything other than this script) can never
-    win. That is the same first-match discipline `select` applies to comments.
+    Only the FIRST `state: ` line counts -- the twin's `exit` -- so a body carrying a second one (appended by anything other than this script) can never win. That is the same first-match discipline `select` applies to comments.
 
     Every matching part of that line is printed, and `$( )` joins them with
     newlines; `normalize_field` then strips the whitespace and validates, so two
-    `campaign: ` parts on one line collapse to the sentinel rather than to the
-    first value. Reproduced rather than tidied.
+    `campaign: ` parts on one line collapse to the sentinel rather than to the first value. Reproduced rather than tidied.
     """
     needle = (name + ": ").encode("utf-8", "surrogateescape")
     for record in records:
@@ -314,10 +274,7 @@ def state_field_raw(records: list[bytes], name: str) -> str:
 def state_field(path: str, name: str) -> tuple[bool, str]:
     """`state_field <body-file> <field>`. (ok, normalized value).
 
-    `ok` is False only on gawk's fatal arm. Its CALLERS all sit inside a command
-    substitution in the twin, where `set -e` does not reach (`inherit_errexit` is
-    off), so every one of them treats a fatal as an empty read and carries on to
-    the sentinel -- while still letting gawk's message reach fd 2.
+    `ok` is False only on gawk's fatal arm. Its CALLERS all sit inside a command substitution in the twin, where `set -e` does not reach (`inherit_errexit` is off), so every one of them treats a fatal as an empty read and carries on to the sentinel -- while still letting gawk's message reach fd 2.
     """
     if not path:
         return True, normalize_field(name, "")
@@ -337,9 +294,7 @@ def state_field(path: str, name: str) -> tuple[bool, str]:
 def carry_over(records: list[bytes]) -> tuple[list[bytes], list[bytes], list[bytes]]:
     """The section walk (state-comment.sh:181-190). (ledger, ruled, decisions).
 
-    ANYTHING OUTSIDE THE KNOWN SECTIONS IS DROPPED, which is the anti-tamper
-    rule: a body someone edited by hand cannot smuggle text into the next round.
-    Note the order of the awk rules, which is preserved exactly --
+    ANYTHING OUTSIDE THE KNOWN SECTIONS IS DROPPED, which is the anti-tamper rule: a body someone edited by hand cannot smuggle text into the next round. Note the order of the awk rules, which is preserved exactly --
 
       * `#### DECISIONS` is a PREFIX match, the other two headings are exact.
       * a `####` or `###` line that is none of the three CLOSES the current
@@ -388,9 +343,7 @@ def read_entries(path: str) -> list[bytes]:
         (`[[ -z "${line//[[:space:]]/}" ]]`), so "this round ruled nothing out"
         does not render a stray bullet.
 
-    An absent or empty source contributes nothing (`[[ -n && -s ]] || return 0`),
-    and a DIRECTORY passes that test and then fails to read -- which the twin
-    reports as bash's own redirection error. Reproduced as an empty read plus
+    An absent or empty source contributes nothing (`[[ -n && -s ]] || return 0`), and a DIRECTORY passes that test and then fails to read -- which the twin reports as bash's own redirection error. Reproduced as an empty read plus
     that message; see `_entries_or_error`.
     """
     return [
@@ -412,10 +365,7 @@ def render_body(
 ) -> bytes:
     """`render_body` (state-comment.sh:212-225), byte for byte.
 
-    The blank line before each heading comes from the twin's `printf '\\n####...'`
-    and is real output, not tidy-up: the carry-over parser on the NEXT round
-    reads this same text back, so changing the spacing changes what survives a
-    round.
+    The blank line before each heading comes from the twin's `printf '\\n####...'` and is real output, not tidy-up: the carry-over parser on the NEXT round reads this same text back, so changing the spacing changes what survives a round.
     """
     out = [HEADER, b"\n", state_line, b"\n", b"\n", LEDGER_HEADING, b"\n"]
     out += [line + b"\n" for line in ledger]
@@ -431,15 +381,10 @@ def compact(ledger: list[bytes]) -> list[bytes]:
 
     Everything but the newest KEEP_FULL_ROUNDS lines collapses to a one-line
     pointer; the run id keeps the full detail reachable in that round's workflow
-    logs. A line that does not carry the `r<n> | run <id>` shape is passed
-    through untouched rather than mangled.
+    logs. A line that does not carry the `r<n> | run <id>` shape is passed through untouched rather than mangled.
 
-    `total` is `grep -c .`, which counts NON-EMPTY lines, while `cut` is compared
-    against awk's NR, which counts ALL of them. The two disagree the moment a
-    blank line is in the ledger file -- which the carry-over parser cannot
-    produce, since it only keeps `r<n> | run ` lines. Preserved as-is: the
-    divergence is unreachable, and "fixing" it would change which rounds survive
-    at the boundary.
+    `total` is `grep -c .`, which counts NON-EMPTY lines, while `cut` is compared against awk's NR, which counts ALL of them. The two disagree the moment a blank line is in the ledger file -- which the carry-over parser cannot produce, since it only keeps `r<n> | run ` lines. Preserved as-is: the divergence is unreachable, and "fixing" it would change which rounds survive at the
+    boundary.
     """
     total = sum(1 for line in ledger if line)
     cut_at = total - KEEP_FULL_ROUNDS
@@ -553,20 +498,13 @@ def _render(args: dict[str, str]) -> int:
 def _append_entries(source: str, dest: list[bytes]) -> int:
     """`append_entries` (state-comment.sh:197-204).
 
-    THE ONE NAMED DIVERGENCE IN THIS PORT, and it is on fd 2 only. A DIRECTORY
-    passes the `-s` test and bash then opens it successfully (Linux allows
-    `open(2)` on a directory) but `read` fails, so the twin prints BASH'S OWN
-    diagnostic --
+    THE ONE NAMED DIVERGENCE IN THIS PORT, and it is on fd 2 only. A DIRECTORY passes the `-s` test and bash then opens it successfully (Linux allows `open(2)` on a directory) but `read` fails, so the twin prints BASH'S OWN diagnostic --
 
         <path-as-invoked>: line 200: read: 0: read error: Is a directory
 
-    -- appends nothing, and carries on with exit 0. The message names the twin's
-    own file and line number, which no port can reproduce without lying about
-    where it came from, so this port appends nothing and carries on SILENTLY.
+    -- appends nothing, and carries on with exit 0. The message names the twin's own file and line number, which no port can reproduce without lying about where it came from, so this port appends nothing and carries on SILENTLY.
     Exit code and stdout are identical; stderr differs by exactly that one line.
-    Pinned by `test_a_directory_as_an_entries_file_is_the_one_named_divergence`,
-    which asserts the difference is that line and nothing else -- so if the twin
-    ever starts REFUSING here, the test goes red rather than the port drifting.
+    Pinned by `test_a_directory_as_an_entries_file_is_the_one_named_divergence`, which asserts the difference is that line and nothing else -- so if the twin ever starts REFUSING here, the test goes red rather than the port drifting.
     """
     try:
         entries = read_entries(source)

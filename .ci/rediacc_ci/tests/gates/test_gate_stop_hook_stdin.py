@@ -7,78 +7,43 @@ WHY THIS EXISTS. On 2026-08-07 the harness reported::
     Stop hook error: Failed with non-blocking status code:
     EAGAIN: resource temporarily unavailable, read
 
-`_read_event` caught only JSONDecodeError and ValueError. EAGAIN arrives as
-BlockingIOError -- an OSError -- so it sailed past, the hook CRASHED, and every stop
-check silently did not run for that stop. The hook is the thing that enforces the
-other checks, so when it dies the whole guard layer goes quiet at once, and nothing
-in CI notices: the checks cannot validate the health of the process running them.
+`_read_event` caught only JSONDecodeError and ValueError. EAGAIN arrives as BlockingIOError -- an OSError -- so it sailed past, the hook CRASHED, and every stop check silently did not run for that stop. The hook is the thing that enforces the other checks, so when it dies the whole guard layer goes quiet at once, and nothing in CI notices: the checks cannot validate the health of
+the process running them.
 
 THE OBVIOUS FIX WAS WORSE. `os.set_blocking(fd, True)` makes `read()` wait forever
 when the writer holds the pipe open and sends nothing; that version had to be
-SIGKILLed. A hook that HANGS is worse than one that crashes, because it stalls the
-session instead of failing it. So this file asserts BOTH properties, and a fix that
-trades one for the other fails here.
+SIGKILLed. A hook that HANGS is worse than one that crashes, because it stalls the session instead of failing it. So this file asserts BOTH properties, and a fix that trades one for the other fails here.
 
-WHAT IT DOES NOT DO, stated honestly and carried over from the twin unchanged. It
-does not exercise the checks' logic. And it does NOT reproduce the original EAGAIN
-crash against the real hook: mutating `_read_event` back to its pre-fix shape leaves
-this GREEN, because CPython's buffered `TextIOWrapper.read()` returns `""` rather
-than raising on a non-blocking empty pipe, so the old code fell through to a
-JSONDecodeError it already caught. That is measured, not assumed, and it is recorded
-here so nobody reads a green run as proof the EAGAIN case is covered.
+WHAT IT DOES NOT DO, stated honestly and carried over from the twin unchanged. It does not exercise the checks' logic. And it does NOT reproduce the original EAGAIN crash against the real hook: mutating `_read_event` back to its pre-fix shape leaves this GREEN, because CPython's buffered `TextIOWrapper.read()` returns `""` rather than raising on a non-blocking empty pipe, so the
+old code fell through to a JSONDecodeError it already caught. That is measured, not assumed, and it is recorded here so nobody reads a green run as proof the EAGAIN case is covered.
 
-THIS PORT DELIBERATELY DIVERGES FROM ITS TWIN IN ONE STATE, and the reason is a
-defect in the twin found while plant-verifying this port on 2026-09-07. The twin
-decides `crashed` from STDERR ALONE::
+THIS PORT DELIBERATELY DIVERGES FROM ITS TWIN IN ONE STATE, and the reason is a defect in the twin found while plant-verifying this port on 2026-09-07. The twin decides `crashed` from STDERR ALONE::
 
     crashed = "Traceback" in err or "BlockingIOError" in err
 
-The real hook cannot crash to stderr. Its last twelve lines wrap `main()` in
-`except BaseException` and turn ANY crash into a `"decision": "block"` object with
-the traceback inside `reason`, written to STDOUT -- deliberately, because a crash
-that printed to stderr and nothing to stdout used to read as ALLOW and silently
-disabled every check. Measured directly: with `except (json.JSONDecodeError,
-ValueError)` in `_read_event` narrowed to `except (KeyError,)`, so that a malformed
-payload raises,
+The real hook cannot crash to stderr. Its last twelve lines wrap `main()` in `except BaseException` and turn ANY crash into a `"decision": "block"` object with the traceback inside `reason`, written to STDOUT -- deliberately, because a crash that printed to stderr and nothing to stdout used to read as ALLOW and silently disabled every check. Measured directly: with `except
+(json.JSONDecodeError, ValueError)` in `_read_event` narrowed to `except (KeyError,)`, so that a malformed payload raises,
 
     printf '{not json at all' | python3 .claude/hooks/stop/worklist.py
 
 exits 0 with an EMPTY stderr and `{"systemMessage": "Stop hook CRASHED; ...` plus the
 whole traceback on stdout. The twin ran GREEN over that tree. Its crash arm therefore
 cannot see a crash in the subject it is pointed at; it passes only because its
-control points at a bare stand-in that HAS no such handler, which is exactly the
-"a control that fires for a reason unrelated to the subject" shape.
+control points at a bare stand-in that HAS no such handler, which is exactly the "a control that fires for a reason unrelated to the subject" shape.
 
-So `drive()` below reads BOTH streams. On this tree that changes no verdict -- the
-hook does not crash, both sides are green, and the parity driver compares verdicts --
-and the divergence appears only in the state where the twin is wrong. That is the
-same argument `test_gate_renet_deadcode.py` records for its own divergence, and if a
-future change ever does make the hook crash, the two will disagree and the parity
-driver will say so. That is the intended alarm, not a regression to suppress.
+So `drive()` below reads BOTH streams. On this tree that changes no verdict -- the hook does not crash, both sides are green, and the parity driver compares verdicts -- and the divergence appears only in the state where the twin is wrong. That is the same argument `test_gate_renet_deadcode.py` records for its own divergence, and if a future change ever does make the hook crash, the
+two will disagree and the parity driver will say so. That is the intended alarm, not a regression to suppress.
 
-WHAT IT DOES CATCH, mutation-proven: the HANG. Installing the
-`os.set_blocking(fd, True)` variant -- the obvious fix, nearly shipped in place of
+WHAT IT DOES CATCH, mutation-proven: the HANG. Installing the `os.set_blocking(fd, True)` variant -- the obvious fix, nearly shipped in place of
 this one -- turns this file RED with `hung=1 crashed=0 elapsed=40.0`.
 
-THE DRIVER IS IN THIS PROCESS, WHICH IS THE ONE STRUCTURAL DIFFERENCE. The twin
-writes a Python program to a temp file and runs it under `python3`, because the
-hostile conditions (a non-blocking pipe, a writer that never writes) cannot be built
-in portable bash. Python can build them directly, so `drive()` below IS that program,
-line for line, with no nested interpreter in the middle. The two agree because
-`O_NONBLOCK` is a property of the open file DESCRIPTION and therefore survives the
-`dup` that `subprocess` performs when it installs the read end as the child's stdin
--- which is exactly the property the twin's driver relies on too. Dropping the outer
-interpreter removes a layer that could only ever have swallowed a diagnostic.
+THE DRIVER IS IN THIS PROCESS, WHICH IS THE ONE STRUCTURAL DIFFERENCE. The twin writes a Python program to a temp file and runs it under `python3`, because the hostile conditions (a non-blocking pipe, a writer that never writes) cannot be built in portable bash. Python can build them directly, so `drive()` below IS that program, line for line, with no nested interpreter in the
+middle. The two agree because `O_NONBLOCK` is a property of the open file DESCRIPTION and therefore survives the `dup` that `subprocess` performs when it installs the read end as the child's stdin -- which is exactly the property the twin's driver relies on too. Dropping the outer interpreter removes a layer that could only ever have swallowed a diagnostic.
 
-THE FOUR SHAPES, and the control that proves the instrument can see a crash at all,
-are the twin's five cases with their names intact.
+THE FOUR SHAPES, and the control that proves the instrument can see a crash at all, are the twin's five cases with their names intact.
 
-`xdist_group`: NONE, and the reason is worth stating because this one looks like it
-needs one. The hook is the real `.claude/hooks/stop/worklist.py`, which owns a shared
-append-only store -- but every case here feeds it a payload whose `session_id` is
-`test-stop-hook-stdin`, or no payload at all, and none of them ADDS an item. Reading
-the store concurrently is what the store's own lock is for. What would need a group
-is a case that wrote, and there is none.
+`xdist_group`: NONE, and the reason is worth stating because this one looks like it needs one. The hook is the real `.claude/hooks/stop/worklist.py`, which owns a shared append-only store -- but every case here feeds it a payload whose `session_id` is `test-stop-hook-stdin`, or no payload at all, and none of them ADDS an item. Reading the store concurrently is what the store's own
+lock is for. What would need a group is a case that wrote, and there is none.
 """
 
 import contextlib
@@ -112,11 +77,9 @@ except (json.JSONDecodeError, ValueError):
 def drive(hook: str, mode: str, budget: float) -> str:
     """`hung=<0|1> crashed=<0|1> elapsed=<seconds>`, the twin's driver in-process.
 
-    `closed` : stdin is /dev/null, closed before the hook ever reads.
-    `never`  : a non-blocking pipe whose write end is held open and never written.
+    `closed` : stdin is /dev/null, closed before the hook ever reads. `never` : a non-blocking pipe whose write end is held open and never written.
                THE FOUNDING CASE.
-    `late`   : the payload arrives 0.3s in, AFTER the first read attempt.
-    `garbage`: malformed JSON arrives on the same schedule.
+    `late` : the payload arrives 0.3s in, AFTER the first read attempt. `garbage`: malformed JSON arrives on the same schedule.
     """
     payload = json.dumps({"session_id": "test-stop-hook-stdin", "cwd": os.getcwd()})
     write_end = None

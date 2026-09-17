@@ -1,29 +1,15 @@
 """`rediacc_ci.quality.release_key_canonical` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-release-key-canonical.sh`
-over a fixture with stdout and stderr captured SEPARATELY, and its bytes are
-compared against the port's. The twin's own `RELEASE_KEY_ROOT` seam points both
+A bash child runs the REAL `.ci/scripts/quality/check-release-key-canonical.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. The twin's own `RELEASE_KEY_ROOT` seam points both
 implementations at the fixture; the twin is copied in anyway, because the
-committed ledger (`.ci/shadow/w7p2-release-key.observations.jsonl`) records a tree
-id that has to be a claim about BOTH implementations.
+committed ledger (`.ci/shadow/w7p2-release-key.observations.jsonl`) records a tree id that has to be a claim about BOTH implementations.
 
-EACH SIDE GENERATES ITS OWN THROWAWAY KEY, so the two runs are NOT byte-identical
-in general: the fingerprint differs. Every fixture below is therefore built so
-that the controls naming a fingerprint PASS (and are printed as `  ok    ...`
-without the value), and only the two `grep`-counting controls fail. That is what
-makes a byte comparison meaningful here rather than merely noisy.
+EACH SIDE GENERATES ITS OWN THROWAWAY KEY, so the two runs are NOT byte-identical in general: the fingerprint differs. Every fixture below is therefore built so that the controls naming a fingerprint PASS (and are printed as ` ok ...` without the value), and only the two `grep`-counting controls fail. That is what makes a byte comparison meaningful here rather than merely noisy.
 
-WHAT NO FIXTURE HERE EXERCISES, and why. Three of the twin's exits are REFUSALS
-in `scripts/lib/shadow-gate.ts`'s vocabulary -- "nothing here was verified" (no
-gpg), "so NOTHING was verified" (key generation failed) and "the battery is not
-being executed as written" (short battery). A refusal suspends the comparison
-rather than colouring it, so no ledger row can be recorded over one. They are
-ported faithfully and are asserted here only through the message-shape test at
-the bottom, which reads the strings without driving the state.
+WHAT NO FIXTURE HERE EXERCISES, and why. Three of the twin's exits are REFUSALS in `scripts/lib/shadow-gate.ts`'s vocabulary -- "nothing here was verified" (no gpg), "so NOTHING was verified" (key generation failed) and "the battery is not being executed as written" (short battery). A refusal suspends the comparison rather than colouring it, so no ledger row can be recorded over
+one. They are ported faithfully and are asserted here only through the message-shape test at the bottom, which reads the strings without driving the state.
 
-THE FIXTURES VARY build-linux-pkg.sh, not the key, because that file is the only
-input a test can move without a secret. The twin cannot check the real
-RELEASE_GPG_PRIVATE_KEY -- quality jobs do not have it and must not.
+THE FIXTURES VARY build-linux-pkg.sh, not the key, because that file is the only input a test can move without a secret. The twin cannot check the real RELEASE_GPG_PRIVATE_KEY -- quality jobs do not have it and must not.
 """
 
 import pathlib
@@ -109,8 +95,7 @@ def test_port_and_twin_agree(
 def test_a_correct_build_script_is_green_on_both_sides(tmp_path: pathlib.Path) -> None:
     """The mirror the five cases above need, and the non-trivial-count evidence.
 
-    Twelve controls, all of them green, on BOTH implementations. A gate that
-    failed everything would satisfy every parametrized case.
+    Twelve controls, all of them green, on BOTH implementations. A gate that failed everything would satisfy every parametrized case.
     """
     root = build(tmp_path, 1, 0)
     (old_exit, old_out, _), (new_exit, new_out, _) = run_both(root)

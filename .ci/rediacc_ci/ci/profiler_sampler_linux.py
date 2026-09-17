@@ -22,18 +22,10 @@
 #   PROFILER_RUNNER_LABEL=self .ci/scripts/ci/profiler/sampler-linux.sh \
 """Port of `.ci/scripts/ci/profiler/sampler-linux.sh` (627 lines).
 
-THE 39 COMMENT LINES ABOVE ARE THE TWIN'S LINES 2-40, CARRIED BYTE FOR BYTE, and
-they are not decoration. `usage()` in the twin is
-`sed -n '2,40p' "$0" | sed 's/^# \\?//'` (`sampler-linux.sh:80`), so `--help`
-prints the script's OWN first 39 comment lines. A port whose `--help` printed a
-Python docstring would differ from the twin on its most-read output, so this
-file reproduces the mechanism rather than the string: `usage()` below slices
-lines 2-40 of THIS file and strips the same prefix.
-`test_help_is_byte_identical` compares the two renderings.
+THE 39 COMMENT LINES ABOVE ARE THE TWIN'S LINES 2-40, CARRIED BYTE FOR BYTE, and they are not decoration. `usage()` in the twin is `sed -n '2,40p' "$0" | sed 's/^# \\?//'` (`sampler-linux.sh:80`), so `--help` prints the script's OWN first 39 comment lines. A port whose `--help` printed a Python docstring would differ from the twin on its most-read output, so this file reproduces
+the mechanism rather than the string: `usage()` below slices lines 2-40 of THIS file and strips the same prefix. `test_help_is_byte_identical` compares the two renderings.
 
-That slice ends mid-continuation, with a dangling `\\` on the last line, because
-line 41 (`--out /tmp/p.tsv --interval 2 &`) is outside the range. Reproduced,
-not tidied: tidying it would mean the two `--help` outputs no longer match.
+That slice ends mid-continuation, with a dangling `\\` on the last line, because line 41 (`--out /tmp/p.tsv --interval 2 &`) is outside the range. Reproduced, not tidied: tidying it would mean the two `--help` outputs no longer match.
 
 LIVE CALLERS OF THE TWIN, none repointed by this port:
   * `.github/actions/profiler/index.js:32,117` -- the composite action's `main`
@@ -45,94 +37,54 @@ LIVE CALLERS OF THE TWIN, none repointed by this port:
   * `.ci/scripts/test/gates/test-profiler-report.sh:34,398,409,421,478,506` and
     its Python port `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:59,703`.
 
-FOUR MEASURED DEFECTS, ALL FIXED IN BOTH SIDES IN LOCKSTEP ON 2026-09-10. Each
-paragraph below is the record of what was wrong, kept because the measurement is
-the expensive part and because the differential tests that used to pin the bug now
-pin the fix. Everything AFTER "PORT NOTES" is still reproduced, not repaired.
+FOUR MEASURED DEFECTS, ALL FIXED IN BOTH SIDES IN LOCKSTEP ON 2026-09-10. Each paragraph below is the record of what was wrong, kept because the measurement is the expensive part and because the differential tests that used to pin the bug now pin the fix. Everything AFTER "PORT NOTES" is still reproduced, not repaired.
 
 (1) A DANGLING VALUE FLAG SPUN FOREVER. `sampler-linux.sh` handled `--out` and
 `--interval` with `OUT="${2:-}"; shift 2`. When the flag is the LAST argument,
 `shift 2` with `$# == 1` returns non-zero and shifts NOTHING; `set -e` is
-deliberately off (`:54-57` explains why), so `while (($# > 0))` never terminated.
-Measured directly:
+deliberately off (`:54-57` explains why), so `while (($# > 0))` never terminated. Measured directly:
 
     /usr/bin/time -f "%e %U %P" timeout 3 bash .ci/scripts/ci/profiler/sampler-linux.sh --out
     -> wall=3.01 user=3.00 cpu=100%
 
-100% of one core, no output on either stream, no exit. On ubuntu-slim that is the
-whole machine, and the production caller spawns the sampler `detached: true` with
-`child.unref()`, so nothing would reap it before the job's 6-hour ceiling.
-`PROFILER_MAX_SECONDS` could not help: it is evaluated inside the sample loop,
-which the spin never reached.
+100% of one core, no output on either stream, no exit. On ubuntu-slim that is the whole machine, and the production caller spawns the sampler `detached: true` with `child.unref()`, so nothing would reap it before the job's 6-hour ceiling. `PROFILER_MAX_SECONDS` could not help: it is evaluated inside the sample loop, which the spin never reached.
 
-BLAST RADIUS, COUNTED NOT ESTIMATED, AND THE FIRST COUNT WAS AN UNDERCOUNT. The
-twin has 14 real invocation sites (docstrings, this file and the ledgers
-excluded). TWELVE pass a value after `--out`/`--interval`:
-`.github/actions/profiler/index.js:117`,
-`.ci/scripts/test/profiler-control.sh:121`,
-`.ci/scripts/test/gates/test-profiler-report.sh:398,409,421,478,506` and its
-Python port `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:548,568,592,656,703`.
-TWO use `--probe` only, `.github/workflows/profiler-probe.yml:54,72`. ZERO were
+BLAST RADIUS, COUNTED NOT ESTIMATED, AND THE FIRST COUNT WAS AN UNDERCOUNT. The twin has 14 real invocation sites (docstrings, this file and the ledgers excluded). TWELVE pass a value after `--out`/`--interval`: `.github/actions/profiler/index.js:117`, `.ci/scripts/test/profiler-control.sh:121`, `.ci/scripts/test/gates/test-profiler-report.sh:398,409,421,478,506` and its Python
+port `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:548,568,592,656,703`. TWO use `--probe` only, `.github/workflows/profiler-probe.yml:54,72`. ZERO were
 reachable; the defect was one hand-typed invocation away, and it failed SILENTLY,
 which is what made it worth fixing rather than noting. (A first pass wrote "8 and
 2", having missed the five sites in the gate-test port; re-derived by enumerating
-every match rather than by recalling the earlier grep.) Every arm of the loop now
-consumes at least one argument, and a missing value is the exit 2 every other bad
-argument already got. `test_a_dangling_value_flag_exits_on_both_sides` pins it.
+every match rather than by recalling the earlier grep.) Every arm of the loop now consumes at least one argument, and a missing value is the exit 2 every other bad argument already got. `test_a_dangling_value_flag_exits_on_both_sides` pins it.
 
 (2) `--interval 08` KILLED THE SAMPLER. `DISK_EVERY=$(((DISK_EVERY_S + INTERVAL -
-1) / INTERVAL))` and `$(( ))` reads a leading `0` as OCTAL. `08` is not a valid
-octal constant, so bash refused the whole expression, left `DISK_EVERY` unassigned,
-and the next line died on `set -u`:
+1) / INTERVAL))` and `$(( ))` reads a leading `0` as OCTAL. `08` is not a valid octal constant, so bash refused the whole expression, left `DISK_EVERY` unassigned, and the next line died on `set -u`:
 
     sampler-linux.sh: line 584: 08: value too great for base (error token is "08")
     sampler-linux.sh: line 585: DISK_EVERY: unbound variable
     rc=1, one #META line written, zero samples
 
-`08` and `09` were the only two values that did that. `010` was worse in a quieter
-way: a VALID octal 8, so the decimation divisor became 8 while `read -t 010` waited
-10 real seconds and the `#META` record said `010` -- three different numbers for one
-flag in one run. Verified individually: `$((010))` is 8, `[ 010 -lt 9 ]` is false (so
-`test` reads it as decimal 10), and a `read -t 010` on a fifo returned after 10.01s.
+`08` and `09` were the only two values that did that. `010` was worse in a quieter way: a VALID octal 8, so the decimation divisor became 8 while `read -t 010` waited 10 real seconds and the `#META` record said `010` -- three different numbers for one flag in one run. Verified individually: `$((010))` is 8, `[ 010 -lt 9 ]` is false (so `test` reads it as decimal 10), and a `read -t
+010` on a fifo returned after 10.01s.
 Fixed with `INTERVAL=$((10#$INTERVAL))` right after the existing digits-only check.
 
-BLAST RADIUS: `.github/actions/profiler/action.yml:25` declares `interval` with
-default `'10'`, and the three live callers (`profiler-probe.yml:89,108,127`) all pass
-`'5'`. Zero were affected, and `interval: '08'` is an entirely ordinary thing to
-write in YAML.
+BLAST RADIUS: `.github/actions/profiler/action.yml:25` declares `interval` with default `'10'`, and the three live callers (`profiler-probe.yml:89,108,127`) all pass `'5'`. Zero were affected, and `interval: '08'` is an entirely ordinary thing to write in YAML.
 
-(3) THE SAME OCTAL TRAP IN `PROFILER_DISK_EVERY_S`, one line down, found by
-sweeping for the sibling rather than fixing the instance. `is_num 08` is true and
-`[ 08 -ge 1 ]` is true because `test` parses base 10, so the guard on that line
-passed `08` through to the same `$(( ))` and produced the same two diagnostics and
+(3) THE SAME OCTAL TRAP IN `PROFILER_DISK_EVERY_S`, one line down, found by sweeping for the sibling rather than fixing the instance. `is_num 08` is true and `[ 08 -ge 1 ]` is true because `test` parses base 10, so the guard on that line passed `08` through to the same `$(( ))` and produced the same two diagnostics and
 the same rc=1. Same fix, `DISK_EVERY_S=$((10#$DISK_EVERY_S))`; that knob keeps its
-own convention of falling back to 60 without a word, because a wrong `df` cadence
-costs a sampling rate and not a runner.
+own convention of falling back to 60 without a word, because a wrong `df` cadence costs a sampling rate and not a runner.
 
-(4) A NON-NUMERIC `PROFILER_MAX_SECONDS` DISABLED THE GUARD IT BELONGS TO. The only
-use was `[ $(((NOW_US - START_US) / 1000000)) -ge "$MAX_SECONDS" ]`, and `test`
-answers a non-numeric right-hand side with `[: abc: integer expected` and status 2,
-which `if` reads as FALSE. So the orphan protection the variable exists for was
-switched off by the same typo that looks like it would tighten it. Measured: 3 ticks
-in 4 seconds, three diagnostics, no stop. Now REJECTED LOUDLY at startup with exit 2,
-the way `--interval` already was, rather than coerced to the 6-hour default: the line
-between this file's two conventions is what a wrong value costs, and this one costs a
-sampler running forever on a runner that has moved on. `sampler-linux.sh` carries the
-same argument next to the code, including why the check sits BEFORE the `--probe`
-branch. The `_test_int` helper that modelled the false comparison was deleted with the
+(4) A NON-NUMERIC `PROFILER_MAX_SECONDS` DISABLED THE GUARD IT BELONGS TO. The only use was `[ $(((NOW_US - START_US) / 1000000)) -ge "$MAX_SECONDS" ]`, and `test` answers a non-numeric right-hand side with `[: abc: integer expected` and status 2, which `if` reads as FALSE. So the orphan protection the variable exists for was switched off by the same typo that looks like it would
+tighten it. Measured: 3 ticks in 4 seconds, three diagnostics, no stop. Now REJECTED LOUDLY at startup with exit 2, the way `--interval` already was, rather than coerced to the 6-hour default: the line between this file's two conventions is what a wrong value costs, and this one costs a sampler running forever on a runner that has moved on. `sampler-linux.sh` carries the same
+argument next to the code, including why the check sits BEFORE the `--probe` branch. The `_test_int` helper that modelled the false comparison was deleted with the
 bug; a model of a branch that cannot be taken is dead code beside a live one.
 
-`$INTERVAL` USED TO BE ECHOED RAW into the `#META` record (`:528`, `:575`), so
-`--interval 01` recorded `01`. The first version of this port stored `int(raw)` and
+`$INTERVAL` USED TO BE ECHOED RAW into the `#META` record (`:528`, `:575`), so `--interval 01` recorded `01`. The first version of this port stored `int(raw)` and
 wrote `1`; the differential caught it, reading the file did not. That divergence is
-gone in the other direction as of fix (2): the twin REASSIGNS `$INTERVAL` to the
-base-10 value, so both sides now record the normalised number and
-`test_the_meta_record_carries_the_normalised_interval` is what keeps them together.
+gone in the other direction as of fix (2): the twin REASSIGNS `$INTERVAL` to the base-10 value, so both sides now record the normalised number and `test_the_meta_record_carries_the_normalised_interval` is what keeps them together.
 
 PORT NOTES -- the rest of the quirks, each driven before it was written down.
 
-`read -r a b < file` IS NOT `open().readline()`. Three separate behaviours had
-to be reproduced and each one decides a branch:
+`read -r a b < file` IS NOT `open().readline()`. Three separate behaviours had to be reproduced and each one decides a branch:
   * it returns NON-ZERO when the line is not newline-terminated, INCLUDING for
     an empty file, while still assigning what it read. `detect_cpu_ceiling`'s
     condition is `[ -r "$CG/cpu.max" ] && read -r q p <"$CG/cpu.max"`, so a
@@ -145,57 +97,33 @@ to be reproduced and each one decides a branch:
 
 A FAILED REDIRECTION PRINTS A bash DIAGNOSTIC AND IS NOT AN ERROR.
 `read_mem_bytes:314` guards `$CG/memory.current` with `[ "$MEM_MODE" = "V2" ]`
-and NOT with `-r`, so a cgroup tree exposing `memory.max` but not
-`memory.current` makes real bash write
-`<path>: line 314: <CG>/memory.current: No such file or directory` to stderr on
+and NOT with `-r`, so a cgroup tree exposing `memory.max` but not `memory.current` makes real bash write `<path>: line 314: <CG>/memory.current: No such file or directory` to stderr on
 EVERY TICK (measured: `bash -c 'read -r p < missing'` -> that text, rc=1). This
 port does NOT forge a bash diagnostic carrying the twin's own path and line
 number; it matches the observable decision (fall through to the next branch) and
-`test_missing_memory_current_is_a_bash_diagnostic_only` pins the twin's
-divergence as still real rather than silently fixing it.
+`test_missing_memory_current_is_a_bash_diagnostic_only` pins the twin's divergence as still real rather than silently fixing it.
 
-`$(( ))` TRUNCATES TOWARD ZERO, `//` FLOORS. `_idiv` is C truncation. Every
-division in the twin is guarded to non-negative operands today, so the two agree
+`$(( ))` TRUNCATES TOWARD ZERO, `//` FLOORS. `_idiv` is C truncation. Every division in the twin is guarded to non-negative operands today, so the two agree
 on the real tree; the helper exists so a future negative cannot drift silently.
 
-`is_num` IS `case $1 in '' | *[!0-9]*)`, which rejects `-1`, `+1`, ` 1`, `1.0`
-and the empty string. cgroup v1 spells "unlimited" as `-1` in
-`cpu.cfs_quota_us`, and that is exactly why the division at `:160` can never see
-a negative divisor.
+`is_num` IS `case $1 in '' | *[!0-9]*)`, which rejects `-1`, `+1`, ` 1`, `1.0` and the empty string. cgroup v1 spells "unlimited" as `-1` in `cpu.cfs_quota_us`, and that is exactly why the division at `:160` can never see a negative divisor.
 
-`RUNNER_ENV` IS SANITIZED TO `[a-z-]+` OR THE WHOLE VALUE BECOMES `unknown`
-(`:218-220`), because it is copied verbatim into a TAB-separated record. Note
-this rejects `Github-Hosted` and `self_hosted` outright rather than cleaning
-them.
+`RUNNER_ENV` IS SANITIZED TO `[a-z-]+` OR THE WHOLE VALUE BECOMES `unknown` (`:218-220`), because it is copied verbatim into a TAB-separated record. Note this rejects `Github-Hosted` and `self_hosted` outright rather than cleaning them.
 
-THE FIFO IS A REAL FIFO. `:553` opens a mkfifo read-write so `read -t` on it
-never delivers and never EOFs -- a pure-builtin sleep. Reproduced with
-`os.mkfifo` + `O_RDWR` + `select`, not with `time.sleep`, so the
+THE FIFO IS A REAL FIFO. `:553` opens a mkfifo read-write so `read -t` on it never delivers and never EOFs -- a pure-builtin sleep. Reproduced with `os.mkfifo` + `O_RDWR` + `select`, not with `time.sleep`, so the
 `SLEEP_MODE=sleep` fallback stays a real branch.
 
 A SIGTERM DOES NOT BREAK THE WAIT, AND THE FIRST VERSION OF THIS PORT ASSUMED IT
-DID. The assumption was that bash's `read -t` returns the moment a trapped
-signal arrives, so the port used `signal.set_wakeup_fd` on a self-pipe to make
-`select` return instantly. Measured instead of believed, at `--interval 5` with
-a SIGTERM 1.2s in:
+DID. The assumption was that bash's `read -t` returns the moment a trapped signal arrives, so the port used `signal.set_wakeup_fd` on a self-pipe to make `select` return instantly. Measured instead of believed, at `--interval 5` with a SIGTERM 1.2s in:
 
     twin  rc=0  latency=3.80s
     port  rc=0  latency=0.043s   (with the self-pipe)
 
-bash defers the trap until the `read -t` finishes its timeout, so the twin dies
-one FULL INTERVAL after the signal, not immediately. That is not cosmetic: the
-production stopper (`.github/actions/profiler/index.js:148-166`) SIGTERMs the
-sampler, waits, and then SIGKILLs it, annotating the panel with "the sampler had
+bash defers the trap until the `read -t` finishes its timeout, so the twin dies one FULL INTERVAL after the signal, not immediately. That is not cosmetic: the production stopper (`.github/actions/profiler/index.js:148-166`) SIGTERMs the sampler, waits, and then SIGKILLs it, annotating the panel with "the sampler had
 to be SIGKILLed; the final sample may be truncated". A port that died faster
-would silently change which of those two notes a job's panel carries. The
-self-pipe is therefore GONE: plain `select` retries with the RECOMPUTED
-remaining timeout under PEP 475, which is exactly bash's behaviour, and
-`test_sigterm_latency_matches_the_twin` measures both sides rather than
-asserting either.
+would silently change which of those two notes a job's panel carries. The self-pipe is therefore GONE: plain `select` retries with the RECOMPUTED remaining timeout under PEP 475, which is exactly bash's behaviour, and `test_sigterm_latency_matches_the_twin` measures both sides rather than asserting either.
 
-`EPOCHREALTIME` CANNOT BE ABSENT HERE. `:122-125` refuses bash < 5.0. Python has
-`time.time()` unconditionally, so that refusal is unreachable in the port and is
-the one branch with no differential coverage. Named rather than pretended.
+`EPOCHREALTIME` CANNOT BE ABSENT HERE. `:122-125` refuses bash < 5.0. Python has `time.time()` unconditionally, so that refusal is unreachable in the port and is the one branch with no differential coverage. Named rather than pretended.
 
 Exit: 0 sampling finished / probe done, 2 usage or setup error, 3 HOST_LEAK.
 """
@@ -229,8 +157,7 @@ SLIM_CPU_CEILING_MILLI = 1500
 def is_num(value: str | None) -> bool:
     """`is_num()` (`sampler-linux.sh:138-143`): non-empty and all ASCII digits.
 
-    Rejects `-1`, `+1`, `1.0`, ` 1` and ``. cgroup v1's "unlimited" is `-1`, so
-    this is the guard that keeps a negative out of every division below.
+    Rejects `-1`, `+1`, `1.0`, ` 1` and ``. cgroup v1's "unlimited" is `-1`, so this is the guard that keeps a negative out of every division below.
     """
     if not value:
         return False
@@ -246,22 +173,15 @@ def _idiv(a: int, b: int) -> int:
 class BashArithError(Exception):
     """`$(( ))` refused the expression, e.g. `08` under octal rules.
 
-    bash writes `<script>: line N: 08: value too great for base (error token is
-    "08")`, leaves the target variable UNASSIGNED, and the next expansion of it
-    then dies on `set -u`. Carrying the exception is how the port reproduces
-    that sequence without forging bash's own path and line number.
+    bash writes `<script>: line N: 08: value too great for base (error token is "08")`, leaves the target variable UNASSIGNED, and the next expansion of it then dies on `set -u`. Carrying the exception is how the port reproduces that sequence without forging bash's own path and line number.
     """
 
 
 def _arith(token: str) -> int:
     """A bash NUMERIC CONSTANT, which is not `int()`.
 
-    `$(( ))` reads a leading `0` as OCTAL, `0x` as hex and `base#digits` as that
-    base. `int()` reads everything as decimal, and the difference is not
-    academic here: `--interval 010` makes the twin compute the disk-decimation
-    divisor as 8 while `read -t 010` waits 10 seconds, and `--interval 08` makes
-    it refuse the expression outright. See the module docstring for the
-    measurement and the blast radius.
+    `$(( ))` reads a leading `0` as OCTAL, `0x` as hex and `base#digits` as that base. `int()` reads everything as decimal, and the difference is not academic here: `--interval 010` makes the twin compute the disk-decimation divisor as 8 while `read -t 010` waits 10 seconds, and `--interval 08` makes it refuse the expression outright. See the module docstring for the measurement
+    and the blast radius.
     """
     text = token.strip()
     negative = text.startswith("-")
@@ -288,8 +208,7 @@ def _arith(token: str) -> int:
 def _split_fields(line: str, count: int) -> list[str]:
     """`read -r a b c` field splitting: the LAST name absorbs the remainder.
 
-    Leading and trailing IFS whitespace is stripped from the line first, then it
-    is split on runs of IFS whitespace at most `count - 1` times.
+    Leading and trailing IFS whitespace is stripped from the line first, then it is split on runs of IFS whitespace at most `count - 1` times.
     """
     parts = line.strip(" \t").split(None, count - 1) if count > 1 else [line.strip(" \t")]
     while len(parts) < count:
@@ -300,12 +219,9 @@ def _split_fields(line: str, count: int) -> list[str]:
 def _read_fields(path: str, count: int) -> tuple[bool, list[str]]:
     """`read -r v1..vN < path`.
 
-    Returns `(ok, fields)`. `ok` is `read`'s exit status: FALSE when the first
-    line is not newline-terminated (an empty file included), even though the
-    fields are still assigned from whatever was read.
+    Returns `(ok, fields)`. `ok` is `read`'s exit status: FALSE when the first line is not newline-terminated (an empty file included), even though the fields are still assigned from whatever was read.
 
-    Raises OSError when the redirection itself fails, which is the caller's cue
-    to reproduce bash's "condition is false" rather than to crash.
+    Raises OSError when the redirection itself fails, which is the caller's cue to reproduce bash's "condition is false" rather than to crash.
     """
     with open(path, "rb") as fh:
         raw = fh.readline()
@@ -317,8 +233,7 @@ def _read_fields(path: str, count: int) -> tuple[bool, list[str]]:
 def _iter_fields(path: str, count: int) -> typing.Iterator[list[str]]:
     """`while read -r v1..vN; do ... done < path`.
 
-    Drops an unterminated final line, exactly as `read` returning non-zero at
-    EOF drops it in the twin.
+    Drops an unterminated final line, exactly as `read` returning non-zero at EOF drops it in the twin.
     """
     with open(path, "rb") as fh:
         for raw in fh:
@@ -331,8 +246,7 @@ def _iter_fields(path: str, count: int) -> typing.Iterator[list[str]]:
 def usage() -> None:
     """`usage()` (`:79-81`): `sed -n '2,40p' "$0" | sed 's/^# \\?//'`.
 
-    Slices THIS file, not the twin. The 39 lines are carried verbatim at the top
-    precisely so the two renderings are the same bytes.
+    Slices THIS file, not the twin. The 39 lines are carried verbatim at the top precisely so the two renderings are the same bytes.
     """
     lines = SELF.read_text(encoding="utf-8").split("\n")
     for line in lines[1:40]:
@@ -388,12 +302,8 @@ class Sampler:
     def parse_args(self, argv: list[str]) -> int | None:
         """Returns an exit code, or None to carry on.
 
-        EVERY BRANCH CONSUMES AT LEAST ONE ARGUMENT, which is the loop's variant
-        and the fix of 2026-09-10. Both sides used to reproduce a non-terminating
-        `while (($# > 0))`: `shift 2` with one argument left returns non-zero and
-        shifts nothing, `set -e` is off in the twin by design, so `--out` as the
-        final argument burned 100% of a core with no output and no exit. See the
-        module docstring for the measurement.
+        EVERY BRANCH CONSUMES AT LEAST ONE ARGUMENT, which is the loop's variant and the fix of 2026-09-10. Both sides used to reproduce a non-terminating `while (($# > 0))`: `shift 2` with one argument left returns non-zero and shifts nothing, `set -e` is off in the twin by design, so `--out` as the final argument burned 100% of a core with no output and no exit. See the module
+        docstring for the measurement.
         """
         args = list(argv)
         while len(args) > 0:
@@ -513,8 +423,7 @@ class Sampler:
     def _nproc() -> str:
         """`n="$(nproc 2>/dev/null || echo 0)"`.
 
-        Command substitution strips trailing newlines, and a missing binary
-        yields the literal `0`.
+        Command substitution strips trailing newlines, and a missing binary yields the literal `0`.
         """
         try:
             proc = subprocess.run(
@@ -567,8 +476,7 @@ class Sampler:
     def detect_container(self) -> None:
         """`detect_container()` (`:223-247`).
 
-        Note the middle branch's `else: return 0`: an UNREADABLE `/proc/1/comm`
-        stops the fingerprint at UNKNOWN and never consults `/proc/1/cgroup`.
+        Note the middle branch's `else: return 0`: an UNREADABLE `/proc/1/comm` stops the fingerprint at UNKNOWN and never consults `/proc/1/cgroup`.
         """
         if os.path.exists("/.dockerenv"):
             self.container_hint = "CONTAINER"
@@ -689,8 +597,7 @@ class Sampler:
     def _bash_int(token: str) -> int:
         """`$(( x ))` on an arbitrary word: empty is 0, non-numeric is a bash error.
 
-        The twin never reaches the error case on a real /proc, and neither side
-        has a defined answer for it, so the port takes the benign reading.
+        The twin never reaches the error case on a real /proc, and neither side has a defined answer for it, so the port takes the benign reading.
         """
         try:
             return int(token)
@@ -755,8 +662,7 @@ class Sampler:
     def _try_read_one(path: str) -> tuple[bool, str]:
         """One `read -r v < path` whose redirection may fail.
 
-        ONE open, not two: the twin reads the file once per tick, and a second
-        open could see a different value on a live /sys or /proc file.
+        ONE open, not two: the twin reads the file once per tick, and a second open could see a different value on a live /sys or /proc file.
         """
         try:
             ok, fields = _read_fields(path, 1)

@@ -1,11 +1,9 @@
 """Validate EVERY package-lock.json in the tree, on two independent properties.
 
 Ported from `.ci/scripts/quality/check-lockfile.sh`, which is NOT deleted; see
-`rediacc_ci.quality.__init__` for why both copies live side by side until a
-committed differential ledger says otherwise.
+`rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
 
-WHY THE TWIN WAS REWRITTEN, carried over from its header because the archaeology
-is the half of a gate that cannot be recovered from the code:
+WHY THE TWIN WAS REWRITTEN, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
   It used to run lockfile-lint on `package-lock.json` -- the ROOT one, and only
   that one. Two consequences, both bad:
@@ -73,87 +71,36 @@ PORT NOTES.
 -----------------------------------------------------------------------------
 
 THIS PORT SHELLS OUT TO THE SAME TWO COMMANDS AND DOES NOT REIMPLEMENT EITHER.
-That is the point of property B: the check IS `npm ci --dry-run`, so anything
-this module did instead of running it would be the heuristic the twin's header
-spends eleven lines rejecting. `npx` is invoked with the identical argv in the
-identical working directory.
+That is the point of property B: the check IS `npm ci --dry-run`, so anything this module did instead of running it would be the heuristic the twin's header spends eleven lines rejecting. `npx` is invoked with the identical argv in the identical working directory.
 
-THE DIFFERENTIAL FOR THIS PAIR IS RECORDED AGAINST A FIXTURE `npx`, AND THAT IS
-STATED OUT LOUD RATHER THAN LEFT TO BE DISCOVERED. Running the real thing costs
-a network round trip per probe, downloads two npm majors, and puts an installer
-next to eleven committed lockfiles whose byte form this repository has an entire
-CLAUDE.md section about (the 27-line `"dev": true` flip). So the recorded trees
-put a deterministic stand-in for `npx` on PATH, INSIDE the fixture, and drive
-every branch through it: lint pass, lint fail, npm 11 fail, npm 10 fail, skip,
-and the no-lockfile refusal. What the ledger therefore proves is that both
-implementations DISCOVER the same lockfiles, INVOKE the same commands, and
-REACT identically to their exit codes. What it does not prove is anything about
-npm itself, which is not this gate's subject either.
+THE DIFFERENTIAL FOR THIS PAIR IS RECORDED AGAINST A FIXTURE `npx`, AND THAT IS STATED OUT LOUD RATHER THAN LEFT TO BE DISCOVERED. Running the real thing costs a network round trip per probe, downloads two npm majors, and puts an installer next to eleven committed lockfiles whose byte form this repository has an entire CLAUDE.md section about (the 27-line `"dev": true` flip). So
+the recorded trees put a deterministic stand-in for `npx` on PATH, INSIDE the fixture, and drive every branch through it: lint pass, lint fail, npm 11 fail, npm 10 fail, skip, and the no-lockfile refusal. What the ledger therefore proves is that both implementations DISCOVER the same lockfiles, INVOKE the same commands, and REACT identically to their exit codes. What it does not
+prove is anything about npm itself, which is not this gate's subject either.
 
-THE DISCOVERY IS `find`, NOT `git ls-files`, and that is deliberate in the twin:
-"Discovered, never hardcoded: a hardcoded list is how this gate went stale in the
-first place, and a lockfile added tomorrow must be covered without anyone
-remembering to add it." The consequence is that an UNTRACKED lockfile is in
-scope, unlike most gates here. Preserved. The `-not -path '*/node_modules/*'`
-exclusion is reproduced as "no path component is node_modules", which is the
-same set for every path `find` can produce.
+THE DISCOVERY IS `find`, NOT `git ls-files`, and that is deliberate in the twin: "Discovered, never hardcoded: a hardcoded list is how this gate went stale in the first place, and a lockfile added tomorrow must be covered without anyone remembering to add it." The consequence is that an UNTRACKED lockfile is in scope, unlike most gates here. Preserved. The `-not -path
+'*/node_modules/*'` exclusion is reproduced as "no path component is node_modules", which is the same set for every path `find` can produce.
 
-`while read`, NOT `mapfile`, in the twin, and the reason is worth carrying even
-though Python has no such problem: mapfile/readarray are bash-4 builtins and are
-BANNED by `.ci/scripts/security/check-commands.sh`, which tracks what is
-actually available in the minimal CI images (and on macOS / Git Bash). The twin
-"was written to catch npm-10-vs-11 ENVIRONMENT DRIFT and was itself defeated by
-environment drift -- it passed locally on bash 5 and failed in CI."
+`while read`, NOT `mapfile`, in the twin, and the reason is worth carrying even though Python has no such problem: mapfile/readarray are bash-4 builtins and are BANNED by `.ci/scripts/security/check-commands.sh`, which tracks what is actually available in the minimal CI images (and on macOS / Git Bash). The twin "was written to catch npm-10-vs-11 ENVIRONMENT DRIFT and was itself
+defeated by environment drift -- it passed locally on bash 5 and failed in CI."
 
-A SILENT SKIP IS THE FAILURE MODE THIS GATE ALREADY SURVIVED ONCE. The
-quality-security job checks out WITHOUT submodules, so `private/account*` and
-`private/growth*` legitimately do not exist there, and a lockfile with no
-`package.json` beside it is skipped -- LOUDLY, as a warning, listed again in a
-second warning at the end. The twin's own comment names the precedent: "a silent
-skip is how test-embed-credits.sh went green while checking nothing (round 3,
-0707 campaign)." Both warnings are carried, and `scripts/lib/shadow-gate.ts`
-classifies a `⚠` line as a FINDING, so a port that quietly downgraded either one
-to chatter would show up as a mismatch rather than as tidier output.
+A SILENT SKIP IS THE FAILURE MODE THIS GATE ALREADY SURVIVED ONCE. The quality-security job checks out WITHOUT submodules, so `private/account*` and `private/growth*` legitimately do not exist there, and a lockfile with no `package.json` beside it is skipped -- LOUDLY, as a warning, listed again in a second warning at the end. The twin's own comment names the precedent: "a silent
+skip is how test-embed-credits.sh went green while checking nothing (round 3, 0707 campaign)." Both warnings are carried, and `scripts/lib/shadow-gate.ts` classifies a `⚠` line as a FINDING, so a port that quietly downgraded either one to chatter would show up as a mismatch rather than as tidier output.
 
-A HARNESS DEFECT FOUND WHILE RECORDING THIS PAIR, 2026-09-06, and it belongs
-here rather than in a report nobody re-reads. The advice line the twin prints
-when the CANONICAL writer fails begins "The canonical writer cannot read this
-lockfile", and `scripts/lib/shadow-gate.ts`'s REFUSAL vocabulary carries the
-term `CANNOT READ` matched case-INSENSITIVELY. So an ordinary sentence of
-English advice is read as a gate refusing to report a verdict, the comparison is
-SUSPENDED, and the row lands as ERROR_REFUSAL even though both sides produced
-byte-identical output. The measured row: tree
-ce6f9586c98b8c00d6c23e8df690a5bb805c85d9, exit 1 on both sides, finding count 4
-on both sides, fingerprint a2f5ffa94ca75e9a on BOTH sides, onlyOld and onlyNew
-both empty. Nothing disagreed.
+A HARNESS DEFECT FOUND WHILE RECORDING THIS PAIR, 2026-09-06, and it belongs here rather than in a report nobody re-reads. The advice line the twin prints when the CANONICAL writer fails begins "The canonical writer cannot read this lockfile", and `scripts/lib/shadow-gate.ts`'s REFUSAL vocabulary carries the term `CANNOT READ` matched case-INSENSITIVELY. So an ordinary sentence of
+English advice is read as a gate refusing to report a verdict, the comparison is SUSPENDED, and the row lands as ERROR_REFUSAL even though both sides produced byte-identical output. The measured row: tree ce6f9586c98b8c00d6c23e8df690a5bb805c85d9, exit 1 on both sides, finding count 4 on both sides, fingerprint a2f5ffa94ca75e9a on BOTH sides, onlyOld and onlyNew both empty. Nothing
+disagreed.
 
-That matters more than it sounds, because `assertEquivalent` disqualifies a tree
-id UNCONDITIONALLY once any row against it is non-EQUIVALENT, and the id is the
-content of both implementations -- so a FALSE refusal can never be cleared by
-re-running, only by changing code that had nothing wrong with it. The row was
-archived verbatim and removed from the ledger rather than left to poison the
-pair forever, and the recorded trees now exercise the CI-installer failure
-branch instead. The canonical-writer branch is still covered, by `--selftest`
-("PLANT: the canonical writer failing to resolve reds") and by the pytest twin.
+That matters more than it sounds, because `assertEquivalent` disqualifies a tree id UNCONDITIONALLY once any row against it is non-EQUIVALENT, and the id is the content of both implementations -- so a FALSE refusal can never be cleared by re-running, only by changing code that had nothing wrong with it. The row was archived verbatim and removed from the ledger rather than left to
+poison the pair forever, and the recorded trees now exercise the CI-installer failure branch instead. The canonical-writer branch is still covered, by `--selftest` ("PLANT: the canonical writer failing to resolve reds") and by the pytest twin.
 Reported to the root driver; not fixed here, because `scripts/lib/shadow-gate.ts`
 is not this port's file.
 
-THE `break` AFTER A RESOLVE FAILURE IS LOAD-BEARING. When the canonical writer
-cannot read a lockfile, the CI-installer probe is not run at all: the two have
-DIFFERENT fixes, and telling someone to reconcile with the wrong npm is how the
-flip oscillated in the first place. So exactly one resolve failure is ever
-reported per lockfile, and it is the first one.
+THE `break` AFTER A RESOLVE FAILURE IS LOAD-BEARING. When the canonical writer cannot read a lockfile, the CI-installer probe is not run at all: the two have DIFFERENT fixes, and telling someone to reconcile with the wrong npm is how the flip oscillated in the first place. So exactly one resolve failure is ever reported per lockfile, and it is the first one.
 
-STREAMS. `common.sh`'s four loggers all write to stderr and gate colour on
-`[[ -t 2 ]]`, which is the one pre-existing variant that tests the stream it
-writes to -- so `rediacc_ci.log` matches it exactly and no stream moves in this
-port. The bare `echo` advice lines around a resolve failure are STDOUT in the
+STREAMS. `common.sh`'s four loggers all write to stderr and gate colour on `[[ -t 2 ]]`, which is the one pre-existing variant that tests the stream it writes to -- so `rediacc_ci.log` matches it exactly and no stream moves in this port. The bare `echo` advice lines around a resolve failure are STDOUT in the
 twin and stay stdout here; they are data a reader copies, not messages.
 
-ONE KNOWN DIVERGENCE, inherited from the logger and stated so nobody "fixes" it:
-`common.sh` logs with `echo -e`, which interprets backslash escapes IN THE
-MESSAGE. A lockfile path containing `\t` would be printed differently by the two
-implementations. No such path exists, and `rediacc_ci.log` formats the message
+ONE KNOWN DIVERGENCE, inherited from the logger and stated so nobody "fixes" it: `common.sh` logs with `echo -e`, which interprets backslash escapes IN THE MESSAGE. A lockfile path containing `\t` would be printed differently by the two implementations. No such path exists, and `rediacc_ci.log` formats the message
 as data on purpose; see its docstring.
 """
 
@@ -200,13 +147,9 @@ LINT_ARGS = (
 def discover(root: pathlib.Path) -> list[str]:
     """`find . -name package-lock.json -not -path '*/node_modules/*' | sed | sort`.
 
-    Repo-relative paths, sorted. `sorted()` on `str` is code-point order, which
-    is the C collation the twin's `sort` runs under in CI and in the
-    differential harness.
+    Repo-relative paths, sorted. `sorted()` on `str` is code-point order, which is the C collation the twin's `sort` runs under in CI and in the differential harness.
 
-    ZERO IS NOT A VERDICT HERE, and the caller enforces that: a tree with no
-    lockfile at all is a refusal, because this gate would otherwise report
-    success having opened nothing.
+    ZERO IS NOT A VERDICT HERE, and the caller enforces that: a tree with no lockfile at all is a refusal, because this gate would otherwise report success having opened nothing.
     """
     out: list[str] = []
     # `paths.walk_tree` prunes `node_modules` in place, which is what `-not -path '*/node_modules/*'` amounts to for every path `find` can produce, and is also why a lockfile sitting directly beside a node_modules is still found. It prunes `.claude/worktrees` too: a peer session's sibling checkout of this repository carries its own `package-lock.json` files, and this gate was
@@ -236,10 +179,7 @@ def resolve_argv(npm_pin: str) -> list[str]:
 def run_lint(root: pathlib.Path, lock: str) -> int:
     """Run lockfile-lint, letting its own output through to both streams.
 
-    NOT CAPTURED. The twin does not redirect it, so lockfile-lint's report is
-    what an operator reads when this fails, and swallowing it would leave a
-    finding with no evidence under it. `flush` first, because this process's
-    buffered stdout would otherwise land AFTER the child's.
+    NOT CAPTURED. The twin does not redirect it, so lockfile-lint's report is what an operator reads when this fails, and swallowing it would leave a finding with no evidence under it. `flush` first, because this process's buffered stdout would otherwise land AFTER the child's.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -249,8 +189,7 @@ def run_lint(root: pathlib.Path, lock: str) -> int:
 def run_resolve(directory: pathlib.Path, npm_pin: str) -> int:
     """`npm ci --dry-run` in `directory`, output DISCARDED. Returns the exit code.
 
-    Discarded to match the twin's `>/dev/null 2>&1`: the first probe is a yes/no
-    question and npm's success chatter is long. The failure path re-runs it with
+    Discarded to match the twin's `>/dev/null 2>&1`: the first probe is a yes/no question and npm's success chatter is long. The failure path re-runs it with
     output kept; see `resolve_failure_detail`.
     """
     return subprocess.run(
@@ -265,10 +204,7 @@ def run_resolve(directory: pathlib.Path, npm_pin: str) -> int:
 def resolve_failure_detail(directory: pathlib.Path, npm_pin: str, limit: int = 25) -> list[str]:
     """The first `limit` lines of the failing command, each indented four spaces.
 
-    `2>&1 | head -25 | sed 's/^/    /'` in the twin. Merging the streams is
-    correct HERE and only here: this is a transcript being shown to a human, not
-    a comparison, and the twin's own `|| true` says the re-run's exit code is
-    not part of the verdict.
+    `2>&1 | head -25 | sed 's/^/ /'` in the twin. Merging the streams is correct HERE and only here: this is a transcript being shown to a human, not a comparison, and the twin's own `|| true` says the re-run's exit code is not part of the verdict.
     """
     proc = subprocess.run(
         resolve_argv(npm_pin),
@@ -290,8 +226,7 @@ def resolve_failure_detail(directory: pathlib.Path, npm_pin: str, limit: int = 2
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 violation.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments
-    at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -393,9 +328,7 @@ def selftest() -> int:
 
     NO REAL npm RUNS HERE EITHER. `npx` is stubbed on PATH by a tiny script this
     function writes, for the reasons in the port notes; the subject under test is
-    the discovery, the skip rule, the two-probe loop and the exit code, all of
-    which are this module's own logic. The stub's exit code is the only thing
-    npm contributes to the verdict, and that is exactly what is varied.
+    the discovery, the skip rule, the two-probe loop and the exit code, all of which are this module's own logic. The stub's exit code is the only thing npm contributes to the verdict, and that is exactly what is varied.
     """
     ctl = Controls("lockfile", floor=24, verbose=True)
 
@@ -470,11 +403,7 @@ def selftest() -> int:
         def stubbed():
             """Point PATH at the stub and REDIACC_CI_ROOT at the fixture.
 
-            EVERY probe in this selftest runs inside this, without exception. A
-            call that escaped it would reach the REAL npx, download two npm
-            majors, and put an installer next to this repository's committed
-            lockfiles -- which is the one thing this port is under orders never
-            to do.
+            EVERY probe in this selftest runs inside this, without exception. A call that escaped it would reach the REAL npx, download two npm majors, and put an installer next to this repository's committed lockfiles -- which is the one thing this port is under orders never to do.
             """
             saved_root = os.environ.get(paths.ROOT_ENV)
             saved_path = os.environ.get("PATH", "")

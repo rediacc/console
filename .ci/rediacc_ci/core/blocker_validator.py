@@ -1,50 +1,22 @@
 """The BLOCKER convention transport, ported from `.ci/scripts/lib/blocker-validator.sh`.
 
-PORTED FROM `.ci/scripts/lib/blocker-validator.sh` (356 lines), which still
-exists, is untouched by this file, and has EIGHT real sourcers re-measured on
-2026-09-10 (`grep -rnP '^\\s*(source|\\.)\\s+.*blocker-validator\\.sh'`):
-`.ci/scripts/quality/check-ci-job-aggregation.sh:52`,
-`.ci/scripts/quality/check-go-deps.sh:37`,
-`.ci/scripts/quality/check-profiler-coverage.sh:85`,
-`.ci/scripts/quality/check-swallowed-failures.sh:86`,
-`.ci/scripts/security/audit.sh:36`,
-`.ci/scripts/test/gates/test-blocker-validator.sh:26`,
-`.ci/scripts/test/gates/test-emit-advisory.sh:141` and `:168` (one file, two
-heredoc-driven subshells), and `.ci/rediacc_ci/tests/test_core_allowlist.py:155`
-and `:183`, which drive the real library from bash snippets. This module does NOT
-shim any of them: deletion and cutover are a later box, both implementations are
-live, and `.ci/rediacc_ci/tests/test_core_blocker_validator.py` is what says they
-agree.
+PORTED FROM `.ci/scripts/lib/blocker-validator.sh` (356 lines), which still exists, is untouched by this file, and has EIGHT real sourcers re-measured on 2026-09-10 (`grep -rnP '^\\s*(source|\\.)\\s+.*blocker-validator\\.sh'`): `.ci/scripts/quality/check-ci-job-aggregation.sh:52`, `.ci/scripts/quality/check-go-deps.sh:37`, `.ci/scripts/quality/check-profiler-coverage.sh:85`,
+`.ci/scripts/quality/check-swallowed-failures.sh:86`, `.ci/scripts/security/audit.sh:36`, `.ci/scripts/test/gates/test-blocker-validator.sh:26`, `.ci/scripts/test/gates/test-emit-advisory.sh:141` and `:168` (one file, two heredoc-driven subshells), and `.ci/rediacc_ci/tests/test_core_allowlist.py:155` and `:183`, which drive the real library from bash snippets. This module does NOT
+shim any of them: deletion and cutover are a later box, both implementations are live, and `.ci/rediacc_ci/tests/test_core_blocker_validator.py` is what says they agree.
 
-WHAT THIS FILE IS NOT. It is not a second copy of the BLOCKER rule. The twin
-stopped being an implementation on 2026-09-09: its grammar, its two banned-phrase
-tables, its 30-character floor and all four message bodies live in
-`rediacc_ci.core.allowlist`, and `parse_blockered_list` / `verify_all_blockers`
-there are TRANSPORTS that decide nothing. This is the Python transport over the
-same canonical module, so the hop the twin pays (bash -> python3 -m ... -> bash)
-collapses to a function call, and nothing about the verdict moves.
+WHAT THIS FILE IS NOT. It is not a second copy of the BLOCKER rule. The twin stopped being an implementation on 2026-09-09: its grammar, its two banned-phrase tables, its 30-character floor and all four message bodies live in `rediacc_ci.core.allowlist`, and `parse_blockered_list` / `verify_all_blockers` there are TRANSPORTS that decide nothing. This is the Python transport over
+the same canonical module, so the hop the twin pays (bash -> python3 -m ... -> bash) collapses to a function call, and nothing about the verdict moves.
 
 --------------------------------------------------------------------------
 WHY THE PHRASE ARRAYS DO NOT CROSS OVER, WHICH IS NOT AN OVERSIGHT
 --------------------------------------------------------------------------
-The twin still carries `LOW_EFFORT_BLOCKER_PATTERNS` and
-`LOW_EFFORT_BLOCKER_SUBSTRINGS` as a TEXT MIRROR, because
-`.ci/scripts/test/gates/test-breakpoint-portability.sh:361` parses them out of
-THAT FILE'S TEXT to prove the vendored breakpoint copy is a subset. That
-justification is specific to the bash file and does not travel: a Python mirror
-would be read by nothing, and
-`.ci/rediacc_ci/tests/test_blocker_implementations.py:207` fails BY NAME on any
-tracked file that carries ten or more of the canonical phrases as quoted
-literals. So the constants below are REFERENCES to
-`rediacc_ci.core.allowlist`, never copies, and `BLOCKER_MIN_LENGTH` is
-`allowlist.MIN_REASON_LENGTH` rather than the literal 30 the twin writes.
+The twin still carries `LOW_EFFORT_BLOCKER_PATTERNS` and `LOW_EFFORT_BLOCKER_SUBSTRINGS` as a TEXT MIRROR, because `.ci/scripts/test/gates/test-breakpoint-portability.sh:361` parses them out of THAT FILE'S TEXT to prove the vendored breakpoint copy is a subset. That justification is specific to the bash file and does not travel: a Python mirror would be read by nothing, and
+`.ci/rediacc_ci/tests/test_blocker_implementations.py:207` fails BY NAME on any tracked file that carries ten or more of the canonical phrases as quoted literals. So the constants below are REFERENCES to `rediacc_ci.core.allowlist`, never copies, and `BLOCKER_MIN_LENGTH` is `allowlist.MIN_REASON_LENGTH` rather than the literal 30 the twin writes.
 
 --------------------------------------------------------------------------
 WHAT THE THREE PRECONDITION GUARDS BECOME
 --------------------------------------------------------------------------
-The twin opens with three refusals, and none of them has a counterpart here BY
-CONSTRUCTION rather than by choice. Said out loud so a reader does not read the
-absence as a dropped control:
+The twin opens with three refusals, and none of them has a counterpart here BY CONSTRUCTION rather than by choice. Said out loud so a reader does not read the absence as a dropped control:
 
   * `blocker-validator.sh:69-76`, bash 4.3. The `local -n` namerefs are what
     needs it; this module returns tables instead of aliasing the caller's
@@ -114,14 +86,9 @@ tabs collapse and leading and trailing tabs are stripped. Measured 2026-09-10:
     $ printf 'a\\t\\tb\\tc\\t\\n' | { IFS=$'\\t' read -r k v; printf '[%s][%s]' "$k" "$v"; }
     [a][b<TAB>c]
 
-The comment at `:211-213` claims "everything after the first one is the reason,
-tabs and all", which is not what bash does. It costs nothing TODAY only because
-`allowlist.parse_text` `.strip()`s every reason, so no reason can begin or end
+The comment at `:211-213` claims "everything after the first one is the reason, tabs and all", which is not what bash does. It costs nothing TODAY only because `allowlist.parse_text` `.strip()`s every reason, so no reason can begin or end
 with a tab, and an interior tab run inside the remainder IS preserved (measured:
-`x\\ta\\t\\tb` gives value `a\\t\\tb`). The port holds the reason verbatim, which
-agrees with the twin on every reason the canonical grammar can produce and
-disagrees only on reasons it cannot. Recorded because the claim in the twin is
-wrong even where the consequence is nil.
+`x\\ta\\t\\tb` gives value `a\\t\\tb`). The port holds the reason verbatim, which agrees with the twin on every reason the canonical grammar can produce and disagrees only on reasons it cannot. Recorded because the claim in the twin is wrong even where the consequence is nil.
 """
 
 import pathlib
@@ -153,13 +120,9 @@ USAGE = """blocker_validator -- the `blocker-validator.sh` transport verbs.
 class Tables(NamedTuple):
     """What `parse_blockered_list`'s two namerefs hold when it returns.
 
-    Two dicts and not one, because the twin populates two arrays and five gates
-    read them independently: `allowed` answers "is this entry suppressed at all"
+    Two dicts and not one, because the twin populates two arrays and five gates read them independently: `allowed` answers "is this entry suppressed at all"
     and is what `audit.sh` tests with `[[ -n "${ALLOWED[$id]:-}" ]]`, while
-    `blocker` answers "with what reason", and an entry with NO reason is present
-    in both, mapped to 1 and to the empty string respectively. Collapsing them
-    into one dict would make "absent" and "present with no reason" the same
-    lookup, which is exactly the distinction `verify_all_blockers` fails on.
+    `blocker` answers "with what reason", and an entry with NO reason is present in both, mapped to 1 and to the empty string respectively. Collapsing them into one dict would make "absent" and "present with no reason" the same lookup, which is exactly the distinction `verify_all_blockers` fails on.
     """
 
     allowed: dict[str, int]
@@ -169,11 +132,7 @@ class Tables(NamedTuple):
 class BrokenReaderError(RuntimeError):
     """The canonical reader could not parse a list that exists.
 
-    `blocker-validator.sh:205-209` prints two lines and returns 1 here, and every
-    bash caller invokes `parse_blockered_list` bare, so under the `errexit` those
-    gates run with the script dies. Raising is the same contract: a caller that
-    wants the twin's non-errexit behaviour (carry on with empty tables) catches
-    it, and has to write that down to get it.
+    `blocker-validator.sh:205-209` prints two lines and returns 1 here, and every bash caller invokes `parse_blockered_list` bare, so under the `errexit` those gates run with the script dies. Raising is the same contract: a caller that wants the twin's non-errexit behaviour (carry on with empty tables) catches it, and has to write that down to get it.
 
     THIS IS NOT THE MISSING-FILE CASE. A missing file is empty tables and
     success, on purpose; see behaviour 1 in the module docstring.
@@ -183,11 +142,7 @@ class BrokenReaderError(RuntimeError):
 def parse_blockered_list(file: str | pathlib.Path, comment_char: str = "#") -> Tables:
     """`parse_blockered_list <file> <allowed_var> <blocker_var> [<comment_char>]`.
 
-    Returns the two tables instead of writing through namerefs, which is the one
-    capability the port loses and the one class of caller error it removes: the
-    twin's `local -n` is bash 4.3, and on 3.2 it fails with `local: -n: invalid
-    option`, RETURNS ZERO, and every allowlist parses to zero entries while the
-    gate exits 0 (`blocker-validator.sh:40-64`, measured on a real bash 3.2.0).
+    Returns the two tables instead of writing through namerefs, which is the one capability the port loses and the one class of caller error it removes: the twin's `local -n` is bash 4.3, and on 3.2 it fails with `local: -n: invalid option`, RETURNS ZERO, and every allowlist parses to zero entries while the gate exits 0 (`blocker-validator.sh:40-64`, measured on a real bash 3.2.0).
 
     A MISSING FILE RETURNS EMPTY TABLES AND SUCCESS. That is the twin's
     historical contract, `missing_ok=True` in the canonical module's vocabulary,
@@ -222,16 +177,10 @@ def parse_blockered_list(file: str | pathlib.Path, comment_char: str = "#") -> T
 def emit_message(message: str, *, out=None) -> None:
     """`_blocker_emit_message` (blocker-validator.sh:227-237).
 
-    The stream split, which is the only part of the message contract that stayed
-    in bash on that side and is the only part that has to be re-decided here: the
-    FIRST line through `ci_error`, which is what turns it into a GitHub
-    annotation under CI, the rest as a plain `echo` to stdout.
+    The stream split, which is the only part of the message contract that stayed in bash on that side and is the only part that has to be re-decided here: the FIRST line through `ci_error`, which is what turns it into a GitHub annotation under CI, the rest as a plain `echo` to stdout.
 
     Note what that means and reproduce it exactly: under `CI=true` the head line
-    lands on STDOUT as `::error::...` and off CI on STDERR as `x ...`, while the
-    continuation lines are on stdout either way. Three renderings in one failure,
-    and `.ci/rediacc_ci/quality/profiler_coverage.py:988` records the same split
-    after a cutover differential found a port that had lost it.
+    lands on STDOUT as `::error::...` and off CI on STDERR as `x ...`, while the continuation lines are on stdout either way. Three renderings in one failure, and `.ci/rediacc_ci/quality/profiler_coverage.py:988` records the same split after a cutover differential found a port that had lost it.
     """
     first = True
     # `while IFS= read -r line; do ... done <<<"$1"`. A here-string appends a
@@ -252,12 +201,8 @@ def emit_message(message: str, *, out=None) -> None:
 def frame(messages: list[str]) -> str:
     """The RS writer: `\\x1e<line-count>` then exactly that many lines.
 
-    A TRANSCRIPTION OF `rediacc_ci.core.allowlist.main`'s `verify-rows` writer,
-    not a second protocol, and the reason it is transcribed rather than called is
-    that the canonical writer is welded to `sys.stdin` and `sys.stdout` inside a
-    CLI verb. `test_core_blocker_validator.py` runs the real
-    `python3 -m rediacc_ci.core.allowlist verify-rows` and asserts its bytes equal
-    this function's, so the two cannot drift without a red test.
+    A TRANSCRIPTION OF `rediacc_ci.core.allowlist.main`'s `verify-rows` writer, not a second protocol, and the reason it is transcribed rather than called is that the canonical writer is welded to `sys.stdin` and `sys.stdout` inside a CLI verb. `test_core_blocker_validator.py` runs the real `python3 -m rediacc_ci.core.allowlist verify-rows` and asserts its bytes equal this
+    function's, so the two cannot drift without a red test.
     """
     out = []
     for message in messages:
@@ -270,8 +215,7 @@ def frame(messages: list[str]) -> str:
 def replay_frames(stream: str, *, out=None) -> bool:
     """`_blocker_emit` (blocker-validator.sh:245-271). False on an unframed stream.
 
-    Reads exactly `count` lines per frame, so a BLOCKER reason that contains a
-    line starting with RS cannot open a frame of its own.
+    Reads exactly `count` lines per frame, so a BLOCKER reason that contains a line starting with RS cannot open a frame of its own.
     """
     # `done <<<"$stream"`: the here-string's appended newline is why an EMPTY stream still yields one (empty, unframed) line. See behaviour 3 in the
     # module docstring; this is the line that makes the zero-frame arm below
@@ -320,16 +264,12 @@ def replay_frames(stream: str, *, out=None) -> bool:
 def validate_blocker_quality(entry: str, reason: str, file: str, *, out=None) -> bool:
     """`validate_blocker_quality <id> <reason> <file>`. True when acceptable.
 
-    THE RULE AND THE WORDS ARE `allowlist.validate_reason`'s. The twin's third
-    arm, `exit 2 is a usage error, not a verdict`
-    (`blocker-validator.sh:284-290`), guards against a malformed CLI call and has
+    THE RULE AND THE WORDS ARE `allowlist.validate_reason`'s. The twin's third arm, `exit 2 is a usage error, not a verdict` (`blocker-validator.sh:284-290`), guards against a malformed CLI call and has
     no counterpart across a function call with three required arguments; a caller
-    that gets the arity wrong gets a TypeError, which is the same refusal to fold
-    a broken call into a finding about somebody's allowlist.
+    that gets the arity wrong gets a TypeError, which is the same refusal to fold a broken call into a finding about somebody's allowlist.
 
     UNFRAMED, and deliberately so. The single-reason answer is raw text; only the
-    batch path frames, because only the batch path has more than one message to
-    delimit. Feeding this to `replay_frames` was the twin's first cut's bug.
+    batch path frames, because only the batch path has more than one message to delimit. Feeding this to `replay_frames` was the twin's first cut's bug.
     """
     rejection = allowlist.validate_reason(entry, reason, file)
     if rejection is None:
@@ -341,19 +281,9 @@ def validate_blocker_quality(entry: str, reason: str, file: str, *, out=None) ->
 def verify_all_blockers(file: str, blocker: dict[str, str], *, out=None) -> bool:
     """`verify_all_blockers <file> <blocker_var>`. True when every entry passes.
 
-    ONE pass over the whole table, not one per entry: the twin's first cut
-    spawned an interpreter inside the loop and took
-    `.ci/policy/.profiler-coverage-allowlist` (71 entries) from 0.06s to 3.4s.
-    That cost is a bash cost and does not exist here, and the batch shape is kept
-    anyway because it is what carries the RS frame, which is a control rather
-    than an optimisation.
+    ONE pass over the whole table, not one per entry: the twin's first cut spawned an interpreter inside the loop and took `.ci/policy/.profiler-coverage-allowlist` (71 entries) from 0.06s to 3.4s. That cost is a bash cost and does not exist here, and the batch shape is kept anyway because it is what carries the RS frame, which is a control rather than an optimisation.
 
-    AN EMPTY TABLE PASSES (`blocker-validator.sh:342`). That is not an
-    anti-vacuity hole in this function: the caller decides whether an empty list
-    is suspicious, and the twin's first cut of an emptiness guard HERE killed
-    `.ci/scripts/security/audit.sh` on the spot, because `declare -A ALLOWED_DEV
-    BLOCKER_DEV` at `audit.sh:52` has no initialiser and `.audit-allowlist` is
-    empty.
+    AN EMPTY TABLE PASSES (`blocker-validator.sh:342`). That is not an anti-vacuity hole in this function: the caller decides whether an empty list is suspicious, and the twin's first cut of an emptiness guard HERE killed `.ci/scripts/security/audit.sh` on the spot, because `declare -A ALLOWED_DEV BLOCKER_DEV` at `audit.sh:52` has no initialiser and `.audit-allowlist` is empty.
     """
     rows = list(blocker.items())
     if not rows:

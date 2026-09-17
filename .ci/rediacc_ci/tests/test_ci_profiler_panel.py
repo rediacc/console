@@ -1,23 +1,13 @@
 """Differential: `rediacc_ci.ci.profiler_panel` against its twin
 `.ci/scripts/ci/profiler/panel.sh`.
 
-BOTH SIDES ARE COMPARED BYTE FOR BYTE ON THREE CHANNELS -- stdout, stderr and
-the summary file -- plus the exit code, because this program's whole output is
-text a human reads in a job panel and a machine (`check_runner_advice.py
---refresh`) harvests out of one `::notice` annotation. A finding-set comparison
-would let the machine row drift.
+BOTH SIDES ARE COMPARED BYTE FOR BYTE ON THREE CHANNELS -- stdout, stderr and the summary file -- plus the exit code, because this program's whole output is text a human reads in a job panel and a machine (`check_runner_advice.py --refresh`) harvests out of one `::notice` annotation. A finding-set comparison would let the machine row drift.
 
-NOTHING HERE TOUCHES THE NETWORK, DOCKER, OR THE REAL TREE. Every case builds
-its own sampler TSV under pytest's `tmp_path` and both subjects read it through
+NOTHING HERE TOUCHES THE NETWORK, DOCKER, OR THE REAL TREE. Every case builds its own sampler TSV under pytest's `tmp_path` and both subjects read it through
 `PROFILER_SAMPLE_FILE`; the only repository files either side opens are
-`panel.sh` and `report.awk` themselves, and both open the SAME `report.awk`
-deliberately -- the aggregator is not ported, it is invoked, so a differential
-that gave each side its own copy would be comparing two awk runs rather than
-two wrappers.
+`panel.sh` and `report.awk` themselves, and both open the SAME `report.awk` deliberately -- the aggregator is not ported, it is invoked, so a differential that gave each side its own copy would be comparing two awk runs rather than two wrappers.
 
-THE PLANTED DEFECT (`test_planted_defect_is_caught_by_this_differential`)
-mutates a COPY of the port in `tmp_path`, never the file on disk: it drops the
-`%`-escaping from `escape_workflow_command`, which is invisible on every other
+THE PLANTED DEFECT (`test_planted_defect_is_caught_by_this_differential`) mutates a COPY of the port in `tmp_path`, never the file on disk: it drops the `%`-escaping from `escape_workflow_command`, which is invisible on every other
 case in this file and corrupts exactly one line of one annotation. That is the
 control this suite would be worthless without.
 
@@ -75,8 +65,7 @@ def append_samples(
 
     `walk=False` is how a DEGENERATE series is built on purpose: with the walk
     on, `cpu=0` still produces 0/10/20/30/40 and report.awk correctly declines
-    to call it flat. That is a fixture bug the first draft of this file had, and
-    it made the all-zero test pass for the wrong reason.
+    to call it flat. That is a fixture bug the first draft of this file had, and it made the all-zero test pass for the wrong reason.
     """
     rx = 0
     tx = 0
@@ -136,9 +125,7 @@ def run_both(
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str], str, str]:
     """Drive both subjects with their OWN summary file, and return both bodies.
 
-    A FRESH PAIR OF FILES PER CALL, because `>>` APPENDS: a test that invokes
-    this twice against one tmp_path was comparing the second run against the
-    concatenation of both, and the failure read as a port defect.
+    A FRESH PAIR OF FILES PER CALL, because `>>` APPENDS: a test that invokes this twice against one tmp_path was comparing the second run against the concatenation of both, and the failure read as a port defect.
     """
     _CALLS.append(None)
     nth = len(_CALLS)
@@ -408,8 +395,7 @@ def test_non_numeric_budget_is_a_bash_diagnostic_only(tmp_path: pathlib.Path) ->
 
     `[ "$SIZE" -gt abc ]` makes bash print `[: abc: integer expected` on stderr
     and evaluate false; an `if` condition is exempt from `set -e`, so the run
-    continues and produces an untrimmed panel. The port reaches the same
-    decision without forging a bash diagnostic that carries the twin's own path
+    continues and produces an untrimmed panel. The port reaches the same decision without forging a bash diagnostic that carries the twin's own path
     and line number. stdout, the panel and the exit code all still agree; only
     stderr differs, and this test exists so that stops being invisible.
     """
@@ -439,8 +425,7 @@ def test_summary_defaults_to_stdout_and_keeps_its_order(tmp_path: pathlib.Path) 
 
     Both subjects are captured through a PIPE here (`capture_output=True`), which
     is the shape a human running the twin's own documented `PROFILER_SAMPLE_FILE=
-    /tmp/p.tsv .ci/scripts/ci/profiler/panel.sh` gets. A pipe has no file offset,
-    so the two writers cannot overwrite each other and the panel must come first.
+    /tmp/p.tsv .ci/scripts/ci/profiler/panel.sh` gets. A pipe has no file offset, so the two writers cannot overwrite each other and the panel must come first.
     """
     sample = healthy(tmp_path)
     env = {"PROFILER_SAMPLE_FILE": str(sample), "PROFILER_WALL_S": "370"}
@@ -487,8 +472,7 @@ def test_read_lines_drops_an_unterminated_final_record(tmp_path: pathlib.Path) -
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:
     """Drop `%`-escaping from a COPY of the port and watch the notice diverge.
 
-    The real file on disk is never touched. Without this case the suite proves
-    only that two programs that agree today agree today.
+    The real file on disk is never touched. Without this case the suite proves only that two programs that agree today agree today.
     """
     source = PORT.read_text(encoding="utf-8")
     broken_src = source.replace('    s = s.replace("%", "%25")\n', "", 1)

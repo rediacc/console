@@ -1,24 +1,17 @@
 """A SHELL FILE CAN GROW UNTIL IT KILLS THE LINTER, and nothing noticed.
 
 Ported from `.ci/scripts/quality/check-shell-size.sh`, which is NOT deleted; see
-`rediacc_ci.quality.__init__` for why both copies live until a committed
-differential ledger retires the twin.
+`rediacc_ci.quality.__init__` for why both copies live until a committed differential ledger retires the twin.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS. The measurements below are the original's.
 -----------------------------------------------------------------------------
 
-WHAT WENT WRONG, measured 2026-08-25: a shellcheck 0.10.0 run over 453 files
-was OOM-KILLED. Batching did not help, because the cause was ONE file --
-.claude/hooks/stop/test-worklist-v5.sh at 11,955 lines -- whose dataflow
+WHAT WENT WRONG, measured 2026-08-25: a shellcheck 0.10.0 run over 453 files was OOM-KILLED. Batching did not help, because the cause was ONE file -- .claude/hooks/stop/test-worklist-v5.sh at 11,955 lines -- whose dataflow
 analysis took 2714 MB on its own. With `extended-analysis=false` the same file
-took 199 MB. The fix was to split it into a 135-line runner plus 22 topic
-files, which also took the path-scan gate from 51m02s to 7.9s.
+took 199 MB. The fix was to split it into a 135-line runner plus 22 topic files, which also took the path-scan gate from 51m02s to 7.9s.
 
-NOTHING PREVENTS IT COMING BACK. Every content-based linter passed that file:
-its own shellcheck findings were clean, shfmt was clean, and the size was
-invisible to all of them by construction -- a linter cannot report a file it
-died on. That is the i18n lesson exactly: fixed by hand, ungated.
+NOTHING PREVENTS IT COMING BACK. Every content-based linter passed that file: its own shellcheck findings were clean, shfmt was clean, and the size was invisible to all of them by construction -- a linter cannot report a file it died on. That is the i18n lesson exactly: fixed by hand, ungated.
 
 THE RULE IS SIZE **OR** THE DIRECTIVE, not size alone. A genuinely large
 generated or table-driven script is legitimate; what is not legitimate is one
@@ -26,81 +19,47 @@ that is both large AND asks shellcheck for the expensive analysis. Carrying
 `# shellcheck extended-analysis=false` is an explicit, reviewable statement
 that the author knows the file is big, so the gate accepts it.
 
-WHY THIS THRESHOLD. It was set against a measured maximum, and that maximum has
-MOVED TWICE since, in opposite directions, which is why this paragraph no longer
-names a file or a number. It used to read "the largest shell file is run.sh at
-2,418 lines": run.sh is now 120 lines (the 2026-09-06 router split moved its body
-to .ci/legacy/run-legacy.sh), and the real maximum today is LARGER than the figure
-that sentence offered as the historic peak. A threshold justified by a specific
-file's size is a comment that goes wrong every time that file changes, and goes
-wrong silently because nothing re-derives it.
+WHY THIS THRESHOLD. It was set against a measured maximum, and that maximum has MOVED TWICE since, in opposite directions, which is why this paragraph no longer names a file or a number. It used to read "the largest shell file is run.sh at 2,418 lines": run.sh is now 120 lines (the 2026-09-06 router split moved its body to .ci/legacy/run-legacy.sh), and the real maximum today is
+LARGER than the figure that sentence offered as the historic peak. A threshold justified by a specific file's size is a comment that goes wrong every time that file changes, and goes wrong silently because nothing re-derives it.
 
-What is durable: 5,000 sits far above anything this tree has held and far below
-the 11,955 that actually caused the OOM, so it fires long before the failure it
-exists to prevent. To re-derive the current maximum:
+What is durable: 5,000 sits far above anything this tree has held and far below the 11,955 that actually caused the OOM, so it fires long before the failure it exists to prevent. To re-derive the current maximum:
 
     git ls-files '*.sh' | xargs wc -l | sort -n | tail -3
 
-WHAT THIS GATE CANNOT SEE: lines are a proxy. A 3,000-line file of pathological
-nesting could still be expensive, and a 6,000-line file of flat `case` arms is
-cheap. The proxy is deliberate -- it is mechanical, has no false negatives in
-the direction that hurt us, and the directive is the documented escape.
+WHAT THIS GATE CANNOT SEE: lines are a proxy. A 3,000-line file of pathological nesting could still be expensive, and a 6,000-line file of flat `case` arms is cheap. The proxy is deliberate -- it is mechanical, has no false negatives in the direction that hurt us, and the directive is the documented escape.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE COLOURS ARE UNCONDITIONAL IN THE TWIN, and that is worth stating because
-every other gate in this batch tests `[ -t 1 ]` first. `check-shell-size.sh`
+THE COLOURS ARE UNCONDITIONAL IN THE TWIN, and that is worth stating because every other gate in this batch tests `[ -t 1 ]` first. `check-shell-size.sh`
 assigns `RED=$'\\033[0;31m'` with no tty test at all, so it writes escape bytes
 into a CI log and into a pipe. That is arguably a defect; it is NOT fixed here,
-because fixing it would change the bytes and the port's job is to keep the
-verdict. `scripts/lib/shadow-gate.ts` strips ANSI before comparing, so the two
-sides agree either way, and a reader diffing the raw streams sees the same file.
+because fixing it would change the bytes and the port's job is to keep the verdict. `scripts/lib/shadow-gate.ts` strips ANSI before comparing, so the two sides agree either way, and a reader diffing the raw streams sees the same file.
 
 EVERYTHING GOES TO STDOUT. `fail()` in the twin is `echo "  ${RED}FAIL${NC} $*"`
 with no `>&2`, and so are the offender list, the two advice lines and the final
-verdict. This gate never writes to stderr at all. `rediacc_ci.log` would put
-messages on stderr, which is the house rule and the WRONG answer here, so
-nothing in this module uses it.
+verdict. This gate never writes to stderr at all. `rediacc_ci.log` would put messages on stderr, which is the house rule and the WRONG answer here, so nothing in this module uses it.
 
-`FAIL` IS FOLLOWED BY ONE SPACE, NOT TWO, and that has a consequence the next
-reader should not have to rediscover: `shadow-gate.ts`'s marker table carries
-`/^FAIL\\s\\s+/` (the `gate-controls.sh` tally shape), so these lines are NOT
-recognised as findings by default and the differential for this pair is recorded
+`FAIL` IS FOLLOWED BY ONE SPACE, NOT TWO, and that has a consequence the next reader should not have to rediscover: `shadow-gate.ts`'s marker table carries `/^FAIL\\s\\s+/` (the `gate-controls.sh` tally shape), so these lines are NOT recognised as findings by default and the differential for this pair is recorded
 with an explicit `--finding-re`. The alternative -- widening the marker to one
 space -- would reclassify unrelated prose across the whole estate.
 
-`read -r n < <(wc -l <"$f")` IS AN UNREADABLE-FILE PROBE, not a line count with
-extra steps. The twin's comment records that this was once `|| echo 0`, which
-"gave an unreadable file the same value as an empty one -- so a permission error
-or a broken symlink passed the size check silently. That is the exact vacuity
-this gate exists to prevent, sitting inside the gate itself. Caught by
-check-swallowed-failures." The port keeps the three-valued answer: a count, the
-string UNREADABLE, or the empty string for "under the limit".
+`read -r n < <(wc -l <"$f")` IS AN UNREADABLE-FILE PROBE, not a line count with extra steps. The twin's comment records that this was once `|| echo 0`, which "gave an unreadable file the same value as an empty one -- so a permission error or a broken symlink passed the size check silently. That is the exact vacuity this gate exists to prevent, sitting inside the gate itself. Caught
+by check-swallowed-failures." The port keeps the three-valued answer: a count, the string UNREADABLE, or the empty string for "under the limit".
 
 The twin also explains why it uses `read` rather than `${n//[[:space:]]/}`:
 "check-control-vacuity counts ANY `${VAR//x/y}` in a gate as control-building,
-so a substitution used for data cleaning reads as a control that never proves
-its plant landed." That constraint is about BASH source text and does not
-survive into Python, so it is recorded here as history rather than obeyed.
+so a substitution used for data cleaning reads as a control that never proves its plant landed." That constraint is about BASH source text and does not survive into Python, so it is recorded here as history rather than obeyed.
 
-`wc -l` COUNTS NEWLINES, NOT LINES. A file whose last line has no terminator is
-reported one short by `wc` and must be reported one short here, or a file
-sitting exactly on the threshold would flip verdicts between the two sides.
+`wc -l` COUNTS NEWLINES, NOT LINES. A file whose last line has no terminator is reported one short by `wc` and must be reported one short here, or a file sitting exactly on the threshold would flip verdicts between the two sides.
 `text.count("\\n")` is the faithful spelling; `len(splitlines())` is not.
 
-DISCOVERED, TRACKED AND UNTRACKED. `git ls-files` alone is blind to a script not
-yet committed, which is exactly when a file is being grown, so the twin unions
-`ls-files '*.sh'` with `ls-files --others --exclude-standard '*.sh'` and pipes
+DISCOVERED, TRACKED AND UNTRACKED. `git ls-files` alone is blind to a script not yet committed, which is exactly when a file is being grown, so the twin unions `ls-files '*.sh'` with `ls-files --others --exclude-standard '*.sh'` and pipes
 the result through `sort -u`. Under `LC_ALL=C` -- which the differential harness
-pins and CI sets -- that sort is byte order, which is what Python's own `sorted`
-on `str` gives for these ASCII paths.
+pins and CI sets -- that sort is byte order, which is what Python's own `sorted` on `str` gives for these ASCII paths.
 
-`gen_lines` IS NOT `seq`. The twin says why: "ubuntu-slim does not ship it, and
-check-ci-compat flags it. Same reason mapfile is avoided below." Neither
-constraint applies to a Python range, and both are recorded here because the
-next person to touch the bash will need them.
+`gen_lines` IS NOT `seq`. The twin says why: "ubuntu-slim does not ship it, and check-ci-compat flags it. Same reason mapfile is avoided below." Neither constraint applies to a Python range, and both are recorded here because the next person to touch the bash will need them.
 """
 
 import os
@@ -135,11 +94,7 @@ DIRECTIVE_RE = r"^[[:space:]]*#[[:space:]]*shellcheck[[:space:]]+.*extended-anal
 def max_lines(env: dict[str, str] | None = None) -> int:
     """`$SHELL_MAX_LINES`, or 5000. Never raises on a non-numeric value.
 
-    The twin does not validate it either: `[[ "$n" -le "$MAX_LINES" ]]` with a
-    non-numeric MAX_LINES is a bash arithmetic error that aborts the comparison,
-    which is louder than what happens here. Nothing sets the variable to
-    anything but a number today, and a port is not the place to invent a new
-    failure mode, so a bad value falls back to the default.
+    The twin does not validate it either: `[[ "$n" -le "$MAX_LINES" ]]` with a non-numeric MAX_LINES is a bash arithmetic error that aborts the comparison, which is louder than what happens here. Nothing sets the variable to anything but a number today, and a port is not the place to invent a new failure mode, so a bad value falls back to the default.
     """
     raw = (os.environ if env is None else env).get(MAX_LINES_ENV, "")
     try:
@@ -151,12 +106,8 @@ def max_lines(env: dict[str, str] | None = None) -> int:
 def has_directive(text: str) -> bool:
     """Is there a real `# shellcheck ... extended-analysis=false` LINE?
 
-    The distinction is the whole rule: this gate's own documentation says the
-    words several times, and a file is allowed to be large only when it DECLARES
-    the flag. Written out with the POSIX classes spelled as their Python
-    equivalents rather than as `\\s`, for the reason `rediacc_ci.quality.npmrc`
-    records at length: POSIX space is exactly [ \\t\\n\\v\\f\\r], while Python's
-    `\\s` on a str pattern also matches U+00A0 and friends.
+    The distinction is the whole rule: this gate's own documentation says the words several times, and a file is allowed to be large only when it DECLARES the flag. Written out with the POSIX classes spelled as their Python equivalents rather than as `\\s`, for the reason `rediacc_ci.quality.npmrc` records at length: POSIX space is exactly [ \\t\\n\\v\\f\\r], while Python's `\\s`
+    on a str pattern also matches U+00A0 and friends.
     """
     pattern = re.compile(
         r"^[ \t\n\v\f\r]*#[ \t\n\v\f\r]*shellcheck[ \t\n\v\f\r]+.*extended-analysis=false"
@@ -168,9 +119,7 @@ def over_limit(path: pathlib.Path, limit: int) -> str:
     """The line count when the file breaks the rule, UNREADABLE, or "".
 
     Three-valued on purpose; see the port notes. "" means either "small enough"
-    or "large but declared", which the twin also collapses, because the caller
-    treats both as compliant and printing them differently would be a different
-    gate.
+    or "large but declared", which the twin also collapses, because the caller treats both as compliant and printing them differently would be a different gate.
     """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -188,12 +137,8 @@ def over_limit(path: pathlib.Path, limit: int) -> str:
 def discover(root: pathlib.Path) -> list[str]:
     """Every `*.sh` git knows about, tracked AND untracked, sorted and unique.
 
-    Returns paths RELATIVE to the root, which is what the twin's array holds and
-    what its offender lines print. A failed `git` is not distinguished from an
-    empty repository here, exactly as the twin's `2>/dev/null` does not
-    distinguish them -- and it does not need to, because the MIN_FILES floor
-    below turns both into a loud failure rather than a clean pass. That is the
-    difference between swallowing a failure and having a net under it.
+    Returns paths RELATIVE to the root, which is what the twin's array holds and what its offender lines print. A failed `git` is not distinguished from an empty repository here, exactly as the twin's `2>/dev/null` does not distinguish them -- and it does not need to, because the MIN_FILES floor below turns both into a loud failure rather than a clean pass. That is the difference
+    between swallowing a failure and having a net under it.
     """
     out: set[str] = set()
     for args in (
@@ -216,10 +161,7 @@ def discover(root: pathlib.Path) -> list[str]:
 def gen_lines(count: int) -> str:
     """`count` trivial shell lines, built rather than copied.
 
-    The controls are generated with this and never by mutating a real file: a
-    substitution can silently no-op, and the control then passes against
-    unmutated input. That is the `check-control-vacuity.sh` rule, and it is the
-    reason this function exists at all instead of the fixtures being sampled
+    The controls are generated with this and never by mutating a real file: a substitution can silently no-op, and the control then passes against unmutated input. That is the `check-control-vacuity.sh` rule, and it is the reason this function exists at all instead of the fixtures being sampled
     from the tree.
     """
     return "".join("echo %d\n" % i for i in range(1, count + 1))
@@ -330,11 +272,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    BOTH DIRECTIONS FOR EVERY CONTROL. The twin already carries four inline
-    controls over `over_limit`, and those are preserved above, byte for byte, on
-    every real run. What it has no way to exercise is the ENUMERATION and the
-    two assertions built on it, because they read the real tree. Those are what
-    this adds, over throwaway git repositories.
+    BOTH DIRECTIONS FOR EVERY CONTROL. The twin already carries four inline controls over `over_limit`, and those are preserved above, byte for byte, on every real run. What it has no way to exercise is the ENUMERATION and the two assertions built on it, because they read the real tree. Those are what this adds, over throwaway git repositories.
     """
     ctl = Controls("shell-size", floor=17, verbose=True)
 

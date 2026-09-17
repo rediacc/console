@@ -1,10 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-shrink-only-composition.sh`.
 
-Every shrink-only baseline in this repo must enforce shrink-only on the WRITE
-path, and this file is both the detector and its test: there is no separate
-`check-*.ts` to shell out to, so porting it means re-expressing the scan in
-Python. Parity here is therefore a claim about two implementations agreeing on
-the same tree, which is why the controls matter more than usual.
+Every shrink-only baseline in this repo must enforce shrink-only on the WRITE path, and this file is both the detector and its test: there is no separate `check-*.ts` to shell out to, so porting it means re-expressing the scan in Python. Parity here is therefore a claim about two implementations agreeing on the same tree, which is why the controls matter more than usual.
 
 WHY IT EXISTS. Seven gates freeze a backlog and describe it as shrink-only. All
 seven enforced that on the READ path only; the drain flag was an
@@ -13,36 +9,20 @@ unconditional reseed in every one. The difference is not academic:
     as enforced:  the TOTAL cannot grow without someone noticing.
     as promised:  the SET can only lose members.
 
-A reseed that drains thirty findings and absorbs one satisfies the first,
-violates the second, and prints a SMALLER number while doing it. On 2026-08-20
-the guard added to `scripts/gates/check-em-dash-surfaces.ts` refused, on its
-first real run, a reseed that would have enshrined two em dashes a background
-naturalization job had introduced minutes earlier.
+A reseed that drains thirty findings and absorbs one satisfies the first, violates the second, and prints a SMALLER number while doing it. On 2026-08-20 the guard added to `scripts/gates/check-em-dash-surfaces.ts` refused, on its first real run, a reseed that would have enshrined two em dashes a background naturalization job had introduced minutes earlier.
 
-STRUCTURAL PLUS BEHAVIOURAL, and the split is deliberate. Driving every gate's
-drain flag for real would mean rewriting live suppression files, and four
-of the gates do not even accept a `--baseline` override to redirect the write. So
-the structural half asserts that every CLI offering the flag consumes the shared
-guard, and the behavioural half proves the guard really refuses, end to end, on
-the one gate that CAN be pointed at a copy.
+STRUCTURAL PLUS BEHAVIOURAL, and the split is deliberate. Driving every gate's drain flag for real would mean rewriting live suppression files, and four of the gates do not even accept a `--baseline` override to redirect the write. So the structural half asserts that every CLI offering the flag consumes the shared guard, and the behavioural half proves the guard really refuses, end
+to end, on the one gate that CAN be pointed at a copy.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. The scan enumerates the working
-tree through `git ls-files --cached --others`, and four control cases PLANT a
-probe file inside `scripts/` and `.ci/scripts/quality/` and remove it again --
-the lock records `mutex: ["tree:repo"]` for `gate-test:shrink-only-composition`
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. The scan enumerates the working tree through `git ls-files --cached --others`, and four control cases PLANT a probe file inside `scripts/` and `.ci/scripts/quality/` and remove it again -- the lock records `mutex: ["tree:repo"]` for `gate-test:shrink-only-composition`
 for exactly that reason. A battery step reading either directory mid-plant is the
 flake that would be blamed on this port. `REAL_TREE_TWIN = True` buys the
-serialisation, and it is honoured only because this module declares no
-`XDIST_GROUP` of its own.
+serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own.
 
-THE PROBES ARE PID-KEYED, which the twin's are not. The twin uses fixed names, so
-two concurrent invocations plant the same path and each cleanup deletes the
-OTHER run's fixture -- the failure `.ci/scripts/test/run-all.sh` records for the
-`.gate-paths-exist` pair. Adding the pid costs nothing and removes a way for this
-port and its own twin to collide when both are driven from one parity run.
+THE PROBES ARE PID-KEYED, which the twin's are not. The twin uses fixed names, so two concurrent invocations plant the same path and each cleanup deletes the OTHER run's fixture -- the failure `.ci/scripts/test/run-all.sh` records for the `.gate-paths-exist` pair. Adding the pid costs nothing and removes a way for this port and its own twin to collide when both are driven from one
+parity run.
 
-ANTI-VACUITY. Scanning zero files is a FAILURE, never a pass, and EACH CORPUS IS
-REFUSED SEPARATELY: with a single summed count the `.py` half could go to zero
+ANTI-VACUITY. Scanning zero files is a FAILURE, never a pass, and EACH CORPUS IS REFUSED SEPARATELY: with a single summed count the `.py` half could go to zero
 while twenty-two TypeScript offerers carried the total past the floor, and the
 language this programme is migrating TO would be unchecked.
 """
@@ -113,17 +93,10 @@ def git_bin() -> str:
 def all_offerers() -> list[str]:
     """Every tracked-or-untracked source file whose text names the flag, sorted.
 
-    ENUMERATED FROM `git ls-files` RATHER THAN FROM A ROOT LIST, which is what
-    makes the coverage permanent: a directory created next month is in the corpus
-    the day it exists. The extension filter is a git PATHSPEC rather than a glob
-    applied afterwards, so a filename can never be read as an option.
+    ENUMERATED FROM `git ls-files` RATHER THAN FROM A ROOT LIST, which is what makes the coverage permanent: a directory created next month is in the corpus the day it exists. The extension filter is a git PATHSPEC rather than a glob applied afterwards, so a filename can never be read as an option.
 
-    TWO BLIND SPOTS THE TWIN CLOSED ON 2026-09-08 AND THIS INHERITS. The old
-    enumerator read only `.ts` and `.js` under `scripts/` and
-    `packages/www/scripts/`, which excluded `.py` AND excluded the whole `.ci/`
-    tree -- and the first Python shrink-only baseline landed outside both
-    filters, freezing 521 paths. The hole was self-declared in that gate's own
-    comment and was still open a day later.
+    TWO BLIND SPOTS THE TWIN CLOSED ON 2026-09-08 AND THIS INHERITS. The old enumerator read only `.ts` and `.js` under `scripts/` and `packages/www/scripts/`, which excluded `.py` AND excluded the whole `.ci/` tree -- and the first Python shrink-only baseline landed outside both filters, freezing 521 paths. The hole was self-declared in that gate's own comment and was still open a
+    day later.
     """
     proc = harness.run(
         [
@@ -197,12 +170,8 @@ def probe(rel_dir: str, stem: str, suffix: str, body: str):
     """Plant one probe inside the SCANNED tree, yield its repo-relative path, and
     remove it whatever happens.
 
-    NOT A TEMP DIR. The corpus is `git ls-files` over this repository, so a probe
-    outside it is invisible and the control silently stops firing -- which is the
-    failure a plant-based control exists to rule out, not to reproduce. The
-    removal is in a `finally` so a killed run cannot leave a synthetic offerer in
-    a tracked directory, where the next reader would investigate a finding nobody
-    introduced.
+    NOT A TEMP DIR. The corpus is `git ls-files` over this repository, so a probe outside it is invisible and the control silently stops firing -- which is the failure a plant-based control exists to rule out, not to reproduce. The removal is in a `finally` so a killed run cannot leave a synthetic offerer in a tracked directory, where the next reader would investigate a finding
+    nobody introduced.
     """
     name = "%s_%d%s" % (stem, os.getpid(), suffix)
     rel = "%s/%s" % (rel_dir, name)
@@ -374,8 +343,7 @@ def test_every_python_writer_consumes_the_guard(gate):
 
 def test_control_unguarded_python_reseed_is_detected(gate):
     """CONTROL. Plant an unguarded PYTHON writer where the OLD enumerator could
-    not look -- under `.ci/`, with a `.py` suffix -- and require detection. Run
-    against the previous enumerator it detects nothing at all, because neither the
+    not look -- under `.ci/`, with a `.py` suffix -- and require detection. Run against the previous enumerator it detects nothing at all, because neither the
     extension nor the directory was in scope."""
     with probe(
         ".ci/scripts/quality", "zz_composition_control_probe_port", ".py", UNGUARDED_PY_BODY
@@ -528,10 +496,7 @@ def test_refusal_end_to_end(gate):
 
 def test_the_two_corpora_do_not_overlap_or_lose_a_file(gate):
     """ADDED BY THE PORT, and it is a claim about the SPLIT rather than about
-    either half. `offerers()` and `offerers_py()` partition `all_offerers()`, and
-    the two floors above are read as covering the whole scan. A pathspec that
-    started admitting a fourth extension, or a suffix test that stopped matching,
-    would leave files in neither half -- unchecked, while both floors stayed
+    either half. `offerers()` and `offerers_py()` partition `all_offerers()`, and the two floors above are read as covering the whole scan. A pathspec that started admitting a fourth extension, or a suffix test that stopped matching, would leave files in neither half -- unchecked, while both floors stayed
     comfortably green."""
     everything = all_offerers()
     ts, py = offerers(), offerers_py()
@@ -553,17 +518,10 @@ def test_the_two_corpora_do_not_overlap_or_lose_a_file(gate):
 def test_this_module_is_not_itself_an_offender(gate):
     """THE SELF-SCANNING CONTROL, which the twin does not need and this port does.
 
-    The twin is a `.sh` file and the corpus is `.ts`/`.js`/`.py`, so the twin is
-    outside its own scan for free. This module is a `.py` file whose whole subject
-    is that flag, and it is outside the scan only because `FLAG` is split and every
-    probe body is rendered -- something a later editor would undo without connecting
-    the two. Nothing in `unguarded_py()` excludes a port BY NAME, so the moment the
-    contiguous literal reappears here this file becomes an "unguarded Python
-    baseline writer" and this gate reds tree-wide over its own source.
+    The twin is a `.sh` file and the corpus is `.ts`/`.js`/`.py`, so the twin is outside its own scan for free. This module is a `.py` file whose whole subject is that flag, and it is outside the scan only because `FLAG` is split and every probe body is rendered -- something a later editor would undo without connecting the two. Nothing in `unguarded_py()` excludes a port BY NAME,
+    so the moment the contiguous literal reappears here this file becomes an "unguarded Python baseline writer" and this gate reds tree-wide over its own source.
 
-    MEASURED, not hypothetical. On 2026-09-09 the first cut of this port and of
-    `test_gate_language_policy.py` both landed on the offender list minutes after
-    being written, which is how the rule was rediscovered.
+    MEASURED, not hypothetical. On 2026-09-09 the first cut of this port and of `test_gate_language_policy.py` both landed on the offender list minutes after being written, which is how the rule was rediscovered.
     """
     own = paths.relative_to_root(pathlib.Path(__file__))
     corpus = all_offerers()

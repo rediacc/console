@@ -1,45 +1,22 @@
 """Differential: `rediacc_ci.autopilot.sweep_collect` against its twin
 `.ci/scripts/autopilot/sweep-collect.sh`.
 
-A RECORDING FAKE `gh` ON A STUB PATH, and the fake is the whole apparatus:
-nothing here reaches the network, and the real `gh` on this machine is never on
-the PATH handed to either subject. `test_the_stub_path_has_no_real_gh` is the
-control for that claim rather than a comment asserting it.
+A RECORDING FAKE `gh` ON A STUB PATH, and the fake is the whole apparatus: nothing here reaches the network, and the real `gh` on this machine is never on the PATH handed to either subject. `test_the_stub_path_has_no_real_gh` is the control for that claim rather than a comment asserting it.
 
-FIVE ARTIFACTS ARE COMPARED PER CASE, not two. This script's visible result is
-neither stdout nor stderr: it is the `--out` file, the whole `--work` tree
-(`prs.json`, `label-armed.txt`, `campaign-armed.txt` and one raw plus one
-transformed dump per PR), and the SEQUENCE OF `gh` INVOCATIONS. A port that
-printed the right summary while requesting the wrong pages, or while writing
-`comments/7.json` with different bytes, would sail past a stream comparison.
-The work tree is compared as BYTES per relative path, because the transformed
-dumps are read by `sweep-campaigns.sh` and their formatting is jq's.
+FIVE ARTIFACTS ARE COMPARED PER CASE, not two. This script's visible result is neither stdout nor stderr: it is the `--out` file, the whole `--work` tree (`prs.json`, `label-armed.txt`, `campaign-armed.txt` and one raw plus one transformed dump per PR), and the SEQUENCE OF `gh` INVOCATIONS. A port that printed the right summary while requesting the wrong pages, or while writing
+`comments/7.json` with different bytes, would sail past a stream comparison. The work tree is compared as BYTES per relative path, because the transformed dumps are read by `sweep-campaigns.sh` and their formatting is jq's.
 
-`sweep-campaigns.sh` AND `state-comment.sh` RUN FOR REAL, unstubbed, in both
-subjects. They are pure (files in, PR numbers out) and they carry the TRUST
-RULE this collector depends on: a campaign counts only when the comment's
-author is the bot AND the body starts with the exact state header. So the
-fixture comments below are shaped like real state comments, and
-`test_a_lookalike_campaign_comment_is_not_armed` drives the untrusted case
-through both sides rather than asserting it about the collector alone.
+`sweep-campaigns.sh` AND `state-comment.sh` RUN FOR REAL, unstubbed, in both subjects. They are pure (files in, PR numbers out) and they carry the TRUST RULE this collector depends on: a campaign counts only when the comment's author is the bot AND the body starts with the exact state header. So the fixture comments below are shaped like real state comments, and
+`test_a_lookalike_campaign_comment_is_not_armed` drives the untrusted case through both sides rather than asserting it about the collector alone.
 
-TWO CASES COST NINE SECONDS PER SIDE AND ARE WORTH IT. `_gh_probe` sleeps 3
-then 6 seconds between its three attempts, so any case that drives a `gh`
-failure to exhaustion takes 18 seconds across the two subjects. They are the
-only cases that prove the retry loop, the final `gh failed after 3 attempts`
-line and the four-space stderr replay agree, and one of them is also the only
+TWO CASES COST NINE SECONDS PER SIDE AND ARE WORTH IT. `_gh_probe` sleeps 3 then 6 seconds between its three attempts, so any case that drives a `gh` failure to exhaustion takes 18 seconds across the two subjects. They are the only cases that prove the retry loop, the final `gh failed after 3 attempts` line and the four-space stderr replay agree, and one of them is also the only
 case that proves `jq -e`'s null rule (a body of `null` is UNUSABLE, not an
 answer).
 
-THE ONE SHAPE-COMPARED CASE is `--out` in a directory that does not exist:
-bash's redirection diagnostic carries the twin's own path and line number. Exit
-code, the position of the message and everything after it (including the
-summary line with its EMPTY count, which is defect 2) are compared exactly.
+THE ONE SHAPE-COMPARED CASE is `--out` in a directory that does not exist: bash's redirection diagnostic carries the twin's own path and line number. Exit code, the position of the message and everything after it (including the summary line with its EMPTY count, which is defect 2) are compared exactly.
 
 K=5 LEDGER: `.ci/shadow/w7p6-sweep-collect.observations.jsonl`, recorded in a
-disposable scratch git repository outside this checkout, since
-`shadow-gate.ts --record` refuses a dirty tree and this checkout is never
-clean.
+disposable scratch git repository outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean.
 """
 
 from __future__ import annotations
@@ -283,8 +260,7 @@ def test_the_happy_sweep() -> None:
 def test_the_union_is_a_union_not_an_intersection() -> None:
     """A PR armed ONLY by a campaign, and one armed ONLY by a label, both land.
 
-    This is the defect the twin was written to fix, so it gets a case of its
-    own rather than riding on the happy path's counts.
+    This is the defect the twin was written to fix, so it gets a case of its own rather than riding on the happy path's counts.
     """
     _, _, stderr, _, _, out = _sides(
         "union",
@@ -352,11 +328,9 @@ def test_defect_a_prs_json_that_cannot_be_indexed_scans_nothing_and_exits_0() ->
     `{"pages":1}` satisfies `gh_json` (it parses, and `jq -e` accepts it),
     then `jq -r '.[].number'` fails inside a PROCESS SUBSTITUTION whose status
     nothing checks. A bare `{}` is NOT a specimen for this, and finding that
-    out cost this case a run: `.[]` over an empty object yields nothing at all,
-    so jq succeeds silently and the scan is empty for a boring reason.
+    out cost this case a run: `.[]` over an empty object yields nothing at all, so jq succeeds silently and the scan is empty for a boring reason.
 
-    Zero comment dumps are written, zero campaigns are found, and the sweep
-    announces success.
+    Zero comment dumps are written, zero campaigns are found, and the sweep announces success.
     """
     exit_code, _, stderr, calls, work, out = _sides("defect-prs", ARGV, FAKE_PRS='{"pages":1}')
     assert exit_code == 0, "the twin really does succeed here"

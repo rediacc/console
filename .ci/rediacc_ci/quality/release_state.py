@@ -1,18 +1,10 @@
 """The R2 `.released` sentinels, the git tags and the channel pointers agree.
 
-Ported from `.ci/scripts/quality/check-release-state.sh` TOGETHER WITH the parts
-of `.ci/scripts/lib/release-state-validator.sh` it calls, neither of which is
+Ported from `.ci/scripts/quality/check-release-state.sh` TOGETHER WITH the parts of `.ci/scripts/lib/release-state-validator.sh` it calls, neither of which is
 deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-WHY THE LIBRARY COMES WITH IT. The bash gate is thirty lines of glue over five
-library functions, and the library has five other bash consumers
-(`upload-to-r2.sh`, `write-release-sentinel.sh`, `assert-r2-sentinel.sh`,
-`cleanup-versions.sh`) that still source it. A port of the gate alone would be a
-port of the glue, and the differential would compare two programs that both
-delegate the interesting half to the same shell file, which proves nothing about
-the half that decides. So the five functions the gate reaches are ported here,
-into the gate's own module, and the bash library stays exactly where it is for
-its other callers.
+WHY THE LIBRARY COMES WITH IT. The bash gate is thirty lines of glue over five library functions, and the library has five other bash consumers (`upload-to-r2.sh`, `write-release-sentinel.sh`, `assert-r2-sentinel.sh`, `cleanup-versions.sh`) that still source it. A port of the gate alone would be a port of the glue, and the differential would compare two programs that both delegate
+the interesting half to the same shell file, which proves nothing about the half that decides. So the five functions the gate reaches are ported here, into the gate's own module, and the bash library stays exactly where it is for its other callers.
 
 THE CONTRACT, from the library's own header:
 
@@ -23,17 +15,10 @@ CI gate has passed. A prefix that is non-empty but missing its sentinel is an
 orphan from a cancelled run. Drift is never auto-healed; the error lines include
 remediation pointers for a human.
 
-THE RELATION THE BIJECTION CANNOT SEE, and the incident that added the second
-half of this gate. A `bump-none` merge correctly skips both the sentinel and the
-tag, so the two sides stay in step, while the R2 channel pointer was advanced
-anyway. That is how `cli/edge/manifest.json` came to advertise 1.3.1 with no
-v1.3.1 tag and a 404 notes URL, three times over (#573, #574, #576), and it
-would have half-applied a production release across eu/us/asia on 2026-09-01,
-because promote-stable reads the manifest and then checks out `ref: v<version>`.
+THE RELATION THE BIJECTION CANNOT SEE, and the incident that added the second half of this gate. A `bump-none` merge correctly skips both the sentinel and the tag, so the two sides stay in step, while the R2 channel pointer was advanced anyway. That is how `cli/edge/manifest.json` came to advertise 1.3.1 with no v1.3.1 tag and a 404 notes URL, three times over (#573, #574, #576),
+and it would have half-applied a production release across eu/us/asia on 2026-09-01, because promote-stable reads the manifest and then checks out `ref: v<version>`.
 
-ORDERING IS WHAT MAKES THE POINTER CHECK SAFE ON THE RELEASE PATH: the gate runs
-BEFORE stage-artifacts (ci.yml says so), so the pointer it reads is the PREVIOUS
-release's. The back-to-back case resolves itself: if release X's tag is not
+ORDERING IS WHAT MAKES THE POINTER CHECK SAFE ON THE RELEASE PATH: the gate runs BEFORE stage-artifacts (ci.yml says so), so the pointer it reads is the PREVIOUS release's. The back-to-back case resolves itself: if release X's tag is not
 pushed yet, IN_FLIGHT is vX and the pointer's X is excluded; if it is pushed,
 IN_FLIGHT is vX+1 and X has its tag.
 
@@ -41,24 +26,13 @@ IN_FLIGHT is vX+1 and X has its tag.
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`aws` IS SHELLED OUT TO, NOT REPLACED BY BOTO. Two reasons and the second is the
-one that matters. The credentials are mapped into `AWS_*` environment variables
-and consumed by the CLI's own resolution chain, which a Python SDK would resolve
+`aws` IS SHELLED OUT TO, NOT REPLACED BY BOTO. Two reasons and the second is the one that matters. The credentials are mapped into `AWS_*` environment variables and consumed by the CLI's own resolution chain, which a Python SDK would resolve
 differently; and the twin's `--query` expressions are JMESPath evaluated by the
-CLI, so re-expressing them in Python would move the filtering from the server's
-answer into the port and change WHICH keys are seen. The port runs the same
-argv.
+CLI, so re-expressing them in Python would move the filtering from the server's answer into the port and change WHICH keys are seen. The port runs the same argv.
 
-THE `--query` STRING CARRIES BACKTICKS AND IS PASSED AS ONE ARGV ELEMENT. The
-expression is Contents[?ends_with(Key, <backtick>/.released<backtick>)].Key, and
-those backticks are JMESPath's literal syntax rather than a shell substitution.
-The twin has to backslash-escape them because it writes the expression inside
+THE `--query` STRING CARRIES BACKTICKS AND IS PASSED AS ONE ARGV ELEMENT. The expression is Contents[?ends_with(Key, <backtick>/.released<backtick>)].Key, and those backticks are JMESPath's literal syntax rather than a shell substitution. The twin has to backslash-escape them because it writes the expression inside
 double quotes; there is no shell here, so it is written plain. The two backticks
-are spelled out in words on purpose. Written literally, a backslash immediately
-before a backtick is an INVALID ESCAPE SEQUENCE to Python, and this docstring
-carried two of them: every run of the module printed a SyntaxWarning on stderr,
-which the first side-by-side run against the twin caught, the twin's stderr
-being clean.
+are spelled out in words on purpose. Written literally, a backslash immediately before a backtick is an INVALID ESCAPE SEQUENCE to Python, and this docstring carried two of them: every run of the module printed a SyntaxWarning on stderr, which the first side-by-side run against the twin caught, the twin's stderr being clean.
 
 TWO OUTPUT DEFECTS ARE REPRODUCED RATHER THAN REPAIRED, and both are reported:
 
@@ -71,19 +45,10 @@ TWO OUTPUT DEFECTS ARE REPRODUCED RATHER THAN REPAIRED, and both are reported:
     empty string is one line. Zero git tags is therefore reported as
     `  1 git tags`, which is the one count a reader most needs to be right.
 
-`sort -uV` IS APPROXIMATED BY A NUMERIC KEY, AND THE INPUTS MAKE THAT SAFE.
-Everything reaching a sort here has already passed
-`grep -E '^v[0-9]+\\.[0-9]+\\.[0-9]+$'`, so the values are three integers and
-`sort -V` reduces to a numeric tuple comparison. The two escapes from that are
-named: `$RSV_GRANDFATHER_BEFORE`, an override the library's own comment says
-"production should never set", and the ratchet file, which is itself filtered by
-the same grep. `version_key` below handles a general string by splitting digit
-runs, which agrees with `sort -V` on everything this gate can be handed.
+`sort -uV` IS APPROXIMATED BY A NUMERIC KEY, AND THE INPUTS MAKE THAT SAFE. Everything reaching a sort here has already passed `grep -E '^v[0-9]+\\.[0-9]+\\.[0-9]+$'`, so the values are three integers and `sort -V` reduces to a numeric tuple comparison. The two escapes from that are named: `$RSV_GRANDFATHER_BEFORE`, an override the library's own comment says "production should
+never set", and the ratchet file, which is itself filtered by the same grep. `version_key` below handles a general string by splitting digit runs, which agrees with `sort -V` on everything this gate can be handed.
 
-THE GREEDY `.*` IN THE POINTER SED IS LOAD-BEARING.
-`sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' | head -1`
-takes the LAST `"version"` on the FIRST matching line, because BRE `.*` is
-greedy. A manifest that carries a nested `"version"` after the top-level one
+THE GREEDY `.*` IN THE POINTER SED IS LOAD-BEARING. `sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' | head -1` takes the LAST `"version"` on the FIRST matching line, because BRE `.*` is greedy. A manifest that carries a nested `"version"` after the top-level one
 therefore reports the nested value. Reproduced exactly; a left-to-right search
 would be a different gate.
 """
@@ -128,9 +93,7 @@ def bucket() -> str:
 def version_key(value: str) -> tuple:
     """A `sort -V` key. See the port notes for why an approximation is enough.
 
-    Digit runs compare as integers and everything else as text, which is what
-    `sort -V` does for the shapes this gate can be handed. A general
-    reimplementation of version sort would be a much larger thing to get wrong
+    Digit runs compare as integers and everything else as text, which is what `sort -V` does for the shapes this gate can be handed. A general reimplementation of version sort would be a much larger thing to get wrong
     for inputs that cannot occur.
     """
     parts: list[tuple[int, object]] = []
@@ -151,9 +114,7 @@ def _records(text: str) -> list[str]:
     """The lines a shell loop would read. A trailing newline is not a record.
 
     `while IFS= read -r v` over a herestring sees N lines for N-plus-one split
-    elements, and every one of those loops here guards with `[[ -z "$v" ]] &&
-    continue` anyway. The helper exists so the port's loops do not each grow
-    their own guard and drift.
+    elements, and every one of those loops here guards with `[[ -z "$v" ]] && continue` anyway. The helper exists so the port's loops do not each grow their own guard and drift.
     """
     lines = text.split("\n")
     if lines and lines[-1] == "":
@@ -164,10 +125,7 @@ def _records(text: str) -> list[str]:
 def _aws(args: list[str]) -> subprocess.CompletedProcess:
     """Run the `aws` CLI. Never raises for a missing binary; see `require_cmd`.
 
-    The binary is checked once, up front, by `require_cmd`, exactly as the twin
-    does. A FileNotFoundError here would therefore mean `aws` vanished mid-run,
-    which is reported as a failed probe rather than as a crash: an unanswered
-    question is not a `no`, and the library says so in three separate places.
+    The binary is checked once, up front, by `require_cmd`, exactly as the twin does. A FileNotFoundError here would therefore mean `aws` vanished mid-run, which is reported as a failed probe rather than as a crash: an unanswered question is not a `no`, and the library says so in three separate places.
     """
     try:
         return subprocess.run(args, capture_output=True, text=True, check=False)
@@ -179,8 +137,7 @@ def list_sentinels(product: str, endpoint: str) -> list[str]:
     """Every `.released` sentinel under `<product>/v*/`, semver-sorted.
 
     Empty when there are none. The twin wraps the whole pipeline in `{ ... } ||
-    true` for that reason: callers run under `set -euo pipefail` and would
-    otherwise trip on grep's exit-1-on-no-match through the pipefail option.
+    true` for that reason: callers run under `set -euo pipefail` and would otherwise trip on grep's exit-1-on-no-match through the pipefail option.
     """
     # Checked at CALL time, not import time, matching the library's `:
     # "${AWS_ACCESS_KEY_ID:?...}"`. The gate exports it from the R2 credential a
@@ -251,12 +208,9 @@ def pre_contract_floor(cli_versions: list[str], root: pathlib.Path) -> str:
 
     Floor = max(observed, ratchet) when both are present.
 
-    WHAT THE RATCHET DOES NOT CATCH, from the library's own comment: the "oldest
-    CLI sentinel was scrubbed in isolation" case. When observed advances past
+    WHAT THE RATCHET DOES NOT CATCH, from the library's own comment: the "oldest CLI sentinel was scrubbed in isolation" case. When observed advances past
     the scrubbed version, max(observed, ratchet) == observed and the scrubbed
-    version falls below the floor and is grandfathered. Catching that would need
-    a record of every sentinel ever observed, diffed on every check, rather than
-    a single high-water mark.
+    version falls below the floor and is grandfathered. Catching that would need a record of every sentinel ever observed, diffed on every check, rather than a single high-water mark.
     """
     override = os.environ.get("RSV_GRANDFATHER_BEFORE")
     if override:
@@ -297,9 +251,7 @@ def assert_bijection(
 ) -> tuple[list[str], int]:
     """(the lines to print, 0 on bijection / 1 on drift).
 
-    PURE, and returned rather than printed, so the decision can be asserted
-    without capturing a stream. The twin echoes on STDOUT and returns the same
-    two codes.
+    PURE, and returned rather than printed, so the decision can be asserted without capturing a stream. The twin echoes on STDOUT and returns the same two codes.
 
     `in_flight` is the one version this CI run is building; it is excluded so
     the gate does not false-positive on its own in-flight release.
@@ -366,9 +318,7 @@ def assert_channel_pointer_tagged(
 ) -> tuple[list[str], int]:
     """(the lines to print, 0 when the pointer is consistent and tagged).
 
-    PURE, deliberately, and the library says why: "`aws` is not installable on
-    the maintainer's host or in the devbox, so an I/O-coupled assertion here
-    would be untestable locally -- which is how a release gate ends up
+    PURE, deliberately, and the library says why: "`aws` is not installable on the maintainer's host or in the devbox, so an I/O-coupled assertion here would be untestable locally -- which is how a release gate ends up
     unverified." The caller does the R2 and git reads; this only judges them.
     """
     out: list[str] = []
@@ -426,8 +376,7 @@ def pointer_version(payload: str) -> str:
 
     The last two cancel out for a value that already starts with `v` and matter
     for one that does not, which is why the twin writes them rather than just
-    taking the value. A payload with no `"version"` at all reduces to the bare
-    string `v`, which the twin then rewrites to "".
+    taking the value. A payload with no `"version"` at all reduces to the bare string `v`, which the twin then rewrites to "".
     """
     for line in _records(payload):
         match = POINTER_VERSION.match(line)
@@ -448,9 +397,7 @@ def require_var(name: str) -> None:
     """`require_var` from `.ci/scripts/lib/common.sh`. Exits 1 when unset OR EMPTY.
 
     The empty case is the one that matters and is easy to lose: `[[ -z "${!var:-}" ]]`
-    treats a variable set to the empty string as missing, which is exactly the
-    2026-09-05 shape one lane over, where a deleted org secret resolved to "" and
-    an empty value was indistinguishable from "not wanted".
+    treats a variable set to the empty string as missing, which is exactly the 2026-09-05 shape one lane over, where a deleted org secret resolved to "" and an empty value was indistinguishable from "not wanted".
     """
     if not os.environ.get(name):
         log.error("Required environment variable '%s' is not set" % name)
@@ -460,8 +407,7 @@ def require_var(name: str) -> None:
 def _resolve_in_flight(root: pathlib.Path) -> str:
     """`$IN_FLIGHT_VERSION`, or `v$(resolve-version.sh --bump-type patch)`.
 
-    Mirrors what ci.yml's initialize step computes, which is what keeps this
-    gate runnable standalone.
+    Mirrors what ci.yml's initialize step computes, which is what keeps this gate runnable standalone.
     """
     given = os.environ.get("IN_FLIGHT_VERSION")
     if given:
@@ -503,8 +449,7 @@ def _read_pointer(channel: str, name: str, endpoint: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 on bijection, 1 on drift. Drift is never auto-healed.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no
-    arguments at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -578,14 +523,8 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    THE PURE HALF, WHICH HERE IS ALMOST ALL OF IT. The library's own header says
-    callers "should usually feed `rsv_assert_bijection` synthetic version lists
-    rather than shimming AWS", and the assertions were deliberately written
-    without I/O for that reason. So the two relations, the floor, the version
-    sort and the pointer parse are all driven directly. The R2 half is proven
-    end to end by the committed shadow ledger
-    `.ci/shadow/w7p2-release-state.observations.jsonl` over five distinct trees,
-    against a stub `aws` inside each fixture.
+    THE PURE HALF, WHICH HERE IS ALMOST ALL OF IT. The library's own header says callers "should usually feed `rsv_assert_bijection` synthetic version lists rather than shimming AWS", and the assertions were deliberately written without I/O for that reason. So the two relations, the floor, the version sort and the pointer parse are all driven directly. The R2 half is proven end to
+    end by the committed shadow ledger `.ci/shadow/w7p2-release-state.observations.jsonl` over five distinct trees, against a stub `aws` inside each fixture.
     """
     ctl = Controls("release-state", floor=30, verbose=True)
 

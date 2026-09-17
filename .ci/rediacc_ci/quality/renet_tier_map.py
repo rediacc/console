@@ -3,27 +3,14 @@
 Ported from `.ci/scripts/quality/check-renet-tier-map.sh`, which is not deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-THE TWIN IS DECLARED `kind: local-only`, AND ITS BLOCKER IS ABOUT WIRING RATHER
-THAN ABOUT THE TIER MAP, so it stays with the bash file rather than moving here:
+THE TWIN IS DECLARED `kind: local-only`, AND ITS BLOCKER IS ABOUT WIRING RATHER THAN ABOUT THE TIER MAP, so it stays with the bash file rather than moving here:
 "no CI step invokes this script; the seven tier-map tests it drives already run
-in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet,
-step 'Run renet tests'), which resolves to that leaf and not this one, so a step
-pointer would claim CI runs a script it never invokes". A port does not inherit
-a registration, so nothing here re-states it as a live suppression, and this
-module is deliberately NOT wired into anything either.
+in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step 'Run renet tests'), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes". A port does not inherit a registration, so nothing here re-states it as a live suppression, and this module is deliberately NOT wired into anything either.
 
-WHY THE TWIN EXISTS AT ALL, given CI already runs those tests. `npm run ci` had
-no leg for them, so a tier-map regression could only be found after a push. The
-CLI now DERIVES its licence-issuance class from this map through the generated
-contract (`packages/shared/src/renet-contract/data/license-tiers.generated.ts`,
-consumed by `packages/cli/src/services/renet/renet-license-contract.ts`), which
-makes the map's completeness a console-side correctness property, not only a
-renet one.
+WHY THE TWIN EXISTS AT ALL, given CI already runs those tests. `npm run ci` had no leg for them, so a tier-map regression could only be found after a push. The CLI now DERIVES its licence-issuance class from this map through the generated contract (`packages/shared/src/renet-contract/data/license-tiers.generated.ts`, consumed by
+`packages/cli/src/services/renet/renet-license-contract.ts`), which makes the map's completeness a console-side correctness property, not only a renet one.
 
-THE THREE PHASES, AND WHY THE FIRST AND THIRD EXIST AT ALL. Phase 2 on its own
--- run the tests, believe the exit code -- is the vacuous version of this gate,
-and both of the phases around it close a way it reports green while checking
-nothing:
+THE THREE PHASES, AND WHY THE FIRST AND THIRD EXIST AT ALL. Phase 2 on its own -- run the tests, believe the exit code -- is the vacuous version of this gate, and both of the phases around it close a way it reports green while checking nothing:
 
     Phase 1  INSTRUMENT CHECK. `go test -run` exits 0 with "no tests to run"
              when its regex matches nothing. So the regex's selection is
@@ -40,37 +27,23 @@ nothing:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE SUBMODULE GUARD IS A THREE-WAY BRANCH, NOT A TWO-WAY ONE. `require_submodule`
-answers "present", "absent under CI" (hard failure, exit 1, three lines naming
-the fix) and "absent locally" (warn, and the caller's `|| exit 0` makes it a
+THE SUBMODULE GUARD IS A THREE-WAY BRANCH, NOT A TWO-WAY ONE. `require_submodule` answers "present", "absent under CI" (hard failure, exit 1, three lines naming the fix) and "absent locally" (warn, and the caller's `|| exit 0` makes it a
 skip). All three rungs are carried; see `rediacc_ci.quality.renet_types` for the
-same note and for common.sh's own reason ("a gate that silently skips is worse
-than no gate at all").
+same note and for common.sh's own reason ("a gate that silently skips is worse than no gate at all").
 
-`sort` IS BYTE ORDER HERE, AND THE PORT'S `sorted()` MATCHES IT. The twin sorts
-both lists with coreutils `sort`, whose result depends on the locale. Every
+`sort` IS BYTE ORDER HERE, AND THE PORT'S `sorted()` MATCHES IT. The twin sorts both lists with coreutils `sort`, whose result depends on the locale. Every
 caller that matters -- CI, and the shadow differential -- pins `LC_ALL=C`, and
-all seven names are ASCII, so `sorted()` on the Python side produces the same
-sequence. Under a collating locale the twin could order `TestTierMapGateCanFail`
-and `TestTierMapHasNoOrphans` differently from the port. Stated rather than
-hidden, because it is the kind of difference that surfaces once, on someone
+all seven names are ASCII, so `sorted()` on the Python side produces the same sequence. Under a collating locale the twin could order `TestTierMapGateCanFail` and `TestTierMapHasNoOrphans` differently from the port. Stated rather than hidden, because it is the kind of difference that surfaces once, on someone
 else's machine.
 
 A ZERO-TEST SELECTION ABORTS THE TWIN SILENTLY, and that is a defect this port
 reproduces. `LISTED="$(... | grep '^Test' | sort)"` runs under `set -euo
-pipefail`, so when `grep` matches nothing the pipeline fails, the assignment
-fails, and the script exits 1 having printed NOTHING beyond `go test`'s own
-output. The reader sees an exit code and no explanation, for the exact
-condition phase 1 was written to explain. The port exits with the same code at
+pipefail`, so when `grep` matches nothing the pipeline fails, the assignment fails, and the script exits 1 having printed NOTHING beyond `go test`'s own output. The reader sees an exit code and no explanation, for the exact condition phase 1 was written to explain. The port exits with the same code at
 the same point; the defect is reported, not repaired, because repairing it
 would change what the gate prints.
 
-`2>&1` IS THE TWIN'S OWN MERGE AND IS NOT THIS PORT'S CHOICE. Phase 2 captures
-the test run with the two streams merged, then re-prints the whole thing on
-stderr when the run failed. `rediacc_ci.tests.differential` refuses to merge
-streams for exactly the reason the 2026-09-06 emit-advisory incident showed, and
-this is not that: the merge here is INSIDE the subject, part of what the gate
-prints, so the port merges too and the gate's own two streams stay separate.
+`2>&1` IS THE TWIN'S OWN MERGE AND IS NOT THIS PORT'S CHOICE. Phase 2 captures the test run with the two streams merged, then re-prints the whole thing on stderr when the run failed. `rediacc_ci.tests.differential` refuses to merge streams for exactly the reason the 2026-09-06 emit-advisory incident showed, and this is not that: the merge here is INSIDE the subject, part of what
+the gate prints, so the port merges too and the gate's own two streams stay separate.
 """
 
 import os
@@ -117,9 +90,7 @@ def wanted() -> list[str]:
 def listed_from(output: str) -> list[str]:
     """`go test -list` output, filtered to `^Test` and sorted.
 
-    The filter is not cosmetic: `go test -list` also prints the package result
-    line (`ok  <module>/pkg/functions  0.002s`), and without `grep '^Test'` that
-    line would join the comparison and make phase 1 fail on every run.
+    The filter is not cosmetic: `go test -list` also prints the package result line (`ok <module>/pkg/functions 0.002s`), and without `grep '^Test'` that line would join the comparison and make phase 1 fail on every run.
     """
     lines = output.split("\n")
     if lines and lines[-1] == "":
@@ -130,8 +101,7 @@ def listed_from(output: str) -> list[str]:
 def missing_passes(output: str) -> list[str]:
     """Which expected tests never reported `--- PASS:`. Order is EXPECTED's.
 
-    `grep -q -- "--- PASS: $test_name"` is a SUBSTRING test, not an anchored
-    one, and the order of the result is the declaration order rather than the
+    `grep -q -- "--- PASS: $test_name"` is a SUBSTRING test, not an anchored one, and the order of the result is the declaration order rather than the
     sorted one because the twin loops over `"${EXPECTED_TESTS[@]}"`. Both are
     carried: the list is interpolated into the failure message with `${MISSING[*]}`
     and a reviewer diffs the two implementations' stderr side by side.
@@ -142,8 +112,7 @@ def missing_passes(output: str) -> list[str]:
 def _require_submodule(marker: pathlib.Path, label: str) -> bool:
     """`require_submodule` from `.ci/scripts/lib/common.sh`. True to proceed.
 
-    Raises SystemExit(1) on the CI rung, exactly as the bash function's `exit 1`
-    does. See this module's port notes for why all three rungs survive.
+    Raises SystemExit(1) on the CI rung, exactly as the bash function's `exit 1` does. See this module's port notes for why all three rungs survive.
     """
     if marker.exists():
         return True
@@ -166,8 +135,7 @@ def _go_env() -> dict[str, str]:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 covered, 1 on drift or failure, 0 on a local skip.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no
-    arguments at all, so no caller can be passing this string today.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all, so no caller can be passing this string today.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -266,13 +234,9 @@ _LISTING = "\n".join(EXPECTED_TESTS) + "\nok  \tgithub.com/rediacc/renet/pkg/fun
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    THE PURE HALF ONLY, AND THAT IS A DECISION. The end-to-end path compiles and
-    runs a Go package, which needs a toolchain, the submodule, and tens of
+    THE PURE HALF ONLY, AND THAT IS A DECISION. The end-to-end path compiles and runs a Go package, which needs a toolchain, the submodule, and tens of
     seconds; a selftest that silently degraded when any of those was missing
-    would be the vacuity this package exists to refuse. The two functions that
-    decide the verdict are pure, so they are driven directly here, and the whole
-    gate is proven end to end by the committed shadow ledger
-    `.ci/shadow/w7p2-renet-tiermap.observations.jsonl` over five distinct trees.
+    would be the vacuity this package exists to refuse. The two functions that decide the verdict are pure, so they are driven directly here, and the whole gate is proven end to end by the committed shadow ledger `.ci/shadow/w7p2-renet-tiermap.observations.jsonl` over five distinct trees.
     """
     ctl = Controls("renet-tier-map", floor=18, verbose=True)
 

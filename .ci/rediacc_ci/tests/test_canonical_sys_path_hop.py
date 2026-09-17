@@ -1,28 +1,16 @@
 """This repo has ONE canonical way onto sys.path, and this is the whole-tree control.
 
 WHAT PRE-A1 ESTABLISHED, AND WHY IT NEEDS A GUARD RATHER THAN A MEASUREMENT.
-Before that box, eight files under `.ci/scripts/quality` carried a hand-written
-`sys.path.insert` and `.ci/rediacc_ci/quality/hook_exec_baseline.py` carried a
-ninth. Ten inserts across nine files, in four different spellings, all of them
-saying "put a directory on the path". They are now:
+Before that box, eight files under `.ci/scripts/quality` carried a hand-written `sys.path.insert` and `.ci/rediacc_ci/quality/hook_exec_baseline.py` carried a ninth. Ten inserts across nine files, in four different spellings, all of them saying "put a directory on the path". They are now:
 
     import _cipath                              the `.ci` hop, once, in a shim
     paths.on_sys_path(paths.hooks_stop_dir(R))  the `.claude/hooks/stop` hop
     paths.on_sys_path(<dir>)                    anything else
 
-That box's acceptance was a BEFORE/AFTER measurement of the file set, which
-proves the sweep happened and proves nothing at all about tomorrow. The next
-gate written in this tree will be copied from a neighbour, and the neighbour it
-is copied from decides which spelling spreads. So the invariant is pinned here
-instead of being left as a paragraph in a plan.
+That box's acceptance was a BEFORE/AFTER measurement of the file set, which proves the sweep happened and proves nothing at all about tomorrow. The next gate written in this tree will be copied from a neighbour, and the neighbour it is copied from decides which spelling spreads. So the invariant is pinned here instead of being left as a paragraph in a plan.
 
-WHY THE CORPUS IS NOW THE WHOLE TREE, AND WHAT THAT COST. Until 2026-09-09 this
-control governed exactly two directories, `.ci/scripts/quality` and
-`.ci/rediacc_ci/quality`. Those two hold 2 of the 39 hops that actually exist in
-this repository, and the second directory holds none at all. A control scoped to the ground its own workstream had already
-cleared is a control that can only report success: widening it is W1P4, and the
-number it was widened against is measured below rather than quoted, because
-every count in that plan that was quoted rather than re-measured has been wrong.
+WHY THE CORPUS IS NOW THE WHOLE TREE, AND WHAT THAT COST. Until 2026-09-09 this control governed exactly two directories, `.ci/scripts/quality` and `.ci/rediacc_ci/quality`. Those two hold 2 of the 39 hops that actually exist in this repository, and the second directory holds none at all. A control scoped to the ground its own workstream had already cleared is a control that can
+only report success: widening it is W1P4, and the number it was widened against is measured below rather than quoted, because every count in that plan that was quoted rather than re-measured has been wrong.
 
     git ls-files -z --cached --others --exclude-standard -- '*.py'
         | xargs -0 <ast walk for sys.path.insert / append / extend>
@@ -31,64 +19,25 @@ every count in that plan that was quoted rather than re-measured has been wrong.
     -> 45 files at HEAD 73bd8f7ec by the same walk, so the tree has already
        shrunk and this control is what makes that shrink permanent
 
-That plan box said "68 files and rising". No reading of this tree produces 68.
-On the same 655-file corpus: 36 files / 39 hops by the syntax walk, 41 files / 49
-hops by a line-anchored grep that also counts docstring examples and fixture
-strings, and 45 files at HEAD by the syntax walk. The number was quoted rather
-than measured.
+That plan box said "68 files and rising". No reading of this tree produces 68. On the same 655-file corpus: 36 files / 39 hops by the syntax walk, 41 files / 49 hops by a line-anchored grep that also counts docstring examples and fixture strings, and 45 files at HEAD by the syntax walk. The number was quoted rather than measured.
 
-WHY A BASELINE AND NOT THIRTY-THREE MORE EXEMPTIONS. 33 of those 36 files are
-outside the box that widened this control, and an exemption means "this is
-correct forever". Freezing them as DEBT says the opposite: the total may not
-grow, a baselined hop that gets fixed must be DRAINED rather than left as a
-permanent hole, and both halves are asserted below. EXEMPT is reserved for the
-three that are structurally required, each with a reason this file proves is
-still live.
+WHY A BASELINE AND NOT THIRTY-THREE MORE EXEMPTIONS. 33 of those 36 files are outside the box that widened this control, and an exemption means "this is correct forever". Freezing them as DEBT says the opposite: the total may not grow, a baselined hop that gets fixed must be DRAINED rather than left as a permanent hole, and both halves are asserted below. EXEMPT is reserved for the
+three that are structurally required, each with a reason this file proves is still live.
 
-WHAT THE `_cipath` TRICK CANNOT DO, MEASURED RATHER THAN ASSUMED, because the
-next box to read this file will otherwise try it. `import _cipath` resolves only
-because a PATH invocation puts the script's own directory on `sys.path[0]`. Six
-of the baselined hops sit INSIDE a package and still run as scripts:
-`check_pytest.py`, `battery.py`, the three under `rediacc_ci/setup/`, and
-`rediacc_hooks/dispatch.py`. FOUR of those six are also imported by their package
-name -- `setup/tools.py` and `setup/port_parity.py` by the suite,
-`battery.py` by `xdist_groups.py`, `dispatch.py` by two hook suites -- and a
-sibling shim is impossible for them: driven on a throwaway package, running
+WHAT THE `_cipath` TRICK CANNOT DO, MEASURED RATHER THAN ASSUMED, because the next box to read this file will otherwise try it. `import _cipath` resolves only because a PATH invocation puts the script's own directory on `sys.path[0]`. Six of the baselined hops sit INSIDE a package and still run as scripts: `check_pytest.py`, `battery.py`, the three under `rediacc_ci/setup/`, and
+`rediacc_hooks/dispatch.py`. FOUR of those six are also imported by their package name -- `setup/tools.py` and `setup/port_parity.py` by the suite, `battery.py` by `xdist_groups.py`, `dispatch.py` by two hook suites -- and a sibling shim is impossible for them: driven on a throwaway package, running
 `pkg/sub/dualuse.py` as a script prints `__package__=None` and loads, while
-`from pkg.sub import dualuse` dies at `import _pkgpath`. The remaining two,
-`check_pytest.py` and `setup/shadow_driver.py`, COULD take a shim and would gain
-nothing, because they sit in different directories and the shim is itself a file
-containing the hop: two hops would become two shims. So none of the six is
-sitting there because nobody swept it.
+`from pkg.sub import dualuse` dies at `import _pkgpath`. The remaining two, `check_pytest.py` and `setup/shadow_driver.py`, COULD take a shim and would gain nothing, because they sit in different directories and the shim is itself a file containing the hop: two hops would become two shims. So none of the six is sitting there because nobody swept it.
 
 WHY THE BASELINE IS KEYED ON A HASH OF THE HOP'S SOURCE AND NOT ON ITS LINE.
-A line number churns when a paragraph moves above it, and a baseline that churns
-gets regenerated wholesale, which silently re-absorbs findings nobody looked at.
-The hash survives a MOVE and deliberately does NOT survive a REWRITE: rewriting
-a hop is exactly the moment a human should look at it again. When that happens
-the run reports one gone and one new IN THE SAME FILE -- hand-edit that single
-line rather than regenerating the table, which would absorb any other writer's
-fresh findings along with yours.
+A line number churns when a paragraph moves above it, and a baseline that churns gets regenerated wholesale, which silently re-absorbs findings nobody looked at. The hash survives a MOVE and deliberately does NOT survive a REWRITE: rewriting a hop is exactly the moment a human should look at it again. When that happens the run reports one gone and one new IN THE SAME FILE --
+hand-edit that single line rather than regenerating the table, which would absorb any other writer's fresh findings along with yours.
 
-WHY AN AST WALK AND NOT A GREP. This tree's Python is heavily commented ABOUT
-the hops it no longer has: `check_python_gate_deps.py` mentions
-`sys.path.insert(` seven times in comments while writing it zero times, and
-`_cipath.py`'s docstring quotes the line it is replacing. A grep-based version of
-this control reported five false positives on its first run and would have been
-"fixed" by deleting the explanations, which are the most valuable text in those
-files. Measured on the widened corpus, grep also reports two files the syntax
-tree correctly ignores -- `packages/locales/site_locales.py`, whose hop is a
-usage example in the module docstring, and `.ci/rediacc_ci/quality/dead_python.py`,
-whose hop is a fixture string. The syntax tree cannot see either.
+WHY AN AST WALK AND NOT A GREP. This tree's Python is heavily commented ABOUT the hops it no longer has: `check_python_gate_deps.py` mentions `sys.path.insert(` seven times in comments while writing it zero times, and `_cipath.py`'s docstring quotes the line it is replacing. A grep-based version of this control reported five false positives on its first run and would have been
+"fixed" by deleting the explanations, which are the most valuable text in those files. Measured on the widened corpus, grep also reports two files the syntax tree correctly ignores -- `packages/locales/site_locales.py`, whose hop is a usage example in the module docstring, and `.ci/rediacc_ci/quality/dead_python.py`, whose hop is a fixture string. The syntax tree cannot see either.
 
-THE FLOOR IS THE KNOWN-POSITIVE SET, NOT A TYPED NUMBER. A sweep that empties
-the finding set by breaking the scanner looks exactly like a sweep that fixed
-everything, and the previous version of this file guarded that with
-`assert len(files) > 50` -- a hand-typed constant, which goes red at the moment
-the migration it guards succeeds and passes against nothing if the corpus moves.
-What replaces it is derived entirely from the corpus: every path this file
-already knows carries a hop must still be FOUND carrying one, so a scanner that
-sees nothing reports all 39 vanished entries rather than a clean tree.
+THE FLOOR IS THE KNOWN-POSITIVE SET, NOT A TYPED NUMBER. A sweep that empties the finding set by breaking the scanner looks exactly like a sweep that fixed everything, and the previous version of this file guarded that with `assert len(files) > 50` -- a hand-typed constant, which goes red at the moment the migration it guards succeeds and passes against nothing if the corpus moves.
+What replaces it is derived entirely from the corpus: every path this file already knows carries a hop must still be FOUND carrying one, so a scanner that sees nothing reports all 39 vanished entries rather than a clean tree.
 """
 
 import ast
@@ -236,8 +185,7 @@ def fingerprint(hop_source: str) -> str:
 def hops(source: str) -> list[tuple[int, str]]:
     """(line, unparsed source) for every `sys.path.insert/append/extend` CALL.
 
-    A comment, a docstring and a string literal cannot match, because none of them
-    is a Call node. That is the whole reason this is a syntax walk.
+    A comment, a docstring and a string literal cannot match, because none of them is a Call node. That is the whole reason this is a syntax walk.
     """
     out: list[tuple[int, str]] = []
     for node in ast.walk(ast.parse(source)):
@@ -260,29 +208,16 @@ def hops(source: str) -> list[tuple[int, str]]:
 def _corpus() -> list[str]:
     """Every `.py` path in this repo that git can see, tracked or not.
 
-    GIT AND NOT A GLOB, for the reason `gitx.ls_files` exists: a glob walks
-    node_modules, build output and other sessions' scratch files, and its answer
-    moves for reasons that have nothing to do with the invariant. Submodules under
-    `private/` are deliberately not recursed -- they have their own CI and this
-    control cannot fix a hop it cannot edit.
+    GIT AND NOT A GLOB, for the reason `gitx.ls_files` exists: a glob walks node_modules, build output and other sessions' scratch files, and its answer moves for reasons that have nothing to do with the invariant. Submodules under `private/` are deliberately not recursed -- they have their own CI and this control cannot fix a hop it cannot edit.
 
     `untracked=True`, AND THAT IS THE WHOLE DIFFERENCE BETWEEN A CONTROL AND A
-    DECORATION. Written without it first, and the planted violation this control
-    is supposed to catch did not fire: a NEW file is untracked by definition, and
-    `git ls-files` without `--others` cannot see one. The plant was in this very
-    file, which was itself untracked at the time, so the scan read 567 paths and
-    the 568th was the one carrying the plant. Turning the flag on moved the corpus
+    DECORATION. Written without it first, and the planted violation this control is supposed to catch did not fire: a NEW file is untracked by definition, and `git ls-files` without `--others` cannot see one. The plant was in this very file, which was itself untracked at the time, so the scan read 567 paths and the 568th was the one carrying the plant. Turning the flag on moved the
+    corpus
     from 567 to 655 and surfaced three real hops that had arrived after PRE-A1 in
-    files no committed enumeration contains. `gitx.ls_files`'s own docstring
-    records the identical defect in `check-python-lint.sh:88`, which "shipped green
-    over an untracked file for an unknown period". `--exclude-standard` still keeps
-    gitignored scratch out, so `.ci/cache` cannot red this.
+    files no committed enumeration contains. `gitx.ls_files`'s own docstring records the identical defect in `check-python-lint.sh:88`, which "shipped green over an untracked file for an unknown period". `--exclude-standard` still keeps gitignored scratch out, so `.ci/cache` cannot red this.
 
     `existing=True` DROPS a path git lists but disk does not have, and on its own
-    that would be exactly the "unknown folded into fine" this file argues against.
-    It is safe only because the floor below covers it: in a partial checkout the
-    dropped paths are the ones whose hops are frozen, so they come back as vanished
-    entries rather than as silence.
+    that would be exactly the "unknown folded into fine" this file argues against. It is safe only because the floor below covers it: in a partial checkout the dropped paths are the ones whose hops are frozen, so they come back as vanished entries rather than as silence.
     """
     return gitx.ls_files("*.py", root=paths.repo_root(), untracked=True, existing=True)
 
@@ -290,15 +225,10 @@ def _corpus() -> list[str]:
 def scan(root: pathlib.Path, files: list[str]) -> dict[str, list[tuple[int, str]]]:
     """relpath -> its hops, for the files that HAVE one. Unreadable input raises.
 
-    Raises rather than skipping, because a file that cannot be parsed is UNCHECKED
-    and an unchecked file folded into "fine" is the exact vacuity this control is
+    Raises rather than skipping, because a file that cannot be parsed is UNCHECKED and an unchecked file folded into "fine" is the exact vacuity this control is
     for.
 
-    THE SYNTAX ERROR IS CAUGHT AND RE-RAISED WITH A SENTENCE, not left to surface
-    as a bare traceback from `ast.parse`. This corpus includes UNTRACKED files, so
-    it reads whatever another session has half-written at that moment: on
-    2026-09-09 `.ci/rediacc_ci/battery.py:83` was momentarily unparsable and the
-    unhelpful version of this message would have read as flake in a file this
+    THE SYNTAX ERROR IS CAUGHT AND RE-RAISED WITH A SENTENCE, not left to surface as a bare traceback from `ast.parse`. This corpus includes UNTRACKED files, so it reads whatever another session has half-written at that moment: on 2026-09-09 `.ci/rediacc_ci/battery.py:83` was momentarily unparsable and the unhelpful version of this message would have read as flake in a file this
     control never touched.
     """
     found: dict[str, list[tuple[int, str]]] = {}
@@ -329,9 +259,7 @@ def scan(root: pathlib.Path, files: list[str]) -> dict[str, list[tuple[int, str]
 def vanished(found: dict[str, list[tuple[int, str]]]) -> list[str]:
     """The FLOOR. Known-positive entries the scan failed to find, by name.
 
-    Derived from the corpus, never typed: EXEMPT and BASELINE are together the set
-    of hops this repo is known to contain, so a scanner that has stopped seeing the
-    tree reports all of them here rather than reporting a clean tree.
+    Derived from the corpus, never typed: EXEMPT and BASELINE are together the set of hops this repo is known to contain, so a scanner that has stopped seeing the tree reports all of them here rather than reporting a clean tree.
     """
     gone: list[str] = [
         f"{rel} is EXEMPT but the scan found no hop in it"

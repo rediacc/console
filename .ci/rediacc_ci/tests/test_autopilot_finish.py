@@ -1,34 +1,18 @@
 """Differential: `rediacc_ci.autopilot.finish` against its twin
 `.ci/scripts/autopilot/finish.sh`.
 
-A DECISION TREE, SO EVERY BRANCH GETS A CASE. This subject has three
-subcommands, an unknown-subcommand arm, a usage refusal per subcommand, a
-fail-closed write gate, two `gh` pipelines and jq's own exit codes leaking
-through `set -e`. The cases below walk each of them, and the ones that pin the
-EXIT CODE rather than the message are the load-bearing half: 0 and 1 out of
-`check-done` are how the babysit loop decides whether to stop, and 5 out of a
-broken pipeline is jq's, not this script's.
+A DECISION TREE, SO EVERY BRANCH GETS A CASE. This subject has three subcommands, an unknown-subcommand arm, a usage refusal per subcommand, a fail-closed write gate, two `gh` pipelines and jq's own exit codes leaking through `set -e`. The cases below walk each of them, and the ones that pin the EXIT CODE rather than the message are the load-bearing half: 0 and 1 out of
+`check-done` are how the babysit loop decides whether to stop, and 5 out of a broken pipeline is jq's, not this script's.
 
-A RECORDING FAKE `gh` ON A STUB PATH, as in
-`test_housekeeping_cleanup_github_deployments.py`. Nothing reaches the network,
-and `test_the_stub_path_has_no_real_gh` is the control for that rather than a
-comment claiming it. THE CALL LOG IS COMPARED, not just the streams: this
-script's whole effect on the world is which requests it makes, and a port that
-flipped the right PR in the wrong repository would print an identical summary.
+A RECORDING FAKE `gh` ON A STUB PATH, as in `test_housekeeping_cleanup_github_deployments.py`. Nothing reaches the network, and `test_the_stub_path_has_no_real_gh` is the control for that rather than a comment claiming it. THE CALL LOG IS COMPARED, not just the streams: this script's whole effect on the world is which requests it makes, and a port that flipped the right PR in the
+wrong repository would print an identical summary.
 
-THE WRITE GATE IS TESTED FROM BOTH SIDES, and the negative side is the one that
-matters: `test_the_write_gate_is_closed_by_default` asserts that NO `gh` call
-was recorded, because "it printed the refusal" is not the same claim as "it did
-not write".
+THE WRITE GATE IS TESTED FROM BOTH SIDES, and the negative side is the one that matters: `test_the_write_gate_is_closed_by_default` asserts that NO `gh` call was recorded, because "it printed the refusal" is not the same claim as "it did not write".
 
-ONE CASE COSTS NINE SECONDS PER SIDE. `_gh_probe` sleeps 3 then 6 between its
-three attempts, and it is the only way to prove the retry loop, the final
-`gh failed after 3 attempts` line and the exit code agree.
+ONE CASE COSTS NINE SECONDS PER SIDE. `_gh_probe` sleeps 3 then 6 between its three attempts, and it is the only way to prove the retry loop, the final `gh failed after 3 attempts` line and the exit code agree.
 
 K=5 LEDGER: `.ci/shadow/w7p6-finish.observations.jsonl`, recorded in a
-disposable scratch git repository outside this checkout, since
-`shadow-gate.ts --record` refuses a dirty tree and this checkout is never
-clean.
+disposable scratch git repository outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean.
 """
 
 from __future__ import annotations
@@ -203,8 +187,7 @@ def test_check_done_names_every_unmet_condition() -> None:
 
 def test_check_done_fails_closed_on_an_absent_draft_field() -> None:
     """The twin's own comment: NOT `.draft // true | not`. A PR whose fixture
-    never mentions `draft` is NOT done, and a non-draft PR (`draft: false`) is
-    not read as a draft. Both directions, because only one of them catches the
+    never mentions `draft` is NOT done, and a non-draft PR (`draft: false`) is not read as a draft. Both directions, because only one of them catches the
     `//` bug the comment describes."""
     absent = dict(DONE)
     del absent["draft"]

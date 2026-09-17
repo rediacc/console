@@ -1,22 +1,12 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/housekeeping/cleanup-github-deployments.sh`.
 
-Deletes every GitHub deployment RECORD for one environment, which is what
-drops a `pr-N` entry from the repository's Deployments view when a PR closes.
-The twin's header explains why records and not the environment object:
-deleting the environment needs `Administration:write`, which neither
-`GITHUB_TOKEN` nor the housekeeping App token carries, while the records need
-only `deployments:write` -- so deleting the records achieves the visible
-cleanup without admin rights.
+Deletes every GitHub deployment RECORD for one environment, which is what drops a `pr-N` entry from the repository's Deployments view when a PR closes. The twin's header explains why records and not the environment object: deleting the environment needs `Administration:write`, which neither `GITHUB_TOKEN` nor the housekeeping App token carries, while the records need only
+`deployments:write` -- so deleting the records achieves the visible cleanup without admin rights.
 
-Usage: cleanup_github_deployments.py --repo <owner/repo> --environment <name>
-[--dry-run]
+Usage: cleanup_github_deployments.py --repo <owner/repo> --environment <name> [--dry-run]
 
-THE ARGUMENT PARSER IS NOT RE-IMPLEMENTED. `parse_args` (common.sh:324-353)
-already has its Python equivalent in `rediacc_ci.core.common.parse_args`, with
-the twin's four parsing rules and the `printf -v` security property driven
-there. This module calls it and reads `ARG_REPO` / `ARG_ENVIRONMENT` /
-`ARG_DRY_RUN` out of the dict exactly as the twin reads them out of the shell's
+THE ARGUMENT PARSER IS NOT RE-IMPLEMENTED. `parse_args` (common.sh:324-353) already has its Python equivalent in `rediacc_ci.core.common.parse_args`, with the twin's four parsing rules and the `printf -v` security property driven there. This module calls it and reads `ARG_REPO` / `ARG_ENVIRONMENT` / `ARG_DRY_RUN` out of the dict exactly as the twin reads them out of the shell's
 globals, which preserves two quirks worth naming because they are reachable
 from a real command line:
 
@@ -26,23 +16,13 @@ from a real command line:
   * anything not starting with `--` is skipped silently, so a positional
     argument is invisible.
 
-STREAMS: THIS SCRIPT WRITES NOTHING TO STDOUT, EVER. Every message goes
-through `log_step` / `log_warn` / `log_info` / `log_error`, all of which write
-to stderr (common.sh:35-54), and both `gh` mutation calls are redirected to
-/dev/null on both streams. The one command whose stdout is read is the
-deployment listing, and it is captured. A port that printed its progress to
-stdout would look identical in a terminal and would corrupt any caller that
-pipes it.
+STREAMS: THIS SCRIPT WRITES NOTHING TO STDOUT, EVER. Every message goes through `log_step` / `log_warn` / `log_info` / `log_error`, all of which write to stderr (common.sh:35-54), and both `gh` mutation calls are redirected to /dev/null on both streams. The one command whose stdout is read is the deployment listing, and it is captured. A port that printed its progress to stdout
+would look identical in a terminal and would corrupt any caller that pipes it.
 
 THE MUTATING PATH IS NEVER DRIVEN AGAINST A REAL REPOSITORY BY ANY TEST HERE.
-`test_housekeeping_cleanup_github_deployments.py` puts a recording fake `gh`
-on PATH (ruling 7's seam) and drives both the `--dry-run` path and the real
-path against it, so the DELETE call sequence is compared without a single
-network request.
+`test_housekeeping_cleanup_github_deployments.py` puts a recording fake `gh` on PATH (ruling 7's seam) and drives both the `--dry-run` path and the real path against it, so the DELETE call sequence is compared without a single network request.
 
-TWO DEFECTS IN THE TWIN, REPRODUCED AND REPORTED RATHER THAN FIXED, because
-this box's contract is agreement with the twin and both are live release-path
-behaviour changes that are the operator's call:
+TWO DEFECTS IN THE TWIN, REPRODUCED AND REPORTED RATHER THAN FIXED, because this box's contract is agreement with the twin and both are live release-path behaviour changes that are the operator's call:
 
   1. A FAILED DELETION DOES NOT AFFECT THE EXIT CODE. Every `gh api -X DELETE`
      that fails produces a `log_warn` and nothing else, so the script prints
@@ -77,9 +57,7 @@ DRY_RUN_ON = "true"
 def list_path(repo: str, environment: str) -> str:
     """The listing endpoint, built exactly as the twin builds it.
 
-    NOT URL-ENCODED, deliberately: see defect 2 in the module docstring. This
-    is a transliteration, and quietly encoding here would make the port send a
-    different request than the twin for the same input.
+    NOT URL-ENCODED, deliberately: see defect 2 in the module docstring. This is a transliteration, and quietly encoding here would make the port send a different request than the twin for the same input.
     """
     return "repos/%s/deployments?environment=%s&per_page=100" % (repo, environment)
 

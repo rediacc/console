@@ -1,15 +1,10 @@
 """Port of `.ci/scripts/test/gates/test-gate-paths-exist.sh`.
 
-Gate: every hardcoded `packages/<name>/...` and `private/<name>/...` path
-constant in our tooling must resolve to something that exists in the tree.
+Gate: every hardcoded `packages/<name>/...` and `private/<name>/...` path constant in our tooling must resolve to something that exists in the tree.
 
-WHY THIS EXISTS. PR #513 deleted `packages/web`, `packages/desktop`,
-`packages/e2e` and the middleware tree. 22+ scripts kept pointing at them. The
-paths did not throw -- they silently produced empty globs, empty Sets and empty
-file lists, so the gates built on top of them printed a checkmark for months
+WHY THIS EXISTS. PR #513 deleted `packages/web`, `packages/desktop`, `packages/e2e` and the middleware tree. 22+ scripts kept pointing at them. The paths did not throw -- they silently produced empty globs, empty Sets and empty file lists, so the gates built on top of them printed a checkmark for months
 while asserting nothing at all (`check-www-only-translations.ts` compared two
-empty sets). A dead path constant is the cheapest possible signal that a gate has
-gone vacuous, and it is fully static.
+empty sets). A dead path constant is the cheapest possible signal that a gate has gone vacuous, and it is fully static.
 
 WHAT IT CHECKS.
   Tier A (package roots): the `packages/<name>` / `private/<name>` prefix of every
@@ -19,41 +14,21 @@ WHAT IT CHECKS.
     unambiguously a checked-in source path -- it carries a known source extension,
     or it ends in `/`. Anything else is left to Tier A.
 
-WHAT IT DELIBERATELY DOES NOT CATCH, precision over recall, because a noisy gate
-gets suppressed and a suppressed gate is the bug being fixed: paths assembled at
-runtime from variables, glob patterns, anything inside a line comment, build
-outputs and vendored trees, extensionless paths, and submodule interiors when the
-submodule is not checked out.
+WHAT IT DELIBERATELY DOES NOT CATCH, precision over recall, because a noisy gate gets suppressed and a suppressed gate is the bug being fixed: paths assembled at runtime from variables, glob patterns, anything inside a line comment, build outputs and vendored trees, extensionless paths, and submodule interiors when the submodule is not checked out.
 
-THE SUBJECT IS THE SCAN ITSELF, which makes this port unlike most of the family.
-There is no separate `check-*.sh` to shell out to: the twin IS the detector, so
-porting it means re-expressing the detector in Python rather than driving a
-subject through a seam. The consequence is that parity here is a claim about two
-independent implementations agreeing on the same tree, which is why the plant
-proof matters more than usual and why the extraction rules below are transcribed
-clause by clause from the twin's awk program rather than paraphrased.
+THE SUBJECT IS THE SCAN ITSELF, which makes this port unlike most of the family. There is no separate `check-*.sh` to shell out to: the twin IS the detector, so porting it means re-expressing the detector in Python rather than driving a subject through a seam. The consequence is that parity here is a claim about two independent implementations agreeing on the same tree, which is
+why the plant proof matters more than usual and why the extraction rules below are transcribed clause by clause from the twin's awk program rather than paraphrased.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Every case walks the working tree
-(`scripts/`, `packages/www/scripts/`, `.ci/scripts/`) and two of them PLANT a
-file inside `.ci/scripts/` and remove it again. A battery step reading that
-directory mid-plant, or a second scanner seeing a fixture that vanishes under it,
-is the flake that would be blamed on this port -- and the twin carries
-`mutex: ["tree:repo"]` in `gates.lock.json` for exactly that reason.
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Every case walks the working tree (`scripts/`, `packages/www/scripts/`, `.ci/scripts/`) and two of them PLANT a file inside `.ci/scripts/` and remove it again. A battery step reading that directory mid-plant, or a second scanner seeing a fixture that vanishes under it, is the flake that would be blamed on this port -- and the twin
+carries `mutex: ["tree:repo"]` in `gates.lock.json` for exactly that reason.
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
 this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in
 `test_twin_parity.py`, which refuses that combination.
 
-THE SELF-SCANNING TRAP, and this file is squarely in it. The detector reports
-dead `packages/...` literals found in source files, and a port of it is a source
-file full of dead `packages/...` literals. The twin is invisible to itself
+THE SELF-SCANNING TRAP, and this file is squarely in it. The detector reports dead `packages/...` literals found in source files, and a port of it is a source file full of dead `packages/...` literals. The twin is invisible to itself
 because `scan_targets` excludes `.ci/scripts/test/*`; this module lives outside
-every scanned root, so it is invisible for a different and less deliberate
-reason -- one that a future scanner widening its roots would quietly remove. So
-the fixture literal is RENDERED through a `%s` template and never appears whole
-in this file's bytes (`%` is outside the `[A-Za-z0-9._+-]` class the extractor
-uses, so the template cannot be extracted as a path), and
-`test_this_module_is_not_itself_a_finding` points the real detector at this
-directory and fails BY NAME if that ever stops being true. Batch 3's
+every scanned root, so it is invisible for a different and less deliberate reason -- one that a future scanner widening its roots would quietly remove. So the fixture literal is RENDERED through a `%s` template and never appears whole in this file's bytes (`%` is outside the `[A-Za-z0-9._+-]` class the extractor uses, so the template cannot be extracted as a path), and
+`test_this_module_is_not_itself_a_finding` points the real detector at this directory and fails BY NAME if that ever stops being true. Batch 3's
 `label-references` port paid for this rule; any port of a self-scanning subject
 owes the same treatment.
 """
@@ -134,10 +109,7 @@ SCAN_FLOOR = int(os.environ.get("GATE_PATHS_SCAN_FLOOR", "150"))
 def scan_targets() -> list[str]:
     """The tooling files whose path constants we police, repo-relative.
 
-    The three legs are the twin's three `find` invocations. `.ci/scripts/test/**`
-    is excluded on purpose: those files name planted fixture paths that do not
-    exist by design. `*.py` is in the list because 45 quality gates exist ONLY as
-    `check_*.py` with no `.sh` twin left to cover them by accident.
+    The three legs are the twin's three `find` invocations. `.ci/scripts/test/**` is excluded on purpose: those files name planted fixture paths that do not exist by design. `*.py` is in the list because 45 quality gates exist ONLY as `check_*.py` with no `.sh` twin left to cover them by accident.
     """
     found: list[str] = []
 
@@ -165,22 +137,12 @@ def scan_targets() -> list[str]:
 def extract_literals(rel_path: str) -> list[tuple[str, int, str]]:
     """`(<file>, <line>, <path>)` for every quoted path literal in one file.
 
-    A CLAUSE-BY-CLAUSE transcription of the twin's `EXTRACT_AWK`, in its order,
-    because the order is what makes it correct: the Python docstring state machine
-    runs BEFORE the comment skip, and the selftest cut runs before both.
+    A CLAUSE-BY-CLAUSE transcription of the twin's `EXTRACT_AWK`, in its order, because the order is what makes it correct: the Python docstring state machine runs BEFORE the comment skip, and the selftest cut runs before both.
 
-    PYTHON NEEDS TWO SKIPS THAT BASH DOES NOT, and without them widening the scan
-    to `*.py` is worse than not widening it. `.ci/scripts/test/**` is excluded
-    wholesale by `scan_targets`, but a Python gate carries its selftest INSIDE the
-    module, so that exclusion cannot be done by directory. Measured 2026-09-08 on
-    the twin's first widened run, both findings were false: a path quoted in a
-    DOCSTRING explaining a control, and a fixture in a selftest table whose whole
-    point is that the path is NOT covered.
+    PYTHON NEEDS TWO SKIPS THAT BASH DOES NOT, and without them widening the scan to `*.py` is worse than not widening it. `.ci/scripts/test/**` is excluded wholesale by `scan_targets`, but a Python gate carries its selftest INSIDE the module, so that exclusion cannot be done by directory. Measured 2026-09-08 on the twin's first widened run, both findings were false: a path quoted
+    in a DOCSTRING explaining a control, and a fixture in a selftest table whose whole point is that the path is NOT covered.
 
-    Only text inside a quote pair is considered, which is what keeps prose out.
-    Splitting each line on the three quote characters and dropping field 1
-    reproduces the twin's "a leading quote plus a run of non-quote characters"
-    exactly: field N+1 is the run that followed the Nth quote.
+    Only text inside a quote pair is considered, which is what keeps prose out. Splitting each line on the three quote characters and dropping field 1 reproduces the twin's "a leading quote plus a run of non-quote characters" exactly: field N+1 is the run that followed the Nth quote.
     """
     try:
         text = (ROOT / rel_path).read_text(encoding="utf-8", errors="replace")
@@ -220,11 +182,7 @@ def extract_literals(rel_path: str) -> list[tuple[str, int, str]]:
 def declared_submodule(root: str) -> bool:
     """True when `.gitmodules` declares this path.
 
-    A `private/<name>` that is NOT declared is an EXTERNAL repository this one does
-    not track (private/growth and private/generative are separate GitLab repos).
-    Such a root is legitimately missing from a fresh checkout, so its absence is
-    not a dead path -- CI has no private/growth at all, which is what made the twin
-    fail there while passing locally.
+    A `private/<name>` that is NOT declared is an EXTERNAL repository this one does not track (private/growth and private/generative are separate GitLab repos). Such a root is legitimately missing from a fresh checkout, so its absence is not a dead path -- CI has no private/growth at all, which is what made the twin fail there while passing locally.
     """
     try:
         text = (ROOT / ".gitmodules").read_text(encoding="utf-8")
@@ -311,11 +269,7 @@ def assert_scan_is_whole(gate) -> int:
 def planted_fixture(stem: str, body: str):
     """Plant one scan target, yield its basename, and remove it whatever happens.
 
-    A context manager rather than the twin's `trap ... RETURN`, for the reason
-    `harness.temp_dir` gives: the trap is scaffolding for a language feature Python
-    has. The removal is what keeps a killed run from leaving a synthetic dead path
-    in a tracked directory, where the next reader would investigate a finding
-    nobody introduced.
+    A context manager rather than the twin's `trap ... RETURN`, for the reason `harness.temp_dir` gives: the trap is scaffolding for a language feature Python has. The removal is what keeps a killed run from leaving a synthetic dead path in a tracked directory, where the next reader would investigate a finding nobody introduced.
     """
     name = "%s%s.%s.ts" % (FIXTURE_NAME_PREFIX, stem, FIXTURE_PID_SUFFIX)
     path = FIXTURE_DIR / name
@@ -351,8 +305,7 @@ def test_detector_ignores_runtime_and_glob_paths(gate):
     """Shape check: the two biggest false-positive sources must stay silent.
 
     Template literals carry `${}`, globs carry `*`, and comment prose names deleted
-    paths on purpose. A detector that reported any of the three would be suppressed
-    within a week, and a suppressed gate is the bug this whole file is about.
+    paths on purpose. A detector that reported any of the three would be suppressed within a week, and a suppressed gate is the bug this whole file is about.
     """
     with planted_fixture("noise-fixture", NOISE_BODY):
         dead = collect_dead_paths()
@@ -379,11 +332,7 @@ def test_no_dead_path_constants(gate):
 def test_this_module_is_not_itself_a_finding(gate):
     """THE SELF-SCANNING CONTROL, which the twin does not need and this port does.
 
-    The twin is excluded from its own walk by `! -path '.ci/scripts/test/*'`, a
-    deliberate line someone would have to delete. This module is excluded only
-    because `.ci/rediacc_ci/` happens to be outside all three scanned roots, which
-    a future widening would remove without anyone connecting the two. So the
-    literals in this file are rendered through `%s` templates, and this case reds
+    The twin is excluded from its own walk by `! -path '.ci/scripts/test/*'`, a deliberate line someone would have to delete. This module is excluded only because `.ci/rediacc_ci/` happens to be outside all three scanned roots, which a future widening would remove without anyone connecting the two. So the literals in this file are rendered through `%s` templates, and this case reds
     BY NAME if a template ever starts matching.
     """
     own = paths.relative_to_root(pathlib.Path(__file__))
@@ -401,16 +350,11 @@ def test_this_module_is_not_itself_a_finding(gate):
 def test_scripts_tsconfig_covers_both_tooling_trees(gate):
     """Same failure class, one level up: an `include` GLOB that resolves to nothing.
 
-    A dead path constant and a dead include pattern fail identically -- both
-    produce an empty set that every downstream check reports a checkmark over.
-    `scripts/tsconfig.json` is the live example. It sat in the tree from creation
-    until 2026-08-05 covering 70 files that nothing type-checked, and when it was
+    A dead path constant and a dead include pattern fail identically -- both produce an empty set that every downstream check reports a checkmark over. `scripts/tsconfig.json` is the live example. It sat in the tree from creation until 2026-08-05 covering 70 files that nothing type-checked, and when it was
     finally run it produced 512 errors, ~99% of them artifacts of its own stale
-    settings. A config that LOOKS like coverage is worse than no config, because it
-    answers "is this tree type-checked?" with a yes.
+    settings. A config that LOOKS like coverage is worse than no config, because it answers "is this tree type-checked?" with a yes.
 
-    `--listFilesOnly` resolves the includes without type-checking. This is
-    deliberately a COVERAGE assertion, not the type-check itself.
+    `--listFilesOnly` resolves the includes without type-checking. This is deliberately a COVERAGE assertion, not the type-check itself.
     """
     config = ROOT / "scripts" / "tsconfig.json"
     if not config.is_file():

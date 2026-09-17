@@ -1,7 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-fetch-depth-safety.sh`.
 
-No git operation may quietly reshape the repository a later step measures, and no
-fixture may be built in a shape that measures nothing.
+No git operation may quietly reshape the repository a later step measures, and no fixture may be built in a shape that measures nothing.
 
 WHAT THIS IS ABOUT, measured 2026-09-03 rather than reasoned about. `--depth` on a
 fetch is not a limit on what that fetch transfers; on a complete repository it WRITES
@@ -11,21 +10,15 @@ A GRAFT and truncates the whole history. Against the real remote::
     $ git fetch --no-tags --depth=50 origin +refs/heads/main:refs/remotes/origin/main
     $ git rev-list --count refs/remotes/pull/585/merge   # 114, .git/shallow: 1 graft
 
-The line that did it lived in `packages/www/scripts/lib/translation-freshness-git.js`
-and ran inside `check:i18n`. The job's `actions/checkout` had deliberately taken
-`fetch-depth: 0`. Four steps later `check:ci-plan-housekeeping` refused with "SHALLOW
-at a boundary that 58 plan(s) sit on", and the checkout -- which was innocent, and
-correct -- is what every reader went to look at.
+The line that did it lived in `packages/www/scripts/lib/translation-freshness-git.js` and ran inside `check:i18n`. The job's `actions/checkout` had deliberately taken `fetch-depth: 0`. Four steps later `check:ci-plan-housekeeping` refused with "SHALLOW at a boundary that 58 plan(s) sit on", and the checkout -- which was innocent, and correct -- is what every reader went to look at.
 
-THE DAMAGE IS ALWAYS SOMEBODY ELSE'S, which is what makes this class worth a gate:
-the script that truncates history is not the script that fails.
+THE DAMAGE IS ALWAYS SOMEBODY ELSE'S, which is what makes this class worth a gate: the script that truncates history is not the script that fails.
 
 A FLAT TWIN, so the parity floor is its runtime `PASS:` count rather than a case set.
 The twin prints ten; this module records at least ten controls, one per `pass` the
 twin emits, in the twin's order.
 
-WHERE THIS REIMPLEMENTS awk, grep AND sed, AND WHY THE ANSWERS AGREE. Two awk
-programs carry the whole sweep, and they are subtle enough to be worth spelling out.
+WHERE THIS REIMPLEMENTS awk, grep AND sed, AND WHY THE ANSWERS AGREE. Two awk programs carry the whole sweep, and they are subtle enough to be worth spelling out.
 
   `real_fetch_depth` is::
 
@@ -61,21 +54,15 @@ programs carry the whole sweep, and they are subtle enough to be worth spelling 
   `git ls-files '*.sh' ...` is driven as the real command. Enumerating the corpus in
   Python would be a second opinion about what "tracked" means.
 
-WHY THIS FILE EXCLUDES ITSELF FROM THE SWEEP AS WELL AS THE TWIN. The twin excludes
-exactly one path, its own. This module contains the same planted string
+WHY THIS FILE EXCLUDES ITSELF FROM THE SWEEP AS WELL AS THE TWIN. The twin excludes exactly one path, its own. This module contains the same planted string
 (`git fetch --depth=1 origin main`) inside a fixture, so once it is tracked the sweep
-would reach it. It would in fact be exempted anyway, because it asks
-`git rev-parse --is-shallow-repository` and therefore satisfies the file-level guard
--- but an exemption that depends on a token appearing somewhere in the file is the
-accidental kind, and the twin's own comment records that a file-level exemption is
-what let a planted violation survive once. So the exclusion is BY NAME, beside the
-twin's, where a reader can see it.
+would reach it. It would in fact be exempted anyway, because it asks `git rev-parse --is-shallow-repository` and therefore satisfies the file-level guard -- but an exemption that depends on a token appearing somewhere in the file is the accidental kind, and the twin's own comment records that a file-level exemption is what let a planted violation survive once. So the exclusion is
+BY NAME, beside the twin's, where a reader can see it.
 
 `node` IS REQUIRED and its absence is a loud failure carrying the fix, never a skip.
 
 NO `xdist_group`. Every git fixture is built under pytest's own `tmp_path`; nothing
-is written inside the checkout, and the two reads of it (`git ls-files` and
-`git rev-parse --is-shallow-repository`) do not mutate anything.
+is written inside the checkout, and the two reads of it (`git ls-files` and `git rev-parse --is-shallow-repository`) do not mutate anything.
 """
 
 import os
@@ -127,12 +114,8 @@ def node(gate) -> str:  # noqa: ARG001 - `gate` keeps every caller uniform
 def real_fetch_depth(path: pathlib.Path) -> bool:
     """The twin's `real_fetch_depth` awk, file-level, comments excluded.
 
-    COMMENTS ARE NOT CODE, and the first run of the twin's sweep proved it: it named
-    `claude-review-reusable.yml`, whose only match is PROSE describing what a
-    third-party action does inside its own workspace. A gate whose first finding is a
-    false positive teaches the reader to skim its output. Stated blind spot, carried
-    over unchanged: a real command sitting inside a heredoc that opens with `#` is
-    missed.
+    COMMENTS ARE NOT CODE, and the first run of the twin's sweep proved it: it named `claude-review-reusable.yml`, whose only match is PROSE describing what a third-party action does inside its own workspace. A gate whose first finding is a false positive teaches the reader to skim its output. Stated blind spot, carried over unchanged: a real command sitting inside a heredoc that
+    opens with `#` is missed.
     """
     for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
         if COMMENT_RE.match(STRIP_RE.sub("", raw)):
@@ -163,8 +146,7 @@ def bare_offender_lines(path: pathlib.Path) -> list[str]:
 def bare_hits(path: pathlib.Path) -> int:
     """The CONTROL's counter, deliberately WITHOUT the printf/echo filter.
 
-    See the module docstring: the control is the simpler instrument on purpose, and
-    handing it the offender loop's extra filter would quietly change what it proves.
+    See the module docstring: the control is the simpler instrument on purpose, and handing it the offender loop's extra filter would quietly change what it proves.
     """
     count = 0
     for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
@@ -197,16 +179,10 @@ def commit_count(gate, directory: pathlib.Path) -> int:
 def make_fixture(gate, directory: pathlib.Path) -> pathlib.Path:
     """origin (bare) + work (60 commits) + clone, with the fixture asserting its own shape.
 
-    BOTH PRECAUTIONS WERE PAID FOR on this gate's FIRST CI run (job 100707433574). The
-    runner's `init.defaultBranch` is not this machine's: a bare `git init` there left
-    origin's HEAD pointing at a nonexistent `master`, so `git clone` reported "you
-    appear to have cloned an empty repository" and the whole battery ran against a
-    1-commit tree. One case then FAILED honestly and another PASSED VACUOUSLY, which
-    is the worse of the two outcomes.
+    BOTH PRECAUTIONS WERE PAID FOR on this gate's FIRST CI run (job 100707433574). The runner's `init.defaultBranch` is not this machine's: a bare `git init` there left origin's HEAD pointing at a nonexistent `master`, so `git clone` reported "you appear to have cloned an empty repository" and the whole battery ran against a 1-commit tree. One case then FAILED honestly and another
+    PASSED VACUOUSLY, which is the worse of the two outcomes.
 
-    So the default branch is pinned in three places (both inits and an explicit
-    `symbolic-ref`, because which of them a given git honours has changed across
-    versions), and the commit count is a hard precondition rather than a hope.
+    So the default branch is pinned in three places (both inits and an explicit `symbolic-ref`, because which of them a given git honours has changed across versions), and the commit count is a hard precondition rather than a hope.
     """
     binary = git(gate)
     origin = directory / "origin"
@@ -247,12 +223,9 @@ def make_fixture(gate, directory: pathlib.Path) -> pathlib.Path:
 
 def detect_changed_files(gate, clone: pathlib.Path) -> harness.RunResult:
     """The REAL entry point. `detectChangedFiles` is what `validate:translation-freshness`
-    calls, and `tryFetchBaseRef` is private to the module, so this drives the thing
-    that actually runs in CI.
+    calls, and `tryFetchBaseRef` is private to the module, so this drives the thing that actually runs in CI.
 
-    `TRANSLATION_FRESHNESS_CHANGED_FILES` is UNSET rather than left inherited: the
-    module short-circuits on it, and inheriting a value from an outer run would make
-    the fetch this whole file is about never happen.
+    `TRANSLATION_FRESHNESS_CHANGED_FILES` is UNSET rather than left inherited: the module short-circuits on it, and inheriting a value from an outer run would make the fetch this whole file is about never happen.
     """
     environment = {
         key: value

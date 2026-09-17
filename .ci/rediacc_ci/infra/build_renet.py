@@ -1,27 +1,19 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/infra/build-renet.sh`.
 
-Builds the renet binary from Go source at `private/renet/`, skipping the build
-only when the binary already on disk was built THE SAME WAY, and hands the path
+Builds the renet binary from Go source at `private/renet/`, skipping the build only when the binary already on disk was built THE SAME WAY, and hands the path
 back on stdout as `RENET_BINARY=<path>` (plus an append to `$GITHUB_ENV` when
 running under GitHub Actions).
 
-WHAT "THE SAME WAY" MEANS, AND WHY IT IS NOT `-f bin/renet`. The twin's own
-comment (build-renet.sh:44-63) records the incident: this used to be a bare
-existence test, ten CI steps call the script, and a job that had built
-`--nolicense` handed its binary to a later job that wanted an enforcing one, so
-that job's licence assertions passed for free. The identity string
-`<mode>|<sha256(ACCOUNT_ED25519_PUBLIC_KEY)[:16]>` covers everything that
-changes the BYTES, and it is stamped into `bin/.renet-build-identity` only AFTER
-the produced binary has been seen on disk. Both halves are reproduced here
+WHAT "THE SAME WAY" MEANS, AND WHY IT IS NOT `-f bin/renet`. The twin's own comment (build-renet.sh:44-63) records the incident: this used to be a bare existence test, ten CI steps call the script, and a job that had built `--nolicense` handed its binary to a later job that wanted an enforcing one, so that job's licence assertions passed for free. The identity string
+`<mode>|<sha256(ACCOUNT_ED25519_PUBLIC_KEY)[:16]>` covers everything that changes the BYTES, and it is stamped into `bin/.renet-build-identity` only AFTER the produced binary has been seen on disk. Both halves are reproduced here
 exactly; `build_identity()` and `build_args()` are exported so a test can drive
 them without a build.
 
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHAT IS NOT
 -----------------------------------------------------------------------------
-SHELLED OUT, because these are the twin's own probes and the differential fakes
-them on PATH:
+SHELLED OUT, because these are the twin's own probes and the differential fakes them on PATH:
 
   * `uname -s`   -- the `.exe` suffix decision. `core.platform.exe_suffix()` was
     deliberately NOT used: it RAISES on a system string it does not recognise,
@@ -36,56 +28,32 @@ them on PATH:
     decision, the ldflags and the output path, and a Python copy of it would be
     a second source of truth for what a shipped binary contains.
 
-NOT SHELLED OUT: the SHA-256. The twin spells it
-`printf '%s' "$KEY" | sha256sum | cut -c1-16`, and `hashlib` produces the same
-16 hex characters with no ambiguity of encoding to get wrong (unlike, say, a DER
-key blob). `test_infra_build_renet.py::test_the_identity_digest_is_the_twins_own
-_pipeline` drives the two against each other rather than against a constant.
+NOT SHELLED OUT: the SHA-256. The twin spells it `printf '%s' "$KEY" | sha256sum | cut -c1-16`, and `hashlib` produces the same 16 hex characters with no ambiguity of encoding to get wrong (unlike, say, a DER key blob). `test_infra_build_renet.py::test_the_identity_digest_is_the_twins_own _pipeline` drives the two against each other rather than against a constant.
 
-This buys ONE DELIBERATE DIVERGENCE, and finding out what it actually was
-uncovered a REAL DEFECT IN THE TWIN. On a host with no `sha256sum` (stock macOS
-ships `shasum`, not `sha256sum`, and this script advertises itself as locally
-runnable) the twin does NOT die. The failing pipeline sits in a COMMAND
-SUBSTITUTION USED AS AN ARGUMENT to `printf`, where neither `set -e` nor
-`pipefail` can see it: printf succeeds with an empty second field, and the
-identity silently collapses from `<mode>|<16 hex>` to `<mode>|`.
+This buys ONE DELIBERATE DIVERGENCE, and finding out what it actually was uncovered a REAL DEFECT IN THE TWIN. On a host with no `sha256sum` (stock macOS ships `shasum`, not `sha256sum`, and this script advertises itself as locally runnable) the twin does NOT die. The failing pipeline sits in a COMMAND SUBSTITUTION USED AS AN ARGUMENT to `printf`, where neither `set -e` nor
+`pipefail` can see it: printf succeeds with an empty second field, and the identity silently collapses from `<mode>|<16 hex>` to `<mode>|`.
 
-The consequence is exactly the incident the stamp was added to prevent. With the
-key half of the identity gone, a binary linked against one
-ACCOUNT_ED25519_PUBLIC_KEY is handed to a job that wanted another and NO REBUILD
-HAPPENS -- one line of stderr, exit 0.
+The consequence is exactly the incident the stamp was added to prevent. With the key half of the identity gone, a binary linked against one ACCOUNT_ED25519_PUBLIC_KEY is handed to a job that wanted another and NO REBUILD HAPPENS -- one line of stderr, exit 0.
 
-This port keeps the key half. Both halves are asserted by
-`test_a_missing_sha256sum_is_the_one_deliberate_divergence` and the consequence
-is demonstrated by
-`test_the_collapsed_identity_defeats_the_rebuild_the_stamp_exists_for`, so the
-difference is a recorded decision and not a surprise. Reported, not fixed: the
-repair is a cutover-box decision.
+This port keeps the key half. Both halves are asserted by `test_a_missing_sha256sum_is_the_one_deliberate_divergence` and the consequence is demonstrated by `test_the_collapsed_identity_defeats_the_rebuild_the_stamp_exists_for`, so the difference is a recorded decision and not a surprise. Reported, not fixed: the repair is a cutover-box decision.
 
 -----------------------------------------------------------------------------
 CONSOLE ROOT COMES FROM THIS FILE'S OWN LOCATION
 -----------------------------------------------------------------------------
-Matching the twin's `SCRIPT_DIR/../../..`. This module sits one directory deeper
-than the twin, so it is `parents[3]` here where the twin's is `parents[2]` of
+Matching the twin's `SCRIPT_DIR/../../..`. This module sits one directory deeper than the twin, so it is `parents[3]` here where the twin's is `parents[2]` of
 ITS directory; both land on the repository root. `rediacc_ci.paths.repo_root()`
-is deliberately not used, on the `ci_stop_elite.py` precedent: that resolver
-honours `$REDIACC_CI_ROOT` and the twin has no such override, so a differential
-pointing one at a fixture and not the other would diverge for a reason that has
-nothing to do with the port.
+is deliberately not used, on the `ci_stop_elite.py` precedent: that resolver honours `$REDIACC_CI_ROOT` and the twin has no such override, so a differential pointing one at a fixture and not the other would diverge for a reason that has nothing to do with the port.
 
 -----------------------------------------------------------------------------
 ENVIRONMENT IS READ AT THE CALL SITE, ONE NAME AT A TIME
 -----------------------------------------------------------------------------
 `os.environ.get("RDC_RENET_LICENSE", "")`, `...get("ACCOUNT_ED25519_PUBLIC_KEY",
 "")`, `...get("GITHUB_ENV", "")`. No `env = dict(os.environ)` alias anywhere:
-the env-manifest reader parses direct `os.environ` reads and an alias makes the
-three names invisible to it.
+the env-manifest reader parses direct `os.environ` reads and an alias makes the three names invisible to it.
 
 `RDC_BENCH` IS NOT READ, and its absence is the point. The twin's identity
 function used to have a second arm for it; that arm was removed 2026-09-09
-because bench is a CONFIG now (`./rdc.sh --config bench`) and nothing else in
-the tree reads the name. Re-adding it here would resurrect a dead knob in the
-one file whose whole job is to decide whether a binary needs rebuilding.
+because bench is a CONFIG now (`./rdc.sh --config bench`) and nothing else in the tree reads the name. Re-adding it here would resurrect a dead knob in the one file whose whole job is to decide whether a binary needs rebuilding.
 """
 
 from __future__ import annotations
@@ -119,12 +87,8 @@ def build_args(argv: list[str]) -> list[str]:
     forwarded, in the order given, and EVERY OTHER ARGUMENT IS DROPPED IN
     SILENCE.
 
-    That silence is the twin's behaviour and is reproduced deliberately, not
-    endorsed: `build-renet.sh --nolicence` (one letter short) builds a DEFAULT
-    binary and says nothing, and the caller reads the exit 0 as "built the way I
-    asked". Reported as a twin defect rather than fixed here, because a port
-    that started rejecting arguments would fail differently from the script it
-    claims to be equivalent to.
+    That silence is the twin's behaviour and is reproduced deliberately, not endorsed: `build-renet.sh --nolicence` (one letter short) builds a DEFAULT binary and says nothing, and the caller reads the exit 0 as "built the way I asked". Reported as a twin defect rather than fixed here, because a port that started rejecting arguments would fail differently from the script it claims
+    to be equivalent to.
     """
     return [arg for arg in argv if arg in ("--nolicense", "--license")]
 
@@ -143,8 +107,7 @@ def build_identity(args: list[str]) -> str:
         what stops `--nolicense` from matching the `--license` pattern.
 
     `RDC_RENET_LICENSE=1` then OVERRIDES whatever the flags said, because
-    `build.sh dev` opts into enforcement from the environment and a stamp that
-    only looked at the flags would call two different binaries the same thing.
+    `build.sh dev` opts into enforcement from the environment and a stamp that only looked at the flags would call two different binaries the same thing.
     """
     joined = " %s " % " ".join(args)
     mode = "default"
@@ -162,10 +125,7 @@ def build_identity(args: list[str]) -> str:
 def exe_suffix() -> str:
     """`.exe` under Git Bash / MSYS / Cygwin, empty everywhere else.
 
-    `uname` is invoked, not `platform.system()`: under MSYS the two disagree
-    (Python reports "Windows", uname reports "MINGW64_NT-10.0"), and the twin
-    asks uname. A missing or failing `uname` yields "", which is what the twin's
-    `case "$(uname -s)"` also falls through to.
+    `uname` is invoked, not `platform.system()`: under MSYS the two disagree (Python reports "Windows", uname reports "MINGW64_NT-10.0"), and the twin asks uname. A missing or failing `uname` yields "", which is what the twin's `case "$(uname -s)"` also falls through to.
     """
     try:
         completed = subprocess.run(

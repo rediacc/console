@@ -1,24 +1,16 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/autopilot/autopilot-gate.sh`.
 
-THE PRE-MODEL GATE. Every check that must pass before the model is invoked, so
-a no-go costs zero model tokens (03-v2-autonomy.md section 2). The gate is
-PURE: it consumes recorded fixture files and env, runs no network calls, and
-prints exactly one decision JSON line on stdout.
+THE PRE-MODEL GATE. Every check that must pass before the model is invoked, so a no-go costs zero model tokens (03-v2-autonomy.md section 2). The gate is PURE: it consumes recorded fixture files and env, runs no network calls, and prints exactly one decision JSON line on stdout.
 
-Purity is what makes every branch offline-testable, and the twin says the thing
-that makes this port's shape mandatory rather than tasteful:
+Purity is what makes every branch offline-testable, and the twin says the thing that makes this port's shape mandatory rather than tasteful:
 
     an untested branch in this file is an untested security decision
 
-So the differential (`test_autopilot_gate.py`) walks EVERY refusal arm, in
-order, and the port below is written to make that walk possible: each decision
-is a straight-line transliteration of the twin's, in the twin's order, with the
-same string on stderr and the same JSON line on stdout.
+So the differential (`test_autopilot_gate.py`) walks EVERY refusal arm, in order, and the port below is written to make that walk possible: each decision is a straight-line transliteration of the twin's, in the twin's order, with the same string on stderr and the same JSON line on stdout.
 
 -----------------------------------------------------------------------------
-THE SIXTEEN EXITS, ENUMERATED, because "I ported the script" is not a claim
-anyone can check and "these sixteen arms are each pinned by a case" is
+THE SIXTEEN EXITS, ENUMERATED, because "I ported the script" is not a claim anyone can check and "these sixteen arms are each pinned by a case" is
 -----------------------------------------------------------------------------
 Six of them are LOUD (exit 2 or 1, a wiring bug must never read as a quiet
 no-go); ten print a decision line and exit 0.
@@ -51,8 +43,7 @@ no-go); ten print a decision line and exit 0.
             26  ready-flip           success while draft
             27  done                 green, ready, reviewed, nothing outstanding
 
-ORDER IS A SECURITY PROPERTY HERE, NOT A STYLE. Three orderings in particular
-are load-bearing and are asserted rather than assumed:
+ORDER IS A SECURITY PROPERTY HERE, NOT A STYLE. Three orderings in particular are load-bearing and are asserted rather than assumed:
 
   * `autopilot-blocked` is read BEFORE any arming path, so the escalation latch
     beats a fresh dispatch. Cancelling a run kills one round; the label kills
@@ -66,10 +57,7 @@ are load-bearing and are asserted rather than assumed:
 -----------------------------------------------------------------------------
 WHY `jq`, `grep`, `sort` AND `state-comment.sh` ARE ALL STILL SPAWNED
 -----------------------------------------------------------------------------
-Same rule as `finish.py` and `update_state.py` in this directory: the twin's
-observable behaviour on the paths a differential can reach INCLUDES the exit
-codes and diagnostics of the programs it spawns, and a reimplementation has to
-re-derive each of their rules correctly or change a decision.
+Same rule as `finish.py` and `update_state.py` in this directory: the twin's observable behaviour on the paths a differential can reach INCLUDES the exit codes and diagnostics of the programs it spawns, and a reimplementation has to re-derive each of their rules correctly or change a decision.
 
   * `jq -e .` is not `json.loads`. It exits 1 when the LAST value is `null` or
     `false`, so a fixture whose whole content is `null` is "not valid JSON" to
@@ -99,10 +87,7 @@ BASH ARITHMETIC IS NOT `int()`, AND THE DIFFERENCE CHANGES DECISIONS
 Every numeric comparison in the twin is `((...))`, which parses a leading zero
 as OCTAL. `AUTOPILOT_MAX_ROUNDS=012` is validated by `^[0-9]{1,4}$`, reaches
 `((ROUNDS_DONE >= MAX_ROUNDS))` as TEN, and reaches `jq --argjson rounds_max
-012` as TWELVE (measured against jq 1.8.1, which accepts the leading zero). So
-the twin ENFORCES a cap of ten while REPORTING twelve, and a port using `int()`
-would enforce twelve and agree with its own report -- a different gate.
-`bash_int` below reproduces bash's rule, and the reported value stays jq's,
+012` as TWELVE (measured against jq 1.8.1, which accepts the leading zero). So the twin ENFORCES a cap of ten while REPORTING twelve, and a port using `int()` would enforce twelve and agree with its own report -- a different gate. `bash_int` below reproduces bash's rule, and the reported value stays jq's,
 because jq is still jq. The same split reaches `((pr_threads == 0))` through a
 `unresolved_threads` that arrives as the JSON STRING "012".
 
@@ -206,17 +191,11 @@ LEDGER_ROUND_RE = r"^r[0-9]+ \| run "
 class Decided:
     """What `emit`/`no_go` reach `exit 0` WITH: an exit code and the line to print.
 
-    The twin's `emit` ends in `exit 0` inside a function, which ends the whole
-    script. A Python helper cannot do that without `sys.exit`, which is
-    untestable without catching `SystemExit`.
+    The twin's `emit` ends in `exit 0` inside a function, which ends the whole script. A Python helper cannot do that without `sys.exit`, which is untestable without catching `SystemExit`.
 
-    NOT AN EXCEPTION, DELIBERATELY, and this is the second draft: `RefusalError`
-    next door is one because a `require_*` is called from a dozen places that
-    each have to unwind. Here every caller is a `return` in one straight-line
+    NOT AN EXCEPTION, DELIBERATELY, and this is the second draft: `RefusalError` next door is one because a `require_*` is called from a dozen places that each have to unwind. Here every caller is a `return` in one straight-line
     function, so an exception would add a control-flow mechanism nothing needs
-    and would make "did this arm decide?" invisible in the signature. The value
-    is RETURNED, `_classify` is typed as returning it, and a missing `return`
-    is then a type error rather than a silently skipped decision.
+    and would make "did this arm decide?" invisible in the signature. The value is RETURNED, `_classify` is typed as returning it, and a missing `return` is then a type error rather than a silently skipped decision.
     """
 
     __slots__ = ("code", "payload")
@@ -230,10 +209,7 @@ def script_dir() -> pathlib.Path:
     """The twin's `SCRIPT_DIR`: `.ci/scripts/autopilot`.
 
     From THIS file's location, matching `cd "$(dirname "${BASH_SOURCE[0]}")"`.
-    `rediacc_ci.paths.repo_root()` is deliberately NOT used, for the reason
-    `update_state.py:108-115` gives: it honours `$REDIACC_CI_ROOT` and the twin
-    honours nothing, so a port built on it would follow an env var the twin
-    ignores and could spawn a DIFFERENT `state-comment.sh` than the twin does.
+    `rediacc_ci.paths.repo_root()` is deliberately NOT used, for the reason `update_state.py:108-115` gives: it honours `$REDIACC_CI_ROOT` and the twin honours nothing, so a port built on it would follow an env var the twin ignores and could spawn a DIFFERENT `state-comment.sh` than the twin does.
     """
     return pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "autopilot"
 
@@ -241,8 +217,7 @@ def script_dir() -> pathlib.Path:
 def bash_arith(text: str) -> int | None:
     """`$((text))` for a bare token. `None` means bash raised an ERROR.
 
-    Bash's arithmetic literal grammar, and only the parts a value reaching this
-    gate can exhibit:
+    Bash's arithmetic literal grammar, and only the parts a value reaching this gate can exhibit:
 
         ""        0     an empty or unset variable is zero
         "0"       0
@@ -254,12 +229,10 @@ def bash_arith(text: str) -> int | None:
     A negative literal cannot arrive: every value is either `grep -c` output or
     has already passed `^[0-9]{1,4}$` or `^[0-9]+$`.
 
-    THE `None` IS NOT A DETAIL, IT IS THE WHOLE REASON THIS RETURNS AN OPTION.
-    An erroring `((...))` returns FALSE, and false is not "compare against
+    THE `None` IS NOT A DETAIL, IT IS THE WHOLE REASON THIS RETURNS AN OPTION. An erroring `((...))` returns FALSE, and false is not "compare against
     zero". `((10 >= 08))` is FALSE, so a malformed round cap FAILS OPEN and the
     round runs; a port that read `08` as `0` would compute `10 >= 0`, which is
-    TRUE, and would refuse the round instead. That divergence was found by the
-    differential rather than by reading, which is why `bash_cmp` exists at all
+    TRUE, and would refuse the round instead. That divergence was found by the differential rather than by reading, which is why `bash_cmp` exists at all
     instead of `bash_arith(a) >= bash_arith(b)`.
     """
     token = text.strip()
@@ -300,9 +273,7 @@ def bash_int(text: str) -> int:
     An error is zero here, which is not bash's behaviour: bash would abort the
     assignment and, under `set -e`, the script. Both call sites (`ROUND=$((
     ROUNDS_DONE + 1 ))` and `SIG_COUNT=$((campaign_sig_count + 1))`) are fed
-    values that CANNOT error -- `grep -c` output and a `jq --argjson` number --
-    so the abort path is unreachable and reproducing it would add an exit code
-    no input can produce. Named rather than left implicit.
+    values that CANNOT error -- `grep -c` output and a `jq --argjson` number -- so the abort path is unreachable and reproducing it would add an exit code no input can produce. Named rather than left implicit.
     """
     value = bash_arith(text)
     return 0 if value is None else value
@@ -311,9 +282,7 @@ def bash_int(text: str) -> int:
 def bash_cmp(left: str, op: str, right: str) -> bool:
     """`((left OP right))`, including "an error is FALSE".
 
-    Bash evaluates left to right and stops at the first bad token, so only one
-    diagnostic is printed even when both operands are malformed. Reproduced,
-    because the diagnostics are on stderr and the differential counts them.
+    Bash evaluates left to right and stops at the first bad token, so only one diagnostic is printed even when both operands are malformed. Reproduced, because the diagnostics are on stderr and the differential counts them.
     """
     a = bash_arith(left)
     if a is None:
@@ -345,10 +314,7 @@ def in_csv_allowlist(value: str, csv: str) -> bool:
     2. `item="${item//[[:space:]]/}"` deletes EVERY whitespace character rather
        than trimming the ends. See hazard 2 in the module docstring.
 
-    An empty allowlist admits nobody, by construction: there is no item, so the
-    loop ends and the answer is False. The twin's step 4 comment leans on that,
-    and it is the whole fail-closed story for `AUTOPILOT_AUTHOR_ALLOWLIST`
-    being unset.
+    An empty allowlist admits nobody, by construction: there is no item, so the loop ends and the answer is False. The twin's step 4 comment leans on that, and it is the whole fail-closed story for `AUTOPILOT_AUTHOR_ALLOWLIST` being unset.
     """
     line = csv.split("\n", 1)[0]
     for item in line.split(","):
@@ -361,8 +327,7 @@ def in_csv_allowlist(value: str, csv: str) -> bool:
 def _run(args: list[str], *, capture_err: bool = False, env: dict | None = None):
     """Spawn, capturing stdout, with stderr INHERITED unless asked otherwise.
 
-    Inherited stderr is what an unredirected command in the twin does, and it
-    is why jq's own parse errors reach fd 2 in the same order.
+    Inherited stderr is what an unredirected command in the twin does, and it is why jq's own parse errors reach fd 2 in the same order.
     """
     return subprocess.run(
         args,
@@ -386,9 +351,7 @@ def jq_capture(args: list[str]) -> tuple[int, str]:
 def jq_test(args: list[str], *, quiet: bool = False) -> bool:
     """`jq -e ... >/dev/null`: the exit status only.
 
-    `quiet` is the twin's `2>&1` on the dispatch probe, which is the ONE jq
-    call whose diagnostics are deliberately swallowed (an absent
-    `.autopilot_dispatch` key is the normal workflow_run path, not an error).
+    `quiet` is the twin's `2>&1` on the dispatch probe, which is the ONE jq call whose diagnostics are deliberately swallowed (an absent `.autopilot_dispatch` key is the normal workflow_run path, not an error).
     """
     return _run(["jq", *args], capture_err=quiet).returncode == 0
 
@@ -396,8 +359,7 @@ def jq_test(args: list[str], *, quiet: bool = False) -> bool:
 def sha256_hex(data: bytes) -> str:
     """`sha256_hex`: the twin's `sha256sum | cut -d' ' -f1`, as a digest.
 
-    The twin branches to `shasum -a 256` on macOS. Both print the same 64 hex
-    characters for the same bytes, so there is nothing here to choose between.
+    The twin branches to `shasum -a 256` on macOS. Both print the same 64 hex characters for the same bytes, so there is nothing here to choose between.
     """
     return hashlib.sha256(data).hexdigest()
 
@@ -405,11 +367,7 @@ def sha256_hex(data: bytes) -> str:
 def failure_signature(path: str) -> tuple[int, str]:
     """`LC_ALL=C sort "$FAILED_JOBS" | sha256_hex | cut -c1-8`.
 
-    Returns (exit code, signature). `sort` is SPAWNED (see the module
-    docstring), and `pipefail` means its status is the pipeline's, so a
-    unreadable file ends the twin's run rather than yielding a signature over
-    nothing. That is the correct direction: a signature computed over a failed
-    read would collide with every other failed read and read as "stuck".
+    Returns (exit code, signature). `sort` is SPAWNED (see the module docstring), and `pipefail` means its status is the pipeline's, so a unreadable file ends the twin's run rather than yielding a signature over nothing. That is the correct direction: a signature computed over a failed read would collide with every other failed read and read as "stuck".
     """
     env = dict(os.environ)
     env["LC_ALL"] = "C"
@@ -428,10 +386,7 @@ def failure_signature(path: str) -> tuple[int, str]:
 def grep_count(pattern_args: list[str], path: str) -> str:
     """`$(grep -c ... file || true)`: the count as the twin's shell sees it.
 
-    A STRING, not an int, because `|| true` turns grep's "no match, exit 1"
-    into an EMPTY capture on some grep failures and `0` on the ordinary
-    no-match, and the difference travels into `$((...))` where both are zero.
-    Returning the string keeps that faithful instead of guessing.
+    A STRING, not an int, because `|| true` turns grep's "no match, exit 1" into an EMPTY capture on some grep failures and `0` on the ordinary no-match, and the difference travels into `$((...))` where both are zero. Returning the string keeps that faithful instead of guessing.
     """
     proc = _run(["grep", *pattern_args, path])
     return (proc.stdout or b"").decode("utf-8", "surrogateescape").rstrip("\n")
@@ -440,8 +395,7 @@ def grep_count(pattern_args: list[str], path: str) -> str:
 def non_empty_file(path: str) -> bool:
     """`[[ -n "$p" && -s "$p" ]]`, the twin's test for every optional fixture.
 
-    NOT `require_file`. See hazard 1 in the module docstring: this is the test
-    that makes a mistyped path silent.
+    NOT `require_file`. See hazard 1 in the module docstring: this is the test that makes a mistyped path silent.
     """
     if not path:
         return False
@@ -477,10 +431,7 @@ class Gate:
         THE CAMPAIGN VALUE IS THE NEXT WRITE'S, NOT THIS ROUND'S. A
         dispatch-armed go OPENS the campaign; reaching mode `done` CLOSES one
         that exists; everything else carries the current value forward
-        untouched, so a label-armed round never closes a campaign it knows
-        nothing about. Three arms, and the middle one has a guard that is easy
-        to miss: `done` with campaign `none` stays `none` rather than becoming
-        `closed`, because there was nothing to close.
+        untouched, so a label-armed round never closes a campaign it knows nothing about. Three arms, and the middle one has a guard that is easy to miss: `done` with campaign `none` stays `none` rather than becoming `closed`, because there was nothing to close.
         """
         campaign_next = self.campaign_state
         if mode == "done":
@@ -546,8 +497,7 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
 
     Deliberately ONE function despite its length. The twin is one straight-line
     script and its order IS the specification; splitting it into per-check
-    helpers would let a future edit move a check without the move being visible
-    as a diff of this file's control flow.
+    helpers would let a future edit move a check without the move being visible as a diff of this file's control flow.
     """
     event = args.get("ARG_EVENT", "")
     pr = args.get("ARG_PR", "")

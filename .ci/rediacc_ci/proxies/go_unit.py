@@ -1,94 +1,53 @@
 """Port of `.ci/scripts/test/proxies/proxy-go-unit.sh`.
 
-Local proxy for the renet Go unit tests, the heaviest single leg of CI's
-test-renet job, wired as the registered gate `check:ci-proxy-go-unit`
+Local proxy for the renet Go unit tests, the heaviest single leg of CI's test-renet job, wired as the registered gate `check:ci-proxy-go-unit`
 (`package.json:388`). CI runs `sudo -E gotestsum -- -v -race -coverprofile=...
 ./pkg/... ./cmd/...` under root; none of that is in the parity surface, so a
 developer's local run has never compiled a single renet test.
 
-The subset is DERIVED on every run, never typed, and the excluded set is
-PRINTED BY NAME: it is real debt (those tests run only in CI) and a quiet
-exemption is how a gate stops meaning what its name says. What this proxy
-therefore does NOT prove is stated in the twin's header and unchanged here: no
-race detector, no root paths, no subscription e2e.
+The subset is DERIVED on every run, never typed, and the excluded set is PRINTED BY NAME: it is real debt (those tests run only in CI) and a quiet exemption is how a gate stops meaning what its name says. What this proxy therefore does NOT prove is stated in the twin's header and unchanged here: no race detector, no root paths, no subscription e2e.
 
 -----------------------------------------------------------------------------
 THE EXCLUSION REGEX WAS WIDER THAN ITS OWN DOCUMENTATION. FIXED 2026-09-10,
 BY CORRECTING THE DOCUMENTATION -- THE REGEX WAS RIGHT
 -----------------------------------------------------------------------------
-The twin's header used to say the excluded set was the packages "whose
-_test.go files reference Geteuid, RequireRoot or the pkg/testutil PRIVILEGED
-HELPERS (btrfs.go, luksext4.go)", while `:100` greps
+The twin's header used to say the excluded set was the packages "whose _test.go files reference Geteuid, RequireRoot or the pkg/testutil PRIVILEGED HELPERS (btrfs.go, luksext4.go)", while `:100` greps
 
     Geteuid|RequireRoot|requireRoot|testutil\\.
 
-which excludes a directory on ANY reference to the testutil package, and on
-`requireRoot` in lower case, which the header did not mention at all. Two
-discrepancies, and both were in the DOCUMENT rather than in the code.
+which excludes a directory on ANY reference to the testutil package, and on `requireRoot` in lower case, which the header did not mention at all. Two discrepancies, and both were in the DOCUMENT rather than in the code.
 
-WHY THE WIDER MATCH IS THE CORRECT ONE, which is the judgement this fix rests
-on. Narrowing to "privileged helpers" means classifying pkg/testutil's symbols
-one by one -- `CreateLuksExt4Repo` and `RequireBtrfs` yes, `SHA256File`,
-`NewSeededRng`, `MakePatch` and `FilesIdentical` no -- and that classification
-can only live as a HAND-TYPED allowlist, the one thing this subset refuses to
-be ("DERIVED on every run, never typed"). A typed list goes stale in the
-HAZARDOUS direction: add a privileged helper to pkg/testutil, forget the list,
-and an unprivileged developer box starts creating loop devices and LUKS
-containers, which the twin's own header calls "not a test, it is a hazard".
+WHY THE WIDER MATCH IS THE CORRECT ONE, which is the judgement this fix rests on. Narrowing to "privileged helpers" means classifying pkg/testutil's symbols one by one -- `CreateLuksExt4Repo` and `RequireBtrfs` yes, `SHA256File`, `NewSeededRng`, `MakePatch` and `FilesIdentical` no -- and that classification can only live as a HAND-TYPED allowlist, the one thing this subset refuses
+to be ("DERIVED on every run, never typed"). A typed list goes stale in the HAZARDOUS direction: add a privileged helper to pkg/testutil, forget the list, and an unprivileged developer box starts creating loop devices and LUKS containers, which the twin's own header calls "not a test, it is a hazard".
 Over-exclusion costs local coverage and is PRINTED BY NAME on every run;
-under-exclusion costs a damaged workstation and prints nothing. So the
-conservative direction wins and the comment was brought in line with it.
+under-exclusion costs a damaged workstation and prints nothing. So the conservative direction wins and the comment was brought in line with it.
 
-BLAST RADIUS, MEASURED BEFORE AND AFTER AND UNCHANGED BY THIS FIX: ZERO
-packages. Nothing about the excluded set moved, because only a comment moved.
-On this tree the fourth alternative matches five files
-(pkg/chunkstore, pkg/delta x2, pkg/kubecsi, pkg/repodiff) that are a STRICT
-SUBSET of the nine matched by `Geteuid|RequireRoot|requireRoot`, so all eight
-excluded directories
+BLAST RADIUS, MEASURED BEFORE AND AFTER AND UNCHANGED BY THIS FIX: ZERO packages. Nothing about the excluded set moved, because only a comment moved. On this tree the fourth alternative matches five files (pkg/chunkstore, pkg/delta x2, pkg/kubecsi, pkg/repodiff) that are a STRICT SUBSET of the nine matched by `Geteuid|RequireRoot|requireRoot`, so all eight excluded directories
 
     pkg/chunkstore  pkg/daemon  pkg/datastore  pkg/delta
     pkg/ebpf        pkg/kubecsi pkg/luks       pkg/repodiff
 
-would be excluded without it. That measurement is now a TEST rather than a
-sentence:
-`test_proxies_go_unit.py::test_the_fourth_alternative_removes_nothing_extra_on_
-the_real_tree`. The drift itself cannot recur silently either:
-`::test_the_documented_predicate_matches_the_grep_character_for_character`
-reads the pattern out of the twin's grep, requires the twin's header to quote
-it verbatim, and requires `EXCLUDE_RE` below to equal it.
+would be excluded without it. That measurement is now a TEST rather than a sentence: `test_proxies_go_unit.py::test_the_fourth_alternative_removes_nothing_extra_on_ the_real_tree`. The drift itself cannot recur silently either: `::test_the_documented_predicate_matches_the_grep_character_for_character` reads the pattern out of the twin's grep, requires the twin's header to quote it
+verbatim, and requires `EXCLUDE_RE` below to equal it.
 
 -----------------------------------------------------------------------------
 THE FIFTH ALTERNATIVE, ADDED 2026-09-10: A REAL GAP, FOUND UNDER CI=true
 -----------------------------------------------------------------------------
 `pkg/storage` gates its root-only tests with plain `os.Getuid() != 0`
-(`directory_test.go`, `luks_test.go`), an idiom none of the first four
-alternatives catch -- it is neither `Geteuid` (a distinct, real Go function
-this pattern must also ignore) nor `RequireRoot` nor `testutil.`. Locally,
+(`directory_test.go`, `luks_test.go`), an idiom none of the first four alternatives catch -- it is neither `Geteuid` (a distinct, real Go function this pattern must also ignore) nor `RequireRoot` nor `testutil.`. Locally,
 with no `CI` env var, those tests just call `t.Skip` and this proxy silently
 reported a clean pass over 11 tests it never really ran. Under `CI=true`
-(what real CI sets, and what this port's own real-tree differential drives it
-under), the same tests instead call `t.Fatalf("CI must run as root for LUKS
-storage tests")`, and the whole package -- including its non-LUKS
-`TestDirectoryStorage_*` cases, gated by the same idiom -- hard-failed this
-gate. `pkg/repository` and `pkg/filesystem` use the identical guard and move
+(what real CI sets, and what this port's own real-tree differential drives it under), the same tests instead call `t.Fatalf("CI must run as root for LUKS storage tests")`, and the whole package -- including its non-LUKS `TestDirectoryStorage_*` cases, gated by the same idiom -- hard-failed this gate. `pkg/repository` and `pkg/filesystem` use the identical guard and move
 into the excluded set too; `pkg/daemon` was already excluded. Net: 68 -> 11
-excluded, 57 in the subset (was 8 excluded, 60 in the subset). Pinned by
-`test_a_getuid_only_package_is_now_excluded`.
+excluded, 57 in the subset (was 8 excluded, 60 in the subset). Pinned by `test_a_getuid_only_package_is_now_excluded`.
 
 -----------------------------------------------------------------------------
 TWO SMALLER FIDELITIES WORTH NAMING
 -----------------------------------------------------------------------------
-`:108` is `grep -qx "$rel"`, not `grep -qxF`, so the relative directory is used
-as a BASIC REGULAR EXPRESSION against the excluded list. Every path in that
-list today is metacharacter-free (checked: none of the eleven contains any of
-`.` `*` `[` `]` `^` `$` `\\`), so exact string equality is the same predicate
-and is what `_is_excluded` uses. A directory named `pkg/v1.2` would diverge,
-and that is recorded here rather than silently normalised.
+`:108` is `grep -qx "$rel"`, not `grep -qxF`, so the relative directory is used as a BASIC REGULAR EXPRESSION against the excluded list. Every path in that list today is metacharacter-free (checked: none of the eleven contains any of `.` `*` `[` `]` `^` `$` `\\`), so exact string equality is the same predicate and is what `_is_excluded` uses. A directory named `pkg/v1.2` would
+diverge, and that is recorded here rather than silently normalised.
 
-`:117` is `printf '  - %s\\n' $EXCLUDED_DIRS`, UNQUOTED -- deliberate word
-splitting so one line prints per directory. It also globs, which is why
-`_print_excluded` splits on whitespace rather than on newlines: the bytes are
-the same for these names and the shape is the twin's.
+`:117` is `printf ' - %s\\n' $EXCLUDED_DIRS`, UNQUOTED -- deliberate word splitting so one line prints per directory. It also globs, which is why `_print_excluded` splits on whitespace rather than on newlines: the bytes are the same for these names and the shape is the twin's.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-go-unit.observations.jsonl`.
 """
@@ -121,8 +80,7 @@ def candidates(listing: str) -> list[str]:
 
     awk splits on runs of whitespace and compares numerically, so a package
     with no test files of either kind drops out. A `.Dir` containing a space
-    would shift the fields on BOTH sides identically, since `read -r ip _nt
-    _nx dir` below takes the rest of the line into `dir`.
+    would shift the fields on BOTH sides identically, since `read -r ip _nt _nx dir` below takes the rest of the line into `dir`.
     """
     out = []
     for line in listing.split("\n"):

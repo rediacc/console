@@ -1,30 +1,18 @@
 """Differential: `rediacc_ci.release.cleanup_channel_docker_tags` against its
 twin `.ci/scripts/release/cleanup-channel-docker-tags.sh`.
 
-NEITHER SIDE RUNS IN THIS CHECKOUT. The twin resolves the deleter as
-`$SCRIPT_DIR/../docker/cleanup_staging.py` (agent/PLAN-w7p4w-docker-cutover.md
-Stage 5 cut the twin's own call site from `cleanup-staging.sh` over to this
+NEITHER SIDE RUNS IN THIS CHECKOUT. The twin resolves the deleter as `$SCRIPT_DIR/../docker/cleanup_staging.py` (agent/PLAN-w7p4w-docker-cutover.md Stage 5 cut the twin's own call site from `cleanup-staging.sh` over to this
 Python entry point; the fixture below tracks that, not the pre-cutover name),
 with no override hook, and that script talks to GHCR through `gh api --method
-DELETE`. So every case builds a throwaway console tree per side at the real
-relative depths, drops a RECORDING STUB at `.ci/scripts/docker/cleanup_staging.py`,
-and runs the subject out of that tree. The real deleter is never on any path
-either side can reach.
+DELETE`. So every case builds a throwaway console tree per side at the real relative depths, drops a RECORDING STUB at `.ci/scripts/docker/cleanup_staging.py`, and runs the subject out of that tree. The real deleter is never on any path either side can reach.
 
 THE STEP SUMMARY IS THE OBSERVABLE, not stdout. This script's whole product is
 a markdown block appended to `$GITHUB_STEP_SUMMARY`; stdout and stderr carry
-only whatever the deleter itself printed, inherited rather than captured. So
-every case compares the summary FILE byte for byte, and the deleter's own two
-streams as well, and the call log on top of that.
+only whatever the deleter itself printed, inherited rather than captured. So every case compares the summary FILE byte for byte, and the deleter's own two streams as well, and the call log on top of that.
 
-THE PRODUCTION PATH IS THE ONE THAT CALLS NOTHING, which is worth stating
-because it looks like a bug and is not. `cleanup-staging.sh` accepts only
-`staging-*` tags by design, so a stray call cannot delete a real tag, and
-`CHANNEL` is `edge` or `stable`. The guard therefore rejects it on EVERY
+THE PRODUCTION PATH IS THE ONE THAT CALLS NOTHING, which is worth stating because it looks like a bug and is not. `cleanup-staging.sh` accepts only `staging-*` tags by design, so a stray call cannot delete a real tag, and `CHANNEL` is `edge` or `stable`. The guard therefore rejects it on EVERY
 release and the deleter is never invoked; the twin's header is emphatic that
-this is a KNOWN GAP with its own summary wording, not the token-scope problem
-the header used to claim. `test_edge_takes_the_known_gap_branch_and_calls_
-nothing` pins exactly that, call log included.
+this is a KNOWN GAP with its own summary wording, not the token-scope problem the header used to claim. `test_edge_takes_the_known_gap_branch_and_calls_ nothing` pins exactly that, call log included.
 """
 
 from __future__ import annotations
@@ -268,13 +256,8 @@ def test_a_nonzero_exit_other_than_one_is_still_a_failure(tmp_path: pathlib.Path
 def test_a_missing_deleter_falls_through_to_the_failure_block(tmp_path: pathlib.Path) -> None:
     """`command not found` is a non-zero status like any other.
 
-    STDERR IS EXCLUDED FROM THIS ONE COMPARISON, and only this one: bash says
-    `line 62: <path>: No such file or directory` while the port says
-    `<path>: No such file or directory`. The summary block, the exit code and
-    the empty call log all agree, which is what a reader of the step summary
-    sees. A port that let `FileNotFoundError` escape would instead abort with a
-    traceback BEFORE writing the failure block, so this case is the one that
-    proves it does not.
+    STDERR IS EXCLUDED FROM THIS ONE COMPARISON, and only this one: bash says `line 62: <path>: No such file or directory` while the port says `<path>: No such file or directory`. The summary block, the exit code and the empty call log all agree, which is what a reader of the step summary sees. A port that let `FileNotFoundError` escape would instead abort with a traceback BEFORE
+    writing the failure block, so this case is the one that proves it does not.
     """
     old, new = run_both(tmp_path, with_deleter=False, CHANNEL="staging-abc123", FAKE_CLEANUP_RC="0")
     assert old[0] == 0

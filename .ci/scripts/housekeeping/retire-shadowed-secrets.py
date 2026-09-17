@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Retire a GitHub org secret whose Bitwarden twin is now the live source.
 
-WHAT THIS IS FOR. The cutover flipped every CONSUMER read from `secrets.X` to
-`env.BWS_X`. What is left of X in the tree is scaffolding that exists only to prove
-the twin matched while the flip was in progress:
+WHAT THIS IS FOR. The cutover flipped every CONSUMER read from `secrets.X` to `env.BWS_X`. What is left of X in the tree is scaffolding that exists only to prove the twin matched while the flip was in progress:
 
   1. the `GH_<NAME>:` line and the SHADOW_NAMES entry in each job's
      "Compare shadow secrets against GitHub" step -- and the whole step, but ONLY
@@ -13,14 +11,9 @@ the twin matched while the flip was in progress:
   3. the callee's `on.workflow_call.secrets.<NAME>` declaration, which is dead the
      moment nothing in it reads the name.
 
-Deleting the GitHub secret itself is NOT done here and never will be: this script
-PRINTS the `gh secret delete` lines and stops. An org secret cannot be restored, the
-value is not in the tree, and a script that both edits code and destroys the only
-copy of a credential is a script that can do half the job and leave no way back.
+Deleting the GitHub secret itself is NOT done here and never will be: this script PRINTS the `gh secret delete` lines and stops. An org secret cannot be restored, the value is not in the tree, and a script that both edits code and destroys the only copy of a credential is a script that can do half the job and leave no way back.
 
-ORDER MATTERS AND THIS TOOL DOES NOT ENFORCE IT. Land the edit, let CI go green, and
-only then run the printed commands. Doing it the other way round blanks the reads
-this edit has not removed yet.
+ORDER MATTERS AND THIS TOOL DOES NOT ENFORCE IT. Land the edit, let CI go green, and only then run the printed commands. Doing it the other way round blanks the reads this edit has not removed yet.
 
 Usage:
   retire-shadowed-secrets.py <NAME> [<NAME>...]            # report only (default)
@@ -75,10 +68,7 @@ def step_span(lines: list[str], i: int) -> tuple[int, int]:
 def retire_in_text(text: str, names: set[str]) -> tuple[str, list[str]]:
     """Rewrite one workflow's text. Returns (new_text, what changed).
 
-    Line-addressed and re-scanned after every removal rather than done in one pass:
-    the three edits below overlap (removing a GH_ line can empty a SHADOW_NAMES list
-    which empties a step), and a single pass over stale indices is how a rewrite lands
-    in the neighbouring key.
+    Line-addressed and re-scanned after every removal rather than done in one pass: the three edits below overlap (removing a GH_ line can empty a SHADOW_NAMES list which empties a step), and a single pass over stale indices is how a rewrite lands in the neighbouring key.
     """
     lines = text.split("\n")
     changed: list[str] = []

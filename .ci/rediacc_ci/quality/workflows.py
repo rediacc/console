@@ -7,8 +7,7 @@ Ported from `.ci/scripts/quality/check-workflows.sh`, which is NOT deleted; see
 THE TWIN'S HEADER, CARRIED ACROSS.
 -----------------------------------------------------------------------------
 
-Validates that GitHub Actions workflows and actions don't use patterns that
-violate CI design principles:
+Validates that GitHub Actions workflows and actions don't use patterns that violate CI design principles:
   - continue-on-error: Silently ignores step/job failures
   - script: |          Inline scripts violate multi-CI design (use .ci/scripts/)
   (fail-fast was previously banned but GitHub defaults to true, not false.
@@ -45,22 +44,14 @@ SECURITY BANS, each with its own reason:
 THE FOUR STRUCTURAL RULES AND THE INCIDENTS BEHIND THEM.
 -----------------------------------------------------------------------------
 
-THE INLINE-RUN RULE. CI step LOGIC belongs in .ci/scripts/<area>/<name>.sh,
-which is locally runnable and shareable across CI systems. A workflow `run:`
-block scalar whose shell logic (non-blank, non-comment lines) exceeds
-$INLINE_MAX_LOGIC lines is a violation. Full stop -- there is no baseline and no
-grandfathering. There used to be a ratchet:
-.ci/quality/workflow-inline-baseline.json froze 52 legacy violations per-file
-and only allowed the counts to fall. All 52 were extracted, so the file and its
-ratchet logic are gone. Do not reintroduce them: an escape hatch that exists
-gets used, and the rule only actually held once the hatch was removed.
+THE INLINE-RUN RULE. CI step LOGIC belongs in .ci/scripts/<area>/<name>.sh, which is locally runnable and shareable across CI systems. A workflow `run:` block scalar whose shell logic (non-blank, non-comment lines) exceeds $INLINE_MAX_LOGIC lines is a violation. Full stop -- there is no baseline and no grandfathering. There used to be a ratchet:
+.ci/quality/workflow-inline-baseline.json froze 52 legacy violations per-file and only allowed the counts to fall. All 52 were extracted, so the file and its ratchet logic are gone. Do not reintroduce them: an escape hatch that exists gets used, and the rule only actually held once the hatch was removed.
 
 A block owns every following line that is blank OR indented deeper than the
 `run:` key; a logic line is a non-blank line whose first non-space char is not
 `#`.
 
-Anti-vacuity: no workflows parsed means the layout moved and this gate is
-asserting nothing. Fail loudly rather than report a clean run.
+Anti-vacuity: no workflows parsed means the layout moved and this gate is asserting nothing. Fail loudly rather than report a clean run.
 
 THE `env:` SHELL-SYNTAX RULE. GitHub does NOT expand shell syntax in an `env:`
 VALUE -- only `${{ }}` expressions -- and bash does not recursively expand a
@@ -69,54 +60,30 @@ variable's value. So
     env:
       SSH_KEY: $RUNNER_TEMP/renet/staging/.ssh/id_rsa
 
-reaches the script as the 24-character literal `$RUNNER_TEMP/renet/...`, and the
-failure is a confusing "No such file or directory" naming a path with a dollar
-sign in it. Real case: OPS Provision, run 29830623794. This is specifically an
-inline-extraction hazard. Inside a `run:` block the shell DOES expand
-$RUNNER_TEMP, so moving that same text into `env:` while extracting a script
-silently changes its meaning. That is how it got here. Fix: use the GitHub
+reaches the script as the 24-character literal `$RUNNER_TEMP/renet/...`, and the failure is a confusing "No such file or directory" naming a path with a dollar sign in it. Real case: OPS Provision, run 29830623794. This is specifically an inline-extraction hazard. Inside a `run:` block the shell DOES expand $RUNNER_TEMP, so moving that same text into `env:` while extracting a
+script silently changes its meaning. That is how it got here. Fix: use the GitHub
 context (`${{ runner.temp }}`, `${{ github.workspace }}`), or assign on the run
 line where the shell can expand it (`run: VAR="$HOME/x" ./script.sh`) for
 variables with no context equivalent.
 
-NOTE THE EXPLICIT BOUNDARY CLASS rather than `\b`: in awk regex `\b` is a
-BACKSPACE, not a word boundary. The first version of this rule used it and
-matched nothing -- permanently vacuous, and green. Caught only by planting a
-violation. The class also stops $HOMEBREW_PREFIX reading as $HOME.
+NOTE THE EXPLICIT BOUNDARY CLASS rather than `\b`: in awk regex `\b` is a BACKSPACE, not a word boundary. The first version of this rule used it and matched nothing -- permanently vacuous, and green. Caught only by planting a violation. The class also stops $HOMEBREW_PREFIX reading as $HOME.
 
 Comment lines are prose, not values -- housekeeping.yml:72 documents
 `${IN_FLIGHT_VERSION:-}` inside an env: block and must not read as a violation.
 
-ANY shell-style variable, not a list of six. The six-name form
-(RUNNER_TEMP|RUNNER_OS|GITHUB_WORKSPACE|GITHUB_SHA|HOME|PWD) let
-`SECRET_X: $SOME_VAR` through -- the exact idiom a job-start secret fetch
-invites, and one that ships an EMPTY string because GitHub never expands it.
-Widened 2026-09-02.
+ANY shell-style variable, not a list of six. The six-name form (RUNNER_TEMP|RUNNER_OS|GITHUB_WORKSPACE|GITHUB_SHA|HOME|PWD) let `SECRET_X: $SOME_VAR` through -- the exact idiom a job-start secret fetch invites, and one that ships an EMPTY string because GitHub never expands it. Widened 2026-09-02.
 
-THE `pr-` ENVIRONMENT RULE. A job-level `environment:` makes GitHub create the
-environment OBJECT plus a deployment record. ci.yml's deploy-preview job did
-that for every PR, and CI cannot undo it: deleting an environment needs
-Administration:write, which check-no-app-admin-perm.sh forbids the CI App from
-holding. 25 empty `pr-*` shells accumulated on /deployments before they were
-deleted by hand. BOTH SYNTACTIC FORMS, because only one of them is the obvious
-one:
+THE `pr-` ENVIRONMENT RULE. A job-level `environment:` makes GitHub create the environment OBJECT plus a deployment record. ci.yml's deploy-preview job did that for every PR, and CI cannot undo it: deleting an environment needs Administration:write, which check-no-app-admin-perm.sh forbids the CI App from holding. 25 empty `pr-*` shells accumulated on /deployments before they were
+deleted by hand. BOTH SYNTACTIC FORMS, because only one of them is the obvious one:
 
     environment:            environment: pr-${{ ... }}
       name: pr-${{ ... }}
 
-A `grep 'name: pr-'` would be the vacuous version -- it misses the scalar
-shorthand entirely, and the shorthand is exactly what somebody writes when
-re-adding this in a hurry. No escape hatch, matching the inline-run rule above
-and for its stated reason: a hatch that exists gets used. An environment that
-legitimately needs a `pr-` prefix should be renamed.
+A `grep 'name: pr-'` would be the vacuous version -- it misses the scalar shorthand entirely, and the shorthand is exactly what somebody writes when re-adding this in a hurry. No escape hatch, matching the inline-run rule above and for its stated reason: a hatch that exists gets used. An environment that legitimately needs a `pr-` prefix should be renamed.
 
-THE gh `--slurp`/`--jq` RULE. The RUNNER's gh refuses `--slurp` combined with
-`--jq` ("the --slurp option is not supported with --jq or --template") while
-local gh versions accept it, so the incompatibility is invisible to every local
+THE gh `--slurp`/`--jq` RULE. The RUNNER's gh refuses `--slurp` combined with `--jq` ("the --slurp option is not supported with --jq or --template") while local gh versions accept it, so the incompatibility is invisible to every local
 run and to shell linting (the bash is valid; the tool rejects the flags at
-runtime). It killed the first live autopilot dispatch on 2026-08-09 (run
-31321043543). Pipe the --slurp output through jq as a separate process instead.
-Control-first: the scanner must prove it can fire before its silence means
+runtime). It killed the first live autopilot dispatch on 2026-08-09 (run 31321043543). Pipe the --slurp output through jq as a separate process instead. Control-first: the scanner must prove it can fire before its silence means
 anything. The scanner's own awk program and control string carry both flags;
 scanning this file would be a permanent self-match, not a finding.
 
@@ -124,46 +91,30 @@ scanning this file would be a permanent self-match, not a finding.
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`grep -n "$pattern"` IS BASIC REGULAR EXPRESSION, not extended, in four of the
-five `check_pattern` calls, and that is load-bearing for one of them:
-`"script:[[:space:]]*|"` relies on `|` being LITERAL in BRE. Read as ERE it
-would be the alternation of `script:[[:space:]]*` with the empty string, which
-matches every line. The Python translations below are written as explicit
-patterns with the `|` escaped, and each one is quoted above its constant so the
-BRE-versus-ERE question is answered in the file rather than re-derived.
+`grep -n "$pattern"` IS BASIC REGULAR EXPRESSION, not extended, in four of the five `check_pattern` calls, and that is load-bearing for one of them: `"script:[[:space:]]*|"` relies on `|` being LITERAL in BRE. Read as ERE it would be the alternation of `script:[[:space:]]*` with the empty string, which matches every line. The Python translations below are written as explicit
+patterns with the `|` escaped, and each one is quoted above its constant so the BRE-versus-ERE question is answered in the file rather than re-derived.
 
 THE MATCH SPLIT IS `${match%%:*}` AND `${match#*:}`, so the "line number" is
-everything before the FIRST colon and the "content" is everything after it. With
-`grep -n` over a single file that is exactly right. It is written out here
-rather than using a regex, because a regex would silently do something else on a
-line whose content contains a colon.
+everything before the FIRST colon and the "content" is everything after it. With `grep -n` over a single file that is exactly right. It is written out here rather than using a regex, because a regex would silently do something else on a line whose content contains a colon.
 
-`grep -qE "^\s*#"` USES `\s`, WHICH IS A GNU/ugrep EXTENSION, not POSIX. It is
-carried as `[ \t]` plus the leading anchor, which is what it means for these
+`grep -qE "^\s*#"` USES `\s`, WHICH IS A GNU/ugrep EXTENSION, not POSIX. It is carried as `[ \t]` plus the leading anchor, which is what it means for these
 inputs; the difference (`\s` also matching a form feed) cannot arise in a YAML
 line that reached this point.
 
 `require_cmd jq` IS PRESERVED EVEN THOUGH NOTHING PARSES JSON ANY MORE. The
 inline-run rule used to read a baseline JSON file; the baseline was deleted with
-its ratchet, and the `require_cmd jq` line stayed. Removing it would be a
-behaviour change on a machine without jq -- the twin exits 1 there, and so does
-this -- so it stays, and this paragraph is the record of why a jq-less gate
-still demands jq.
+its ratchet, and the `require_cmd jq` line stayed. Removing it would be a behaviour change on a machine without jq -- the twin exits 1 there, and so does this -- so it stays, and this paragraph is the record of why a jq-less gate still demands jq.
 
-THE AWK BLOCK-SCALAR PARSER IS TRANSLATED, not shelled out. Its two subtleties
-are reproduced explicitly: `match(line, /^ */)` counts SPACES only, so a
+THE AWK BLOCK-SCALAR PARSER IS TRANSLATED, not shelled out. Its two subtleties are reproduced explicitly: `match(line, /^ */)` counts SPACES only, so a
 tab-indented block is measured as indent 0; and a line inside a block that is
-blank was already skipped by the `^[[:space:]]*$` rule ABOVE the block handling,
-so blanks never terminate a block and never count as logic.
+blank was already skipped by the `^[[:space:]]*$` rule ABOVE the block handling, so blanks never terminate a block and never count as logic.
 
-`match($0, /[^ ]/)` IN THE env RULE IS ALSO SPACES-ONLY, and it returns a
-1-BASED index, with 0 for a line that is entirely spaces. Both facts are carried
+`match($0, /[^ ]/)` IN THE env RULE IS ALSO SPACES-ONLY, and it returns a 1-BASED index, with 0 for a line that is entirely spaces. Both facts are carried
 because the comparison is `ind <= envind`, and an off-by-one there silently
 changes which lines belong to the mapping.
 
 STREAMS. `log_error` is `✗ <msg>` on stderr; every `Line:` / `Fix:` /
-continuation line is a bare `echo` on stdout. That split is the reason
-`scripts/lib/shadow-gate.ts` sees one finding per violation rather than three.
+continuation line is a bare `echo` on stdout. That split is the reason `scripts/lib/shadow-gate.ts` sees one finding per violation rather than three.
 """
 
 import os
@@ -287,8 +238,7 @@ def read_lines(path: pathlib.Path) -> list[str]:
 def github_yamls(root: pathlib.Path) -> list[str]:
     """`find .github/workflows .github/actions -name "*.yml" -type f`.
 
-    Root-relative, in walk order. The twin never sorts, and the comparison is a
-    multiset, so the order is recorded here rather than imposed.
+    Root-relative, in walk order. The twin never sorts, and the comparison is a multiset, so the order is recorded here rather than imposed.
     """
     out: list[str] = []
     for rel in (".github/workflows", ".github/actions"):
@@ -510,8 +460,7 @@ def check_inline_run_blocks(
 def env_shell_hits(lines: list[str]) -> list[tuple[int, str]]:
     """`env:` values that reference a shell variable GitHub will not expand.
 
-    `match($0, /[^ ]/)` counts SPACES only and is 1-BASED, returning 0 for a
-    line that is entirely spaces. Both facts matter: the comparison is
+    `match($0, /[^ ]/)` counts SPACES only and is 1-BASED, returning 0 for a line that is entirely spaces. Both facts matter: the comparison is
     `ind <= envind`.
     """
     out: list[tuple[int, str]] = []
@@ -626,8 +575,7 @@ def check_pr_environment_names(errors: Errors, root: pathlib.Path, workflow_dir:
 def slurp_jq_offenders(text: str) -> list[int]:
     """Start line of each gh invocation carrying BOTH `--slurp` and `--jq`.
 
-    Line continuations are joined first, which is how the real regression was
-    written. Comments do not count and they RESET the join.
+    Line continuations are joined first, which is how the real regression was written. Comments do not count and they RESET the join.
     """
     out: list[int] = []
     joined = ""

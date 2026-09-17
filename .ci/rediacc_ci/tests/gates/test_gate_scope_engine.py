@@ -1,44 +1,27 @@
 """Port of `.ci/scripts/test/gates/test-scope-engine.sh`.
 
-Unit test for the pure core of the CI scope engine: `.ci/scripts/ci/scope-map.cjs`
-and `.ci/scripts/ci/scope-engine.cjs`.
+Unit test for the pure core of the CI scope engine: `.ci/scripts/ci/scope-map.cjs` and `.ci/scripts/ci/scope-engine.cjs`.
 
-WHAT THIS GUARDS. The engine replaces `detect-pointer-bump.sh` (defect D9: its
-ancestor walk aborted on the `refs/pull/N/merge` commit and NEVER fired) and decides
-which CI jobs a PR may skip. The one rule that makes that safe is fail-CLOSED
-classification: every ambiguous input, an unknown path, an empty delta, a malformed
+WHAT THIS GUARDS. The engine replaces `detect-pointer-bump.sh` (defect D9: its ancestor walk aborted on the `refs/pull/N/merge` commit and NEVER fired) and decides which CI jobs a PR may skip. The one rule that makes that safe is fail-CLOSED classification: every ambiguous input, an unknown path, an empty delta, a malformed
 line, resolves to FULL CI. A false full run costs 70 minutes; a false reduced run
 merges untested code.
 
-Every case here is CONTROL-PROVEN: for each rule asserted there is also an input that
-produces the OPPOSITE outcome, so a classifier hardcoded to "always full" (or "always
-reduced") fails this file. A validator that passes when given nothing is broken by
-definition.
+Every case here is CONTROL-PROVEN: for each rule asserted there is also an input that produces the OPPOSITE outcome, so a classifier hardcoded to "always full" (or "always reduced") fails this file. A validator that passes when given nothing is broken by definition.
 
 Edge-case numbers cite the Wave B edge-case matrix (17, 19-24 here; the baseline
 cases 1/2/4/5 via the exported pure helpers).
 
-WHAT THE PORT CHANGES, and it is one thing. The twin reads plan fields through a
-`pget` helper that evaluates a JS expression against the parsed plan in a nested
+WHAT THE PORT CHANGES, and it is one thing. The twin reads plan fields through a `pget` helper that evaluates a JS expression against the parsed plan in a nested
 `node`; here the plan is parsed by Python and the predicates are Python. That removes
-one interpreter hop per assertion and nothing else: the plan itself is still produced
-by the REAL `node .ci/scripts/ci/scope-engine.cjs --classify`, and every assertion
-whose subject is a JS export (`computeWorkflowClosure`, `evaluateBaselineCandidate`,
-`resolveBaseline`, `isBaseUnchanged`, `validateJobSurfaces`, `JOB_SURFACES`) still
-shells out to node, because those cannot be reimplemented without becoming a second
-copy of the thing under test.
+one interpreter hop per assertion and nothing else: the plan itself is still produced by the REAL `node .ci/scripts/ci/scope-engine.cjs --classify`, and every assertion whose subject is a JS export (`computeWorkflowClosure`, `evaluateBaselineCandidate`, `resolveBaseline`, `isBaseUnchanged`, `validateJobSurfaces`, `JOB_SURFACES`) still shells out to node, because those cannot be
+reimplemented without becoming a second copy of the thing under test.
 
 ONE DETAIL THAT IS EASY TO GET WRONG AND WAS. Where the twin greps a stringified
 array, this port stringifies with `ensure_ascii=False`. Python's default escapes
-`ü` to `\\u00fc` while JS's `JSON.stringify` does not, so the hostile-path case
-would have looked for a needle that could never appear and passed vacuously in the
-`assert_not_contains` direction.
+`ü` to `\\u00fc` while JS's `JSON.stringify` does not, so the hostile-path case would have looked for a needle that could never appear and passed vacuously in the `assert_not_contains` direction.
 
-THE ORDER OF DEFINITION IS LOAD-BEARING IN THE TWIN and is preserved here.
-`test-gate-anti-vacuity.sh` registers the twin with the pattern `closure`: run
-against an empty fixture tree the twin must fail AND say "closure", which is
-`test_workflow_closure_is_computed_not_name_matched`, seventh in the call order, and
-`log_fail` exits on the first failure. A table placed ahead of it would fail first
+THE ORDER OF DEFINITION IS LOAD-BEARING IN THE TWIN and is preserved here. `test-gate-anti-vacuity.sh` registers the twin with the pattern `closure`: run against an empty fixture tree the twin must fail AND say "closure", which is `test_workflow_closure_is_computed_not_name_matched`, seventh in the call order, and `log_fail` exits on the first failure. A table placed ahead of it
+would fail first
 with a message containing no "closure" and quietly retire that registration.
 """
 
@@ -761,15 +744,10 @@ def classify_verdict(engine: pathlib.Path, *file_paths: str) -> str:
     """`<mode>|<total keys>|<sorted running keys>`, or a SENTINEL that can never
     equal an expectation.
 
-    The sentinel is the whole point. A classification that produced nothing must not
-    read as "no keys to run": here that is the vacuity shape, and it fails toward
-    skipping everything. So a dead engine, unparseable bytes and a plan with no job
-    vector each answer with a distinct string rather than an empty key list, and the
-    `total` field means a zero-key row still has to prove it saw all eighteen keys
-    before finding none of them running.
+    The sentinel is the whole point. A classification that produced nothing must not read as "no keys to run": here that is the vacuity shape, and it fails toward skipping everything. So a dead engine, unparseable bytes and a plan with no job vector each answer with a distinct string rather than an empty key list, and the `total` field means a zero-key row still has to prove it saw
+    all eighteen keys before finding none of them running.
 
-    The reducing half stays in JS, run over the engine's raw stdout, so the port and
-    the twin read the plan through the identical expression.
+    The reducing half stays in JS, run over the engine's raw stdout, so the port and the twin read the plan through the identical expression.
     """
     first = harness.run(
         [node_bin(), str(engine), "--classify"],
@@ -805,8 +783,7 @@ def expect_classify(gate, label: str, expected: str, *file_paths: str) -> None:
 
 def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
     """Each partial set is named ONCE and reused by every row that expects it, so a
-    legitimate map change edits one line rather than several rows. The sets are the
-    measured truth as of 2026-08-05, taken from the real --classify path rather than
+    legitimate map change edits one line rather than several rows. The sets are the measured truth as of 2026-08-05, taken from the real --classify path rather than
     read off JOB_SURFACES by hand."""
     cli_keys = (
         "drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate "
