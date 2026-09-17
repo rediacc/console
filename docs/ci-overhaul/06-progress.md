@@ -7729,3 +7729,84 @@ nobody has executed can be wrong for months.
   had three of four arms. The missing one, a callee DECLARING a secret nothing
   reads, is why 57 such declarations accumulated.
 - breakpoint.yml's 3 org-scope reads dropped; org-scope reads **147 -> 1**.
+
+---
+
+## The prose-style gate landed, then found its own contamination class again (2026-09-16/17)
+
+`e225ab572` introduced R1-R18, "the work, not the person": no second person, no first person, an
+imperative-genre carve-out, a line-length ceiling, enforced by a shrink-only baseline plus two
+native guards (`block_prose_style_edit.py`, `block_prose_style_commit.py`) carrying `TWIN = None`,
+the first guards in this package with no bash original to differential-test against. Their
+evidence is a dedicated per-guard control harness (`test-block_<name>.py`) plus a planted `DEFECT`
+tuple each, the same standard the sys-path-hop suite already holds every ported module to.
+
+The wave that followed found real bugs, several of them the SAME shape as bugs this document
+already narrates for other gates, which is worth naming rather than treating each as a one-off.
+
+**`discover()` trusted the filesystem, not git, and admitted gitignored files into a
+`--write-baseline` sweep.** This is the second recorded instance of exactly the contamination
+class the 2026-09-13 `.claude/worktrees/` incident named first (fixed there by
+`paths.walk_tree()`): a corpus-building function that walks disk instead of `git ls-files` will
+eventually freeze debt for a file nobody committed. Fixed by routing `discover()` through
+`gitx.is_work_tree()` + `gitx.ls_files(existing=True)`, matching the same convention three sibling
+`--write-baseline` gates (`plant_proofs.py`, `python_env_registry.py`,
+`check_language_policy.py`) already used. `agent/PLAN-git-ignore-aware-discover.md` carries the
+full design and the sibling-gate evidence table.
+
+**Widening `.json` into scope needed two separate fixes before it could work at all, not one.**
+`globals.include` matched by bare suffix, so a glob meant to narrow scope to
+`.ci/config/*.json` would have silently admitted every `.json` in the tree (fixed: `fnmatch`
+against the raw glob, in both `discover()` and the edit-time guard's `_in_scope()`). And every
+non-`.md`/`.py` suffix extracted comments via a scanner that treats anything inside quotes as
+data, so a naive `.json` addition would have scanned zero prose lines and reported green over
+nothing (fixed: a dedicated `json_prose_lines()` physical-line extractor). `gates.lock.json`
+stays excluded on purpose: its `blocker` field is a **typed** field
+(`scripts/ci-runner/gate-spec.ts`), not an untyped string constant a human wraps by hand, so no
+amount of source-side rewrapping changes its JSON output -- verified directly by wrapping six
+long `BLOCKER:` literals in `manifest.ts` and confirming `gates.lock.json`'s own lines were
+unaffected. `agent/PLAN-json-prose-scope-audit.md` has the full survey (742 `.json` files, 23 in
+the narrow scope that actually got widened) and the bug found while seeding it: `write_baseline()`
+tallied `by_rule` from raw findings instead of the same `fid`-deduped set `count` uses, drifting
+by exactly the number of repeated `(path, rule, text)` triples in the tree.
+
+**A `--migrate --candidates` bug hid a session that had ticked every worklist item but still had
+real work in its STATE.md.** The fallback loop that surfaces a STATE.md-only candidate reused
+`WORKLIST_DEAD_HOURS` (a 24-hour constant tuned for "is this process still plausibly alive") as
+an upper age bound for "is this handoff worth surfacing at all" -- two questions that want
+different numbers, made nearly mutually exclusive by sharing one. Fixed with a dedicated
+`WORKLIST_HANDOFF_STALE_HOURS` (default 720h/30 days).
+
+**A PR review then found four real defects in the two native guards, none caught by the harness
+that was supposed to be their oracle.** All four are the same lesson from different angles: a
+hand-rolled regex or token walk that has not been tested against the SPECIFIC shape that breaks
+it will not catch that shape by accident.
+
+- `_is_target()`'s `git`/`gh` anchors had no `re.MULTILINE`, so a target on the second line of a
+  multi-line command went unexamined -- `^` meant "start of the whole payload", not "start of a
+  line", and nothing in the harness had ever run a two-line command through it.
+- `_is_docstring()` (the Python-comment extractor) stopped its before/after token scan at the
+  first non-comment token, treating a bare `NL` as proof a string was alone on its logical line.
+  An implicitly concatenated multi-line string literal -- a regex tuple spread across several
+  adjacent `STRING` tokens, exactly the shape `block_secret_exposure.py`'s own `PERMISSION` tuple
+  uses -- has an `NL` on both sides of every fragment too, so every fragment read as a standalone
+  docstring and got linted as prose. Draining this correctly required stepping PAST `NL`, not just
+  past `COMMENT`, to find each fragment's real neighbour (another `STRING` token, which correctly
+  disqualifies it). The fix drained 375 false positives from the baseline tree-wide -- 221 of them
+  in one file, `worklist_messages.py`, whose 1,028 implicit-concatenation boundaries had been
+  invisible debt since the gate first went green.
+- The commit guard computed `scope` once per whole command from a single regex search, so a
+  chained `git commit -m ... && gh pr create ...` applied R18 (a `pr`-only rule) to the commit
+  message too. Fixed by keying scope off each extracted flag's own name instead of the command as
+  a whole.
+- `_is_target()` scanned the raw command string with no notion of "this text is heredoc-body data,
+  not an executed command": a `cat > file <<'EOF' ... EOF` heredoc that quoted an illustrative
+  `git commit ... && gh pr create ...` example as prose tripped it, because the literal `&&`
+  before `gh` satisfied the separator-class regex regardless of context. `shellscan.scan_target()`
+  already exists to solve exactly this for the `gh`-guard family and was simply not being used
+  here; routing through it (heredoc bodies and quoted spans stripped before the anchor runs, the
+  introducer line kept) closed the gap with no new parsing code.
+
+Each fix carries a `test-block_prose_style_commit.py` case proving it (28/28 green), because a
+control harness that only re-runs the cases that already passed is not evidence against the next
+regression of the same shape.
