@@ -531,6 +531,11 @@ REFLOW = [
     ("a list is untouched", "- a\n- b\n", "- a\n- b\n"),
     ("a numbered list is untouched", "1. a\n2. b\n", "1. a\n2. b\n"),
     ("a table is untouched", "| a | b |\n|---|---|\n", "| a | b |\n|---|---|\n"),
+    (
+        "a table with 3+ data rows is untouched, row for row",
+        "| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |\n| 5 | 6 |\n",
+        "| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |\n| 5 | 6 |\n",
+    ),
     ("a heading does not absorb the next line", "# H\ntext\n", "# H\ntext\n"),
     ("a blockquote is untouched", "> a\n> b\n", "> a\n> b\n"),
     ("frontmatter is untouched", "---\na: b\n---\nc\n", "---\na: b\n---\nc\n"),

@@ -253,6 +253,18 @@ BAD_EXAMPLE = re.compile(
 )
 # A markdown table's alignment row, which is punctuation rather than prose.
 TABLE_RULE = re.compile(r"^\s*\|?[\s:|-]+\|[\s:|-]*$")
+# A markdown table HEADER or DATA row -- any line using `|` as its cell
+# delimiter, not just the alignment row TABLE_RULE matches above. Missing
+# until 2026-09-17: reflow_markdown had no stop for an ordinary table row, so
+# a table with more than one row after its header (no blank line separates
+# consecutive rows, which is how every table in this tree is written) had its
+# entire body flattened into one prose paragraph and rewrapped, destroying
+# the table. Found live: `check_prose_style.py reflow --write` merged a
+# 5-row table in a freshly written plan into two garbled lines the moment it
+# ran tree-wide. `TABLE_RULE` alone caught the separator between the header
+# and the first data row, so a two-row table (header + one data row) never
+# showed the bug -- it takes 3+ rows in a row for the gap to be visible.
+TABLE_ROW = re.compile(r"^\s{0,3}\|")
 BLOCKQUOTE = re.compile(r"^\s{0,3}>")
 # A `gen-docs` generated region. Everything between the two markers is MACHINE
 # OUTPUT, and `check:ci-doc-region-parity` refuses a hand-edit to it in as many
@@ -928,7 +940,7 @@ def exempt_for(rel, exempts):
 
 # A line that starts a structure reflow must not join into a paragraph. Reflow
 # touches exactly one thing: a run of consecutive plain prose lines.
-REFLOW_STOP = (FENCE, ATX_HEADING, RULE_LINE, TABLE_RULE, LINK_DEF, BLOCKQUOTE, INDENT_CODE)
+REFLOW_STOP = (FENCE, ATX_HEADING, RULE_LINE, TABLE_RULE, TABLE_ROW, LINK_DEF, BLOCKQUOTE, INDENT_CODE)
 LIST_ITEM = re.compile(r"^\s*(?:[-*+]\s|\d+[.)]\s)")
 
 
@@ -1851,6 +1863,19 @@ def selftest():
         "reflow: a table is untouched",
         reflow_markdown("| a | b |\n|---|---|\n", 40),
         "| a | b |\n|---|---|\n",
+    )
+    # A 2-row table (header + separator, no data) cannot expose the bug this
+    # pins: TABLE_RULE alone stops the join between header and separator, so
+    # the gap only shows once a THIRD consecutive `|`-row (a real data row)
+    # has nothing after it to stop against. Found live 2026-09-17:
+    # `reflow --write` merged a 5-data-row table into two garbled lines the
+    # first time it ran tree-wide, because ordinary table rows were never in
+    # REFLOW_STOP -- only the `---` alignment row was.
+    _table_3row = "| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |\n| 5 | 6 |\n"
+    ctl.check(
+        "reflow: a table with 3+ DATA rows is untouched, row for row",
+        reflow_markdown(_table_3row, 40),
+        _table_3row,
     )
     ctl.check(
         "reflow: a heading is untouched and does not absorb the next line",
