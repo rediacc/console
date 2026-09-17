@@ -22,6 +22,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import tempfile
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_prose_style_commit"]
@@ -30,6 +31,13 @@ GUARD_ARGV = [sys.executable, DISPATCH, "block_prose_style_commit"]
 Y = "y" + "ou"
 EYE = "I"
 COMMIT = "git " + "commit"
+
+# A REAL file on disk, for the `-F body=@<file>` case: `_read_file` genuinely
+# reads it, so the case proves the whole path, not just the inline-value arm.
+_body_file = tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False)
+_body_file.write("Did %s run the tests?" % Y)
+_body_file.close()
+BODY_FILE_PATH = _body_file.name
 
 CASES = [
     # (name, command, expect_blocked) ---- the block direction ------------------------------------------
@@ -50,6 +58,21 @@ CASES = [
     ("a gh pr body", 'gh pr create --title "fix: x" --body "Did %s run it?"' % Y, True),
     ("a gh pr comment", 'gh pr comment 1 --body "%s already told %s!"' % (EYE, Y), True),
     ("a gh pr edit body", 'gh pr edit 1 --body "Did %s run it?"' % Y, True),
+    (
+        "the SANCTIONED gh api PATCH form for a PR body, inline",
+        'gh api repos/o/r/pulls/589 -X PATCH -F body="Did %s run the tests?"' % Y,
+        True,
+    ),
+    (
+        "the SANCTIONED gh api PATCH form for a PR body, from a file",
+        "gh api repos/o/r/pulls/589 -X PATCH -F body=@%s" % BODY_FILE_PATH,
+        True,
+    ),
+    (
+        "the SANCTIONED gh api PATCH form, flags in the OTHER order",
+        'gh api -X PATCH repos/o/r/pulls/589 -F body="Did %s run the tests?"' % Y,
+        True,
+    ),
     (
         "a commit reached after && is still a commit",
         'git add -A && %s -m "Did %s run it?"' % (COMMIT, Y),
@@ -96,6 +119,16 @@ CASES = [
     ("git log is not git commit", 'git log --grep "Did %s run it?"' % Y, False),
     ("git show is not git commit", "git show HEAD", False),
     ("gh pr view is not a write", "gh pr view 1", False),
+    (
+        "gh api on pulls/<n> with GET is not a write",
+        "gh api repos/o/r/pulls/589 -X GET -F body=\"Did %s run it?\"" % Y,
+        False,
+    ),
+    (
+        "gh api PATCH on a non-pulls endpoint is not this guard's business",
+        'gh api repos/o/r/issues/589 -X PATCH -F body="Did %s run it?"' % Y,
+        False,
+    ),
     ("a plain command is not a target", "ls -la", False),
     (
         "a warning-only absolute does not block",

@@ -28,6 +28,12 @@ WHAT IT READS OUT OF A COMMAND LINE
                                  this repository actually uses
     gh pr create/edit            --title, --body, --body-file
     gh pr comment / pr review    --body, --body-file
+    gh api .../pulls/<n> -X PATCH -F body=@<file>   the SANCTIONED PR-body edit
+                                 (`gh pr edit --body-file` is blocked by a
+                                 different guard, `gh-pr-edit-body`, for a
+                                 GraphQL bug -- this is the redirect it sends
+                                 callers to, and it does not look like `gh pr`
+                                 at all)
 
 THE COMMIT SUBJECT IS EXEMPT FROM R11's IMPERATIVE ARM, and that exemption is in
 the rules file rather than here: R11 lists `ai_output`, `pr` and `markdown` as
@@ -81,6 +87,12 @@ GH_PR = re.compile(
     r"(?:^|[;&|(])\s*(?:\S*/)?gh\b[^;&|\n]*\bpr\b[^;&|\n]*\b(?:create|edit|comment|review)\b",
     re.MULTILINE,
 )
+# The SANCTIONED PR-body edit. `gh pr edit --body-file` is blocked outright by a different guard (`gh-pr-edit-body`) for a real GraphQL bug, which redirects
+# every caller to `gh api repos/<owner>/<repo>/pulls/<n> -X PATCH -F body=@<file>`
+# instead -- a shape `GH_PR` above cannot see, because it contains no `pr` verb at all, `pr` only ever appearing inside the URL path `pulls/<n>`. Found live 2026-09-17: every PR-body edit in this repository goes through the sanctioned form, so without this the guard's PR half was unreachable in practice. Two independent checks (the endpoint shape, the PATCH method) rather than one
+# combined regex, because `gh api`'s flags are order-independent -- `-X PATCH` can precede or follow the endpoint -- and a single sequential pattern would have to duplicate every ordering to stay sound.
+GH_API_PR_PATCH = re.compile(r"gh\b[^;&|\n]*\bapi\b[^;&|\n]*\bpulls/\d+")
+PATCH_METHOD = re.compile(r"(?:-X|--method)[= ]?['\"]?PATCH\b", re.IGNORECASE)
 # A heredoc body: `<<'EOF' ... EOF` or `<<EOF ... EOF`, quoted or not.
 HEREDOC = re.compile(
     r"<<-?\s*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?\s*\n(.*?)\n\s*\1\s*(?:\n|$)", re.DOTALL
@@ -120,6 +132,10 @@ EDGE_CASES = [
     ("an amend", 'git commit --amend -m "Did you run the tests?"'),
     ("a heredoc body", "git commit -F - <<'EOF'\nfix: the thing\n\nI think this is right.\nEOF"),
     ("a gh pr body", 'gh pr create --title "fix: x" --body "Did you run the tests?"'),
+    (
+        "the sanctioned gh api PATCH form for a PR body",
+        'gh api repos/o/r/pulls/589 -X PATCH -F body="Did you run the tests?"',
+    ),
     ("a gh pr comment", 'gh pr comment 1 --body "I already told you!"'),
     # CONTROLS. Every one of these must pass untouched.
     (
@@ -191,7 +207,11 @@ def _is_target(command):
     still needs the real, unstripped text.
     """
     scanned = shellscan._command_substitution(shellscan.scan_target(command))
-    return bool(GIT_COMMIT.search(scanned) or GH_PR.search(scanned))
+    return bool(
+        GIT_COMMIT.search(scanned)
+        or GH_PR.search(scanned)
+        or (GH_API_PR_PATCH.search(scanned) and PATCH_METHOD.search(scanned))
+    )
 
 
 def messages(command, cwd=None):
@@ -231,6 +251,17 @@ def messages(command, cwd=None):
         if token.startswith("-m") and len(token) > 2:
             out.append(("-m", token[2:]))
             index += 1
+            continue
+        if token in ("-F", "-f") and index + 1 < len(tokens) and tokens[index + 1].startswith("body="):
+            # `gh api ... -F body=@<file>` / `-f body=<literal>`: the SANCTIONED
+            # PR-body edit (see GH_API_PR_PATCH above). Checked BEFORE the bare
+            # `-F <path>` arm below, since `gh api`'s `-F key=value` and git's
+            # `-F <path>` share a flag spelling with different grammars -- a
+            # `body=@<file>` token would otherwise be read, wrongly, as a
+            # literal filename.
+            value = tokens[index + 1][len("body=") :]
+            out.append(("--body", _read_file(value[1:], cwd) if value.startswith("@") else value))
+            index += 2
             continue
         if token in ("-F", "--file", "--body-file"):
             if index + 1 < len(tokens):
