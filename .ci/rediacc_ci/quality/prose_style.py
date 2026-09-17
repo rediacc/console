@@ -43,6 +43,7 @@ should look at the line again.
 `--write-baseline` DIFFS THE OLD AND NEW SETS AND REFUSES A NON-EMPTY ADDED SIDE. Comparing SIZES is a different and weaker claim: a drain that removes thirty and adds one prints a smaller number and goes green while enshrining a brand-new violation. The ADDED side has to be empty, so the only way a new finding enters the baseline is to say so on the command line.
 """
 
+import collections
 import fnmatch
 import hashlib
 import io
@@ -1160,6 +1161,10 @@ def run_check(
     notes = []
     exempted = {}
     prose_lines = 0
+    # PER-SUFFIX, BECAUSE AN AGGREGATE FLOOR CANNOT SEE ONE EXTRACTOR DIE. Measured 2026-09-17 the corpus splits .md 98,163 / .py 57,294 / .ts 35,194 / .json 10,548 / .js 2,562 / .cjs 1,096 / .tsx 534 / .mjs 351, so the whole `.py` extractor could return nothing and the total would still read 148,000 and pass. `check-shape-duplication.ts` learned this first and fixed it the same
+    # way, after a family fell to one tracked file while the gate printed a confident tick; this is that lesson reaching the gate whose own two scanners had already disagreed about docstrings once.
+    per_suffix_lines = collections.Counter()
+    per_suffix_files = collections.Counter()
     for rel in files:
         full = pathlib.Path(root) / rel
         try:
@@ -1170,6 +1175,9 @@ def run_check(
         markers = tuple(globals_.get("ignore_markers") or DEFAULT_MARKERS)
         lines, note = extract(rel, text, markers)
         prose_lines += len(lines)
+        suffix = pathlib.Path(rel).suffix
+        per_suffix_files[suffix] += 1
+        per_suffix_lines[suffix] += len(lines)
         if note:
             notes.append(note)
         got, _ = lint_text(rel, text, rules, globals_)
@@ -1187,6 +1195,23 @@ def run_check(
             "VACUOUS: %d file(s) scanned and ZERO prose lines extracted. The extractor is "
             "throwing everything away, which is indistinguishable from a clean tree by exit "
             "code alone." % len(files)
+        )
+        return 1
+
+    # THE SAME QUESTION ASKED PER SUFFIX. A suffix contributing files and no prose at all is one
+    # extractor that stopped working, and the aggregate above is far too coarse to notice.
+    dead = sorted(
+        sfx for sfx, n in per_suffix_files.items() if n and per_suffix_lines[sfx] == 0
+    )
+    if dead:
+        log.error(
+            "VACUOUS PER SUFFIX: %s contributed files but ZERO prose lines. The aggregate floor "
+            "passed on %d line(s) from the other suffixes, which is exactly how one dead "
+            "extractor hides behind a healthy corpus."
+            % (
+                ", ".join("%s (%d file(s))" % (s, per_suffix_files[s]) for s in dead),
+                prose_lines,
+            )
         )
         return 1
 
