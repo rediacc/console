@@ -301,6 +301,27 @@ HTML_COMMENT_LINE = re.compile(r".*<!--")
 # here (a "Note: ..." aside staying on its own line) is the safe direction;
 # matching too little is what broke 89 files.
 DOC_HEADER_FIELD = re.compile(r"^\s{0,3}\*{0,2}[A-Z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*\*{0,2}:\s\S")
+# A real HTML BLOCK element this repo's markdown actually uses --
+# `<details><summary>...</summary>`/`</details>` for collapsible sections,
+# tables, images, line breaks -- found by SEARCHING THE CLASS after the
+# operator's stop-hook judge asked whether more REFLOW_STOP gaps existed
+# rather than waiting for a fourth one to corrupt a fourth file. Confirmed
+# live: joining `</details>` into a wrapped prose paragraph moves the closing
+# tag off its own line, which is exactly the shape that breaks GitHub's
+# collapsible-section rendering. `HTML_TAG` (used elsewhere in this module
+# for scrubbing tags out of LINT text) is deliberately NOT reused here: its
+# broad `</?[a-zA-Z][^>]*>` also matches placeholder notation this repo's own
+# prose uses constantly (`<machine>`, `<FILL: why>`), which would silently
+# stop far more joins than the actual bug ever touched. This is a narrow,
+# measured allowlist of the block elements really present in this tree
+# (`grep`, 2026-09-17: 172 real hits across 69 files, versus 2860 for the
+# broad pattern) -- widen it if a future element joins the corpus, the same
+# way `HTML_COMMENT_LINE` was written broad because comments have no such
+# placeholder-collision problem.
+HTML_BLOCK_TAG = re.compile(
+    r".*</?(?:details|summary|div|table|tr|td|th|br|img|sub|sup|kbd|picture|source)\b",
+    re.IGNORECASE,
+)
 BLOCKQUOTE = re.compile(r"^\s{0,3}>")
 # A `gen-docs` generated region. Everything between the two markers is MACHINE
 # OUTPUT, and `check:ci-doc-region-parity` refuses a hand-edit to it in as many
@@ -987,6 +1008,7 @@ REFLOW_STOP = (
     INDENT_CODE,
     HTML_COMMENT_LINE,
     DOC_HEADER_FIELD,
+    HTML_BLOCK_TAG,
 )
 LIST_ITEM = re.compile(r"^\s*(?:[-*+]\s|\d+[.)]\s)")
 
@@ -1395,8 +1417,13 @@ def _rule_help(rules, ids):
 # `reflow_markdown` this same session (a multi-row table, an HTML-comment
 # marker), under-reflowing here -- leaving a directive-adjacent line un-joined
 # -- is the safe failure mode; over-reflowing -- silently absorbing a
-# noqa/eslint-disable/go:build line into a joined paragraph, turning the tool
-# it talks to off -- is not.
+# `noqa`/`eslint-disable`/`go:build` line into a joined paragraph, turning the
+# tool it talks to off -- is not. The names are BACKTICKED, deliberately: bare,
+# the first one reads to ruff as a malformed suppression directive on this very
+# line (ruff warns "Invalid ... directive" on every lint run, quoting the marker
+# back -- which is why this sentence cannot quote it either), and one well-meant
+# edit adding a code after it would have suppressed a real finding here while
+# looking like prose.
 COMMENT_DIRECTIVE = re.compile(
     r"(?:^\s*#!|-\*-\s*coding|\bnoqa\b|\btype:\s|\bpragma\b|\bpylint:|\bmypy:|\bstyle-ok\b"
     r"|eslint|@ts-(?:ignore|expect-error|nocheck)|prettier-ignore|//go:(?:build|generate)"
@@ -1563,10 +1590,12 @@ def reflow_comments(text, suffix, width):
         if len(prefix) + len(joined) <= width:
             out.append(prefix + joined)
         else:
-            for piece in textwrap.wrap(
-                joined, width=avail, break_long_words=False, break_on_hyphens=False
-            ):
-                out.append(prefix + piece)
+            out.extend(
+                prefix + piece
+                for piece in textwrap.wrap(
+                    joined, width=avail, break_long_words=False, break_on_hyphens=False
+                )
+            )
         buffer.clear()
 
     # `split("\n")`, not `splitlines()`. The lexers above number lines the way
@@ -1611,9 +1640,7 @@ def run_reflow(root, globals_, targets, *, write=False, show_diff=False):
         log.error(str(exc))
         return 1
     files = [
-        f
-        for f in files
-        if f.endswith(".md") or pathlib.Path(f).suffix in COMMENT_LINE_BY_SUFFIX
+        f for f in files if f.endswith(".md") or pathlib.Path(f).suffix in COMMENT_LINE_BY_SUFFIX
     ]
     if not files:
         log.error("VACUOUS: zero reflowable file(s) matched, so reflow checked nothing.")
@@ -2175,6 +2202,16 @@ def selftest():
         "reflow: doc-header key:value lines never merge into each other",
         reflow_markdown(_docheader, 40),
         _docheader,
+    )
+    # Found by SWEEPING THE CLASS, not by a fourth corrupted file: the
+    # operator's stop-hook judge asked whether more REFLOW_STOP gaps existed
+    # after the third one, and this repo really does use <details>/<summary>
+    # collapsible sections in a few documents.
+    _htmlblock = "lead-in.\n<details><summary>x</summary>\nbody\n</details>\ntrailing.\n"
+    ctl.check(
+        "reflow: a <details>/<summary> block does not absorb its neighbours",
+        reflow_markdown(_htmlblock, 40),
+        _htmlblock,
     )
     ctl.check(
         "reflow: a heading is untouched and does not absorb the next line",

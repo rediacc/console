@@ -3123,7 +3123,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             plans_show = int(os.environ.get("WORKLIST_MIGRATE_PLANS_SHOW", "3"))
             plans = c.get("plans") or []
             lines.extend(
-                "      PLAN %s  [%s]  %d open / %d ticked" % (p["rel"], p["status"], p["open"], p["ticked"])
+                "      PLAN %s  [%s]  %d open / %d ticked"
+                % (p["rel"], p["status"], p["open"], p["ticked"])
                 for p in plans[:plans_show]
             )
             if len(plans) > plans_show:

@@ -29,6 +29,7 @@ the entire gate, and each of those is a way for it to go green while meaning
 nothing.
 """
 
+import ast
 import json
 import os
 import pathlib
@@ -551,6 +552,11 @@ REFLOW = [
         "Status: done\nOwner: e580532b\nUpdated: 2026-09-06\n",
         "Status: done\nOwner: e580532b\nUpdated: 2026-09-06\n",
     ),
+    (
+        "a details/summary block does not absorb its neighbours",
+        "lead-in.\n<details><summary>x</summary>\nbody\n</details>\ntrailing.\n",
+        "lead-in.\n<details><summary>x</summary>\nbody\n</details>\ntrailing.\n",
+    ),
     ("a heading does not absorb the next line", "# H\ntext\n", "# H\ntext\n"),
     ("a blockquote is untouched", "> a\n> b\n", "> a\n> b\n"),
     ("frontmatter is untouched", "---\na: b\n---\nc\n", "---\na: b\n---\nc\n"),
@@ -588,9 +594,14 @@ def test_reflow_over_the_width_rewraps_and_loses_no_word():
 # Reflow of source comments, where a LEXER decides what a comment is
 # ---------------------------------------------------------------------------
 #
-# THE FIRST FOUR CASES ARE THE GATE, and each was run against the reverted
+# THE FIRST FIVE CASES ARE THE GATE, and each was run against the reverted
 # `^\s*#` / `^\s*//` implementation before being kept: every one of them comes
-# back corrupted there. That version rewrote 52 of the 1051 `.py` files in this
+# back corrupted there. The eleven after them are CONTRACT PINS, which the
+# reverted version also passes -- they hold behaviour that was already right
+# (directives, commented-out code, indentation, an unknown suffix) so the
+# rewrite above cannot have quietly traded one for the other. The distinction is
+# stated because a table where only some rows can fail reads, at a glance, like
+# a table where all of them can. That version rewrote 52 of the 1051 `.py` files in this
 # repository into a different `ast.dump`, because a docstring quoting an example
 # `# ...` line reads to a per-line regex exactly like the real comment paragraph
 # under it. The fixtures are shaped around the two ways that bug hides:
@@ -608,18 +619,26 @@ REFLOW_COMMENTS = [
     (
         "a `#` line inside a docstring is not a comment",
         ".py",
-        'def f():\n    """Doc.\n\n    # an example inside the docstring"""\n'
-        "    # a real comment that is\n    # hard wrapped over two lines\n    return 1\n",
-        'def f():\n    """Doc.\n\n    # an example inside the docstring"""\n'
-        "    # a real comment that is hard wrapped over two lines\n    return 1\n",
+        (
+            'def f():\n    """Doc.\n\n    # an example inside the docstring"""\n'
+            "    # a real comment that is\n    # hard wrapped over two lines\n    return 1\n"
+        ),
+        (
+            'def f():\n    """Doc.\n\n    # an example inside the docstring"""\n'
+            "    # a real comment that is hard wrapped over two lines\n    return 1\n"
+        ),
     ),
     (
         "a `//` line inside a template literal is not a comment",
         ".ts",
-        "const t = `\n// looks like a comment`\n"
-        "// a real comment that is\n// hard wrapped over two lines\n",
-        "const t = `\n// looks like a comment`\n"
-        "// a real comment that is hard wrapped over two lines\n",
+        (
+            "const t = `\n// looks like a comment`\n"
+            "// a real comment that is\n// hard wrapped over two lines\n"
+        ),
+        (
+            "const t = `\n// looks like a comment`\n"
+            "// a real comment that is hard wrapped over two lines\n"
+        ),
     ),
     (
         "a `//` line inside a `/* */` block is not a comment line",
@@ -630,10 +649,14 @@ REFLOW_COMMENTS = [
     (
         "a trailing comment on a docstring's closing line is never joined",
         ".py",
-        'def f():\n    """D\n    # example"""  # note\n'
-        "    # a real comment that is\n    # hard wrapped over two lines\n    return 1\n",
-        'def f():\n    """D\n    # example"""  # note\n'
-        "    # a real comment that is hard wrapped over two lines\n    return 1\n",
+        (
+            'def f():\n    """D\n    # example"""  # note\n'
+            "    # a real comment that is\n    # hard wrapped over two lines\n    return 1\n"
+        ),
+        (
+            'def f():\n    """D\n    # example"""  # note\n'
+            "    # a real comment that is hard wrapped over two lines\n    return 1\n"
+        ),
     ),
     (
         "a file tokenize cannot read is returned unchanged",
@@ -745,8 +768,6 @@ def test_reflow_comments_preserves_the_ast_of_every_tracked_python_file():
     moves it on the first file that quotes one, which is what this asserts against
     the real corpus rather than a fixture.
     """
-    import ast
-
     files = gitx.ls_files("*.py", root=ROOT, existing=True)
     assert len(files) > 500, "the corpus collapsed to %d file(s); this asserts nothing" % len(files)
     mismatched = []

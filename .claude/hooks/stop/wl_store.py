@@ -2162,10 +2162,11 @@ def plan_candidates(root):
 
     `plan_owner` (a real file read) runs only over the short list the census already narrowed to box-carrying, in-scope plans -- never over all 96.
     """
-    import wl_checks  # noqa: PLC0415 -- plan_owner lives here; wl_checks imports wl_planindex,
-    # which imports wl_store (this module), so importing it at module level cycles.
-    import wl_planfile  # noqa: PLC0415 -- FINISHED_STATES lives here, same cycle shape.
-    import wl_planindex  # noqa: PLC0415 -- imports wl_store (this module) at its own top.
+    # wl_checks imports wl_planindex, which imports wl_store (this module), so
+    # importing any of the three at module level here would cycle.
+    import wl_checks  # noqa: PLC0415
+    import wl_planfile  # noqa: PLC0415
+    import wl_planindex  # noqa: PLC0415
 
     min_open = int(os.environ.get("WORKLIST_MIGRATE_PLAN_MIN_OPEN", "1"))
     rows, state, _detail = wl_planindex.index_census(root)
@@ -2182,8 +2183,8 @@ def plan_candidates(root):
         out.setdefault(owner, []).append(
             {"rel": rel, "status": status, "open": open_n, "ticked": ticked_n}
         )
-    for owner in out:
-        out[owner].sort(key=lambda p: p["rel"])
+    for plans in out.values():
+        plans.sort(key=lambda p: p["rel"])
     return out
 
 

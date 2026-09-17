@@ -1206,7 +1206,9 @@ def _migrate_cli(argv):
                 lines[new_head.count("\n", 0, um.start())] = updated_re.sub(
                     r"\g<1>%s" % today, lines[new_head.count("\n", 0, um.start())]
                 )
-            path.write_text("\n".join(lines) + ("\n" if text.endswith("\n") else ""), encoding="utf-8")
+            path.write_text(
+                "\n".join(lines) + ("\n" if text.endswith("\n") else ""), encoding="utf-8"
+            )
             print("adopted %s (was %s, %d open box(es))" % (rel, owner or "unowned", open_n))
             any_written = True
         if any_written:
@@ -1251,9 +1253,15 @@ def _migrate_cli(argv):
         # A STORE MIGRATION MUST NOT SILENTLY REWRITE A COMMITTED DOCUMENT: the skill's own rule is that a predecessor's STATE.md is left alone as a peer's document, and a plan file is the same kind of document with a stronger claim to it (it is CI-gated). Print the exact command instead.
         prev_plans = S.plan_candidates(root).get(prev) or []
         if prev_plans:
-            print("\n  %s also owns %d open plan(s), not moved by this command:" % (prev, len(prev_plans)))
+            print(
+                "\n  %s also owns %d open plan(s), not moved by this command:"
+                % (prev, len(prev_plans))
+            )
             for p in prev_plans:
-                print("    PLAN %s  [%s]  %d open / %d ticked" % (p["rel"], p["status"], p["open"], p["ticked"]))
+                print(
+                    "    PLAN %s  [%s]  %d open / %d ticked"
+                    % (p["rel"], p["status"], p["open"], p["ticked"])
+                )
             print(
                 "  adopt one:  worklist.py --migrate %s --plan %s"
                 % (me, " ".join(p["rel"] for p in prev_plans))
