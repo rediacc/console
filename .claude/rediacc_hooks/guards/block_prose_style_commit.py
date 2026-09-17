@@ -79,9 +79,14 @@ UNEXAMINED = (
 )
 
 # `git commit`, with anything between the two words (`-C dir`, `--no-pager`).
-GIT_COMMIT = re.compile(r"(?:^|[;&|(])\s*(?:\S*/)?git\b[^;&|\n]*\bcommit\b")
+#
+# `re.MULTILINE`, so `^` also anchors after a `\n` and not only at the start of the whole payload. Found live by review 2026-09-16: a `git commit` sitting on the SECOND line of a multi-line command (e.g. a `set -e` guard line before it) has a `\n` immediately to its left, which is neither position 0 nor one of `;&|(` -- `_is_target` returned False and the message went unexamined.
+# `block_worktree_add.py` does not have this bug because it matches per LINE via `hookio.grep_q`; this guard keeps its single-regex-over-the-whole-command shape and fixes the anchor instead, which is the smaller change for the same result.
+# The `[^;&|\n]*` gap between the verb and `commit`/`pr` already never crosses a line, so `MULTILINE` cannot make the middle of the pattern bleed across lines -- only `^` changes meaning.
+GIT_COMMIT = re.compile(r"(?:^|[;&|(])\s*(?:\S*/)?git\b[^;&|\n]*\bcommit\b", re.MULTILINE)
 GH_PR = re.compile(
-    r"(?:^|[;&|(])\s*(?:\S*/)?gh\b[^;&|\n]*\bpr\b[^;&|\n]*\b(?:create|edit|comment|review)\b"
+    r"(?:^|[;&|(])\s*(?:\S*/)?gh\b[^;&|\n]*\bpr\b[^;&|\n]*\b(?:create|edit|comment|review)\b",
+    re.MULTILINE,
 )
 # A heredoc body: `<<'EOF' ... EOF` or `<<EOF ... EOF`, quoted or not.
 HEREDOC = re.compile(
@@ -102,6 +107,16 @@ the sentence being fixed -- takes an explicit marker on that line:
 <!-- style-ok -->. Use it for a line that IS the example, never to get past
 this hook.
 """
+
+# Which command a flag belongs to, not which command the guard happened to see LAST.
+# Found live by review 2026-09-16: `scope` used to be computed ONCE from `GH_PR.search(command)` over the whole command line, so a chained `git commit -m "..." && gh pr create ...` set scope="pr" for the COMMIT message too, and R18 (line length, scoped to "pr"/"markdown"/"ai_output", deliberately NOT "commit") blocked a long commit body under a rule written not to apply to it.
+# The flag names are unambiguous per command -- `-m`/`--message`/`-F`/`--file`/a heredoc body are `git commit`'s, `--body`/`--title`/`-b`/`-t`/`--body-file` are `gh pr`'s -- so scope is looked up per LABEL instead of guessed once for the whole command.
+PR_LABELS = frozenset({"--body", "--title", "-b", "-t", "--body-file"})
+
+
+def _scope_for(label):
+    return "pr" if label in PR_LABELS else "commit"
+
 
 EDGE_CASES = [
     # The shapes this guard exists for.
@@ -133,6 +148,15 @@ EDGE_CASES = [
     ("an echo mentioning commit is not a commit", 'echo "git commit -m \\"Did you run it?\\""'),
     ("a gh pr view is not a write", "gh pr view 1"),
     ("a warning-only absolute does not block", 'git commit -m "fix: x" -m "That will never work."'),
+    (
+        "a commit on the second line of a multi-line command is still a target",
+        'set -e\ngit commit -m "Did you run the tests?"',
+    ),
+    (
+        "a chained commit+pr scopes each message to its OWN command, not the last one seen",
+        'git commit -m "fix: x" -m "%s" && gh pr create --title "fix: x" --body "short body"'
+        % ("x" * 400),
+    ),
 ]
 
 
@@ -248,7 +272,6 @@ def run(ev):
         )
         return hookio.ALLOW
 
-    scope = "pr" if GH_PR.search(command) else "commit"
     # THE PAYLOAD'S OWN `cwd`, not the interpreter's. `-F <relative-path>` has to
     # resolve against where the COMMAND would run. Its sibling guard measured what
     # `os.getcwd()` costs here: run from a foreign directory, every relative path
@@ -260,7 +283,7 @@ def run(ev):
 
     findings = []
     for label, text in bodies:
-        for finding in engine.lint_message(text, rules, globals_, scope):
+        for finding in engine.lint_message(text, rules, globals_, _scope_for(label)):
             finding.path = label
             findings.append(finding)
 
@@ -280,10 +303,10 @@ def run(ev):
 
     by_id = {rule.id: rule for rule in rules}
     lines = [HEADER]
-    lines.append("%s\n" % ("pull request body" if scope == "pr" else "commit message"))
     for finding in errors[:12]:
         rule = by_id.get(finding.rule)
-        lines.append("  %s  %s  %r\n" % (finding.path, finding.rule, finding.snippet))
+        kind = "pull request body" if _scope_for(finding.path) == "pr" else "commit message"
+        lines.append("  [%s] %s  %s  %r\n" % (kind, finding.path, finding.rule, finding.snippet))
         lines.append("    %s\n" % (rule.description if rule else ""))
         for example in rule.examples if rule else ():
             if example.get("kind") == "good":

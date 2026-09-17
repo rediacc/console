@@ -495,19 +495,32 @@ def _is_docstring(stream, index):
     A BARE MODULE-LEVEL STRING PASSES BOTH AND IS DELIBERATELY ADMITTED: it is
     either documentation or dead, and linting it is right in the first case and
     harmless in the second.
+
+    AN IMPLICITLY CONCATENATED FRAGMENT IS NOT A WHOLE LOGICAL STRING, and treating NL as a genuine opener/closer without also looking past it missed that. Found live by review 2026-09-16, reproduced against the `PERMISSION` regex tuple in `block_secret_exposure.py`::
+
+        PERMISSION = (
+            r"can (you|I) "
+            r"do something"
+        )
+
+    Both STRING tokens sit inside the parens with only an NL between them and the surrounding tokens, so the OLD before/after scan (stop at the first non-COMMENT token, treat a bare NL as an opener/closer) read EACH fragment as alone on its logical line and linted regex source as prose.
+
+    The scan now also steps PAST an NL looking for the real neighbour: a fragment's true neighbour on one side is always another STRING token, which is not in `_LINE_OPENERS`, so the walk-past correctly disqualifies both fragments instead of stopping one token too early. A genuine standalone string is unaffected, because there is no second STRING for the walk to find.
     """
     before = None
     for i in range(index - 1, -1, -1):
-        if stream[i].type != tokenize.COMMENT:
-            before = stream[i].type
-            break
+        if stream[i].type in (tokenize.COMMENT, tokenize.NL):
+            continue
+        before = stream[i].type
+        break
     if before is not None and before not in _LINE_OPENERS:
         return False
     after = None
     for i in range(index + 1, len(stream)):
-        if stream[i].type != tokenize.COMMENT:
-            after = stream[i].type
-            break
+        if stream[i].type in (tokenize.COMMENT, tokenize.NL):
+            continue
+        after = stream[i].type
+        break
     return after is None or after in _LINE_CLOSERS
 
 

@@ -16,15 +16,15 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 3597,
- "files": 731,
+ "count": 3222,
+ "files": 710,
  "by_rule": {
-  "R1": 1564,
+  "R1": 1255,
   "R11": 148,
   "R14": 1,
-  "R18": 522,
-  "R2": 834,
-  "R7": 528
+  "R18": 521,
+  "R2": 787,
+  "R7": 510
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -306,9 +306,6 @@
    ]
   },
   ".ci/rediacc_ci/core/proxyx.py": {
-   "R1": [
-    "88fb321a80bcdc5d"
-   ],
    "R7": [
     "e8358e8bd4ac3fb9"
    ]
@@ -380,7 +377,6 @@
   ".ci/rediacc_ci/paths.py": {
    "R1": [
     "2cffe8d8e0be0613",
-    "6249e9973dd426ae",
     "6937a2b6fbccca1f",
     "b40ce68957ba7e46",
     "fd82e00bcc8edd75"
@@ -438,9 +434,6 @@
    ]
   },
   ".ci/rediacc_ci/quality/dead_python.py": {
-   "R18": [
-    "03b1ae97aa403416"
-   ],
    "R2": [
     "7b197f50899a5182"
    ]
@@ -448,11 +441,6 @@
   ".ci/rediacc_ci/quality/drill_verdicts.py": {
    "R7": [
     "3348ef891eab9f8a"
-   ]
-  },
-  ".ci/rediacc_ci/quality/editorconfig.py": {
-   "R7": [
-    "e506eccee96571b2"
    ]
   },
   ".ci/rediacc_ci/quality/env_manifest.py": {
@@ -500,9 +488,6 @@
    ]
   },
   ".ci/rediacc_ci/quality/plant_proofs.py": {
-   "R1": [
-    "136275d449e8980b"
-   ],
    "R7": [
     "a85e1f4e118fe03f"
    ]
@@ -522,9 +507,6 @@
    ]
   },
   ".ci/rediacc_ci/quality/python_env_registry.py": {
-   "R1": [
-    "cba3b2c409c246c3"
-   ],
    "R7": [
     "0dd38f168835468b",
     "bf092e0b8d9aa26b"
@@ -554,7 +536,6 @@
   },
   ".ci/rediacc_ci/quality/secret_supply.py": {
    "R1": [
-    "6c90085d9edd0999",
     "cef57b8d380a6e28",
     "fb010a76a04bd91b"
    ]
@@ -562,11 +543,6 @@
   ".ci/rediacc_ci/quality/shell_size.py": {
    "R2": [
     "d97d581e873350aa"
-   ]
-  },
-  ".ci/rediacc_ci/quality/submodule_branches.py": {
-   "R1": [
-    "9bb234a014eb2fe8"
    ]
   },
   ".ci/rediacc_ci/quality/swallowed_failures.py": {
@@ -588,41 +564,20 @@
     "eef30736d0bf33e7"
    ]
   },
-  ".ci/rediacc_ci/quality/workflows.py": {
-   "R2": [
-    "08b2eb246b15729e"
-   ]
-  },
   ".ci/rediacc_ci/quality/www_build_token.py": {
    "R7": [
     "7178e6ef2b3c85e7"
    ]
   },
-  ".ci/rediacc_ci/release/cleanup_channel_docker_tags.py": {
-   "R7": [
-    "431173be51658b71"
-   ]
-  },
-  ".ci/rediacc_ci/review/claude_review_gate.py": {
-   "R1": [
-    "c750a83cf6f32b93"
-   ]
-  },
   ".ci/rediacc_ci/review/review_status.py": {
    "R7": [
-    "59290d327d2269a9",
-    "baf29b9601e99820",
-    "d4119950baac159d"
+    "59290d327d2269a9"
    ]
   },
   ".ci/rediacc_ci/review/standing_orders_brief.py": {
    "R2": [
-    "30ab89193a93d3b1",
     "5783b8e9df90d2be",
-    "a5d291ea095e834b",
-    "a6508e43f8bd187f",
-    "df280194ec07473d",
-    "eface97b2c96a368"
+    "df280194ec07473d"
    ],
    "R7": [
     "380c962ada248d91"
@@ -645,8 +600,7 @@
   },
   ".ci/rediacc_ci/setup/tools.py": {
    "R7": [
-    "a92aa0ee1dc759aa",
-    "c2588a1ef23e68de"
+    "a92aa0ee1dc759aa"
    ]
   },
   ".ci/rediacc_ci/tests/differential.py": {
@@ -712,22 +666,11 @@
     "57dbd5d25a80d348"
    ]
   },
-  ".ci/rediacc_ci/tests/gates/test_gate_devbox_slug.py": {
-   "R2": [
-    "426cd825fedb7883"
-   ]
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py": {
-   "R7": [
-    "fa47e02a3d171e76"
-   ]
-  },
   ".ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py": {
    "R2": [
     "1762ac0cb4932ff3",
     "3fd449048872cf05",
     "4f3eb24400ace401",
-    "99b6fb6d2d98c159",
     "a5ffaefbc6cea8fe"
    ]
   },
@@ -746,8 +689,7 @@
   ".ci/rediacc_ci/tests/gates/test_gate_gate_lanes.py": {
    "R7": [
     "3d7a6f216507c6f2",
-    "7ad54aeb0efed280",
-    "9fe3d324221c8cf3"
+    "7ad54aeb0efed280"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_greenlight.py": {
@@ -776,9 +718,6 @@
   ".ci/rediacc_ci/tests/gates/test_gate_media_docs.py": {
    "R2": [
     "62259f68a284eebd"
-   ],
-   "R7": [
-    "227ce472a4c95189"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_media_shims.py": {
@@ -812,10 +751,6 @@
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_review_status.py": {
-   "R2": [
-    "20fbcb4b5851133c",
-    "4bb52fd3417dd686"
-   ],
    "R7": [
     "26e7d3c6332aa61e"
    ]
@@ -900,11 +835,6 @@
     "fba824ffdb6ae19b"
    ]
   },
-  ".ci/rediacc_ci/tests/test_autopilot_submodule_prs.py": {
-   "R2": [
-    "0848e861ab129026"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_build_build_pages.py": {
    "R7": [
     "2646da47f4b810d2",
@@ -948,12 +878,6 @@
    ],
    "R7": [
     "e0d13cb040e0995b"
-   ]
-  },
-  ".ci/rediacc_ci/tests/test_core_ghx.py": {
-   "R1": [
-    "4af9106c79e24f0b",
-    "8cb00c429a79615a"
    ]
   },
   ".ci/rediacc_ci/tests/test_core_platform.py": {
@@ -1134,11 +1058,6 @@
     "e8bc719e0d1d0227"
    ]
   },
-  ".ci/rediacc_ci/tests/test_release_cleanup_channel_docker_tags.py": {
-   "R7": [
-    "134bf2fd1480f444"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_release_reprobe_r2_sentinel.py": {
    "R7": [
     "654e3195fca00be6"
@@ -1156,7 +1075,6 @@
   },
   ".ci/rediacc_ci/tests/test_review_review_status.py": {
    "R7": [
-    "5f30ba62da2609ba",
     "7f5dbe553a2aeea4",
     "df0b7d7fa5cbb3eb"
    ]
@@ -1242,9 +1160,6 @@
    ]
   },
   ".ci/scripts/ci/ci-trace.py": {
-   "R1": [
-    "2dabdde2bbee3625"
-   ],
    "R7": [
     "95ef846decf599e6",
     "c7179a59f091e6dc",
@@ -1379,9 +1294,6 @@
    ]
   },
   ".ci/scripts/quality/check_plan_boxes.py": {
-   "R1": [
-    "11d84d6d0be43a9e"
-   ],
    "R2": [
     "6c8afde607d431f0"
    ],
@@ -1392,7 +1304,6 @@
   ".ci/scripts/quality/check_plan_citations.py": {
    "R1": [
     "6514d933b41570e8",
-    "c5635e702a711abc",
     "c79e177b4ff9c323"
    ],
    "R2": [
@@ -1987,21 +1898,9 @@
     "1f8f9986ac58b89e"
    ]
   },
-  ".claude/hooks/lib/sanctioned.py": {
-   "R1": [
-    "0ab075c554c73eab",
-    "af12ff2ebf35e795"
-   ]
-  },
   ".claude/hooks/stop/calibrate-judge-rules.py": {
-   "R1": [
-    "2e4439ef89c00b7c",
-    "a7fe30528eb78924"
-   ],
    "R2": [
-    "0d47060359c479b0",
-    "5f72c3c0098cb8d3",
-    "68a0087ac5d7bceb"
+    "0d47060359c479b0"
    ]
   },
   ".claude/hooks/stop/test-completion-evidence.py": {
@@ -2014,11 +1913,9 @@
   },
   ".claude/hooks/stop/test-judge-schema.py": {
    "R1": [
-    "1eb01b569cd7a360",
-    "48ed20beb2aa1e39"
+    "1eb01b569cd7a360"
    ],
    "R2": [
-    "3844a557be0530cc",
     "b63754042c9959c1"
    ],
    "R7": [
@@ -2032,53 +1929,32 @@
   },
   ".claude/hooks/stop/wl_admit.py": {
    "R1": [
-    "17cd1f4eaa69ae67",
     "3bc459faec9ac860",
-    "48f63133bee07dd5",
     "651caf0ca70ea570",
     "7d3396e8a0ba9735",
     "9b32c2cc1fde5ead",
     "ac3a8ff4db9d3787",
-    "bbeeaaa97560de47",
     "d81a5c01a7e52628",
-    "d83ec13bee4c71c9",
     "e487fea0148220f0",
     "e8937b0d16c80fe2",
     "e8acdc35e4b08625",
     "ff845e6126e9b9d7"
    ],
    "R2": [
-    "06ca2f162e1acd50",
     "14cb785f5f442547",
     "15b2001a1606f512",
     "15d1e5af75b1b0e2",
-    "173c5487ec32b0bd",
     "1f06cf42b159a2e0",
-    "1ff1d1edeaf400b6",
     "24f72662f3b4cced",
     "28112280ff7478ec",
-    "2b685bcb0231c381",
-    "35a4f47b60d54a17",
     "3a91910f90e1d115",
-    "3b58a5bd3f80d782",
-    "45385c3811a646e8",
     "53d36f3bdb40f155",
-    "5da08ad6a73043de",
     "71acf86a83d556be",
-    "79a897ab495e5503",
-    "7e4add1a4a92e848",
-    "813f6700c447710f",
     "a7b5242366b1e3bc",
     "aaf3bec0f3e7110f",
-    "b0e77516383ef323",
-    "b688cde01dc56566",
     "bd90e7ead7a2ff29",
     "c1abbf8c674889ff",
-    "c978124a851627b6",
     "cdc6f1552a5ce77b",
-    "d396ba3ac75b587f",
-    "dc4561b10799cb44",
-    "eeb62417cc9a3aa7",
     "f71548c2f68dfbf9",
     "ff93270f9a7d1b41"
    ]
@@ -2086,38 +1962,28 @@
   ".claude/hooks/stop/wl_agents.py": {
    "R1": [
     "2c2e1c65260b7b73",
-    "6cc4aaadb3b4feb1",
-    "85a221adb5d0dd5b"
+    "6cc4aaadb3b4feb1"
    ],
    "R2": [
     "399ad7082ef0ef15",
-    "4959ab597d69683d",
-    "62ee060042126cb1",
-    "c5a01bc3ff7718f5"
+    "62ee060042126cb1"
    ],
    "R7": [
     "39c98c97fa0c92af",
     "404176f6d9ede768",
     "8367344a07e4fcf7",
-    "be671ac12d7a9469",
-    "e4cef99e9dbd9e79"
+    "be671ac12d7a9469"
    ]
   },
   ".claude/hooks/stop/wl_bravedefault.py": {
    "R1": [
-    "2c752d916253fd76",
-    "30c7e2c58707c80e",
-    "8ed5948884b13f51",
-    "cdb11a05050872d8"
+    "2c752d916253fd76"
    ],
    "R2": [
     "ad2d3f3d592589f9"
    ]
   },
   ".claude/hooks/stop/wl_checklist.py": {
-   "R1": [
-    "d5d3eee5ab093580"
-   ],
    "R2": [
     "a49d4ad6f233d7dd"
    ]
@@ -2126,7 +1992,6 @@
    "R1": [
     "08d458dce1c078b5",
     "0c889712ad07078c",
-    "0f6b42086d7256e5",
     "1e665f7ef05ae7b9",
     "1fc9c32a225eadff",
     "35ed03c94a61e241",
@@ -2137,16 +2002,13 @@
     "6b9de0951ecb3b7c",
     "6be2882c65223405",
     "7e3b2e280d72e794",
-    "a0b92036e53c3008",
     "a1ca29c19e316924",
     "d3ae40e4454f9090",
     "d71442db6019ee4d",
     "dc9d7c212f9ffaf1",
     "dd81f1d7a2b98084",
-    "df32e02015605b66",
     "e6bd9c59e2fb0d63",
     "e88ce0792ab2f267",
-    "ebdd6231bacb735b",
     "ec49423372c4d73a"
    ],
    "R2": [
@@ -2161,7 +2023,6 @@
     "38fc840754fd98b3",
     "44b50c318c7c8be9",
     "4d1d998132db4ba1",
-    "5d585c3d354c6aef",
     "602ff1bc261f27b2",
     "66f8253952babdb7",
     "73839988a3cbf6f4",
@@ -2206,10 +2067,6 @@
    ]
   },
   ".claude/hooks/stop/wl_classsweep.py": {
-   "R1": [
-    "7be51a0b93cb9c25",
-    "ca3038aaf3070eb4"
-   ],
    "R2": [
     "5ec2edccbcecb84a",
     "87c048163b0bee2e"
@@ -2218,12 +2075,8 @@
   ".claude/hooks/stop/wl_core.py": {
    "R1": [
     "2b201e2694e56c44",
-    "38e2f3f6d50d4dad",
     "4933dd57d3067e70",
-    "50214411b872252e",
-    "60e4fcb336328ea5",
-    "cc2b804f1c74085b",
-    "db5084f34aaffc1c"
+    "50214411b872252e"
    ],
    "R2": [
     "0667ef45b906cd67",
@@ -2238,10 +2091,8 @@
   ".claude/hooks/stop/wl_git.py": {
    "R1": [
     "4eda2c092bdf7595",
-    "562c2e970123c9fc",
     "85a32cd2014dc57b",
-    "c3c0348ba0a2c1d0",
-    "e7c307eb085fa832"
+    "c3c0348ba0a2c1d0"
    ],
    "R2": [
     "04d4a89c753c33e1",
@@ -2249,7 +2100,6 @@
    ],
    "R7": [
     "265e70e74d7de13a",
-    "6ac3ad2f4b9f9f8d",
     "77a7be47ccdc2333"
    ]
   },
@@ -2271,7 +2121,6 @@
   },
   ".claude/hooks/stop/wl_lineage.py": {
    "R2": [
-    "22f673e42520af09",
     "350d77f9c9eac825",
     "ce137fcb049da28d",
     "d59c92316ed15883"
@@ -2305,7 +2154,6 @@
   },
   ".claude/hooks/stop/wl_planfile.py": {
    "R1": [
-    "40d5f6b3217dba2a",
     "667a71452e23469f",
     "6adbefb68677d624",
     "8206aaafa71aebea",
@@ -2358,11 +2206,7 @@
   },
   ".claude/hooks/stop/wl_requests.py": {
    "R1": [
-    "051be98195b3cb70",
-    "0a4ecb4ff202efe3",
-    "22211ed95b799ad2",
-    "382b46571d0035b7",
-    "3a21caee3b04fea9"
+    "382b46571d0035b7"
    ],
    "R2": [
     "fe78275585cf832d"
@@ -2391,10 +2235,8 @@
   },
   ".claude/hooks/stop/wl_store.py": {
    "R1": [
-    "33e0c7f9af7e6537",
     "6454f12460ee0e15",
     "ba1218f498c1e943",
-    "c537fdfa2f4b9559",
     "d6f9c7af2c798ba9",
     "ed7c2e9024c015b4",
     "fa691fc3af8df8c4"
@@ -2425,7 +2267,6 @@
   },
   ".claude/hooks/stop/wl_wait.py": {
    "R1": [
-    "1532567730eb4b12",
     "f14476b4c3d73812",
     "fafbf4baa5444362"
    ],
@@ -2440,9 +2281,6 @@
     "13d030fda8b7e2ce",
     "461f15e281854ca8",
     "4d386fdc3b61edeb",
-    "9ea1843e0ce7a6fd",
-    "da096e4473371335",
-    "e5f53d5a8e6a97bb",
     "f844d56173591678"
    ],
    "R2": [
@@ -2463,243 +2301,21 @@
   },
   ".claude/hooks/stop/worklist_messages.py": {
    "R1": [
-    "004ecb8398fa0edf",
-    "009e365623abc44d",
-    "00b5eac3282006f6",
-    "010be0f06e9eb1b2",
-    "016688408316027f",
-    "07188b7cf04726d7",
-    "07a96728cb6dcc32",
-    "07ebdb88c9a9e7c9",
-    "08e8a38ed95db615",
-    "090a22292cefbf15",
-    "09955870ab96e6c6",
-    "0b0863a76ea3b817",
-    "0cbf7e4c80322622",
-    "1024e4230cf56d24",
-    "10a252f812855731",
-    "1158b4c41f8492e0",
-    "11ba80c392401a6b",
-    "1362c38c57a8d89d",
-    "14de8462ef6c71b5",
-    "1797d559056e1d26",
-    "1beddd852627403a",
-    "1c7c53d4bd742563",
-    "1ceafcd1619cc409",
-    "1e3a00d899cfb688",
-    "1effeb023cc5b63e",
-    "1f0384568992f10f",
-    "1f15e517879c0fc8",
-    "1f49595519c9cbd9",
-    "21a145e74a40e60f",
-    "22442581c471f3ef",
-    "225521ef12f6ff27",
-    "2351ba8e369caecf",
-    "23844d80086d873b",
-    "24d7ea16b896f10b",
-    "2826415a26ed5d7c",
-    "29d960fcd8666ac7",
-    "29ddaa2771dbf00f",
-    "2bf425771b4912cb",
-    "2efc226b43183481",
-    "2f74018a90c0a9df",
-    "2f847bd138019352",
-    "2f966f885fb90454",
-    "30662331cf755823",
-    "31e337d83d8d4ede",
-    "36e7e3b3731dce3b",
-    "3a414c85254d13d0",
-    "3b46fe2c4f40a523",
-    "3de27e544970309c",
-    "3f28600b9fd7392f",
-    "405736fa084bf2bf",
-    "406b1818f305c06b",
-    "438d8105635288b6",
-    "43c8c1b05a887143",
-    "43ee470dd1522d34",
-    "4454e05294ca5dfd",
-    "4466a3795dc530a0",
-    "45157816f70fce50",
-    "453d637b3d26fb86",
-    "46c949190cc5120b",
     "47e934393f031ba2",
-    "483e588b05d40742",
-    "4a308a02f27d1f3a",
-    "4b23fcfc96208fe7",
-    "50b527eb39ef6097",
-    "5196133d63080fb0",
-    "539f15e71bdcebf3",
-    "54b8a9054c97e70f",
-    "55c132b3e7ecc595",
-    "5679b0d1cd090810",
-    "56d3a01cf4a2f6c6",
-    "56da5fa5668e8946",
-    "575d8f967c5bfe5e",
-    "5774fc1a45bdf7cd",
-    "58e015cbbce39e00",
-    "592843f8ac58eabf",
-    "5950b0b89950c196",
-    "5a23136d2b105479",
-    "5b8d6d6e08e2f0b3",
-    "5c30fab8ace57884",
-    "5cd5542ac57aaa6d",
-    "600c7afd20d62b78",
-    "60813398d1210448",
-    "610c6712d7ed9ac5",
-    "6218b263d913d771",
-    "627e8ea1d834aeef",
-    "6467e82e0eb3850f",
-    "64cb4b34cee21e08",
-    "6577a9c00ff055b4",
-    "664fbd9524357511",
-    "665a14c6e4bea1d0",
-    "685fd91a1738230b",
-    "68f40faef67e8350",
-    "6b12fb99dcc6470f",
-    "6b341881ad0a7cda",
-    "6c07e868794a48a5",
-    "6d7cc77c1d5137a5",
-    "6e14960b63d287af",
-    "6e94b96ee682f195",
     "71ca0fa167509801",
-    "733bf2e740345a98",
-    "75401d0e92abcb39",
-    "754e3f3b9431c913",
-    "76abcdc19c64e8b3",
-    "77bb75aad2a4eb71",
-    "786704f2d9297879",
-    "7ab241cb7e1c60a4",
-    "7ae614403caf0c9c",
-    "7c0a8a441e0b62e2",
-    "7f335539101897f0",
-    "802eef7171b0ad48",
-    "80bb3ea61c2ae949",
-    "8222344c02f7e974",
-    "82a725f196adcf70",
-    "8444d997c1c8ebac",
-    "847384dc7ed7b4a4",
-    "84dc9ec782a0bcc5",
-    "84e1bd0dfc738ddf",
-    "84ff75d4bb675c41",
-    "88d340b1f6259c60",
-    "88d60f559e1b3e26",
-    "898092be83a1a329",
-    "8a04f52e4786e33d",
-    "8a72d49c5107f51c",
-    "8b307d408e45f350",
-    "8b3bbfb5fd648571",
-    "8bd1781126bab2da",
-    "8d8c310110d7b125",
-    "8f73e28e5688165a",
-    "90e1d7f898ff935b",
-    "9194d348ad99c79b",
-    "92cd92146f9bd74d",
-    "95a76dac1c7ee31b",
-    "96030d7d9b66a6a2",
-    "960378383353149d",
-    "99c2e126d0333330",
-    "9a61e1663b1a7c6f",
-    "9c52f9d061fe15cf",
-    "9d34f7801c9a2e41",
-    "9d4fd1ef3c1ebbda",
-    "9f4fd463e467ed60",
-    "9fa3fa6fe5780be3",
-    "9fac9a3a449a9dfa",
-    "a0650bb87e5ea4d9",
-    "a17301baee99098a",
-    "a29b1c9f83cd6856",
-    "a5591401e1803c0b",
-    "a5ab24605430e6e0",
-    "a5fe095710ff3c4d",
-    "a6aafb5be01f3c59",
-    "a7daaf07ee3e10e9",
     "a8ded83195befd1b",
-    "a928c3b3e0658822",
-    "a958decc71d33780",
-    "abbe403f8a097208",
-    "ac2e3a1752e3fbb2",
-    "ac3fb52562941a46",
-    "addf22fa4a35d7e8",
-    "ae9b5a20a30ecd6a",
-    "af190fc8d2de8a3a",
-    "af7232548e09af5f",
-    "b042c74798e85c2e",
-    "b2f095434f0c6eaa",
-    "b58c885c31123081",
-    "b5cfb0a9870d3252",
-    "b75f111b026d4c23",
-    "bc5a042c848d7cc5",
-    "bd2b5883adbce434",
-    "be4b052513ac2ec4",
-    "be8dbdb627c02311",
-    "becb704d27f8fc1a",
-    "bf02154aefa99531",
-    "c328561c1fd43879",
-    "c47d976313dde5a3",
-    "c4866862eacb30d2",
-    "c4a2b02a371ce96d",
-    "c4cb4de333aca5f3",
-    "c8f68cb48e07bb71",
-    "cb279818c2891e5f",
-    "cdabfcabc6551d95",
-    "cdd91661d626c3e2",
-    "cfb0a850494b5084",
-    "d0701812cf5d447d",
-    "d0af705077508640",
-    "d1588e7063b05d61",
-    "d68b6a149463403f",
-    "d7c8236db3ad835a",
-    "d7d91c37032c27ad",
-    "d944b18127a3abf4",
-    "da52cc65efcd84e7",
-    "db6de51c21eb5f8b",
-    "ddc7ebea122acf88",
-    "e49876602b85b5c1",
-    "e98d73b1b3f921f2",
-    "eac7a8429a3acf76",
-    "eb82a61a4ce6b81f",
-    "eb92e33916ea1044",
-    "ecaaf9c5f8d58c8a",
-    "ed2865cbe2c49cb1",
-    "ed90c0d518b905d3",
-    "f3d588dd4fd3ab74",
-    "f4b45c598a627d8f",
-    "f5fcdeb6cce04a9e",
-    "f6006db7b89cdb12",
-    "f66de55ecd11a0e2",
-    "f6829cb56e1cdd93",
-    "f80f4b265dab0052",
-    "f87502216605ee10",
-    "f952655d81f2ee50",
-    "faade674a2fceaf6",
-    "fd961f715854d036",
-    "fdd5679189aab732",
-    "fdde227c2f6c0607",
-    "fdeae4ab29854227",
-    "fe1c8f3be1dc1980"
+    "f87502216605ee10"
    ],
    "R2": [
-    "0126e03b04fb0d63",
-    "0c20782e0f370339",
-    "149e62c633912d21",
-    "48bda34543b6169e",
-    "7955347e63277fbd",
-    "974b36d76fb63259",
-    "9ccbd5b8cdbc34e7",
-    "9e22fffcbf780ccb",
-    "d208613f9ac17f44",
-    "f6fd5fa37420fff5"
+    "9e22fffcbf780ccb"
    ],
    "R7": [
-    "0e28aeb199a7ec94",
-    "4a23f0f2c518166f",
     "8fec5d1d807ff611",
     "ca6372730782bfb7"
    ]
   },
   ".claude/hooks/trapguard/dispatch.py": {
    "R1": [
-    "10e874324b03dde5",
     "a3f4dc99550bf002",
     "a6bf371bfe500230",
     "d5433a4e6feff724",
@@ -2714,10 +2330,6 @@
    ]
   },
   ".claude/hooks/why-on-edit.py": {
-   "R1": [
-    "3d95dd76c1c0577d",
-    "537046c7243f8f6d"
-   ],
    "R2": [
     "67cc357e8c8162a8"
    ]
@@ -2738,16 +2350,6 @@
     "eec51b331755adc8"
    ]
   },
-  ".claude/rediacc_hooks/guards/block_agent_browser_repo_output.py": {
-   "R1": [
-    "bb6970a172ba2b59"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_agent_state_shape.py": {
-   "R1": [
-    "2e69fe499b08c5fe"
-   ]
-  },
   ".claude/rediacc_hooks/guards/block_bash_write_to_running_script.py": {
    "R1": [
     "b57e7c63f27bf8b7",
@@ -2759,20 +2361,11 @@
    ]
   },
   ".claude/rediacc_hooks/guards/block_blanket_git_add.py": {
-   "R1": [
-    "1a192d10f314de64",
-    "d201b5b329784cd5"
-   ],
    "R2": [
     "8b62e1dac26afc4c"
    ],
    "R7": [
     "57a100a4967d11dd"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_ci_polling.py": {
-   "R1": [
-    "c81bab111c6945e0"
    ]
   },
   ".claude/rediacc_hooks/guards/block_commit_meta.py": {
@@ -2788,19 +2381,14 @@
   },
   ".claude/rediacc_hooks/guards/block_destructive_git_restore.py": {
    "R1": [
-    "2484bcc1b123b610",
-    "32dc273a3c29cbea",
-    "4113163b00fbcaa9",
     "45d738dd9b25e125",
     "6c18843a00fa0fe3",
     "9aa00644e7b45748",
     "9b951be1f34413cf",
-    "c36669b1709a79b9",
-    "c4e5d609d93572e1"
+    "c36669b1709a79b9"
    ],
    "R2": [
-    "4b5374888a6a1fa2",
-    "4fbd6ae0f841eb7d"
+    "4b5374888a6a1fa2"
    ],
    "R7": [
     "58211a3c5c19632e"
@@ -2814,11 +2402,7 @@
   },
   ".claude/rediacc_hooks/guards/block_git_amend.py": {
    "R1": [
-    "4523adc89ff19a91",
-    "4963f1b09e51a915"
-   ],
-   "R7": [
-    "96db678a1a0944db"
+    "4523adc89ff19a91"
    ]
   },
   ".claude/rediacc_hooks/guards/block_git_empty_commit.py": {
@@ -2828,33 +2412,11 @@
    ],
    "R2": [
     "00d171f884eb5096",
-    "01b4c7fbe589f435",
     "9899a49c419d424b"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_git_force_push.py": {
-   "R1": [
-    "59426f25536a17e5",
-    "9cd3980bdb268243"
-   ],
-   "R7": [
-    "a932a0fd59076bb9"
    ]
   },
   ".claude/rediacc_hooks/guards/block_host_toolchain_run.py": {
    "R1": [
-    "068d8662da6f4fad",
-    "07bdf4cee0c1f5ed",
-    "3327d48c23ce96b0",
-    "38c30f8a90f97e6b",
-    "3fb77eb30dae4424",
-    "491da5d9fc20780a",
-    "5393ec7d8202a3a9",
-    "95f3578ad1539536",
-    "9d167996ca079edf",
-    "b29db70357dd896a",
-    "bfeb71c041c17cc0",
-    "d75e0063ca9e07e1",
     "f81a551f0725a79d"
    ],
    "R2": [
@@ -2864,39 +2426,12 @@
     "84f19782eb23fff5"
    ]
   },
-  ".claude/rediacc_hooks/guards/block_long_sleep.py": {
-   "R1": [
-    "09bfaf19d798e127"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_nondraft_pr_create.py": {
-   "R1": [
-    "c9f5dfb919562906"
-   ],
-   "R7": [
-    "753cfbd1e7ceb881"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_nonstandard_branch_name.py": {
-   "R1": [
-    "146d2e29de28f411"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_plan_without_tasks.py": {
-   "R1": [
-    "26c25054d2c3c3cd",
-    "e097b39e2b2056e9"
-   ]
-  },
   ".claude/rediacc_hooks/guards/block_premature_ready.py": {
    "R7": [
     "9b9001cb8a02f49f"
    ]
   },
   ".claude/rediacc_hooks/guards/block_raw_pr_body_edit.py": {
-   "R1": [
-    "a2a5b0429bef70c7"
-   ],
    "R2": [
     "96765eaf09f11f7b"
    ]
@@ -2908,10 +2443,7 @@
   },
   ".claude/rediacc_hooks/guards/block_second_open_pr.py": {
    "R1": [
-    "8763cfd29a6ef719",
-    "90f4256e62a87cfb",
-    "9458e1233112ea01",
-    "c201e11ef15fbf09"
+    "9458e1233112ea01"
    ]
   },
   ".claude/rediacc_hooks/guards/block_self_matching_pgrep.py": {
@@ -2921,12 +2453,10 @@
   },
   ".claude/rediacc_hooks/guards/block_settled_questions.py": {
    "R1": [
-    "0345263a1692ff09",
     "44386a683bddfe40",
     "7f7542c7ef1b588b",
     "902f320c701fe0d5",
-    "bcb64724518006dd",
-    "fad34a39e7403b04"
+    "bcb64724518006dd"
    ],
    "R2": [
     "0c88d2535574fe75",
@@ -2935,28 +2465,15 @@
     "829c738788cc43e2",
     "8d172201dbecf781",
     "91c607bb868754cc",
-    "dc2a080b1ec1097b",
-    "fcd4c861b8ae0446"
+    "dc2a080b1ec1097b"
    ],
    "R7": [
     "453d9190a246c411"
    ]
   },
-  ".claude/rediacc_hooks/guards/block_shell_background_waiter.py": {
-   "R1": [
-    "960a2e5dd0a3a558",
-    "ac14a888d59e0cfb",
-    "ae5d02a3841204fb"
-   ],
-   "R7": [
-    "60c7c045fc6fc097"
-   ]
-  },
   ".claude/rediacc_hooks/guards/block_stale_pr_branch_date.py": {
    "R1": [
-    "e9162250b2718b46",
-    "f045a4ca452a7f69",
-    "f3d4c32929876c38"
+    "f045a4ca452a7f69"
    ],
    "R7": [
     "5b3299e785be7429",
@@ -2974,11 +2491,6 @@
    ]
   },
   ".claude/rediacc_hooks/guards/block_worktree_add.py": {
-   "R1": [
-    "2850b5f8f75ab112",
-    "78f46e1a737005f7",
-    "c67ce8e70c58094d"
-   ],
    "R2": [
     "faee8db55013dda8"
    ]
@@ -2986,13 +2498,6 @@
   ".claude/rediacc_hooks/guards/test-block_destructive_git_restore.py": {
    "R7": [
     "2928698e981b5577"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/warn_remote_drift.py": {
-   "R1": [
-    "a6cf0086038d1a14",
-    "eb5e47d87f498d09",
-    "ebb4f571d7a28731"
    ]
   },
   ".claude/rediacc_hooks/guards/warn_stale_index.py": {
@@ -3038,8 +2543,7 @@
     "f21bd183d863b61d"
    ],
    "R2": [
-    "38b7842e746a099f",
-    "711b072184d0ad4d"
+    "38b7842e746a099f"
    ],
    "R7": [
     "ac2542da9852223d",
@@ -6992,9 +6496,6 @@
    ]
   },
   "scripts/dev/secret-rename.py": {
-   "R1": [
-    "3ff3bc81e1d41c47"
-   ],
    "R7": [
     "f646b4dd4d374f0e"
    ]

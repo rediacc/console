@@ -57,6 +57,17 @@ CASES = [
         'git add -A && %s -m "Did %s run it?"' % (COMMIT, Y),
         True,
     ),
+    (
+        "a commit on the SECOND line of a multi-line command is still a target",
+        'set -e\n%s -m "Did %s run the tests?"' % (COMMIT, Y),
+        True,
+    ),
+    (
+        "a long PR body still gets R18 even chained after a short commit",
+        '%s -m "fix: x" -m "short" && gh pr create --title "fix: x" --body "%s"'
+        % (COMMIT, "z" * 400),
+        True,
+    ),
     # ---- the allow direction ------------------------------------------
     (
         "a house-convention imperative subject is EXEMPT (R11 omits `commit`)",
@@ -104,6 +115,12 @@ CASES = [
         False,
     ),
     ("an empty command", "", False),
+    (
+        "a long commit body is not R18 (pr-only) even chained with a gh pr create",
+        '%s -m "fix: x" -m "%s" && gh pr create --title "fix: x" --body "short body"'
+        % (COMMIT, "z" * 400),
+        False,
+    ),
 ]
 
 
