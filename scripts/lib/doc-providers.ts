@@ -2049,12 +2049,10 @@ export const proseStyleProvider: Provider = {
     const doc = JSON.parse(fs.readFileSync(file, 'utf-8')) as { rules?: ProseRule[] };
     return (doc.rules ?? []).map((r) => {
       const patterns = r.patterns ?? [];
+      // NAME THE DETECTION RATHER THAN ENUMERATE THE KNOWN ONES. Testing for `measured` by name and sending everything else to a pattern count published R19 -- an ENFORCED error detected by a heuristic over a whole paragraph, carrying no patterns -- as `advisory`, the one word that tells a reader a rule is not enforced. This mirrors
+      // `prose_style.run_sync`, which had the identical bug and was fixed in the same change: the two are separate implementations of one decision over one rules file, which is the very shape the sibling-agreement test exists to catch.
       const detection =
-        r.detection === 'measured'
-          ? 'measured'
-          : patterns.length === 0
-            ? 'advisory'
-            : `${patterns.length} pattern(s)`;
+        patterns.length > 0 ? `${patterns.length} pattern(s)` : (r.detection ?? 'advisory');
       const undetected = (r.examples ?? []).filter((e) => e.expect === 'undetected').length;
       return {
         key: r.id,

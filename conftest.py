@@ -1,27 +1,15 @@
 """Repo-root conftest: attach the xdist groups derived in `rediacc_ci.xdist_groups`.
 
-WHY AT THE ROOT AND NOWHERE ELSE. `pyproject.toml` lists three `testpaths`
-(`.ci/rediacc_ci/tests`, `.ci/rediacc_ci/tests/gates`, `.claude/rediacc_hooks/tests`),
-and pytest loads a conftest for every directory from the rootdir DOWN to each
+WHY AT THE ROOT AND NOWHERE ELSE. `pyproject.toml` lists three `testpaths` (`.ci/rediacc_ci/tests`, `.ci/rediacc_ci/tests/gates`, `.claude/rediacc_hooks/tests`), and pytest loads a conftest for every directory from the rootdir DOWN to each
 collected file. Only a conftest at the rootdir is therefore seen by all three; one
-placed in any of them would silently leave the other two ungrouped, which is the
-half-wired shape that reads as working.
+placed in any of them would silently leave the other two ungrouped, which is the half-wired shape that reads as working.
 
 WHY THE IMPORT BELOW WORKS WITHOUT A sys.path HOP. `pythonpath = [".ci"]` in
-pyproject.toml is applied by `Config._configure_python_path`, which
-`_pytest/config/__init__.py:1575` calls BEFORE the
-`pytest_load_initial_conftests` dispatch at :1603 that imports this file
-(verified against pytest 9.1.1). A hand-written hop here would be a second copy
-of that decision. If the ordering ever changes, the failure is a loud
-ConftestImportFailure naming this file, not a silent loss of grouping.
+pyproject.toml is applied by `Config._configure_python_path`, which `_pytest/config/__init__.py:1575` calls BEFORE the `pytest_load_initial_conftests` dispatch at :1603 that imports this file (verified against pytest 9.1.1). A hand-written hop here would be a second copy of that decision. If the ordering ever changes, the failure is a loud ConftestImportFailure naming this file,
+not a silent loss of grouping.
 
-WHAT IT DOES NOT DO. It does not turn parallelism on, and it does not decide the
-worker count. `-n` and `--dist loadgroup` live on the GATE's argv
-(`.ci/rediacc_ci/check_pytest.py`) and deliberately not in `addopts`:
-`test_twin_parity.py` spawns a nested `python -m pytest` per ported module, which
-reads the same ini, so `-n auto` in `addopts` would have 24 outer workers each
-spawn 24 inner ones. Without `--dist loadgroup` these markers do nothing at all,
-which is what makes it safe for this file to land before the flag does.
+WHAT IT DOES NOT DO. It does not turn parallelism on, and it does not decide the worker count. `-n` and `--dist loadgroup` live on the GATE's argv (`.ci/rediacc_ci/check_pytest.py`) and deliberately not in `addopts`: `test_twin_parity.py` spawns a nested `python -m pytest` per ported module, which reads the same ini, so `-n auto` in `addopts` would have 24 outer workers each spawn
+24 inner ones. Without `--dist loadgroup` these markers do nothing at all, which is what makes it safe for this file to land before the flag does.
 """
 
 import pytest
@@ -42,14 +30,9 @@ def _real_tree_twins() -> set[str]:
 def pytest_report_header() -> str:
     """PRINT THE SHAPE, so a collapse in the join is visible rather than silent.
 
-    The number that matters is how many real-tree gate tests the lock and
-    run-all.sh between them know about. If it ever reads 0, the derivation below
-    admits every twin to every worker and `test_twin_parity`'s own refusal is the
-    thing that will go red -- but a reader seeing this line will already know
-    why.
+    The number that matters is how many real-tree gate tests the lock and run-all.sh between them know about. If it ever reads 0, the derivation below admits every twin to every worker and `test_twin_parity`'s own refusal is the thing that will go red -- but a reader seeing this line will already know why.
 
-    Suppressed automatically under `-q` (pytest prints no header at negative
-    verbosity), which is what keeps the nested parity runs' output unchanged.
+    Suppressed automatically under `-q` (pytest prints no header at negative verbosity), which is what keeps the nested parity runs' output unchanged.
     """
     return "xdist groups: %d real-tree gate test(s) known to the lock+run-all.sh join" % len(
         _real_tree_twins()
@@ -69,15 +52,10 @@ def pytest_report_header() -> str:
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     """Mark every item whose module declares a shared resource.
 
-    NO-OP WITHOUT THE PLUGIN, and that is a guard rather than a convenience.
-    `--strict-markers` is on, so `pytest.mark.xdist_group` on a pytest that has
-    no xdist registered is a hard error at attribute-access time -- it would
-    break every serial run on a host where the bootstrap has not installed the
-    plugin yet. Skipping is safe here and hides nothing: with no xdist there are
-    no workers, so there is nothing a group could have serialised.
+    NO-OP WITHOUT THE PLUGIN, and that is a guard rather than a convenience. `--strict-markers` is on, so `pytest.mark.xdist_group` on a pytest that has no xdist registered is a hard error at attribute-access time -- it would break every serial run on a host where the bootstrap has not installed the plugin yet. Skipping is safe here and hides nothing: with no xdist there are no
+    workers, so there is nothing a group could have serialised.
 
-    Modules are grouped, not items: the resources being declared (the real tree,
-    the host's port space) are shared by every test in the file.
+    Modules are grouped, not items: the resources being declared (the real tree, the host's port space) are shared by every test in the file.
     """
     if not config.pluginmanager.hasplugin("xdist"):
         return

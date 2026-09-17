@@ -1,11 +1,8 @@
 """The site's locale set, for Python consumers.
 
-Companion to `index.js` for the same `site-locales.json`. It lives HERE, beside the JSON,
-rather than being copied into each pipeline, because the whole point is that there is one
-place to change.
+Companion to `index.js` for the same `site-locales.json`. It lives HERE, beside the JSON, rather than being copied into each pipeline, because the whole point is that there is one place to change.
 
-Why this exists: before it, 9 Python lists across 6 pipelines hand-maintained the same 13
-codes in 5 different orderings, and nothing could tell a deliberate subset from a stale copy.
+Why this exists: before it, 9 Python lists across 6 pipelines hand-maintained the same 13 codes in 5 different orderings, and nothing could tell a deliberate subset from a stale copy.
 
 ## The distinction that matters most
 
@@ -18,8 +15,7 @@ A list of locale codes in this repo is one of two completely different facts:
       silently assert TTS/aligner support that does not exist. The house bug in this repo is
       the silent language fallback, and this is exactly how one gets created.
 
-`et` (Estonian) is the discriminator: it is a site locale, but no aligner in the stack
-supports it. A 12-code list omitting `et` is almost always category B.
+`et` (Estonian) is the discriminator: it is a site locale, but no aligner in the stack supports it. A 12-code list omitting `et` is almost always category B.
 
 Known category B, deliberately NOT importing from here - do not "fix" these:
   - `tutorial_tts/engine_qwen.py::LANGUAGE_LABELS`
@@ -32,10 +28,7 @@ Known category B, deliberately NOT importing from here - do not "fix" these:
 
 ## Why this module's selftest is NOT in `npm run ci`
 
-Every consumer lives under `private/`, which is gitignored, so CI never checks those trees out
-and there is nothing here for CI to protect. Adding `python3 packages/locales/site_locales.py`
-to the npm chain would make it the only `python3` in it, on a runner whose workflow sets up no
-Python — a new dependency for zero coverage. Run it locally instead:
+Every consumer lives under `private/`, which is gitignored, so CI never checks those trees out and there is nothing here for CI to protect. Adding `python3 packages/locales/site_locales.py` to the npm chain would make it the only `python3` in it, on a runner whose workflow sets up no Python — a new dependency for zero coverage. Run it locally instead:
 
     python3 packages/locales/site_locales.py
 
@@ -45,8 +38,7 @@ that would make the Python pipelines and the site ship different locale sets.
 
 ## Usage
 
-Consumers live in gitignored trees with their own venvs, so there is no installable package
-to depend on. Bootstrap by walking up for the marker file:
+Consumers live in gitignored trees with their own venvs, so there is no installable package to depend on. Bootstrap by walking up for the marker file:
 
     import sys
     from pathlib import Path
@@ -56,8 +48,7 @@ to depend on. Bootstrap by walking up for the marker file:
             break
     from site_locales import SITE_LOCALES, NON_ENGLISH_LOCALES, subset
 
-Walking up for the *marker* rather than for a directory named `console` is deliberate: this
-repo uses git worktrees, so the checkout is often not named `console`.
+Walking up for the *marker* rather than for a directory named `console` is deliberate: this repo uses git worktrees, so the checkout is often not named `console`.
 """
 
 from __future__ import annotations
@@ -109,8 +100,7 @@ def is_site_locale(code: str) -> bool:
 def assert_site_locale(code: str, *, where: str = "") -> str:
     """Return `code`, or raise if it is not a site locale.
 
-    Use this at a boundary where a bad code would otherwise cause a SILENT fallback to
-    English rather than a visible failure.
+    Use this at a boundary where a bad code would otherwise cause a SILENT fallback to English rather than a visible failure.
     """
     if code not in SITE_LOCALES:
         ctx = f" in {where}" if where else ""
@@ -125,10 +115,7 @@ def assert_site_locale(code: str, *, where: str = "") -> str:
 def subset(name: str, codes: list[str] | tuple[str, ...]) -> tuple[str, ...]:
     """A deliberate, named narrowing of the site set.
 
-    This is the sanctioned way to express "only some locales", because unlike a bare literal
-    it FAILS when a code is not a site locale - so a typo or a removed locale is loud. The
-    `name` is required and appears in the error, so the reason for the narrowing has a place
-    to live.
+    This is the sanctioned way to express "only some locales", because unlike a bare literal it FAILS when a code is not a site locale - so a typo or a removed locale is loud. The `name` is required and appears in the error, so the reason for the narrowing has a place to live.
     """
     out: list[str] = []
     for code in codes:
@@ -142,9 +129,7 @@ def subset(name: str, codes: list[str] | tuple[str, ...]) -> tuple[str, ...]:
 def assert_covered_by_site(name: str, codes: object) -> None:
     """Assert every code in `codes` is a site locale, WITHOUT deriving it from the site set.
 
-    This is the correct coupling for a category B list, and for an attribute map whose keys
-    are per-locale but whose values are independent data. It catches a typo'd key while
-    leaving the membership decision where it belongs.
+    This is the correct coupling for a category B list, and for an attribute map whose keys are per-locale but whose values are independent data. It catches a typo'd key while leaving the membership decision where it belongs.
     """
     unknown = sorted(c for c in codes if c not in SITE_LOCALES)  # type: ignore[union-attr]
     if unknown:

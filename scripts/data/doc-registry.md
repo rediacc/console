@@ -805,7 +805,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/review | 6 | .py 6 |
 | .ci/rediacc_ci/security | 11 | .py 11 |
 | .ci/rediacc_ci/setup | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 283 | .py 283 |
+| .ci/rediacc_ci/tests | 284 | .py 284 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/gates | 163 | .py 162, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
@@ -829,7 +829,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/pr | 1 | .sh 1 |
 | .ci/scripts/private | 9 | .sh 9 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 223 | .py 138, .sh 82, .json 2, .mjs 1 |
+| .ci/scripts/quality | 224 | .py 139, .sh 82, .json 2, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/release | 21 | .sh 21 |
 | .ci/scripts/review | 4 | .sh 4 |

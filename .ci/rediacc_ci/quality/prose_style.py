@@ -1652,13 +1652,14 @@ def run_sync(globals_, rules):
         "|---|---|---|---|---|",
     ]
     for rule in rules:
-        detection = (
-            "advisory"
-            if rule.advisory
-            else (
-                "measured" if rule.detection == "measured" else "%d pattern(s)" % len(rule.patterns)
-            )
-        )
+        # NAME THE DETECTION RATHER THAN ENUMERATE THE KNOWN ONES. The previous form tested for `measured` by name and sent everything else to a pattern count, so R19 -- an ENFORCED error detected by a heuristic over a whole paragraph, carrying no patterns -- was published to readers as `advisory`, the one word that says a rule is not enforced. A new detection kind falling
+        # silently into the wrong bucket is the same shape as the defect this gate's own two scanners had, one table further out.
+        if rule.advisory:
+            detection = "advisory"
+        elif rule.raw_patterns:
+            detection = "%d pattern(s)" % len(rule.patterns)
+        else:
+            detection = rule.detection or "advisory"
         out.append(
             "| %s | %s | %s | %s | %s |"
             % (rule.id, rule.title, rule.severity, ", ".join(rule.scopes), detection)

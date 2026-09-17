@@ -1,21 +1,14 @@
 """Prepare a remote machine's VS Code Server environment.
 
-Executed on the REMOTE host over SSH by
-packages/cli/src/remote/vscode/bootstrap.ts, which embeds this file's text at
+Executed on the REMOTE host over SSH by packages/cli/src/remote/vscode/bootstrap.ts, which embeds this file's text at
 bundle time (esbuild `loader: {".py": "text"}`) and runs it as
 `python3 -c <this source> <config-json>`.
 
-WHY THIS IS A FILE AND NOT A TEMPLATE LITERAL. It used to be 130 lines of
-Python inside a TypeScript backtick string, where no linter, formatter or type
-checker could see it, and it stayed that way long enough to grow a
-code-injection hole: four of the six values interpolated into it went in
+WHY THIS IS A FILE AND NOT A TEMPLATE LITERAL. It used to be 130 lines of Python inside a TypeScript backtick string, where no linter, formatter or type checker could see it, and it stayed that way long enough to grow a code-injection hole: four of the six values interpolated into it went in
 unescaped, so a UNIVERSAL_USER of `\'; import os; os.system(\'id\'); x=\'`
-parsed cleanly and executed -- on a remote host, under `sudo -u` on the
-user-switch path.
+parsed cleanly and executed -- on a remote host, under `sudo -u` on the user-switch path.
 
-The fix is not better escaping. There is NO interpolation into this file at
-all: every value arrives as JSON in argv[1], so the only quoting left is
-shell-quoting a single opaque argument. A value can no longer become code.
+The fix is not better escaping. There is NO interpolation into this file at all: every value arrives as JSON in argv[1], so the only quoting left is shell-quoting a single opaque argument. A value can no longer become code.
 """
 
 import contextlib
