@@ -536,6 +536,16 @@ REFLOW = [
         "| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |\n| 5 | 6 |\n",
         "| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |\n| 5 | 6 |\n",
     ),
+    (
+        "a gen-docs region marker does not absorb its neighbours",
+        "lead-in sentence.\n<!-- >>> gen-docs: x -->\nbody\n<!-- <<< gen-docs -->\ntrailing sentence.\n",
+        "lead-in sentence.\n<!-- >>> gen-docs: x -->\nbody\n<!-- <<< gen-docs -->\ntrailing sentence.\n",
+    ),
+    (
+        "a trailing style-ok marker does not absorb its neighbours",
+        "first line.\nDid you check it? <!-- style-ok -->\nthird line.\n",
+        "first line.\nDid you check it? <!-- style-ok -->\nthird line.\n",
+    ),
     ("a heading does not absorb the next line", "# H\ntext\n", "# H\ntext\n"),
     ("a blockquote is untouched", "> a\n> b\n", "> a\n> b\n"),
     ("frontmatter is untouched", "---\na: b\n---\nc\n", "---\na: b\n---\nc\n"),

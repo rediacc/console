@@ -265,6 +265,26 @@ TABLE_RULE = re.compile(r"^\s*\|?[\s:|-]+\|[\s:|-]*$")
 # and the first data row, so a two-row table (header + one data row) never
 # showed the bug -- it takes 3+ rows in a row for the gap to be visible.
 TABLE_ROW = re.compile(r"^\s{0,3}\|")
+# A line carrying an HTML comment: a gen-docs region marker
+# (`<!-- >>> gen-docs: ... -->` / `<!-- <<< gen-docs -->`, see REGION_OPEN/
+# REGION_CLOSE below) or a `<!-- style-ok -->` exemption (DEFAULT_MARKERS).
+# Found live 2026-09-17, same session as TABLE_ROW: joining a marker line into
+# an adjacent paragraph either shifted a gen-docs region boundary by a line
+# (reported by check:ci-doc-region-parity as "closing marker with no open
+# region") or widened/narrowed which physical line a style-ok exemption
+# covers, surfacing hundreds of findings that were never real regressions.
+# Every HTML comment in this tree is a directive, never prose ornamentation
+# a reader would want re-flowed with its neighbours, so the rule is broad on
+# purpose: contains `<!--` anywhere on the line, not just gen-docs/style-ok
+# by name -- the next marker convention this repo invents gets the same
+# protection for free instead of needing its own REFLOW_STOP entry.
+# `.*` FIRST, DELIBERATELY: every other REFLOW_STOP pattern is anchored at
+# column 0 and used with `.match()`, which only tests the START of the
+# string. A `style-ok` marker is a TRAILING comment on an otherwise-ordinary
+# prose line, so a bare `r"<!--"` would only catch a comment that opens the
+# line and silently miss the far more common trailing shape -- caught by the
+# synthetic test below before this pattern was ever wired in.
+HTML_COMMENT_LINE = re.compile(r".*<!--")
 BLOCKQUOTE = re.compile(r"^\s{0,3}>")
 # A `gen-docs` generated region. Everything between the two markers is MACHINE
 # OUTPUT, and `check:ci-doc-region-parity` refuses a hand-edit to it in as many
@@ -940,7 +960,17 @@ def exempt_for(rel, exempts):
 
 # A line that starts a structure reflow must not join into a paragraph. Reflow
 # touches exactly one thing: a run of consecutive plain prose lines.
-REFLOW_STOP = (FENCE, ATX_HEADING, RULE_LINE, TABLE_RULE, TABLE_ROW, LINK_DEF, BLOCKQUOTE, INDENT_CODE)
+REFLOW_STOP = (
+    FENCE,
+    ATX_HEADING,
+    RULE_LINE,
+    TABLE_RULE,
+    TABLE_ROW,
+    LINK_DEF,
+    BLOCKQUOTE,
+    INDENT_CODE,
+    HTML_COMMENT_LINE,
+)
 LIST_ITEM = re.compile(r"^\s*(?:[-*+]\s|\d+[.)]\s)")
 
 
@@ -1876,6 +1906,26 @@ def selftest():
         "reflow: a table with 3+ DATA rows is untouched, row for row",
         reflow_markdown(_table_3row, 40),
         _table_3row,
+    )
+    # Found the same session, same shape: a gen-docs region marker with no
+    # blank line to a neighbouring paragraph shifted the region boundary,
+    # which check:ci-doc-region-parity reported as "closing marker with no
+    # open region" the first time reflow --write ran tree-wide.
+    _gendocs = "lead-in sentence.\n<!-- >>> gen-docs: x -->\nbody\n<!-- <<< gen-docs -->\ntrailing sentence.\n"
+    ctl.check(
+        "reflow: a gen-docs region marker does not absorb its neighbours",
+        reflow_markdown(_gendocs, 40),
+        _gendocs,
+    )
+    # A TRAILING marker, not a line that OPENS with one -- the shape
+    # `DEFAULT_MARKERS`/`is_marked` actually use. Caught live: the first fix
+    # (anchored at column 0) missed this and still let the marked line merge
+    # with its neighbours, moving which physical line the exemption covers.
+    _styleok = "first line.\nDid you check it? <!-- style-ok -->\nthird line.\n"
+    ctl.check(
+        "reflow: a TRAILING style-ok marker does not absorb its neighbours",
+        reflow_markdown(_styleok, 40),
+        _styleok,
     )
     ctl.check(
         "reflow: a heading is untouched and does not absorb the next line",
