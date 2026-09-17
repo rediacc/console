@@ -829,6 +829,40 @@
           "kind": "good"
         }
       ]
+    },
+    {
+      "id": "R19",
+      "title": "Under-wrap",
+      "description": "A paragraph of 3+ lines hard-wrapped at a uniform width well under the limit is rewrapped wider, not left narrow. The reflow subcommand exists to fix this in bulk; this rule stops a new one from being added the same way.",
+      "severity": "error",
+      "scopes": [
+        "markdown",
+        "comment",
+        "pr"
+      ],
+      "patterns": [],
+      "detection": "underwrap",
+      "detection_why": [
+        "A heuristic over the whole paragraph, not a per-line regex: 3+ lines, all but the last",
+        "within a narrow width band of each other, that common width at or under 40% of",
+        "`globals.max_line_length`, and the shared reflow primitive actually producing fewer",
+        "lines when applied. A naive \"would joining change anything\" test fires on 99.99% of",
+        "this repository's real markdown corpus, measured live 2026-09-17, and is therefore not",
+        "a debt detector at all -- see agent/PLAN-prose-style-under-wrap.md."
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "A paragraph that already uses close to the full available width on every line before it naturally ends, so there is nothing narrow to fix here at all.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "This is a line that is deliberately\nkept narrow so that joining works\nas the paragraph's whole intent shows.",
+          "expect": "flag",
+          "kind": "bad"
+        }
+      ]
     }
   ]
 }

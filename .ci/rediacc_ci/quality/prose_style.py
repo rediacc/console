@@ -158,7 +158,7 @@ class Rule:
         that can fire" are different claims and a reader is entitled to the
         second one.
         """
-        return not self.raw_patterns and self.detection != "measured"
+        return not self.raw_patterns and self.detection not in ("measured", "underwrap")
 
 
 class RuleError(ValueError):
@@ -743,6 +743,10 @@ def lint_text(path, text, rules, globals_, scope=None):
     for line in lines:
         for rule, snippet in lint_line(line, rules, scope, max_len):
             findings.append(Finding(path, line.lineno, rule.id, snippet, line.text, rule.severity))
+    # R19 (under-wrap): a CROSS-LINE check, so it cannot live in `lint_line`'s per-line loop above -- a second pass over the whole document instead.
+    for rule in rules:
+        if rule.detection == "underwrap" and rule.applies_to(scope) and max_len:
+            findings.extend(underwrap_findings(path, text, rule, scope, max_len))
     return findings, note
 
 
@@ -760,6 +764,10 @@ def lint_message(text, rules, globals_, scope):
             findings.append(
                 Finding("<message>", line.lineno, rule.id, snippet, line.text, rule.severity)
             )
+    # R19 (under-wrap): see lint_text's identical second pass. A message is always markdown-shaped text (commit/PR body), never `comment` scope.
+    for rule in rules:
+        if rule.detection == "underwrap" and rule.applies_to(scope) and max_len:
+            findings.extend(underwrap_findings("<message>", text, rule, scope, max_len))
     return findings
 
 
@@ -996,6 +1004,87 @@ def _join_and_wrap(buffer, width):
     if len(joined) <= width:
         return [joined]
     return textwrap.wrap(joined, width=width, break_long_words=False, break_on_hyphens=False)
+
+
+# R19's own constants. Not `globals.max_line_length`-relative in the rules file, because they gate a SHAPE (uniform narrow columns), not a length -- see `_looks_hard_wrapped` for the measurement each one guards.
+UNDERWRAP_MIN_LINES = 3
+UNDERWRAP_BAND = 20
+UNDERWRAP_MAX_RATIO = 0.4
+
+
+def _looks_hard_wrapped(buffer, width):
+    """Whether `buffer` (already known joinable, by construction of the
+    segment generators) is a NARROW HARD-WRAP rather than an ordinary short
+    paragraph -- the R19 heuristic gate from `agent/PLAN-prose-style-under-
+    wrap.md`, measured against a naive "would `_join_and_wrap` change
+    anything" test that fires on 99.99% of this repo's real markdown corpus
+    and is therefore not a debt detector at all.
+
+    Four conditions, ALL required:
+      1. 3+ lines. A 2-line paragraph almost always just ends there -- a
+         short final line is evidence of a sentence ending, not of a
+         hard-wrap.
+      2. Every line EXCEPT THE LAST sits within a 20-char band of the
+         narrowest -- the fixed-column-wrap signature, as opposed to the
+         natural variation a real sentence's line breaks have.
+      3. That common width is at or under 40% of `width` -- a paragraph
+         already wrapped near the limit is not under-wrapped even if one
+         more word would technically fit.
+      4. `_join_and_wrap` on the buffer actually produces FEWER lines than
+         it started with -- the same real join-feasibility test
+         `reflow_markdown` performs, so a paragraph whose next line
+         genuinely would not fit is correctly excluded.
+    """
+    if len(buffer) < UNDERWRAP_MIN_LINES:
+        return False
+    body_lines = buffer[:-1]
+    lengths = [len(line) for line in body_lines]
+    if max(lengths) - min(lengths) > UNDERWRAP_BAND:
+        return False
+    if max(lengths) > width * UNDERWRAP_MAX_RATIO:
+        return False
+    return len(_join_and_wrap(buffer, width)) < len(buffer)
+
+
+def underwrap_findings(path, text, rule, scope, max_len):
+    """R19's findings for one document or message: a hard-wrapped paragraph
+    that should have used more of the available width.
+
+    Reuses `markdown_segments`/`comment_segments` for boundaries -- the SAME
+    generators `reflow_markdown`/`reflow_comments` use to actually fix the
+    paragraphs this rule flags, so detection and remedy agree by
+    construction about what one paragraph is. `Finding.text` is the whole
+    paragraph joined by `\\n`, not a single line, so rewriting ANY line
+    inside it re-keys the baseline entry -- exactly the "a rewrite is when
+    a human looks again" contract every other multi-line Finding in this
+    module already uses.
+    """
+    findings = []
+    if scope in ("markdown", "pr"):
+        for kind, start, payload in markdown_segments(text):
+            if kind != "para":
+                continue
+            if _looks_hard_wrapped(payload, max_len):
+                findings.append(
+                    Finding(path, start, rule.id, payload[0][:80], "\n".join(payload), rule.severity)
+                )
+    elif scope == "comment":
+        # `comment` scope only ever reaches here from `lint_text` (a real
+        # file); `lint_message` never carries it, since a commit/PR body is
+        # markdown-shaped text, not source code.
+        suffix = pathlib.Path(path).suffix
+        for item in comment_segments(text, suffix):
+            if item[0] != "para":
+                continue
+            _, start, indent, marker, payload = item
+            avail = max(max_len - len(indent + marker + " "), 20)
+            if _looks_hard_wrapped(payload, avail):
+                findings.append(
+                    Finding(
+                        path, start, rule.id, payload[0][:80], "\n".join(payload), rule.severity
+                    )
+                )
+    return findings
 
 
 def reflow_markdown(text, width):
@@ -1528,9 +1617,7 @@ def reflow_comments(text, suffix, width):
         return text
     segments = list(comment_segments(text, suffix))
     if not segments:
-        # The suffix check above already excludes the "unknown language" case,
-        # so reaching here means the lexer could not read the file -- returned
-        # UNCHANGED, per this function's own contract above.
+        # The suffix check above already excludes the "unknown language" case, so reaching here means the lexer could not read the file -- returned UNCHANGED, per this function's own contract above.
         return text
 
     out = []
