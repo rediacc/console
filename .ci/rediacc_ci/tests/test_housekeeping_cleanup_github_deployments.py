@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.housekeeping.cleanup_github_deployments` against
-its twin `.ci/scripts/housekeeping/cleanup-github-deployments.sh`.
+"""Differential: `rediacc_ci.housekeeping.cleanup_github_deployments` against its twin `.ci/scripts/housekeeping/cleanup-github-deployments.sh`.
 
 A RECORDING FAKE `gh`, written as Python, seam is PATH -- ruling 7's shape, as in `test_pr_sync_epic_block.py`. Nothing here reaches the network, and the real `gh` on this machine is never on the PATH handed to either subject. That is not merely tidy: this script's non-dry-run arm DELETES deployment records, and its `--repo` comes from the command line, so a case that leaked the
 real binary would delete real records from whatever repository the argument named.
@@ -10,9 +9,7 @@ otherwise pass.
 TWO CASES PIN DEFECTS IN THE TWIN RATHER THAN CORRECT BEHAVIOUR, and say so in their own names, so a future fix turns them red instead of sliding past: `test_DEFECT_failed_deletions_do_not_affect_the_exit_code` and `test_DEFECT_the_environment_is_not_url_encoded`. Both are described in the port's module docstring.
 
 K=5 LEDGER: `.ci/shadow/w7p6-cleanup-github-deployments.observations.jsonl`
--- five distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout
-(dirty tree; `--record` refuses one) with the same fake `gh` on PATH, one
-scenario per tree: a dry run over three ids, one failed deletion, all deletions failing, a usage error, and a listing that returns HTTP 403.
+-- five distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty tree; `--record` refuses one) with the same fake `gh` on PATH, one scenario per tree: a dry run over three ids, one failed deletion, all deletions failing, a usage error, and a listing that returns HTTP 403.
 """
 
 from __future__ import annotations
@@ -170,9 +167,7 @@ def test_environment_without_repo_prints_the_usage(tmp_path: pathlib.Path) -> No
 
 
 def test_missing_gh_refuses_before_the_usage_check(tmp_path: pathlib.Path) -> None:
-    """ORDER MATTERS AND IS REPRODUCED: `require_cmd gh` runs BEFORE the
-    argument validation, so a machine without gh reports the missing binary
-    even when the command line is also wrong."""
+    """ORDER MATTERS AND IS REPRODUCED: `require_cmd gh` runs BEFORE the argument validation, so a machine without gh reports the missing binary even when the command line is also wrong."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], with_gh=False)
     assert old.returncode == 1
     assert old.stderr == "✗ Required command 'gh' is not available\n"
@@ -191,8 +186,7 @@ def test_no_deployments_found(tmp_path: pathlib.Path) -> None:
 
 
 def test_dry_run_deletes_nothing(tmp_path: pathlib.Path) -> None:
-    """THE SAFE PATH, and the assertion that matters is the CALL LOG: exactly
-    one listing call and not a single DELETE."""
+    """THE SAFE PATH, and the assertion that matters is the CALL LOG: exactly one listing call and not a single DELETE."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--repo", "acme/widget", "--environment", "pr-42", "--dry-run"],
@@ -225,8 +219,7 @@ def test_real_path_marks_inactive_then_deletes_each_id(tmp_path: pathlib.Path) -
 
 
 def test_gh_output_from_the_mutating_calls_is_swallowed(tmp_path: pathlib.Path) -> None:
-    """`>/dev/null 2>&1` on BOTH mutation calls. The fake writes to both
-    streams precisely so a port that forgot one would be caught here."""
+    """`>/dev/null 2>&1` on BOTH mutation calls. The fake writes to both streams precisely so a port that forgot one would be caught here."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--repo", "acme/widget", "--environment", "pr-42"], FAKE_GH_IDS="101"
     )
@@ -249,9 +242,7 @@ def test_a_failed_deletion_warns_and_the_others_still_run(tmp_path: pathlib.Path
 
 
 def test_defect_failed_deletions_do_not_affect_the_exit_code(tmp_path: pathlib.Path) -> None:
-    """PINNING A DEFECT, NOT A REQUIREMENT. Every deletion fails and the script
-    still exits 0, so a workflow step shows a green tick while the Deployments view is untouched. Reported to the driver rather than fixed here: changing it changes live release-path behaviour on both sides at once. If the twin
-    is ever fixed, THIS TEST GOES RED, which is the point."""
+    """PINNING A DEFECT, NOT A REQUIREMENT. Every deletion fails and the script still exits 0, so a workflow step shows a green tick while the Deployments view is untouched. Reported to the driver rather than fixed here: changing it changes live release-path behaviour on both sides at once. If the twin is ever fixed, THIS TEST GOES RED, which is the point."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--repo", "acme/widget", "--environment", "pr-42"],
@@ -264,9 +255,7 @@ def test_defect_failed_deletions_do_not_affect_the_exit_code(tmp_path: pathlib.P
 
 
 def test_defect_the_environment_is_not_url_encoded(tmp_path: pathlib.Path) -> None:
-    """PINNING A DEFECT. An environment name carrying `&` is interpolated raw
-    into the query string, so the request asks for something else entirely.
-    Latent today (every caller passes `pr-<n>`), reproduced on both sides."""
+    """PINNING A DEFECT. An environment name carrying `&` is interpolated raw into the query string, so the request asks for something else entirely. Latent today (every caller passes `pr-<n>`), reproduced on both sides."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--repo", "acme/widget", "--environment", "pr-1&per_page=1"],
@@ -282,9 +271,7 @@ def test_defect_the_environment_is_not_url_encoded(tmp_path: pathlib.Path) -> No
 
 
 def test_dry_run_false_is_not_a_dry_run(tmp_path: pathlib.Path) -> None:
-    """common.sh's parse_args QUIRK 2: `--dry-run false` consumes the next
-    token as the VALUE, so DRY_RUN is the string `false` and the deletions are
-    real. Surprising, live, and identical on both sides."""
+    """common.sh's parse_args QUIRK 2: `--dry-run false` consumes the next token as the VALUE, so DRY_RUN is the string `false` and the deletions are real. Surprising, live, and identical on both sides."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--repo", "acme/widget", "--environment", "pr-42", "--dry-run", "false"],
@@ -297,8 +284,7 @@ def test_dry_run_false_is_not_a_dry_run(tmp_path: pathlib.Path) -> None:
 
 
 def test_listing_failure_propagates_with_ghs_own_stderr(tmp_path: pathlib.Path) -> None:
-    """The listing is `$(gh ...)` with stderr INHERITED, so gh's diagnostic
-    reaches the caller and `set -e` takes the exit code."""
+    """The listing is `$(gh ...)` with stderr INHERITED, so gh's diagnostic reaches the caller and `set -e` takes the exit code."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--repo", "acme/widget", "--environment", "pr-42"],
@@ -329,9 +315,8 @@ def test_pure_url_builders() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the line that makes `--dry-run` safe. Removing
-    the `continue` turns the dry run into a real one: the messages stay identical, the exit code stays 0, and only the CALL LOG shows that records were deleted -- which is exactly why every case in this file compares the call log. Driven red, then the source is restored byte-identical and
-    re-verified green."""
+    """ANTI-VACUITY, planted on the line that makes `--dry-run` safe. Removing the `continue` turns the dry run into a real one: the messages stay identical, the exit code stays 0, and only the CALL LOG shows that records were deleted -- which is exactly why every case in this file compares the call log. Driven red, then the source is restored byte-identical and re-verified
+    green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
         '            log.warn("[DRY-RUN] Would delete deployment %s (%s)" '

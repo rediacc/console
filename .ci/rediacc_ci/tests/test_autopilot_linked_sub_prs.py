@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.linked_sub_prs` against its twin
-`.ci/scripts/autopilot/linked-sub-prs.sh`.
+"""Differential: `rediacc_ci.autopilot.linked_sub_prs` against its twin `.ci/scripts/autopilot/linked-sub-prs.sh`.
 
 BYTES, NOT TEXT, on both streams. The subject reads a PR body, which is whatever GitHub stored, and one of the cases below feeds it a NUL byte on purpose to exercise GNU grep's binary suppression. A comparison that decoded would fail on the input rather than on the difference it is looking for.
 
@@ -118,8 +117,7 @@ def test_the_full_body() -> None:
 
 
 def test_the_allowlist_is_the_boundary() -> None:
-    """NEGATIVE CONTROL. A body that links only non-submodules prints nothing
-    and exits 0, which is the twin's documented quiet-empty result."""
+    """NEGATIVE CONTROL. A body that links only non-submodules prints nothing and exits 0, which is the twin's documented quiet-empty result."""
     body = b"\n".join(
         [
             b"https://github.com/rediacc/console/pull/1",
@@ -155,8 +153,7 @@ def test_near_miss_spellings_are_not_links() -> None:
 
 
 def test_every_spelling_alone() -> None:
-    """Each accepted spelling on its own, so a regression in one is not hidden
-    by another matching the same number."""
+    """Each accepted spelling on its own, so a regression in one is not hidden by another matching the same number."""
     for label, line, want in (
         ("url", b"https://github.com/rediacc/renet/pull/41\n", b"rediacc/renet 41\n"),
         ("hash", b"rediacc/renet#42\n", b"rediacc/renet 42\n"),
@@ -167,9 +164,7 @@ def test_every_spelling_alone() -> None:
 
 
 def test_numeric_dedup_keeps_the_first_of_an_equal_run() -> None:
-    """`sort -un` reads `007` and `7` as ONE PR. Which STRING survives depends
-    on input order, and both orders are driven because a port that sorted
-    lexicographically would agree with one of them by accident."""
+    """`sort -un` reads `007` and `7` as ONE PR. Which STRING survives depends on input order, and both orders are driven because a port that sorted lexicographically would agree with one of them by accident."""
     _, first, _ = _sides(
         "zeros-7-first",
         ["--body", "b.md"],
@@ -201,8 +196,7 @@ def test_a_nul_byte_makes_the_body_binary() -> None:
 
 
 def test_a_nul_byte_with_no_link_is_silent() -> None:
-    """The other half of the case above: grep only announces a binary file it
-    MATCHED, so a binary body with no links produces no diagnostic at all."""
+    """The other half of the case above: grep only announces a binary file it MATCHED, so a binary body with no links produces no diagnostic at all."""
     _, stdout, stderr = _sides("binary-quiet", ["--body", "body.md"], body=b"nothing\x00here\n")
     assert stdout == b""
     assert stderr == b""
@@ -266,8 +260,7 @@ def test_divergence_an_owner_that_is_not_valid_regex() -> None:
 
 
 def test_divergence_a_flag_that_is_not_a_shell_identifier() -> None:
-    """`parse_args` QUIRK 3. Exit 2 on both; the twin's text carries common.sh's
-    own path and line number, so only the shape is compared.
+    """`parse_args` QUIRK 3. Exit 2 on both; the twin's text carries common.sh's own path and line number, so only the shape is compared.
 
     THE FLAG HAS TO CARRY A CHARACTER THE PREFIX CANNOT RESCUE. `--1bad` looks like the obvious specimen and is not one: the key becomes `ARG_1BAD`, which starts with a letter and is a perfectly good shell identifier, so both sides parse it happily and exit 0. Driven, and it cost this case its first run. `--a.b` is the real thing: `ARG_A.B` cannot be a variable name.
     """
@@ -286,8 +279,7 @@ def test_divergence_a_flag_that_is_not_a_shell_identifier() -> None:
 
 
 def test_positional_arguments_are_invisible() -> None:
-    """`parse_args` skips anything not starting with `--`, so a positional body
-    path is NOT a body path and the script refuses for want of `--body`."""
+    """`parse_args` skips anything not starting with `--`, so a positional body path is NOT a body path and the script refuses for want of `--body`."""
     exit_code, _, stderr = _sides("positional", ["body.md"])
     assert exit_code == 2
     assert b"usage: linked-sub-prs.sh" in stderr

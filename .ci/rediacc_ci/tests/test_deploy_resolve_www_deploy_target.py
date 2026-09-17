@@ -1,7 +1,6 @@
 """`rediacc_ci.deploy.resolve_www_deploy_target` against its bash twin.
 
-Sibling of `test_deploy_resolve_account_deploy_config.py`; see that file for
-why `/dev/stdout` is not used as `$GITHUB_OUTPUT` and why the missing-env-var
+Sibling of `test_deploy_resolve_account_deploy_config.py`; see that file for why `/dev/stdout` is not used as `$GITHUB_OUTPUT` and why the missing-env-var
 path is checked for exit code and substance, not bytes. The K=5 ledger is
 `.ci/shadow/w7p5a-resolve-www-deploy-target.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-www-deploy-target --assert --k 5` -> "equivalence holds over 5 distinct trees").
 
@@ -70,8 +69,7 @@ def test_edge_target_selects_the_edge_worker_and_sandbox(tmp_path: pathlib.Path)
 
 
 def test_missing_target_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> None:
-    """Exit codes and the identified variable agree; wording does not, and is
-    not supposed to -- see the port's module docstring."""
+    """Exit codes and the identified variable agree; wording does not, and is not supposed to -- see the port's module docstring."""
     env: dict[str, str] = {}
     (old_exit, _, old_err), (new_exit, _, new_err), _, _ = run_both(tmp_path, env)
     assert old_exit == 1

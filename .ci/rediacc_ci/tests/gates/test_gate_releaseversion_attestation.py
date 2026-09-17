@@ -4,9 +4,8 @@ Both-ways test for `.ci/scripts/release/verify-artifact-attestation.sh`.
 
 WHAT IT IS FOR. cd-v2.yml runs it after downloading the release artifacts and before publishing them. It re-verifies the Sigstore build provenance that cd-stage.yml attached, proving the bytes CD is about to publish are the bytes CI produced.
 
-WHAT WAS BROKEN. Every `gh attestation verify` failure became a `::warning::` and the script had NO failing exit path at all -- it could not fail, for any input,
-ever. Its header called that a "transition period"; nothing recorded when the
-period ended, so it never would. Worse, `find` over two absent directories prints nothing, the loop body never runs, and it exited 0 having verified precisely zero artifacts, indistinguishable from a clean pass.
+WHAT WAS BROKEN. Every `gh attestation verify` failure became a `::warning::` and the script had NO failing exit path at all -- it could not fail, for any input, ever. Its header called that a "transition period"; nothing recorded when the period ended, so it never would. Worse, `find` over two absent directories prints nothing, the loop body never runs, and it exited 0 having
+verified precisely zero artifacts, indistinguishable from a clean pass.
 
 The script resolves its repo root from its OWN path, so the test runs a copy inside a fixture tree. That keeps planted dist/ artifacts out of the real working tree, which other sessions are using.
 """

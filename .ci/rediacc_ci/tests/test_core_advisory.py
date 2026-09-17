@@ -3,9 +3,7 @@
 THE TWIN IS LIVE, not frozen: `.ci/scripts/lib/emit-advisory.sh` still carries its implementation and is still reached by `blocker-validator.sh:80`, by `age-check.sh` and by `.ci/scripts/security/audit.sh`. Every case below sources that file.
 
 THE TWIN IS DRIVEN STANDALONE, WITH NO `common.sh`, AND THAT IS THE WHOLE DIFFERENTIAL'S SCOPE. `emit-advisory.sh` defines its loggers only when nothing has defined them already (`declare -F`), so sourcing `common.sh` first replaces four of the functions under test with common.sh's. A differential that did that would be measuring `common.sh` while appearing to measure this file.
-The
-transitive branch belongs to whichever box ports `common.sh`; it is named here
-so its absence reads as a boundary rather than as an oversight.
+The transitive branch belongs to whichever box ports `common.sh`; it is named here so its absence reads as a boundary rather than as an oversight.
 
 WHY BOTH STREAMS ARE COMPARED SEPARATELY AND NEVER MERGED. One advisory STRADDLES them: off CI the header goes to stderr through `log_error` while every continuation line -- Affected, Summary, Fix, Action, Details -- is a plain `echo` on stdout. `2>&1` would make a stream swap invisible, and a stream swap in this exact file is the 2026-09-06 incident `rediacc_ci.log` is shaped by.
 `differential.bash_streams` has no option to merge them.

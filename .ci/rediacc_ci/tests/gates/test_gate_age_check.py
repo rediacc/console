@@ -3,9 +3,7 @@
 Unit tests for `.ci/scripts/lib/age-check.sh`, the library that decides whether a suppression entry has outlived its re-review window.
 
 WHY THE PORT STILL GOES THROUGH BASH. The subject is a bash library today, and it is a DELEGATING SHIM over `rediacc_ci.core.age`. A port that imported the Python core directly would be testing the half that is already Python and would go green on a tree where the shim had stopped loading, stopped passing `$AGE_WARN_DAYS`, or stopped translating the verdict line. The twin's whole
-subject is that seam, so
-every case here drives `bash -c 'source age-check.sh; <call>'` exactly as the twin
-does, and the Python core is exercised THROUGH it.
+subject is that seam, so every case here drives `bash -c 'source age-check.sh; <call>'` exactly as the twin does, and the Python core is exercised THROUGH it.
 
 WHY EACH CALL IS ITS OWN `bash -c`, the same argument `test_gate_verify_version` makes: the twin sources the library once into its own shell and every case shares that state. A Python port has no shell to source into, so the library is re-sourced per call. Slower, and strictly more honest -- no case can leave a variable behind
 for the next one, which matters here because the library marks
@@ -151,8 +149,7 @@ def test_age_untracked_file_returns_zero(gate, tmp_path):
 
 
 def test_age_truncated_history_cannot_verify(gate, tmp_path):
-    """A TRUNCATED history reports the graft's date, not the line's, so an old
-    suppression looks new. Measured on the real repo before this was fixed: the github.com/docker/docker entry in .go-deps-upgrade-blocklist read 195 days on a full clone and 2 days on a truncated one, with AGE_WARN_DAYS at 180. The gate whose job is expiring stale suppressions expired nothing, in green.
+    """A TRUNCATED history reports the graft's date, not the line's, so an old suppression looks new. Measured on the real repo before this was fixed: the github.com/docker/docker entry in .go-deps-upgrade-blocklist read 195 days on a full clone and 2 days on a truncated one, with AGE_WARN_DAYS at 180. The gate whose job is expiring stale suppressions expired nothing, in green.
     """
     make_shallow_pair(gate, tmp_path, 400, "ENTRY_OLD")
 

@@ -10,10 +10,8 @@ THE PROPERTY. For each key, derive the set of repo paths its DEFINING workflow j
 THE CHECKER IS NOT REIMPLEMENTED, AND THAT IS THE WHOLE DESIGN DECISION HERE. The twin does not check anything itself: it writes a 222-line Node program to a temp file and drives it, twice over deliberately mutated tables. That program is a line-based YAML block extractor, a shell source/invoke sweeper and a directory-aware coverage walk, and every one of those is the kind of thing
 that agrees with its twin TODAY and diverges the first time a job id or a `source` line moves. So the port carries the SAME PROGRAM, byte for byte, in `CHECKER_PATH`, and drives it the same four ways. What is ported is the harness, not the instrument.
 
-THE COPY LIVES BESIDE THIS FILE RATHER THAN INSIDE IT, and that is not cosmetic. A
-heredoc's bytes are unambiguous; a Python string literal's are not, because the same
-program embedded as a literal would have to survive whatever quoting the literal imposes, and a port whose fidelity claim rests on nobody having mis-escaped a backslash is not making a fidelity claim. `trace_checker.cjs.fixture` is copied out of the twin unmodified and read from disk, then MATERIALISED into `tmp_path` as `trace.cjs` before each run -- which is what the twin does
-too, into its own `mktemp -d`.
+THE COPY LIVES BESIDE THIS FILE RATHER THAN INSIDE IT, and that is not cosmetic. A heredoc's bytes are unambiguous; a Python string literal's are not, because the same program embedded as a literal would have to survive whatever quoting the literal imposes, and a port whose fidelity claim rests on nobody having mis-escaped a backslash is not making a fidelity claim.
+`trace_checker.cjs.fixture` is copied out of the twin unmodified and read from disk, then MATERIALISED into `tmp_path` as `trace.cjs` before each run -- which is what the twin does too, into its own `mktemp -d`.
 
 THE `.fixture` SUFFIX IS LOAD-BEARING AND WAS PAID FOR. Named plainly `trace_checker.cjs`, the file is JavaScript source of this repository and
 `npm run lint` covers `.ci`: `npx eslint` on it reports
@@ -21,9 +19,7 @@ THE `.fixture` SUFFIX IS LOAD-BEARING AND WAS PAID FOR. Named plainly `trace_che
 bytes -- and node is handed a `.cjs` copy instead. Node refuses an unknown extension outright (`ERR_UNKNOWN_FILE_EXTENSION`), so the materialisation is not optional.
 
 THE PRICE OF A SECOND COPY IS DRIFT, so the copy is a CHECKED INVARIANT rather than a hope. `test_the_checker_is_byte_identical_to_the_twins` -- an ADDED case, not one of the twin's four -- extracts the twin's heredoc and requires it to equal the file. A drift that would otherwise make the two files silently answer different questions is a red naming the byte count on each side.
-When W7 P5 deletes the twin, that case has
-nothing left to compare and must be deleted with it; it is written to FAIL rather
-than skip if the twin is gone, so the deletion cannot be forgotten.
+When W7 P5 deletes the twin, that case has nothing left to compare and must be deleted with it; it is written to FAIL rather than skip if the twin is gone, so the deletion cannot be forgotten.
 
 WHERE THIS REIMPLEMENTS awk AND grep, AND WHY THE ANSWERS AGREE. Only the assertions around the checker's own stdout, which is a fixed line grammar the checker writes itself (`DERIVED <key> <n>` and `UNCOVERED <key> <path> <why>`):
 
@@ -68,8 +64,7 @@ def node(gate) -> str:  # noqa: ARG001 - `gate` keeps every caller uniform
 
 
 def table_json(gate, directory: pathlib.Path) -> pathlib.Path:
-    """CLOSURES as data, which is what makes the mutation controls possible without
-    ever editing the engine."""
+    """CLOSURES as data, which is what makes the mutation controls possible without ever editing the engine."""
     result = harness.run(
         [
             node(gate),
@@ -140,9 +135,7 @@ def mutate_table(gate, source: pathlib.Path, target: pathlib.Path, program: str)
 
 
 def test_the_checker_is_byte_identical_to_the_twins(gate):
-    """ADDED CASE, not one of the twin's four. See the module docstring: the port
-    carries the checker rather than reimplementing it, and this is what stops the two
-    copies from silently answering different questions."""
+    """ADDED CASE, not one of the twin's four. See the module docstring: the port carries the checker rather than reimplementing it, and this is what stops the two copies from silently answering different questions."""
     if not CHECKER_PATH.is_file():
         gate.log_fail("%s is missing; there is nothing to compare" % CHECKER_PATH)
     if not TWIN.is_file():

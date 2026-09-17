@@ -3,9 +3,7 @@
 A bash child runs the REAL `.ci/scripts/quality/check-staging-tag-guard.sh` over a fixture -- pointed there with the twin's own `STAGING_GUARD_ROOT` seam, which is why the twin does not have to be copied -- with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's.
 
 STDOUT IS COMPARED BYTE FOR BYTE HERE, and that is not the usual bar. This gate's output IS its tally: ` ok <label>` lines and a `✓ <subject>: N control(s) passed` verdict, all of it interpolated from the same subject string that appears in the FAILING verdict, where it carries a ✗ and is therefore a compared finding. The first draft of this port enriched that subject with a
-scanned-file count and
-the shadow differential refused all three trees with MISMATCH_FINDINGS; the rows
-are in `.ci/shadow/w7p2-stagingtag.observations.jsonl` and those tree ids stay disqualified. Comparing the bytes here is what stops that returning.
+scanned-file count and the shadow differential refused all three trees with MISMATCH_FINDINGS; the rows are in `.ci/shadow/w7p2-stagingtag.observations.jsonl` and those tree ids stay disqualified. Comparing the bytes here is what stops that returning.
 
 The committed ledger records the same comparison over K distinct trees, three of which embed BOTH implementations so that the tree id really is the content the disqualification rule assumes it is.
 """
@@ -35,8 +33,7 @@ UNGUARDED_PY = '"$SCRIPT_DIR/../docker/cleanup_staging.py" --tag "$CHANNEL"\n'
 
 
 def build(tmp_path: pathlib.Path, files: dict[str, str], rail: bool = True) -> pathlib.Path:
-    """A fixture tree holding the SUBJECT and its callers. The twin is not copied:
-    it reads `$STAGING_GUARD_ROOT`, so the real one judges this tree."""
+    """A fixture tree holding the SUBJECT and its callers. The twin is not copied: it reads `$STAGING_GUARD_ROOT`, so the real one judges this tree."""
     root = tmp_path / "fixture"
     subject = root / SUBJECT_REL
     subject.parent.mkdir(parents=True)

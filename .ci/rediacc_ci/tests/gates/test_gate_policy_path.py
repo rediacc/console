@@ -18,9 +18,8 @@ THE THREE PROPERTIES PINNED HERE, each of them a refusal, and they are the twin'
 
 Plus the liveness assertion that keeps the name list honest: every name the module knows must resolve to a file that is there TODAY.
 
-WHY THE MODULE'S OWN CLI RATHER THAN AN IMPORT, carried over verbatim from the twin's reasoning. An earlier bash version generated a temp `.ts` that imported
-the module; that needed four more exports than any TypeScript caller wants, and
-`lint:unused` was right to refuse them. The workspace `tsx` binary is called directly rather than through `npx`, which also skips npx's re-resolution -- and stdout and stderr are kept SEPARATE, because npx prints an unrelated "Unknown project config minimum-release-age" warning on stderr and the first run of the bash file compared a path against that warning.
+WHY THE MODULE'S OWN CLI RATHER THAN AN IMPORT, carried over verbatim from the twin's reasoning. An earlier bash version generated a temp `.ts` that imported the module; that needed four more exports than any TypeScript caller wants, and `lint:unused` was right to refuse them. The workspace `tsx` binary is called directly rather than through `npx`, which also skips npx's
+re-resolution -- and stdout and stderr are kept SEPARATE, because npx prints an unrelated "Unknown project config minimum-release-age" warning on stderr and the first run of the bash file compared a path against that warning.
 
 NO `xdist_group`. Every case here reads the real tree and writes only into its own `mktemp -d`, and the one filesystem mutation (the fixture root) is created and removed inside a single case. Nothing is bound, nothing global is mutated.
 """
@@ -56,9 +55,7 @@ def pp(gate, *args: str) -> harness.RunResult:
 def all_paths(gate) -> list[str]:
     """`pp --all-paths`, one path per line.
 
-    ONE process, not one per name. The obvious loop calling `--path <name>` fifteen times cost fifteen node startups and made the bash twin the
-    third-slowest gate in the quick lane; the answers are identical because
-    `--all-paths` is `policyPath()` mapped over the same name list.
+    ONE process, not one per name. The obvious loop calling `--path <name>` fifteen times cost fifteen node startups and made the bash twin the third-slowest gate in the quick lane; the answers are identical because `--all-paths` is `policyPath()` mapped over the same name list.
     """
     result = pp(gate, "--all-paths")
     gate.assert_exit_code(0, result.rc, "--all-paths must succeed (stderr: %s)" % result.err)
@@ -68,8 +65,7 @@ def all_paths(gate) -> list[str]:
 def test_pure_join_needs_no_filesystem(gate):
     gate.log_test("policyPath resolves against a root that contains nothing")
     with harness.temp_dir() as empty:
-        # Deliberately EMPTY: no .ci, no .ci/policy, no dotfiles, nothing. A helper that stat'ed anything would have to either throw or answer a
-        # second location here; a pure join cannot tell the difference.
+        # Deliberately EMPTY: no .ci, no .ci/policy, no dotfiles, nothing. A helper that stat'ed anything would have to either throw or answer a second location here; a pure join cannot tell the difference.
         result = pp(gate, "--path", ".deps-upgrade-blocklist", "--root", str(empty))
         gate.assert_eq(
             result.out.strip(),
@@ -115,8 +111,7 @@ def test_unknown_name_is_refused_loudly(gate):
 
 def test_ci_trigger_is_not_a_policy_name(gate):
     gate.log_test(".ci-trigger is the one root dotfile in this family that is NOT policy")
-    # It has no entries, no BLOCKER lines and no parser anywhere in the tree; its
-    # only effect is ROOT_MANIFESTS membership in .ci/scripts/ci/scope-map.cjs, which is what makes `touch .ci-trigger` force a full CI round. Naming it here would make the module claim a file it must not move.
+    # It has no entries, no BLOCKER lines and no parser anywhere in the tree; its only effect is ROOT_MANIFESTS membership in .ci/scripts/ci/scope-map.cjs, which is what makes `touch .ci-trigger` force a full CI round. Naming it here would make the module claim a file it must not move.
     gate.assert_eq(
         pp(gate, "--is", ".ci-trigger").out.strip(),
         "false",

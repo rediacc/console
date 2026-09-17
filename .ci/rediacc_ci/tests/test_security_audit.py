@@ -616,7 +616,7 @@ def test_every_advisory_allowlisted_with_a_blocker(fx: Fixture) -> None:
 
 
 def test_defect3_an_empty_vulnerable_range_shifts_the_two_fields(fx: Fixture) -> None:
-    """`Affected: 7.0.2  ->  Patched in: Host header SSRF.` -- both sides.
+    """`Affected: 7.0.2 -> Patched in: Host header SSRF.` -- both sides.
 
     GHSA-2pvr's `vulnerable_version_range` is the empty string, so the TAB run in the `@tsv` row collapses, `first_patched_version` lands in the range slot and the DESCRIPTION lands in the patched slot. This is the case that would make a naive `line.split("\\t")` port disagree, and it disagrees in a direction that looks like the port being correct.
     """

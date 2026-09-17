@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.review_reply` against its twin
-`.ci/scripts/autopilot/review-reply.sh`.
+"""Differential: `rediacc_ci.autopilot.review_reply` against its twin `.ci/scripts/autopilot/review-reply.sh`.
 
 THE FAKE `gh` IS A SAFETY CONTROL, NOT A CONVENIENCE, and this subject is the one where that is literal: `apply`'s success path posts a comment into a review thread and marks that thread RESOLVED. GitHub undoes neither. The thread id comes out of a model-authored verdict, and a global GraphQL node id names a thread on any pull request in any repository the token can reach. So a
 case that reached the real binary could post fixture text onto somebody's PR.
@@ -41,8 +40,7 @@ TWIN = ROOT / ".ci" / "scripts" / "autopilot" / "review-reply.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "autopilot" / "review_reply.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# A recording fake `gh`. Answers from FAKE_GH_SCRIPT in call order; records
-# every argv BEFORE deciding anything.
+# A recording fake `gh`. Answers from FAKE_GH_SCRIPT in call order; records every argv BEFORE deciding anything.
 FAKE_GH = """#!/usr/bin/python3
 import json
 import os
@@ -195,9 +193,7 @@ def test_the_fake_gh_records_every_call() -> None:
 
 
 def test_the_mutations_are_the_twins_mutations() -> None:
-    """Byte for byte, because they travel as request arguments and because
-    `check-resolved-threads.sh` advertises the same two to humans -- the
-    automated and manual paths must not drift."""
+    """Byte for byte, because they travel as request arguments and because `check-resolved-threads.sh` advertises the same two to humans -- the automated and manual paths must not drift."""
     twin = TWIN.read_text(encoding="utf-8")
     for name, value in (
         ("REPLY_MUTATION", rr.REPLY_MUTATION),
@@ -295,8 +291,7 @@ def test_a_clean_plan() -> None:
 
 
 def test_an_ordinary_decision_entry_is_not_thread_traffic() -> None:
-    """Dropped SILENTLY, not skipped loudly. A round whose decisions are mostly
-    prose must not be `flagged`, or the warning stops meaning anything."""
+    """Dropped SILENTLY, not skipped loudly. A round whose decisions are mostly prose must not be `flagged`, or the warning stops meaning anything."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["verdict.json"] = verdict(
         "ruled out bumping the pin, see the ledger",
@@ -312,9 +307,7 @@ def test_an_ordinary_decision_entry_is_not_thread_traffic() -> None:
 
 
 def test_the_two_skip_reasons_are_different_reasons() -> None:
-    """A malformed id and a well-formed id nobody showed the model are separate
-    findings. The second is the security one: the payload is the round's whole
-    world, so an id outside it is not addressable."""
+    """A malformed id and a well-formed id nobody showed the model are separate findings. The second is the security one: the payload is the round's whole world, so an id outside it is not addressable."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["verdict.json"] = verdict(
         "thread T_acme1: kept",
@@ -378,8 +371,7 @@ def test_a_multi_line_disposition_is_silently_dropped() -> None:
 
     THAT CONTRADICTS THE TWIN'S OWN HEADER ("Anything else lands in skipped[]
     with a reason and raises flagged -- never silently"). A model writing a
-    two-line answer gets exactly the silence that sentence promises cannot happen. Asserted as the twin BEHAVES rather than as it is documented, and
-    this test is what will go red when somebody repairs it."""
+    two-line answer gets exactly the silence that sentence promises cannot happen. Asserted as the twin BEHAVES rather than as it is documented, and this test is what will go red when somebody repairs it."""
     fixtures = {
         "verdict.json": verdict("thread T_acme1: first line\nsecond line\n\nthird"),
         "threads.json": threads(entry("T_acme1")),
@@ -397,8 +389,7 @@ def test_a_multi_line_disposition_is_silently_dropped() -> None:
 
 
 def test_the_threads_fixture_is_accepted_in_both_spellings() -> None:
-    """`(.threads // .) // []`: the payload object OR a bare array, because
-    requiring one spelling breaks the moment the payload gains a field."""
+    """`(.threads // .) // []`: the payload object OR a bare array, because requiring one spelling breaks the moment the payload gains a field."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["threads.json"] = threads(entry("T_acme1"))
     _, out, _, _, _ = _sides("plan-shape-object", PLAN_ARGV, fixtures=fixtures)
@@ -416,8 +407,7 @@ def test_a_bare_array_threads_fixture_is_refused_by_jq() -> None:
 
     `.threads` on an ARRAY is an ERROR in jq, not `null`, so `(.threads // .)` never falls through and the bare-array spelling the comment promises exits 5
     with a jq diagnostic and no plan. Latent because the only caller
-    (`.github/workflows/autopilot.yml:817`) passes `review-payload.sh`'s object,
-    so this is documentation of a capability that was never there."""
+    (`.github/workflows/autopilot.yml:817`) passes `review-payload.sh`'s object, so this is documentation of a capability that was never there."""
     for label, text in (
         ("array-of-threads", threads(entry("T_acme1"), wrapped=False)),
         ("empty-array", "[]\n"),
@@ -431,8 +421,7 @@ def test_a_bare_array_threads_fixture_is_refused_by_jq() -> None:
 
 
 def test_the_repo_tag_is_carried_into_the_plan() -> None:
-    """The plan is an audit record: "resolved a thread" is not a useful sentence
-    without naming where. An untagged thread falls back to `console`."""
+    """The plan is an audit record: "resolved a thread" is not a useful sentence without naming where. An untagged thread falls back to `console`."""
     fixtures = {
         "verdict.json": verdict("thread T_acme1: a", "thread T_acme2: b"),
         "threads.json": threads(entry("T_acme1", "rediacc/renet"), entry("T_acme2", repo=None)),
@@ -555,8 +544,7 @@ def test_the_write_gate_is_closed_by_default() -> None:
 
 
 def test_the_file_check_comes_before_the_write_gate() -> None:
-    """ORDER: a typo'd `--plan` with the stage OFF is still the FILE error, so a
-    mistyped path cannot be mistaken for a closed stage."""
+    """ORDER: a typo'd `--plan` with the stage OFF is still the FILE error, so a mistyped path cannot be mistaken for a closed stage."""
     code, _, err, _, _ = _sides(
         "apply-order", ["apply", "--plan", "nope.json"], fixtures=APPLY_FIXTURES
     )
@@ -583,8 +571,7 @@ def test_nothing_planned_touches_nothing() -> None:
 
 
 def test_apply_replies_then_resolves_each_thread_in_order() -> None:
-    """TWO mutations per entry, reply FIRST. Resolving first would leave a
-    resolved thread with no answer in it if the reply failed, which is exactly the state `check-resolved-threads.sh` cannot tell from a human having dealt
+    """TWO mutations per entry, reply FIRST. Resolving first would leave a resolved thread with no answer in it if the reply failed, which is exactly the state `check-resolved-threads.sh` cannot tell from a human having dealt
     with it."""
     code, _out, err, calls, _ = _sides(
         "apply-two", APPLY_ARGV, fixtures=APPLY_FIXTURES, env=PUSH_ON
@@ -605,8 +592,7 @@ def test_apply_replies_then_resolves_each_thread_in_order() -> None:
 
 def test_model_text_travels_as_an_argv_value_not_as_shell() -> None:
     """`-f k=v` puts the bytes in ONE argv slot with no re-parse. The recorded
-    argv is read back and compared literally, so a body that looks like a
-    command substitution arrives as text."""
+    argv is read back and compared literally, so a body that looks like a command substitution arrives as text."""
     nasty = '$(rm -rf /) `id` ; echo pwned | tee /tmp/x "quoted" \\backslash\n newline'
     plan = json.dumps(
         {"replies": [{"thread_id": "T_acme1", "body": nasty, "repo": "acme/console"}]}
@@ -622,8 +608,7 @@ def test_model_text_travels_as_an_argv_value_not_as_shell() -> None:
 
 
 def test_the_id_shape_is_rechecked_at_the_write() -> None:
-    """`apply` is a SEPARATE INVOCATION whose input is a file on disk. `plan`
-    having been careful is not a property of the bytes `apply` reads."""
+    """`apply` is a SEPARATE INVOCATION whose input is a file on disk. `plan` having been careful is not a property of the bytes `apply` reads."""
     for bad in ("T_acme1 T_acme2", "../../x", "T_acme1;id", "T" + "a" * 128, ""):
         plan = json.dumps({"replies": [{"thread_id": bad, "body": "x", "repo": "acme/console"}]})
         code, _, err, calls, _ = _sides(
@@ -654,9 +639,7 @@ def test_the_id_shape_is_rechecked_at_the_write() -> None:
 def test_a_mutation_failure_stops_the_run_mid_plan() -> None:
     """NOT TRANSACTIONAL, and pinned as a finding rather than repaired.
 
-    The reply on entry 2 fails; entry 1 is already replied-and-resolved and
-    entry 3 is never touched, with no record of where it stopped beyond the
-    per-thread log lines. Rerunning would re-reply to entry 1."""
+    The reply on entry 2 fails; entry 1 is already replied-and-resolved and entry 3 is never touched, with no record of where it stopped beyond the per-thread log lines. Rerunning would re-reply to entry 1."""
     plan = json.dumps(
         {
             "replies": [
@@ -684,8 +667,7 @@ def test_a_mutation_failure_stops_the_run_mid_plan() -> None:
 
 
 def test_a_resolve_failure_leaves_the_reply_posted() -> None:
-    """The other half of the same finding: the reply succeeded and the thread is
-    NOT resolved, so the round looks answered and the gate stays red."""
+    """The other half of the same finding: the reply succeeded and the thread is NOT resolved, so the round looks answered and the gate stays red."""
     plan = json.dumps({"replies": [{"thread_id": "T_acme1", "body": "a", "repo": "acme/console"}]})
     ok = {"rc": 0, "out": '{"data":{}}'}
     code, _, err, calls, _ = _sides(
@@ -702,9 +684,7 @@ def test_a_resolve_failure_leaves_the_reply_posted() -> None:
 
 
 def test_a_mutation_that_exits_zero_with_an_unusable_body_is_retried() -> None:
-    """`gh_json` is `_gh_probe true`: the body must PARSE and must not be `null`
-    or `false`. A GraphQL endpoint answering `null` with exit 0 is exactly the
-    swallowed failure `_gh_probe` was written for."""
+    """`gh_json` is `_gh_probe true`: the body must PARSE and must not be `null` or `false`. A GraphQL endpoint answering `null` with exit 0 is exactly the swallowed failure `_gh_probe` was written for."""
     plan = json.dumps({"replies": [{"thread_id": "T_acme1", "body": "a", "repo": "acme/console"}]})
     code, _, err, calls, _ = _sides(
         "apply-nullbody",
@@ -764,8 +744,7 @@ def test_json_usable_is_jq_dash_e_and_not_json_loads() -> None:
 
 
 def test_the_plan_program_keeps_the_twins_reasoning() -> None:
-    """The jq program is the twin's, so the comment inside it is too: it is the
-    sentence that says an ordinary decisions entry is not an error."""
+    """The jq program is the twin's, so the comment inside it is too: it is the sentence that says an ordinary decisions entry is not an error."""
     assert "an ordinary decisions entry is not a reply and is" in rr.PLAN_PROGRAM
     assert "not an error either." in rr.PLAN_PROGRAM
     assert 'capture("^thread (?<id>[^:]+): (?<body>.*)$"; "s")' in rr.PLAN_PROGRAM

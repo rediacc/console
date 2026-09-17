@@ -87,9 +87,8 @@ def build(
     return root
 
 
-# THE RUNNER NAMES ITS SANDBOX AFTER ITS OWN PID (`mutate-check.$$`), so the two sides quote a different path in the scenario-4 detail block for reasons that have nothing to do with either implementation. That is environment volatility,
-# which `scripts/lib/shadow-gate.ts` handles with its `<tmp>` mask; this file
-# compares raw bytes, so it has to mask the same thing itself. Masked NARROWLY -- only the pid -- because masking `/tmp/...` wholesale would also hide a port that quoted the wrong file.
+# THE RUNNER NAMES ITS SANDBOX AFTER ITS OWN PID (`mutate-check.$$`), so the two sides quote a different path in the scenario-4 detail block for reasons that have nothing to do with either implementation. That is environment volatility, which `scripts/lib/shadow-gate.ts` handles with its `<tmp>` mask; this file compares raw bytes, so it has to mask the same thing itself. Masked
+# NARROWLY -- only the pid -- because masking `/tmp/...` wholesale would also hide a port that quoted the wrong file.
 _SANDBOX_PID = re.compile(r"mutate-check\.\d+")
 
 

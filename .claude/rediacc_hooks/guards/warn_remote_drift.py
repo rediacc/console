@@ -1,5 +1,4 @@
-"""On `git push`, check whether the remote branch has moved past local HEAD
-and STOP the push before it burns a CI round.
+"""On `git push`, check whether the remote branch has moved past local HEAD and STOP the push before it burns a CI round.
 
 WHY (operator, 2026-07-31): a babysat branch gets rebased on the REMOTE by GitHub's update-branch (strict_required_status_checks_policy keeps PR branches current with main), so a session's local branch silently falls behind its own remote. The session then watches a superseded run, or worse pushes its stale head, minting a non-fast-forward failure or an extra full CI round. One
 `git fetch` here is cheaper than either.

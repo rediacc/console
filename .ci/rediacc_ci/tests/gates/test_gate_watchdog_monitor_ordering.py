@@ -83,8 +83,7 @@ def real_workflow(gate) -> str:
 def plant(gate, *extra: str) -> str:
     """The real workflow with one step inserted immediately AHEAD of the monitor.
 
-    TEXT EDITING, because that is the kind of edit a human makes; a round-trip
-    through pyyaml would normalise away the very shape being judged.
+    TEXT EDITING, because that is the kind of edit a human makes; a round-trip through pyyaml would normalise away the very shape being judged.
     """
     lines = real_workflow(gate).split("\n")
     step = ["      - name: Planted step"] + ["        " + a for a in extra]

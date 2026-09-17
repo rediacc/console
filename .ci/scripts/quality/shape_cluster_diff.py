@@ -26,8 +26,8 @@ import re
 import subprocess
 import sys
 
-# THE SHAPES, ordered because the FIRST match wins and the order encodes precedence. A fenced line is a fence before it is anything else; a table row is a row before it is prose. Each one is a structure a bulk transform can silently eat, and each was chosen from a real corruption rather than from a taxonomy: rule-line, table-row, html-comment and doc-header are the four
-# REFLOW_STOP gaps this repository actually paid for, in the order they were found.
+# THE SHAPES, ordered because the FIRST match wins and the order encodes precedence. A fenced line is a fence before it is anything else; a table row is a row before it is prose. Each one is a structure a bulk transform can silently eat, and each was chosen from a real corruption rather than from a taxonomy: rule-line, table-row, html-comment and doc-header are the four REFLOW_STOP
+# gaps this repository actually paid for, in the order they were found.
 SHAPES = (
     ("blank", re.compile(r"^\s*$")),
     ("fence", re.compile(r"^\s*(?:```|~~~)")),
@@ -47,8 +47,8 @@ PROSE = "prose"
 
 
 # TWO SHAPES ARE MARKDOWN-ONLY, and running them against source code was a real bug caught by dogfooding this tool against its own repository's first bulk `.py` reflow. `heading` (`^#{1,6}\s`) matches an ordinary single-`#` PYTHON COMMENT by coincidence, since one hash followed by a space satisfies `#{1,6}` at count 1. `indent-code` (`^ {4,}\S`) matches any ordinarily-indented
-# Python statement, and just as often an ordinarily-indented COMMENT inside a function body. Both false-positived on a legitimate comment-paragraph join, reporting real reflow work as markdown-structure loss. `MARKDOWN_ONLY_SHAPES` names exactly the two, rather than a broader exclusion list, because every other shape (comment, list-item, table-row, allcaps, doctest) was measured
-# to mean the same thing in a code comment that it means in markdown prose -- a banner or a numbered list inside a `#` block is exactly the structure this tool exists to protect there too.
+# Python statement, and just as often an ordinarily-indented COMMENT inside a function body. Both false-positived on a legitimate comment-paragraph join, reporting real reflow work as markdown-structure loss. `MARKDOWN_ONLY_SHAPES` names exactly the two, rather than a broader exclusion list, because every other shape (comment, list-item, table-row, allcaps, doctest) was measured to
+# mean the same thing in a code comment that it means in markdown prose -- a banner or a numbered list inside a `#` block is exactly the structure this tool exists to protect there too.
 MARKDOWN_ONLY_SHAPES = frozenset({"heading", "indent-code"})
 MARKDOWN_SUFFIXES = frozenset({".md", ".mdx"})
 
@@ -174,8 +174,7 @@ def selftest():
     check("a fence is a fence first", shape_of("```python") == "fence")
     check("ordinary prose falls through", shape_of("an ordinary sentence here") == PROSE)
 
-    # THE MARKDOWN-ONLY FIX, planted against the exact live case that found it: a bare
-    # single-`#` Python comment joining with its neighbour must not read as heading loss.
+    # THE MARKDOWN-ONLY FIX, planted against the exact live case that found it: a bare single-`#` Python comment joining with its neighbour must not read as heading loss.
     py_comment = "# a first line of a comment paragraph here\n# a second line joining it\n"
     py_joined = "# a first line of a comment paragraph here a second line joining it\n"
     check(

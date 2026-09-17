@@ -1,5 +1,4 @@
-"""The Stop hook's one door to `rediacc_ci.proc`, and the only place `.ci` is added
-to `sys.path` from under `.claude/hooks/`.
+"""The Stop hook's one door to `rediacc_ci.proc`, and the only place `.ci` is added to `sys.path` from under `.claude/hooks/`.
 
 WHY THE HOOKS NEEDED ONE. Eight call sites across four `wl_*` modules launch a command that FORKS -- `npm run <gate>`, `npx tsx`, and six `claude -p` invocations -- and every
 one used `subprocess.run(capture_output=True, timeout=N)`. That combination bounds

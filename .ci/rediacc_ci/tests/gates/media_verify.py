@@ -4,9 +4,8 @@ WHAT THE BASH ORIGINAL PROVES, restated because it is the whole reason a media g
 no second copy left to drift from, so the question changed from "did the copy drift" to "does the delegation still reach the function that used to be here", and it is answered two ways: STRUCTURE (exactly one file defines the name, it is the module under test, the origins no longer define it, and sourcing media-entry.sh resolves the name to THIS module's body) and BEHAVIOUR (what
 the module does when its dependencies are missing, which is the only part CI can drive).
 
-WHAT IS PORTED AND WHAT IS NOT. The two `fidelity_assert_*` byte-identity helpers are already GONE from the bash file, deleted in phase 2 rather than left pointing at an absent function, and nothing here recreates them. The chain probe (`media_chain_probe` / `media_chain_mutate` / `media_chain_run`) is not ported
-either, because no subject in this batch drives a verb chain; `media_chain_sandbox`
-IS ported, because `media_assert_ownership_control` needs a real writable repo. When a later batch ports a chain test it adds those three here rather than building a second sandbox.
+WHAT IS PORTED AND WHAT IS NOT. The two `fidelity_assert_*` byte-identity helpers are already GONE from the bash file, deleted in phase 2 rather than left pointing at an absent function, and nothing here recreates them. The chain probe (`media_chain_probe` / `media_chain_mutate` / `media_chain_run`) is not ported either, because no subject in this batch drives a verb chain;
+`media_chain_sandbox` IS ported, because `media_assert_ownership_control` needs a real writable repo. When a later batch ports a chain test it adds those three here rather than building a second sandbox.
 
 THE VACUITY TRAP IS THE SAME ONE, so it is guarded the same way. Extraction still fails loudly on a name it cannot find, every comparison is preceded by a floor on its size, and each module's gate test plants a mutation and requires the assertion to fire, because a comparison that has never been seen to fail is a comparison nobody has checked.
 
@@ -28,9 +27,7 @@ MEDIA_DIR = MEDIA_ROOT / ".ci" / "media"
 # See the docstring: resolved now, while the caller's real PATH is still in effect.
 _BASH = shutil.which("bash") or "/bin/bash"
 
-# ONE LIST, BECAUSE FOUR HAND-MAINTAINED COPIES IS WHAT WENT WRONG. The 2026-09-06 router split moved every verb body out of run.sh into .ci/legacy/run-legacy.sh,
-# which made that file a third origin overnight; four separate absence assertions
-# had to be widened by hand to notice, and missing one of them would not have shown up as a failure.
+# ONE LIST, BECAUSE FOUR HAND-MAINTAINED COPIES IS WHAT WENT WRONG. The 2026-09-06 router split moved every verb body out of run.sh into .ci/legacy/run-legacy.sh, which made that file a third origin overnight; four separate absence assertions had to be widened by hand to notice, and missing one of them would not have shown up as a failure.
 MEDIA_ORIGIN_RELPATHS = ("run.sh", "media.sh", ".ci/legacy/run-legacy.sh")
 
 
@@ -41,9 +38,8 @@ class ExtractionError(Exception):
 def fidelity_extract(path: pathlib.Path, name: str) -> str:
     """The function's body: the `name() {` line through the closing `}` in COLUMN 0.
 
-    Column 0 is what makes this unambiguous: every nested block in these files closes indented, and shfmt (`-i 4 -ci`, enforced by check:ci-shell-format over `.ci/**`) is what keeps that true. The bash original is an awk program doing
-    exactly this scan; the two agree because both test for the literal opening
-    line and the literal single-character closing line, with no regex involved on either side.
+    Column 0 is what makes this unambiguous: every nested block in these files closes indented, and shfmt (`-i 4 -ci`, enforced by check:ci-shell-format over `.ci/**`) is what keeps that true. The bash original is an awk program doing exactly this scan; the two agree because both test for the literal opening line and the literal single-character closing line, with no regex involved
+    on either side.
     """
     if not path.is_file():
         raise ExtractionError("fidelity_extract: no such file: %s" % path)
@@ -65,9 +61,8 @@ def fidelity_extract(path: pathlib.Path, name: str) -> str:
 def fidelity_extract_any(path: pathlib.Path, name: str) -> str:
     """`fidelity_extract`, widened to the ONE-LINE form `name() { ...; }`.
 
-    media.sh wrote `die` that way before the cutover, and a block-only extractor reported it MISSING, which under a naive comparison read as "both sides empty, therefore equal". media.sh no longer defines anything, so the form
-    survives only in prose today; the widening stays because `media_defines` uses
-    this to ask WHETHER A FILE STILL DEFINES A NAME, and a one-line definition would otherwise be invisible to exactly the check that must not miss it.
+    media.sh wrote `die` that way before the cutover, and a block-only extractor reported it MISSING, which under a naive comparison read as "both sides empty, therefore equal". media.sh no longer defines anything, so the form survives only in prose today; the widening stays because `media_defines` uses this to ask WHETHER A FILE STILL DEFINES A NAME, and a one-line definition
+    would otherwise be invisible to exactly the check that must not miss it.
     """
     if not path.is_file():
         raise ExtractionError("fidelity_extract: no such file: %s" % path)

@@ -396,7 +396,6 @@ def test_common_sh_is_actually_there():
 
 
 def test_bash_is_available_at_all():
-    """ANTI-VACUITY for the harness: a missing bash makes every case throw, but
-    a future refactor that caught the exception would make them all pass."""
+    """ANTI-VACUITY for the harness: a missing bash makes every case throw, but a future refactor that caught the exception would make them all pass."""
     proc = subprocess.run(["bash", "-c", "echo alive"], capture_output=True, text=True, check=True)
     assert proc.stdout.strip() == "alive"

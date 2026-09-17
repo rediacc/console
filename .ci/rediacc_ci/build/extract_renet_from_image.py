@@ -13,18 +13,11 @@ throwaway container from `<registry>/renet:<tag>` and copies the artifacts out:
      with the assets from step 2 embedded.
   5. `checksums.sha256` over everything in the output directory.
 
-THE LOCKFILE IS THE SOURCE OF TRUTH for step 2, and the twin's own comments say
-why: this script used to carry its own REQUIRED/OPTIONAL split that disagreed
+THE LOCKFILE IS THE SOURCE OF TRUTH for step 2, and the twin's own comments say why: this script used to carry its own REQUIRED/OPTIONAL split that disagreed
 with `build.sh`'s, which is how the CSI sidecars ended up mandatory in one place
-and optional in the other. The component list, its per-arch coverage, the image
-directory each lives in and its base/cluster class all come out of
-`private/renet/embed-assets.lock.json`. That reasoning is the twin's; it is not
-restated here beyond naming it.
+and optional in the other. The component list, its per-arch coverage, the image directory each lives in and its base/cluster class all come out of `private/renet/embed-assets.lock.json`. That reasoning is the twin's; it is not restated here beyond naming it.
 
-WHY THE PER-ARCH LAYOUT MATTERS, also the twin's: a FLAT `assets/` directory is
-what silently shipped assetless darwin/windows binaries, because the per-arch
-`go:embed` directives found nothing and `ops up` failed with "embedded assets
-missing".
+WHY THE PER-ARCH LAYOUT MATTERS, also the twin's: a FLAT `assets/` directory is what silently shipped assetless darwin/windows binaries, because the per-arch `go:embed` directives found nothing and `ops up` failed with "embedded assets missing".
 
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHAT IS NOT
@@ -49,57 +42,33 @@ SHELLED OUT, all of them the twin's contract with the machine:
   * `ls -la` (`:205`, `:242`) and `sha256sum` (`:239`). Their stdout IS the
     script's output, so they are run rather than reimplemented.
 
-NOT SHELLED OUT: `grep -oE` / `grep -xE` / `sed` / `sort -u` inside the version
-check, which are `re` and `sorted(set(...))`; `mkdir -p`, `rm -f`, the glob
-expansions and the `-f` tests. The grep divergence is real and named: on a
-machine with no `grep` the twin's pipeline collapses to an empty result and the
-check degrades to a warning (see DEFECT 1, which reaches the same end by a
-different door), while this port still answers. The scratch PATH the
-differential runs on carries a real `grep`, so both sides agree there.
+NOT SHELLED OUT: `grep -oE` / `grep -xE` / `sed` / `sort -u` inside the version check, which are `re` and `sorted(set(...))`; `mkdir -p`, `rm -f`, the glob expansions and the `-f` tests. The grep divergence is real and named: on a machine with no `grep` the twin's pipeline collapses to an empty result and the check degrades to a warning (see DEFECT 1, which reaches the same end by
+a different door), while this port still answers. The scratch PATH the differential runs on carries a real `grep`, so both sides agree there.
 
 -----------------------------------------------------------------------------
 DEFECTS CARRIED, NOT FIXED
 -----------------------------------------------------------------------------
-DEFECT 1, THE VERSION CHECK IS DISARMED BY A MISSING `strings`, SILENTLY.
-`:94-95` require `jq` and `zstd`. Nothing requires `strings`, and `:135-136`
-redirect its stderr to `/dev/null`, which also swallows bash's own
-`strings: command not found`. With `strings` absent the collected set is empty,
-`:147-150` reports `no version string found; cannot verify` as a WARNING and
-returns 0, and the run completes. Driven, with a container whose criu really is
-the stale 3.17.1 the lockfile forbids:
+DEFECT 1, THE VERSION CHECK IS DISARMED BY A MISSING `strings`, SILENTLY. `:94-95` require `jq` and `zstd`. Nothing requires `strings`, and `:135-136` redirect its stderr to `/dev/null`, which also swallows bash's own `strings: command not found`. With `strings` absent the collected set is empty, `:147-150` reports `no version string found; cannot verify` as a WARNING and returns
+0, and the run completes. Driven, with a container whose criu really is the stale 3.17.1 the lockfile forbids:
 
     (strings present)  x criu-linux-amd64 declares version(s) [3.17.1] but the
                          lockfile requires 4.2.1                        rc=1
     (strings absent)   ! criu-linux-amd64: no version string found;
                          cannot verify against lockfile (4.2.1)         rc=0
 
-That is UNKNOWN folded into FINE, on the one component the twin's own comment
-says actually drifted: "arm64 criu shipped 3.17.1 for months while every
-inventory declared 4.2.x". The warning is honest; the exit code is not. Carried
-unchanged.
+That is UNKNOWN folded into FINE, on the one component the twin's own comment says actually drifted: "arm64 criu shipped 3.17.1 for months while every inventory declared 4.2.x". The warning is honest; the exit code is not. Carried unchanged.
 
-DEFECT 2, THERE IS NO `-h` / `--help` ARM. `:34-37` sends anything unrecognised
-to `log_error "Unknown option: $1"; exit 1`, so `--help` is an error here while
-both sibling build scripts print a usage and exit 0. Driven:
+DEFECT 2, THERE IS NO `-h` / `--help` ARM. `:34-37` sends anything unrecognised to `log_error "Unknown option: $1"; exit 1`, so `--help` is an error here while both sibling build scripts print a usage and exit 0. Driven:
 `extract-renet-from-image.sh --help` -> `x Unknown option: --help`, rc=1.
 
-DEFECT 3, `docker` IS NEVER `require_cmd`ed. `jq` and `zstd` are; `docker`, which
-the script cannot do anything without, is not, so a machine without it dies at
-`:57` with bash's `command not found` (rc 127) instead of the house refusal.
+DEFECT 3, `docker` IS NEVER `require_cmd`ed. `jq` and `zstd` are; `docker`, which the script cannot do anything without, is not, so a machine without it dies at `:57` with bash's `command not found` (rc 127) instead of the house refusal.
 
-DEFECT 4, A FAILED `docker cp` MEANS "the image does not carry this asset" AND
-NOTHING ELSE. `:164` suppresses stderr and reads only the status, so a daemon
-that died mid-run reports every remaining asset as MISSING FROM THE IMAGE and
-tells the operator to rebuild it. The verdict is at least a failure rather than
-a pass, which is why it is listed last.
+DEFECT 4, A FAILED `docker cp` MEANS "the image does not carry this asset" AND NOTHING ELSE. `:164` suppresses stderr and reads only the status, so a daemon that died mid-run reports every remaining asset as MISSING FROM THE IMAGE and tells the operator to rebuild it. The verdict is at least a failure rather than a pass, which is why it is listed last.
 
 -----------------------------------------------------------------------------
 ENVIRONMENT
 -----------------------------------------------------------------------------
-This script reads NO environment variables of its own. `CGO_ENABLED`, `GOOS` and
-`GOARCH` are SET for the `go build` children (`:218`, `:230`) and never read, so
-they are passed in the child's env dict and are deliberately not
-`os.environ.get` call sites.
+This script reads NO environment variables of its own. `CGO_ENABLED`, `GOOS` and `GOARCH` are SET for the `go build` children (`:218`, `:230`) and never read, so they are passed in the child's env dict and are deliberately not `os.environ.get` call sites.
 """
 
 from __future__ import annotations
@@ -120,8 +89,7 @@ DEFAULT_REGISTRY = "ghcr.io/rediacc"
 # `:68`, `:71`. The two binaries that come straight out of `/opt/renet/`.
 RENET_LINUX_BINARIES = ("renet-linux-amd64", "renet-linux-arm64")
 
-# `:182-190`, verbatim. One filter, shared with `build.sh`, emitting
-# `<assetBase>\t<imageDir>\t<arch>\t<class>` per row.
+# `:182-190`, verbatim. One filter, shared with `build.sh`, emitting `<assetBase>\t<imageDir>\t<arch>\t<class>` per row.
 MATRIX_FILTER = """
     .components
     | to_entries[]
@@ -136,19 +104,14 @@ MATRIX_FILTER = """
 VERSION_FILTER = '.components[$b].version // ""'
 
 # `:135-136`. The amd64 build carries the build path `/build/criu-<version>`;
-# the arm64 cross-build carries a bare `<version>` string. BOTH are collected,
-# because a pattern matching only one would leave the other unverified, and the
-# other is the arch that drifted.
+# the arm64 cross-build carries a bare `<version>` string. BOTH are collected, because a pattern matching only one would leave the other unverified, and the other is the arch that drifted.
 CRIU_BUILD_PATH_RE = re.compile(r"/build/criu-[0-9][0-9.]*")
 CRIU_BARE_VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+(\.[0-9]+)?$")
 
-# `:120-145`. criu is the only component whose version is reliably greppable out
-# of the binary; for the rest the digest-pinned fetch in the Dockerfile is the
-# guarantee, and the twin returns success rather than pretending to check.
+# `:120-145`. criu is the only component whose version is reliably greppable out of the binary; for the rest the digest-pinned fetch in the Dockerfile is the guarantee, and the twin returns success rather than pretending to check.
 CHECKABLE_COMPONENTS = ("criu",)
 
-# `:216-234`. The two cross-compile families, in the twin's order, with the
-# suffix each target's output carries.
+# `:216-234`. The two cross-compile families, in the twin's order, with the suffix each target's output carries.
 CROSS_TARGETS = (
     ("Darwin", "darwin", ""),
     ("Windows", "windows", ".exe"),
@@ -158,18 +121,14 @@ CROSS_ARCHES = ("amd64", "arm64")
 # The lines bash names in a `set -u` death when an option's value is missing.
 # These are the lines of the ASSIGNMENTS -- `TAG="$2"` (`:23`),
 # `OUTPUT_DIR="$2"` (`:27`), `REGISTRY="$2"` (`:31`) -- not of the `case` labels
-# above them, and the three gaps are not uniform because the `--tag` arm has no
-# blank line before it. Each is established by DRIVING the twin in the
-# differential, not by counting lines in a reading.
+# above them, and the three gaps are not uniform because the `--tag` arm has no blank line before it. Each is established by DRIVING the twin in the differential, not by counting lines in a reading.
 UNBOUND_LINES = {"--tag": 23, "--output": 27, "--registry": 31}
 
 
 def console_root() -> pathlib.Path:
     """The repository root, from this file's own location.
 
-    `get_repo_root` (common.sh:205-210) has no environment override, so
-    `paths.repo_root()` is deliberately not used here; see the same note in
-    `build/build_cli_musl.py`.
+    `get_repo_root` (common.sh:205-210) has no environment override, so `paths.repo_root()` is deliberately not used here; see the same note in `build/build_cli_musl.py`.
     """
     # This file: <root>/.ci/rediacc_ci/build/extract_renet_from_image.py
     return pathlib.Path(__file__).resolve().parents[3]
@@ -178,9 +137,7 @@ def console_root() -> pathlib.Path:
 def parse_args(argv: list[str]) -> tuple[str, str, str, int | None, str]:
     """`:20-39`. Returns `(tag, output_dir, registry, exit_code, message)`.
 
-    There is no `-h`/`--help` arm; see DEFECT 2. A missing option VALUE dies the
-    way bash's `set -u` does, naming the script and the line of the `"$2"` it
-    could not expand.
+    There is no `-h`/`--help` arm; see DEFECT 2. A missing option VALUE dies the way bash's `set -u` does, naming the script and the line of the `"$2"` it could not expand.
     """
     tag = ""
     output_dir = ""
@@ -257,10 +214,7 @@ def _run(command: list[str], **kw) -> int:
 def _strings(path: pathlib.Path) -> str:
     """`strings -a "$file" 2>/dev/null`, once.
 
-    The `2>/dev/null` also swallows bash's own `strings: command not found`, so
-    an absent binary is indistinguishable from one that found nothing. That is
-    DEFECT 1's whole mechanism, and the `except OSError: return ""` here is the
-    faithful reproduction of it rather than a repair.
+    The `2>/dev/null` also swallows bash's own `strings: command not found`, so an absent binary is indistinguishable from one that found nothing. That is DEFECT 1's whole mechanism, and the `except OSError: return ""` here is the faithful reproduction of it rather than a repair.
     """
     with open(os.devnull, "wb") as sink:
         try:
@@ -280,17 +234,13 @@ def criu_versions(path: pathlib.Path) -> list[str]:
 
     `strings` IS RUN TWICE, ONCE PER PATTERN, and that is not an oversight to be
     optimised away. The twin's `{ ...; ...; } | sort -u` is two independent
-    pipelines, each opening its own `strings -a`, and the differential compares
-    the recording fake's CALL LOG: a single-invocation port produced one
-    `FAKEBIN strings` line where the twin produced two, and the suite failed on
-    exactly that. The number of times a script executes a program is behaviour.
+    pipelines, each opening its own `strings -a`, and the differential compares the recording fake's CALL LOG: a single-invocation port produced one `FAKEBIN strings` line where the twin produced two, and the suite failed on exactly that. The number of times a script executes a program is behaviour.
     """
     # `strings -a "$file" | grep -oE '/build/criu-[0-9][0-9.]*' | sed 's|.*/build/criu-||'`
     found: set[str] = set()
     for match in CRIU_BUILD_PATH_RE.findall(_strings(path)):
         found.add(match.rsplit("/build/criu-", 1)[1])
-    # `strings -a "$file" | grep -xE '[0-9]+\\.[0-9]+(\\.[0-9]+)?'`, a WHOLE-LINE
-    # match, which is why `v4.2.1` and `4.2.1-rc` are not versions here.
+    # `strings -a "$file" | grep -xE '[0-9]+\\.[0-9]+(\\.[0-9]+)?'`, a WHOLE-LINE match, which is why `v4.2.1` and `4.2.1-rc` are not versions here.
     for line in _strings(path).splitlines():
         if CRIU_BARE_VERSION_RE.match(line):
             found.add(line)
@@ -303,10 +253,7 @@ def verify_extracted_version(
 ) -> tuple[bool, str | None, str | None]:
     """`_verify_extracted_version` (`:120-156`).
 
-    Returns `(ok, warning, error)`. `ok` is False only when a version was found
-    and it is not the one the lockfile declares; a component with no declared
-    version, a component that is not greppable, and a binary from which nothing
-    could be read all return True, the last of them with a warning. That last
+    Returns `(ok, warning, error)`. `ok` is False only when a version was found and it is not the one the lockfile declares; a component with no declared version, a component that is not greppable, and a binary from which nothing could be read all return True, the last of them with a warning. That last
     case is DEFECT 1.
     """
     code, want = _capture(
@@ -363,8 +310,7 @@ def main(argv: list[str]) -> int:
     log.info("Creating temporary container...")
     code, container_id = _capture(["docker", "create", renet_image])
     if code != 0:
-        # `set -e` on a failing command substitution in an assignment. DEFECT 3
-        # means a missing docker arrives here as 127 rather than as a refusal.
+        # `set -e` on a failing command substitution in an assignment. DEFECT 3 means a missing docker arrives here as 127 rather than as a refusal.
         return code
 
     # `:59-64`. `trap cleanup EXIT`, which fires on every exit below.
@@ -376,8 +322,7 @@ def main(argv: list[str]) -> int:
 
 
 def _extract(root: pathlib.Path, output: pathlib.Path, container_id: str) -> int:
-    """Everything the twin does between `trap cleanup EXIT` (`:64`) and the end,
-    split out only so the trap's `try/finally` reads as one statement."""
+    """Everything the twin does between `trap cleanup EXIT` (`:64`) and the end, split out only so the trap's `try/finally` reads as one statement."""
     # `:66-71`.
     for name in RENET_LINUX_BINARIES:
         log.info("Extracting %s..." % name)
@@ -385,8 +330,7 @@ def _extract(root: pathlib.Path, output: pathlib.Path, container_id: str) -> int
         if code != 0:
             return code
 
-    # `:74`. `cd "$OUTPUT_DIR" && pwd` is bash's LOGICAL pwd, which normalises
-    # without resolving symlinks; `os.path.abspath` is the same operation.
+    # `:74`. `cd "$OUTPUT_DIR" && pwd` is bash's LOGICAL pwd, which normalises without resolving symlinks; `os.path.abspath` is the same operation.
     output = pathlib.Path(os.path.abspath(output))
 
     # `:91-95`.
@@ -405,9 +349,7 @@ def _extract(root: pathlib.Path, output: pathlib.Path, container_id: str) -> int
         log.error("embed lockfile not found: %s" % lockfile)
         return 1
 
-    # `:106`. Start clean so the embedded set is EXACTLY what this image
-    # carries. The glob depth tracks the staged layout; one level too shallow
-    # matches nothing and leaves stale payloads in place.
+    # `:106`. Start clean so the embedded set is EXACTLY what this image carries. The glob depth tracks the staged layout; one level too shallow matches nothing and leaves stale payloads in place.
     for stale in embed_dir.glob("*/*/*.zst"):
         stale.unlink(missing_ok=True)
 
@@ -421,8 +363,7 @@ def _extract(root: pathlib.Path, output: pathlib.Path, container_id: str) -> int
     mismatched: list[str] = []
     for row in matrix.split("\n"):
         # `IFS=$'\t' read -r base image_dir arch class`: fields beyond the last
-        # name are folded into it and absent ones read as empty, so a short row
-        # never raises here either.
+        # name are folded into it and absent ones read as empty, so a short row never raises here either.
         fields = [*row.split("\t"), "", "", "", ""][:4]
         base, image_dir, arch, klass = fields
         # `[[ -n "$base" ]] || continue`.
@@ -478,8 +419,7 @@ def _extract(root: pathlib.Path, output: pathlib.Path, container_id: str) -> int
     with open(os.devnull, "wb") as sink:
         _run(["ls", "-la", *bash_glob("%s/*/*/*.zst" % embed_dir, root)], stderr=sink)
 
-    # `:210-211`. `embed_proxy` stages ONLY the proxy compose; the datastore
-    # README is a tracked embed file and must NOT be overwritten.
+    # `:210-211`. `embed_proxy` stages ONLY the proxy compose; the datastore README is a tracked embed file and must NOT be overwritten.
     renet_dir = root / "private" / "renet"
     log.step("Staging proxy compose for embedding...")
     code = _run(["./build.sh", "embed_proxy"], cwd=str(renet_dir))

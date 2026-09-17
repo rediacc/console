@@ -95,8 +95,7 @@ def test_force_bypasses_the_soak_window(tmp_path: pathlib.Path) -> None:
 
 
 def test_unparseable_date_aborts_silently_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """See the module docstring. Not a weak assertion -- this IS the twin's
-    behaviour, measured directly against the real bash script."""
+    """See the module docstring. Not a weak assertion -- this IS the twin's behaviour, measured directly against the real bash script."""
     env = {"EDGE_DATE": "not-a-date", "SOAK_DAYS": "7"}
     (old_exit, old_out, old_err), (new_exit, new_out, new_err), old_output, new_output = run_both(
         tmp_path, env

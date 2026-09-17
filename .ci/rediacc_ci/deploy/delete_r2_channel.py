@@ -114,9 +114,7 @@ def aws_argv(prefix: str, endpoint: str) -> list[str]:
 def _rm(argv: list[str]) -> int:
     """`aws ... 2>/dev/null || true`.
 
-    STDOUT IS INHERITED and stderr is DISCARDED, exactly as the twin leaves them: the `delete: s3://...` lines reach the workflow log, the error text
-    does not. The status is returned only so a test can see it; the twin
-    discards it, which is the defect above.
+    STDOUT IS INHERITED and stderr is DISCARDED, exactly as the twin leaves them: the `delete: s3://...` lines reach the workflow log, the error text does not. The status is returned only so a test can see it; the twin discards it, which is the defect above.
     """
     proc = subprocess.run(argv, stderr=subprocess.DEVNULL, check=False)
     return proc.returncode

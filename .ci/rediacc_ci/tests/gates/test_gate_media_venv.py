@@ -67,8 +67,7 @@ def test_the_ownership_assertion_can_fail(gate):
 
 
 def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate):
-    """CONTROL FOR THE BEHAVIOUR CASES BELOW, which assert diagnoses by their exact
-    wording. Change one of those messages in a COPY of the module and the assertion naming it must stop holding; if it still held, the cases would be reading something other than the module under test.
+    """CONTROL FOR THE BEHAVIOUR CASES BELOW, which assert diagnoses by their exact wording. Change one of those messages in a COPY of the module and the assertion naming it must stop holding; if it still held, the cases would be reading something other than the module under test.
     """
     gate.log_test("CONTROL: a one-line mutation must change what the behaviour cases see")
     with harness.temp_dir() as d:

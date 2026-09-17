@@ -12,8 +12,7 @@ THIS COST TWO REAL DEFECTS IN A SINGLE SESSION (2026-08-28):
      reworded), then committed. The commit message claimed the rewording; the
      commit did not contain it. Caught only by grepping the commit afterwards.
 
-WHY WARN AND NOT BLOCK. Staging a deliberately partial version is legitimate (`git add -p` exists). The failure here is not that it is possible, it is that it is SILENT -- so the fix is to say it out loud, not to forbid it. A block
-would be wrong on a real workflow; a warning is right on every case.
+WHY WARN AND NOT BLOCK. Staging a deliberately partial version is legitimate (`git add -p` exists). The failure here is not that it is possible, it is that it is SILENT -- so the fix is to say it out loud, not to forbid it. A block would be wrong on a real workflow; a warning is right on every case.
 
 ROUTED THROUGH lib/command-scan.sh so prose quoting `git commit` is not matched -- a worklist note or a doc mentioning the command is not a commit.
 
@@ -36,9 +35,7 @@ ORDER = 22
 DEFECT = ("if hookio.grep_q(WORKING_TREE_FORM, scan):", "if False:")
 
 # COMMAND POSITION, not mere mention. The first draft of this guard matched `git commit` after ANY whitespace, so `echo do not run git commit here` warned -- prose read as a command. That is the same mention-vs-target defect fixed in block-bash-write-to-running-script.sh and block-roundlog-truncate.sh on 2026-08-28, reintroduced here within the hour, which is why it is anchored
-# rather than remembered. hook_scan_target strips QUOTED spans and extracts
-# `sh -c` payloads; unquoted prose survives it, so the anchor is what separates
-# a command from a sentence.
+# rather than remembered. hook_scan_target strips QUOTED spans and extracts `sh -c` payloads; unquoted prose survives it, so the anchor is what separates a command from a sentence.
 COMMIT_AT_COMMAND_POS = hookio.rx(r"(^|[;&|(]|&&|\|\|)[{S}]*git[{S}]+commit")
 
 # `-a` / `--all`: the index is not what gets committed, so there is nothing to be stale.

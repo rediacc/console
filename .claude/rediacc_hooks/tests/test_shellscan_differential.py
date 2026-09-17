@@ -16,8 +16,7 @@ WHAT IS COMPARED, per command:
 
 THE BASH SIDE RUNS THE REAL FILE. `command-scan.sh` is sourced, never copied and never modified: a differential against a transcribed copy of the oracle proves the transcription, not the port. It is read-only here.
 
-ONE BASH PROCESS FOR THE WHOLE CORPUS. Each case drives roughly fifty forks (awk, sed, grep, tr and git), so a subprocess per case would spend its life in `fork`. The driver below loops inside one shell and frames its results with the two ASCII control characters that exist for exactly this (0x1f between a
-field name and its value, 0x1e between fields); `corpus.harvest` drops any
+ONE BASH PROCESS FOR THE WHOLE CORPUS. Each case drives roughly fifty forks (awk, sed, grep, tr and git), so a subprocess per case would spend its life in `fork`. The driver below loops inside one shell and frames its results with the two ASCII control characters that exist for exactly this (0x1f between a field name and its value, 0x1e between fields); `corpus.harvest` drops any
 payload containing either, so the frame cannot be forged by the input.
 """
 
@@ -200,9 +199,8 @@ def bash_results(tmp_path_factory):
         capture_output=True,
         check=False,
         # BYTES, then decoded by hand. `encoding=` puts the pipe in text mode,
-        # and text mode translates universal newlines: a lone \r in a command comes back as \n. That is not a difference between the two implementations, it is the harness rewriting the oracle's answer -- and it was found by this differential failing on a \r case, which is the reason the corpus carries one. An inherited CLAUDE_PROJECT_DIR or GIT_INDEX_FILE would reach git
-        # here; the lib reads neither, but a differential that depends on the
-        # caller's environment is one that passes for the wrong reason.
+        # and text mode translates universal newlines: a lone \r in a command comes back as \n. That is not a difference between the two implementations, it is the harness rewriting the oracle's answer -- and it was found by this differential failing on a \r case, which is the reason the corpus carries one. An inherited CLAUDE_PROJECT_DIR or GIT_INDEX_FILE would reach git here; the
+        # lib reads neither, but a differential that depends on the caller's environment is one that passes for the wrong reason.
         env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": os.environ.get("HOME", "/")},
     )
     stdout = proc.stdout.decode("utf-8", "surrogateescape")
@@ -344,8 +342,7 @@ def test_the_differential_can_fail(tmp_path):
 
 # --------------------------------------------------------------------------- Section 5c of the driver contract: comment archaeology ---------------------------------------------------------------------------
 
-# The ratio the contract sets. Docstrings count as comments; a module
-# docstring is the natural home for a file-header block.
+# The ratio the contract sets. Docstrings count as comments; a module docstring is the natural home for a file-header block.
 COMMENT_RATIO_FLOOR = 0.90
 
 

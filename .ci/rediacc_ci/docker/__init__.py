@@ -18,9 +18,8 @@ NONE OF THE THREE IS A GATE, and two of them are workflow `run:` targets. The ca
 
 So no `scripts/ci-runner/manifest.ts` entry follows from a module living here (these are `run:` targets and plumbing, never gates), and every one of those call sites still names the BASH twin. Flipping them is the cutover box, not this one.
 
-WHAT "VERIFIED EQUIVALENT" MEANS HERE, and it is narrower than for the quality gates. Every one of these three talks to a REGISTRY. The differential drives both sides against recording fakes for `docker` and `gh` on a scratch PATH and compares stdout, stderr, the exit code and the exact argv of every external
-call; the shadow-gate ledger under `.ci/shadow/w7p6-*.observations.jsonl` scopes
-its `--finding-re` to those recorded calls, so the compared finding set IS the set of registry operations each side would have performed. Nothing in this
+WHAT "VERIFIED EQUIVALENT" MEANS HERE, and it is narrower than for the quality gates. Every one of these three talks to a REGISTRY. The differential drives both sides against recording fakes for `docker` and `gh` on a scratch PATH and compares stdout, stderr, the exit code and the exact argv of every external call; the shadow-gate ledger under `.ci/shadow/w7p6-*.observations.jsonl`
+scopes its `--finding-re` to those recorded calls, so the compared finding set IS the set of registry operations each side would have performed. Nothing in this
 package has ever been run against a real registry from a test, and nothing here
 should be.
 

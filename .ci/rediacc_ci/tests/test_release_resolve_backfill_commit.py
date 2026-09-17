@@ -36,8 +36,7 @@ def _git(repo: pathlib.Path, *args: str) -> str:
 
 
 def _build_repo(repo: pathlib.Path) -> dict[str, str]:
-    """A tiny repo: two commits on `main` (tagged v1.0.0 at the tip, tracked as
-    `origin/main`), and one commit on a feature branch never merged into it.
+    """A tiny repo: two commits on `main` (tagged v1.0.0 at the tip, tracked as `origin/main`), and one commit on a feature branch never merged into it.
 
     Returns the shas/tags a test needs, so a case reads as "which of these" rather than re-deriving offsets into the fixture's own history.
     """
@@ -59,8 +58,7 @@ def _build_repo(repo: pathlib.Path) -> dict[str, str]:
     run("commit", "-aq", "-m", "second")
     main_tip = _git(repo, "rev-parse", "HEAD")
     run("tag", "v1.0.0", main_tip)
-    # A plain ref is enough for `merge-base --is-ancestor <sha> origin/main` to
-    # read; no real remote or network is involved.
+    # A plain ref is enough for `merge-base --is-ancestor <sha> origin/main` to read; no real remote or network is involved.
     run("update-ref", "refs/remotes/origin/main", main_tip)
     run("checkout", "-qb", "feature")
     (repo / "f.txt").write_text("off-main\n", encoding="utf-8")

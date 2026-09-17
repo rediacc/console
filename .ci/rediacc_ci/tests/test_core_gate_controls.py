@@ -6,8 +6,7 @@ THE TWIN IS LIVE HERE, NOT FROZEN, which is the opposite of `test_core_ports.py`
 THE BASH DRIVER IS A STRING IN THIS FILE and not a script under `.ci/`. RULING 7 freezes the tracked `.sh` count, and a driver is exactly the kind of file that gets added without anyone deciding to. It is also the honest place for it: the driver is part of the TEST, not part of the tree under test.
 
 WHAT THE PLANTED CONTROL PROVES, AND WHY IT IS NOT THE SELFTEST. Every case below could pass against a port that was byte-identical to nothing at all if the comparison were misassembled -- a helper comparing a string to itself, a case list that is empty, a `diff` whose exit code is discarded. `test_the_differential_can_fail` mutates ONE character of the port's output contract and
-asserts the same comparison goes red. It runs the real bash and the
-real Python; only the expected bytes move.
+asserts the same comparison goes red. It runs the real bash and the real Python; only the expected bytes move.
 """
 
 import textwrap

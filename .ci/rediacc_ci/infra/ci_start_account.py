@@ -10,9 +10,8 @@ is shelled out to argument for argument.
 
 PORT NOTES, each driven before it was written down.
 
-`source_ci_env` IS DUPLICATED FROM `ci_start_elite.py` ON PURPOSE. Both modules are executed as plain scripts from a fixture tree that holds only the two subjects (`python3 .ci/rediacc_ci/infra/ci_start_account.py`), with no
-`rediacc_ci` package on `sys.path`; an import between them would make the
-differential's fixture a package problem instead of a behaviour comparison. The twin has the same duplication in the other direction -- both bash scripts `source` the same file rather than sharing a function.
+`source_ci_env` IS DUPLICATED FROM `ci_start_elite.py` ON PURPOSE. Both modules are executed as plain scripts from a fixture tree that holds only the two subjects (`python3 .ci/rediacc_ci/infra/ci_start_account.py`), with no `rediacc_ci` package on `sys.path`; an import between them would make the differential's fixture a package problem instead of a behaviour comparison. The twin
+has the same duplication in the other direction -- both bash scripts `source` the same file rather than sharing a function.
 
 THE THREE SECRET GUARDS RUN BEFORE ANYTHING ELSE AND BEFORE THE SOURCE (:29-43), which is why the port cannot hoist the `source` for convenience: on a host with no secrets the twin prints two lines and exits 1 having generated no keys, written no `.env` and started no container.
 
@@ -22,10 +21,8 @@ so the value survives. The save/restore on :47-49 and :61-63 is therefore belt-a
 reasoned away: a future ci-env.sh that stops honouring `${VAR:-}` would break
 the twin and the port identically.
 
-`CI_DOCKER_DIR` IS READ BACK FROM THE SOURCED ENVIRONMENT, not recomputed. The
-twin sets it on :22 and ci-env.sh then `export`s its own on :122; the twin's
-`.env` write on :78 uses whichever value is live after the source, which is ci-env.sh's. Both derive from the same `SCRIPT_DIR/../../..`, so they agree
-today; taking the sourced one keeps them agreeing if that ever stops being true.
+`CI_DOCKER_DIR` IS READ BACK FROM THE SOURCED ENVIRONMENT, not recomputed. The twin sets it on :22 and ci-env.sh then `export`s its own on :122; the twin's `.env` write on :78 uses whichever value is live after the source, which is ci-env.sh's. Both derive from the same `SCRIPT_DIR/../../..`, so they agree today; taking the sourced one keeps them agreeing if that ever stops being
+true.
 
 `grep -q "healthy"` MATCHES `unhealthy`, AND THIS PORT REPRODUCES THE MATCH.
 :106 pipes `docker inspect --format='{{.State.Health.Status}}'` into
@@ -33,8 +30,7 @@ today; taking the sourced one keeps them agreeing if that ever stops being true.
 lives in `test_infra_ci_start_account.py::test_unhealthy_is_read_as_healthy`: the last
 probe lands around t=191s on this host against an earliest-`unhealthy` of about
 t=200s, a nine-second margin a slower daemon erases. Fixing it is a change to a
-live CI step's pass/fail behaviour and is out of this port's file ownership; it
-is pinned here, not silently corrected.
+live CI step's pass/fail behaviour and is out of this port's file ownership; it is pinned here, not silently corrected.
 
 THE PROGRESS LINE FIRES ON MULTIPLES OF 15 ONLY (:118). With `interval=3` that
 is every fifth iteration. `((elapsed % 15 == 0))` returns exit status 1 when the
@@ -50,8 +46,7 @@ two backslash-t sequences, which docker's own `table` directive then expands. A 
 
 THE HEALTH POLL IS A BUDGET, NOT A DEADLINE. Same arithmetic as the twin: 180s divided by a 3s interval is 60 probes, and the wall time the probes themselves consume is not counted against the budget.
 
-Exit: 0 when the account server came up and is still running; the twin's own
-non-zero status otherwise.
+Exit: 0 when the account server came up and is still running; the twin's own non-zero status otherwise.
 """
 
 from __future__ import annotations
@@ -145,8 +140,7 @@ def env_file_body(env: dict[str, str]) -> str:
 def _docker(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
     """`docker <args>`, treating a missing binary as bash's 127 rather than raising.
 
-    The twin never probes for the binary; a missing one just makes every call
-    fail with bash's own "command not found", caught by the same guards that catch a real failure.
+    The twin never probes for the binary; a missing one just makes every call fail with bash's own "command not found", caught by the same guards that catch a real failure.
     """
     try:
         return subprocess.run(["docker", *args], check=False, **kwargs)  # type: ignore[arg-type]
@@ -191,8 +185,7 @@ def wait_for_account_server() -> bool:
         if health_status_says_healthy(inspect.stdout):
             print("  Account server is healthy", flush=True)
             return True
-        # stdout is piped into the `grep -q` equivalent below; stderr is NOT
-        # redirected in the twin, so it stays on this process's stderr.
+        # stdout is piped into the `grep -q` equivalent below; stderr is NOT redirected in the twin, so it stays on this process's stderr.
         ps = _docker(["ps", "--format", "{{.Names}}"], stdout=subprocess.PIPE, text=True)
         if CONTAINER not in ps.stdout.splitlines():
             print("  Account server container stopped unexpectedly", flush=True)

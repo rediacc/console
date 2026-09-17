@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported swallowed-failures gate.
 
-The logic lives in `rediacc_ci.quality.swallowed_failures`; this file exists so the
-registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun`.
+The logic lives in `rediacc_ci.quality.swallowed_failures`; this file exists so the registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun`.
 
 THIS GATE HAS NEVER RUN, AND THAT IS WHY IT CARRIES A HEADER WHERE ITS SIBLINGS DO NOT.
 `check-swallowed-failures.sh` is invoked by NOTHING: no `package.json` key, no `manifest.ts` entry, no workflow `run:` line, no wrapper. CI runs its gate TEST (`gate-test:swallowed-failures`) and never the gate, so the thing that looks for probes whose failure is indistinguishable from an empty result has itself been silently unprotected. `check:ci-parity` cannot see it: a gate
@@ -11,8 +10,7 @@ from the comparison. Found 2026-09-08 while cutting W7 P4 over.
 
 So this is not a cutover, it is a FIRST registration, and it goes in through a `---- gate ----` header plus one driver `gate:bind --write` rather than by hand. Driven against the real tree before registering: exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-swallowed-failures.sh` is NOT deleted
-by this change. It stays as the twin this port is proven against; deletion is W7 P5.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-swallowed-failures.sh` is NOT deleted by this change. It stays as the twin this port is proven against; deletion is W7 P5.
 
 THE LEDGER CONDITION IS MET. Driven 2026-09-08:
 

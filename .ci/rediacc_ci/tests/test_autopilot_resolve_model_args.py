@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.resolve_model_args` against its twin
-`.ci/scripts/autopilot/resolve-model-args.sh`.
+"""Differential: `rediacc_ci.autopilot.resolve_model_args` against its twin `.ci/scripts/autopilot/resolve-model-args.sh`.
 
 BESPOKE SUBPROCESS COMPARISON rather than `differential.bash_streams`, for one reason: this subject writes a THIRD output nobody's stdout or stderr shows, the `args<<HEREDOC` block it appends to `$GITHUB_OUTPUT`. That file is what the workflow actually consumes -- stdout is for a human reading the log -- so a comparison that checked only the two streams would be checking the half
 that does not matter. Every case here compares FOUR things: exit code, stdout, stderr, and the bytes of `$GITHUB_OUTPUT`.
@@ -85,8 +84,7 @@ def _compare(
     return old
 
 
-# The five shapes each effort source can take, plus the bare-flag sixth. The
-# value is the argv fragment; None means "the flag is absent entirely".
+# The five shapes each effort source can take, plus the bare-flag sixth. The value is the argv fragment; None means "the flag is absent entirely".
 EFFORT_SHAPES: list[tuple[str, list[str] | None]] = [
     ("absent", None),
     ("empty", ["--effort="]),
@@ -170,8 +168,7 @@ def test_usage_refusals() -> None:
 
 
 def test_no_github_output_is_a_no_op() -> None:
-    """With `$GITHUB_OUTPUT` unset both sides must still print the flags and
-    must not write anything anywhere."""
+    """With `$GITHUB_OUTPUT` unset both sides must still print the flags and must not write anything anywhere."""
     exit_code, stdout, _, _ = _compare(
         "no-github-output", ["--model", "m", "--mode", "fix"], github_output=False
     )
@@ -180,12 +177,9 @@ def test_no_github_output_is_a_no_op() -> None:
 
 
 def test_the_comparison_can_actually_fail() -> None:
-    """ANTI-VACUITY. Every assertion above compares the twin with the port; if
-    the harness could not tell two different programs apart, all of it would be green over any port at all.
+    """ANTI-VACUITY. Every assertion above compares the twin with the port; if the harness could not tell two different programs apart, all of it would be green over any port at all.
 
-    So drive the TWIN against ITSELF with one input changed and require the same comparison to report a difference. A mutated copy of the port would be a better control still, but it would also be a second implementation this
-    file then has to maintain; changing the input is enough to prove the
-    comparator's eyes work, and it cannot rot.
+    So drive the TWIN against ITSELF with one input changed and require the same comparison to report a difference. A mutated copy of the port would be a better control still, but it would also be a second implementation this file then has to maintain; changing the input is enough to prove the comparator's eyes work, and it cannot rot.
     """
     a = _run(TWIN, ["--model", "m", "--mode", "fix"], github_output=True)
     b = _run(TWIN, ["--model", "m", "--mode", "review-response"], github_output=True)

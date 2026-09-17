@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.infra.docker_pull_ghcr` against its twin
-`.ci/scripts/infra/docker-pull-ghcr.sh`.
+"""Differential: `rediacc_ci.infra.docker_pull_ghcr` against its twin `.ci/scripts/infra/docker-pull-ghcr.sh`.
 
 A RECORDING FAKE `docker` ON A PREPENDED PATH, the same seam `rediacc_ci.tests.test_infra_docker_prepull` established and `rediacc_ci.tests.test_infra_ci_pull_images` reuses. The reason is stronger here than for a plain pull: the subject's second action is `docker login ghcr.io --password-stdin`, which WRITES a credential into `~/.docker/config.json`, and its last action is `docker
 logout ghcr.io`, which would log the developer's machine OUT of a registry it may be using. Four guards keep the real binary unreachable:
@@ -249,9 +248,7 @@ def test_the_happy_path_is_login_pull_logout_with_the_token_on_stdin() -> None:
 
 
 def test_quiet_only_reaches_docker_and_not_the_log_lines() -> None:
-    """`--quiet` is docker's flag, not this script's. The three `log_step` lines
-    print either way; a port that treated it as a verbosity switch would be
-    silently quieter than the twin in CI logs."""
+    """`--quiet` is docker's flag, not this script's. The three `log_step` lines print either way; a port that treated it as a verbosity switch would be silently quieter than the twin in CI logs."""
     exit_code, _, stderr, calls = _sides("quiet", ["--image", IMAGE, "--quiet"])
     assert exit_code == 0
     assert calls[1] == "docker\tpull\t--quiet\t%s" % IMAGE
@@ -259,9 +256,7 @@ def test_quiet_only_reaches_docker_and_not_the_log_lines() -> None:
 
 
 def test_quiet_with_a_following_word_takes_that_word_as_its_value() -> None:
-    """common.sh `parse_args` QUIRK: `--quiet` consumes the next token unless it
-    starts with `--`. So `--quiet --image X` is the boolean and
-    `--image X --quiet false` is NOT. Reproduced through `core.common`."""
+    """common.sh `parse_args` QUIRK: `--quiet` consumes the next token unless it starts with `--`. So `--quiet --image X` is the boolean and `--image X --quiet false` is NOT. Reproduced through `core.common`."""
     _, _, _, calls = _sides("quiet-false", ["--image", IMAGE, "--quiet", "false"])
     assert calls[1] == "docker\tpull\t%s" % IMAGE
 
@@ -290,8 +285,7 @@ def test_a_missing_actor_is_refused_before_docker_is_reached() -> None:
 
 
 def test_a_missing_docker_is_common_shs_refusal_word_for_word() -> None:
-    """UNLIKE `ci-pull-images.sh`: this twin calls `require_cmd docker`, so
-    there is no bash `command not found` and no named divergence."""
+    """UNLIKE `ci-pull-images.sh`: this twin calls `require_cmd docker`, so there is no bash `command not found` and no named divergence."""
     exit_code, _, stderr, calls = _sides("no-docker", ["--image", IMAGE], _no_docker="1")
     assert exit_code == 1
     assert calls == []
@@ -329,8 +323,7 @@ def test_latest_in_ci_with_no_flag_is_the_legacy_refusal() -> None:
 
 def test_any_non_empty_ci_arms_the_latest_check_including_zero() -> None:
     """`[[ -n "${CI:-}" ]]`, NOT `is_ci`. `CI=0` and `CI=1` are both "in CI"
-    here, while `is_ci` in common.sh would say no to both. The two tests in one
-    tree disagreeing about what CI means is the twin's, and it is preserved."""
+    here, while `is_ci` in common.sh would say no to both. The two tests in one tree disagreeing about what CI means is the twin's, and it is preserved."""
     for value in ("0", "1", "false"):
         exit_code, _, _, calls = _sides("ci-%s" % value, ["--image", LATEST], CI=value)
         assert exit_code == 1, value
@@ -356,9 +349,7 @@ def test_a_failing_login_stops_before_the_pull_and_keeps_dockers_status() -> Non
 
 
 def test_a_failing_pull_never_reaches_the_logout() -> None:
-    """SAME HAZARD AS `ci-pull-images.sh`, in a smaller script and with no
-    subshell to blame: `set -e` walks out past `docker logout`, so a failed pull leaves the GHCR credential in `~/.docker/config.json`. Both sides do it. Reported to the driver rather than repaired, because repairing it means
-    changing the live twin."""
+    """SAME HAZARD AS `ci-pull-images.sh`, in a smaller script and with no subshell to blame: `set -e` walks out past `docker logout`, so a failed pull leaves the GHCR credential in `~/.docker/config.json`. Both sides do it. Reported to the driver rather than repaired, because repairing it means changing the live twin."""
     exit_code, _, stderr, calls = _sides(
         "pull-fails", ["--image", IMAGE], FAKE_DOCKER_FAIL_ON="pull"
     )
@@ -369,9 +360,7 @@ def test_a_failing_pull_never_reaches_the_logout() -> None:
 
 
 def test_a_failing_logout_loses_the_success_line() -> None:
-    """UNGUARDED LOGOUT, unlike `ci-pull-images.sh`'s `2>/dev/null || true`. The
-    image IS pulled and the script still exits non-zero with no success line, so
-    a caller reading the exit status concludes the pull failed."""
+    """UNGUARDED LOGOUT, unlike `ci-pull-images.sh`'s `2>/dev/null || true`. The image IS pulled and the script still exits non-zero with no success line, so a caller reading the exit status concludes the pull failed."""
     exit_code, _, stderr, calls = _sides(
         "logout-fails", ["--image", IMAGE], FAKE_DOCKER_FAIL_ON="logout"
     )
@@ -394,10 +383,7 @@ def test_dockers_own_stdout_reaches_the_caller_unwrapped() -> None:
 
 
 def test_a_flag_that_is_not_a_shell_identifier_kills_the_run_on_both_sides() -> None:
-    """common.sh QUIRK 3, reached through this script's `parse_args "$@"`:
-    `printf -v 'ARG_FOO.BAR'` fails, `set -e` is on, and the script dies at exit 2 with a message naming common.sh rather than the caller. `core.common`
-    reproduces the text; only bash's `common.sh: line 333: ` prefix differs, so
-    the exit status and the absence of any docker call are what is compared."""
+    """common.sh QUIRK 3, reached through this script's `parse_args "$@"`: `printf -v 'ARG_FOO.BAR'` fails, `set -e` is on, and the script dies at exit 2 with a message naming common.sh rather than the caller. `core.common` reproduces the text; only bash's `common.sh: line 333: ` prefix differs, so the exit status and the absence of any docker call are what is compared."""
     results = []
     with tempfile.TemporaryDirectory() as td:
         for subject in (TWIN, PORT):

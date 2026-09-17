@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.version.bump` against its twin
-`.ci/scripts/version/bump.sh`.
+"""Differential: `rediacc_ci.version.bump` against its twin `.ci/scripts/version/bump.sh`.
 
 REAL FILES, NOT STUBS, and that is the whole design of this differential. The deliverable of this script IS a mutated `package.json`, so every case builds a throwaway console tree per side with real manifests in it, runs the subject, and compares the resulting BYTES and the resulting FILE MODE. A stub could not show the root manifest being written when only the CLI one should be,
 nor jq's formatting drifting, nor the 0600 that `mktemp` + `mv` leaves behind.
@@ -46,9 +45,7 @@ PATH_MINIMUM = ("dirname", "uname", "tr", "jq", "mktemp", "mv", "rm", "cat")
 
 
 def _manifest(name: str, version: str) -> str:
-    """A realistic manifest: `.version` is NOT the first key, so a port that
-    rebuilt the file instead of editing it would reorder the keys and be
-    caught by the byte comparison."""
+    """A realistic manifest: `.version` is NOT the first key, so a port that rebuilt the file instead of editing it would reorder the keys and be caught by the byte comparison."""
     return (
         json.dumps(
             {
@@ -209,9 +206,7 @@ def assert_agree(old, new, label: str) -> None:
 def test_no_arguments_refuses_with_the_error_on_stderr_and_usage_on_stdout(
     tmp_path: pathlib.Path,
 ) -> None:
-    """TWO STREAMS, TWO PURPOSES (:97-99). `log_error` goes to stderr and the
-    bare `echo "Usage: ..."` goes to STDOUT, which is the same stream the
-    successful run puts the new version on."""
+    """TWO STREAMS, TWO PURPOSES (:97-99). `log_error` goes to stderr and the bare `echo "Usage: ..."` goes to STDOUT, which is the same stream the successful run puts the new version on."""
     old, new = run_both(tmp_path, [])
     assert old[0].returncode == 1
     assert old[0].stderr == "✗ Must specify --auto/--patch/--minor/--major or --version\n"
@@ -238,8 +233,7 @@ def test_two_bump_flags_are_refused(tmp_path: pathlib.Path) -> None:
 def test_auto_and_patch_are_the_same_flag_and_still_collide(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`--auto` and `--patch` both call `set_bump_type patch`, so passing both
-    is refused even though they mean the same thing. Reproduced, not tidied."""
+    """`--auto` and `--patch` both call `set_bump_type patch`, so passing both is refused even though they mean the same thing. Reproduced, not tidied."""
     old, new = run_both(tmp_path, ["--auto", "--patch"])
     assert old[0].returncode == 1
     assert "Only one bump flag" in old[0].stderr
@@ -275,9 +269,7 @@ def test_a_missing_toolchain_env_refuses_before_any_argument_is_read(
 def test_missing_jq_is_refused_after_the_argument_validation(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`require_cmd jq` is the first line of `main` (:169), which runs AFTER the
-    top-level validation, so a bad flag is reported even on a machine with no
-    jq at all."""
+    """`require_cmd jq` is the first line of `main` (:169), which runs AFTER the top-level validation, so a bad flag is reported even on a machine with no jq at all."""
     old, new = run_both(tmp_path, ["--version", "1.2.3"], with_jq=False)
     assert old[0].returncode == 1
     assert old[0].stderr == "✗ Required command 'jq' is not available\n"
@@ -299,9 +291,7 @@ def test_an_explicit_version_is_written_and_echoed(tmp_path: pathlib.Path) -> No
 
 
 def test_the_root_manifest_is_read_and_never_written(tmp_path: pathlib.Path) -> None:
-    """THE ASYMMETRY A PORT WOULD SILENTLY GET WRONG. `VERSION_FILES_JSON` holds
-    only the CLI manifest; the root one supplies the CURRENT version and must
-    come out untouched, byte for byte and mode for mode."""
+    """THE ASYMMETRY A PORT WOULD SILENTLY GET WRONG. `VERSION_FILES_JSON` holds only the CLI manifest; the root one supplies the CURRENT version and must come out untouched, byte for byte and mode for mode."""
     before = _manifest("console", "0.4.29")
     old, new = run_both(tmp_path, ["--version", "9.9.9"])
     assert old[1]["package.json"][0] == before, "the root manifest was rewritten"
@@ -311,8 +301,7 @@ def test_the_root_manifest_is_read_and_never_written(tmp_path: pathlib.Path) -> 
 
 def test_the_manifests_key_order_and_formatting_survive(tmp_path: pathlib.Path) -> None:
     """`jq '.version = $v'` EDITS, it does not rebuild: `name` still precedes
-    `version`, the nested objects keep their shape, and the file keeps its trailing newline. A port that used Python's json.dump would pass every
-    version assertion here and fail this one."""
+    `version`, the nested objects keep their shape, and the file keeps its trailing newline. A port that used Python's json.dump would pass every version assertion here and fail this one."""
     old, new = run_both(tmp_path, ["--version", "1.2.3"])
     text = old[1][CLI_MANIFEST][0]
     assert text.startswith('{\n  "name": "@rediacc/cli",\n  "version": "1.2.3",\n')
@@ -324,9 +313,7 @@ def test_the_manifests_key_order_and_formatting_survive(tmp_path: pathlib.Path) 
 def test_the_manifest_comes_out_0600_because_mktemp_plus_mv(
     tmp_path: pathlib.Path,
 ) -> None:
-    """A SIDE EFFECT NOBODY WOULD SEE IN A DIFF. `mktemp` creates 0600 and `mv`
-    carries that mode onto the manifest, so a 0644 package.json becomes 0600.
-    Reproduced and pinned rather than quietly improved."""
+    """A SIDE EFFECT NOBODY WOULD SEE IN A DIFF. `mktemp` creates 0600 and `mv` carries that mode onto the manifest, so a 0644 package.json becomes 0600. Reproduced and pinned rather than quietly improved."""
     old, new = run_both(tmp_path, ["--version", "1.2.3"])
     assert old[1][CLI_MANIFEST][1] == 0o600, oct(old[1][CLI_MANIFEST][1])
     assert_agree(old, new, "mode-0600")
@@ -454,8 +441,7 @@ def test_a_four_part_current_version_keeps_the_remainder_in_the_patch_field(
     tmp_path: pathlib.Path,
 ) -> None:
     """`IFS='.' read -r major minor patch` gives `patch` the WHOLE remainder, so
-    `1.2.3.4` asks for `$((3.4 + 1))` and dies. Named here because the obvious
-    Python port (`split(".")[2]`) would quietly succeed with `1.2.4`."""
+    `1.2.3.4` asks for `$((3.4 + 1))` and dies. Named here because the obvious Python port (`split(".")[2]`) would quietly succeed with `1.2.4`."""
     old, new = run_both(tmp_path, ["--patch"], root_version="1.2.3.4")
     assert old[0].returncode == 1
     assert new[0].returncode == 1
@@ -467,9 +453,7 @@ def test_a_four_part_current_version_keeps_the_remainder_in_the_patch_field(
 def test_a_two_part_current_version_produces_an_invalid_version(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`1.2` splits to `1`, `2`, `` and `$(( + 1))` is 1, so the increment
-    SUCCEEDS and yields `1.2.1`. That is a valid semver, and it is written.
-    Recorded because it looks like a bug and is not one."""
+    """`1.2` splits to `1`, `2`, `` and `$(( + 1))` is 1, so the increment SUCCEEDS and yields `1.2.1`. That is a valid semver, and it is written. Recorded because it looks like a bug and is not one."""
     old, new = run_both(tmp_path, ["--patch"], root_version="1.2")
     assert old[0].returncode == 0, old[0].stderr
     assert old[0].stdout == "1.2.1\n"
@@ -482,8 +466,7 @@ def test_a_two_part_current_version_produces_an_invalid_version(
 def test_a_missing_target_manifest_warns_then_fails_at_the_end(
     tmp_path: pathlib.Path,
 ) -> None:
-    """A MISSING FILE IS NOT AN IMMEDIATE STOP. The twin warns, counts it in
-    `failed`, finishes the list, prints "Updated 0 files", and only then exits
+    """A MISSING FILE IS NOT AN IMMEDIATE STOP. The twin warns, counts it in `failed`, finishes the list, prints "Updated 0 files", and only then exits
     1. So the version is never echoed on stdout even though it was computed."""
     old, new = run_both(tmp_path, ["--version", "1.2.3"], with_cli_manifest=False)
     assert old[0].returncode == 1
@@ -518,9 +501,7 @@ def _bash_dot_fields(text: str) -> list[str]:
 
 
 def test_read_dot_fields_matches_bash() -> None:
-    """FOUR PROPERTIES, EACH MEASURED. `.` is not IFS whitespace, so nothing
-    collapses, nothing is stripped, empty fields survive, and the last variable
-    keeps the remainder with its delimiters."""
+    """FOUR PROPERTIES, EACH MEASURED. `.` is not IFS whitespace, so nothing collapses, nothing is stripped, empty fields survive, and the last variable keeps the remainder with its delimiters."""
     for case in ("1.2.3", "1.2.3.4", ".1.2", "1.2.", "1.2", "", "0.0.0-dev", "...."):
         assert port.read_dot_fields(case, 3) == _bash_dot_fields(case), case
 
@@ -536,8 +517,7 @@ def _bash_arith(value: str) -> tuple[int, str]:
 
 
 def test_bash_arith_matches_bash_on_every_value_a_manifest_can_hold() -> None:
-    """BOTH DIRECTIONS. The values that WORK must produce the same number, and
-    the values that DIE must die -- a helper with only the happy half would let `0.0.0-dev` through as `0.0.1` and nobody would notice until a tag was cut.
+    """BOTH DIRECTIONS. The values that WORK must produce the same number, and the values that DIE must die -- a helper with only the happy half would let `0.0.0-dev` through as `0.0.1` and nobody would notice until a tag was cut.
     """
     for value, expected in (("29", 30), ("0", 1), ("", 1), ("010", 9), ("0x10", 17), ("7", 8)):
         rc, text = _bash_arith(value)
@@ -581,9 +561,7 @@ def test_constants_have_not_drifted() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the ONE thing this script exists to do: the
-    mutant writes the ROOT manifest instead of the CLI one. Every stream is byte-identical, the exit code is 0 on both sides, and the only evidence is the file tree. Driven red, then the source is confirmed byte-identical and
-    green."""
+    """ANTI-VACUITY, planted on the ONE thing this script exists to do: the mutant writes the ROOT manifest instead of the CLI one. Every stream is byte-identical, the exit code is 0 on both sides, and the only evidence is the file tree. Driven red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
         'VERSION_FILES_JSON = ("packages/cli/package.json",)',

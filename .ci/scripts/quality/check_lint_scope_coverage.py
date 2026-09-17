@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""No tracked source file may be invisible to every linter, and biome's
-allowlist must actually be in force.
+"""No tracked source file may be invisible to every linter, and biome's allowlist must actually be in force.
 
 WHY THIS EXISTS. Two failures on 2026-08-06, and neither was a rule being wrong about code -- both were code no rule ever looked at.
 
@@ -39,8 +38,7 @@ WHY THIS EXISTS. Two failures on 2026-08-06, and neither was a rule being wrong 
      script_roots(). The shard names are deliberately not written down here; a
      fifth shard registers itself simply by being linked.
 
-Both are the same shape as the dead i18n rules: the instrument reports success because it never examined anything. check_lint_rule_liveness.py proves an
-ENABLED RULE can fire; this proves the FILES reach a rule at all.
+Both are the same shape as the dead i18n rules: the instrument reports success because it never examined anything. check_lint_rule_liveness.py proves an ENABLED RULE can fire; this proves the FILES reach a rule at all.
 
 WHAT IT DOES NOT DO. It does not judge whether a file's rules are the right rules -- only that some linter sees it. A file linted by a config that happens to enable nothing would pass here and be caught by the liveness gate instead. The two are complements and neither subsumes the other.
 
@@ -100,8 +98,7 @@ ESLINT_EXEMPT_EXACT = {
 # FILES they reach: widening check:lint while `lint` and `fix:lint` keep the old list gives a developer a clean local run over a narrower tree than CI enforces, which is the same invisible-scope failure one script down.
 LINT_ROOT_SCRIPTS = ("check:lint", "fix:lint", "lint")
 
-# The one of them CI runs. Its roots are the authority; the other two are compared
-# against it, because a developer script that is NARROWER than CI is the failure and a developer script that is WIDER is a different one (a clean local run over files CI never lints is still a lie about scope).
+# The one of them CI runs. Its roots are the authority; the other two are compared against it, because a developer script that is NARROWER than CI is the failure and a developer script that is WIDER is a different one (a clean local run over files CI never lints is still a lie about scope).
 LINT_CI_SCRIPT = "check:lint"
 
 # The wrapper the roots are positional arguments to. Its first argument is a heap size in MB, so the roots begin two tokens later.

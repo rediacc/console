@@ -243,8 +243,7 @@ def cp_argv(src: str, full_dest: str, endpoint: str, cache_control: str) -> list
 
 
 def put_argv(full_dest: str, endpoint: str, content_type: str) -> list[str]:
-    """`r2_put` (:213-217). Always the MUTABLE policy: its only callers are the
-    three channel pointers (`latest.json`, `manifest.json`, `versions.json`)."""
+    """`r2_put` (:213-217). Always the MUTABLE policy: its only callers are the three channel pointers (`latest.json`, `manifest.json`, `versions.json`)."""
     return [
         "aws",
         "s3",

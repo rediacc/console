@@ -14,9 +14,7 @@ them entirely on success. A single-answer fake would make those two facts indist
 
 The `call:` line is also what makes a shadow-gate ledger possible for this pair. `shadow-gate.ts` classifies `→ ` and `✓ ` as CHATTER before any `--finding-re` is consulted, and a successful dispatch reports ONLY through `log_info`, so no message-text regex could ever produce a finding on the happy path. The ledger is recorded with `--finding-re '^call: '`.
 
-ONE NORMALISATION, AND ONLY ONE. Defect C's octal abort makes bash print `((: 08: value too great for base (error token is "08")` naming a line of the
-twin. `strip_bash_arith` removes exactly that line and nothing else; the case
-that uses it asserts the removed line was really there.
+ONE NORMALISATION, AND ONLY ONE. Defect C's octal abort makes bash print `((: 08: value too great for base (error token is "08")` naming a line of the twin. `strip_bash_arith` removes exactly that line and nothing else; the case that uses it asserts the removed line was really there.
 
 The K=5 ledger is `.ci/shadow/w7p6-dispatch-watchdog.observations.jsonl`
 (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-watchdog --assert --k 5`).

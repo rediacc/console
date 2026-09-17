@@ -23,9 +23,7 @@ one and not the other would diverge for a reason that has nothing to do
 with this script.
 
 THE ONE KNOWN DIVERGENCE, PINNED BY A TEST RATHER THAN HIDDEN. common.sh logs through `echo -e`, which interprets backslash escapes IN THE MESSAGE, and the error branches interpolate `gh`'s own output into the message. So a `gh` failure whose text contains a literal `\\n` prints a newline through the twin and two characters through this port. `rediacc_ci.log` formats the message as
-data on
-purpose (see its module docstring); the differential asserts the two disagree
-there, so nobody later "fixes" the Python to re-interpret escapes.
+data on purpose (see its module docstring); the differential asserts the two disagree there, so nobody later "fixes" the Python to re-interpret escapes.
 
 K=5 LEDGER: `.ci/shadow/w7p6-mark-production.observations.jsonl`.
 """
@@ -140,16 +138,12 @@ def _quiet(args: list[str]) -> int:
 
 
 def _stdout_devnull(args: list[str]) -> int:
-    """`cmd >/dev/null`: stderr is INHERITED, so gh's own diagnostic still reaches
-    the caller when a mutation fails, which is the only explanation anyone gets
-    before `set -e` ends the run."""
+    """`cmd >/dev/null`: stderr is INHERITED, so gh's own diagnostic still reaches the caller when a mutation fails, which is the only explanation anyone gets before `set -e` ends the run."""
     return subprocess.run(["gh", *args], stdout=subprocess.DEVNULL, check=False).returncode
 
 
 def _inherit(args: list[str]) -> int:
-    """`cmd` with NO redirection: `gh release edit` writes its confirmation to
-    the script's own stdout, which is the only thing this script ever puts
-    there."""
+    """`cmd` with NO redirection: `gh release edit` writes its confirmation to the script's own stdout, which is the only thing this script ever puts there."""
     return subprocess.run(["gh", *args], check=False).returncode
 
 

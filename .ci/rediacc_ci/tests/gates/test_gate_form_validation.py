@@ -98,8 +98,7 @@ def test_the_control_can_actually_fail(gate, tmp_path):
 
 
 def test_real_tree_scan_is_not_vacuous(gate):
-    """Seam-free: the real invocation over the real component tree. This is the line
-    the manifest's BLOCKER names.
+    """Seam-free: the real invocation over the real component tree. This is the line the manifest's BLOCKER names.
     """
     result = run(GATE)
     out = result.combined

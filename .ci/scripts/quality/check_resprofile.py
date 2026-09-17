@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """check:ci-resprofile -- structural findings from the PREVIOUS run's process-tree captures.
 
-WHY THE PREVIOUS RUN. Gates run in parallel; a capture of a gate still running is
-incomplete, so a gate that judged THIS run would read torn files. scripts/ci-runner/run.ts rotates `.ci/cache/profiles` -> `.ci/cache/profiles.prev` at start, and this gate reads the completed set. The first run therefore has nothing to judge, and says so.
+WHY THE PREVIOUS RUN. Gates run in parallel; a capture of a gate still running is incomplete, so a gate that judged THIS run would read torn files. scripts/ci-runner/run.ts rotates `.ci/cache/profiles` -> `.ci/cache/profiles.prev` at start, and this gate reads the completed set. The first run therefore has nothing to judge, and says so.
 
 WHAT IS ENFORCED, AND THE ONE RULE. A finding class may ENFORCE only while it is
 admissible: J >= 20 judgeable captures and a one-sided 95% upper bound on its fire rate
@@ -11,9 +10,8 @@ Every predicate is dilation-invariant (wall stretched by k changes no verdict) a
 is proven per run: the captures are re-derived at k=2.3 and the two finding sets must be
 byte-identical or the gate refuses its own verdict.
 
-PRISTINE BOOTSTRAP, copied from .runner-advice-allowlist. Until .ci/config/resprofile-baseline.json is SEEDED (`--seed <captures-dir>`, by a human, from real numbers), the gate WARNS and exits 0. Seeded means enforced, which is the only reason the pristine pass is not a permanent hole. Seeding from one machine's first run is how a
-bad number gets enshrined, so the seed command refuses an EMPTY corpus outright; seeds
-accumulate, and only a NAMED --reseed-class can replace a class's numbers.
+PRISTINE BOOTSTRAP, copied from .runner-advice-allowlist. Until .ci/config/resprofile-baseline.json is SEEDED (`--seed <captures-dir>`, by a human, from real numbers), the gate WARNS and exits 0. Seeded means enforced, which is the only reason the pristine pass is not a permanent hole. Seeding from one machine's first run is how a bad number gets enshrined, so the seed command
+refuses an EMPTY corpus outright; seeds accumulate, and only a NAMED --reseed-class can replace a class's numbers.
 
 THE KILL TRIGGER, fixed in advance. `sunset` in the baseline is 30 days after seeding. Past it, if no commit in the last 30 days mentions `resprofile:` AND touches a file a finding named, this gate FAILS with the remedy `git rm` -- a metrics layer nobody acts on is write-only data, and this hook directory already holds one (wl_admit.py:596-600).
 
@@ -21,8 +19,8 @@ ANTI-VACUITY. A captures dir with zero judgeable captures is UNJUDGEABLE, never 
 
 KNOWN OPEN, 2026-09-15 (docs/ci-overhaul/07-tooling-decisions.md O-4). The dilation control fired for real, standalone, twice: "a predicate is reading wall-clock", after a heavily-serialized battery (`npx tsx scripts/ci-runner/run.ts --jobs 4 --heavy-limit 1`,
 3354s wall, k=2.3). It went green again on the next run because the triggering captures
-live outside the tree (`~/.claude/resprofile/<repo>/<day>/<run>/` via `.ci/cache/profiles.prev`) and regenerate every run -- the data that exposed the divergence was already gone by the time anyone looked. NOT fixed: whoever reproduces the triggering run config and diffs `W.derive(caps)` against `W.derive([W.dilate(c, 2.3) for
-c in caps])` will name the offending predicate; nobody has spent the ~56 minutes yet.
+live outside the tree (`~/.claude/resprofile/<repo>/<day>/<run>/` via `.ci/cache/profiles.prev`) and regenerate every run -- the data that exposed the divergence was already gone by the time anyone looked. NOT fixed: whoever reproduces the triggering run config and diffs `W.derive(caps)` against `W.derive([W.dilate(c, 2.3) for c in caps])` will name the offending predicate; nobody
+has spent the ~56 minutes yet.
 
 ---- gate ---- step: Resource profile (previous run's captures) needs: none lane: quality-branch ---- end gate ----
 """
@@ -49,9 +47,7 @@ BASELINE = ROOT / ".ci" / "config" / "resprofile-baseline.json"
 
 
 def _default_captures() -> Path:
-    """`.ci/cache/profiles.prev` is a POINTER FILE naming the last completed run's
-    capture folder under ~/.claude/resprofile/<repo>/<day>/<run>/ (time-based, durable,
-    outside the tree). A missing pointer is "no captures", never an error."""
+    """`.ci/cache/profiles.prev` is a POINTER FILE naming the last completed run's capture folder under ~/.claude/resprofile/<repo>/<day>/<run>/ (time-based, durable, outside the tree). A missing pointer is "no captures", never an error."""
     ptr = ROOT / ".ci" / "cache" / "profiles.prev"
     try:
         return Path(ptr.read_text(encoding="utf-8").strip())
@@ -224,9 +220,7 @@ def acts_outside(files: list[str]) -> bool:
     """Did this commit change something the ranking could plausibly have DRIVEN?
 
     PROSE DOES NOT COUNT, and that exclusion was paid for immediately. The first commit ever to carry a `Resprofile:` trailer changed wl_profile.py, check_resprofile.py and agent/PLAN-resprofile-wave2.md -- three files, all of them the layer or a document about the layer -- and this function accepted it, because the plan file is not in LAYER_FILES. The retirement trigger asks
-    whether
-    the profiler drove work in the CODEBASE; a commit that only writes about the
-    profiler answers that question with its own subject.
+    whether the profiler drove work in the CODEBASE; a commit that only writes about the profiler answers that question with its own subject.
 
     So: at least one changed file outside the layer that is not documentation. Docs are `.md` anywhere, plus everything under agent/ and docs/, which are prose trees whatever the extension.
     """

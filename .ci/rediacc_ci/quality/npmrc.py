@@ -1,7 +1,6 @@
 """`.npmrc` supply-chain hardening, enforced in BOTH directions.
 
-Ported from `.ci/scripts/quality/check-npmrc.sh`, which is not deleted; see
-`rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-npmrc.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the list IS the gate and a summary of it would be a different gate:
 
@@ -55,8 +54,7 @@ CASE SENSITIVITY DIFFERS BETWEEN THE TWO HALVES OF THIS GATE, and that is the tw
 (case sensitive, so `Ignore-Scripts=true` does NOT satisfy `ignore-scripts`).
 npm's own config keys are case sensitive, so the required half is right and the forbidden half is merely generous. Both are carried unchanged.
 
-`[[:space:]]` IS NOT `\\s`. POSIX space is exactly [ \\t\\n\\v\\f\\r]; Python's
-`\\s` on a str pattern additionally matches U+00A0, U+2028 and friends, so a `.npmrc` line indented with a non-breaking space would be seen by the port and not by grep. The character class is written out rather than abbreviated.
+`[[:space:]]` IS NOT `\\s`. POSIX space is exactly [ \\t\\n\\v\\f\\r]; Python's `\\s` on a str pattern additionally matches U+00A0, U+2028 and friends, so a `.npmrc` line indented with a non-breaking space would be seen by the port and not by grep. The character class is written out rather than abbreviated.
 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it reads the repo-root `.npmrc` only. A per-workspace `.npmrc`, a `~/.npmrc`, or an `NPM_CONFIG_*` environment variable overrides these settings at install time and this gate never looks. That is a real blind spot in the twin and it is preserved rather than quietly widened, because widening it would change the verdict.
 """
@@ -70,8 +68,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
 
-# The file, relative to the repository root. The twin `cd`s to the root and
-# writes a bare `.npmrc`; this is the same fact with the cd removed.
+# The file, relative to the repository root. The twin `cd`s to the root and writes a bare `.npmrc`; this is the same fact with the cd removed.
 NPMRC = ".npmrc"
 
 # POSIX [[:space:]], written out. See the port notes for why `\s` is wrong here.
@@ -80,8 +77,7 @@ SPACE = r"[ \t\n\v\f\r]"
 # The forbidden settings, as ONE alternation so the compiled pattern matches the twin's `(legacy-peer-deps|force)` exactly. Case insensitive, matching `-i`.
 FORBIDDEN_RE = re.compile(r"^%s*(legacy-peer-deps|force)%s*=" % (SPACE, SPACE), re.IGNORECASE)
 
-# The required settings and their exact expected values. A TUPLE in bash's
-# measured hash order, not a dict in source order; see the port notes.
+# The required settings and their exact expected values. A TUPLE in bash's measured hash order, not a dict in source order; see the port notes.
 REQUIRED: tuple[tuple[str, str], ...] = (
     ("allow-git", "none"),
     ("minimum-release-age", "1440"),
@@ -170,9 +166,7 @@ def main(argv: list[str] | None = None) -> int:
     if problems:
         log.error(".npmrc contains legacy-peer-deps or force=true")
         log.error("These settings hide dependency problems that should be fixed properly.")
-        # STDOUT, deliberately. The twin uses bare `echo` for these three, not log_error, so they land on stdout while the two lines above land on stderr. `rediacc_ci.log` refuses to write messages to stdout, which is
-        # correct for messages; this is DATA the twin prints for copy-paste, so
-        # it goes through print() and the split is preserved.
+        # STDOUT, deliberately. The twin uses bare `echo` for these three, not log_error, so they land on stdout while the two lines above land on stderr. `rediacc_ci.log` refuses to write messages to stdout, which is correct for messages; this is DATA the twin prints for copy-paste, so it goes through print() and the split is preserved.
         print()
         print("Problematic lines:")
         for number, line in problems:

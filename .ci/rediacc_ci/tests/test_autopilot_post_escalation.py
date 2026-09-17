@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.post_escalation` against its twin
-`.ci/scripts/autopilot/post-escalation.sh`.
+"""Differential: `rediacc_ci.autopilot.post_escalation` against its twin `.ci/scripts/autopilot/post-escalation.sh`.
 
 A RECORDING FAKE `gh` ON A PREPENDED PATH, and the fake is the only thing between this file and a real comment on a real pull request. This script's success path is `api --method POST repos/<repo>/issues/<pr>/comments`, and a
 case that reached the real binary would post an escalation onto whatever PR the
@@ -165,8 +164,7 @@ LABEL_CALL = (
 
 
 def test_the_comment_then_the_label_in_that_order() -> None:
-    """The happy path, and THE ORDER IS THE LATCH: an escalation is never
-    latched without the words that say why."""
+    """The happy path, and THE ORDER IS THE LATCH: an escalation is never latched without the words that say why."""
     exit_code, stdout, stderr, calls, body = _sides(
         "post", [*BASE_ARGV, "--reason", "the validator refused three rounds running"]
     )
@@ -188,8 +186,7 @@ def test_no_label_posts_the_comment_and_leaves_the_labels_alone() -> None:
 
 
 def test_a_failed_comment_never_latches_the_loop() -> None:
-    """THE MOST IMPORTANT REFUSAL IN THE FILE. `gh_retry` fails, `set -e` ends
-    the run, and the label write is never reached -- so the next round retries instead of the campaign stopping silently behind a wordless label.
+    """THE MOST IMPORTANT REFUSAL IN THE FILE. `gh_retry` fails, `set -e` ends the run, and the label write is never reached -- so the next round retries instead of the campaign stopping silently behind a wordless label.
 
     SLOW ON PURPOSE (9 seconds per side): the retry sleeps are 3s then 6s, and a port that dropped them would stop being a retry past a rate limit.
     """
@@ -232,8 +229,7 @@ def test_a_verdict_with_no_reason_says_so_rather_than_posting_nothing() -> None:
 
 
 def test_the_verdict_wins_over_the_reason_flag() -> None:
-    """Both supplied: the twin's `if/elif` takes the verdict arm, so a caller
-    that passes both gets the model's words, not the harness's."""
+    """Both supplied: the twin's `if/elif` takes the verdict arm, so a caller that passes both gets the model's words, not the harness's."""
     _, _, _, _, body = _sides(
         "verdict-beats-reason",
         [*BASE_ARGV, "--verdict", "verdict.json", "--reason", "harness words"],
@@ -245,9 +241,7 @@ def test_the_verdict_wins_over_the_reason_flag() -> None:
 
 
 def test_a_mistyped_verdict_path_is_silent() -> None:
-    """PRESERVED DEFECT. `--verdict` is `[[ -n && -s ]]`-checked, never
-    `require_file`-checked, so a path that does not exist falls through to `--reason` and the model's own words go quietly missing. If this ever starts
-    refusing, this test goes red first."""
+    """PRESERVED DEFECT. `--verdict` is `[[ -n && -s ]]`-checked, never `require_file`-checked, so a path that does not exist falls through to `--reason` and the model's own words go quietly missing. If this ever starts refusing, this test goes red first."""
     exit_code, _, stderr, _, body = _sides(
         "mistyped-verdict",
         [*BASE_ARGV, "--verdict", "nope.json", "--reason", "fallback words"],
@@ -259,8 +253,7 @@ def test_a_mistyped_verdict_path_is_silent() -> None:
 
 
 def test_an_empty_verdict_file_is_also_silent() -> None:
-    """`-s` is a SIZE test, which is the right one: an empty file is the shape a
-    failed validator leaves behind."""
+    """`-s` is a SIZE test, which is the right one: an empty file is the shape a failed validator leaves behind."""
     _, _, _, _, body = _sides(
         "empty-verdict",
         [*BASE_ARGV, "--verdict", "verdict.json", "--reason", "fallback words"],
@@ -351,9 +344,7 @@ def test_the_step_class_rides_alongside_a_reason() -> None:
 
 
 def test_a_patch_is_attached_as_data_in_a_fitted_fence() -> None:
-    """THE FENCE IS A SECURITY PROPERTY. A patch containing its own ``` run
-    would close a three-backtick fence early and promote the remainder --
-    untrusted, model-authored text -- from a code block into live markdown."""
+    """THE FENCE IS A SECURITY PROPERTY. A patch containing its own ``` run would close a three-backtick fence early and promote the remainder -- untrusted, model-authored text -- from a code block into live markdown."""
     patch = "--- a/README.md\n+++ b/README.md\n+```\n+code\n+```\n"
     _, _, _, _, body = _sides(
         "patch-fence",
@@ -404,9 +395,7 @@ def test_the_run_url_is_the_last_line() -> None:
 
 
 def test_dry_run_writes_nothing_and_prints_the_body() -> None:
-    """The words an operator reads at the moment a campaign stops, exercisable
-    offline. A body only ever driven against the live API is a body nobody has
-    read."""
+    """The words an operator reads at the moment a campaign stops, exercisable offline. A body only ever driven against the live API is a body nobody has read."""
     exit_code, stdout, stderr, calls, body = _sides(
         "dry-run", [*BASE_ARGV, "--reason", "r", "--dry-run"]
     )
@@ -422,8 +411,7 @@ def test_dry_run_writes_nothing_and_prints_the_body() -> None:
 
 
 def test_body_bytes_are_not_decoded() -> None:
-    """The reason is model-authored and need not be valid UTF-8; a port that
-    decoded would fail the escalation on a stray byte the twin passed through."""
+    """The reason is model-authored and need not be valid UTF-8; a port that decoded would fail the escalation on a stray byte the twin passed through."""
     exit_code, stdout, _, _, _ = _sides(
         "raw-bytes",
         [*BASE_ARGV, "--verdict", "verdict.json", "--dry-run"],
@@ -434,8 +422,7 @@ def test_body_bytes_are_not_decoded() -> None:
 
 
 def test_the_stage_flag_fails_closed() -> None:
-    """Absent is off; only the exact string `true` arms it. And it is checked
-    BEFORE any network call, so a misconfigured stage cannot even read."""
+    """Absent is off; only the exact string `true` arms it. And it is checked BEFORE any network call, so a misconfigured stage cannot even read."""
     for name, value in (
         ("unset", None),
         ("false", "false"),
@@ -451,9 +438,7 @@ def test_the_stage_flag_fails_closed() -> None:
 
 
 def test_the_stage_flag_is_checked_even_on_a_dry_run() -> None:
-    """Unlike `autopilot-push.sh`, this script does NOT exempt a dry run: the
-    flag guards the whole script, not only the write. Pinned so a port cannot
-    'improve' it into an offline-always tool."""
+    """Unlike `autopilot-push.sh`, this script does NOT exempt a dry run: the flag guards the whole script, not only the write. Pinned so a port cannot 'improve' it into an offline-always tool."""
     code, _, err, _, _ = _sides(
         "flag-dry-run",
         [*BASE_ARGV, "--reason", "r", "--dry-run"],
@@ -464,8 +449,7 @@ def test_the_stage_flag_is_checked_even_on_a_dry_run() -> None:
 
 
 def test_usage_refusals_come_before_the_stage_flag() -> None:
-    """The three required flags, each dropped in turn, with the flag OFF: the
-    usage message must still win, so a broken invocation is diagnosable."""
+    """The three required flags, each dropped in turn, with the flag OFF: the usage message must still win, so a broken invocation is diagnosable."""
     for drop in ("--pr", "--repo", "--title"):
         argv = []
         skip = False
@@ -485,9 +469,7 @@ def test_usage_refusals_come_before_the_stage_flag() -> None:
 
 
 def test_the_fake_gh_is_the_gh() -> None:
-    """CONTROL for the whole file. If the stub ever stops winning the PATH
-    lookup, every case above would be talking to the real GitHub CLI and
-    labelling real pull requests."""
+    """CONTROL for the whole file. If the stub ever stops winning the PATH lookup, every case above would be talking to the real GitHub CLI and labelling real pull requests."""
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
         path = _stub_bin(base)
@@ -498,9 +480,7 @@ def test_the_fake_gh_is_the_gh() -> None:
 
 
 def test_pure_helpers_are_exercised_directly() -> None:
-    """`failed_class`, `step_class`, `longest_backtick_run` and `fence_for`
-    without a subprocess. BOTH DIRECTIONS: a case that must classify and a case
-    that must not."""
+    """`failed_class`, `step_class`, `longest_backtick_run` and `fence_for` without a subprocess. BOTH DIRECTIONS: a case that must classify and a case that must not."""
     assert pe.step_class("model").startswith("the model step itself")
     assert pe.step_class("brandnew") == "brandnew"
     assert pe.failed_class("") == pe.NO_FAILURE

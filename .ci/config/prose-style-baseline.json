@@ -16,16 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 6088,
- "files": 1255,
+ "count": 6068,
+ "files": 1250,
  "by_rule": {
-  "R1": 1714,
+  "R1": 1705,
   "R11": 192,
   "R14": 1,
-  "R18": 2549,
+  "R18": 2547,
   "R19": 62,
-  "R2": 1015,
-  "R7": 555
+  "R2": 1004,
+  "R7": 557
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -229,7 +229,7 @@
     "ca0c47ed96a1375a"
    ],
    "R7": [
-    "0dff576878f17a5e"
+    "d18499a79ab11cae"
    ]
   },
   ".ci/rediacc_ci/ci/profiler_sampler_linux.py": {
@@ -254,18 +254,18 @@
   },
   ".ci/rediacc_ci/core/allowlist.py": {
    "R1": [
-    "35bdf9c499122f00",
+    "859914b3f951c4bb",
     "a0e0724b45060a4d"
    ],
    "R2": [
-    "65309291d708f8cf"
+    "b51feb65db64c86b"
    ]
   },
   ".ci/rediacc_ci/core/dockerx.py": {
    "R1": [
-    "06dc252b44bd0128",
     "1464600958c63d2f",
     "9111aa7f60f7033c",
+    "df33ad87023e782f",
     "ff5066a46f166b07"
    ],
    "R2": [
@@ -308,8 +308,8 @@
     "667c6aef92b4dfc8"
    ],
    "R7": [
-    "243d458c7d101cba",
-    "505cc76f73e28bc2"
+    "505cc76f73e28bc2",
+    "5967992026bf9884"
    ]
   },
   ".ci/rediacc_ci/core/secrets.py": {
@@ -319,18 +319,17 @@
   },
   ".ci/rediacc_ci/core/toolchain.py": {
    "R1": [
-    "0f2408df317389ae",
-    "407c1f811cc4b7d9",
+    "42b1b074a10d0c9d",
+    "6af55135bef6f8a4",
     "8fe2f0791e8f4dd6",
-    "a9f54682b810c1b8"
+    "d759e0e6ab99b7ab"
    ],
    "R2": [
-    "224768941276a300",
+    "5615fa6824e31338",
+    "5812ce50c9768ca5",
     "6bc48ea605463683",
-    "9481c5171f492ec8",
-    "a33420e5697fcd08",
-    "d480060f7402ddfa",
-    "f82f70637d244a87"
+    "c40d3f8e7c9adf03",
+    "d40ffb1eb024ea4c"
    ],
    "R7": [
     "729d6ccbc4963f64",
@@ -339,7 +338,7 @@
   },
   ".ci/rediacc_ci/deploy/promote_r2_to_stable.py": {
    "R7": [
-    "7a09c7fd0bd53950"
+    "b0f51be66746359d"
    ]
   },
   ".ci/rediacc_ci/deploy/verify_edge_endpoints.py": {
@@ -357,8 +356,8 @@
     "21164655bfa4de36"
    ],
    "R2": [
-    "b39a8ca9e061ef7c",
-    "d3b640ce7e293503"
+    "9e2cedcb715f97ba",
+    "b39a8ca9e061ef7c"
    ]
   },
   ".ci/rediacc_ci/infra/build_renet.py": {
@@ -442,12 +441,12 @@
   },
   ".ci/rediacc_ci/quality/git_op_conditionals.py": {
    "R7": [
-    "91a5ad5f07ace6e9"
+    "c661b33b31e7fe27"
    ]
   },
   ".ci/rediacc_ci/quality/go_tool_path.py": {
    "R7": [
-    "1a9491c0312489b6"
+    "aaee6364cc479568"
    ]
   },
   ".ci/rediacc_ci/quality/label_references.py": {
@@ -463,7 +462,7 @@
   },
   ".ci/rediacc_ci/quality/mutate_check.py": {
    "R7": [
-    "a1fec4c98d49a22c"
+    "6df1cd2de3ba44ed"
    ]
   },
   ".ci/rediacc_ci/quality/pipefail_grep_q.py": {
@@ -484,17 +483,18 @@
   },
   ".ci/rediacc_ci/quality/plant_proofs.py": {
    "R7": [
-    "a85e1f4e118fe03f"
+    "0ff21e01e0975816"
    ]
   },
   ".ci/rediacc_ci/quality/profiler_coverage.py": {
    "R7": [
-    "f3ac555ee0afbe5b"
+    "cece7f9e20619a93"
    ]
   },
   ".ci/rediacc_ci/quality/prose_style.py": {
-   "R2": [
-    "23841cae5cc2ffd9"
+   "R7": [
+    "bb1500313874d146",
+    "beb5fe820b3a8364"
    ]
   },
   ".ci/rediacc_ci/quality/python_env_registry.py": {
@@ -548,8 +548,8 @@
   },
   ".ci/rediacc_ci/quality/toolchain_pins.py": {
    "R1": [
-    "138a315bb0387133",
-    "31d7040aff482f8e"
+    "6ba1ddf205452b28",
+    "fd99e5da0991e555"
    ],
    "R7": [
     "8f11fd978bdef4cb"
@@ -575,7 +575,7 @@
   },
   ".ci/rediacc_ci/security/actionlint.py": {
    "R7": [
-    "4ea106665b193b48"
+    "e57194580ed995f2"
    ]
   },
   ".ci/rediacc_ci/security/workflow_gates.py": {
@@ -595,7 +595,7 @@
   },
   ".ci/rediacc_ci/setup/tools.py": {
    "R7": [
-    "03e276cec0c85a37"
+    "8e3f780e722eb27b"
    ]
   },
   ".ci/rediacc_ci/tests/differential.py": {
@@ -603,31 +603,23 @@
     "d3dd778196f6c5f9"
    ]
   },
-  ".ci/rediacc_ci/tests/gates/test_gate_actions_release_age.py": {
-   "R1": [
-    "32162eb3aeef40db"
-   ]
-  },
   ".ci/rediacc_ci/tests/gates/test_gate_autopilot_harness.py": {
    "R7": [
-    "64ec1cedd1fb4060",
-    "7444420c271885d0"
+    "7444420c271885d0",
+    "ba649a6d6ce65151"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_drift.py": {
    "R7": [
-    "3f38bee633669371",
-    "670e4e3a470db20a",
+    "2df2644b1b62f1f7",
+    "81b6e5a891536be5",
     "f27e293d28aa16b3"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_pins.py": {
    "R1": [
-    "05b3355579aba9c0",
-    "60aff9770a8e3c21",
     "84fcea592b69823a",
-    "8b678f973b9340cd",
-    "dd2763142fba2adb"
+    "8b678f973b9340cd"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py": {
@@ -682,8 +674,8 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_gate_lanes.py": {
    "R7": [
-    "3bb6d5b8461054d7",
-    "cc8ca9ba7b4f726d"
+    "1ecfc1086217e4b1",
+    "3bb6d5b8461054d7"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_greenlight.py": {
@@ -706,7 +698,7 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_language_policy.py": {
    "R7": [
-    "0e19deb78417c708"
+    "62970e77ea600158"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_media_docs.py": {
@@ -721,7 +713,7 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_policy_liveness_floors.py": {
    "R7": [
-    "3b907234feca3c88"
+    "66b9be8ebd4dc838"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_profiler_report.py": {
@@ -736,12 +728,12 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_resprofile.py": {
    "R7": [
-    "230d2cb960913c8f"
+    "60602da684a982ca"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_review_labels.py": {
    "R7": [
-    "0a3cace34fa31a94"
+    "dfd0f239345c058c"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_review_status.py": {
@@ -756,15 +748,15 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_run_sh.py": {
    "R7": [
-    "db3e26fc6d1d85f2"
+    "856cea7895c19df0"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py": {
    "R7": [
-    "3f6962d41c64ed88",
-    "6deff24ea1c2c3c5",
+    "20145c481d16bd9d",
     "701d5314343a58c6",
-    "beab8c6f386e6c9c"
+    "beab8c6f386e6c9c",
+    "e3fe1d55a02a505d"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_scrub_sentinel_empty.py": {
@@ -784,7 +776,7 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_skip_plan_reconcile.py": {
    "R7": [
-    "a1c550297eb32bb3"
+    "9b8b1042794deab9"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_vacuity_floors.py": {
@@ -804,7 +796,7 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_watchdog_schedule_exemption.py": {
    "R2": [
-    "48efcf899621e439"
+    "7810ca2f8f9cdddc"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_watchdog_supersession.py": {
@@ -836,18 +828,18 @@
   },
   ".ci/rediacc_ci/tests/test_build_build_pages.py": {
    "R7": [
-    "3fe53f3dd8facc55",
-    "b5a205ac10eaee98"
+    "3a8ab62e3b7652fc",
+    "ceb14fdbcf6b2cba"
    ]
   },
   ".ci/rediacc_ci/tests/test_build_cli_musl.py": {
    "R7": [
-    "646212c6fad87036"
+    "bea6d53c1e5e0a48"
    ]
   },
   ".ci/rediacc_ci/tests/test_build_linux_pkg.py": {
    "R7": [
-    "4faacdf601bb1669"
+    "d3a7db2b92d705b8"
    ]
   },
   ".ci/rediacc_ci/tests/test_canonical_sys_path_hop.py": {
@@ -936,27 +928,27 @@
   },
   ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py": {
    "R7": [
-    "fa43ceda696814d9"
+    "7dd39b121ffb0960"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py": {
    "R7": [
-    "e15a33ac31858eb4"
+    "6378a6058999e08e"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_renet_csi_sanity.py": {
    "R7": [
-    "acb86f0787295616"
+    "b8609fa286fa2631"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py": {
    "R7": [
-    "dff419cec40b43f9"
+    "116f8c50bff0d08e"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_renet_integration.py": {
    "R7": [
-    "276eb075e6e3ad3f"
+    "7e5553abf4f34013"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_renet_root_tests.py": {
@@ -966,12 +958,12 @@
   },
   ".ci/rediacc_ci/tests/test_private_run_account.py": {
    "R7": [
-    "80070321380292b7"
+    "848d195a4f1dac6f"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_run_renet.py": {
    "R7": [
-    "5ab9cbda2251245a"
+    "3f987702b81bc33f"
    ]
   },
   ".ci/rediacc_ci/tests/test_proc.py": {
@@ -982,11 +974,6 @@
   ".ci/rediacc_ci/tests/test_quality_account_portal.py": {
    "R1": [
     "25ec0c2fbb9ac812"
-   ]
-  },
-  ".ci/rediacc_ci/tests/test_quality_agent_browser_exit.py": {
-   "R1": [
-    "3420368ae050b523"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_browser_smoke.py": {
@@ -1004,7 +991,7 @@
     "6207a857ee5fbf10"
    ],
    "R7": [
-    "53a3b35e38924ccd"
+    "a907062be4dbe2ec"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_label_references.py": {
@@ -1026,9 +1013,14 @@
     "a109176abe50e559"
    ]
   },
+  ".ci/rediacc_ci/tests/test_quality_prose_style.py": {
+   "R7": [
+    "40da5ac375146090"
+   ]
+  },
   ".ci/rediacc_ci/tests/test_quality_resolved_threads.py": {
    "R7": [
-    "e89a941c039114eb"
+    "2509c48716035805"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_review_report_replies.py": {
@@ -1041,16 +1033,10 @@
     "5a5613929cc01cf0"
    ]
   },
-  ".ci/rediacc_ci/tests/test_quality_run_external_gate.py": {
-   "R1": [
-    "9b1876da544ddfc1"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_quality_swallowed_failures.py": {
    "R2": [
     "2923b4e84b7e2448",
-    "2ec34418cb7338ab",
-    "453588e0793f2140"
+    "68f58ab30dcba290"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_typecheck_workers.py": {
@@ -1068,14 +1054,9 @@
     "b9ae5c4373d179ad"
    ]
   },
-  ".ci/rediacc_ci/tests/test_review_claude_review_gate.py": {
-   "R2": [
-    "715347b99df0092d"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_review_review_status.py": {
    "R7": [
-    "92382f2e9bf62237"
+    "e300e1d78f4323fc"
    ]
   },
   ".ci/rediacc_ci/tests/test_review_standing_orders_brief.py": {
@@ -1085,7 +1066,7 @@
   },
   ".ci/rediacc_ci/tests/test_security_actionlint.py": {
    "R7": [
-    "5f0edef77d8896b6"
+    "5e270c025493a154"
    ]
   },
   ".ci/rediacc_ci/tests/test_setup_port.py": {
@@ -1217,7 +1198,7 @@
   },
   ".ci/scripts/housekeeping/retire-shadowed-secrets.py": {
    "R2": [
-    "0e4892cf2169d8d6"
+    "1c40036f407fea89"
    ]
   },
   ".ci/scripts/quality/check_agent_hint_liveness.py": {
@@ -1265,7 +1246,7 @@
   },
   ".ci/scripts/quality/check_guard_mention_anchoring.py": {
    "R7": [
-    "138a373f4d9b8696"
+    "252f8e8932499d0f"
    ]
   },
   ".ci/scripts/quality/check_i18n_value_types.py": {
@@ -1276,11 +1257,6 @@
   ".ci/scripts/quality/check_inner_timeout_reachable.py": {
    "R7": [
     "9771ca57b50358d9"
-   ]
-  },
-  ".ci/scripts/quality/check_label_inventory.py": {
-   "R18": [
-    "355430e097b0e55b"
    ]
   },
   ".ci/scripts/quality/check_plan_boxes.py": {
@@ -1316,11 +1292,8 @@
    ]
   },
   ".ci/scripts/quality/check_profiler_coverage.py": {
-   "R18": [
-    "59901789cc3d4759"
-   ],
    "R7": [
-    "5fd8f15c0d27512a"
+    "81bf62792e0ba8f7"
    ]
   },
   ".ci/scripts/quality/check_python_control_plants.py": {
@@ -1359,15 +1332,10 @@
   },
   ".ci/scripts/quality/check_secret_reachability.py": {
    "R1": [
-    "9b6ca8b9231e3556",
-    "bf1cedb0140426f9"
-   ],
-   "R2": [
-    "ca524fdac08e7267"
+    "9b6ca8b9231e3556"
    ],
    "R7": [
-    "07d6c584c8054c5f",
-    "97c1c0b5c98bd48a"
+    "30cce58631de7d0e"
    ]
   },
   ".ci/scripts/quality/check_syncpack_sources.py": {
@@ -1378,11 +1346,6 @@
   ".ci/scripts/quality/check_test_file_orphans.py": {
    "R1": [
     "ce7a1458122c66e6"
-   ]
-  },
-  ".ci/scripts/quality/check_tutorial_cli_validity.py": {
-   "R2": [
-    "fdbadd8f34b1d53e"
    ]
   },
   ".ci/scripts/quality/check_tutorial_no_skips.py": {
@@ -1820,7 +1783,7 @@
   },
   ".claude/hooks/context/onboard.py": {
    "R7": [
-    "1f8f9986ac58b89e"
+    "e3add846e582f676"
    ]
   },
   ".claude/hooks/stop/calibrate-judge-rules.py": {
@@ -1844,8 +1807,8 @@
     "0263c4d310e883a0"
    ],
    "R7": [
-    "417b4e9d1407ee1e",
-    "cfea00ea0e818599"
+    "1a4e6767138e321b",
+    "417b4e9d1407ee1e"
    ]
   },
   ".claude/hooks/stop/test-plan-status-parse.py": {
@@ -1894,9 +1857,9 @@
     "fd073ecf02808071"
    ],
    "R7": [
-    "39c98c97fa0c92af",
     "92806b65ff6ce1fc",
-    "c7240d4952675158",
+    "e9069caef0b46a1d",
+    "efcc5f91ec03458e",
     "f49ef5611bb2721d"
    ]
   },
@@ -1915,12 +1878,10 @@
     "113acc200d5bd2a1",
     "289ed5fa71af39c8",
     "30139fc1deec6dbc",
-    "36095f7e5111dea1",
     "4b4d0acbc82d4b8c",
     "55ac9a11a02d142b",
     "55c68295b24a1b8c",
     "5e65b0e48d23636b",
-    "6930d97e19faeede",
     "6b086110c390695e",
     "6e82e94ac8b79ec0",
     "76d3b272639c453c",
@@ -1928,26 +1889,27 @@
     "b5649572dab790f8",
     "b8ced11c07fb0c85",
     "ccbd3c70cd487a96",
-    "d182a2fc069ac8a0"
+    "d182a2fc069ac8a0",
+    "dfbec3aeae9b0cae"
    ],
    "R2": [
     "07b7b63545717335",
     "0f04ad46ba1e0ad2",
     "1f38c1cab2a73041",
     "232ec7ae98c8772f",
+    "32f4a03ab276ef9b",
+    "51b470d2c15f65e5",
     "5852f31badedee4c",
     "5ac0015f911dfcdd",
-    "5b7f6b1d85dd46d6",
     "7f9d14bb0b3c27c8",
     "83968b3f5230faad",
-    "8bec7525ed0a680e",
     "8e420aaf6cda9d55",
     "91c4e1ce7e12565a",
     "a6b9be16836499a6",
     "ab0e2a5a4b5d38a3",
     "b196e55d4213c5c8",
     "b39e0ac731af8072",
-    "b9e04b963f223978",
+    "be8fec871bef73fd",
     "c572997b4465c2a2",
     "c6e0d5c702f02a35",
     "cbde948eef0ec891",
@@ -1961,16 +1923,14 @@
     "fe2a899f3f021928"
    ],
    "R7": [
+    "01ee46d968c24f8d",
     "1a39229380dfc274",
     "1c58b05eee9b8ed1",
-    "248e5d5379fb0a26",
     "2f3da51105c7810e",
     "34235d150448d68a",
     "4824b2336549bd98",
-    "646295a3051f90ae",
     "6980b4747187ab0d",
     "7a99d09f2d6a94bf",
-    "7ec10ac8c63bcd9c",
     "83d6ed83931d8f51",
     "8c3e3617c13cd73b",
     "9e3469c0fa5de048",
@@ -1980,6 +1940,8 @@
     "b686d99284010e1c",
     "d11a95bf7e0da060",
     "dbdada92a6421db8",
+    "f0ec409a5f0c64e3",
+    "f53e2dc0b6614566",
     "fbed5a899930fc38"
    ]
   },
@@ -2002,7 +1964,6 @@
    ],
    "R2": [
     "898f8e8c3db88d91",
-    "a509761b1b63a778",
     "a5ee5f871f3efa5c",
     "bc343b48361a8663",
     "e10b1cd247a1d448",
@@ -2020,7 +1981,7 @@
     "f587785601b8f029"
    ],
    "R7": [
-    "0d870a71a70a15c2",
+    "01fb55798197edd0",
     "817b4ba38c7173c6"
    ]
   },
@@ -2069,7 +2030,6 @@
     "09281fc014606a76"
    ],
    "R2": [
-    "0ff253d29fd36008",
     "8eddde99bbe83c0e"
    ],
    "R7": [
@@ -2100,21 +2060,21 @@
   },
   ".claude/hooks/stop/wl_profile.py": {
    "R1": [
-    "aca8a6bea57e767b"
+    "c8cbaa9055b4ab22"
    ],
    "R2": [
     "0c12d9038e650b87",
     "56c2c2cb78325a80"
    ],
    "R7": [
-    "fa7b96bde06d7fa6"
+    "84b5bd17180a09e2"
    ]
   },
   ".claude/hooks/stop/wl_reggate.py": {
    "R1": [
-    "167ca0e0a32942a7",
-    "5d9ccc6b76fe228c",
-    "acaaa0370cdb69be",
+    "829138df3fd840cf",
+    "8fb40042c4a12eee",
+    "a1f52b24c57b2c76",
     "cbb2bae4a401c7c1"
    ]
   },
@@ -2122,19 +2082,13 @@
    "R1": [
     "a604a9265f40af67"
    ],
-   "R2": [
-    "9e616c6607634d17"
-   ],
    "R7": [
-    "0e94e62c823ad1ae"
+    "265ca6642da74a43"
    ]
   },
   ".claude/hooks/stop/wl_requests.py": {
    "R1": [
     "382b46571d0035b7"
-   ],
-   "R2": [
-    "fe78275585cf832d"
    ]
   },
   ".claude/hooks/stop/wl_rules.py": {
@@ -2153,8 +2107,8 @@
     "a220a905473358b2"
    ],
    "R7": [
-    "0d124a8dcba7e913",
-    "7b723d9fa27c79f4"
+    "7b723d9fa27c79f4",
+    "f0300cbb7f72aa40"
    ]
   },
   ".claude/hooks/stop/wl_store.py": {
@@ -2162,8 +2116,7 @@
     "6454f12460ee0e15",
     "d6f9c7af2c798ba9",
     "d889c42d6560fca9",
-    "dc15c2c1d89764c9",
-    "f57f94ae63daa063"
+    "dc15c2c1d89764c9"
    ],
    "R2": [
     "0bef07d01d909d00",
@@ -2177,10 +2130,10 @@
    ],
    "R7": [
     "0bd11fd19011a86c",
-    "774f9bc4b77fd277",
-    "9b65fd8bbb74e57a",
-    "9b7bbbfa3af31478",
-    "ba25795126abd04a"
+    "31d6d48a64b23b8e",
+    "77b2e8fcbb04d405",
+    "ba25795126abd04a",
+    "d27a9a1bb1afdd6e"
    ]
   },
   ".claude/hooks/stop/wl_wait.py": {
@@ -2202,12 +2155,12 @@
     "f844d56173591678"
    ],
    "R2": [
-    "219a5a21ff562e3e",
     "2fd823313c60d152",
-    "82b31fbacff39fa3",
+    "52d85b55bbdb1ce4",
     "85869c0d06879408",
     "86b390a438e9aff7",
     "879e1e762b06a8bd",
+    "8aa269394ecdecce",
     "e799bdc9b3d02ad7"
    ],
    "R7": [
@@ -2218,16 +2171,16 @@
   },
   ".claude/hooks/stop/worklist_messages.py": {
    "R1": [
-    "27421a37afae3136",
+    "647891330204ff41",
     "95a0c8f14716a5ae",
     "c4d5a42582c31272",
     "d0d8f0afb20394fe"
    ],
    "R2": [
-    "337f1bc56a76c8d9"
+    "b3900a7772340fcc"
    ],
    "R7": [
-    "8fec5d1d807ff611",
+    "8e9bef8ffd13d583",
     "cb648001ca82659e"
    ]
   },
@@ -2257,7 +2210,7 @@
   },
   ".claude/rediacc_hooks/dispatch.py": {
    "R7": [
-    "60b584f65862b37f"
+    "7be2d6b61d50c2c1"
    ]
   },
   ".claude/rediacc_hooks/execcount.py": {
@@ -2277,9 +2230,6 @@
    ]
   },
   ".claude/rediacc_hooks/guards/block_blanket_git_add.py": {
-   "R2": [
-    "eb12621782b862c6"
-   ],
    "R7": [
     "f9bfe3c59663cab8"
    ]
@@ -2337,12 +2287,12 @@
     "5bab69cc11dab879"
    ],
    "R7": [
-    "86513e53d9bd894f"
+    "0997bb94542f9bf7"
    ]
   },
   ".claude/rediacc_hooks/guards/block_premature_ready.py": {
    "R7": [
-    "55c3be4d082a6ec5"
+    "671eec4dff249573"
    ]
   },
   ".claude/rediacc_hooks/guards/block_raw_pr_body_edit.py": {
@@ -2388,7 +2338,7 @@
     "09d01c85455a29c3"
    ],
    "R7": [
-    "9281ae56ab09c7ae",
+    "121d1a754b598468",
     "c815b27fd457db42"
    ]
   },
@@ -2399,10 +2349,10 @@
   },
   ".claude/rediacc_hooks/guards/block_unverified_push.py": {
    "R1": [
-    "907b4191b5106c79"
+    "b631b5de1fd05caa"
    ],
    "R7": [
-    "fe869d79ccec6aae"
+    "678c68bae879115e"
    ]
   },
   ".claude/rediacc_hooks/guards/block_worktree_add.py": {
@@ -2460,8 +2410,8 @@
     "f093bddb94daffa9"
    ],
    "R7": [
-    "86f432450e975197",
-    "bc1b48894bbb91c2"
+    "0f2db304c878393e",
+    "86f432450e975197"
    ]
   },
   ".claude/rediacc_hooks/tests/test_dispatch.py": {
@@ -5671,7 +5621,7 @@
   "packages/cli/src/config/command-metadata.ts": {
    "R2": [
     "4b665ed94d89ba4e",
-    "54661e2b12227d46",
+    "72f2acaab2b87c91",
     "860ac989dd1feb91"
    ]
   },
@@ -11814,7 +11764,7 @@
   },
   "scripts/ci-runner/run.ts": {
    "R1": [
-    "34625d3d5615a8b8"
+    "c80a8acba88632c9"
    ],
    "R2": [
     "e7e01ff31e4770d5"
@@ -11944,12 +11894,12 @@
   },
   "scripts/gates/check-external-links.ts": {
    "R1": [
-    "905ec5de0b3530e4",
+    "6416215380f6b3bb",
     "b7970f99886df21d",
     "ee68f1cc0facc2b0"
    ],
    "R2": [
-    "077b3780265dc7ee"
+    "a3ac67e2904313f4"
    ]
   },
   "scripts/gates/check-form-validation.ts": {
@@ -12030,8 +11980,8 @@
   },
   "scripts/gates/check-pr-task-trailers.ts": {
    "R7": [
-    "256541be64d549eb",
-    "2e9ff0ddb0d691ae"
+    "2e9ff0ddb0d691ae",
+    "ab85afe872b20ebc"
    ]
   },
   "scripts/gates/check-pricing-consistency.ts": {

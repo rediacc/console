@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.docker.cleanup_staging` against its twin
-`.ci/scripts/docker/cleanup-staging.sh`.
+"""Differential: `rediacc_ci.docker.cleanup_staging` against its twin `.ci/scripts/docker/cleanup-staging.sh`.
 
 RECORDING FAKES FOR `gh` ON A SCRATCH PATH, AND NOTHING ELSE REAL. No case here names a credential, and the scratch PATH is built from an explicit list of symlinks, so a tool that is not listed is genuinely absent rather than inherited
 from the developer's shell. That precaution is not theoretical: an early probe
@@ -174,8 +173,7 @@ def run_both(tmp_path: pathlib.Path, args: list[str] | None = None, **kw):
 
 
 def _mask(text: str) -> str:
-    """The ONE thing that cannot agree: `$0` in the usage line and in bash's
-    `set -u` message. Masked by the two exact paths, so any OTHER absolute path leaking into the output is still compared.
+    """The ONE thing that cannot agree: `$0` in the usage line and in bash's `set -u` message. Masked by the two exact paths, so any OTHER absolute path leaking into the output is still compared.
     """
     masked = text.replace(".ci/scripts/docker/" + TWIN.name, "<SELF>")
     return masked.replace(".ci/rediacc_ci/docker/" + PORT_FILE.name, "<SELF>")
@@ -234,8 +232,7 @@ def test_no_tag_refuses(tmp_path) -> None:
 
 
 def test_a_tag_without_the_staging_prefix_refuses_before_any_call(tmp_path) -> None:
-    """THE SAFETY RAIL. `edge` is the value production actually passes through
-    `cleanup-channel-docker-tags.sh`, so this branch is the common one.
+    """THE SAFETY RAIL. `edge` is the value production actually passes through `cleanup-channel-docker-tags.sh`, so this branch is the common one.
     """
     old, new, old_calls, new_calls = run_both(tmp_path, ["--tag", "edge"])
     _agree(old, new, "bad-prefix", old_calls, new_calls)
@@ -263,8 +260,7 @@ def test_a_bare_tag_flag_dies_the_way_set_u_dies(tmp_path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, ["--tag"])
     _agree(old, new, "unbound", old_calls, new_calls)
     assert old.returncode == 1
-    # `$0` is the invoked path, which differs per side and per tmp dir; `_mask`
-    # collapses exactly those two spellings and nothing else.
+    # `$0` is the invoked path, which differs per side and per tmp dir; `_mask` collapses exactly those two spellings and nothing else.
     assert _mask(old.stderr).endswith("<SELF>: line 26: $2: unbound variable\n"), repr(old.stderr)
     assert old.stdout == ""
 
@@ -332,8 +328,7 @@ def test_a_tag_no_version_carries_is_reported_as_already_deleted(tmp_path) -> No
 
 
 def test_a_null_tag_list_does_not_crash_the_filter(tmp_path) -> None:
-    """jq's `index(...)` on `null` yields null, which `select` drops. A port that
-    reimplemented the filter in Python with `.get("tags", [])` would agree here
+    """jq's `index(...)` on `null` yields null, which `select` drops. A port that reimplemented the filter in Python with `.get("tags", [])` would agree here
     by luck and diverge on the `{"id":222}` entry with no metadata at all.
     """
     old, new, old_calls, new_calls = run_both(
@@ -358,9 +353,7 @@ def test_a_failing_delete_makes_the_summary_red_and_the_exit_one(tmp_path) -> No
 def test_stderr_arriving_before_the_json_is_merged_in_order(tmp_path) -> None:
     """`2>&1` INSIDE the substitution, not two buffers concatenated.
 
-    The fake writes a warning to stderr and flushes before writing valid JSON to stdout. Under a true merge the warning lands FIRST and jq rejects the whole
-    thing; under `stdout + stderr` the JSON would come first and jq would accept
-    it. Both sides must reach the same verdict, and it is the reject.
+    The fake writes a warning to stderr and flushes before writing valid JSON to stdout. Under a true merge the warning lands FIRST and jq rejects the whole thing; under `stdout + stderr` the JSON would come first and jq would accept it. Both sides must reach the same verdict, and it is the reject.
     """
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--tag", "staging-abc"], FAKE_GH_MODE="warnfirst"
@@ -374,8 +367,7 @@ def test_stderr_arriving_before_the_json_is_merged_in_order(tmp_path) -> None:
 def test_the_delete_calls_own_stdout_is_inherited_and_interleaves(tmp_path) -> None:
     """`DELETE-ACCEPTED` reaches the caller's stdout between the two separators.
 
-    Python block-buffers stdout against a pipe; without the port's `_flush` the
-    two blank lines would arrive AFTER both children's output, byte-identical and in the wrong order. This is the only comparison that sees it.
+    Python block-buffers stdout against a pipe; without the port's `_flush` the two blank lines would arrive AFTER both children's output, byte-identical and in the wrong order. This is the only comparison that sees it.
     """
     old, new, old_calls, new_calls = run_both(tmp_path, ["--tag", "staging-abc"])
     _agree(old, new, "inherited-stdout", old_calls, new_calls)
@@ -386,8 +378,7 @@ def test_the_delete_calls_own_stdout_is_inherited_and_interleaves(tmp_path) -> N
 
 
 def test_defect_a_missing_gh_reports_two_successes_and_exits_zero(tmp_path) -> None:
-    """UNKNOWN FOLDED INTO FINE. With no `gh` on PATH nothing is deleted, the
-    staging tags survive, and the run prints `Cleanup summary: 2 succeeded` and exits 0. The `2>&1` capture turns `command not found` into an unparseable response, which the twin files under "package may not exist yet".
+    """UNKNOWN FOLDED INTO FINE. With no `gh` on PATH nothing is deleted, the staging tags survive, and the run prints `Cleanup summary: 2 succeeded` and exits 0. The `2>&1` capture turns `command not found` into an unparseable response, which the twin files under "package may not exist yet".
     """
     old, new, old_calls, new_calls = run_both(tmp_path, ["--tag", "staging-abc"], drop="gh")
     _agree(old, new, "no-gh", old_calls, new_calls)
@@ -397,8 +388,7 @@ def test_defect_a_missing_gh_reports_two_successes_and_exits_zero(tmp_path) -> N
 
 
 def test_defect_two_versions_sharing_a_tag_build_one_malformed_url(tmp_path) -> None:
-    """jq returns TWO ids, command substitution keeps the newline, and the twin
-    splices the whole `"111\\n222"` into a single URL. The port reproduces the malformed call rather than picking one id, because picking would change WHICH version gets deleted.
+    """jq returns TWO ids, command substitution keeps the newline, and the twin splices the whole `"111\\n222"` into a single URL. The port reproduces the malformed call rather than picking one id, because picking would change WHICH version gets deleted.
     """
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--tag", "staging-abc"], FAKE_GH_MODE="dup"
@@ -409,8 +399,7 @@ def test_defect_two_versions_sharing_a_tag_build_one_malformed_url(tmp_path) -> 
 
 
 def test_defect_a_quote_in_the_tag_is_swallowed_as_already_deleted(tmp_path) -> None:
-    """The tag is interpolated into the jq PROGRAM unquoted, so a `"` is a jq
-    syntax error, jq's stderr is discarded and the empty result reads as "may already be deleted". Nothing warns that the filter never ran.
+    """The tag is interpolated into the jq PROGRAM unquoted, so a `"` is a jq syntax error, jq's stderr is discarded and the empty result reads as "may already be deleted". Nothing warns that the filter never ran.
     """
     old, new, old_calls, new_calls = run_both(tmp_path, ["--tag", 'staging-a"b'])
     _agree(old, new, "quote-in-tag", old_calls, new_calls)
@@ -431,8 +420,7 @@ def test_defect_a_non_ghcr_registry_yields_the_host_as_the_org(tmp_path) -> None
 
 
 def test_a_version_carrying_a_second_tag_is_deleted_whole(tmp_path) -> None:
-    """The fixture's id 111 carries `staging-abc` AND `spare`. GHCR has no
-    delete-one-tag call, so `spare` disappears with it. Recorded, not repaired.
+    """The fixture's id 111 carries `staging-abc` AND `spare`. GHCR has no delete-one-tag call, so `spare` disappears with it. Recorded, not repaired.
     """
     old, _new, old_calls, _n = run_both(tmp_path, ["--tag", "staging-abc"])
     assert "DELETE\t/orgs/rediacc/packages/container/renet/versions/111" in old_calls
@@ -577,8 +565,7 @@ def test_the_registry_default_is_taken_on_unset_and_on_empty(monkeypatch) -> Non
 
 
 def test_the_constants_are_still_constants_shs() -> None:
-    """The port restates `PUBLISH_IMAGES` and the registry default rather than
-    sourcing constants.sh (which hard-requires `.devcontainer/toolchain.env`). This is the alarm that makes the copy safe.
+    """The port restates `PUBLISH_IMAGES` and the registry default rather than sourcing constants.sh (which hard-requires `.devcontainer/toolchain.env`). This is the alarm that makes the copy safe.
     """
     text = CONSTANTS.read_text(encoding="utf-8")
     images = re.search(r"^readonly PUBLISH_IMAGES=\((.*)\)$", text, re.MULTILINE)
@@ -593,8 +580,7 @@ def test_the_constants_are_still_constants_shs() -> None:
 
 
 def test_the_unbound_line_number_still_names_the_assignment() -> None:
-    """`UNBOUND_LINE_TAG` is quoted into a user-visible message, so a twin edit
-    that moves the line must red here rather than drift silently.
+    """`UNBOUND_LINE_TAG` is quoted into a user-visible message, so a twin edit that moves the line must red here rather than drift silently.
     """
     lines = TWIN.read_text(encoding="utf-8").splitlines()
     assert lines[port.UNBOUND_LINE_TAG - 1].strip() == 'STAGING_TAG="$2"'

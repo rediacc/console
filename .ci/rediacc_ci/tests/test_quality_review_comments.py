@@ -2,10 +2,8 @@
 
 A bash child runs the REAL `.ci/scripts/quality/check-review-comments.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-review-comments.observations.jsonl`.
 
-THE STUB DISPATCHES ON `$2`, THE ENDPOINT, and that is a scar. `gh_json` calls
-`gh api <endpoint> --paginate`, so the endpoint is `$2`; the first version of this
-fixture keyed on `$3`, which is `--paginate`, and therefore failed EVERY call. Both implementations then failed identically, byte for byte, over six specimens, and the differential scored EQUIVALENT each time. What refused it was the comparator's distinct-fingerprint rule: six trees, one finding set, "that is one observation re-shaded". A stub that answers nothing is rule 2's
-both-empty trap in disguise.
+THE STUB DISPATCHES ON `$2`, THE ENDPOINT, and that is a scar. `gh_json` calls `gh api <endpoint> --paginate`, so the endpoint is `$2`; the first version of this fixture keyed on `$3`, which is `--paginate`, and therefore failed EVERY call. Both implementations then failed identically, byte for byte, over six specimens, and the differential scored EQUIVALENT each time. What refused
+it was the comparator's distinct-fingerprint rule: six trees, one finding set, "that is one observation re-shaded". A stub that answers nothing is rule 2's both-empty trap in disguise.
 
 TWO PORT BUGS WERE FOUND BY THIS DIFFERENTIAL ONCE THE STUB WORKED, and both are one character wide:
 

@@ -190,16 +190,13 @@ def run_chain(gate, tmp_path, cf: str, claude: str) -> str:
 
 def run_chain_full(gate, tmp_path, cf: str, claude: str) -> str:
     """The WHOLE output. `run_chain`'s last-line rule keeps only the FETCHED=
-    trace, which is right for the ordering cases and useless for anything the
-    chain reports on its way there."""
+    trace, which is right for the ordering cases and useless for anything the chain reports on its way there."""
     result = drive(gate, tmp_path, cf, claude)
     return result.combined
 
 
 def test_prompt_file_exists(gate):
-    """Anti-vacuity. Every provider returns null when the prompt cannot be read,
-    so a missing prompt file would make the whole chain "work" by never calling
-    anybody, and each ordering assertion below would pass for the wrong reason."""
+    """Anti-vacuity. Every provider returns null when the prompt cannot be read, so a missing prompt file would make the whole chain "work" by never calling anybody, and each ordering assertion below would pass for the wrong reason."""
     gate.assert_eq(
         "yes" if PROMPT.is_file() else "no",
         "yes",
@@ -221,8 +218,7 @@ def test_tier1_answers_and_tier2_is_never_called(gate, tmp_path):
 
 
 def test_tier1_402_falls_through_to_tier2(gate, tmp_path):
-    """THE CASE THIS CHANGE EXISTS FOR. Tier 1 has returned HTTP 402
-    continuously, so before tier 2 existed this went straight to the allowlist."""
+    """THE CASE THIS CHANGE EXISTS FOR. Tier 1 has returned HTTP 402 continuously, so before tier 2 existed this went straight to the allowlist."""
     out = run_chain(gate, tmp_path, "http402", "ok")
     gate.assert_contains(
         out, "cloudflare,anthropic", "tier 1 is tried first, then tier 2, in that order"
@@ -236,8 +232,7 @@ def test_tier1_402_falls_through_to_tier2(gate, tmp_path):
 
 
 def test_offcontract_answer_counts_as_no_answer(gate, tmp_path):
-    """A reply that parses as JSON but violates the verdict contract is NOT a
-    weak verdict. Believing it would let a malformed answer decide a retry."""
+    """A reply that parses as JSON but violates the verdict contract is NOT a weak verdict. Believing it would let a malformed answer decide a retry."""
     out = run_chain(gate, tmp_path, "offcontract", "ok")
     gate.assert_contains(
         out,
@@ -264,8 +259,7 @@ def test_both_tiers_down_reaches_the_allowlist(gate, tmp_path):
 
 
 def test_absent_credentials_skip_a_tier_without_breaking(gate, tmp_path):
-    """A missing secret must make a tier ABSENT, never fatal. This is what keeps
-    the change safe to land before any credential is configured."""
+    """A missing secret must make a tier ABSENT, never fatal. This is what keeps the change safe to land before any credential is configured."""
     out = run_chain(gate, tmp_path, "http402", "absent")
     gate.assert_not_contains(out, "THREW", "a missing Claude credential must not throw")
     gate.assert_contains(
@@ -284,8 +278,7 @@ def test_tier1_absent_still_reaches_tier2(gate, tmp_path):
 
 
 def test_provider_order_is_declared_not_incidental(gate):
-    """The order is a cost decision (cheapest capable first), so it is pinned
-    against the source rather than left to whichever function was defined first.
+    """The order is a cost decision (cheapest capable first), so it is pinned against the source rather than left to whichever function was defined first.
 
     Anchored on the CALL, not on the model name. This assertion used to grep for a literal model string, which coupled an ordering test to a display string and is exactly why the label could go stale unnoticed. The call target is the tier's real identity and cannot drift with the model.
     """
@@ -308,9 +301,8 @@ def test_provider_order_is_declared_not_incidental(gate):
 
 
 def test_tier1_label_is_derived_from_the_model_it_calls(gate):
-    """THE ROT THIS PREVENTS, observed on watchdog run 30541558539: the log said
-    "[AI] verdict from cloudflare/deepseek-v4-pro" while the request actually went to /ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast. The label is the only record of which model produced a verdict that decides whether to spend ~500 machine-minutes on a retry, and the 402 that broke this tier was diagnosed BY MODEL IDENTITY, so a label that lies sends the next investigation to the
-    wrong provider.
+    """THE ROT THIS PREVENTS, observed on watchdog run 30541558539: the log said "[AI] verdict from cloudflare/deepseek-v4-pro" while the request actually went to /ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast. The label is the only record of which model produced a verdict that decides whether to spend ~500 machine-minutes on a retry, and the 402 that broke this tier was
+    diagnosed BY MODEL IDENTITY, so a label that lies sends the next investigation to the wrong provider.
 
     Asserting the SHAPE (interpolated from AI_MODEL) rather than the current model string, because pinning the string would rebuild the same trap.
     """
@@ -329,9 +321,8 @@ def test_tier1_label_is_derived_from_the_model_it_calls(gate):
 
 
 def test_declining_tier_reports_why_not_just_the_status(gate, tmp_path):
-    """REGRESSION. Both tiers went dark in production simultaneously and the run
-    log said only "HTTP 402" and "HTTP 400". Those are different problems with different fixes (a quota versus a malformed request), and neither status alone says which. Worse, "both tiers declined" is indistinguishable from "both tiers are unconfigured" when the reason is missing, so the chain looks absent rather
-    than broken and nobody goes looking."""
+    """REGRESSION. Both tiers went dark in production simultaneously and the run log said only "HTTP 402" and "HTTP 400". Those are different problems with different fixes (a quota versus a malformed request), and neither status alone says which. Worse, "both tiers declined" is indistinguishable from "both tiers are unconfigured" when the reason is missing, so the chain looks
+    absent rather than broken and nobody goes looking."""
     out = run_chain_full(gate, tmp_path, "http402", "http402")
 
     gate.assert_contains(

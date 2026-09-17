@@ -18,8 +18,7 @@ HOW. The script is driven as a real program with `gh` and `aws` replaced by rout
 nothing at all.
 
 THE ONE STATIC CASE IS THE ONE THAT NAMES THE BUG.
-`test_no_return_inside_the_errexit_relaxed_region` is lexical rather than behavioural, because a `set +e` region spanning ~340 lines cannot be exercised into every early exit. Its control plants the exact defect into a COPY under `tmp_path` and requires it
-to be reported; the real subject is never written to.
+`test_no_return_inside_the_errexit_relaxed_region` is lexical rather than behavioural, because a `set +e` region spanning ~340 lines cannot be exercised into every early exit. Its control plants the exact defect into a COPY under `tmp_path` and requires it to be reported; the real subject is never written to.
 """
 
 import datetime
@@ -182,8 +181,7 @@ class World:
         self.rc = 0
 
     def setup(self) -> None:
-        """`setup`, RESETTING: several cases call it twice in one function to run a
-        control arm, and a leftover recorder would make the second arm read the first."""
+        """`setup`, RESETTING: several cases call it twice in one function to run a control arm, and a leftover recorder would make the second arm read the first."""
         for path in (self.gh_fixtures, self.aws_fixtures, self.bin):
             shutil.rmtree(path, ignore_errors=True)
         for path in (self.gh_log, self.aws_log):
@@ -259,11 +257,9 @@ def make_world(gate, tmp_path) -> World:
 
 
 def returns_in_relaxed_region(path: pathlib.Path) -> list[str]:
-    """One entry per `return`/`exit` lexically between `set +e` and the `set -e`
-    that closes it; empty means clean.
+    """One entry per `return`/`exit` lexically between `set +e` and the `set -e` that closes it; empty means clean.
 
-    A PURE FUNCTION over the file's text, exported so the control below can run the IDENTICAL code path against a planted copy. The twin shells out to an inline
-    `python3` heredoc twice; this is the same predicate, called twice.
+    A PURE FUNCTION over the file's text, exported so the control below can run the IDENTICAL code path against a planted copy. The twin shells out to an inline `python3` heredoc twice; this is the same predicate, called twice.
     """
     lines = path.read_text(encoding="utf-8").split("\n")
     start = next((i for i, ln in enumerate(lines) if ln.strip() == "set +e"), None)
@@ -284,8 +280,7 @@ def returns_in_relaxed_region(path: pathlib.Path) -> list[str]:
 
 
 def test_drift_fails_the_run(gate, tmp_path):
-    """THE FEATURE. A sentinel with no matching git tag is the live state that went
-    unreported for six consecutive nightlies."""
+    """THE FEATURE. A sentinel with no matching git tag is the live state that went unreported for six consecutive nightlies."""
     world = make_world(gate, tmp_path)
     world.r2_has_version("v1.2.27")
     world.r2_has_sentinel("v1.2.27")
@@ -306,8 +301,7 @@ def test_drift_fails_the_run(gate, tmp_path):
 
 
 def test_no_drift_passes_cleanly(gate, tmp_path):
-    """CONTROL. Without it the case above would pass against a script that failed
-    unconditionally."""
+    """CONTROL. Without it the case above would pass against a script that failed unconditionally."""
     world = make_world(gate, tmp_path)
     world.r2_has_version("v1.2.27")
     world.r2_has_sentinel("v1.2.27")
@@ -365,9 +359,7 @@ def test_drift_does_not_skip_phases_9_to_12(gate, tmp_path):
 
 
 def test_no_return_inside_the_errexit_relaxed_region(gate, tmp_path):
-    """STATIC. The `set +e` / `set -e` bracket spans ~340 lines and guards SIGPIPE on
-    `aws | awk` pipes. ANY early exit out of that span leaves errexit off for the rest
-    of the script, which is the bug this file is named for."""
+    """STATIC. The `set +e` / `set -e` bracket spans ~340 lines and guards SIGPIPE on `aws | awk` pipes. ANY early exit out of that span leaves errexit off for the rest of the script, which is the bug this file is named for."""
     found = returns_in_relaxed_region(UNDER_TEST)
     if found:
         gate.log_fail("cleanup_r2 leaves its set +e region early: %s" % "; ".join(found))
@@ -478,8 +470,7 @@ def test_an_undatable_branch_is_kept(gate, tmp_path):
 
 
 def test_dry_run_deletes_nothing_and_says_so(gate, tmp_path):
-    """The old code incremented the SAME counter in dry-run, so a dry run reported
-    'deleted 7' having deleted nothing."""
+    """The old code incremented the SAME counter in dry-run, so a dry run reported 'deleted 7' having deleted nothing."""
     world = make_world(gate, tmp_path)
     world.branch("feature/old", 40)
     world.run("--dry-run")

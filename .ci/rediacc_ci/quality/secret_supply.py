@@ -1,5 +1,4 @@
-r"""check:ci-secret-supply -- where every declared-secret name's value actually
-comes from, and the truncation spec for `private/account/.env`.
+r"""check:ci-secret-supply -- where every declared-secret name's value actually comes from, and the truncation spec for `private/account/.env`.
 
 THE QUESTION NO GATE ASKED. `check:ci-env-manifest` classifies every environment name by shard, and its `secret` shard means "supplied by the Bitwarden vault or by a GitHub Actions secret". `check:ci-bws-map` asserts that every MAPPED secret is requested by some workflow and every requested one is mapped. Between them sits a set nobody looked at: the names the manifest DECLARES
 vault-supplied that no vault holds. Measured 2026-09-09, the day this landed: 26 of 84. That is a RECEIPT with a date on it, not an acceptance -- every number in the output is derived on the run that prints it, so a reader watches them move instead of trusting this line. Each one is a name whose supply is unstated, and "unstated" has covered four genuinely different things here --

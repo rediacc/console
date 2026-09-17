@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.deploy_edge` against its twin
-`.ci/scripts/deploy/deploy-edge.sh`.
+"""Differential: `rediacc_ci.deploy.deploy_edge` against its twin `.ci/scripts/deploy/deploy-edge.sh`.
 
 RECORDING FAKE `npx` AND `npm` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT. Nothing here reaches Cloudflare and nothing installs anything. The root is made to agree across the two implementations the same way the `deploy_account` differential does it, and for the same reason: the twin's `get_repo_root` resolves from a COPY of `common.sh` inside `tmp_path`, and the port's
 `common.repo_root()` is pointed at the same directory with `$REDIACC_CI_ROOT`. `test_the_copied_twin_is_the_real_twin` keeps the copy honest.
@@ -38,8 +37,7 @@ ACCOUNT_TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-account.sh"
 COMMON_SH = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# `uname` and `dirname` are what `common.sh` needs at source time; `tr` is the
-# token strip at :27 on the bash side. Nothing else is on the scratch PATH.
+# `uname` and `dirname` are what `common.sh` needs at source time; `tr` is the token strip at :27 on the bash side. Nothing else is on the scratch PATH.
 PATH_MINIMUM = ("tr", "uname", "dirname")
 
 FAKE_NPX = """#!/usr/bin/python3
@@ -216,9 +214,7 @@ def test_the_one_wrangler_call_is_pinned_in_full(tmp_path: pathlib.Path) -> None
 
 
 def test_every_argument_is_ignored(tmp_path: pathlib.Path) -> None:
-    """NO `parse_args` CALL AT ALL (contrast `deploy-account.sh:17`). `--foo.bar`
-    exits 2 in the account sibling and is invisible here, and `--region eu` does
-    not mean anything either. Both sides must agree that they mean nothing."""
+    """NO `parse_args` CALL AT ALL (contrast `deploy-account.sh:17`). `--foo.bar` exits 2 in the account sibling and is invisible here, and `--region eu` does not mean anything either. Both sides must agree that they mean nothing."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu", "--foo.bar", "x")
     assert old.returncode == 0, old.stderr
@@ -228,8 +224,7 @@ def test_every_argument_is_ignored(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_missing_config_names_the_absolute_path(tmp_path: pathlib.Path) -> None:
-    """:17-20. Note the wording differs from the account sibling's ("not found
-    at" versus "not found:"), so the two messages are not interchangeable."""
+    """:17-20. Note the wording differs from the account sibling's ("not found at" versus "not found:"), so the two messages are not interchangeable."""
     root = _fixture_root(tmp_path, config=False)
     old, new, old_calls, new_calls = run_both(tmp_path, root)
     assert old.returncode == 1
@@ -241,8 +236,7 @@ def test_a_missing_config_names_the_absolute_path(tmp_path: pathlib.Path) -> Non
 
 
 def test_the_two_credential_guards_fire_in_order(tmp_path: pathlib.Path) -> None:
-    """`require_var CLOUDFLARE_API_TOKEN` first (:24-25), so a run missing BOTH
-    names the token."""
+    """`require_var CLOUDFLARE_API_TOKEN` first (:24-25), so a run missing BOTH names the token."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(
         tmp_path, root, drop_env=("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID")
@@ -266,8 +260,7 @@ def test_an_empty_credential_is_refused_like_an_absent_one(tmp_path: pathlib.Pat
 
 
 def test_the_account_id_is_demanded_and_then_never_used(tmp_path: pathlib.Path) -> None:
-    """THE VACUITY CLASS, NAMED: `CLOUDFLARE_ACCOUNT_ID` is required at :25 and
-    read by nothing in the file. A WRONG one passes every check here."""
+    """THE VACUITY CLASS, NAMED: `CLOUDFLARE_ACCOUNT_ID` is required at :25 and read by nothing in the file. A WRONG one passes every check here."""
     source = _twin_source()
     assert source.count("CLOUDFLARE_ACCOUNT_ID") == 2, "one header mention, one require_var"
     assert "$CLOUDFLARE_ACCOUNT_ID" not in source
@@ -295,9 +288,7 @@ def test_the_token_is_stripped_of_carriage_returns_before_the_child_sees_it(
 
 
 def test_the_two_strip_lines_still_agree_across_the_siblings(tmp_path: pathlib.Path) -> None:
-    """WHY THE PORT DOES NOT SHARE ONE HELPER. The line is duplicated in both
-    twins today; this asserts that, so the duplication in the ports is a checked
-    fact rather than an assumption, and so a change to one twin shows up here."""
+    """WHY THE PORT DOES NOT SHARE ONE HELPER. The line is duplicated in both twins today; this asserts that, so the duplication in the ports is a checked fact rather than an assumption, and so a change to one twin shows up here."""
     del tmp_path
     line = "CLOUDFLARE_API_TOKEN=\"$(printf '%s' \"$CLOUDFLARE_API_TOKEN\" | tr -d '\\r\\n')\""
     assert line in _twin_source()
@@ -315,8 +306,7 @@ def test_an_existing_node_modules_skips_the_install(tmp_path: pathlib.Path) -> N
 
 
 def test_a_global_wrangler_does_not_skip_the_install(tmp_path: pathlib.Path) -> None:
-    """THE CASE WHERE THE TWO SIBLINGS DISAGREE. `deploy-account.sh:45` also
-    tests `command -v wrangler`; this one does not, so the install runs anyway."""
+    """THE CASE WHERE THE TWO SIBLINGS DISAGREE. `deploy-account.sh:45` also tests `command -v wrangler`; this one does not, so the install runs anyway."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, with_wrangler=True)
     assert old.returncode == 0, old.stderr
@@ -325,8 +315,7 @@ def test_a_global_wrangler_does_not_skip_the_install(tmp_path: pathlib.Path) -> 
 
 
 def test_the_install_condition_is_still_the_one_condition_form(tmp_path: pathlib.Path) -> None:
-    """STALENESS ALARM for the test above: the day someone harmonises the two
-    scripts, this fails instead of the port keeping a condition nobody has."""
+    """STALENESS ALARM for the test above: the day someone harmonises the two scripts, this fails instead of the port keeping a condition nobody has."""
     del tmp_path
     source = _twin_source()
     assert 'if [[ ! -d "node_modules" ]]; then' in source
@@ -344,8 +333,7 @@ def test_a_failed_install_ends_the_run_with_npms_status(tmp_path: pathlib.Path) 
 
 
 def test_a_failed_deploy_propagates_wranglers_status(tmp_path: pathlib.Path) -> None:
-    """`set -e` on :36: the closing `log_info` must NOT print, and the status is
-    wrangler's own rather than 1."""
+    """`set -e` on :36: the closing `log_info` must NOT print, and the status is wrangler's own rather than 1."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, FAKE_NPX_RC="3")
     assert old.returncode == 3

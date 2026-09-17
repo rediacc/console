@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""How many processes the harness starts for one lifecycle event. The counter
-W5 P0 said it had built and did not.
+"""How many processes the harness starts for one lifecycle event. The counter W5 P0 said it had built and did not.
 
     python3 .claude/rediacc_hooks/execcount.py            the table
     python3 .claude/rediacc_hooks/execcount.py --json     the same, machine readable

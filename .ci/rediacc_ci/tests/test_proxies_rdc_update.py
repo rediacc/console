@@ -1,8 +1,6 @@
-"""`rediacc_ci.proxies.rdc_update` against its bash twin
-`.ci/scripts/test/proxies/proxy-rdc-update.sh` (gate `check:ci-proxy-rdc-update`, `package.json:386`).
+"""`rediacc_ci.proxies.rdc_update` against its bash twin `.ci/scripts/test/proxies/proxy-rdc-update.sh` (gate `check:ci-proxy-rdc-update`, `package.json:386`).
 
-Sibling of `test_proxies_linux_packages.py`; see that file for why the two
-invocations are compared byte for byte rather than as a finding set.
+Sibling of `test_proxies_linux_packages.py`; see that file for why the two invocations are compared byte for byte rather than as a finding set.
 
 ONE CASE DRIVES THE REAL SUBJECT (five scenarios, a Python fixture server per scenario, ~7 s on this host). The rest use a stub subject with the same dispatch SHAPE, which is the only way to drive the drift and zero-scenario branches: the real dispatch cannot be asked to grow an eighth arm.
 

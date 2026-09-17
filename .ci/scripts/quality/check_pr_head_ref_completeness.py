@@ -5,9 +5,7 @@ Two checks, two corpora, two different questions. They are separate because the 
 
 CHECK 1 -- every script that PREFERS PR_HEAD_REF is invoked by a step that SETS it.
 
-WHY THIS EXISTS. `check-pr-epic-block.ts`, `check-pr-task-trailers.ts` and `wl_git.py` all already preferred `PR_HEAD_REF` (falling back to `GITHUB_HEAD_REF`, then a bare `git` derivation) before this repo's own
-workflow steps caught up. The pattern was CORRECT at the reader; the gap was
-always at the SETTER: a workflow step invoking one of these scripts without a
+WHY THIS EXISTS. `check-pr-epic-block.ts`, `check-pr-task-trailers.ts` and `wl_git.py` all already preferred `PR_HEAD_REF` (falling back to `GITHUB_HEAD_REF`, then a bare `git` derivation) before this repo's own workflow steps caught up. The pattern was CORRECT at the reader; the gap was always at the SETTER: a workflow step invoking one of these scripts without a
 `PR_HEAD_REF` (or an explicit `GITHUB_HEAD_REF: ${{ github.head_ref }}`) in its
 `env:` block. On this repo's `workflow_call` chain, the runner's own default `GITHUB_HEAD_REF` does not reliably materialise, so an unset pair means the script falls all the way to `git branch --show-current`, which is EMPTY on the detached checkout every pull_request run uses -- silently skipping real work (`check-pr-epic-block.ts`) or silently degrading to a coarser check
 (`check-review-report-replies.sh`).
@@ -35,9 +33,8 @@ died at its first job. CHECK 1 was green throughout, for two independent reasons
      that SET the variable, enumerated from the workflow files directly, with no
      reader resolution anywhere in the path.
 
-WHAT CHECK 2 PROVES, AND WHAT IT DOES NOT. It proves NON-EMPTINESS, not CORRECTNESS. `github.ref_name` is non-empty on every event, so it makes any
-expression trivially covered; on a `pull_request` event its value is `<n>/merge`,
-which is a real ref and the wrong answer to "which branch is this PR". That is acceptable here only because it is always LAST in these chains and an event-scoped clause wins ahead of it -- and this gate cannot check that ordering. A gate that pretended otherwise would be worse than one that names the hole.
+WHAT CHECK 2 PROVES, AND WHAT IT DOES NOT. It proves NON-EMPTINESS, not CORRECTNESS. `github.ref_name` is non-empty on every event, so it makes any expression trivially covered; on a `pull_request` event its value is `<n>/merge`, which is a real ref and the wrong answer to "which branch is this PR". That is acceptable here only because it is always LAST in these chains and an
+event-scoped clause wins ahead of it -- and this gate cannot check that ordering. A gate that pretended otherwise would be worse than one that names the hole.
 
 Two more things it deliberately does not do:
 
@@ -76,8 +73,7 @@ Two more things it deliberately does not do:
     `if:` narrower and the caller-chain resolver are separately named functions, so
     doing it later is a name plus an exemption rule rather than a rewrite.
 
-NOT AN EXEMPTION: A WAIVER COMMENT. House rule is never to suppress a gate to get past it. The two honest fixes are a covering clause or a narrowing `if:`, both
-one line; a marker would only preserve the ambiguity this gate exists to end.
+NOT AN EXEMPTION: A WAIVER COMMENT. House rule is never to suppress a gate to get past it. The two honest fixes are a covering clause or a narrowing `if:`, both one line; a marker would only preserve the ambiguity this gate exists to end.
 
 SCOPE. CHECK 1 reads only `.ci/scripts/**` and `scripts/**`, and only files that are not themselves test fixtures (`test-*.sh`, `*.control.ts`, anything under a `test/` or `__tests__/` directory) -- those set the variable to drive a specific scenario, they are not a real CI caller needing a workflow setter. `.claude/hooks/**` is out of scope entirely: those run as local git hooks,
 not CI workflow steps, and have no `run:` line to resolve. CHECK 2 reads `.github/workflows/*.yml` and nothing else -- in particular it does NOT use `EXCLUDE_DIR_PARTS`, which once carried `"gates"` and silently blinded CHECK 1 to `scripts/gates/`, both of its own founding motivating cases, from the day it was written.

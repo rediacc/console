@@ -14,9 +14,7 @@ appendix is appended to forever, and the wave header takes dated addenda. Denyin
 
 The failure being prevented is specifically SILENT TRUNCATION, and only a whole-file replacement can do that silently. A targeted Edit carries an exact old_string: it either matches what is there or it fails loudly, and it cannot quietly swallow a 5 KB appendix it never mentioned. So Write and NotebookEdit are denied, Edit and MultiEdit are allowed through.
 
-SCOPED TO ROUND LOGS, NOT BRIEFINGS. `pr-babysit-<branch>-briefing.md` is a different artifact with a different contract (immutable once the babysitter is
-running; superseded by a NEW file, never rewritten). The verb does not handle
-briefings, so they are left to their own rule rather than blocked here with nothing offered in return.
+SCOPED TO ROUND LOGS, NOT BRIEFINGS. `pr-babysit-<branch>-briefing.md` is a different artifact with a different contract (immutable once the babysitter is running; superseded by a NEW file, never rewritten). The verb does not handle briefings, so they are left to their own rule rather than blocked here with nothing offered in return.
 
 FAILS OPEN by design, like its neighbour: anything this pattern does not recognise is allowed through rather than blocked on a guess.
 

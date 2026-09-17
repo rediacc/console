@@ -3,9 +3,7 @@
 HOW EQUIVALENCE IS PROVEN HERE. Not by reading both and agreeing they look alike. A bash child runs the REAL twin over a fixture, with stdout and stderr captured SEPARATELY, and the bytes it produced are compared against the port's over the same fixture. That is the shape `.ci/scripts/quality/check-python-lint.sh` uses for its own control: build a specimen, run the instrument,
 compare.
 
-THE COMMITTED LEDGER IS THE OTHER HALF, and neither replaces the other. The ledger (`.ci/shadow/w7p2-peerdeps.observations.jsonl`) records the verdict over
-K distinct trees and is the evidence a reviewer reads; these cases run on every
-`pytest` and are what catches a regression the day someone edits either file.
+THE COMMITTED LEDGER IS THE OTHER HALF, and neither replaces the other. The ledger (`.ci/shadow/w7p2-peerdeps.observations.jsonl`) records the verdict over K distinct trees and is the evidence a reviewer reads; these cases run on every `pytest` and are what catches a regression the day someone edits either file.
 
 BOTH SIDES RESOLVE `npm` THROUGH PATH, which is why the fixture ships a shim rather than patching `subprocess`. A mock inside this process would prove nothing about the resolution the twin performs.
 """
@@ -68,8 +66,7 @@ def test_port_and_twin_agree(tmp_path: pathlib.Path, shim: str, want_exit: int) 
     (old_exit, old_out, _old_err), (new_exit, new_out, _new_err) = run_both(root)
     assert old_exit == want_exit
     assert new_exit == old_exit
-    # The DATA on stdout is the finding set. The twin prints a blank line, a
-    # header and then the hits; the port prints the same three things.
+    # The DATA on stdout is the finding set. The twin prints a blank line, a header and then the hits; the port prints the same three things.
     assert [x for x in new_out.split("\n") if "invalid" in x] == [
         x for x in old_out.split("\n") if "invalid" in x
     ]

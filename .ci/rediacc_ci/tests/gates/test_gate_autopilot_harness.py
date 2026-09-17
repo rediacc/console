@@ -275,9 +275,7 @@ def test_handoff_valid_control(gate, tmp_path):
 
 
 def test_handoff_in_root_is_not_undeclared_dirty(gate, tmp_path):
-    """The CI shape every earlier fixture missed: the model writes handoff.json INTO the
-    workspace root, so git reports it dirty, and it can never be declared in files[] (declaring it would commit the round's own control channel). Live regression: canary attempt 6 (run 31327079213) had the first valid model handoff refused as
-    undeclared-dirty over the handoff file itself."""
+    """The CI shape every earlier fixture missed: the model writes handoff.json INTO the workspace root, so git reports it dirty, and it can never be declared in files[] (declaring it would commit the round's own control channel). Live regression: canary attempt 6 (run 31327079213) had the first valid model handoff refused as undeclared-dirty over the handoff file itself."""
     c = make_checkout(gate, tmp_path)
     c.make_dirty()
     in_root = c.mk_handoff(c.repo / "handoff.json", ["packages/cli/src/x.ts"])
@@ -532,8 +530,7 @@ def test_handoff_commit_meta_banned(gate, tmp_path):
 
 
 def test_handoff_every_rejection_is_loud(gate, tmp_path):
-    """The invariant behind all of the above: rejection always means non-zero exit AND at
-    least one ESCALATE line AND the closing REJECTED banner."""
+    """The invariant behind all of the above: rejection always means non-zero exit AND at least one ESCALATE line AND the closing REJECTED banner."""
     c = make_checkout(gate, tmp_path)
     hollow = tmp_path / "hollow.json"
     hollow.write_text("{}\n", encoding="utf-8")
@@ -598,8 +595,7 @@ def test_tripwire_quiet_on_legitimate_fix(gate, tmp_path):
 
 
 def test_tripwire_fires_out_of_scope(gate, tmp_path):
-    """Unit failed; a 40KB addition under docs/ is outside every implicated prefix and
-    over the 32KB bound: the exfiltration shape."""
+    """Unit failed; a 40KB addition under docs/ is outside every implicated prefix and over the 32KB bound: the exfiltration shape."""
     require_subjects(gate, TRIPWIRE)
     tw = Tripwire()
     jobs = failed_unit(tmp_path)
@@ -619,8 +615,7 @@ def test_tripwire_fires_out_of_scope(gate, tmp_path):
 
 
 def test_tripwire_fires_new_file_regardless_of_prefix(gate, tmp_path):
-    """Rule 2 is prefix-blind on purpose: a big NEW file inside the implicated prefix is
-    exactly where an exfiltration would hide."""
+    """Rule 2 is prefix-blind on purpose: a big NEW file inside the implicated prefix is exactly where an exfiltration would hide."""
     require_subjects(gate, TRIPWIRE)
     tw = Tripwire()
     jobs = failed_unit(tmp_path)
@@ -665,8 +660,7 @@ def test_tripwire_binary_fails_closed(gate, tmp_path):
 
 
 def test_tripwire_never_echoes_diff_content(gate, tmp_path):
-    """Uploading or printing the suspected diff would complete the exfiltration; the
-    tripwire may name paths and byte counts only."""
+    """Uploading or printing the suspected diff would complete the exfiltration; the tripwire may name paths and byte counts only."""
     require_subjects(gate, TRIPWIRE)
     tw = Tripwire()
     canary = "CANARY_PRIVATE_BYTES_do_not_leak_9f8e7d"
@@ -678,8 +672,7 @@ def test_tripwire_never_echoes_diff_content(gate, tmp_path):
 
 
 def test_tripwire_empty_implicated_set_is_tighter(gate, tmp_path):
-    """A failed job that maps to no plan key (or no failed-jobs file at all) implicates
-    nothing, so EVERYTHING is out of scope: fail-closed."""
+    """A failed job that maps to no plan key (or no failed-jobs file at all) implicates nothing, so EVERYTHING is out of scope: fail-closed."""
     require_subjects(gate, TRIPWIRE)
     tw = Tripwire()
     diff = gen_diff(tmp_path / "noscope.diff", "packages/cli/src/x.ts", 40960, False)
@@ -694,8 +687,7 @@ def test_tripwire_empty_implicated_set_is_tighter(gate, tmp_path):
 
 
 def test_tripwire_mirror_never_drifts_from_classify(gate):
-    """Hop 3 is a declarative module->prefix mirror because scope-map's RULES matchers are
-    opaque closures. The mirror is held to `classify()` as the oracle, in both directions."""
+    """Hop 3 is a declarative module->prefix mirror because scope-map's RULES matchers are opaque closures. The mirror is held to `classify()` as the oracle, in both directions."""
     require_subjects(gate, TRIPWIRE, SCOPE_MAP)
     verdict = harness.run(
         [
@@ -753,8 +745,7 @@ process.stdout.write(errs.length ? errs.join("\\n") : "drift-ok");
 
 
 def test_tripwire_hops_reuse_scope_engine(gate):
-    """Hop 1 must accept matrix-leg display names via matchJobName, and hop 2 must expand
-    through JOB_SURFACES: an E2E Workers leg implicates the whole VM/E2E surface."""
+    """Hop 1 must accept matrix-leg display names via matchJobName, and hop 2 must expand through JOB_SURFACES: an E2E Workers leg implicates the whole VM/E2E surface."""
     require_subjects(gate, TRIPWIRE)
     prefixes = harness.run(
         [
@@ -1082,8 +1073,7 @@ def test_push_escalate_is_a_result_not_a_failure(gate, tmp_path):
 
 
 def test_push_escalate_without_a_reason_is_still_rejected(gate, tmp_path):
-    """THE CONTROL THAT MATTERS: making escalate exit 0 must not make it a way to end a
-    round quietly. A reasonless escalation is still a rejection."""
+    """THE CONTROL THAT MATTERS: making escalate exit 0 must not make it a way to end a round quietly. A reasonless escalation is still a rejection."""
     require_subjects(gate, PUSH)
     r = PushRepo(tmp_path / "push-escalate-bad", "fix-branch")
     payload = json.loads(
@@ -1143,8 +1133,7 @@ def test_push_no_change_outcome(gate, tmp_path):
 
 
 def test_push_publishes_the_verdict_on_the_push_path_too(gate, tmp_path):
-    """CONTROL for the whole outcome branch: the push path is unchanged, and it publishes
-    the same verdict file, so no caller has to re-parse the untrusted handoff."""
+    """CONTROL for the whole outcome branch: the push path is unchanged, and it publishes the same verdict file, so no caller has to re-parse the untrusted handoff."""
     require_subjects(gate, PUSH)
     r = PushRepo(tmp_path / "push-verdict", "fix-branch")
     with (r.root / "packages/cli/src/x.ts").open("a", encoding="utf-8") as handle:
@@ -1308,8 +1297,7 @@ class SubFixture:
         return result.rc
 
     def mk_orphan(self, branch: str, email: str) -> str:
-        """Leave a commit on the submodule's remote branch that the parent's pointer
-        knows nothing about."""
+        """Leave a commit on the submodule's remote branch that the parent's pointer knows nothing about."""
         orphan = self.dir / "orphan"
         shutil.rmtree(orphan, ignore_errors=True)
         harness.run(
@@ -1529,9 +1517,7 @@ def test_push_submodule_tripwire_fires(gate, tmp_path):
 
 
 def test_push_validation_failure_leaves_no_remote_write(gate, tmp_path):
-    """THE TRANSACTION ORDER. Submodules used to be pushed inside their own loop, so a
-    CONSOLE-side refusal arrived after renet already had a branch on its remote: a
-    published commit belonging to a console commit that was never made."""
+    """THE TRANSACTION ORDER. Submodules used to be pushed inside their own loop, so a CONSOLE-side refusal arrived after renet already had a branch on its remote: a published commit belonging to a console commit that was never made."""
     require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-txn", "fix-branch")
     write_sub_change(fx)
@@ -1585,9 +1571,7 @@ def test_push_validation_failure_leaves_no_remote_write(gate, tmp_path):
 
 
 def test_push_submodule_adopts_our_own_orphan(gate, tmp_path):
-    """A previous round pushed the submodule and never landed its console half. This
-    round branches from the recorded pointer, so its push is rejected as non-fast-forward
-    BY A COMMIT THIS SYSTEM WROTE. Refusing there strands the campaign."""
+    """A previous round pushed the submodule and never landed its console half. This round branches from the recorded pointer, so its push is rejected as non-fast-forward BY A COMMIT THIS SYSTEM WROTE. Refusing there strands the campaign."""
     require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-orphan", "fix-branch")
     orphan = fx.mk_orphan("fix-branch", "autopilot@example.invalid")
@@ -1630,8 +1614,7 @@ def test_push_submodule_adopts_our_own_orphan(gate, tmp_path):
 
 
 def test_push_submodule_refuses_a_foreign_branch(gate, tmp_path):
-    """The other direction, and the one that matters more: a branch of the same name
-    written by someone else is not ours to rewrite."""
+    """The other direction, and the one that matters more: a branch of the same name written by someone else is not ours to rewrite."""
     require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-foreign", "fix-branch")
     foreign = fx.mk_orphan("fix-branch", "someone-else@example.invalid")
@@ -1658,9 +1641,7 @@ def test_push_submodule_refuses_a_foreign_branch(gate, tmp_path):
 
 
 def test_push_submodule_adoption_needs_resolvable_main(gate, tmp_path):
-    """The ancestry half of the adoption check needs $REMOTE/main. When it is unresolvable
-    even after a fetch, the guard must REFUSE rather than fall through to the identity check alone: a committer email is the forgeable half, and "both required" has to mean
-    both. (Review observation on a2559c9: the old code swallowed the rev-parse failure.)"""
+    """The ancestry half of the adoption check needs $REMOTE/main. When it is unresolvable even after a fetch, the guard must REFUSE rather than fall through to the identity check alone: a committer email is the forgeable half, and "both required" has to mean both. (Review observation on a2559c9: the old code swallowed the rev-parse failure.)"""
     require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-nomain", "fix-branch")
     fx.mk_orphan("fix-branch", "autopilot@example.invalid")
@@ -1680,8 +1661,7 @@ def test_push_submodule_adoption_needs_resolvable_main(gate, tmp_path):
 
 
 def test_push_submodule_branch_forbidden_touches_nothing(gate, tmp_path):
-    """The submodule branch name IS the console branch name, so `main` is refused by the
-    parent's own branch check before any submodule is opened."""
+    """The submodule branch name IS the console branch name, so `main` is refused by the parent's own branch check before any submodule is opened."""
     require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-main", "main")
     write_sub_change(fx)
@@ -1702,12 +1682,10 @@ def test_push_submodule_branch_forbidden_touches_nothing(gate, tmp_path):
 
 
 def test_push_submodule_uninitialized_never_writes_the_parent(gate, tmp_path):
-    """The live gap this guards: the model job checks out the PR head with NO
-    `submodules:` input, so a real round finds these directories empty.
+    """The live gap this guards: the model job checks out the PR head with NO `submodules:` input, so a real round finds these directories empty.
 
-    WHAT THIS DOES AND DOES NOT PROVE. It proves the OUTCOME (refused, and nothing flattened into the parent). It does NOT exercise the submodule-not-initialized guard in autopilot-push.sh: an uninitialized submodule makes the parent report nothing dirty at that path, so the round dies earlier at path-not-dirty. That guard is documented at its own site as unreachable-today defence
-    in depth, rather than counted
-    here as a control it is not."""
+    WHAT THIS DOES AND DOES NOT PROVE. It proves the OUTCOME (refused, and nothing flattened into the parent). It does NOT exercise the submodule-not-initialized guard in autopilot-push.sh: an uninitialized submodule makes the parent report nothing dirty at that path, so the round dies earlier at path-not-dirty. That guard is documented at its own site as unreachable-today
+    defence in depth, rather than counted here as a control it is not."""
     require_subjects(gate, PUSH)
     fx = SubFixture(tmp_path / "sub-uninit", "fix-branch")
     # `rm -rf private/renet/.git`, and the FILE case is the one that matters. Modern `git submodule add` writes a GITFILE there, not a directory, so `shutil.rmtree`
@@ -1740,8 +1718,7 @@ def test_push_submodule_uninitialized_never_writes_the_parent(gate, tmp_path):
 
 
 def test_push_boundary_never_stages_wholesale(gate, tmp_path):
-    """The ban is structural: no wholesale-staging git invocation may appear in any
-    executable in the autopilot directory."""
+    """The ban is structural: no wholesale-staging git invocation may appear in any executable in the autopilot directory."""
     require_subjects(gate, AUTOPILOT)
     pattern = re.compile(r"git add -A|git add --all|git add \.")
     hits = []
@@ -1807,8 +1784,7 @@ def mk_dispatch_event(
     model: str = "",
     max_rounds: str = "",
 ) -> pathlib.Path:
-    """The dispatch path's SYNTHESIZED payload: the same workflow_run shape plus the
-    `autopilot_dispatch` key the real payload never carries. Its presence is what makes a round dispatch-armed.
+    """The dispatch path's SYNTHESIZED payload: the same workflow_run shape plus the `autopilot_dispatch` key the real payload never carries. Its presence is what makes a round dispatch-armed.
 
     Every field is passed EXPLICITLY. The twin spells this `${n-default}` rather than
     `${n:-default}` because an explicitly EMPTY pr_input is the case under test (a
@@ -1853,8 +1829,7 @@ def mk_state(
     sig: str = "none",
     sig_count: int = 0,
 ) -> pathlib.Path:
-    """A state body in the exact shape `state-comment.sh render` produces, so the gate
-    reads the real format rather than a convenient approximation."""
+    """A state body in the exact shape `state-comment.sh render` produces, so the gate reads the real format rather than a convenient approximation."""
     lines = [
         "### Autopilot state (machine-maintained, do not edit)",
         "state: waiting-ci | round: %d/%d | head: abc | last_run: 1/1 handled | campaign: %s | "
@@ -1872,8 +1847,7 @@ def mk_state(
 
 
 def run_gate(gate, event: pathlib.Path, pr: pathlib.Path, *args: str, **env: str) -> dict:
-    """`--classify`, parsed. A non-JSON answer is a LOUD failure rather than a KeyError
-    three assertions later."""
+    """`--classify`, parsed. A non-JSON answer is a LOUD failure rather than a KeyError three assertions later."""
     result = harness.run(
         [bash_bin(), str(GATE), "--classify", "--event", str(event), "--pr", str(pr), *args],
         env=clean_env(**env),
@@ -2099,8 +2073,7 @@ def state_comment(*args: str) -> harness.RunResult:
 
 
 def test_gate_campaign_fields_survive_a_round_trip(gate, tmp_path):
-    """ANTI-DRIFT: the gate reads the metadata line through state-comment.sh rather than
-    re-parsing it, so a rendered body must classify back to the values it was rendered
+    """ANTI-DRIFT: the gate reads the metadata line through state-comment.sh rather than re-parsing it, so a rendered body must classify back to the values it was rendered
     with. If the format ever changes in one file only, this is what goes red."""
     require_subjects(gate, GATE, STATE_COMMENT)
     body = state_comment(
@@ -2141,9 +2114,7 @@ def test_gate_campaign_fields_survive_a_round_trip(gate, tmp_path):
 
 
 def test_state_comment_fields_normalize_hostile_values(gate, tmp_path):
-    """The state comment is bot-authored and author-checked upstream, so this is defence
-    in depth. But these values feed a model selection and a round cap, and a surprise
-    value must fail closed rather than propagate."""
+    """The state comment is bot-authored and author-checked upstream, so this is defence in depth. But these values feed a model selection and a round cap, and a surprise value must fail closed rather than propagate."""
     require_subjects(gate, STATE_COMMENT)
     hostile = tmp_path / "hostile.txt"
     hostile.write_text(
@@ -2263,9 +2234,7 @@ def test_gate_mode_selection_table(gate, tmp_path):
 
 
 def test_gate_stuck_signature_stops_the_thrash(gate, tmp_path):
-    """03-v2-autonomy.md section 4's flapping bound made mechanical. Three consecutive
-    rounds facing an UNCHANGED failed-job set stop the campaign, because two distinct
-    fixes have already failed to move it."""
+    """03-v2-autonomy.md section 4's flapping bound made mechanical. Three consecutive rounds facing an UNCHANGED failed-job set stop the campaign, because two distinct fixes have already failed to move it."""
     require_subjects(gate, GATE)
     event = mk_event(tmp_path / "ev.json", "failure")
     pr = mk_pr(tmp_path / "pr.json")
@@ -2340,9 +2309,7 @@ def test_gate_rerun_review_mode(gate, tmp_path):
 
 
 def test_gate_rerun_rounds_count_against_the_cap(gate, tmp_path):
-    """TERMINATION: a rerun creates a review run, which creates a workflow_run, which
-    re-enters the gate. That loop terminates only because the rerun writes a ledger line
-    in the counted shape."""
+    """TERMINATION: a rerun creates a review run, which creates a workflow_run, which re-enters the gate. That loop terminates only because the rerun writes a ledger line in the counted shape."""
     require_subjects(gate, GATE)
     success = mk_event(tmp_path / "ev-s.json", "success")
     red0 = mk_pr(tmp_path / "pr-red0.json", review_gate_red=True, unresolved_threads=0)
@@ -2538,9 +2505,7 @@ def test_state_comment_compaction_over_55kb(gate, tmp_path):
 
 
 def test_state_comment_records_every_entry_not_just_the_first(gate, tmp_path):
-    """THE ANTI-THRASH MEMORY ONLY WORKS IF IT REMEMBERS. The single --ruled-out /
-    --decision flags recorded one entry per round, so a round that ruled out three
-    approaches recorded one and the next round was free to retry the other two."""
+    """THE ANTI-THRASH MEMORY ONLY WORKS IF IT REMEMBERS. The single --ruled-out / --decision flags recorded one entry per round, so a round that ruled out three approaches recorded one and the next round was free to retry the other two."""
     require_subjects(gate, STATE_COMMENT)
     ruled = tmp_path / "ruled.txt"
     ruled.write_text(
@@ -2661,8 +2626,7 @@ def test_state_comment_records_every_entry_not_just_the_first(gate, tmp_path):
 
 
 def test_state_comment_signature_fields_round_trip(gate, tmp_path):
-    """ONE WRITER, ONE READER: the gate reads the signature back through `fields`, so a
-    rendered body must classify to the values it carried."""
+    """ONE WRITER, ONE READER: the gate reads the signature back through `fields`, so a rendered body must classify to the values it carried."""
     require_subjects(gate, STATE_COMMENT)
     body = state_comment(
         "render",
@@ -2785,9 +2749,7 @@ def test_review_payload_filters_on_the_root_author(gate, tmp_path):
 
 
 def test_review_payload_byte_cap(gate, tmp_path):
-    """Oversize plant: three fat threads against a small cap. Dropping is REPORTED,
-    because a round that silently saw half the findings would claim to have addressed
-    every finding."""
+    """Oversize plant: three fat threads against a small cap. Dropping is REPORTED, because a round that silently saw half the findings would claim to have addressed every finding."""
     require_subjects(gate, PAYLOAD)
     fat = write_threads(
         tmp_path / "fat-threads.json",

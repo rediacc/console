@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.promote_docker_to_stable_hotfix` against its
-twin `.ci/scripts/deploy/promote-docker-to-stable-hotfix.sh`.
+"""Differential: `rediacc_ci.deploy.promote_docker_to_stable_hotfix` against its twin `.ci/scripts/deploy/promote-docker-to-stable-hotfix.sh`.
 
 A RECORDING FAKE `docker` ON A SCRATCH PATH. Nothing here reaches GHCR: the fake logs its exact argv and answers from the environment, and no case names a real credential. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
@@ -187,8 +186,7 @@ def test_a_failure_on_the_first_call_stops_before_the_other_two(tmp_path) -> Non
 
 
 def test_a_failure_on_the_last_call_leaves_two_images_already_promoted(tmp_path) -> None:
-    """THE HALF-PROMOTION IS THE POINT. renet and rdc are at the new version and
-    server is not, and the run says nothing about it beyond docker's own error.
+    """THE HALF-PROMOTION IS THE POINT. renet and rdc are at the new version and server is not, and the run says nothing about it beyond docker's own error.
     """
     old, new, old_calls, new_calls = run_both(tmp_path, FAKE_FAIL_ON_CALL="3")
     _agree(old, new, "fail-last", old_calls, new_calls)
@@ -210,8 +208,7 @@ def test_a_missing_docker_refuses_before_any_call(tmp_path) -> None:
 
 
 def test_extra_arguments_are_ignored_by_both(tmp_path) -> None:
-    """NOT AN ACADEMIC CASE. `--dry-run` looks like it would be honoured and is
-    not: the twin parses no argv at all, so a caller reaching for a safety flag gets a real promotion. Recorded as agreement rather than as a wish.
+    """NOT AN ACADEMIC CASE. `--dry-run` looks like it would be honoured and is not: the twin parses no argv at all, so a caller reaching for a safety flag gets a real promotion. Recorded as agreement rather than as a wish.
     """
     old, new, old_calls, new_calls = run_both(tmp_path, ["--dry-run", "extra"])
     _agree(old, new, "argv", old_calls, new_calls)
@@ -291,9 +288,7 @@ def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
 def test_defect_no_post_promotion_verification(tmp_path) -> None:
     """A docker THAT DOES NOTHING AND EXITS 0 produces a clean promotion report.
 
-    The fake is replaced by one that records nothing and touches nothing. Both implementations print the same seven-line success and exit 0. That is the
-    twin's behaviour and the port reproduces it; repairing it is a cutover-box
-    decision, not this one's.
+    The fake is replaced by one that records nothing and touches nothing. Both implementations print the same seven-line success and exit 0. That is the twin's behaviour and the port reproduces it; repairing it is a cutover-box decision, not this one's.
     """
     assert port.NO_POST_PROMOTION_VERIFICATION is True
 

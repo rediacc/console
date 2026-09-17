@@ -217,8 +217,7 @@ def make_fixture(gate, directory: pathlib.Path) -> pathlib.Path:
 
 
 def detect_changed_files(gate, clone: pathlib.Path) -> harness.RunResult:
-    """The REAL entry point. `detectChangedFiles` is what `validate:translation-freshness`
-    calls, and `tryFetchBaseRef` is private to the module, so this drives the thing that actually runs in CI.
+    """The REAL entry point. `detectChangedFiles` is what `validate:translation-freshness` calls, and `tryFetchBaseRef` is private to the module, so this drives the thing that actually runs in CI.
 
     `TRANSLATION_FRESHNESS_CHANGED_FILES` is UNSET rather than left inherited: the module short-circuits on it, and inheriting a value from an outer run would make the fetch this whole file is about never happen.
     """

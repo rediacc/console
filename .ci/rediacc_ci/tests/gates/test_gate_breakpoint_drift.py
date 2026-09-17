@@ -23,8 +23,7 @@ strips `GITHUB_REPOSITORY` and anything else that could make the gate behave dif
 WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md` records six `test-breakpoint-*.sh` subjects as unportable by any agent under the standard brief and NOT on merit, because plant-verifying one means temporarily writing under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The brief's two ways out are to hand one batch owner
 that path explicitly or to exclude them in the derivation with the reason recorded, and it adds "Do not silently drop them a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
 
-NO `xdist_group`. Every case builds its own `cp -r` copy of the folder inside its own
-`mktemp -d` and runs the gate there; the real tree is only ever READ.
+NO `xdist_group`. Every case builds its own `cp -r` copy of the folder inside its own `mktemp -d` and runs the gate there; the real tree is only ever READ.
 """
 
 import difflib
@@ -49,8 +48,7 @@ def make_copy(tmp):
 
 
 def run_gate(bp, *args: str, **extra: str) -> harness.RunResult:
-    """The gate, in the copy, with the environment REPLACED. Streams merged as the twin
-    merges them."""
+    """The gate, in the copy, with the environment REPLACED. Streams merged as the twin merges them."""
     bash = harness.require_tool("bash", "install bash; the subject is a bash script")
     env = {
         "PATH": os.environ.get("PATH", ""),
@@ -63,8 +61,7 @@ def run_gate(bp, *args: str, **extra: str) -> harness.RunResult:
 
 
 def manifest_body(bp) -> str:
-    """The manifest's entries, comments dropped and sorted -- the twin's
-    `grep -v '^#' | sort`."""
+    """The manifest's entries, comments dropped and sorted -- the twin's `grep -v '^#' | sort`."""
     lines = (bp / "MANIFEST.sha256").read_text(encoding="utf-8").splitlines()
     return "\n".join(sorted(line for line in lines if not line.startswith("#")))
 
@@ -112,9 +109,7 @@ def test_missing_file_is_detected(gate):
 
 
 def test_untracked_file_is_detected(gate):
-    """Without this, adding a NEW script is the trivial way to smuggle code into a
-    vendored copy: it is not in the manifest, so a per-file hash check would never look
-    at it, and the gate would pass while the folder grew."""
+    """Without this, adding a NEW script is the trivial way to smuggle code into a vendored copy: it is not in the manifest, so a per-file hash check would never look at it, and the gate would pass while the folder grew."""
     with harness.temp_dir() as tmp:
         bp = make_copy(tmp)
         rogue = bp / "scripts" / "rogue-helper.sh"
@@ -135,8 +130,7 @@ def test_untracked_file_is_detected(gate):
 
 
 def test_empty_manifest_is_vacuous(gate):
-    """Emptying the manifest is the cheapest possible way to make a diverged copy
-    "pass", because every comparison loop then runs zero times and reports success."""
+    """Emptying the manifest is the cheapest possible way to make a diverged copy "pass", because every comparison loop then runs zero times and reports success."""
     with harness.temp_dir() as tmp:
         bp = make_copy(tmp)
         (bp / "MANIFEST.sha256").write_text("", encoding="utf-8")
@@ -165,9 +159,7 @@ def test_absent_manifest_is_rejected(gate):
 
 
 def test_write_refused_downstream(gate):
-    """THE REFUSAL IS WHAT GIVES THE GATE TEETH. Without it a downstream operator "fixes"
-    a drift failure by regenerating, which records the local fork as canonical and turns
-    every future comparison into a comparison against itself."""
+    """THE REFUSAL IS WHAT GIVES THE GATE TEETH. Without it a downstream operator "fixes" a drift failure by regenerating, which records the local fork as canonical and turns every future comparison into a comparison against itself."""
     with harness.temp_dir() as tmp:
         bp = make_copy(tmp)
         run = run_gate(bp, "--write", GITHUB_REPOSITORY="someone/elsewhere")
@@ -181,8 +173,8 @@ def test_write_refused_downstream(gate):
 
 
 def test_write_regenerates_in_console(gate):
-    """Regression test for a live defect: the slug came from a sed expression using
-    `([^/]+?)(\\.git)?$`, and sed has no lazy quantifiers, so `[^/]+` swallowed `console.git` and the `(\\.git)?` group matched empty. `bp_current_repo` returned `rediacc/console.git`, which never equals `rediacc/console` -- so `--write` refused inside the canonical repo and the accept list was the only way onward.
+    """Regression test for a live defect: the slug came from a sed expression using `([^/]+?)(\\.git)?$`, and sed has no lazy quantifiers, so `[^/]+` swallowed `console.git` and the `(\\.git)?` group matched empty. `bp_current_repo` returned `rediacc/console.git`, which never equals `rediacc/console` -- so `--write` refused inside the canonical repo and the accept list was the only
+    way onward.
 
     Both remote-URL forms are exercised, since HTTPS clones carry the suffix and SSH clones may not.
     """
@@ -204,9 +196,7 @@ def test_write_regenerates_in_console(gate):
 
 
 def test_write_is_byte_identical_to_committed(gate):
-    """Doubles as the "somebody edited a frozen file and forgot --write" check: if the
-    committed manifest does not match what `--write` produces right now, it is stale, and
-    the gate has been verifying against yesterday's hashes."""
+    """Doubles as the "somebody edited a frozen file and forgot --write" check: if the committed manifest does not match what `--write` produces right now, it is stale, and the gate has been verifying against yesterday's hashes."""
     with harness.temp_dir() as tmp:
         bp = make_copy(tmp)
         committed = manifest_body(bp)
@@ -287,9 +277,7 @@ def test_missing_blocker_is_rejected(gate):
 
 
 def test_stale_accept_entry_is_rejected(gate):
-    """A BLOCKER proves a reason EXISTS; it cannot prove the reason is still TRUE. An
-    entry naming a path the manifest does not cover can never fire, so it is dead weight
-    at best and a typo protecting nothing at worst."""
+    """A BLOCKER proves a reason EXISTS; it cannot prove the reason is still TRUE. An entry naming a path the manifest does not cover can never fire, so it is dead weight at best and a typo protecting nothing at worst."""
     with harness.temp_dir() as tmp:
         bp = make_copy(tmp)
         (bp / ".breakpoint-drift-accept").write_text(

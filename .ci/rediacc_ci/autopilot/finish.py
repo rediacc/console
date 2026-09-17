@@ -38,9 +38,8 @@ the 3-attempt loop, the `sleep $((attempt * 3))` backoff, the JSON validation an
 `jq -e` IS NOT `json.loads`: it exits 1 when the last output value is `null` or `false`, so a `gh` call that exits 0 with the body `null` is UNUSABLE and gets retried. `_json_usable` implements jq's rule.
 
 -----------------------------------------------------------------------------
-THE PIPELINES IN `rerun-review` ARE `pipefail` PIPELINES, and their exit codes are not this script's inventions. `gh_json ... | jq -r '.sha'` fails with 1 when the probe gives up (jq is perfectly happy with empty input) and with JQ's code, 5, when the body cannot be indexed. `set -e` then ends the run with that
-number and no message of this script's own. Both are reproduced; neither is
-smoothed into a friendly refusal, because a workflow step that branches on 5 versus 1 today would stop working.
+THE PIPELINES IN `rerun-review` ARE `pipefail` PIPELINES, and their exit codes are not this script's inventions. `gh_json ... | jq -r '.sha'` fails with 1 when the probe gives up (jq is perfectly happy with empty input) and with JQ's code, 5, when the body cannot be indexed. `set -e` then ends the run with that number and no message of this script's own. Both are reproduced;
+neither is smoothed into a friendly refusal, because a workflow step that branches on 5 versus 1 today would stop working.
 
 -----------------------------------------------------------------------------
 ONE HAZARD, REPORTED RATHER THAN REPAIRED. `check-done`'s fixture is read with `require_file`, but the two write paths take `--pr` as a NUMBER and never validate it: `finish.sh ready-flip --pr 'x y' --repo r/c` reaches `gh` as a single argument `x y`, which `gh` refuses with its own message after the stage flag has already been checked. That is a bad-input path with a confusing
@@ -95,8 +94,7 @@ DONE_PROGRAM = """
             }
         """
 
-# `gh api ... --jq` filters, which run inside `gh`, and the `jq -r` that reads
-# what `gh` printed. Two different jq invocations; the twin's spelling of each.
+# `gh api ... --jq` filters, which run inside `gh`, and the `jq -r` that reads what `gh` printed. Two different jq invocations; the twin's spelling of each.
 HEAD_SHA_FILTER = "{sha: .head.sha}"
 RUN_ID_FILTER = '{id: ([.workflow_runs[] | select(.name | test("[Rr]eview"))] | first | .id)}'
 

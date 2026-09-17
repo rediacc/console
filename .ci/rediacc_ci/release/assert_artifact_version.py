@@ -4,9 +4,7 @@ Asserts that the CI run CD is about to promote actually BUILT the version CD is 
 notice, hours later. It happened -- "the second published 1.2.16 binaries as 1.2.17".
 
 IT DOES NOT COMPUTE THE VERSION, AND THAT IS THE FIRST THING TO KNOW ABOUT IT.
-The twin does NO "latest tag + bump" arithmetic of its own: `VERSION` arrives already computed, from `resolve-version.sh --bump-type` by way of the init job's outputs, and this script's whole contribution is the COMPARISON. So the
-version-arithmetic edge cases live upstream; the edge cases that live HERE are
-in the extraction and the comparison, and they are these four:
+The twin does NO "latest tag + bump" arithmetic of its own: `VERSION` arrives already computed, from `resolve-version.sh --bump-type` by way of the init job's outputs, and this script's whole contribution is the COMPARISON. So the version-arithmetic edge cases live upstream; the edge cases that live HERE are in the extraction and the comparison, and they are these four:
 
   1. `jq -r '.version // empty'` -- an absent, null or false `.version` yields
      the empty string, which is the refusal below. `false` is worth naming

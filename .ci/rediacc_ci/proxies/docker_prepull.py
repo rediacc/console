@@ -3,8 +3,7 @@
 Local proxy for `.ci/scripts/infra/docker-prepull.sh`. The proxy runs the REAL script, against docker, on the smallest public image there is (`hello-world`), in both argument shapes the subject parses:
 `<ref>` and `<ref>=<platform>`. The subject's argument grammar is the
 interesting part -- `image="${spec%%=*}"` has to survive a ref that itself
-contains `:` and `/` -- so this proxy exercises the split, not just the pull.
-The subject stays bash and unported; only the proxy is ported here.
+contains `:` and `/` -- so this proxy exercises the split, not just the pull. The subject stays bash and unported; only the proxy is ported here.
 
 If the image was not already present it is removed afterwards, so the proxy leaves the daemon exactly as it found it -- preserved as `_Cleanup` below.
 

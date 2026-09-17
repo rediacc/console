@@ -6,9 +6,7 @@ failure this wrapper exists to prevent), EMPTY (same), and an unrecognised value
 THE EXIT CODE IS THE ASSERTION, not the prose, because the exit code is what decides red versus green. Three of the cases exist only to pin codes a port can plausibly get wrong: 127 for a command that is not on PATH, 126 for a file that is there but not executable, and 143 for a child killed by SIGTERM -- which `subprocess` reports as `-15` and every shell reports as `128 + 15`. A
 port passing the negative number through would turn a killed gate into something other than a failure.
 
-THREE MESSAGE-TEXT DIVERGENCES ARE EXPECTED AND MASKED RATHER THAN IGNORED, one per case: the `$0` in the usage line, the spawn-failure wording, and bash's own `Terminated` job-control notice, which has no Python equivalent. Each masking
-site says which divergence it is covering; nothing is compared loosely except
-those three.
+THREE MESSAGE-TEXT DIVERGENCES ARE EXPECTED AND MASKED RATHER THAN IGNORED, one per case: the `$0` in the usage line, the spawn-failure wording, and bash's own `Terminated` job-control notice, which has no Python equivalent. Each masking site says which divergence it is covering; nothing is compared loosely except those three.
 
 K=5 LEDGER: `.ci/shadow/w7p6-run-external-gate.observations.jsonl`, recorded
 against a disposable scratch git repo built OUTSIDE this checkout (this repo's working tree is not clean and `shadow-gate.ts --record` refuses a dirty tree).
@@ -83,8 +81,7 @@ def test_hard_mode_keeps_the_failing_exit_code() -> None:
 
 
 def test_soft_mode_passes_a_clean_gate_silently() -> None:
-    """A soft gate that PASSES must print no warning at all: a wrapper that
-    warned unconditionally would train everyone to ignore the warning."""
+    """A soft gate that PASSES must print no warning at all: a wrapper that warned unconditionally would train everyone to ignore the warning."""
     old, new = run_both(PASSING, mode="soft")
     assert old == (0, "gate-stdout\n", "gate-stderr\n")
     assert new == old
@@ -184,9 +181,7 @@ def test_empty_mode_is_also_hard() -> None:
 
 
 def test_the_skip_state_is_refused_here_because_it_belongs_in_the_step_if() -> None:
-    """`skip` is a real value of the three-state flag and it must NEVER be
-    honoured by this wrapper: the step's `if:` is what implements it, so a
-    `skip` arriving here means the workflow is miswired. Exit 2, not exit 0."""
+    """`skip` is a real value of the three-state flag and it must NEVER be honoured by this wrapper: the step's `if:` is what implements it, so a `skip` arriving here means the workflow is miswired. Exit 2, not exit 0."""
     old, new = run_both(PASSING, mode="skip")
     assert old == (
         2,
@@ -225,8 +220,7 @@ def test_the_usage_refusal_outranks_an_unknown_mode() -> None:
 
 
 def test_a_missing_command_exits_127_on_both_sides() -> None:
-    """DIVERGENCE 2: the wording differs, the code does not. 127 is what tells
-    a reader "your gate name is wrong" rather than "your gate found something"."""
+    """DIVERGENCE 2: the wording differs, the code does not. 127 is what tells a reader "the gate name is wrong" rather than "the gate found something"."""
     old, new = run_both(["definitely-not-a-real-binary-w7p6"], mode="hard")
     assert old[0] == 127
     assert new[0] == 127
@@ -237,9 +231,7 @@ def test_a_missing_command_exits_127_on_both_sides() -> None:
 
 
 def test_a_missing_command_is_still_softened_in_soft_mode() -> None:
-    """The soft branch must not care WHY the child failed. A port that only
-    softened real exit codes and let a spawn failure through would redden a
-    nightly for a typo in a gate name."""
+    """The soft branch must not care WHY the child failed. A port that only softened real exit codes and let a spawn failure through would redden a nightly for a typo in a gate name."""
     old, new = run_both(["definitely-not-a-real-binary-w7p6"], mode="soft")
     assert old[0] == 0
     assert new[0] == 0
@@ -257,9 +249,7 @@ def test_a_non_executable_file_exits_126_on_both_sides(tmp_path: pathlib.Path) -
 
 
 def test_a_signalled_child_reports_128_plus_n(tmp_path: pathlib.Path) -> None:
-    """DIVERGENCE 3, and the one exit-code translation this port has to do by
-    hand: `subprocess` says -15, every shell says 143. A port passing the negative through would misreport a killed gate. bash's own `Terminated`
-    notice is masked out of stderr; the code is not."""
+    """DIVERGENCE 3, and the one exit-code translation this port has to do by hand: `subprocess` says -15, every shell says 143. A port passing the negative through would misreport a killed gate. bash's own `Terminated` notice is masked out of stderr; the code is not."""
     del tmp_path
     old, new = run_both(["bash", "-c", "kill -TERM $$"], mode="hard")
     assert old[0] == 143
@@ -277,8 +267,7 @@ def test_a_signalled_child_is_softened_with_the_shell_style_code() -> None:
 def test_the_child_is_executed_not_shelled() -> None:
     """`"$@"` runs the argument vector directly, so a single argument holding a
     space names a program with a space in it. `shell=True` in the port would
-    have run `echo` with an argument instead, and this case is what would catch
-    it: 127 on both sides, not 0 with `hi` on stdout."""
+    have run `echo` with an argument instead, and this case is what would catch it: 127 on both sides, not 0 with `hi` on stdout."""
     old, new = run_both(["echo hi"], mode="hard")
     assert old[0] == 127
     assert new[0] == 127

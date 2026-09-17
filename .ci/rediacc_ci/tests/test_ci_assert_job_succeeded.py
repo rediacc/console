@@ -1,9 +1,6 @@
 """`rediacc_ci.ci.assert_job_succeeded` against its bash twin.
 
-argv in, two streams and an exit code out; no subprocess, no file, no env
-beyond the colour decision, so both sides are driven directly and compared byte-for-byte. The only normalisation is the `$0` token in the usage line,
-which is the program's own name and therefore necessarily differs; `usage_tail`
-strips exactly that and nothing else.
+argv in, two streams and an exit code out; no subprocess, no file, no env beyond the colour decision, so both sides are driven directly and compared byte-for-byte. The only normalisation is the `$0` token in the usage line, which is the program's own name and therefore necessarily differs; `usage_tail` strips exactly that and nothing else.
 
 The K=5 ledger is `.ci/shadow/w7p6-assert-job-succeeded.observations.jsonl`
 (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-job-succeeded --assert --k 5`).

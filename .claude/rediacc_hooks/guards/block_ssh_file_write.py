@@ -20,9 +20,7 @@ DEFECT = ("and not hookio.grep_q_line(BRIDGE, cmd)", "and True")
 # `sed -E 's/[0-9]?>+[[:space:]]*(&[0-9]|\\/dev\\/null)//g'` -- the read-only plumbing, removed before the write shapes are looked for.
 PLUMBING = hookio.rx(r"[0-9]?>+[{S}]*(&[0-9]|/dev/null)")
 
-# ANCHORED TO COMMAND POSITION 2026-08-28, found by check:ci-guard-mention-anchoring. The first branch already required an actual
-# `|` before `ssh`; the SECOND had no anchor at all, so
-# "echo the guard blocks ssh ... cat > file redirections" refused as if it were the write itself. hook_scan_target's quote-stripping above covers the QUOTED
+# ANCHORED TO COMMAND POSITION 2026-08-28, found by check:ci-guard-mention-anchoring. The first branch already required an actual `|` before `ssh`; the SECOND had no anchor at all, so "echo the guard blocks ssh ... cat > file redirections" refused as if it were the write itself. hook_scan_target's quote-stripping above covers the QUOTED
 # case only, same class as block-git-empty-commit.sh's fix the same day.
 #
 # PORT NOTE ON `\s`. GNU grep's `\s` in the C locale is exactly `[[:space:]]`,

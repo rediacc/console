@@ -97,9 +97,7 @@ def test_healthy_deployment_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None
 
 
 def test_the_region_field_is_domain_not_edgedomain(tmp_path: pathlib.Path) -> None:
-    """One jq field is the entire difference between this loop and the edge
-    twin's, and getting it wrong would silently probe the WRONG production
-    hosts while still printing three OK lines."""
+    """One jq field is the entire difference between this loop and the edge twin's, and getting it wrong would silently probe the WRONG production hosts while still printing three OK lines."""
     old, new = drive(tmp_path)
     assert old.rc == 0
     for domain in region_domains("domain"):
@@ -135,8 +133,7 @@ def test_install_ps1_baked_to_the_wrong_channel(tmp_path: pathlib.Path) -> None:
 
 
 def test_r2_backstop_not_rebaked_to_stable(tmp_path: pathlib.Path) -> None:
-    """The re-bake in `promote-r2-to-stable.sh` rewrites `:-edge` to `:-stable`.
-    This is the assertion that proves it landed."""
+    """The re-bake in `promote-r2-to-stable.sh` rewrites `:-edge` to `:-stable`. This is the assertion that proves it landed."""
 
     def mutate(d: pathlib.Path) -> None:
         _put(
@@ -225,9 +222,7 @@ def test_a_404_on_install_sh_exits_22_with_no_annotation(tmp_path: pathlib.Path)
 
 
 def test_a_transport_failure_on_a_fingerprint_probe_exits_7(tmp_path: pathlib.Path) -> None:
-    """The same defect on the `-sI` probes, and the sharpest contrast with the
-    edge twin: the identical fixture there yields `got 000` plus a real `::error::` and exit 1, because the probe runs inside a `fetch_retry`
-    predicate where `set -e` is suspended."""
+    """The same defect on the `-sI` probes, and the sharpest contrast with the edge twin: the identical fixture there yields `got 000` plus a real `::error::` and exit 1, because the probe runs inside a `fetch_retry` predicate where `set -e` is suspended."""
 
     def mutate(d: pathlib.Path) -> None:
         _put(d, "www.rediacc.com/en", "code", "000")
@@ -244,9 +239,7 @@ def test_a_transport_failure_on_a_fingerprint_probe_exits_7(tmp_path: pathlib.Pa
 def test_a_single_bad_sample_fails_here_though_it_would_retry_on_edge(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The SAME fixture the edge differential uses to prove retrying works.
-    Here it must FAIL, on both sides. A port that copied `fetch_retry` across
-    would pass this and nothing else in the file would notice."""
+    """The SAME fixture the edge differential uses to prove retrying works. Here it must FAIL, on both sides. A port that copied `fetch_retry` across would pass this and nothing else in the file would notice."""
 
     def mutate(d: pathlib.Path) -> None:
         _put(d, "www.rediacc.com/about", "code@1", "500")
@@ -262,8 +255,7 @@ def test_a_single_bad_sample_fails_here_though_it_would_retry_on_edge(
 
 
 def test_a_slow_region_warns_and_the_run_still_passes(tmp_path: pathlib.Path) -> None:
-    """The deliberate asymmetry with the edge twin, which reds on the same
-    condition. Promotion has already happened by this point."""
+    """The deliberate asymmetry with the edge twin, which reds on the same condition. Promotion has already happened by this point."""
     domain = region_domains("domain")[1]
 
     def mutate(d: pathlib.Path) -> None:
@@ -314,8 +306,7 @@ def test_no_hsts_yet_still_passes(tmp_path: pathlib.Path) -> None:
 
 
 def test_every_region_is_still_probed_after_one_warns(tmp_path: pathlib.Path) -> None:
-    """`continue`, not a break. A port that stopped at the first bad region
-    would still exit 0, so only the per-region output can catch it."""
+    """`continue`, not a break. A port that stopped at the first bad region would still exit 0, so only the per-region output can catch it."""
     domains = region_domains("domain")
 
     def mutate(d: pathlib.Path) -> None:
@@ -335,9 +326,7 @@ def test_every_region_is_still_probed_after_one_warns(tmp_path: pathlib.Path) ->
 def test_a_missing_regions_json_warns_about_nothing_and_passes(
     tmp_path: pathlib.Path,
 ) -> None:
-    """FINDING 1, second instance. The process-substitution loop sees zero
-    domains, `Stable verification complete` prints, exit 0. Here it is even quieter than in the edge twin, because region health only warns anyway: nothing about the output distinguishes "three healthy regions" from "no
-    regions were looked at"."""
+    """FINDING 1, second instance. The process-substitution loop sees zero domains, `Stable verification complete` prints, exit 0. Here it is even quieter than in the edge twin, because region health only warns anyway: nothing about the output distinguishes "three healthy regions" from "no regions were looked at"."""
     tree = edgediff.fixture_tree(tmp_path, with_regions=False)
     old, new = drive(tmp_path, tree=tree)
     assert old.rc == 0
@@ -383,9 +372,7 @@ def test_a_missing_curl_refuses_identically(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_script_takes_no_environment_input(tmp_path: pathlib.Path) -> None:
-    """The twin's header says "Takes no env input". Setting the edge twin's
-    whole knob set must change nothing, or the two ports share state they
-    should not."""
+    """The twin's header says "Takes no env input". Setting the edge twin's whole knob set must change nothing, or the two ports share state they should not."""
     plain_old, plain_new = drive(tmp_path)
     noisy_old, noisy_new = drive(
         tmp_path,
@@ -424,8 +411,7 @@ def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -
 
 
 def test_a_port_that_retried_would_be_caught(tmp_path: pathlib.Path) -> None:
-    """The second control, aimed at the structural difference from the edge
-    twin. A port that reused `fetch_retry` here passes every healthy fixture."""
+    """The second control, aimed at the structural difference from the edge twin. A port that reused `fetch_retry` here passes every healthy fixture."""
     source = PORT_FILE.read_text(encoding="utf-8")
     anchor = '    status = _status_or_die("%s/about?cb=%s" % (WWW, rnda))\n    if status != "410":'
     assert source.count(anchor) == 1, "the plant's anchor moved"

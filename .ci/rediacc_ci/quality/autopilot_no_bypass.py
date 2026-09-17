@@ -1,7 +1,6 @@
 """The rediacc-autopilot App must hold NO bypass on console's branch ruleset.
 
-Ported from `.ci/scripts/quality/check-autopilot-no-bypass.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-autopilot-no-bypass.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 The twin's header, carried whole because the trap it records is the whole design:
 
@@ -42,10 +41,8 @@ PORT NOTES.
 
 THE RULESET IS FOUND BY SHAPE, NOT BY A PINNED ID, and the twin says why in one line kept at the call site: "ids change when a ruleset is recreated, and a gate pointing at a deleted id would 404 rather than protect."
 
-`jq` IS STILL PROBED EVEN THOUGH THIS PORT DOES NOT USE IT. That is a deliberate choice and it is the kind that goes wrong silently if it is not written down.
-The twin runs `require_cmd jq` and refuses without it; this module parses the
-same payloads with `json.loads`. Dropping the probe would mean the port RUNS in an environment where its twin REFUSES, so the two would disagree about the only machine where the question is interesting, and the differential would have nothing to say about it. The probe is therefore carried, with the twin's exact message, and it is the FIRST thing W7 phase 5 should delete when the
-twin dies: at that point it is a dependency on a tool nothing calls.
+`jq` IS STILL PROBED EVEN THOUGH THIS PORT DOES NOT USE IT. That is a deliberate choice and it is the kind that goes wrong silently if it is not written down. The twin runs `require_cmd jq` and refuses without it; this module parses the same payloads with `json.loads`. Dropping the probe would mean the port RUNS in an environment where its twin REFUSES, so the two would disagree
+about the only machine where the question is interesting, and the differential would have nothing to say about it. The probe is therefore carried, with the twin's exact message, and it is the FIRST thing W7 phase 5 should delete when the twin dies: at that point it is a dependency on a tool nothing calls.
 
 AN UNPARSEABLE RULESET LIST IS THE ONE DELIBERATE DIVERGENCE, and it is a twin DEFECT rather than a design. The twin pipes the payload into `jq -r '.[] | select(...)'` inside a `set -e` assignment, so a body that is not a JSON array kills the whole gate with jq's own diagnostic on stderr and jq's exit status (5) as the gate's. Nothing in the gate's vocabulary appears, and a reader
 sees what looks like a broken runner. This port refuses with its own message and exit 1 instead. Reported rather than reproduced, because reproducing it would mean forging another program's error text, and no ledger row exercises it.
@@ -88,8 +85,7 @@ class RulesetPayloadError(ValueError):
 def require_cmd(name: str) -> bool:
     """`common.sh:141-147`, in one function, with its message byte for byte.
 
-    Returns True when the command is present. The twin exits immediately; the
-    caller here does the exiting, so the probe stays testable.
+    Returns True when the command is present. The twin exits immediately; the caller here does the exiting, so the probe stays testable.
     """
     if shutil.which(name) is not None:
         return True

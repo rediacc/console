@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.purge_media_cache` against its twin
-`.ci/scripts/deploy/purge-media-cache.sh`.
+"""Differential: `rediacc_ci.deploy.purge_media_cache` against its twin `.ci/scripts/deploy/purge-media-cache.sh`.
 
 A RECORDING FAKE `curl` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv and answers from the environment, and the only real credential name in the file is an environment KEY, never a value. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
 separate, achievable piece of work. This is that piece.
@@ -146,9 +145,7 @@ def purge_call(headers: list[str] | None = None) -> str:
 
 
 def test_the_request_shape_is_asserted_in_full(tmp_path: pathlib.Path) -> None:
-    """THE ONE REQUEST, PINNED AGAINST LITERAL BYTES rather than against the
-    port's own helpers, so a change in both would still be caught. Zone id,
-    hostname, both headers and the exact body, SPACE AFTER THE COLON included."""
+    """THE ONE REQUEST, PINNED AGAINST LITERAL BYTES rather than against the port's own helpers, so a change in both would still be caught. Zone id, hostname, both headers and the exact body, SPACE AFTER THE COLON included."""
     old, new, old_calls, new_calls = run_both(tmp_path, [])
     assert old.returncode == 0
     assert old_calls == [
@@ -172,9 +169,7 @@ def test_the_request_shape_is_asserted_in_full(tmp_path: pathlib.Path) -> None:
 
 
 def test_no_credentials_is_a_refusal_not_a_skip(tmp_path: pathlib.Path) -> None:
-    """CONTRAST WITH THE SIBLING `cf-purge-urls.sh`, which treats a missing
-    credential as a best-effort skip and exits 0. This one exits 1, and the
-    difference is deliberate on both sides."""
+    """CONTRAST WITH THE SIBLING `cf-purge-urls.sh`, which treats a missing credential as a best-effort skip and exits 0. This one exits 1, and the difference is deliberate on both sides."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], drop_env=("CLOUDFLARE_API_TOKEN",))
     assert old.returncode == 1
     assert old.stderr == "✗ Set CLOUDFLARE_API_TOKEN, or CF_GLOBAL_API_KEY + CF_EMAIL\n"
@@ -192,9 +187,7 @@ def test_half_a_global_key_is_not_a_credential(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_global_key_pair_sends_key_before_email(tmp_path: pathlib.Path) -> None:
-    """THE HEADER ORDER IS THE OPPOSITE OF THE SIBLING SCRIPT'S. Neither order
-    matters to Cloudflare and both matter to a recorded argv, which is why each
-    port carries its own twin's order instead of sharing a helper."""
+    """THE HEADER ORDER IS THE OPPOSITE OF THE SIBLING SCRIPT'S. Neither order matters to Cloudflare and both matter to a recorded argv, which is why each port carries its own twin's order instead of sharing a helper."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         [],
@@ -227,8 +220,7 @@ def test_missing_curl_is_refused_before_missing_jq(tmp_path: pathlib.Path) -> No
 
 
 def test_missing_jq_is_refused(tmp_path: pathlib.Path) -> None:
-    """The port shells out to jq for the same reason the twin does, so `jq` is a
-    real prerequisite of BOTH and this refusal has to agree."""
+    """The port shells out to jq for the same reason the twin does, so `jq` is a real prerequisite of BOTH and this refusal has to agree."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], drop="jq")
     assert old.returncode == 1
     assert old.stderr == "✗ Required command 'jq' is not available\n"
@@ -253,8 +245,7 @@ def test_an_unsuccessful_body_prints_the_errors_array(tmp_path: pathlib.Path) ->
 def test_an_empty_object_is_the_string_null_not_false(tmp_path: pathlib.Path) -> None:
     """`.success` HAS NO `// false` DEFAULT here, unlike the housekeeping
     sibling, so a body of `{}` yields the STRING `null`. Both are `!= "true"` so
-    the branch is the same; the point is that a port must not tidy the filter,
-    because `.errors` then reports `null` as well."""
+    the branch is the same; the point is that a port must not tidy the filter, because `.errors` then reports `null` as well."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_CURL_BODY="{}\n")
     assert old.returncode == 1
     assert old.stderr.endswith("✗ Purge failed: null\n")
@@ -264,8 +255,7 @@ def test_an_empty_object_is_the_string_null_not_false(tmp_path: pathlib.Path) ->
 def test_an_empty_body_fails_with_an_empty_tail_and_no_jq_error(
     tmp_path: pathlib.Path,
 ) -> None:
-    """jq over EMPTY input emits nothing and exits 0, so this is the failure
-    branch with a message that just stops. Not a parse error, and not a pass."""
+    """jq over EMPTY input emits nothing and exits 0, so this is the failure branch with a message that just stops. Not a parse error, and not a pass."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_CURL_BODY="")
     assert old.returncode == 1
     assert old.stderr.endswith("✗ Purge failed: \n")
@@ -274,9 +264,7 @@ def test_an_empty_body_fails_with_an_empty_tail_and_no_jq_error(
 
 
 def test_a_non_json_body_prints_jqs_parse_error_twice(tmp_path: pathlib.Path) -> None:
-    """THE CASE A `json.loads` PORT WOULD GET WRONG, and the reason both jq call
-    sites are shelled out. Neither substitution is in a position `set -e` can act on, so jq dies TWICE -- once for `.success`, once for `.errors` inside
-    the `log_error` argument -- and the script still reaches its own exit 1."""
+    """THE CASE A `json.loads` PORT WOULD GET WRONG, and the reason both jq call sites are shelled out. Neither substitution is in a position `set -e` can act on, so jq dies TWICE -- once for `.success`, once for `.errors` inside the `log_error` argument -- and the script still reaches its own exit 1."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, [], FAKE_CURL_BODY="<html>504 Gateway Timeout</html>\n"
     )
@@ -287,8 +275,7 @@ def test_a_non_json_body_prints_jqs_parse_error_twice(tmp_path: pathlib.Path) ->
 
 
 def test_defect_a_transport_failure_is_a_silent_non_zero(tmp_path: pathlib.Path) -> None:
-    """THE DEFECT, PINNED. `curl -s` (no `-S`) says nothing on a network error and
-    the assignment feeds `set -e`, so the caller gets the step line, NO diagnostic whatsoever, and exit 6. A workflow step fails with no reason in the log.
+    """THE DEFECT, PINNED. `curl -s` (no `-S`) says nothing on a network error and the assignment feeds `set -e`, so the caller gets the step line, NO diagnostic whatsoever, and exit 6. A workflow step fails with no reason in the log.
 
     Reproduced because agreement with the live twin is the deliverable;
     repaired, this test goes red and names the port that must follow.
@@ -303,8 +290,7 @@ def test_defect_a_transport_failure_is_a_silent_non_zero(tmp_path: pathlib.Path)
 
 
 def test_extra_arguments_are_ignored_by_both(tmp_path: pathlib.Path) -> None:
-    """The twin parses nothing, so `--dry-run` is NOT a dry run: the purge
-    happens. Driven so a port cannot invent a flag the callers do not have."""
+    """The twin parses nothing, so `--dry-run` is NOT a dry run: the purge happens. Driven so a port cannot invent a flag the callers do not have."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--dry-run"])
     assert old.returncode == 0
     assert len(old_calls) == 1, "an ignored flag became a dry run"
@@ -359,8 +345,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the zone id -- the one value that decides WHICH
-    cache is purged, and whose corruption leaves both streams and the exit code completely unchanged while media.rediacc.com keeps serving the stale response the script exists to evict. Driven red, then the source is confirmed byte-identical and green.
+    """ANTI-VACUITY, planted on the zone id -- the one value that decides WHICH cache is purged, and whose corruption leaves both streams and the exit code completely unchanged while media.rediacc.com keeps serving the stale response the script exists to evict. Driven red, then the source is confirmed byte-identical and green.
     """
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

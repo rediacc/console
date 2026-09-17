@@ -286,8 +286,7 @@ def _run(argv: list[str], **kwargs) -> int:
 
 
 def _capture(argv: list[str], **kwargs) -> tuple[int, str]:
-    """`$(...)`: stdout captured with ALL trailing newlines stripped, stderr
-    inherited unless the caller redirects it."""
+    """`$(...)`: stdout captured with ALL trailing newlines stripped, stderr inherited unless the caller redirects it."""
     _flush()
     proc = subprocess.run(argv, stdout=subprocess.PIPE, check=False, **kwargs)
     return proc.returncode, proc.stdout.decode("utf-8", "surrogateescape").rstrip("\n")

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """The quality-gate battery: run every `.ci/scripts/test/gates/test-*.sh` and judge it.
 
-THE TWIN IT COEXISTS WITH IS `.ci/scripts/test/run-all.sh`, AND IT IS NOT DELETED. Invariant 5: a twin is never removed in the change that ports it. Both runners
-schedule the same 148 files and both must reach the same verdict; deleting the shell
-one here would remove the only thing that can contradict this one on a real tree.
+THE TWIN IT COEXISTS WITH IS `.ci/scripts/test/run-all.sh`, AND IT IS NOT DELETED. Invariant 5: a twin is never removed in the change that ports it. Both runners schedule the same 148 files and both must reach the same verdict; deleting the shell one here would remove the only thing that can contradict this one on a real tree.
 
 WHAT IT KEEPS FROM run-all.sh, deliberately byte-for-byte, because a reader will put the two transcripts side by side:
 
@@ -84,8 +82,8 @@ EXIT_FAIL = 1
 EXIT_CANNOT_RUN = 77
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
-# run-all.sh spells this `^(\033\[0;32m)?PASS:` -- it admits the ONE colour
-# log_pass emits and the bare form `ok` emits. Stripping every escape first is the same predicate on content and is not fooled by a helper that changes colour, which is worth having: the shell version's previous spelling used a literal "x1b" and matched NOTHING, so every colour-emitting test contributed zero visible evidence
+# run-all.sh spells this `^(\033\[0;32m)?PASS:` -- it admits the ONE colour log_pass emits and the bare form `ok` emits. Stripping every escape first is the same predicate on content and is not fooled by a helper that changes colour, which is worth having: the shell version's previous spelling used a literal "x1b" and matched NOTHING, so every colour-emitting test contributed zero
+# visible evidence
 # while the counter stayed right.
 PASS_RE = re.compile(r"^PASS:", re.MULTILINE)
 
@@ -103,8 +101,7 @@ RED, GREEN, YELLOW, NC = _colours()
 
 
 def classify_from_lock(lock_path: pathlib.Path, claim: str) -> set[str]:
-    """Basenames of gate tests whose lock entry declares a `tree:` resource under
-    `claim` (`mutex` for exclusive, `reads` for shared).
+    """Basenames of gate tests whose lock entry declares a `tree:` resource under `claim` (`mutex` for exclusive, `reads` for shared).
 
     Returns an EMPTY SET when the lock is unreadable or declares nothing, and the caller decides what that means -- "no declarations yet" and "the lock is broken" must not silently become the same thing as "nothing needs isolating".
     """
@@ -184,8 +181,7 @@ def build_schedule(lock_path: pathlib.Path, env: dict[str, str] | None = None) -
 
 
 def undeclared_notice(lock_path: pathlib.Path, root: pathlib.Path) -> list[str]:
-    """The loud refusal. Named as a function so the selftest can assert its content
-    rather than its existence."""
+    """The loud refusal. Named as a function so the selftest can assert its content rather than its existence."""
     return [
         "battery: no 'tree:' isolation is declared in %s for any gate test."
         % paths.relative_to_root(lock_path, root),
@@ -216,8 +212,7 @@ class Outcome:
 
     @property
     def verdict(self) -> str:
-        """ "pass" | "fail" | "vacuous" | "lost". Four outcomes and not two, because
-        `vacuous` and `lost` are the ones a boolean would fold into `pass`."""
+        """"pass" | "fail" | "vacuous" | "lost". Four outcomes and not two, because `vacuous` and `lost` are the ones a boolean would fold into `pass`."""
         if not self.recorded:
             return "lost"
         if self.rc != 0:
@@ -252,9 +247,7 @@ def run_one(gates_dir: pathlib.Path, name: str, timeout: int = 1800) -> Outcome:
 
 
 def tree_state(root: pathlib.Path) -> str:
-    """Tracked modifications only, sorted. Untracked noise is excluded because
-    several tests legitimately plant fixtures inside the tree; a TRACKED file
-    changing is the defect.
+    """Tracked modifications only, sorted. Untracked noise is excluded because several tests legitimately plant fixtures inside the tree; a TRACKED file changing is the defect.
 
     An unavailable git yields an EMPTY snapshot on both sides, so the before/after comparison stays honest rather than firing spuriously.
     """
@@ -732,9 +725,8 @@ def main(argv: list[str]) -> int:
 
     # The controls run BEFORE the battery is judged, and a control failure refuses to judge it at all: a verdict from an instrument that cannot fail is worse than no verdict.
     #
-    # THE LABEL IS NOT DECORATION. `Controls.report()` prints a bare "N control(s) passed", and this call happens before anything else, so the FIRST line of every CI transcript was a count of nothing named. run-all.sh spelled its
-    # equivalent "tree-guard selftest: N control(s) passed" on one line; the text
-    # lives in rediacc_ci.controls and is shared, so the label goes above it here rather than into every other caller's output.
+    # THE LABEL IS NOT DECORATION. `Controls.report()` prints a bare "N control(s) passed", and this call happens before anything else, so the FIRST line of every CI transcript was a count of nothing named. run-all.sh spelled its equivalent "tree-guard selftest: N control(s) passed" on one line; the text lives in rediacc_ci.controls and is shared, so the label goes above it here
+    # rather than into every other caller's output.
     print("runner controls, before the battery is judged:")
     if not selftest():
         print(

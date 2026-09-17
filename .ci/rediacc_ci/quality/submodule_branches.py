@@ -1,7 +1,6 @@
 """Submodule branch, PR-linking and review-comment validation.
 
-Ported from `.ci/scripts/quality/check-submodule-branches.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-submodule-branches.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
 
 -----------------------------------------------------------------------------
 THE TWIN'S AI-FRIENDLY HEADER, CARRIED ACROSS IN FULL. It is a troubleshooting guide, not decoration: every ERROR string below is one this gate prints, and the FIX under it is what a session is meant to run.
@@ -85,13 +84,11 @@ rules cannot catch this: they legitimately ALLOW a pointer at an unmerged branch
 THE REPORT HOLE, hit live on 2026-08-09 while landing console#561: rediacc/account#78's automated review posted a top-level REPORT (no inline threads), and nothing console-side checked it. The thread check sees only pulls/comments, and the report landed AFTER the last console run, so no per-commit check ever re-evaluated. Only the local block-admin-merge hook caught it, which a
 web-UI merge would bypass. Rule (same oracle as check-review-report-replies.sh): the NEWEST "**Claude finished" report on the sub-PR must have a LATER comment by someone other than the bot that posted it.
 
-THE DETACHED-HEAD TRAP, twice. `rev-parse --abbrev-ref HEAD` SUCCEEDS on a detached checkout and prints the literal string "HEAD", so a `|| echo "main"` or `|| echo "detached"` fallback never fires for that case, since git did not fail. Downstream the console value is compared against a submodule's own (possibly
-ALSO detached) branch name; two coincidentally-detached checkouts would both
-read "HEAD" and compare EQUAL, reporting a branch match that is not real. Both functions catch the literal string explicitly rather than leaning on the fallback.
+THE DETACHED-HEAD TRAP, twice. `rev-parse --abbrev-ref HEAD` SUCCEEDS on a detached checkout and prints the literal string "HEAD", so a `|| echo "main"` or `|| echo "detached"` fallback never fires for that case, since git did not fail. Downstream the console value is compared against a submodule's own (possibly ALSO detached) branch name; two coincidentally-detached checkouts
+would both read "HEAD" and compare EQUAL, reporting a branch match that is not real. Both functions catch the literal string explicitly rather than leaning on the fallback.
 
-TWO FAIL-CLOSED REPAIRS, also from the twin's comments. `check_pr_review_comments` used to end its fetch with `|| echo "[]"`, so a gh failure produced the same value as a PR with no review comments and the function echoed "0" unreplied,
-which the caller reads as "this submodule PR is clean"; it now returns non-zero
-so the caller can tell a real zero from an unanswered question. And `branch_has_merged_pr`'s failed probe used to become "0", i.e. "no merged PR": the direction is safe (the caller reports the branch as unmerged, which is the louder answer), but it is still a guess presented as a fact, so it says so.
+TWO FAIL-CLOSED REPAIRS, also from the twin's comments. `check_pr_review_comments` used to end its fetch with `|| echo "[]"`, so a gh failure produced the same value as a PR with no review comments and the function echoed "0" unreplied, which the caller reads as "this submodule PR is clean"; it now returns non-zero so the caller can tell a real zero from an unanswered question. And
+`branch_has_merged_pr`'s failed probe used to become "0", i.e. "no merged PR": the direction is safe (the caller reports the branch as unmerged, which is the louder answer), but it is still a guess presented as a fact, so it says so.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -105,17 +102,15 @@ jq IS REPLACED BY `json`, and every jq expression is quoted above the code that 
 `git ls-tree HEAD -- <path> | awk '{print $3}'` IS FIELD 3, THE OBJECT NAME, and
 `awk` on empty input prints nothing rather than an empty field. A missing gitlink therefore yields "" on both sides, which the caller tests for explicitly.
 
-`branch_exists_in_remote` USES `grep -q "$branch"` ON THE WHOLE ls-remote LINE, which is a SUBSTRING test against `<sha>\\trefs/heads/<branch>`, not an equality test. A branch named `x` therefore "exists" whenever any ref contains `x` anywhere, including inside the sha. That is over-permissive and it is the twin's
-behaviour; it is carried, not narrowed, because narrowing it would turn some
-currently-passing PR red for a reason nobody changed.
+`branch_exists_in_remote` USES `grep -q "$branch"` ON THE WHOLE ls-remote LINE, which is a SUBSTRING test against `<sha>\\trefs/heads/<branch>`, not an equality test. A branch named `x` therefore "exists" whenever any ref contains `x` anywhere, including inside the sha. That is over-permissive and it is the twin's behaviour; it is carried, not narrowed, because narrowing it would
+turn some currently-passing PR red for a reason nobody changed.
 
 `for ptr in ${enf//,/ }` -- WORD SPLITTING IS THE PARSER in the sibling trap
 gate, and the same shape appears here in `${pr_info%%|*}` / `${pr_info##*|}`:
 `get_pr_for_branch` returns `number|url` and the two halves are taken by prefix and suffix removal. A URL containing a `|` would break it. It cannot, so the spelling is kept.
 
-STREAMS. Every message goes through `common.sh`'s loggers, which `rediacc_ci.log` reproduces byte for byte. Note the doubled glyphs: the twin writes `log_info "✓ $sm_path: ..."` and `log_error "✗ $sm_path: ..."`, so the logger's own glyph is prepended to a typed one and the line really does read
-`✓ ✓ private/renet: ...`. That is not a transcription error here; it is the
-twin's output and changing it would change the bytes a reader greps for.
+STREAMS. Every message goes through `common.sh`'s loggers, which `rediacc_ci.log` reproduces byte for byte. Note the doubled glyphs: the twin writes `log_info "✓ $sm_path: ..."` and `log_error "✗ $sm_path: ..."`, so the logger's own glyph is prepended to a typed one and the line really does read `✓ ✓ private/renet: ...`. That is not a transcription error here; it is the twin's
+output and changing it would change the bytes a reader greps for.
 """
 
 import json
@@ -139,9 +134,7 @@ SUBMODULE_REPOS = {
     "private/elite": "rediacc/elite",
 }
 
-# The iteration ORDER the twin uses in both of its loops, written out rather than taken from the mapping above. Bash's associative-array order is a hash
-# order and is NOT this list; the two loops both hard-code this sequence, so a
-# port that iterated the mapping would print its findings in a different order.
+# The iteration ORDER the twin uses in both of its loops, written out rather than taken from the mapping above. Bash's associative-array order is a hash order and is NOT this list; the two loops both hard-code this sequence, so a port that iterated the mapping would print its findings in a different order.
 SUBMODULE_ORDER = (
     "private/renet",
     "private/homebrew-tap",
@@ -253,9 +246,8 @@ def gh_probe(require_json: bool, what: str, args: list[str]) -> tuple[bool, str]
 def is_low_effort_reply(reply: str) -> bool:
     """True when the reply is not a real response.
 
-    The normalisation is the twin's four-stage pipeline and it runs PER LINE, because `sed` does: `echo "$reply" | tr '[:upper:]' '[:lower:]' |
-    sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/[.!?]*$//'`. A multi-line
-    reply therefore has every line trimmed and every line's trailing punctuation removed, and the LENGTH test below is applied to the joined result. `$(...)` strips the trailing newline `echo` added, which is why the join drops a trailing empty line.
+    The normalisation is the twin's four-stage pipeline and it runs PER LINE, because `sed` does: `echo "$reply" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/[.!?]*$//'`. A multi-line reply therefore has every line trimmed and every line's trailing punctuation removed, and the LENGTH test below is applied to the joined result. `$(...)` strips
+    the trailing newline `echo` added, which is why the join drops a trailing empty line.
     """
     lowered = reply.lower()
     lines = []
@@ -340,7 +332,7 @@ def branch_exists_in_remote(root: pathlib.Path, sm_path: str, branch: str) -> bo
 
 
 def get_pr_for_branch(repo: str, branch: str) -> str:
-    """ "number|url" for the open PR on this branch, or "".
+    """"number|url" for the open PR on this branch, or "".
 
     jq: `.[0] // empty | "\\(.number)|\\(.url)"`. A missing `gh`, a failed call and a branch with no open PR all produce "", which is the twin's behaviour and the one place it does NOT fail closed: the caller's next move is to ask whether a MERGED PR exists, which is the louder question anyway.
     """
@@ -440,12 +432,11 @@ def pr_is_linked(pr_url: str, text: str) -> bool:
 
 
 def judge_report(comments: list[dict]) -> str:
-    """ "none" | "answered" | "unanswered" for a list of issue comments.
+    """"none" | "answered" | "unanswered" for a list of issue comments.
 
     SPLIT FROM THE FETCH ON PURPOSE. The `gh` call cannot run in a test and the JUDGEMENT is the part that decides a merge, so the judgement is a pure
     function the selftest drives directly and `report_answered` is a thin
-    wrapper over a fetch. There is exactly one implementation; a second copy
-    written "for the test" is a copy that drifts and then tests nothing.
+    wrapper over a fetch. There is exactly one implementation; a second copy written "for the test" is a copy that drifts and then tests nothing.
     """
     reports = [c for c in comments if str(c.get("body") or "").startswith(REPORT_PREFIX)]
     if not reports:

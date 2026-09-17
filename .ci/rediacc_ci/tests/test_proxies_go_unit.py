@@ -1,8 +1,6 @@
-"""`rediacc_ci.proxies.go_unit` against its bash twin
-`.ci/scripts/test/proxies/proxy-go-unit.sh` (gate `check:ci-proxy-go-unit`, `package.json:388`).
+"""`rediacc_ci.proxies.go_unit` against its bash twin `.ci/scripts/test/proxies/proxy-go-unit.sh` (gate `check:ci-proxy-go-unit`, `package.json:388`).
 
-Sibling of `test_proxies_linux_packages.py`; see that file for why the two
-invocations are compared byte for byte rather than as a finding set.
+Sibling of `test_proxies_linux_packages.py`; see that file for why the two invocations are compared byte for byte rather than as a finding set.
 
 ONE CASE DRIVES THE REAL `private/renet` (57 packages, ~12 s per side with a warm build cache -- was 60 before the fifth exclusion alternative). The rest use a SYNTHETIC module with no external dependencies, because the real one is 947 MB and because the interesting branches -- an empty candidate set, an exclusion that swallows everything, a package excluded on nothing but a
 `testutil.` mention -- cannot be produced by asking the real tree nicely.
@@ -370,8 +368,7 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_getuid_only_package_is_now_excluded(tmp_path: pathlib.Path) -> None:
-    """The real gap found 2026-09-10: `os.Getuid()` matched none of the first
-    four alternatives, so a package gated only by it (like the real
+    """The real gap found 2026-09-10: `os.Getuid()` matched none of the first four alternatives, so a package gated only by it (like the real
     `pkg/storage`) stayed in the subset and hard-failed under `CI=true`.
     """
     fixture = build_fixture(tmp_path, files={**PLAIN, **GU})

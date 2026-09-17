@@ -1,9 +1,7 @@
-"""Differential: `rediacc_ci.infra.ci_start_elite` against its twin
-`.ci/scripts/infra/ci-start-elite.sh`.
+"""Differential: `rediacc_ci.infra.ci_start_elite` against its twin `.ci/scripts/infra/ci-start-elite.sh`.
 
-THE SEAM IS PATH AND THE FIXTURE ROOT, on the `test_infra_ci_stop_elite.py` precedent. Both subjects derive the console root from their own file location (`BASH_SOURCE[0]` / `__file__`), so each case COPIES both of them into a fresh
-tree at the right relative depth and runs the copies; driving the tracked files
-would point both at this checkout's real `private/elite` and its real `.ci/docker/ci`. `run.sh`, `curl` and `docker` are recording fakes, so the comparison asserts on the ARGV SEQUENCE both sides produced as well as on stdout: a port that printed "Starting Elite services via ./run.sh up" and never ran it would pass a stdout-only comparison.
+THE SEAM IS PATH AND THE FIXTURE ROOT, on the `test_infra_ci_stop_elite.py` precedent. Both subjects derive the console root from their own file location (`BASH_SOURCE[0]` / `__file__`), so each case COPIES both of them into a fresh tree at the right relative depth and runs the copies; driving the tracked files would point both at this checkout's real `private/elite` and its real
+`.ci/docker/ci`. `run.sh`, `curl` and `docker` are recording fakes, so the comparison asserts on the ARGV SEQUENCE both sides produced as well as on stdout: a port that printed "Starting Elite services via ./run.sh up" and never ran it would pass a stdout-only comparison.
 
 THE REAL `ci-env.sh` IS COPIED IN AND SOURCED FOR REAL. It is not stubbed, because the whole question this differential answers about the `source` on the twin's :23 is whether the port's `env -0` round trip delivers the same exported set that bash's `source` delivers into the caller's own shell. Every secret it would otherwise GENERATE is pre-set in the fixture environment so that
 both
@@ -267,8 +265,7 @@ def test_port_and_twin_agree(name: str, kwargs: dict[str, object]) -> None:
 
 
 def test_the_fakes_are_actually_reached() -> None:
-    """ANTI-VACUITY. Without this every comparison above could be two programs
-    that never invoked anything agreeing trivially."""
+    """ANTI-VACUITY. Without this every comparison above could be two programs that never invoked anything agreeing trivially."""
     with tempfile.TemporaryDirectory() as td:
         root = _fixture(pathlib.Path(td) / "v")
         proc, calls, written = _run("new", root)
@@ -285,8 +282,7 @@ def test_the_fakes_are_actually_reached() -> None:
 
 
 def test_the_load_line_is_really_there() -> None:
-    """CONTROL for `_normalize`: the one masked line must actually be printed by
-    both sides on the timeout path, or the mask would be hiding its absence."""
+    """CONTROL for `_normalize`: the one masked line must actually be printed by both sides on the timeout path, or the mask would be hiding its absence."""
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
         old, _, _ = _run("old", _fixture(base / "a", curl_never=True))
@@ -296,8 +292,7 @@ def test_the_load_line_is_really_there() -> None:
 
 
 def test_the_null_sleep_anchors_still_exist() -> None:
-    """The rewrite the fixture performs must still have exactly one target on
-    each side, and the two files must still agree on the real budget."""
+    """The rewrite the fixture performs must still have exactly one target on each side, and the two files must still agree on the real budget."""
     twin = TWIN.read_text(encoding="utf-8")
     port = PORT.read_text(encoding="utf-8")
     assert twin.count(BASH_SLEEP_ANCHOR) == 1, "the bash sleep anchor moved"
@@ -309,9 +304,7 @@ def test_the_null_sleep_anchors_still_exist() -> None:
 
 
 def test_the_probe_count_is_the_real_one() -> None:
-    """ANTI-VACUITY for the null-sleep rewrite: the timeout path must really
-    perform TIMEOUT/INTERVAL probes on both sides, not a shrunken few. A copy that had accidentally kept a shrunken budget would still "agree" while
-    proving nothing about the loop the twin actually runs in CI."""
+    """ANTI-VACUITY for the null-sleep rewrite: the timeout path must really perform TIMEOUT/INTERVAL probes on both sides, not a shrunken few. A copy that had accidentally kept a shrunken budget would still "agree" while proving nothing about the loop the twin actually runs in CI."""
     expected = REAL_TIMEOUT // 2
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
@@ -328,8 +321,7 @@ def test_the_probe_count_is_the_real_one() -> None:
 
 def test_missing_elite_dir_is_a_named_divergence() -> None:
     """Both sides die rc=1 when `private/elite` is absent, and the port does NOT
-    forge bash's `ci-start-elite.sh: line 45:` prefix. Pinned so the divergence
-    stays deliberate rather than becoming a surprise."""
+    forge bash's `ci-start-elite.sh: line 45:` prefix. Pinned so the divergence stays deliberate rather than becoming a surprise."""
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
         old, _, _ = _run("old", _fixture(base / "a", elite_dir=False))
@@ -343,9 +335,7 @@ def test_missing_elite_dir_is_a_named_divergence() -> None:
 
 
 def test_generated_secrets_path_agrees_on_shape() -> None:
-    """The OTHER arm of ci-env.sh: with nothing pre-set it generates a fresh key
-    pair per run, so the values cannot be compared -- but the NAMES written into
-    `.env`, and the exit code, still must agree."""
+    """The OTHER arm of ci-env.sh: with nothing pre-set it generates a fresh key pair per run, so the values cannot be compared -- but the NAMES written into `.env`, and the exit code, still must agree."""
     if not all(shutil.which(t) for t in ("node", "jq", "openssl")):
         pytest.skip("ci-env.sh's generating arm needs node, jq and openssl")
     with tempfile.TemporaryDirectory() as td:
@@ -382,9 +372,7 @@ def test_generated_secrets_path_agrees_on_shape() -> None:
 def test_planted_defect_is_caught_by_this_differential() -> None:
     """Delete the `set -e` reproduction on the failure path from a COPY.
 
-    `./run.sh logs web` failing suppresses the twin's own `exit 1` and the script exits with the LOGS command's status. A port that "tidied" that into a plain `return 1` would be right-looking and wrong, and would only diverge
-    on a case nobody runs by hand. This mutates an in-memory copy; the real file
-    on disk is never touched.
+    `./run.sh logs web` failing suppresses the twin's own `exit 1` and the script exits with the LOGS command's status. A port that "tidied" that into a plain `return 1` would be right-looking and wrong, and would only diverge on a case nobody runs by hand. This mutates an in-memory copy; the real file on disk is never touched.
     """
     source = PORT.read_text(encoding="utf-8")
     anchor = "        return logs.returncode if logs.returncode != 0 else 1\n"

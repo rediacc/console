@@ -188,9 +188,8 @@ def overlaps(a: dict, b: dict) -> bool:
 
 # ------------------------------------------------------------- predicates ---
 def logical_root(cap: Capture, agg: dict[int, dict]) -> int | None:
-    """The pid whose children are the WORK. Under the Bash profiler every bash is
-    re-exec'd in place under bashcov-sup, which then forks the real shell -- so a capture rooted at exec.ts's child sees a supervisor root with exactly one `bash` child, and a child-counting predicate would never see the fanout. The supervisor is transparent: descend through any chain of single-child bashcov-sup nodes. A supervisor with 0 or 2+ children is NOT descended (that
-    is not the wrapper shape) -- unresolved stays unresolved."""
+    """The pid whose children are the WORK. Under the Bash profiler every bash is re-exec'd in place under bashcov-sup, which then forks the real shell -- so a capture rooted at exec.ts's child sees a supervisor root with exactly one `bash` child, and a child-counting predicate would never see the fanout. The supervisor is transparent: descend through any chain of single-child
+    bashcov-sup nodes. A supervisor with 0 or 2+ children is NOT descended (that is not the wrapper shape) -- unresolved stays unresolved."""
     root = cap.run.get("root_pid")
     while True:
         a = agg.get(root)
@@ -534,9 +533,7 @@ _FIXTURE_ENV = {**os.environ, "WORKLIST_PROFILE": "off"}
 
 
 def _e1(caps) -> list[dict]:
-    """E1 findings only. The controls below assert that E1 is SILENT, and until E7
-    existed that was the same statement as `not derive(...)`. It no longer is: a synthetic fixture with no runnable thread and no pipes is a stall by construction, so an unscoped assertion would fail for a reason that has nothing
-    to do with E1. Scoping it keeps each control about its own class."""
+    """E1 findings only. The controls below assert that E1 is SILENT, and until E7 existed that was the same statement as `not derive(...)`. It no longer is: a synthetic fixture with no runnable thread and no pipes is a stall by construction, so an unscoped assertion would fail for a reason that has nothing to do with E1. Scoping it keeps each control about its own class."""
     return [f for f in derive(caps) if f["class"] == "E1"]
 
 

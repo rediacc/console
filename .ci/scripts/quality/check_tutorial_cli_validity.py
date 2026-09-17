@@ -10,9 +10,8 @@ So this is not the gate for that defect. It is a cheaper gate for a neighbouring
 class that nothing covered either, and pretending otherwise would make it the
 kind of reassuring-but-blind check this repo keeps having to unlearn.
 
-RELATIONSHIP TO check:ci-tutorial-commands, which already existed and which I should have found before writing this. That gate validates the tutorial
-STORYBOARDS (card.commandFull and teardownCommand) against the same tree; this
-one validates the tutorial SHELL SCRIPTS, which it does not read. Different surfaces, same idea, and neither can see a runtime refusal: that gate was green through the entire defect described above, because the failing line is structurally valid.
+RELATIONSHIP TO check:ci-tutorial-commands, which already existed and should have been found before writing this one. That gate validates the tutorial STORYBOARDS (card.commandFull and teardownCommand) against the same tree; this one validates the tutorial SHELL SCRIPTS, unread there. Different surfaces, same idea, and neither can see a runtime refusal: that gate was green
+through the entire defect described above, because the failing line is structurally valid.
 
 THE ORACLE is packages/cli/scripts/command-tree.json, the exported Commander tree, not `rdc --help`. It needs no build, and check:ci-command-tree already proves it matches the shipped CLI, so a stale tree is somebody else's red rather than a silent pass here.
 
@@ -34,8 +33,7 @@ RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# A token carrying shell interpolation cannot be resolved statically. Skipping is
-# correct; PRETENDING to check it would be the lie.
+# A token carrying shell interpolation cannot be resolved statically. Skipping is correct; PRETENDING to check it would be the lie.
 UNRESOLVABLE = re.compile(r"[$`]")
 
 
@@ -68,8 +66,7 @@ def invocations(text):
         line = raw.strip()
         if line.startswith("#"):
             continue
-        # run_cmd "rdc ..." is the tutorials' own wrapper; bare `rdc ...` also
-        # appears in setup blocks.
+        # run_cmd "rdc ..." is the tutorials' own wrapper; bare `rdc ...` also appears in setup blocks.
         found.extend(match.group(1) for match in re.finditer(r'run_cmd\s+"([^"]*)"', line))
         if re.match(r"^(sudo\s+)?rdc\s", line):
             found.append(line)

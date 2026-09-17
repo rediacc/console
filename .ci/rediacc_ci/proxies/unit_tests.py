@@ -108,16 +108,15 @@ def has_script(root: pathlib.Path, ws_dir: str, key: str) -> bool:
 
 
 def summary_count(both: str) -> str:
-    """FIXED 2026-09-10, mirroring `:122-133` of the twin. Strip vitest's ANSI
-    SGR escapes first (they sit BETWEEN "Tests" and the number in any CI-shaped run, which made the old regex simply not match), then read the trailing "(N)" total off the "Tests" line -- correct whether the run is clean ("Tests N passed (N)") or mixed ("Tests F failed | P passed (N)"), since it no longer depends on which token comes first.
+    """FIXED 2026-09-10, mirroring `:122-133` of the twin. Strip vitest's ANSI SGR escapes first (they sit BETWEEN "Tests" and the number in any CI-shaped run, which made the old regex simply not match), then read the trailing "(N)" total off the "Tests" line -- correct whether the run is clean ("Tests N passed (N)") or mixed ("Tests F failed | P passed (N)"), since it no longer
+    depends on which token comes first.
     """
     found = SUMMARY_RE.findall(_ANSI_RE.sub("", both))
     return found[-1] if found else ""
 
 
 def files_count(both: str) -> str:
-    """`grep -oE 'Test Files +[0-9]+ ' | grep -oE '[0-9]+' | tail -1` (:126,134
-    of the twin). Also ANSI-stripped first, for the same reason as above.
+    """`grep -oE 'Test Files +[0-9]+ ' | grep -oE '[0-9]+' | tail -1` (:126,134 of the twin). Also ANSI-stripped first, for the same reason as above.
     """
     found = FILES_RE.findall(_ANSI_RE.sub("", both))
     return found[-1] if found else ""

@@ -1,7 +1,6 @@
 """The `.devcontainer` bootstrap scripts must REPORT failures, not swallow them.
 
-Ported from `.ci/scripts/quality/check-devcontainer-scripts.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-devcontainer-scripts.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 The twin's header, carried whole because the incident and the control-first rule are the gate:
 
@@ -71,8 +70,7 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The em dash the twin's three CONTROL IS VACUOUS lines carry. Named by code
-# point; see the port notes.
+# The em dash the twin's three CONTROL IS VACUOUS lines carry. Named by code point; see the port notes.
 DASH = "\u2014"
 
 # The subject directory and the two named scripts inside it.
@@ -437,9 +435,7 @@ NOT_SUPPRESSED = (
 def selftest() -> int:
     """Both directions for A and C, and both directions for every mutation.
 
-    The mutations are the part a port is most likely to get subtly wrong, so each one is applied to a fixture written by construction and the marker it plants
-    is asserted present; then the same mutation is applied to a fixture it CANNOT
-    match and the absence of the marker is asserted, which is exactly the `CONTROL IS VACUOUS` arm the twin fails itself on.
+    The mutations are the part a port is most likely to get subtly wrong, so each one is applied to a fixture written by construction and the marker it plants is asserted present; then the same mutation is applied to a fixture it CANNOT match and the absence of the marker is asserted, which is exactly the `CONTROL IS VACUOUS` arm the twin fails itself on.
     """
     ctl = Controls("devcontainer-scripts", floor=24, verbose=True)
 

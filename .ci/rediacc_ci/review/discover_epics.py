@@ -14,9 +14,8 @@ BETWEEN THE TWO HELPERS. The bash `review_epic_ids` resolves its root as
 (common.sh:610-611): the CHECKOUT the caller is standing in. `review_budget.epic_ids` falls back to `paths.repo_root()`, which is derived from the package file's own location and is deliberately immune to cwd (see `paths.py`'s docstring on why cwd is never a rung). Those two answers agree whenever the process is standing in the checkout the package was copied into, and disagree the
 moment it is not -- a fixture repo under a tmpdir being the case that matters. So this module computes the twin's root itself and passes it down through the shared parser's own `WORKLIST_PUBLISH_ROOT` override, which keeps ONE parser and still gives the twin's root semantics byte for byte.
 
-`jq` IS STILL REQUIRED THOUGH NOTHING HERE SHELLS OUT TO IT. `require_cmd jq` is the twin's first statement, so a machine without jq gets a refusal and exit
-1 from bash; a port that quietly dropped the check would exit 0 with a correct
-answer in exactly the environment the check exists for, and the two would disagree there and nowhere else. The requirement is preserved deliberately and named here so the cutover step -- which is where dropping it becomes correct, because `json.dumps` needs no binary -- can drop it on purpose rather than by accident.
+`jq` IS STILL REQUIRED THOUGH NOTHING HERE SHELLS OUT TO IT. `require_cmd jq` is the twin's first statement, so a machine without jq gets a refusal and exit 1 from bash; a port that quietly dropped the check would exit 0 with a correct answer in exactly the environment the check exists for, and the two would disagree there and nowhere else. The requirement is preserved deliberately
+and named here so the cutover step -- which is where dropping it becomes correct, because `json.dumps` needs no binary -- can drop it on purpose rather than by accident.
 
 THE EMPTY CASE IS THE ONE TO GET RIGHT, quoting the twin: a matrix over an empty array does not run the job AT ALL, so `[""]` (one flat pass) is emitted rather than `[]`. That is the single most load-bearing line in either file and `test_review_discover_epics.py` drives it on both sides.
 
@@ -38,9 +37,8 @@ GITHUB_OUTPUT unset and a socketpair on fd 1:
     port  rc=0  stdout="no epics declared ...\nepics=[\"\"]\n"
 
 So the twin printed the human line, LOST the `epics=` line -- the only thing
-the workflow reads -- and then exited 1, reporting failure for a run that had already done its work. GITHUB_OUTPUT is always set in Actions, so the live
-matrix never hit it; every local run and every Node-harness run did. The twin
-now has an `emit()` helper that branches on `GITHUB_OUTPUT` rather than redirecting to a path, which is what this port always did, and `test_review_discover_epics.py` pins both sides against a real socketpair.
+the workflow reads -- and then exited 1, reporting failure for a run that had already done its work. GITHUB_OUTPUT is always set in Actions, so the live matrix never hit it; every local run and every Node-harness run did. The twin now has an `emit()` helper that branches on `GITHUB_OUTPUT` rather than redirecting to a path, which is what this port always did, and
+`test_review_discover_epics.py` pins both sides against a real socketpair.
 
 K=5 LEDGER: `.ci/shadow/w7p6-discover-epics.observations.jsonl`.
 """

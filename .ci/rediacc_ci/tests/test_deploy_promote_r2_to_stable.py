@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.promote_r2_to_stable` against its twin
-`.ci/scripts/deploy/promote-r2-to-stable.sh`.
+"""Differential: `rediacc_ci.deploy.promote_r2_to_stable` against its twin `.ci/scripts/deploy/promote-r2-to-stable.sh`.
 
 RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO, exactly as the hotfix sibling's differential does and for the same reasons. Nothing here reaches R2 or Cloudflare; every case pins a fixture endpoint, bucket and credential. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the
 mocked parity ledger is a separate, achievable piece of work. This is that piece.
@@ -299,8 +298,7 @@ def _run(
 
 
 def run_both(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None, **kw):
-    """BOTH SIDES RUN AGAINST ONE FIXTURE REPO but SEPARATE bucket copies, so the
-    second side reads what the first side read rather than what it wrote."""
+    """BOTH SIDES RUN AGAINST ONE FIXTURE REPO but SEPARATE bucket copies, so the second side reads what the first side read rather than what it wrote."""
     root = fixture(tmp_path, bucket)
     old, old_calls = _run(root, "old", **kw)
     new, new_calls = _run(root, "new", **kw)
@@ -382,8 +380,7 @@ def test_the_phase_order_is_bytes_then_metadata_then_signatures(tmp_path) -> Non
 
 
 def test_the_rewrites_happen_before_phase_two_uploads_them(tmp_path) -> None:
-    """THE CONTENT LOG IS THE ONLY WITNESS. The twin rewrites the LOCAL copy and
-    then uploads it once; a port that uploaded first and rewrote afterwards would print the same six lines and reintroduce the second race the header names.
+    """THE CONTENT LOG IS THE ONLY WITNESS. The twin rewrites the LOCAL copy and then uploads it once; a port that uploaded first and rewrote afterwards would print the same six lines and reintroduce the second race the header names.
 
     THE INVARIANT IS "BEFORE PHASE 2", NOT "BEFORE PHASE 1", and that was measured rather than assumed. Moving `_rewrite` to sit between phase 1 and phase 2 changes NOTHING observable, because all four rewrite targets (`install.sh`, `install.ps1`, `*.repo`, `*.conf`) are in the phase-1 exclude list and so were never going to be uploaded by phase 1. Driven 2026-09-13: that plant
     left all 25 cases green, and the plant that moves the rewrite past phase 2 reds eight of them. Written down because a reader could otherwise take this case for a guarantee about a position it does not constrain.
@@ -547,9 +544,7 @@ def test_a_missing_aws_refuses_before_the_variable_guards(tmp_path) -> None:
 
 
 def test_an_aws_failure_mid_run_stops_with_awss_status(tmp_path) -> None:
-    """UNGUARDED UNDER `set -e`, and the interesting part is WHERE it stops: call
-    5 is `apt`'s phase-1 sync, so `cli` is fully promoted and `apt` has its bytes
-    but not its metadata."""
+    """UNGUARDED UNDER `set -e`, and the interesting part is WHERE it stops: call 5 is `apt`'s phase-1 sync, so `cli` is fully promoted and `apt` has its bytes but not its metadata."""
     _root, old, new, old_calls, new_calls = run_both(tmp_path, FAKE_AWS_FAIL_ON_CALL="5")
     _agree(old, new, "aws-fails", old_calls, new_calls)
     assert old.returncode == 1
@@ -562,8 +557,7 @@ def test_an_aws_failure_mid_run_stops_with_awss_status(tmp_path) -> None:
 
 
 def test_an_unset_zone_becomes_an_empty_argument_and_the_purge_refuses(tmp_path) -> None:
-    """The promotion has already happened by then, which the twin's header says
-    is deliberate."""
+    """The promotion has already happened by then, which the twin's header says is deliberate."""
     _root, old, new, old_calls, new_calls = run_both(tmp_path, drop_env=("CLOUDFLARE_ZONE_ID",))
     _agree(old, new, "no-zone", old_calls, new_calls)
     assert old.returncode == 1
@@ -629,8 +623,7 @@ def test_every_channel_directory_has_a_phase_two_arm() -> None:
 
 
 def test_the_phase_one_excludes_are_the_twins_list_in_the_twins_order() -> None:
-    """A REORDERED LIST IS A DIFFERENT FILTER even when the set is identical,
-    because aws applies the rules in order with the last match winning."""
+    """A REORDERED LIST IS A DIFFERENT FILTER even when the set is identical, because aws applies the rules in order with the last match winning."""
     excludes = [
         port.META_EXCLUDES[i + 1]
         for i in range(0, len(port.META_EXCLUDES), 2)

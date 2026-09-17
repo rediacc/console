@@ -179,8 +179,7 @@ def test_an_r100_archive_is_silent_at_both_ages(gate, tmp_path):
 
 
 def test_an_aged_husk_whose_boxes_moved_is_still_free(gate, tmp_path):
-    """Never-delete must not become never-tidy: a file whose boxes all live
-    elsewhere costs nothing to remove, and firing there would punish the tidying."""
+    """Never-delete must not become never-tidy: a file whose boxes all live elsewhere costs nothing to remove, and firing there would punish the tidying."""
     gate.log_test("an aged plan deleted after its box was moved into a live plan")
     root, base = _seed(tmp_path, "PLAN-old.md", 999)
     moved = (root / "agent" / "PLAN-old.md").read_text(encoding="utf-8")
@@ -225,8 +224,7 @@ def test_the_selftest_runs_and_records_the_never_delete_controls(gate):
 def test_git_is_available_or_this_file_asserts_nothing(gate):
     """A missing tool is a loud failure with the fix in the message, never a skip.
 
-    Every case above builds a real repository; without git they would all error in
-    fixture setup, which reads as flake rather than as an unrun test.
+    Every case above builds a real repository; without git they would all error in fixture setup, which reads as flake rather than as an unrun test.
     """
     gate.log_test("the fixture's own precondition")
     found = shutil.which("git")

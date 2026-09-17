@@ -136,9 +136,7 @@ def test_exec_shape(gate):
 
 
 def test_the_extraction_covers_every_named_probe(gate):
-    """PORT-ONLY ANTI-VACUITY. Every case above runs against extracted text, and
-    an extraction that silently returned less would make each probe pass by not being defined -- `bash` reports command-not-found as 127, which is non-zero,
-    so the REFUSAL cases would all still look correct."""
+    """PORT-ONLY ANTI-VACUITY. Every case above runs against extracted text, and an extraction that silently returned less would make each probe pass by not being defined -- `bash` reports command-not-found as 127, which is non-zero, so the REFUSAL cases would all still look correct."""
     body = extract(gate)
     for name in WANTED:
         gate.assert_contains(body, "%s() {" % name, "lifted body is missing %s" % name)

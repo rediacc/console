@@ -309,8 +309,7 @@ WORKLIST = hookcases.HOOKS / "stop" / "worklist.py"
 
 
 def _fixture_rebase(kind: str) -> str:
-    """The fixture's own directory, or "" when it did not halt. Same bytes as the
-    suite ran: the library is bash, so it is sourced rather than transcribed."""
+    """The fixture's own directory, or "" when it did not halt. Same bytes as the suite ran: the library is bash, so it is sourced rather than transcribed."""
     done = subprocess.run(
         ["bash", "-c", 'source "$1"; git_fixture_rebase "$2"', "--", str(GIT_FIXTURE), kind],
         capture_output=True,

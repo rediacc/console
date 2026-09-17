@@ -71,9 +71,7 @@ def test_wanted_matches_the_shell_sort() -> None:
     assert tm.wanted() == [line for line in out.split("\n") if line != ""]
 
 
-# NAMED AWAY FROM "PASS" ON PURPOSE. `S105` flags any constant whose name contains PASS as a hardcoded credential, and it is right to be crude about
-# that; the rule is not disabled for one shell snippet. This greps a go-test
-# transcript for the tests that did not report success, so it is named for that.
+# NAMED AWAY FROM "PASS" ON PURPOSE. `S105` flags any constant whose name contains PASS as a hardcoded credential, and it is right to be crude about that; the rule is not disabled for one shell snippet. This greps a go-test transcript for the tests that did not report success, so it is named for that.
 _TESTS_WITHOUT_SUCCESS_LOOP = (
     """for t in %s; do grep -q -- "--- PASS: $t" run.txt || echo "$t"; done"""
 )

@@ -23,9 +23,8 @@ BASH_TWIN = ".ci/scripts/test/gates/test-language-policy.sh"
 REAL_TREE_TWIN = True
 
 # THE SELF-SCANNING TRAP, AND WHY THIS FLAG IS RENDERED RATHER THAN WRITTEN. `gate-test:shrink-only-composition` enumerates every tracked-or-untracked `.ts`/`.js`/`.py` file whose TEXT contains the drain flag and requires each one to consume the composition guard. It excludes nothing by name, so a PORT that quotes the flag becomes an "unguarded Python baseline writer" and reds that
-# gate tree-wide. Measured on 2026-09-09: writing the flag literally here put this file on that gate's offender list within minutes of it being created. Splitting it means the contiguous string never appears in this file's bytes, and `test_this_port_is_not_a_shrink_only_offender` reds BY NAME if that ever stops
-# being true. Batch 3's `label-references` port paid for this rule first; any port
-# of a self-scanning subject owes the same treatment.
+# gate tree-wide. Measured on 2026-09-09: writing the flag literally here put this file on that gate's offender list within minutes of it being created. Splitting it means the contiguous string never appears in this file's bytes, and `test_this_port_is_not_a_shrink_only_offender` reds BY NAME if that ever stops being true. Batch 3's `label-references` port paid for this rule first;
+# any port of a self-scanning subject owes the same treatment.
 DRAIN_FLAG = "--write-" + "baseline"
 
 ROOT = paths.repo_root()
@@ -149,8 +148,7 @@ def test_new_bash_file_fires(gate):
 
 
 def test_new_file_under_exempt_tree_is_silent(gate):
-    """THE CONTROL FOR THE CASE ABOVE. Without it, a gate that fired on any change
-    at all would pass that test, and the exemption would be proving nothing."""
+    """THE CONTROL FOR THE CASE ABOVE. Without it, a gate that fired on any change at all would pass that test, and the exemption would be proving nothing."""
     with harness.temp_dir() as d:
         fixture(d)
         (d / ".ci/media/four.sh").write_text("#!/usr/bin/env bash\necho new\n", encoding="utf-8")
@@ -162,8 +160,7 @@ def test_new_file_under_exempt_tree_is_silent(gate):
 
 
 def test_new_py_file_is_silent(gate):
-    """The other half of the same control: the gate must be blind to Python, or
-    it is a file-count gate wearing a language gate's name."""
+    """The other half of the same control: the gate must be blind to Python, or it is a file-count gate wearing a language gate's name."""
     with harness.temp_dir() as d:
         fixture(d)
         (d / ".ci/scripts/ported.py").write_text(
@@ -199,8 +196,7 @@ def test_drained_file_demands_a_ratchet(gate):
 
 
 def test_composition_trap_on_the_read_path(gate):
-    """Delete one, add one. The TOTAL is unchanged, so a count-based gate goes
-    green here. This is the exact case the set-based requirement exists for."""
+    """Delete one, add one. The TOTAL is unchanged, so a count-based gate goes green here. This is the exact case the set-based requirement exists for."""
     with harness.temp_dir() as d:
         fixture(d)
         git("-C", str(d), "rm", "-qf", str(d / ".ci/scripts/two.sh"))
@@ -219,9 +215,7 @@ def test_composition_trap_on_the_read_path(gate):
 
 
 def test_composition_trap_on_the_write_path(gate):
-    """The same trap, on the drain flag, which is where it actually bites: a
-    drain that absorbs a new finding prints a SMALLER number and looks like
-    progress. Refusing on the read path alone does not close this."""
+    """The same trap, on the drain flag, which is where it actually bites: a drain that absorbs a new finding prints a SMALLER number and looks like progress. Refusing on the read path alone does not close this."""
     with harness.temp_dir() as d:
         fixture(d)
         git("-C", str(d), "rm", "-qf", str(d / ".ci/scripts/two.sh"))
@@ -246,9 +240,7 @@ def test_composition_trap_on_the_write_path(gate):
 
 
 def test_pure_drain_is_allowed(gate):
-    """CONTROL for the case above. If the drain flag refused everything the
-    backlog could never shrink, and the gate would be a freeze rather than a
-    ratchet."""
+    """CONTROL for the case above. If the drain flag refused everything the backlog could never shrink, and the gate would be a freeze rather than a ratchet."""
     with harness.temp_dir() as d:
         fixture(d)
         git("-C", str(d), "rm", "-qf", str(d / ".ci/scripts/two.sh"))
@@ -289,8 +281,7 @@ def test_missing_baseline_is_strict_not_silent(gate):
 
 
 def test_strict_mode_passes_when_only_exempt_bash_remains(gate):
-    """W1 P6's goal state, proven reachable rather than assumed: no baseline file,
-    and every surviving bash file named in the allowlist."""
+    """W1 P6's goal state, proven reachable rather than assumed: no baseline file, and every surviving bash file named in the allowlist."""
     with harness.temp_dir() as d:
         fixture(d)
         (d / "baseline.json").unlink()
@@ -323,9 +314,7 @@ def test_missing_blocker_is_refused(gate):
 
 
 def test_low_effort_blocker_is_refused(gate):
-    """This is also the control that the CANONICAL validator is really consulted.
-    "tbd" is on `.ci/scripts/lib/blocker-validator.sh`'s banned-phrase list and nowhere in the subject's own source, so a passing verdict here would mean the
-    subprocess never ran."""
+    """This is also the control that the CANONICAL validator is really consulted. "tbd" is on `.ci/scripts/lib/blocker-validator.sh`'s banned-phrase list and nowhere in the subject's own source, so a passing verdict here would mean the subprocess never ran."""
     with harness.temp_dir() as d:
         fixture(d)
         allowlist(d, "# BLOCKER: tbd\ntree:.ci/media/\n")
@@ -392,13 +381,11 @@ def test_shim_entry_that_grew_is_refused(gate):
 
 
 def test_file_entry_exempts_a_multiline_file(gate):
-    """THE THIRD KIND (W7P6, 2026-09-09). Added because `tree:` and `shim:` between
-    them could not spell `.ci/bootstrap.sh`: 395 permanently-bash lines alone in `.ci/`, where the only two available spellings were `tree:.ci/` (which exempts the entire port backlog) and moving the file to fit the grammar.
+    """THE THIRD KIND (W7P6, 2026-09-09). Added because `tree:` and `shim:` between them could not spell `.ci/bootstrap.sh`: 395 permanently-bash lines alone in `.ci/`, where the only two available spellings were `tree:.ci/` (which exempts the entire port backlog) and moving the file to fit the grammar.
 
     A CASE THE TWIN DOES NOT HAVE. `test_twin_parity` compares case SETS in one direction only -- the port must hold every case the twin declares, and may add its own -- so the twin stays green while the subject grows a kind it does not know about. This case is the reason the addition is not invisible.
 
-    BOTH DIRECTIONS, and the negative is the one that matters: `file:` has no line oracle, so it is strictly weaker than `shim:`, and a gate that let an author pick it over `shim:` would retire the check that notices a shim becoming a
-    program. Pointing it at a ONE-line body must be refused BY NAME."""
+    BOTH DIRECTIONS, and the negative is the one that matters: `file:` has no line oracle, so it is strictly weaker than `shim:`, and a gate that let an author pick it over `shim:` would retire the check that notices a shim becoming a program. Pointing it at a ONE-line body must be refused BY NAME."""
     with harness.temp_dir() as d:
         fixture(d)
         # Multi-line, so `shim:` genuinely does not apply and `file:` is the only kind left.
@@ -465,8 +452,7 @@ def test_malformed_entry_is_named_not_dropped(gate):
 
 
 def test_empty_tree_fails(gate):
-    """ANTI-VACUITY. An enumeration that found nothing is the failure this gate
-    would otherwise report as the cleanest run in its history."""
+    """ANTI-VACUITY. An enumeration that found nothing is the failure this gate would otherwise report as the cleanest run in its history."""
     with harness.temp_dir() as d:
         empty = d / "empty"
         empty.mkdir(parents=True, exist_ok=True)
@@ -492,8 +478,7 @@ def test_corrupt_baseline_is_not_an_empty_one(gate):
 
 
 def test_missing_git_is_cannot_run_not_a_verdict(gate):
-    """A missing toolchain must be 77 with the cause named, never a pass, never a
-    red, and never a traceback.
+    """A missing toolchain must be 77 with the cause named, never a pass, never a red, and never a traceback.
 
     THE PATH IS EMPTIED RATHER THAN THE BINARY HIDDEN, so the interpreter has to be named absolutely: `python3` resolved through the doctored PATH would fail to launch and the case would pass on the wrong exit code.
     """
@@ -572,8 +557,7 @@ def test_selftest_can_fail(gate):
 
 
 def test_real_tree_seam_free(gate):
-    """NO SEAMS. Every case above could be right about a fixture and wrong about
-    the repository this gate ships with.
+    """NO SEAMS. Every case above could be right about a fixture and wrong about the repository this gate ships with.
 
     THE STREAMS ARE READ APART HERE, which is the one place the twin makes that claim: a gate whose progress text lands on stderr is invisible until something parses it, and a merged read cannot see the difference.
     """
@@ -586,9 +570,7 @@ def test_real_tree_seam_free(gate):
 
 
 def test_the_three_seams_still_exist_in_the_subject(gate):
-    """ADDED BY THE PORT. Twenty-two of the twenty-three cases point the subject
-    at a fixture through `LANGUAGE_POLICY_ROOT`, `_BASELINE` and `_ALLOWLIST`. If a seam were renamed the subject would silently judge the REAL tree instead, and most of those cases expect a non-zero exit -- so several would keep
-    passing while asserting something about the wrong corpus."""
+    """ADDED BY THE PORT. Twenty-two of the twenty-three cases point the subject at a fixture through `LANGUAGE_POLICY_ROOT`, `_BASELINE` and `_ALLOWLIST`. If a seam were renamed the subject would silently judge the REAL tree instead, and most of those cases expect a non-zero exit -- so several would keep passing while asserting something about the wrong corpus."""
     source = GATE.read_text(encoding="utf-8")
     for seam in (
         "LANGUAGE_POLICY_ROOT",

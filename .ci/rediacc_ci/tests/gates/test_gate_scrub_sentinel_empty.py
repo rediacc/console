@@ -79,8 +79,7 @@ def dry_run(gate) -> harness.RunResult:
 
 
 def test_dry_run_completes_with_no_credentials(gate):
-    """No R2 credentials means `aws s3api list-objects-v2` errors, the helper
-    returns 0, and the dry-run plan emits "objects: 0" for the cli product.
+    """No R2 credentials means `aws s3api list-objects-v2` errors, the helper returns 0, and the dry-run plan emits "objects: 0" for the cli product.
 
     CRITICALLY: the script must reach the "dry-run: pass --execute" final line. If pipefail kills it after the count assignment there is no exit message, and that silence is the whole bug.
     """
@@ -98,9 +97,7 @@ def test_dry_run_completes_with_no_credentials(gate):
 
 
 def test_dry_run_emits_zero_object_count(gate):
-    """Cosmetic but important: the operator relies on the "objects: N" count to
-    decide whether the scrub is safe. If the helper falls back to a malformed
-    value (e.g. "None"), the count must still normalise to 0."""
+    """Cosmetic but important: the operator relies on the "objects: N" count to decide whether the scrub is safe. If the helper falls back to a malformed value (e.g. "None"), the count must still normalise to 0."""
     if not tool_gate(gate):
         return
     result = dry_run(gate)

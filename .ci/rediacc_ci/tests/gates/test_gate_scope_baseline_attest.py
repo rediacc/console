@@ -322,8 +322,7 @@ def shape(tmp_path: pathlib.Path) -> dict:
 
 
 def dumps(value: object) -> str:
-    """JS `JSON.stringify` shape, for the assertions the twin makes against a
-    stringified array."""
+    """JS `JSON.stringify` shape, for the assertions the twin makes against a stringified array."""
     return json.dumps(value, separators=(",", ":"), ensure_ascii=False)
 
 
@@ -361,9 +360,7 @@ def test_control_green_full_attested_baseline(gate, tmp_path):
 
 
 def test_planted_invisible_cell_refuses_baseline(gate, tmp_path):
-    """(b) The defect the whole mechanism exists for: the plan says Unit runs, the leaf
-    self-skipped, every sibling passed, so the run is GREEN and its caller scalars all
-    read success."""
+    """(b) The defect the whole mechanism exists for: the plan says Unit runs, the leaf self-skipped, every sibling passed, so the run is GREEN and its caller scalars all read success."""
     sc = drive(
         tmp_path,
         'f.jobs["1001"].jobs.find((j) => j.name === "Tests + Infra / Unit").conclusion = "skipped"',
@@ -435,8 +432,7 @@ def test_run_id_mismatch_refuses(gate, tmp_path):
 
 
 def test_head_sha_mismatch_refuses(gate, tmp_path):
-    """(e) A plan describes ONE commit's delta. If it names a different head than the
-    candidate under consideration, it is not that candidate's proof."""
+    """(e) A plan describes ONE commit's delta. If it names a different head than the candidate under consideration, it is not that candidate's proof."""
     sc = drive(tmp_path, 'f.plans["1001"].head_sha = "SOMEOTHERCOMMIT"')
     gate.assert_eq(sc.rc, 0, "a plan naming another head still answers")
     gate.assert_eq(
@@ -451,8 +447,7 @@ def test_head_sha_mismatch_refuses(gate, tmp_path):
 
 
 def test_jobs_api_failure_is_an_answer_not_an_exception(gate, tmp_path):
-    """(f) The Jobs API is the one NEW dependency this design takes on. An exception
-    here would escape into `initialize`, which every other job depends on."""
+    """(f) The Jobs API is the one NEW dependency this design takes on. An exception here would escape into `initialize`, which every other job depends on."""
     sc = drive(tmp_path, 'f.jobs["1001"] = "THROW"')
     gate.assert_eq(sc.rc, 0, "a throwing Jobs API must not crash the engine")
     gate.assert_contains(
@@ -476,8 +471,7 @@ def test_jobs_api_failure_is_an_answer_not_an_exception(gate, tmp_path):
 
 
 def test_missing_artifact_reads_as_no_plan(gate, tmp_path):
-    """(g) Absent, expired and never-attested are the same thing: none can prove what
-    that run executed."""
+    """(g) Absent, expired and never-attested are the same thing: none can prove what that run executed."""
     sc = drive(tmp_path, 'delete f.plans["1001"]')
     gate.assert_eq(sc.rc, 0, "a run with no artifact answers")
     gate.assert_eq(reason0(sc), "no-skip-plan", "as no-skip-plan")
@@ -489,8 +483,7 @@ def test_missing_artifact_reads_as_no_plan(gate, tmp_path):
 
 
 def test_corrupt_plan_bytes_read_as_no_plan(gate, tmp_path):
-    """(h) A truncated or half-written artifact must read as absent, not crash the parse
-    and not be half-believed."""
+    """(h) A truncated or half-written artifact must read as absent, not crash the parse and not be half-believed."""
     sc = drive(tmp_path, 'f.plans["1001"] = "{not json at all"')
     gate.assert_eq(sc.rc, 0, "corrupt plan bytes must not crash the engine")
     gate.assert_eq(reason0(sc), "no-skip-plan", "they read as no plan")
@@ -502,11 +495,9 @@ def test_corrupt_plan_bytes_read_as_no_plan(gate, tmp_path):
 
 
 def test_reduced_baseline_refused_before_any_jobs_call(gate, tmp_path):
-    """(i) Case 1: evidence does not chain across reduced rounds, so asking the Jobs API
-    about a reduced plan would be a round trip spent on a foregone conclusion. This asserts the ORDERING, which bounds the cost of every attestation.
+    """(i) Case 1: evidence does not chain across reduced rounds, so asking the Jobs API about a reduced plan would be a round trip spent on a foregone conclusion. This asserts the ORDERING, which bounds the cost of every attestation.
 
-    THE MUTATION SETS A SKIPPED KEY, not just the mode label, and since 2026-08-05 that is the load-bearing half: coverage is read per key, so a plan whose every key still
-    ran is full coverage whatever its label says."""
+    THE MUTATION SETS A SKIPPED KEY, not just the mode label, and since 2026-08-05 that is the load-bearing half: coverage is read per key, so a plan whose every key still ran is full coverage whatever its label says."""
     scope_reduced = (
         'f.plans["1001"].mode = "reduced";'
         'f.plans["1001"].jobs.unit = { run: false, reason: "out-of-scope" }'
@@ -557,8 +548,7 @@ def test_red_run_costs_nothing(gate, tmp_path):
 
 
 def test_second_green_run_on_the_same_sha_is_found(gate, tmp_path):
-    """(k) ONE commit can carry SEVERAL completed green runs of the same workflow, and
-    only one of them uploads a ci-skip-plan."""
+    """(k) ONE commit can carry SEVERAL completed green runs of the same workflow, and only one of them uploads a ci-skip-plan."""
     two_runs = (
         "f.runs.CAND1 = ["
         '{ databaseId: 1001, status: "completed", conclusion: "success" },'
@@ -585,9 +575,7 @@ def test_second_green_run_on_the_same_sha_is_found(gate, tmp_path):
 
 
 def test_multi_page_jobs_payload_is_merged(gate, tmp_path):
-    """`gh api --paginate` on the Jobs API (an OBJECT-shaped endpoint) concatenates one
-    JSON object PER PAGE. A plain JSON.parse succeeds today and starts throwing the moment a run exceeds per_page jobs, which reads as jobs-unreadable and would
-    silently pin CI to full forever: D9's exact failure shape."""
+    """`gh api --paginate` on the Jobs API (an OBJECT-shaped endpoint) concatenates one JSON object PER PAGE. A plain JSON.parse succeeds today and starts throwing the moment a run exceeds per_page jobs, which reads as jobs-unreadable and would silently pin CI to full forever: D9's exact failure shape."""
     sc = drive(
         tmp_path,
         "const all = healthyJobs();"
@@ -618,9 +606,7 @@ def test_multi_page_jobs_payload_is_merged(gate, tmp_path):
 
 
 def test_fixture_shape_is_asserted_not_assumed(gate, tmp_path):
-    """(l) Every silence assertion above rests on the healthy fixture really covering
-    every planned key. Assert that with the RECONCILER's own table and matcher, not by eye: a fixture that matched nothing would make 'full-green-attested' unreachable and
-    'planned-job-missing' universal, and half this file would still look like it passed."""
+    """(l) Every silence assertion above rests on the healthy fixture really covering every planned key. Assert that with the RECONCILER's own table and matcher, not by eye: a fixture that matched nothing would make 'full-green-attested' unreachable and 'planned-job-missing' universal, and half this file would still look like it passed."""
     result = shape(tmp_path)
     gate.assert_eq(
         dumps(result["unmatched"]),
@@ -650,8 +636,7 @@ DEEP_CHAIN = (
 
 
 def test_walk_depth_honours_the_explicit_valve(gate, tmp_path):
-    """(m) `--limit` survives as the explicit valve override, and the mock honours
-    `--max-count`, so a deliberately small valve still truncates."""
+    """(m) `--limit` survives as the explicit valve override, and the mock honours `--max-count`, so a deliberately small valve still truncates."""
     sc = drive(tmp_path, DEEP_CHAIN)
     gate.assert_eq(sc.rc, 0, "a seven-deep chain answers under valve 5")
     gate.assert_eq(
@@ -676,9 +661,7 @@ def test_walk_depth_honours_the_explicit_valve(gate, tmp_path):
 
 
 def test_deep_green_regression_no_fixed_count(gate, tmp_path):
-    """(n) THE REGRESSION FOR THE TWO INCIDENTS, fire-proofed against the PRE-CHANGE
-    engine before it landed: with 29 red ancestors and the only attested green at depth 30, the old DEFAULT_CANDIDATE_LIMIT of 20 answered candidates_seen 20, baseline
-    null, mode full, reason baseline:none-usable (measured 2026-07-30)."""
+    """(n) THE REGRESSION FOR THE TWO INCIDENTS, fire-proofed against the PRE-CHANGE engine before it landed: with 29 red ancestors and the only attested green at depth 30, the old DEFAULT_CANDIDATE_LIMIT of 20 answered candidates_seen 20, baseline null, mode full, reason baseline:none-usable (measured 2026-07-30)."""
     deep = (
         "f.candidates = [];"
         "delete f.runs.CAND1;"
@@ -706,8 +689,7 @@ def test_deep_green_regression_no_fixed_count(gate, tmp_path):
 
 
 def test_fence_stops_the_walk_at_the_merge_boundary(gate, tmp_path):
-    """(o) Candidates past the merge boundary are main-history commits whose runs never
-    carry a ci-skip-plan, so the walk must not consider them."""
+    """(o) Candidates past the merge boundary are main-history commits whose runs never carry a ci-skip-plan, so the walk must not consider them."""
     fenced = (
         'f.candidates = ["C1", "BASE1", "PASTGREEN"];'
         "delete f.runs.CAND1;"
@@ -742,8 +724,7 @@ def test_fence_stops_the_walk_at_the_merge_boundary(gate, tmp_path):
 
 
 def test_green_attestation_budget_binds_both_ways(gate, tmp_path):
-    """(p) Attestation is the expensive class (a download plus a jobs read per green),
-    and its failures are systematic: retention, format drift, reconciler drift."""
+    """(p) Attestation is the expensive class (a download plus a jobs read per green), and its failures are systematic: retention, format drift, reconciler drift."""
     exhausted = (
         'f.candidates = ["G1", "G2", "G3", "G4"];'
         "delete f.runs.CAND1;"
@@ -783,8 +764,7 @@ def test_green_attestation_budget_binds_both_ways(gate, tmp_path):
 
 
 def test_cost_lock_pages_not_candidates(gate, tmp_path):
-    """(r) THE COST LOCK, the control that keeps candidate C true over time. A
-    112-commit all-red streak must cost run-listing calls that scale with PAGES of the
+    """(r) THE COST LOCK, the control that keeps candidate C true over time. A 112-commit all-red streak must cost run-listing calls that scale with PAGES of the
     branch listing (112 runs = 2 pages of 100), NEVER one call per candidate."""
     streak = (
         "f.candidates = [];"
@@ -808,8 +788,7 @@ def test_cost_lock_pages_not_candidates(gate, tmp_path):
 
 
 def test_per_commit_fallback_still_works_without_a_branch(gate, tmp_path):
-    """(s) The pair to (r): it proves the fallback exists, so the zeros in (r) are the
-    cheap path being chosen rather than run lookups not happening at all."""
+    """(s) The pair to (r): it proves the fallback exists, so the zeros in (r) are the cheap path being chosen rather than run lookups not happening at all."""
     sc = drive(tmp_path, "f.branch = null")
     gate.assert_eq(sc.rc, 0, "the branchless fixture answers")
     gate.assert_eq(dumps(sc["baselineRunId"]), "1001", "and still resolves the baseline")
@@ -824,9 +803,7 @@ def test_per_commit_fallback_still_works_without_a_branch(gate, tmp_path):
 
 
 def test_degraded_listing_is_noted_not_silent(gate, tmp_path):
-    """(u) THE CAVEAT CLOSED. A mid-resolve listing failure degrades to per-commit
-    lookups (correctness over cost), and that degradation used to be invisible outside
-    API-call patterns nobody watches."""
+    """(u) THE CAVEAT CLOSED. A mid-resolve listing failure degrades to per-commit lookups (correctness over cost), and that degradation used to be invisible outside API-call patterns nobody watches."""
     sc = drive(tmp_path, "f.runsListThrow = true")
     gate.assert_eq(sc.rc, 0, "a throwing branch listing answers")
     gate.assert_eq(
@@ -849,8 +826,7 @@ def test_degraded_listing_is_noted_not_silent(gate, tmp_path):
 
 
 def test_notes_reach_the_shadow_artifact(gate):
-    """(v) A channel with no listener is the same defect class as a fire-proof behind an
-    unused flag, so pin the emit chain. These are structural greps, deliberately cheap:
+    """(v) A channel with no listener is the same defect class as a fire-proof behind an unused flag, so pin the emit chain. These are structural greps, deliberately cheap:
     if either link is renamed away, this fails and the notes silently stop reaching the
     one place someone looks."""
     engine_source = ENGINE.read_text(encoding="utf-8")
@@ -874,8 +850,7 @@ def test_notes_reach_the_shadow_artifact(gate):
 
 
 def test_unreadable_merge_parent_degrades_to_valve_only_walk(gate, tmp_path):
-    """(t) THE DEGRADATION DIRECTION. A bad mergeSha turning every round full while the
-    walk itself was fine is the cry-wolf shape this whole redesign exists to end."""
+    """(t) THE DEGRADATION DIRECTION. A bad mergeSha turning every round full while the walk itself was fine is the cry-wolf shape this whole redesign exists to end."""
     sc = drive(tmp_path, "f.firstParentThrow = true")
     gate.assert_eq(sc.rc, 0, "a throwing merge-parent probe answers")
     gate.assert_eq(

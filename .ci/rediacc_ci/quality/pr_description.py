@@ -55,8 +55,7 @@ is therefore UNREACHABLE. Measured 2026-09-06 with a `gh` stub that exits 1: the
 The port reproduces both statuses, because invariant 5 says the twin is not edited in the change that ports it and the differential rules on behaviour, not on intent. It is reported as a defect in the twin.
 
 A SECOND, QUIETER ONE: this gate calls `gh` DIRECTLY rather than through `gh_json` from `.ci/scripts/lib/common.sh`, so it gets no retry and no body-parses-as-JSON check. `gh_json`'s own comment says why that matters: "gh api graphql can exit 0 while returning a truncated or malformed body, so an exit-code check alone misses it." Eight other call sites across the review gates were
-moved
-onto it; this one was left behind.
+moved onto it; this one was left behind.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -67,8 +66,7 @@ in the same order and falls back to the same "0".
 
 THE JSON IS PARSED IN PYTHON, NOT THROUGH jq, and the one place that shows is an UNPARSEABLE body: jq prints `jq: parse error: ...` on stderr and exits 5, and this port cannot emit jq's wording. `gh pr view --json` either fails (in which case the
 twin substitutes `{}`) or emits valid JSON, so the shape is one `gh` does not
-produce; the divergence is stated here rather than hidden, and the exit status is
-reproduced.
+produce; the divergence is stated here rather than hidden, and the exit status is reproduced.
 
 STDERR CARRIES THE PROGRESS, STDOUT CARRIES THE ADVICE. The twin's `log_step` and `log_info` go to stderr through `common.sh`, and every line of the stale-PR block is a bare `echo` to stdout. Both are preserved: a caller that redirects one stream sees exactly what it saw before.
 """
@@ -191,8 +189,7 @@ def stale_block(repo: str, pr_number: str, commit_count: int, age_minutes: int) 
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 fresh or not applicable, 1 stale or unreadable.
 
-    THE EXIT STATUSES ARE NOT ALL VERDICTS, and the twin does not distinguish them. `1` means "the description is stale", "PR data could not be fetched", or -- through the unguarded pipeline described in the module docstring -- "gh failed and the script died". The port reproduces all three because the
-    differential rules on behaviour; the third is reported as a defect.
+    THE EXIT STATUSES ARE NOT ALL VERDICTS, and the twin does not distinguish them. `1` means "the description is stale", "PR data could not be fetched", or -- through the unguarded pipeline described in the module docstring -- "gh failed and the script died". The port reproduces all three because the differential rules on behaviour; the third is reported as a defect.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":

@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/security/check-ci-workflow-invariants.sh`.
 
-W7P6 wave 27. The bash twin stays the LIVE registered gate; this module is its
-VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
+W7P6 wave 27. The bash twin stays the LIVE registered gate; this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
 `.ci/rediacc_ci/tests/test_security_ci_workflow_invariants.py` and by the K=5
 shadow ledger `.ci/shadow/w7p6-check-ci-workflow-invariants.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
-NAMING. `check_` is dropped from the module name to match the closest sibling already in this package, `rediacc_ci.security.workflow_gates` (the port of `check-workflow-gates.sh`). `check_commands.py` and `rdc_sh_env_check.py` kept
-their prefixes; the package is not internally consistent, so the rule applied
-here is "match the nearest shape", not "match the package".
+NAMING. `check_` is dropped from the module name to match the closest sibling already in this package, `rediacc_ci.security.workflow_gates` (the port of `check-workflow-gates.sh`). `check_commands.py` and `rdc_sh_env_check.py` kept their prefixes; the package is not internally consistent, so the rule applied here is "match the nearest shape", not "match the package".
 
 WHAT THE TWIN DOES, AND HOW MUCH OF IT IS ALREADY PYTHON. 224 lines, of which 103 (`:66-168`) are the body of a `python3 - <<'PY'` heredoc that parses the workflow with PyYAML and prints tab-separated findings on stdout. The bash around it does three things and no more: resolve `$WORKFLOW_FILE`, refuse a missing file, and translate each finding kind into one long `log_error`
 sentence. So this port is a transcription of the heredoc plus a translation of the ~40-line orchestrator.
@@ -116,8 +113,7 @@ def load_workflow(path: str) -> dict:
         raise SetupExit("SETUP: PyYAML is not importable\n")
     try:
         # `io.open(path, encoding="utf-8")` in the twin. The handle is left to
-        # the garbage collector there; closed properly here, which changes no
-        # observable byte.
+        # the garbage collector there; closed properly here, which changes no observable byte.
         with io.open(path, encoding="utf-8") as handle:  # noqa: UP020 - the twin's spelling
             return yaml.safe_load(handle)
     except Exception as exc:  # the twin catches bare `Exception` here too

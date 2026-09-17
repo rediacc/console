@@ -32,9 +32,7 @@ FOUR EXTERNAL PROGRAMS ARE STILL INVOKED, DELIBERATELY, and each for the same re
 diagnostic to stderr and exits 2, which `set -e` turns into the script's exit code. gawk, mawk and busybox awk word that diagnostic differently, so the only way both sides say the same thing on the same machine is for both to ask the same awk.
 
 THREE `set -u` DEATHS ARE REPRODUCED IN SHAPE, NOT IN COORDINATES, and the differential pins the difference rather than hiding it. `--version` and `--local-checksums` read `"$2"` unguarded, and `commit_and_push` / `update_submodule_pointer` read `"$GIT_BOT_NAME"` / `"$GIT_BOT_EMAIL"`, which `.ci/config/constants.sh:164-166` deliberately does NOT declare. Each is a live crash path a
-caller can reach, so the port exits 1 and writes bash's own `<script>: line <n>: <name>: unbound variable`. The script name and the line
-number are the port's own, because they are true of the port; every other byte
-and the exit code agree.
+caller can reach, so the port exits 1 and writes bash's own `<script>: line <n>: <name>: unbound variable`. The script name and the line number are the port's own, because they are true of the port; every other byte and the exit code agree.
 
 CONSTANTS ARE LITERALS WITH A DRIFT TEST, not a bash parser. Two scalars are read out of `.ci/config/constants.sh` by the twin -- `HOMEBREW_FORMULA_PATH` (:288) and `RELEASES_BASE_URL` (:200) -- and both are reproduced below with their line references. `test_constants_have_not_drifted` reads constants.sh and asserts the pair still matches, so a change there turns the test RED
 instead of being silently followed.
@@ -243,8 +241,7 @@ def require_env(name: str, line: int, env: dict[str, str] | None = None) -> str:
 def _git(args: list[str], *, quiet: bool = False, capture: bool = False, cwd=None):
     """One `git` call, with the twin's redirection for that call site.
 
-    `quiet` is `>/dev/null 2>&1`; `capture` is `$(...)`, which takes stdout and
-    leaves stderr on the caller's own stderr.
+    `quiet` is `>/dev/null 2>&1`; `capture` is `$(...)`, which takes stdout and leaves stderr on the caller's own stderr.
     """
     if quiet:
         return subprocess.run(
@@ -264,9 +261,8 @@ def _git(args: list[str], *, quiet: bool = False, capture: bool = False, cwd=Non
 def sync_to_origin_main(directory: pathlib.Path, *, dry_run: bool) -> int:
     """`:81-90`.
 
-    THE FETCH IS ALLOWED TO FAIL AND THE REV-PARSE IS NOT. `|| true` on the fetch means an offline machine still proceeds against whatever `origin/main`
-    it already has; the `rev-parse` that follows is a bare assignment, so `set
-    -e` kills the script when there is no `origin/main` at all. Both halves are reproduced, including the fact that DRY-RUN still runs both of them and only skips the checkout.
+    THE FETCH IS ALLOWED TO FAIL AND THE REV-PARSE IS NOT. `|| true` on the fetch means an offline machine still proceeds against whatever `origin/main` it already has; the `rev-parse` that follows is a bare assignment, so `set -e` kills the script when there is no `origin/main` at all. Both halves are reproduced, including the fact that DRY-RUN still runs both of them and only
+    skips the checkout.
     """
     _git(["-C", str(directory), "fetch", "origin", "main"], quiet=True)
     proc = _git(["-C", str(directory), "rev-parse", "origin/main"], capture=True)
@@ -520,8 +516,7 @@ def update_submodule_pointer(repo_root: pathlib.Path, *, dry_run: bool) -> int:
 
 
 def require_sources(root: pathlib.Path) -> None:
-    """`source common.sh` (:25) and `source constants.sh` (:26), plus what the
-    second one refuses on.
+    """`source common.sh` (:25) and `source constants.sh` (:26), plus what the second one refuses on.
 
     Ordered exactly as the twin sources them, because the message a broken checkout gets names the FIRST missing file and no other.
     """

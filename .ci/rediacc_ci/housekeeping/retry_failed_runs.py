@@ -4,8 +4,7 @@
 Nightly sweep that re-runs the failed jobs of workflow runs that failed for a reason a rerun can fix. Usage: `retry_failed_runs.py [--dry-run]`.
 
 THE FILTERS ARE THE FEATURE, and the twin's 40-line banner is the evidence for each one: three measured days of runs held 64 failures, 63 of them watchdog-monitor.yml failing BY DESIGN. So `cancelled` is never retried, the watchdog is excluded BY PATH rather than by its generated display name, a run whose head is no longer any branch tip is treated as superseded, and both an
-attempt cap and an age floor apply. All five are reproduced exactly; dropping
-any one turns a sweeper with an expected yield of ~1 per night into one that retries 63 deliberate failures.
+attempt cap and an age floor apply. All five are reproduced exactly; dropping any one turns a sweeper with an expected yield of ~1 per night into one that retries 63 deliberate failures.
 
 EXPECTED YIELD IS ~1 PER NIGHT, AND THE SUMMARY LINE IS WHAT MAKES A ZERO
 READABLE. `considered=.. excluded=.. too-old=.. attempt-capped=.. dead-head=..
@@ -116,8 +115,7 @@ class _Loggers:
 def console_root() -> pathlib.Path:
     """`SCRIPT_DIR/../../..` from `.ci/scripts/housekeeping/`.
 
-    This module sits one directory deeper, so it is `parents[3]` against the
-    twin's `parents[2]`; both land on the repository root.
+    This module sits one directory deeper, so it is `parents[3]` against the twin's `parents[2]`; both land on the repository root.
     """
     return pathlib.Path(__file__).resolve().parents[3]
 
@@ -346,9 +344,7 @@ def _as_int(text: str) -> int:
     `.run_attempt` is a JSON number, so `@tsv` renders a decimal integer, and the only way anything else arrives is the field shift the module docstring describes: a null `.name` slides the TIMESTAMP into this column.
 
     THE ONE DELIBERATE DIVERGENCE IN THIS PORT, and it is named rather than hidden. `[[ "2026-09-13T10:20:30Z" -ge 3 ]]` makes bash write `value too great for base (error token is "09")` to stderr and then evaluate FALSE. Reading 0 here reaches the same FALSE, and the same verdict, without carrying a bash arithmetic evaluator into this module for the sake of a diagnostic line that
-    could not be byte-identical anyway (it names the script and the line). The two agree on the exit code, the six counters and
-    every gh call; they differ by that one line, and
-    `test_divergence_a_null_workflow_name_shifts_the_fields_and_only_bash_complains` asserts both halves.
+    could not be byte-identical anyway (it names the script and the line). The two agree on the exit code, the six counters and every gh call; they differ by that one line, and `test_divergence_a_null_workflow_name_shifts_the_fields_and_only_bash_complains` asserts both halves.
 
     The residue, stated so it is not discovered later: with
     `RETRY_MAX_ATTEMPT=0` the two would also disagree on the VERDICT, because

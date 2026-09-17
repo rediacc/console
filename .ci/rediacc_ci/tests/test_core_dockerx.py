@@ -49,8 +49,7 @@ MEASURED_INFO_STDOUT_WHEN_UNREACHABLE = (
     "Server:\n"
 )
 
-# docker frobnicate  -> exit 1. The engine was never contacted; this is a usage
-# error, and it must NOT be classified as "cannot run".
+# docker frobnicate -> exit 1. The engine was never contacted; this is a usage error, and it must NOT be classified as "cannot run".
 MEASURED_UNKNOWN_VERB_STDERR = (
     "docker: unknown command: docker frobnicate\n\nRun 'docker --help' for more information\n"
 )
@@ -169,9 +168,7 @@ def test_an_empty_path_really_does_hide_the_binary():
 
 
 def test_the_per_verb_fake_really_distinguishes_verbs(fake_bin):
-    """The fixture's own control. Every MEASUREMENT-3 case depends on one binary
-    answering two verbs differently, so that mechanism is asserted before it is
-    relied on."""
+    """The fixture's own control. Every MEASUREMENT-3 case depends on one binary answering two verbs differently, so that mechanism is asserted before it is relied on."""
     unreachable(fake_bin)
     assert dockerx.docker(["--version"]).ok is True
     assert dockerx.docker(["version"]).ok is False
@@ -199,13 +196,10 @@ def test_the_four_states_are_four_answers(fake_bin):
 
 
 def test_control_collapsing_the_classifier_breaks_the_four_states(fake_bin, monkeypatch):
-    """PLANTED DEFECT: `_classify` always says "the command failed", which is what
-    every `docker info >/dev/null 2>&1 || return 1` site effectively does. The
-    assertion above must stop holding."""
+    """PLANTED DEFECT: `_classify` always says "the command failed", which is what every `docker info >/dev/null 2>&1 || return 1` site effectively does. The assertion above must stop holding."""
 
     def collapsed(returncode, stderr, *, timed_out):
-        """Every failure is "the command failed", which is what a bare
-        `docker info >/dev/null 2>&1 || return 1` amounts to."""
+        """Every failure is "the command failed", which is what a bare `docker info >/dev/null 2>&1 || return 1` amounts to."""
         assert isinstance(returncode, int)
         assert isinstance(stderr, str)
         assert timed_out in (True, False)
@@ -217,9 +211,7 @@ def test_control_collapsing_the_classifier_breaks_the_four_states(fake_bin, monk
 
 
 def test_permission_denied_is_not_reported_as_unreachable(fake_bin):
-    """The message contains "connect to the Docker daemon socket", so a classifier
-    that tests the unreachable markers first sends the operator to restart an
-    engine that is already running."""
+    """The message contains "connect to the Docker daemon socket", so a classifier that tests the unreachable markers first sends the operator to restart an engine that is already running."""
     fake_bin(stderr=MEASURED_DENIED_STDERR, rc=1)
     result = dockerx.docker(["ps"])
     assert result.failure == dockerx.FAILURE_DENIED
@@ -228,9 +220,7 @@ def test_permission_denied_is_not_reported_as_unreachable(fake_bin):
 
 
 def test_control_removing_the_denied_markers_misfiles_it_as_unreachable(fake_bin, monkeypatch):
-    """PLANTED DEFECT that proves the ordering above is load bearing rather than
-    incidental: with the DENIED table emptied, the same stderr lands on
-    UNREACHABLE, which is the wrong advice."""
+    """PLANTED DEFECT that proves the ordering above is load bearing rather than incidental: with the DENIED table emptied, the same stderr lands on UNREACHABLE, which is the wrong advice."""
     monkeypatch.setattr(dockerx, "_DENIED_MARKERS", ())
     monkeypatch.setattr(dockerx, "_DENIED_WEAK_MARKERS", ())
     monkeypatch.setattr(dockerx, "_UNREACHABLE_MARKERS", ("connect to the docker daemon",))
@@ -246,23 +236,19 @@ def _assert_a_bad_command_is_a_finding_not_a_shrug(fake_bin):
 
 
 def test_a_command_that_reached_the_engine_and_failed_is_a_finding(fake_bin):
-    """THE LINE THAT MAKES 77 MEAN SOMETHING. `docker frobnicate` exits 1 exactly
-    like an unreachable daemon does, and it must not be excused."""
+    """THE LINE THAT MAKES 77 MEAN SOMETHING. `docker frobnicate` exits 1 exactly like an unreachable daemon does, and it must not be excused."""
     _assert_a_bad_command_is_a_finding_not_a_shrug(fake_bin)
 
 
 def test_control_treating_every_failure_as_cannot_run_breaks_that(fake_bin, monkeypatch):
-    """PLANTED DEFECT: `cannot_run` made unconditional, which is what a gate that
-    exits 77 on any docker failure would do. It converts a red into a shrug, and
-    the assertion above must catch it."""
+    """PLANTED DEFECT: `cannot_run` made unconditional, which is what a gate that exits 77 on any docker failure would do. It converts a red into a shrug, and the assertion above must catch it."""
     monkeypatch.setattr(dockerx.DockerResult, "cannot_run", property(lambda self: not self.ok))
     with pytest.raises(AssertionError):
         _assert_a_bad_command_is_a_finding_not_a_shrug(fake_bin)
 
 
 def test_cannot_run_states_excludes_the_verdicts():
-    """Set-based rather than a count: the two failures that ARE verdicts must not
-    be in the cannot-run set, whatever else joins it later."""
+    """Set-based rather than a count: the two failures that ARE verdicts must not be in the cannot-run set, whatever else joins it later."""
     assert dockerx.FAILURE_FAILED not in dockerx.CANNOT_RUN_STATES
     assert dockerx.FAILURE_TIMED_OUT not in dockerx.CANNOT_RUN_STATES
     assert {
@@ -307,9 +293,7 @@ def test_the_module_calls_the_same_engine_unreachable(fake_bin):
 
 
 def test_the_confident_stdout_is_still_reachable_for_diagnosis(fake_bin):
-    """`.stdout_raw` keeps the bytes. Refusing to hand them over as an ANSWER is
-    not the same as destroying them, and the client report is genuinely useful
-    when a human is working out why the socket is missing."""
+    """`.stdout_raw` keeps the bytes. Refusing to hand them over as an ANSWER is not the same as destroying them, and the client report is genuinely useful when a human is working out why the socket is missing."""
     unreachable(fake_bin)
     result = dockerx.docker(["info"])
     assert result.stdout_raw.startswith("Client:")
@@ -353,8 +337,7 @@ def test_an_unparseable_version_line_is_refused_rather_than_returned(fake_bin):
 
 
 def test_server_version_raises_instead_of_saying_unknown(fake_bin):
-    """`.ci/lib/setup.sh:583` answers "version unknown" here, which is right for a
-    log line and wrong for anything a program compares."""
+    """`.ci/lib/setup.sh:583` answers "version unknown" here, which is right for a log line and wrong for anything a program compares."""
     unreachable(fake_bin)
     with pytest.raises(dockerx.DockerUnreachableError):
         dockerx.server_version()
@@ -406,9 +389,7 @@ def test_docker_ps_is_newline_delimited_json_and_is_parsed_as_such(fake_bin):
 
 
 def test_control_the_whole_body_parse_passes_with_one_container_and_fails_with_two(fake_bin):
-    """WHY THAT BUG SHIPS. `json.loads(body)` is correct for zero or one
-    container and wrong for two, so it passes every hand-run test and fails the
-    first time a second container exists. Both halves asserted."""
+    """WHY THAT BUG SHIPS. `json.loads(body)` is correct for zero or one container and wrong for two, so it passes every hand-run test and fails the first time a second container exists. Both halves asserted."""
     ready(fake_bin, ps_body=ONE_CONTAINER)
     assert json.loads(dockerx.docker(["ps", "--format", "{{json .}}"]).stdout_raw) == {
         "Names": "solo",
@@ -498,8 +479,7 @@ def test_retries_follow_the_documented_backoff(fake_bin):
 
 
 def test_the_cannot_run_code_agrees_with_every_other_definition_in_the_repo():
-    """CORPUS-DERIVED, not hand-typed. 77 is written in four places (pool.ts owns
-    it, and three consumers duplicate the literal because they cannot import a TypeScript constant). This reads them and asserts they all still agree, so the day one of them drifts is the day something says so.
+    """CORPUS-DERIVED, not hand-typed. 77 is written in four places (pool.ts owns it, and three consumers duplicate the literal because they cannot import a TypeScript constant). This reads them and asserts they all still agree, so the day one of them drifts is the day something says so.
     """
     root = paths.repo_root()
     found = {}
@@ -652,9 +632,7 @@ def test_all_names_in_dunder_all_exist():
 
 
 def test_every_cannot_run_state_has_operator_advice():
-    """Set-based: a state with no advice would print "unusable" and leave the
-    reader with nothing to do, which check-python-lint.sh:170-180 records as
-    expensive."""
+    """Set-based: a state with no advice would print "unusable" and leave the reader with nothing to do, which check-python-lint.sh:170-180 records as expensive."""
     assert set(dockerx._ADVICE) == dockerx.CANNOT_RUN_STATES
     for state_name, text in dockerx._ADVICE.items():
         assert text.strip(), state_name
@@ -671,8 +649,8 @@ def test_no_em_dashes_in_the_module_or_this_file():
 
 # A citation whose target this repository deliberately RETIRED, with the reason.
 #
-# `.ci/lib/setup.sh` is cited here as PROVENANCE, not as a live pointer: this module is the port of it, and each citation records which bash lines a function came from. E1 deleted the original once the port landed, so these citations are history and are kept on purpose. Repointing them at the port would make the module cite itself and destroy
-# the only record of what came from where; deleting them would lose it outright.
+# `.ci/lib/setup.sh` is cited here as PROVENANCE, not as a live pointer: this module is the port of it, and each citation records which bash lines a function came from. E1 deleted the original once the port landed, so these citations are history and are kept on purpose. Repointing them at the port would make the module cite itself and destroy the only record of what came from
+# where; deleting them would lose it outright.
 #
 # The reason is mandatory and the entry must still be CITED, so this cannot quietly become a place where a genuinely vanished file hides.
 RETIRED_SOURCES = {
@@ -703,8 +681,7 @@ def test_every_file_the_module_cites_still_exists():
 def test_retired_sources_are_still_cited_and_carry_a_reason():
     """The exemption cannot outlive its use, and cannot be reasonless.
 
-    An entry nothing cites any more is dead weight that would silence a future
-    citation of the same path; an entry with a blank reason is a suppression.
+    An entry nothing cites any more is dead weight that would silence a future citation of the same path; an entry with a blank reason is a suppression.
     """
     text = (paths.repo_root() / ".ci/rediacc_ci/core/dockerx.py").read_text(encoding="utf-8")
     cited = _cited_paths(text)

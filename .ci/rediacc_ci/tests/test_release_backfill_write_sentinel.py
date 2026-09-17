@@ -94,8 +94,7 @@ def test_dry_run_false_forwards_and_dies_on_missing_aws_byte_for_byte() -> None:
 
 
 def test_missing_channel_fails_the_same_way_reworded() -> None:
-    """Exit codes and the identified variable agree; wording does not, and is
-    not supposed to -- see the port's module docstring."""
+    """Exit codes and the identified variable agree; wording does not, and is not supposed to -- see the port's module docstring."""
     env = {"VERSION": "v1.1.2", "COMMIT_SHA": "deadbeef1234", "DRY_RUN": "true"}
     (old_exit, _, old_err), (new_exit, _, new_err) = run_both(env)
     assert old_exit == 1

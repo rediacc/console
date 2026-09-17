@@ -241,8 +241,7 @@ def selftest() -> int:
 
 
 def _run_empty_dirs(saved_cwd: str, saved_env: dict[str, str]) -> int:
-    """The scan dirs exist and hold nothing. `mkdir` cannot be expressed as a
-    file map, so this case builds the tree itself."""
+    """The scan dirs exist and hold nothing. `mkdir` cannot be expressed as a file map, so this case builds the tree itself."""
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
         for scan_dir in SCAN_DIRS:

@@ -1,5 +1,4 @@
-"""Gate `gh pr ready` on green CI: a console PR may leave draft state ONLY when
-the single required check, "CI Complete", is SUCCESS on its current head. Flipping ready is what triggers the automated Claude review, and the review invariant is "non-draft AND green" -- this hook enforces the green half.
+"""Gate `gh pr ready` on green CI: a console PR may leave draft state ONLY when the single required check, "CI Complete", is SUCCESS on its current head. Flipping ready is what triggers the automated Claude review, and the review invariant is "non-draft AND green" -- this hook enforces the green half.
 
 `gh pr ready --undo` (back to draft) is always allowed: it can never expose an unreviewed/red PR. Network paths here are NOT covered by test-hooks.sh (only the pattern paths are); verification failures fail CLOSED.
 

@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.infra.wait_for_vm_ssh` against its twin
-`.ci/scripts/infra/wait-for-vm-ssh.sh`.
+"""Differential: `rediacc_ci.infra.wait_for_vm_ssh` against its twin `.ci/scripts/infra/wait-for-vm-ssh.sh`.
 
 SAME TECHNIQUE AS `test_infra_verify_ssh.py`, and for the same reason: the subject is a retry loop around a network call, so requiring a reachable VM would mean the differential never ran anywhere. Stub `ssh` and `ssh-keyscan` sit on a scratch PATH, every external program records its argv into one shared log, and each case compares FIVE things -- exit code, stdout, stderr, the call
 SEQUENCE, and the bytes of `~/.ssh/known_hosts`.
@@ -276,8 +275,7 @@ def test_immediate_success() -> None:
 
 
 def test_keyscan_runs_only_after_the_vm_answers() -> None:
-    """The twin's central ordering claim, asserted rather than assumed: a
-    half-booted guest must never get its key into known_hosts."""
+    """The twin's central ordering claim, asserted rather than assumed: a half-booted guest must never get its key into known_hosts."""
     _, _, _, calls, kh = _compare("keyscan-after", ["10.0.0.1"], USER, succeed_on={"*": 3})
     verbs = [c.split("\t")[0] for c in calls]
     assert verbs == ["ssh", "sleep", "ssh", "sleep", "ssh", "ssh-keyscan"], verbs
@@ -286,8 +284,7 @@ def test_keyscan_runs_only_after_the_vm_answers() -> None:
 
 
 def test_exhausted_budget() -> None:
-    """36 attempts, then one refusal and one diagnostic line. Nothing is
-    written to known_hosts, because the VM never answered."""
+    """36 attempts, then one refusal and one diagnostic line. Nothing is written to known_hosts, because the VM never answered."""
     exit_code, _, stderr, calls, kh = _compare("exhausted", ["10.0.0.1"], USER, succeed_on={"*": 0})
     assert exit_code == 1
     assert "VM 10.0.0.1 SSH not ready after 180s" in stderr
@@ -302,9 +299,7 @@ def test_exhausted_budget() -> None:
 
 
 def test_diagnostic_fallbacks() -> None:
-    """The `|| echo unavailable` / `|| echo unknown` arms, driven by making the
-    two diagnostic programs fail. Unreachable on any machine with a /proc,
-    which is exactly why they are worth a stub."""
+    """The `|| echo unavailable` / `|| echo unknown` arms, driven by making the two diagnostic programs fail. Unreachable on any machine with a /proc, which is exactly why they are worth a stub."""
     _, _, stderr, _, _ = _compare(
         "diag-fallbacks",
         ["10.0.0.1"],
@@ -317,9 +312,7 @@ def test_diagnostic_fallbacks() -> None:
 
 
 def test_every_vm_must_answer() -> None:
-    """The quantifier, and the difference from `verify-ssh.sh`: this subject
-    waits for EVERY target, and one unreachable VM fails the run even though an
-    earlier one answered."""
+    """The quantifier, and the difference from `verify-ssh.sh`: this subject waits for EVERY target, and one unreachable VM fails the run even though an earlier one answered."""
     exit_code, _, stderr, calls, kh = _compare(
         "second-vm-dead",
         ["10.0.0.1", "10.0.0.11"],
@@ -356,9 +349,7 @@ def test_vm_net_base_default_targets() -> None:
 
 
 def test_keyscan_failure_aborts_the_whole_run() -> None:
-    """HAZARD 2, pinned. `ssh-keyscan` is the last command in the success
-    branch and is unguarded, so under `set -e` a non-zero exit kills the run -- after "SSH-ready" has already been printed, with no message of its own, and
-    without waiting for the remaining VM."""
+    """HAZARD 2, pinned. `ssh-keyscan` is the last command in the success branch and is unguarded, so under `set -e` a non-zero exit kills the run -- after "SSH-ready" has already been printed, with no message of its own, and without waiting for the remaining VM."""
     exit_code, _, stderr, calls, _ = _compare(
         "keyscan-fails",
         ["10.0.0.1", "10.0.0.11"],
@@ -435,9 +426,7 @@ def test_user_env_is_the_fallback() -> None:
 
 
 def test_ssh_stderr_is_discarded() -> None:
-    """`2>/dev/null` on the probe: ssh's own chatter must NOT reach the caller,
-    unlike `verify-ssh.sh`, which lets it through. The two twins disagree here
-    on purpose and both ports must keep their own side of it."""
+    """`2>/dev/null` on the probe: ssh's own chatter must NOT reach the caller, unlike `verify-ssh.sh`, which lets it through. The two twins disagree here on purpose and both ports must keep their own side of it."""
     _, _, stderr, _, _ = _compare(
         "ssh-stderr-dropped",
         ["10.0.0.1"],

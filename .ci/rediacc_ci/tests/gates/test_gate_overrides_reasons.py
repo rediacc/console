@@ -4,9 +4,8 @@ Integration test for `scripts/gates/check-overrides-reasons.ts`: the JSON-safe s
 package.json's `overrides` carries its rationale in a parallel `_overridesReasons`
 object keyed identically, and the validator refuses a missing reason, a low-effort one, and a reason whose override has since been removed.
 
-HOW THE FIXTURE CASES REACH THE SUBJECT, and why it is a copy rather than a flag. The validator resolves package.json from ITS OWN location (`__dirname/..`), with no override. There is therefore no seam to point it at a fixture, so the twin copies the whole `scripts/` tree beside a synthetic package.json in a temp directory and runs it
-there. This port does the same thing for the same reason; re-implementing the
-validator in Python to avoid the copy would be testing a copy.
+HOW THE FIXTURE CASES REACH THE SUBJECT, and why it is a copy rather than a flag. The validator resolves package.json from ITS OWN location (`__dirname/..`), with no override. There is therefore no seam to point it at a fixture, so the twin copies the whole `scripts/` tree beside a synthetic package.json in a temp directory and runs it there. This port does the same thing for the
+same reason; re-implementing the validator in Python to avoid the copy would be testing a copy.
 
 THE FIRST CASE HAS NO FIXTURE AT ALL. `test_accepts_real_package_json` drives the validator against the repo's own package.json, which is what makes this a real-tree reader rather than a self-contained unit test.
 
@@ -113,8 +112,7 @@ def test_rejects_stale_reason(gate):
 
 
 def test_the_real_manifest_declares_overrides_to_check(gate):
-    """ADDED BY THE PORT. `test_accepts_real_package_json` is the only case that
-    touches the shipping manifest, and it would pass just as green against a
+    """ADDED BY THE PORT. `test_accepts_real_package_json` is the only case that touches the shipping manifest, and it would pass just as green against a
     package.json with NO overrides at all -- the validator prints
     `All 0 ... overrides have valid BLOCKER reasons` and exits 0. That green says nothing, so this pins the corpus: the count the validator reports must be non-zero AND must equal the number of top-level override keys in the file.
 

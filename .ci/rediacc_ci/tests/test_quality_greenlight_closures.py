@@ -3,8 +3,7 @@
 WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The two decisions this gate makes are made by git and by the shell, not by the gate: `[[ -e $root/$p ]]` and `git ls-files --error-unmatch -- "$p"`. The second one is the interesting one, because its answer for a DIRECTORY is not what a reader guesses -- it succeeds when the directory contains tracked files, which is why the
 obvious "read the index once and test membership" optimisation is wrong. Running the real command and comparing is the only form of this test that can fail for the right reason.
 
-The real closure list is 78 paths long and comes out of a CommonJS program, so this file drives `scan` on hand-built path lists instead. The whole gate over real closures is what the committed shadow ledger `.ci/shadow/w7p2-greenlight.observations.jsonl` compares over five distinct
-trees; this file covers the seams that ledger cannot isolate.
+The real closure list is 78 paths long and comes out of a CommonJS program, so this file drives `scan` on hand-built path lists instead. The whole gate over real closures is what the committed shadow ledger `.ci/shadow/w7p2-greenlight.observations.jsonl` compares over five distinct trees; this file covers the seams that ledger cannot isolate.
 """
 
 import pathlib
@@ -20,8 +19,7 @@ from rediacc_ci.tests import differential as diff
 
 @pytest.fixture
 def repo(tmp_path: pathlib.Path) -> pathlib.Path:
-    """A tiny repository with one tracked file, one tracked directory, one
-    ignored file, one untracked file and one untracked directory.
+    """A tiny repository with one tracked file, one tracked directory, one ignored file, one untracked file and one untracked directory.
 
     Five states, because the gate distinguishes three of them and a fixture with fewer cannot show that the third is distinguished at all.
     """

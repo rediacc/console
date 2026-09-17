@@ -1,5 +1,4 @@
-"""`rediacc_ci.proxies.ops_host_check` against its bash twin
-`.ci/scripts/test/proxies/proxy-ops-host-check.sh` (gate `check:ci-proxy-ops-host-check`, `package.json:389`).
+"""`rediacc_ci.proxies.ops_host_check` against its bash twin `.ci/scripts/test/proxies/proxy-ops-host-check.sh` (gate `check:ci-proxy-ops-host-check`, `package.json:389`).
 
 Sibling of `test_proxies_linux_packages.py`; see that file for why the two invocations are compared byte for byte rather than as a finding set.
 

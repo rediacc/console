@@ -10,8 +10,7 @@ override, which is what lets the differential test point both sides at an isolat
 
 `-type f` EXCLUDES SYMLINKS, and this port's file-counting walk does too: `find -type f` reports a symlink's type as `l`, not `f`, even when the link target is a regular file. `os.walk` alone does not make that distinction (a symlink-to-file shows up in `filenames` either way), so every count here explicitly skips `Path.is_symlink()` entries before testing `is_file()`.
 
-`FIND ... 2>/dev/null | wc -l` NEVER RAISES; A MISSING DIRECTORY COUNTS AS
-ZERO, matching the twin: this port returns 0 for any `dist/...` path that is not a directory rather than raising, which is what lets an entirely absent `dist/` tree fail loud through the vacuity checks below instead of crashing before it gets there.
+`FIND ... 2>/dev/null | wc -l` NEVER RAISES; A MISSING DIRECTORY COUNTS AS ZERO, matching the twin: this port returns 0 for any `dist/...` path that is not a directory rather than raising, which is what lets an entirely absent `dist/` tree fail loud through the vacuity checks below instead of crashing before it gets there.
 """
 
 from __future__ import annotations

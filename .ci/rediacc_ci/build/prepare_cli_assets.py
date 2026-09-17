@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/prepare-cli-assets.sh` (228 lines).
 
-Stages everything the CLI's SEA build embeds: the renet binaries the target
-platform needs, a `renet-metadata.json` describing them, the third-party credits
-inventory, a generated `THIRD_PARTY_LICENSES`, and a platform-specific
-`sea-config.generated.json` listing all of it.
+Stages everything the CLI's SEA build embeds: the renet binaries the target platform needs, a `renet-metadata.json` describing them, the third-party credits inventory, a generated `THIRD_PARTY_LICENSES`, and a platform-specific `sea-config.generated.json` listing all of it.
 
-WHICH BINARIES, and why. Every platform embeds BOTH Linux binaries, because the
-CLI provisions remote Linux machines from wherever it runs. macOS additionally
-embeds its own `darwin-<arch>` for local renet execution, and Windows its own
-`windows-<arch>`. The Windows binary is `renet-windows-<arch>.exe` ON DISK and
-`renet-windows-<arch>` as a SEA asset key, so the copy renames it.
+WHICH BINARIES, and why. Every platform embeds BOTH Linux binaries, because the CLI provisions remote Linux machines from wherever it runs. macOS additionally embeds its own `darwin-<arch>` for local renet execution, and Windows its own `windows-<arch>`. The Windows binary is `renet-windows-<arch>.exe` ON DISK and `renet-windows-<arch>` as a SEA asset key, so the copy renames it.
 
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHAT IS NOT
@@ -32,20 +25,12 @@ SHELLED OUT:
 
 NOT SHELLED OUT: `jq -Rn` for WRITING the two JSON files. Both are built from
 values this process already holds, and `json.dumps(obj, indent=2) + "\\n"` is
-byte-identical to jq's default pretty-printer for these shapes; the differential
-asserts that equality on the real artifacts rather than assuming it. Building
-the objects as tab-separated text so a second program can parse them back is a
-bash limitation, not behaviour. `stat -c%s` is `os.path.getsize`; `cp`,
-`mkdir -p` and `wc -l` are likewise in-process.
+byte-identical to jq's default pretty-printer for these shapes; the differential asserts that equality on the real artifacts rather than assuming it. Building the objects as tab-separated text so a second program can parse them back is a bash limitation, not behaviour. `stat -c%s` is `os.path.getsize`; `cp`, `mkdir -p` and `wc -l` are likewise in-process.
 
 -----------------------------------------------------------------------------
 DEFECTS CARRIED, NOT FIXED
 -----------------------------------------------------------------------------
-DEFECT 1, `--arch` IS VALIDATED AND THE VERDICT IS THROWN AWAY. `map_arch`
-(`:64-73`) ends its unknown-arch arm with `log_error` and `exit 1`. That `exit`
-runs inside `$(map_arch "$arch")`, which runs inside `$(get_required_binaries
-...)`, and **bash does not inherit errexit into a command-substitution
-subshell**. Driven on bash 5.3.9 to be sure it is the nesting and not the
+DEFECT 1, `--arch` IS VALIDATED AND THE VERDICT IS THROWN AWAY. `map_arch` (`:64-73`) ends its unknown-arch arm with `log_error` and `exit 1`. That `exit` runs inside `$(map_arch "$arch")`, which runs inside `$(get_required_binaries ...)`, and **bash does not inherit errexit into a command-substitution subshell**. Driven on bash 5.3.9 to be sure it is the nesting and not the
 assignment:
 
     set -euo pipefail
@@ -54,8 +39,7 @@ assignment:
     g                       # dies, rc=1
     R=$( a=$(f); echo sub-continued >&2; echo out )   # SURVIVES, rc=0
 
-So the script prints its refusal and carries straight on with an EMPTY
-`renet_arch`:
+So the script prints its refusal and carries straight on with an EMPTY `renet_arch`:
 
     $ bash .ci/scripts/build/prepare-cli-assets.sh --platform linux --arch bogus
     -> Preparing CLI embedded assets for linux-bogus...
@@ -64,9 +48,7 @@ So the script prints its refusal and carries straight on with an EMPTY
     ok CLI assets prepared successfully
     ; echo $? -> 0
 
-For `--platform linux` the empty value is never used, so a typo'd arch produces
-a complete, valid, silently-mislabelled build. For `--platform mac` it becomes
-the asset name `renet-darwin-`, which is missing, so that path dies at `:128`
+For `--platform linux` the empty value is never used, so a typo'd arch produces a complete, valid, silently-mislabelled build. For `--platform mac` it becomes the asset name `renet-darwin-`, which is missing, so that path dies at `:128`
 with the wrong diagnostic. Reproduced exactly: the error is logged, the value is
 empty, execution continues.
 
@@ -74,27 +56,16 @@ DEFECT 2, `--platform` IS NEVER VALIDATED AT ALL. The usage says
 `linux|mac|win`; the code tests only `== "mac"` and `== "win"` (`:87`, `:91`).
 `--platform banana --arch x64` builds the Linux-only asset set and exits 0.
 
-DEFECT 3, THE ASSET COUNT IS OFF BY ONE, ALWAYS. `:211` is
-`printf '%b' "$ASSET_LINES" | wc -l`, and `ASSET_LINES` has no trailing newline,
-so `wc -l` counts SEPARATORS rather than entries. Note that `:213` -- the line
-that feeds the same string to jq -- uses `printf '%b\\n'` WITH the newline, so
-the file is right and only the report is wrong. Driven: `--platform linux`
-writes five assets and prints `Generated sea-config with 4 assets`.
+DEFECT 3, THE ASSET COUNT IS OFF BY ONE, ALWAYS. `:211` is `printf '%b' "$ASSET_LINES" | wc -l`, and `ASSET_LINES` has no trailing newline, so `wc -l` counts SEPARATORS rather than entries. Note that `:213` -- the line that feeds the same string to jq -- uses `printf '%b\\n'` WITH the newline, so the file is right and only the report is wrong. Driven: `--platform linux` writes five
+assets and prints `Generated sea-config with 4 assets`.
 
-DEFECT 4, `Generated THIRD_PARTY_LICENSES` IS A CLAIM ABOUT AN EXIT CODE, NOT
-ABOUT A FILE. `:190` branches on the generator's status alone. A generator that
-exits 0 without writing anything leaves `sea-config.generated.json` pointing at
-`dist/assets/THIRD_PARTY_LICENSES`, which does not exist, and the log says it
-was generated. Driven with a stub `npx` that only exits 0: the success line
-prints and the file is absent from `dist/assets/`.
+DEFECT 4, `Generated THIRD_PARTY_LICENSES` IS A CLAIM ABOUT AN EXIT CODE, NOT ABOUT A FILE. `:190` branches on the generator's status alone. A generator that exits 0 without writing anything leaves `sea-config.generated.json` pointing at `dist/assets/THIRD_PARTY_LICENSES`, which does not exist, and the log says it was generated. Driven with a stub `npx` that only exits 0: the
+success line prints and the file is absent from `dist/assets/`.
 
 -----------------------------------------------------------------------------
 ENVIRONMENT IS READ AT THE CALL SITE
 -----------------------------------------------------------------------------
-`RENET_VERSION` is read once, with a literal
-`os.environ.get("RENET_VERSION", "")`, where it is used. No alias and no loop:
-`check:ci-python-env-registry` reads the AST and records a non-literal key as
-the expression rather than the name.
+`RENET_VERSION` is read once, with a literal `os.environ.get("RENET_VERSION", "")`, where it is used. No alias and no loop: `check:ci-python-env-registry` reads the AST and records a non-literal key as the expression rather than the name.
 """
 
 from __future__ import annotations
@@ -130,18 +101,14 @@ LICENSES_PLACEHOLDER = (
 
 # The lines bash names in a `set -u` death when an option's value is missing:
 # `SEA_PLATFORM="$2"` is `:32`, `SEA_ARCH="$2"` is `:36`. These are the lines of
-# the ASSIGNMENT, not of the `case` label above it, and the differential drove
-# the twin to establish which.
+# the ASSIGNMENT, not of the `case` label above it, and the differential drove the twin to establish which.
 UNBOUND_LINES = {"--platform": 32, "--arch": 36}
 
 
 def console_root() -> pathlib.Path:
     """The repository root, from this file's own location.
 
-    Same reasoning as `build/build_cli_musl.py`: `get_repo_root`
-    (common.sh:205-210) has no environment override, so `paths.repo_root()` --
-    which honours `$REDIACC_CI_ROOT` -- would make one side of a differential
-    follow a variable the other cannot see.
+    Same reasoning as `build/build_cli_musl.py`: `get_repo_root` (common.sh:205-210) has no environment override, so `paths.repo_root()` -- which honours `$REDIACC_CI_ROOT` -- would make one side of a differential follow a variable the other cannot see.
     """
     # This file: <root>/.ci/rediacc_ci/build/prepare_cli_assets.py
     return pathlib.Path(__file__).resolve().parents[3]
@@ -150,10 +117,7 @@ def console_root() -> pathlib.Path:
 def map_arch(arch: str) -> tuple[str, str | None]:
     """`map_arch` (`:64-73`). Returns `(renet_arch, error_message)`.
 
-    DEFECT 1 IS IN THE SIGNATURE. The twin's `exit 1` cannot escape its nested
-    command substitution, so an unknown arch yields the error line AND an empty
-    string AND continued execution. Returning both is how that is said in Python
-    without pretending the refusal works.
+    DEFECT 1 IS IN THE SIGNATURE. The twin's `exit 1` cannot escape its nested command substitution, so an unknown arch yields the error line AND an empty string AND continued execution. Returning both is how that is said in Python without pretending the refusal works.
     """
     mapped = ARCH_MAP.get(arch)
     if mapped is None:
@@ -164,10 +128,7 @@ def map_arch(arch: str) -> tuple[str, str | None]:
 def required_binaries(platform: str, arch: str) -> tuple[list[str], str | None]:
     """`get_required_binaries` (`:78-94`). Returns `(names, error_message)`.
 
-    Both Linux binaries always, plus the host's own on mac and win. `map_arch`
-    is called UNCONDITIONALLY, before either test, so a bad `--arch` is reported
-    even for `--platform linux` where its value is never used. That ordering is
-    observable in the output and is kept.
+    Both Linux binaries always, plus the host's own on mac and win. `map_arch` is called UNCONDITIONALLY, before either test, so a bad `--arch` is reported even for `--platform linux` where its value is never used. That ordering is observable in the output and is kept.
     """
     renet_arch, error = map_arch(arch)
     names = ["linux-amd64", "linux-arm64"]
@@ -180,16 +141,14 @@ def required_binaries(platform: str, arch: str) -> tuple[list[str], str | None]:
 
 
 def binary_to_meta_key(name: str) -> str:
-    """`binary_to_meta_key` (`:99-105`). `linux-amd64` -> `amd64`; anything else
-    keeps its full name, so `darwin-arm64` stays `darwin-arm64`."""
+    """`binary_to_meta_key` (`:99-105`). `linux-amd64` -> `amd64`; anything else keeps its full name, so `darwin-arm64` stays `darwin-arm64`."""
     if name.startswith("linux-"):
         return name[len("linux-") :]
     return name
 
 
 def disk_name(name: str) -> str:
-    """`:118-122`. Windows binaries carry `.exe` ON DISK and never as an asset
-    key, so the source path and the destination name differ for exactly them."""
+    """`:118-122`. Windows binaries carry `.exe` ON DISK and never as an asset key, so the source path and the destination name differ for exactly them."""
     if name.startswith("windows-"):
         return "renet-%s.exe" % name
     return "renet-%s" % name
@@ -219,8 +178,7 @@ def sea_config(asset_pairs: list[tuple[str, str]]) -> str:
 
 
 def asset_count(asset_pairs: list[tuple[str, str]]) -> int:
-    """`:211`, DEFECT 3 preserved. `printf '%b'` writes no trailing newline, so
-    `wc -l` counts the separators between the entries, one fewer than there are.
+    """`:211`, DEFECT 3 preserved. `printf '%b'` writes no trailing newline, so `wc -l` counts the separators between the entries, one fewer than there are.
     """
     return max(len(asset_pairs) - 1, 0)
 
@@ -229,9 +187,7 @@ def parse_args(argv: list[str]) -> tuple[str, str, int | None, str]:
     """`:29-48`. Returns `(platform, arch, exit_code, message)`.
 
     `exit_code` is `None` on success. `-h/--help` prints on STDOUT and exits 0;
-    everything else is stderr. `--platform` or `--arch` as the final argument
-    dies the way bash's `set -u` does, naming the script and the line of the
-    `"$2"` it could not expand, before any `shift` happens.
+    everything else is stderr. `--platform` or `--arch` as the final argument dies the way bash's `set -u` does, naming the script and the line of the `"$2"` it could not expand, before any `shift` happens.
     """
     platform = ""
     arch = ""
@@ -264,8 +220,7 @@ def parse_args(argv: list[str]) -> tuple[str, str, int | None, str]:
 
 
 def _capture(command: list[str], **kw) -> tuple[int, str]:
-    """A child whose STDOUT this process consumes and whose stderr it inherits,
-    which is what `$(cmd)` does. Trailing newlines are stripped, as there."""
+    """A child whose STDOUT this process consumes and whose stderr it inherits, which is what `$(cmd)` does. Trailing newlines are stripped, as there."""
     sys.stdout.flush()
     sys.stderr.flush()
     try:
@@ -280,8 +235,7 @@ def _capture(command: list[str], **kw) -> tuple[int, str]:
 def file_sha256(path: pathlib.Path) -> tuple[str, str | None]:
     """`file_sha256` (`:146-155`). Returns `(hex, error_message)`.
 
-    The `command -v` probe is the observable part: `sha256sum` first, `shasum -a
-    256` second, and a refusal when neither exists. Unlike `map_arch`, this
+    The `command -v` probe is the observable part: `sha256sum` first, `shasum -a 256` second, and a refusal when neither exists. Unlike `map_arch`, this
     function's `exit 1` is reached from a TOP-LEVEL `$( )` (`:163`), where
     errexit does fire, so the refusal really does stop the script.
     """
@@ -345,9 +299,7 @@ def main(argv: list[str]) -> int:
             log.error("Missing renet binary: %s" % source)
             return 1
         log.info("Copying renet-%s..." % name)
-        # `cp` (`:126`) gives the new file the SOURCE's mode bits, which matters:
-        # these are executables. `shutil.copyfile` would not, so `shutil.copy` is
-        # the right analogue.
+        # `cp` (`:126`) gives the new file the SOURCE's mode bits, which matters: these are executables. `shutil.copyfile` would not, so `shutil.copy` is the right analogue.
         shutil.copy(source, assets_dir / ("renet-%s" % name))
 
     # `:135`. `${RENET_VERSION:-...}`: unset and empty both fall through to jq.
@@ -400,9 +352,7 @@ def main(argv: list[str]) -> int:
     )
     log.info("Copied third-party-credits.json")
 
-    # `:190-198`. Best-effort and non-fatal by design: the Go-dependency section
-    # needs network, so an offline build carries a marked placeholder. DEFECT 4:
-    # only the status is consulted, never the file.
+    # `:190-198`. Best-effort and non-fatal by design: the Go-dependency section needs network, so an offline build carries a marked placeholder. DEFECT 4: only the status is consulted, never the file.
     sys.stdout.flush()
     sys.stderr.flush()
     try:

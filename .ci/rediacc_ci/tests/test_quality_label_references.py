@@ -3,9 +3,7 @@
 A bash child runs the REAL `.ci/scripts/quality/check-label-references.sh` over a specimen with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-label-references.observations.jsonl`.
 
 THIS FILE ASSEMBLES EVERY LABEL-CONSUMING SHAPE AT RUNTIME, and that is not style. This file lives under `.ci`, which is one of the two directories the real sweep reads. Written as literals, its fixtures would BE label references, and the real gate would report them as undeclared: the port's first draft did exactly that, and `check-label-references.sh` went red naming
-`.ci/rediacc_ci/quality/label_references.py`. The twin dodges the same problem by
-excluding its own basename AND its test's basename; the port cannot use that dodge
-without scanning a different corpus than the twin, so it removes the reason instead. Every helper below therefore builds its line from a token that is itself assembled.
+`.ci/rediacc_ci/quality/label_references.py`. The twin dodges the same problem by excluding its own basename AND its test's basename; the port cannot use that dodge without scanning a different corpus than the twin, so it removes the reason instead. Every helper below therefore builds its line from a token that is itself assembled.
 
 BOTH DIRECTIONS. The corpus carries an undeclared label (must fire), a declared one (must stay quiet), a templated placeholder (must be dropped), a broken extractor (must be caught by the self-test before the sweep), a collapsed sweep (must hit the floor), and an EMPTY labels file, which is the case the twin's missing `|| true` made unreachable until 96355d3b5 on 2026-09-06.
 """

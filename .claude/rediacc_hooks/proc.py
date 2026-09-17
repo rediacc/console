@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Reading the process table, for the two guards that refuse to corrupt a
-running script.
+"""Reading the process table, for the two guards that refuse to corrupt a running script.
 
 WHO NEEDS THIS. `block-bash-write-to-running-script.sh` and `block-edit-of-running-script.sh` cover the two doors -- Bash and Edit -- onto the same failure: bash reads a script LAZILY, by byte offset, so rewriting it mid-run makes the interpreter resume at its old offset inside the new bytes and die parsing mid-token, naming an INNOCENT line while `bash -n` on that same file stays
 clean. Documented at docs/agent-reference/TRAPS.md, hit three times on 2026-08-26/27 and again on 2026-08-09.

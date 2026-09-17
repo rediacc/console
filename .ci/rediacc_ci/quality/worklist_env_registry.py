@@ -1,5 +1,4 @@
-r"""check:ci-worklist-env-registry -- every WORKLIST_* name is registered, and
-every registered name is read.
+r"""check:ci-worklist-env-registry -- every WORKLIST_* name is registered, and every registered name is read.
 
 THE DEFECT, IN ONE SENTENCE. A typo'd environment name reads as UNSET, and for a feature flag that defaults to `on` that is the FAIL-OPEN direction: the author believes they switched something off, the default applies, and the check keeps firing with nothing anywhere saying why. Four names in this repository are exactly that shape (`WORKLIST_AGENT_HINT`, `WORKLIST_AGENT_PUSHBACK`,
 `WORKLIST_CADENCE`, `WORKLIST_FOCUS`), and until 2026-09-09 there was no registry, no schema and nothing that could tell a live name from a dead one.

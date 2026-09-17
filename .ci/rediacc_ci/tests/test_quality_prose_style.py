@@ -354,8 +354,7 @@ CLEAN = "The tests were run.\n"
 
 
 def _repo(tmp_path, tracked, *, ignore=(), untracked=()):
-    """A real checkout: `tracked` staged, `ignore` written to .gitignore,
-    `untracked` planted AFTER the add so git never sees it.
+    """A real checkout: `tracked` staged, `ignore` written to .gitignore, `untracked` planted AFTER the add so git never sees it.
 
     NO COMMIT. `git ls-files` reads the index, so `git add` is the whole requirement, and skipping the commit skips every way a global identity or signing configuration could make this fixture machine-dependent.
     """
@@ -815,8 +814,8 @@ def test_a_rest_field_list_inside_a_docstring_is_never_rewrapped():
 
 
 def test_a_rule_line_banner_is_never_absorbed_into_the_prose_beside_it():
-    """MEASURED DAMAGE, not a hypothetical. One reflow pass over 400 tracked `.py` files absorbed 793 banner lines across 154 files, turning the three-line `---- / TITLE / ----` section rule this repository writes inside its own module docstrings into a single run-on line joined to the paragraph beneath it.
-    `REFLOW_STOP` has carried `RULE_LINE` for markdown since the beginning; the comment path simply never applied it, on the since-corrected belief that a comment carries no structure worth protecting.
+    """MEASURED DAMAGE, not a hypothetical. One reflow pass over 400 tracked `.py` files absorbed 793 banner lines across 154 files, turning the three-line `---- / TITLE / ----` section rule this repository writes inside its own module docstrings into a single run-on line joined to the paragraph beneath it. `REFLOW_STOP` has carried `RULE_LINE` for markdown since the beginning; the
+    comment path simply never applied it, on the since-corrected belief that a comment carries no structure worth protecting.
     """
     text = (
         'def f():\n    """Header.\n\n    ----------------------------------------\n'
@@ -859,8 +858,8 @@ def test_an_html_tag_named_inside_a_code_span_is_prose_not_a_block():
 
 
 def test_a_list_item_continuation_keeps_its_left_margin():
-    """REPORTED BY THE OPERATOR FROM THE RENDERED RESULT, which is the detail worth keeping: this survived a corpus-wide AST proof, a structural fence/heading/table check and a full reflow, because every one of those counts lines and none of them reads the COLUMN a line starts in.
-    `_join_and_wrap` strips each piece before joining, correct for the words and wrong for the margin, so an indented continuation came back at column 0 and detached from the item above it. `reflow_markdown`'s own docstring already claimed the opposite, which is how the gap stayed invisible.
+    """REPORTED BY THE OPERATOR FROM THE RENDERED RESULT, which is the detail worth keeping: this survived a corpus-wide AST proof, a structural fence/heading/table check and a full reflow, because every one of those counts lines and none of them reads the COLUMN a line starts in. `_join_and_wrap` strips each piece before joining, correct for the words and wrong for the margin, so
+    an indented continuation came back at column 0 and detached from the item above it. `reflow_markdown`'s own docstring already claimed the opposite, which is how the gap stayed invisible.
     """
     text = (
         "- Without JSON output, Terraform can't detect if autostart was changed\n"
@@ -895,8 +894,8 @@ def test_a_trailing_semicolon_still_reads_as_commented_out_code():
 
 
 def test_a_cstyle_comment_block_gets_the_same_stops_as_a_hash_block():
-    """THE SIBLING THE FIRST FIX MISSED, which is the whole reason the class sweep is run against every scope rather than the one that surfaced the bug. Adding the stops to the Python branch alone still absorbed 32 rule-line banners, 19 list items and 3 all-caps headings across the tracked `.ts`/`.js`/`.go` corpus, because `_cstyle_reflow_lines` had no equivalent check.
-    A `//` block carries section structure exactly as a `#` block does.
+    """THE SIBLING THE FIRST FIX MISSED, which is the whole reason the class sweep is run against every scope rather than the one that surfaced the bug. Adding the stops to the Python branch alone still absorbed 32 rule-line banners, 19 list items and 3 all-caps headings across the tracked `.ts`/`.js`/`.go` corpus, because `_cstyle_reflow_lines` had no equivalent check. A `//`
+    block carries section structure exactly as a `#` block does.
     """
     text = (
         "// ----------------------------------------\n"
@@ -913,6 +912,61 @@ def test_a_cstyle_comment_block_gets_the_same_stops_as_a_hash_block():
 def test_a_rest_directive_inside_a_docstring_is_never_rewrapped():
     text = 'def f():\n    """Do a thing.\n\n    .. note::\n\n       an aside\n    """\n'
     assert ps.reflow_comments(text, ".py", 384) == text
+
+
+# --------------------------------------------------------------------------- A docstring's own opening/closing physical line folds and wraps too, when it carries prose alongside its delimiter ---------------------------------------------------------------------------
+
+
+def test_a_short_opening_line_widens_and_joins_the_next_line():
+    """THE ROOT BUG THIS PLAN FIXES. Before it, a docstring's opening physical line -- carrying the opening quote plus a lead sentence, this repository's own convention on every multi-line docstring -- was excluded from the eligible map unconditionally and emitted verbatim, so a short lead sentence could never widen by absorbing the line beneath it."""
+    text = 'def f():\n    """Lead sentence.\n    More words that follow on the next line.\n    """\n'
+    assert ps.reflow_comments(text, ".py", 384) == (
+        'def f():\n    """Lead sentence. More words that follow on the next line.\n    """\n'
+    )
+
+
+def test_an_opening_line_alone_over_width_is_wrapped():
+    """The other direction of the same gap: an opening line that alone exceeds width used to be emitted unchanged, since a `"raw"` segment is never passed through `_join_and_wrap`."""
+    text = 'def f():\n    """' + ("word " * 90).strip() + '\n    """\n'
+    out = ps.reflow_comments(text, ".py", 80)
+    assert max(len(line) for line in out.splitlines()) <= 80
+    ast.parse(out)
+
+
+def test_a_closing_line_alone_over_width_is_wrapped():
+    """The closing-side twin of the previous control, gluing the closing delimiter back on after the wrap rather than before it."""
+    text = 'def f():\n    """Summary.\n\n    ' + ("word " * 90).strip() + '"""\n'
+    out = ps.reflow_comments(text, ".py", 80)
+    assert max(len(line) for line in out.splitlines()) <= 80
+    ast.parse(out)
+
+
+def test_a_command_example_ending_in_a_line_continuation_backslash_is_never_folded():
+    """A REAL, currently-tracked shape: `.ci/rediacc_ci/deploy/promote_r2_to_stable_hotfix.py`'s own docstring shows a shell command wrapped across two lines with a genuine `\\` continuation. Folding it would glue a delimiter onto an escaped position, corrupting the escape."""
+    text = 'def f(tmp):\n    """`aws s3 cp tmp/ --quiet \\\n    --cache-control no-cache`."""\n'
+    assert ps.reflow_comments(text, ".py", 384) == text
+
+
+def test_a_closing_line_ending_in_the_delimiters_own_quote_gets_a_protective_space():
+    """A REAL, currently-tracked shape: a docstring ending in a quoted word right before its own closing triple-quote. Gluing the closing delimiter straight onto text ending in the same quote character is an UNTERMINATED STRING, not cosmetic, so one space must separate them."""
+    text = 'def f():\n    """Reads "The round\n    failed in failure." """\n'
+    out = ps.reflow_comments(text, ".py", 384)
+    ast.parse(out)
+
+
+def test_a_trailing_comment_on_a_docstrings_closing_line_still_never_joins():
+    """THE BUG THIS FIX ALMOST INTRODUCED, caught by the pre-existing fixture above rather than by a new one, and pinned here so it cannot regress silently a second time. The tokenizer's own STRING text for the closing line ends at the quote; anything after it on the raw source line -- a real trailing comment -- is a SEPARATE token this fold must never absorb into the
+    reconstructed line, since gluing `close_delim` back on would otherwise rebuild the line from parts and silently drop whatever followed the quote in the original source."""
+    text = (
+        'def f():\n    """D\n    # example"""  # note\n'
+        "    # a real comment that is\n    # hard wrapped over two lines\n    return 1\n"
+    )
+    after = ps.reflow_comments(text, ".py", 384)
+    assert "# note" in after
+    assert after == (
+        'def f():\n    """D\n    # example"""  # note\n'
+        "    # a real comment that is hard wrapped over two lines\n    return 1\n"
+    )
 
 
 def _cstyle_comment_spans(text):
@@ -1101,8 +1155,7 @@ def test_the_loader_refuses(label, text):
 
 
 def test_the_loader_accepts_the_real_file():
-    """The MIRROR for the seven refusals above. Without it they prove only that
-    `load_rules` can raise, which a `raise RuleError` on line one would satisfy."""
+    """The MIRROR for the seven refusals above. Without it they prove only that `load_rules` can raise, which a `raise RuleError` on line one would satisfy."""
     globals_, rules = ps.load_rules_file(ROOT)
     assert len(rules) >= 18
     assert globals_["max_line_length"] == 384

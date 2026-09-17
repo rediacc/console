@@ -24,8 +24,7 @@ WHERE THIS REIMPLEMENTS sed, grep AND awk, AND WHY THE ANSWERS AGREE:
     and silently disagree the first time a non-ASCII character entered either
     guide.
 
-NO `xdist_group`. The harness is written into pytest's own `tmp_path`; every
-other file this touches is read and never written. Nothing is bound and no module global is mutated.
+NO `xdist_group`. The harness is written into pytest's own `tmp_path`; every other file this touches is read and never written. Nothing is bound and no module global is mutated.
 """
 
 import json

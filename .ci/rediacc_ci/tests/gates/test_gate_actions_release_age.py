@@ -103,8 +103,7 @@ def windows(gate) -> dict[str, str]:
 
 
 def test_the_shared_lib_is_what_the_gate_uses(gate):
-    """Anti-vacuity for this file: every behavioural assertion below drives the
-    shared lib, so if the gate stopped delegating to it they would all pass while proving nothing about the gate.
+    """Anti-vacuity for this file: every behavioural assertion below drives the shared lib, so if the gate stopped delegating to it they would all pass while proving nothing about the gate.
     """
     src = gate_source(gate)
     gate.assert_contains(
@@ -131,8 +130,7 @@ def test_a_fresh_release_is_deferred(gate):
 
 
 def test_an_aged_release_is_eligible(gate):
-    """THE CONTROL. Same helper, same shape, older release: it must come back
-    eligible. Without this the deferral could be a mute button and every other assertion here would still pass.
+    """THE CONTROL. Same helper, same shape, older release: it must come back eligible. Without this the deferral could be a mute button and every other assertion here would still pass.
     """
     gate.assert_eq(
         windows(gate)["aged"], "eligible", "a release well past the window must still be demanded"
@@ -141,8 +139,7 @@ def test_an_aged_release_is_eligible(gate):
 
 
 def test_a_zero_window_defers_nothing(gate):
-    """The second control: with the feature disabled, even a release published this
-    instant is eligible. Proves the deferral is driven by the window rather than by something incidental.
+    """The second control: with the feature disabled, even a release published this instant is eligible. Proves the deferral is driven by the window rather than by something incidental.
     """
     gate.assert_eq(
         windows(gate)["zero-window"], "eligible", "a zero window disables deferral entirely"
@@ -151,8 +148,7 @@ def test_a_zero_window_defers_nothing(gate):
 
 
 def test_null_policy_is_fail_closed(gate):
-    """A lookup hiccup must never manufacture a "you must upgrade now" failure.
-    Pinned against the source: the lib deliberately leaves null-handling to the caller, and this gate's choice is the fail-closed one.
+    """A lookup hiccup must never manufacture an "upgrade is required now" failure. Pinned against the source: the lib deliberately leaves null-handling to the caller, and this gate's choice is the fail-closed one.
     """
     src = gate_source(gate)
     gate.assert_contains(src, "if (!publishedAt) return true", "a missing publish date defers")
@@ -163,8 +159,7 @@ def test_null_policy_is_fail_closed(gate):
 
 
 def test_deferrals_are_reported_not_silent(gate):
-    """A silent defer is indistinguishable from a gate that stopped looking, which is
-    the failure mode this repo keeps finding in its own tooling.
+    """A silent defer is indistinguishable from a gate that stopped looking, which is the failure mode this repo keeps finding in its own tooling.
     """
     src = gate_source(gate)
     gate.assert_contains(src, "Deferred upgrades", "held-back upgrades are printed")
@@ -177,8 +172,7 @@ def test_deferrals_are_reported_not_silent(gate):
 
 
 def test_total_lookup_failure_is_a_failure_not_a_pass(gate):
-    """THE VACUOUS-PASS FIX. Zero resolved of N is evidence the read failed, never
-    evidence that everything is current.
+    """THE VACUOUS-PASS FIX. Zero resolved of N is evidence the read failed, never evidence that everything is current.
     """
     src = gate_source(gate)
     gate.assert_contains(
@@ -194,8 +188,7 @@ def test_total_lookup_failure_is_a_failure_not_a_pass(gate):
 
 
 def test_partial_failure_is_deliberately_not_fatal(gate):
-    """Scope matters: failing on ONE flaky lookup would make this the flakiest gate in
-    CI. Only a total failure is fatal, and that choice is written down.
+    """Scope matters: failing on ONE flaky lookup would make this the flakiest gate in CI. Only a total failure is fatal, and that choice is written down.
     """
     gate.assert_contains(
         gate_source(gate),

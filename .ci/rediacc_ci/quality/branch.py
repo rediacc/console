@@ -114,7 +114,7 @@ def fetch_refspec(base: str) -> str:
 
 
 def indent(text: str, width: int = 4) -> list[str]:
-    """`sed 's/^/    /'` over a captured stream, as a list of lines.
+    """`sed 's/^/ /'` over a captured stream, as a list of lines.
 
     The trailing newline is dropped the way sed's line-oriented reading does, so an output ending in `\\n` does not produce a final line of four spaces.
     """

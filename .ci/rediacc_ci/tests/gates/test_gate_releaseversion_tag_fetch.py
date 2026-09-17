@@ -10,9 +10,7 @@ structurally cannot catch: CD's label and CI's label both descend from this one 
 The block is EXTRACTED FROM THE REAL SCRIPT by its own anchors and run in a throwaway git repo -- initialize.sh as a whole needs submodules, secrets and a GitHub token, none of which this behaviour depends on. If the block is rewritten the anchors stop matching and `test_block_is_extractable` fails, rather than the gate silently testing nothing.
 
 THE ONE REAL DIFFERENCE, AND IT IS A DEFECT THE PORT DOES NOT INHERIT. The twin's cases share one `$WORK` directory and depend on each other through it: `test_failed_fetch_redacts_the_token` asserts on `$WORK/run.log` WITHOUT RUNNING ANYTHING -- it reads the log the previous case happened to leave -- and `test_planted_swallowed_fetch_continues` reuses the `bin-badgit` shim built
-inside `test_failed_fetch_stops_the_run`. Run either one alone and it passes over an
-absent file or fails on a missing shim; reorder the two and the redaction case
-asserts against the wrong run. Each case here builds what it needs and drives its own run, which is why the redaction case is slower and why it is now actually testing the thing its name claims.
+inside `test_failed_fetch_stops_the_run`. Run either one alone and it passes over an absent file or fails on a missing shim; reorder the two and the redaction case asserts against the wrong run. Each case here builds what it needs and drives its own run, which is why the redaction case is slower and why it is now actually testing the thing its name claims.
 """
 
 import os
@@ -68,8 +66,7 @@ def extract_block(gate) -> str:
 
 
 def make_runner(gate, path, mutation=None) -> None:
-    """A standalone script wrapping the real block with logging stubs and a no-op
-    sleep (the retry backoff would otherwise cost 15 seconds per failing case)."""
+    """A standalone script wrapping the real block with logging stubs and a no-op sleep (the retry backoff would otherwise cost 15 seconds per failing case)."""
     block = extract_block(gate)
     if mutation is not None:
         mutated = mutation(block)
@@ -189,8 +186,7 @@ def test_successful_fetch_yields_the_tag(gate, tmp_path):
 
 
 def test_failed_fetch_stops_the_run(gate, tmp_path):
-    """THE DEFECT: the fetch fails. Before the fix this was swallowed and the script
-    went on to compute a version from a tag list it could not refresh.
+    """THE DEFECT: the fetch fails. Before the fix this was swallowed and the script went on to compute a version from a tag list it could not refresh.
     """
     gate.log_test("a failing fetch stops the run instead of guessing")
     result = failing_fetch_run(gate, tmp_path)
@@ -205,8 +201,7 @@ def test_failed_fetch_stops_the_run(gate, tmp_path):
 
 
 def test_failed_fetch_redacts_the_token(gate, tmp_path):
-    """The twin reads the PREVIOUS case's log here. This one drives its own run, so
-    the assertion is about a fetch that happened rather than about a file."""
+    """The twin reads the PREVIOUS case's log here. This one drives its own run, so the assertion is about a fetch that happened rather than about a file."""
     gate.log_test("the failure output does not leak the app token")
     result = failing_fetch_run(gate, tmp_path)
     gate.assert_contains(result.combined, "***", "git's stderr must be redacted, not suppressed")
@@ -229,8 +224,7 @@ def test_no_tags_after_a_good_fetch_stops_the_run(gate, tmp_path):
 
 
 def test_planted_swallowed_fetch_continues(gate, tmp_path):
-    """THE CONTROL. Plant the pre-fix behaviour -- fetch failure swallowed, tag list
-    used regardless -- and prove the same failing fetch sails through. Without this, `test_failed_fetch_stops_the_run` might be red for some unrelated reason.
+    """THE CONTROL. Plant the pre-fix behaviour -- fetch failure swallowed, tag list used regardless -- and prove the same failing fetch sails through. Without this, `test_failed_fetch_stops_the_run` might be red for some unrelated reason.
     """
     gate.log_test("control: with the failure swallowed, the run continues on a stale tag list")
     seed_source_repo(gate, tmp_path / "src-stale", "v0.0.9")

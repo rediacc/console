@@ -107,9 +107,7 @@ def compose_chunks(prompts: str, fx: str, template: str):
 
 
 def compose(prompts: str, fx: str, template: str) -> bytes:
-    """`compose_chunks` joined. For a caller that wants the whole block and has
-    no file to stream it into, which is the pure-helper case the selftest and
-    `test_pure_helpers_are_exercised_directly` drive."""
+    """`compose_chunks` joined. For a caller that wants the whole block and has no file to stream it into, which is the pure-helper case the selftest and `test_pure_helpers_are_exercised_directly` drive."""
     return b"".join(compose_chunks(prompts, fx, template))
 
 

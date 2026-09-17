@@ -210,8 +210,7 @@ def test_parse_args_stores_an_injection_rather_than_running_it():
     """common.sh:309-314's security fix, re-proved on both sides.
 
     The twin used `eval "$key=\\"$value\\""` until 2026-09-06, which EXECUTED a
-    value carrying `;`. `printf -v` stores the bytes. A dict cannot execute
-    anything, so the port has the property structurally -- and the test drives the bash too, because the property that matters is the twin's.
+    value carrying `;`. `printf -v` stores the bytes. A dict cannot execute anything, so the port has the property structurally -- and the test drives the bash too, because the property that matters is the twin's.
     """
     payload = '--foo=a"; PROOF=INJECTED; :"'
     rc, out, _err = twin(

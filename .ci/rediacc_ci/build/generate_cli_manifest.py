@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/generate-cli-manifest.sh` (139 lines).
 
-Builds `manifest.json` -- the file `rdc update` reads to learn what the latest
-release is and where to download it -- from the `rdc-<platform>-<arch>.sha256`
-files a CLI build leaves in a directory.
+Builds `manifest.json` -- the file `rdc update` reads to learn what the latest release is and where to download it -- from the `rdc-<platform>-<arch>.sha256` files a CLI build leaves in a directory.
 
 LIVE CALLERS, neither repointed by this port:
   * `.github/workflows/cd-stage.yml:168-173`  `--version <next> --channel <ch>
@@ -11,35 +9,22 @@ LIVE CALLERS, neither repointed by this port:
   * `.ci/legacy/run-legacy.sh:210-211`  `--version <describe> --input dist/cli/`,
     the PR-preview path, which takes the `<input>/manifest.json` default.
 
-It is also DRIVEN AS A SUBJECT by `.ci/scripts/test/proxies/proxy-cli-manifest.sh`
-and its own port `rediacc_ci.proxies.cli_manifest`, which run the BASH twin over
-a fixture. Nothing there is repointed either.
+It is also DRIVEN AS A SUBJECT by `.ci/scripts/test/proxies/proxy-cli-manifest.sh` and its own port `rediacc_ci.proxies.cli_manifest`, which run the BASH twin over a fixture. Nothing there is repointed either.
 
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHY
 -----------------------------------------------------------------------------
-`jq`, `date`, `awk`, `dirname` and `mkdir` are all spawned exactly as the twin
-spawns them.
+`jq`, `date`, `awk`, `dirname` and `mkdir` are all spawned exactly as the twin spawns them.
 
-`jq` is not negotiable: THE MANIFEST IS jq'S BYTES. `:137` writes `jq .`'s
-pretty-printer straight to the output file, and that file is uploaded to R2 and
-served to every `rdc update`. Two-space indent, key order, `/` left unescaped,
-one trailing newline -- a second pretty-printer that agreed today could stop
-agreeing on a jq bump, and the twin's `:89` refusal proves jq is a hard
+`jq` is not negotiable: THE MANIFEST IS jq'S BYTES. `:137` writes `jq .`'s pretty-printer straight to the output file, and that file is uploaded to R2 and served to every `rdc update`. Two-space indent, key order, `/` left unescaped, one trailing newline -- a second pretty-printer that agreed today could stop agreeing on a jq bump, and the twin's `:89` refusal proves jq is a hard
 requirement of this script rather than an implementation detail.
 
 `date` and `awk` are spawned for a sharper reason than fidelity of output:
 FIDELITY OF FAILURE. Both sit inside `VAR="$(...)"` assignments, whose status
-under `set -e` is the substitution's, so a host without them does not degrade --
-it stops. Driven 2026-09-14 on a PATH holding neither: a missing `awk` exits
-**127** at `:116` with `generate-cli-manifest.sh: line 116: awk: command not
-found`, three log lines in and with no manifest written. `datetime.now()` and
-`str.split()` would both have quietly succeeded there, turning a stop into a
-silent pass, which is the one direction a port of a release-path script must
-not move.
+under `set -e` is the substitution's, so a host without them does not degrade -- it stops. Driven 2026-09-14 on a PATH holding neither: a missing `awk` exits **127** at `:116` with `generate-cli-manifest.sh: line 116: awk: command not found`, three log lines in and with no manifest written. `datetime.now()` and `str.split()` would both have quietly succeeded there, turning a stop
+into a silent pass, which is the one direction a port of a release-path script must not move.
 
-`dirname` is spawned because it is the one substitution here whose failure does
-NOT stop the script; see `capture_lax`.
+`dirname` is spawned because it is the one substitution here whose failure does NOT stop the script; see `capture_lax`.
 
 -----------------------------------------------------------------------------
 FIVE DEFECTS IN THE TWIN, ALL REPRODUCED RATHER THAN REPAIRED
@@ -109,8 +94,7 @@ _ROOT_PARENT_INDEX = 3
 # `:22`.
 DEFAULT_REPO = "rediacc/console"
 
-# `:65`, appended to the repo root. Defect 3 lives in the asymmetry between this
-# absolute default and a caller-relative `--input`.
+# `:65`, appended to the repo root. Defect 3 lives in the asymmetry between this absolute default and a caller-relative `--input`.
 DEFAULT_INPUT_SUBDIR = ("dist", "cli")
 
 # `:76`. The fallback when `RELEASES_BASE_URL` is unset or empty.
@@ -126,8 +110,7 @@ DATE_FORMAT = "+%Y-%m-%dT%H:%M:%SZ"
 PLATFORMS = ("linux", "mac", "win")
 ARCHES = ("x64", "arm64")
 
-# `:77`. A channel in this set (or an empty channel) gets the immutable
-# versioned URL; anything else gets its own channel path.
+# `:77`. A channel in this set (or an empty channel) gets the immutable versioned URL; anything else gets its own channel path.
 VERSIONED_URL_CHANNELS = ("stable", "edge")
 
 # `:100`, verbatim: the shape of the empty manifest before any binary is added.
@@ -148,8 +131,7 @@ SHA256_LENGTH = 64
 # `:131`. How much of the hash the log line shows.
 SHA256_LOG_PREFIX = 16
 
-# The twin's line numbers. Bash names the line in `$2: unbound variable` and in
-# `command not found`, so a reader diffs on them.
+# The twin's line numbers. Bash names the line in `$2: unbound variable` and in `command not found`, so a reader diffs on them.
 FLAG_LINES = {
     "--version": 28,
     "--input": 32,
@@ -170,8 +152,7 @@ NO_JQ_MESSAGE = "jq is required for manifest generation"
 # `:59`, verbatim.
 NO_VERSION_MESSAGE = "--version is required"
 
-# `:52`, the lead of the one refusal this parser has (it DOES have a `*)` arm,
-# unlike its `build-pages.sh` sibling).
+# `:52`, the lead of the one refusal this parser has (it DOES have a `*)` arm, unlike its `build-pages.sh` sibling).
 UNKNOWN_OPTION_LEAD = "Unknown option: "
 
 
@@ -209,9 +190,7 @@ def _strip_trailing_newlines(text: str) -> str:
 def capture_strict(argv: list[str], line: int, stdin: str | None = None) -> str:
     """`VAR="$(cmd)"`, whose own status IS the substitution's under `set -e`.
 
-    stderr is INHERITED, exactly as the twin's is: a `jq: error` or an awk
-    diagnostic still reaches the caller's terminal, it is only stdout that is
-    captured. A non-zero status raises `Stop`, which is `set -e` firing.
+    stderr is INHERITED, exactly as the twin's is: a `jq: error` or an awk diagnostic still reaches the caller's terminal, it is only stdout that is captured. A non-zero status raises `Stop`, which is `set -e` firing.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -238,11 +217,7 @@ def capture_strict(argv: list[str], line: int, stdin: str | None = None) -> str:
 def capture_lax(argv: list[str], line: int) -> str:
     """`cmd "$(other)"`: a substitution used as an ARGUMENT, not as the command.
 
-    `set -e` does not fire here, because the status that counts is the OUTER
-    command's. `:136` is the one place in this script where that matters: with
-    `dirname` absent, bash prints its `command not found`, substitutes the empty
-    string, and hands `mkdir -p ''` to the next process, which is the thing that
-    then fails. Reproducing the outer failure means reproducing the empty string.
+    `set -e` does not fire here, because the status that counts is the OUTER command's. `:136` is the one place in this script where that matters: with `dirname` absent, bash prints its `command not found`, substitutes the empty string, and hands `mkdir -p ''` to the next process, which is the thing that then fails. Reproducing the outer failure means reproducing the empty string.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -287,9 +262,7 @@ class Options:
 def parse_argv(argv: list[str]) -> Options:
     """`:25-56`, arm for arm, including defect 4.
 
-    Returns the filled `Options`. Raises `Stop(0)` for `--help` (after printing
-    the usage line to STDOUT, as `echo` does) and `Stop(1)` for an unknown
-    option or a value-taking flag with no value.
+    Returns the filled `Options`. Raises `Stop(0)` for `--help` (after printing the usage line to STDOUT, as `echo` does) and `Stop(1)` for an unknown option or a value-taking flag with no value.
     """
     opts = Options()
     setters = {
@@ -360,8 +333,7 @@ def _body(argv: list[str]) -> int:
     log.info("  Input: %s" % input_dir)  # `:85`
     log.info("  Output: %s" % output_path)  # `:86`
 
-    # `:89-92`. `command -v jq &>/dev/null` differs from `shutil.which` only for
-    # a shell FUNCTION or alias named jq, which a script bash spawns cannot inherit.
+    # `:89-92`. `command -v jq &>/dev/null` differs from `shutil.which` only for a shell FUNCTION or alias named jq, which a script bash spawns cannot inherit.
     if shutil.which("jq") is None:
         log.error(NO_JQ_MESSAGE)
         return 1
@@ -400,8 +372,7 @@ def _body(argv: list[str]) -> int:
 
             sha256 = capture_strict(["awk", FIRST_FIELD_PROGRAM, checksum_file], AWK_LINE)  # `:116`
             if not sha256 or len(sha256) != SHA256_LENGTH:  # `:117-120`
-                # Defect 2: empty, truncated and multi-line all land here, and
-                # none of them changes the exit code.
+                # Defect 2: empty, truncated and multi-line all land here, and none of them changes the exit code.
                 log.warn("  Invalid checksum for %s, skipping" % name)
                 continue
 
@@ -431,8 +402,7 @@ def _body(argv: list[str]) -> int:
     # `:136`. The inner `dirname` is LAX; the outer `mkdir` is strict.
     run_strict(["mkdir", "-p", capture_lax(["dirname", output_path], MKDIR_LINE)], MKDIR_LINE)
 
-    # `:137`. `>` truncates the destination BEFORE jq runs, so a jq failure here
-    # leaves a zero-byte manifest behind. Reproduced by opening in "w".
+    # `:137`. `>` truncates the destination BEFORE jq runs, so a jq failure here leaves a zero-byte manifest behind. Reproduced by opening in "w".
     sys.stdout.flush()
     sys.stderr.flush()
     try:

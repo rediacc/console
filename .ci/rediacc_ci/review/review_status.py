@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/review/review-status.sh`, the "Review Complete"
-check-run reporter.
+"""Port of `.ci/scripts/review/review-status.sh`, the "Review Complete" check-run reporter.
 
 THE SHAPE OF THE THING FIRST, because nothing else here makes sense without it. This is not a CI job and must never become one. Console CI's old `Review Gate` ran on `pull_request` -- BEFORE the review it is named after can have happened -- and asserted nothing about WHICH commit was reviewed. The assertion cannot move into CI either, because the review only starts once CI is
 green, so a CI job that waits for the review deadlocks the pipeline that produces it. The verdict is therefore posted as an INDEPENDENT check-run from a workflow no CI job references. That acyclicity is the property to preserve: never add a `needs:` or a `wait-for` on `Review Complete` anywhere inside Console CI.

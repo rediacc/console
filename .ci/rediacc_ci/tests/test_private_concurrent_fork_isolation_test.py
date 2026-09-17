@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/private/concurrent_fork_isolation_test.py`
-against its twin `.ci/scripts/private/concurrent-fork-isolation-test.sh`.
+"""Differential: `.ci/rediacc_ci/private/concurrent_fork_isolation_test.py` against its twin `.ci/scripts/private/concurrent-fork-isolation-test.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
@@ -186,8 +185,7 @@ def _mask(text: str, root: pathlib.Path, tmp: pathlib.Path) -> str:
 
 
 def _records(raw: str) -> list[str]:
-    """Split the call log into records. `ssh` payloads span many lines, so a
-    naive `splitlines()` would shred five of the eight remote scripts."""
+    """Split the call log into records. `ssh` payloads span many lines, so a naive `splitlines()` would shred five of the eight remote scripts."""
     records: list[str] = []
     current: str | None = None
     # ONE trailing newline is the last record's TERMINATOR, not part of it. Any newline INSIDE a record is kept, because `PROJECTS_CMD` genuinely ends
@@ -640,9 +638,7 @@ def test_port_and_twin_agree(tmp_path, binder_kw, run_kw):
 
 
 def test_every_external_is_reached_in_order_on_the_passing_run(tmp_path):
-    """ANTI-VACUITY, and the strongest claim in the file. Every comparison above
-    is worthless if the run never orchestrated anything, and a port that printed the same twenty-four log lines while spawning nothing would satisfy a
-    stdout-only comparison exactly."""
+    """ANTI-VACUITY, and the strongest claim in the file. Every comparison above is worthless if the run never orchestrated anything, and a port that printed the same twenty-four log lines while spawning nothing would satisfy a stdout-only comparison exactly."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     out = _run(PORT_REL, root, tmp_path, binder)
@@ -691,8 +687,7 @@ def test_the_two_sidecar_files_reach_the_upload_byte_for_byte(tmp_path):
     `count=$$i` come from a QUOTED heredoc and must arrive UNEXPANDED: the
     doubled `$$` is compose's own escape, and a port that let a shell or an
     f-string touch them would upload `count=<pid>` and the checkpoint phase
-    would compare two numbers that never existed. The twin `rm -rf`s the directory on the line after the upload, so the fake snapshot is the only
-    place either subject's bytes can be read."""
+    would compare two numbers that never existed. The twin `rm -rf`s the directory on the line after the upload, so the fake snapshot is the only place either subject's bytes can be read."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     snapshots = {}
@@ -716,8 +711,7 @@ def test_the_two_sidecar_files_reach_the_upload_byte_for_byte(tmp_path):
 def test_the_double_tick_is_a_defect_pinned_rather_than_repaired(tmp_path):
     """A COSMETIC DEFECT IN THE TWIN. Four `log_info` calls open their message
     with a literal U+2713 and `log_info` already prefixes one, so the twin
-    prints two. Reproduced exactly; the day the twin drops one of them this goes
-    red and names the decision instead of letting a port drift."""
+    prints two. Reproduced exactly; the day the twin drops one of them this goes red and names the decision instead of letting a port drift."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -730,9 +724,7 @@ def test_the_double_tick_is_a_defect_pinned_rather_than_repaired(tmp_path):
 
 
 def test_the_wait_loop_burns_all_thirty_sleeps_when_the_counter_never_moves(tmp_path):
-    """A SECOND DEFECT IN THE TWIN, PINNED. `sleep 2` comes AFTER the `&& break`,
-    so a counter that never reaches 15 does thirty readings and THIRTY sleeps: the thirtieth waits two seconds after the last reading the loop will ever take. Thirty `sleep 2` calls is the shape, and a port that broke out early
-    would be friendlier and would not be the same script."""
+    """A SECOND DEFECT IN THE TWIN, PINNED. `sleep 2` comes AFTER the `&& break`, so a counter that never reaches 15 does thirty readings and THIRTY sleeps: the thirtieth waits two seconds after the last reading the loop will ever take. Thirty `sleep 2` calls is the shape, and a port that broke out early would be friendlier and would not be the same script."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, rules=_ssh_rule("docker-aaa.sock", {"out": "1\n"}))
     for subject in (TWIN_REL, PORT_REL):
@@ -744,8 +736,7 @@ def test_the_wait_loop_burns_all_thirty_sleeps_when_the_counter_never_moves(tmp_
 
 
 def test_a_healthy_run_is_not_refused(tmp_path):
-    """THE NEGATIVE CONTROL on all four assertions. A gate with only positive
-    controls will happily refuse a run where nothing is wrong."""
+    """THE NEGATIVE CONTROL on all four assertions. A gate with only positive controls will happily refuse a run where nothing is wrong."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -759,8 +750,7 @@ def test_a_healthy_run_is_not_refused(tmp_path):
 
 
 def test_the_wildcard_bind_is_the_reason_the_script_exists(tmp_path):
-    """renet#60 IS `0.0.0.0:5432`. If this stops firing the script is certifying
-    nothing, whichever subject runs it."""
+    """renet#60 IS `0.0.0.0:5432`. If this stops firing the script is certifying nothing, whichever subject runs it."""
     root = _fixture(tmp_path)
     binder = _binder(
         tmp_path, rules=_ssh_rule("ss -Hltnp4", {"out": "0.0.0.0:5432\n127.0.1.1:5432\n"})
@@ -775,9 +765,7 @@ def test_the_wildcard_bind_is_the_reason_the_script_exists(tmp_path):
 
 
 def test_the_cleanup_trap_runs_on_every_path_including_the_early_aborts(tmp_path):
-    """`trap cleanup EXIT` is the twin's only guarantee that a failed run leaves
-    no repos behind. A port that put the cleanup after the last statement rather
-    than in a `finally` would pass every happy-path comparison."""
+    """`trap cleanup EXIT` is the twin's only guarantee that a failed run leaves no repos behind. A port that put the cleanup after the last statement rather than in a `finally` would pass every happy-path comparison."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, rules=_ssh_rule("ss -Hltnp4", {"out": ""}))
     for subject in (TWIN_REL, PORT_REL):
@@ -791,8 +779,7 @@ def test_the_cleanup_trap_runs_on_every_path_including_the_early_aborts(tmp_path
 
 def test_the_unbound_array_abort_runs_no_cleanup_whatsoever(tmp_path):
     """THE ONE PATH WITH NO TRAP. `${WORKER_IDS[0]}` is read on line 36 and
-    `trap cleanup EXIT` is installed on line 67, so a whitespace-only `VM_WORKERS` dies before any handler exists. A port that installed its `finally` around the whole of `main` would run six `rdc` calls the twin
-    never runs."""
+    `trap cleanup EXIT` is installed on line 67, so a whitespace-only `VM_WORKERS` dies before any handler exists. A port that installed its `finally` around the whole of `main` would run six `rdc` calls the twin never runs."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -827,8 +814,8 @@ def test_backslashes_in_remote_output_are_the_one_known_divergence(tmp_path):
 
 
 def test_the_drift_is_real_and_the_split_survives_repetition(tmp_path):
-    """A CONTROL ON THE NORMALISATION. `_split_drifting` exists because a shell
-    does not fix the order in which two members of one pipeline reach their `exec`. If that were untrue the split would be discarding four records for nothing, so both halves are re-derived here rather than trusted: the twin is run repeatedly on one fixture, the ordered spine must be IDENTICAL every time, and the port must match it.
+    """A CONTROL ON THE NORMALISATION. `_split_drifting` exists because a shell does not fix the order in which two members of one pipeline reach their `exec`. If that were untrue the split would be discarding four records for nothing, so both halves are re-derived here rather than trusted: the twin is run repeatedly on one fixture, the ordered spine must be IDENTICAL every time,
+    and the port must match it.
 
     The instability itself was measured 2026-09-14: on the raw log, `grep` before `tail` seven times and `tail` before `grep` five times out of twelve, and under `pytest -n 8` a `head` line landed two slots ahead of a command that causally precedes its own pipeline.
     """
@@ -852,8 +839,7 @@ def test_the_drift_is_real_and_the_split_survives_repetition(tmp_path):
 
 
 def test_the_drift_split_removes_only_the_four_right_hand_tools():
-    """A CONTROL ON THE CONTROL. If `_split_drifting` removed more it would hide
-    the phase ordering that every case above depends on."""
+    """A CONTROL ON THE CONTROL. If `_split_drifting` removed more it would hide the phase ordering that every case above depends on."""
     sample = ["rdc\tx", "head\t-1", "ssh\ty", "sort\t-u", "grep\t-q", "tee\tf", "tail\t-20"]
     ordered, drifting = _split_drifting(sample)
     assert ordered == ["rdc\tx", "ssh\ty", "grep\t-q"], ordered
@@ -877,8 +863,7 @@ def test_the_record_splitter_keeps_multiline_ssh_payloads_whole():
 
 
 def test_the_mask_does_not_hide_the_message(tmp_path):
-    """A CONTROL ON THE MASK. `_mask` collapses the `<$0>: line <n>: ` prefix on
-    both sides; if it were greedier it would hide real divergences and every
+    """A CONTROL ON THE MASK. `_mask` collapses the `<$0>: line <n>: ` prefix on both sides; if it were greedier it would hide real divergences and every
     case above would pass for the wrong reason."""
     sample = "/a/b/twin.sh: line 73: rdc: command not found\nkept: line noise\n"
     masked = _mask(sample, pathlib.Path("/nowhere"), pathlib.Path("/nowhere-either"))
@@ -935,9 +920,7 @@ def test_arith_reads_the_literals_bash_reads(text, expected):
 
 
 def test_arith_reports_an_unset_name_as_fatal_and_a_bad_shape_as_not_fatal():
-    """The two failure modes are NOT interchangeable, and conflating them is the
-    mistake a port makes here: a nounset error kills the shell even from inside
-    an `if` condition, while a syntax error prints and leaves `[[ ]]` false."""
+    """The two failure modes are NOT interchangeable, and conflating them is the mistake a port makes here: a nounset error kills the shell even from inside an `if` condition, while a syntax error prints and leaves `[[ ]]` false."""
     with pytest.raises(port._ArithError) as unset:
         port.arith("abc")
     assert unset.value.fatal is True

@@ -1,12 +1,9 @@
-"""Differential: `.ci/rediacc_ci/private/renet_root_tests.py` against its twin
-`.ci/scripts/private/renet-root-tests.sh`.
+"""Differential: `.ci/rediacc_ci/private/renet_root_tests.py` against its twin `.ci/scripts/private/renet-root-tests.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-NO REAL `go` IS EVER INVOKED. The subject's whole job is to run root-tagged Go
-tests that need `sudo`, a BTRFS mount and a compiled `private/renet`; a suite
-that shelled out to the real toolchain would take minutes, would need root, and would SKIP on any machine that lacked one of those, which is the exact vacuity this campaign exists to avoid. `go` is a recording fake on a scratch PATH: it appends its cwd and full argv to a log, writes canned bytes to stdout AND stderr, and exits with a canned status. Every case below therefore drives
-a `go test` outcome that could not otherwise be produced on this machine at all, including "the run passed but one named test never appeared".
+NO REAL `go` IS EVER INVOKED. The subject's whole job is to run root-tagged Go tests that need `sudo`, a BTRFS mount and a compiled `private/renet`; a suite that shelled out to the real toolchain would take minutes, would need root, and would SKIP on any machine that lacked one of those, which is the exact vacuity this campaign exists to avoid. `go` is a recording fake on a scratch
+PATH: it appends its cwd and full argv to a log, writes canned bytes to stdout AND stderr, and exits with a canned status. Every case below therefore drives a `go test` outcome that could not otherwise be produced on this machine at all, including "the run passed but one named test never appeared".
 
 WHAT IS COMPARED, AND WHY IT IS FOUR THINGS. Every case compares:
 
@@ -51,9 +48,8 @@ PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/renet_root_tests.py")
 
 # The recording `go`. Configured by its own TEXT rather than through the environment: the subject advertises "No env vars", and a fixture that added three would make any env-shaped divergence unattributable.
 #
-# BOTH STREAMS ARE WRITTEN AS RAW BYTES AND EACH IS FLUSHED IMMEDIATELY. Bytes, because one case drives output that is not valid UTF-8 and a `str` write would raise inside the fake instead of reaching the subject. The subject merges the
-# two streams with `2>&1`, so this is what proves the merge happens; the flushes
-# make the interleaving deterministic, which an unflushed pair would not be.
+# BOTH STREAMS ARE WRITTEN AS RAW BYTES AND EACH IS FLUSHED IMMEDIATELY. Bytes, because one case drives output that is not valid UTF-8 and a `str` write would raise inside the fake instead of reaching the subject. The subject merges the two streams with `2>&1`, so this is what proves the merge happens; the flushes make the interleaving deterministic, which an unflushed pair would
+# not be.
 FAKE_GO = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
@@ -110,8 +106,7 @@ def _transcript(*passing: str, ok: bool = True) -> str:
 
 ALL_PASS = _transcript(*NAMES).encode("utf-8")
 
-# `<$0>: line <n>: ` -- the only thing masked, on both sides. See the module
-# docstring; `test_the_mask_does_not_hide_the_message` pins it.
+# `<$0>: line <n>: ` -- the only thing masked, on both sides. See the module docstring; `test_the_mask_does_not_hide_the_message` pins it.
 SHELL_PREFIX = re.compile(r"^[^\n]*?: line \d+: ", re.MULTILINE)
 
 
@@ -207,8 +202,7 @@ def _run(
         "PATH": binder,
         "HOME": str(tmp_path),
         "PYTHONDONTWRITEBYTECODE": "1",
-        # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci.log`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     runner = "bash" if subject.suffix == ".sh" else "python3"
@@ -354,8 +348,7 @@ def test_the_guard_fires_on_a_green_run_that_skipped_everything(tmp_path):
 
 
 def test_the_guard_does_not_fire_on_a_real_pass(tmp_path):
-    """THE NEGATIVE CONTROL. A gate with only positive controls will happily
-    flag a tree in which nothing is wrong."""
+    """THE NEGATIVE CONTROL. A gate with only positive controls will happily flag a tree in which nothing is wrong."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -366,9 +359,7 @@ def test_the_guard_does_not_fire_on_a_real_pass(tmp_path):
 
 
 def test_only_the_first_missing_name_is_reported(tmp_path):
-    """The twin's loop exits on the FIRST miss, so a run in which all three are
-    absent names one test, not three. Reproduced rather than improved: a port that listed all three would be a different gate, and the difference would
-    show up in CI annotations."""
+    """The twin's loop exits on the FIRST miss, so a run in which all three are absent names one test, not three. Reproduced rather than improved: a port that listed all three would be a different gate, and the difference would show up in CI annotations."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, out=b"PASS\nok\t0.001s\n")
     for subject in (TWIN_REL, PORT_REL):
@@ -379,8 +370,7 @@ def test_only_the_first_missing_name_is_reported(tmp_path):
 
 
 def test_a_substring_match_satisfies_the_guard(tmp_path):
-    """A TWIN DEFECT, PINNED IN BOTH: `grep -q -- "--- PASS: $t"` is a substring
-    test, so `--- PASS: TestLoadState_PreservesDataAndMore` satisfies the guard
+    """A TWIN DEFECT, PINNED IN BOTH: `grep -q -- "--- PASS: $t"` is a substring test, so `--- PASS: TestLoadState_PreservesDataAndMore` satisfies the guard
     for `TestLoadState_PreservesData`. A renamed test would therefore keep the
     guard green while the test it names no longer exists.
 
@@ -398,9 +388,7 @@ def test_a_substring_match_satisfies_the_guard(tmp_path):
 
 
 def test_the_mask_does_not_hide_the_message(tmp_path):
-    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix
-    on both sides; if it were greedier than that it would hide real divergences
-    and every case above would pass for the wrong reason."""
+    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix on both sides; if it were greedier than that it would hide real divergences and every case above would pass for the wrong reason."""
     sample = "/a/b/twin.sh: line 20: go: command not found\nkept: line noise\n"
     masked = _mask(sample, pathlib.Path("/nowhere"), pathlib.Path("/nowhere-either"))
     assert masked == "<shell>: go: command not found\nkept: line noise\n", masked

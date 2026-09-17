@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.deploy_account` against its twin
-`.ci/scripts/deploy/deploy-account.sh`.
+"""Differential: `rediacc_ci.deploy.deploy_account` against its twin `.ci/scripts/deploy/deploy-account.sh`.
 
 RECORDING FAKE `npx` AND `npm` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT. Nothing here reaches Cloudflare and nothing installs anything: the fakes log their exact argv, their cwd, and the value of `CLOUDFLARE_API_TOKEN` they were handed. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
 ledger is a separate, achievable piece of work. This is that piece.
@@ -40,8 +39,7 @@ FIXTURE_TOML = (
     '[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-db-eu"\ndatabase_id = "x"\n'
 )
 
-# What the real binaries on the scratch PATH must be. `grep`, `head` and `sed` are the database-name pipeline on BOTH sides (the port shells out to the same
-# three); `uname` and `dirname` are what `common.sh` needs at source time.
+# What the real binaries on the scratch PATH must be. `grep`, `head` and `sed` are the database-name pipeline on BOTH sides (the port shells out to the same three); `uname` and `dirname` are what `common.sh` needs at source time.
 PATH_MINIMUM = ("grep", "head", "sed", "tr", "uname", "dirname")
 
 FAKE_NPX = """#!/usr/bin/python3
@@ -203,9 +201,7 @@ def test_the_copied_twin_is_the_real_twin(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_twin_ignores_the_root_override(tmp_path: pathlib.Path) -> None:
-    """$REDIACC_CI_ROOT STEERS ONLY THE PORT, and the two must still land on the
-    same tree. Pointed at a decoy, the bash side keeps resolving from its own location, so a differential that relied on the variable for both would be
-    comparing nothing."""
+    """$REDIACC_CI_ROOT STEERS ONLY THE PORT, and the two must still land on the same tree. Pointed at a decoy, the bash side keeps resolving from its own location, so a differential that relied on the variable for both would be comparing nothing."""
     root = _fixture_root(tmp_path)
     decoy = tmp_path / "decoy"
     (decoy / "workers" / "account").mkdir(parents=True)
@@ -224,8 +220,7 @@ def test_the_twin_ignores_the_root_override(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_two_wrangler_calls_are_pinned_in_full(tmp_path: pathlib.Path) -> None:
-    """MIGRATIONS FIRST, THEN DEPLOY, both with the SAME `--config`, both from
-    inside the worker directory, both carrying the token."""
+    """MIGRATIONS FIRST, THEN DEPLOY, both with the SAME `--config`, both from inside the worker directory, both carrying the token."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu")
     assert old.returncode == 0, old.stderr
@@ -250,8 +245,7 @@ def test_the_two_wrangler_calls_are_pinned_in_full(tmp_path: pathlib.Path) -> No
 
 
 def test_the_edge_target_selects_the_edge_config(tmp_path: pathlib.Path) -> None:
-    """`--target edge` composes `wrangler.edge-<region>.toml` (:25-26), and the
-    target string is echoed into the two log lines."""
+    """`--target edge` composes `wrangler.edge-<region>.toml` (:25-26), and the target string is echoed into the two log lines."""
     root = _fixture_root(tmp_path, configs={"wrangler.edge-eu.toml": FIXTURE_TOML})
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu", "--target", "edge")
     assert old.returncode == 0, old.stderr
@@ -261,8 +255,7 @@ def test_the_edge_target_selects_the_edge_config(tmp_path: pathlib.Path) -> None
 
 
 def test_an_unknown_target_is_silently_production(tmp_path: pathlib.Path) -> None:
-    """THE COMPARISON IS AGAINST THE LITERAL `edge` AND NOTHING ELSE (:25), so a
-    typo deploys the production config while printing the typo."""
+    """THE COMPARISON IS AGAINST THE LITERAL `edge` AND NOTHING ELSE (:25), so a typo deploys the production config while printing the typo."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu", "--target", "Edge")
     assert old.returncode == 0, old.stderr
@@ -275,8 +268,7 @@ def test_an_unknown_target_is_silently_production(tmp_path: pathlib.Path) -> Non
 def test_the_token_is_stripped_of_carriage_returns_before_the_child_sees_it(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`tr -d '\\r\\n'` (:41). A token pasted out of a secret store carries a
-    trailing newline, and wrangler sends the header verbatim."""
+    """`tr -d '\\r\\n'` (:41). A token pasted out of a secret store carries a trailing newline, and wrangler sends the header verbatim."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(
         tmp_path,
@@ -292,8 +284,7 @@ def test_the_token_is_stripped_of_carriage_returns_before_the_child_sees_it(
 
 
 def test_the_account_id_is_not_stripped(tmp_path: pathlib.Path) -> None:
-    """THE ASYMMETRY IS THE TWIN'S: only the token is cleaned (:41), so a
-    carriage return in the account id survives into wrangler's environment."""
+    """THE ASYMMETRY IS THE TWIN'S: only the token is cleaned (:41), so a carriage return in the account id survives into wrangler's environment."""
     assert _twin_source().count("tr -d '\\r\\n'") == 1
     assert 'CLOUDFLARE_ACCOUNT_ID="$(printf' not in _twin_source()
     root = _fixture_root(tmp_path)
@@ -324,9 +315,7 @@ def test_a_missing_region_refuses_and_the_divergence_is_bash_only(tmp_path: path
 
 
 def test_an_empty_region_refuses_exactly_as_an_absent_one_does(tmp_path: pathlib.Path) -> None:
-    """`:?` IS AN UNSET-OR-EMPTY TEST. A port checking only for presence would
-    resolve `wrangler..toml` and report it missing instead, which is a different
-    message and a different reason."""
+    """`:?` IS AN UNSET-OR-EMPTY TEST. A port checking only for presence would resolve `wrangler..toml` and report it missing instead, which is a different message and a different reason."""
     root = _fixture_root(tmp_path)
     old, new, _, _ = run_both(tmp_path, root, "--region=")
     assert old.returncode == new.returncode == 1
@@ -335,9 +324,7 @@ def test_an_empty_region_refuses_exactly_as_an_absent_one_does(tmp_path: pathlib
 
 
 def test_a_bare_region_flag_becomes_the_literal_true(tmp_path: pathlib.Path) -> None:
-    """`parse_args` QUIRK: `--region` as the last token stores the string
-    `true`, so the run refuses on a config file named after it rather than on a
-    missing region."""
+    """`parse_args` QUIRK: `--region` as the last token stores the string `true`, so the run refuses on a config file named after it rather than on a missing region."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--region")
     assert old.returncode == 1
@@ -357,8 +344,7 @@ def test_a_missing_config_names_the_absolute_path(tmp_path: pathlib.Path) -> Non
 
 
 def test_the_two_credential_guards_fire_in_order(tmp_path: pathlib.Path) -> None:
-    """`require_var CLOUDFLARE_API_TOKEN` runs first (:38-39), so a run missing
-    BOTH names the token. The order is observable and therefore pinned."""
+    """`require_var CLOUDFLARE_API_TOKEN` runs first (:38-39), so a run missing BOTH names the token. The order is observable and therefore pinned."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(
         tmp_path, root, "--region", "eu", drop_env=("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID")
@@ -388,8 +374,7 @@ def test_an_empty_credential_is_refused_like_an_absent_one(tmp_path: pathlib.Pat
 
 
 def test_a_flag_that_is_not_a_shell_identifier_exits_two(tmp_path: pathlib.Path) -> None:
-    """`printf -v ARG_FOO.BAR` is `printf`'s own failure inside `common.sh:341`,
-    status 2, and under `set -e` it takes the whole script down before anything
+    """`printf -v ARG_FOO.BAR` is `printf`'s own failure inside `common.sh:341`, status 2, and under `set -e` it takes the whole script down before anything
     else runs. The port reports the same status with its own prefix."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--foo.bar", "x", "--region", "eu")
@@ -404,9 +389,7 @@ def test_a_flag_that_is_not_a_shell_identifier_exits_two(tmp_path: pathlib.Path)
 
 
 def test_a_config_with_no_database_name_refuses(tmp_path: pathlib.Path) -> None:
-    """THE GUARD THAT DOES WORK (:51-54): grep matching nothing yields an empty
-    pipeline output. Note the message names the config RELATIVELY, unlike the
-    "config not found" one above, because the run has already `cd`'d."""
+    """THE GUARD THAT DOES WORK (:51-54): grep matching nothing yields an empty pipeline output. Note the message names the config RELATIVELY, unlike the "config not found" one above, because the run has already `cd`'d."""
     root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": 'name = "account"\n'})
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu")
     assert old.returncode == 1
@@ -416,11 +399,9 @@ def test_a_config_with_no_database_name_refuses(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_comment_becomes_the_database_name(tmp_path: pathlib.Path) -> None:
-    """DEFECT, REPRODUCED NOT FIXED. `sed` is a substitution: a first match that
-    does not fit the pattern is passed through UNCHANGED, so the guard sees a non-empty string and `wrangler d1 migrations apply` is handed a sentence.
+    """DEFECT, REPRODUCED NOT FIXED. `sed` is a substitution: a first match that does not fit the pattern is passed through UNCHANGED, so the guard sees a non-empty string and `wrangler d1 migrations apply` is handed a sentence.
 
-    A `tomllib` port would refuse here, or find `real-db`. Either would be a
-    different program, which is why this is asserted rather than repaired."""
+    A `tomllib` port would refuse here, or find `real-db`. Either would be a different program, which is why this is asserted rather than repaired."""
     root = _fixture_root(
         tmp_path,
         configs={
@@ -440,8 +421,7 @@ def test_a_comment_becomes_the_database_name(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_last_quote_on_the_line_wins(tmp_path: pathlib.Path) -> None:
-    """DEFECT, REPRODUCED NOT FIXED. Both `.*` in the sed program are greedy, so
-    a trailing quoted comment is swallowed into the database name."""
+    """DEFECT, REPRODUCED NOT FIXED. Both `.*` in the sed program are greedy, so a trailing quoted comment is swallowed into the database name."""
     root = _fixture_root(
         tmp_path,
         configs={"wrangler.eu.toml": 'database_name = "account-db-eu" # was "old-db"\n'},
@@ -454,8 +434,7 @@ def test_the_last_quote_on_the_line_wins(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_first_of_two_database_blocks_wins(tmp_path: pathlib.Path) -> None:
-    """`head -1` (:50). A config with two D1 bindings migrates the first and
-    never mentions the second."""
+    """`head -1` (:50). A config with two D1 bindings migrates the first and never mentions the second."""
     root = _fixture_root(
         tmp_path,
         configs={"wrangler.eu.toml": 'database_name = "first-db"\ndatabase_name = "second-db"\n'},
@@ -468,8 +447,7 @@ def test_the_first_of_two_database_blocks_wins(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_tab_indented_unspaced_assignment_still_parses(tmp_path: pathlib.Path) -> None:
-    """THE NEGATIVE CONTROL FOR THE TWO DEFECTS ABOVE: the pipeline is not
-    simply broken, it reads a legitimately-formatted line correctly."""
+    """THE NEGATIVE CONTROL FOR THE TWO DEFECTS ABOVE: the pipeline is not simply broken, it reads a legitimately-formatted line correctly."""
     root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": '\tdatabase_name="tabbed"\n'})
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu")
     assert old.returncode == 0, old.stderr
@@ -481,8 +459,7 @@ def test_a_tab_indented_unspaced_assignment_still_parses(tmp_path: pathlib.Path)
 
 
 def test_a_wrangler_on_path_skips_the_install(tmp_path: pathlib.Path) -> None:
-    """`! command -v wrangler && [[ ! -d node_modules ]]` (:45): BOTH halves are
-    required, so a global wrangler is enough on its own."""
+    """`! command -v wrangler && [[ ! -d node_modules ]]` (:45): BOTH halves are required, so a global wrangler is enough on its own."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu", with_wrangler=True)
     assert old.returncode == 0, old.stderr
@@ -513,8 +490,7 @@ def test_a_failed_install_ends_the_run_with_npms_status(tmp_path: pathlib.Path) 
 
 
 def test_a_failed_migration_stops_before_the_deploy(tmp_path: pathlib.Path) -> None:
-    """`set -e` on :60. The deploy must NOT run, and the exit status is
-    wrangler's own, not 1."""
+    """`set -e` on :60. The deploy must NOT run, and the exit status is wrangler's own, not 1."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu", FAKE_NPX_RC="7")
     assert old.returncode == 7
@@ -527,8 +503,7 @@ def test_a_failed_migration_stops_before_the_deploy(tmp_path: pathlib.Path) -> N
 
 
 def test_the_sed_program_and_the_needle_are_still_the_twins(tmp_path: pathlib.Path) -> None:
-    """THE PIPELINE IS A COPY, so the day someone rewrites it in the twin this
-    fails instead of the port quietly reading a different key."""
+    """THE PIPELINE IS A COPY, so the day someone rewrites it in the twin this fails instead of the port quietly reading a different key."""
     del tmp_path
     source = _twin_source()
     assert port.SED_PROGRAM in source

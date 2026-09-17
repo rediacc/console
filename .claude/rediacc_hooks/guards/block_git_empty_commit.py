@@ -19,8 +19,7 @@ It cannot be used to dodge the rerun advice: the verification fails whenever the
 ROUTED THROUGH lib/command-scan.sh 2026-08-27. Matching the raw command meant matching PROSE: `echo '<the banned command>'` was refused, and so was a worklist note or a doc quoting it. hook_scan_target removes heredoc bodies and quoted spans while still extracting `sh -c` / `eval` payloads, so a command hidden in a wrapper is scanned exactly as before -- this narrows what the guard
 refuses, never what it catches.
 
-PORT NOTE ON WHERE `git rev-parse HEAD` RUNS. The bash does not `cd` anywhere, so HEAD is read from the hook process's own working directory and NOT from CLAUDE_PROJECT_DIR. That is carried across by leaving `cwd` unset on the call
-below; passing the project dir would be a fix, and this is a port.
+PORT NOTE ON WHERE `git rev-parse HEAD` RUNS. The bash does not `cd` anywhere, so HEAD is read from the hook process's own working directory and NOT from CLAUDE_PROJECT_DIR. That is carried across by leaving `cwd` unset on the call below; passing the project dir would be a fix, and this is a port.
 """
 
 from rediacc_hooks import hookio, shellscan

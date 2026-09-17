@@ -1,9 +1,7 @@
 """wl_requests: the v6 cross-session request log and its CLI.
 
-The log at <worklist>.requests is append-only JSONL (ask / answer / decline /
-ack / escalate events; state is a fold, never an edit) -- NOT a worklist
-state, because a request is a conversation (a body, an answer with its own body, an acknowledgement) and the item protocol has no room for that. No operation deletes or rewrites shared state, so there is no delete-then- recreate window where it is absent (the cron lesson): a missing log simply reads as empty, and every transition is an appended event that supersedes, never
-replaces, what came before.
+The log at <worklist>.requests is append-only JSONL (ask / answer / decline / ack / escalate events; state is a fold, never an edit) -- NOT a worklist state, because a request is a conversation (a body, an answer with its own body, an acknowledgement) and the item protocol has no room for that. No operation deletes or rewrites shared state, so there is no delete-then- recreate
+window where it is absent (the cron lesson): a missing log simply reads as empty, and every transition is an appended event that supersedes, never replaces, what came before.
 
 Delivery rides INSIDE the block, untruncated. The motivating failure was a finding written into a commit message: correct, passive, and read by nobody until the operator relayed it BY HAND. So the request body and the answer text are carried whole in the block reason -- the one channel a session cannot end a turn around -- and never behind a pointer to --requests, which would make
 reading them a choice again.
@@ -35,15 +33,13 @@ def append_request_event(worklist, obj):
     """One event = one full line = ONE write() on an O_APPEND handle, taken
     under a blocking flock on <requests>.lock (its own lock file, so it never contends with the worklist cleaner's lock). The flock makes concurrent writers a settled question rather than an unlikely one: they serialize
     absolutely, and the lock is held for microseconds. Readers take no lock;
-    a torn trailing line is only possible on a crash mid-write, fails json.loads, and is skipped by every reader. The shared appender also
-    heals a torn tail before writing (v10 hardening)."""
+    a torn trailing line is only possible on a crash mid-write, fails json.loads, and is skipped by every reader. The shared appender also heals a torn tail before writing (v10 hardening)."""
     S._append_lines(S.requests_path(worklist), str(S.requests_path(worklist)) + ".lock", [obj])
 
 
 def read_requests(worklist):
     """{id: request} folded from the append-only event log. State is DERIVED,
-    never edited: an answer, decline, ack or escalation is an appended event,
-    so no writer ever rewrites another's line."""
+    never edited: an answer, decline, ack or escalation is an appended event, so no writer ever rewrites another's line."""
     p = S.requests_path(worklist)
     reqs = {}
     if not p.exists():
@@ -92,9 +88,7 @@ def read_requests(worklist):
 
 
 def request_resolved(r):
-    """A direct request is resolved by an answer OR a decline: a refusal with
-    a reason IS an answer. A broadcast is resolved only by an answer -- a
-    decline there just releases the decliner ("not my area")."""
+    """A direct request is resolved by an answer OR a decline: a refusal with a reason IS an answer. A broadcast is resolved only by an answer -- a decline there just releases the decliner ("outside scope")."""
     if r["answers"]:
         return True
     return r["to"] != "*" and bool(r["declines"])
@@ -115,9 +109,8 @@ def escalate_requests(worklist, session_id, dry_run=False):
       - anything is unanswered past WORKLIST_REQUEST_STALE_MIN (default 240),
         live recipient or not: a recipient that never stops never runs this
         hook, and four hours of silence is the operator's business.
-    Escalation appends an `escalate` event plus a `- [?]` item (a CLI-origin store event since v10, no longer a markdown append) owned by the ASKER, carrying the ask's own DEFAULT: (or a generic proceed-without-it one), so the existing deferral machinery reports it to the operator every stop without wrongly blocking anyone. Check-then-append is not idempotent, so it runs under an
-    exclusive NON-BLOCKING flock with a re-read inside the lock: the losing racer skips and retries next stop, and a request is
-    escalated exactly once."""
+    Escalation appends an `escalate` event plus a `- [?]` item (a CLI-origin store event since v10, no longer a markdown append) owned by the ASKER, carrying the ask's own DEFAULT: (or a generic proceed-without-it one), so the existing deferral machinery reports it to the operator every stop without wrongly blocking anyone. Check-then-append is not idempotent, so it runs under
+    an exclusive NON-BLOCKING flock with a re-read inside the lock: the losing racer skips and retries next stop, and a request is escalated exactly once."""
     stale_min = float(os.environ.get("WORKLIST_REQUEST_STALE_MIN", "240"))
     dead_min = float(os.environ.get("WORKLIST_REQUEST_DEAD_MIN", "180"))
     grace_min = float(os.environ.get("WORKLIST_REQUEST_GRACE_MIN", "30"))
@@ -136,10 +129,8 @@ def escalate_requests(worklist, session_id, dry_run=False):
         if r["escalated"] or r["acked"] or request_resolved(r):
             return ""
         if r["to"] == "operator":
-            # THE REPORT IS THE ESCALATION. An operator request is already in front of the one party who can settle it, so cloning it into a `- [?]` would report the same question twice: once as a live request and once as a deferral carrying its text, each with its own DEFAULT window. Escalation exists for a question with nobody
-            # left to answer it; this one is addressed to the one party who
-            # always can. (It used to leave the machine over SES as well; that
-            # channel is gone, and the reasoning never depended on it.)
+            # THE REPORT IS THE ESCALATION. An operator request is already in front of the one party who can settle it, so cloning it into a `- [?]` would report the same question twice: once as a live request and once as a deferral carrying its text, each with its own DEFAULT window. Escalation exists for a question with nobody left to answer it; this one is addressed to the one
+            # party who always can. (It used to leave the machine over SES as well; that channel is gone, and the reasoning never depended on it.)
             return ""
         age = C.stamp_age_min(r["at"])
         if age is None:
@@ -215,8 +206,7 @@ def escalate_requests(worklist, session_id, dry_run=False):
 def classify_requests(reqs, session_id):
     """(to_me, broadcasts_awaiting_me, answered_unacked_mine, open_mine).
 
-    The ownership rule, applied to requests: a session is only ever blocked on its OWN obligations -- answering what is addressed to it (a broadcast is addressed to everyone, but only until THIS session responds) and
-    acting on answers to what it asked. Never on another session's silence."""
+    The ownership rule, applied to requests: a session is only ever blocked on its OWN obligations -- answering what is addressed to it (a broadcast is addressed to everyone, but only until THIS session responds) and acting on answers to what it asked. Never on another session's silence."""
     to_me, bcast, answered_mine, open_mine = [], [], [], []
     for r in sorted(reqs.values(), key=lambda x: (x["at"], x.get("id", ""))):
         mine = bool(session_id) and C.same_session(r["from"], session_id)
@@ -252,12 +242,9 @@ def _briefed(worklist, to):
 
 
 def request_cli(argv, worklist):
-    """--ask / --answer / --decline / --ack / --requests. Exits non-zero on
-    misuse, so a session cannot mistake a rejected post for a delivered one.
+    """--ask / --answer / --decline / --ack / --requests. Exits non-zero on misuse, so a session cannot mistake a rejected post for a delivered one.
 
-    The catalogue import is LAZY so an inbox poll on an empty inbox (and the read-only --requests listing) keep working when worklist_messages.py is
-    broken; the two die() sites that need it fail into the crash handler,
-    naming the catalogue, which is the fail-closed direction."""
+    The catalogue import is LAZY so an inbox poll on an empty inbox (and the read-only --requests listing) keep working when worklist_messages.py is broken; the two die() sites that need it fail into the crash handler, naming the catalogue, which is the fail-closed direction."""
     import worklist_messages as M  # noqa: PLC0415 -- lazy on purpose: a broken catalogue must fail into the crash handler, not at import time
 
     def die(msg):
@@ -265,9 +252,7 @@ def request_cli(argv, worklist):
         sys.exit(1)
 
     def request_body(what):
-        """Join, flatten, and LENGTH-CHECK the free-text argument. Over-length
-        is REFUSED, never silently clipped: a write-time truncation would be the commit-message defect one layer down, losing the tail (often the
-        crucial part) while telling the sender it was delivered."""
+        """Join, flatten, and LENGTH-CHECK the free-text argument. Over-length is REFUSED, never silently clipped: a write-time truncation would be the commit-message defect one layer down, losing the tail (often the crucial part) while telling the sender it was delivered."""
         body = " ".join(argv[3:]).replace("\n", " ").strip()
         if len(body) > REQUEST_BODY_MAX:
             die(M.CLI_BODY_REFUSED % (what, len(body), REQUEST_BODY_MAX))
@@ -333,9 +318,7 @@ def request_cli(argv, worklist):
                 "an empty request asks nothing: say what you need, why, and a DEFAULT: if unanswered"
             )
         if to == "operator" and not C.DEFAULT_TOKEN.search(body):
-            # Same rule the escalation retrofit applies below, enforced at the door instead. An operator request is answered by a human who may be asleep, so a question with no stated fallback is a session
-            # volunteering to stall for hours; a DEFAULT: makes the wait
-            # time-boxed rather than open-ended.
+            # Same rule the escalation retrofit applies below, enforced at the door instead. An operator request is answered by a human who may be asleep, so a question with no stated fallback is a session volunteering to stall for hours; a DEFAULT: makes the wait time-boxed rather than open-ended.
             die(M.CLI_ASK_OPERATOR_NO_DEFAULT)
         rid = hashlib.sha1(
             ("%d|%d|%s|%s" % (time.time_ns(), os.getpid(), me, body)).encode("utf-8")
@@ -426,13 +409,9 @@ def request_cli(argv, worklist):
 
 
 def poll_cli(worklist, me, hook_path):
-    """`--poll <8-char-prefix>`: the 5-minute inbox poll (v9). EMPTY inbox:
-    print NOTHING, exit 0, so the poll turn costs the session almost no context. Non-empty: the full payloads plus the exact commands. Either way it drops the single-use poll marker that lets the Stop hook recognise
-    this turn structurally."""
+    """`--poll <8-char-prefix>`: the 5-minute inbox poll (v9). EMPTY inbox: print NOTHING, exit 0, so the poll turn costs the session almost no context. Non-empty: the full payloads plus the exact commands. Either way it drops the single-use poll marker that lets the Stop hook recognise this turn structurally."""
     if not C.PREFIX_RE.match(me or "") or len(me or "") < C.ME_MIN_LEN:
-        # A short prefix would name a DIFFERENT marker than the Stop hook derives from the full session id, silently disabling the fast path, so misuse is refused rather than half-working. This floor is
-        # where C.ME_MIN_LEN comes from; check_me now applies it -- and the
-        # identity check this verb never had -- to every verb taking a <me>.
+        # A short prefix would name a DIFFERENT marker than the Stop hook derives from the full session id, silently disabling the fast path, so misuse is refused rather than half-working. This floor is where C.ME_MIN_LEN comes from; check_me now applies it -- and the identity check this verb never had -- to every verb taking a <me>.
         print(
             "usage: --poll <your-8-char-session-id-prefix> (got %r)" % me,
             file=sys.stderr,
@@ -455,8 +434,7 @@ def poll_cli(worklist, me, hook_path):
 def print_inbox(to_me, bcast, answered, me, hook_path):
     """The inbox rendering, shared by `--poll` and by the blocking waiter.
 
-    Factored out rather than copied because the payload and the exact --answer/--decline/--ack command lines are the whole product of both modes: a second copy would drift, and the copy that drifts is the one a session
-    reads at 3am when it cannot remember the verb."""
+    Factored out rather than copied because the payload and the exact --answer/--decline/--ack command lines are the whole product of both modes: a second copy would drift, and the copy that drifts is the one a session reads at 3am when it cannot remember the verb."""
     for r in to_me + bcast:
         print(
             "INBOX #%s from %s (%s, asked %s): %s"

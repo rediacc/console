@@ -48,8 +48,7 @@ CL_STATES = ("producing", "executing", "done", "superseded")
 
 
 def checklist_paths(root):
-    """Every agent/programs/<slug>/CHECKLIST.md, sorted. One glob is the entire
-    cost of this module for a repo that keeps no handoffs."""
+    """Every agent/programs/<slug>/CHECKLIST.md, sorted. One glob is the entire cost of this module for a repo that keeps no handoffs."""
     return sorted(glob.glob(os.path.join(str(root), "agent", "programs", "*", "CHECKLIST.md")))
 
 
@@ -61,8 +60,7 @@ def _rel(root, path):
 
 
 def checklists_sig(root):
-    """A STAT-ONLY signature of every checklist: sha1 over sorted
-    (relpath, mtime_ns, size).
+    """A STAT-ONLY signature of every checklist: sha1 over sorted (relpath, mtime_ns, size).
 
     Never opens a file, and that is a contract rather than an optimisation: this is what the poll fast path compares against its banked baseline, and a poll that read files would pay the cost the fast path exists to avoid. A path that cannot be stat'd contributes a sentinel instead of raising, so a permission-denied checklist still MOVES the signature (which forfeits the silent
     path) rather than wedging the poll.
@@ -312,8 +310,7 @@ def _door_parked_rows(fold, parsed):
 
 
 def _door_name(rec):
-    """The door a record names, for the advisory. 'a door' when it cannot be read
-    -- the row is worth printing even when the reason is unparseable."""
+    """The door a record names, for the advisory. 'a door' when it cannot be read -- the row is worth printing even when the reason is unparseable."""
     m = _DOOR_RX.search(" ".join(str(v) for v in rec.values() if isinstance(v, str)))
 
     return m.group(0) if m else "a door"
@@ -481,8 +478,7 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
 def checklist_findings(root, fold, session_id, projects_dir):
     """(violations, advisories, live_count) for every checklist in the repo.
 
-    violations are (key, always, text) ready for run_stop's vadd; advisories
-    are (key, text, prio) ready for outq_add. live_count is what the poll fast path banks: 0 means no checklist can block, so a poll may still take the silent path.
+    violations are (key, always, text) ready for run_stop's vadd; advisories are (key, text, prio) ready for outq_add. live_count is what the poll fast path banks: 0 means no checklist can block, so a poll may still take the silent path.
 
     NEVER RAISES. Any unexpected exception becomes the ALWAYS-tier unreadable violation and counts as live, because a gate that went blind must say so and must not also hand the poll path a clean baseline.
     """
@@ -508,8 +504,7 @@ def checklist_findings(root, fold, session_id, projects_dir):
 
 
 def checklists_block(root):
-    """(listing, n): one line per live-or-malformed checklist, for
-    SessionStart and PostCompact. ("", 0) when there is nothing to say, so a repo without handoffs emits no block at all.
+    """(listing, n): one line per live-or-malformed checklist, for SessionStart and PostCompact. ("", 0) when there is nothing to say, so a repo without handoffs emits no block at all.
 
     Reading files HERE is fine: these two events fire once each, unlike the poll path this module is otherwise careful never to charge.
     """

@@ -78,8 +78,7 @@ def env_for(**overrides: str) -> dict[str, str]:
 def read_pty(master_fd: int, proc: subprocess.Popen, timeout: float) -> bytes:
     """Drain a pty master until the child exits and the buffer is empty.
 
-    THE EIO IS NORMAL, NOT AN ERROR. When the last slave descriptor closes, Linux reports EIO to a reader of the master rather than a clean EOF. Treating that
-    as a failure is the classic pty bug; treating it as end-of-stream is correct.
+    THE EIO IS NORMAL, NOT AN ERROR. When the last slave descriptor closes, Linux reports EIO to a reader of the master rather than a clean EOF. Treating that as a failure is the classic pty bug; treating it as end-of-stream is correct.
 
     A selector rather than a blocking read because the child may exit having written nothing, and a blocking read on a master whose slave this process still holds open would never return.
     """

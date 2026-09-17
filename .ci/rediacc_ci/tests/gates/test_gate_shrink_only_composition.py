@@ -163,8 +163,7 @@ def unguarded() -> list[str]:
 
 @contextlib.contextmanager
 def probe(rel_dir: str, stem: str, suffix: str, body: str):
-    """Plant one probe inside the SCANNED tree, yield its repo-relative path, and
-    remove it whatever happens.
+    """Plant one probe inside the SCANNED tree, yield its repo-relative path, and remove it whatever happens.
 
     NOT A TEMP DIR. The corpus is `git ls-files` over this repository, so a probe outside it is invisible and the control silently stops firing -- which is the failure a plant-based control exists to rule out, not to reproduce. The removal is in a `finally` so a killed run cannot leave a synthetic offerer in a tracked directory, where the next reader would investigate a finding
     nobody introduced.
@@ -292,9 +291,7 @@ def test_every_gate_consumes_the_guard(gate):
 
 
 def test_pending_set_only_shrinks(gate):
-    """The PENDING set may only shrink, and it is EMPTY. Kept as a live check
-    rather than deleted, because the next unguarded writer must land in the
-    failure above, never here."""
+    """The PENDING set may only shrink, and it is EMPTY. Kept as a live check rather than deleted, because the next unguarded writer must land in the failure above, never here."""
     if not PENDING:
         gate.log_pass("no known-unguarded baseline writers remain (PENDING is empty)")
         return
@@ -310,8 +307,7 @@ def test_pending_set_only_shrinks(gate):
 
 
 def test_every_python_writer_consumes_the_guard(gate):
-    """The Python writers, against the ported guard. Separate from the TypeScript
-    check because the ROUTES are different, not because the rule is."""
+    """The Python writers, against the ported guard. Separate from the TypeScript check because the ROUTES are different, not because the rule is."""
     bad = unguarded_py()
     if bad:
         for f in bad:
@@ -338,9 +334,7 @@ def test_every_python_writer_consumes_the_guard(gate):
 
 
 def test_control_unguarded_python_reseed_is_detected(gate):
-    """CONTROL. Plant an unguarded PYTHON writer where the OLD enumerator could
-    not look -- under `.ci/`, with a `.py` suffix -- and require detection. Run against the previous enumerator it detects nothing at all, because neither the
-    extension nor the directory was in scope."""
+    """CONTROL. Plant an unguarded PYTHON writer where the OLD enumerator could not look -- under `.ci/`, with a `.py` suffix -- and require detection. Run against the previous enumerator it detects nothing at all, because neither the extension nor the directory was in scope."""
     with probe(
         ".ci/scripts/quality", "zz_composition_control_probe_port", ".py", UNGUARDED_PY_BODY
     ) as rel:
@@ -361,9 +355,7 @@ def test_control_unguarded_python_reseed_is_detected(gate):
 
 
 def test_control_python_mention_is_not_a_guard(gate):
-    """CONTROL, the other direction. A Python file that only MENTIONS the ported
-    guard in prose must NOT count as guarded, and one that genuinely consumes it
-    MUST. Both answers come from the same scanner on the same run."""
+    """CONTROL, the other direction. A Python file that only MENTIONS the ported guard in prose must NOT count as guarded, and one that genuinely consumes it MUST. Both answers come from the same scanner on the same run."""
     with probe(
         ".ci/scripts/quality", "zz_composition_mention_probe_port", ".py", MENTION_PY_BODY
     ) as rel:
@@ -385,9 +377,7 @@ def test_control_python_mention_is_not_a_guard(gate):
 
 
 def test_control_unguarded_reseed_is_detected(gate):
-    """CONTROL. Plant a file with the OLD unconditional shape and require
-    detection. Without this, `unguarded()` returning nothing proves nothing about
-    the scanner."""
+    """CONTROL. Plant a file with the OLD unconditional shape and require detection. Without this, `unguarded()` returning nothing proves nothing about the scanner."""
     with probe("scripts", "zz-composition-control-probe-port", ".ts", UNGUARDED_TS_BODY) as rel:
         detected = rel in unguarded()
     if (ROOT / rel).exists():
@@ -400,9 +390,7 @@ def test_control_unguarded_reseed_is_detected(gate):
 
 
 def test_control_mention_is_not_an_import(gate):
-    """CONTROL. A file that only MENTIONS the choke point in prose must NOT count
-    as guarded. Without this, the transitive route above is a substring match
-    masquerading as a check."""
+    """CONTROL. A file that only MENTIONS the choke point in prose must NOT count as guarded. Without this, the transitive route above is a substring match masquerading as a check."""
     with probe("scripts", "zz-composition-mention-probe-port", ".ts", MENTION_TS_BODY) as rel:
         detected = rel in unguarded()
     if (ROOT / rel).exists():
@@ -413,9 +401,7 @@ def test_control_mention_is_not_an_import(gate):
 
 
 def test_refusal_end_to_end(gate):
-    """BEHAVIOURAL. The one gate that accepts `--baseline`, so the write can be
-    aimed at a copy and the live suppression file is never touched. Proven both
-    directions, and the live file's digest is compared before and after."""
+    """BEHAVIOURAL. The one gate that accepts `--baseline`, so the write can be aimed at a copy and the live suppression file is never touched. Proven both directions, and the live file's digest is compared before and after."""
     npx = harness.require_tool("npx", "install node (the lane's setup-workspace step provides it)")
     subject = ROOT / "scripts" / "gates" / "check-em-dash-surfaces.ts"
     live = ROOT / "scripts" / "data" / "em-dash-surfaces-baseline.json"
@@ -491,8 +477,7 @@ def test_refusal_end_to_end(gate):
 
 
 def test_the_two_corpora_do_not_overlap_or_lose_a_file(gate):
-    """ADDED BY THE PORT, and it is a claim about the SPLIT rather than about
-    either half. `offerers()` and `offerers_py()` partition `all_offerers()`, and the two floors above are read as covering the whole scan. A pathspec that started admitting a fourth extension, or a suffix test that stopped matching, would leave files in neither half -- unchecked, while both floors stayed
+    """ADDED BY THE PORT, and it is a claim about the SPLIT rather than about either half. `offerers()` and `offerers_py()` partition `all_offerers()`, and the two floors above are read as covering the whole scan. A pathspec that started admitting a fourth extension, or a suffix test that stopped matching, would leave files in neither half -- unchecked, while both floors stayed
     comfortably green."""
     everything = all_offerers()
     ts, py = offerers(), offerers_py()

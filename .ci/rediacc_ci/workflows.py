@@ -557,8 +557,7 @@ def parse(text: str):
 
 
 def load(path: pathlib.Path | str):
-    """Parse a file. The path is included in any error, because a line number
-    without a filename is useless when 28 files are being read in a loop."""
+    """Parse a file. The path is included in any error, because a line number without a filename is useless when 28 files are being read in a loop."""
     target = pathlib.Path(path)
     try:
         return parse(target.read_text(encoding="utf-8"))

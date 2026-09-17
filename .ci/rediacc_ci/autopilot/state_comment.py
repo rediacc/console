@@ -201,8 +201,7 @@ def cap_line(line: bytes) -> bytes:
 
 
 def normalize_field(name: str, value: str) -> str:
-    """`normalize_field` (state-comment.sh:91-108). Anything unrecognised
-    collapses to the field's sentinel.
+    """`normalize_field` (state-comment.sh:91-108). Anything unrecognised collapses to the field's sentinel.
 
     Raises `common.RefusalError(code=2)` on an unknown field name, which is the
     twin's `log_error ...; exit 2`. See the module docstring for why that arm exists at all.
@@ -386,8 +385,7 @@ def compact(ledger: list[bytes]) -> list[bytes]:
 
 
 def _jq(args: list[str]) -> int:
-    """jq with stdout and stderr both INHERITED, the way an unredirected jq in a
-    `case` arm behaves. Its status becomes the script's."""
+    """jq with stdout and stderr both INHERITED, the way an unredirected jq in a `case` arm behaves. Its status becomes the script's."""
     sys.stdout.flush()
     sys.stderr.flush()
     return subprocess.run(["jq", *args], check=False).returncode

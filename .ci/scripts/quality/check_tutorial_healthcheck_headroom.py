@@ -19,9 +19,7 @@ must be at least MIN_BUDGET_SECONDS. That single number is what actually governs
 
 WHY 180 SECONDS
 ---------------
-Evidence, not taste: the configuration observed to FAIL had a budget of exactly 150s. A floor must exceed a value proven insufficient, so 180 leaves 20% headroom
-above the known-bad point. Raise it if a slower host is ever adopted; never lower
-it to make a red gate green.
+Evidence, not taste: the configuration observed to FAIL had a budget of exactly 150s. A floor must exceed a value proven insufficient, so 180 leaves 20% headroom above the known-bad point. Raise it if a slower host is ever adopted; never lower it to make a red gate green.
 
 Widening a window costs a fast machine NOTHING. Failures inside `start_period` do not count against `retries`, and a container is marked healthy the instant a check passes, so the extra budget is engaged only when the host is actually slow.
 

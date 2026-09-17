@@ -67,9 +67,7 @@ PORT NOTES.
 containing a NUL byte, which is the behaviour the differential compares against;
 under GNU grep the twin would emit a mangled `Binary file ...` line that the scanner would then try to split on colons. Reported as a portability defect in the twin rather than repaired.
 
-THE SCANNER READS THE WHOLE grep LINE, PREFIX INCLUDED. `printf '%s' "$line" | grep -oE '"[^"]*"'` runs over `path:lineno:content`, so a quoted segment in the
-PATH would contribute keys. No such path exists; the behaviour is carried
-because narrowing it to the content would change which keys a future path could produce.
+THE SCANNER READS THE WHOLE grep LINE, PREFIX INCLUDED. `printf '%s' "$line" | grep -oE '"[^"]*"'` runs over `path:lineno:content`, so a quoted segment in the PATH would contribute keys. No such path exists; the behaviour is carried because narrowing it to the content would change which keys a future path could produce.
 
 FINDING ORDER IS TRAVERSAL ORDER AND IS NOT SORTED. `grep -r` emits in the order its directory walk produces, which is readdir order and therefore filesystem state rather than repository content. The port uses `os.walk`, which is also readdir order, and the two need not agree. That is fine and deliberate: `scripts/lib/shadow-gate.ts` compares findings as an unordered MULTISET, so a
 different order is the same verdict, and imposing a sort here would hide a real change in enumeration that the twin would show.
@@ -101,9 +99,7 @@ DEFAULT_CODE_DIRS = ".ci/scripts scripts packages/www/scripts"
 # POSIX [[:space:]], written out rather than abbreviated to `\s`, which is wider in Python and would match a non-breaking space grep never sees.
 SPACE = r"[ \t\n\v\f\r]"
 
-# A case-arm line: starts with an optional `*`, carries at least one double-quoted glob segment, and ENDS in `)` (optionally followed by a command on the same line). The earlier attempt anchored on `)$`, which
-# missed the common `... ) ;;` and `... )` -with-trailing-code shapes and
-# made this gate's own control fail -- which is exactly what the control is for.
+# A case-arm line: starts with an optional `*`, carries at least one double-quoted glob segment, and ENDS in `)` (optionally followed by a command on the same line). The earlier attempt anchored on `)$`, which missed the common `... ) ;;` and `... )` -with-trailing-code shapes and made this gate's own control fail -- which is exactly what the control is for.
 CASE_ARM = re.compile(r'^%s*\*[^)]*"[^"]*"[^)]*\)' % SPACE)
 
 # The second grep of `extract_case_keys`, dropping a matched line whose CONTENT is a comment. Applied to the whole `path:lineno:content` string, so the `[^:]+:[0-9]+:` prefix is part of the pattern and not stripped first.
@@ -209,8 +205,7 @@ def key_is_live(key: str, code_dirs: list[str], base: pathlib.Path) -> bool:
 def keys_in(hit: str) -> list[str]:
     """Every `ident=` key inside a quoted segment of one grep hit, sorted unique.
 
-    Two chained `grep -o`s in the twin: quoted segments first, then identifier tokens inside them. Run over the WHOLE line including the `path:lineno:`
-    prefix; see the port notes.
+    Two chained `grep -o`s in the twin: quoted segments first, then identifier tokens inside them. Run over the WHOLE line including the `path:lineno:` prefix; see the port notes.
     """
     keys: set[str] = set()
     for segment in QUOTED.findall(hit):
@@ -264,8 +259,7 @@ def media_shell_files(media_dirs: list[str], base: pathlib.Path) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the gate. Exit 0 clean, 1 on a control failure, a vacuous root, or a
-    dead arm.
+    """Run the gate. Exit 0 clean, 1 on a control failure, a vacuous root, or a dead arm.
 
     `--selftest` is intercepted BEFORE any real scan. The twin documents itself as taking no arguments ("Usage: check-dead-case-arms.sh") and ignores any it is given.
     """

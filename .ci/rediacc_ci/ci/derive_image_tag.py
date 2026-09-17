@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/derive-image-tag.sh` (137 lines).
 
-Derive the Docker image tag from an explicit `--version`, from the git ref when the build is a tag build, or from the newest `v*` tag in the repository. The
-twin's header owns the three-step ladder; it is not restated here.
+Derive the Docker image tag from an explicit `--version`, from the git ref when the build is a tag build, or from the newest `v*` tag in the repository. The twin's header owns the three-step ladder; it is not restated here.
 
-LIVE CALLER, not repointed. The bash twin stays the registered gate; this module
-is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
+LIVE CALLER, not repointed. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
 Ledger: `.ci/shadow/w7p6-derive-image-tag.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-derive-image-tag --assert --k 5`).
 
@@ -30,8 +28,7 @@ accepts an EMPTY one, and the decision below is `if [[ -n "$VERSION" ]]`. So an 
     (info) Auto-derived from git tags (local): 1.3.12
     1.3.12
 
-A workflow input that resolved to the empty string -- which is exactly what a `workflow_dispatch` input left blank produces -- therefore tags an image with whatever the newest git tag happens to be, and says so only on stderr, which the
-consuming step does not read. Reproduced; not repaired.
+A workflow input that resolved to the empty string -- which is exactly what a `workflow_dispatch` input left blank produces -- therefore tags an image with whatever the newest git tag happens to be, and says so only on stderr, which the consuming step does not read. Reproduced; not repaired.
 
 -----------------------------------------------------------------------------
 WHY `git` IS SHELLED OUT TO RATHER THAN REIMPLEMENTED
@@ -69,8 +66,7 @@ TAG_RE = re.compile(r"^[a-zA-Z0-9._-]+$")
 # `[[ ${#TAG} -gt 128 ]]` (twin :119).
 MAX_TAG_LENGTH = 128
 
-# The placeholder every package.json in this repo carries; the twin treats it as
-# "no usable version" and falls back (twin :85).
+# The placeholder every package.json in this repo carries; the twin treats it as "no usable version" and falls back (twin :85).
 PLACEHOLDER_VERSION = "0.0.0-dev"
 FALLBACK_TAG = "latest"
 
@@ -159,9 +155,8 @@ def parse_argv(argv: list[str]) -> tuple[str, bool, bool]:
 def git_stdout(args: list[str]) -> str:
     """Run `git <args> 2>/dev/null` and return stdout, or "" if git is absent.
 
-    A MISSING `git` IS THE EMPTY STRING, NOT AN EXCEPTION, and that is the twin's behaviour rather than a convenience. Every git call in the twin has its stderr on `/dev/null` and its status either tested or `|| true`d, so on a machine without git the twin prints nothing, derives `latest` and exits 0.
-    Driven 2026-09-14 on a PATH without git; the port raised FileNotFoundError
-    until this existed, which is a louder answer than the twin's and therefore a divergence rather than an improvement.
+    A MISSING `git` IS THE EMPTY STRING, NOT AN EXCEPTION, and that is the twin's behaviour rather than a convenience. Every git call in the twin has its stderr on `/dev/null` and its status either tested or `|| true`d, so on a machine without git the twin prints nothing, derives `latest` and exits 0. Driven 2026-09-14 on a PATH without git; the port raised FileNotFoundError until
+    this existed, which is a louder answer than the twin's and therefore a divergence rather than an improvement.
     """
     try:
         return subprocess.run(
@@ -199,9 +194,7 @@ def git_fetch_tags() -> None:
 def newest_v_tag() -> str:
     """`git tag -l 'v*' --sort=-v:refname 2>/dev/null | head -1 | sed 's/^v//'`.
 
-    `head -1` takes at most one line, so `sed` sees at most one and strips at most one leading `v` -- `vv1.0` becomes `v1.0`, which `removeprefix` matches.
-    Command substitution strips the trailing newline; a failing git leaves the
-    whole thing empty because of the twin's `|| true`.
+    `head -1` takes at most one line, so `sed` sees at most one and strips at most one leading `v` -- `vv1.0` becomes `v1.0`, which `removeprefix` matches. Command substitution strips the trailing newline; a failing git leaves the whole thing empty because of the twin's `|| true`.
     """
     first = git_stdout(["tag", "-l", "v*", "--sort=-v:refname"]).split("\n", 1)[0]
     return first.removeprefix("v")

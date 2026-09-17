@@ -169,8 +169,7 @@ def test_a_failed_run_lookup_falls_back_to_empty_object_on_both_sides(
     tmp_path: pathlib.Path,
 ) -> None:
     """`gh api ... 2>/dev/null || echo '{}'`: a failed lookup degrades to an
-    empty object, which then fails validation as an empty branch/workflow --
-    not a crash."""
+    empty object, which then fails validation as an empty branch/workflow -- not a crash."""
     bindir = _make_fake_gh(tmp_path)
     env = {
         "GITHUB_REPOSITORY": "rediacc/console",

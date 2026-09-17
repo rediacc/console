@@ -9,8 +9,7 @@ AND IT MATTERS MORE IN A HOOK THAN IN A GATE. These run inside the Stop hook, so
 WHAT THIS FILE PROVES, and it is the property rather than the plumbing: a child that spawns a grandchild holding the capture pipes is killed WITH its grandchild, in bounded time, and what the child managed to say still comes back. The last part is not a detail: partial output is usually the only evidence of why something hung, and the naive fix (kill the child, give up on the
 pipes) throws it away.
 
-NOT A GATE-TEST PORT. There is no bash twin for `wl_proc.py`; it is new. This is a plain
-unit test in the plain test tree, which is also why it can be added without putting `test_twin_parity.py` into disagreement.
+NOT A GATE-TEST PORT. There is no bash twin for `wl_proc.py`; it is new. This is a plain unit test in the plain test tree, which is also why it can be added without putting `test_twin_parity.py` into disagreement.
 """
 
 import importlib.util
@@ -38,9 +37,7 @@ def _load():
 
 
 def test_the_hook_can_reach_the_shared_runner():
-    """The coupling itself, asserted. `wl_proc` exists to be the ONE place `.ci` is put
-    on `sys.path` from under `.claude/hooks/`, so its failure mode should be this test
-    going red rather than four modules each raising a bare ImportError at hook time."""
+    """The coupling itself, asserted. `wl_proc` exists to be the ONE place `.ci` is put on `sys.path` from under `.claude/hooks/`, so its failure mode should be this test going red rather than four modules each raising a bare ImportError at hook time."""
     mod = _load()
     assert callable(mod.run)
     assert mod.TIMEOUT_RC == 124
@@ -61,17 +58,14 @@ def test_a_child_holding_the_pipe_through_a_grandchild_is_bounded():
 
 
 def test_the_kill_preserves_what_the_child_already_said():
-    """The half a naive kill throws away. A timeout with empty streams tells the reader
-    nothing about WHY, which is exactly when they need it most."""
+    """The half a naive kill throws away. A timeout with empty streams tells the reader nothing about WHY, which is exactly when they need it most."""
     mod = _load()
     result = mod.run(["bash", "-c", _FORKING_CHILD], timeout=3)
     assert "i-said-something" in result.stdout, "the partial output was lost: %r" % result.stdout
 
 
 def test_a_command_that_does_not_exist_is_a_result_not_an_exception():
-    """The four routed call sites dropped their `except OSError` arms, so a failed spawn
-    has to arrive as a value. If this ever raised again, those sites would crash the
-    Stop hook instead of reporting."""
+    """The four routed call sites dropped their `except OSError` arms, so a failed spawn has to arrive as a value. If this ever raised again, those sites would crash the Stop hook instead of reporting."""
     mod = _load()
     result = mod.run(["definitely-no-such-binary-xyz"], timeout=5)
     assert result.returncode == mod.SPAWN_FAILED_RC
@@ -80,8 +74,7 @@ def test_a_command_that_does_not_exist_is_a_result_not_an_exception():
 
 
 def test_an_ordinary_command_is_unaffected():
-    """The quiet direction, so the three cases above are not satisfied by a runner that
-    simply fails everything."""
+    """The quiet direction, so the three cases above are not satisfied by a runner that simply fails everything."""
     mod = _load()
     result = mod.run(["bash", "-c", "echo fine; echo bad >&2; exit 0"], timeout=10)
     assert result.returncode == 0

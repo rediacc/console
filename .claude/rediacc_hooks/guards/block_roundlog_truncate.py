@@ -15,8 +15,7 @@ WHAT IS DENIED, AND WHY NOT EVERYTHING. The failure is silent truncation, so the
 
 Appends are deliberately allowed: `>>` and `tee -a` cannot delete a history appendix, and appending to it is a normal, sanctioned thing to do. Reads are untouched. So is `worklist.py --roundlog` itself, which is the whole point of having somewhere to send people.
 
-FAILS OPEN. This matches on a path shape plus a write verb; anything it does
-not recognise runs. A guard that blocked on suspicion would be routed around, and being routed around is worse than a named residual.
+FAILS OPEN. This matches on a path shape plus a write verb; anything it does not recognise runs. A guard that blocked on suspicion would be routed around, and being routed around is worse than a named residual.
 
 NAMED RESIDUAL, not pretended away: a write whose path is ASSEMBLED at runtime (a variable holding the filename, a shell glob that expands to it) is invisible here, exactly as it is to every other command-text guard in this directory. The verb's own success line is the backstop for that case: it reports the bytes kept above and below STATUS, so a session that used the verb can SEE
 the appendix survived, and a session that bypassed it has no such line to point at.
@@ -26,9 +25,7 @@ PORT NOTES, and the bash's own two are worth keeping because they are about what
 =============================================================================
 
 `grep -q ... | grep -qv ...` IS NOT THE CHECK IT READS AS, and the tee arm used to be written that way: `-q` suppresses stdout, so the downstream grep always sees empty input and its exit status says nothing whatever about the first pattern. Measured in the bash: the pipeline returns 0 on a match AND on a miss. It happened not to set the flag in practice, which is worse than
-failing loudly, because it made the line look tested when the controls were passing for an unrelated reason. In Python the two tests are simply two calls, so the trap
-cannot recur; the record of it is here because the NEXT person to "simplify"
-this arm is the reader this paragraph is for.
+failing loudly, because it made the line look tested when the controls were passing for an unrelated reason. In Python the two tests are simply two calls, so the trap cannot recur; the record of it is here because the NEXT person to "simplify" this arm is the reader this paragraph is for.
 
 `${RL}` BRACED, NOT `$RL`, in the bash: a `[` directly after a bare name reads
 as an array subscript to shellcheck (SC1087, an error not a warning), and here the bracket opens a character class in the regex rather than an index. Python has no such ambiguity, which is why the braces are gone and the reason is not.
@@ -62,8 +59,7 @@ MESSAGE = (
 
 EDGE_CASES = [
     ("the sanctioned verb", ".claude/hooks/stop/worklist.py --roundlog 0831-1"),
-    # THE CASE THAT FOUND THE BYPASS, kept with its verdict inverted. It used to be labelled "the carve-out is a substring match, so this truncation passes" and it DID pass, on both sides, because `*--roundlog*` matched the string anywhere on the line rather than the verb at a command position. The twin
-    # was narrowed on 2026-09-06 and this port followed it a day later; the case
+    # THE CASE THAT FOUND THE BYPASS, kept with its verdict inverted. It used to be labelled "the carve-out is a substring match, so this truncation passes" and it DID pass, on both sides, because `*--roundlog*` matched the string anywhere on the line rather than the verb at a command position. The twin was narrowed on 2026-09-06 and this port followed it a day later; the case
     # stays because it is the only one in this corpus that can tell the narrow carve-out from the wide one.
     (
         "a refresh and an archive on one line",
@@ -126,8 +122,7 @@ def run(ev):
     #
     # echo "see --roundlog" > agent/pr-babysit-0831-1.md -> ALLOWED echo hi > agent/pr-babysit-0831-1.md -> BLOCKED
     #
-    # Both truncate the same file; the first differs only by naming the flag
-    # inside a string it is writing, which is the easiest thing in the world to do by accident when the payload is prose ABOUT the round-log workflow. The exemption now requires the flag to be an ARGUMENT TO worklist.py, in that order, which is what actually makes a command the sanctioned path.
+    # Both truncate the same file; the first differs only by naming the flag inside a string it is writing, which is the easiest thing in the world to do by accident when the payload is prose ABOUT the round-log workflow. The exemption now requires the flag to be an ARGUMENT TO worklist.py, in that order, which is what actually makes a command the sanctioned path.
     #
     # THIS PORT LAGGED THE TWIN BY A DAY and the differential is what caught it, not review: the old wide carve-out was documented here as deliberate ("the port's job is to agree with its twin"), which was true when written and false the moment the twin moved.
     if hookio.case_glob(cmd, "*worklist.py*--roundlog*"):
@@ -139,12 +134,10 @@ def run(ev):
     if hookio.grep_q_line(BRIEFING, cmd):
         return hookio.ALLOW
 
-    # Appends first: `>>` and `tee -a` cannot truncate, so if the only write shape present is an append, let it through. EVERY shell verb below is ANCHORED TO THE LOG: the verb, then the path, with no
-    # `;` `&&` `||` or `|` between them, so the two are genuinely one command.
+    # Appends first: `>>` and `tee -a` cannot truncate, so if the only write shape present is an append, let it through. EVERY shell verb below is ANCHORED TO THE LOG: the verb, then the path, with no `;` `&&` `||` or `|` between them, so the two are genuinely one command.
     #
-    # THE UNANCHORED FORM WAS A REAL DEFECT, caught in review and then reproduced twice against this very hook within minutes. `truncate` matched this script's OWN filename, so `ls .../block-roundlog-trunc*.sh` next to a round-log read was
-    # blocked; and a bare `cp`/`mv` matched a copy of unrelated files that merely
-    # shared a command line with a round-log READ. A guard that blocks `cat <log>` is not strict, it is broken, and its own header argues that a guard which blocks legitimate work teaches people to route around it.
+    # THE UNANCHORED FORM WAS A REAL DEFECT, caught in review and then reproduced twice against this very hook within minutes. `truncate` matched this script's OWN filename, so `ls .../block-roundlog-trunc*.sh` next to a round-log read was blocked; and a bare `cp`/`mv` matched a copy of unrelated files that merely shared a command line with a round-log READ. A guard that blocks
+    # `cat <log>` is not strict, it is broken, and its own header argues that a guard which blocks legitimate work teaches people to route around it.
     truncating = False
 
     # `>` that is not `>>` and not `2>&1`-style fd plumbing, aimed at the log.

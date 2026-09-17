@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.housekeeping.cleanup_versions` against its twin
-`.ci/scripts/housekeeping/cleanup-versions.sh` (2055 lines, 14 phases).
+"""Differential: `rediacc_ci.housekeeping.cleanup_versions` against its twin `.ci/scripts/housekeeping/cleanup-versions.sh` (2055 lines, 14 phases).
 
 WHAT IS STUBBED, AND WHAT IS DELIBERATELY NOT.
 
@@ -172,8 +171,7 @@ CURATED = ("dirname", "uname", "tr", "sed", "date", "cat", "sort", "head", "grep
 
 
 def _stub_bin(base: pathlib.Path, *, drop: tuple[str, ...] = ()) -> str:
-    """The fakes, prepended to the real PATH -- or a curated PATH when a case
-    needs a tool to be ABSENT (the `require_cmd` cases)."""
+    """The fakes, prepended to the real PATH -- or a curated PATH when a case needs a tool to be ABSENT (the `require_cmd` cases)."""
     stub = base / "bin"
     stub.mkdir(exist_ok=True)
     for name, body in FAKES.items():
@@ -405,8 +403,7 @@ def test_the_fake_gh_is_actually_reached_and_records_its_argv() -> None:
 
 
 def test_the_differential_can_fail() -> None:
-    """A comparison that cannot go red is not evidence. Two DIFFERENT fixtures
-    through the same comparison must be distinguishable."""
+    """A comparison that cannot go red is not evidence. Two DIFFERENT fixtures through the same comparison must be distinguishable."""
     quiet = sides(
         "cleanup_releases",
         argv=("--dry-run",),
@@ -518,9 +515,7 @@ def test_jq_filters_agree_with_the_real_jq(payload: list) -> None:
 
 @pytest.mark.skipif(JQ is None, reason="jq is not installed")
 def test_the_empty_stream_is_not_a_zero() -> None:
-    """`echo "" | jq 'length'` exits 0 and prints NOTHING, so `total` is the
-    empty string and every later `-eq 0` reads it as zero. A port that answered
-    "0" would print `Found 0 releases` where the twin prints `Found  releases`."""
+    """`echo "" | jq 'length'` exits 0 and prints NOTHING, so `total` is the empty string and every later `-eq 0` reads it as zero. A port that answered "0" would print `Found 0 releases` where the twin prints `Found releases`."""
     proc = subprocess.run(["jq", "length"], input=b"\n", capture_output=True, check=False)
     assert proc.returncode == 0
     assert proc.stdout == b""
@@ -530,9 +525,7 @@ def test_the_empty_stream_is_not_a_zero() -> None:
 
 @pytest.mark.skipif(JQ is None, reason="jq is not installed")
 def test_a_multi_page_blob_is_a_stream_of_values_not_one_document() -> None:
-    """`gh api --paginate --jq '[...]'` emits one array PER PAGE. The twin slurps
-    them with `jq -s 'flatten'`; a port that parsed one document would silently
-    drop every page after the first."""
+    """`gh api --paginate --jq '[...]'` emits one array PER PAGE. The twin slurps them with `jq -s 'flatten'`; a port that parsed one document would silently drop every page after the first."""
     blob = '[{"id":1}]\n[{"id":2}]\n'
     assert cv.json_values(blob) == [[{"id": 1}], [{"id": 2}]]
     assert cv.jq_flatten(cv.json_values(blob)) == json.loads(_jq("flatten", blob, "-s"))
@@ -599,8 +592,7 @@ def test_grep_qx_is_a_whole_line_match() -> None:
 
 
 def test_bash_div_truncates_toward_zero() -> None:
-    """`$((a / b))` is C division. Python's `//` floors, which differs on the
-    negative numerator a future timestamp produces."""
+    """`$((a / b))` is C division. Python's `//` floors, which differs on the negative numerator a future timestamp produces."""
     for numerator in (-7300, -1, 0, 1, 7300):
         proc = subprocess.run(
             [BASH, "-c", "echo $(( $1 / 3600 ))", "bash", str(numerator)],
@@ -612,8 +604,7 @@ def test_bash_div_truncates_toward_zero() -> None:
 
 
 def test_records_and_stream_lines_differ_on_the_empty_input() -> None:
-    """A here-string yields one empty record; a process substitution yields none.
-    Both loops exist in the twin and they are not interchangeable."""
+    """A here-string yields one empty record; a process substitution yields none. Both loops exist in the twin and they are not interchangeable."""
     assert cv.records("") == [""]
     assert cv._stream_lines("") == []
     assert cv.records("a\nb") == ["a", "b"]
@@ -673,8 +664,7 @@ def test_phase_1_really_deletes_and_then_best_effort_deletes_the_tag() -> None:
 
 
 def test_phase_1_retries_three_times_with_visible_backoff_then_warns() -> None:
-    """Phase 1 is the ONE call site whose `retry_with_backoff` is not silenced by
-    a `2>/dev/null`, so its `Attempt 1/3` lines are part of the output."""
+    """Phase 1 is the ONE call site whose `retry_with_backoff` is not silenced by a `2>/dev/null`, so its `Attempt 1/3` lines are part of the output."""
     fixture = _releases(("v1.0.0", ago(90.5)))
     fixture["gh"][1] = rule("release", "delete", rc=1)
     result = sides("cleanup_releases", argv=("--versions", "0", "--days", "1"), fixture=fixture)
@@ -701,8 +691,7 @@ def test_phase_1_stops_at_the_delete_budget_and_says_what_it_deferred() -> None:
 
 
 def test_phase_1_reads_an_api_failure_as_an_empty_account() -> None:
-    """HAZARD 1, pinned. A gh that fails is `[]`, and the phase reports a clean
-    sweep of nothing rather than saying it could not look."""
+    """HAZARD 1, pinned. A gh that fails is `[]`, and the phase reports a clean sweep of nothing rather than saying it could not look."""
     result = sides(
         "cleanup_releases",
         argv=("--dry-run",),
@@ -833,8 +822,7 @@ def test_phase_2_dates_an_annotated_tag_from_its_tagger_and_deletes_the_old_one(
 
 
 def test_phase_2_falls_back_to_the_commit_date_for_a_lightweight_tag() -> None:
-    """Three calls instead of two, and the twin makes them for every tag it will
-    go on to keep as well."""
+    """Three calls instead of two, and the twin makes them for every tag it will go on to keep as well."""
     result = sides(
         "cleanup_tags",
         argv=("--dry-run", "--versions", "0", "--days", "7"),
@@ -852,8 +840,7 @@ def test_phase_2_falls_back_to_the_commit_date_for_a_lightweight_tag() -> None:
 
 
 def test_phase_2_resolves_an_annotated_tag_with_no_tagger_date_in_two_more_calls() -> None:
-    """The fallback inside the fallback, and the only path that reaches
-    `git/tags/<sha> --jq .object.sha`.
+    """The fallback inside the fallback, and the only path that reaches `git/tags/<sha> --jq .object.sha`.
 
     An annotated tag whose tagger date is missing needs the tag OBJECT resolved to its target commit before the commit date can be read, so the twin makes FOUR calls for that one tag. A port that reused the ref sha as the commit sha would still produce the right date here and the wrong call log, which is why this case exists: it was added after a planted defect of exactly that
     shape failed to turn anything red.
@@ -893,8 +880,7 @@ def test_phase_2_resolves_an_annotated_tag_with_no_tagger_date_in_two_more_calls
 
 
 def test_phase_2_a_tag_object_with_no_tagger_date_yields_the_string_null() -> None:
-    """`gh api --jq '.tagger.date'` on an object without one prints `null`, and
-    the twin tests for EMPTY, so the fallback is not taken and the four characters travel on as the tag's date. `date -d null` then fails and the tag is retained with a message that quotes it back.
+    """`gh api --jq '.tagger.date'` on an object without one prints `null`, and the twin tests for EMPTY, so the fallback is not taken and the four characters travel on as the tag's date. `date -d null` then fails and the tag is retained with a message that quotes it back.
 
     Reproduced, not repaired: it is the twin's behaviour, it errs toward keeping, and it is the only reason `jq_text` renders a missing key as `null`.
     """
@@ -915,8 +901,7 @@ def test_phase_2_a_tag_object_with_no_tagger_date_yields_the_string_null() -> No
 
 
 def test_phase_2_says_nothing_when_the_tag_list_call_fails() -> None:
-    """A repo whose tag list 404s is `log_debug`, so on a normal nightly this
-    phase reports NOTHING AT ALL for that repo. HAZARD 1 again."""
+    """A repo whose tag list 404s is `log_debug`, so on a normal nightly this phase reports NOTHING AT ALL for that repo. HAZARD 1 again."""
     result = sides(
         "cleanup_tags",
         argv=("--dry-run",),
@@ -930,9 +915,7 @@ def test_phase_2_says_nothing_when_the_tag_list_call_fails() -> None:
 
 
 def test_phase_2_retry_is_silenced_by_the_call_sites_redirection() -> None:
-    """`retry_with_backoff ... 2>/dev/null` covers the FUNCTION, so the three
-    `Attempt N/3` lines Phase 1 prints are invisible here. Getting this wrong
-    would add three lines per failing delete."""
+    """`retry_with_backoff ... 2>/dev/null` covers the FUNCTION, so the three `Attempt N/3` lines Phase 1 prints are invisible here. Getting this wrong would add three lines per failing delete."""
     fixture = _tags_fixture(annotated=True)
     fixture["gh"][-1] = rule("-X", "DELETE", "git/refs/tags", rc=1)
     result = sides("cleanup_tags", argv=("--versions", "0", "--days", "7"), fixture=fixture)
@@ -1090,8 +1073,7 @@ def test_phase_4_keeps_two_per_environment_and_none_for_a_closed_pr() -> None:
 
 
 def test_phase_4_falls_back_to_keep_n_when_the_open_pr_lookup_fails() -> None:
-    """FAILS OPEN, deliberately, and the twin's comment says why: its worst case
-    is retaining too much history. Compare with Phase 5b below, which skips."""
+    """FAILS OPEN, deliberately, and the twin's comment says why: its worst case is retaining too much history. Compare with Phase 5b below, which skips."""
     result = sides(
         "cleanup_deployments",
         argv=("--dry-run",),
@@ -1142,8 +1124,7 @@ def test_phase_4_sets_a_deployment_inactive_before_deleting_it() -> None:
 
 
 def test_phase_4_multi_page_deployments_are_flattened_not_dropped() -> None:
-    """`--paginate` emits one array per page and the twin slurps them. A port
-    that read one document would keep everything on page 2."""
+    """`--paginate` emits one array per page and the twin slurps them. A port that read one document would keep everything on page 2."""
     page = json.dumps(_deployments((1, "edge", ago(3.5)), (2, "edge", ago(2.5))))
     page2 = json.dumps(_deployments((3, "edge", ago(1.5)), (4, "edge", ago(0.5))))
     result = sides(
@@ -1163,8 +1144,7 @@ def test_phase_4_multi_page_deployments_are_flattened_not_dropped() -> None:
 
 
 def test_phase_4_budget_exhaustion_breaks_out_of_both_loops() -> None:
-    """`break 2`. With the budget gone, the SECOND environment must not be
-    processed at all, which only the call log can show."""
+    """`break 2`. With the budget gone, the SECOND environment must not be processed at all, which only the call log can show."""
     result = sides(
         "cleanup_deployments",
         fixture={
@@ -1221,8 +1201,7 @@ def test_the_cloudflare_phases_skip_when_either_credential_is_unset(missing: str
 
 
 def test_phase_5_skips_the_latest_deployment_per_branch_and_reaps_the_rest() -> None:
-    """The CF API refuses to delete the newest deployment of a branch, so the
-    phase computes that set with `group_by` and counts the skips separately."""
+    """The CF API refuses to delete the newest deployment of a branch, so the phase computes that set with `group_by` and counts the skips separately."""
     result = sides(
         "cleanup_cf_pages",
         argv=("--dry-run", "--versions", "0", "--days", "7"),
@@ -1346,8 +1325,7 @@ def test_phase_5_pagination_asks_for_page_2_only_when_page_1_was_full() -> None:
 
 
 def test_phase_5b_fails_closed_when_the_open_pr_list_is_unreadable() -> None:
-    """The mirror image of Phase 4. Here the worst case is deleting a LIVE
-    preview, so an unreadable PR list skips the phase and no curl is made."""
+    """The mirror image of Phase 4. Here the worst case is deleting a LIVE preview, so an unreadable PR list skips the phase and no curl is made."""
     result = sides(
         "cleanup_preview_workers",
         fixture={"gh": [rule("pr", "list", rc=1)]},
@@ -1430,8 +1408,7 @@ def test_phase_5b_dry_run_says_would_be_deleted() -> None:
 
 
 def test_phase_6_is_a_403_by_design_and_stops_after_the_first_one() -> None:
-    """HAZARD 4. `check-no-app-admin-perm.sh` forbids the permission this needs,
-    so the 403 arm logs at INFO and breaks rather than warning per environment."""
+    """HAZARD 4. `check-no-app-admin-perm.sh` forbids the permission this needs, so the 403 arm logs at INFO and breaks rather than warning per environment."""
     result = sides(
         "cleanup_environments",
         fixture={
@@ -1541,8 +1518,7 @@ def _widgets(*rows: tuple[str, str]) -> dict:
 
 
 def test_phase_7b_holds_a_widget_inside_the_24h_grace_and_reaps_an_older_one() -> None:
-    """The grace window exists so `cleanup-preview.yml` always wins the race.
-    The hold line rounds the remaining hours UP, in integer arithmetic."""
+    """The grace window exists so `cleanup-preview.yml` always wins the race. The hold line rounds the remaining hours UP, in integer arithmetic."""
     result = sides(
         "cleanup_orphan_turnstile_widgets",
         fixture={
@@ -1780,8 +1756,7 @@ def test_phase_8d_keeps_a_committed_release_and_reaps_an_aged_orphan() -> None:
 
 
 def test_phase_8d_holds_a_young_orphan_because_it_may_be_a_release_in_flight() -> None:
-    """The message carries a U+2014 EM DASH, which the port spells as an escape
-    so the source holds no em dash byte while the OUTPUT stays identical."""
+    """The message carries a U+2014 EM DASH, which the port spells as an escape so the source holds no em dash byte while the OUTPUT stays identical."""
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
@@ -1798,8 +1773,7 @@ def test_phase_8d_holds_a_young_orphan_because_it_may_be_a_release_in_flight() -
 
 
 def test_phase_8d_never_touches_the_version_this_ci_run_is_releasing() -> None:
-    """`IN_FLIGHT_VERSION` short-circuits BEFORE classification, so the prefix is
-    not even datable-checked. The call log is the only place that shows it."""
+    """`IN_FLIGHT_VERSION` short-circuits BEFORE classification, so the prefix is not even datable-checked. The call log is the only place that shows it."""
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
@@ -1813,8 +1787,7 @@ def test_phase_8d_never_touches_the_version_this_ci_run_is_releasing() -> None:
 
 
 def test_phase_8d_latches_the_run_as_failed_on_drift_in_either_direction() -> None:
-    """Drift is NOT auto-healed: two `log_error` lines per finding, a GHA
-    annotation on STDOUT, and a latch the run reports at the very end."""
+    """Drift is NOT auto-healed: two `log_error` lines per finding, a GHA annotation on STDOUT, and a latch the run reports at the very end."""
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
@@ -1841,8 +1814,7 @@ def test_phase_8d_latches_the_run_as_failed_on_drift_in_either_direction() -> No
 
 
 def test_phase_8d_grandfathers_a_version_below_the_pre_contract_floor() -> None:
-    """`.ci/config/release-contract-floor.txt` is the ratchet, and drift below it
-    is not actionable. Both sides read the same file, through different code."""
+    """`.ci/config/release-contract-floor.txt` is the ratchet, and drift below it is not actionable. Both sides read the same file, through different code."""
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
@@ -1902,9 +1874,7 @@ def test_phase_8f_leaves_channel_metadata_alone() -> None:
 
 
 def test_phase_8e_reads_a_null_upload_query_as_no_uploads() -> None:
-    """`aws --query 'Uploads[]...'` prints `null` for an idle bucket, and
-    `null | length` is a jq ERROR. Inside the twin's `set +e` region that leaves `mpu_count` EMPTY, which `-eq 0` reads as zero. A port that raised here would
-    be louder than the twin on the ordinary case."""
+    """`aws --query 'Uploads[]...'` prints `null` for an idle bucket, and `null | length` is a jq ERROR. Inside the twin's `set +e` region that leaves `mpu_count` EMPTY, which `-eq 0` reads as zero. A port that raised here would be louder than the twin on the ordinary case."""
     result = sides("cleanup_r2", fixture=r2_fixture(), env=R2_ENV)
     assert b"8e: no ongoing multipart uploads" in result[2]
     assert result[0] == 0
@@ -1946,8 +1916,7 @@ def test_phase_8e_aborts_an_old_multipart_and_holds_a_young_one() -> None:
 
 
 def test_phase_8_dry_run_makes_no_destructive_call_at_all() -> None:
-    """The whole phase at once: every arm named, nothing removed. If any `aws s3
-    rm` or `abort-multipart-upload` appears in the log, the dry run is a lie."""
+    """The whole phase at once: every arm named, nothing removed. If any `aws s3 rm` or `abort-multipart-upload` appears in the log, the dry run is a lie."""
     listing = "%s       12 apt/stable/rediacc-cli_0.0.1_amd64.deb\n" % s3_ago(10.5)
     uploads = json.dumps([{"Key": "k", "UploadId": "u", "Initiated": ago(3.5)}])
     result = sides(
@@ -2037,8 +2006,7 @@ def test_phase_9_dry_run_has_its_own_counter() -> None:
 
 
 def test_phase_9_a_failed_delete_is_the_one_that_fails_the_whole_run() -> None:
-    """`housekeeping_fail`, the latch. Two places call it and this is one; every
-    other failed delete in the file is a warning the run survives."""
+    """`housekeeping_fail`, the latch. Two places call it and this is one; every other failed delete in the file is a warning the run survives."""
     fixture = _branches_fixture(
         "stale",
         pulls=rule("pulls?head=", json_body=[]),
@@ -2144,8 +2112,7 @@ def _runs(count: int, *, start: int = 0, age: float = 1.5) -> list:
 
 
 def test_phase_10_reports_an_empty_workflow_list_as_a_possible_api_error() -> None:
-    """The only phase besides 5b that says out loud that it might not have been
-    able to look. Every other one reports a clean sweep of nothing."""
+    """The only phase besides 5b that says out loud that it might not have been able to look. Every other one reports a clean sweep of nothing."""
     result = sides("cleanup_workflow_runs", fixture={"gh": [rule("actions/workflows", rc=1)]})
     assert b"No active workflows listed (API error?); skipping phase" in result[2]
     assert result[0] == 0
@@ -2197,8 +2164,7 @@ def test_phase_10_keeps_the_hundred_newest_and_reaps_the_old_tail() -> None:
 
 
 def test_phase_10_gives_the_watchdog_its_own_shorter_retention_by_path() -> None:
-    """Keyed by path, never by name: the watchdog's display name is generated per
-    run ("Watchdog: run <id> (gen N)"), so a name match is unwritable."""
+    """Keyed by path, never by name: the watchdog's display name is generated per run ("Watchdog: run <id> (gen N)"), so a name match is unwritable."""
     page = [*_runs(100), {"id": 9001, "created_at": ago(10.5), "conclusion": "success"}]
     result = sides(
         "cleanup_workflow_runs",
@@ -2240,9 +2206,7 @@ def test_phase_10_gives_the_watchdog_its_own_shorter_retention_by_path() -> None
 
 
 def test_phase_10_warns_when_its_scan_window_can_never_reach_the_threshold() -> None:
-    """THE VACUOUS-GREEN CHECK. This phase deleted nothing for the watchdog for
-    months while reporting success, because ten pages of runs never reached back as far as the retention threshold. The warning fires only when the window was
-    TRUNCATED, so a young low-volume workflow stays quiet."""
+    """THE VACUOUS-GREEN CHECK. This phase deleted nothing for the watchdog for months while reporting success, because ten pages of runs never reached back as far as the retention threshold. The warning fires only when the window was TRUNCATED, so a young low-volume workflow stays quiet."""
     result = sides(
         "cleanup_workflow_runs",
         argv=("--dry-run",),
@@ -2521,9 +2485,7 @@ def test_a_failed_cache_listing_kills_the_run_with_an_arithmetic_error() -> None
 
 
 def test_run_all_phases_over_an_empty_world_is_identical_end_to_end() -> None:
-    """Every phase, in order, with every API answering empty. This is the case
-    that pins the BLANK LINES -- `echo ""` puts them on STDOUT while every log line goes to stderr, so a port that printed them to the wrong stream would
-    pass every per-phase case above and fail here."""
+    """Every phase, in order, with every API answering empty. This is the case that pins the BLANK LINES -- `echo ""` puts them on STDOUT while every log line goes to stderr, so a port that printed them to the wrong stream would pass every per-phase case above and fail here."""
     result = sides(
         "run_all_phases",
         argv=("--dry-run",),
@@ -2563,8 +2525,7 @@ def test_run_all_phases_over_an_empty_world_is_identical_end_to_end() -> None:
 
 
 def test_run_all_phases_exits_1_once_at_the_end_when_a_phase_latched() -> None:
-    """ONE exit point, AFTER every phase has run. Returning non-zero out of a
-    phase instead is what once disabled Phase 8f and unset errexit for 9-12."""
+    """ONE exit point, AFTER every phase has run. Returning non-zero out of a phase instead is what once disabled Phase 8f and unset errexit for 9-12."""
     result = sides(
         "run_all_phases",
         fixture={
@@ -2589,8 +2550,7 @@ def test_run_all_phases_exits_1_once_at_the_end_when_a_phase_latched() -> None:
 
 
 def test_the_guards_refuse_in_the_twins_order() -> None:
-    """`require_cmd gh jq curl aws` then `require_var GH_TOKEN`, at SOURCE time,
-    so a host missing two of them is told about the FIRST one."""
+    """`require_cmd gh jq curl aws` then `require_var GH_TOKEN`, at SOURCE time, so a host missing two of them is told about the FIRST one."""
     for drop, message in (
         ("gh", "Required command 'gh' is not available"),
         ("curl", "Required command 'curl' is not available"),

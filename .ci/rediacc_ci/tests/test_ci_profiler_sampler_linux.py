@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.ci.profiler_sampler_linux` against its twin
-`.ci/scripts/ci/profiler/sampler-linux.sh`.
+"""Differential: `rediacc_ci.ci.profiler_sampler_linux` against its twin `.ci/scripts/ci/profiler/sampler-linux.sh`.
 
 FOUR LAYERS, because this pair has four genuinely different risks and only one of them is "does the output match".
 

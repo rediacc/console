@@ -75,9 +75,7 @@ def test_walker_fires_on_synthetic_unregistered_leaf(gate):
 
 
 def test_the_gate_reports_a_non_trivial_leaf_count(gate):
-    """PORT-ONLY. `Schema coverage OK` is a string, and a walk that visited nothing
-    prints it just as happily as a walk that visited the whole schema. The gate names its numbers; this reads one back and refuses a zero, so the green above
-    is a claim about a corpus rather than about a line of text."""
+    """PORT-ONLY. `Schema coverage OK` is a string, and a walk that visited nothing prints it just as happily as a walk that visited the whole schema. The gate names its numbers; this reads one back and refuses a zero, so the green above is a claim about a corpus rather than about a line of text."""
     gate.log_test("the green above covered a non-empty schema")
     result = harness.run([str(TSX), str(SUT)], cwd=paths.repo_root())
     digits = [int(token) for token in result.combined.replace(",", " ").split() if token.isdigit()]

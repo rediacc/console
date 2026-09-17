@@ -27,8 +27,7 @@ import sys
 
 
 def _docker(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
-    """`subprocess.run(["docker", *args], ...)`, treating a missing binary as
-    bash's exit 127 rather than raising.
+    """`subprocess.run(["docker", *args], ...)`, treating a missing binary as bash's exit 127 rather than raising.
 
     The twin never checks `command -v docker` first; a missing binary just makes every `docker ...` invocation fail with bash's own "command not found" (127),
     caught by the same `|| { ... }` / `|| true` guards that catch a real failure.

@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.security.rdc_sh_env_check` against its twin
-`.ci/scripts/test/test-rdc-sh-env.sh` (gate `check:ci-rdc-sh-env`).
+"""Differential: `rediacc_ci.security.rdc_sh_env_check` against its twin `.ci/scripts/test/test-rdc-sh-env.sh` (gate `check:ci-rdc-sh-env`).
 
 THE GREEN RUN IS THE WEAKEST CASE, so most of this file is about the red ones. Both subjects pass on the real tree today, which proves only that two programs agree about an `rdc.sh` neither is currently catching out. Every case below therefore runs both against a FIXTURE TREE holding a MUTATED copy of `rdc.sh`, so each of the twin's eleven `fail` branches is actually reached and
 compared byte for byte -- ANSI escapes included, because those are what a reader of a CI log sees and what a "tidier" port would drop.

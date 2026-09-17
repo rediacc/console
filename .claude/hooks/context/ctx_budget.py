@@ -299,8 +299,7 @@ def state_dir():
 
 
 def session_slug(session_id):
-    """The same [:8] rule wl_store.agent_session_slug uses, so this module and
-    the worklist store name the same session the same way."""
+    """The same [:8] rule wl_store.agent_session_slug uses, so this module and the worklist store name the same session the same way."""
     return re.sub(r"[^A-Za-z0-9._-]", "_", str(session_id or "unknown"))[:8] or "unknown"
 
 

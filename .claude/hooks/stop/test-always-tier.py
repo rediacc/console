@@ -19,9 +19,7 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent
 CHECKS = HERE / "wl_checks.py"
 
-# --------------------------------------------------------------------------- THE PINNED INVARIANT SET. A key belongs here iff it satisfies I1, I2 or I3 in wl_checks.py's tier comment. Adding one is a deliberate act with an argument
-# attached; the corollary there (an I1-only check should move its latch to
-# display time instead of being promoted) is why this set is not longer.
+# --------------------------------------------------------------------------- THE PINNED INVARIANT SET. A key belongs here iff it satisfies I1, I2 or I3 in wl_checks.py's tier comment. Adding one is a deliberate act with an argument attached; the corollary there (an I1-only check should move its latch to display time instead of being promoted) is why this set is not longer.
 ALWAYS_KEYS = frozenset(
     {
         # I3 -- the hook or a gate cannot see.

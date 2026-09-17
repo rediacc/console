@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.set_account_worker_secrets` against its twin
-`.ci/scripts/deploy/set-account-worker-secrets.sh`.
+"""Differential: `rediacc_ci.deploy.set_account_worker_secrets` against its twin `.ci/scripts/deploy/set-account-worker-secrets.sh`.
 
 A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
 is that piece.
@@ -201,9 +200,7 @@ def _twin_source() -> str:
 
 
 def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Path) -> None:
-    """ONE CALL, PINNED AGAINST LITERAL BYTES. Twenty-nine keys in the twin's
-    order, on the stable EU channel: the Stripe pair present, the SES pair fanned in from the EU names, the endpoint carrying its `eu` jurisdiction label, and
-    the STABLE bucket rather than the edge one."""
+    """ONE CALL, PINNED AGAINST LITERAL BYTES. Twenty-nine keys in the twin's order, on the stable EU channel: the Stripe pair present, the SES pair fanned in from the EU names, the endpoint carrying its `eu` jurisdiction label, and the STABLE bucket rather than the edge one."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert old.returncode == 0
     assert old_calls.splitlines()[0] == ("npx\twrangler\tsecret\tbulk\t--name\trediacc-account-eu")
@@ -244,9 +241,7 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
 
 
 def test_a_successful_run_says_nothing_of_its_own(tmp_path: pathlib.Path) -> None:
-    """THE PROPERTY THAT MAKES THE DOCUMENT LOAD BEARING, and the reason the
-    preview sibling's hard-coded `Set 15 secrets` line has no third occurrence:
-    this twin ends on the pipe and prints no closing line at all."""
+    """THE PROPERTY THAT MAKES THE DOCUMENT LOAD BEARING, and the reason the preview sibling's hard-coded `Set 15 secrets` line has no third occurrence: this twin ends on the pipe and prints no closing line at all."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert old.stdout == "Finished processing secrets JSON file.\n"
     assert old.stderr == ""
@@ -256,9 +251,7 @@ def test_a_successful_run_says_nothing_of_its_own(tmp_path: pathlib.Path) -> Non
 
 
 def test_the_edge_channel_blanks_both_stripe_values(tmp_path: pathlib.Path) -> None:
-    """DECISION 1. Billing is disabled on edge, so the key and the webhook secret
-    are written as EMPTY STRINGS rather than omitted, and neither is demanded. The regional webhook secret is in the environment and must NOT reach the
-    document."""
+    """DECISION 1. Billing is disabled on edge, so the key and the webhook secret are written as EMPTY STRINGS rather than omitted, and neither is demanded. The regional webhook secret is in the environment and must NOT reach the document."""
     old, new, old_calls, new_calls = run_both(tmp_path, TARGET="edge")
     assert old.returncode == 0
     doc = document(old_calls)
@@ -271,9 +264,7 @@ def test_the_edge_channel_blanks_both_stripe_values(tmp_path: pathlib.Path) -> N
 
 
 def test_any_target_that_is_not_stable_is_the_edge_channel(tmp_path: pathlib.Path) -> None:
-    """THE `if` HAS TWO ARMS AND NO THIRD. A typo in TARGET does not refuse; it
-    deploys the edge shape, which is worth knowing and is why the port compares
-    against the literal `stable` rather than testing for `edge`."""
+    """THE `if` HAS TWO ARMS AND NO THIRD. A typo in TARGET does not refuse; it deploys the edge shape, which is worth knowing and is why the port compares against the literal `stable` rather than testing for `edge`."""
     old, new, old_calls, new_calls = run_both(tmp_path, TARGET="Stable")
     assert old.returncode == 0
     assert '"STRIPE_SECRET_KEY": ""' in document(old_calls)
@@ -282,9 +273,7 @@ def test_any_target_that_is_not_stable_is_the_edge_channel(tmp_path: pathlib.Pat
 
 
 def test_asia_borrows_the_eu_ses_credential(tmp_path: pathlib.Path) -> None:
-    """DECISION 3. The ASIA pair is read and then DISCARDED: with both pairs
-    present, the document must carry EU's. `regions.json` gives asia
-    `sesRegion: eu-central-1`, so the borrowed credential and the region agree."""
+    """DECISION 3. The ASIA pair is read and then DISCARDED: with both pairs present, the document must carry EU's. `regions.json` gives asia `sesRegion: eu-central-1`, so the borrowed credential and the region agree."""
     asia = {
         "SUFFIX": "ASIA",
         "AWS_SES_ACCESS_KEY_ID_ASIA": "sk-asia",
@@ -306,8 +295,7 @@ def test_asia_borrows_the_eu_ses_credential(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_region_without_a_jurisdiction_keeps_the_default_host(tmp_path: pathlib.Path) -> None:
-    """DECISION 4, the negative half. `regions.json` gives us and asia
-    `r2Jurisdiction: null`, which the deploy matrix passes as the empty string."""
+    """DECISION 4, the negative half. `regions.json` gives us and asia `r2Jurisdiction: null`, which the deploy matrix passes as the empty string."""
     # A `**dict` rather than keyword arguments: ruff's S106 reads a keyword whose NAME looks like a credential as a hardcoded password, and every fan-in name in this file looks exactly like one.
     us = {
         "SUFFIX": "US",
@@ -325,9 +313,7 @@ def test_a_region_without_a_jurisdiction_keeps_the_default_host(tmp_path: pathli
 
 
 def test_an_endpoint_already_carrying_the_label_is_left_alone(tmp_path: pathlib.Path) -> None:
-    """THE SPLICE IS IDEMPOTENT, which is the whole point of the negative clause
-    in the twin's condition: a secret already stored in jurisdictional form must
-    not become `acct.eu.eu.r2.cloudflarestorage.com`."""
+    """THE SPLICE IS IDEMPOTENT, which is the whole point of the negative clause in the twin's condition: a secret already stored in jurisdictional form must not become `acct.eu.eu.r2.cloudflarestorage.com`."""
     already = "https://acct.eu.r2.cloudflarestorage.com"
     old, new, old_calls, new_calls = run_both(tmp_path, ACCOUNT_BACKUP_S3_ENDPOINT=already)
     assert f'"ACCOUNT_BACKUP_S3_ENDPOINT": "{already}"' in document(old_calls)
@@ -336,8 +322,7 @@ def test_an_endpoint_already_carrying_the_label_is_left_alone(tmp_path: pathlib.
 
 
 def test_a_non_r2_endpoint_is_never_rewritten(tmp_path: pathlib.Path) -> None:
-    """The host test is a substring match on the R2 host, so an endpoint pointing
-    anywhere else passes through untouched even with a jurisdiction set."""
+    """The host test is a substring match on the R2 host, so an endpoint pointing anywhere else passes through untouched even with a jurisdiction set."""
     other = "https://s3.eu-central-1.amazonaws.com"
     old, new, old_calls, new_calls = run_both(tmp_path, ACCOUNT_BACKUP_S3_ENDPOINT=other)
     assert f'"ACCOUNT_BACKUP_S3_ENDPOINT": "{other}"' in document(old_calls)
@@ -345,9 +330,7 @@ def test_a_non_r2_endpoint_is_never_rewritten(tmp_path: pathlib.Path) -> None:
 
 
 def test_an_empty_bucket_is_refused_on_both_channels(tmp_path: pathlib.Path) -> None:
-    """THE BUCKET GUARD, four lines, and it fires BEFORE every `_require_nonempty`
-    one. An empty bucket does not throw inside the Worker: it mints presigned URLs
-    against bucket "" and every upload 404s at runtime."""
+    """THE BUCKET GUARD, four lines, and it fires BEFORE every `_require_nonempty` one. An empty bucket does not throw inside the Worker: it mints presigned URLs against bucket "" and every upload 404s at runtime."""
     for target, blank in (("stable", "BACKUP_BUCKET_STABLE"), ("edge", "BACKUP_BUCKET_EDGE")):
         case = tmp_path / f"bucket-{target}"
         case.mkdir()
@@ -365,8 +348,7 @@ def test_an_empty_bucket_is_refused_on_both_channels(tmp_path: pathlib.Path) -> 
 
 
 def test_the_bucket_guard_precedes_every_value_guard(tmp_path: pathlib.Path) -> None:
-    """ORDER IS OBSERVABLE. With the bucket AND the first secret both empty, the
-    message a caller reads is the bucket's."""
+    """ORDER IS OBSERVABLE. With the bucket AND the first secret both empty, the message a caller reads is the bucket's."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, BACKUP_BUCKET_STABLE="", ACCOUNT_ED25519_PRIVATE_KEY=""
     )
@@ -378,9 +360,7 @@ def test_the_bucket_guard_precedes_every_value_guard(tmp_path: pathlib.Path) -> 
 def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
     tmp_path: pathlib.Path,
 ) -> None:
-    """SEVENTEEN CASES ON STABLE, ONE PER GUARD, each driven EMPTY rather than
-    absent, and each blanking the variable the value really comes from rather
-    than the name the guard prints."""
+    """SEVENTEEN CASES ON STABLE, ONE PER GUARD, each driven EMPTY rather than absent, and each blanking the variable the value really comes from rather than the name the guard prints."""
     demanded = port.REQUIRED_NONEMPTY + port.REQUIRED_NONEMPTY_STABLE
     assert len(demanded) == 17
     for name in demanded:
@@ -400,8 +380,7 @@ def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
 
 
 def test_the_two_stripe_guards_are_demanded_on_stable_only(tmp_path: pathlib.Path) -> None:
-    """THE CONDITIONAL HALF OF THE GUARD LIST, pinned in BOTH directions: the same
-    blank value refuses on stable and deploys on edge."""
+    """THE CONDITIONAL HALF OF THE GUARD LIST, pinned in BOTH directions: the same blank value refuses on stable and deploys on edge."""
     for name in port.REQUIRED_NONEMPTY_STABLE:
         blank = {GUARD_SOURCE[name]: ""}
 
@@ -455,9 +434,7 @@ def test_the_tool_checks_run_before_the_three_control_variables(tmp_path: pathli
 def test_divergence_a_the_three_control_variables_are_bashs_own_refusals(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE FIRST DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED"
-    BY ACCIDENT. bash names its own FILE and LINE NUMBER and then the twin's message, which already begins with the script name, so the name is printed TWICE. The port prints the `VAR: message` half. Same stream, same status, no
-    call from either side."""
+    """THE FIRST DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED" BY ACCIDENT. bash names its own FILE and LINE NUMBER and then the twin's message, which already begins with the script name, so the name is printed TWICE. The port prints the `VAR: message` half. Same stream, same status, no call from either side."""
     lines = {"WORKER_NAME": 106, "TARGET": 107, "SUFFIX": 108}
     for name, line in lines.items():
         case = tmp_path / f"missing-{name}"
@@ -474,9 +451,7 @@ def test_divergence_a_the_three_control_variables_are_bashs_own_refusals(
 
 
 def test_the_first_missing_control_variable_wins(tmp_path: pathlib.Path) -> None:
-    """ORDER IS OBSERVABLE for the three `:?` refusals too: with all three gone,
-    both sides name WORKER_NAME and stop. The expected line is a LITERAL rather than `port.MISSING_MESSAGES[0]`, because reading the order out of the port is
-    how a reordered tuple passes its own test."""
+    """ORDER IS OBSERVABLE for the three `:?` refusals too: with all three gone, both sides name WORKER_NAME and stop. The expected line is a LITERAL rather than `port.MISSING_MESSAGES[0]`, because reading the order out of the port is how a reordered tuple passes its own test."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, drop_env=("WORKER_NAME", "TARGET", "SUFFIX")
     )
@@ -490,8 +465,7 @@ def test_the_first_missing_control_variable_wins(tmp_path: pathlib.Path) -> None
 def test_an_empty_control_variable_refuses_exactly_as_an_absent_one(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`:?` IS AN UNSET-OR-EMPTY TEST. A port checking `"TARGET" in os.environ`
-    would sail past this and deploy the edge shape to a stable Worker."""
+    """`:?` IS AN UNSET-OR-EMPTY TEST. A port checking `"TARGET" in os.environ` would sail past this and deploy the edge shape to a stable Worker."""
     for name, message in port.MISSING_MESSAGES:
         case = tmp_path / f"empty-{name}"
         case.mkdir()
@@ -504,8 +478,7 @@ def test_an_empty_control_variable_refuses_exactly_as_an_absent_one(
 
 def test_divergence_b_a_suffix_that_is_not_an_identifier(tmp_path: pathlib.Path) -> None:
     """THE SECOND DIVERGENCE. `${!var}` refuses a constructed name bash cannot
-    parse, and WHICH name it is depends on the channel: the Stripe webhook is evaluated first on stable, the SES key first on edge. Both sides exit 1 with
-    the same sentence; only bash's file-and-line prefix differs."""
+    parse, and WHICH name it is depends on the channel: the Stripe webhook is evaluated first on stable, the SES key first on edge. Both sides exit 1 with the same sentence; only bash's file-and-line prefix differs."""
     cases = (
         ("stable", "STRIPE_WEBHOOK_SECRET_EU-1", 115),
         ("edge", "AWS_SES_ACCESS_KEY_ID_EU-1", 124),
@@ -529,8 +502,7 @@ def test_divergence_b_an_array_subscript_suffix_is_the_one_shape_not_reproduced(
     SCALAR answers to subscript 0, so `SUFFIX=EU[0]` reads
     `AWS_SES_ACCESS_KEY_ID_EU[0]`, which is the EU credential itself: the twin DEPLOYS, exit 0, with a perfectly ordinary document. The port refuses.
 
-    Unreachable in production, since SUFFIX is `regions.json`'s `secretSuffix`, one of EU / US / ASIA. Asserted so a later reader finds the divergence written down instead of discovering it, and so nobody "fixes" the identifier rule without reading this. It is also the safe direction: the port refuses
-    where the twin would deploy."""
+    Unreachable in production, since SUFFIX is `regions.json`'s `secretSuffix`, one of EU / US / ASIA. Asserted so a later reader finds the divergence written down instead of discovering it, and so nobody "fixes" the identifier rule without reading this. It is also the safe direction: the port refuses where the twin would deploy."""
     old, new, old_calls, new_calls = run_both(tmp_path, TARGET="edge", SUFFIX="EU[0]")
     assert old.returncode == 0, "bash no longer resolves the subscript form"
     assert "invalid variable name" not in old.stderr
@@ -543,9 +515,7 @@ def test_divergence_b_an_array_subscript_suffix_is_the_one_shape_not_reproduced(
 
 
 def test_a_wrangler_failure_ends_the_run_with_its_status(tmp_path: pathlib.Path) -> None:
-    """PIPEFAIL, the right-hand half, and the reason the twin's header says
-    `-uo pipefail` were added: a jq failure used to be hidden because wrangler's
-    status won."""
+    """PIPEFAIL, the right-hand half, and the reason the twin's header says `-uo pipefail` were added: a jq failure used to be hidden because wrangler's status won."""
     old, new, old_calls, new_calls = run_both(tmp_path, FAKE_NPX_RC="7")
     assert old.returncode == 7
     assert old.stderr == "wrangler: failed to set secrets\n"
@@ -563,9 +533,7 @@ def test_a_value_with_quotes_and_newlines_survives_intact(tmp_path: pathlib.Path
 
 
 def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Path) -> None:
-    """WHY `jq` IS CALLED RATHER THAN REIMPLEMENTED: `json.dumps` would emit
-    `\\uXXXX` here and jq emits raw UTF-8. A secret is opaque bytes chosen by
-    someone else."""
+    """WHY `jq` IS CALLED RATHER THAN REIMPLEMENTED: `json.dumps` would emit `\\uXXXX` here and jq emits raw UTF-8. A secret is opaque bytes chosen by someone else."""
     old, new, old_calls, new_calls = run_both(tmp_path, SELLER_CITY="Zürich \x7f")
     assert '"SELLER_CITY": "Zürich \\u007f"' in document(old_calls)
     _assert_agree(old, new, "non-ascii", old_calls, new_calls)
@@ -591,8 +559,7 @@ def test_the_key_list_is_the_twins_key_list() -> None:
 
 
 def test_the_guard_lists_are_the_twins_guard_lists() -> None:
-    """STALENESS ALARM for the `_require_nonempty` calls, and for the SPLIT
-    between the unconditional fifteen (column 0) and the two the twin indents
+    """STALENESS ALARM for the `_require_nonempty` calls, and for the SPLIT between the unconditional fifteen (column 0) and the two the twin indents
     inside `if [[ "$TARGET" == "stable" ]]`."""
     src = _twin_source()
     always = re.findall(r'^_require_nonempty (\w+) "', src, re.MULTILINE)
@@ -628,9 +595,7 @@ def test_the_asia_borrow_names_are_the_twins_names() -> None:
 
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
-    """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This
-    is the only member of the family that decides anything, and every difference
-    below is driven by a test above."""
+    """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
     assert len(port.KEYS) == 29
     assert len(www.KEYS) == 24
     assert len(preview.KEYS) == 15
@@ -655,8 +620,7 @@ def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
 
 def test_the_guard_label_defect_has_no_third_occurrence() -> None:
     """`set-preview-worker-secrets.sh:53` prints `WORKER_NAME=` for a script whose
-    variable is `WORKER`, inherited verbatim from the www twin. This twin really does have WORKER_NAME, and prints TARGET and SUFFIX beside it, so every label
-    in its guard message names a variable it holds."""
+    variable is `WORKER`, inherited verbatim from the www twin. This twin really does have WORKER_NAME, and prints TARGET and SUFFIX beside it, so every label in its guard message names a variable it holds."""
     assert preview.GUARD_LABEL_SAYS_WORKER_NAME
     assert "WORKER_NAME" not in preview.__doc__.split("K=5 LEDGER")[0].split("1. THE GUARD")[0]
     src = _twin_source()
@@ -715,9 +679,8 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on THE DECISION rather than on a key: the mutant
-    picks the EDGE bucket on the stable channel. That is the exact defect the twin's header records as already having happened once in the other direction (one global bucket secret against six per-region bindings), and it is invisible everywhere a reader would look -- exit 0 on both sides, the same stdout, the same empty stderr. Only the document shows it. Driven red, then
-    the source is confirmed byte-identical and green again."""
+    """ANTI-VACUITY, planted on THE DECISION rather than on a key: the mutant picks the EDGE bucket on the stable channel. That is the exact defect the twin's header records as already having happened once in the other direction (one global bucket secret against six per-region bindings), and it is invisible everywhere a reader would look -- exit 0 on both sides, the same
+    stdout, the same empty stderr. Only the document shows it. Driven red, then the source is confirmed byte-identical and green again."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
         "    bucket_var = BUCKET_VAR_STABLE if target == STABLE else BUCKET_VAR_EDGE\n",

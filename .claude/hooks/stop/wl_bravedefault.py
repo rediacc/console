@@ -47,13 +47,10 @@ import os
 import wl_core as C
 import wl_rules
 
-# The substring the prompt section carries; judge_schema_for requires the object
-# iff this is present, the same contract as the other two optional objects.
+# The substring the prompt section carries; judge_schema_for requires the object iff this is present, the same contract as the other two optional objects.
 BRAVE_MARKER = "A DEFAULT THAT DOES NOTHING IS NOT A DEFAULT"
 
-# THE SAME TOKEN the rest of the program already requires on every `- [?]`, IMPORTED rather than re-spelled. A second copy of this regex would drift from the first the day either changes, which is precisely the defect the sibling
-# rule in wl_classsweep exists to catch; writing it twice here would be that
-# rule failing inside its own pull request.
+# THE SAME TOKEN the rest of the program already requires on every `- [?]`, IMPORTED rather than re-spelled. A second copy of this regex would drift from the first the day either changes, which is precisely the defect the sibling rule in wl_classsweep exists to catch; writing it twice here would be that rule failing inside its own pull request.
 DEFAULT_TOKEN = C.DEFAULT_TOKEN
 
 HOLD_REASONS = ("irreversible", "outward", "cost-on-others", "preference", "none")

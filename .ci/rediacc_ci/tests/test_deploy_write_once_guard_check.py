@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.write_once_guard_check` against its twin
-`.ci/scripts/test/test-write-once-guard.sh` (gate `test:write-once-guard`).
+"""Differential: `rediacc_ci.deploy.write_once_guard_check` against its twin `.ci/scripts/test/test-write-once-guard.sh` (gate `test:write-once-guard`).
 
 THE HAPPY PATH IS THE WEAKEST CASE HERE, so most of this file is about the FAILURE paths. Both subjects pass on the real tree today, which proves only that two programs agree about a guard neither of them is currently catching out. Every case below therefore runs both against a FIXTURE TREE holding a MUTATED copy of `upload-to-r2.sh` or `release-state-validator.sh`, so the twin's
 four `log_fail` branches are actually reached and compared byte for byte -- including the ANSI escapes, which are the part a reader of a CI log sees and the part a "tidier" port would drop.

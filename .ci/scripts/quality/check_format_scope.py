@@ -5,9 +5,7 @@ WHY THIS EXISTS, measured 2026-09-03. `check:format` ran `biome format packages/
 covers `scripts/`, `.ci/`, `workers/`, `eslint-rules/` and `.github/actions/`. The gate
 inspected a fraction of its own configured scope, so 35 files had drifted where nothing was looking -- and that blind spot is how a prettier run (not this repo's formatter, and nothing said so) put a 424-line quote-churn diff into the tree with every gate green.
 
-It is the same shape as the defect check_lint_scope_coverage.py was written for -- a narrowed path list making files invisible to a rule -- one tool over. That gate asserts
-FILES reach a linter; this asserts the COMMAND does not shrink what the config declares.
-Neither implies the other: a file can be lintable and unformatted.
+It is the same shape as the defect check_lint_scope_coverage.py was written for -- a narrowed path list making files invisible to a rule -- one tool over. That gate asserts FILES reach a linter; this asserts the COMMAND does not shrink what the config declares. Neither implies the other: a file can be lintable and unformatted.
 
 THE ORACLE IS THE TOOL'S OWN COUNT, not a reimplementation of biome's glob semantics. A gate that re-derives `files.includes` by hand would be a second, subtly different matcher -- exactly the trap check_syncpack_sources.py records, where fnmatch's `*` crossed `/` and reported files as covered that the real tool never reads. So: run biome with the command's own arguments, run it
 with `.`, and compare the counts it reports. If the declared command sees fewer files than the config would, it narrows.

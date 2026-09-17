@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.build.ensure_nfpm` against its twin
-`.ci/scripts/build/ensure-nfpm.sh`.
+"""Differential: `rediacc_ci.build.ensure_nfpm` against its twin `.ci/scripts/build/ensure-nfpm.sh`.
 
 HOW THE TWO SIDES ARE POINTED AT A FIXTURE. Neither side takes a root override:
 the twin resolves `REPO_ROOT` from `${BASH_SOURCE[0]}` and the port from
@@ -255,9 +254,7 @@ def test_cold_cache_downloads_verifies_and_prints_the_cache_dir(
 
 
 def test_a_failing_curl_exits_with_curls_own_status(tmp_path: pathlib.Path) -> None:
-    """`set -e` on `curl -sfL` (:67): the script's exit status is curl's 22, and
-    the only output is the `fetching` line already on stderr. A port that
-    normalised this to 1 would be indistinguishable from a checksum failure."""
+    """`set -e` on `curl -sfL` (:67): the script's exit status is curl's 22, and the only output is the `fetching` line already on stderr. A port that normalised this to 1 would be indistinguishable from a checksum failure."""
     fixture = build_fixture(tmp_path, curl=CURL_REFUSE)
     old, new = run_both(fixture)
     assert old.returncode == 22

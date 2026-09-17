@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.infra.ci_env` against its twin
-`.ci/scripts/infra/ci-env.sh`.
+"""Differential: `rediacc_ci.infra.ci_env` against its twin `.ci/scripts/infra/ci-env.sh`.
 
 THE TWIN IS SOURCED, NEVER EXECUTED, so "run both and compare stdout" is not the comparison. Sourcing it leaves FOUR observables behind and this file compares all four on every case:
 
@@ -11,9 +10,8 @@ THE TWIN IS SOURCED, NEVER EXECUTED, so "run both and compare stdout" is not the
   3. the bytes appended to `$GITHUB_ENV`;
   4. stdout: the `::add-mask::` directives and the three summary lines.
 
-ONE TREE, TWO SEQUENTIAL RUNS, and that is deliberate. `CONSOLE_ROOT` is derived from the script's own location on both sides, so giving each side its own copy of the tree would make `CI_DOCKER_DIR` and `CI_COMPOSE_FILE` legitimately differ and every case would need those two values normalised away.
-Sharing one tree makes them identical and keeps the comparison exact; the
-artifacts are captured after each run, before the other side overwrites them.
+ONE TREE, TWO SEQUENTIAL RUNS, and that is deliberate. `CONSOLE_ROOT` is derived from the script's own location on both sides, so giving each side its own copy of the tree would make `CI_DOCKER_DIR` and `CI_COMPOSE_FILE` legitimately differ and every case would need those two values normalised away. Sharing one tree makes them identical and keeps the comparison exact; the artifacts
+are captured after each run, before the other side overwrites them.
 
 `node` AND `openssl` ARE RECORDING FAKES ON A PREPENDED PATH, for two reasons and only the first is speed. The second is that both real programs are RANDOM: a differential against the real ones can only ever compare shapes, and shapes are what a port gets right while producing a key that does not verify. With canned generators the comparison is byte-exact, and the ARGV the two
 sides hand to `node` -- a 300-character program whose curve name is the only thing that varies -- is compared too.
@@ -259,9 +257,7 @@ def test_the_fakes_are_what_resolves() -> None:
 
 
 def test_the_twin_is_sourced_by_two_scripts_and_executed_by_none() -> None:
-    """THE REASON THIS PORT IS A LIBRARY, re-checked rather than inherited from
-    the allowlist. If something ever starts EXECUTING the twin, this goes red
-    and the port needs a real CLI."""
+    """THE REASON THIS PORT IS A LIBRARY, re-checked rather than inherited from the allowlist. If something ever starts EXECUTING the twin, this goes red and the port needs a real CLI."""
     hits = subprocess.run(
         ["git", "grep", "-n", "ci-env.sh", "--", "*.sh"],
         capture_output=True,
@@ -298,9 +294,7 @@ def test_the_node_programs_are_the_twins_own_text() -> None:
 
 
 def test_the_persisted_block_matches_the_twins_heredoc() -> None:
-    """`check-compose-env.sh` parses this same heredoc out of the twin to decide
-    whether a compose variable is persisted, so a name dropped from the port's
-    table is a variable that silently arrives empty in a later workflow step."""
+    """`check-compose-env.sh` parses this same heredoc out of the twin to decide whether a compose variable is persisted, so a name dropped from the port's table is a variable that silently arrives empty in a later workflow step."""
     source = TWIN.read_text(encoding="utf-8")
     body = source.split("<<ENVBLOCK\n", 1)[1].split("\nENVBLOCK", 1)[0]
     expected = []
@@ -365,8 +359,7 @@ def test_the_supplied_everything_case_agrees_on_all_four_observables() -> None:
 
 
 def test_the_generators_run_with_identical_argv_when_nothing_is_supplied() -> None:
-    """The node program is 300 characters of JavaScript; the ARGV is compared,
-    not merely the fact that node was called."""
+    """The node program is 300 characters of JavaScript; the ARGV is compared, not merely the fact that node was called."""
     old, _, calls = _sides("generated", {})
     assert old.exit == 0
     verbs = [line.split("\t", 1)[0] for line in calls]
@@ -400,8 +393,7 @@ def test_a_private_key_without_its_public_leaves_the_public_unexported() -> None
 
 
 def test_a_failing_openssl_yields_empty_secrets() -> None:
-    """THE DEFECT, reproduced rather than repaired. Measured against the live
-    twin on 2026-09-13: exit 0, two empty secrets and a stub webhook secret, all three written to the `.env` file and appended to `$GITHUB_ENV`.
+    """THE DEFECT, reproduced rather than repaired. Measured against the live twin on 2026-09-13: exit 0, two empty secrets and a stub webhook secret, all three written to the `.env` file and appended to `$GITHUB_ENV`.
 
     Two things have to be true at once for `set -e` to miss it: there is no
     `set -o pipefail`, and the three assignments are `export VAR=$(...)`, whose
@@ -511,9 +503,7 @@ def test_the_masks_are_printed_only_under_github_actions_and_in_order() -> None:
 
 
 def test_a_missing_public_key_masks_the_empty_string() -> None:
-    """The mask directive is still printed, with nothing after it. Preserved:
-    it is what hazard (a) produces, and a port that skipped the line would
-    change stdout on a path a real CI job can take."""
+    """The mask directive is still printed, with nothing after it. Preserved: it is what hazard (a) produces, and a port that skipped the line would change stdout on a path a real CI job can take."""
     old, _, _ = _sides(
         "mask-empty",
         {
@@ -551,9 +541,7 @@ def test_ci_mode_is_preserved_when_the_workflow_sets_it() -> None:
 
 
 def test_the_two_defaulted_heredoc_names_come_from_the_caller() -> None:
-    """`ENABLE_HTTPS` and `SYSTEM_ORGANIZATION_VAULT_DEFAULTS` are never
-    exported by this script; they are read straight out of the caller's
-    environment when the block is expanded."""
+    """`ENABLE_HTTPS` and `SYSTEM_ORGANIZATION_VAULT_DEFAULTS` are never exported by this script; they are read straight out of the caller's environment when the block is expanded."""
     old, _, _ = _sides(
         "heredoc-defaults",
         {**SUPPLIED, "ENABLE_HTTPS": "true", "SYSTEM_ORGANIZATION_VAULT_DEFAULTS": "{}"},
@@ -610,10 +598,7 @@ def test_no_github_env_means_nothing_is_appended_anywhere() -> None:
 
 
 def test_an_unwritable_env_directory_stops_the_run_after_the_masks() -> None:
-    """A NAMED DIVERGENCE, and the only one in this file. bash reports a failed
-    redirection as `<script>: line 165: <path>: No such file or directory`; the
-    port names the same path in its own words. Exit code, stdout and the
-    absence of the file are identical, and that is what is asserted."""
+    """A NAMED DIVERGENCE, and the only one in this file. bash reports a failed redirection as `<script>: line 165: <path>: No such file or directory`; the port names the same path in its own words. Exit code, stdout and the absence of the file are identical, and that is what is asserted."""
     with tempfile.TemporaryDirectory() as td:
         base = _tree(pathlib.Path(td))
         shutil.rmtree(base / ".ci" / "docker" / "ci")

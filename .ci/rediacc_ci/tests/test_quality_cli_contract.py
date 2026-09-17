@@ -55,8 +55,7 @@ def test_compare_ignoring_version_matches_bash(
 
 
 def test_the_pair_table_exercises_both_directions() -> None:
-    """ANTI-VACUITY on the table above: a comparison that always answered
-    "equal", or always "different", would satisfy a one-sided table."""
+    """ANTI-VACUITY on the table above: a comparison that always answered "equal", or always "different", would satisfy a one-sided table."""
     verdicts = set()
     for left, right, _why in PAIRS:
         filtered_left = [
@@ -70,8 +69,7 @@ def test_the_pair_table_exercises_both_directions() -> None:
 
 
 def test_a_missing_generated_file_is_not_equal(tmp_path: pathlib.Path) -> None:
-    """The absent side must never compare EQUAL. A port that read a missing file
-    as an empty one would call a vanished artefact up-to-date."""
+    """The absent side must never compare EQUAL. A port that read a missing file as an empty one would call a vanished artefact up-to-date."""
     (tmp_path / "a").write_text("x\n", encoding="utf-8")
     assert cc.compare_ignoring_version(tmp_path / "a", tmp_path / "gone") is False
 
@@ -90,8 +88,7 @@ def test_glob_or_literal_both_directions(tmp_path: pathlib.Path) -> None:
 
 
 def test_glob_or_literal_matches_bash(tmp_path: pathlib.Path) -> None:
-    """The no-nullglob behaviour, proven against a real bash loop rather than
-    asserted from memory of how bash behaves."""
+    """The no-nullglob behaviour, proven against a real bash loop rather than asserted from memory of how bash behaves."""
     directory = tmp_path / "i18n"
     directory.mkdir()
     script = 'for f in "%s"/*.json; do basename "$f"; done' % directory

@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/infra/build_renet.py` against its twin
-`.ci/scripts/infra/build-renet.sh`.
+"""Differential: `.ci/rediacc_ci/infra/build_renet.py` against its twin `.ci/scripts/infra/build-renet.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
@@ -214,8 +213,7 @@ def _run(
         "PATH": _binder(root.parent / ("fxbin-%s" % tag), go=go, system=system, exclude=exclude),
         "HOME": str(root.parent),
         "PYTHONDONTWRITEBYTECODE": "1",
-        # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci.log`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})
@@ -351,8 +349,7 @@ def test_the_fake_build_is_actually_reached(tmp_path):
 def test_the_skip_path_really_skips(tmp_path):
     """CONTROL for the case above: a matching stamp must run NO build at all.
 
-    A port that rebuilt unconditionally would satisfy every positive assertion in
-    this file and would re-run a Go build in ten CI steps."""
+    A port that rebuilt unconditionally would satisfy every positive assertion in this file and would re-run a Go build in ten CI steps."""
     root = _fixture(tmp_path / "s", binary="renet", stamp="default|" + EMPTY_KEY_DIGEST)
     out = _run(PORT_REL, root)
     assert out["calls"] == [], "a build ran despite a matching stamp: %r" % out["calls"]
@@ -360,9 +357,7 @@ def test_the_skip_path_really_skips(tmp_path):
 
 
 def test_the_stamp_is_not_written_when_the_build_fails(tmp_path):
-    """The twin's Step 5 comment is the whole reason the stamp exists; a stamp
-    written ahead of a failed build makes the NEXT run skip and hand back
-    nothing."""
+    """The twin's Step 5 comment is the whole reason the stamp exists; a stamp written ahead of a failed build makes the NEXT run skip and hand back nothing."""
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("f-%s" % subject.name), build_rc=3)
         out = _run(subject, root)
@@ -395,8 +390,7 @@ def test_a_deleted_binary_is_not_restored_when_go_is_missing(tmp_path):
 
 
 def test_a_missing_sha256sum_is_the_one_deliberate_divergence(tmp_path):
-    """THE ONE DELIBERATE DIVERGENCE, asserted in BOTH directions, and it is a
-    REAL DEFECT in the twin rather than a stylistic difference.
+    """THE ONE DELIBERATE DIVERGENCE, asserted in BOTH directions, and it is a REAL DEFECT in the twin rather than a stylistic difference.
 
     With no `sha256sum` on PATH -- stock macOS ships `shasum`, not `sha256sum`, and this script advertises itself as locally runnable -- the twin does NOT die. `printf '%s|%s' "$mode" "$(... | sha256sum | cut ...)"` puts the failing pipeline in a COMMAND SUBSTITUTION USED AS AN ARGUMENT, so `set -e` and `pipefail` never see a failing command: printf succeeds with an empty second
     field and the identity collapses to `default|`.
@@ -430,8 +424,7 @@ def test_a_missing_sha256sum_is_the_one_deliberate_divergence(tmp_path):
 
 
 def test_the_collapsed_identity_defeats_the_rebuild_the_stamp_exists_for(tmp_path):
-    """The consequence of the case above, demonstrated rather than asserted in
-    prose: with `sha256sum` gone, TWO DIFFERENT KEYS produce the SAME twin stamp, so the second run skips the build. The port rebuilds.
+    """The consequence of the case above, demonstrated rather than asserted in prose: with `sha256sum` gone, TWO DIFFERENT KEYS produce the SAME twin stamp, so the second run skips the build. The port rebuilds.
 
     This is the incident build-renet.sh:44-63 describes, reachable again on any host without coreutils' `sha256sum`.
     """
@@ -459,8 +452,7 @@ def test_the_collapsed_identity_defeats_the_rebuild_the_stamp_exists_for(tmp_pat
 
 
 def test_the_identity_digest_is_the_twins_own_pipeline():
-    """`hashlib` is only allowed to stand in for `sha256sum | cut -c1-16` if it
-    produces the same 16 characters. Driven against the REAL bash pipeline rather than against a constant -- a constant copied out of the port cannot contradict the port -- for both the empty key and a realistic one.
+    """`hashlib` is only allowed to stand in for `sha256sum | cut -c1-16` if it produces the same 16 characters. Driven against the REAL bash pipeline rather than against a constant -- a constant copied out of the port cannot contradict the port -- for both the empty key and a realistic one.
 
     The port half runs in a SUBPROCESS with a controlled environment, because `build_identity()` reads `$RDC_RENET_LICENSE` and `$ACCOUNT_ED25519_PUBLIC_KEY` directly (deliberately: an `os.environ` alias is invisible to the env manifest reader), and a developer with either exported would otherwise see a green here for the wrong reason.
     """
@@ -485,9 +477,7 @@ def test_the_identity_digest_is_the_twins_own_pipeline():
 
 
 def test_build_args_drops_what_the_twin_drops():
-    """The pure half of the filter, driven directly. The parametrised cases
-    above prove the two agree; this one names WHAT they agree on, so a reader
-    does not have to reconstruct it from a build log."""
+    """The pure half of the filter, driven directly. The parametrised cases above prove the two agree; this one names WHAT they agree on, so a reader does not have to reconstruct it from a build log."""
     assert build_renet.build_args([]) == []
     assert build_renet.build_args(["--nolicence"]) == []
     assert build_renet.build_args(["-v", "--license", "x"]) == ["--license"]

@@ -1,13 +1,11 @@
-"""Differential: `rediacc_ci.build.prepare_cli_assets` against its twin
-`.ci/scripts/build/prepare-cli-assets.sh`.
+"""Differential: `rediacc_ci.build.prepare_cli_assets` against its twin `.ci/scripts/build/prepare-cli-assets.sh`.
 
 THE ARTIFACTS ARE THE SUBJECT, NOT THE LOG. This script's whole output is three files -- `dist/assets/renet-metadata.json`, `dist/assets/THIRD_PARTY_LICENSES` and `packages/cli/sea-config.generated.json`, plus the copied binaries -- and its stderr says almost nothing about them. Every case therefore compares the FULL byte content of everything the run wrote under `packages/cli/`,
 not just the three streams. A port that logged the right sentences and emitted different
 JSON would pass on stdout, stderr and exit code alone;
 `test_a_planted_defect_is_caught_only_by_the_artifacts` plants exactly that.
 
-`date` IS FAKED, AND IT HAS TO BE. `:171` stamps `generatedAt` with `date -u +%Y-%m-%dT%H:%M:%SZ`. That is the only non-deterministic byte in the metadata, and two sides run seconds apart, so without a frozen `date` the two files differ for a reason that has nothing to do with the port. The port shells
-out to the same `date` for that reason; a `datetime.now()` implementation could
+`date` IS FAKED, AND IT HAS TO BE. `:171` stamps `generatedAt` with `date -u +%Y-%m-%dT%H:%M:%SZ`. That is the only non-deterministic byte in the metadata, and two sides run seconds apart, so without a frozen `date` the two files differ for a reason that has nothing to do with the port. The port shells out to the same `date` for that reason; a `datetime.now()` implementation could
 not be pinned on both sides at once.
 
 `npx` IS FAKED because `:190` runs a real `tsx` program that walks the whole dependency tree and reaches the network. `jq`, `sha256sum`, `cp` and `stat` are REAL: they are deterministic, and the point of the comparison is the bytes they produce.
@@ -58,8 +56,7 @@ BASH = shutil.which("bash") or "/bin/bash"
 # Real, deterministic, and genuinely used by the twin. Anything not listed is ABSENT from the scratch PATH, including `npx`, `shasum` and `node`.
 PATH_MINIMUM = ("dirname", "uname", "jq", "cp", "mkdir", "stat", "sha256sum", "cut", "wc")
 
-# `:171`, frozen. Recorded to the call log on STDERR-adjacent storage only; its
-# STDOUT is the timestamp itself and must stay clean.
+# `:171`, frozen. Recorded to the call log on STDERR-adjacent storage only; its STDOUT is the timestamp itself and must stay clean.
 FROZEN_STAMP = "2026-01-02T03:04:05Z"
 FAKE_DATE = """#!/bin/bash
 {
@@ -281,9 +278,7 @@ def test_the_scratch_path_cannot_reach_a_real_npx(tmp_path) -> None:
 
 
 def test_the_frozen_date_really_is_what_lands_in_the_metadata(tmp_path) -> None:
-    """If the fake `date` were bypassed on either side, every metadata comparison
-    below would be comparing timestamps rather than the port. Pinned once here so
-    a silent bypass fails LOUDLY instead of turning the suite vacuous."""
+    """If the fake `date` were bypassed on either side, every metadata comparison below would be comparing timestamps rather than the port. Pinned once here so a silent bypass fails LOUDLY instead of turning the suite vacuous."""
     root = fixture(tmp_path)
     old_t, _ = run_both(root, args=("--platform", "linux", "--arch", "x64"))
     meta = json.loads(old_t[2]["packages/cli/dist/assets/renet-metadata.json"])
@@ -376,9 +371,7 @@ def test_mac_adds_its_own_darwin_binary(tmp_path) -> None:
 
 
 def test_win_copies_the_exe_but_drops_the_extension_from_the_asset_key(tmp_path) -> None:
-    """`:118-126`: the source path carries `.exe` and the SEA asset key never
-    does, so the copy renames. Both the destination name and the metadata key
-    are asserted, because getting only one right is the plausible mistake."""
+    """`:118-126`: the source path carries `.exe` and the SEA asset key never does, so the copy renames. Both the destination name and the metadata key are asserted, because getting only one right is the plausible mistake."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--platform", "win", "--arch", "x64"))
     assert old_t[0].returncode == 0, old_t[0].stderr
@@ -438,9 +431,7 @@ def test_a_package_json_with_no_version_yields_the_string_null(tmp_path) -> None
 
 
 def test_with_no_hashing_tool_the_run_refuses(tmp_path) -> None:
-    """`file_sha256`'s `exit 1` is reached from a TOP-LEVEL `$( )`, where errexit
-    DOES fire, so unlike `map_arch` this refusal really stops the script. The
-    contrast with DEFECT 1 is the reason this case exists."""
+    """`file_sha256`'s `exit 1` is reached from a TOP-LEVEL `$( )`, where errexit DOES fire, so unlike `map_arch` this refusal really stops the script. The contrast with DEFECT 1 is the reason this case exists."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
         root, args=("--platform", "linux", "--arch", "x64"), drop_hash_tools=True
@@ -473,9 +464,7 @@ def test_a_failing_generator_writes_the_placeholder_and_does_not_fail_the_build(
 def test_defect_a_generator_that_writes_nothing_is_still_reported_as_generated(
     tmp_path,
 ) -> None:
-    """DEFECT 4. `:190` branches on the STATUS alone. A generator that exits 0
-    without writing leaves the sea-config pointing at a file that is not there,
-    and the log claims success."""
+    """DEFECT 4. `:190` branches on the STATUS alone. A generator that exits 0 without writing leaves the sea-config pointing at a file that is not there, and the log claims success."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
         root,
@@ -496,9 +485,7 @@ def test_defect_a_generator_that_writes_nothing_is_still_reported_as_generated(
 
 
 def test_defect_an_unknown_arch_is_reported_and_then_ignored(tmp_path) -> None:
-    """DEFECT 1. `map_arch`'s `exit 1` runs two command substitutions deep, and
-    bash does not inherit errexit into `$( )`, so the refusal is printed and discarded. On `--platform linux` the value is never used and the run
-    completes with exit 0 and a fully valid artifact set."""
+    """DEFECT 1. `map_arch`'s `exit 1` runs two command substitutions deep, and bash does not inherit errexit into `$( )`, so the refusal is printed and discarded. On `--platform linux` the value is never used and the run completes with exit 0 and a fully valid artifact set."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--platform", "linux", "--arch", "bogus"))
     assert old_t[0].returncode == 0, "the defect is that this is a PASS"
@@ -509,9 +496,7 @@ def test_defect_an_unknown_arch_is_reported_and_then_ignored(tmp_path) -> None:
 
 
 def test_defect_an_unknown_arch_on_mac_dies_with_the_wrong_diagnostic(tmp_path) -> None:
-    """The other half of DEFECT 1: on `--platform mac` the empty `renet_arch`
-    becomes the asset name `renet-darwin-`, which does not exist, so the run fails at `:128` complaining about a MISSING BINARY rather than about the
-    argument it already rejected two lines earlier."""
+    """The other half of DEFECT 1: on `--platform mac` the empty `renet_arch` becomes the asset name `renet-darwin-`, which does not exist, so the run fails at `:128` complaining about a MISSING BINARY rather than about the argument it already rejected two lines earlier."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--platform", "mac", "--arch", "bogus"))
     assert old_t[0].returncode == 1
@@ -521,8 +506,7 @@ def test_defect_an_unknown_arch_on_mac_dies_with_the_wrong_diagnostic(tmp_path) 
 
 
 def test_defect_the_platform_is_never_validated(tmp_path) -> None:
-    """DEFECT 2. The usage says `linux|mac|win`; the code tests only for `mac`
-    and `win`, so anything else silently means "linux"."""
+    """DEFECT 2. The usage says `linux|mac|win`; the code tests only for `mac` and `win`, so anything else silently means "linux"."""
     root = fixture(tmp_path)
     banana_t, banana_new_t = run_both(root, args=("--platform", "banana", "--arch", "x64"))
     assert banana_t[0].returncode == 0, "the defect is that this is a PASS"
@@ -536,8 +520,7 @@ def test_defect_the_platform_is_never_validated(tmp_path) -> None:
 def test_defect_the_reported_asset_count_is_one_short(tmp_path) -> None:
     """DEFECT 3. `:211` uses `printf '%b'` with no trailing newline and counts
     with `wc -l`, so it reports SEPARATORS. `:213`, which feeds the same string
-    to jq, uses `printf '%b\\n'` -- so the FILE is right and only the report is wrong. Both halves are asserted, on both platforms, because a fix to one
-    without the other is the plausible half-repair."""
+    to jq, uses `printf '%b\\n'` -- so the FILE is right and only the report is wrong. Both halves are asserted, on both platforms, because a fix to one without the other is the plausible half-repair."""
     root = fixture(tmp_path)
     for args, real_count in (
         (("--platform", "linux", "--arch", "x64"), 5),
@@ -578,8 +561,7 @@ def test_the_helpers_are_exercised_directly_in_both_directions() -> None:
 
 
 def test_the_generated_json_matches_what_jq_would_have_written(tmp_path) -> None:
-    """The port builds both JSON files in Python instead of shelling out to
-    `jq -Rn`. That is only safe if the bytes agree, so this drives the REAL jq
+    """The port builds both JSON files in Python instead of shelling out to `jq -Rn`. That is only safe if the bytes agree, so this drives the REAL jq
     with the twin's own filter and compares."""
     root = fixture(tmp_path)
     pairs = [
@@ -622,9 +604,7 @@ def test_the_generated_json_matches_what_jq_would_have_written(tmp_path) -> None
 
 
 def test_a_planted_defect_is_caught_only_by_the_artifacts(tmp_path) -> None:
-    """The proof that this differential can fail. Dropping the `linux-` prefix
-    strip from the metadata key changes the FILE and nothing else: the exit code,
-    both streams and the call log are identical on both sides."""
+    """The proof that this differential can fail. Dropping the `linux-` prefix strip from the metadata key changes the FILE and nothing else: the exit code, both streams and the call log are identical on both sides."""
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(
         '    if name.startswith("linux-"):\n        return name[len("linux-") :]\n',

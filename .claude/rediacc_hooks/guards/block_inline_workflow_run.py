@@ -1,8 +1,6 @@
 """Block edits that add a fat inline `run:` block to a GitHub workflow.
 
-The rule (enforced in CI by .ci/scripts/quality/check-workflows.sh): a workflow `run:` block scalar whose shell logic exceeds 8 non-blank/non-comment lines does not belong inline. CI step logic lives in .ci/scripts/<area>/<name>.sh so it is
-locally runnable and shareable across CI systems; the workflow step is env
-wiring + one script call.
+The rule (enforced in CI by .ci/scripts/quality/check-workflows.sh): a workflow `run:` block scalar whose shell logic exceeds 8 non-blank/non-comment lines does not belong inline. CI step logic lives in .ci/scripts/<area>/<name>.sh so it is locally runnable and shareable across CI systems; the workflow step is env wiring + one script call.
 
 This is the fast local nudge for that rule: it fires only for .github/workflows/*.yml|yaml edits, only when the new content introduces a `run:` block that already crosses the threshold within the edited fragment. The CI gate remains the source of truth: it parses whole files, so a fat block assembled across several edits still fails there even if no single fragment trips this hook.
 
@@ -114,8 +112,7 @@ EDGE_CASES = [
 def _worst(content):
     """The awk program above, record for record.
 
-    Same block-scalar rules as the CI parser: a block owns following
-    blank/deeper-indented lines; a logic line is non-blank and does not start
+    Same block-scalar rules as the CI parser: a block owns following blank/deeper-indented lines; a logic line is non-blank and does not start
     with `#`.
     """
     records, _ = hookio._records(hookio._printf_line(content))

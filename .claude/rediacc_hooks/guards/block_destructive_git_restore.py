@@ -1,11 +1,9 @@
-"""Block the four commands that DISCARD uncommitted work: `git checkout <path>`,
-`git restore`, `git stash`, `git clean`.
+"""Block the four commands that DISCARD uncommitted work: `git checkout <path>`, `git restore`, `git stash`, `git clean`.
 
 WHY. This checkout is shared by several live sessions and the deliverable is an UNCOMMITTED working tree, so there is no safety net underneath these. They do not undo "your" change to a file, they discard every uncommitted change to it, including work you cannot see and did not write.
 
 WHY A HOOK AND NOT A RULE. CLAUDE.md session default 1 has said "never checkout/restore/stash/clean to undo your own mistake" for months, in the same paragraph that says the tree usually holds other sessions' work. On 2026-08-14 a locale writer read that rule, then ran `git checkout --` on a single file to tidy up something a script had touched, and destroyed another session's
-uncommitted value in it. The rule was not misunderstood; it was not recalled
-at the one second it mattered. That is what a hook is for.
+uncommitted value in it. The rule was not misunderstood; it was not recalled at the one second it mattered. That is what a hook is for.
 
 THE PART THAT MAKES THIS CLASS SILENT, and why the block is worth the friction: the writer then checked `git status`, saw the file CLEAN, and sincerely reported "touched then restored, net no-op". After an unwanted edit, clean vs HEAD is the WRONG target. The right target is "identical to what was there before I arrived", and the two coincide only in a tree with no uncommitted
 work, which is never true here. The command had reset PAST the prior state, so the file looked cleaner than correct. See docs/agent-reference/TRAPS.md, "Clean vs HEAD is the wrong baseline in a tree that was already dirty".
@@ -21,9 +19,7 @@ DELIBERATELY NOT BLOCKED, because these do not discard anything:
   - `git clean -n` / `--dry-run`: prints what it would remove.
 The escape for a genuine need is a human: ask the operator, who can run it themselves with the `!` prefix and knows what else is in the tree.
 
-NO CROSS-TALK with block-protected-files.sh, which blocks restore/checkout/rm aimed at the hook files specifically. This guard is about the shared tree in
-general; that one is about protecting the guards themselves. Both may match a
-single command, which is fine: the first to fire wins and both messages are true.
+NO CROSS-TALK with block-protected-files.sh, which blocks restore/checkout/rm aimed at the hook files specifically. This guard is about the shared tree in general; that one is about protecting the guards themselves. Both may match a single command, which is fine: the first to fire wins and both messages are true.
 
 PORT NOTE ON THE SIX SEQUENTIAL TESTS. The bash runs all six greps unconditionally and lets each one OVERWRITE `BLOCKED`, so the message names the LAST shape that matched and not the first. `git stash pop && git clean -f` is reported as `git clean`. That is behaviour, not an accident of layout, so the loop below assigns in the same order rather than returning early.
 """
@@ -125,8 +121,7 @@ def run(ev):
     # OUTSIDE THE PROJECT TREE, not merely a different toplevel. A SUBMODULE is a different toplevel and is emphatically not foreign: private/account is shared, frozen, and full of other people's work, and a `git -C private/account add -A` is the exact sweep this guard exists to refuse. Standing down on "different toplevel" alone allowed it -- caught by asking, before shipping,
     # which repos the new predicate had just stopped protecting.
     #
-    # Empty target means "this root, or unresolvable", so the guard keeps guarding by
-    # default; a resolvable target under the project directory keeps guarding too.
+    # Empty target means "this root, or unresolvable", so the guard keeps guarding by default; a resolvable target under the project directory keeps guarding too.
     _target = shellscan.target_root(scan, shellscan.repo_root_env())
     if _target != "" and not _is_inside(_target, shellscan.repo_root_env()):
         return hookio.ALLOW

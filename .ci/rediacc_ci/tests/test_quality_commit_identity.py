@@ -1,8 +1,7 @@
 """`rediacc_ci.quality.commit_identity` against the jq and grep it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-commit-identity.observations.jsonl` drives the whole gate over five distinct trees: one unattributed commit, three from two addresses, an empty list, a list at the 250 page cap, and a null committer with a resolved author. (Those rows were recorded 2026-09-06, before the 250 cap was replaced by a
-completeness check against the PR's own commit count; the row named for the cap
-records what the pair did THEN, and is history rather than a live assertion.) What a ledger row cannot isolate is the four small readings the verdict rests on, and each of them is a place where jq and Python disagree if nobody looks:
+WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-commit-identity.observations.jsonl` drives the whole gate over five distinct trees: one unattributed commit, three from two addresses, an empty list, a list at the 250 page cap, and a null committer with a resolved author. (Those rows were recorded 2026-09-06, before the 250 cap was replaced by a completeness check
+against the PR's own commit count; the row named for the cap records what the pair did THEN, and is history rather than a live assertion.) What a ledger row cannot isolate is the four small readings the verdict rests on, and each of them is a place where jq and Python disagree if nobody looks:
 
   * `.author.login` on a NULL author is `null`, not an error. That null IS the
     finding, so a port that raised there would turn every offending PR into a

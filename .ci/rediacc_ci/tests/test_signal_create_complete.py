@@ -42,8 +42,7 @@ def run_both(
     tty: str | None = None,
     use_flag: bool = True,
 ) -> tuple[tuple[int, str, str], tuple[int, str, str], pathlib.Path, pathlib.Path]:
-    """Run both sides into their own output directory. Returns both tuples and
-    both directories, with the directory path masked out of the streams."""
+    """Run both sides into their own output directory. Returns both tuples and both directories, with the directory path masked out of the streams."""
     old_dir = tmp_path / "old"
     new_dir = tmp_path / "new"
     extra = dict(env_extra or {})
@@ -96,8 +95,7 @@ def test_missing_name_refuses_identically(tmp_path: pathlib.Path) -> None:
 
 def test_empty_name_value_is_treated_as_absent(tmp_path: pathlib.Path) -> None:
     """`--name=` sets ARG_NAME to the empty string, and `${ARG_NAME:-}` then
-    reads as unset. A port using `.get(key, default)` instead of `or` would
-    happily write `complete-.txt`, so this case is the one that catches it."""
+    reads as unset. A port using `.get(key, default)` instead of `or` would happily write `complete-.txt`, so this case is the one that catches it."""
     old, new, old_dir, new_dir = run_both(tmp_path, ["--name="], use_flag=False)
     assert old[0] == 1
     assert "Usage: create-complete.sh" in old[2]
@@ -152,9 +150,7 @@ def test_output_directory_is_created_recursively(tmp_path: pathlib.Path) -> None
 
 
 def test_runner_temp_is_preferred_over_tmpdir(tmp_path: pathlib.Path) -> None:
-    """`CI_TEMP` is `get_temp_dir()`: RUNNER_TEMP, else TMPDIR, else /tmp. The
-    fallback ORDER is the part a port gets wrong, so both variables are set and
-    only one of them may be written into."""
+    """`CI_TEMP` is `get_temp_dir()`: RUNNER_TEMP, else TMPDIR, else /tmp. The fallback ORDER is the part a port gets wrong, so both variables are set and only one of them may be written into."""
     decoy_old = tmp_path / "decoy"
     decoy_old.mkdir()
     old, new, old_dir, new_dir = run_both(
@@ -203,9 +199,7 @@ def test_tmpdir_is_used_when_runner_temp_is_empty(tmp_path: pathlib.Path) -> Non
 
 
 def test_flag_valued_name_reproduces_the_parse_args_quirk(tmp_path: pathlib.Path) -> None:
-    """`--name --status failure` does NOT mean "name is --status". parse_args
-    refuses to consume a token beginning with `--` as a value, so ARG_NAME becomes the literal string `true` and the signal file is `complete-true.txt`.
-    Surprising, live in the twin, and therefore required of the port."""
+    """`--name --status failure` does NOT mean "name is --status". parse_args refuses to consume a token beginning with `--` as a value, so ARG_NAME becomes the literal string `true` and the signal file is `complete-true.txt`. Surprising, live in the twin, and therefore required of the port."""
     old, new, old_dir, new_dir = run_both(tmp_path, ["--name", "--status", "failure"])
     assert old[0] == 0
     assert "complete-true.txt (status: failure)" in old[2]
@@ -215,8 +209,7 @@ def test_flag_valued_name_reproduces_the_parse_args_quirk(tmp_path: pathlib.Path
 
 
 def test_positional_arguments_are_invisible_to_the_parser(tmp_path: pathlib.Path) -> None:
-    """parse_args skips anything not starting with `--`, so a caller who wrote
-    `create-complete.sh cli-Linux` gets the usage refusal, not a signal file."""
+    """parse_args skips anything not starting with `--`, so a caller who wrote `create-complete.sh cli-Linux` gets the usage refusal, not a signal file."""
     old, new, old_dir, new_dir = run_both(tmp_path, ["cli-Linux"], use_flag=False)
     assert old[0] == 1
     assert "Usage: create-complete.sh" in old[2]
@@ -225,8 +218,7 @@ def test_positional_arguments_are_invisible_to_the_parser(tmp_path: pathlib.Path
 
 
 def test_colour_matches_when_stderr_is_a_terminal(tmp_path: pathlib.Path) -> None:
-    """The branch a developer actually sees. Off a tty both sides print a bare
-    `✓`; on one, both must print the SAME escape sequence around it."""
+    """The branch a developer actually sees. Off a tty both sides print a bare `✓`; on one, both must print the SAME escape sequence around it."""
     old, new, _old_dir, _new_dir = run_both(tmp_path, ["--name", "tty-case"], tty="stderr")
     assert old[0] == 0
     assert "\033[0;32m✓\033[0m Created completion signal:" in old[2]
@@ -244,9 +236,7 @@ def test_no_color_suppresses_the_escape_on_both_sides(tmp_path: pathlib.Path) ->
 
 
 def test_unwritable_output_directory_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> None:
-    """DOCUMENTED DIVERGENCE, pinned rather than papered over: `mkdir -p` over
-    an existing regular file dies under `set -e`, and this port raises OSError. Same exit code, same stream, different wording -- so the assertion is on the
-    code and on the path being named, not on the bytes."""
+    """DOCUMENTED DIVERGENCE, pinned rather than papered over: `mkdir -p` over an existing regular file dies under `set -e`, and this port raises OSError. Same exit code, same stream, different wording -- so the assertion is on the code and on the path being named, not on the bytes."""
     blocker_old = tmp_path / "blocked-old"
     blocker_new = tmp_path / "blocked-new"
     blocker_old.write_text("not a directory\n", encoding="utf-8")

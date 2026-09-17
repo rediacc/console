@@ -19,16 +19,14 @@ from rediacc_ci.tests import differential as diff
 
 
 def test_the_harness_exists() -> None:
-    """ZERO INPUTS IS A FAILURE. Every case below is vacuous without it, and the
-    gate's own first branch says so in two lines."""
+    """ZERO INPUTS IS A FAILURE. Every case below is vacuous without it, and the gate's own first branch says so in two lines."""
     assert (paths.repo_root() / dv.DRILL_LIB).is_file(), (
         "%s moved; the gate refuses rather than passing, and so should this" % dv.DRILL_LIB
     )
 
 
 def test_the_driver_returns_both_halves() -> None:
-    """`<rc>|<stdout>`. Asserting only on the exit code is what let the original
-    defect through, so the shape itself is asserted."""
+    """`<rc>|<stdout>`. Asserting only on the exit code is what let the original defect through, so the shape itself is asserted."""
     result = dv.run_summary(paths.repo_root(), "3", "0")
     assert "|" in result, result
     rc, _, out = result.partition("|")
@@ -37,8 +35,7 @@ def test_the_driver_returns_both_halves() -> None:
 
 
 def test_zero_assertions_says_skipped_and_never_passed() -> None:
-    """THE 2026-08-05 DEFECT, driven against the live harness. Both halves: the
-    right word present AND the wrong word absent."""
+    """THE 2026-08-05 DEFECT, driven against the live harness. Both halves: the right word present AND the wrong word absent."""
     rc, _, out = dv.run_summary(paths.repo_root(), "0", "0").partition("|")
     assert rc == "0", "a DECLARED skip keeps exit 0; it was the WORD that was wrong"
     assert "SKIPPED" in out, out
@@ -112,8 +109,7 @@ def test_the_bash_subshell_agrees_with_the_twins() -> None:
 
 
 def test_the_byte_tail_matches_the_twins_pipeline() -> None:
-    """`tr '\n' ' ' <<<"$out" | tail -c 200`, including the herestring's own
-    trailing newline. Compared against the real tr and tail."""
+    """`tr '\n' ' ' <<<"$out" | tail -c 200`, including the herestring's own trailing newline. Compared against the real tr and tail."""
     text = "line one\nline two\n" + "z" * 250
     # The text arrives through the ENVIRONMENT, not through the command string. An earlier version interpolated it and doubled its own `%%s`, so the comparison ran against the literal two characters `%s` and failed for a reason that had nothing to do with the tail.
     code, out, err = diff.bash_streams(
@@ -125,9 +121,7 @@ def test_the_byte_tail_matches_the_twins_pipeline() -> None:
 
 
 def test_the_four_cases_are_the_twins_four() -> None:
-    """The decision TABLE, asserted as a table. A fifth row appearing here
-    without appearing in the twin is a divergence nobody would notice from the
-    output, because every row prints the same shape of line."""
+    """The decision TABLE, asserted as a table. A fifth row appearing here without appearing in the twin is a divergence nobody would notice from the output, because every row prints the same shape of line."""
     assert [(c.count, c.fails, c.selftest, c.want_rc, c.want, c.forbid) for c in dv.CASES] == [
         ("0", "0", "0", "0", "SKIPPED", "PASSED"),
         ("3", "0", "0", "0", "PASSED", ""),

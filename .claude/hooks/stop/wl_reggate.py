@@ -236,9 +236,7 @@ def _hash_file(path):
 
 
 def seed_gate_hashes(root):
-    """Hashes of every existing check script, recorded at marker init so only
-    scripts that are NEW or CHANGED after that point ever count as candidate proof (or get run). Without this seed, the first fix-signal stop in a real
-    repo would treat ~all 90 existing gates as candidates and try to run them."""
+    """Hashes of every existing check script, recorded at marker init so only scripts that are NEW or CHANGED after that point ever count as candidate proof (or get run). Without this seed, the first fix-signal stop in a real repo would treat ~all 90 existing gates as candidates and try to run them."""
     stamp = C.stamp_now()
     out = {}
     for pat in CHECK_SCRIPT_GLOBS:
@@ -463,8 +461,7 @@ def _manifest_gate_run_paths(root):
 
 
 def _citation_matches_gate(eg, root):
-    """True when `eg` names real, `npm run ci`-scheduled coverage: either a
-    manifest `id:` (checked by the caller against `_manifest_gate_ids` directly) or a `run:` file path, exact or with a trailing "::name"/"#name"
+    """True when `eg` names real, `npm run ci`-scheduled coverage: either a manifest `id:` (checked by the caller against `_manifest_gate_ids` directly) or a `run:` file path, exact or with a trailing "::name"/"#name"
     case qualifier and/or a leading "./" stripped."""
     base = re.split(r"::|#", eg, maxsplit=1)[0].strip()
     while base.startswith("./"):
@@ -474,9 +471,7 @@ def _citation_matches_gate(eg, root):
 
 
 def gate_reachable(scripts, target, root=None):
-    """Is `target` TRANSITIVELY reachable from the `ci` script via `npm run`
-    references? Transitive, because ci reaches most gates through batch keys. NOT a substring test: a gate's name inside an `echo` is not reachability,
-    and the substring version produced real false positives on this repo."""
+    """Is `target` TRANSITIVELY reachable from the `ci` script via `npm run` references? Transitive, because ci reaches most gates through batch keys. NOT a substring test: a gate's name inside an `echo` is not reachability, and the substring version produced real false positives on this repo."""
     seen, todo = set(), ["ci"]
     runner = False
     while todo:
@@ -521,10 +516,8 @@ def prove_named_artifact(root, artifact):
 
 
 def prove_new_gate(root, scripts, state):
-    """(proven, notes). A claimed gate must leave ARTIFACTS, each verified:
-    a NEW or CHANGED check script (content hash vs the marker), a check:* key whose command runs it, reachability from `npm run ci` (transitive, see gate_reachable), and a bounded green run. Runs are cached by content hash so a red gate is not re-run every stop and a green one is not re-paid. A green run of a control-first gate IS the planted-defect proof, because such a gate
-    self-fails when its own control cannot fire -- the check-i18n-cross-locale.ts --selftest that NOTHING invoked is the exact failure this rule exists for, and check-gate-reachability.ts exists
-    because a gate can be defined yet never run."""
+    """(proven, notes). A claimed gate must leave ARTIFACTS, each verified: a NEW or CHANGED check script (content hash vs the marker), a check:* key whose command runs it, reachability from `npm run ci` (transitive, see gate_reachable), and a bounded green run. Runs are cached by content hash so a red gate is not re-run every stop and a green one is not re-paid. A green run of
+    a control-first gate IS the planted-defect proof, because such a gate self-fails when its own control cannot fire -- the check-i18n-cross-locale.ts --selftest that NOTHING invoked is the exact failure this rule exists for, and check-gate-reachability.ts exists because a gate can be defined yet never run."""
     stamp = C.stamp_now()
     notes, proven = [], False
     already_green = []

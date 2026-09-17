@@ -1,7 +1,6 @@
 r"""Every ROOT `scripts/` path reachable from non-quality CI code must classify FULL.
 
-Ported from `.ci/scripts/quality/check-scope-scripts-reachability.sh`, which is
-NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-scope-scripts-reachability.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHY THIS EXISTS, in the twin's own words, because the failure is invisible:
 
@@ -111,8 +110,7 @@ THE DISPATCH-HALF ANTI-VACUITY REFUSAL CALLS A FUNCTION THAT DOES NOT EXIST. The
 `log_fail` is defined in `.ci/scripts/test/lib/test-helpers.sh` and in four test scripts, in NONE of the libraries this gate loads. Under `set -euo pipefail` an unknown command exits 127 immediately, so the three explanatory `echo` lines and the `exit 1` beneath it never run: the refusal prints `...: line N: log_fail: command not found` and exits 127.
 
 THIS IS THE SAME DEFECT, IN THE SAME SHAPE, AS ONE ALREADY RECORDED IN THIS TREE.
-`.ci/scripts/test/run-all.sh:215-219` says of check-pool-writer-safety.sh: "the anti-vacuity refusal that exists for exactly that case called a log_fail() that does not exist, so the gate exited 127 rather than refusing. Two failures had to be repaired before this one line became visible." That gate was given its own
-`log_fail` at check-pool-writer-safety.sh:76; this one was not.
+`.ci/scripts/test/run-all.sh:215-219` says of check-pool-writer-safety.sh: "the anti-vacuity refusal that exists for exactly that case called a log_fail() that does not exist, so the gate exited 127 rather than refusing. Two failures had to be repaired before this one line became visible." That gate was given its own `log_fail` at check-pool-writer-safety.sh:76; this one was not.
 
 The port reproduces the 127 and the diagnostic's shape, because invariant 5 says the twin is not edited in the change that ports it and the differential rules on behaviour. See `dispatch_floor_refusal` for exactly how far the reproduction goes and where it stops.
 
@@ -122,8 +120,8 @@ PORT NOTES.
 
 WHICH grep RUNS THIS GATE, because getting that wrong invalidates every probe. A script resolves `grep` to `/usr/bin/grep`, GNU grep 3.12. An interactive Claude Code shell resolves it to a FUNCTION wrapping a bundled ugrep 7.8.4 with
 `-G --ignore-files --hidden -I --exclude-dir=.git ...`. Measured 2026-09-06, the
-same pipeline over `.github/workflows` yields 231 references under the wrapper and 226 under the real grep, and the five-reference gap is the `\x27` defect above. Under the wrapper, `-P` on `[^A-Za-z0-9_./-]` additionally exits 2 with "range out of order in character class" (it appends `\n` to the class, making the trailing
-`-` a range start) while `-E` matches; under GNU grep both flags agree. So: probe
+same pipeline over `.github/workflows` yields 231 references under the wrapper and 226 under the real grep, and the five-reference gap is the `\x27` defect above. Under the wrapper, `-P` on `[^A-Za-z0-9_./-]` additionally exits 2 with "range out of order in character class" (it appends `\n` to the class, making the trailing `-` a range start) while `-E` matches; under GNU grep both
+flags agree. So: probe
 with `/usr/bin/grep`, or from inside a script, and treat any grep measurement
 taken at an interactive prompt as being about a different program.
 
@@ -162,8 +160,7 @@ GATED_DIRS = (
 # `run.sh` is the drill dispatcher and is itself a ROOT_MANIFEST path, so editing it forces full on its own. It is scanned because what it DISPATCHES to must still be full. The legacy body is here for the reason in the module docstring.
 GATED_FILES = ("run.sh", ".ci/legacy/run-legacy.sh")
 
-# Where the gate lives, as the CI invocation spells it. Used ONLY to reproduce
-# bash's `command not found` diagnostic; see dispatch_floor_refusal.
+# Where the gate lives, as the CI invocation spells it. Used ONLY to reproduce bash's `command not found` diagnostic; see dispatch_floor_refusal.
 TWIN_REL = ".ci/scripts/quality/check-scope-scripts-reachability.sh"
 
 # Stage 1: a line mentioning a root `scripts/` path at a path boundary.
@@ -175,10 +172,8 @@ OUTPUT_STATEMENT = re.compile(r"\b(log_error|log_warn|log_info|log_debug|echo|pr
 
 # Stage 3: COMMAND POSITION.
 #
-# `\x27` IS NOT A SINGLE QUOTE HERE, AND THAT IS A DEFECT IN THE TWIN, MEASURED RATHER THAN ASSUMED. The twin's lead alternation is
-# `(^|[[:space:]]|"|\x27|\$\(|`|&&|\|\||;)`, written to admit a command that
-# starts after an opening single quote. GNU grep 3.12, which is what `/usr/bin/grep` is on this host and therefore what the twin actually runs, does NOT read `\x27` as a hex escape in an ERE: it treats `\x` as an escaped ordinary `x`, so the alternative matches the literal three characters `x27`. Probed 2026-09-06 on a two-line file containing `a'b` and `ax27b`: `/usr/bin/grep -oE
-# '\x27'` printed `x27`.
+# `\x27` IS NOT A SINGLE QUOTE HERE, AND THAT IS A DEFECT IN THE TWIN, MEASURED RATHER THAN ASSUMED. The twin's lead alternation is `(^|[[:space:]]|"|\x27|\$\(|`|&&|\|\||;)`, written to admit a command that starts after an opening single quote. GNU grep 3.12, which is what `/usr/bin/grep` is on this host and therefore what the twin actually runs, does NOT read `\x27` as a hex
+# escape in an ERE: it treats `\x` as an escaped ordinary `x`, so the alternative matches the literal three characters `x27`. Probed 2026-09-06 on a two-line file containing `a'b` and `ax27b`: `/usr/bin/grep -oE '\x27'` printed `x27`.
 #
 # The consequence is a real blind spot, not a curiosity. Five `.cjs` paths in `.github/workflows` are invoked as `require('./.ci/scripts/ci/<name>.cjs')` -- autopilot-guide-comment, label-guide-comment, report-nightly-status, validate-pr and watchdog-monitor -- and the twin does not see any of them: its `.ci` scan counts 226 references from that directory where a grep with a
 # working single-quote alternative counts 231. So an invocation whose only lead character is `'` is invisible to this gate.
@@ -205,8 +200,7 @@ TOP_LEVEL_LABEL = re.compile(r'^        [A-Za-z0-9_"|-]+\)')
 LABEL_LEAD = re.compile(r'^[ \t\v\f\r]*"?')
 LABEL_TAIL = re.compile(r'"?\).*$')
 
-# The two floors. `ci_scanned` had one from the start; the dispatch half did not,
-# and the module docstring records what that cost.
+# The two floors. `ci_scanned` had one from the start; the dispatch half did not, and the module docstring records what that cost.
 CI_SCAN_FLOOR = 20
 DISPATCH_FLOOR = 1
 
@@ -290,8 +284,7 @@ def extract_ci_refs(target: pathlib.Path) -> list[str]:
 def ci_invoked_runsh_subcommands(root: pathlib.Path) -> list[str]:
     """`./run.sh <sub>` names a WORKFLOW actually invokes.
 
-    "run.sh dispatches many subcommands; only the ones a WORKFLOW actually invokes
-    are reachable from a gated job. `./run.sh drill ...` appears in ct-tests.yml, `./run.sh worktree` does not, so scripts/dev/worktree.sh is legitimately narrowable even though run.sh names it."
+    "run.sh dispatches many subcommands; only the ones a WORKFLOW actually invokes are reachable from a gated job. `./run.sh drill ...` appears in ct-tests.yml, `./run.sh worktree` does not, so scripts/dev/worktree.sh is legitimately narrowable even though run.sh names it."
     """
     out: set[str] = set()
     for text in walk_text(root / ".github" / "workflows"):

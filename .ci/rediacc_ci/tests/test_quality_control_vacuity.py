@@ -55,8 +55,7 @@ def _gate_files() -> list[pathlib.Path]:
 
 
 def test_the_corpus_is_not_empty() -> None:
-    """ZERO INPUTS IS A FAILURE. Every comparison below is vacuous if the glob
-    stops matching, and a vacuous comparison passes silently.
+    """ZERO INPUTS IS A FAILURE. Every comparison below is vacuous if the glob stops matching, and a vacuous comparison passes silently.
 
     DERIVED, NOT TYPED, and the difference is about to matter. This read
     `>= 50` against a directory holding 77 `check-*.sh`. W7 P5 deletes that
@@ -83,8 +82,8 @@ def test_the_corpus_is_not_empty() -> None:
         "family instead of lowering a floor to keep a green over an empty corpus."
     )
     # SUBSET, NOT EQUALITY, and the direction is the whole point. I wrote this as `==`
-    # and it was wrong within hours: another writer left an untracked `check-env-file-adoption.sh` in the directory and the glob saw 78 against git's 77, so a test whose subject is "did the corpus COLLAPSE" started failing because the corpus GREW. An extra untracked file is in-flight work, which is the normal state of
-    # this tree; a tracked file the glob cannot see is the collapse this guards.
+    # and it was wrong within hours: another writer left an untracked `check-env-file-adoption.sh` in the directory and the glob saw 78 against git's 77, so a test whose subject is "did the corpus COLLAPSE" started failing because the corpus GREW. An extra untracked file is in-flight work, which is the normal state of this tree; a tracked file the glob cannot see is the collapse
+    # this guards.
     #
     # The `>=` floor this replaced was worse in the other direction: it sat through
     # twenty-seven deletions. Subset catches a narrowing of ONE and is indifferent to growth, which is exactly the asymmetry the failure mode has.
@@ -121,9 +120,7 @@ def test_has_control_agrees_with_the_live_grep_on_every_gate() -> None:
 
 
 def test_both_classes_are_non_empty_across_the_real_corpus() -> None:
-    """A classifier that answered "yes" to everything, or "no" to everything,
-    would pass both comparisons above only if the corpus happened to be
-    uniform. It is not, and this says so with numbers."""
+    """A classifier that answered "yes" to everything, or "no" to everything, would pass both comparisons above only if the corpus happened to be uniform. It is not, and this says so with numbers."""
     substituting = [p.name for p in _gate_files() if cv.builds_by_substitution(cv.read_lines(p))]
     controlled = [p.name for p in _gate_files() if cv.has_control(cv.read_lines(p))]
     assert len(substituting) >= 3, substituting
@@ -132,9 +129,7 @@ def test_both_classes_are_non_empty_across_the_real_corpus() -> None:
 
 
 def test_strip_guard_matches_the_twins_sed(tmp_path: pathlib.Path) -> None:
-    """`sed '/<guard>/,+2d'` is a RANGE. Compared against the real sed, because
-    the two plausible mis-readings (delete only the matching line; stop after
-    the first range) both make the CONTROL easier to pass."""
+    """`sed '/<guard>/,+2d'` is a RANGE. Compared against the real sed, because the two plausible mis-readings (delete only the matching line; stop after the first range) both make the CONTROL easier to pass."""
     body = _joined(
         "keep 1",
         'if [[ "$MUTANT" == "$FN" ]]; then',
@@ -157,9 +152,7 @@ def test_strip_guard_matches_the_twins_sed(tmp_path: pathlib.Path) -> None:
 
 
 def test_strip_guard_on_the_real_control_source_keeps_its_substitution() -> None:
-    """The CONTROL's precondition, asserted directly: the stripped copy must
-    still carry a substitution, or the control proves nothing and the gate says CONTROL IS VACUOUS. That branch firing on the real tree would be a finding
-    about check-review-turn-capacity.sh, not about the port."""
+    """The CONTROL's precondition, asserted directly: the stripped copy must still carry a substitution, or the control proves nothing and the gate says CONTROL IS VACUOUS. That branch firing on the real tree would be a finding about check-review-turn-capacity.sh, not about the port."""
     source = paths.repo_root() / ".ci" / "scripts" / "quality" / cv.CONTROL_GATE
     assert source.is_file(), "%s moved; retarget the control in BOTH implementations" % source
     stripped = cv.strip_guard(cv.read_lines(source))
@@ -168,8 +161,7 @@ def test_strip_guard_on_the_real_control_source_keeps_its_substitution() -> None
 
 
 def test_prefix_substitutions_are_exempt_in_both_implementations(tmp_path: pathlib.Path) -> None:
-    """The 2026-08-26 false positives, as fixtures. `s/^/.../` always matches,
-    so it can never silently produce an identical copy."""
+    """The 2026-08-26 false positives, as fixtures. `s/^/.../` always matches, so it can never silently produce an identical copy."""
     for body in (
         "echo \"$hits\" | sed 's/^/         /'\n",
         "seq 1 5 | sed 's/^/echo /'\n",
@@ -181,8 +173,7 @@ def test_prefix_substitutions_are_exempt_in_both_implementations(tmp_path: pathl
 
 
 def test_a_substitution_in_a_comment_is_prose_in_both(tmp_path: pathlib.Path) -> None:
-    """The other 2026-08-26 false positive: a gate that documents the construct
-    it avoids must not be flagged for the documentation."""
+    """The other 2026-08-26 false positive: a gate that documents the construct it avoids must not be flagged for the documentation."""
     target = tmp_path / "probe.sh"
     target.write_text("# we avoid ${SRC//needle/repl} here\necho hi\n", encoding="utf-8")
     assert _bash_true(PIPELINE, target) is False
@@ -190,8 +181,7 @@ def test_a_substitution_in_a_comment_is_prose_in_both(tmp_path: pathlib.Path) ->
 
 
 def test_all_three_substitution_shapes_register_in_both(tmp_path: pathlib.Path) -> None:
-    """Including `sed -i "$expr"`, whose absence "mis-exempted the two gates
-    that motivated this check"."""
+    """Including `sed -i "$expr"`, whose absence "mis-exempted the two gates that motivated this check"."""
     for body in (
         'MUTANT="${SRC//needle/repl}"\n',
         'sed \'s/needle/repl/\' "$SRC" >"$TMP/broken.sh"\n',

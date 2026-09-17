@@ -469,8 +469,7 @@ def test_vendored_blocker_list_is_a_subset(gate):
 
 
 def test_subset_check_catches_a_real_violation(gate):
-    """PLANTED-DEFECT REGRESSION: a REAL subset violation must still fire, and
-    must be named as one rather than excused as instability.
+    """PLANTED-DEFECT REGRESSION: a REAL subset violation must still fire, and must be named as one rather than excused as instability.
 
     Both reads of the mutated canonical see the SAME (genuinely missing) content, which is exactly what distinguishes a real violation from the transient case below. The deleted phrase is the exact one this gate's own history cites as having false-accused the vendored list on 2026-08-28, so the fixture is not a synthetic string the check happens to ignore.
     """
@@ -505,8 +504,7 @@ def test_subset_check_catches_a_real_violation(gate):
 
 
 def test_subset_check_survives_a_flaky_second_read(gate):
-    """PLANTED-DEFECT REGRESSION: a TRANSIENT truncation on the FIRST read must be
-    reported as a re-verified phrase, never as a subset violation.
+    """PLANTED-DEFECT REGRESSION: a TRANSIENT truncation on the FIRST read must be reported as a re-verified phrase, never as a subset violation.
 
     This is the exact shape of the 2026-07-31 and 2026-08-28 incidents: the two reads DISAGREE, which is the one fact that proves the list is not at fault.
 

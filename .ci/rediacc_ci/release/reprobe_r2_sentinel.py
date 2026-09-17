@@ -6,8 +6,7 @@ THE PROBE LIBRARY IS SHARED, NOT RE-DERIVED. The twin sources
 `.ci/scripts/lib/release-state-validator.sh` and calls `rsv_sentinel_exists`;
 this calls `rediacc_ci.core.release_state_validator.sentinel_exists`, which is that function's already-verified port, down to grepping the captured stderr for `404|Not Found|NoSuchKey` because the aws CLI returns 254 for both a 404 and an auth failure and the exit code genuinely cannot tell them apart.
 
-AND THE THIRD STATE IS DELIBERATELY FOLDED HERE, which is worth saying out loud because the library went to some trouble to keep it separate. `sentinel_exists`
-answers YES / NO / UNKNOWN; the twin's `if rsv_sentinel_exists ...; then` is a
+AND THE THIRD STATE IS DELIBERATELY FOLDED HERE, which is worth saying out loud because the library went to some trouble to keep it separate. `sentinel_exists` answers YES / NO / UNKNOWN; the twin's `if rsv_sentinel_exists ...; then` is a
 two-way branch, so rc=1 (genuinely absent) and rc=2 (could not tell) both land
 in the `else` and both print `::error::... NOT present after write`. That is lossy, and the loss is SAFE IN THIS ONE CALLER: an unanswered probe here fails the job, which is the direction a post-write assertion must err in. The port reproduces the fold rather than improving on it, and the library still logs its own "this is NOT evidence that it is missing" line to stderr on the
 UNKNOWN path, so the distinction survives where a reader can see it.

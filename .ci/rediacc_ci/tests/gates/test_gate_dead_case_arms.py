@@ -100,9 +100,7 @@ def test_a_dead_arm_is_caught(gate):
 
 
 def test_a_live_arm_passes(gate):
-    """CONTROL for the case above. Same shape, but the field DOES exist in the code
-    under test, so the arm can match and must not be reported. Without this, a
-    scanner that flagged every case arm would look correct."""
+    """CONTROL for the case above. Same shape, but the field DOES exist in the code under test, so the arm can match and must not be reported. Without this, a scanner that flagged every case arm would look correct."""
     with harness.temp_dir() as d:
         tests = d / "test"
         code = d / "code"
@@ -126,8 +124,7 @@ def test_the_founding_defect_fires(gate):
     """THE case this gate was built from, kept as a permanent fixture. `cores=` is
     special precisely because the subject's own header describes the defect in prose, and the first implementation grepped comments too -- so the only two
     occurrences of `cores=` in the whole tree were its own comment lines, and it
-    ruled the arm live and MISSED the bug it exists to catch. Verified 2026-08-05: exit 0 on this exact fixture before the fix, exit 1 after. If `key_is_live` ever
-    stops filtering comments, this case goes red."""
+    ruled the arm live and MISSED the bug it exists to catch. Verified 2026-08-05: exit 0 on this exact fixture before the fix, exit 1 after. If `key_is_live` ever stops filtering comments, this case goes red."""
     with harness.temp_dir() as d:
         tests = d / "test"
         tests.mkdir(parents=True, exist_ok=True)
@@ -146,8 +143,7 @@ def test_the_founding_defect_fires(gate):
 
 
 def test_comments_are_not_assertions(gate):
-    """A commented-out arm is prose, not a claim, and flagging it would make the
-    gate noisy enough to be suppressed."""
+    """A commented-out arm is prose, not a claim, and flagging it would make the gate noisy enough to be suppressed."""
     with harness.temp_dir() as d:
         tests = d / "test"
         tests.mkdir(parents=True, exist_ok=True)

@@ -1,8 +1,6 @@
-"""`rediacc_ci.proxies.unit_tests` against its bash twin
-`.ci/scripts/test/proxies/proxy-unit-tests.sh`, which is TWO registered gates over one script: `check:test-provisioning` (`package.json:393`) and `check:test-e2e-unit` (`package.json:394`).
+"""`rediacc_ci.proxies.unit_tests` against its bash twin `.ci/scripts/test/proxies/proxy-unit-tests.sh`, which is TWO registered gates over one script: `check:test-provisioning` (`package.json:393`) and `check:test-e2e-unit` (`package.json:394`).
 
-Sibling of `test_proxies_linux_packages.py`; see that file for why the two
-invocations are compared byte for byte rather than as a finding set.
+Sibling of `test_proxies_linux_packages.py`; see that file for why the two invocations are compared byte for byte rather than as a finding set.
 
 TWO CASES DRIVE THE REAL WORKSPACES, one per registered gate, so a rename on either side reds here. The rest use a fixture root with a stub `node_modules/.bin/vitest` (the proxy requires it to EXIST and never invokes it) and a workspace whose script prints a canned vitest summary -- which is the only way to drive the mixed-summary defect, since a real suite cannot be asked to print
 `Tests 1 failed | 10 passed (11)` on demand.
@@ -198,8 +196,7 @@ def _bin_without(tmp_path: pathlib.Path, drop: str) -> str:
 def _real_tree_env(no_color: bool = True) -> dict[str, str]:
     """NO_COLOR is set DELIBERATELY, and that is a finding rather than tidiness.
 
-    See `test_the_summary_regex_cannot_see_a_coloured_vitest_line` below: the twin's summary regex cannot match vitest's coloured output, so whether this gate is green depends on whether something in the ambient environment happened to turn vitest's colour off. Pinning it here makes the green case
-    reproducible; the red case gets its own test rather than being inherited
+    See `test_the_summary_regex_cannot_see_a_coloured_vitest_line` below: the twin's summary regex cannot match vitest's coloured output, so whether this gate is green depends on whether something in the ambient environment happened to turn vitest's colour off. Pinning it here makes the green case reproducible; the red case gets its own test rather than being inherited
     from whatever shell the suite is run from.
     """
     env = {
@@ -395,7 +392,7 @@ def test_the_escapes_really_sit_between_the_word_and_the_number() -> None:
 def test_a_partly_failing_suite_reports_the_failed_count_on_both_sides(
     tmp_path: pathlib.Path,
 ) -> None:
-    """vitest prints `Tests  1 failed | 10 passed (11)`.
+    """vitest prints `Tests 1 failed | 10 passed (11)`.
 
     The OLD `grep -oE 'Tests +[0-9]+ (passed|failed)'` matched the FIRST token on that line -- the FAILURE count -- so a run of eleven was reported as one. FIXED 2026-09-10: the trailing "(11)" total is read instead, which is right regardless of which side of "|" wins. The verdict still goes red here -- `npm run` exited non-zero and `:115` already recorded a FAIL -- but the PASS
     line under it now names the true count.
@@ -411,8 +408,7 @@ def test_a_partly_failing_suite_reports_the_failed_count_on_both_sides(
 
 
 def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
-    """The plant reverts the fix: it takes the FIRST number after `Tests`
-    instead of the trailing `(N)` total, which is exactly the class of bug this pair was just fixed for.
+    """The plant reverts the fix: it takes the FIRST number after `Tests` instead of the trailing `(N)` total, which is exactly the class of bug this pair was just fixed for.
     """
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(

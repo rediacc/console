@@ -1,7 +1,6 @@
 """`rediacc_ci.release.check_stable_manifest` against its bash twin.
 
-Sibling of `test_release_check_edge_manifest.py`; see that file for why the
-fake is `curl` rather than a fixture URL, and why it is PREPENDED to PATH rather than replacing it (real `jq`/`bash` still need to resolve).
+Sibling of `test_release_check_edge_manifest.py`; see that file for why the fake is `curl` rather than a fixture URL, and why it is PREPENDED to PATH rather than replacing it (real `jq`/`bash` still need to resolve).
 """
 
 from __future__ import annotations

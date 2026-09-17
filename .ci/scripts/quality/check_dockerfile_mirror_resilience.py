@@ -7,13 +7,9 @@ Because ALL sources pointed at that one host, the surrounding five-attempt retry
 The retry loop was not the bug and was working exactly as designed. Retrying a single point of failure is still a single point of failure.
 
 WHY NO EXISTING GATE CAUGHT IT, which is the whole reason this file exists rather than a comment in the Dockerfile. Every check in this repo that looks at retry logic counts ATTEMPTS. None asked whether the attempts could ever reach a DIFFERENT source. A loop with five retries and one host passes every existing notion of "has retries" while being strictly equivalent to no retries
-at all when
-that host is down. The fix was applied by hand; nothing prevented its return, and
-a revert or a newly added single-mirror block would have been invisible.
+at all when that host is down. The fix was applied by hand; nothing prevented its return, and a revert or a newly added single-mirror block would have been invisible.
 
-WHAT IT REQUIRES. If a Dockerfile RUN block rewrites apt sources to a specific mirror host, that same block must name at least TWO distinct hosts, so a failure of the first can fall through to the second. It does not mandate a particular
-mirror, a particular retry count, or a particular shape of fallback; it only
-refuses the shape that has already cost this repo a night.
+WHAT IT REQUIRES. If a Dockerfile RUN block rewrites apt sources to a specific mirror host, that same block must name at least TWO distinct hosts, so a failure of the first can fall through to the second. It does not mandate a particular mirror, a particular retry count, or a particular shape of fallback; it only refuses the shape that has already cost this repo a night.
 
 AND IT CHECKS THE SEQUENCING, because naming a second host is necessary and not sufficient. A fallback guarded on the LAST loop iteration fires after the final attempt, so nothing is left to use it: two hosts appear, the shallow reading of this gate passes, and the build still dies exactly as before. That is the precise shape of box-ticking a regression gate is supposed to refuse,
 so the guard iteration is compared against the loop bound and a fallback that cannot help is reported with the numbers that make it useless.
@@ -41,8 +37,7 @@ from rediacc_ci.controls import plant
 # A sed that rewrites an apt source URL to a specific host. The captured group is the DESTINATION host, which is what has to vary for a fallback to exist.
 REWRITE = re.compile(r"s\|https?://[^|]*?ubuntu[^|]*?\|https?://([a-z0-9.-]+)/", re.IGNORECASE)
 
-# Anti-vacuity floor. This repo has hundreds of tracked Dockerfiles and shell
-# scripts; a scan finding none means the glob broke, not that the tree is clean.
+# Anti-vacuity floor. This repo has hundreds of tracked Dockerfiles and shell scripts; a scan finding none means the glob broke, not that the tree is clean.
 MIN_SCANNED = 50
 
 
@@ -81,16 +76,14 @@ def run_blocks(text):
     A fallback lives in the SAME block as the rewrite it protects, because that is the only place it can run between two attempts of the same loop.
     """
     # COMMENTS ARE STRIPPED BEFORE THE JOIN, because that is the order Docker itself uses: a comment line inside a continued instruction is REMOVED, and the continuation closes over it. Joining first instead made a mid-RUN comment terminate the block, and everything after it -- in .devcontainer/ Dockerfile, the entire fallback arm -- fell outside the block the gate then judged. The
-    # gate reported that file as "pinned to a SINGLE mirror" while its fallback sat 60 lines further down the SAME RUN, and pointed at that same file as the example to copy. A parser that ends a block early does not
-    # under-report; it reports the opposite of the truth.
+    # gate reported that file as "pinned to a SINGLE mirror" while its fallback sat 60 lines further down the SAME RUN, and pointed at that same file as the example to copy. A parser that ends a block early does not under-report; it reports the opposite of the truth.
     decommented = "\n".join(ln for ln in text.split("\n") if not ln.lstrip().startswith("#"))
     joined = re.sub(r"\\\s*\n", " ", decommented)
     return [ln for ln in joined.split("\n") if ln.lstrip().startswith("RUN ")]
 
 
 def offenders(text):
-    """[(reason, block_excerpt)] for blocks whose apt sourcing cannot survive one
-    dead mirror.
+    """[(reason, block_excerpt)] for blocks whose apt sourcing cannot survive one dead mirror.
 
     TWO classes, because naming a second host is necessary and not sufficient.
 
@@ -162,9 +155,7 @@ ITER_TEST = r'\[\[?\s*"?\$\{?\w+\}?"?\s*(?:==?|-eq)\s*"?(\d+)"?\s*\]\]?'
 def giveup_iteration(block):
     """Iteration N of an iteration guard whose body EXITS.
 
-    A fallback can be correctly placed relative to the loop bound and still never run, because an earlier iteration bails out first. Loop bound and fallback
-    position are each fine in isolation; only their relation to the give-up point
-    decides whether the fallback is reachable.
+    A fallback can be correctly placed relative to the loop bound and still never run, because an earlier iteration bails out first. Loop bound and fallback position are each fine in isolation; only their relation to the give-up point decides whether the fallback is reachable.
     """
     best = None
     for m in re.finditer(ITER_TEST, block):
@@ -272,8 +263,7 @@ def selftest():
         fallback_iteration(both),
     )
 
-    # UNREACHABLE BY EARLY EXIT. The fallback sits before the loop bound, so the bound check above is satisfied, and it still never runs because an earlier iteration bails out first. Loop bound and fallback position are each fine in
-    # isolation; only their RELATION to the give-up point decides reachability.
+    # UNREACHABLE BY EARLY EXIT. The fallback sits before the loop bound, so the bound check above is satisfied, and it still never runs because an earlier iteration bails out first. Loop bound and fallback position are each fine in isolation; only their RELATION to the give-up point decides reachability.
     stranded = (
         "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
         "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
@@ -305,9 +295,7 @@ def selftest():
 
     # THE DOUBLE-BRACKET BLINDSPOT, found in review. The iteration test used to be
     # `[ "$i" = "N" ]` and NOTHING else, so a fallback guarded `[[ $i -eq N ]]` was
-    # invisible: both sequencing checks are conditioned on finding a guard, so finding none meant reporting none, and the gate passed on the very defect it exists to
-    # catch. `[[ ... -eq ... ]]` is not hypothetical; it is already used elsewhere in the
-    # delta that added this file. Each shape below is the SAME defect written a different legal way, and every one must still be caught.
+    # invisible: both sequencing checks are conditioned on finding a guard, so finding none meant reporting none, and the gate passed on the very defect it exists to catch. `[[ ... -eq ... ]]` is not hypothetical; it is already used elsewhere in the delta that added this file. Each shape below is the SAME defect written a different legal way, and every one must still be caught.
     for label, test in (
         ("[[ $i -eq N ]]", "[[ $i -eq 5 ]]"),
         ('[[ "$i" == "N" ]]', '[[ "$i" == "5" ]]'),
@@ -381,9 +369,8 @@ def selftest():
         len(run_blocks(both)) == 1,
         run_blocks(both),
     )
-    # A COMMENT INSIDE THE RUN, which is the shape that made this gate report the opposite of the truth. Docker removes such a line and closes the
-    # continuation over it; joining first instead ended the block there, so a
-    # fallback below the comment fell outside the block and a correct Dockerfile was reported "pinned to a SINGLE mirror". Both directions, because the repair must not also swallow the finding it exists to make.
+    # A COMMENT INSIDE THE RUN, which is the shape that made this gate report the opposite of the truth. Docker removes such a line and closes the continuation over it; joining first instead ended the block there, so a fallback below the comment fell outside the block and a correct Dockerfile was reported "pinned to a SINGLE mirror". Both directions, because the repair must not
+    # also swallow the finding it exists to make.
     commented = plant(
         both, " && for i in 1 2 3", "    # a comment Docker strips\n    && for i in 1 2 3", 1
     )

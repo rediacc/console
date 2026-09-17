@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/build/build_linux_packages.py` against its twin
-`.ci/scripts/build/build-linux-packages.sh`.
+"""Differential: `.ci/rediacc_ci/build/build_linux_packages.py` against its twin `.ci/scripts/build/build-linux-packages.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
@@ -124,8 +123,7 @@ def _fixture(
 
 
 def _binder(where: pathlib.Path, *, exclude: tuple[str, ...]) -> str:
-    """The COMPLETE PATH for one run. No fakes live here: the only thing either
-    subject executes is the delegate, and the delegate is addressed by path."""
+    """The COMPLETE PATH for one run. No fakes live here: the only thing either subject executes is the delegate, and the delegate is addressed by path."""
     binder = where / "bin"
     binder.mkdir(parents=True, exist_ok=True)
     for tool in NEEDED:
@@ -178,8 +176,7 @@ def _run(
         "PYTHONDONTWRITEBYTECODE": "1",
         "LC_ALL": "C",
         "LANG": "C",
-        # The port imports `rediacc_ci`; the COPY under the fixture is what runs,
-        # so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     if next_version is not None:
@@ -261,8 +258,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
 
 
 def test_the_delegate_is_actually_reached_eight_times(tmp_path):
-    """ANTI-VACUITY. Every comparison above is worthless if the delegate never
-    ran, and this also pins the MATRIX and the CWD: eight invocations, in the twin's nesting order, all from the repository root.
+    """ANTI-VACUITY. Every comparison above is worthless if the delegate never ran, and this also pins the MATRIX and the CWD: eight invocations, in the twin's nesting order, all from the repository root.
     """
     root = _fixture(tmp_path / "v")
     out = _run(PORT_REL, root)
@@ -288,9 +284,7 @@ def test_the_delegate_is_actually_reached_eight_times(tmp_path):
 
 
 def test_a_failure_stops_the_matrix_rather_than_collecting(tmp_path):
-    """CONTROL in the other direction: after a failing delegate, NOTHING else
-    runs. A port that ran all eight and reported at the end would satisfy every positive assertion in this file and would keep packaging against a binary an
-    earlier step had already refused."""
+    """CONTROL in the other direction: after a failing delegate, NOTHING else runs. A port that ran all eight and reported at the end would satisfy every positive assertion in this file and would keep packaging against a binary an earlier step had already refused."""
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("s-%s" % subject.name))
         out = _run(subject, root, fail_on=3, rc=5)
@@ -321,8 +315,7 @@ def test_the_musl_substitution_only_touches_apk(tmp_path):
 
 
 def test_the_glibc_fallback_is_real_and_silent(tmp_path):
-    """The other half of the same decision, and the one the twin's own header
-    calls out: with no musl binary, `apk` packages the GLIBC binary and says nothing about it. Pinned in both, because a `.apk` holding a glibc binary installs cleanly on Alpine and fails at exec time.
+    """The other half of the same decision, and the one the twin's own header calls out: with no musl binary, `apk` packages the GLIBC binary and says nothing about it. Pinned in both, because a `.apk` holding a glibc binary installs cleanly on Alpine and fails at exec time.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("g-%s" % subject.name))
@@ -339,8 +332,7 @@ def test_the_glibc_fallback_is_real_and_silent(tmp_path):
 
 
 def test_an_unset_next_version_names_the_program_that_refused(tmp_path):
-    """THE ONE DELIBERATE DIVERGENCE, asserted in both directions with the
-    `<path>: line <n>: ` prefix masked.
+    """THE ONE DELIBERATE DIVERGENCE, asserted in both directions with the `<path>: line <n>: ` prefix masked.
 
     `:?` fires on unset AND on empty, so both are driven. The twin's own message text -- which embeds `build-linux-packages.sh:` a second time, producing a line that reads as though the filename appears twice -- is reproduced verbatim, and that is what the masked comparison checks.
     """
@@ -369,9 +361,7 @@ def test_an_unset_next_version_names_the_program_that_refused(tmp_path):
 def test_a_missing_delegate_agrees_on_127_and_not_on_the_diagnostic(tmp_path):
     """Same treatment for the other interpreter-owned message.
 
-    `build-linux-pkg.sh` absent: bash reports "No such file or directory" against its own path and line and exits 127. The port takes the same status and prints the same shape against its own. The status is what the workflow step
-    branches on, so it is asserted equal; the text is asserted DIFFERENT so the
-    divergence stays visible.
+    `build-linux-pkg.sh` absent: bash reports "No such file or directory" against its own path and line and exits 127. The port takes the same status and prints the same shape against its own. The status is what the workflow step branches on, so it is asserted equal; the text is asserted DIFFERENT so the divergence stays visible.
     """
     root_a = _fixture(tmp_path / "na")
     old = _run(TWIN_REL, root_a, delegate=False)
@@ -420,8 +410,7 @@ def test_invocations_is_lazy_so_the_f_test_happens_per_pair(tmp_path):
         produced = []
         for index, argv in enumerate(build_linux_packages.invocations("1.0.0")):
             produced.append(argv[argv.index("--binary") + 1])
-            # After the fourth invocation (both debs, both rpms) the musl binary appears. A lazy generator must pick it up for the apk pair that
-            # follows; an eager list cannot.
+            # After the fourth invocation (both debs, both rpms) the musl binary appears. A lazy generator must pick it up for the apk pair that follows; an eager list cannot.
             if index == 3:
                 (cli / "rdc-linux-musl-x64").write_text("x", encoding="utf-8")
     finally:

@@ -266,9 +266,7 @@ def test_fingerprint_of_nothing_is_empty_not_a_conspicuous_constant() -> None:
 def test_fingerprint_matches_the_shell_sha256_it_has_to_interoperate_with() -> None:
     """A differential, because the corpus this must match was computed in bash.
 
-    `scripts/dev/bws-map-refresh.py:67` and `.ci/config/bws-token-expiry.json` already carry digests of this exact shape. Recomputing the digest in Python
-    here would only prove the function calls hashlib; `sha256sum` is an
-    independent implementation.
+    `scripts/dev/bws-map-refresh.py:67` and `.ci/config/bws-token-expiry.json` already carry digests of this exact shape. Recomputing the digest in Python here would only prove the function calls hashlib; `sha256sum` is an independent implementation.
     """
     value = "0.deadbeef-1111-2222-3333-444455556666"
     rc, out, err = diff.bash_streams(

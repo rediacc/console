@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.housekeeping.cleanup_stale_d1` against its twin
-`.ci/scripts/housekeeping/cleanup-stale-d1.sh`.
+"""Differential: `rediacc_ci.housekeeping.cleanup_stale_d1` against its twin `.ci/scripts/housekeeping/cleanup-stale-d1.sh`.
 
 A RECORDING FAKE `npx` ON A PREPENDED PATH, AND `npx` IS THE RIGHT THING TO STUB. Both call sites go through it -- `npx wrangler d1 list --json` and `npx wrangler d1 delete <name> --skip-confirmation` -- and `require_cmd` guards `npx`, never `wrangler`. Stubbing `wrangler` alone would leave both sides resolving the REAL npx, which would try to fetch the wrangler package from the
 network on a cold cache, so the fake answers as npx and dispatches the `wrangler d1 ...` shapes itself. A `wrangler` stub is installed beside it and records to the same log, purely so that a future call site that drops the `npx` prefix cannot silently reach the real CLI; `test_neither_side_can_reach_a_real_ wrangler` asserts both resolutions.
@@ -84,8 +83,7 @@ CURATED = ("dirname", "uname", "tr", "sed", "date", "wc", "cat")
 
 
 def _stub_bin(base: pathlib.Path, *, drop: tuple[str, ...] = ()) -> str:
-    """The fakes, prepended to the real PATH -- or a curated path when a case
-    needs a tool to be ABSENT.
+    """The fakes, prepended to the real PATH -- or a curated path when a case needs a tool to be ABSENT.
 
     `drop` names tools the case wants missing (`jq`, `npx`). Those cases cannot prepend, because the real PATH has both, so they get a symlink farm of exactly what the twin needs to reach its refusal and nothing else.
     """
@@ -248,9 +246,7 @@ def test_stale_names_keeps_array_order_and_the_prefix_and_the_cutoff() -> None:
 
 
 def test_the_comparison_is_lexicographic_so_the_same_second_is_not_stale() -> None:
-    """`created_at < $cutoff` is jq STRING comparison, and wrangler's value
-    carries `.000Z` that the cutoff does not. So an identical first 19 characters makes created_at the LONGER, GREATER string and the database
-    survives. A port that parsed both into datetimes would flip this."""
+    """`created_at < $cutoff` is jq STRING comparison, and wrangler's value carries `.000Z` that the cutoff does not. So an identical first 19 characters makes created_at the LONGER, GREATER string and the database survives. A port that parsed both into datetimes would flip this."""
     cutoff = "2026-05-05T10:00:00"
     assert (
         csd.stale_names([{"name": "migration-test-x", "created_at": cutoff + ".000Z"}], cutoff)
@@ -263,8 +259,7 @@ def test_the_comparison_is_lexicographic_so_the_same_second_is_not_stale() -> No
 
 
 def test_a_database_with_no_created_at_is_stale_on_both_sides() -> None:
-    """jq sorts `null` BELOW every string, so `null < $cutoff` is true and the
-    row IS selected. Reproduced rather than skipped."""
+    """jq sorts `null` BELOW every string, so `null < $cutoff` is true and the row IS selected. Reproduced rather than skipped."""
     assert csd.stale_names([{"name": "migration-test-x"}], "2026-01-01T00:00:00") == [
         "migration-test-x"
     ]
@@ -295,8 +290,7 @@ def test_a_missing_account_id_is_refused_too() -> None:
 
 
 def test_a_missing_jq_is_refused_even_though_the_port_does_not_use_jq() -> None:
-    """`require_cmd jq` IS KEPT IN THE PORT ON PURPOSE. Dropping it would widen
-    the set of hosts the script runs on, which is a cutover decision and not a porting one -- and it would make this case diverge. The port parses JSON
+    """`require_cmd jq` IS KEPT IN THE PORT ON PURPOSE. Dropping it would widen the set of hosts the script runs on, which is a cutover decision and not a porting one -- and it would make this case diverge. The port parses JSON
     with `json.loads`; the GUARD is what is being preserved, not the tool."""
     exit_code, _, stderr, calls = _sides("no-jq", [], _drop="jq")
     assert exit_code == 1
@@ -305,8 +299,7 @@ def test_a_missing_jq_is_refused_even_though_the_port_does_not_use_jq() -> None:
 
 
 def test_a_missing_npx_is_refused_after_jq() -> None:
-    """The GUARD ORDER is observable: jq is checked first, so a host missing
-    both is told about jq."""
+    """The GUARD ORDER is observable: jq is checked first, so a host missing both is told about jq."""
     exit_code, _, stderr, calls = _sides("no-npx", [], _drop="npx")
     assert exit_code == 1
     assert calls == []
@@ -314,9 +307,7 @@ def test_a_missing_npx_is_refused_after_jq() -> None:
 
 
 def test_an_unreachable_api_is_a_green_exit_on_both_sides() -> None:
-    """HAZARD 1, PINNED. `2>/dev/null || true` throws away both the status and
-    the message, so an expired token is indistinguishable from an empty account and the reaper exits 0 having reaped nothing. Both sides do it. This test
-    exists so the day someone makes the failure loud, they have to come here."""
+    """HAZARD 1, PINNED. `2>/dev/null || true` throws away both the status and the message, so an expired token is indistinguishable from an empty account and the reaper exits 0 having reaped nothing. Both sides do it. This test exists so the day someone makes the failure loud, they have to come here."""
     exit_code, stdout, stderr, calls = _sides(
         "api-down",
         [],
@@ -343,8 +334,7 @@ def test_a_non_json_banner_with_no_array_is_the_same_green_exit() -> None:
 
 
 def test_a_banner_before_the_array_is_stripped_and_the_array_is_read() -> None:
-    """`sed -n '/^\\[/,$p'` exists for exactly this: wrangler prints chatter
-    before its JSON."""
+    """`sed -n '/^\\[/,$p'` exists for exactly this: wrangler prints chatter before its JSON."""
     exit_code, _, stderr, calls = _sides(
         "banner-then-json",
         [],
@@ -429,8 +419,7 @@ def test_dry_run_still_prints_nothing_extra_when_there_is_nothing_stale() -> Non
 
 
 def test_a_failed_delete_is_a_warning_and_the_run_still_exits_zero() -> None:
-    """HAZARD 2, PINNED. `log_warn` does not touch `$?`, so the reaper reports
-    success having removed nothing. The count line is at least honest."""
+    """HAZARD 2, PINNED. `log_warn` does not touch `$?`, so the reaper reports success having removed nothing. The count line is at least honest."""
     exit_code, _, stderr, calls = _sides(
         "delete-fails",
         [],
@@ -458,9 +447,7 @@ def test_max_age_widens_the_window_and_reaches_the_log_line_verbatim() -> None:
 
 
 def test_an_unparseable_max_age_dies_with_dates_own_status_and_message() -> None:
-    """HAZARD 3: `--max-age` is interpolated into `date` unvalidated, and under
-    `set -e` the command substitution takes the run down. The port EXECUTES the
-    same `date` for exactly this reason, so the message is the same binary's."""
+    """HAZARD 3: `--max-age` is interpolated into `date` unvalidated, and under `set -e` the command substitution takes the run down. The port EXECUTES the same `date` for exactly this reason, so the message is the same binary's."""
     exit_code, _, stderr, calls = _sides(
         "max-age-garbage",
         ["--max-age", "not-a-number"],
@@ -473,9 +460,7 @@ def test_an_unparseable_max_age_dies_with_dates_own_status_and_message() -> None
 
 
 def test_a_negative_max_age_reaches_into_the_future_and_selects_everything() -> None:
-    """PRESERVED SHAPE, and it is the one that would hurt. `--max-age -30` makes
-    the cutoff THIRTY MINUTES FROM NOW, so a database created seconds ago is "stale". Driven under `--dry-run` so the fixture cannot be read as an
-    endorsement of running it for real."""
+    """PRESERVED SHAPE, and it is the one that would hurt. `--max-age -30` makes the cutoff THIRTY MINUTES FROM NOW, so a database created seconds ago is "stale". Driven under `--dry-run` so the fixture cannot be read as an endorsement of running it for real."""
     exit_code, _, stderr, _ = _sides(
         "negative",
         ["--dry-run", "--max-age", "-30"],
@@ -487,9 +472,7 @@ def test_a_negative_max_age_reaches_into_the_future_and_selects_everything() -> 
 
 
 def test_the_cutoff_line_is_the_only_clock_dependent_output() -> None:
-    """The masking in `_mask_cutoff` is a claim about this subject, so it is
-    checked rather than trusted: with the cutoff line removed, the two sides'
-    stderr must be byte-identical without any masking at all."""
+    """The masking in `_mask_cutoff` is a claim about this subject, so it is checked rather than trusted: with the cutoff line removed, the two sides' stderr must be byte-identical without any masking at all."""
     results = []
     with tempfile.TemporaryDirectory() as td:
         for subject in (TWIN, PORT):

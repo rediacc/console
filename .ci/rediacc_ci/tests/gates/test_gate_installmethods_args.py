@@ -138,9 +138,7 @@ def test_unknown_platform_and_arch_are_fatal(gate):
 
 
 def test_a_valid_run_still_works(gate):
-    """The other direction: the parser must not have become so strict that a
-    legitimate invocation fails. These are the exact flag shapes ci.yml and
-    ct-install-methods.yml use."""
+    """The other direction: the parser must not have become so strict that a legitimate invocation fails. These are the exact flag shapes ci.yml and ct-install-methods.yml use."""
     result = run_target(target(gate), "--dry-run", "--method", "apt", "--version", "1.2.17")
     gate.assert_exit_code(0, result.rc, "a valid invocation must still succeed")
     gate.assert_contains(result.combined, "total 3", "the three APT distros must be accounted for")
@@ -162,8 +160,7 @@ def test_a_valid_run_still_works(gate):
 
 
 def test_a_dry_run_is_never_reported_as_a_pass(gate):
-    """A dry run installs nothing and compares no version. It used to be counted
-    as a PASS, which made "3 passed, 0 failed" indistinguishable in the summary
+    """A dry run installs nothing and compares no version. It used to be counted as a PASS, which made "3 passed, 0 failed" indistinguishable in the summary
     from three real verifications."""
     result = run_target(target(gate), "--dry-run", "--method", "apt", "--version", "1.2.17")
     gate.assert_exit_code(0, result.rc, "a dry run is not a failure")
@@ -176,9 +173,7 @@ def test_a_dry_run_is_never_reported_as_a_pass(gate):
 
 
 def test_an_all_skipped_run_is_visible_and_allowed(gate):
-    """`--method verify` with no REPO_CHANNEL is a real CI condition (schedule
-    and workflow_dispatch stage no artifacts). It must succeed, and it must SAY
-    that it verified nothing -- the visible-skip half of the rule."""
+    """`--method verify` with no REPO_CHANNEL is a real CI condition (schedule and workflow_dispatch stage no artifacts). It must succeed, and it must SAY that it verified nothing -- the visible-skip half of the rule."""
     result = harness.run(
         ["bash", str(target(gate)), "--method", "verify", "--version", "1.2.17"],
         env={"REPO_CHANNEL": ""},

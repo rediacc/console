@@ -77,8 +77,7 @@ def _yaml_key_skip_re(cmd: str) -> re.Pattern[str]:
 def _find_sh_files(root: Path, subdir: str) -> list[str]:
     """`find <subdir> -name "*.sh" -type f 2>/dev/null` -- the real binary,
     for its traversal order, not a Python reimplementation. A missing
-    directory (or any other `find` failure) is swallowed exactly as the
-    twin's `2>/dev/null` swallows it: empty result, no crash."""
+    directory (or any other `find` failure) is swallowed exactly as the twin's `2>/dev/null` swallows it: empty result, no crash."""
     proc = subprocess.run(
         ["find", subdir, "-name", "*.sh", "-type", "f"],
         cwd=root,
@@ -92,9 +91,7 @@ def _find_sh_files(root: Path, subdir: str) -> list[str]:
 
 
 def _line_finding(line_content: str) -> tuple[str, str] | None:
-    """Returns `(cmd, alt)` for the first disallowed command that fires on
-    this line and is not skipped, or `None` if none does. Mirrors the twin's inner `for entry in DISALLOWED; do ... continue/break ... done` exactly: a narrow-regex match that is SKIPPED (comment/assignment/yaml-key) moves on to the NEXT disallowed command on the SAME line, it does not abandon
-    the line."""
+    """Returns `(cmd, alt)` for the first disallowed command that fires on this line and is not skipped, or `None` if none does. Mirrors the twin's inner `for entry in DISALLOWED; do ... continue/break ... done` exactly: a narrow-regex match that is SKIPPED (comment/assignment/yaml-key) moves on to the NEXT disallowed command on the SAME line, it does not abandon the line."""
     for cmd, alt in DISALLOWED:
         if not _narrow_re(cmd).search(line_content):
             continue

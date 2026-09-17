@@ -140,8 +140,7 @@ CASES = [
         1,
     ),
     (
-        # NEWEST WINS. The older report is answered; the newer one is not, and it is
-        # the newer one that is gated.
+        # NEWEST WINS. The older report is answered; the newer one is not, and it is the newer one that is gated.
         "a newer report supersedes an answered older one",
         [
             dict(
@@ -234,8 +233,7 @@ def test_the_fan_out_runs_every_epic_and_names_the_unanswered_ones(tmp_path):
 def test_the_two_shared_constants_match_the_sibling_gate():
     """One reply must clear BOTH gates, so these cannot drift.
 
-    `test-review-status.sh` parses both bash files and fails if they disagree; this
-    asserts the same thing across the two ports, which is the half that gate cannot see.
+    `test-review-status.sh` parses both bash files and fails if they disagree; this asserts the same thing across the two ports, which is the half that gate cannot see.
     """
     assert gate.SUMMARY_MIN_CHARS == sibling.SUMMARY_MIN_CHARS == 30
     assert gate.SUMMARY_LONGFORM_CHARS == sibling.SUMMARY_LONGFORM_CHARS == 200

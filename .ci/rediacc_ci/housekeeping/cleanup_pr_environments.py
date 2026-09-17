@@ -16,9 +16,8 @@ STREAMS: NOTHING IS EVER WRITTEN TO STDOUT. Every message is `log_step` / `log_w
 
 THE ARGUMENT PARSER IS NOT RE-IMPLEMENTED: `rediacc_ci.core.common.parse_args` is the port of `parse_args` (common.sh:324-353) and carries its four rules and both live quirks, including `--dry-run false` meaning NOT a dry run.
 
-THE `sort -t- -k2 -n` ORDER IS REPRODUCED WITH ITS TIE-BREAK, not approximated. GNU sort compares the numeric key first and falls back to a byte-wise comparison of the WHOLE LINE when the keys tie, so `pr-2`, `pr-010`, `pr-10`
-sorts to exactly that order (driven against real `sort`; `010` and `10` tie at
-10 and `pr-010` wins the byte comparison). A port that sorted on the integer alone would agree on every realistic input and disagree there.
+THE `sort -t- -k2 -n` ORDER IS REPRODUCED WITH ITS TIE-BREAK, not approximated. GNU sort compares the numeric key first and falls back to a byte-wise comparison of the WHOLE LINE when the keys tie, so `pr-2`, `pr-010`, `pr-10` sorts to exactly that order (driven against real `sort`; `010` and `10` tie at 10 and `pr-010` wins the byte comparison). A port that sorted on the integer
+alone would agree on every realistic input and disagree there.
 
 TWO DEFECTS IN THE TWIN, REPRODUCED AND REPORTED RATHER THAN FIXED, on the same contract this box's sibling states: agreement with the twin is the deliverable, and changing live behaviour is the operator's call.
 
@@ -75,8 +74,7 @@ def environment_path(repo: str, env: str) -> str:
 def sort_key(name: str) -> tuple[int, str]:
     """`sort -t- -k2 -n`, tie-break included.
 
-    Field 2 of `pr-<n>` split on `-` is the number; `-n` compares it
-    numerically, and GNU sort's last-resort comparison breaks a tie by comparing the entire line byte-wise. Only names that already matched PR_ENV_RE reach this, so the numeric field always parses.
+    Field 2 of `pr-<n>` split on `-` is the number; `-n` compares it numerically, and GNU sort's last-resort comparison breaks a tie by comparing the entire line byte-wise. Only names that already matched PR_ENV_RE reach this, so the numeric field always parses.
     """
     return (int(name.split("-", 1)[1]), name)
 

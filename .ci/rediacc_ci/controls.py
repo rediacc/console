@@ -42,7 +42,7 @@ _FLOOR_MESSAGE = "FAIL  only %d control(s) ran; the file is not being executed a
 
 
 class Checker:
-    """A gate's own `  PASS  ` / `  FAIL  ` selftest tally, in one place.
+    """A gate's own ` PASS ` / ` FAIL ` selftest tally, in one place.
 
     WHAT IT REPLACES. Four `.ci/scripts/quality/check_*.py` gates -- `check_fetch_retry.py`, `check_git_history_depth.py`, `check_judged_rule_wiring.py` and `check_review_prompt_render.py` -- opened `selftest()` with the SAME twelve lines, down to the docstring::
 

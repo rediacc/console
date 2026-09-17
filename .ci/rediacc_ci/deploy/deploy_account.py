@@ -40,8 +40,7 @@ this campaign has ruled on before (`deploy/set_www_worker_secrets.py`, `deploy/w
      ...` with the same status, following `autopilot/sweep_collect.py:284`.
 
 `:?` IS AN UNSET-OR-EMPTY TEST, so `--region=` refuses exactly as an absent
-`--region` does. Driven; a port testing only for presence would resolve
-`wrangler..toml` and report it missing instead.
+`--region` does. Driven; a port testing only for presence would resolve `wrangler..toml` and report it missing instead.
 
 K=5 LEDGER: `.ci/shadow/w7p6-deploy-account.observations.jsonl`.
 """
@@ -81,9 +80,7 @@ SED_PROGRAM = r's/.*= *"\(.*\)"/\1/'
 # The string grep looks for (:50). A SUBSTRING, not a key: `# database_name` and `preview_database_name` both match.
 DB_NAME_NEEDLE = "database_name"
 
-# THE TWO DEFECTS THE grep/head/sed PIPELINE HAS, named as constants so the differential can assert them by name instead of restating the sentences, and so nobody "fixes" them in the port. Both driven against the real twin on
-# 2026-09-13 in a fixture tree; both are reproduced here, not repaired, because
-# repairing a twin is a cutover decision and this file is not the cutover.
+# THE TWO DEFECTS THE grep/head/sed PIPELINE HAS, named as constants so the differential can assert them by name instead of restating the sentences, and so nobody "fixes" them in the port. Both driven against the real twin on 2026-09-13 in a fixture tree; both are reproduced here, not repaired, because repairing a twin is a cutover decision and this file is not the cutover.
 #
 # 1. A COMMENT BECOMES THE DATABASE NAME. A config whose first `database_name` occurrence is a comment (`# database_name is chosen per environment`) fails the sed pattern, so sed passes the line through unchanged, `[[ -z "$DB_NAME" ]]` is false, and the run prints "Applying migrations to # database_name is chosen per environment..." and calls `wrangler d1 migrations apply '#
 # database_name is chosen per environment'`. The guard at :51-54 exists for exactly this case and cannot see it, because the pipeline's output is only empty when grep matched NOTHING.
@@ -132,8 +129,7 @@ def database_name(config: str) -> str:
 
     STDERR IS INHERITED on all three, as the twin leaves it: a grep that cannot open the file has already been ruled out by the `-f` check above, but a read error mid-file is the only trace anyone would get.
 
-    `|| true` MAKES THE PIPELINE'S STATUS UNOBSERVABLE, including grep's 1 for "no match" and the 141 a SIGPIPE from `head` leaves on a long file. Nothing
-    is checked here either; the empty result is what the caller tests.
+    `|| true` MAKES THE PIPELINE'S STATUS UNOBSERVABLE, including grep's 1 for "no match" and the 141 a SIGPIPE from `head` leaves on a long file. Nothing is checked here either; the empty result is what the caller tests.
 
     Bytes are decoded with `surrogateescape` so a config that is not valid UTF-8 reaches `wrangler` as the same bytes bash would have handed it. The one spot where the two still differ is a diagnostic: Python renders an unpaired surrogate on stderr as a backslash escape.
     """

@@ -58,8 +58,7 @@ def real_source(gate) -> str:
 
 
 def run_gate(gate, workflow_file) -> harness.RunResult:
-    """`run_gate` from the twin: the real subject, WORKFLOW_FILE pointed at
-    `workflow_file`, stdout and stderr kept APART.
+    """`run_gate` from the twin: the real subject, WORKFLOW_FILE pointed at `workflow_file`, stdout and stderr kept APART.
 
     The twin captures the two streams into separate files and asserts on `err()`, because `common.sh`'s `log_error`/`log_info` write to stderr. Merging them here would hide a diagnostic that moved to the wrong stream, which is a real defect in a gate whose whole output is diagnostics.
     """
@@ -396,9 +395,7 @@ def test_model_round_file_tools_required(gate):
 
 
 def test_unparsed_model_if_fails_closed(gate):
-    """Anti-vacuity for the invariant above: if the model job's `if:` cannot be
-    found at all, the check verified nothing and must say so rather than pass.
-    Renaming the job is the cheapest way to make it unfindable."""
+    """Anti-vacuity for the invariant above: if the model job's `if:` cannot be found at all, the check verified nothing and must say so rather than pass. Renaming the job is the cheapest way to make it unfindable."""
     source = real_source(gate)
     mutated = substitute_each_line(source, r"^  model:$", "  modelx:")
     assert_mutated(gate, mutated, "nomodeljob.yml")
@@ -412,9 +409,7 @@ def test_unparsed_model_if_fails_closed(gate):
 
 
 def test_submodule_checkout_before_model_fails(gate):
-    """S6 makes submodule PUSHES possible after the model exits. The tempting
-    follow-on is to let the model EDIT submodules by adding `submodules:` to its checkout -- but the four submodules are private, so that fetch needs a credential, and a credential before the model step is the one thing this design
-    exists to prevent."""
+    """S6 makes submodule PUSHES possible after the model exits. The tempting follow-on is to let the model EDIT submodules by adding `submodules:` to its checkout -- but the four submodules are private, so that fetch needs a credential, and a credential before the model step is the one thing this design exists to prevent."""
     source = real_source(gate)
     with harness.temp_dir() as work:
         mutated = append_after(

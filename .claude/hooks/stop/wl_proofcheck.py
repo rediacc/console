@@ -10,8 +10,8 @@ WHY THIS RIDES wl_classsweep'S TRIGGER RATHER THAN INVENTING ITS OWN. Detecting 
 SECOND question about a fix-set the judge is already being shown, not a second git scan. The trade is honest: this rule can only fire on a stop that already qualifies as a fix stop, so a bulk transform that is never described as a "fix" (a pure reflow/style commit, say) will not trip it from THIS signal alone -- `docs(agent)`-prefixed and `style(`-prefixed commits do reach
 `FIX_SUBJECT` in `wl_reggate.py`, which is why every reflow commit in the incident history above would have qualified.
 
-THE SAME ENFORCEMENT SHAPE AS wl_classsweep, on purpose, because it is proven: ONE optional-at-the-top-level schema object, required only when the prompt actually asks for it (`judge_schema_for`); a verdict flip via `wl_rules.apply_order`, never a new blocking path; a carried-forward demand so a session that stops again without the proof is asked again; FAIL SEMANTICS that
-never fail closed, because the only thing this object can do is turn a stop into a continue, and degrading loses a demand rather than granting an exit.
+THE SAME ENFORCEMENT SHAPE AS wl_classsweep, on purpose, because it is proven: ONE optional-at-the-top-level schema object, required only when the prompt actually asks for it (`judge_schema_for`); a verdict flip via `wl_rules.apply_order`, never a new blocking path; a carried-forward demand so a session that stops again without the proof is asked again; FAIL SEMANTICS that never
+fail closed, because the only thing this object can do is turn a stop into a continue, and degrading loses a demand rather than granting an exit.
 
 NOT DUPLICATED, REUSED. `validate_search`, `names_destructive` and the Demand class already live behind `wl_classsweep`/`wl_rules` and are called here rather than copied, which is the discipline `agent/PLAN-consolidation-pressure.md` argues for: a rule of this shape belongs in one place, consulted by every caller, not re-derived by each one that needs it.
 """

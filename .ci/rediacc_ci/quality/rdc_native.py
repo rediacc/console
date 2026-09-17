@@ -16,8 +16,7 @@ WHAT THIS GATE IS FOR. On 2026-09-09 the `--native` SEA build left `rdc.sh` for 
 THE TABLE IS WRITTEN OUT, NOT DERIVED, and that is the whole value of it. Deriving the expected paths by calling the same helpers the subject calls would agree with any defect in those helpers, which is the tautology this gate would otherwise be. `ARMS` below spells `rdc-mac-arm64`, `rdc-win-x64.exe` and `rdc.old.exe` as literals, read off the bash that was deleted, so a re-keyed
 mapping is a MISMATCH rather than a matching pair of wrongs.
 
-ANTI-VACUITY. Every probe is a real subprocess and its exit code is checked; a probe that
-could not run is a finding, never a skip. The arm count is asserted against the table's own length, so a loop that stopped iterating fails instead of reporting a clean sweep. The subject file being absent is a failure, and so is a `rdc.sh` of zero bytes.
+ANTI-VACUITY. Every probe is a real subprocess and its exit code is checked; a probe that could not run is a finding, never a skip. The arm count is asserted against the table's own length, so a loop that stopped iterating fails instead of reporting a clean sweep. The subject file being absent is a failure, and so is a `rdc.sh` of zero bytes.
 
 THE CONTROL RUNS AGAINST A MUTATED COPY OF THE PACKAGE, not against a mutated copy of the gate. `plan()` resolves its root from `native.py`'s own location and this gate points the subprocess at the copy with `PYTHONPATH`, so the control exercises the same delegation the real run does, over a package whose darwin mapping has been re-keyed. The plant is asserted to have landed before
 its result is believed: a substitution that matched nothing would otherwise produce an identical copy, a control that "fires" on unmutated source, and a green that means nothing. Both directions are covered, because a differential that always reports a mismatch is as useless as one that never does.
@@ -42,8 +41,7 @@ RDC_SH = "rdc.sh"
 # near the 93 that left. The success line prints the spare.
 CEILING = 185
 
-# A floor as well as a ceiling. A `rdc.sh` that has become a two-line stub is not a win,
-# it is a file somebody truncated; every assertion below would pass on it.
+# A floor as well as a ceiling. A `rdc.sh` that has become a two-line stub is not a win, it is a file somebody truncated; every assertion below would pass on it.
 FLOOR = 40
 
 # The three platform arms, times the spellings `uname` really emits, times both arches. Read off the bash that was deleted (`rdc.sh:89-118` at HEAD~), NOT derived from the subject's own tables. See the module docstring.

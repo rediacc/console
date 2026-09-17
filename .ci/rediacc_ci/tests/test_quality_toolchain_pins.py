@@ -105,9 +105,7 @@ def test_a9_executes_the_pin_rather_than_reading_it(
 
     The empty value travelled into a download URL and produced a curl 404 naming GitHub, which is the wrong problem to go debugging. A9 exists because no textual assertion could have caught it.
 
-    THE `*_VERSION` NAMES ARE CLEARED FIRST, and without that the mutant half of this test measures the ENVIRONMENT instead of the library. `pin_from_bare_
-    source` shells out and inherits `os.environ`; a CI lane runs
-    `.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"`, which exports
+    THE `*_VERSION` NAMES ARE CLEARED FIRST, and without that the mutant half of this test measures the ENVIRONMENT instead of the library. `pin_from_bare_ source` shells out and inherits `os.environ`; a CI lane runs `.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"`, which exports
     `SHELLCHECK_VERSION=0.10.0` into every later step. So the mutant -- a copy of
     the library with `toolchain_load` stubbed to a no-op, whose whole purpose is to resolve EMPTY -- happily resolved `0.10.0` from the ambient environment,
     and this assertion read `assert '0.10.0' == ''` in run 34970782616. On a

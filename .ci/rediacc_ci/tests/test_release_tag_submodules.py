@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.release.tag_submodules` against its twin
-`.ci/scripts/release/tag-submodules.sh`.
+"""Differential: `rediacc_ci.release.tag_submodules` against its twin `.ci/scripts/release/tag-submodules.sh`.
 
 THE SUBJECT PUSHES TAGS, so the first design decision is where. Never at the real `private/renet` remote: every case here builds a throwaway parent directory holding its own `private/renet` git repository whose `origin` is a BARE repository in the same tmpdir, and the remote is added as the RELATIVE path `../renet-remote.git`. Relative on purpose -- `git push` prints `To <remote>`
 to stderr, and an absolute path would differ between the two independent fixtures and defeat byte-for-byte comparison for a reason that has nothing to do with the port.
@@ -133,8 +132,7 @@ def test_uninitialized_submodule_is_skipped(tmp_path: pathlib.Path) -> None:
 
 
 def test_directory_without_dot_git_is_skipped(tmp_path: pathlib.Path) -> None:
-    """The directory exists but is not a checkout -- the case an unrun
-    `git submodule update --init` leaves behind."""
+    """The directory exists but is not a checkout -- the case an unrun `git submodule update --init` leaves behind."""
     old_parent = _parent(tmp_path, "old")
     new_parent = _parent(tmp_path, "new")
     for parent in (old_parent, new_parent):
@@ -147,9 +145,7 @@ def test_directory_without_dot_git_is_skipped(tmp_path: pathlib.Path) -> None:
 
 
 def test_dot_git_as_a_file_is_initialized(tmp_path: pathlib.Path) -> None:
-    """A real submodule checkout has `.git` as a FILE holding a gitdir
-    pointer. A port that tested only `is_dir()` would skip every real
-    submodule and exit 0, which is the silent pass this case exists for."""
+    """A real submodule checkout has `.git` as a FILE holding a gitdir pointer. A port that tested only `is_dir()` would skip every real submodule and exit 0, which is the silent pass this case exists for."""
     results = []
     for name in ("old", "new"):
         parent = _parent(tmp_path, name)
@@ -204,9 +200,7 @@ def test_tag_already_at_head_is_reused_and_the_push_is_idempotent(
 
 
 def test_drift_is_a_hard_failure(tmp_path: pathlib.Path) -> None:
-    """THE ARM THE TWIN'S HEADER IS ABOUT. The tag exists but points at an
-    older commit: refusing is the only correct answer, because a release that
-    retagged here would claim one version maps to two commits."""
+    """THE ARM THE TWIN'S HEADER IS ABOUT. The tag exists but points at an older commit: refusing is the only correct answer, because a release that retagged here would claim one version maps to two commits."""
     parents = []
     for name in ("old", "new"):
         parent = _parent(tmp_path, name)
@@ -247,8 +241,7 @@ def test_missing_version_refuses_on_both_sides(tmp_path: pathlib.Path) -> None:
 
 
 def test_empty_version_refuses_too(tmp_path: pathlib.Path) -> None:
-    """`:?` fires on set-but-empty, not only on unset. A port using
-    `"VERSION" in os.environ` would sail past this and try to push `v`."""
+    """`:?` fires on set-but-empty, not only on unset. A port using `"VERSION" in os.environ` would sail past this and try to push `v`."""
     old_parent = _parent(tmp_path, "old")
     new_parent = _parent(tmp_path, "new")
     _submodule(old_parent)
@@ -264,9 +257,7 @@ def test_empty_version_refuses_too(tmp_path: pathlib.Path) -> None:
 
 
 def test_unborn_head_dies_with_gits_own_exit_code(tmp_path: pathlib.Path) -> None:
-    """A `.git` with no commits: `git rev-parse HEAD` fails, and under `set -e`
-    the failed command substitution takes the script down with git's status.
-    git's fatal message is on the INHERITED stderr, so it is byte-identical."""
+    """A `.git` with no commits: `git rev-parse HEAD` fails, and under `set -e` the failed command substitution takes the script down with git's status. git's fatal message is on the INHERITED stderr, so it is byte-identical."""
     parents = []
     for name in ("old", "new"):
         parent = _parent(tmp_path, name)
@@ -280,8 +271,7 @@ def test_unborn_head_dies_with_gits_own_exit_code(tmp_path: pathlib.Path) -> Non
 
 
 def test_push_failure_propagates(tmp_path: pathlib.Path) -> None:
-    """No `origin` at all. The tag is still created locally, and the push
-    failure is the script's exit code -- not swallowed into a 0."""
+    """No `origin` at all. The tag is still created locally, and the push failure is the script's exit code -- not swallowed into a 0."""
     parents = []
     for name in ("old", "new"):
         parent = _parent(tmp_path, name)
@@ -314,8 +304,7 @@ def test_missing_git_refuses_on_both_sides(tmp_path: pathlib.Path) -> None:
 
 
 def test_is_initialized_helper(tmp_path: pathlib.Path) -> None:
-    """The pure helper, BOTH DIRECTIONS: a `.git` directory and a `.git` file
-    both count as initialized, a bare directory and a missing one do not."""
+    """The pure helper, BOTH DIRECTIONS: a `.git` directory and a `.git` file both count as initialized, a bare directory and a missing one do not."""
     cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
@@ -333,9 +322,7 @@ def test_is_initialized_helper(tmp_path: pathlib.Path) -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY on the arm the twin's header exists for. Delete the drift
-    refusal so the port silently reuses whatever tag it finds -- exactly the "silent retag" the twin forbids. Driven red against the drift fixture,
-    then the source is restored byte-identical and re-verified green."""
+    """ANTI-VACUITY on the arm the twin's header exists for. Delete the drift refusal so the port silently reuses whatever tag it finds -- exactly the "silent retag" the twin forbids. Driven red against the drift fixture, then the source is restored byte-identical and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace("        if existing_sha != head_sha:\n", "        if False:\n")
     assert mutated != original, "the line this plant targets is no longer present verbatim"

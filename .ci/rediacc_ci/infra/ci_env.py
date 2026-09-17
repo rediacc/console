@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/infra/ci-env.sh`, as a LIBRARY, because the twin is
-sourced and never executed.
+"""Port of `.ci/scripts/infra/ci-env.sh`, as a LIBRARY, because the twin is sourced and never executed.
 
 -----------------------------------------------------------------------------
 WHY THERE IS NO CLI TWIN HERE, AND WHY THAT IS NOT A GAP

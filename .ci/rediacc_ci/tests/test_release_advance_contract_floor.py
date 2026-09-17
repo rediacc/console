@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.release.advance_contract_floor` against its twin
-`.ci/scripts/release/advance-contract-floor.sh`.
+"""Differential: `rediacc_ci.release.advance_contract_floor` against its twin `.ci/scripts/release/advance-contract-floor.sh`.
 
 A FIXTURE ROOT, NOT THIS CHECKOUT, AND THAT IS NOT OPTIONAL. On an advance the twin runs `git add`, `git commit` and `git push origin HEAD:main` in whatever `get_repo_root` resolves to -- and `get_repo_root` derives from COMMON.SH's own location, so running the twin out of this tree would target this tree. Every
 case therefore copies both subjects into a temporary root whose layout gives the
@@ -246,8 +245,7 @@ def test_the_ratchet_advances_and_commits(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_oldest_sentinel_wins_not_the_first_key_listed(tmp_path: pathlib.Path) -> None:
-    """`sort -uV | head -1`. R2 returns keys in lexical order, where `v1.10.0`
-    precedes `v1.9.0`; the floor must be the VERSION-oldest, not the first key."""
+    """`sort -uV | head -1`. R2 returns keys in lexical order, where `v1.10.0` precedes `v1.9.0`; the floor must be the VERSION-oldest, not the first key."""
     old, new, old_calls, new_calls, floor = run_both(
         tmp_path, "v1.0.0\n", FAKE_AWS_OUT=sentinels("v1.10.0", "v1.9.0", "v1.11.0")
     )
@@ -271,9 +269,7 @@ def test_an_equal_observation_is_a_no_op_with_no_git_at_all(tmp_path: pathlib.Pa
 def test_an_older_observation_never_walks_the_ratchet_backwards(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE SAFETY PROPERTY. A scrub that left only an old sentinel must NOT be
-    able to lower the floor -- that is the whole reason the value is committed
-    rather than re-derived."""
+    """THE SAFETY PROPERTY. A scrub that left only an old sentinel must NOT be able to lower the floor -- that is the whole reason the value is committed rather than re-derived."""
     old, new, old_calls, new_calls, floor = run_both(
         tmp_path, "v1.5.0\n", FAKE_AWS_OUT=sentinels("v1.2.0")
     )
@@ -304,9 +300,7 @@ def test_a_missing_floor_file_is_a_warning_and_a_clean_exit(tmp_path: pathlib.Pa
 
 
 def test_a_floor_file_with_no_semver_line_reads_as_unset(tmp_path: pathlib.Path) -> None:
-    """`grep -E '^v[0-9]+\\.[0-9]+\\.[0-9]+$' | head -1` finds nothing, and the
-    twin then prints `<unset>` while COMPARING against `v0.0.0`. Two different
-    defaults for one empty value, reproduced rather than harmonised."""
+    """`grep -E '^v[0-9]+\\.[0-9]+\\.[0-9]+$' | head -1` finds nothing, and the twin then prints `<unset>` while COMPARING against `v0.0.0`. Two different defaults for one empty value, reproduced rather than harmonised."""
     old, new, old_calls, new_calls, floor = run_both(
         tmp_path,
         "# the floor is not recorded yet\n\nv1.2.3-rc.1\n",
@@ -319,8 +313,7 @@ def test_a_floor_file_with_no_semver_line_reads_as_unset(tmp_path: pathlib.Path)
 
 
 def test_a_prerelease_sentinel_is_not_a_floor_candidate(tmp_path: pathlib.Path) -> None:
-    """The sentinel filter is STRICT semver, so `v1.3.0-rc.1` is invisible and
-    the floor is the oldest RELEASE sentinel."""
+    """The sentinel filter is STRICT semver, so `v1.3.0-rc.1` is invisible and the floor is the oldest RELEASE sentinel."""
     old, new, old_calls, new_calls, floor = run_both(
         tmp_path, "v1.0.0\n", FAKE_AWS_OUT=sentinels("v1.3.0-rc.1", "v1.4.0")
     )
@@ -366,9 +359,7 @@ def test_defect_a_failed_aws_probe_is_reported_as_an_empty_bucket(
 
 
 def test_defect_the_floor_file_is_written_before_git_runs(tmp_path: pathlib.Path) -> None:
-    """THE HALF-APPLIED-RATCHET DEFECT, PINNED. The write happens first and
-    every git call is unguarded under `set -e`, so a refused commit exits with git's status having ALREADY modified the tree. Only the leftover bytes show
-    it, which is why `run_both` compares the floor file at all."""
+    """THE HALF-APPLIED-RATCHET DEFECT, PINNED. The write happens first and every git call is unguarded under `set -e`, so a refused commit exits with git's status having ALREADY modified the tree. Only the leftover bytes show it, which is why `run_both` compares the floor file at all."""
     old, new, old_calls, new_calls, floor = run_both(
         tmp_path,
         "v1.0.0\n",
@@ -409,8 +400,7 @@ def test_missing_aws_is_refused_before_missing_git(tmp_path: pathlib.Path) -> No
 
 def test_each_required_variable_is_demanded_in_order(tmp_path: pathlib.Path) -> None:
     """DIVERGENCE 1 IS ASSERTED, NOT ASSUMED. `${VAR:?msg}` is a bash diagnostic
-    carrying the twin's path and line number; the port names itself instead. The stream, the exit code, the order and the absence of any aws or git call
-    must all agree."""
+    carrying the twin's path and line number; the port names itself instead. The stream, the exit code, the order and the absence of any aws or git call must all agree."""
     for name in port.REQUIRED_ENV:
         fix = _fixture(tmp_path, "v1.0.0\n")
         old, old_calls = _run(fix, tmp_path, "old", drop_env=(name,))
@@ -444,9 +434,7 @@ def test_an_empty_variable_is_refused_like_an_unset_one(tmp_path: pathlib.Path) 
 
 
 def test_the_fixture_root_is_not_this_checkout(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY ON THE HARNESS ITSELF. Every case above asserts on a floor
-    file and on git calls; if either subject resolved its root back to this checkout, those assertions would be about the real tree and the twin would have run `git push origin HEAD:main` against it. Both subjects are asked
-    where they think the root is, out of band."""
+    """ANTI-VACUITY ON THE HARNESS ITSELF. Every case above asserts on a floor file and on git calls; if either subject resolved its root back to this checkout, those assertions would be about the real tree and the twin would have run `git push origin HEAD:main` against it. Both subjects are asked where they think the root is, out of band."""
     fix = _fixture(tmp_path, "v1.0.0\n")
     twin_copy = fix / ".ci" / "scripts" / "release" / TWIN.name
 
@@ -527,8 +515,7 @@ def test_decide_is_the_ratchet_rule() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the monotonicity test itself -- the one line
-    whose removal turns a ratchet into a follower. The mutant advances the floor DOWNWARD to an older observation, which is exactly the scrub this file exists to survive, and it does it while printing a perfectly plausible ::notice:: line. Driven red, then the source is confirmed byte-identical and green.
+    """ANTI-VACUITY, planted on the monotonicity test itself -- the one line whose removal turns a ratchet into a follower. The mutant advances the floor DOWNWARD to an older observation, which is exactly the scrub this file exists to survive, and it does it while printing a perfectly plausible ::notice:: line. Driven red, then the source is confirmed byte-identical and green.
     """
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

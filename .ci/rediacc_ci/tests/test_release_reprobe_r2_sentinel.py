@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.release.reprobe_r2_sentinel` against its twin
-`.ci/scripts/release/reprobe-r2-sentinel.sh`.
+"""Differential: `rediacc_ci.release.reprobe_r2_sentinel` against its twin `.ci/scripts/release/reprobe-r2-sentinel.sh`.
 
 BOTH SIDES RUN IN THE REAL CHECKOUT, unlike the fixture-tree siblings in this directory, and that is safe here for one reason: this script resolves nothing relative to the repo root and writes nothing. Its entire observable is one `aws s3api head-object` call, and the only thing that has to be faked is `aws`. It is faked on a scratch PATH whose shadowing is PROVEN by
 `test_the_fake_aws_shadows_any_real_one` rather than assumed, because the whole point of the fake is that no real R2 endpoint is ever contacted.
@@ -92,8 +91,7 @@ def _run(
         "TMPDIR": str(tmp_path),
         "LC_ALL": "C",
         "LANG": "C",
-        # Both sides decide colour from the stream and from NO_COLOR; pinning it
-        # removes a pty from the comparison without removing the marker difference the UNKNOWN case exists to record.
+        # Both sides decide colour from the stream and from NO_COLOR; pinning it removes a pty from the comparison without removing the marker difference the UNKNOWN case exists to record.
         "NO_COLOR": "1",
         "PYTHONPATH": str(ROOT / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",
@@ -255,9 +253,8 @@ def test_missing_aws_refuses_identically(tmp_path: pathlib.Path) -> None:
     earlier at `$(dirname "${BASH_SOURCE[0]}")` with `dirname: command not
     found`, which is what this case asserted on its first run and is a defect in the HARNESS rather than in either subject.
 
-    AND WITH `aws` MASKED OUT OF IT. This used to read "`aws` genuinely is not installed here, which the premise below proves, so the real PATH is already the without-aws case" -- true of this tree's machines, false of a GitHub runner, which ships the CLI at /usr/local/bin/aws. On such a host the case
-    was not exercising the `require_cmd` refusal it documents; it was running a
-    real aws. Measured in CI run 34970782616. `pathmask` removes exactly that one command and keeps everything else the directory provided, so `dirname` and friends still resolve and the harness defect above stays fixed.
+    AND WITH `aws` MASKED OUT OF IT. This used to read "`aws` genuinely is not installed here, which the premise below proves, so the real PATH is already the without-aws case" -- true of this tree's machines, false of a GitHub runner, which ships the CLI at /usr/local/bin/aws. On such a host the case was not exercising the `require_cmd` refusal it documents; it was running a real
+    aws. Measured in CI run 34970782616. `pathmask` removes exactly that one command and keeps everything else the directory provided, so `dirname` and friends still resolve and the harness defect above stays fixed.
     """
     masked = pathmask.path_without("aws", tmp_path, base=os.environ.get("PATH", "/usr/bin:/bin"))
     pathmask.assert_absent("aws", masked)

@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.sweep_collect` against its twin
-`.ci/scripts/autopilot/sweep-collect.sh`.
+"""Differential: `rediacc_ci.autopilot.sweep_collect` against its twin `.ci/scripts/autopilot/sweep-collect.sh`.
 
 A RECORDING FAKE `gh` ON A STUB PATH, and the fake is the whole apparatus: nothing here reaches the network, and the real `gh` on this machine is never on the PATH handed to either subject. `test_the_stub_path_has_no_real_gh` is the control for that claim rather than a comment asserting it.
 
@@ -271,9 +270,7 @@ def test_the_union_is_a_union_not_an_intersection() -> None:
 
 
 def test_a_lookalike_campaign_comment_is_not_armed() -> None:
-    """NEGATIVE CONTROL, and the security-relevant one. Console is public, so a
-    comment claiming `campaign: open` is the obvious way to make the sweeper
-    dispatch rounds nobody armed. The author check is what makes it fail."""
+    """NEGATIVE CONTROL, and the security-relevant one. Console is public, so a comment claiming `campaign: open` is the obvious way to make the sweeper dispatch rounds nobody armed. The author check is what makes it fail."""
     _, _, stderr, _, _, out = _sides(
         "lookalike",
         ARGV,
@@ -294,8 +291,7 @@ def test_an_empty_sweep_is_normal_and_quiet() -> None:
 
 
 def test_usage_refusals() -> None:
-    """Each required flag absent, and each present but empty. `--label` is NOT
-    required: it defaults to `autopilot`."""
+    """Each required flag absent, and each present but empty. `--label` is NOT required: it defaults to `autopilot`."""
     full = {"--repo": "rediacc/console", "--bot": BOT, "--work": "work", "--out": "out.txt"}
     for drop in list(full):
         argv: list[str] = []
@@ -313,8 +309,7 @@ def test_usage_refusals() -> None:
 
 
 def test_the_label_is_a_parameter_and_defaults() -> None:
-    """The default reaches `gh` as `--label autopilot`, and an override reaches
-    it verbatim. Read off the recorded call, not off the summary line."""
+    """The default reaches `gh` as `--label autopilot`, and an override reaches it verbatim. Read off the recorded call, not off the summary line."""
     for argv, want in ((ARGV, "autopilot"), ([*ARGV, "--label", "sweep-me"], "sweep-me")):
         _, _, _, calls, _, _ = _sides("label-%s" % want, argv)
         assert "--label\t%s" % want in calls[1], calls[1]
@@ -340,8 +335,7 @@ def test_defect_a_prs_json_that_cannot_be_indexed_scans_nothing_and_exits_0() ->
 
 
 def test_a_comment_dump_jq_can_not_transform_kills_the_run() -> None:
-    """The other jq, the one whose status IS checked: its exit code becomes the
-    script's, and no `--out` is written at all."""
+    """The other jq, the one whose status IS checked: its exit code becomes the script's, and no `--out` is written at all."""
     exit_code, _, stderr, _, work, out = _sides("jq-fails", ARGV, FAKE_API_BODY="[1,2]")
     assert exit_code == 5, exit_code
     assert b"Cannot iterate over number" in stderr
@@ -351,8 +345,7 @@ def test_a_comment_dump_jq_can_not_transform_kills_the_run() -> None:
 
 
 def test_defect_an_unwritable_out_is_announced_as_an_empty_sweep() -> None:
-    """Defect 2. Shape-compared, because bash's redirection diagnostic carries
-    the twin's own path and line number; everything after it is exact."""
+    """Defect 2. Shape-compared, because bash's redirection diagnostic carries the twin's own path and line number; everything after it is exact."""
     argv = ["--repo", "rediacc/console", "--bot", BOT, "--work", "work", "--out", "nodir/out.txt"]
     with tempfile.TemporaryDirectory() as td:
         seen = []
@@ -373,9 +366,7 @@ def test_defect_an_unwritable_out_is_announced_as_an_empty_sweep() -> None:
 
 
 def test_slow_a_failing_gh_retries_three_times_and_replays_its_stderr() -> None:
-    """18 seconds, and the only case that proves the whole `_gh_probe` loop:
-    two warnings, the final error with the last exit code, and the captured
-    stderr replayed indented four spaces WITHOUT inventing a final newline."""
+    """18 seconds, and the only case that proves the whole `_gh_probe` loop: two warnings, the final error with the last exit code, and the captured stderr replayed indented four spaces WITHOUT inventing a final newline."""
     exit_code, _, stderr, calls, work, out = _sides(
         "gh-fails",
         ARGV,
@@ -395,9 +386,7 @@ def test_slow_a_failing_gh_retries_three_times_and_replays_its_stderr() -> None:
 
 
 def test_slow_a_body_of_null_is_unusable_not_an_answer() -> None:
-    """`jq -e .` exits 1 on `null`, so `gh_json` retries and then refuses. A
-    port validating with `json.loads` alone would accept it and write `null`
-    into `prs.json`."""
+    """`jq -e .` exits 1 on `null`, so `gh_json` retries and then refuses. A port validating with `json.loads` alone would accept it and write `null` into `prs.json`."""
     exit_code, _, stderr, _, work, _ = _sides("null-body", ARGV, FAKE_PRS="null")
     assert exit_code == 1
     assert b"sweeper open PR list: gh failed after 3 attempts (last exit 0)." in stderr

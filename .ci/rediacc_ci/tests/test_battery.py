@@ -180,9 +180,7 @@ def test_the_env_seam_overrides_membership(tmp_path, monkeypatch):
 
 
 def test_the_live_lock_is_read_by_the_same_code_the_twin_uses(tmp_path):
-    """THE CLAIM THIS FILE IS HERE TO KEEP HONEST: the two runners must not decide
-    isolation separately. run-all.sh classifies with an inline python3 heredoc over
-    the same lock; drive it and require the same answer on the REAL file."""
+    """THE CLAIM THIS FILE IS HERE TO KEEP HONEST: the two runners must not decide isolation separately. run-all.sh classifies with an inline python3 heredoc over the same lock; drive it and require the same answer on the REAL file."""
     lock = paths.from_root("scripts", "ci-runner", "gates.lock.json")
     twin_source = TWIN.read_text(encoding="utf-8")
     start = twin_source.index('python3 - "$GATES_LOCK" "$1" <<\'CLASSIFY\'')
@@ -329,9 +327,7 @@ def test_a_vacuous_fixture_battery_exits_one_as_a_program(tmp_path):
 
 
 def test_an_absent_bash_is_77_and_never_1():
-    """77 is BLOCKED, not FAILED. Returning 1 here would say the battery judged the
-    code and found it bad, which is false, and it is what made a pre-push lane refuse
-    every push on a machine that simply lacked a tool."""
+    """77 is BLOCKED, not FAILED. Returning 1 here would say the battery judged the code and found it bad, which is false, and it is what made a pre-push lane refuse every push on a machine that simply lacked a tool."""
     proc = _run_program([], env={"PATH": "/nonexistent-for-this-control"})
     assert proc.returncode == 77, proc.stdout + proc.stderr
     assert "bash is not on PATH" in proc.stderr

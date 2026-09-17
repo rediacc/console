@@ -195,8 +195,7 @@ def test_os_name_matches_the_frozen_toolchain_os(system: str) -> None:
 
 @pytest.mark.parametrize("system", UNSUPPORTED_SYSTEMS)
 def test_unsupported_os_refuses_and_the_bash_agrees(system: str) -> None:
-    """BOTH DIRECTIONS. Falling through to a default is how a Linux binary got
-    installed on a Mac and passed its checksum."""
+    """BOTH DIRECTIONS. Falling through to a default is how a Linux binary got installed on a Mac and passed its checksum."""
     rc, out, _ = _bash(FROZEN_OS + "\n_toolchain_os\n", system=system)
     assert rc == 1
     assert out == ""
@@ -206,8 +205,7 @@ def test_unsupported_os_refuses_and_the_bash_agrees(system: str) -> None:
 
 @pytest.mark.parametrize("system", SYSTEMS)
 def test_every_supported_system_string_maps(system: str) -> None:
-    """CONTROL for the refusal above: a function that raised on everything would
-    pass every unsupported case and this is what catches it."""
+    """CONTROL for the refusal above: a function that raised on everything would pass every unsupported case and this is what catches it."""
     assert plat.os_name(system) in (plat.OS_LINUX, plat.OS_DARWIN, plat.OS_WINDOWS)
 
 
@@ -402,8 +400,7 @@ def test_uv_checksum_key_is_a_key_the_pins_file_defines(system: str, machine: st
 
 
 def test_uv_target_refuses_windows() -> None:
-    """uv publishes Windows builds; this repo records no checksum for one, and a
-    download nobody recorded a hash for must be refused rather than trusted."""
+    """uv publishes Windows builds; this repo records no checksum for one, and a download nobody recorded a hash for must be refused rather than trusted."""
     with pytest.raises(plat.UnsupportedPlatformError):
         plat.uv_target("MINGW64_NT-10.0-22631", "x86_64")
 
@@ -484,8 +481,7 @@ def test_both_signals_are_reported_when_both_fire(tmp_path) -> None:
 
 
 def test_a_plain_linux_kernel_is_not_wsl(tmp_path) -> None:
-    """THE CONTROL. Without it, a detector that returned True unconditionally
-    passes all three cases above."""
+    """THE CONTROL. Without it, a detector that returned True unconditionally passes all three cases above."""
     root = _plant(tmp_path, PLAIN_VERSION_BANNER, PLAIN_OSRELEASE)
     evidence = plat.detect_wsl(root, env={})
     assert evidence.is_wsl is False
@@ -512,8 +508,7 @@ def test_an_environment_variable_alone_is_not_evidence(tmp_path) -> None:
 
 
 def test_env_signals_control_they_are_empty_when_unset(tmp_path) -> None:
-    """CONTROL for the case above: `env_signals` must be capable of being empty,
-    or "recorded but not decisive" would be indistinguishable from "ignored"."""
+    """CONTROL for the case above: `env_signals` must be capable of being empty, or "recorded but not decisive" would be indistinguishable from "ignored"."""
     root = _plant(tmp_path, WSL_VERSION_BANNER, WSL_OSRELEASE)
     evidence = plat.detect_wsl(root, env={})
     assert evidence.env_signals == ()
@@ -556,16 +551,14 @@ def test_sha256_command_falls_back_to_shasum(tmp_path) -> None:
 
 
 def test_sha256_command_raises_when_there_is_neither(tmp_path) -> None:
-    """THE CASE THE HELPER EXISTS FOR. Returning ["sha256sum"] and hoping is what
-    turned "cannot verify" into a checksum MISMATCH that never happened."""
+    """THE CASE THE HELPER EXISTS FOR. Returning ["sha256sum"] and hoping is what turned "cannot verify" into a checksum MISMATCH that never happened."""
     env = {"PATH": _stub_path(tmp_path)}
     with pytest.raises(plat.MissingToolError, match="no sha256 tool"):
         plat.sha256_command(env=env)
 
 
 def test_missing_tool_is_not_an_unsupported_platform(tmp_path) -> None:
-    """macOS is a SUPPORTED platform that is missing one binary, and conflating
-    the two is how the original message misled."""
+    """macOS is a SUPPORTED platform that is missing one binary, and conflating the two is how the original message misled."""
     env = {"PATH": _stub_path(tmp_path)}
     with pytest.raises(plat.MissingToolError):
         plat.sha256_command(env=env)
@@ -573,8 +566,7 @@ def test_missing_tool_is_not_an_unsupported_platform(tmp_path) -> None:
 
 
 def test_the_returned_argv_actually_computes_the_right_digest(tmp_path) -> None:
-    """RUN THE REAL THING. An argv that is well formed and wrong looks identical
-    to one that works until a download is verified against it."""
+    """RUN THE REAL THING. An argv that is well formed and wrong looks identical to one that works until a download is verified against it."""
     payload = b"rediacc toolchain platform differential\n"
     target = tmp_path / "payload.bin"
     target.write_bytes(payload)
@@ -602,8 +594,7 @@ def test_windows_is_never_a_native_target(system: str) -> None:
 
 @pytest.mark.parametrize("system", ["Linux", "Darwin"])
 def test_linux_and_macos_are_native(system: str) -> None:
-    """CONTROL. A `runs_natively` that returned False for everything would pass
-    every case above."""
+    """CONTROL. A `runs_natively` that returned False for everything would pass every case above."""
     assert plat.runs_natively(system) is True
     assert plat.require_native_host(system) == plat.os_name(system)
 
@@ -745,8 +736,7 @@ def test_cli_wsl_answers_in_the_exit_code_and_names_the_signal() -> None:
 
 
 def test_cli_report_never_dies_partway() -> None:
-    """Every line, even on a host missing a tool. A report that stops at line
-    three is the least useful thing to hand someone diagnosing a host."""
+    """Every line, even on a host missing a tool. A report that stops at line three is the least useful thing to hand someone diagnosing a host."""
     result = _module("report")
     assert result.returncode == 0, result.stderr
     keys = {line.split(":", 1)[0] for line in result.stdout.splitlines() if line}

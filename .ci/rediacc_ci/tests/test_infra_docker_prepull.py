@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.infra.docker_prepull` against its twin
-`.ci/scripts/infra/docker-prepull.sh`.
+"""Differential: `rediacc_ci.infra.docker_prepull` against its twin `.ci/scripts/infra/docker-prepull.sh`.
 
 A RECORDING FAKE `docker` ON A PREPENDED PATH, and it is not a convenience: the subject's entire job is `docker pull`, so a case that reached the real binary would pull whatever ref the argument named, over the network, into the developer's daemon -- and the retry cases would then take 90 seconds each while doing it. Three independent things keep the real one out of reach:
 
@@ -229,8 +228,7 @@ def test_pull_argv_omits_the_platform_flag_when_there_is_none() -> None:
 
 
 def test_no_arguments_is_refused_with_the_usage_line() -> None:
-    """THE ONE NAMED DIVERGENCE. `$0` is the path the caller typed, so the two
-    sides legitimately name different files; everything else must match."""
+    """THE ONE NAMED DIVERGENCE. `$0` is the path the caller typed, so the two sides legitimately name different files; everything else must match."""
     results = []
     with tempfile.TemporaryDirectory() as td:
         for subject in (TWIN, PORT):
@@ -304,8 +302,7 @@ def test_docker_stdout_reaches_the_caller_unbuffered_and_unwrapped() -> None:
 def test_a_failing_pull_is_three_attempts_with_thirty_then_sixty_seconds() -> None:
     """The retry schedule, and the interleaving, both compared.
 
-    Cheap only because `sleep` is a PATH stub on both sides; the twin would
-    otherwise spend 90 seconds here and so would the port.
+    Cheap only because `sleep` is a PATH stub on both sides; the twin would otherwise spend 90 seconds here and so would the port.
     """
     exit_code, _, stderr, calls = _sides("retry", [REF], FAKE_DOCKER_RC="1")
     assert exit_code == 1
@@ -335,8 +332,7 @@ def test_the_retry_message_names_the_platform_when_there_is_one() -> None:
 
 def test_one_bad_spec_does_not_stop_the_others_from_being_attempted() -> None:
     """`|| failed=1` rather than `set -e`: every spec is tried, and the run
-    still ends non-zero. A port that gave up on the first failure would leave
-    the later bases unpulled and the build would fail where it always did."""
+    still ends non-zero. A port that gave up on the first failure would leave the later bases unpulled and the build would fail where it always did."""
     good = "%s-ok" % REF
     exit_code, _, stderr, calls = _sides("one-bad", [REF, good], FAKE_DOCKER_FAIL_ON=REF)
     assert exit_code == 1
@@ -352,8 +348,7 @@ def test_one_bad_spec_does_not_stop_the_others_from_being_attempted() -> None:
 
 
 def test_the_count_is_the_argument_count_not_the_image_count() -> None:
-    """PRESERVED WART. `$#` counts arguments, so the same ref twice reads as 2.
-    If this ever starts counting pulls, this test goes red first."""
+    """PRESERVED WART. `$#` counts arguments, so the same ref twice reads as 2. If this ever starts counting pulls, this test goes red first."""
     exit_code, _, stderr, calls = _sides("dupes", [REF, REF])
     assert exit_code == 0
     assert calls == ["docker\tpull\t%s" % REF] * 2

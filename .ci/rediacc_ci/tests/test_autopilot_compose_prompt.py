@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.compose_prompt` against its twin
-`.ci/scripts/autopilot/compose-prompt.sh`.
+"""Differential: `rediacc_ci.autopilot.compose_prompt` against its twin `.ci/scripts/autopilot/compose-prompt.sh`.
 
 BESPOKE SUBPROCESS COMPARISON, because this subject's real output is neither stdout nor stderr: it is the FILE named by `--out` plus the `prompt<<HEREDOC` block appended to `$GITHUB_OUTPUT`. Every case here compares five things -- exit code, stdout, stderr, the `--out` bytes, and the `$GITHUB_OUTPUT` bytes -- and it compares the two files as BYTES rather than text, because a prompt
 carries review-thread content written by whoever replied to the thread and a decoder in the test would refuse input the subject passes through untouched.
@@ -7,8 +6,7 @@ carries review-thread content written by whoever replied to the thread and a dec
 THE RANDOM DELIMITER IS NORMALISED, NOT ASSERTED. `compose-prompt.sh` draws a fresh 32-hex-character marker per run on purpose (a fixed marker inside attacker-influenceable text could close the step output early), so two runs cannot produce identical `$GITHUB_OUTPUT` bytes and a byte comparison would be a test that can never pass. The comparison masks the hex and asserts the SHAPE
 separately: the prefix, exactly 32 lowercase hex characters, the same marker on both fence lines, and two runs of the SAME implementation differing. Asserting the value would be asserting that a CSPRNG repeats itself.
 
-TWO REFUSALS DIVERGE IN TEXT AND ARE COMPARED STRUCTURALLY, and both are named in the port's docstring rather than discovered here: a bash `>"$OUT"` redirection failure and (in the parse path) `printf -v`'s identifier error both carry the twin's own path and LINE NUMBER. Exit code, stream and ordering are
-compared exactly; only the text is compared by shape.
+TWO REFUSALS DIVERGE IN TEXT AND ARE COMPARED STRUCTURALLY, and both are named in the port's docstring rather than discovered here: a bash `>"$OUT"` redirection failure and (in the parse path) `printf -v`'s identifier error both carry the twin's own path and LINE NUMBER. Exit code, stream and ordering are compared exactly; only the text is compared by shape.
 
 K=5 LEDGER: `.ci/shadow/w7p6-compose-prompt.observations.jsonl`, recorded
 against a disposable scratch git repository built outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean.
@@ -207,9 +205,7 @@ def test_happy_rounds() -> None:
 
 
 def test_review_round_refuses_without_a_payload() -> None:
-    """Exit 1, the gate's own message, and -- the part a port gets wrong -- the
-    partial `--out` file is still on disk, because the refusal happens after the
-    main block has been written."""
+    """Exit 1, the gate's own message, and -- the part a port gets wrong -- the partial `--out` file is still on disk, because the refusal happens after the main block has been written."""
     for name, payload in (("missing", None), ("empty", b"")):
         exit_code, _, stderr, out_bytes, _ = _sides(
             "review-payload-%s" % name,
@@ -323,8 +319,7 @@ def test_usage_refusals() -> None:
 
 
 def test_out_in_a_nonexistent_directory() -> None:
-    """A redirection failure. Exit 1 on both, text compared by SHAPE: the twin
-    emits a bash diagnostic carrying its own path and line number."""
+    """A redirection failure. Exit 1 on both, text compared by SHAPE: the twin emits a bash diagnostic carrying its own path and line number."""
     argv = [
         "--prompts",
         "prompts",
@@ -370,8 +365,7 @@ def test_github_output_shape() -> None:
 
 
 def test_the_delimiter_is_fresh_per_run() -> None:
-    """CONTROL for the case above: a constant that happened to look like hex
-    would satisfy every shape assertion. Two runs of the PORT must differ."""
+    """CONTROL for the case above: a constant that happened to look like hex would satisfy every shape assertion. Two runs of the PORT must differ."""
     values = {cp.delimiter() for _ in range(8)}
     assert len(values) == 8, "the delimiter repeated inside eight calls: %r" % values
 

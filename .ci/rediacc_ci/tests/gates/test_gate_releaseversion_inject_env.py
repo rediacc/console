@@ -41,8 +41,7 @@ def subject(gate):
 
 
 def run_inject(gate, *args: str, **env: str) -> harness.RunResult:
-    """The streams stay APART: the twin routes stderr into a file for the same
-    reason, because the failure message is what says WHY it refused."""
+    """The streams stay APART: the twin routes stderr into a file for the same reason, because the failure message is what says WHY it refused."""
     return harness.run(["bash", str(subject(gate)), *args], env=env or None, timeout=120)
 
 
@@ -74,8 +73,7 @@ def test_rejects_the_placeholder(gate):
 
 
 def test_rejects_an_empty_version(gate):
-    """THE CONTROL for the hole the original check had: it compared only against
-    the literal "0.0.0-dev", so an empty version was "not 0.0.0-dev" and passed."""
+    """THE CONTROL for the hole the original check had: it compared only against the literal "0.0.0-dev", so an empty version was "not 0.0.0-dev" and passed."""
     result = run_inject(gate, "--version", "", "--strict", "--print")
     gate.assert_exit_code(1, result.rc, "an empty --version must fail under --strict")
     gate.assert_contains(result.err, "empty", "the failure must say the version was empty")
@@ -108,9 +106,7 @@ def test_reads_the_VERSION_env(gate):  # noqa: N802 -- the twin's case name; par
 
 
 def test_empty_resolver_output_is_not_a_version(gate, tmp_path):
-    """THE CONTROL for the second half of the same hole: a resolver that exits 0
-    printing nothing produced an EMPTY resolved version, which --strict accepted.
-    Planted in a fixture because inject-env.sh resolves its sibling by path."""
+    """THE CONTROL for the second half of the same hole: a resolver that exits 0 printing nothing produced an EMPTY resolved version, which --strict accepted. Planted in a fixture because inject-env.sh resolves its sibling by path."""
     version_dir = tmp_path / "version"
     version_dir.mkdir(parents=True, exist_ok=True)
     copy = version_dir / "inject-env.sh"
@@ -136,9 +132,7 @@ def test_empty_resolver_output_is_not_a_version(gate, tmp_path):
 
 
 def test_guard_is_reachable_from_the_release_path(gate, tmp_path):
-    """THE OTHER HALF OF FINDING 8, and the half that made the guard worthless:
-    it had no callers. A --strict that nothing invokes is indistinguishable from
-    no guard at all, which is what shipped for the whole life of the flag."""
+    """THE OTHER HALF OF FINDING 8, and the half that made the guard worthless: it had no callers. A --strict that nothing invokes is indistinguishable from no guard at all, which is what shipped for the whole life of the flag."""
     root = paths.repo_root()
     gate.assert_eq(
         strict_callers(root),
@@ -147,8 +141,7 @@ def test_guard_is_reachable_from_the_release_path(gate, tmp_path):
         % len(STRICT_CALLERS),
     )
 
-    # PROVE THIS COUNT CAN FALL: strip the invocations in a COPY and watch it drop to zero -- the exact state the repo was in before this wave. The copy
-    # lives under tmp_path; the real boundaries are read and never written.
+    # PROVE THIS COUNT CAN FALL: strip the invocations in a COPY and watch it drop to zero -- the exact state the repo was in before this wave. The copy lives under tmp_path; the real boundaries are read and never written.
     for name in STRICT_CALLERS:
         src = root.joinpath(*name.split("/"))
         dest = tmp_path.joinpath(*name.split("/"))

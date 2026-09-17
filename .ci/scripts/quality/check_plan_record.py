@@ -512,9 +512,7 @@ def _prior_record_text(root, rel, current):
 
 
 def candidate_findings(root, rel, text):
-    """[(candidate_id, detail)] -- what a future BLOCKING rung would refuse about
-    this one record. Advisory by construction: the caller records it and does not
-    branch on it."""
+    """[(candidate_id, detail)] -- what a future BLOCKING rung would refuse about this one record. Advisory by construction: the caller records it and does not branch on it."""
     rec = R.parse(text)
     if rec is None:
         return []
@@ -574,8 +572,7 @@ def candidate_findings(root, rel, text):
 
 
 def census_row(root, recs):
-    """One row of the census: what the candidates would refuse across the WHOLE
-    corpus, right now.
+    """One row of the census: what the candidates would refuse across the WHOLE corpus, right now.
 
     `recs` is the gate's own `[(rel, status, lines)]` enumeration. The statuses and the file bytes are RE-READ here rather than taken from the verdict loop, so the two counts `census_append` compares are genuinely two readings.
     """
@@ -609,9 +606,7 @@ def census_row(root, recs):
 
 
 def census_rows(path):
-    """Every well-formed row in one census file. A truncated last line is skipped
-    rather than fatal: the file is appended to by concurrent runs in a shared checkout, and losing a verdict over a half-written byte would be the wrong
-    trade for a log whose whole job is to keep accumulating."""
+    """Every well-formed row in one census file. A truncated last line is skipped rather than fatal: the file is appended to by concurrent runs in a shared checkout, and losing a verdict over a half-written byte would be the wrong trade for a log whose whole job is to keep accumulating."""
     out = []
     try:
         raw = pathlib.Path(path).read_text(encoding="utf-8")
@@ -746,8 +741,7 @@ def census_append(root, row, expect_plans, expect_records):
 
 
 def census_report(root, out=sys.stdout, err=sys.stderr):
-    """Answer, FROM THE ROWS ALONE: has the two-week window elapsed, and what
-    would have been refused across it. 0 green, 1 when there is nothing to read.
+    """Answer, FROM THE ROWS ALONE: has the two-week window elapsed, and what would have been refused across it. 0 green, 1 when there is nothing to read.
 
     The elapsed span is derived from the recorded `ts` values, which is the whole reason a timestamp is on every row. Nothing here consults the clock for anything but "now", and nothing consults anyone's memory of when the census started.
     """
@@ -828,8 +822,7 @@ def _run(cwd, *args):
 
 
 def build_fixture(td):
-    """A tiny repo carrying one plan, one ledger commit, and a `main` to be an
-    ancestor of. Returns (root, rel, record_text).
+    """A tiny repo carrying one plan, one ledger commit, and a `main` to be an ancestor of. Returns (root, rel, record_text).
 
     BUILT BY CONSTRUCTION, not by substituting into a copy of the real tree. `check-control-vacuity.sh` exempts construction for exactly this reason: a fixture assembled from known-bad parts cannot fail to contain the defect, whereas a substitution can silently miss and leave a control that proves the clean case twice.
     """
@@ -905,9 +898,7 @@ def build_fixture(td):
 
 
 def selftest():
-    """Plant ONE defect per rule, require the matching finding, and require the
-    clean record to stay SILENT. The silent case is not a formality: "every fixture reds" is a check that cannot pass, and it is the shape a gate takes
-    on when a refactor breaks its parser."""
+    """Plant ONE defect per rule, require the matching finding, and require the clean record to stay SILENT. The silent case is not a formality: "every fixture reds" is a check that cannot pass, and it is the shape a gate takes on when a refactor breaks its parser."""
     bad = 0
 
     def ck(label, ok, detail=""):

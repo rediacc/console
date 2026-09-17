@@ -157,9 +157,7 @@ def run_gate(gate, root, dirs: str = SCAN_REL) -> harness.RunResult:
 
 
 def test_fires_on_the_prefix_go_deps_probe(gate):
-    """THE CONTROL. Byte-for-byte the probe that shipped before 2026-07-28,
-    recovered with `git show <commit>^:.ci/scripts/quality/check-go-deps.sh`. It spans three physical lines with 2>/dev/null on the first and || true on
-    the third, which is why a line-based scanner cannot see it at all."""
+    """THE CONTROL. Byte-for-byte the probe that shipped before 2026-07-28, recovered with `git show <commit>^:.ci/scripts/quality/check-go-deps.sh`. It spans three physical lines with 2>/dev/null on the first and || true on the third, which is why a line-based scanner cannot see it at all."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         write_case(
@@ -190,11 +188,9 @@ def test_fires_on_the_prefix_go_deps_probe(gate):
 
 
 def test_silent_on_the_fixed_go_deps_probe(gate):
-    """The other half of the control, run against the REAL current file rather
-    than a copy of it. The remediated probe captures the status into
+    """The other half of the control, run against the REAL current file rather than a copy of it. The remediated probe captures the status into
     `status=$?`, keeps stderr in a file, and reports __PROBE_FAILED__ when the
-    module list is empty. None of that may read as a swallowed failure, or the
-    gate punishes the fix it is supposed to reward."""
+    module list is empty. None of that may read as a swallowed failure, or the gate punishes the fix it is supposed to reward."""
     bash = require_gate(gate)
     result = harness.run(
         [bash, os.fspath(GATE)],
@@ -228,8 +224,7 @@ def test_silent_on_the_fixed_go_deps_probe(gate):
 
 
 def test_clean_file_passes(gate):
-    """Baseline. Without it, every silence below could be silence for the wrong
-    reason (a scanner that matches nothing at all)."""
+    """Baseline. Without it, every silence below could be silence for the wrong reason (a scanner that matches nothing at all)."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         write_case(
@@ -266,8 +261,7 @@ def test_capture_with_bare_or_true_fires(gate):
 def test_quoted_capture_fires(gate):
     """The recall bug found during calibration: NAME="$(...)" is the commonest
     spelling in this repo, and the first pattern only matched NAME=$(...).
-    Every quoted capture was invisible, including all five in
-    dependency-inventory.sh."""
+    Every quoted capture was invisible, including all five in dependency-inventory.sh."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         write_case(
@@ -284,11 +278,9 @@ def test_quoted_capture_fires(gate):
 
 
 def test_empty_case_that_exits_zero_fires(gate):
-    """The subtlest true positive, and the shape check-review-comments.sh and
-    check-branch.sh BOTH carried before they were repaired: the author DID test
+    """The subtlest true positive, and the shape check-review-comments.sh and check-branch.sh BOTH carried before they were repaired: the author DID test
     for empty, and then treated empty as a pass. Both now fail closed (see the
-    repairs pinned in test_the_repaired_sites_stay_repaired), so this fixture is the only place the shape still lives -- which is exactly why it is pinned
-    here rather than left to be rediscovered in the wild."""
+    repairs pinned in test_the_repaired_sites_stay_repaired), so this fixture is the only place the shape still lives -- which is exactly why it is pinned here rather than left to be rediscovered in the wild."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         write_case(
@@ -312,8 +304,7 @@ def test_empty_case_that_exits_zero_fires(gate):
 
 
 def test_multiline_continuation_is_joined(gate):
-    """Proves the logical-line folding independently of the go-deps case: the
-    capture and its || true are three physical lines apart."""
+    """Proves the logical-line folding independently of the go-deps case: the capture and its || true are three physical lines apart."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         write_case(
@@ -371,8 +362,7 @@ def test_stderr_folded_in_is_silent(gate):
 
 
 def test_answer_is_exit_commands_are_silent(gate):
-    """grep and command -v exit non-zero to MEAN "not found". Flagging them cost
-    8 false positives on the real tree during calibration."""
+    """grep and command -v exit non-zero to MEAN "not found". Flagging them cost 8 false positives on the real tree during calibration."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         write_case(
@@ -389,9 +379,7 @@ def test_answer_is_exit_commands_are_silent(gate):
 
 
 def test_bare_command_without_capture_is_silent(gate):
-    """Best-effort cleanup is none of this gate's business, and it is by far the
-    most common `|| true` in the repo. Flagging it is how this class of lint
-    becomes a wall of noise."""
+    """Best-effort cleanup is none of this gate's business, and it is by far the most common `|| true` in the repo. Flagging it is how this class of lint becomes a wall of noise."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         write_case(
@@ -428,9 +416,7 @@ def test_reported_empty_case_is_silent(gate):
 
 
 def test_escalation_in_the_next_function_does_not_count(gate):
-    """Found during calibration: the lookahead window ran past the closing brace,
-    so a log_error in the NEXT function counted as handling for this one. That silently cleared r2_count_objects in lib/common.sh, which is a genuine
-    finding AND the helper the sibling gate recommends as a remedy."""
+    """Found during calibration: the lookahead window ran past the closing brace, so a log_error in the NEXT function counted as handling for this one. That silently cleared r2_count_objects in lib/common.sh, which is a genuine finding AND the helper the sibling gate recommends as a remedy."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         write_case(
@@ -487,9 +473,7 @@ def test_waiver_suppresses(gate):
 
 
 def test_low_effort_waiver_is_rejected(gate):
-    """PROVE THE INSTRUMENT. The header claims the waiver is held to the BLOCKER
-    bar. Without this case that claim could be decorative and nothing would say
-    so."""
+    """PROVE THE INSTRUMENT. The header claims the waiver is held to the BLOCKER bar. Without this case that claim could be decorative and nothing would say so."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         write_case(
@@ -511,8 +495,7 @@ def test_low_effort_waiver_is_rejected(gate):
 
 
 def test_waiver_must_be_adjacent(gate):
-    """A waiver that drifts away from its line starts excusing whatever moved
-    underneath it, which nobody re-reads."""
+    """A waiver that drifts away from its line starts excusing whatever moved underneath it, which nobody re-reads."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         write_case(
@@ -536,9 +519,7 @@ def test_waiver_must_be_adjacent(gate):
 
 
 def test_empty_scope_is_blind_not_clean(gate):
-    """Anti-vacuity. A gate that scans zero files reports clean forever. This is
-    the property the repo's test-gate-anti-vacuity.sh harness checks for other validators; that harness cannot check this one, because its fixture COPIES .ci/scripts into the empty tree, so this gate always has input there. The
-    seam makes the same property testable directly."""
+    """Anti-vacuity. A gate that scans zero files reports clean forever. This is the property the repo's test-gate-anti-vacuity.sh harness checks for other validators; that harness cannot check this one, because its fixture COPIES .ci/scripts into the empty tree, so this gate always has input there. The seam makes the same property testable directly."""
     with harness.temp_dir() as d:
         tree = d / "tree"
         (tree / SCAN_REL).mkdir(parents=True, exist_ok=True)
@@ -554,8 +535,7 @@ def test_empty_scope_is_blind_not_clean(gate):
 
 
 def test_dead_scanner_is_not_a_clean_scan(gate):
-    """THE GATE'S OWN FIRST BUG, pinned. Its awk program died on all 42 files
-    (backslash escapes are consumed when awk assigns a -v value, so every regex became "Unmatched ("), and it printed "OK: no gate captures a probe..." and exited 0. The empty output of a dead scanner is identical to the empty output of a clean file, which is precisely the defect this gate exists to
+    """THE GATE'S OWN FIRST BUG, pinned. Its awk program died on all 42 files (backslash escapes are consumed when awk assigns a -v value, so every regex became "Unmatched ("), and it printed "OK: no gate captures a probe..." and exited 0. The empty output of a dead scanner is identical to the empty output of a clean file, which is precisely the defect this gate exists to
     police."""
     with harness.temp_dir() as d:
         tree = d / "tree"
@@ -578,8 +558,7 @@ def test_dead_scanner_is_not_a_clean_scan(gate):
 
 
 def test_real_tree_is_clean(gate):
-    """THE RATCHET. This started at 16 findings, all triaged by hand: 14 gates
-    that could pass vacuously when their probe failed, and 2 that failed safe. All 16 were fixed rather than waived, so the live count is now ZERO and stays that way.
+    """THE RATCHET. This started at 16 findings, all triaged by hand: 14 gates that could pass vacuously when their probe failed, and 2 that failed safe. All 16 were fixed rather than waived, so the live count is now ZERO and stays that way.
 
     Zero is the only bound worth pinning here. A range would let the class regrow one call site at a time, which is exactly how it reached 16: nobody was counting. If this case fails, a new capture is throwing away a probe failure. Fix it or waive it with a real reason, and do not relax this assertion to make the failure go away.
     """
@@ -600,8 +579,7 @@ def test_real_tree_is_clean(gate):
 
 
 def test_the_repaired_sites_stay_repaired(gate):
-    """Anti-vacuity for the case above: "0 findings" is also what a gate that
-    stopped scanning would report. Assert that the specific repairs are still present in the real files, so a regression shows up as a failure here rather than as a suspiciously quiet clean run.
+    """Anti-vacuity for the case above: "0 findings" is also what a gate that stopped scanning would report. Assert that the specific repairs are still present in the real files, so a regression shows up as a failure here rather than as a suspiciously quiet clean run.
 
     A SUBSTRING TEST AND NOT `assert_contains`: these needles are searched in WHOLE FILES, and a failing assert_contains would dump the entire file into the test output, burying the one line that matters. The bash twin reaches
     for `grep -qF` for the same reason.
@@ -622,9 +600,7 @@ def test_the_repaired_sites_stay_repaired(gate):
 
 
 def test_scope_is_gates_only(gate):
-    """The scope is the justification for the whole design: only a gate can turn
-    a swallowed failure into a false GREEN that lets a merge through. If the default scope silently widened to the whole repo, the false-positive budget
-    calibrated above would be meaningless."""
+    """The scope is the justification for the whole design: only a gate can turn a swallowed failure into a false GREEN that lets a merge through. If the default scope silently widened to the whole repo, the false-positive budget calibrated above would be meaningless."""
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE_REL)
     body = "\n".join(

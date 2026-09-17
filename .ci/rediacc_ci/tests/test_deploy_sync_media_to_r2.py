@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.sync_media_to_r2` against its twin
-`.ci/scripts/deploy/sync-media-to-r2.sh`.
+"""Differential: `rediacc_ci.deploy.sync_media_to_r2` against its twin `.ci/scripts/deploy/sync-media-to-r2.sh`.
 
 A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches Cloudflare R2: the fake logs its exact argv, answers from the environment, and the only real credential name in the file is an environment KEY, never a value. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
 separate, achievable piece of work. This is that piece.
@@ -204,9 +203,7 @@ CLOSING = (
 
 
 def test_the_default_run_uploads_three_prefixes_in_order(tmp_path: pathlib.Path) -> None:
-    """THE WHOLE CONTRACT, PINNED AGAINST LITERAL BYTES rather than against the
-    port's own helpers, so a change in both would still be caught. Three calls, in the twin's order, each carrying the endpoint, the one-year
-    `Cache-Control` as a SINGLE argument, and `--no-progress`."""
+    """THE WHOLE CONTRACT, PINNED AGAINST LITERAL BYTES rather than against the port's own helpers, so a change in both would still be caught. Three calls, in the twin's order, each carrying the endpoint, the one-year `Cache-Control` as a SINGLE argument, and `--no-progress`."""
     old, new, old_calls, new_calls = run_both(tmp_path, [])
     tree = _tree(tmp_path)
     assert old.returncode == 0
@@ -240,9 +237,7 @@ def test_the_default_run_uploads_three_prefixes_in_order(tmp_path: pathlib.Path)
 
 
 def test_the_closing_recipe_does_not_interpolate_the_endpoint(tmp_path: pathlib.Path) -> None:
-    """`\\$CLOUDFLARE_R2_MEDIA_ENDPOINT` is an ESCAPED dollar inside the twin's
-    double quotes, so the closing line hands the reader a variable to paste, not the endpoint this run used. A port that interpolated it would leak the
-    endpoint into a log that is routinely shared."""
+    """`\\$CLOUDFLARE_R2_MEDIA_ENDPOINT` is an ESCAPED dollar inside the twin's double quotes, so the closing line hands the reader a variable to paste, not the endpoint this run used. A port that interpolated it would leak the endpoint into a log that is routinely shared."""
     old, new, _oc, _nc = run_both(tmp_path, ["--tutorials-only"])
     assert "--endpoint-url $CLOUDFLARE_R2_MEDIA_ENDPOINT" in old.stderr
     assert ENDPOINT not in old.stderr.split("Sync complete")[1]
@@ -274,9 +269,7 @@ def test_delete_warns_and_appends_delete_last(tmp_path: pathlib.Path) -> None:
 def test_dry_run_and_delete_keep_their_order_in_both_the_log_and_the_argv(
     tmp_path: pathlib.Path,
 ) -> None:
-    """TWO ORDERINGS AT ONCE, and neither is arbitrary. On stderr the dry-run
-    line precedes the delete warning because the twin's two `if` blocks are in that order; in the argv `--dryrun` precedes `--delete` for the same reason. A port that emitted either pair the other way round would be reporting a
-    different program."""
+    """TWO ORDERINGS AT ONCE, and neither is arbitrary. On stderr the dry-run line precedes the delete warning because the twin's two `if` blocks are in that order; in the argv `--dryrun` precedes `--delete` for the same reason. A port that emitted either pair the other way round would be reporting a different program."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--delete", "--dry-run"])
     assert old.returncode == 0
     assert old.stderr.startswith(
@@ -309,9 +302,7 @@ def test_audio_only_uploads_one_prefix(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_only_flags_are_not_additive_and_the_last_one_wins(tmp_path: pathlib.Path) -> None:
-    """Each `--*-only` arm assigns ALL THREE booleans, so the flags overwrite
-    rather than accumulate. A port that OR-ed them would upload two prefixes
-    where the twin uploads one, and would still print a plausible log."""
+    """Each `--*-only` arm assigns ALL THREE booleans, so the flags overwrite rather than accumulate. A port that OR-ed them would upload two prefixes where the twin uploads one, and would still print a plausible log."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--audio-only", "--solutions-only"])
     assert len(old_calls) == 1, "the two flags accumulated instead of overwriting"
     assert "s3://rediacc-www-media/videos/" in old_calls[0]
@@ -355,9 +346,7 @@ def test_an_empty_access_key_is_refused(tmp_path: pathlib.Path) -> None:
 def test_missing_aws_is_refused_after_the_access_key_and_before_the_secret(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE ORDER OF THE REFUSALS IS THE CONTRACT. Driven with the secret ALSO
-    unset, so the only thing that decides which message appears is the order:
-    `require_cmd aws` sits above the `export`."""
+    """THE ORDER OF THE REFUSALS IS THE CONTRACT. Driven with the secret ALSO unset, so the only thing that decides which message appears is the order: `require_cmd aws` sits above the `export`."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--audio-only"],
@@ -370,8 +359,7 @@ def test_missing_aws_is_refused_after_the_access_key_and_before_the_secret(
 
 
 def test_defect_require_var_checks_only_its_first_argument(tmp_path: pathlib.Path) -> None:
-    """THE DEFECT, PINNED, and it is the shape of the 2026-08-28 incident this
-    repository's pre-bash hook still warns about. The twin passes THREE names to
+    """THE DEFECT, PINNED, and it is the shape of the 2026-08-28 incident this repository's pre-bash hook still warns about. The twin passes THREE names to
     `require_var` and `common.sh:131-137` reads `local var_name="$1"`, so two
     documented-as-required credentials are never checked. `set -u` catches them only when UNSET, so an EXPORTED-EMPTY secret and an EXPORTED-EMPTY endpoint sail through: `aws` is handed `--endpoint-url` followed by the empty string, the closing recipe prints, and the run exits 0.
 
@@ -418,8 +406,7 @@ def test_divergence_set_u_names_the_bash_file_and_line(tmp_path: pathlib.Path) -
 
 
 def test_an_unset_endpoint_is_reported_after_the_secret(tmp_path: pathlib.Path) -> None:
-    """The secret is expanded three lines above the endpoint, so with BOTH unset
-    the secret is the one named."""
+    """The secret is expanded three lines above the endpoint, so with BOTH unset the secret is the one named."""
     tree = _tree(tmp_path)
     for subject, expect_prefix in ((TWIN_REL, True), (PORT_REL, False)):
         _layout(tree, ALL_DIRS)
@@ -443,8 +430,7 @@ def test_an_unset_endpoint_is_reported_after_the_secret(tmp_path: pathlib.Path) 
 def test_a_failing_aws_ends_the_run_with_its_status_and_no_further_legs(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`set -e` on the unguarded `aws s3 sync`: the first failure is the last
-    call, the closing recipe never prints, and the script's status is aws's."""
+    """`set -e` on the unguarded `aws s3 sync`: the first failure is the last call, the closing recipe never prints, and the script's status is aws's."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_AWS_RC="4")
     assert old.returncode == 4
     assert len(old_calls) == 1, "the run continued past a failed leg"
@@ -455,9 +441,7 @@ def test_a_failing_aws_ends_the_run_with_its_status_and_no_further_legs(
 def test_a_missing_directory_is_a_warning_and_the_other_legs_still_run(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`sync_dir` answers a missing local directory with `return 0`, so one
-    absent prefix does not stop the other two. The warning names the LOCAL path,
-    which is the only place the reader learns which leg was skipped."""
+    """`sync_dir` answers a missing local directory with `return 0`, so one absent prefix does not stop the other two. The warning names the LOCAL path, which is the only place the reader learns which leg was skipped."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], dirs=(TUTORIALS_DIR, AUDIO_DIR))
     tree = _tree(tmp_path)
     assert old.returncode == 0
@@ -488,9 +472,7 @@ def test_defect_a_run_that_uploads_nothing_still_says_complete(tmp_path: pathlib
 def test_defect_a_file_where_a_directory_belongs_is_reported_as_absent(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`[[ ! -d ]]` cannot tell a regular file from an absent path, so a
-    half-finished write at `packages/www/public/assets/videos` produces `(not present locally)`. Fails closed, with a diagnosis that names the wrong
-    thing; `os.path.isdir` reproduces it exactly."""
+    """`[[ ! -d ]]` cannot tell a regular file from an absent path, so a half-finished write at `packages/www/public/assets/videos` produces `(not present locally)`. Fails closed, with a diagnosis that names the wrong thing; `os.path.isdir` reproduces it exactly."""
     tree = _tree(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
         _layout(tree, ())
@@ -504,8 +486,7 @@ def test_defect_a_file_where_a_directory_belongs_is_reported_as_absent(
 
 
 def test_a_symlink_to_a_directory_is_synced_not_skipped(tmp_path: pathlib.Path) -> None:
-    """THE NEGATIVE HALF OF THE PREVIOUS CONTROL. `[[ -d ]]` and `os.path.isdir`
-    both FOLLOW symlinks, so a checkout whose media directory is a symlink to a scratch disk is uploaded rather than silently skipped. Without this, a port
+    """THE NEGATIVE HALF OF THE PREVIOUS CONTROL. `[[ -d ]]` and `os.path.isdir` both FOLLOW symlinks, so a checkout whose media directory is a symlink to a scratch disk is uploaded rather than silently skipped. Without this, a port
     that answered `Path.is_dir(follow_symlinks=False)` would pass every other
     test in this file."""
     tree = _tree(tmp_path)
@@ -522,8 +503,7 @@ def test_a_symlink_to_a_directory_is_synced_not_skipped(tmp_path: pathlib.Path) 
 
 
 def test_pure_helpers() -> None:
-    """The exported helpers, driven directly. Both directions on the parse loop:
-    something that must be refused, and flag combinations that must NOT be."""
+    """The exported helpers, driven directly. Both directions on the parse loop: something that must be refused, and flag combinations that must NOT be."""
     assert port.BUCKET == "rediacc-www-media"
     assert port.CACHE_CONTROL == "public, max-age=31536000"
     assert port.TUTORIALS == ("packages/www/public/assets/tutorials/video/", "tutorials/video/")
@@ -576,8 +556,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on `CACHE_CONTROL` -- the one value that decides how
-    long media.rediacc.com serves an object before revalidating, and whose corruption leaves both streams, the exit code and the call COUNT completely unchanged while every uploaded object gets the wrong header. Driven red, then the source is confirmed byte-identical and green.
+    """ANTI-VACUITY, planted on `CACHE_CONTROL` -- the one value that decides how long media.rediacc.com serves an object before revalidating, and whose corruption leaves both streams, the exit code and the call COUNT completely unchanged while every uploaded object gets the wrong header. Driven red, then the source is confirmed byte-identical and green.
     """
     original = (ROOT / PORT_REL).read_text(encoding="utf-8")
     mutated = original.replace(

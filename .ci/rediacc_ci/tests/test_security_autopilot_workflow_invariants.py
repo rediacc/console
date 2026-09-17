@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.security.autopilot_workflow_invariants` against its
-twin `.ci/scripts/security/check-autopilot-workflow-invariants.sh`.
+"""Differential: `rediacc_ci.security.autopilot_workflow_invariants` against its twin `.ci/scripts/security/check-autopilot-workflow-invariants.sh`.
 
 THE COMPARISON IS BYTE FOR BYTE ON BOTH STREAMS, with exactly one exemption: `test_two_token_jobs_disagree_only_on_order`, which pins the twin's `for (j in array)` non-determinism rather than pretending it away. Every other case, the real workflow included, is compared with nothing elided.
 
@@ -384,8 +383,7 @@ def test_the_model_round_allowlist_missing_a_tool(tmp_path: pathlib.Path) -> Non
 def test_a_tool_named_outside_the_settings_block_does_not_count(
     tmp_path: pathlib.Path,
 ) -> None:
-    """Scoped to the block, not the file: `grep -qF '"Edit"'` over the whole file
-    would be satisfied by a mention in a comment three steps away."""
+    """Scoped to the block, not the file: `grep -qF '"Edit"'` over the whole file would be satisfied by a mention in a comment three steps away."""
     body = mutate(BASELINE, '"Edit", ', "")
     body = mutate(
         body, "      - name: Push\n", '      # "Edit" is mentioned here\n      - name: Push\n'

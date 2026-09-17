@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.housekeeping.cleanup_cf_preview` against its twin
-`.ci/scripts/housekeeping/cleanup-cf-preview.sh`.
+"""Differential: `rediacc_ci.housekeeping.cleanup_cf_preview` against its twin `.ci/scripts/housekeeping/cleanup-cf-preview.sh`.
 
 A RECORDING FAKE `curl` ON A SCRATCH PATH, answering from the REQUEST SHAPE. Nothing here reaches Cloudflare. The fake routes on the URL -- a `/deployments/` segment is a delete, anything else is a listing -- and every case pins a fixture account id and token, so even a bypassed fake would not name a real account.
 
@@ -11,9 +10,7 @@ twin.
 THE THREE jq FAILURE MODES ARE DRIVEN, because the port shells out to jq rather than parsing JSON in Python precisely so that they agree: a non-JSON body and a `result`-less body both kill the run with jq's own message and exit 5, while an EMPTY body does not and takes the ordinary warning branch. A port using `json.loads` would pass every happy-path test here and differ on all
 three.
 
-THE VACUITY DEFECT IS PINNED. `test_defect_a_failed_listing_reads_as_nothing_to_do` drives a curl that cannot reach the host and asserts the twin exits 0 saying "No preview deployments to clean up". Reproduced because agreement with the live
-twin is the deliverable; repaired, the test goes red and names the port that
-must follow.
+THE VACUITY DEFECT IS PINNED. `test_defect_a_failed_listing_reads_as_nothing_to_do` drives a curl that cannot reach the host and asserts the twin exits 0 saying "No preview deployments to clean up". Reproduced because agreement with the live twin is the deliverable; repaired, the test goes red and names the port that must follow.
 """
 
 from __future__ import annotations
@@ -192,8 +189,7 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
 
 
 def list_call(page: int) -> str:
-    """The recorded line for one listing request. `[1:]` drops the argv[0]
-    `curl`, which the fake writes itself as the log's own first field."""
+    """The recorded line for one listing request. `[1:]` drops the argv[0] `curl`, which the fake writes itself as the log's own first field."""
     return "curl\t" + "\t".join(
         port.curl_argv("GET", port.deployments_path(ACCOUNT, page), BEARER)[1:]
     )
@@ -206,9 +202,7 @@ def delete_call(dep_id: str) -> str:
 
 
 def test_the_request_shape_is_asserted_in_full(tmp_path: pathlib.Path) -> None:
-    """THE REQUESTS, PINNED AGAINST THE LITERAL BYTES rather than against the
-    port's own helpers, so that a change in both would still be caught. Method,
-    URL, and BOTH headers, for both endpoints."""
+    """THE REQUESTS, PINNED AGAINST THE LITERAL BYTES rather than against the port's own helpers, so that a change in both would still be caught. Method, URL, and BOTH headers, for both endpoints."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--branch", "feature-x"])
     assert old.returncode == 0
     assert old_calls == [
@@ -231,8 +225,7 @@ def test_the_request_shape_is_asserted_in_full(tmp_path: pathlib.Path) -> None:
 
 
 def test_only_the_named_branch_is_deleted(tmp_path: pathlib.Path) -> None:
-    """THE ONE REFUSAL. The listing carries deployments from OTHER branches and
-    they must never be touched; the filter is
+    """THE ONE REFUSAL. The listing carries deployments from OTHER branches and they must never be touched; the filter is
     `.deployment_trigger.metadata.branch == $branch`."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--branch", "feature-x"], FAKE_PER_PAGE="6"
@@ -273,8 +266,7 @@ def test_dry_run_makes_no_delete_request_at_all(tmp_path: pathlib.Path) -> None:
 
 
 def test_dry_run_false_is_not_a_dry_run(tmp_path: pathlib.Path) -> None:
-    """parse_args quirk 2: `--dry-run false` stores the STRING `false`, and the
-    comparison is against the literal `true`. So this really deletes."""
+    """parse_args quirk 2: `--dry-run false` stores the STRING `false`, and the comparison is against the literal `true`. So this really deletes."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--branch", "feature-x", "--dry-run", "false"]
     )
@@ -286,8 +278,7 @@ def test_dry_run_false_is_not_a_dry_run(tmp_path: pathlib.Path) -> None:
 
 def test_pagination_follows_until_a_short_page(tmp_path: pathlib.Path) -> None:
     """`per_page=25` and `[[ "$all_results" -lt 25 ]]`. A full page means there
-    may be more; a short one ends the sweep. Three listings here: two full, one
-    short."""
+    may be more; a short one ends the sweep. Three listings here: two full, one short."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--branch", "feature-x"], FAKE_PER_PAGE="25", FAKE_LAST_PAGE="2"
     )
@@ -301,9 +292,7 @@ def test_pagination_follows_until_a_short_page(tmp_path: pathlib.Path) -> None:
 def test_a_refused_delete_is_reported_and_the_sweep_continues(
     tmp_path: pathlib.Path,
 ) -> None:
-    """Cloudflare refuses to delete the LATEST deployment of a branch. That is
-    expected, not fatal: refusing over it would leave every older preview
-    behind."""
+    """Cloudflare refuses to delete the LATEST deployment of a branch. That is expected, not fatal: refusing over it would leave every older preview behind."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--branch", "feature-x"],
@@ -322,8 +311,7 @@ def test_a_refused_delete_is_reported_and_the_sweep_continues(
 def test_a_delete_error_with_no_errors_array_says_unknown_error(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`.errors[0].message // "unknown error"`. Indexing a missing key yields
-    null in jq rather than raising, so this is a message and not a crash."""
+    """`.errors[0].message // "unknown error"`. Indexing a missing key yields null in jq rather than raising, so this is a message and not a crash."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--branch", "feature-x"],
@@ -341,8 +329,7 @@ def test_a_successful_delete_is_silent_unless_debug_is_true(
     tmp_path: pathlib.Path,
 ) -> None:
     """`log_debug` is gated on `DEBUG=true` EXACTLY -- not on any truthy value.
-    Both directions are driven, because a port that logged unconditionally would
-    look fine to a reader and change the workflow log."""
+    Both directions are driven, because a port that logged unconditionally would look fine to a reader and change the workflow log."""
     quiet_old, quiet_new, qoc, qnc = run_both(tmp_path, ["--branch", "feature-x"])
     assert "Deleted: dep-1-0" not in quiet_old.stderr
     _assert_agree(quiet_old, quiet_new, "debug-off", qoc, qnc)
@@ -392,8 +379,7 @@ def test_missing_curl_is_refused_before_missing_jq(tmp_path: pathlib.Path) -> No
 
 
 def test_missing_jq_is_refused(tmp_path: pathlib.Path) -> None:
-    """The port shells out to jq for the same reason the twin does, so `jq` is a
-    real prerequisite of BOTH and this refusal has to agree."""
+    """The port shells out to jq for the same reason the twin does, so `jq` is a real prerequisite of BOTH and this refusal has to agree."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--branch", "b"], drop="jq")
     assert old.returncode == 1
     assert old.stderr == "✗ Required command 'jq' is not available\n"
@@ -421,9 +407,7 @@ def test_defect_a_failed_listing_reads_as_nothing_to_do(tmp_path: pathlib.Path) 
 
 
 def test_an_unsuccessful_listing_body_is_the_same_green(tmp_path: pathlib.Path) -> None:
-    """A 200 whose body says `success: false` -- an auth failure, say -- takes
-    the identical path. Driven separately from the transport failure because the
-    two reach the branch by different routes."""
+    """A 200 whose body says `success: false` -- an auth failure, say -- takes the identical path. Driven separately from the transport failure because the two reach the branch by different routes."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--branch", "feature-x"], FAKE_LIST_UNSUCCESSFUL="1"
     )
@@ -436,9 +420,7 @@ def test_an_unsuccessful_listing_body_is_the_same_green(tmp_path: pathlib.Path) 
 def test_a_non_json_body_kills_the_run_with_jqs_own_message(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE CASE A `json.loads` PORT WOULD GET WRONG. An HTML error page reaches
-    an unguarded `jq`, whose parse error goes to stderr and whose exit status passes through `set -e`. Both the message and the status must agree, which is
-    why the port runs jq rather than parsing in Python."""
+    """THE CASE A `json.loads` PORT WOULD GET WRONG. An HTML error page reaches an unguarded `jq`, whose parse error goes to stderr and whose exit status passes through `set -e`. Both the message and the status must agree, which is why the port runs jq rather than parsing in Python."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--branch", "feature-x"], FAKE_CURL_BODY="<html>504 Gateway Timeout</html>\n"
     )
@@ -451,9 +433,7 @@ def test_a_non_json_body_kills_the_run_with_jqs_own_message(
 def test_a_result_less_body_dies_on_the_filter_not_on_the_length(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`[.result[] | ...]` is evaluated BEFORE `.result | length`, so a body with
-    `success: true` and no `result` key dies with "Cannot iterate over null"
-    rather than reporting zero. Order matters and is asserted."""
+    """`[.result[] | ...]` is evaluated BEFORE `.result | length`, so a body with `success: true` and no `result` key dies with "Cannot iterate over null" rather than reporting zero. Order matters and is asserted."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--branch", "feature-x"], FAKE_CURL_BODY='{"success":true}\n'
     )
@@ -463,9 +443,7 @@ def test_a_result_less_body_dies_on_the_filter_not_on_the_length(
 
 
 def test_an_empty_body_does_not_die(tmp_path: pathlib.Path) -> None:
-    """The third jq shape: EMPTY input makes `jq -r '.success // false'` emit
-    nothing at all and exit 0, so `success` is the empty string and the ordinary
-    warning branch runs. Not a parse error, and not a pass."""
+    """The third jq shape: EMPTY input makes `jq -r '.success // false'` emit nothing at all and exit 0, so `success` is the empty string and the ordinary warning branch runs. Not a parse error, and not a pass."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--branch", "feature-x"], FAKE_CURL_BODY=""
     )
@@ -478,9 +456,7 @@ def test_an_empty_body_does_not_die(tmp_path: pathlib.Path) -> None:
 def test_a_branch_name_with_a_space_is_carried_through_the_filter(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`--arg branch "$BRANCH"` passes the name as DATA to jq, so a branch name
-    is never a jq program fragment. Driven with a space because parse_args
-    consumes the next token whole."""
+    """`--arg branch "$BRANCH"` passes the name as DATA to jq, so a branch name is never a jq program fragment. Driven with a space because parse_args consumes the next token whole."""
     body = (
         '{"success":true,"result":[{"id":"dep-space","created_on":"2026-02-02",'
         '"deployment_trigger":{"metadata":{"branch":"odd name"}}}]}\n'
@@ -497,8 +473,7 @@ def test_divergence_common_sh_interprets_backslash_escapes_in_the_cf_error(
     tmp_path: pathlib.Path,
 ) -> None:
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. `Could not delete <id>: <error_msg>` is the one message that interpolates remote text, and common.sh logs through `echo -e`.
-    `rediacc_ci.log` formats the message as data (see its module docstring)."""
+    "FIXED" BY ACCIDENT. `Could not delete <id>: <error_msg>` is the one message that interpolates remote text, and common.sh logs through `echo -e`. `rediacc_ci.log` formats the message as data (see its module docstring)."""
     old, new, _oc, _nc = run_both(
         tmp_path,
         ["--branch", "feature-x"],
@@ -537,8 +512,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the branch filter -- the one refusal in the
-    script, and the one whose omission deletes other branches' live previews
+    """ANTI-VACUITY, planted on the branch filter -- the one refusal in the script, and the one whose omission deletes other branches' live previews
     while printing a bigger, entirely plausible tally. Driven red, then the
     source is confirmed byte-identical and green.
     """

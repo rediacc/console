@@ -5,9 +5,7 @@ WHY THIS EXISTS, and it is a regression test for a build that broke with no comm
 
     npm error Cannot read properties of null (reading 'edgesOut')
 
-an arborist crash inside #loadPeerSet while walking vitest 4's peer graph. It failed in CI (job 100832669673) and reproduced identically on a laptop. Nothing in this repo
-had changed; a package published that morning had. The stage resolved its whole
-dependency tree live from the registry on every build, so a stranger's publish was enough.
+an arborist crash inside #loadPeerSet while walking vitest 4's peer graph. It failed in CI (job 100832669673) and reproduced identically on a laptop. Nothing in this repo had changed; a package published that morning had. The stage resolved its whole dependency tree live from the registry on every build, so a stranger's publish was enough.
 
 THE RULE. Every `npm install` / `npm i` / `npm add` inside a tracked Dockerfile must name a version for each package, or install from a lockfile. Concretely:
 
@@ -146,9 +144,8 @@ FROM_RE = re.compile(r"^\s*FROM\b", re.IGNORECASE)
 def findings_for(text: str, kind: str = "dockerfile") -> tuple[list[tuple[str, str]], int]:
     """([(line, why)], number of npm-install lines seen) for one Dockerfile.
 
-    A bare `npm install` with no package list is judged on whether a LOCKFILE reached THIS STAGE. Per-stage, not per-file, and that is not pedantry -- it is the exact false negative this gate nearly shipped with. private/account/Dockerfile's FIRST
-    stage was fixed on 2026-09-04 to copy `package*.json` and run `npm ci`; a
-    whole-file scan then read that one COPY as forgiveness for the two LATER stages, which still copy `package.json` alone and still re-resolve their trees live. The gate written to catch tonight's break would have reported tonight's break clean.
+    A bare `npm install` with no package list is judged on whether a LOCKFILE reached THIS STAGE. Per-stage, not per-file, and that is not pedantry -- it is the exact false negative this gate nearly shipped with. private/account/Dockerfile's FIRST stage was fixed on 2026-09-04 to copy `package*.json` and run `npm ci`; a whole-file scan then read that one COPY as forgiveness for the
+    two LATER stages, which still copy `package.json` alone and still re-resolve their trees live. The gate written to catch tonight's break would have reported tonight's break clean.
 
     The count is returned so the caller can refuse a verdict when NOTHING was inspected: "no Dockerfile installs anything" is what a broken scan looks like.
     """

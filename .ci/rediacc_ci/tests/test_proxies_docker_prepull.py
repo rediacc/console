@@ -1,7 +1,6 @@
 """`rediacc_ci.proxies.docker_prepull` against its bash twin.
 
-Sibling of `test_proxies_cli_manifest.py`; see that file for why the two
-invocations are compared byte-for-byte rather than as a finding set (this proxy's own output carries no timestamps, tmp paths or PIDs either). This one NEEDS a reachable docker daemon and a reachable public registry -- both proxies exit 77 (cannot-run, not a verdict) without them, and this test would
+Sibling of `test_proxies_cli_manifest.py`; see that file for why the two invocations are compared byte-for-byte rather than as a finding set (this proxy's own output carries no timestamps, tmp paths or PIDs either). This one NEEDS a reachable docker daemon and a reachable public registry -- both proxies exit 77 (cannot-run, not a verdict) without them, and this test would
 then assert 77 == 77 rather than proving anything about the port, so it is
 skipped in that case exactly as a developer's local run would be.
 

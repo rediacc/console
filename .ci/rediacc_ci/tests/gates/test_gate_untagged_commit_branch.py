@@ -218,9 +218,7 @@ def test_mid_rebase_the_branch_is_recovered_from_head_name(gate):
 
 
 def test_the_guard_is_reachable_through_the_dispatcher(gate):
-    """PORT-ONLY. Every case above drives `dispatch.py <name>`; if that name were
-    gone the dispatcher would exit non-zero for a reason unrelated to branches, and
-    the two cases expecting a non-zero exit would pass for the wrong reason."""
+    """PORT-ONLY. Every case above drives `dispatch.py <name>`; if that name were gone the dispatcher would exit non-zero for a reason unrelated to branches, and the two cases expecting a non-zero exit would pass for the wrong reason."""
     gate.log_test("the dispatcher really knows this guard by name")
     if not DISPATCH.is_file():
         gate.log_fail("the hook dispatcher is missing: %s" % paths.relative_to_root(DISPATCH))

@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/version/inject_env.py` against its twin
-`.ci/scripts/version/inject-env.sh`.
+"""Differential: `.ci/rediacc_ci/version/inject_env.py` against its twin `.ci/scripts/version/inject-env.sh`.
 
 FOUR OBSERVABLES, NOT ONE, because this script's happy path exits 0 in every
 case it has and comparing exit codes alone would compare almost nothing:
@@ -299,8 +298,7 @@ def test_exported_set_port_and_twin_agree(tmp_path, fixture_kw, argv, env_extra)
 
 
 def test_the_resolver_stub_is_actually_reached(tmp_path):
-    """ANTI-VACUITY. Every fallback case above is worthless if neither subject
-    ever ran the resolver -- they would both have taken the same shortcut."""
+    """ANTI-VACUITY. Every fallback case above is worthless if neither subject ever ran the resolver -- they would both have taken the same shortcut."""
     for subject, runner in ((TWIN_REL, _cli_twin), (PORT_REL, _cli_port)):
         root = _fixture(tmp_path / ("v-%s" % subject.name))
         code, out, err = runner(root, ("--print",), {})
@@ -312,9 +310,7 @@ def test_the_resolver_stub_is_actually_reached(tmp_path):
 
 
 def test_an_override_short_circuits_the_resolver(tmp_path):
-    """CONTROL for the case above, in the other direction: with `--version` or
-    `$VERSION` set, the resolver must NOT be consulted. A port that always resolved would pass every comparison in this file while spawning a git
-    process on the release path for a version it was handed."""
+    """CONTROL for the case above, in the other direction: with `--version` or `$VERSION` set, the resolver must NOT be consulted. A port that always resolved would pass every comparison in this file while spawning a git process on the release path for a version it was handed."""
     for argv, env_extra in ((("--version", "9.9.9"), {}), (("--print",), {"VERSION": "7.7.7"})):
         for subject, runner in ((TWIN_REL, _cli_twin), (PORT_REL, _cli_port)):
             root = _fixture(tmp_path / ("c-%s-%s" % (subject.name, len(env_extra))))

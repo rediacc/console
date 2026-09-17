@@ -1,8 +1,7 @@
 """`rediacc_ci.quality.toolchain_env_dockerfile_sync` against its three extractors.
 
-WHY A DIFFERENTIAL FOR TWO OF THEM AND NOT THE THIRD. `env_value` and `arg_value` are shell pipelines (`grep | head -1 | cut` and `grep -oP ... \\K`)
-whose edges are decided by the tools; they are run and compared. `engines_node`
-is deliberately NOT a pipeline in either implementation -- the twin shells out to `node -e` with a real JSON parse, for the reason its own comment gives: a first-match grep would read a `volta` pin and send someone to edit the wrong number. It is compared against `node` here for exactly that reason.
+WHY A DIFFERENTIAL FOR TWO OF THEM AND NOT THE THIRD. `env_value` and `arg_value` are shell pipelines (`grep | head -1 | cut` and `grep -oP ... \\K`) whose edges are decided by the tools; they are run and compared. `engines_node` is deliberately NOT a pipeline in either implementation -- the twin shells out to `node -e` with a real JSON parse, for the reason its own comment gives:
+a first-match grep would read a `volta` pin and send someone to edit the wrong number. It is compared against `node` here for exactly that reason.
 
 The whole gate is covered by `.ci/shadow/w7p2-toolchain-sync.observations.jsonl` over five distinct trees.
 """

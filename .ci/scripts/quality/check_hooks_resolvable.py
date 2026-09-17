@@ -30,8 +30,7 @@ import re
 import subprocess
 import sys
 
-# Vacuity floor. This repo wires dozens of hook commands; a handful means the
-# parse broke, and every check below would be over an empty set -- which reads exactly like "every hook resolves".
+# Vacuity floor. This repo wires dozens of hook commands; a handful means the parse broke, and every check below would be over an empty set -- which reads exactly like "every hook resolves".
 MIN_COMMANDS = 10
 
 SETTINGS = ".claude/settings.json"
@@ -107,9 +106,7 @@ FIRST_GUARD = "require-jq.sh"
 def guarded_blocks(settings):
     """(label, block) for every chain require-jq.sh must lead.
 
-    Every PreToolUse block -- Bash, the Edit family, AskUserQuestion -- plus the PostToolUse block matched on Bash. The other PostToolUse blocks are matcher-
-    less and fire for every tool; they are not jq-parsing Bash chains, so they
-    are deliberately out of scope.
+    Every PreToolUse block -- Bash, the Edit family, AskUserQuestion -- plus the PostToolUse block matched on Bash. The other PostToolUse blocks are matcher- less and fire for every tool; they are not jq-parsing Bash chains, so they are deliberately out of scope.
     """
     hooks = settings.get("hooks", {}) or {}
     out = []
@@ -130,8 +127,7 @@ def first_guard_verdicts(settings):
     WHY POSITION, AND WHY NOTHING ELSE HERE CAN SEE IT. Every other verdict in this file is about a command in isolation: does the file exist, is it a file, is it non-empty, is its git mode right. `commands()` flattens the whole hooks tree precisely because that is all those checks need. Order survives none of that flattening, and order is the entire contract of require-jq.sh: it
     fails closed when jq is missing so the hooks BEHIND it never get to parse an empty string and exit 0. Registered second, the hook it was meant to cover has already run and already returned ALLOW.
 
-    Measured 2026-09-06: require-jq.sh led all three PreToolUse chains and was absent from PostToolUse entirely, so both post-bash hooks (cancel-old-ci.sh and refresh-pr-body.sh, each parsing stdin with `jq -r ... 2>/dev/null`) failed OPEN on a machine without jq -- they ran, found nothing, said nothing.
-    Registering it there is one line; keeping it FIRST there is this predicate.
+    Measured 2026-09-06: require-jq.sh led all three PreToolUse chains and was absent from PostToolUse entirely, so both post-bash hooks (cancel-old-ci.sh and refresh-pr-body.sh, each parsing stdin with `jq -r ... 2>/dev/null`) failed OPEN on a machine without jq -- they ran, found nothing, said nothing. Registering it there is one line; keeping it FIRST there is this predicate.
 
     On PostToolUse it prevents nothing, the tool having already run. It converts a silent no-op into a visible one, which is the whole difference.
     """
@@ -203,8 +199,7 @@ def controls(root):
     return None
 
 
-# Guard directories, and the naming convention that separates a guard from its
-# own test. `block-*`/`warn-*` are hooks; `test-*` are the suites that drive them.
+# Guard directories, and the naming convention that separates a guard from its own test. `block-*`/`warn-*` are hooks; `test-*` are the suites that drive them.
 GUARD_DIRS = ("pre-bash", "pre-edit", "post-bash")
 GUARD_PREFIXES = ("block-", "warn-")
 

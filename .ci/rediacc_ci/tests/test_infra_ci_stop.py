@@ -221,8 +221,7 @@ def test_the_fake_is_actually_reached(tmp_path):
 def test_the_force_removal_is_conditional(tmp_path):
     """CONTROL for the case above: with no matching container, nothing is removed.
 
-    A port that removed unconditionally would satisfy every positive assertion in
-    this file and would `docker rm` a container that another job is using."""
+    A port that removed unconditionally would satisfy every positive assertion in this file and would `docker rm` a container that another job is using."""
     root = _fixture(tmp_path / "c", compose_dir=True, backend_state=True)
     _, calls = _run(PORT, root, ps_names=())
     verbs = [c.split("\t")[1] for c in calls]
@@ -230,9 +229,7 @@ def test_the_force_removal_is_conditional(tmp_path):
 
 
 def test_compose_runs_in_the_compose_directory(tmp_path):
-    """The twin wraps the call in `(cd "$CI_DOCKER_DIR" && ...)`. Losing that runs
-    compose against whatever the caller's cwd happened to be, which in CI is the
-    repository root and a completely different stack."""
+    """The twin wraps the call in `(cd "$CI_DOCKER_DIR" && ...)`. Losing that runs compose against whatever the caller's cwd happened to be, which in CI is the repository root and a completely different stack."""
     root = _fixture(tmp_path / "d", compose_dir=True, backend_state=False)
     _, calls = _run(PORT, root)
     compose = [c for c in calls if c.split("\t")[1] == "compose"]

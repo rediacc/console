@@ -99,8 +99,7 @@ def manifest_entry(manifest: pathlib.Path, key: str) -> str | None:
 
 
 def make_fixture(root: pathlib.Path) -> None:
-    """One referenced script and one referencing caller, so the tree is healthy
-    before each case bends exactly one thing."""
+    """One referenced script and one referencing caller, so the tree is healthy before each case bends exactly one thing."""
     for sub in (".ci/scripts/lib", ".ci/policy", "scripts"):
         (root / sub).mkdir(parents=True, exist_ok=True)
     (root / ".ci/scripts/lib/helpers.sh").write_text(
@@ -111,8 +110,7 @@ def make_fixture(root: pathlib.Path) -> None:
         "bash .ci/scripts/lib/helpers.sh\n",
         encoding="utf-8",
     )
-    # run.sh needs an inbound reference of its own, or it is legitimately an orphan and every case below inherits that finding. In the real repo the
-    # docs name it; here a README plays that role.
+    # run.sh needs an inbound reference of its own, or it is legitimately an orphan and every case below inherits that finding. In the real repo the docs name it; here a README plays that role.
     (root / "README.md").write_text("Run the entrypoint with `./run.sh`.\n", encoding="utf-8")
 
 
@@ -352,8 +350,7 @@ def test_rejects_unknown_entry_kind(gate):
 
 
 def test_empty_tree_is_vacuous(gate):
-    """ANTI-VACUITY, driven through the real detector: a scan that saw no input
-    must REFUSE rather than report the cleanest run in its history."""
+    """ANTI-VACUITY, driven through the real detector: a scan that saw no input must REFUSE rather than report the cleanest run in its history."""
     with harness.temp_dir() as t:
         result = run_gate(t)
         gate.assert_exit_code(
@@ -364,8 +361,7 @@ def test_empty_tree_is_vacuous(gate):
 
 
 def test_the_delegate_key_resolves_to_a_real_npm_script(gate):
-    """ADDED BY THE PORT. `delegation_verdict` reads package.json as TEXT, exactly
-    as the twin's grep does, which is what keeps the two sides comparable. Text is not JSON, though: a key inside a comment-like string, or a duplicated `scripts` block, would satisfy the grep and not the runtime. This reads the same file through a JSON parser and requires the two answers to agree.
+    """ADDED BY THE PORT. `delegation_verdict` reads package.json as TEXT, exactly as the twin's grep does, which is what keeps the two sides comparable. Text is not JSON, though: a key inside a comment-like string, or a duplicated `scripts` block, would satisfy the grep and not the runtime. This reads the same file through a JSON parser and requires the two answers to agree.
 
     A manifest id is NOT an npm script, and this repo has paid for that confusion: `npm run --silent <id-that-is-not-a-key>` exits 1 with zero bytes on both streams, which is indistinguishable from a gate failing for a real reason.
     """

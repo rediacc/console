@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.build.build_linux_pkg` against its twin
-`.ci/scripts/build/build-linux-pkg.sh`.
+"""Differential: `rediacc_ci.build.build_linux_pkg` against its twin `.ci/scripts/build/build-linux-pkg.sh`.
 
 WHAT IS COMPARED, per case and never folded: stdout, stderr, exit code, the FAKE-BINARY CALL LOG, the env `nfpm` was handed, and every file left under the output directory.
 
@@ -326,8 +325,7 @@ def _artifacts(root: pathlib.Path) -> dict[str, str]:
 
 
 def _leftover_temp(root: pathlib.Path) -> list[str]:
-    """The EXIT trap's subject. A build directory that survives is a leak, and it
-    is invisible on every stream."""
+    """The EXIT trap's subject. A build directory that survives is a leak, and it is invisible on every stream."""
     return sorted(p.name for p in (root / "fixture-tmp").iterdir())
 
 
@@ -443,9 +441,7 @@ def test_the_absent_tools_are_absent_in_the_env_that_is_actually_driven(tmp_path
 
 
 def test_the_restated_constants_match_constants_sh() -> None:
-    """The staleness alarm the module head promises. `constants.sh` is the source
-    of truth for what a package is CALLED; a drift here is a mislabelled
-    artifact, and nothing else in the tree would notice."""
+    """The staleness alarm the module head promises. `constants.sh` is the source of truth for what a package is CALLED; a drift here is a mislabelled artifact, and nothing else in the tree would notice."""
     text = (ROOT / CONSTANTS_REL).read_text(encoding="utf-8")
     for name, value in (
         ("PKG_NAME", port.PKG_NAME),
@@ -502,8 +498,7 @@ def test_every_flag_with_no_value_dies_the_way_set_u_does(tmp_path) -> None:
 
 
 def test_each_missing_required_argument_names_itself_lowercased(tmp_path) -> None:
-    """`tr '[:upper:]' '[:lower:]'` on the loop variable, and the FIRST missing
-    one wins: the loop exits rather than collecting all four."""
+    """`tr '[:upper:]' '[:lower:]'` on the loop variable, and the FIRST missing one wins: the loop exits rather than collecting all four."""
     root = fixture(tmp_path)
     for args, missing in (
         ((), "binary"),
@@ -553,8 +548,7 @@ def test_an_invalid_arch_refuses(tmp_path) -> None:
 
 
 def test_every_format_and_arch_spelling_produces_the_documented_filename(tmp_path) -> None:
-    """Eight of the sixteen combinations, through the real script in dry-run, so
-    the names are read off the twin rather than off a table this file wrote."""
+    """Eight of the sixteen combinations, through the real script in dry-run, so the names are read off the twin rather than off a table this file wrote."""
     root = fixture(tmp_path)
     expected = {
         ("deb", "amd64"): "rediacc-cli_1.2.3_amd64.deb",
@@ -589,8 +583,7 @@ def test_every_format_and_arch_spelling_produces_the_documented_filename(tmp_pat
 
 
 def test_a_dry_run_creates_the_output_directory_and_validates_nothing(tmp_path) -> None:
-    """DEFECT 5. The binary does not exist and `nfpm` is not installed, and the
-    preview reports success anyway -- because both checks are BELOW it."""
+    """DEFECT 5. The binary does not exist and `nfpm` is not installed, and the preview reports success anyway -- because both checks are BELOW it."""
     root = fixture(tmp_path, binary=False)
     old_t, new_t = run_both(
         root,
@@ -615,8 +608,7 @@ def test_a_dry_run_creates_the_output_directory_and_validates_nothing(tmp_path) 
 
 
 def test_output_directory_is_honoured_relative_and_absolute(tmp_path) -> None:
-    """`--output` was parsed by both sides and driven by NEITHER. The flag decides
-    where the artifact lands, so a port that dropped it would have been green."""
+    """`--output` was parsed by both sides and driven by NEITHER. The flag decides where the artifact lands, so a port that dropped it would have been green."""
     root = fixture(tmp_path)
     for spelling in ("out", str(root / "out")):
         old_t, new_t = run_both(root, args=(*DEB, "--format", "deb", "--output", spelling))
@@ -648,9 +640,7 @@ def test_an_output_directory_blocked_by_a_file_fails_the_way_mkdir_does(tmp_path
 
 
 def test_a_binary_with_no_directory_part_still_becomes_absolute(tmp_path) -> None:
-    """`$(dirname "rdc")` is `.`, not the empty string, and `$(cd . && pwd)` is
-    the CWD. `os.path.dirname` returns `""` there, which `os.path.abspath` would also resolve to the CWD -- but only because the port spells the `or "."`
-    out. Untested, this is a one-character difference from a path of `/rdc`."""
+    """`$(dirname "rdc")` is `.`, not the empty string, and `$(cd . && pwd)` is the CWD. `os.path.dirname` returns `""` there, which `os.path.abspath` would also resolve to the CWD -- but only because the port spells the `or "."` out. Untested, this is a one-character difference from a path of `/rdc`."""
     root = fixture(tmp_path)
     (root / "rdc").write_text("BINARY\n", encoding="utf-8")
     old_t, new_t = run_both(
@@ -708,9 +698,7 @@ def test_the_environment_nfpm_receives_is_the_whole_package_definition(tmp_path)
 
 
 def test_a_relative_binary_becomes_an_absolute_binary_path(tmp_path) -> None:
-    """`$(cd "$(dirname "$BINARY")" && pwd)/$(basename "$BINARY")` -- a command
-    substitution nested two levels deep, whose `cd` failing would be a silent
-    death. It cannot fail here, and the ABSOLUTE result is what nfpm needs."""
+    """`$(cd "$(dirname "$BINARY")" && pwd)/$(basename "$BINARY")` -- a command substitution nested two levels deep, whose `cd` failing would be a silent death. It cannot fail here, and the ABSOLUTE result is what nfpm needs."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=(*DEB, "--format", "apk"))
     seen = dict(line.split("=", 1) for line in old_t[2].splitlines())
@@ -733,9 +721,7 @@ def test_apk_and_archlinux_each_say_why_they_are_unsigned(tmp_path) -> None:
 
 
 def test_release_signing_required_turns_an_empty_secret_into_a_refusal(tmp_path) -> None:
-    """The 2026-09-05 incident: a deleted org secret resolved to "", which was
-    indistinguishable from "no signing wanted", and the build shipped unsigned
-    and green."""
+    """The 2026-09-05 incident: a deleted org secret resolved to "", which was indistinguishable from "no signing wanted", and the build shipped unsigned and green."""
     root = fixture(tmp_path)
     # NOT `..._amd64.%s`: rpm's convention is `-1.x86_64.rpm`, and writing the deb spelling for both formats is how this assertion previously came to
     # carry an `or fmt == "rpm"` escape hatch -- which made it ALWAYS TRUE for
@@ -766,8 +752,7 @@ def test_release_signing_required_turns_an_empty_secret_into_a_refusal(tmp_path)
 
 
 def test_release_signing_required_does_not_touch_apk_or_archlinux(tmp_path) -> None:
-    """It blocked a real release once (run 34003316362) for a credential nobody
-    has. Both formats stay warnings under the same flag."""
+    """It blocked a real release once (run 34003316362) for a credential nobody has. Both formats stay warnings under the same flag."""
     root = fixture(tmp_path)
     for fmt in ("apk", "archlinux"):
         old_t, new_t = run_both(
@@ -846,8 +831,7 @@ def test_defect_3_a_failing_find_dies_silently(tmp_path) -> None:
 
 
 def test_find_reporting_success_with_no_output_is_the_other_branch(tmp_path) -> None:
-    """The refusal DEFECT 3 hides. Same missing package, `find` exits 0, and this
-    time the script says so -- which is what makes the silent arm worth naming."""
+    """The refusal DEFECT 3 hides. Same missing package, `find` exits 0, and this time the script says so -- which is what makes the silent arm worth naming."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
         root,
@@ -860,8 +844,7 @@ def test_find_reporting_success_with_no_output_is_the_other_branch(tmp_path) -> 
 
 
 def test_the_build_directory_never_survives_any_path(tmp_path) -> None:
-    """`trap cleanup EXIT`. A leaked temp directory is invisible on every stream,
-    so `_agree` asserts the fixture temp root is empty after BOTH sides on every
+    """`trap cleanup EXIT`. A leaked temp directory is invisible on every stream, so `_agree` asserts the fixture temp root is empty after BOTH sides on every
     case; this one drives the refusal paths explicitly."""
     root = fixture(tmp_path)
     for overrides in (
@@ -932,9 +915,7 @@ def test_a_mismatched_key_refuses_and_names_both_fingerprints(tmp_path) -> None:
 
 
 def test_a_key_with_no_fingerprint_row_refuses_as_unreadable(tmp_path) -> None:
-    """The ONE way `<unreadable>` can actually print: gpg exits 0 and emits no
-    `fpr` row. When gpg exits NON-zero the script dies before reaching it -- see
-    the next test."""
+    """The ONE way `<unreadable>` can actually print: gpg exits 0 and emits no `fpr` row. When gpg exits NON-zero the script dies before reaching it -- see the next test."""
     root = fixture(tmp_path, public_key="NOFPR\n")
     old_t, new_t = run_both(root, args=(*DEB, "--format", "deb"), env_overrides=_signed())
     assert old_t[0].returncode == 1
@@ -946,8 +927,7 @@ def test_a_key_with_no_fingerprint_row_refuses_as_unreadable(tmp_path) -> None:
 
 def test_defect_2_an_unreadable_published_key_dies_silently(tmp_path) -> None:
     """`want_fpr=$(gpg ... | awk ...)` under `pipefail`: gpg's exit 2 becomes the
-    assignment's status and `set -e` ends the script with NOTHING on either stream. The `<unreadable>` fallback written for exactly this case is
-    unreachable, and a release engineer sees a bare exit 2."""
+    assignment's status and `set -e` ends the script with NOTHING on either stream. The `<unreadable>` fallback written for exactly this case is unreachable, and a release engineer sees a bare exit 2."""
     root = fixture(tmp_path, public_key="BADKEY\n")
     old_t, new_t = run_both(root, args=(*DEB, "--format", "deb"), env_overrides=_signed())
     assert old_t[0].returncode == 2, "gpg's own status, not a flattened 1"
@@ -973,9 +953,7 @@ def test_defect_2_also_fires_on_an_unreadable_private_key(tmp_path) -> None:
 
 
 def test_defect_1_no_published_key_file_means_no_check_at_all(tmp_path) -> None:
-    """`if [[ -f "$PUBLIC_KEY_FILE" ]]` with no `else`. The build signs with an
-    unverified key, exits 0, and never mentions that the comparison did not
-    happen."""
+    """`if [[ -f "$PUBLIC_KEY_FILE" ]]` with no `else`. The build signs with an unverified key, exits 0, and never mentions that the comparison did not happen."""
     root = fixture(tmp_path, public_key=None)
     old_t, new_t = run_both(
         root, args=(*DEB, "--format", "deb"), env_overrides=_signed(fpr=OTHER_FPR)
@@ -1005,8 +983,7 @@ def test_the_public_key_file_can_be_overridden(tmp_path) -> None:
 
 
 def test_a_repaired_key_is_loud_and_a_failed_canonicalise_is_a_warning(tmp_path) -> None:
-    """Exit 10 is a SIGNAL, not a failure: a bare call under `set -e` aborted
-    every build whose key needed repairing, which is the production case."""
+    """Exit 10 is a SIGNAL, not a failure: a bare call under `set -e` aborted every build whose key needed repairing, which is the production case."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
         root, args=(*DEB, "--format", "deb"), env_overrides=_signed(FAKE_CANON_RC="10")
@@ -1073,8 +1050,7 @@ def test_an_apk_rsa_key_is_the_other_signing_arm(tmp_path) -> None:
 
 
 def test_a_gpg_key_is_ignored_for_apk_and_an_rsa_key_for_deb(tmp_path) -> None:
-    """The `elif` chain, both directions. A GPG key present while building apk
-    takes NEITHER arm, so apk still reports itself unsigned."""
+    """The `elif` chain, both directions. A GPG key present while building apk takes NEITHER arm, so apk still reports itself unsigned."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=(*DEB, "--format", "apk"), env_overrides=_signed())
     assert old_t[0].returncode == 0, old_t[0].stderr
@@ -1126,8 +1102,7 @@ def test_a_key_that_is_exactly_dash_n_writes_a_zero_byte_key_file(tmp_path) -> N
 
 
 def test_the_logger_escape_divergence_is_pinned_not_accidental(tmp_path) -> None:
-    """THE ONE PLACE THE TWO SIDES DELIBERATELY DISAGREE, asserted as a
-    DISAGREEMENT so nobody later reads a green suite as proof they match.
+    """THE ONE PLACE THE TWO SIDES DELIBERATELY DISAGREE, asserted as a DISAGREEMENT so nobody later reads a green suite as proof they match.
 
     `common.sh:35` logs with `echo -e`, which INTERPRETS backslash escapes in the message: `--binary 'a\\tb'` makes the twin print a real tab. `rediacc_ci.log` formats the message as data, and `log.py`'s own docstring records that as a bug being dropped rather than a decision being made, pinned by `test_log.py`. Changing it here would mean forking the one logger the whole campaign
     shares, so it is DOCUMENTED instead -- and documented means executed, not commented.
@@ -1162,9 +1137,7 @@ def test_the_logger_escape_divergence_is_pinned_not_accidental(tmp_path) -> None
 
 
 def test_a_missing_gpg_is_declared_before_the_check_that_needs_it(tmp_path) -> None:
-    """`require_cmd gpg` exists precisely because the check below runs gpg inside
-    a command substitution, where a missing binary would exit 127 with no
-    message and the signing check would silently not happen."""
+    """`require_cmd gpg` exists precisely because the check below runs gpg inside a command substitution, where a missing binary would exit 127 with no message and the signing check would silently not happen."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
         root, args=(*DEB, "--format", "deb"), env_overrides=_signed(), drop=("gpg",)

@@ -1,8 +1,6 @@
 """Port of `.ci/scripts/deploy/resolve-account-deploy-config.sh`.
 
-Picks the Worker name / domain / sandbox flag for one region of an account deploy and emits them as GitHub Actions step outputs. Pure computation: no network, no subprocess, no filesystem access beyond appending to
-`$GITHUB_OUTPUT`. See the bash twin for the full WHY; this port changes no
-behaviour, only the language.
+Picks the Worker name / domain / sandbox flag for one region of an account deploy and emits them as GitHub Actions step outputs. Pure computation: no network, no subprocess, no filesystem access beyond appending to `$GITHUB_OUTPUT`. See the bash twin for the full WHY; this port changes no behaviour, only the language.
 
 REWORDED ON PURPOSE, NOT BYTE-IDENTICAL: the bash twin's missing-env-var
 message is `${VAR:?msg}`, which bash renders as

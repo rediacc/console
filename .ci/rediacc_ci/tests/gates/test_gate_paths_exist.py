@@ -22,15 +22,11 @@ why the plant proof matters more than usual and why the extraction rules below a
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Every case walks the working tree (`scripts/`, `packages/www/scripts/`, `.ci/scripts/`) and two of them PLANT a file inside `.ci/scripts/` and remove it again. A battery step reading that directory mid-plant, or a second scanner seeing a fixture that vanishes under it, is the flake that would be blamed on this port -- and the twin
 carries `mutex: ["tree:repo"]` in `gates.lock.json` for exactly that reason.
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
-this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in
-`test_twin_parity.py`, which refuses that combination.
+this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, which refuses that combination.
 
-THE SELF-SCANNING TRAP, and this file is squarely in it. The detector reports dead `packages/...` literals found in source files, and a port of it is a source file full of dead `packages/...` literals. The twin is invisible to itself
-because `scan_targets` excludes `.ci/scripts/test/*`; this module lives outside
-every scanned root, so it is invisible for a different and less deliberate reason -- one that a future scanner widening its roots would quietly remove. So the fixture literal is RENDERED through a `%s` template and never appears whole in this file's bytes (`%` is outside the `[A-Za-z0-9._+-]` class the extractor uses, so the template cannot be extracted as a path), and
-`test_this_module_is_not_itself_a_finding` points the real detector at this directory and fails BY NAME if that ever stops being true. Batch 3's
-`label-references` port paid for this rule; any port of a self-scanning subject
-owes the same treatment.
+THE SELF-SCANNING TRAP, and this file is squarely in it. The detector reports dead `packages/...` literals found in source files, and a port of it is a source file full of dead `packages/...` literals. The twin is invisible to itself because `scan_targets` excludes `.ci/scripts/test/*`; this module lives outside every scanned root, so it is invisible for a different and less
+deliberate reason -- one that a future scanner widening its roots would quietly remove. So the fixture literal is RENDERED through a `%s` template and never appears whole in this file's bytes (`%` is outside the `[A-Za-z0-9._+-]` class the extractor uses, so the template cannot be extracted as a path), and `test_this_module_is_not_itself_a_finding` points the real detector at this
+directory and fails BY NAME if that ever stops being true. Batch 3's `label-references` port paid for this rule; any port of a self-scanning subject owes the same treatment.
 """
 
 import contextlib
@@ -52,13 +48,10 @@ ROOT = paths.repo_root()
 #
 # NOT `scripts/`, and not a temp dir either. The controls have to sit inside a directory the scan actually walks, or the detector never sees them and the control silently stops firing -- so a temp dir outside the repo is not an
 # option. But `scripts/` is ALSO linted (`eslint packages scripts private/account`,
-# and knip's project glob `scripts/**/*.ts`), and a file that appears and vanishes mid-run raced a concurrent `npm run check:lint` into `ENOENT`, exit 2. That was
-# never a lint failure; it was this gate polluting a linted tree. `.ci/scripts`
-# satisfies both halves, measured rather than assumed by the twin on 2026-07-31.
+# and knip's project glob `scripts/**/*.ts`), and a file that appears and vanishes mid-run raced a concurrent `npm run check:lint` into `ENOENT`, exit 2. That was never a lint failure; it was this gate polluting a linted tree. `.ci/scripts` satisfies both halves, measured rather than assumed by the twin on 2026-07-31.
 FIXTURE_DIR = ROOT / ".ci" / "scripts"
 
-# The fixture filenames carry THIS PROCESS's pid, and that is a correctness fix rather than tidiness. They used to be fixed names in the twin, so two concurrent invocations planted the same two paths and each cleanup deleted the OTHER run's
-# fixture; on 2026-08-05 that surfaced as a false "detector broken".
+# The fixture filenames carry THIS PROCESS's pid, and that is a correctness fix rather than tidiness. They used to be fixed names in the twin, so two concurrent invocations planted the same two paths and each cleanup deleted the OTHER run's fixture; on 2026-08-05 that surfaced as a false "detector broken".
 #
 # The dotfile prefix is load-bearing (it is what keeps eslint, biome and knip off
 # these files) and the `.ts` suffix is what the scan globs for, so the pid goes between them. FIXTURE_NAME_PREFIX is the shape both fixtures share ACROSS pids and across the two LANGUAGES: the twin's fixtures are visible to this scan and this port's are visible to the twin's, so both sides scope themselves with it rather than assuming they are alone in the tree.
@@ -88,9 +81,7 @@ SOURCE_EXTENSIONS = re.compile(
 
 # The three clauses of the twin's awk program, one regex each.
 #
-# `PATH_RE` is the awk `match(s, /(packages|private)\/[A-Za-z0-9._+-]+(\/[A-Za-z0-9._+-]+)*\/?/)`. POSIX awk matches leftmost-LONGEST and Python matches leftmost-greedy-with-
-# backtracking; for this pattern the two coincide, because the alternation has no
-# shared prefix and the character class excludes `/`, so there is nothing for backtracking to give back.
+# `PATH_RE` is the awk `match(s, /(packages|private)\/[A-Za-z0-9._+-]+(\/[A-Za-z0-9._+-]+)*\/?/)`. POSIX awk matches leftmost-LONGEST and Python matches leftmost-greedy-with- backtracking; for this pattern the two coincide, because the alternation has no shared prefix and the character class excludes `/`, so there is nothing for backtracking to give back.
 PATH_RE = re.compile(r"(?:packages|private)/[A-Za-z0-9._+-]+(?:/[A-Za-z0-9._+-]+)*/?")
 COMMENT_RE = re.compile(r"^\s*(//|#|\*|/\*)")
 QUOTE_SPLIT_RE = re.compile("[\"'`]")
@@ -193,8 +184,7 @@ def declared_submodule(root: str) -> bool:
 
 
 def submodule_checked_out(root: str) -> bool:
-    """False when the `private/<name>` root is empty, meaning the submodule was
-    never initialised in this checkout."""
+    """False when the `private/<name>` root is empty, meaning the submodule was never initialised in this checkout."""
     directory = ROOT / root
     if not directory.is_dir():
         return False
@@ -202,8 +192,7 @@ def submodule_checked_out(root: str) -> bool:
 
 
 def path_resolves(candidate: str) -> bool:
-    """Existence check with the NodeNext `.js` -> `.ts` fallback: a `./x.js`
-    specifier legitimately resolves to `x.ts`."""
+    """Existence check with the NodeNext `.js` -> `.ts` fallback: a `./x.js` specifier legitimately resolves to `x.ts`."""
     target = ROOT / candidate
     if target.exists():
         return True
@@ -284,9 +273,7 @@ def planted_fixture(stem: str, body: str):
 
 
 def test_detector_fires_on_a_deleted_workspace(gate):
-    """Control: prove the instrument can FAIL. A synthetic scan target naming a
-    workspace that has never existed must be reported, otherwise this gate is
-    exactly the vacuous check it was written to prevent."""
+    """Control: prove the instrument can FAIL. A synthetic scan target naming a workspace that has never existed must be reported, otherwise this gate is exactly the vacuous check it was written to prevent."""
     with planted_fixture("fixture", FIXTURE_BODY) as planted:
         # Guard the CONTROL too, and for the sharper reason: this is the case that actually failed under load in the twin. Without the floor its failure message was "not in ''", which reads as "the detector is broken" when the truth was "the walk never reached the fixture".
         assert_scan_is_whole(gate)

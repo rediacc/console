@@ -4,8 +4,7 @@ WHAT THE SHADOW LEDGER ALREADY PROVES:
 `.ci/shadow/w7p2-profiler-coverage.observations.jsonl` drives both implementations end to end over five distinct committed trees: unprofiled Linux jobs, a stale allowlist entry, a malformed reference with a bad interval and a label mismatch, the fail-closed classification of an unknown label and an unresolvable expression, and a low-effort BLOCKER.
 
 WHAT THE LEDGER CANNOT ISOLATE is the EIGHT EXTRACTORS, and they are the whole gate. Each is a small awk state machine whose failure mode is silence: an extractor that stops matching under-reports coverage, and under-reported coverage reads exactly like a clean tree. The twin knows this, which is why it self-tests every extractor against a planted sample before it looks at the real
-tree; this file does the other half, comparing the PORT against the TWIN over
-the repository's own workflows.
+tree; this file does the other half, comparing the PORT against the TWIN over the repository's own workflows.
 
 THE TWIN'S TEXT IS READ AT TEST TIME, not copied here. Each awk program is pulled out of `.ci/scripts/quality/check-profiler-coverage.sh` by name and run under bash, so this comparison cannot drift away from the file it is about. A copy would be a third implementation, and a third implementation is what this whole workstream exists to remove.
 """

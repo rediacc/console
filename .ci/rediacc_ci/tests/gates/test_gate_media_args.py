@@ -25,14 +25,11 @@ WHERE THIS REIMPLEMENTS grep, AND WHY THE ANSWERS AGREE.
   `grep -qF "$sentence"` is a FIXED-STRING search with no anchor, which is `in`.
 
 THE ONE HELPER THAT COULD NOT BE A DIRECT TRANSLATION. `_absence_verdict` runs the absence assertion in a SUBSHELL so that its `log_fail`'s `exit` takes down the subshell rather than the gate. Python's `log_fail` raises, and catching an exception in a control makes a bug in the control indistinguishable from the finding it is looking for. So `media_verify_ext.absent_from_origins`
-returns the reason as an
-ordinary value and the assertion is a thin wrapper over it; the control reads the
-value. Same two directions, no exception in the middle.
+returns the reason as an ordinary value and the assertion is a thin wrapper over it; the control reads the value. Same two directions, no exception in the middle.
 
 WHY `STUBS_STEPS` IS NOT FOLDED INTO `STUBS_BASE`, kept from the twin because the mistake it records was made here on a first run: stubbing a verb while testing that same verb is how an argument-validation case comes back green having exercised a two-line echo. `www_tutorials_video --jobs abc` reported exit 0 because the stub, not the parser, is what answered.
 
-NO `xdist_group`. Every fixture and sandbox is under pytest's own `tmp_path`; the
-only process-wide state is `os.environ["PATH"]`, restored per call by `harness.fake_bin`.
+NO `xdist_group`. Every fixture and sandbox is under pytest's own `tmp_path`; the only process-wide state is `os.environ["PATH"]`, restored per call by `harness.fake_bin`.
 """
 
 from rediacc_ci import paths
@@ -104,8 +101,7 @@ def run_teaser(root, code):
 
 
 def lines_matching(text: str, prefix: str) -> str:
-    """`grep '^<prefix>'` over merged output, joined the way a command substitution
-    would join it."""
+    """`grep '^<prefix>'` over merged output, joined the way a command substitution would join it."""
     return "\n".join(line for line in text.splitlines() if line.startswith(prefix))
 
 

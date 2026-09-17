@@ -5,8 +5,7 @@ Integration test for the FORWARD half of the e2e-coverage gate (`scripts/gates/c
 "Prove the instrument": the primary case PLANTS a renet function whose only mention is a NON-LIVE file (a test the config does not select) plus its declared-but-uncalled harness method, and asserts the gate FIRES and names it. The negative control plants two verbs a live test genuinely covers (one via the harness method map, one via a raw verb literal) and asserts the gate stays
 silent about them. The remaining cases exercise the allowlist pass, the stale-entry guard, and the registry/workflow drift self-check.
 
-The fixture is entirely inside `tmp_path`; the only real-tree access is READING
-`scripts/gates/check-e2e-coverage.ts` to run it.
+The fixture is entirely inside `tmp_path`; the only real-tree access is READING `scripts/gates/check-e2e-coverage.ts` to run it.
 """
 
 from rediacc_ci import paths
@@ -64,9 +63,7 @@ WORKFLOW_YML = """jobs:
 
 
 def build_fixture(gate, root):
-    """One live suite (01-live) covers live_verb (via the harness method map: it
-    calls .liveVerb()) and litonly_verb (via a raw 'litonly_verb' literal). One DARK suite (99-dark, unselected by the config's '01-*' testMatch) is the only
-    place dead_verb is mentioned or its method called."""
+    """One live suite (01-live) covers live_verb (via the harness method map: it calls .liveVerb()) and litonly_verb (via a raw 'litonly_verb' literal). One DARK suite (99-dark, unselected by the config's '01-*' testMatch) is the only place dead_verb is mentioned or its method called."""
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE)
     for rel in (
@@ -127,9 +124,8 @@ def test_negative_control_live_verbs_pass(gate, tmp_path):
 
 
 def test_comment_mention_is_not_coverage(gate, tmp_path):
-    """A COMMENT IS NOT COVERAGE. This is the one that was live: a storage test
-    asserted a retirement message names its replacement, and the verb literal in that assertion plus the comment explaining it made backup_restore read as exercised. The gate then demanded its allowlist entry be deleted as a debt paid. Stripping comments also exposed machine_uninstall, whose only trace was
-    a header comment listing a whole domain."""
+    """A COMMENT IS NOT COVERAGE. This is the one that was live: a storage test asserted a retirement message names its replacement, and the verb literal in that assertion plus the comment explaining it made backup_restore read as exercised. The gate then demanded its allowlist entry be deleted as a debt paid. Stripping comments also exposed machine_uninstall, whose only trace
+    was a header comment listing a whole domain."""
     root = build_fixture(gate, tmp_path)
     # dead_verb is genuinely uncovered. Name it in a COMMENT inside the LIVE suite and nothing else: a gate that reads comments will call it covered.
     (root / "e2e" / "tests" / "01-live.test.ts").write_text(

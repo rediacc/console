@@ -134,8 +134,7 @@ def test_the_differential_can_fail(tmp_path, fake_date) -> None:
 def test_the_clock_is_really_frozen(tmp_path, fake_date) -> None:
     """A CONTROL ON THE HARNESS. If either seam stopped working, every uptime
     case above would still pass whenever the two runs landed in the same second,
-    and would flake otherwise. Two DIFFERENT frozen values must give two
-    different uptimes on both sides."""
+    and would flake otherwise. Two DIFFERENT frozen values must give two different uptimes on both sides."""
     root = tmp_path / "clock"
     root.mkdir()
     (root / ".service-state").write_text("started=1700000000\nport=8080\n", encoding="utf-8")
@@ -263,9 +262,7 @@ def test_the_status_container_list_is_a_subset_of_the_stop_list() -> None:
 
 
 def test_docker_is_actually_available_here() -> None:
-    """ANTI-VACUITY. Every differential case above runs `docker ps`. If docker
-    were absent, `check_docker` would exit 1 on BOTH sides with identical bytes
-    and every case would pass while measuring nothing at all."""
+    """ANTI-VACUITY. Every differential case above runs `docker ps`. If docker were absent, `check_docker` would exit 1 on BOTH sides with identical bytes and every case would pass while measuring nothing at all."""
     assert shutil.which("docker") is not None, (
         "docker is not on PATH, so every case in this file compares two identical "
         "refusals and proves nothing about service_status"

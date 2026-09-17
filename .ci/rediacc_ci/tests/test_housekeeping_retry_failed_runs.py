@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.housekeeping.retry_failed_runs` against its twin
-`.ci/scripts/housekeeping/retry-failed-runs.sh`.
+"""Differential: `rediacc_ci.housekeeping.retry_failed_runs` against its twin `.ci/scripts/housekeeping/retry-failed-runs.sh`.
 
 A RECORDING FAKE `gh` ON A PATH WITH NO REAL `gh` ON IT. The live effect of this script is `POST .../rerun-failed-jobs` against `rediacc/console`, and this
 machine has a logged-in `gh`, so every case also pins `RETRY_REPO=acme/widget`:
@@ -237,9 +236,7 @@ def test_missing_gh_is_refused_first(tmp_path: pathlib.Path) -> None:
 def test_unreadable_branch_tips_skip_rather_than_retry_on_incomplete_data(
     tmp_path: pathlib.Path,
 ) -> None:
-    """FAIL CLOSED, AND EXIT 0 WHILE DOING IT. Without the branch tips a
-    superseded run cannot be told from a current one, and reviving a superseded pipeline is the expensive mistake. It is not an error either, so the job
-    stays green and tomorrow tries again."""
+    """FAIL CLOSED, AND EXIT 0 WHILE DOING IT. Without the branch tips a superseded run cannot be told from a current one, and reviving a superseded pipeline is the expensive mistake. It is not an error either, so the job stays green and tomorrow tries again."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, [], FAKE_GH_HEADS="", FAKE_GH_BRANCHES_RC="1"
     )
@@ -263,9 +260,7 @@ def test_an_empty_but_successful_branch_listing_is_also_a_skip(
 
 
 def test_no_failed_runs_reports_the_normal_night(tmp_path: pathlib.Path) -> None:
-    """A SWEEPER THAT RETRIES NOTHING MUST NOT LOOK BROKEN. The measured
-    baseline is ~1 retry per night, so zero is the expected outcome and the
-    summary line plus the closing sentence are what make it readable."""
+    """A SWEEPER THAT RETRIES NOTHING MUST NOT LOOK BROKEN. The measured baseline is ~1 retry per night, so zero is the expected outcome and the summary line plus the closing sentence are what make it readable."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, [], FAKE_GH_HEADS=LIVE_HEAD + "\n", FAKE_GH_RUNS="[]"
     )
@@ -276,8 +271,7 @@ def test_no_failed_runs_reports_the_normal_night(tmp_path: pathlib.Path) -> None
 
 
 def test_the_watchdog_is_excluded_by_path(tmp_path: pathlib.Path) -> None:
-    """63 OF 64 MEASURED FAILURES ARE THIS ONE WORKFLOW failing by design. It is
-    excluded by PATH because its display name is generated per run."""
+    """63 OF 64 MEASURED FAILURES ARE THIS ONE WORKFLOW failing by design. It is excluded by PATH because its display name is generated per run."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         [],
@@ -303,9 +297,7 @@ def test_a_run_older_than_the_age_floor_is_skipped(tmp_path: pathlib.Path) -> No
 
 
 def test_an_unparseable_created_at_counts_as_too_old(tmp_path: pathlib.Path) -> None:
-    """`date -u -d ... || echo 0` and then `-eq 0` is the too-old branch, so an
-    unreadable timestamp never licenses a rerun. The direction matters more than
-    the label."""
+    """`date -u -d ... || echo 0` and then `-eq 0` is the too-old branch, so an unreadable timestamp never licenses a rerun. The direction matters more than the label."""
     record = a_run(1)
     record["created_at"] = "not-a-date"
     old, new, old_calls, new_calls = run_both(
@@ -366,8 +358,7 @@ def test_an_eligible_run_is_reran_and_the_call_is_exact(tmp_path: pathlib.Path) 
 
 
 def test_the_reruns_output_is_swallowed_on_both_streams(tmp_path: pathlib.Path) -> None:
-    """`>/dev/null 2>&1`. The fake writes to both so a port that forgot one
-    would be caught here rather than in a nightly log."""
+    """`>/dev/null 2>&1`. The fake writes to both so a port that forgot one would be caught here rather than in a nightly log."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, [], FAKE_GH_HEADS=LIVE_HEAD + "\n", FAKE_GH_RUNS=runs_json(a_run(5))
     )
@@ -377,8 +368,7 @@ def test_the_reruns_output_is_swallowed_on_both_streams(tmp_path: pathlib.Path) 
 
 
 def test_a_rejected_rerun_is_a_warning_and_not_a_failure(tmp_path: pathlib.Path) -> None:
-    """A run still winding down answers 403 "already running". The job must stay
-    green: tomorrow picks it up, and failing here would page somebody nightly."""
+    """A run still winding down answers 403 "already running". The job must stay green: tomorrow picks it up, and failing here would page somebody nightly."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         [],
@@ -410,8 +400,7 @@ def test_dry_run_posts_nothing_and_prints_eight_characters_of_the_head(
 
 def test_only_argv_one_spelled_exactly_dry_run_is_a_dry_run(tmp_path: pathlib.Path) -> None:
     """`[[ "${1:-}" == "--dry-run" ]]` and nothing else. `-n` is a LIVE run, and
-    so is `--dry-run` in second position. Reproduced rather than improved: this script POSTs, and a caller who believes an unrecognised flag was honoured is
-    the person this pins the behaviour for."""
+    so is `--dry-run` in second position. Reproduced rather than improved: this script POSTs, and a caller who believes an unrecognised flag was honoured is the person this pins the behaviour for."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["-n"],
@@ -475,9 +464,7 @@ def test_the_repo_is_read_from_the_environment_and_reaches_every_url(
 
 
 def test_an_unreadable_runs_listing_yields_no_candidates(tmp_path: pathlib.Path) -> None:
-    """`|| echo '[]'`: a failed listing becomes an empty one, which prints the
-    same zero summary a genuinely clean night prints. That is a real weakness of the twin and it is reproduced rather than repaired -- the branch-tip lookup
-    above is the one that fails closed, and this one does not."""
+    """`|| echo '[]'`: a failed listing becomes an empty one, which prints the same zero summary a genuinely clean night prints. That is a real weakness of the twin and it is reproduced rather than repaired -- the branch-tip lookup above is the one that fails closed, and this one does not."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         [],
@@ -535,9 +522,7 @@ def test_the_fallback_world_warn_path_also_agrees(tmp_path: pathlib.Path) -> Non
 def test_the_fallback_world_require_cmd_is_its_own_and_still_reports(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The twin defines a private `require_cmd` in the fallback block because
-    calling common.sh's would die at 127 while reporting nothing about the
-    missing dependency it exists to report."""
+    """The twin defines a private `require_cmd` in the fallback block because calling common.sh's would die at 127 while reporting nothing about the missing dependency it exists to report."""
     old, old_calls = _run(tmp_path, "old", [], with_common=False, with_gh=False)
     new, new_calls = _run(tmp_path, "new", [], with_common=False, with_gh=False)
     assert old.returncode == 1
@@ -566,9 +551,7 @@ def _bash_read_fields(line: str) -> list[str]:
 
 
 def test_read_fields_collapses_runs_of_tabs() -> None:
-    """THE FIELD-SHIFTING HAZARD, PINNED IN BOTH DIRECTIONS. Tab is an IFS
-    WHITESPACE character, so a null `.name` does not leave an empty field, it shifts every later field left by one and the workflow PATH is read as the name. Every case is checked against real bash so the claim is measured, not
-    asserted."""
+    """THE FIELD-SHIFTING HAZARD, PINNED IN BOTH DIRECTIONS. Tab is an IFS WHITESPACE character, so a null `.name` does not leave an empty field, it shifts every later field left by one and the workflow PATH is read as the name. Every case is checked against real bash so the claim is measured, not asserted."""
     cases = [
         "1\tCI\t.github/workflows/ci.yml\tabc\t1\t2026-01-01T00:00:00Z",
         "1\t\t.github/workflows/ci.yml\tabc\t1\t2026-01-01T00:00:00Z",
@@ -606,9 +589,8 @@ def test_divergence_a_null_workflow_name_shifts_the_fields_and_only_bash_complai
 
     A run with a null `.name` collapses to five tab-separated fields, so every later field shifts left: the workflow PATH is read as the name, the head sha as the path, the ATTEMPT NUMBER as the head, and the TIMESTAMP as the attempt. Both implementations then reach the same verdict -- dead head, not retried -- and the six counters, the exit code and the gh call log all agree.
 
-    What does NOT agree is one line. `[[ "2026-09-13T.." -ge 3 ]]` makes bash write `value too great for base (error token is "09")` to stderr and
-    evaluate FALSE; the port reads the field as 0 and reaches the same FALSE
-    without a diagnostic. `_as_int` names this in its docstring. It is asserted in BOTH directions here so nobody later "fixes" either side, and the ledger deliberately does not record this scenario.
+    What does NOT agree is one line. `[[ "2026-09-13T.." -ge 3 ]]` makes bash write `value too great for base (error token is "09")` to stderr and evaluate FALSE; the port reads the field as 0 and reaches the same FALSE without a diagnostic. `_as_int` names this in its docstring. It is asserted in BOTH directions here so nobody later "fixes" either side, and the ledger deliberately
+    does not record this scenario.
     """
     record = a_run(1, path=WATCHDOG)
     record["name"] = None
@@ -630,9 +612,7 @@ def test_divergence_a_null_workflow_name_shifts_the_fields_and_only_bash_complai
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the watchdog exclusion -- the filter that removes
-    63 of 64 measured candidates and whose absence looks like a busy night rather than a bug. Driven red, then the source is confirmed byte-identical
-    and green."""
+    """ANTI-VACUITY, planted on the watchdog exclusion -- the filter that removes 63 of 64 measured candidates and whose absence looks like a busy night rather than a bug. Driven red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
         'EXCLUDED_PATHS = (".github/workflows/watchdog-monitor.yml",)', "EXCLUDED_PATHS = ()"

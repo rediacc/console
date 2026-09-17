@@ -1,5 +1,4 @@
-"""wl_planfid: block a session that papers over an APPROVED PLAN with umbrella
-worklist items instead of tracking the plan's actual tasks.
+"""wl_planfid: block a session that papers over an APPROVED PLAN with umbrella worklist items instead of tracking the plan's actual tasks.
 
 WHY THIS EXISTS, from an incident on 2026-08-19 rather than from theory. The operator approved a plan at ~/.claude/plans/memoized-gliding-kay.md carrying four waves and roughly fifteen discrete tasks. The session seeded its worklist with exactly two items:
 
@@ -11,16 +10,13 @@ The operator caught it by hand: "you took it easy and wrote Round 4 which is not
 That is not a cosmetic naming complaint. The Stop battery's entire enforcement is "a turn cannot end while an open item tagged with this session remains", and that enforcement is only as good as the DECOMPOSITION behind it. One umbrella item is indistinguishable, to every check in this directory, from one small task: the hook sees a queue of length two and asks the same questions
 it would ask of a session with two afternoons of work left. Worse, an umbrella item can be TICKED, and the tick-evidence gate accepts one citation for twenty tasks. So the failure is not "an item was badly worded", it is "the instrument was disarmed and still reported green" -- the exact class TRAPS.md exists for.
 
-WHY IT BLOCKS, and this is the deliberate opposite of wl_admit next door. wl_admit never blocks because it triggers on PROSE, on a session voluntarily
-writing "I broke something", and punishing that teaches evasion; the honesty is
-the asset and must not be taxed. Nothing here is voluntary. The trigger is the SHAPE of tracked work measured against a document the operator already approved, and the remedy is bounded, mechanical, and known in advance: write down the tasks the plan already lists. There is no confession to chill and no judgement call to punish. A non-blocking version would also be self-defeating
-in a way the admission detector is not: its only non-blocking consequence could be to add a worklist item, and the defect under detection is precisely that this session writes worklist items which do not mean what they say. Asking an umbrella-writing session to police itself with one more item it can tick with a sentence is not a control. So it blocks, with three named exits,
-exactly like wl_reggate.
+WHY IT BLOCKS, and this is the deliberate opposite of wl_admit next door. wl_admit never blocks because it triggers on PROSE, on a session voluntarily writing "something broke", and punishing that teaches evasion; the honesty is the asset and must not be taxed. Nothing here is voluntary. The trigger is the SHAPE of tracked work measured against a document the operator already
+approved, and the remedy is bounded, mechanical, and known in advance: write down the tasks the plan already lists. There is no confession to chill and no judgement call to punish. A non-blocking version would also be self-defeating in a way the admission detector is not: its only non-blocking consequence could be to add a worklist item, and the defect under detection is precisely
+that this session writes worklist items which do not mean what they say. Asking an umbrella-writing session to police itself with one more item it can tick with a sentence is not a control. So it blocks, with three named exits, exactly like wl_reggate.
 
 WHY IT FAILS OPEN ON A BROKEN JUDGE, which is the opposite of wl_judge's no-escape-hatch contract, and the difference is the TRIGGER. wl_judge gates every stop and wl_reggate triggers on ARTIFACTS (a fix commit, a tick), so failing closed there costs a session that really did land a fix. This one triggers on a HEURISTIC about item shape. Failing closed would mean that any session
 with an approved plan and a coarse-looking queue is walled in permanently the moment the claude CLI is unavailable, for a suspicion no artifact supports. And unlike the stop judge, its absence opens no hatch: every other check in the battery, open items included, still runs. A failure is QUEUED for the session's next clean stop rather than dropped, because the queue survives the
-block stops this session is
-likely to be having; the trade is that it is told late rather than not at all.
+block stops this session is likely to be having; the trade is that it is told late rather than not at all.
 
 TWO TIERS, same discipline as wl_admit:
 
@@ -44,9 +40,8 @@ TWO TIERS, same discipline as wl_admit:
                           DECISIONS at a worklist that was already correctly
                           decomposed. See apply_planfid_verdict.
 
-WHY THE MODEL IS NOT OPTIONAL. The two prefilter signals are both shape, and shape is exactly what a coarse item can fake. "r4-B implement the solution-page bottom" is long, specific-sounding, carries no wave word, and is still one item
-covering four plan tasks. The regexes cannot see that; only reading the plan
-next to the items can. The prefilter is a COST FILTER and never the last word.
+WHY THE MODEL IS NOT OPTIONAL. The two prefilter signals are both shape, and shape is exactly what a coarse item can fake. "r4-B implement the solution-page bottom" is long, specific-sounding, carries no wave word, and is still one item covering four plan tasks. The regexes cannot see that; only reading the plan next to the items can. The prefilter is a COST FILTER and never the
+last word.
 
 RESIDUALS, named rather than pretended away:
   - PLAN DISCOVERY IS TRANSCRIPT-BOUND. The approval is an attachment record of
@@ -319,9 +314,7 @@ def prefilter(tasks, mine):
 def plan_sig(plan_path, plan_text):
     """Identity of the QUESTION: this plan, at this content.
 
-    Deliberately NOT a function of the item set. Keying on the items would make every added item a new question and re-pay the model call all the way through
-    a correct decomposition; keying on the plan means a settled verdict stands
-    until the plan itself changes, and a re-approved plan is asked again.
+    Deliberately NOT a function of the item set. Keying on the items would make every added item a new question and re-pay the model call all the way through a correct decomposition; keying on the plan means a settled verdict stands until the plan itself changes, and a re-approved plan is asked again.
     """
     h = hashlib.sha1()
     h.update((plan_path or "").encode("utf-8", "replace"))
@@ -335,9 +328,7 @@ def state_path(worklist, session_id):
 
 
 def load_state(path):
-    """(state, forgot). Corrupt state is DISCARDED WHOLE, never salvaged field by
-    field, for the reason wl_reggate.load_reggate gives: a half-parsed file
-    silently resurrects an unanswered question as settled."""
+    """(state, forgot). Corrupt state is DISCARDED WHOLE, never salvaged field by field, for the reason wl_reggate.load_reggate gives: a half-parsed file silently resurrects an unanswered question as settled."""
     default = {"scanned": 0, "plan": "", "settled": {}}
     if not path.exists():
         return default, False
@@ -486,9 +477,8 @@ def apply_planfid_verdict(pf, plan_text, mine, sig, lines, me8, item_re):
         #
         # The old reasoning ("the checkable half is the actionable half") is still sound in isolation and simply does not generalise off the incident shape: on a plan whose items are prose rather than wave labels, the judge reliably points at the ITEM and does not enumerate the tasks.
         #
-        # THE CONJUNCTION IS WHAT KEEPS THE FALSE-POSITIVE BOUND. `shortfall` is arithmetic, computed from the plan and the store with no model in the
-        # loop; the umbrella id is a model claim already checked against the real
-        # open items. Two independent sources, neither sufficient alone. Measured on a worklist that legitimately covers 15 plan tasks with 8 grouped items: 10 of 10 answers came back faithful with ZERO umbrella ids, so the rule added 0 false positives in 10 trials. N is small.
+        # THE CONJUNCTION IS WHAT KEEPS THE FALSE-POSITIVE BOUND. `shortfall` is arithmetic, computed from the plan and the store with no model in the loop; the umbrella id is a model claim already checked against the real open items. Two independent sources, neither sufficient alone. Measured on a worklist that legitimately covers 15 plan tasks with 8 grouped items: 10 of 10
+        # answers came back faithful with ZERO umbrella ids, so the rule added 0 false positives in 10 trials. N is small.
         #
         # prefilter() is REUSED rather than re-deriving the threshold, so the shortfall this consults can never drift from the one that decided to spend the call in the first place.
         if not (umb and any(k == "shortfall" for k, _d in prefilter(tasks, mine))):
@@ -527,8 +517,7 @@ def render_items(mine, cap=40):
 
 # ---- Controls ----------------------------------------------------------------
 
-# The real incident, quoted from ~/.claude/plans/memoized-gliding-kay.md and from the worklist as it stood before the operator caught it. Trimmed to the sections
-# that decide the verdict; the wording is verbatim.
+# The real incident, quoted from ~/.claude/plans/memoized-gliding-kay.md and from the worklist as it stood before the operator caught it. Trimmed to the sections that decide the verdict; the wording is verbatim.
 REAL_PLAN = """# www round 4: the page frame, the voice, and a docs surface people can browse
 
 ## Context
@@ -909,8 +898,7 @@ def _selftest():
             and not forgot2,
         )
 
-        # SETTLED LIFETIME. faithful and deferred are permanent; unevidenced
-        # expires the moment the worklist grows, which is the hole a permanent bank would leave open (see is_settled).
+        # SETTLED LIFETIME. faithful and deferred are permanent; unevidenced expires the moment the worklist grows, which is the hole a permanent bank would leave open (see is_settled).
         perm = {"settled": {"s1": {"verdict": "faithful"}}}
         check("a faithful verdict stays settled at any item count", is_settled(perm, "s1", 99))
         cond = {"settled": {"s2": {"verdict": "unevidenced", "items": 2}}}

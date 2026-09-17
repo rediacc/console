@@ -92,8 +92,7 @@ def find_modules(root: pathlib.Path) -> list[str]:
 
     Returns `./`-prefixed, byte-sorted paths, which is what
     `grep -rln ... . | grep -v node_modules | sort` produces under LC_ALL=C.
-    A ZERO-LENGTH RESULT IS NOT AN ERROR HERE; it is the caller's refusal, so
-    that a test can assert on the discovery and on the refusal separately.
+    A ZERO-LENGTH RESULT IS NOT AN ERROR HERE; it is the caller's refusal, so that a test can assert on the discovery and on the refusal separately.
     """
     found: list[str] = []
     for dirpath, _dirnames, filenames in paths.walk_tree(root):
@@ -103,8 +102,7 @@ def find_modules(root: pathlib.Path) -> list[str]:
         try:
             text = absolute.read_text(encoding="utf-8", errors="replace")
         except OSError:
-            # grep skips what it cannot read and carries on; it does not abort
-            # the scan. One unreadable go.mod must not turn a discovery gate into a gate that discovered nothing, which is the failure this whole file is written against.
+            # grep skips what it cannot read and carries on; it does not abort the scan. One unreadable go.mod must not turn a discovery gate into a gate that discovered nothing, which is the failure this whole file is written against.
             continue
         if REPLACE_NEEDLE not in text:
             continue

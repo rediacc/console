@@ -5,13 +5,10 @@ Turns a console PR body back into the submodule PRs it links, one `<owner>/<repo
 WHY IT EXISTS, in the twin's words: `check-submodule-branches.sh` reds the console PR while a LINKED submodule PR carries unresolved review threads, and the autopilot's review machinery only ever saw console's own threads. A round would answer every console finding and still sit red on a gate whose complaint lived in another repository.
 
 THE OTHER HALF OF THE PAIR IS `submodule-prs.sh`, WHICH WRITES WHAT THIS READS. The twin says so ("the same links submodule-prs.sh writes there"), and the coupling is the reason the three accepted spellings below are a CONTRACT and not an implementation detail: `submodule-prs.sh` composes the body block, `check-submodule-branches.sh` decides a body is acceptable, and this script
-parses it back. A spelling added to one and not the others is a link that is written and never read, or read and never gated. This port does not touch
-`submodule-prs.sh`; it records the coupling so a future edit to either one is
-made knowing the other exists.
+parses it back. A spelling added to one and not the others is a link that is written and never read, or read and never gated. This port does not touch `submodule-prs.sh`; it records the coupling so a future edit to either one is made knowing the other exists.
 
-THE REPO ALLOWLIST IS THE SECURITY BOUNDARY, and it is `SUB_REPOS` below. A PR body is operator-authored on an armed PR but is still text, and this output decides which repositories the gate will fetch review comments from and hand to
-a model. Only the four submodules are recognised; a link to anything else,
-however well-formed, is ignored. The list is held to `check-submodule-branches.sh`'s own hardcoded map, so a submodule missing there is invisible here too, exactly as the twin intends.
+THE REPO ALLOWLIST IS THE SECURITY BOUNDARY, and it is `SUB_REPOS` below. A PR body is operator-authored on an armed PR but is still text, and this output decides which repositories the gate will fetch review comments from and hand to a model. Only the four submodules are recognised; a link to anything else, however well-formed, is ignored. The list is held to
+`check-submodule-branches.sh`'s own hardcoded map, so a submodule missing there is invisible here too, exactly as the twin intends.
 
 -----------------------------------------------------------------------------
 WHAT `grep` DOES THAT A NAIVE PORT WOULD NOT, all four reproduced
@@ -52,9 +49,7 @@ WHAT `grep` DOES THAT A NAIVE PORT WOULD NOT, all four reproduced
 THE ONE KNOWN DIVERGENCE, PINNED BY A TEST
 -----------------------------------------------------------------------------
 `--owner` IS INTERPOLATED INTO A REGULAR EXPRESSION, in the twin and therefore here: `re.escape` would be a different program, matching owners the twin does not. An owner carrying an unbalanced bracket is consequently invalid regex syntax, where the twin gets grep's own diagnostic (`grep: Unmatched ( or \\(`, exit 2, four times, all swallowed by `|| true`) and this port gets
-Python's.
-Exit code, stdout and the empty result agree; only the diagnostic text differs,
-and `test_divergence_an_owner_that_is_not_valid_regex` asserts exactly that so nobody later "fixes" the port into refusing.
+Python's. Exit code, stdout and the empty result agree; only the diagnostic text differs, and `test_divergence_an_owner_that_is_not_valid_regex` asserts exactly that so nobody later "fixes" the port into refusing.
 
 Not a security hole in either implementation: an owner that fails to compile matches NOTHING, which is the safe direction, and the allowlist of four names is applied whatever the owner is.
 

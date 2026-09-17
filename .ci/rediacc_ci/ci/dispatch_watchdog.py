@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/dispatch-watchdog.sh` (138 lines).
 
-Dispatches ONE generation of the chained watchdog monitor. The twin's header carries why the chain exists (ubuntu-slim's 15-minute job cap against a 1-2h CI
-run) and who calls it; none of it is restated here.
+Dispatches ONE generation of the chained watchdog monitor. The twin's header carries why the chain exists (ubuntu-slim's 15-minute job cap against a 1-2h CI run) and who calls it; none of it is restated here.
 
-LIVE CALLERS, not repointed: `.github/workflows/ci.yml` (CI Watchdog bootstrap, `--generation 1`) and `.github/workflows/watchdog-monitor.yml` (chain handoff).
-The bash twin stays the registered gate; this module is its verified-equivalent
-alternative, and the cutover is a separate, later, driver-only step.
+LIVE CALLERS, not repointed: `.github/workflows/ci.yml` (CI Watchdog bootstrap, `--generation 1`) and `.github/workflows/watchdog-monitor.yml` (chain handoff). The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
 Ledger: `.ci/shadow/w7p6-dispatch-watchdog.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-watchdog --assert --k 5`).
 
@@ -323,9 +320,7 @@ def main(argv: list[str]) -> int:
     dispatch_err = out
 
     if is_bootstrap_404(dispatch_err):
-        # workflow_dispatch resolves the workflow FILENAME against the DEFAULT branch's registry, so until watchdog-monitor.yml has landed on main it
-        # cannot be dispatched from ANY ref. One-time bootstrap condition; fail
-        # OPEN with a loud warning instead of failing the job.
+        # workflow_dispatch resolves the workflow FILENAME against the DEFAULT branch's registry, so until watchdog-monitor.yml has landed on main it cannot be dispatched from ANY ref. One-time bootstrap condition; fail OPEN with a loud warning instead of failing the job.
         log.warn(
             "watchdog-monitor.yml is not registered on the default branch yet "
             "(pre-merge bootstrap) - run %s continues UNWATCHED" % args["run_id"]

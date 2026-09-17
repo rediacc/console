@@ -1,5 +1,4 @@
-"""`rediacc_ci.proxies.linux_packages` against its bash twin
-`.ci/scripts/test/proxies/proxy-linux-packages.sh` (gate `check:ci-proxy-linux-packages`, `package.json:385`).
+"""`rediacc_ci.proxies.linux_packages` against its bash twin `.ci/scripts/test/proxies/proxy-linux-packages.sh` (gate `check:ci-proxy-linux-packages`, `package.json:385`).
 
 Sibling of `test_proxies_ensure_nfpm.py`; see that file for why the two invocations are compared byte for byte rather than as a finding set.
 

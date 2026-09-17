@@ -114,9 +114,7 @@ def require_tools() -> tuple[str, str]:
 
 
 class FixtureError(harness.GateAssertionError):
-    """A fixture that could not be built. Distinct so a reader can tell a broken
-    fixture from a broken subject, which is the one distinction a failing
-    end-to-end test most often loses."""
+    """A fixture that could not be built. Distinct so a reader can tell a broken fixture from a broken subject, which is the one distinction a failing end-to-end test most often loses."""
 
 
 # --------------------------------------------------------------------------- the fixture
@@ -262,8 +260,7 @@ require("fs").writeFileSync(
 
     def _write_gh_shim(self) -> None:
         """The `gh` shim. `SCOPE_GH_FAIL=1` turns every call into a failure, which
-        is how the engine-failure case breaks the engine without touching its
-        source."""
+        is how the engine-failure case breaks the engine without touching its source."""
         self.bin.mkdir(parents=True, exist_ok=True)
         shim = self.bin / "gh"
         shim.write_text(
@@ -299,8 +296,7 @@ exit 1
         shim.chmod(shim.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     def _expected_false(self) -> str:
-        """The seventeen keys a correct reduced plan must mark false, derived from
-        the real surface table rather than listed by hand.
+        """The seventeen keys a correct reduced plan must mark false, derived from the real surface table rather than listed by hand.
 
         Sorted AFTER the `run_<k>=false` suffix is applied, so this side and the
         Python sort in the case below are byte-order sorts over the SAME strings rather than two sorts that merely agree today. Sorting the bare keys first
@@ -419,8 +415,7 @@ class GateRun:
 
 @pytest.fixture(scope="module")
 def fixture(tmp_path_factory):
-    """`build_fixture`, once. See the module docstring for why once and not eight
-    times; the shape is the twin's, which also builds it a single time."""
+    """`build_fixture`, once. See the module docstring for why once and not eight times; the shape is the twin's, which also builds it a single time."""
     return Fixture(tmp_path_factory.mktemp("scope-gate-outputs"))
 
 
@@ -450,9 +445,8 @@ def test_the_fixture_carries_a_real_engine(gate, fixture):
 
 
 def test_emitted_names_match_the_workflow_contract(gate, fixture):
-    """The emitter can only ever produce `run_<key>` for a key in scope-map's
-    JOB_SURFACES, so comparing that table to the literal list above is the whole contract: same 18 names, same spelling. A key added to scope-map without a matching ci.yml output would be emitted and dropped on the floor; a key renamed in ci.yml without scope-map would be read as empty forever, which reads as "run
-    it" and is safe but silently free of any saving at all."""
+    """The emitter can only ever produce `run_<key>` for a key in scope-map's JOB_SURFACES, so comparing that table to the literal list above is the whole contract: same 18 names, same spelling. A key added to scope-map without a matching ci.yml output would be emitted and dropped on the floor; a key renamed in ci.yml without scope-map would be read as empty forever, which
+    reads as "run it" and is safe but silently free of any saving at all."""
     from_map = fixture.surface_keys()
     gate.assert_eq(
         "\n".join(from_map),
@@ -508,9 +502,8 @@ def test_reduced_plan_emits_exactly_the_out_of_scope_keys(gate, fixture):
 
 
 def test_quiet_wire_values_do_not_trip_the_kill_switch(gate, fixture):
-    """THE EXACT STRINGS ci.yml PRODUCES ON AN ORDINARY PR. `vars.FULL_CI` is the
-    EMPTY STRING when the repository variable is unset, and the label check `contains(...)` renders the literal 'false', never an empty value. Both must read as "not forced". Comparing against 'true' rather than testing for non-emptiness is what makes that work, and this case exists so nobody can later relax it to `[[ -n "$FORCE_FULL_CI" ]]` and make every PR full while the engine
-    looks perfectly healthy."""
+    """THE EXACT STRINGS ci.yml PRODUCES ON AN ORDINARY PR. `vars.FULL_CI` is the EMPTY STRING when the repository variable is unset, and the label check `contains(...)` renders the literal 'false', never an empty value. Both must read as "not forced". Comparing against 'true' rather than testing for non-emptiness is what makes that work, and this case exists so nobody can
+    later relax it to `[[ -n "$FORCE_FULL_CI" ]]` and make every PR full while the engine looks perfectly healthy."""
     run = fixture.run_gate("quietwire", env={"FORCE_FULL_CI": "", "FULL_CI_LABEL": "false"})
     gate.assert_exit_code(0, run.rc, "the gate must always exit 0")
     gate.assert_contains(
@@ -529,9 +522,7 @@ def test_quiet_wire_values_do_not_trip_the_kill_switch(gate, fixture):
 
 
 def test_the_deciding_plan_is_the_baseline_plan(gate, fixture):
-    """The reduction above can only come from `--resolve-baseline`: the merge-base
-    classify over B..C2 also touches docs/a.md, and would classify identically here, so the two are told apart by WHICH artifact plan.json was built from. plan.json carries the baseline walk's own fields; a plan.json written from
-    scope-classify.json cannot have them."""
+    """The reduction above can only come from `--resolve-baseline`: the merge-base classify over B..C2 also touches docs/a.md, and would classify identically here, so the two are told apart by WHICH artifact plan.json was built from. plan.json carries the baseline walk's own fields; a plan.json written from scope-classify.json cannot have them."""
     run = fixture.run_gate("deciding")
     gate.assert_exit_code(0, run.rc, "the gate must always exit 0")
     plan = run.plan()
@@ -550,8 +541,7 @@ def test_the_deciding_plan_is_the_baseline_plan(gate, fixture):
 
 
 def test_engine_failure_emits_no_false_line(gate, fixture):
-    """(b) THE SAFETY PROPERTY. An engine that cannot reach the API must not shrink
-    the run by a single job."""
+    """(b) THE SAFETY PROPERTY. An engine that cannot reach the API must not shrink the run by a single job."""
     run = fixture.run_gate("enginefail", env={"SCOPE_GH_FAIL": "1"})
     gate.assert_exit_code(0, run.rc, "an engine failure must still exit 0")
     gate.assert_eq(
@@ -637,8 +627,7 @@ def test_plan_write_failure_emits_nothing_and_still_exits_zero(gate, fixture):
 
 
 def test_unset_output_file_decides_nothing(gate, fixture):
-    """The old shadow behaviour, kept reachable: a local run has no `$GITHUB_OUTPUT`
-    and must neither crash nor invent one. It must still write the plan, which is
+    """The old shadow behaviour, kept reachable: a local run has no `$GITHUB_OUTPUT` and must neither crash nor invent one. It must still write the plan, which is
     what makes `SCOPE_SHADOW_OUT=... scope-shadow.sh` a usable way to see what a
     change WOULD scope to."""
     run = fixture.run_gate("nooutput", unset=("OUTPUT_FILE",))

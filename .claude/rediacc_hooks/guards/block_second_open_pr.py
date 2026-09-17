@@ -1,5 +1,4 @@
-"""ONE OPEN PR AT A TIME. Refuse `gh pr create` when this author already has an
-open PR in the target repo.
+"""ONE OPEN PR AT A TIME. Refuse `gh pr create` when this author already has an open PR in the target repo.
 
 WHY THIS IS A HOOK AND NOT A LINE IN CLAUDE.md. The operator's ruling, and the incident behind it: a single session opened FOUR stacked PRs over one night, each one individually reasonable (new work arrived, it needed a base, the previous PR was not merged yet), and the result was four unmerged PRs waiting on one person. Nothing in CLAUDE.md or the pr-babysit command stopped it,
 because instructions only bind a session that reads them, remembers them, and applies them at the one second that matters. PreToolUse is the only surface that can DENY the command before it runs, which is the difference between a preference and a control.

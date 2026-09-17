@@ -163,8 +163,7 @@ def summary(gate, output: str) -> tuple[int, int, int]:
 
 
 def test_passes_on_real_repo(gate):
-    """THE REAL-TREE CASE. Real policy files, real manifests, real `git ls-files`,
-    no seams. A FAIL-tier stale entry anywhere in the tree reds here."""
+    """THE REAL-TREE CASE. Real policy files, real manifests, real `git ls-files`, no seams. A FAIL-tier stale entry anywhere in the tree reds here."""
     npx = require_subject(gate)
     result = harness.run([npx, "tsx", SUBJECT_REL], cwd=paths.repo_root())
     gate.assert_exit_code(
@@ -177,9 +176,7 @@ def test_passes_on_real_repo(gate):
 
 
 def test_the_real_run_reports_a_non_trivial_corpus(gate):
-    """ADDED BY THE PORT. The twin's real-repo case is satisfied by a run that
-    checked ZERO entries, because `probes:` is printed either way. This reads the counts out of the summary and refuses a collapse, and PRINTS the shape so a
-    reader can see the green was non-trivial."""
+    """ADDED BY THE PORT. The twin's real-repo case is satisfied by a run that checked ZERO entries, because `probes:` is printed either way. This reads the counts out of the summary and refuses a collapse, and PRINTS the shape so a reader can see the green was non-trivial."""
     npx = require_subject(gate)
     result = harness.run([npx, "tsx", SUBJECT_REL], cwd=paths.repo_root())
     gate.assert_exit_code(
@@ -205,9 +202,7 @@ def test_the_real_run_reports_a_non_trivial_corpus(gate):
 
 
 def test_fires_on_dead_deps_entry(gate):
-    """THE FIRING DIRECTION, and the case the whole gate exists for. The finding
-    must name the entry, cite file:line, and hand over the follow-up command --
-    "something is stale" sends the reader grepping."""
+    """THE FIRING DIRECTION, and the case the whole gate exists for. The finding must name the entry, cite file:line, and hand over the follow-up command -- "something is stale" sends the reader grepping."""
     with harness.temp_dir() as root:
         make_fixture(gate, root)
         write_policy(
@@ -228,8 +223,7 @@ def test_fires_on_dead_deps_entry(gate):
 
 def test_no_false_positive_on_live_entry(gate):
     """THE CONTROL FOR THE CASE ABOVE. eslint is genuinely declared in the root
-    manifest, which is the only one the fixture carries. (zod would NOT work here: it appears in the real package.json only under "overrides", and an override is
-    not a declaration, so the deps probe would correctly condemn it.)"""
+    manifest, which is the only one the fixture carries. (zod would NOT work here: it appears in the real package.json only under "overrides", and an override is not a declaration, so the deps probe would correctly condemn it.)"""
     with harness.temp_dir() as root:
         make_fixture(gate, root)
         write_policy(
@@ -244,8 +238,7 @@ def test_no_false_positive_on_live_entry(gate):
 
 
 def test_oracle_floor_skips_instead_of_condemning(gate):
-    """A SUSPECT ORACLE MUST SKIP LOUDLY, never condemn. Two deps only, far below
-    the deps probe's floor of 20: the direct analogue of the `total_vulns>0` guard in `.ci/scripts/security/audit.sh`.
+    """A SUSPECT ORACLE MUST SKIP LOUDLY, never condemn. Two deps only, far below the deps probe's floor of 20: the direct analogue of the `total_vulns>0` guard in `.ci/scripts/security/audit.sh`.
 
     The second, LIVE entry on a healthy probe is not decoration. Without it the only entry is the skipped one, the run asserts nothing, and the gate's own anti-vacuity refusal fails it for a different reason than the one under test.
     """
@@ -277,8 +270,7 @@ def test_oracle_floor_skips_instead_of_condemning(gate):
 
 
 def test_vacuous_run_fails(gate):
-    """THE ANTI-VACUITY REFUSAL, IN THE SUBJECT. No manifests, no lockfile, no
-    `.github`, no go.mod: every oracle unavailable, yet entries exist. The run proved nothing and must not report success.
+    """THE ANTI-VACUITY REFUSAL, IN THE SUBJECT. No manifests, no lockfile, no `.github`, no go.mod: every oracle unavailable, yet entries exist. The run proved nothing and must not report success.
 
     `.ci/policy` alone is not a full checkout (`isFullCheckout` wants `.ci/scripts/quality`, `package.json` and `.github/workflows`), so this stays the all-oracles-missing root it was before the lists moved there.
     """
@@ -297,9 +289,7 @@ def test_vacuous_run_fails(gate):
 
 
 def test_composite_action_counts_as_a_reference(gate):
-    """`create-github-app-token` is referenced ONLY from the composite action.
-    Before `collectActionRefs()` scanned `.github/actions`, this entry would have
-    been wrongly condemned -- a false positive that deletes a live pin."""
+    """`create-github-app-token` is referenced ONLY from the composite action. Before `collectActionRefs()` scanned `.github/actions`, this entry would have been wrongly condemned -- a false positive that deletes a live pin."""
     with harness.temp_dir() as root:
         make_fixture(gate, root)
         write_policy(
@@ -344,9 +334,7 @@ def test_a_python_port_invocation_keeps_its_exemption_alive(gate):
 
 
 def test_an_uninvoked_python_port_exemption_is_still_condemned(gate):
-    """THE FIRING HALF of the pair above, and the reason widening the oracle did
-    not make it toothless: with no workflow naming it, the same `.py` entry must
-    still be reported dead."""
+    """THE FIRING HALF of the pair above, and the reason widening the oracle did not make it toothless: with no workflow naming it, the same `.py` entry must still be reported dead."""
     with harness.temp_dir() as root:
         make_fixture(gate, root)
         write_policy(
@@ -362,8 +350,7 @@ def test_an_uninvoked_python_port_exemption_is_still_condemned(gate):
 
 
 def test_overrides_warn_never_fail(gate):
-    """TIERING. A dead override is a human call, not a build break, so it WARNS and
-    the gate still exits 0 -- and the warning carries the removal command."""
+    """TIERING. A dead override is a human call, not a build break, so it WARNS and the gate still exits 0 -- and the warning carries the removal command."""
     with harness.temp_dir() as root:
         make_fixture(gate, root)
         add_override(
@@ -378,8 +365,7 @@ def test_overrides_warn_never_fail(gate):
 
 
 def test_preventive_annotation_silences_override_warning(gate):
-    """THE OPT-OUT, and the converse of the case above. An override that guards
-    against a vulnerable transitive RETURNING is dead by construction and must not be reported forever.
+    """THE OPT-OUT, and the converse of the case above. An override that guards against a vulnerable transitive RETURNING is dead by construction and must not be reported forever.
 
     The reason string here uses a plain hyphen where the twin uses an em dash. The
     matcher is `/^BLOCKER:\\s*preventive\\b/i`, so only the word is load-bearing;
@@ -398,8 +384,7 @@ def test_preventive_annotation_silences_override_warning(gate):
 
 
 def test_findings_are_capped(gate):
-    """25 dead entries against a per-probe output cap of 10. The roll-up line is
-    what keeps a bulk failure readable instead of burying the other probes."""
+    """25 dead entries against a per-probe output cap of 10. The roll-up line is what keeps a bulk failure readable instead of burying the other probes."""
     with harness.temp_dir() as root:
         make_fixture(gate, root)
         lines = ["# BLOCKER: bulk planted dead entries to prove the per-probe output cap works"]
@@ -436,9 +421,7 @@ def test_fires_on_dead_template_skiplist_entry(gate):
 
 
 def test_cli_i18n_prefix_matching(gate):
-    """PREFIXES ARE MATCHED AS PREFIXES, not as exact keys. Both directions in one
-    fixture: a live dynamic-key prefix that still matches leaves must survive, and a prefix matching nothing must fire. A gate doing exact-key lookups would
-    condemn the first and pass the second."""
+    """PREFIXES ARE MATCHED AS PREFIXES, not as exact keys. Both directions in one fixture: a live dynamic-key prefix that still matches leaves must survive, and a prefix matching nothing must fire. A gate doing exact-key lookups would condemn the first and pass the second."""
     with harness.temp_dir() as root:
         make_fixture(gate, root)
         catalog_rel = ("packages", "cli", "src", "i18n", "locales", "en", "cli.json")

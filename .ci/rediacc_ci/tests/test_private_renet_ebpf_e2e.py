@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/private/renet_ebpf_e2e.py` against its twin
-`.ci/scripts/private/renet-ebpf-e2e.sh`.
+"""Differential: `.ci/rediacc_ci/private/renet_ebpf_e2e.py` against its twin `.ci/scripts/private/renet-ebpf-e2e.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
@@ -345,9 +344,7 @@ def test_every_fake_is_actually_reached(tmp_path):
 
 
 def test_an_already_mounted_bpffs_is_not_mounted_again(tmp_path):
-    """THE NEGATIVE CONTROL on the mount decision. A port that mounted
-    unconditionally would satisfy every positive assertion in this file and
-    would stack a second bpffs over the live one on every CI run."""
+    """THE NEGATIVE CONTROL on the mount decision. A port that mounted unconditionally would satisfy every positive assertion in this file and would stack a second bpffs over the live one on every CI run."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, fstype=b"bpf_fs\n")
     for subject in (TWIN_REL, PORT_REL):
@@ -358,9 +355,7 @@ def test_an_already_mounted_bpffs_is_not_mounted_again(tmp_path):
 
 
 def test_the_loud_skip_guard_fires_on_an_all_skips_run(tmp_path):
-    """THE POSITIVE CONTROL for the reason this script exists. `go test` exits 0
-    when every test skipped, and without the guard both subjects would report
-    success having verified nothing at all."""
+    """THE POSITIVE CONTROL for the reason this script exists. `go test` exits 0 when every test skipped, and without the guard both subjects would report success having verified nothing at all."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, fstype=b"bpf_fs\n", out=ALL_SKIP)
     for subject in (TWIN_REL, PORT_REL):
@@ -382,9 +377,7 @@ def test_the_guard_does_not_fire_on_a_real_pass(tmp_path):
 
 
 def test_the_em_dash_reaches_stdout_as_the_character(tmp_path):
-    """The port spells U+2014 as an escape so no em dash is TYPED into a file
-    under `.ci/rediacc_ci`; the CHARACTER still has to be printed, because the twin prints it and the whole claim is byte-identical output. Asserted on the
-    raw bytes so an escape that never got interpreted would show up."""
+    """The port spells U+2014 as an escape so no em dash is TYPED into a file under `.ci/rediacc_ci`; the CHARACTER still has to be printed, because the twin prints it and the whole claim is byte-identical output. Asserted on the raw bytes so an escape that never got interpreted would show up."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, fstype=b"bpf_fs\n", out=ALL_SKIP)
     for subject in (TWIN_REL, PORT_REL):
@@ -418,8 +411,7 @@ def test_a_failed_mount_stops_before_go(tmp_path):
 
 
 def test_the_mask_does_not_hide_the_message(tmp_path):
-    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix
-    on both sides; if it were greedier it would hide real divergences and every
+    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix on both sides; if it were greedier it would hide real divergences and every
     case above would pass for the wrong reason."""
     sample = "/a/b/twin.sh: line 20: mount: command not found\nkept: line noise\n"
     masked = _mask(sample, pathlib.Path("/nowhere"), pathlib.Path("/nowhere-either"))

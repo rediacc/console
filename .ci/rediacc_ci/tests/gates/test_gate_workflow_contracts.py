@@ -112,8 +112,7 @@ EXTRA_EXEMPTION = "claude-review-reusable.yml:ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN"
 def run_check_live(directory) -> harness.RunResult:
     """CHECK 2 with the exemption liveness sweep forced ON against a fixture tree.
 
-    SLIM coverage is pinned off because it defaults from the same flag and this
-    fixture has no slim job to offer; CHECK 3 has its own test.
+    SLIM coverage is pinned off because it defaults from the same flag and this fixture has no slim job to offer; CHECK 3 has its own test.
     """
     return run_check(
         directory,

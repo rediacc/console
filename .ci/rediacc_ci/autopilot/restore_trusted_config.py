@@ -36,10 +36,8 @@ assert` FAILS the second assert with
     trusted-config-drift: '.claude' differs from the pre-checkout snapshot
     trusted-config-drift: '.husky' differs from the pre-checkout snapshot
 
-on a checkout nobody touched. The snapshot now holds `.claude/.claude`, which the checkout does not, so `diff -r` is right and the message is pointing at the
-wrong side. Every directory-valued protected entry is affected; the file-valued
-ones are simply overwritten and stay correct. Any re-run of the snapshot step -- a retried job, two jobs sharing one snapshot path, a workflow that snapshots per matrix leg -- reds the control with a diagnosis that blames the branch. It is REPRODUCED here rather than repaired: the twin stays live and registered until cutover, and a port that silently disagreed with it would be a
-worse outcome than a defect both implementations share. `test_defect_snapshotting_ twice_poisons_the_baseline` is the pin.
+on a checkout nobody touched. The snapshot now holds `.claude/.claude`, which the checkout does not, so `diff -r` is right and the message is pointing at the wrong side. Every directory-valued protected entry is affected; the file-valued ones are simply overwritten and stay correct. Any re-run of the snapshot step -- a retried job, two jobs sharing one snapshot path, a workflow
+that snapshots per matrix leg -- reds the control with a diagnosis that blames the branch. It is REPRODUCED here rather than repaired: the twin stays live and registered until cutover, and a port that silently disagreed with it would be a worse outcome than a defect both implementations share. `test_defect_snapshotting_ twice_poisons_the_baseline` is the pin.
 
 -----------------------------------------------------------------------------
 TWO HAZARDS, REPORTED RATHER THAN REPAIRED
@@ -124,8 +122,7 @@ def read_manifest(snapshot: str) -> list[str]:
     """The manifest's lines, in file order, blank lines dropped.
 
     `while IFS= read -r entry; [[ -z "$entry" ]] && continue`, plus the detail
-    that bash's `read` DISCARDS a final line with no newline. `: >file` then `echo >>` always terminates every line, so the two agree on everything this
-    script writes; the difference only shows on a hand-edited manifest.
+    that bash's `read` DISCARDS a final line with no newline. `: >file` then `echo >>` always terminates every line, so the two agree on everything this script writes; the difference only shows on a hand-edited manifest.
     """
     with open(manifest_path(snapshot), "rb") as handle:
         raw = handle.read()
@@ -176,8 +173,7 @@ def copy_a(src: str, dest: str) -> None:
 
 
 def move(src: str, dest: str) -> None:
-    """`mv SRC DEST`. `shutil.move` already implements the DEST-is-a-directory
-    rule, which is the one behaviour of `mv` that surprises people."""
+    """`mv SRC DEST`. `shutil.move` already implements the DEST-is-a-directory rule, which is the one behaviour of `mv` that surprises people."""
     shutil.move(src, dest)
 
 

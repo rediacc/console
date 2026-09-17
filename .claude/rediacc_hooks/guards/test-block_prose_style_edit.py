@@ -172,9 +172,7 @@ for name, payload, want in CASES:
         print("    stderr: %s" % err.strip().splitlines()[:3])
 
 print()
-# ANTI-VACUITY. A suite where nothing blocked, or where everything did, has compared the guard against a constant. `test_every_guard_discriminates` makes
-# the same argument for the differential's corpus; it is made here too because
-# this harness is the ONLY control for a guard with no oracle.
+# ANTI-VACUITY. A suite where nothing blocked, or where everything did, has compared the guard against a constant. `test_every_guard_discriminates` makes the same argument for the differential's corpus; it is made here too because this harness is the ONLY control for a guard with no oracle.
 if blocked == 0 or blocked == len(CASES):
     print(
         "*** FAIL *** %d of %d cases blocked: the guard answered the same way on every "

@@ -1,7 +1,6 @@
 """`rediacc_ci.release.validate_stage_artifacts` against its bash twin.
 
-Sibling of `test_deploy_resolve_account_deploy_config.py`; see that file for
-why `/dev/stdout` is not used as `$GITHUB_OUTPUT`/`$GITHUB_STEP_SUMMARY`. The
+Sibling of `test_deploy_resolve_account_deploy_config.py`; see that file for why `/dev/stdout` is not used as `$GITHUB_OUTPUT`/`$GITHUB_STEP_SUMMARY`. The
 K=5 ledger is `.ci/shadow/w7p5a-validate-stage-artifacts.observations.jsonl`
 (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-validate-stage-artifacts --assert --k 5` -> "equivalence holds over 5 distinct trees").
 
@@ -36,9 +35,7 @@ MODULE = "validate_stage_artifacts"
 
 
 def _build_fixture(root: pathlib.Path, twin_root: str) -> None:
-    """Copy just enough of the real tree for the bash twin's own root
-    resolution (`get_repo_root()`) to land on `root` instead of this
-    checkout."""
+    """Copy just enough of the real tree for the bash twin's own root resolution (`get_repo_root()`) to land on `root` instead of this checkout."""
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "release").mkdir(parents=True, exist_ok=True)
     shutil.copy2(os.path.join(twin_root, COMMON_REL), root / COMMON_REL)
@@ -131,8 +128,7 @@ def test_full_dist_with_channel_passes(tmp_path: pathlib.Path) -> None:
 
 
 def test_missing_event_name_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> None:
-    """`$GITHUB_STEP_SUMMARY`/`$GITHUB_OUTPUT` are always supplied by
-    `run_both` (both point at real temp files), so the first genuinely-missing required var is `EVENT_NAME`. Wording is not byte-identical here: bash's
+    """`$GITHUB_STEP_SUMMARY`/`$GITHUB_OUTPUT` are always supplied by `run_both` (both point at real temp files), so the first genuinely-missing required var is `EVENT_NAME`. Wording is not byte-identical here: bash's
     own `${VAR:?msg}` diagnostic (line-numbered) differs from the port's, same
     as every other twin in this box."""
     root = tmp_path / "fixture"

@@ -154,7 +154,7 @@ def _corpus(root: str, suffixes: tuple[str, ...], prune: tuple[str, ...]) -> lis
 
 
 def _report(root: str, path: str, number: int, line: str) -> str:
-    """One finding, in the twin's two-line `printf '  %s:%d\\n    %s\\n'` shape.
+    """One finding, in the twin's two-line `printf ' %s:%d\\n %s\\n'` shape.
 
     The path is made relative with `${f#"$root"/}`, which is a PREFIX strip and
     not a path computation: a file that is not under `root` keeps its full name, which is what the twin does and is the harmless case.
@@ -200,8 +200,7 @@ def scan(root: str) -> list[str]:
 
 
 def scan_js(root: str) -> list[str]:
-    """JS/TS callers that exec agent-browser through a THROWING exec and discard
-    the child's stdout.
+    """JS/TS callers that exec agent-browser through a THROWING exec and discard the child's stdout.
 
     See the module docstring for the 2026-08-31 CI red (run 33430885467, job 99616335703) this half was written for.
     """

@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.test_d1_migrations` against its twin
-`.ci/scripts/deploy/test-d1-migrations.sh`.
+"""Differential: `rediacc_ci.deploy.test_d1_migrations` against its twin `.ci/scripts/deploy/test-d1-migrations.sh`.
 
 A RECORDING FAKE FOR `npx` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
@@ -208,8 +207,7 @@ def fixture(
     regions: dict | None = DEFAULT_REGIONS,
     worker_dir: bool = True,
 ) -> pathlib.Path:
-    """A throwaway repository holding the twin, clone-d1.sh, common.sh and
-    regions.json.
+    """A throwaway repository holding the twin, clone-d1.sh, common.sh and regions.json.
 
     `regions=None` REMOVES regions.json entirely, which is the input for fact 1.
     """
@@ -351,9 +349,7 @@ def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
 
 
 def test_edge_databases_are_tested_before_stable_ones(tmp_path) -> None:
-    """THE ORDERING IS THE TWIN'S HEADER'S WHOLE POINT: edge is the soak
-    environment, so a regression must surface there before it can propagate to stable on the next promotion. A port that concatenated the two lists the
-    other way round would print the same four groups and exit 0."""
+    """THE ORDERING IS THE TWIN'S HEADER'S WHOLE POINT: edge is the soak environment, so a regression must surface there before it can propagate to stable on the next promotion. A port that concatenated the two lists the other way round would print the same four groups and exit 0."""
     _root, old, new = run_both(tmp_path)
     _agree(old, new, "edge-first")
 
@@ -380,9 +376,7 @@ def test_edge_databases_are_tested_before_stable_ones(tmp_path) -> None:
 def test_the_generated_config_is_byte_identical_and_removed_after_each_region(
     tmp_path,
 ) -> None:
-    """The file is written, used and removed inside one iteration, so nothing
-    survives a successful run. `clone-d1.sh` is what makes this checkable: it runs BETWEEN the write and the apply, and a port that wrote the file later
-    would change the order of the calls around it."""
+    """The file is written, used and removed inside one iteration, so nothing survives a successful run. `clone-d1.sh` is what makes this checkable: it runs BETWEEN the write and the apply, and a port that wrote the file later would change the order of the calls around it."""
     root, old, new = run_both(tmp_path)
     _agree(old, new, "generated-config")
     assert not (root / "workers" / "www" / port.TMPCONFIG_BASENAME).exists()
@@ -416,9 +410,7 @@ def test_the_cleanup_trap_deletes_every_clone_and_says_so(tmp_path) -> None:
 
 
 def test_a_delete_that_fails_is_reported_as_failed_not_as_deleted(tmp_path) -> None:
-    """THE TWIN'S OWN COMMENT CALLS THIS A REPAIR: the old form swallowed
-    stderr, ignored the status and printed `Deleted $db` unconditionally, so a clone left behind announced itself as cleaned up. The warning's WORDING is
-    part of it, and is asserted whole."""
+    """THE TWIN'S OWN COMMENT CALLS THIS A REPAIR: the old form swallowed stderr, ignored the status and printed `Deleted $db` unconditionally, so a clone left behind announced itself as cleaned up. The warning's WORDING is part of it, and is asserted whole."""
     _root, old, new = run_both(tmp_path, FAKE_D1_DELETE_FAILS="1")
     _agree(old, new, "delete-fails")
 
@@ -435,8 +427,7 @@ def test_a_delete_that_fails_is_reported_as_failed_not_as_deleted(tmp_path) -> N
 def test_fact_an_unreadable_regions_json_is_a_green_run_that_tested_nothing(
     tmp_path,
 ) -> None:
-    """THE VACUITY DEFECT, and it is the reason this port carries a named
-    constant for it.
+    """THE VACUITY DEFECT, and it is the reason this port carries a named constant for it.
 
     `< <(jq ...)` is a PROCESS SUBSTITUTION, so neither `set -e` nor `pipefail` can see jq's failure. With `regions.json` gone both lists are empty, the loop runs zero times, and the run reports success. Reproduced, not repaired: adding a floor changes what the release pipeline accepts, which is a cutover-box decision.
     """
@@ -483,8 +474,7 @@ def test_fact_the_workspace_takes_over_after_the_first_region(tmp_path) -> None:
 
 
 def test_fact_the_uuid_guard_only_fires_for_valid_json_without_a_uuid(tmp_path) -> None:
-    """TWO INPUTS, TWO DIFFERENT ENDINGS, and only one of them reaches the
-    guard's own sentence.
+    """TWO INPUTS, TWO DIFFERENT ENDINGS, and only one of them reaches the guard's own sentence.
 
     With `FAKE_D1_INFO_HAS_NO_UUID` the JSON parses and has no `uuid`, so jq prints nothing, all three stages exit 0, and `Failed to get UUID` is printed. With a `d1 info` that EXITS NON-ZERO the pipeline fails under `pipefail`, the assignment fails, and `set -e` ends the run with wrangler's status and no message from this script at all.
     """
@@ -523,9 +513,7 @@ def test_fact_the_generated_config_survives_a_failed_apply(tmp_path) -> None:
 
 @pytest.mark.parametrize("missing", ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"])
 def test_each_required_variable_refuses_before_the_trap_is_installed(tmp_path, missing) -> None:
-    """THE ONE NAMED DIVERGENCE, and the half that is NOT a divergence: the
-    cleanup block does not print, because `trap cleanup EXIT` is installed after
-    these guards."""
+    """THE ONE NAMED DIVERGENCE, and the half that is NOT a divergence: the cleanup block does not print, because `trap cleanup EXIT` is installed after these guards."""
     root = fixture(tmp_path)
     old_proc, old_calls = _run(root, "old", drop_env=(missing,))
     new_proc, new_calls = _run(root, "new", drop_env=(missing,))
@@ -555,8 +543,7 @@ def test_an_empty_variable_refuses_exactly_as_an_absent_one_does(tmp_path) -> No
 
 @pytest.mark.parametrize("tool", ["jq", "npx"])
 def test_a_missing_tool_refuses_with_the_same_bytes(tmp_path, tool) -> None:
-    """ORDER: `require_cmd jq` then `require_cmd npx`, both BEFORE the two
-    variables, so a run with neither jq nor a token names jq."""
+    """ORDER: `require_cmd jq` then `require_cmd npx`, both BEFORE the two variables, so a run with neither jq nor a token names jq."""
     _root, old, new = run_both(tmp_path, drop=tool, drop_env=tuple(BASE_ENV))
     _agree(old, new, "no-" + tool)
     assert old[0].returncode == 1
@@ -682,8 +669,7 @@ def test_the_mktemp_mask_hides_only_the_random_suffix() -> None:
 
 
 def test_the_guard_table_and_the_literal_reads_cannot_drift() -> None:
-    """`require_env` READS `os.environ` WITH LITERAL KEYS so the env-registry
-    scanner can see them, and `REQUIRED_ENV` is the table it must agree with.
+    """`require_env` READS `os.environ` WITH LITERAL KEYS so the env-registry scanner can see them, and `REQUIRED_ENV` is the table it must agree with.
 
     Two claims, because either one alone is satisfiable by a broken file: the table names exactly the two variables the twin guards, IN ORDER, and the
     function's SOURCE contains a literal `os.environ.get("<name>"` for each of

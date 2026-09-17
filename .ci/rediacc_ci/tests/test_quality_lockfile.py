@@ -21,8 +21,7 @@ from rediacc_ci import log, paths
 from rediacc_ci.quality import lockfile as lf
 from rediacc_ci.tests import differential as diff
 
-# Every tree shape the discovery has to survive. Each entry is a list of files to
-# create; the comment is the property it is there for.
+# Every tree shape the discovery has to survive. Each entry is a list of files to create; the comment is the property it is there for.
 TREES = [
     [],  # nothing at all
     ["package-lock.json"],  # the root one, whose `./` prefix the sed strips
@@ -138,16 +137,14 @@ def stub_npx(tmp_path: pathlib.Path):
 
 
 def test_the_stub_is_really_what_runs(tmp_path: pathlib.Path, stub_npx) -> None:
-    """A CONTROL ON THE CONTROL. Without it every case below could be green
-    because `npx` was never invoked at all, which is the vacuity this whole
-    exercise refuses."""
+    """A CONTROL ON THE CONTROL. Without it every case below could be green because `npx` was never invoked at all, which is the vacuity this whole exercise refuses."""
     stub_npx(lint=0, npm11=0, npm10=3)
     assert lf.run_resolve(tmp_path, lf.CANONICAL_NPM) == 0
     assert lf.run_resolve(tmp_path, lf.CI_NPM) == 3
 
 
 def test_the_failure_transcript_is_indented_and_truncated(tmp_path: pathlib.Path, stub_npx) -> None:
-    """`2>&1 | head -25 | sed 's/^/    /'`, including the merge of the streams.
+    """`2>&1 | head -25 | sed 's/^/ /'`, including the merge of the streams.
 
     Merging is correct HERE and only here: this is a transcript shown to a human, not a comparison, and the twin's `|| true` says its exit code is not part of the verdict.
     """
@@ -177,8 +174,7 @@ def _run_gate(root: pathlib.Path) -> int:
 
 @pytest.mark.usefixtures("stub_npx")
 def test_no_lockfile_anywhere_is_a_refusal(tmp_path: pathlib.Path) -> None:
-    """THE VACUITY CASE. An empty list is the one a gate most easily turns into
-    a pass by reading it as "nothing to complain about"."""
+    """THE VACUITY CASE. An empty list is the one a gate most easily turns into a pass by reading it as "nothing to complain about"."""
     root = tmp_path / "tree"
     root.mkdir()
     assert _run_gate(root) == 1
@@ -213,8 +209,7 @@ def test_a_lockfile_with_no_sibling_manifest_is_skipped_loudly(
 def test_each_probes_exit_code_decides_the_verdict(
     tmp_path: pathlib.Path, stub_npx, lint: int, npm11: int, npm10: int, want: int
 ) -> None:
-    """BOTH DIRECTIONS. The first row is the mirror that stops a port which
-    simply reds on everything from passing this table."""
+    """BOTH DIRECTIONS. The first row is the mirror that stops a port which simply reds on everything from passing this table."""
     root = tmp_path / "tree"
     _make(root, ["package-lock.json", "package.json"])
     stub_npx(lint=lint, npm11=npm11, npm10=npm10)
@@ -224,9 +219,7 @@ def test_each_probes_exit_code_decides_the_verdict(
 def test_the_break_means_only_the_first_resolve_failure_is_reported(
     tmp_path: pathlib.Path, stub_npx, capsys
 ) -> None:
-    """THE `break` IS LOAD-BEARING: the two failures have DIFFERENT fixes, and
-    telling someone to reconcile with the wrong npm is how the 27-line flip
-    oscillated in the first place."""
+    """THE `break` IS LOAD-BEARING: the two failures have DIFFERENT fixes, and telling someone to reconcile with the wrong npm is how the 27-line flip oscillated in the first place."""
     root = tmp_path / "tree"
     _make(root, ["package-lock.json", "package.json"])
     stub_npx(npm11=1, npm10=1)
@@ -237,8 +230,7 @@ def test_the_break_means_only_the_first_resolve_failure_is_reported(
 
 
 def test_a_skipped_lockfile_does_not_stop_the_others(tmp_path: pathlib.Path, stub_npx) -> None:
-    """A skip that suppressed the rest of the run would look identical to a
-    clean tree, which is how a gate goes green while checking nothing."""
+    """A skip that suppressed the rest of the run would look identical to a clean tree, which is how a gate goes green while checking nothing."""
     root = tmp_path / "tree"
     _make(root, ["package-lock.json", "package.json", "sub/package-lock.json"])
     stub_npx()

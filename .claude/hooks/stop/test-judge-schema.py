@@ -33,9 +33,7 @@ import wl_rules
 
 
 class Tally:
-    """A counter object rather than module globals: ruff's PLW0603 is right that a
-    `global` statement here buys nothing, and the sibling test files already use this
-    shape."""
+    """A counter object rather than module globals: ruff's PLW0603 is right that a `global` statement here buys nothing, and the sibling test files already use this shape."""
 
     fails = 0
     count = 0
@@ -118,9 +116,7 @@ MARKER = pathlib.Path(_TMP.name) / "sweep-marker.json"
 
 
 def fires(path):
-    """The banked fire count, or None. Read defensively so a rule that stopped
-    firing altogether reports a clean FAIL instead of a traceback -- the first
-    mutation run against these controls crashed here rather than failing."""
+    """The banked fire count, or None. Read defensively so a rule that stopped firing altogether reports a clean FAIL instead of a traceback -- the first mutation run against these controls crashed here rather than failing."""
     try:
         return json.loads(path.read_text())["fires"]
     except (OSError, ValueError, KeyError):
@@ -1334,9 +1330,7 @@ finally:
 
 
 class _FakeProc:
-    """Just the two attributes the helper reads. A real subprocess here would
-    make these controls depend on the network, which is the thing they exist to
-    stop mattering."""
+    """Just the two attributes the helper reads. A real subprocess here would make these controls depend on the network, which is the thing they exist to stop mattering."""
 
     def __init__(self, returncode, stdout):
         self.returncode = returncode

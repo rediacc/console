@@ -47,9 +47,7 @@ MEASURED_AUTH_STATUS_STDERR = (
 MEASURED_UNKNOWN_VERB_RC = 1
 MEASURED_UNKNOWN_VERB_STDERR = 'unknown command "frobnicate" for "gh"\n'
 
-# What GitHub answers when the token is present and the budget is not. Not captured from a live 403 here (that would mean spending the budget to prove the
-# string); it is the documented body, and the case that matters is the ORDERING
-# it exercises, not the exact wording.
+# What GitHub answers when the token is present and the budget is not. Not captured from a live 403 here (that would mean spending the budget to prove the string); it is the documented body, and the case that matters is the ORDERING it exercises, not the exact wording.
 RATE_LIMIT_STDERR = (
     "HTTP 403: API rate limit exceeded for user ID 1. If you reach out to GitHub "
     "Support for help, please include the request ID. (https://api.github.com/...)\n"
@@ -138,8 +136,7 @@ def _rows(*refs: str) -> str:
 
 
 def test_the_fake_gh_is_the_one_that_runs(fake_bin):
-    """Without this, every case below could be driving the developer's real gh
-    and passing for reasons that have nothing to do with the fixture."""
+    """Without this, every case below could be driving the developer's real gh and passing for reasons that have nothing to do with the fixture."""
     fake_bin("gh", stdout="gh version 0.0.0-fake (1999-01-01)\n")
     resolved = ghx.which_gh()
     assert resolved is not None
@@ -149,8 +146,7 @@ def test_the_fake_gh_is_the_one_that_runs(fake_bin):
 
 @pytest.mark.usefixtures("fake_bin")
 def test_an_empty_path_really_does_hide_the_binary():
-    """The ABSENT case is produced by a directory with no gh in it, so this
-    asserts that the mechanism works before any case relies on it."""
+    """The ABSENT case is produced by a directory with no gh in it, so this asserts that the mechanism works before any case relies on it."""
     assert ghx.which_gh() is None
     result = ghx.gh(["--version"])
     assert result.returncode == ghx.NOT_INSTALLED_RC
@@ -191,9 +187,7 @@ def test_a_genuinely_empty_list_is_an_empty_list(fake_bin):
 
 
 def test_control_planting_the_or_echo_defect_makes_the_failure_case_fail(fake_bin, monkeypatch):
-    """THE PLANTED DEFECT. `pr_list` is replaced by exactly the behaviour the
-    module refuses -- `gh api ... || echo "[]"` -- and the assertion above must stop holding. Without this control the raise-assertion could be passing for
-    some unrelated reason and nobody would know."""
+    """THE PLANTED DEFECT. `pr_list` is replaced by exactly the behaviour the module refuses -- `gh api ... || echo "[]"` -- and the assertion above must stop holding. Without this control the raise-assertion could be passing for some unrelated reason and nobody would know."""
     fake_bin("gh", rc=MEASURED_UNAUTH_RC, stderr=MEASURED_UNAUTH_STDERR)
     monkeypatch.setattr(ghx, "pr_list", lambda **_kwargs: [])
     # `pytest.raises` that sees nothing raised fails with `Failed`, so catching that IS the statement "the assertion above no longer holds".
@@ -211,8 +205,7 @@ def test_control_the_empty_case_still_passes_under_the_planted_defect(fake_bin, 
 
 
 def test_the_stderr_survives_and_names_the_cause(fake_bin):
-    """28 call sites send this to /dev/null. It is the only useful thing a
-    failed call produces, so it must reach the exception's message."""
+    """28 call sites send this to /dev/null. It is the only useful thing a failed call produces, so it must reach the exception's message."""
     fake_bin("gh", rc=MEASURED_UNAUTH_RC, stderr=MEASURED_UNAUTH_STDERR)
     with pytest.raises(ghx.GhUnauthenticatedError) as caught:
         ghx.pr_head_refs(repo="rediacc/console")
@@ -400,9 +393,7 @@ def test_rate_limit_is_classified_before_authentication():
 
 
 def test_control_removing_the_rate_limit_markers_breaks_the_ordering(monkeypatch):
-    """PLANTED DEFECT: with the rate-limit markers gone, the same body is read as
-    an authentication failure, and the assertion above must fail. This is what
-    makes the ordering comment in `_classify` load bearing rather than decorative."""
+    """PLANTED DEFECT: with the rate-limit markers gone, the same body is read as an authentication failure, and the assertion above must fail. This is what makes the ordering comment in `_classify` load bearing rather than decorative."""
     monkeypatch.setattr(ghx, "_RATE_LIMIT_MARKERS", ())
     with pytest.raises(AssertionError):
         _assert_rate_limit_wins_over_auth()
@@ -445,8 +436,7 @@ def test_auth_state_is_tri_state(fake_bin):
 
 @pytest.mark.usefixtures("fake_bin")
 def test_auth_state_says_unknown_rather_than_unauthenticated_when_gh_is_absent():
-    """The distinction that stops a message telling a human to log in when the
-    real problem is that gh was never installed."""
+    """The distinction that stops a message telling a human to log in when the real problem is that gh was never installed."""
     assert ghx.which_gh() is None
     assert ghx.auth_state() == ghx.AUTH_UNKNOWN
 
@@ -462,9 +452,7 @@ def test_an_html_body_is_refused_rather_than_parsed(fake_bin):
 
 
 def test_control_the_naive_spelling_accepts_the_html_body(fake_bin):
-    """The other direction: `result.stdout_raw` is exactly what an unchecked
-    caller would have used, and it hands back the HTML without complaint. The
-    module's refusal is only meaningful because this is what it refuses."""
+    """The other direction: `result.stdout_raw` is exactly what an unchecked caller would have used, and it hands back the HTML without complaint. The module's refusal is only meaningful because this is what it refuses."""
     fake_bin("gh", stdout=HTML_BODY)
     result = ghx.gh(["api", "repos/x/y"])
     assert result.stdout_raw == HTML_BODY
@@ -478,9 +466,7 @@ def test_an_error_object_is_not_iterated_as_a_list(fake_bin):
 
 
 def test_control_the_naive_spelling_iterates_the_error_objects_keys(fake_bin):
-    """What `for row in result.json()` would have produced: one "finding" named
-    after the error message. Asserted so the refusal above is anchored to a real
-    wrong answer rather than to a hypothetical one."""
+    """What `for row in result.json()` would have produced: one "finding" named after the error message. Asserted so the refusal above is anchored to a real wrong answer rather than to a hypothetical one."""
     fake_bin("gh", stdout=NOT_FOUND_BODY)
     parsed = ghx.gh(["api", "x"]).json()
     assert list(parsed) == ["message", "documentation_url"]
@@ -495,8 +481,7 @@ def test_an_empty_value_is_refused_where_a_scalar_is_required(fake_bin):
 
 
 def test_control_the_naive_strip_yields_the_empty_string(fake_bin):
-    """The exact assignment that put an empty signing key into a production
-    build. `curl -f` on the dead endpoint did this; so does `.strip()` here."""
+    """The exact assignment that put an empty signing key into a production build. `curl -f` on the dead endpoint did this; so does `.strip()` here."""
     fake_bin("gh", stdout="   \n")
     assert ghx.gh(["api", "x"]).stdout_raw.strip() == ""
 
@@ -674,8 +659,7 @@ def test_all_names_in_dunder_all_exist():
 
 
 def test_no_em_dashes_in_the_module_or_this_file():
-    """House rule for this workstream, checked on the artefacts rather than
-    trusted to the author."""
+    """House rule for this workstream, checked on the artefacts rather than trusted to the author."""
     # chr(8212) rather than the literal character, or this file would fail its own check the moment it was written.
     em_dash = chr(8212)
     for path in (

@@ -118,7 +118,7 @@ def _run(argv: list[str], cwd: pathlib.Path) -> int:
 
 
 def diff_lines(committed: pathlib.Path, live: pathlib.Path) -> list[str]:
-    """`diff a b | head -40 | sed 's/^/    /'`, byte for byte.
+    """`diff a b | head -40 | sed 's/^/ /'`, byte for byte.
 
     Shelling out to `diff` rather than reaching for difflib is a decision, not an oversight; see the port notes. `diff` exits 1 when the files differ, which is the expected case here and is not an error.
     """
@@ -348,9 +348,7 @@ def selftest() -> int:
 
 
 def node_count_of(text: str) -> int:
-    """`node_count` over a string, for the selftest. Writes a real file because
-    `node_count` reads one, and a second parsing path would be a second thing to
-    keep in agreement."""
+    """`node_count` over a string, for the selftest. Writes a real file because `node_count` reads one, and a second parsing path would be a second thing to keep in agreement."""
     with tempfile.TemporaryDirectory() as tmp:
         path = pathlib.Path(tmp) / "t.json"
         path.write_text(text, encoding="utf-8")

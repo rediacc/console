@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.release.install_sh_config_check` against its twin
-`.ci/scripts/test/test-install-sh-config.sh` (gate `check:ci-install-sh-config`).
+"""Differential: `rediacc_ci.release.install_sh_config_check` against its twin `.ci/scripts/test/test-install-sh-config.sh` (gate `check:ci-install-sh-config`).
 
 BOTH SIDES PASS ON THE REAL TREE, which proves only that two programs agree about an `install.sh` neither is currently catching out. So every case below runs both against a FIXTURE TREE holding a MUTATED copy of `packages/www/public/install.sh`, driving the twin's five failure branches -- including the one it was written for, "a preview-cloned backend must not override the baked
 channel".

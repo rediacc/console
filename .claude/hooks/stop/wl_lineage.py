@@ -33,8 +33,7 @@ import mmap
 import os
 import pathlib
 
-# The preamble records a transcript opens with; the first record NOT of these types is
-# the one that says how the session began.
+# The preamble records a transcript opens with; the first record NOT of these types is the one that says how the session began.
 PREAMBLE = {
     "mode",
     "bridge-session",

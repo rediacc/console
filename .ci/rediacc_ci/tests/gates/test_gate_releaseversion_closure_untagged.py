@@ -70,8 +70,7 @@ def git(gate, root: pathlib.Path, *args: str) -> harness.RunResult:
 
 
 def build_fixture(gate, tmp_path: pathlib.Path, name: str) -> pathlib.Path:
-    """A throwaway git repo carrying the real generate-tag.sh, its lib and its
-    resolver, plus a stand-in for every hashed closure path."""
+    """A throwaway git repo carrying the real generate-tag.sh, its lib and its resolver, plus a stand-in for every hashed closure path."""
     root = tmp_path / name
     for parts in COPIED:
         src = paths.from_root(*parts)
@@ -94,8 +93,7 @@ def build_fixture(gate, tmp_path: pathlib.Path, name: str) -> pathlib.Path:
 
 
 def commit_unhashed_change(gate, root: pathlib.Path) -> None:
-    """Move HEAD without touching any hashed path, so only the version component
-    can distinguish the two keys."""
+    """Move HEAD without touching any hashed path, so only the version component can distinguish the two keys."""
     readme = root / "README.md"
     readme.write_text(readme.read_text(encoding="utf-8") + "changed\n", encoding="utf-8")
     git(gate, root, "add", "README.md")
@@ -169,9 +167,7 @@ def test_new_tag_invalidates_the_key(gate, tmp_path):
 
 
 def test_planted_empty_marker_collapses_the_key(gate, tmp_path):
-    """THE CONTROL. Plant the pre-fix empty marker and watch the untagged keys
-    collapse into one. Without this, test_untagged_keys_are_distinguishing could
-    be passing for reasons unrelated to the version component."""
+    """THE CONTROL. Plant the pre-fix empty marker and watch the untagged keys collapse into one. Without this, test_untagged_keys_are_distinguishing could be passing for reasons unrelated to the version component."""
     root = build_fixture(gate, tmp_path, "planted")
     script = root / ".ci" / "scripts" / "ci" / "generate-tag.sh"
     planted = []

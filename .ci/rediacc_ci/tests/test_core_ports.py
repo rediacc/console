@@ -342,8 +342,7 @@ def test_control_devbox_is_stable_against_the_real_package() -> None:
 
 
 def _q(value: str) -> str:
-    """Single-quote for bash. Small, and here rather than imported, because the
-    two callers need exactly this and nothing more."""
+    """Single-quote for bash. Small, and here rather than imported, because the two callers need exactly this and nothing more."""
     return "'" + value.replace("'", "'\\''") + "'"
 
 

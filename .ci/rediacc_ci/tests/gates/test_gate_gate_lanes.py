@@ -355,9 +355,7 @@ def test_satisfies_is_a_superset_test(gate):
 
 
 def test_the_workflow_the_derivation_reads_is_the_one_ci_runs(gate):
-    """PORT-ONLY. Everything above derives from one path. If that file were gone,
-    `laneCapabilities` would be handed an empty string and the anti-vacuity case
-    would be the only thing standing between this module and a table of nothing."""
+    """PORT-ONLY. Everything above derives from one path. If that file were gone, `laneCapabilities` would be handed an empty string and the anti-vacuity case would be the only thing standing between this module and a table of nothing."""
     gate.log_test("the derivation's input file exists where the derivation looks")
     if not WORKFLOW.is_file():
         gate.log_fail(
@@ -382,8 +380,7 @@ def _home_of(plan: dict, gate_id: str) -> int:
 
 
 def test_the_sharder_read_a_real_lock(gate):
-    """ANTI-VACUITY for the sharding half, and it comes first for the same
-    reason the lane one does: an empty lock satisfies most of what follows."""
+    """ANTI-VACUITY for the sharding half, and it comes first for the same reason the lane one does: an empty lock satisfies most of what follows."""
     gate.log_test("the lock the sharder reads is not empty")
     data = probe(gate)
     if data["lockSize"] < 100 or len(data["laneSets"]["quality-security"]) < 100:
@@ -432,9 +429,8 @@ def test_no_shard_is_empty(gate):
 
 
 def test_the_shards_are_balanced_on_weight(gate):
-    """T-SCHED B2 D1 moved this fixture off `security4`. Before the step-merge,
-    `quality-security`'s 149-id `Quality-gate unit tests` step was NOT one unit, so the packer could spread its ids across shards for an even weight -- a plan real CI could never run, since gate-bind can attach one conjunct to that one step. After the merge the 149 ids are correctly ONE unit and `security4` is (correctly) unbalanceable: 150 of 166 entries sit in a single
-    indivisible
+    """T-SCHED B2 D1 moved this fixture off `security4`. Before the step-merge, `quality-security`'s 149-id `Quality-gate unit tests` step was NOT one unit, so the packer could spread its ids across shards for an even weight -- a plan real CI could never run, since gate-bind can attach one conjunct to that one step. After the merge the 149 ids are correctly ONE unit and `security4`
+    is (correctly) unbalanceable: 150 of 166 entries sit in a single indivisible
     block. `quality-code` divides on real step boundaries and balances for real;
     it is the box's own worked example (D1/D2) of a lane the mechanism suits."""
     gate.log_test("balance on `weight`, which is the rule the box states")
@@ -450,9 +446,7 @@ def test_the_shards_are_balanced_on_weight(gate):
 
 
 def test_a_dominant_single_step_lane_is_correctly_unbalanceable(gate):
-    """The negative space of the test above, named rather than left implicit.
-    `quality-security` is NOT a planner bug: 149 of its 166 entries are one hand-written step (`Quality-gate unit tests`), so no packer can spread that unit without proposing a plan gate-bind cannot realize. This is exactly the
-    shape T-SCHED B2's own later measurement used to prefer `quality-code`."""
+    """The negative space of the test above, named rather than left implicit. `quality-security` is NOT a planner bug: 149 of its 166 entries are one hand-written step (`Quality-gate unit tests`), so no packer can spread that unit without proposing a plan gate-bind cannot realize. This is exactly the shape T-SCHED B2's own later measurement used to prefer `quality-code`."""
     gate.log_test("quality-security's dominant step correctly resists balance")
     plan = probe(gate)["plans"]["security4"]
     weights = [s["weight"] for s in plan["shards"]]
@@ -489,9 +483,7 @@ def test_heavy_is_capped_at_one_per_shard(gate):
 
 
 def test_a_within_lane_needs_edge_co_locates(gate):
-    """THE FOURTH RULE, which the box does not name. Twelve `quality-www-build`
-    entries declare `needs: [build:www]` and `build:www` is a step in that same lane, so a plan honouring only mutex would put a gate in a runner that never
-    built the thing it validates."""
+    """THE FOURTH RULE, which the box does not name. Twelve `quality-www-build` entries declare `needs: [build:www]` and `build:www` is a step in that same lane, so a plan honouring only mutex would put a gate in a runner that never built the thing it validates."""
     gate.log_test("a within-lane `needs` target shares its dependent's shard")
     plan = probe(gate)["plans"]["www3"]
     gate.assert_eq(
@@ -560,9 +552,7 @@ def test_the_ceiling_is_units_not_entries(gate):
 
 
 def test_a_lane_with_zero_lock_entries_refuses(gate):
-    """ANTI-VACUITY as a refusal in the planner itself. `quality-submodule-branches`
-    is a real job in the workflow that no lock entry names, so this case is driven
-    by the tree rather than by a fixture."""
+    """ANTI-VACUITY as a refusal in the planner itself. `quality-submodule-branches` is a real job in the workflow that no lock entry names, so this case is driven by the tree rather than by a fixture."""
     gate.log_test("a lane with ZERO lock entries is a planner that cannot see the tree")
     message = probe(gate)["refusals"]["submodule2"]
     gate.assert_contains(message, "ZERO entries in the lock", "an empty lane must refuse")
@@ -577,9 +567,8 @@ def test_a_lane_the_workflow_does_not_define_refuses(gate):
 
 
 def test_more_heavy_gates_than_shards_refuses(gate):
-    """T-SCHED B2 D1 moved this number. Before the step-merge, `quality-code` counted
-    8 heavy IDS -- `check:lint` five times over (all one step) plus three more -- and refused any count under 8. After it, the five `check:lint*` ids are one unit with one heavy peak, so the real floor is the number of heavy UNITS, measured here rather than hand-typed so a future lock change cannot make this assertion stale
-    silently."""
+    """T-SCHED B2 D1 moved this number. Before the step-merge, `quality-code` counted 8 heavy IDS -- `check:lint` five times over (all one step) plus three more -- and refused any count under 8. After it, the five `check:lint*` ids are one unit with one heavy peak, so the real floor is the number of heavy UNITS, measured here rather than hand-typed so a future lock change
+    cannot make this assertion stale silently."""
     gate.log_test("the aggregate half of the heavy rule, in the corrected currency")
     floor = probe(gate)["heavyFloors"]["quality-code"]
     if floor < 2:
@@ -595,9 +584,8 @@ def test_more_heavy_gates_than_shards_refuses(gate):
 
 
 def test_step_merge_lowered_the_floor_enough_to_shard_code_at_four(gate):
-    """THE POINT OF D1. Before the step-merge this exact count (`quality-code`, 4
-    shards) refused outright -- 8 heavy ids could not fit in 4 shards -- which is the wrong answer: the five `check:lint*` ids are one process, one runner, one heavy peak. Refusing to shard a lane over ids that never run concurrently is
-    the bug D1 exists to fix; this proves the fix, not just its arithmetic."""
+    """THE POINT OF D1. Before the step-merge this exact count (`quality-code`, 4 shards) refused outright -- 8 heavy ids could not fit in 4 shards -- which is the wrong answer: the five `check:lint*` ids are one process, one runner, one heavy peak. Refusing to shard a lane over ids that never run concurrently is the bug D1 exists to fix; this proves the fix, not just its
+    arithmetic."""
     gate.log_test("quality-code now shards at 4 (was an unconditional refusal before D1)")
     plan = probe(gate)["plans"]["code4"]
     if plan is None:
@@ -615,9 +603,7 @@ def test_step_merge_lowered_the_floor_enough_to_shard_code_at_four(gate):
 
 
 def test_a_step_shared_group_never_splits(gate):
-    """`check:lint`, `check:lint:cli`, `check:lint:web`, `check:lint:tooling` and
-    `check:lint:account` all carry `ci.step: 'Lint'` -- one `run:` of four npm scripts chained with `&&` in one shell. A plan that put two of them on different legs would be unrealisable: gate-bind can attach exactly one
-    conjunct to that one step."""
+    """`check:lint`, `check:lint:cli`, `check:lint:web`, `check:lint:tooling` and `check:lint:account` all carry `ci.step: 'Lint'` -- one `run:` of four npm scripts chained with `&&` in one shell. A plan that put two of them on different legs would be unrealisable: gate-bind can attach exactly one conjunct to that one step."""
     gate.log_test("ids sharing one emitted step land in the same shard")
     plan = probe(gate)["plans"]["code8"]
     homes = {_home_of(plan, gid) for gid in probe(gate)["lintStepIds"]}
@@ -628,14 +614,12 @@ def test_a_step_shared_group_never_splits(gate):
 
 
 def test_two_heavies_in_one_mutex_group_shard_because_they_never_coexist(gate):
-    """CORRECTED 2026-09-09. This control used to assert the OPPOSITE, and it was
-    encoding a bug rather than a rule.
+    """CORRECTED 2026-09-09. This control used to assert the OPPOSITE, and it was encoding a bug rather than a rule.
 
     `quality-go`'s `account-vitest` mutex group holds check:ci-account-server and check:ci-account-scope-audit, BOTH heavy, and the first version of `shardPlan` therefore refused that lane at every shard count. But `gate-spec.ts:44` defines mutex as "no two gates sharing a group overlap", and `heavy` bounds CONCURRENT heap: two heavies that can never run together have a peak of
     ONE. Refusing it was refusing arithmetic, and it made a real lane unshardable for no reason.
 
-    A unit merged by within-lane `needs` is the opposite case -- co-location with no exclusion, so both really are resident -- and that one still refuses. The two
-    directions are asserted together because the distinction IS the rule."""
+    A unit merged by within-lane `needs` is the opposite case -- co-location with no exclusion, so both really are resident -- and that one still refuses. The two directions are asserted together because the distinction IS the rule."""
     gate.log_test("a mutex-only unit shards; a needs-merged unit with two heavies refuses")
     p = probe(gate)
     go2 = p["refusals"].get("go2", "")
@@ -671,8 +655,7 @@ def test_naming_no_lanes_refuses(gate):
 
 
 def test_a_shardable_lane_still_plans(gate):
-    """THE OTHER DIRECTION. Nine refusals above are satisfied by a planner that
-    refuses everything; this is the control that says it does not."""
+    """THE OTHER DIRECTION. Nine refusals above are satisfied by a planner that refuses everything; this is the control that says it does not."""
     gate.log_test("CONTROL: a shardable lane still PLANS")
     plan = probe(gate)["plans"]["static3"]
     if plan is None:
@@ -683,9 +666,7 @@ def test_a_shardable_lane_still_plans(gate):
 
 
 def test_a_lane_absent_from_shard_counts_is_not_asked(gate):
-    """T-SCHED B2 D2. `shardAssignment` returning `null` means "nobody asked to shard
-    this lane", which must stay silent (SHARD_COUNTS is empty in the real tree today,
-    and every lane must fall through this path for the mechanism to be inert)."""
+    """T-SCHED B2 D2. `shardAssignment` returning `null` means "nobody asked to shard this lane", which must stay silent (SHARD_COUNTS is empty in the real tree today, and every lane must fall through this path for the mechanism to be inert)."""
     gate.log_test("a lane absent from counts returns null, not a refusal")
     gate.assert_eq(
         probe(gate)["d2"]["notAsked"], None, "an unsharded lane must be null, not an error"
@@ -694,9 +675,7 @@ def test_a_lane_absent_from_shard_counts_is_not_asked(gate):
 
 
 def test_a_sharded_lane_with_no_ceiling_refuses(gate):
-    """The mandatory declaration. A lane in SHARD_COUNTS with nothing in
-    SHARD_REPLICATED_MAX would ship with no floor on how much of it can run replicated on every leg -- exactly the silent state that let the
-    quality-security mistake happen by hand."""
+    """The mandatory declaration. A lane in SHARD_COUNTS with nothing in SHARD_REPLICATED_MAX would ship with no floor on how much of it can run replicated on every leg -- exactly the silent state that let the quality-security mistake happen by hand."""
     gate.log_test("a lane asked to shard with no declared ceiling refuses")
     message = probe(gate)["d2"]["noCeilingError"]
     gate.assert_contains(
@@ -706,9 +685,7 @@ def test_a_sharded_lane_with_no_ceiling_refuses(gate):
 
 
 def test_replicated_is_computed_from_emitting_not_hardcoded(gate):
-    """THE POINT OF D2. Feed a deliberately PARTIAL `emitting` list (only the Lint
-    step) and prove `replicated` names exactly the ids that step does not cover -- not zero, not everything, which is what a stub or a hardcoded answer would give
-    either way."""
+    """THE POINT OF D2. Feed a deliberately PARTIAL `emitting` list (only the Lint step) and prove `replicated` names exactly the ids that step does not cover -- not zero, not everything, which is what a stub or a hardcoded answer would give either way."""
     gate.log_test("replicated is computed from the real emitting set, both directions")
     d2 = probe(gate)["d2"]
     lint_ids = set(probe(gate)["lintStepIds"])
@@ -739,9 +716,7 @@ def test_replicated_is_computed_from_emitting_not_hardcoded(gate):
 
 
 def test_exceeding_the_replicated_ceiling_refuses(gate):
-    """The refusal D2 exists for. A near-zero ceiling against quality-code's real
-    (non-trivial) replicated share must refuse, naming the share and the ceiling so
-    the fix is legible without re-deriving the arithmetic."""
+    """The refusal D2 exists for. A near-zero ceiling against quality-code's real (non-trivial) replicated share must refuse, naming the share and the ceiling so the fix is legible without re-deriving the arithmetic."""
     gate.log_test("a replicated share over its declared ceiling refuses")
     message = probe(gate)["d2"]["tooTightError"]
     gate.assert_contains(message, "run OUTSIDE any emitted region", "must name the hazard")

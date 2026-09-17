@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.release.assert_edge_tag_exists` against its twin
-`.ci/scripts/release/assert-edge-tag-exists.sh`.
+"""Differential: `rediacc_ci.release.assert_edge_tag_exists` against its twin `.ci/scripts/release/assert-edge-tag-exists.sh`.
 
 RECORDING FAKE `gh` AND `aws` ON A SCRATCH PATH, the seam every port in this box uses. Nothing here reaches GitHub or R2. That matters more than usual: this machine has a logged-in `gh`, and the twin's very first probe is `gh api repos/<repo>/git/ref/tags/<tag>` against whatever `$GITHUB_REPOSITORY`
 names. Every case pins `GITHUB_REPOSITORY=acme/widget` and a fake endpoint as
@@ -81,8 +80,7 @@ sys.stdout.write('{"ContentLength": 0}\\n')
 sys.exit(0)
 """
 
-# common.sh needs `dirname` and `uname` at source time; the twin itself uses
-# `dirname`, `tr` and `sed` (in `one_line`) and `grep` in every probe. All five must be reachable from the stub PATH or the twin fails for a reason that has nothing to do with the subject.
+# common.sh needs `dirname` and `uname` at source time; the twin itself uses `dirname`, `tr` and `sed` (in `one_line`) and `grep` in every probe. All five must be reachable from the stub PATH or the twin fails for a reason that has nothing to do with the subject.
 PATH_MINIMUM = ("dirname", "uname", "tr", "sed", "grep")
 
 
@@ -205,9 +203,7 @@ def test_a_bare_positional_version_works_and_the_v_is_stripped(tmp_path: pathlib
 def test_a_prerelease_suffix_is_accepted_here_unlike_its_siblings(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The pattern is `[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?`, LOOSER than
-    the strict semver `mark-production.sh` demands. The question this script asks
-    is whether the version EXISTS, not whether it is promotable."""
+    """The pattern is `[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?`, LOOSER than the strict semver `mark-production.sh` demands. The question this script asks is whether the version EXISTS, not whether it is promotable."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--version", "1.3.0-rc.1"])
     assert old.returncode == 0
     assert any("v1.3.0-rc.1" in c for c in old_calls)
@@ -239,8 +235,7 @@ def test_an_unknown_option_is_refused(tmp_path: pathlib.Path) -> None:
 
 def test_the_equals_form_of_version_is_not_supported(tmp_path: pathlib.Path) -> None:
     """`--version=1.3.0` falls through to the `-*` arm. Reproduced rather than
-    accepted: a port that "helpfully" understood it would promote on an input
-    the live script rejects."""
+    accepted: a port that "helpfully" understood it would promote on an input the live script rejects."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--version=1.3.0"])
     assert old.returncode == 1
     assert "unknown option: --version=1.3.0" in old.stderr
@@ -259,9 +254,7 @@ def test_missing_gh_is_refused_before_missing_aws(tmp_path: pathlib.Path) -> Non
 def test_a_404_on_every_oracle_names_all_three_and_gives_release_advice(
     tmp_path: pathlib.Path,
 ) -> None:
-    """PROVABLE ABSENCE. All three probes still run -- the failure of the first
-    does not stop the second -- and the remediation block is the "cut the
-    release, then seal it" one, NOT the could-not-tell one."""
+    """PROVABLE ABSENCE. All three probes still run -- the failure of the first does not stop the second -- and the remediation block is the "cut the release, then seal it" one, NOT the could-not-tell one."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["1.3.0"],
@@ -281,9 +274,7 @@ def test_a_404_on_every_oracle_names_all_three_and_gives_release_advice(
 def test_a_403_is_could_not_tell_and_gets_the_opposite_advice(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE POINT OF THE WHOLE SCRIPT. A probe that could not run must not be
-    filed as an absence: the advice for an absence is "cut the release and backfill the sentinel", and giving that to an operator whose release is fine
-    is what the twin's own comment records as having cost real cycles."""
+    """THE POINT OF THE WHOLE SCRIPT. A probe that could not run must not be filed as an absence: the advice for an absence is "cut the release and backfill the sentinel", and giving that to an operator whose release is fine is what the twin's own comment records as having cost real cycles."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["1.3.0"],
@@ -301,8 +292,7 @@ def test_a_403_is_could_not_tell_and_gets_the_opposite_advice(
 
 
 def test_nocredentials_from_aws_gets_the_aws_specific_hint(tmp_path: pathlib.Path) -> None:
-    """The line naming CLOUDFLARE_R2_ACCESS_KEY_ID exists because this exact
-    failure broke promote-stable for 7 consecutive runs from 2026-08-27."""
+    """The line naming CLOUDFLARE_R2_ACCESS_KEY_ID exists because this exact failure broke promote-stable for 7 consecutive runs from 2026-08-27."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["1.3.0"],
@@ -315,9 +305,7 @@ def test_nocredentials_from_aws_gets_the_aws_specific_hint(tmp_path: pathlib.Pat
 
 
 def test_the_could_not_tell_detail_keeps_its_trailing_space(tmp_path: pathlib.Path) -> None:
-    """`one_line`'s here-string appends a newline that becomes a SPACE, and
-    nothing later removes it. Asserted on the raw bytes because it is exactly
-    the kind of thing a port tidies away without noticing."""
+    """`one_line`'s here-string appends a newline that becomes a SPACE, and nothing later removes it. Asserted on the raw bytes because it is exactly the kind of thing a port tidies away without noticing."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["1.3.0"],
@@ -329,9 +317,7 @@ def test_the_could_not_tell_detail_keeps_its_trailing_space(tmp_path: pathlib.Pa
 
 
 def test_a_multiline_probe_error_is_folded_onto_one_line(tmp_path: pathlib.Path) -> None:
-    """`tr '\\n' ' ' | sed 's/  */ /g'`: newlines become spaces and runs of
-    spaces collapse, so a multi-line API error cannot break the one-finding-per-
-    line shape the caller's log reader depends on."""
+    """`tr '\\n' ' ' | sed 's/ */ /g'`: newlines become spaces and runs of spaces collapse, so a multi-line API error cannot break the one-finding-per- line shape the caller's log reader depends on."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["1.3.0"],
@@ -348,8 +334,7 @@ def test_a_multiline_probe_error_is_folded_onto_one_line(tmp_path: pathlib.Path)
 def test_an_empty_probe_error_still_takes_the_could_not_tell_arm(
     tmp_path: pathlib.Path,
 ) -> None:
-    """A tool that fails with NOTHING on either stream is the worst input for a
-    classifier, and it must still be an unknown rather than an absence."""
+    """A tool that fails with NOTHING on either stream is the worst input for a classifier, and it must still be an unknown rather than an absence."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["1.3.0"], FAKE_AWS_RC="7", FAKE_AWS_ERR="")
     assert old.returncode == 1
     assert "COULD NOT TELL R2 sentinel" in old.stderr
@@ -380,9 +365,7 @@ def test_nosuchkey_from_r2_is_an_absence(tmp_path: pathlib.Path) -> None:
 def test_a_mixture_of_absent_and_unknown_takes_the_could_not_tell_advice(
     tmp_path: pathlib.Path,
 ) -> None:
-    """When BOTH states are present the could-not-tell block wins, because an
-    unknown means nothing can be concluded about the release at all -- so the "cut the release" advice would be unsound even though something really is
-    missing."""
+    """When BOTH states are present the could-not-tell block wins, because an unknown means nothing can be concluded about the release at all -- so the "cut the release" advice would be unsound even though something really is missing."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["1.3.0"],
@@ -413,17 +396,14 @@ def test_the_defaults_for_repo_and_bucket_are_used_when_unset(
 
 
 def test_an_empty_repo_variable_falls_back_to_the_default(tmp_path: pathlib.Path) -> None:
-    """`:-` fires on unset OR EMPTY, which is a different rule from `-` and the
-    one an exported-but-blank workflow input actually hits."""
+    """`:-` fires on unset OR EMPTY, which is a different rule from `-` and the one an exported-but-blank workflow input actually hits."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["1.3.0"], GITHUB_REPOSITORY="")
     assert "gh\tapi\trepos/rediacc/console/git/ref/tags/v1.3.0" in old_calls
     _assert_agree(old, new, "empty-repo", old_calls, new_calls)
 
 
 def test_the_r2_credentials_are_bridged_into_the_aws_names(tmp_path: pathlib.Path) -> None:
-    """:90-91. The aws CLI reads AWS_*; the workflow passes CLOUDFLARE_R2_*.
-    The fake asserts the bridge from inside the child process, which is the only
-    place it is observable."""
+    """:90-91. The aws CLI reads AWS_*; the workflow passes CLOUDFLARE_R2_*. The fake asserts the bridge from inside the child process, which is the only place it is observable."""
     probe = tmp_path / "probe-bin"
     probe.mkdir()
     for name in PATH_MINIMUM:
@@ -476,9 +456,7 @@ def test_the_r2_credentials_are_bridged_into_the_aws_names(tmp_path: pathlib.Pat
 
 def test_each_required_credential_is_demanded_in_order(tmp_path: pathlib.Path) -> None:
     """DIVERGENCE 1 IS ASSERTED, NOT ASSUMED. `${VAR:?msg}` is a bash diagnostic
-    carrying the twin's path and line number; the port names itself instead.
-    What must agree is the STREAM, the EXIT CODE, the ORDER (only the first
-    missing variable is named) and the fact that no oracle was consulted."""
+    carrying the twin's path and line number; the port names itself instead. What must agree is the STREAM, the EXIT CODE, the ORDER (only the first missing variable is named) and the fact that no oracle was consulted."""
     for name in port.REQUIRED_ENV:
         old, old_calls = _run(TWIN, tmp_path, ["1.3.0"], drop_env=(name,))
         new, new_calls = _run(PORT, tmp_path, ["1.3.0"], drop_env=(name,))
@@ -514,13 +492,9 @@ def test_help_goes_to_stdout_with_exit_0(tmp_path: pathlib.Path) -> None:
 
 
 def test_defect_bare_version_flag_exits_1_in_total_silence(tmp_path: pathlib.Path) -> None:
-    """THE DEFECT, PINNED IN BOTH DIRECTIONS. `--version` with no value hits
-    `shift 2` with one argument left; `set -e` (inherited from common.sh:11,
-    which this script sources despite its own `set -uo pipefail`) kills the run before the `if [[ -z "$VERSION" ]]` written to handle exactly this case.
+    """THE DEFECT, PINNED IN BOTH DIRECTIONS. `--version` with no value hits `shift 2` with one argument left; `set -e` (inherited from common.sh:11, which this script sources despite its own `set -uo pipefail`) kills the run before the `if [[ -z "$VERSION" ]]` written to handle exactly this case.
 
-    Zero bytes on both streams with exit 1 is indistinguishable from a probe genuinely refusing to promote, on a script whose whole purpose is to be a LOUD no-op. Reproduced because the acceptance rule for this wave is
-    agreement with the live twin; if someone repairs the twin, this test goes
-    red and names the port that must follow.
+    Zero bytes on both streams with exit 1 is indistinguishable from a probe genuinely refusing to promote, on a script whose whole purpose is to be a LOUD no-op. Reproduced because the acceptance rule for this wave is agreement with the live twin; if someone repairs the twin, this test goes red and names the port that must follow.
     """
     old, new, old_calls, new_calls = run_both(tmp_path, ["--version"])
     assert old.returncode == 1
@@ -532,9 +506,7 @@ def test_defect_bare_version_flag_exits_1_in_total_silence(tmp_path: pathlib.Pat
 
 
 def test_an_empty_version_value_reaches_the_required_message(tmp_path: pathlib.Path) -> None:
-    """`--version ''` has TWO tokens, so `shift 2` succeeds and the empty value
-    reaches the guard. This is the case the silent branch above should have
-    been, and driving both shows they are genuinely different code paths."""
+    """`--version ''` has TWO tokens, so `shift 2` succeeds and the empty value reaches the guard. This is the case the silent branch above should have been, and driving both shows they are genuinely different code paths."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--version", ""])
     assert old.returncode == 1
     assert "a version is required" in old.stderr
@@ -591,8 +563,7 @@ def test_pure_helpers() -> None:
 
 
 def test_judge_counts_the_two_states_separately() -> None:
-    """`FAILED` and `COULD_NOT_TELL` are two counters because they need OPPOSITE
-    advice. Driven directly so the branch is provable without a subprocess."""
+    """`FAILED` and `COULD_NOT_TELL` are two counters because they need OPPOSITE advice. Driven directly so the branch is provable without a subprocess."""
     v = port.Verdicts()
     assert v.judge("thing", port.PRESENT) is True
     assert not v.failed
@@ -616,8 +587,8 @@ def test_judge_counts_the_two_states_separately() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the one thing whose omission a reader would not
-    notice: the `unknown` arm classified as a pass. That is exactly the "a check that did not run reads as a green" failure this script exists to prevent, and the mutant's exit code changes from 1 to 0 while two of its three OK lines stay identical. Driven red, then the source is confirmed byte-identical and green.
+    """ANTI-VACUITY, planted on the one thing whose omission a reader would not notice: the `unknown` arm classified as a pass. That is exactly the "a check that did not run reads as a green" failure this script exists to prevent, and the mutant's exit code changes from 1 to 0 while two of its three OK lines stay identical. Driven red, then the source is confirmed byte-identical
+    and green.
     """
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(

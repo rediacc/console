@@ -57,8 +57,6 @@ def test_the_cache_signature_watches_exactly_what_the_counter_reads():
 
 
 def test_both_literals_are_non_empty():
-    """The anti-vacuity half. If either regex stopped matching -- a rename, a reformat,
-    a move to a different quoting style -- both sides would come back as empty sets and
-    the equality above would hold for the worst possible reason."""
+    """The anti-vacuity half. If either regex stopped matching -- a rename, a reformat, a move to a different quoting style -- both sides would come back as empty sets and the equality above would hold for the worst possible reason."""
     assert len(_families()) >= 4
     assert len(_corpus_globs()) >= 4

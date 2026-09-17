@@ -16,8 +16,7 @@ here, because that file has another writer:
      grep does not, so every `if timeout ...` finding is found and then silently
      dropped.
 
-`.ci/breakpoint/lib/breakpoint-common.sh:27-29` states the same ban for its own vendored corpus -- "no seq(1), no timeout(1), no mapfile" -- so the intent is
-consistent; only the enforcement is broken.
+`.ci/breakpoint/lib/breakpoint-common.sh:27-29` states the same ban for its own vendored corpus -- "no seq(1), no timeout(1), no mapfile" -- so the intent is consistent; only the enforcement is broken.
 
 `common.sh:run_with_timeout`. `.ci/scripts/lib/common.sh:233-262` already carries a portable bash replacement, and it is the one this module is checked against. It backgrounds the command, backgrounds a watchdog that sleeps then SIGTERMs it, and maps the resulting 143 to 124.
 
@@ -136,9 +135,8 @@ class Result:
                 self.duration,
                 self.returncode,
             )
-        # A SIGNALLED CHILD DID NOT "EXIT", and saying so sends the reader after the wrong cause. `subprocess` reports a signalled child as a NEGATIVE
-        # returncode and a shell in between reports 128+N; either way the process
-        # was terminated from outside rather than deciding to fail, so the thing to suspect is a deadline or an OOM kill, not the command's own logic. Learned the expensive way on 2026-09-08 in `wl_judge`, whose equivalent line read "judge exited 143" and let a reader conclude the model was unreachable -- the remedy that message offers is to DISABLE the gate.
+        # A SIGNALLED CHILD DID NOT "EXIT", and saying so sends the reader after the wrong cause. `subprocess` reports a signalled child as a NEGATIVE returncode and a shell in between reports 128+N; either way the process was terminated from outside rather than deciding to fail, so the thing to suspect is a deadline or an OOM kill, not the command's own logic. Learned the
+        # expensive way on 2026-09-08 in `wl_judge`, whose equivalent line read "judge exited 143" and let a reader conclude the model was unreachable -- the remedy that message offers is to DISABLE the gate.
         sig = (
             -self.returncode
             if self.returncode < 0
@@ -293,8 +291,7 @@ def retry_with_backoff(
 ) -> RetryOutcome:
     """Call `action()` until it returns something truthy, backing off between tries.
 
-    RETRIES ON ANY FALSY RESULT, which is the same policy as every one of the
-    fifteen bash loops in this tree: `if "$@"; then return 0; fi` and nothing
+    RETRIES ON ANY FALSY RESULT, which is the same policy as every one of the fifteen bash loops in this tree: `if "$@"; then return 0; fi` and nothing
     else. No implementation anywhere in the repo distinguishes a retryable
     failure from a fatal one, so this does not invent a distinction that the call sites would then have to be taught. A caller that wants one returns truthy early or raises.
 

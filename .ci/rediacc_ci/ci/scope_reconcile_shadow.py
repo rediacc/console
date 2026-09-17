@@ -58,8 +58,7 @@ def _console_root() -> pathlib.Path:
 
 
 def _head_bytes(path: pathlib.Path, n: int) -> str:
-    """`"$(head -c N "$path" 2>/dev/null)"` -- all trailing newlines stripped,
-    empty string if the file cannot be read."""
+    """`"$(head -c N "$path" 2>/dev/null)"` -- all trailing newlines stripped, empty string if the file cannot be read."""
     try:
         data = path.read_bytes()[:n]
     except OSError:

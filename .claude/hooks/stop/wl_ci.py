@@ -1,6 +1,4 @@
-"""wl_ci: publish-ref divergence, PR-body freshness, submodule pointer moves,
-and the v10 open-PR CI-trouble check. Pure movement from worklist.py; every
-branch here is paid for by an observed failure, so nothing was "simplified" in the extraction.
+"""wl_ci: publish-ref divergence, PR-body freshness, submodule pointer moves, and the v10 open-PR CI-trouble check. Pure movement from worklist.py; every branch here is paid for by an observed failure, so nothing was "simplified" in the extraction.
 """
 
 import contextlib
@@ -32,8 +30,7 @@ def publish_divergence(root):
     branch = _git(root, "rev-parse", "--abbrev-ref", "HEAD")
     if not branch or branch == "HEAD":
         return "unknown", 0, ""
-    # The published ref is whatever the PR is on; default to the sibling name the
-    # session pushes to, overridable for other setups.
+    # The published ref is whatever the PR is on; default to the sibling name the session pushes to, overridable for other setups.
     target = os.environ.get("WORKLIST_PUBLISH_REF", "")
     if not target:
         return "unset", 0, ""
@@ -44,9 +41,7 @@ def publish_divergence(root):
     ahead = int(n) if n.isdigit() else 0
     if ahead:
         return "diverged", ahead, ref
-    # THE SECOND TRAP, found by a verification agent rather than by reasoning: a LOCAL branch sharing the publish target's name, left behind by an earlier
-    # rename. Nothing in the publish flow touches it, so it rots invisibly; the
-    # cost lands on whoever checks it out next and pushes from a stale base.
+    # THE SECOND TRAP, found by a verification agent rather than by reasoning: a LOCAL branch sharing the publish target's name, left behind by an earlier rename. Nothing in the publish flow touches it, so it rots invisibly; the cost lands on whoever checks it out next and pushes from a stale base.
     if _git(root, "rev-parse", "--verify", "--quiet", target):
         behind = _git(root, "rev-list", "--count", ref, "^%s" % target)
         unique = _git(root, "rev-list", "--count", target, "^%s" % ref)
@@ -136,9 +131,7 @@ def pr_body_freshness(root):
 #     to investigate a leg that is about to be rerun burns a whole round; that
 # night an opensuse E2E leg failed on a Docker Hub CDN reset, was retried, and the run went green at 95 jobs. Those failures are REPORTED, never blocked on, until the run is final and they are still red.
 #
-# The output is a HANDOVER OF FACTS, in the shape submodule_pointer_moves() uses: the failing job, its failing STEP, its run and attempt, and the exact command
-# that reads its log. "CI is red" alone is noise; a session cannot brief a
-# sub-agent with it.
+# The output is a HANDOVER OF FACTS, in the shape submodule_pointer_moves() uses: the failing job, its failing STEP, its run and attempt, and the exact command that reads its log. "CI is red" alone is noise; a session cannot brief a sub-agent with it.
 CI_RETRY_PATTERNS = [
     p.strip()
     for p in os.environ.get(
@@ -170,8 +163,7 @@ def repo_slug(root):
 
 
 def _gh_json(root, args, timeout=25):
-    """(data, error) from `gh <args>`. Never raises; an error is a STRING, so
-    every caller can report blindness instead of guessing."""
+    """(data, error) from `gh <args>`. Never raises; an error is a STRING, so every caller can report blindness instead of guessing."""
     try:
         out = subprocess.run(
             ["gh", *args],
@@ -200,9 +192,7 @@ def _gh_json(root, args, timeout=25):
 
 
 def ci_query(owner, name, ref, cursor):
-    """The ONE read. statusCheckRollup rather than checkSuites.checkRuns on
-    purpose: the rollup exposes the LATEST check run per context, so a watchdog rerun replaces the failed attempt rather than appearing beside it. That is what makes a rerun-in-flight read as IN_PROGRESS here, and this check go
-    quiet by itself while the watchdog works."""
+    """The ONE read. statusCheckRollup rather than checkSuites.checkRuns on purpose: the rollup exposes the LATEST check run per context, so a watchdog rerun replaces the failed attempt rather than appearing beside it. That is what makes a rerun-in-flight read as IN_PROGRESS here, and this check go quiet by itself while the watchdog works."""
     after = ',after:"%s"' % cursor if cursor else ""
     return (
         '{repository(owner:"%s",name:"%s"){pullRequests(headRefName:"%s",states:OPEN,first:1)'
@@ -415,8 +405,7 @@ def review_gate_row(info):
 
 
 def review_gate_detail(root, info, row):
-    """(title, summary, html_url) for the "Review Complete" check-run, read
-    directly, not guessed. This IS review-status.sh's own posted verdict -- the same text a human reads in `gh pr checks` -- so there is no second definition of "what's wrong" to drift from the real gate.
+    """(title, summary, html_url) for the "Review Complete" check-run, read directly, not guessed. This IS review-status.sh's own posted verdict -- the same text a human reads in `gh pr checks` -- so there is no second definition of "what's wrong" to drift from the real gate.
     """
     data, err = _gh_json(
         root,
@@ -460,8 +449,7 @@ def reviewmark_path(worklist, session_id):
 
 
 def review_red(root, worklist, session_id, cidetail, ack_text):
-    """(state, detail) -- is "Review Complete" red while the rest of this
-    PR's CI is clean, and has this already been reported enough times.
+    """(state, detail) -- is "Review Complete" red while the rest of this PR's CI is clean, and has this already been reported enough times.
 
     state: clean | absent | trouble | downgraded | unreadable
 
@@ -517,9 +505,7 @@ CI_WATCH_RE = re.compile(
 def ci_watch_only(live_bg):
     """(watching, description) -- is watching CI the ONLY thing in flight?
 
-    True only when at least one RUNNING background task matches the CI-watch shape and EVERY running background task does. One non-watch worker means
-    the session has real work delegated and is not merely sitting; no tasks
-    at all means there is nothing being waited on and the idle detector owns that case. The description names the watches so the block can quote them.
+    True only when at least one RUNNING background task matches the CI-watch shape and EVERY running background task does. One non-watch worker means the session has real work delegated and is not merely sitting; no tasks at all means there is nothing being waited on and the idle detector owns that case. The description names the watches so the block can quote them.
     """
     names = []
     for b in live_bg or []:
@@ -641,8 +627,7 @@ def cimark_path(worklist, session_id):
 
 # ---- v13: CI-queue-aware backpressure --------------------------------------- OPERATOR (2026-07-31): "CI side has stuck because of many commits. They're in the queue. For that situation stop hook should be smart to avoid pushing the system in such cases... there could be possibility that allow us to work locally until we see CI result to save time." Observed live the same night:
 # a Console CI run sat status=pending for 25+ minutes because pushes had queued
-# runs behind each other; every further push made the jam strictly worse while
-# buying nothing, since only the newest head's result matters.
+# runs behind each other; every further push made the jam strictly worse while buying nothing, since only the newest head's result matters.
 CI_QUEUE_MIN = int(os.environ.get("WORKLIST_CI_QUEUE_MIN", "10"))
 CI_QUEUE_DEPTH = int(os.environ.get("WORKLIST_CI_QUEUE_DEPTH", "2"))
 CI_QUEUE_CACHE_S = int(os.environ.get("WORKLIST_CI_QUEUE_CACHE_S", "180"))
@@ -780,9 +765,7 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text):
         return "ok", info
     watcher = ci_watch_armed(live_bg, hard + soft, info.get("sha") or tip)
     if watcher:
-        # The operator's own condition, and deliberately NOT gated on the run still being live. A watch keyed to this run is a wake-up whether the
-        # run is finishing or already finished; the window where a RUNNING watch
-        # coexists with a final run is the seconds before its last iteration prints, and firing into that window is a false alarm, not diligence.
+        # The operator's own condition, and deliberately NOT gated on the run still being live. A watch keyed to this run is a wake-up whether the run is finishing or already finished; the window where a RUNNING watch coexists with a final run is the seconds before its last iteration prints, and firing into that window is a false alarm, not diligence.
         _ci_cache_write(cache_p, tip, state, info, steps, final=not live)
         return "watched", {"info": info, "hard": hard, "soft": soft, "watcher": watcher}
     ci_steps(root, info, hard or soft, steps)
@@ -826,8 +809,7 @@ def _ci_cache_write(path, sha, state, info, steps, final):
 
 
 def ci_rows_text(rows, info):
-    """One line per failing job, plus the log incantation that actually works
-    on a completed job inside a live run."""
+    """One line per failing job, plus the log incantation that actually works on a completed job inside a live run."""
     out = []
     for r in rows[:6]:
         bits = ["    %s  %s" % (r["name"], r["conclusion"])]

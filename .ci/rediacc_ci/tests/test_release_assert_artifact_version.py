@@ -55,8 +55,7 @@ exit 0
 def _bin_without(tmp_path: pathlib.Path, drop: str) -> str:
     """A PATH directory holding every tool both sides need EXCEPT `drop`.
 
-    An empty PATH is not usable here: `differential.bash_streams` resolves `bash` through the environment it is handed, so emptying PATH breaks the harness rather than the subject, and the test then proves nothing about the
-    missing-tool branch."""
+    An empty PATH is not usable here: `differential.bash_streams` resolves `bash` through the environment it is handed, so emptying PATH breaks the harness rather than the subject, and the test then proves nothing about the missing-tool branch."""
     d = tmp_path / ("bin-no-%s" % drop)
     d.mkdir(exist_ok=True)
     # EVERY executable on the real PATH is mirrored, not a hand-picked list. A list is how this helper goes quietly wrong: the first attempt named ten tools and the twin died at `dirname` on line 39, before `require_cmd` had run at all, so the case was asserting on a broken harness rather than on the missing-tool branch. Mirroring everything means the ONLY thing absent is the one
@@ -137,9 +136,7 @@ def test_leading_v_is_stripped_from_the_artifact_side(tmp_path: pathlib.Path) ->
 
 
 def test_only_one_leading_v_is_stripped(tmp_path: pathlib.Path) -> None:
-    """`#v` removes the SHORTEST matching prefix, i.e. exactly one `v`, so
-    `vv1.2.3` still mismatches. A port using `lstrip('v')` would strip both and
-    turn this failure into a pass."""
+    """`#v` removes the SHORTEST matching prefix, i.e. exactly one `v`, so `vv1.2.3` still mismatches. A port using `lstrip('v')` would strip both and turn this failure into a pass."""
     old, new = run_both(tmp_path, _ok_env(FAKE_GH_MANIFEST='{"version":"vv1.2.3"}'))
     assert old[0] == 1
     assert "produced vv1.2.3, but CD is promoting as v1.2.3." in old[1]
@@ -180,8 +177,7 @@ def test_stale_ci_run_id_mismatch_names_both_versions(tmp_path: pathlib.Path) ->
 
 
 def test_leading_zeros_are_not_normalised_away(tmp_path: pathlib.Path) -> None:
-    """String equality, never semver equality. `01.2.3` is not `1.2.3`, and a
-    port that parsed the version into integers would call this a pass."""
+    """String equality, never semver equality. `01.2.3` is not `1.2.3`, and a port that parsed the version into integers would call this a pass."""
     old, new = run_both(tmp_path, _ok_env(FAKE_GH_MANIFEST='{"version":"01.2.3"}'))
     assert old[0] == 1
     assert "produced v01.2.3, but CD is promoting as v1.2.3." in old[1]
@@ -218,9 +214,7 @@ def test_null_version_is_the_same_refusal(tmp_path: pathlib.Path) -> None:
 def test_false_version_is_also_empty_because_slashslash_is_an_alternative(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`//` is jq's ALTERNATIVE operator, not a null-coalesce: it fires on
-    `false` as well as on `null`. A port that special-cased only `None` would
-    print `::notice::... vFalse ...` here."""
+    """`//` is jq's ALTERNATIVE operator, not a null-coalesce: it fires on `false` as well as on `null`. A port that special-cased only `None` would print `::notice::... vFalse ...` here."""
     old, new = run_both(tmp_path, _ok_env(FAKE_GH_MANIFEST='{"version":false}'))
     assert old[0] == 1
     assert "has no .version field" in old[1]
@@ -235,9 +229,7 @@ def test_empty_string_version_is_the_same_refusal(tmp_path: pathlib.Path) -> Non
 
 
 def test_missing_artifact_is_a_hard_failure_not_a_warning(tmp_path: pathlib.Path) -> None:
-    """HARDENED 2026-08-07. This branch used to warn and exit 0, and because
-    nothing produced the artifact, EVERY release took it. Three `::error::`
-    lines and exit 1 now, on both sides."""
+    """HARDENED 2026-08-07. This branch used to warn and exit 0, and because nothing produced the artifact, EVERY release took it. Three `::error::` lines and exit 1 now, on both sides."""
     old, new = run_both(tmp_path, _ok_env(CI_RUN_ID="777", FAKE_GH_DOWNLOAD_RC="1"))
     assert old[0] == 1
     assert old[1] == (
@@ -253,8 +245,7 @@ def test_missing_artifact_is_a_hard_failure_not_a_warning(tmp_path: pathlib.Path
 
 
 def test_gh_stderr_is_swallowed_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """`2>/dev/null` on the gh call only. The fake writes a line to stderr that
-    must not reach the CD log from either implementation."""
+    """`2>/dev/null` on the gh call only. The fake writes a line to stderr that must not reach the CD log from either implementation."""
     old, new = run_both(tmp_path, _ok_env(FAKE_GH_DOWNLOAD_RC="1"))
     assert "fake gh:" not in old[2]
     assert "fake gh:" not in new[2]
@@ -278,9 +269,7 @@ def test_artifact_present_but_manifest_json_absent(tmp_path: pathlib.Path) -> No
 def test_malformed_json_propagates_jqs_own_exit_code_and_message(
     tmp_path: pathlib.Path,
 ) -> None:
-    """No `::error::` line at all on this path: jq's stderr and jq's exit code
-    are the entire output, because the command substitution fails under `set -e`. Whatever that code is for the installed jq, both sides must
-    report the SAME one -- which is the argument for shelling out."""
+    """No `::error::` line at all on this path: jq's stderr and jq's exit code are the entire output, because the command substitution fails under `set -e`. Whatever that code is for the installed jq, both sides must report the SAME one -- which is the argument for shelling out."""
     old, new = run_both(tmp_path, _ok_env(FAKE_GH_MANIFEST="{not json"))
     assert old[0] != 0
     assert old[0] != 1
@@ -333,9 +322,7 @@ def test_missing_github_repository_refuses_reworded(tmp_path: pathlib.Path) -> N
 
 
 def test_missing_gh_binary_refuses_identically(tmp_path: pathlib.Path) -> None:
-    """`require_cmd gh` runs BEFORE any variable check, and its message is a
-    `log_error` string rather than a bash diagnostic, so this one IS byte-identical. A gate that exits 0 because its tool is not installed is the failure this repo names first, so the missing-tool branch gets a real
-    probe rather than a comment."""
+    """`require_cmd gh` runs BEFORE any variable check, and its message is a `log_error` string rather than a bash diagnostic, so this one IS byte-identical. A gate that exits 0 because its tool is not installed is the failure this repo names first, so the missing-tool branch gets a real probe rather than a comment."""
     nogh = _bin_without(tmp_path, "gh")
     env = _ok_env()
     old_env = diff.env_for(**env, PATH=nogh)
@@ -349,9 +336,7 @@ def test_missing_gh_binary_refuses_identically(tmp_path: pathlib.Path) -> None:
 
 
 def test_missing_jq_binary_refuses_identically(tmp_path: pathlib.Path) -> None:
-    """`require_cmd jq` is carried into the port even though the port could
-    parse JSON itself, because dropping the probe would make the port SUCCEED on a host where the twin refuses. It shells out to jq anyway (see the module
-    docstring), so the dependency is real on both sides, not ceremonial."""
+    """`require_cmd jq` is carried into the port even though the port could parse JSON itself, because dropping the probe would make the port SUCCEED on a host where the twin refuses. It shells out to jq anyway (see the module docstring), so the dependency is real on both sides, not ceremonial."""
     nojq = _bin_without(tmp_path, "jq")
     env = _ok_env()
     old_env = diff.env_for(**env, PATH=nojq)

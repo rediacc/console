@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.security.workflow_gates` against its twin
-`.ci/scripts/security/check-workflow-gates.sh` (`check:ci-workflow-gates`).
+"""Differential: `rediacc_ci.security.workflow_gates` against its twin `.ci/scripts/security/check-workflow-gates.sh` (`check:ci-workflow-gates`).
 
 THE COMPARISON IS BYTE FOR BYTE ON BOTH STREAMS, and that is affordable here in a way it usually is not: 788 of the twin's 1108 lines were ALREADY Python, sitting in six `python3 - <<'PYEOF'` heredocs, so the port transcribes them rather than rewording them. Anything short of byte equality would therefore be a transcription error, not a legitimate rewrite. Two cases are exempted by
 name below, each with its own test saying why.
@@ -667,8 +666,7 @@ def test_check4_an_empty_registry_is_blind(tmp_path: pathlib.Path) -> None:
 def test_check4_stands_down_on_a_fixture_tree_with_no_registry(tmp_path: pathlib.Path) -> None:
     """`:110-119`: the registry is derived ONLY when WORKFLOWS_DIR is the default.
 
-    So the directory has to be a genuinely different one; passing the default
-    path explicitly still takes the real-tree branch, which is what the first version of this case did.
+    So the directory has to be a genuinely different one; passing the default path explicitly still takes the real-tree branch, which is what the first version of this case did.
     """
     fx = build_fixture(tmp_path)
     alt = fx / "elsewhere" / "workflows"
@@ -892,12 +890,9 @@ def test_check2_a_workflow_that_is_not_a_mapping(tmp_path: pathlib.Path) -> None
     """FIXED 2026-09-10: an UNRECORDED DIVERGENCE, found while testing CHECK 6.
 
     CHECK 2's (b)/(c) loop guarded with `(doc or {})`, which covers an EMPTY file and
-    not one whose YAML parses to a scalar. The twin died with `AttributeError: 'str' object has no attribute 'get'` and then printed "Reusable-workflow contract
-    violations (see above)" about a crash; the port already carried an `isinstance`
-    guard and passed. Two implementations, two different answers, and no case in this file exercised it. The twin now carries the same guard.
+    not one whose YAML parses to a scalar. The twin died with `AttributeError: 'str' object has no attribute 'get'` and then printed "Reusable-workflow contract violations (see above)" about a crash; the port already carried an `isinstance` guard and passed. Two implementations, two different answers, and no case in this file exercised it. The twin now carries the same guard.
 
-    CHECK 6 still fails the run, because watchdog-monitor.yml is the file being
-    mangled; the subject here is that CHECK 2 agrees and neither side tracebacks.
+    CHECK 6 still fails the run, because watchdog-monitor.yml is the file being mangled; the subject here is that CHECK 2 agrees and neither side tracebacks.
     """
     fx = build_fixture(tmp_path)
     wf(fx, "watchdog-monitor.yml", "not a mapping")
@@ -1042,8 +1037,7 @@ def test_a_planted_regression_of_the_checkout_exemption_is_caught(
     Until 2026-09-10 this test ran the other way round: it planted the obvious REPAIR (exempt on `uses:`) and proved the port then diverged from a twin that matched on the name. The bug is fixed in both sides now, so the tempting change is the reverse one -- somebody "restoring" the old substring test -- and that is what is planted here. Either way the claim is the same: a port may
     reword, never change which things it objects to.
 
-    The real file is hashed before and after; the mutation lives only in the
-    fixture's copy.
+    The real file is hashed before and after; the mutation lives only in the fixture's copy.
     """
     before = PORT.read_bytes()
     source = PORT.read_text(encoding="utf-8")

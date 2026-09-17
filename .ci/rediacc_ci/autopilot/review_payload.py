@@ -98,8 +98,7 @@ def _type_name(value: Any) -> str:
 
 
 def _index(value: Any, key: str) -> Any:
-    """`value.key` with jq's rules: null indexes to null, objects look up, and
-    everything else is a type error rather than a silent None."""
+    """`value.key` with jq's rules: null indexes to null, objects look up, and everything else is a type error rather than a silent None."""
     if value is None:
         return None
     if isinstance(value, dict):
@@ -117,8 +116,7 @@ def _index_num(value: Any, position: int) -> Any:
 
 
 def _iterate(value: Any) -> list[Any]:
-    """`(.comments.nodes // [])[]`. `//` has already turned null into `[]`, so
-    anything that is not an array here is jq's "Cannot iterate over" error."""
+    """`(.comments.nodes // [])[]`. `//` has already turned null into `[]`, so anything that is not an array here is jq's "Cannot iterate over" error."""
     if isinstance(value, list):
         return value
     raise JqError("Cannot iterate over %s" % _render(value))
@@ -146,8 +144,7 @@ def _render(value: Any) -> str:
 
 
 def _contains(haystack: Any, needle: str) -> bool:
-    """`contains($af)`. Only string-against-string is defined; anything else is
-    jq's containment error, which is how a non-string `login` field surfaces."""
+    """`contains($af)`. Only string-against-string is defined; anything else is jq's containment error, which is how a non-string `login` field surfaces."""
     if not isinstance(haystack, str):
         raise JqError(
             "%s and string (%s) cannot have their containment checked"
@@ -182,9 +179,7 @@ def utf8_len(text: str) -> int:
 
 
 def select_threads(data: list[Any], author_filter: str) -> list[dict[str, Any]]:
-    """The security control: unresolved, not outdated, and ROOT-AUTHORED by a
-    login containing `author_filter`. Shape-preserving, so the result is
-    exactly the object the twin's first `[ ... ]` produces."""
+    """The security control: unresolved, not outdated, and ROOT-AUTHORED by a login containing `author_filter`. Shape-preserving, so the result is exactly the object the twin's first `[ ... ]` produces."""
     kept: list[dict[str, Any]] = []
     for entry in data:
         if not _is_false(_index(entry, "isResolved")):
@@ -218,8 +213,7 @@ def select_threads(data: list[Any], author_filter: str) -> list[dict[str, Any]]:
 
 
 def shed(threads: list[dict[str, Any]], max_bytes: int) -> tuple[list[dict[str, Any]], int]:
-    """The oldest-first byte cap. `reduce range(0; length)`: at most one drop
-    per original thread, so an over-cap single thread ends up dropped too."""
+    """The oldest-first byte cap. `reduce range(0; length)`: at most one drop per original thread, so an over-cap single thread ends up dropped too."""
     dropped = 0
     remaining = list(threads)
     for _ in range(len(threads)):
@@ -231,8 +225,7 @@ def shed(threads: list[dict[str, Any]], max_bytes: int) -> tuple[list[dict[str, 
 
 
 def build_payload(data: list[Any], author_filter: str, max_bytes: int) -> dict[str, Any]:
-    """The whole jq program, as one call. Key order matches the twin's object
-    construction, because the output is compared as bytes downstream."""
+    """The whole jq program, as one call. Key order matches the twin's object construction, because the output is compared as bytes downstream."""
     kept = select_threads(data, author_filter)
     remaining, dropped = shed(kept, max_bytes)
     return {

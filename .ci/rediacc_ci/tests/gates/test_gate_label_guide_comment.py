@@ -143,8 +143,7 @@ class Guide:
         return path
 
     def run(self, labels_file: pathlib.Path, comments: object) -> str:
-        """`run_guide`. The twin drops stderr and swallows the exit code with
-        `|| true`, because several cases EXPECT the module to throw and the
+        """`run_guide`. The twin drops stderr and swallows the exit code with `|| true`, because several cases EXPECT the module to throw and the
         harness reports that on stdout as `THREW=`. Same here: the return code is
         not read, only the stdout lines are."""
         result = harness.run(

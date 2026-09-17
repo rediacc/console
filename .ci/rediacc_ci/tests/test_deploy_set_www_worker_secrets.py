@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.set_www_worker_secrets` against its twin
-`.ci/scripts/deploy/set-www-worker-secrets.sh`.
+"""Differential: `rediacc_ci.deploy.set_www_worker_secrets` against its twin `.ci/scripts/deploy/set-www-worker-secrets.sh`.
 
 A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
 is that piece.
@@ -165,8 +164,7 @@ def _twin_source() -> str:
 
 
 def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Path) -> None:
-    """ONE CALL, PINNED AGAINST LITERAL BYTES. Twenty-four keys in the twin's
-    order, the eleven legitimately-absent ones present as empty strings."""
+    """ONE CALL, PINNED AGAINST LITERAL BYTES. Twenty-four keys in the twin's order, the eleven legitimately-absent ones present as empty strings."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert old.returncode == 0
     assert old_calls.splitlines()[0] == "npx\twrangler\tsecret\tbulk\t--name\twww-edge"
@@ -202,9 +200,7 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
 
 
 def test_a_successful_run_says_nothing_of_its_own(tmp_path: pathlib.Path) -> None:
-    """THE PROPERTY THAT MAKES THE DOCUMENT LOAD BEARING. stdout is wrangler's
-    line and nothing else, stderr is empty: there is no closing `log_info` here,
-    unlike `set-preview-worker-secrets.sh:105`."""
+    """THE PROPERTY THAT MAKES THE DOCUMENT LOAD BEARING. stdout is wrangler's line and nothing else, stderr is empty: there is no closing `log_info` here, unlike `set-preview-worker-secrets.sh:105`."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert old.stdout == "Finished processing secrets JSON file.\n"
     assert old.stderr == ""
@@ -214,8 +210,7 @@ def test_a_successful_run_says_nothing_of_its_own(tmp_path: pathlib.Path) -> Non
 
 
 def test_the_worker_name_is_taken_whole(tmp_path: pathlib.Path) -> None:
-    """NO `pr-` COMPOSITION HERE, unlike the preview sibling: whatever
-    cd-deploy-worker.yml hands over is the Worker written to."""
+    """NO `pr-` COMPOSITION HERE, unlike the preview sibling: whatever cd-deploy-worker.yml hands over is the Worker written to."""
     old, new, old_calls, new_calls = run_both(tmp_path, WORKER_NAME="rediacc-www-eu")
     assert old_calls.splitlines()[0].endswith("--name\trediacc-www-eu")
     _assert_agree(old, new, "worker-name", old_calls, new_calls)
@@ -262,9 +257,7 @@ def test_every_one_of_the_thirteen_guards_fires_with_its_own_name(
 
 
 def test_stripe_is_demanded_here_and_not_on_the_preview(tmp_path: pathlib.Path) -> None:
-    """THE SIBLINGS DISAGREE ON PURPOSE. edge gets the sandbox key and stable the
-    live one, so an empty Stripe key on www is never legitimate, while on a
-    preview it is. Pinned in both directions."""
+    """THE SIBLINGS DISAGREE ON PURPOSE. edge gets the sandbox key and stable the live one, so an empty Stripe key on www is never legitimate, while on a preview it is. Pinned in both directions."""
     old, new, old_calls, new_calls = run_both(tmp_path, STRIPE_SECRET_KEY="")
     assert old.returncode == 1
     assert "STRIPE_SECRET_KEY is EMPTY" in old.stderr
@@ -305,9 +298,7 @@ def test_the_tool_checks_run_before_the_worker_name_check(tmp_path: pathlib.Path
 def test_divergence_a_missing_worker_name_is_bashs_own_unbound_variable(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED" BY
-    ACCIDENT. bash's refusal names the bash FILE and a bash LINE NUMBER, and then the twin's own message, which already begins with the script name: the name is printed twice. The port prints the `VAR: message` half. Same stream, same
-    status, no call from either."""
+    """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED" BY ACCIDENT. bash's refusal names the bash FILE and a bash LINE NUMBER, and then the twin's own message, which already begins with the script name: the name is printed twice. The port prints the `VAR: message` half. Same stream, same status, no call from either."""
     old, new, old_calls, new_calls = run_both(tmp_path, drop_env=("WORKER_NAME",))
     assert old.returncode == new.returncode == 1
     assert old.stderr.endswith(
@@ -320,8 +311,7 @@ def test_divergence_a_missing_worker_name_is_bashs_own_unbound_variable(
 
 
 def test_an_empty_worker_name_refuses_too(tmp_path: pathlib.Path) -> None:
-    """`:?` IS AN UNSET-OR-EMPTY TEST. A port checking `"WORKER_NAME" in
-    os.environ` would run `wrangler secret bulk --name ''` instead."""
+    """`:?` IS AN UNSET-OR-EMPTY TEST. A port checking `"WORKER_NAME" in os.environ` would run `wrangler secret bulk --name ''` instead."""
     old, new, old_calls, new_calls = run_both(tmp_path, WORKER_NAME="")
     assert old.returncode == new.returncode == 1
     assert new.stderr == port.MISSING_WORKER_NAME + "\n"
@@ -329,9 +319,7 @@ def test_an_empty_worker_name_refuses_too(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_wrangler_failure_ends_the_run_with_its_status(tmp_path: pathlib.Path) -> None:
-    """PIPEFAIL, the right-hand half, and the reason the twin's header says
-    `-uo pipefail` were added: a jq failure used to be hidden because wrangler's
-    status won."""
+    """PIPEFAIL, the right-hand half, and the reason the twin's header says `-uo pipefail` were added: a jq failure used to be hidden because wrangler's status won."""
     old, new, old_calls, new_calls = run_both(tmp_path, FAKE_NPX_RC="7")
     assert old.returncode == 7
     assert old.stderr == "wrangler: failed to set secrets\n"
@@ -347,8 +335,7 @@ def test_a_value_with_quotes_and_newlines_survives_intact(tmp_path: pathlib.Path
 
 
 def test_the_key_list_is_the_twins_key_list() -> None:
-    """STALENESS ALARM. `KEYS` is a copy of the twin's `--arg` list, re-derived
-    here from the twin's source, in order."""
+    """STALENESS ALARM. `KEYS` is a copy of the twin's `--arg` list, re-derived here from the twin's source, in order."""
     pairs = re.findall(r'--arg (\w+) "\$\{(\w+):-\}"', _twin_source())
     assert pairs, "the --arg shape changed; this alarm is no longer reading anything"
     assert [(env, var) for var, env in pairs] == list(port.KEYS)
@@ -367,8 +354,7 @@ def test_the_guard_list_is_the_twins_guard_list() -> None:
 
 
 def test_the_two_sibling_scripts_are_not_the_same_script() -> None:
-    """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. Every
-    difference below is load bearing, and each is driven by a test above."""
+    """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. Every difference below is load bearing, and each is driven by a test above."""
     assert len(port.KEYS) == 24
     assert len(sibling.KEYS) == 15
     assert len(port.REQUIRED_NONEMPTY) == 13
@@ -411,9 +397,8 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on a DROPPED KEY, which is the failure this script
-    can suffer in production: `SELLER_VAT_NUMBER` missing from the document means the Worker's zod schema rejects the config and every request 500s, or the field silently disappears from issued invoices. Nothing on either stream shows it -- this twin prints nothing at all when it succeeds -- and the exit code is 0 either way. Driven red, then the source is confirmed byte-identical
-    and green."""
+    """ANTI-VACUITY, planted on a DROPPED KEY, which is the failure this script can suffer in production: `SELLER_VAT_NUMBER` missing from the document means the Worker's zod schema rejects the config and every request 500s, or the field silently disappears from issued invoices. Nothing on either stream shows it -- this twin prints nothing at all when it succeeds -- and the
+    exit code is 0 either way. Driven red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('    ("SELLER_VAT_NUMBER", "seller_vat"),\n', "", 1)
     assert mutated != original, "the line this plant targets is no longer present verbatim"

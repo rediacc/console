@@ -73,15 +73,13 @@ _WINDOWS_UNAME_PREFIXES = ("MINGW", "MSYS", "CYGWIN")
 
 
 def console_root() -> pathlib.Path:
-    """The repository root, derived the way the twin derives it: from the
-    subject file's own path, never from cwd and never from an env override."""
+    """The repository root, derived the way the twin derives it: from the subject file's own path, never from cwd and never from an env override."""
     # This file: <root>/.ci/rediacc_ci/infra/build_renet.py
     return pathlib.Path(__file__).resolve().parents[3]
 
 
 def build_args(argv: list[str]) -> list[str]:
-    """The twin's `for arg in "$@"` filter: `--license` and `--nolicense` are
-    forwarded, in the order given, and EVERY OTHER ARGUMENT IS DROPPED IN
+    """The twin's `for arg in "$@"` filter: `--license` and `--nolicense` are forwarded, in the order given, and EVERY OTHER ARGUMENT IS DROPPED IN
     SILENCE.
 
     That silence is the twin's behaviour and is reproduced deliberately, not endorsed: `build-renet.sh --nolicence` (one letter short) builds a DEFAULT binary and says nothing, and the caller reads the exit 0 as "built the way I asked". Reported as a twin defect rather than fixed here, because a port that started rejecting arguments would fail differently from the script it claims

@@ -13,8 +13,7 @@ AND THE SCALAR FORM, which is the case that decides whether this rule is real.
 past a rule that only looked at a `name:` key. This repo has already shipped a workflow rule that was born VACUOUS (an awk `\\b` that matched nothing while reporting "All workflows are clean"), so the half that is easy to omit is the half asserted first.
 
 NO "the real tree passes" CASE, deliberately, and the twin says why: check:ci-workflows runs this very rule over the real .github/workflows on every pre-push and every CI run, so a copy here asserts nothing new, and it is not free -- the full scan took that battery from ~2s to 21.6s under the lane's contention, which check:ci-gate-manifest correctly refused. The real-tree verdict
-belongs to the
-gate; this file's job is the two directions the gate cannot show by passing.
+belongs to the gate; this file's job is the two directions the gate cannot show by passing.
 
 NO `xdist_group`. Each case gets its own `mktemp -d` fixture directory, and the subject is driven with a per-subprocess environment rather than by mutating this one.
 """

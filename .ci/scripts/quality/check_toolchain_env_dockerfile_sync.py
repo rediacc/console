@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
 """Entry point for the ported toolchain.env/Dockerfile sync gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.toolchain_env_dockerfile_sync`, which pytest and the port's
-own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.toolchain_env_dockerfile_sync`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 8b). See DRIVEN, below.
 
 WHY AN ENTRY POINT AT ALL, rather than registering the module. `check_npmrc.py` states both measured reasons. A port cannot be run by path (nothing puts `.ci` on `sys.path`, hence the insert below), and `python3 -m rediacc_ci.quality.toolchain_env_dockerfile_sync` works but is the wrong registration: `check:ci-parity`'s tokenizer cannot read `-m` and resolves the leaves to
 `[python3]`.
 
-THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. It was extracted from `.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh` PROGRAMMATICALLY, de-commented, and diffed
-as an ordered list of WHOLE LINES against the block in this docstring; the diff
-is empty over 12 line(s). The twin carried exactly these fields, in this order: `step`, `emit`, `blocker`, `needs`, `selftest`, `why`. NO `id:`: the basename derives `check:ci-toolchain-env-dockerfile-sync`, the manifest id. The `why:` field is FIVE lines of continuation and all five moved
+THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. It was extracted from `.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh` PROGRAMMATICALLY, de-commented, and diffed as an ordered list of WHOLE LINES against the block in this docstring; the diff is empty over 12 line(s). The twin carried exactly these fields, in this order: `step`, `emit`, `blocker`, `needs`, `selftest`,
+`why`. NO `id:`: the basename derives `check:ci-toolchain-env-dockerfile-sync`, the manifest id. The `why:` field is FIVE lines of continuation and all five moved
 with it, which is the field a line-by-line diff exists to protect.
 The pilot lost `emit: false` plus a blocker off a header and SEVEN GATES PASSED ANYWAY, because `emit: false` suppresses only the three workflow-region checks (`gate-bind.ts:1724`) while the registration assertions above them still ran.
 
-THE RESOLVED NEED SET DOES NOT MOVE, verified by CALLING `bind()` on both files and comparing every bound field except `file` and `run`, not by reading them.
-`bind()` unions declared needs with `inferredNeeds(source)`; the twin infers
-nothing beyond what it declares from its body and this two-import entry point infers nothing, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both sides bind to `needs: ['node']`.
+THE RESOLVED NEED SET DOES NOT MOVE, verified by CALLING `bind()` on both files and comparing every bound field except `file` and `run`, not by reading them. `bind()` unions declared needs with `inferredNeeds(source)`; the twin infers nothing beyond what it declares from its body and this two-import entry point infers nothing, because `inferredNeeds` strips Python docstrings as
+prose (`gate-header.ts:301`). Both sides bind to `needs: ['node']`.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -29,8 +25,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, 916 bytes, sha256 a5a90daed94641de...
     stderr: BYTE-IDENTICAL, EMPTY on both sides
 
-NO NORMALISATION WAS APPLIED and none was needed. The twin was run TWICE against an unchanged tree FIRST, to establish that its own output is byte-stable against
-itself; it is, on both streams.
+NO NORMALISATION WAS APPLIED and none was needed. The twin was run TWICE against an unchanged tree FIRST, to establish that its own output is byte-stable against itself; it is, on both streams.
 
 DRIVEN RED AS WELL, which is the half that matters.
 The plant rewrites `GO_VERSION=1.26.6` to `GO_VERSION=9.9.9` in

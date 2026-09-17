@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.deploy_www` against its twin
-`.ci/scripts/deploy/deploy-www.sh`.
+"""Differential: `rediacc_ci.deploy.deploy_www` against its twin `.ci/scripts/deploy/deploy-www.sh`.
 
 A RECORDING FAKE FOR `npx`/`npm` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file, and the fake `npx` is a MODEL of `wrangler d1` rather than wrangler. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
 ledger is a separate, achievable piece of work. This is that piece.
@@ -326,8 +325,7 @@ def test_preview_mints_a_database_and_the_generated_toml_is_byte_identical(tmp_p
 
 
 def test_the_generated_toml_carries_the_twins_em_dash_and_backticks(tmp_path) -> None:
-    """THE PORT SPELLS U+2014 AS AN ESCAPE, so this proves the emitted BYTES are
-    the twin's rather than trusting the module docstring's claim.
+    """THE PORT SPELLS U+2014 AS AN ESCAPE, so this proves the emitted BYTES are the twin's rather than trusting the module docstring's claim.
 
     Both halves matter. The backticks around `trailingSlash: 'never'` are `\\`` in the twin's UNQUOTED heredoc; a port that left the backslashes in would emit a different file that no test comparing only the two ports would catch, because both sides would be equally wrong. Here the twin IS one of the two sides, so the comparison is against bash's own expansion.
     """
@@ -343,8 +341,7 @@ def test_the_generated_toml_carries_the_twins_em_dash_and_backticks(tmp_path) ->
 
 
 def test_an_existing_database_is_deleted_first(tmp_path) -> None:
-    """THE CLEAN-SLATE PATH. The delete only happens when the first `d1 info`
-    answered with a uuid, so this is the case the first lookup exists for."""
+    """THE CLEAN-SLATE PATH. The delete only happens when the first `d1 info` answered with a uuid, so this is the case the first lookup exists for."""
     _root, old, new = run_both(
         tmp_path,
         "--name",
@@ -371,9 +368,7 @@ def test_an_existing_database_is_deleted_first(tmp_path) -> None:
 
 
 def test_the_generated_config_is_removed_on_success_and_kept_on_failure(tmp_path) -> None:
-    """`rm -f wrangler.preview.toml` IS ONLY ON THE SUCCESS PATH (twin :141), so
-    a failed deploy leaves the generated file in the worker directory. Both
-    halves are driven, because "it is cleaned up" is the plausible reading."""
+    """`rm -f wrangler.preview.toml` IS ONLY ON THE SUCCESS PATH (twin :141), so a failed deploy leaves the generated file in the worker directory. Both halves are driven, because "it is cleaned up" is the plausible reading."""
     root, old, new = run_both(tmp_path, "--name", "pr-7")
     _agree(old, new, "cleanup-success")
     assert not (root / "workers" / "www" / port.PREVIEW_CONFIG).exists()
@@ -436,8 +431,7 @@ def test_fact_the_production_database_guard_cannot_fire() -> None:
 
 
 def test_a_missing_wrangler_toml_refuses_before_anything_else(tmp_path) -> None:
-    """AND IT REFUSES BEFORE `require_var`, so a run with no credentials at all
-    still reports the missing worker rather than the missing token."""
+    """AND IT REFUSES BEFORE `require_var`, so a run with no credentials at all still reports the missing worker rather than the missing token."""
     root = fixture(tmp_path, worker_files=())
     old = _run(root, "old", drop_env=tuple(BASE_ENV))
     new = _run(root, "new", drop_env=tuple(BASE_ENV))
@@ -469,8 +463,7 @@ def test_an_empty_variable_refuses_exactly_as_an_absent_one_does(tmp_path) -> No
 
 
 def test_a_missing_jq_refuses_after_the_variables(tmp_path) -> None:
-    """ORDER MATTERS: `require_cmd jq` is AFTER both `require_var`s (twin :26-28),
-    so a run with neither jq nor a token names the token."""
+    """ORDER MATTERS: `require_cmd jq` is AFTER both `require_var`s (twin :26-28), so a run with neither jq nor a token names the token."""
     _root, old, new = run_both(tmp_path, drop="jq")
     _agree(old, new, "no-jq")
     assert old[0].returncode == 1
@@ -498,8 +491,7 @@ def test_a_failed_uuid_lookup_after_create_is_the_one_self_refusal(tmp_path) -> 
 
 
 def test_an_npx_failure_mid_run_stops_with_npxs_status(tmp_path) -> None:
-    """UNGUARDED UNDER `set -e`. Call 2 is the create, so the run stops with the
-    first `d1 info` done and nothing generated."""
+    """UNGUARDED UNDER `set -e`. Call 2 is the create, so the run stops with the first `d1 info` done and nothing generated."""
     _root, old, new = run_both(tmp_path, "--name", "pr-8", FAKE_NPX_FAIL_ON_CALL="2")
     _agree(old, new, "npx-fails")
 
@@ -511,9 +503,7 @@ def test_an_npx_failure_mid_run_stops_with_npxs_status(tmp_path) -> None:
 
 
 def test_npm_install_runs_only_when_node_modules_is_absent(tmp_path) -> None:
-    """BOTH DIRECTIONS. The twin's condition is `[[ ! -d "node_modules" ]]` and
-    nothing else, so unlike `deploy-account.sh` a globally installed wrangler
-    does NOT skip the install."""
+    """BOTH DIRECTIONS. The twin's condition is `[[ ! -d "node_modules" ]]` and nothing else, so unlike `deploy-account.sh` a globally installed wrangler does NOT skip the install."""
     _root, old, new = run_both(tmp_path, fixture_kw={"node_modules": False})
     _agree(old, new, "npm-install")
     assert _calls(old[1])[0] == "npm install", old[1]
@@ -668,9 +658,7 @@ def test_both_credentials_are_read_with_literal_keys() -> None:
 
 
 def test_the_twin_still_says_what_this_port_says_it_says() -> None:
-    """A STALENESS GUARD. Every literal below is quoted from the twin; if the
-    twin is edited, this fails here rather than silently in a ledger nobody
-    re-records."""
+    """A STALENESS GUARD. Every literal below is quoted from the twin; if the twin is edited, this fails here rather than silently in a ledger nobody re-records."""
     text = TWIN.read_text(encoding="utf-8")
     assert 'DB_NAME="account-db-pr-${PR_NUM}"' in text
     assert "--location eeur" in text

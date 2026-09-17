@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.upload_to_r2` against its twin
-`.ci/scripts/deploy/upload-to-r2.sh`.
+"""Differential: `rediacc_ci.deploy.upload_to_r2` against its twin `.ci/scripts/deploy/upload-to-r2.sh`.
 
 A RECORDING FAKE `aws` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2, and nothing here reads or writes the real checkout: every case builds a throwaway tree holding the twin, the two bash libraries it sources, the port, and a `dist/` of its own, then runs both sides against it. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real
 production run" clause and says in as many words that a mocked parity ledger is separate, achievable work. This is that work.
@@ -110,9 +109,7 @@ if rc:
     sys.exit(rc)
 """
 
-# Every real binary either side reaches for, and nothing else, so a tool leaking in from the machine would show up as a behaviour change. `bash` is on the list
-# because the PORT spawns it twice (the guard and the globs); `jq` because the
-# twin pipes the tracker through it and `test_without_jq...` removes it.
+# Every real binary either side reaches for, and nothing else, so a tool leaking in from the machine would show up as a behaviour change. `bash` is on the list because the PORT spawns it twice (the guard and the globs); `jq` because the twin pipes the tracker through it and `test_without_jq...` removes it.
 PATH_MINIMUM = (
     "bash",
     "jq",
@@ -223,9 +220,7 @@ def _run(
 
 
 def run_both(tmp_path: pathlib.Path, tree: dict[str, str] | None = None, **kw):
-    """BOTH SIDES RUN AGAINST ONE TREE, which is a correctness requirement rather
-    than a saving: the upload order is the SHELL'S GLOB ORDER over `dist/cli`, and two trees holding the same names can be enumerated differently. Neither side
-    writes into `dist/`, and the two call logs have different names."""
+    """BOTH SIDES RUN AGAINST ONE TREE, which is a correctness requirement rather than a saving: the upload order is the SHELL'S GLOB ORDER over `dist/cli`, and two trees holding the same names can be enumerated differently. Neither side writes into `dist/`, and the two call logs have different names."""
     root = fixture(tmp_path, tree)
     old, old_calls = _run(root, "old", **kw)
     new, new_calls = _run(root, "new", **kw)
@@ -267,9 +262,7 @@ IMMUTABLE = "public, max-age=31536000, immutable"
 
 
 def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
-    """THE WHOLE SEQUENCE ON A RELEASE CHANNEL: one sentinel probe, two immutable
-    versioned copies, two mutable channel copies, the manifest, `latest.json` LAST, then the tracker read and write. The tracker's uploaded BYTES are
-    asserted because they are jq's pretty-printer's, not `json.dumps`'s."""
+    """THE WHOLE SEQUENCE ON A RELEASE CHANNEL: one sentinel probe, two immutable versioned copies, two mutable channel copies, the manifest, `latest.json` LAST, then the tracker read and write. The tracker's uploaded BYTES are asserted because they are jq's pretty-printer's, not `json.dumps`'s."""
     root = fixture(tmp_path)
     old, old_calls = _run(root, "old")
     new, new_calls = _run(root, "new")
@@ -305,9 +298,7 @@ def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_binary_order_is_the_shells_glob_order(tmp_path: pathlib.Path) -> None:
-    """WHY THE PORT ASKS bash FOR THE GLOB. `for binary in "$CLI_DIR"/rdc-*`
-    expands through `strcoll`, which is LOCALE dependent; `sorted(glob.glob())`
-    is codepoint order. Under `C.UTF-8` here they agree, and the control below proves this fixture would notice if they did not: an uppercase name sorts BEFORE every lowercase one by codepoint and AFTER some of them under a
+    """WHY THE PORT ASKS bash FOR THE GLOB. `for binary in "$CLI_DIR"/rdc-*` expands through `strcoll`, which is LOCALE dependent; `sorted(glob.glob())` is codepoint order. Under `C.UTF-8` here they agree, and the control below proves this fixture would notice if they did not: an uppercase name sorts BEFORE every lowercase one by codepoint and AFTER some of them under a
     dictionary collation, which is the disagreement a locale change produces."""
     tree = dict(DEFAULT_TREE)
     tree["dist/cli/rdc-Windows-x64.exe"] = "windows binary\n"
@@ -332,8 +323,7 @@ def test_the_binary_order_is_the_shells_glob_order(tmp_path: pathlib.Path) -> No
 
 
 def test_a_pr_channel_never_writes_the_versioned_prefix(tmp_path: pathlib.Path) -> None:
-    """THE VERSIONED PREFIX IS SCOPED TO stable AND edge, and so are the sentinel
-    probe and the retention tracker. A `pr-N` run makes neither `s3api` call."""
+    """THE VERSIONED PREFIX IS SCOPED TO stable AND edge, and so are the sentinel probe and the retention tracker. A `pr-N` run makes neither `s3api` call."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "pr-9")
     )
@@ -350,9 +340,7 @@ def test_a_pr_channel_never_writes_the_versioned_prefix(tmp_path: pathlib.Path) 
 
 
 def test_dry_run_makes_no_call_at_all(tmp_path: pathlib.Path) -> None:
-    """`--dry-run` short-circuits inside all four R2 primitives AND inside the
-    guard, so the whole run is text. It also skips the credential check, which
-    the next test pins from the other direction."""
+    """`--dry-run` short-circuits inside all four R2 primitives AND inside the guard, so the whole run is text. It also skips the credential check, which the next test pins from the other direction."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "edge", "--dry-run")
     )
@@ -384,9 +372,7 @@ def test_dry_run_skips_the_credential_check(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_guard_the_port_runs_is_the_twins_own_text() -> None:
-    """THE PORT DOES NOT REIMPLEMENT `write_once_guard`; IT EXTRACTS IT. Asserted
-    against the gate harness that makes the same extraction, so the two cannot
-    drift apart, and against the twin's text so an empty extraction is visible."""
+    """THE PORT DOES NOT REIMPLEMENT `write_once_guard`; IT EXTRACTS IT. Asserted against the gate harness that makes the same extraction, so the two cannot drift apart, and against the twin's text so an empty extraction is visible."""
     source = TWIN.read_text(encoding="utf-8")
     extracted = port.extract_guard(source)
     assert extracted == harness.extract_guard(source), (
@@ -418,9 +404,7 @@ def test_the_guard_runner_preserves_the_twins_errexit_suppression() -> None:
 def test_sealed_with_binaries_skips_the_prefix_but_still_moves_the_pointer(
     tmp_path: pathlib.Path,
 ) -> None:
-    """GUARD ANSWER 10, an idempotent rerun of a published version. The immutable
-    prefix is NOT rewritten (the immutable-URL promise) and the channel pointers still refresh, which is the whole reason the guard returns a code instead of
-    aborting."""
+    """GUARD ANSWER 10, an idempotent rerun of a published version. The immutable prefix is NOT rewritten (the immutable-URL promise) and the channel pointers still refresh, which is the whole reason the guard returns a code instead of aborting."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, SENTINEL_EXISTS="true", PREFIX_KEYCOUNT="16"
     )
@@ -435,8 +419,7 @@ def test_sealed_with_binaries_skips_the_prefix_but_still_moves_the_pointer(
 
 
 def test_sealed_but_empty_refuses_loudly_and_stops_the_run(tmp_path: pathlib.Path) -> None:
-    """GUARD ANSWER `exit 1`. The guard's `exit` ends the SCRIPT, so nothing after
-    it runs: no channel upload, no pointer, no npm, no summary."""
+    """GUARD ANSWER `exit 1`. The guard's `exit` ends the SCRIPT, so nothing after it runs: no channel upload, no pointer, no npm, no summary."""
     old, new, old_calls, new_calls = run_both(tmp_path, SENTINEL_EXISTS="true", PREFIX_KEYCOUNT="0")
     assert old.returncode == 1
     assert (
@@ -450,13 +433,11 @@ def test_sealed_but_empty_refuses_loudly_and_stops_the_run(tmp_path: pathlib.Pat
 
 
 def test_defect_an_unanswered_count_reads_as_sealed_but_empty(tmp_path: pathlib.Path) -> None:
-    """DEFECT 2, PINNED. `rsv_binary_count` cannot answer (AccessDenied), says so,
-    and returns non-zero WITHOUT printing a count, exactly so its caller aborts instead of acting on a fabricated 0 (`release-state-validator.sh:161-166`). The abort never happens, because the twin consumes the guard's status with
+    """DEFECT 2, PINNED. `rsv_binary_count` cannot answer (AccessDenied), says so, and returns non-zero WITHOUT printing a count, exactly so its caller aborts instead of acting on a fabricated 0 (`release-state-validator.sh:161-166`). The abort never happens, because the twin consumes the guard's status with
     `|| guard_rc=$?` and that suppresses errexit inside the function. The empty
     count then reads as zero and the operator is told to scrub the sentinel of a healthy sealed release.
 
-    Reproduced rather than repaired: agreement with the live twin is this wave's deliverable, and the fix is a cutover-box decision. If it is ever repaired,
-    this test goes red and names the port that must follow."""
+    Reproduced rather than repaired: agreement with the live twin is this wave's deliverable, and the fix is a cutover-box decision. If it is ever repaired, this test goes red and names the port that must follow."""
     old, new, old_calls, new_calls = run_both(tmp_path, SENTINEL_EXISTS="true", FAKE_LIST_RC="255")
     assert old.returncode == 1
     assert "✗ rsv_binary_count: list-objects-v2 failed for" in old.stderr
@@ -469,9 +450,7 @@ def test_defect_an_unanswered_count_reads_as_sealed_but_empty(tmp_path: pathlib.
 
 
 def test_the_guard_refuses_loudly_when_the_twins_text_is_gone(tmp_path: pathlib.Path) -> None:
-    """THE ONE STATE THE TWIN CANNOT BE IN, so there is nothing to diverge from:
-    the port reads the guard out of the twin, so a missing twin means the guard cannot run. A `command not found` from bash would read as flake, so the
-    refusal names the file and says why the function is not Python."""
+    """THE ONE STATE THE TWIN CANNOT BE IN, so there is nothing to diverge from: the port reads the guard out of the twin, so a missing twin means the guard cannot run. A `command not found` from bash would read as flake, so the refusal names the file and says why the function is not Python."""
     root = fixture(tmp_path)
     (root / ".ci" / "scripts" / "deploy" / TWIN.name).unlink()
     new, calls = _run(root, "new")
@@ -485,9 +464,7 @@ def test_the_guard_refuses_loudly_when_the_twins_text_is_gone(tmp_path: pathlib.
 
 
 def test_the_retention_window_prunes_and_deletes(tmp_path: pathlib.Path) -> None:
-    """22 known versions plus a new one: three fall out of the 20-entry window,
-    and each pruned prefix gets one `aws s3 rm --recursive`. The tracker written back is jq's bytes, asserted in full because a `json.dumps` port would upload
-    a different file while printing the same lines."""
+    """22 known versions plus a new one: three fall out of the 20-entry window, and each pruned prefix gets one `aws s3 rm --recursive`. The tracker written back is jq's bytes, asserted in full because a `json.dumps` port would upload a different file while printing the same lines."""
     tracker = "[%s]" % ",".join('"9.9.%d"' % index for index in range(22))
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "stable"), FAKE_TRACKER=tracker
@@ -507,9 +484,7 @@ def test_the_retention_window_prunes_and_deletes(tmp_path: pathlib.Path) -> None
 
 
 def test_a_version_already_in_the_tracker_is_not_added_twice(tmp_path: pathlib.Path) -> None:
-    """`if index($v) then . else [$v] + . end`: a re-release keeps its place
-    rather than jumping to the front, which is what makes a stable promotion of
-    an existing edge version a no-op for the window."""
+    """`if index($v) then . else [$v] + . end`: a re-release keeps its place rather than jumping to the front, which is what makes a stable promotion of an existing edge version a no-op for the window."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         argv=("--version", "1.2.3", "--channel", "stable"),
@@ -524,8 +499,7 @@ def test_a_version_already_in_the_tracker_is_not_added_twice(tmp_path: pathlib.P
 def test_defect_a_failed_tracker_read_resets_the_retention_window(
     tmp_path: pathlib.Path,
 ) -> None:
-    """DEFECT 3, PINNED. `r2_get` is `... 2>/dev/null || echo ""`, so an expired
-    token and an absent object are one empty string. A 22-entry tracker comes back as a one-entry tracker, exit 0, no warning, and the 21 versions that vanished are never passed to `cleanup_old_versions`, so their prefixes are orphaned until the nightly sweep.
+    """DEFECT 3, PINNED. `r2_get` is `... 2>/dev/null || echo ""`, so an expired token and an absent object are one empty string. A 22-entry tracker comes back as a one-entry tracker, exit 0, no warning, and the 21 versions that vanished are never passed to `cleanup_old_versions`, so their prefixes are orphaned until the nightly sweep.
 
     Reproduced rather than repaired, for the reason in the docstring."""
     tracker = "[%s]" % ",".join('"9.9.%d"' % index for index in range(22))
@@ -544,9 +518,7 @@ def test_defect_a_failed_tracker_read_resets_the_retention_window(
 
 
 def test_a_failed_tracker_read_is_silent_on_both_streams(tmp_path: pathlib.Path) -> None:
-    """`2>/dev/null` ON BOTH SIDES. aws's own explanation of the failure is
-    discarded, which is why the fake's `call:` marker for `r2_get` appears in the file log and NOT on stderr. Asserted so a later reader does not mistake the
-    absence for a hole in the harness."""
+    """`2>/dev/null` ON BOTH SIDES. aws's own explanation of the failure is discarded, which is why the fake's `call:` marker for `r2_get` appears in the file log and NOT on stderr. Asserted so a later reader does not mistake the absence for a hole in the harness."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "stable"), FAKE_GET_RC="255"
     )
@@ -559,13 +531,11 @@ def test_a_failed_tracker_read_is_silent_on_both_streams(tmp_path: pathlib.Path)
 def test_defect_a_malformed_tracker_is_overwritten_with_an_empty_file(
     tmp_path: pathlib.Path,
 ) -> None:
-    """DEFECT 4, PINNED, AND IT DESTROYS DATA. A `cli/versions.json` that is not
-    valid JSON makes the first jq fail. Nothing stops: the three pipelines live
+    """DEFECT 4, PINNED, AND IT DESTROYS DATA. A `cli/versions.json` that is not valid JSON makes the first jq fail. Nothing stops: the three pipelines live
     inside `CLI_PRUNED=$(update_versions_tracker ...)`, and bash does not apply
     errexit inside a command substitution whose value is assigned. `updated` is empty, the next two jq calls on empty input succeed producing nothing, and the tracker is REPLACED WITH AN EMPTY BODY. One `jq: parse error` scrolls past, `R2 upload complete` prints, and the run exits 0.
 
-    Reproduced rather than repaired, for the reason in the docstring. This is the test that would have gone red for a port that simply raised on a non-zero
-    `jq`, which is what a careful reader writes first."""
+    Reproduced rather than repaired, for the reason in the docstring. This is the test that would have gone red for a port that simply raised on a non-zero `jq`, which is what a careful reader writes first."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         argv=("--version", "1.2.3", "--channel", "stable"),
@@ -581,9 +551,7 @@ def test_defect_a_malformed_tracker_is_overwritten_with_an_empty_file(
 
 
 def test_a_failing_tracker_write_does_still_abort_the_run(tmp_path: pathlib.Path) -> None:
-    """THE OTHER HALF OF DEFECT 4, AND THE ASYMMETRY IS THE POINT. A command
-    substitution takes the status of its LAST command, so the closing `r2_put` IS the assignment's status and errexit fires on it, while every jq above it is swallowed. Driven with an `aws` that fails everything, so the run dies at
-    the first upload rather than the tracker; the narrower case is that the
+    """THE OTHER HALF OF DEFECT 4, AND THE ASYMMETRY IS THE POINT. A command substitution takes the status of its LAST command, so the closing `r2_put` IS the assignment's status and errexit fires on it, while every jq above it is swallowed. Driven with an `aws` that fails everything, so the run dies at the first upload rather than the tracker; the narrower case is that the
     tracker write is the one command in that function whose failure is fatal."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "stable"), FAKE_AWS_RC="9"
@@ -593,9 +561,7 @@ def test_a_failing_tracker_write_does_still_abort_the_run(tmp_path: pathlib.Path
 
 
 def test_without_jq_version_tracking_is_skipped_with_a_warning(tmp_path: pathlib.Path) -> None:
-    """`command -v jq &>/dev/null` guards the whole tracker update, so a machine
-    without jq still uploads and still refreshes the pointers. The port uses `shutil.which`, which differs from `command -v` only for a shell FUNCTION or
-    alias named jq, and a script bash spawns cannot inherit either."""
+    """`command -v jq &>/dev/null` guards the whole tracker update, so a machine without jq still uploads and still refreshes the pointers. The port uses `shutil.which`, which differs from `command -v` only for a shell FUNCTION or alias named jq, and a script bash spawns cannot inherit either."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "stable"), drop="jq"
     )
@@ -612,9 +578,7 @@ def test_without_jq_version_tracking_is_skipped_with_a_warning(tmp_path: pathlib
 
 
 def test_the_bump_none_banner_is_pinned_on_stdout(tmp_path: pathlib.Path) -> None:
-    """THE REFUSAL BLOCK, byte for byte, on STDOUT and with exit 0: the twin's own
-    closing sentence says this is the intended outcome, not an error. Nothing is
-    written and the guard is never even probed."""
+    """THE REFUSAL BLOCK, byte for byte, on STDOUT and with exit 0: the twin's own closing sentence says this is the intended outcome, not an error. Nothing is written and the guard is never even probed."""
     for channel in port.RELEASE_CHANNELS:
         case = tmp_path / f"skip-{channel}"
         old, new, old_calls, new_calls = run_both(
@@ -630,9 +594,7 @@ def test_the_bump_none_banner_is_pinned_on_stdout(tmp_path: pathlib.Path) -> Non
 
 
 def test_skip_release_on_a_pr_channel_uploads_as_usual(tmp_path: pathlib.Path) -> None:
-    """SCOPED TO THE RELEASE CHANNELS: a `pr-N` channel has no tag contract, so
-    the flag is announced and ignored. The notice precedes the first `log_step`,
-    which is the ordering a port could easily get wrong."""
+    """SCOPED TO THE RELEASE CHANNELS: a `pr-N` channel has no tag contract, so the flag is announced and ignored. The notice precedes the first `log_step`, which is the ordering a port could easily get wrong."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "pr-9", "--skip-release")
     )
@@ -647,8 +609,7 @@ def test_skip_release_on_a_pr_channel_uploads_as_usual(tmp_path: pathlib.Path) -
 
 @pytest.mark.parametrize("spelling", ["true", "ON", "y", "1"])
 def test_the_env_spellings_that_do_skip(tmp_path: pathlib.Path, spelling: str) -> None:
-    """`SKIP_RELEASE` IS THE SAME SWITCH AS `--skip-release`, read from the
-    environment before the parser runs."""
+    """`SKIP_RELEASE` IS THE SAME SWITCH AS `--skip-release`, read from the environment before the parser runs."""
     old, new, old_calls, new_calls = run_both(tmp_path, SKIP_RELEASE=spelling)
     assert old.returncode == 0
     assert "RELEASE SKIPPED" in old.stdout, spelling
@@ -672,11 +633,9 @@ def test_the_env_spellings_that_do_not_skip(tmp_path: pathlib.Path, spelling: st
 
 
 def test_defect_an_empty_cli_dir_publishes_a_channel_pointer(tmp_path: pathlib.Path) -> None:
-    """DEFECT 1, PINNED. `dist/cli/` exists and holds nothing. No binary and no
-    manifest is uploaded, and `latest.json` is written anyway, so every installer on the channel resolves to a version with zero bytes behind it. The summary prints `Artifacts uploaded: 0` on the next line and nothing acts on it.
+    """DEFECT 1, PINNED. `dist/cli/` exists and holds nothing. No binary and no manifest is uploaded, and `latest.json` is written anyway, so every installer on the channel resolves to a version with zero bytes behind it. The summary prints `Artifacts uploaded: 0` on the next line and nothing acts on it.
 
-    Reproduced rather than repaired, for the reason in the docstring. This is the same harm the bump-none block at the top of the twin prevents, arriving by a
-    different door."""
+    Reproduced rather than repaired, for the reason in the docstring. This is the same harm the bump-none block at the top of the twin prevents, arriving by a different door."""
     old, new, old_calls, new_calls = run_both(tmp_path, tree={})
     assert old.returncode == 0
     assert 'STDIN<<<{"version":"1.2.3"}\n>>>' in old_calls, "no pointer, so there is no defect"
@@ -688,9 +647,7 @@ def test_defect_an_empty_cli_dir_publishes_a_channel_pointer(tmp_path: pathlib.P
 
 
 def test_the_uploaded_counter_ignores_every_channel_upload(tmp_path: pathlib.Path) -> None:
-    """`((UPLOADED++))` SITS ONLY IN THE TWO IMMUTABLE LOOPS. A `pr-N` run that
-    uploads two binaries, a manifest, a pointer and two tarballs reports `Artifacts uploaded: 1`. Not a divergence, a property of the twin, and pinned
-    because a port that "fixed" the count would look more correct and be wrong."""
+    """`((UPLOADED++))` SITS ONLY IN THE TWO IMMUTABLE LOOPS. A `pr-N` run that uploads two binaries, a manifest, a pointer and two tarballs reports `Artifacts uploaded: 1`. Not a divergence, a property of the twin, and pinned because a port that "fixed" the count would look more correct and be wrong."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "pr-9")
     )
@@ -702,9 +659,7 @@ def test_the_uploaded_counter_ignores_every_channel_upload(tmp_path: pathlib.Pat
 def test_a_missing_cli_directory_warns_and_a_missing_npm_directory_informs(
     tmp_path: pathlib.Path,
 ) -> None:
-    """DIFFERENT LEVELS FOR THE TWO ABSENCES, and the twin means it: a missing
-    `dist/cli` is a warning because a release without binaries is odd, a missing
-    `dist/npm` is an info because not every build makes a tarball."""
+    """DIFFERENT LEVELS FOR THE TWO ABSENCES, and the twin means it: a missing `dist/cli` is a warning because a release without binaries is odd, a missing `dist/npm` is an info because not every build makes a tarball."""
     root = fixture(tmp_path, tree={})
     (root / "dist" / "cli").rmdir()
     (root / "dist" / "npm").rmdir()
@@ -721,9 +676,7 @@ def test_a_missing_cli_directory_warns_and_a_missing_npm_directory_informs(
 def test_the_latest_tarball_is_uploaded_mutable_and_never_versioned(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`rediacc-cli-latest.tgz` IS SKIPPED BY THE LOOP AND HANDLED AFTER IT, with
-    the mutable policy, because its filename carries no version and its URL does
-    serve different bytes over time."""
+    """`rediacc-cli-latest.tgz` IS SKIPPED BY THE LOOP AND HANDLED AFTER IT, with the mutable policy, because its filename carries no version and its URL does serve different bytes over time."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     # ONE LINE, not one occurrence: the source path and the destination key both carry the name, so counting substrings would report two for one upload.
     uploads = [line for line in old_calls.splitlines() if "rediacc-cli-latest.tgz" in line]
@@ -752,8 +705,7 @@ def test_an_empty_credential_refuses_exactly_as_an_absent_one_does(
     tmp_path: pathlib.Path,
 ) -> None:
     """`[[ -z "${!var:-}" ]]` IS AN UNSET-OR-EMPTY TEST. A port checking
-    membership in the environment would sail past this and hand aws an empty
-    key, which fails much later and much less clearly."""
+    membership in the environment would sail past this and hand aws an empty key, which fails much later and much less clearly."""
     old, new, old_calls, new_calls = run_both(tmp_path, CLOUDFLARE_R2_ENDPOINT="")
     assert old.returncode == 1
     assert "✗ Missing required environment variable: CLOUDFLARE_R2_ENDPOINT\n" in old.stderr
@@ -762,8 +714,7 @@ def test_an_empty_credential_refuses_exactly_as_an_absent_one_does(
 
 def test_the_r2_credentials_are_bridged_into_the_aws_names(tmp_path: pathlib.Path) -> None:
     """`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION=auto`
-    are EXPORTED for the child, not passed as arguments, so a port that set them
-    on itself without exporting would look identical from the outside."""
+    are EXPORTED for the child, not passed as arguments, so a port that set them on itself without exporting would look identical from the outside."""
     reporter = (
         "#!/usr/bin/python3\n"
         "import os\n"
@@ -786,8 +737,7 @@ def test_the_r2_credentials_are_bridged_into_the_aws_names(tmp_path: pathlib.Pat
 
 def test_the_bucket_is_read_from_the_environment(tmp_path: pathlib.Path) -> None:
     """`RELEASES_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"` in constants.sh.
-    The port does not source constants.sh, so this proves the override still
-    reaches BOTH the four R2 primitives and the bash guard's child."""
+    The port does not source constants.sh, so this proves the override still reaches BOTH the four R2 primitives and the bash guard's child."""
     old, new, old_calls, new_calls = run_both(tmp_path, RELEASES_BUCKET="other-bucket")
     assert old.returncode == 0
     assert "s3://other-bucket/cli/edge/latest.json" in old_calls
@@ -808,9 +758,7 @@ def test_the_npm_directory_is_read_from_the_environment(tmp_path: pathlib.Path) 
 
 
 def test_an_unguarded_aws_failure_ends_the_run_with_its_status(tmp_path: pathlib.Path) -> None:
-    """`r2_cp` IS UNGUARDED, so `set -e` ends the run with aws's status and aws's
-    own stderr is the only explanation. The loop does not continue to the second
-    binary and no summary is printed."""
+    """`r2_cp` IS UNGUARDED, so `set -e` ends the run with aws's status and aws's own stderr is the only explanation. The loop does not continue to the second binary and no summary is printed."""
     old, new, old_calls, new_calls = run_both(tmp_path, FAKE_AWS_RC="7")
     assert old.returncode == 7
     assert old.stderr.endswith("upload failed: the bucket said no\n")
@@ -823,8 +771,7 @@ def test_an_unguarded_aws_failure_ends_the_run_with_its_status(tmp_path: pathlib
 
 
 def test_version_is_required_before_channel(tmp_path: pathlib.Path) -> None:
-    """ORDER IS OBSERVABLE: a run missing BOTH names `--version`, because its
-    check sits above the `REPO_ROOT` block and the channel check sits below."""
+    """ORDER IS OBSERVABLE: a run missing BOTH names `--version`, because its check sits above the `REPO_ROOT` block and the channel check sits below."""
     old, new, old_calls, new_calls = run_both(tmp_path, argv=())
     assert old.returncode == 1
     assert old.stderr == "✗ --version is required\n"
@@ -834,8 +781,7 @@ def test_version_is_required_before_channel(tmp_path: pathlib.Path) -> None:
 def test_channel_is_required_and_an_empty_one_counts_as_absent(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`[[ -z "$CHANNEL" ]]`, so `--channel ''` refuses rather than uploading to
-    `cli//`, which is every channel's parent prefix."""
+    """`[[ -z "$CHANNEL" ]]`, so `--channel ''` refuses rather than uploading to `cli//`, which is every channel's parent prefix."""
     for argv in (("--version", "1.2.3"), ("--version", "1.2.3", "--channel", "")):
         case = tmp_path / ("empty" if len(argv) > 2 else "absent")
         old, new, old_calls, new_calls = run_both(case, argv=argv)
@@ -853,9 +799,7 @@ def test_an_unknown_option_names_itself(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_deprecated_packages_dir_still_consumes_its_value(tmp_path: pathlib.Path) -> None:
-    """`--packages-dir` is DEPRECATED and its value is never read, but it still
-    takes one: dropping the arm would make the path fall through to
-    `Unknown option` and break a caller that still passes it."""
+    """`--packages-dir` is DEPRECATED and its value is never read, but it still takes one: dropping the arm would make the path fall through to `Unknown option` and break a caller that still passes it."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, argv=("--version", "1.2.3", "--channel", "edge", "--packages-dir", "/nowhere")
     )
@@ -865,9 +809,7 @@ def test_a_deprecated_packages_dir_still_consumes_its_value(tmp_path: pathlib.Pa
 
 
 def test_divergence_help_prints_the_path_it_was_invoked_by(tmp_path: pathlib.Path) -> None:
-    """DIVERGENCE 1, ASSERTED IN BOTH DIRECTIONS. `Usage: $0` names the file that
-    is running, so the twin names a `.sh` and the port names a `.py`. Everything
-    after the path is byte-identical, and that is what is compared."""
+    """DIVERGENCE 1, ASSERTED IN BOTH DIRECTIONS. `Usage: $0` names the file that is running, so the twin names a `.sh` and the port names a `.py`. Everything after the path is byte-identical, and that is what is compared."""
     root = fixture(tmp_path)
     old, old_calls = _run(root, "old", ("--help",))
     new, new_calls = _run(root, "new", ("-h",))
@@ -888,10 +830,7 @@ def test_divergence_help_prints_the_path_it_was_invoked_by(tmp_path: pathlib.Pat
 def test_divergence_a_flag_without_a_value_is_bashs_unbound_variable(
     tmp_path: pathlib.Path, flag: str
 ) -> None:
-    """DIVERGENCE 2, ASSERTED IN BOTH DIRECTIONS FOR ALL FOUR VALUE FLAGS. bash
-    prints its own FILE and LINE NUMBER (the number differs per flag) ahead of
-    `$2: unbound variable`; the port prints the message half. Same stream, same
-    status 1, no call from either side."""
+    """DIVERGENCE 2, ASSERTED IN BOTH DIRECTIONS FOR ALL FOUR VALUE FLAGS. bash prints its own FILE and LINE NUMBER (the number differs per flag) ahead of `$2: unbound variable`; the port prints the message half. Same stream, same status 1, no call from either side."""
     old, new, old_calls, new_calls = run_both(tmp_path / flag.strip("-"), argv=(flag,))
     assert old.returncode == new.returncode == 1
     assert old.stdout == new.stdout == ""
@@ -905,9 +844,7 @@ def test_divergence_a_flag_without_a_value_is_bashs_unbound_variable(
 
 
 def test_the_constants_are_the_twins_constants() -> None:
-    """`BUCKET_DEFAULT` and `MAX_RELEASE_VERSIONS` are copies of
-    `.ci/config/constants.sh`, which the port deliberately does not source. They are re-derived here so a change there turns this red instead of silently
-    pointing the port at a different bucket."""
+    """`BUCKET_DEFAULT` and `MAX_RELEASE_VERSIONS` are copies of `.ci/config/constants.sh`, which the port deliberately does not source. They are re-derived here so a change there turns this red instead of silently pointing the port at a different bucket."""
     source = CONSTANTS.read_text(encoding="utf-8")
     bucket = re.search(
         r'^readonly RELEASES_BUCKET="\$\{RELEASES_BUCKET:-([^}]*)\}"', source, re.MULTILINE
@@ -932,9 +869,7 @@ def test_the_cache_control_policies_are_the_twins() -> None:
 
 
 def test_the_skip_values_are_the_twins_case_arms() -> None:
-    """STALENESS ALARM for the `case` arms, which sit between the two markers the
-    gate test `test-skip-release-channel-pointer.sh` splits the twin on to build
-    its mutants."""
+    """STALENESS ALARM for the `case` arms, which sit between the two markers the gate test `test-skip-release-channel-pointer.sh` splits the twin on to build its mutants."""
     source = TWIN.read_text(encoding="utf-8")
     arm = re.search(r"case \"\$\{SKIP_RELEASE:-\}\" in\n\s*([^)]*)\) return 0", source)
     assert arm is not None, "the case shape changed; this alarm reads nothing"
@@ -949,9 +884,7 @@ def test_the_credential_list_is_the_twins() -> None:
 
 
 def test_the_skip_release_markers_still_bracket_the_guard() -> None:
-    """The gate test assembles its mutants by splitting the twin on these two
-    markers. They are not this port's, and a wave that removed them would break
-    that gate silently, so their presence is asserted from here too."""
+    """The gate test assembles its mutants by splitting the twin on these two markers. They are not this port's, and a wave that removed them would break that gate silently, so their presence is asserted from here too."""
     source = TWIN.read_text(encoding="utf-8")
     assert source.count("SKIP_RELEASE_GUARD_BEGIN") == 1
     assert source.count("SKIP_RELEASE_GUARD_END") == 1
@@ -1069,9 +1002,7 @@ def test_parse_args_is_the_twins_parser() -> None:
 
 
 def test_bash_glob_is_bashs_answer_including_the_literal_miss(tmp_path: pathlib.Path) -> None:
-    """WITHOUT `nullglob` AN UNMATCHED PATTERN EXPANDS TO ITSELF, and the twin
-    relies on it: `[[ -f "$binary" ]] || continue` is what discards the literal. `glob.glob` returns `[]`, so a port using it would agree by accident here and
-    disagree the day someone adds a `shopt`."""
+    """WITHOUT `nullglob` AN UNMATCHED PATTERN EXPANDS TO ITSELF, and the twin relies on it: `[[ -f "$binary" ]] || continue` is what discards the literal. `glob.glob` returns `[]`, so a port using it would agree by accident here and disagree the day someone adds a `shopt`."""
     (tmp_path / "rdc-b").write_text("b", encoding="utf-8")
     (tmp_path / "rdc-a").write_text("a", encoding="utf-8")
     (tmp_path / "other").write_text("o", encoding="utf-8")
@@ -1088,9 +1019,7 @@ def test_bash_glob_is_bashs_answer_including_the_literal_miss(tmp_path: pathlib.
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """PLANTED ON THE IMMUTABLE CACHE-CONTROL, the field whose loss is invisible
-    on both streams and in both exit codes: a versioned binary served with `no-cache` costs every installer a full origin fetch, and nothing says so.
-    Driven red, then the source is confirmed byte-identical and green again."""
+    """PLANTED ON THE IMMUTABLE CACHE-CONTROL, the field whose loss is invisible on both streams and in both exit codes: a versioned binary served with `no-cache` costs every installer a full origin fetch, and nothing says so. Driven red, then the source is confirmed byte-identical and green again."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
         'CACHE_CONTROL_IMMUTABLE = "public, max-age=31536000, immutable"',
@@ -1124,9 +1053,7 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_harness_sees_a_non_trivial_tree(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY FOR THE HARNESS ITSELF. Every comparison above would pass
-    trivially against a `dist/` that does not exist, so the default tree's shape
-    is asserted once: five files, two of them binaries the glob must find."""
+    """ANTI-VACUITY FOR THE HARNESS ITSELF. Every comparison above would pass trivially against a `dist/` that does not exist, so the default tree's shape is asserted once: five files, two of them binaries the glob must find."""
     root = fixture(tmp_path)
     assert len(DEFAULT_TREE) == 5
     assert sorted(p.name for p in (root / "dist" / "cli").iterdir()) == [

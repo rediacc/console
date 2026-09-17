@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.simulate_promotion` against its twin
-`.ci/scripts/deploy/simulate-promotion.sh`.
+"""Differential: `rediacc_ci.deploy.simulate_promotion` against its twin `.ci/scripts/deploy/simulate-promotion.sh`.
 
 RECORDING FAKES FOR `aws`, `curl` AND `sleep` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare; every case pins a fixture endpoint, bucket and credential, and an on-disk directory stands in for the bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
 ledger is a separate, achievable piece of work. This is that piece.
@@ -277,8 +276,7 @@ def _bin(root: pathlib.Path, *, drop: str = "") -> str:
 
 
 def fixture(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None) -> pathlib.Path:
-    """A throwaway repository holding the twin, cf-purge-urls.sh and common.sh,
-    plus one bucket copy per side."""
+    """A throwaway repository holding the twin, cf-purge-urls.sh and common.sh, plus one bucket copy per side."""
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
@@ -434,9 +432,7 @@ def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
 
 
 def test_every_object_lands_under_the_promoted_prefix_and_none_is_doubled(tmp_path) -> None:
-    """THE DESTINATION KEY IS THE WHOLE POINT of `copy_one_object`'s prefix
-    guard: a strip that silently no-ops writes to `apk/pr-123-promoted/apt/pr-123/`
-    and the install tests then read a channel nobody wrote."""
+    """THE DESTINATION KEY IS THE WHOLE POINT of `copy_one_object`'s prefix guard: a strip that silently no-ops writes to `apk/pr-123-promoted/apt/pr-123/` and the install tests then read a channel nobody wrote."""
     _root, old, new = run_both(tmp_path)
     _agree(old, new, "destinations")
 
@@ -455,9 +451,7 @@ def test_every_object_lands_under_the_promoted_prefix_and_none_is_doubled(tmp_pa
 
 
 def test_a_key_with_a_space_survives_the_awk_rejoin(tmp_path) -> None:
-    """`aws s3 ls --recursive` prints date, time, size and then the key, and the
-    key may contain spaces. A field-3 split would truncate it; the twin's awk rejoins fields 4..NF with OFS, and so does this port, because it runs the
-    same awk."""
+    """`aws s3 ls --recursive` prints date, time, size and then the key, and the key may contain spaces. A field-3 split would truncate it; the twin's awk rejoins fields 4..NF with OFS, and so does this port, because it runs the same awk."""
     _root, old, new = run_both(tmp_path)
     _agree(old, new, "space-in-key")
 
@@ -488,9 +482,7 @@ def test_the_directory_order_and_the_cache_control_are_the_twins(tmp_path) -> No
 
 
 def test_the_sed_fix_rewrites_the_channel_before_re_uploading(tmp_path) -> None:
-    """THE UPLOADED BYTES ARE THE WITNESS. A port that uploaded first and
-    rewrote afterwards would print the same lines and leave the source channel
-    in the promoted config."""
+    """THE UPLOADED BYTES ARE THE WITNESS. A port that uploaded first and rewrote afterwards would print the same lines and leave the source channel in the promoted config."""
     _root, old, new = run_both(tmp_path)
     _agree(old, new, "sed-fix")
 
@@ -520,8 +512,7 @@ def test_the_purge_list_is_the_copied_objects_plus_the_two_configs(tmp_path) -> 
 
 
 def test_github_env_receives_the_promoted_channel_when_it_is_set(tmp_path) -> None:
-    """AND NOTHING HAPPENS WHEN IT IS NOT, because the twin's line is an
-    AND-list and a failing `[[ -n ... ]]` is exempt from `set -e`."""
+    """AND NOTHING HAPPENS WHEN IT IS NOT, because the twin's line is an AND-list and a failing `[[ -n ... ]]` is exempt from `set -e`."""
     root = fixture(tmp_path)
     old_env = root / "old-github-env"
     new_env = root / "new-github-env"
@@ -557,9 +548,7 @@ def test_fact_the_access_key_message_names_a_different_variable(tmp_path) -> Non
 
 
 def test_fact_the_secret_key_is_never_checked(tmp_path) -> None:
-    """A RUN WITH NO SECRET GETS ALL THE WAY THROUGH under a fake aws, because
-    nothing in the script tests it. Against a real endpoint it would fail at the
-    first call, with aws's message rather than this script's."""
+    """A RUN WITH NO SECRET GETS ALL THE WAY THROUGH under a fake aws, because nothing in the script tests it. Against a real endpoint it would fail at the first call, with aws's message rather than this script's."""
     assert port.THE_SECRET_KEY_IS_NEVER_CHECKED is True
     assert "AWS_SECRET_ACCESS_KEY" in TWIN.read_text(encoding="utf-8"), "header claim is gone"
 
@@ -595,9 +584,7 @@ def test_fact_the_empty_channel_floor_sits_behind_pipefail(tmp_path) -> None:
 
 
 def test_fact_the_sed_fix_scratch_path_is_fixed(tmp_path) -> None:
-    """`/tmp/config` IS NEVER REMOVED, so the last downloaded config is left on
-    the machine after a successful run. Asserted on the file itself rather than
-    on the sentence."""
+    """`/tmp/config` IS NEVER REMOVED, so the last downloaded config is left on the machine after a successful run. Asserted on the file itself rather than on the sentence."""
     assert port.THE_SED_FIX_SCRATCH_PATH_IS_FIXED is True
     assert port.SED_FIX_SCRATCH == "/tmp/config"
 
@@ -617,9 +604,7 @@ def test_fact_the_sed_fix_scratch_path_is_fixed(tmp_path) -> None:
 
 
 def test_fact_an_unset_zone_is_an_unbound_variable_at_the_end(tmp_path) -> None:
-    """THE PROMOTION HAS ALREADY HAPPENED when this fires, which is what makes it
-    worth naming: every object is copied, both configs are rewritten, the
-    `Promotion simulated` line is printed, and THEN the run exits 1."""
+    """THE PROMOTION HAS ALREADY HAPPENED when this fires, which is what makes it worth naming: every object is copied, both configs are rewritten, the `Promotion simulated` line is printed, and THEN the run exits 1."""
     assert port.AN_UNSET_ZONE_IS_AN_UNBOUND_VARIABLE_AT_THE_END is True
 
     root = fixture(tmp_path)
@@ -751,9 +736,7 @@ def test_the_upload_retry_schedule_is_fifteen_thirty_forty_five_sixty(tmp_path) 
 
 
 def test_an_absent_sed_fix_target_is_skipped_in_silence(tmp_path) -> None:
-    """`if aws s3 cp ... 2>/dev/null; then` IS THE CONDITION, so a config that
-    is not in the channel skips the rewrite without a word. Both configs are
-    removed here, so both are skipped and the run still succeeds."""
+    """`if aws s3 cp ... 2>/dev/null; then` IS THE CONDITION, so a config that is not in the channel skips the rewrite without a word. Both configs are removed here, so both are skipped and the run still succeeds."""
     stripped = {
         k: v
         for k, v in DEFAULT_BUCKET.items()
@@ -770,8 +753,7 @@ def test_an_absent_sed_fix_target_is_skipped_in_silence(tmp_path) -> None:
 
 
 def test_a_failing_aws_configure_stops_before_anything_is_listed(tmp_path) -> None:
-    """UNGUARDED UNDER `set -e`, and it is the FIRST thing that runs, so a
-    misconfigured CLI never reaches the bucket."""
+    """UNGUARDED UNDER `set -e`, and it is the FIRST thing that runs, so a misconfigured CLI never reaches the bucket."""
     _root, old, new = run_both(tmp_path, FAKE_AWS_FAIL_ON_CALL="1")
     _agree(old, new, "configure-fails")
 

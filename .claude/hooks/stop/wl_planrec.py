@@ -1,5 +1,4 @@
-"""wl_planrec: turn a finished `agent/PLAN-*.md` into an ATTESTED RECORD that
-keeps its own path, so the plan stops aging out and nothing that cites it breaks.
+"""wl_planrec: turn a finished `agent/PLAN-*.md` into an ATTESTED RECORD that keeps its own path, so the plan stops aging out and nothing that cites it breaks.
 
 ------------------------------------------------------------------------------
 WHY THIS EXISTS, and it has a date on it.
@@ -635,8 +634,7 @@ def ledger_history(root, ledger_rel=LEDGER_REL):
 def ledger_at(root, commit, ledger_rel=LEDGER_REL):
     """The ledger document as of one commit, or None. This is the ORACLE the gate
     re-derives `done=` from, which is what makes the field unforgeable: a record
-    can claim any sha it likes, and `git show <sha>:<ledger>` either carries the
-    signature or it does not."""
+    can claim any sha it likes, and `git show <sha>:<ledger>` either carries the signature or it does not."""
     raw = _git_out(root, "show", "%s:%s" % (commit, ledger_rel))
     if not raw:
         return None
@@ -958,8 +956,7 @@ WHY_NO_INDEX = "no-index"
 
 
 def trailer_paths(value):
-    """`Touched: a, b, c` -> ("a", "b", "c"). A tuple, so a row stays hashable
-    and `sorted(rows)` keeps working on it."""
+    """`Touched: a, b, c` -> ("a", "b", "c"). A tuple, so a row stays hashable and `sorted(rows)` keeps working on it."""
     return tuple(x.strip() for x in (value or "").split(",") if x.strip() and x.strip() != "none")
 
 
@@ -1349,8 +1346,7 @@ def title_of(text, rel):
 
 
 def clip(text, limit):
-    """`text` cut to at most `limit` characters, on a LINE boundary, with any
-    code fence it opened closed again.
+    """`text` cut to at most `limit` characters, on a LINE boundary, with any code fence it opened closed again.
 
     TWO FAILURES IN ONE FUNCTION, and the second is the expensive one.
 
@@ -1777,8 +1773,7 @@ def select_box(boxes, selector):
 
 
 def ledger_row(root, rel, text):
-    """The ledger entry for one plan, computed the way `check_plan_boxes.scan`
-    computes it and not one field differently.
+    """The ledger entry for one plan, computed the way `check_plan_boxes.scan` computes it and not one field differently.
 
     RESTATED RATHER THAN IMPORTED, for the reason `box_sig` is: the import already runs the other way (the gate imports this directory), and importing back would make the two directories mutually dependent. The equality is pinned by a control in test-planrec.py, which is what keeps the restatement
     from drifting into a second opinion.

@@ -2,9 +2,8 @@
 
 Both-ways test for `.ci/scripts/ci/dispatch-release.sh`, the step that decides whether a merge to main earns a release at all.
 
-WHY THIS CLASS NEEDS A GATE. The decision is invisible when it is wrong in the direction that matters. A release that should not have happened is noticed
-immediately, because a tag appears; a release that was silently WITHHELD looks like
-nothing at all, and stays looking like nothing until somebody wonders why the version stream stopped. So the fail-open paths are tested as carefully as the skip: an API failure, an unresolvable commit and a mixed PR set must all end in a dispatch, and each of those is asserted here rather than reasoned about.
+WHY THIS CLASS NEEDS A GATE. The decision is invisible when it is wrong in the direction that matters. A release that should not have happened is noticed immediately, because a tag appears; a release that was silently WITHHELD looks like nothing at all, and stays looking like nothing until somebody wonders why the version stream stopped. So the fail-open paths are tested as
+carefully as the skip: an API failure, an unresolvable commit and a mixed PR set must all end in a dispatch, and each of those is asserted here rather than reasoned about.
 
 THE DISPATCH IS NEVER REAL. `DISPATCH_RELEASE_DRY_RUN=1` is the seam, and the fake
 `gh` deliberately does NOT route `gh workflow run`: a bug that reached the real dispatch fails loudly with "unrouted call" instead of being quietly served.
@@ -12,8 +11,7 @@ THE DISPATCH IS NEVER REAL. `DISPATCH_RELEASE_DRY_RUN=1` is the seam, and the fa
 THE TWO ci.yml PREDICATES ARE PURE FUNCTIONS TAKING JOB TEXT, which is the whole reason a control is possible. `ordering_violations` and `polarity_violations` are run against the REAL `finalize-release-sentinel` job AND against synthetic blocks carrying the exact defect, and the synthetic ones must be reported. A predicate that has never been shown to fire proves nothing. Both are
 module-level so the controls exercise the same code path the real assertion does.
 
-THE PORT'S ONE STRUCTURAL CHANGE. The twin's fixtures are built with `jq -nc`; here
-they are `json.dumps`, which removes `jq` from the fixture-BUILDING path. The fake `gh` still shells out to `jq` to apply the caller's own `--jq`, so the real extraction expression in the subject is still evaluated by the real tool, which is the half that matters.
+THE PORT'S ONE STRUCTURAL CHANGE. The twin's fixtures are built with `jq -nc`; here they are `json.dumps`, which removes `jq` from the fixture-BUILDING path. The fake `gh` still shells out to `jq` to apply the caller's own `--jq`, so the real extraction expression in the subject is still evaluated by the real tool, which is the half that matters.
 """
 
 import json
@@ -95,8 +93,7 @@ def merged_pr(number: int, labels: str) -> dict:
 
 
 def open_pr(number: int, labels: str) -> dict:
-    """An UNMERGED PR, which must never be consulted: its label describes a release
-    that has not happened."""
+    """An UNMERGED PR, which must never be consulted: its label describes a release that has not happened."""
     return {
         "number": number,
         "merged_at": None,
@@ -118,8 +115,7 @@ class Fixture:
         self.rc = 0
 
     def setup(self) -> None:
-        """`setup`. Idempotent, and it RESETS: several cases call it repeatedly in
-        one function and would otherwise read the previous arm's recorder."""
+        """`setup`. Idempotent, and it RESETS: several cases call it repeatedly in one function and would otherwise read the previous arm's recorder."""
         self.bin.mkdir(exist_ok=True)
         self.fixtures.mkdir(exist_ok=True)
         gh = self.bin / "gh"
@@ -208,8 +204,7 @@ def test_bump_none_skips_the_release(gate, tmp_path):
 
 
 def test_an_unlabelled_pr_releases(gate, tmp_path):
-    """CONTROL: same shape, no label. If this dispatched either way the case above
-    would prove nothing."""
+    """CONTROL: same shape, no label. If this dispatched either way the case above would prove nothing."""
     fx = make_fixture(gate, tmp_path)
     fx.pulls_for(SHA, merged_pr(561, ""))
     fx.run()
@@ -515,8 +510,7 @@ def test_ci_yml_wires_the_script(gate):
 
 
 def test_ci_yml_decides_before_it_seals(gate):
-    """THE ROOT CAUSE, asserted structurally. Sealing before deciding is what put
-    cli/v1.2.27/.released in R2 with no v1.2.27 tag."""
+    """THE ROOT CAUSE, asserted structurally. Sealing before deciding is what put cli/v1.2.27/.released in R2 with no v1.2.27 tag."""
     found = ordering_violations(finalize_job_text())
     if found:
         gate.log_fail("finalize-release-sentinel orders its steps wrongly: %s" % "; ".join(found))

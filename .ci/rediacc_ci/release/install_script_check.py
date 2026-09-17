@@ -19,14 +19,11 @@ WHAT MOVES AND WHAT DOES NOT. Only the HARNESS moves: the fresh HOMEs, the no-jq
 PORT NOTES, each driven before being written down.
 
 **THE TWIN'S OWN COLOUR CONSTANTS ARE DEAD, AND THIS PORT REPRODUCES THE DEATH RATHER THAN THE INTENT.** `test-install-script.sh:26-33` sets `RED`/`GREEN`/`NC` to ANSI escapes and uses them in `log_pass`/`log_fail`, but every one of those calls happens AFTER a `source "$INSTALL_SH"`, and `install.sh:62-72` reassigns the SAME THREE NAMES -- to the same escapes when `[ -t 1 ]`, and
-to EMPTY STRINGS otherwise. Driven both ways: piped to a file
-the twin's output is a plain `PASS: ...`; run under a pty it is
-`\\033[0;32mPASS:\\033[0m ...`. So the observable rule is install.sh's, not the
-twin's, and this port asks `os.isatty(1)` at the same moment. Cosmetic only (a CI log is never a tty, so CI has always seen the uncoloured form), which is why it is reproduced and reported rather than fixed in a file this box does not own.
+to EMPTY STRINGS otherwise. Driven both ways: piped to a file the twin's output is a plain `PASS: ...`; run under a pty it is `\\033[0;32mPASS:\\033[0m ...`. So the observable rule is install.sh's, not the twin's, and this port asks `os.isatty(1)` at the same moment. Cosmetic only (a CI log is never a tty, so CI has always seen the uncoloured form), which is why it is reproduced
+and reported rather than fixed in a file this box does not own.
 
-ONE `bash` PER CASE, NOT ONE FOR THE WHOLE RUN, and the state that leaks in the twin was checked rather than assumed. The twin sources `install.sh` into ONE persistent shell fourteen times, so a variable install.sh sets survives into the
-next case; the only one that does is `REDIACC_CHANNEL`, assigned at
-`install.sh:44` when a config carries `updateChannel`. It is set by `test_channel_inherits_from_config` and the very next case (`test_channel_env_overrides_config`) opens by assigning it explicitly, so the leak is unobservable. Every other case either unsets it or never reads it.
+ONE `bash` PER CASE, NOT ONE FOR THE WHOLE RUN, and the state that leaks in the twin was checked rather than assumed. The twin sources `install.sh` into ONE persistent shell fourteen times, so a variable install.sh sets survives into the next case; the only one that does is `REDIACC_CHANNEL`, assigned at `install.sh:44` when a config carries `updateChannel`. It is set by
+`test_channel_inherits_from_config` and the very next case (`test_channel_env_overrides_config`) opens by assigning it explicitly, so the leak is unobservable. Every other case either unsets it or never reads it.
 
 `set -euo pipefail` IS INHERITED BY EVERY SOURCE in the twin, so each snippet
 below sets it too; `install.sh`'s `${VAR:-}` defaults exist precisely because of

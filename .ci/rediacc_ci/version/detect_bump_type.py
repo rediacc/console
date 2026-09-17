@@ -53,8 +53,7 @@ PREFIX = "[detect-bump]"
 # release window can cost in API calls.
 DEFAULT_MAX_COMMITS = "50"
 
-# The two labels. Declared in .github/labels.yml; the gate test
-# `test_gate_detect_bump_type.py` fails if either side of that pair drifts.
+# The two labels. Declared in .github/labels.yml; the gate test `test_gate_detect_bump_type.py` fails if either side of that pair drifts.
 MAJOR_LABEL = "bump-major"
 MINOR_LABEL = "bump-minor"
 

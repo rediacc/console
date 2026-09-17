@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/private/renet_integration.py` against its twin
-`.ci/scripts/private/renet-integration.sh`.
+"""Differential: `.ci/rediacc_ci/private/renet_integration.py` against its twin `.ci/scripts/private/renet-integration.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
@@ -126,9 +125,7 @@ def _fixture(
 
 
 def _binder(tmp_path: pathlib.Path) -> str:
-    """The COMPLETE PATH for one case. Nothing the subject calls lives on it:
-    `ci-test.sh` is invoked by absolute path, so this only has to carry the two
-    interpreters and what `common.sh` asks at source time."""
+    """The COMPLETE PATH for one case. Nothing the subject calls lives on it: `ci-test.sh` is invoked by absolute path, so this only has to carry the two interpreters and what `common.sh` asks at source time."""
     binder = tmp_path.resolve() / "bin"
     binder.mkdir(parents=True, exist_ok=True)
     for tool in NEEDED:
@@ -249,9 +246,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
 
 
 def test_the_recording_suite_is_actually_reached(tmp_path):
-    """ANTI-VACUITY. Every comparison above is worthless if `ci-test.sh` never
-    ran, and a port that skipped it while printing the same two log lines would
-    satisfy a stdout-only comparison exactly."""
+    """ANTI-VACUITY. Every comparison above is worthless if `ci-test.sh` never ran, and a port that skipped it while printing the same two log lines would satisfy a stdout-only comparison exactly."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     out = _run(PORT_REL, root, tmp_path, binder, argv=("--no-cleanup",))
@@ -271,8 +266,7 @@ def test_the_recording_suite_is_actually_reached(tmp_path):
 def test_the_empty_flag_expands_to_zero_words_not_one(tmp_path):
     """`"$CI_TEST" $NO_CLEANUP` is UNQUOTED, so the default run passes NO
     arguments. A port appending an empty string would send `argc=1` with an
-    empty argument, which no stream can show and which a suite parsing its own argv would see. Both subjects are asserted, because the claim is about the
-    pair."""
+    empty argument, which no stream can show and which a suite parsing its own argv would see. Both subjects are asserted, because the claim is about the pair."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -303,8 +297,7 @@ def test_the_missing_ci_arm_is_a_real_hole(tmp_path):
 
 
 def test_the_suite_runs_when_the_submodule_is_there(tmp_path):
-    """THE NEGATIVE CONTROL on the guard. A gate with only positive controls
-    will happily refuse on a tree where nothing is wrong."""
+    """THE NEGATIVE CONTROL on the guard. A gate with only positive controls will happily refuse on a tree where nothing is wrong."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -316,9 +309,7 @@ def test_the_suite_runs_when_the_submodule_is_there(tmp_path):
 
 
 def test_a_failing_suite_never_claims_completion(tmp_path):
-    """`set -e` makes both trailing `log_info` lines unreachable on a red run.
-    A port that logged them anyway would turn a failed integration suite into a
-    transcript that reads as finished, and only the exit code would disagree."""
+    """`set -e` makes both trailing `log_info` lines unreachable on a red run. A port that logged them anyway would turn a failed integration suite into a transcript that reads as finished, and only the exit code would disagree."""
     root = _fixture(tmp_path, rc=7, results="file")
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -329,9 +320,7 @@ def test_a_failing_suite_never_claims_completion(tmp_path):
 
 
 def test_the_results_line_needs_a_real_file(tmp_path):
-    """`[[ -f ... ]]` again: a DIRECTORY named `test-results.xml` must not be
-    announced, and the announcement must appear when a real file is there. Both
-    halves, because a port testing mere existence passes the second alone."""
+    """`[[ -f ... ]]` again: a DIRECTORY named `test-results.xml` must not be announced, and the announcement must appear when a real file is there. Both halves, because a port testing mere existence passes the second alone."""
     binder = _binder(tmp_path)
     present = _fixture(tmp_path, results="file")
     for subject in (TWIN_REL, PORT_REL):
@@ -349,8 +338,7 @@ def test_the_results_line_needs_a_real_file(tmp_path):
 
 
 def test_the_mask_does_not_hide_the_message(tmp_path):
-    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix
-    on both sides; if it were greedier it would hide real divergences and every
+    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix on both sides; if it were greedier it would hide real divergences and every
     case above would pass for the wrong reason."""
     sample = "/a/b/twin.sh: line 30: /x/ci-test.sh: Permission denied\nkept: line noise\n"
     masked = _mask(sample, pathlib.Path("/nowhere"), pathlib.Path("/nowhere-either"))

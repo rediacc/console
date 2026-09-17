@@ -362,8 +362,7 @@ def test_epic_ids_agrees_with_the_twin(snap, branch):
 
 
 def test_epic_ids_finds_exactly_the_three_well_formed_ids(snap):
-    """The negative half. A test that only checked "found some" would pass a
-    regex that matched every line."""
+    """The negative half. A test that only checked "found some" would pass a regex that matched every line."""
     found = rb.epic_ids("0906-1", {"WORKLIST_PUBLISH_ROOT": str(snap)})
     assert found == ["abc123", "deadbeefcafe", "aabbcc"]
 
@@ -546,8 +545,7 @@ def test_planted_an_off_by_one_in_the_free_reattempts_changes_the_charge(monkeyp
 
 
 def test_planted_a_non_infra_class_that_can_exhaust_is_a_new_restriction(monkeypatch):
-    """common.sh:733-735: making a non-infra head exhaustible would be a NEW
-    restriction wearing the costume of a relaxation."""
+    """common.sh:733-735: making a non-infra head exhaustible would be a NEW restriction wearing the costume of a relaxation."""
     states = rb.parse_attempt_states(
         "claude-review-attempt: a\nattempts: 99\nclass: unknown\n---REVIEW-ATTEMPT-EOF---"
     )
@@ -557,8 +555,7 @@ def test_planted_a_non_infra_class_that_can_exhaust_is_a_new_restriction(monkeyp
 
 
 def test_planted_a_content_qualifier_on_the_report_needle_undercounts(monkeypatch):
-    """common.sh:560-573 measured what a content qualifier cost: #551 counted 0
-    of 1, a completed review costing $4.66 registering as never having happened."""
+    """common.sh:560-573 measured what a content qualifier cost: #551 counted 0 of 1, a completed review costing $4.66 registering as never having happened."""
     assert rb.REPORT_NEEDLE == "**Claude finished"
     monkeypatch.setattr(rb, "REPORT_NEEDLE", "**Claude finished with json:review-findings")
     body = "**Claude finished the review\n\nsome wrap-up text"

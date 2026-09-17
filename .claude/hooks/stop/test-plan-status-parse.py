@@ -6,9 +6,7 @@ Why this exists. The stop hook nags about plans whose status is draft, executing
 Round one is recorded in wl_checks.py's own comment: requiring a bare `Status: word` line missed `**Status: DESIGNED, not started.**` and five of twelve real plans read UNKNOWN. Round two, 2026-08-25: the anchored form still required `Status:` to START a line, and two real plans state it mid-line -- `Owner: b7baf3ee - 2026-08-24 - status: BUILT` and `Branch: 0815-1. Status: design
 only, no code written.`
 
-Every control below is a PAIR. Asserting that the inline form parses proves nothing on its own, because a parser returning the first word it ever sees
-would pass it; the paired assertion is that a plan with NO status still reads
-UNKNOWN, and that a real leading `Status:` line still wins over inline text.
+Every control below is a PAIR. Asserting that the inline form parses proves nothing on its own, because a parser returning the first word it ever sees would pass it; the paired assertion is that a plan with NO status still reads UNKNOWN, and that a real leading `Status:` line still wins over inline text.
 """
 
 import pathlib

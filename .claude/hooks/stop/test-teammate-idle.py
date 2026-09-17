@@ -31,8 +31,7 @@ STREAM = {
     "type": "assistant",
     "message": {"stop_reason": None, "content": [{"type": "text", "text": "..."}]},
 }
-# An ended turn whose content still carries a tool_use block. stop_reason alone
-# would call this idle; the content check is what refuses.
+# An ended turn whose content still carries a tool_use block. stop_reason alone would call this idle; the content check is what refuses.
 MIXED = {
     "type": "assistant",
     "message": {"stop_reason": "end_turn", "content": [{"type": "tool_use", "name": "Bash"}]},

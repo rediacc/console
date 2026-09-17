@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.security.dependency_inventory` against its twin
-`.ci/scripts/security/dependency-inventory.sh`.
+"""Differential: `rediacc_ci.security.dependency_inventory` against its twin `.ci/scripts/security/dependency-inventory.sh`.
 
 TWO KINDS OF CASE, AND THE SPLIT IS THE POINT.
 
@@ -315,8 +314,7 @@ def test_the_real_repository_agrees_in_table_format() -> None:
 def test_the_real_repository_agrees_in_json_format() -> None:
     """`jq .` against `json.dumps(indent=2, ensure_ascii=False)`, on 1.1 MB.
 
-    `generatedAt` is the one masked field; everything else, including key ORDER
-    and the exact indentation of a 25-deep chain array, is compared raw.
+    `generatedAt` is the one masked field; everything else, including key ORDER and the exact indentation of a 25-deep chain array, is compared raw.
     """
     before = _hashes()
     old, new = _run_real("--format", "json", "--max-chains", "3")
@@ -354,9 +352,8 @@ def test_help_text_constant_still_matches_the_twin() -> None:
 def test_the_jq_diagnostics_still_match_this_host() -> None:
     """The two jq error texts the port emits, re-derived from the jq on PATH.
 
-    THE --argjson BANNER IS NO LONGER A CONSTANT, and this test is why the change was needed rather than optional. jq moved its documentation URL between releases -- 1.7.x says `https://jqlang.github.io/jq`, 1.8.x says `https://jqlang.org` -- so a pinned string is right on one host and wrong on
-    another AT THE SAME TIME. That is not drift a pin can catch up with; both
-    hosts are correct. The port now asks jq, and what this test checks is that asking produces exactly what jq produces, and that the answer is not vacuous.
+    THE --argjson BANNER IS NO LONGER A CONSTANT, and this test is why the change was needed rather than optional. jq moved its documentation URL between releases -- 1.7.x says `https://jqlang.github.io/jq`, 1.8.x says `https://jqlang.org` -- so a pinned string is right on one host and wrong on another AT THE SAME TIME. That is not drift a pin can catch up with; both hosts are
+    correct. The port now asks jq, and what this test checks is that asking produces exactly what jq produces, and that the answer is not vacuous.
 
     `JQ_OPEN_ERROR` stays a constant: it carries no version-dependent text, and it is still asserted below so a future jq rewording it goes red here.
     """
@@ -407,9 +404,7 @@ def test_a_bad_max_chains(fixture: pathlib.Path, value: str) -> None:
 def test_a_missing_option_value(fixture: pathlib.Path, flag: str) -> None:
     """THE ONE STRUCTURALLY-NORMALISED CASE. See the port's note 3.
 
-    Bash's `$2: unbound variable` names the SCRIPT's path and the SCRIPT's line number, neither of which the port can honestly copy. Exit code, stdout and
-    the call log are still compared raw; only the path and the number are
-    replaced, and the sentence itself is asserted intact on both sides.
+    Bash's `$2: unbound variable` names the SCRIPT's path and the SCRIPT's line number, neither of which the port can honestly copy. Exit code, stdout and the call log are still compared raw; only the path and the number are replaced, and the sentence itself is asserted intact on both sides.
     """
     old, new, old_log, new_log = run_both(fixture, flag)
     assert new_log == old_log == []
@@ -585,8 +580,7 @@ def test_npm_printing_nothing_silently_drops_the_package(fixture: pathlib.Path) 
 
     With `tree_all` empty every jq downstream has no input and emits none, so `$WORK/pkg_0.json` is written EMPTY, `jq -s` slurps nothing from it, and @rediacc/www vanishes from an SBOM that still exits 0 and still says
     `packages=3` as though three were all that was asked for. Reported in this
-    wave's findings; fixed in neither side, because a one-sided fix would make
-    this differential lie.
+    wave's findings; fixed in neither side, because a one-sided fix would make this differential lie.
     """
     (data_dir(fixture) / "npm.@rediacc_www.all").write_text("", encoding="utf-8")
     old = assert_agree(fixture)

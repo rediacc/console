@@ -12,9 +12,8 @@ to prevent -- the port looks like it works while the code it replaced is what ac
 An empty CLI is therefore not a stub: `--help`, the no-verb path and the unknown-verb path are the parts a person meets first, they are the parts a stub would fake, and they are real here and tested against the real command.
 
 WHY A TABLE AND NOT A CHAIN OF `if verb == ...`. The verb set has to be
-INTROSPECTABLE. `--help` derives its listing from the table rather than from a second hand-maintained string (the legacy body's three inventories -- arms, `show_help`, per-verb `Usage:` -- disagreed with each other for months, which is what .ci/scripts/test/gates/test-run-sh.sh section 6 now refuses), and the next
-workstream's boxes read the set programmatically. `names()` is the accessor; a
-dispatch written as control flow has no such thing.
+INTROSPECTABLE. `--help` derives its listing from the table rather than from a second hand-maintained string (the legacy body's three inventories -- arms, `show_help`, per-verb `Usage:` -- disagreed with each other for months, which is what .ci/scripts/test/gates/test-run-sh.sh section 6 now refuses), and the next workstream's boxes read the set programmatically. `names()` is the
+accessor; a dispatch written as control flow has no such thing.
 
 THE HANDLER IS RESOLVED LAZILY, by dotted name, at the moment its verb is dispatched. `rediacc_ci/__init__.py` refuses to re-export its submodules for a stated reason -- it is imported by a vacuity fixture whose whole point is that most of the tree is absent -- and a table that imported every handler at module scope would undo that decision one row at a time. `--help` therefore
 imports nothing at all.
@@ -46,9 +45,7 @@ class Verb:
 
 # THE VERB TABLE. One row per top-level verb `./run.sh` forwards here, and the row must land in the SAME change that adds the name to `PORTED_VERBS` in run.sh and deletes its arm from .ci/legacy/run-legacy.sh -- test-run-sh.sh section 6 fails an orphan and an overlap alike, so a half-done port is red rather than ambiguous.
 #
-# THE NEXT LINE IS MATCHED LITERALLY BY tests/test_main.py, which builds a throwaway package around a copy of this file with one probe verb planted in place of the empty tuple -- the only way to exercise dispatch while the real
-# table is empty. Keep it on one line, in this spelling; the fixture refuses to
-# run rather than testing nothing if the replacement stops matching.
+# THE NEXT LINE IS MATCHED LITERALLY BY tests/test_main.py, which builds a throwaway package around a copy of this file with one probe verb planted in place of the empty tuple -- the only way to exercise dispatch while the real table is empty. Keep it on one line, in this spelling; the fixture refuses to run rather than testing nothing if the replacement stops matching.
 VERBS: tuple[Verb, ...] = (
     Verb(
         name="setup",
@@ -71,8 +68,7 @@ def format_help(table: tuple[Verb, ...] | None = None) -> str:
         width = max(len(verb.name) for verb in registry)
         lines += ["  %-*s  %s" % (width, verb.name, verb.summary) for verb in registry]
     else:
-        # SAY IT, do not print an empty section. An empty list under a heading
-        # reads as "the listing broke"; this reads as the state it is.
+        # SAY IT, do not print an empty section. An empty list under a heading reads as "the listing broke"; this reads as the state it is.
         lines.append("  (none yet -- no verb has been ported into this package)")
     lines += [
         "",

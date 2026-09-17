@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the Python environment registry gate.
 
-The logic lives in `rediacc_ci.quality.python_env_registry`; this file exists so
-the registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring. The `---- gate ----` header is HERE and not on the module, because `gate-bind` reads the file package.json names.
+The logic lives in `rediacc_ci.quality.python_env_registry`; this file exists so the registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring. The `---- gate ----` header is HERE and not on the module, because `gate-bind` reads the file package.json names.
 
 ---- gate ---- step: Python env registry needs: none lane: quality-static selftest: true why: an environment read is an undeclared input, and until this landed nothing
      in the tree could say which Python modules had one. Seeded 2026-09-09 at

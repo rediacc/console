@@ -5,8 +5,7 @@ and `same=false`.
 
 SHELLS OUT TO THE REAL `curl`, same reasoning as the `check_edge_manifest` sibling: the twin's URL is a hardcoded literal with no override hook, so parity is proved by putting a fake `curl` first on PATH for both sides, never the real `releases.rediacc.com`.
 
-REWORDED, NOT BYTE-IDENTICAL, on the missing-env-var paths only; see the
-`check_edge_manifest` sibling's module docstring for why.
+REWORDED, NOT BYTE-IDENTICAL, on the missing-env-var paths only; see the `check_edge_manifest` sibling's module docstring for why.
 """
 
 from __future__ import annotations

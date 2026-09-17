@@ -4,8 +4,7 @@ Local proxy for the `renet ops host check` leg of `.github/workflows/ci-ops-test
 
 WHY THE TWIN EXISTS AT ALL, kept because it is the finding. `ci-ops-test.yml:573-575` is `run: $RENET_BINARY ops host check || true`, so that step cannot fail on any platform for any reason, and the only real assertion on the command's output in the whole workflow is Windows-only (`ci-ops-test.yml:584-589`). On Linux and macOS the command's CONTRACT -- that it emits parseable JSON
 with a populated check list at all -- has never been asserted anywhere. This proxy asserts the SHAPE of the report and deliberately
-NOT the health of the host; the per-status tally is PRINTED instead, so a
-reader can see the composition and notice when it collapses.
+NOT the health of the host; the per-status tally is PRINTED instead, so a reader can see the composition and notice when it collapses.
 
 -----------------------------------------------------------------------------
 A jq ERROR USED TO BE FOLDED INTO "NO FINDINGS". FIXED 2026-09-10, BOTH SIDES
@@ -38,8 +37,7 @@ reports now measure:
     checks:[null]     -> RC=1, 3 findings    (UNCHANGED, and that is the
                                               must-not-fire direction)
 
-jq's runtime-error status is 5 on jq-1.8.1, measured; `_bad_entries` raising
-is rendered with that literal here because the twin interpolates whatever jq returned. A jq that ever returned something else for a runtime error would show up as a byte divergence in the differential, which is the right place for it to show up.
+jq's runtime-error status is 5 on jq-1.8.1, measured; `_bad_entries` raising is rendered with that literal here because the twin interpolates whatever jq returned. A jq that ever returned something else for a runtime error would show up as a byte divergence in the differential, which is the right place for it to show up.
 
 BLAST RADIUS, measured not estimated. The subject is a Go binary and `private/renet/cmd/renet/ops_host.go:29` declares `Checks []HostCheckResult`, so `encoding/json` can only ever emit an array of objects or `null` -- and `null` is handled correctly by `(.checks // [])`. Live paths today: ZERO, both before and after. Override-reachable paths: ONE, `:172`'s
 `RENET_BINARY="${RENET_BINARY:-...}"`, which is honoured with no validation of
@@ -152,9 +150,7 @@ def _jq_length(value: Any) -> int:
 def _jq_entries(value: Any) -> list[tuple[Any, Any]]:
     """`to_entries[]`. An array keys on the index, an object on the key string.
 
-    The error wording is `to_entries`\' own and differs from `.[]`\'s, measured on jq-1.8.1: `printf \'"ab"\' | jq to_entries` says `string ("ab") has no keys` where `jq .[]` says `Cannot iterate over string ("ab")`. Both used to
-    be invisible here because both sides discarded them; the fix of 2026-09-10
-    puts this one in a FINDING, so the two wordings can no longer be conflated.
+    The error wording is `to_entries`\' own and differs from `.[]`\'s, measured on jq-1.8.1: `printf \'"ab"\' | jq to_entries` says `string ("ab") has no keys` where `jq .[]` says `Cannot iterate over string ("ab")`. Both used to be invisible here because both sides discarded them; the fix of 2026-09-10 puts this one in a FINDING, so the two wordings can no longer be conflated.
     """
     if isinstance(value, list):
         return list(enumerate(value))
@@ -189,9 +185,7 @@ def _jq_lineno(fed: str) -> int:
 def _bad_entries(checks: Any) -> list[str]:
     """`:93-101`, and it RAISES rather than returning silence.
 
-    A `_JqError` anywhere in the walk aborts the whole program, exactly as jq does, and everything collected so far is discarded with it -- the twin discards its own partial stdout the same way. The caller turns the
-    exception into a named finding; see this module's docstring for the hole
-    that was.
+    A `_JqError` anywhere in the walk aborts the whole program, exactly as jq does, and everything collected so far is discarded with it -- the twin discards its own partial stdout the same way. The caller turns the exception into a named finding; see this module's docstring for the hole that was.
     """
     out: list[str] = []
     for key, entry in _jq_entries(checks):
@@ -451,9 +445,7 @@ def run() -> int:
     #
     # FOUR SEPARATE jq PROCESSES, and that is the whole reason this block is written out rather than computed once. Each one fails INDEPENDENTLY: against `checks:[1,2,3]` the `length` run succeeds and prints 3 while the
     # three `select(.status==...)` runs each abort on the first element, so the
-    # twin emits three diagnostics and a line reading `3 probe(s) reported -- ok, warn, fail`. A port that computed the four numbers in one pass would print `0 ok, 0 warn, 0 fail` and no
-    # diagnostics; that is exactly what the first draft of this file did, and
-    # the ledger's variant 4 caught it.
+    # twin emits three diagnostics and a line reading `3 probe(s) reported -- ok, warn, fail`. A port that computed the four numbers in one pass would print `0 ok, 0 warn, 0 fail` and no diagnostics; that is exactly what the first draft of this file did, and the ledger's variant 4 caught it.
     doc: Any = None
     parsed = False
     try:

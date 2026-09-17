@@ -42,8 +42,7 @@ def emit(text):
 
 
 def describe_state_md(path, st, usage, threshold):
-    """A factual line about the recovery document, including how stale it is
-    IN CONTEXT TERMS rather than in minutes.
+    """A factual line about the recovery document, including how stale it is IN CONTEXT TERMS rather than in minutes.
 
     Minutes were the old trigger and they were the wrong unit: a session can burn 200K tokens in ten minutes or 5K in an hour. What matters is how much of the window has gone by since the document was last true.
     """

@@ -1,8 +1,6 @@
 """The W4 P3d gate, driven as a PROCESS rather than as a function.
 
-WHAT THIS ADDS OVER THE MODULE'S OWN CONTROLS, which is the only reason a gate test earns its place. `selftest()` inside
-`rediacc_ci.quality.vendored_blocker_derivation` proves the predicates; it can
-prove nothing about the wrapper, the exit codes, the streams, or the one claim that is only meaningful against the REAL directory:
+WHAT THIS ADDS OVER THE MODULE'S OWN CONTROLS, which is the only reason a gate test earns its place. `selftest()` inside `rediacc_ci.quality.vendored_blocker_derivation` proves the predicates; it can prove nothing about the wrapper, the exit codes, the streams, or the one claim that is only meaningful against the REAL directory:
 
   * the entry point is reachable at the path the registry will name, and its
     `--selftest` flag exits 0 rather than 1 (an inverted `return 1 if ...`
@@ -46,9 +44,7 @@ def test_the_gate_is_reachable_as_a_program(gate):
     result = harness.run([str(GATE)], cwd=paths.repo_root())
     gate.assert_exit_code(0, result.rc, "the gate passes on this tree")
     gate.assert_contains(result.out, "  PASS  ", "with its own controls run first, on stdout")
-    # THE VERDICT IS ON STDERR AND THE CONTROL TALLY IS ON STDOUT, which is not a slip: `rediacc_ci.log` writes every level to ONE stream (stderr by default, `log.py:221-235`) while `Checker` prints its PASS lines with a bare `print`.
-    # Asserting the two separately is what makes that split visible; asserting
-    # `out + err` would pass just as happily if the verdict vanished.
+    # THE VERDICT IS ON STDERR AND THE CONTROL TALLY IS ON STDOUT, which is not a slip: `rediacc_ci.log` writes every level to ONE stream (stderr by default, `log.py:221-235`) while `Checker` prints its PASS lines with a bare `print`. Asserting the two separately is what makes that split visible; asserting `out + err` would pass just as happily if the verdict vanished.
     gate.assert_contains(
         result.err, "divergence(s) all attributed", "and it says what it derived, on stderr"
     )

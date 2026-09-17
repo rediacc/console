@@ -1,8 +1,6 @@
-"""`rediacc_ci.proxies.ensure_nfpm` against its bash twin
-`.ci/scripts/test/proxies/proxy-ensure-nfpm.sh` (gate `check:ci-proxy-ensure-nfpm`).
+"""`rediacc_ci.proxies.ensure_nfpm` against its bash twin `.ci/scripts/test/proxies/proxy-ensure-nfpm.sh` (gate `check:ci-proxy-ensure-nfpm`).
 
-Sibling of `test_proxies_docker_prepull.py`; see that file for why the two
-invocations are compared byte for byte rather than as a finding set. This one needs a reachable `https://github.com`, because BOTH sides declare it as a requirement and would otherwise exit 77 (cannot-run, not a verdict) -- the test
+Sibling of `test_proxies_docker_prepull.py`; see that file for why the two invocations are compared byte for byte rather than as a finding set. This one needs a reachable `https://github.com`, because BOTH sides declare it as a requirement and would otherwise exit 77 (cannot-run, not a verdict) -- the test
 would then assert 77 == 77 and prove nothing, so it is skipped instead, exactly
 as a developer's offline run would be.
 
@@ -241,8 +239,7 @@ def test_a_constants_sh_with_no_pin_refuses_before_comparing(tmp_path: pathlib.P
 def test_the_set_e_toggle_really_enables_errexit() -> None:
     """MEASURED, in this test, not asserted from reading.
 
-    `proxy-ensure-nfpm.sh:33` is `set -uo pipefail` with no `-e`, and `:92-95` wraps the first subject run in `set +e` / `set -e`. `set -e` TURNS ERREXIT
-    ON; it does not restore the previous state.
+    `proxy-ensure-nfpm.sh:33` is `set -uo pipefail` with no `-e`, and `:92-95` wraps the first subject run in `set +e` / `set -e`. `set -e` TURNS ERREXIT ON; it does not restore the previous state.
     """
     flags = subprocess.run(
         ["bash", "-c", 'set -uo pipefail; printf "%s|" "$-"; set +e; :; set -e; printf "%s" "$-"'],
@@ -317,8 +314,7 @@ def test_a_planted_soft_version_read_is_caught(tmp_path: pathlib.Path) -> None:
 
     It is the RIGHT behaviour and the WRONG port. If this ever passes, the case above has stopped comparing anything.
 
-    The real file is compared before and after; the mutation lives in the
-    fixture copy only.
+    The real file is compared before and after; the mutation lives in the fixture copy only.
     """
     port = ROOT / ".ci" / "rediacc_ci" / "proxies" / "ensure_nfpm.py"
     before = port.read_bytes()

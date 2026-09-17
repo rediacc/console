@@ -3,8 +3,7 @@
 WHY A DIFFERENTIAL. This gate's whole behaviour is five awk regexes and one skip-the-next-line state machine, and two independent bugs in exactly that layer kept it matching NOTHING for months (a repo root resolved to `.ci`, and `-v` escape processing that turned the guard pattern into an ERE with empty alternations). A table of expected strings would be a table of what the PORT
 does, asserted against itself. Running the real awk and comparing is the only form that can fail for the right reason.
 
-The whole gate is covered by `.ci/shadow/w7p2-silent-failures.observations.jsonl`
-over five distinct trees; this file covers the scanner in isolation.
+The whole gate is covered by `.ci/shadow/w7p2-silent-failures.observations.jsonl` over five distinct trees; this file covers the scanner in isolation.
 """
 
 import pathlib

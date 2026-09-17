@@ -2,8 +2,7 @@
 
 `.ci/scripts/security/check-commands.sh` must not read its own documentation as code.
 
-WHY THIS EXISTS. Three detectors in this repo have flagged text that merely RESEMBLED the construct they forbid, all within one wave (2026-08-26): check-toolchain-pins.sh A6 read an `echo` line PRINTING the shellcheck directive
-as an INVOCATION of shellcheck; check-control-vacuity.sh read `sed 's/^/  /'`,
+WHY THIS EXISTS. Three detectors in this repo have flagged text that merely RESEMBLED the construct they forbid, all within one wave (2026-08-26): check-toolchain-pins.sh A6 read an `echo` line PRINTING the shellcheck directive as an INVOCATION of shellcheck; check-control-vacuity.sh read `sed 's/^/ /'`,
 which indents a message for display, as a control built by pattern substitution;
 and then it read a COMMENT about a substitution as the substitution itself.
 
@@ -18,10 +17,8 @@ way that trips it. An assignment is not command position, so this form is invisi
 while still exercising the real thing. The same care applies here, which is why
 the two names below are built as constants and interpolated.
 
-WHAT THE PORT REIMPLEMENTS. The twin's live-tree case uses
-`grep -rlE '^[[:space:]]*#.*\\b(seq|mapfile)\\b' | wc -l`; this walks the same two
-directories in Python with the equivalent regex. The two agree because the pattern is anchored the same way (line start, optional whitespace, a `#`, then the word on word boundaries) and both count FILES rather than matches. Python's `re` is used rather than shelling out to grep on purpose: the house note about ugrep's silent false zeros on an alternated anchor applies to exactly
-this shape, and a count of 0 here would trip the twin's own anti-vacuity floor rather than passing, but only on the bash side.
+WHAT THE PORT REIMPLEMENTS. The twin's live-tree case uses `grep -rlE '^[[:space:]]*#.*\\b(seq|mapfile)\\b' | wc -l`; this walks the same two directories in Python with the equivalent regex. The two agree because the pattern is anchored the same way (line start, optional whitespace, a `#`, then the word on word boundaries) and both count FILES rather than matches. Python's `re` is
+used rather than shelling out to grep on purpose: the house note about ugrep's silent false zeros on an alternated anchor applies to exactly this shape, and a count of 0 here would trip the twin's own anti-vacuity floor rather than passing, but only on the bash side.
 
 NO `xdist_group`. Every case builds its own `mktemp -d` root and runs the gate
 with `cwd=` rather than chdir'ing this process; nothing global moves.
@@ -77,10 +74,7 @@ def test_a_banned_command_in_code_is_caught(gate):
 
 def test_the_same_command_in_a_comment_is_ignored(gate):
     gate.log_test("the same command in a COMMENT must NOT fail")
-    # THE PROBE MUST REACH THE SKIP BRANCH, and the obvious probe does not. check-commands.sh's outer scan requires the banned word to be immediately
-    # preceded by line-start whitespace, `|`, `&`, `;`, `$(` or `if `. In plain
-    # prose the word follows an ordinary letter, so the outer regex never matches
-    # and the skip branch is never consulted; such a probe passes identically
+    # THE PROBE MUST REACH THE SKIP BRANCH, and the obvious probe does not. check-commands.sh's outer scan requires the banned word to be immediately preceded by line-start whitespace, `|`, `&`, `;`, `$(` or `if `. In plain prose the word follows an ordinary letter, so the outer regex never matches and the skip branch is never consulted; such a probe passes identically
     # with the branch DELETED, measured exit 0 both ways. Putting the word
     # directly after a trigger character makes the outer scan match, so the only thing that can suppress it is the skip branch itself.
     with harness.temp_dir() as work:

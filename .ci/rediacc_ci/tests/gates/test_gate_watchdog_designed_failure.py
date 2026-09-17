@@ -31,8 +31,7 @@ REAL_ERROR_LINE = (
     "core.setFailed(`Run ${targetRunId} completed but the pending rerun could not be triggered`)"
 )
 
-# The PRE-FIX annotation, written out rather than derived. A mutation of the
-# current line drifts with the subject; this is the shape that actually shipped.
+# The PRE-FIX annotation, written out rather than derived. A mutation of the current line drifts with the subject; this is the shape that actually shipped.
 PRE_FIX_ANNOTATION = "core.setFailed('PIPELINE CANCELLED: ' + failureMsg);"
 
 
@@ -88,8 +87,7 @@ def test_a_real_error_still_fails(gate):
 
 def test_summary_failure_does_not_swallow_the_verdict(gate):
     gate.log_test("a summary that cannot be written must NOT suppress the failure")
-    # The write is diagnostics; the annotation is the signal. If a throw from
-    # core.summary could escape, the watchdog would exit 0 having cancelled a pipeline -- a false green on the one path that matters most.
+    # The write is diagnostics; the annotation is the signal. If a throw from core.summary could escape, the watchdog would exit 0 having cancelled a pipeline -- a false green on the one path that matters most.
     body = signal_by_design_body(gate)
     gate.assert_contains(
         body,
@@ -146,9 +144,7 @@ def test_control_marker_removal_is_detectable(gate, tmp_path):
 
 
 def test_the_subject_is_reachable_from_the_workflow(gate):
-    """PORT-ONLY. Everything above reads a FILE; nothing so far proves that file is
-    the one the workflow runs. A subject nobody invokes is a subject whose
-    assertions cost nothing to satisfy."""
+    """PORT-ONLY. Everything above reads a FILE; nothing so far proves that file is the one the workflow runs. A subject nobody invokes is a subject whose assertions cost nothing to satisfy."""
     workflow = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
     if not workflow.is_file():
         gate.log_fail("watchdog-monitor.yml is missing, so the subject has no caller")

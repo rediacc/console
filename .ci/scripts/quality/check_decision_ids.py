@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""check:ci-decision-ids -- every cited decision id resolves to a row, and a
-supersession is stated out loud.
+"""check:ci-decision-ids -- every cited decision id resolves to a row, and a supersession is stated out loud.
 
 WHY THIS GATE EXISTS, and it has a measurement rather than an opinion.
 
@@ -123,9 +122,7 @@ def register_path(root):
 
 
 def register_label():
-    """What a finding should CALL the register. Under the seam that is the
-    override path, not `agent/DECISIONS.md`: a control that reds while naming a
-    file it did not read is a control a reader cannot check."""
+    """What a finding should CALL the register. Under the seam that is the override path, not `agent/DECISIONS.md`: a control that reds while naming a file it did not read is a control a reader cannot check."""
     return os.environ.get("DECISION_IDS_REGISTER") or REGISTER_REL
 
 
@@ -157,9 +154,7 @@ def parse_rows(text):
 
 
 def superseded_target(status):
-    """The id a `superseded-by` status names, or None. Not a truthiness test:
-    `live` and a malformed status are different findings and R1 tells them
-    apart."""
+    """The id a `superseded-by` status names, or None. Not a truthiness test: `live` and a malformed status are different findings and R1 tells them apart."""
     m = SUPERSEDED_RE.match((status or "").strip())
     return m.group(1) if m else None
 

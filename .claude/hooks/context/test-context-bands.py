@@ -258,9 +258,7 @@ def test_arithmetic():
 
 
 def test_bands(hooks_dir):
-    """The behavioural half. The mutation half asserts that a broken hook
-    makes specific checks fail via `must_fail` / `run_isolated`, not via an
-    override here."""
+    """The behavioural half. The mutation half asserts that a broken hook makes specific checks fail via `must_fail` / `run_isolated`, not via an override here."""
     print("\n[band hook] %s" % hooks_dir)
     sb = Sandbox(hooks_dir)
     try:
@@ -781,8 +779,7 @@ def test_mutations():
 
 
 def test_arithmetic_in(hooks_dir):
-    """The arithmetic check, but against a (possibly mutated) copy, driven
-    through a subprocess so the mutated module is the one imported."""
+    """The arithmetic check, but against a (possibly mutated) copy, driven through a subprocess so the mutated module is the one imported."""
     code = (
         "import sys, json; sys.path.insert(0, %r); import ctx_budget as B; "
         "print(json.dumps(B.resolve_threshold('claude-opus-5', sys.argv[1])))" % str(hooks_dir)

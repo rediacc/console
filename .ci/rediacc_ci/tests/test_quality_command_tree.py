@@ -107,8 +107,7 @@ def test_the_diff_is_capped_the_same_way_on_both_sides(tmp_path: pathlib.Path) -
 def test_a_reformat_is_stale_on_both_sides(tmp_path: pathlib.Path) -> None:
     """The BYTE comparison, asserted rather than assumed.
 
-    The sibling port `regions_sync` compares parsed JSON; this one must not, and
-    a control that never reformats anything could not tell the two apart.
+    The sibling port `regions_sync` compares parsed JSON; this one must not, and a control that never reformats anything could not tell the two apart.
     """
     same = {"name": "rdc", "subcommands": [{"name": "repo"}]}
     root = build(

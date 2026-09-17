@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.build.build_cli_musl` against its twin
-`.ci/scripts/build/build-cli-musl.sh`.
+"""Differential: `rediacc_ci.build.build_cli_musl` against its twin `.ci/scripts/build/build-cli-musl.sh`.
 
 ONE REAL INVOCATION PULLS `node:22-alpine`, RUNS `npm ci` INSIDE IT AND WRITES INTO `dist/cli/` OF WHATEVER TREE IT IS POINTED AT. It also runs `sudo chown -R` over that directory. Nothing here goes near a real one: every
 case runs with a PATH that REPLACES the caller's rather than prepending to it,
@@ -221,8 +220,7 @@ def _run(
 
 
 def _artifacts(root: pathlib.Path) -> dict[str, str]:
-    """Every file under `dist/`, so a port that wrote the right log lines and the
-    wrong bytes cannot pass. Keyed by path relative to the fixture root."""
+    """Every file under `dist/`, so a port that wrote the right log lines and the wrong bytes cannot pass. Keyed by path relative to the fixture root."""
     out: dict[str, str] = {}
     dist = root / "dist"
     if not dist.is_dir():
@@ -296,9 +294,7 @@ def _docker_argv(calls: str) -> list[str]:
 
 
 def test_the_scratch_path_cannot_reach_a_real_docker_or_sudo(tmp_path) -> None:
-    """A real run pulls an image, runs `npm ci` in it and `sudo chown -R`s a
-    directory, so the seal on the PATH is load-bearing rather than tidy.
-    Asserted in both directions."""
+    """A real run pulls an image, runs `npm ci` in it and `sudo chown -R`s a directory, so the seal on the PATH is load-bearing rather than tidy. Asserted in both directions."""
     root = fixture(tmp_path)
     sealed = scratch_bin(root)
     assert shutil.which("docker", path=sealed) == str(root / "fixture-bin" / "docker")
@@ -342,8 +338,7 @@ def test_an_unknown_option_refuses_and_names_it(tmp_path) -> None:
 
 
 def test_a_flag_with_no_value_dies_the_way_set_u_does(tmp_path) -> None:
-    """`--arch` as the final argument makes bash expand `"$2"` with nothing
-    behind it. The sentence names the script and the LINE, so the port forges it
+    """`--arch` as the final argument makes bash expand `"$2"` with nothing behind it. The sentence names the script and the LINE, so the port forges it
     with the twin's line numbers and `$0` is masked on both sides."""
     root = fixture(tmp_path)
     for flag, line in (("--arch", 28), ("--output", 32)):
@@ -370,9 +365,7 @@ def test_dry_run_previews_and_executes_nothing(tmp_path) -> None:
 
 
 def test_defect_dry_run_previews_an_architecture_the_real_run_rejects(tmp_path) -> None:
-    """DEFECT 1. The `case` that rejects a bad `--arch` is at `:90-97`, AFTER the
-    dry-run `exit 0` at `:68`, so the preview reports a binary that can never be built and exits 0. Both halves are asserted: the lie under `--dry-run`, and
-    the refusal without it, from the SAME argument."""
+    """DEFECT 1. The `case` that rejects a bad `--arch` is at `:90-97`, AFTER the dry-run `exit 0` at `:68`, so the preview reports a binary that can never be built and exits 0. Both halves are asserted: the lie under `--dry-run`, and the refusal without it, from the SAME argument."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--arch", "banana", "--dry-run"))
     assert old_t[0].returncode == 0, "the defect is that this is a PASS"
@@ -413,8 +406,7 @@ def test_release_build_without_a_version_refuses_before_docker(tmp_path) -> None
 
 
 def test_release_build_consults_inject_env_and_discards_only_its_stdout(tmp_path) -> None:
-    """`:82` redirects the helper's STDOUT to /dev/null and reads its status.
-    The fake prints on stdout, so a port that let it through would show up here."""
+    """`:82` redirects the helper's STDOUT to /dev/null and reads its status. The fake prints on stdout, so a port that let it through would show up here."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
         root,
@@ -464,8 +456,7 @@ def test_the_success_path_builds_renames_and_checksums(tmp_path) -> None:
 
 
 def test_the_docker_argv_is_the_whole_point_of_the_script(tmp_path) -> None:
-    """Exit code, stdout and stderr are identical no matter what argv reaches
-    docker, so this pins the recorded argv against the port's own builder."""
+    """Exit code, stdout and stderr are identical no matter what argv reaches docker, so this pins the recorded argv against the port's own builder."""
     root = fixture(tmp_path)
     _reset(root)
     old, _ = _run(root, "old", args=("--arch", "arm64"), produces=False)
@@ -524,9 +515,7 @@ def test_no_output_from_the_container_is_a_refusal(tmp_path) -> None:
 
 
 def test_defect_a_stale_glibc_binary_ships_as_a_musl_one(tmp_path) -> None:
-    """DEFECT 2. `:133` is an EXISTENCE test. A `dist/cli/rdc-linux-x64` left by
-    an earlier glibc build satisfies it even though this container produced nothing, and the file is renamed, checksummed and reported as a finished musl build. The assertion is on the CONTENT, because the log lines are
-    indistinguishable from a real success."""
+    """DEFECT 2. `:133` is an EXISTENCE test. A `dist/cli/rdc-linux-x64` left by an earlier glibc build satisfies it even though this container produced nothing, and the file is renamed, checksummed and reported as a finished musl build. The assertion is on the CONTENT, because the log lines are indistinguishable from a real success."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--arch", "x64"), produces=False, stale_output=True)
     assert old_t[0].returncode == 0, "the defect is that this is a PASS"
@@ -536,9 +525,7 @@ def test_defect_a_stale_glibc_binary_ships_as_a_musl_one(tmp_path) -> None:
 
 
 def test_an_existing_checksum_is_rewritten_rather_than_recomputed(tmp_path) -> None:
-    """`:146-149`: when the container left a `.sha256`, the twin `sed`s the
-    filename inside it and deletes the original instead of hashing again. The fake writes a checksum that is deliberately NOT the file's real hash, which
-    is the only way to tell the two branches apart."""
+    """`:146-149`: when the container left a `.sha256`, the twin `sed`s the filename inside it and deletes the original instead of hashing again. The fake writes a checksum that is deliberately NOT the file's real hash, which is the only way to tell the two branches apart."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--arch", "x64"), produces=True, checksum=True)
     assert old_t[0].returncode == 0, old_t[0].stderr
@@ -550,9 +537,7 @@ def test_an_existing_checksum_is_rewritten_rather_than_recomputed(tmp_path) -> N
 def test_with_no_hashing_tool_at_all_no_checksum_is_written_and_it_still_passes(
     tmp_path,
 ) -> None:
-    """The third outcome of `:151-155` that nobody writes down: `command -v`
-    finds neither `sha256sum` nor `shasum`, the `if` falls through, and the run
-    completes with no checksum file and exit 0."""
+    """The third outcome of `:151-155` that nobody writes down: `command -v` finds neither `sha256sum` nor `shasum`, the `if` falls through, and the run completes with no checksum file and exit 0."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--arch", "x64"), produces=True, drop_checksum_tools=True)
     assert old_t[0].returncode == 0, old_t[0].stderr
@@ -615,9 +600,7 @@ def test_the_container_script_carries_the_arch_and_nothing_else_changes() -> Non
 
 
 def test_a_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
-    """The proof that this differential can fail. Swapping the docker platform
-    leaves stdout, stderr and the exit code untouched on both sides; only the
-    recorded argv can tell, which is why the call log is compared at all."""
+    """The proof that this differential can fail. Swapping the docker platform leaves stdout, stderr and the exit code untouched on both sides; only the recorded argv can tell, which is why the call log is compared at all."""
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace('"x64": "linux/amd64",', '"x64": "linux/arm64",')
     assert planted != source, "the plant did not apply; fix the control first"

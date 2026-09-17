@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.security.ci_workflow_invariants` against its twin
-`.ci/scripts/security/check-ci-workflow-invariants.sh`.
+"""Differential: `rediacc_ci.security.ci_workflow_invariants` against its twin `.ci/scripts/security/check-ci-workflow-invariants.sh`.
 
 THE COMPARISON IS BYTE FOR BYTE ON BOTH STREAMS, with exactly one exemption (the traceback case, which names a different file on each side and says so in its own docstring). That standard is affordable because 103 of the twin's 224 lines were ALREADY Python inside a `python3 - <<'PY'` heredoc (`:66-168`), so anything short of byte equality would be a transcription error rather than
 a legitimate rewrite.

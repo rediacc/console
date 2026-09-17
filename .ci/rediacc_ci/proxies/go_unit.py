@@ -2,8 +2,7 @@
 
 Local proxy for the renet Go unit tests, the heaviest single leg of CI's test-renet job, wired as the registered gate `check:ci-proxy-go-unit`
 (`package.json:388`). CI runs `sudo -E gotestsum -- -v -race -coverprofile=...
-./pkg/... ./cmd/...` under root; none of that is in the parity surface, so a
-developer's local run has never compiled a single renet test.
+./pkg/... ./cmd/...` under root; none of that is in the parity surface, so a developer's local run has never compiled a single renet test.
 
 The subset is DERIVED on every run, never typed, and the excluded set is PRINTED BY NAME: it is real debt (those tests run only in CI) and a quiet exemption is how a gate stops meaning what its name says. What this proxy therefore does NOT prove is stated in the twin's header and unchanged here: no race detector, no root paths, no subscription e2e.
 
@@ -37,9 +36,8 @@ THE FIFTH ALTERNATIVE, ADDED 2026-09-10: A REAL GAP, FOUND UNDER CI=true
 (`directory_test.go`, `luks_test.go`), an idiom none of the first four alternatives catch -- it is neither `Geteuid` (a distinct, real Go function this pattern must also ignore) nor `RequireRoot` nor `testutil.`. Locally,
 with no `CI` env var, those tests just call `t.Skip` and this proxy silently
 reported a clean pass over 11 tests it never really ran. Under `CI=true`
-(what real CI sets, and what this port's own real-tree differential drives it under), the same tests instead call `t.Fatalf("CI must run as root for LUKS storage tests")`, and the whole package -- including its non-LUKS `TestDirectoryStorage_*` cases, gated by the same idiom -- hard-failed this gate. `pkg/repository` and `pkg/filesystem` use the identical guard and move
-into the excluded set too; `pkg/daemon` was already excluded. Net: 68 -> 11
-excluded, 57 in the subset (was 8 excluded, 60 in the subset). Pinned by `test_a_getuid_only_package_is_now_excluded`.
+(what real CI sets, and what this port's own real-tree differential drives it under), the same tests instead call `t.Fatalf("CI must run as root for LUKS storage tests")`, and the whole package -- including its non-LUKS `TestDirectoryStorage_*` cases, gated by the same idiom -- hard-failed this gate. `pkg/repository` and `pkg/filesystem` use the identical guard and move into the
+excluded set too; `pkg/daemon` was already excluded. Net: 68 -> 11 excluded, 57 in the subset (was 8 excluded, 60 in the subset). Pinned by `test_a_getuid_only_package_is_now_excluded`.
 
 -----------------------------------------------------------------------------
 TWO SMALLER FIDELITIES WORTH NAMING
@@ -62,9 +60,7 @@ import sys
 
 from rediacc_ci.core import proxyx
 
-# `grep -rlE 'Geteuid|RequireRoot|requireRoot|testutil\.|Getuid'` (:116). Kept character-for-character equal to the twin's grep AND to the pattern its
-# header quotes; see this module's docstring for why the fourth alternative
-# is deliberately broader than "privileged" and why the fifth was added.
+# `grep -rlE 'Geteuid|RequireRoot|requireRoot|testutil\.|Getuid'` (:116). Kept character-for-character equal to the twin's grep AND to the pattern its header quotes; see this module's docstring for why the fourth alternative is deliberately broader than "privileged" and why the fifth was added.
 EXCLUDE_RE = re.compile(r"Geteuid|RequireRoot|requireRoot|testutil\.|Getuid")
 
 GO_LIST_FORMAT = "{{.ImportPath}} {{len .TestGoFiles}} {{len .XTestGoFiles}} {{.Dir}}"

@@ -46,8 +46,7 @@ MAX_LEASE_MIN = 120
 
 def parse_justification(text):
     """{field: value} for every WHY:/HOW:/TRIED:/NEEDS:/BLOCKED_ON: token in a
-    deferral's text, keys lowercased. A value runs to the next known token (DEFAULT: included, so the tokens compose in any order) or to the end of the line. Empty values are absent, so `bool(j.get("why"))` is the whole
-    presence test."""
+    deferral's text, keys lowercased. A value runs to the next known token (DEFAULT: included, so the tokens compose in any order) or to the end of the line. Empty values are absent, so `bool(j.get("why"))` is the whole presence test."""
     out = {}
     matches = list(JUST_TOKEN.finditer(text or ""))
     for i, m in enumerate(matches):
@@ -70,9 +69,7 @@ def stamp_now():
 
 
 def stamp_ahead(minutes):
-    """An ISO8601Z stamp `minutes` from now. Used where a message promises a
-    bound (the background check-in's next-earliest time): a claimed latch a reader cannot check from the message alone is not a latch, it is a
-    slogan."""
+    """An ISO8601Z stamp `minutes` from now. Used where a message promises a bound (the background check-in's next-earliest time): a claimed latch a reader cannot check from the message alone is not a latch, it is a slogan."""
     return (utcnow() + datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -167,8 +164,7 @@ def lineage_of(session_id):
 
 
 def owned_by_me(owner, session_id):
-    """An UNTAGGED item is mine: that is the safe default, since the cost of
-    wrongly claiming one is doing a little extra work, while the cost of wrongly disowning one is silently dropping it. A tag is a PREFIX of the session id (CLAUDE.md asks for a short prefix, not the whole uuid).
+    """An UNTAGGED item counts as this session's: that is the safe default, since the cost of wrongly claiming one is doing a little extra work, while the cost of wrongly disowning one is silently dropping it. A tag is a PREFIX of the session id (CLAUDE.md asks for a short prefix, not the whole uuid).
 
     An ANCESTOR's tag is also mine, but only when a `lineage` event has proven the two ids are one conversation (see wl_lineage.py, which requires a compaction boundary AND shared conversational record uuids). This is the single chokepoint
     for 25 call sites, so the compaction fix cannot roll out half-applied.
@@ -183,8 +179,7 @@ def owned_by_me(owner, session_id):
 
 
 def same_session(a, b):
-    """Two prefixes/ids denote one session when either is a prefix of the
-    other. Symmetric, because CLI callers pass short prefixes while the Stop event carries the full id, and either side of a comparison can be either.
+    """Two prefixes/ids denote one session when either is a prefix of the other. Symmetric, because CLI callers pass short prefixes while the Stop event carries the full id, and either side of a comparison can be either.
 
     DELIBERATELY NOT LINEAGE-AWARE, and that is not an oversight. Its ~40 callers compare PEERS -- request routing, the brief roster, the dead-session sweep, the waiter -- and a predecessor is genuinely gone for every one of those purposes. Widening this would silently change all forty; the ancestor branch belongs in `owned_by_me`, which is about who may RESOLVE an item.
     """
@@ -272,8 +267,7 @@ def check_me(me):
 
 
 def _identity_msg(me, sid, why):
-    """The refusal text. Names the variable it read, because the next session to
-    hit this needs the mechanism to be inspectable, not just the verdict."""
+    """The refusal text. Names the variable it read, because the next session to hit this needs the mechanism to be inspectable, not just the verdict."""
     src = (
         "WORKLIST_SESSION_ID" if os.environ.get("WORKLIST_SESSION_ID") else "CLAUDE_CODE_SESSION_ID"
     )
@@ -292,8 +286,7 @@ def _identity_msg(me, sid, why):
 
 
 def project_root(start):
-    """Nearest ancestor holding .git. This repo uses worktrees, where .git is a
-    FILE, not a directory, so test existence rather than is_dir().
+    """Nearest ancestor holding .git. This repo uses worktrees, where .git is a FILE, not a directory, so test existence rather than is_dir().
 
     Resolves from WHEREVER IT IS POINTED, deliberately. It cannot tell a repo
     from a repo nested inside one, and it must not try -- see project_start(),
@@ -444,9 +437,7 @@ def git_branch(root):
 
 
 def _cron_field(spec, lo, hi):
-    """The sorted set of matching values for one cron field, or None on any
-    shape this parser does not understand (the caller treats None as
-    unparseable and skips the cron rather than guessing)."""
+    """The sorted set of matching values for one cron field, or None on any shape this parser does not understand (the caller treats None as unparseable and skips the cron rather than guessing)."""
     vals = set()
     for raw_part in spec.split(","):
         part = raw_part.strip()
@@ -474,8 +465,7 @@ def _cron_field(spec, lo, hi):
 
 
 def cron_next(schedule, now=None):
-    """The next fire time (UTC datetime) of a 5-field cron expression after
-    `now`, or None when the expression is unparseable or never fires within 60 days.
+    """The next fire time (UTC datetime) of a 5-field cron expression after `now`, or None when the expression is unparseable or never fires within 60 days.
 
     WHY THIS EXISTS (operator, 2026-07-30): the Stop event's `session_crons` carries the FULL expansion of every scheduled task -- id, schedule, and the exact prompt that will fire -- but the hook was ignoring it and reporting the loop from a hand-declared sidecar that goes stale. The truthful answer to "when does work resume, and what happens then?" is computable from the event;
     this is the computing half.
@@ -638,12 +628,10 @@ def pending_tasks(session_id, transcript_path=None):
 
 
 def actionable_tasks(session_id, transcript_path=None):
-    """Pending harness tasks whose every recorded blocker is finished, as
-    [(id, subject)] -- the tasks a waiting session could be working RIGHT NOW.
+    """Pending harness tasks whose every recorded blocker is finished, as [(id, subject)] -- the tasks a waiting session could be working RIGHT NOW.
 
-    v19, operator directive 2026-08-08: a session sat in "pure background wait" for hours while a fully-planned task was pending and unblocked; the check-in kept saying "this is not a demand for other work" because the pure-wait state never consulted the harness queue. A pending task with an unresolved `blockedBy` is legitimately parked; one without is not. A blocker id whose file
-    no longer exists counts as resolved (deleted
-    tasks vanish from the dir). Never raises."""
+    v19, operator directive 2026-08-08: a session sat in "pure background wait" for hours while a fully-planned task was pending and unblocked; the check-in kept saying "this is not a demand for other work" because the pure-wait state never consulted the harness queue. A pending task with an unresolved `blockedBy` is legitimately parked; one without is not. A blocker id whose
+    file no longer exists counts as resolved (deleted tasks vanish from the dir). Never raises."""
     if not session_id:
         return []
     d = _resolve_tasks_dir(session_id, transcript_path)
@@ -678,8 +666,7 @@ def actionable_tasks(session_id, transcript_path=None):
 
 def task_statuses(session_id, transcript_path=None):
     """{id: (status, subject)} for ALL harness tasks, completed included.
-    pending_tasks() serves the queue; this serves the completion-evidence
-    check and the liveness ladder, which need TRANSITIONS, not the queue."""
+    pending_tasks() serves the queue; this serves the completion-evidence check and the liveness ladder, which need TRANSITIONS, not the queue."""
     if not session_id:
         return {}
     d = _resolve_tasks_dir(session_id, transcript_path) or tasks_dir(session_id)

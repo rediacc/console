@@ -18,9 +18,7 @@ WHAT IS AND IS NOT A FINDING. Only names this repo PROVISIONS SOMEWHERE are judg
 positives across 124 jobs rather than becoming the kind of noise a gate gets suppressed for.
 
 ONE HOP INTO SCRIPTS, and it is load-bearing rather than a nicety. Nine jobs use $RENET_BINARY, which no workflow line defines: `.ci/scripts/infra/build-renet.sh` writes it to $GITHUB_ENV. Without following the script named in the run block this gate reports nine confident findings that are all wrong. (The first version DID -- because `m.lstrip('./')` strips every leading dot AND
-slash, turning `.ci/scripts/...` into `ci/scripts/...`, which resolves to nothing. The nine findings looked like a real defect class. `removeprefix` is the fix, and a broken
-path resolver that reports MORE is the lucky direction; the same bug in a gate
-that reports less is silent.)
+slash, turning `.ci/scripts/...` into `ci/scripts/...`, which resolves to nothing. The nine findings looked like a real defect class. `removeprefix` is the fix, and a broken path resolver that reports MORE is the lucky direction; the same bug in a gate that reports less is silent.)
 
 Exit 1 on any finding, 2 on a failed control.
 

@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.release.create_github_release` against its twin
-`.ci/scripts/release/create-github-release.sh`.
+"""Differential: `rediacc_ci.release.create_github_release` against its twin `.ci/scripts/release/create-github-release.sh`.
 
 THIS SCRIPT PUBLISHES. Its twin's own header says so: `gh release create` makes a real, public GitHub Release and uploads every asset to it. `gh` IS installed and authenticated on this machine, so the fake is not a convenience, it is the only thing standing between this test file and a published release. Three independent guards, in order of how much they are trusted:
 
@@ -382,8 +381,7 @@ def test_a_failing_gh_propagates_its_exit_code(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_gh_exit_other_than_one_is_propagated_verbatim(tmp_path: pathlib.Path) -> None:
-    """`set -e` hands bash the child's status; the port returns it too. A port
-    that collapsed every failure to 1 would hide `gh`'s own codes."""
+    """`set -e` hands bash the child's status; the port returns it too. A port that collapsed every failure to 1 would hide `gh`'s own codes."""
     old, new = run_both(tmp_path, assets=("dist/cli/rdc-linux-x64",), FAKE_GH_RC="7")
     assert old[0] == 7
     assert_agree(old, new, "gh-rc-7")

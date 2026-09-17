@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.submodule_prs` against its twin
-`.ci/scripts/autopilot/submodule-prs.sh`.
+"""Differential: `rediacc_ci.autopilot.submodule_prs` against its twin `.ci/scripts/autopilot/submodule-prs.sh`.
 
 THE FAKE `gh` IS A SAFETY CONTROL, NOT A CONVENIENCE, and this subject is the one in the wave where that sentence is literal: its success path is `gh pr create`, which OPENS A PULL REQUEST, and `gh pr edit --body-file`, which REPLACES a pull request's body. GitHub restores neither. `--repo` comes straight off the command line. So a case that reached the real binary would open real
 PRs in whatever repository the fixture named and overwrite a real body with a fixture. Four things stop that, and the first is asserted rather than assumed:
@@ -16,9 +15,8 @@ THE CALL LOG AND THE BODY FILES ARE THE ARTIFACT. Everything this script does is
 comparison. A port that logged the right sentences and posted the wrong body would sail through a stdout-only comparison.
 
 TWO PRESERVED DEFECTS ARE PINNED BY NAME:
-`test_an_unterminated_block_swallows_the_rest` (a BEGIN marker with no END makes the rebuild drop everything after it, losing operator text) and `test_a_dry_run_rebuilds_onto_an_empty_body` (a dry run never reads the live body, so what it prints is not what the round would post). Both are defect
-reports in test form; if either twin behaviour is repaired, the test goes red
-and the repair gets noticed here.
+`test_an_unterminated_block_swallows_the_rest` (a BEGIN marker with no END makes the rebuild drop everything after it, losing operator text) and `test_a_dry_run_rebuilds_onto_an_empty_body` (a dry run never reads the live body, so what it prints is not what the round would post). Both are defect reports in test form; if either twin behaviour is repaired, the test goes red and the
+repair gets noticed here.
 
 K=5 LEDGER: `.ci/shadow/w7p6-submodule-prs.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout.
@@ -284,9 +282,7 @@ def test_the_block_is_rebuilt_not_appended() -> None:
 
 
 def test_an_unterminated_block_swallows_the_rest() -> None:
-    """PRESERVED DEFECT. A BEGIN marker with no END makes the strip drop
-    everything after it, so the operator's text below is lost on the next write.
-    If this is ever fixed, this test is where it shows up."""
+    """PRESERVED DEFECT. A BEGIN marker with no END makes the strip drop everything after it, so the operator's text below is lost on the next write. If this is ever fixed, this test is where it shows up."""
     broken = (
         "Keep me.\n"
         "<!-- autopilot-submodule-prs:begin -->\n"
@@ -352,9 +348,7 @@ def test_an_unmapped_path_refuses_to_guess() -> None:
 
 
 def test_a_dry_run_rebuilds_onto_an_empty_body() -> None:
-    """PRESERVED DEFECT, and the reason a dry run is not a preview: it never
-    reads the live PR body, so the block it prints sits on nothing. The TWO blank lines at the top are real output and both are accounted for: an empty body still gives awk one (empty) line, and the block's own `printf '\\n%s\\n'`
-    adds the second."""
+    """PRESERVED DEFECT, and the reason a dry run is not a preview: it never reads the live PR body, so the block it prints sits on nothing. The TWO blank lines at the top are real output and both are accounted for: an empty body still gives awk one (empty) line, and the block's own `printf '\\n%s\\n'` adds the second."""
     exit_code, stdout, stderr, calls, _ = _sides(
         "dry-run",
         [*BASE_ARGV, "--dry-run"],
@@ -420,8 +414,7 @@ def test_a_malformed_verdict_fails_with_jqs_own_words() -> None:
 
 
 def test_a_failing_pr_list_never_becomes_an_empty_answer() -> None:
-    """The most expensive failure this script could have: if a rate-limited
-    `pr list` looked empty, every round would open ANOTHER pull request.
+    """The most expensive failure this script could have: if a rate-limited `pr list` looked empty, every round would open ANOTHER pull request.
 
     SLOW ON PURPOSE (9 seconds per side): the retry sleeps are real.
     """
@@ -447,8 +440,7 @@ def test_a_non_integer_count_wipes_the_block_and_exits_0() -> None:
     arithmetic syntax error that `set -e` does NOT catch: the diagnostic prints, the loop body never runs, and the script CONTINUES. It then PATCHes the console PR body with an EMPTY `**Submodule PRs**` block -- destroying any links a previous round put there, which reds the required Submodule Branches gate on a complaint no later round can fix by editing code -- and exits 0 saying
     "linked 3.5 submodule PR(s)".
 
-    Driven against the twin directly before this test was written; the port
-    matches it deliberately. Exit code, gh calls and the posted body are compared exactly, the bash diagnostic by shape (it carries the twin's path and line).
+    Driven against the twin directly before this test was written; the port matches it deliberately. Exit code, gh calls and the posted body are compared exactly, the bash diagnostic by shape (it carries the twin's path and line).
     """
     exit_code, _, stderr, calls, bodies = _sides(
         "float-count",
@@ -472,8 +464,7 @@ def test_a_non_integer_count_wipes_the_block_and_exits_0() -> None:
 
 
 def test_the_fake_gh_is_the_gh() -> None:
-    """CONTROL for the whole file: if the stub stops winning the PATH lookup,
-    every case above is opening real pull requests."""
+    """CONTROL for the whole file: if the stub stops winning the PATH lookup, every case above is opening real pull requests."""
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
         resolved = shutil.which("gh", path=_stub_bin(base))

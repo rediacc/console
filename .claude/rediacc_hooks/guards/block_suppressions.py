@@ -26,8 +26,7 @@ REASON HERE. In the pattern it is doing exactly what the header says. In the MES
 `"...eslint-disabl""e, @ts-ignor""e..."`, two adjacent double-quoted strings
 that the shell concatenates, so the emitted bytes carry the whole token while the SOURCE never does. The port keeps both halves apart for the same reason and joins them once, at module level, so the message this guard prints is byte for byte what its twin prints while the file remains editable.
 
-PORT NOTE ON THE EXTENSION TEST. `case "$FILE" in *.ts | ... ) ;; "") ;; *)
-exit 0 ;; esac` is a shell GLOB, not a regex, and the empty arm is a
+PORT NOTE ON THE EXTENSION TEST. `case "$FILE" in *.ts | ... ) ;; "") ;; *) exit 0 ;; esac` is a shell GLOB, not a regex, and the empty arm is a
 deliberate hole-closer with its own comment. `hookio.case_glob` is the glob;
 the empty string is spelled as its own disjunct rather than folded into the pattern list, because `case_glob("", "*.ts")` is false and an empty payload must NOT be dismissed as "not code".
 """
@@ -64,10 +63,9 @@ OPENER = hookio.rx(r"(//+|/\*+|\{[{S}]*/\*+|^[{S}]*\*+|#)")
 
 PATTERN = OPENER + hookio.rx(r"[{S}]*(") + TOKENS + r")"
 
-# The message's tokens, kept in halves in the SOURCE and whole in the OUTPUT.
-# See the port note above; this is the `""` concatenation the bash uses.
-# "FIX IT PROPERLY" NAMES A DIAGNOSIS AND NO REMEDY, which is the class swept on 2026-09-17 after the width guard was found reporting R18 and R19 without ever naming `reflow --write`, the one command that repairs them. This guard has no repair TOOL to name, because the fix is whatever the underlying lint error actually wants, but it does have a documented PROCESS: the repository
-# keeps every sanctioned escape hatch in one place, each entry carrying a `BLOCKER:` reason and a liveness check that proves the reason is still true. Pointing at that file is the difference between a session rewriting code it did not need to rewrite and a session discovering that its case may already be provided for.
+# The message's tokens, kept in halves in the SOURCE and whole in the OUTPUT. See the port note above; this is the `""` concatenation the bash uses. "FIX IT PROPERLY" NAMES A DIAGNOSIS AND NO REMEDY, which is the class swept on 2026-09-17 after the width guard was found reporting R18 and R19 without ever naming `reflow --write`, the one command that repairs them. This guard has no
+# repair TOOL to name, because the fix is whatever the underlying lint error actually wants, but it does have a documented PROCESS: the repository keeps every sanctioned escape hatch in one place, each entry carrying a `BLOCKER:` reason and a liveness check that proves the reason is still true. Pointing at that file is the difference between a session rewriting code it did not need
+# to rewrite and a session discovering that its case may already be provided for.
 MESSAGE = (
     "❌ BLOCKED: Do not use %s, %s, %s, %s, or %s. Fix the issue properly.\n"
     "If the suppression is genuinely unavoidable, it is an allowlist entry and it needs a\n"
@@ -157,8 +155,7 @@ EDGE_CASES = [
 
 def run(ev):
     file_path = ev.field("tool_input", "file_path")
-    # `case "$FILE" in *.ts | ... ) ;; "") ;; *) exit 0 ;; esac`. No file_path
-    # at all still gets checked: a payload that names no file could be anything, and defaulting to "not code" would be a hole.
+    # `case "$FILE" in *.ts | ... ) ;; "") ;; *) exit 0 ;; esac`. No file_path at all still gets checked: a payload that names no file could be anything, and defaulting to "not code" would be a hole.
     if not (hookio.case_glob(file_path, *CODE_SUFFIXES) or file_path == ""):
         return hookio.ALLOW
 

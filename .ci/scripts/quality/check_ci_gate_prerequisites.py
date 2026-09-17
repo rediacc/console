@@ -81,8 +81,7 @@ _INTERPRETER_FILE_RE = re.compile(r"\b(?:node|bash|sh|python3?)\s+(\S+\.(?:m?js|
 def _needs_via_run_pattern(
     run_pattern: re.Pattern[str], file_pattern: re.Pattern[str] | None = None
 ) -> Callable[[str, int], bool]:
-    """Build a `needs(run)` predicate that resolves `npm run <key> [-w <ws>]`
-    through the right workspace's package.json, then one more hop into the resolved script FILE's own source if the command hands off to one.
+    """Build a `needs(run)` predicate that resolves `npm run <key> [-w <ws>]` through the right workspace's package.json, then one more hop into the resolved script FILE's own source if the command hands off to one.
 
     TWO PATTERNS ON PURPOSE. `run_pattern` matches shell COMMAND text and must stay anchored to command position (`echo agent-browser` in a run: block is prose, not an invocation -- the exact mention-vs-target shape check-toolchain-pins.sh's A6 rule already paid for). `file_pattern` matches arbitrary FILE SOURCE once resolution reaches one (a JS string literal argument to
     execFileSync is not at "command position" in any shell sense), so it is deliberately the looser of the two -- a stray comment mentioning the tool costs one over-suggested install step, which is a fix a reader dismisses at a glance; a missed real invocation is the defect class this whole file exists to catch. Defaults to `run_pattern` when a resource's shell and file shapes are

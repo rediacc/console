@@ -23,8 +23,7 @@ THREE REFUSALS ARE KEPT, and each is a different way this could go quiet:
      could catch. The count is read back from what actually ran; the floor only
      stops the probe collapsing to nothing.
 
-NO `xdist_group`. Both cases are one short-lived `npx tsx` subprocess reading two
-tracked files; nothing is written, nothing is bound, no module global is mutated.
+NO `xdist_group`. Both cases are one short-lived `npx tsx` subprocess reading two tracked files; nothing is written, nothing is bound, no module global is mutated.
 """
 
 from rediacc_ci import paths

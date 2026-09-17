@@ -12,8 +12,7 @@ THE PLANTS BELOW GO INTO A COPY OF THE REAL CORPUS, never the tracked file. A ki
 
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_real_tree_is_green_and_the_controls_fired` runs the subject seam-free, and every `--scan-only` case leaves the manifest, the dispatcher, the hook suite and `.claude/settings.json` REAL so a planted corpus is judged against live resolution sources. A battery step rewriting any of those
 mid-scan is a divergence that would be blamed on this port. `REAL_TREE_TWIN = True`
-buys the serialisation, and it is honoured only because this module declares no
-`XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
+buys the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
 NO `TWIN_TIMEOUT` DECLARED. Measured 2026-09-08: the twin takes 63s and this module takes comparable time, both far inside the 600s default. A declared timeout that nothing needs is a number that will be believed later.
 
@@ -211,8 +210,7 @@ def _drop_lines(text: str, exact: str) -> str:
 
 
 def test_a_missing_trap_id_is_caught(gate):
-    """F2: identity. An entry with no Trap-Id cannot be pointed at, deduplicated or
-    tracked, so the registry stops being a registry one entry at a time."""
+    """F2: identity. An entry with no Trap-Id cannot be pointed at, deduplicated or tracked, so the registry stops being a registry one entry at a time."""
     with harness.temp_dir() as d:
         plant(
             gate,
@@ -228,8 +226,7 @@ def test_a_missing_trap_id_is_caught(gate):
 
 
 def test_a_dangling_gate_pointer_is_caught(gate):
-    """F4: the pointer must RESOLVE, against the live manifest rather than against a
-    fixture's idea of one."""
+    """F4: the pointer must RESOLVE, against the live manifest rather than against a fixture's idea of one."""
     with harness.temp_dir() as d:
         plant(
             gate,
@@ -276,9 +273,7 @@ def test_a_scheduled_but_unrun_gate_is_caught(gate):
 
 
 def _drop_entry(text: str, marker: str) -> str:
-    """The twin's awk: drop every line of the `## ` section whose heading holds
-    `marker`, and keep everything else. Skipping resets at the next `## `, which is
-    what stops the deletion running to the end of the file."""
+    """The twin's awk: drop every line of the `## ` section whose heading holds `marker`, and keep everything else. Skipping resets at the next `## `, which is what stops the deletion running to the end of the file."""
     out = []
     skip = False
     for line in text.split("\n"):
@@ -290,9 +285,7 @@ def _drop_entry(text: str, marker: str) -> str:
 
 
 def test_a_deleted_entry_is_caught(gate):
-    """F1: the population floor. A corpus that is emptied, truncated or relocated
-    reds instead of passing vacuously -- which is the only signal an unratcheted floor ever gives, and the reason the subject's own comment records the two
-    occasions it was left behind."""
+    """F1: the population floor. A corpus that is emptied, truncated or relocated reds instead of passing vacuously -- which is the only signal an unratcheted floor ever gives, and the reason the subject's own comment records the two occasions it was left behind."""
     with harness.temp_dir() as d:
         plant(gate, d / "p.md", lambda text: _drop_entry(text, "git branch --merged"))
         result = scan_corpus(gate, d / "p.md")
@@ -302,8 +295,7 @@ def test_a_deleted_entry_is_caught(gate):
 
 
 def test_an_unchanged_copy_is_green(gate):
-    """THE CONVERSE. Without it every assertion above is satisfied by a gate that
-    reds on everything, including a correct corpus."""
+    """THE CONVERSE. Without it every assertion above is satisfied by a gate that reds on everything, including a correct corpus."""
     with harness.temp_dir() as d:
         (d / "clean.md").write_text(corpus_text(gate), encoding="utf-8")
         result = scan_corpus(gate, d / "clean.md")

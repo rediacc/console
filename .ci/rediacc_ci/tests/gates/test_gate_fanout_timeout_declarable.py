@@ -1,5 +1,4 @@
-"""A fan-out gate driver must let each subject declare its timeout, and must
-turn a timeout into a VERDICT rather than a traceback.
+"""A fan-out gate driver must let each subject declare its timeout, and must turn a timeout into a VERDICT rather than a traceback.
 
 THE DEFECT THIS EXISTS TO PREVENT FROM RETURNING, measured 2026-09-07. `test_twin_parity.py` discovers its subjects by glob -- 98 ported modules and
 climbing -- and drove every one of them under a hardcoded `timeout=600`, in two
@@ -21,9 +20,8 @@ THE CLASS, stated so membership is checkable rather than asserted. A module here
           TimeoutExpired`, or the one function wrapping it is itself only ever
           called from inside one.
 
-Rule B is deliberately ONE HOP and no further. The real shape it must accept is `test_twin_parity.run_port`, where the `subprocess.run` is in a helper and the
-`try` is at the helper's call site; a rule that only looked inside the function
-would flag the very code that fixed the bug. Chasing further than one hop needs a call graph this does not have, and that is a BLIND SPOT stated rather than papered over: a subject-runner buried two helpers deep would pass here.
+Rule B is deliberately ONE HOP and no further. The real shape it must accept is `test_twin_parity.run_port`, where the `subprocess.run` is in a helper and the `try` is at the helper's call site; a rule that only looked inside the function would flag the very code that fixed the bug. Chasing further than one hop needs a call graph this does not have, and that is a BLIND SPOT stated
+rather than papered over: a subject-runner buried two helpers deep would pass here.
 
 ANTI-VACUITY, both halves. An empty member set fails, because the day the glob stops matching is the day this silently guards nothing. And the analyser itself is exercised against synthetic sources that violate each rule, so a green here means the predicates can still discriminate -- not merely that nobody tripped them. The controls are in-memory strings, never a mutation of a
 tracked file.
@@ -169,8 +167,7 @@ def _module_level_discovered_names(tree: ast.Module) -> set[str]:
 def is_fanout_driver(source: str) -> bool:
     """Does this module DISCOVER its subjects at IMPORT TIME rather than list them?
 
-    IMPORT TIME IS THE WHOLE DISCRIMINATOR, and the looser reading cost a false positive on the first run of this gate. `test_gate_media_docs.py` globs `.ci/media/*.sh` and runs subprocesses with literal timeouts, so "has a glob and runs a subject" flagged it -- wrongly. Its globs are inside test bodies
-    and produce DATA (which media modules exist, for a coverage assertion); the
+    IMPORT TIME IS THE WHOLE DISCRIMINATOR, and the looser reading cost a false positive on the first run of this gate. `test_gate_media_docs.py` globs `.ci/media/*.sh` and runs subprocesses with literal timeouts, so "has a glob and runs a subject" flagged it -- wrongly. Its globs are inside test bodies and produce DATA (which media modules exist, for a coverage assertion); the
     things it actually runs are fixed module-level constants whose cost its author measured. Nothing there can grow behind the author's back, which is the only reason a literal timeout is ever a problem.
 
     So the rule is: a module-level name bound from a glob, referenced elsewhere in the module, in a module that runs a subject with a timeout. A hand-written tuple of subjects is out of class for the same reason.
@@ -348,8 +345,7 @@ def test_the_analyser_still_discriminates(gate):
     gate.assert_contains(loose[0], "RULE B", "and it is named as rule B")
     gate.ok("control: an unguarded subject runner is refused")
 
-    # THE SUBTLE ONE. `try` ancestry alone would call this guarded; it is not,
-    # because the call lives in the handler, which nothing protects.
+    # THE SUBTLE ONE. `try` ancestry alone would call this guarded; it is not, because the call lives in the handler, which nothing protects.
     handler = problems(_GUARDED_ONLY_IN_HANDLER)
     gate.assert_contains(
         " ".join(handler), "RULE B", "a runner inside the HANDLER is not protected by it"

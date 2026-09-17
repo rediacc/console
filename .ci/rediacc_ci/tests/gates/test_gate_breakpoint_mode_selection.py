@@ -75,9 +75,7 @@ def test_named_without_credentials_fails_hard(gate):
 
 
 def test_named_half_configured_still_fails(gate):
-    """Token present, account id missing is THE DANGEROUS SHAPE: it LOOKS configured to
-    a reader, and a script that only checked the token would proceed into a broken API
-    call and then "recover" into quick mode."""
+    """Token present, account id missing is THE DANGEROUS SHAPE: it LOOKS configured to a reader, and a script that only checked the token would proceed into a broken API call and then "recover" into quick mode."""
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, "--mode", "named", env=FAKE_TOKEN)
         gate.assert_exit_code(3, run.rc, "named mode with only a token must fail")
@@ -126,9 +124,7 @@ def test_quick_with_credentials_is_not_upgraded(gate):
 
 
 def test_default_is_quick_not_auto(gate):
-    """No `--mode` at all, with credentials present. If the default were `auto` this
-    would print `named`; the safe default is the one that needs no secrets and creates
-    no account-side state."""
+    """No `--mode` at all, with credentials present. If the default were `auto` this would print `named`; the safe default is the one that needs no secrets and creates no account-side state."""
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, env=FAKE_BOTH)
         gate.assert_exit_code(0, run.rc, "the no-flag default must succeed")
@@ -160,9 +156,7 @@ def test_auto_without_credentials_warns(gate):
 
 
 def test_repeated_mode_flag_is_last_wins(gate):
-    """`parse_args` eval-assigns the same variable name per flag, so repeats overwrite
-    rather than accumulate. Pinned so nobody later writes a script that expects
-    `--mode a --mode b` to mean "a and b" or to be an error."""
+    """`parse_args` eval-assigns the same variable name per flag, so repeats overwrite rather than accumulate. Pinned so nobody later writes a script that expects `--mode a --mode b` to mean "a and b" or to be an error."""
     with harness.temp_dir() as tmp:
         run = select_mode(gate, tmp, "--mode", "named", "--mode", "quick", env=FAKE_BOTH)
         gate.assert_exit_code(0, run.rc, "a repeated flag must not be an error")
@@ -231,10 +225,8 @@ def test_named_never_falls_back_to_quick(gate):
 
 
 def test_named_refuses_too_short_a_duration(gate):
-    """Regression test for a real session. Named mode fronts the box with Cloudflare
-    Access, whose one-time-PIN login is TWO email round trips. Teardown deletes the Access application the instant the timer expires, so run 30259141278 (duration 5) died mid-login and Cloudflare answered `That account does not have access.` -- which blames the policy, the one component that was correct. The operator went looking for a permissions bug that did not exist. This guard
-    turns a misleading runtime failure
-    into an accurate refusal before anything is built."""
+    """Regression test for a real session. Named mode fronts the box with Cloudflare Access, whose one-time-PIN login is TWO email round trips. Teardown deletes the Access application the instant the timer expires, so run 30259141278 (duration 5) died mid-login and Cloudflare answered `That account does not have access.` -- which blames the policy, the one component that was
+    correct. The operator went looking for a permissions bug that did not exist. This guard turns a misleading runtime failure into an accurate refusal before anything is built."""
     bash = harness.require_tool("bash", "install bash; the subject is a bash script")
 
     def run_pre(tmp, mode: str, duration: str) -> int:

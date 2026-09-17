@@ -123,9 +123,7 @@ def test_closed_pr_is_reaped(gate):
 
 
 def test_fails_closed_when_pr_list_unreadable(gate):
-    """By construction: the guard must RETURN before any delete. Assert on the
-    ORDERING, which is the property -- a warn that still falls through to a
-    delete reads identically in a diff."""
+    """By construction: the guard must RETURN before any delete. Assert on the ORDERING, which is the property -- a warn that still falls through to a delete reads identically in a diff."""
     body = phase_body(gate)
     guard_line = first_line_with(body, "SKIPPING Worker cleanup")
     delete_line = first_line_with(body, "cf_api DELETE")

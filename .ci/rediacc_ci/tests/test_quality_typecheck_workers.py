@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.quality.typecheck_workers` against its twin
-`.ci/scripts/quality/typecheck-workers.sh`.
+"""Differential: `rediacc_ci.quality.typecheck_workers` against its twin `.ci/scripts/quality/typecheck-workers.sh`.
 
 RECORDING FAKES FOR `npm` AND `npx` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches the npm registry and nothing runs a real TypeScript compiler: the two programs that would are the two the fakes model, and every other tool the twin reaches for (`find`, `sort`, `dirname`) is the real binary symlinked into the same scratch directory, because both sides call the same
 one.
@@ -10,8 +9,7 @@ THE FIXTURE HAS TWO WORKERS, NOT ONE, and they differ: `alpha` has a `package-lo
 
 `REDIACC_CI_ROOT` STEERS THE PORT, THE COPY STEERS THE TWIN. The twin derives
 its root from `${BASH_SOURCE[0]}/../../..`, so the copy inside the fixture makes
-it land on the fixture root; the port asks `rediacc_ci.paths`, which honours the
-variable. Both then `cd` there, which is why `cwd` for the subprocess is deliberately the fixture's PARENT: a side that did not chdir would find no `workers/` at all.
+it land on the fixture root; the port asks `rediacc_ci.paths`, which honours the variable. Both then `cd` there, which is why `cwd` for the subprocess is deliberately the fixture's PARENT: a side that did not chdir would find no `workers/` at all.
 """
 
 from __future__ import annotations
@@ -215,9 +213,7 @@ def test_default_run_installs_then_typechecks_every_worker_in_order(tmp_path) ->
 
 
 def test_list_prints_the_real_set_and_calls_nothing(tmp_path) -> None:
-    """`check-typecheck-scope-coverage.ts` reads this output as the authority on
-    which projects are covered, so `--list` must not install anything and must
-    print one path per line and nothing else."""
+    """`check-typecheck-scope-coverage.ts` reads this output as the authority on which projects are covered, so `--list` must not install anything and must print one path per line and nothing else."""
     _root, old, new = run_both(tmp_path, args=("--list",))
     _agree(old, new, "list")
 
@@ -228,8 +224,7 @@ def test_list_prints_the_real_set_and_calls_nothing(tmp_path) -> None:
 
 
 def test_install_stops_before_typechecking_and_says_so(tmp_path) -> None:
-    """`lint:unused` runs BEFORE the TypeScript step, so it asks for the trees
-    itself. The distinguishing evidence is the ABSENCE of any `npx tsc` call."""
+    """`lint:unused` runs BEFORE the TypeScript step, so it asks for the trees itself. The distinguishing evidence is the ABSENCE of any `npx tsc` call."""
     _root, old, new = run_both(tmp_path, args=("--install",))
     _agree(old, new, "install")
 
@@ -256,8 +251,7 @@ def test_zero_discovery_is_a_two_line_refusal_on_stderr_and_exit_1(tmp_path) -> 
 
 
 def test_an_empty_workers_directory_also_refuses(tmp_path) -> None:
-    """A `workers/` that exists and holds nothing is the same refusal WITHOUT
-    find's complaint, which proves the refusal is the guard's and not find's."""
+    """A `workers/` that exists and holds nothing is the same refusal WITHOUT find's complaint, which proves the refusal is the guard's and not find's."""
     _root, old, new = run_both(tmp_path, fixture_kw={"workers": ()})
     _agree(old, new, "empty-workers")
 
@@ -267,9 +261,7 @@ def test_an_empty_workers_directory_also_refuses(tmp_path) -> None:
 
 
 def test_the_refusal_precedes_list_so_list_can_never_print_an_empty_set(tmp_path) -> None:
-    """ORDER MATTERS HERE. The guard is above the `--list` arm in the twin, so a
-    coverage gate asking for the set gets a REFUSAL rather than zero lines and a green exit. A port that put the arm first would satisfy every other test in
-    this file."""
+    """ORDER MATTERS HERE. The guard is above the `--list` arm in the twin, so a coverage gate asking for the set gets a REFUSAL rather than zero lines and a green exit. A port that put the arm first would satisfy every other test in this file."""
     _root, old, new = run_both(tmp_path, fixture_kw={"workers": ()}, args=("--list",))
     _agree(old, new, "list-refusal")
 
@@ -304,8 +296,7 @@ def test_a_failing_tsc_ends_the_run_with_tscs_own_status(tmp_path) -> None:
 
 
 def test_a_failing_npm_under_install_only_still_stops_the_run(tmp_path) -> None:
-    """`--install` is the `lint:unused` entry point, so a registry outage there
-    must be a red step rather than a quiet skip into knip."""
+    """`--install` is the `lint:unused` entry point, so a registry outage there must be a red step rather than a quiet skip into knip."""
     _root, old, new = run_both(tmp_path, args=("--install",), FAKE_FAIL="npm install=99")
     _agree(old, new, "install-fails")
 
@@ -318,9 +309,7 @@ def test_a_failing_npm_under_install_only_still_stops_the_run(tmp_path) -> None:
 
 
 def test_defect_a_an_unknown_argument_is_silently_a_full_run(tmp_path) -> None:
-    """`--isntall` is one letter from `--install` and does the OPPOSITE of what
-    the caller asked: a full typecheck instead of an install-only pass. The twin
-    has no `*)` arm, so there is nothing to report it."""
+    """`--isntall` is one letter from `--install` and does the OPPOSITE of what the caller asked: a full typecheck instead of an install-only pass. The twin has no `*)` arm, so there is nothing to report it."""
     assert port.AN_UNKNOWN_ARGUMENT_IS_A_FULL_RUN
     _root, old, new = run_both(tmp_path, args=("--isntall",))
     _agree(old, new, "unknown-arg")
@@ -334,8 +323,7 @@ def test_defect_a_an_unknown_argument_is_silently_a_full_run(tmp_path) -> None:
 
 
 def test_defect_a_holds_for_help_too(tmp_path) -> None:
-    """`--help` is the one an operator is most likely to type, and it installs
-    and typechecks the whole estate instead of printing usage."""
+    """`--help` is the one an operator is most likely to type, and it installs and typechecks the whole estate instead of printing usage."""
     _root, old, new = run_both(tmp_path, args=("--help",))
     _agree(old, new, "help")
 
@@ -345,8 +333,7 @@ def test_defect_a_holds_for_help_too(tmp_path) -> None:
 
 
 def test_defect_b_a_partial_find_failure_is_a_smaller_green_run(tmp_path) -> None:
-    """A REAL UNREADABLE DIRECTORY, not a fake `find`. `workers/beta` is chmod
-    000, so the real `find` prints its complaint, lists `alpha` anyway and exits
+    """A REAL UNREADABLE DIRECTORY, not a fake `find`. `workers/beta` is chmod 000, so the real `find` prints its complaint, lists `alpha` anyway and exits
     1. Both sides discard that status, report ONE project and exit 0, so the
     count in the success line is the only trace and nothing compares it to anything.
 
@@ -384,9 +371,7 @@ def test_defect_b_a_partial_find_failure_is_a_smaller_green_run(tmp_path) -> Non
 
 
 def test_defect_c_a_present_but_empty_node_modules_is_never_refreshed(tmp_path) -> None:
-    """The guard is `[ ! -d "$dir/node_modules" ]`, an EXISTENCE test. An empty
-    directory is indistinguishable from a complete install, which is exactly the
-    state the twin's own comment says breaks knip."""
+    """The guard is `[ ! -d "$dir/node_modules" ]`, an EXISTENCE test. An empty directory is indistinguishable from a complete install, which is exactly the state the twin's own comment says breaks knip."""
     assert port.A_PRESENT_BUT_STALE_NODE_MODULES_IS_NEVER_REFRESHED
     _root, old, new = run_both(
         tmp_path,
@@ -464,18 +449,14 @@ def test_the_port_does_not_carry_a_second_copy_of_the_gate_header() -> None:
 
 
 def test_the_port_reads_no_environment_variable_of_its_own() -> None:
-    """Every input is a positional argument or the filesystem. The only
-    environment this module is sensitive to is `$REDIACC_CI_ROOT`, and that is read inside `rediacc_ci.paths`, which already declares it. A future edit that reaches for `os.environ` here owes an env-registry entry, and this is the
-    line that will say so."""
+    """Every input is a positional argument or the filesystem. The only environment this module is sensitive to is `$REDIACC_CI_ROOT`, and that is read inside `rediacc_ci.paths`, which already declares it. A future edit that reaches for `os.environ` here owes an env-registry entry, and this is the line that will say so."""
     source = PORT_FILE.read_text(encoding="utf-8")
     body = source.split('"""', 2)[2]
     assert "os.environ" not in body
 
 
 def test_the_twin_still_says_what_this_port_says_it_says() -> None:
-    """A STALENESS GUARD, quoting the twin. Each of these is a line the port
-    reproduces; if one moves, the port's claim to be a port needs re-checking
-    rather than the assertion needs relaxing."""
+    """A STALENESS GUARD, quoting the twin. Each of these is a line the port reproduces; if one moves, the port's claim to be a port needs re-checking rather than the assertion needs relaxing."""
     text = TWIN.read_text(encoding="utf-8")
     assert "find workers -maxdepth 2 -name tsconfig.json -type f | sort" in text
     assert 'if [ ! -d "$dir/node_modules" ]; then' in text
@@ -487,8 +468,6 @@ def test_the_twin_still_says_what_this_port_says_it_says() -> None:
 
 
 def test_the_helpers_the_selftest_leans_on_are_exported() -> None:
-    """The pure helpers are module-level functions, not closures, so this file
-    can drive them without shelling out. Asserted rather than assumed, because a refactor that hid one inside `main` would silently reduce this suite to
-    subprocess tests only."""
+    """The pure helpers are module-level functions, not closures, so this file can drive them without shelling out. Asserted rather than assumed, because a refactor that hid one inside `main` would silently reduce this suite to subprocess tests only."""
     for name in ("read_configs", "dirname", "npm_argv", "tsc_argv", "discover"):
         assert inspect.isfunction(getattr(port, name)), name

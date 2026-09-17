@@ -69,8 +69,7 @@ def test_safe_default_extraction_matches_bash(
 
 
 def test_the_compose_table_exercises_both_directions(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY. A safe-default extractor that always returned nothing, or
-    always everything, would satisfy a one-sided table."""
+    """ANTI-VACUITY. A safe-default extractor that always returned nothing, or always everything, would satisfy a one-sided table."""
     empty = []
     nonempty = []
     for why, content in COMPOSE_CASES:
@@ -141,8 +140,7 @@ def test_zero_references_is_a_refusal(tmp_path: pathlib.Path, monkeypatch) -> No
 
 
 def test_a_persisted_reference_passes(tmp_path: pathlib.Path, monkeypatch) -> None:
-    """The mirror. Without it the refusal above could be a gate that refuses
-    everything."""
+    """The mirror. Without it the refusal above could be a gate that refuses everything."""
     (tmp_path / ".ci/docker/ci").mkdir(parents=True)
     (tmp_path / ".ci/docker/ci/docker-compose.yml").write_text("a: ${ONE}\n", encoding="utf-8")
     (tmp_path / ".ci/scripts/infra").mkdir(parents=True)

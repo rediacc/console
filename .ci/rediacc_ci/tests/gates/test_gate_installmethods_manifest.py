@@ -216,8 +216,7 @@ def test_a_failed_fetch_fails(gate, tmp_path):
 
 
 def test_no_channel_skips_visibly(gate, tmp_path):
-    """With no channel the URL would be .../cli//manifest.json, a path that names
-    nothing. 77 is the skip code run_test reports as SKIP; it must not be 0."""
+    """With no channel the URL would be .../cli//manifest.json, a path that names nothing. 77 is the skip code run_test reports as SKIP; it must not be 0."""
     fx = Fixture(gate, tmp_path)
     fx.manifest_file.write_text(GOOD, encoding="utf-8")
     result = fx.run(

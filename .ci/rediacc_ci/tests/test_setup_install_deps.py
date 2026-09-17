@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.setup.install_deps` against its twin
-`.ci/scripts/setup/install-deps.sh`.
+"""Differential: `rediacc_ci.setup.install_deps` against its twin `.ci/scripts/setup/install-deps.sh`.
 
 NOTHING HERE RUNS A REAL `npm ci`. A recording fake `npm` sits on a scratch PATH, logs its exact argv AND the directory it was called in, echoes the same under a `call: ` prefix, and exits with whatever the environment tells it to. The one thing this script does is decide which `npm` runs where and with which flags, so the CALL LOG is the primary evidence and the two streams are
 the secondary.
@@ -20,9 +19,7 @@ Both fakes write the SAME `sleep\\t<seconds>` line into the same call log, so th
 case would cost 30 real seconds per side; with them the schedule itself is an
 assertion (`10` then `20`, never a third).
 
-THE LEDGER LINE. `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is ever consulted, and this script reports almost entirely through `log_step`/`log_info`. The fake's `call: npm [...] ...`
-line on stdout is what gives the shadow ledger something to compare; see
-`.ci/shadow/w7p6-install-deps.observations.jsonl`.
+THE LEDGER LINE. `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is ever consulted, and this script reports almost entirely through `log_step`/`log_info`. The fake's `call: npm [...] ...` line on stdout is what gives the shadow ledger something to compare; see `.ci/shadow/w7p6-install-deps.observations.jsonl`.
 """
 
 from __future__ import annotations
@@ -91,8 +88,7 @@ FAKE_SLEEP = """#!/bin/sh
 printf 'sleep\\t%s\\n' "$1" >> "$FAKE_CALL_LOG"
 """
 
-# `-s` is the only question `detect_os` asks; everything else is handed to the
-# real binary so `detect_arch`'s `uname -m` still answers truthfully on both sides. NOT logged: OS detection is a query, not an effect, and logging it would need a matching hook on the Python side for no gain.
+# `-s` is the only question `detect_os` asks; everything else is handed to the real binary so `detect_arch`'s `uname -m` still answers truthfully on both sides. NOT logged: OS detection is a query, not an effect, and logging it would need a matching hook on the Python side for no gain.
 FAKE_UNAME = """#!/bin/sh
 if [ "$1" = "-s" ]; then
     printf '%s\\n' "${{FAKE_UNAME_S:-Linux}}"
@@ -247,8 +243,7 @@ ACCOUNT_ALL = ("private/account", "private/account/web", "private/account/e2e")
 
 
 def test_the_bare_run_is_one_npm_ci_at_the_root(tmp_path: pathlib.Path) -> None:
-    """PINNED AGAINST LITERAL BYTES rather than against the port's own constants,
-    so a change made in BOTH implementations is still caught."""
+    """PINNED AGAINST LITERAL BYTES rather than against the port's own constants, so a change made in BOTH implementations is still caught."""
     old, new, old_calls, new_calls = run_both(tmp_path, [])
     assert old.returncode == 0
     assert old_calls == ["npm\t.\tci"]
@@ -270,9 +265,7 @@ def test_ignore_scripts_adds_the_flag_and_announces_it(tmp_path: pathlib.Path) -
 
 def test_windows_adds_the_flag_with_no_argument_at_all(tmp_path: pathlib.Path) -> None:
     """`CI_OS == "windows"` is the other half of the `||` at install-deps.sh:50.
-    The twin reads it from `uname -s` at source time; the port from
-    `platform.system()`. Both are faked to `MINGW64_NT-10.0`, which is one of the
-    three prefixes `detect_os` maps to `windows`."""
+    The twin reads it from `uname -s` at source time; the port from `platform.system()`. Both are faked to `MINGW64_NT-10.0`, which is one of the three prefixes `detect_os` maps to `windows`."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_UNAME_S="MINGW64_NT-10.0-19045")
     assert old_calls == ["npm\t.\tci\t--ignore-scripts"]
     assert "✓ Using --ignore-scripts flag\n" in old.stderr
@@ -280,9 +273,7 @@ def test_windows_adds_the_flag_with_no_argument_at_all(tmp_path: pathlib.Path) -
 
 
 def test_darwin_does_not_add_the_flag(tmp_path: pathlib.Path) -> None:
-    """THE NEGATIVE CONTROL for the platform branch. A gate with only positive
-    controls will happily flag the whole tree, and a port that answered
-    `windows` for everything would pass every test above."""
+    """THE NEGATIVE CONTROL for the platform branch. A gate with only positive controls will happily flag the whole tree, and a port that answered `windows` for everything would pass every test above."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_UNAME_S="Darwin")
     assert old_calls == ["npm\t.\tci"]
     assert "--ignore-scripts" not in old.stderr
@@ -290,8 +281,7 @@ def test_darwin_does_not_add_the_flag(tmp_path: pathlib.Path) -> None:
 
 
 def test_an_unrecognised_flag_is_ignored_in_silence(tmp_path: pathlib.Path) -> None:
-    """Fact 4. The `case` has no `*)` arm, so `--ignore-script` (singular, a
-    plausible typo) neither warns nor adds the flag it looks like."""
+    """Fact 4. The `case` has no `*)` arm, so `--ignore-script` (singular, a plausible typo) neither warns nor adds the flag it looks like."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--ignore-script", "extra"])
     assert old.returncode == 0
     assert old_calls == ["npm\t.\tci"]
@@ -304,9 +294,7 @@ def test_an_unrecognised_flag_is_ignored_in_silence(tmp_path: pathlib.Path) -> N
 def test_a_failing_npm_retries_three_times_on_the_10_20_schedule(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THREE ATTEMPTS AND TWO SLEEPS, never three: `common.sh:225` sleeps only
-    when another attempt is coming. Both error lines are asserted, in order -- the helper's `Command failed after 3 attempts` and then the caller's `Failed to install dependencies after retries`. A port that printed only the
-    caller's would lose the attempt count."""
+    """THREE ATTEMPTS AND TWO SLEEPS, never three: `common.sh:225` sleeps only when another attempt is coming. Both error lines are asserted, in order -- the helper's `Command failed after 3 attempts` and then the caller's `Failed to install dependencies after retries`. A port that printed only the caller's would lose the attempt count."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_NPM_RC="1")
     assert old.returncode == 1
     assert old_calls == [
@@ -329,14 +317,10 @@ def test_a_failing_npm_retries_three_times_on_the_10_20_schedule(
 def test_a_127_from_a_missing_npm_is_retried_like_any_other_failure(
     tmp_path: pathlib.Path,
 ) -> None:
-    """Fact 5: there is no `require_cmd npm`, so an absent binary spends 30
-    seconds of backoff and then reports a registry-shaped message. Driven by dropping `npm` from the stub PATH entirely.
+    """Fact 5: there is no `require_cmd npm`, so an absent binary spends 30 seconds of backoff and then reports a registry-shaped message. Driven by dropping `npm` from the stub PATH entirely.
 
-    THE ONE DIVERGENCE IN THE WHOLE PAIR IS PINNED HERE, AS A PREFIX. Bash writes
-    `<script>: line 60: npm: command not found`; the port writes
-    `npm: command not found`. The prefix names a bash file and a line number that do not exist on the Python side, so it is stripped from the twin's bytes and the REMAINDER is required to match exactly -- three occurrences, in the same positions, interleaved with the same warn lines. Asserting equality of the stripped text rather than a substring is what stops this test from
-    passing if
-    the port ever went silent on the missing-binary path."""
+    THE ONE DIVERGENCE IN THE WHOLE PAIR IS PINNED HERE, AS A PREFIX. Bash writes `<script>: line 60: npm: command not found`; the port writes `npm: command not found`. The prefix names a bash file and a line number that do not exist on the Python side, so it is stripped from the twin's bytes and the REMAINDER is required to match exactly -- three occurrences, in the same
+    positions, interleaved with the same warn lines. Asserting equality of the stripped text rather than a substring is what stops this test from passing if the port ever went silent on the missing-binary path."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], drop="npm")
     assert old.returncode == 1
     assert [c for c in old_calls if c.startswith("sleep")] == ["sleep\t10", "sleep\t20"]
@@ -354,9 +338,7 @@ def test_a_127_from_a_missing_npm_is_retried_like_any_other_failure(
 
 
 def test_npm_succeeding_without_node_modules_is_refused(tmp_path: pathlib.Path) -> None:
-    """The ONE anti-vacuity check in the script (install-deps.sh:68-72), and the
-    only place it refuses a green. `npm ci` exits 0, the directory is absent, the
-    script stops with exit 1."""
+    """The ONE anti-vacuity check in the script (install-deps.sh:68-72), and the only place it refuses a green. `npm ci` exits 0, the directory is absent, the script stops with exit 1."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], node_modules=False)
     assert old.returncode == 1
     assert old.stderr.endswith("✗ node_modules directory not created\n")
@@ -381,9 +363,7 @@ def test_all_three_account_trees_are_installed_in_order(tmp_path: pathlib.Path) 
 
 
 def test_the_account_trees_never_receive_ignore_scripts(tmp_path: pathlib.Path) -> None:
-    """FACT 1, THE ONE THAT MATTERS. The flag exists, per the twin's own header,
-    to avoid native-module rebuilds on Windows -- and `run_account_ci` is a bare `npm ci`, so the three account trees run their lifecycle scripts on exactly the platform the flag was added for. Asserted under BOTH triggers at once: an
-    explicit `--ignore-scripts` and a Windows `uname`."""
+    """FACT 1, THE ONE THAT MATTERS. The flag exists, per the twin's own header, to avoid native-module rebuilds on Windows -- and `run_account_ci` is a bare `npm ci`, so the three account trees run their lifecycle scripts on exactly the platform the flag was added for. Asserted under BOTH triggers at once: an explicit `--ignore-scripts` and a Windows `uname`."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--ignore-scripts"],
@@ -429,9 +409,7 @@ def test_skip_account_leaves_a_present_submodule_alone(tmp_path: pathlib.Path) -
 def test_account_only_skips_the_root_and_its_node_modules_check(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`node_modules` is deliberately ABSENT here. The check at
-    install-deps.sh:68 lives inside the `WANT_ROOT` guard, so `--account-only` never asks -- which is right, and is also the reason nothing verifies the
-    account trees produced anything either."""
+    """`node_modules` is deliberately ABSENT here. The check at install-deps.sh:68 lives inside the `WANT_ROOT` guard, so `--account-only` never asks -- which is right, and is also the reason nothing verifies the account trees produced anything either."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--account-only"], accounts=ACCOUNT_ALL, node_modules=False
     )
@@ -448,9 +426,7 @@ def test_account_only_skips_the_root_and_its_node_modules_check(
 def test_account_only_still_announces_the_ignore_scripts_flag(
     tmp_path: pathlib.Path,
 ) -> None:
-    """Fact 2. The `log_info` sits OUTSIDE the `WANT_ROOT` guard, so a run that
-    executes no root install still says it is using a flag it will not pass to
-    anything."""
+    """Fact 2. The `log_info` sits OUTSIDE the `WANT_ROOT` guard, so a run that executes no root install still says it is using a flag it will not pass to anything."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--account-only", "--ignore-scripts"], accounts=("private/account",)
     )
@@ -460,8 +436,7 @@ def test_account_only_still_announces_the_ignore_scripts_flag(
 
 
 def test_a_failing_account_install_names_the_directory(tmp_path: pathlib.Path) -> None:
-    """The loop stops at the FIRST failure, so `e2e` is never attempted and the
-    message names `private/account/web`."""
+    """The loop stops at the FIRST failure, so `e2e` is never attempted and the message names `private/account/web`."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         [],
@@ -491,12 +466,9 @@ def test_a_failing_account_install_names_the_directory(tmp_path: pathlib.Path) -
 def test_both_halves_switched_off_still_reports_npm_install_complete(
     tmp_path: pathlib.Path,
 ) -> None:
-    """FACT 3, THE VACUITY. `--account-only --skip-account` disables the root half
-    by flag and the account half by flag; no file test is involved and no
-    subprocess runs. The script prints `npm install complete` and exits 0.
+    """FACT 3, THE VACUITY. `--account-only --skip-account` disables the root half by flag and the account half by flag; no file test is involved and no subprocess runs. The script prints `npm install complete` and exits 0.
 
-    THE CALL LOG BEING EMPTY IS THE ASSERTION. Nothing in the script counts installs, so there is no number in the output a reader could notice
-    collapsing -- which is why the emptiness has to be asserted from outside."""
+    THE CALL LOG BEING EMPTY IS THE ASSERTION. Nothing in the script counts installs, so there is no number in the output a reader could notice collapsing -- which is why the emptiness has to be asserted from outside."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--account-only", "--skip-account"],
@@ -513,8 +485,7 @@ def test_both_halves_switched_off_still_reports_npm_install_complete(
 def test_account_only_with_no_submodule_also_installs_nothing(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The same vacuity reached by a FILE TEST rather than by a second flag, which
-    is the shape a real CI job hits on a checkout without the private submodule."""
+    """The same vacuity reached by a FILE TEST rather than by a second flag, which is the shape a real CI job hits on a checkout without the private submodule."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--account-only"], accounts=(), node_modules=False
     )

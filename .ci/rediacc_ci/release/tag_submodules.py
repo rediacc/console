@@ -65,9 +65,7 @@ def is_initialized(sub: str) -> bool:
 
 
 def _say(line: str) -> None:
-    """stdout, flushed. Flushed because the very next thing is usually a
-    subprocess writing to the same fd directly; without it the workflow log
-    shows git's output before the notice that explains it."""
+    """stdout, flushed. Flushed because the very next thing is usually a subprocess writing to the same fd directly; without it the workflow log shows git's output before the notice that explains it."""
     print(line)
     sys.stdout.flush()
 

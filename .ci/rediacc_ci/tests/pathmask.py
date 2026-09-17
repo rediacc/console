@@ -39,8 +39,7 @@ def path_without(tool: str, scratch: pathlib.Path, base: str | None = None) -> s
             continue
         directory = pathlib.Path(entry)
         candidate = directory / tool
-        # `exists()` follows symlinks, which is what PATH resolution does too; a
-        # dangling link is not a command and does not need masking.
+        # `exists()` follows symlinks, which is what PATH resolution does too; a dangling link is not a command and does not need masking.
         if not candidate.exists():
             out.append(entry)
             continue

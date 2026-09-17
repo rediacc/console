@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.release.cleanup_channel_docker_tags` against its
-twin `.ci/scripts/release/cleanup-channel-docker-tags.sh`.
+"""Differential: `rediacc_ci.release.cleanup_channel_docker_tags` against its twin `.ci/scripts/release/cleanup-channel-docker-tags.sh`.
 
 NEITHER SIDE RUNS IN THIS CHECKOUT. The twin resolves the deleter as `$SCRIPT_DIR/../docker/cleanup_staging.py` (agent/PLAN-w7p4w-docker-cutover.md Stage 5 cut the twin's own call site from `cleanup-staging.sh` over to this Python entry point; the fixture below tracks that, not the pre-cutover name),
 with no override hook, and that script talks to GHCR through `gh api --method
@@ -204,8 +203,7 @@ def test_stable_takes_the_same_branch(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_bare_staging_without_the_dash_is_still_rejected(tmp_path: pathlib.Path) -> None:
-    """`^staging-` includes the hyphen. A prefix test that dropped it would let
-    a tag literally named `staging` through to the deleter."""
+    """`^staging-` includes the hyphen. A prefix test that dropped it would let a tag literally named `staging` through to the deleter."""
     old, new = run_both(tmp_path, CHANNEL="staging")
     assert old[3] == []
     assert "**Channel tag NOT cleaned up:** staging" in old[4]

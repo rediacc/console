@@ -7,9 +7,7 @@ rewrite-every-time met three live sessions in one checkout and a session obeying
 
 A shape-only shell guard cannot enforce merge semantics. A whole-file Write can be perfectly shaped and still delete every peer's section -- exactly as thoroughly as the old CLI did -- so a guard that measured its LENGTH was waving through the only defect that matters. Only the CLI can merge, so the CLI is the only writer.
 
-The escape hatches that matter survive: restoring a backup is `cp` in Bash, and worklist.py is a script anyone can run. The residual is a Bash heredoc
-straight onto the path, which no PreToolUse hook can see; that is handled by
-the unowned-section rule in wl_store.agent_state_parse and the timestamp fallback in agent_state_state, rather than pretended away.
+The escape hatches that matter survive: restoring a backup is `cp` in Bash, and worklist.py is a script anyone can run. The residual is a Bash heredoc straight onto the path, which no PreToolUse hook can see; that is handled by the unowned-section rule in wl_store.agent_state_parse and the timestamp fallback in agent_state_state, rather than pretended away.
 
 RULES.md and TRAPS.md are deliberately untouched: RULES.md is sharpened by normal edits, TRAPS.md is appended by hand, and neither has a shape gate.
 
@@ -19,9 +17,8 @@ ordinary word this repo uses in `docs/agent/`, `.claude/agents/` and agent sourc
 
 The regex is segment-aware: `agent` (or the legacy `.agent`) must start a path component, and STATE.md must sit exactly one or two components below it. ONE component is the live shape as of 2026-08-18: agent/<session>/STATE.md,
 with no branch in the path. TWO is kept deliberately, because both retired
-shapes had one -- agent/<branch>/<session>/STATE.md before the branch left, and .agent/<branch>/STATE.md before the split -- and a session running stale instructions writes the old path, not a nonexistent one. Blocking a dead
-shape costs one message; waving it through writes a document nothing reads.
-The docs trees are excluded outright: standing prose lives in docs/agent-reference/ and docs/agent/ is what it was called before, and neither is this hook's business.
+shapes had one -- agent/<branch>/<session>/STATE.md before the branch left, and .agent/<branch>/STATE.md before the split -- and a session running stale instructions writes the old path, not a nonexistent one. Blocking a dead shape costs one message; waving it through writes a document nothing reads. The docs trees are excluded outright: standing prose lives in
+docs/agent-reference/ and docs/agent/ is what it was called before, and neither is this hook's business.
 
 NAMED RESIDUAL: an unrelated `<something>/agent/<x>/<y>/STATE.md` in some other tree is denied too, because the payload carries a path and no repo root, and anchoring on CLAUDE_PROJECT_DIR would silently stop guarding every
 SUBMODULE's own agent/ tree. Denying a write nobody makes costs one message;

@@ -82,8 +82,7 @@ SUMMARY_RE = re.compile(r"^(\d+) gates?: ", re.MULTILINE)
 class Run:
     """`RC`, `OUT` and `ERR` from the twin, as one object.
 
-    The twin keeps the two streams in SEPARATE FILES and case 2 asserts on the
-    split; nothing here merges them either, for the same reason.
+    The twin keeps the two streams in SEPARATE FILES and case 2 asserts on the split; nothing here merges them either, for the same reason.
     """
 
     def __init__(self, result: harness.RunResult) -> None:
@@ -95,8 +94,7 @@ class Run:
 def require_runner(gate) -> str:
     """tsx and the runner, proved present before anything is claimed.
 
-    A MISSING TOOL IS A LOUD FAILURE CARRYING THE FIX, not a stack trace that reads as flake and not a skip. The twin does the same two checks at file
-    scope; here they are per-case so one missing binary names itself in every
+    A MISSING TOOL IS A LOUD FAILURE CARRYING THE FIX, not a stack trace that reads as flake and not a skip. The twin does the same two checks at file scope; here they are per-case so one missing binary names itself in every
     case rather than aborting collection.
     """
     if not os.access(TSX, os.X_OK):
@@ -373,9 +371,8 @@ def test_mutex_serialises(gate):
 
 
 def test_reads_shares_and_excludes(gate):
-    """The OTHER claim strength. `reads` is the shared half of the isolation
-    contract defined in pool.ts: any number of readers of a resource may overlap, none may overlap a writer of it. Case 4 above proves the exclusive half and would stay green if `reads` were ignored entirely, or if it were treated as a second exclusive group -- and those two mistakes fail in opposite directions, one losing the isolation and one serialising twenty-one read-only
-    tests for nothing. Both have to be observed, so both are asserted here.
+    """The OTHER claim strength. `reads` is the shared half of the isolation contract defined in pool.ts: any number of readers of a resource may overlap, none may overlap a writer of it. Case 4 above proves the exclusive half and would stay green if `reads` were ignored entirely, or if it were treated as a second exclusive group -- and those two mistakes fail in opposite
+    directions, one losing the isolation and one serialising twenty-one read-only tests for nothing. Both have to be observed, so both are asserted here.
 
     WHY IT MATTERS BEYOND THE SCHEDULER. Until 2026-09-06 the two schedulers over the gate-test battery decided isolation separately: .ci/scripts/test/run-all.sh carried hand-maintained W/S name lists while the manifest declared nothing, so `npm run ci` ran the three real-tree writers concurrently with the scanners that enumerate the same directories. run-all.sh now derives its
     sets
@@ -646,9 +643,7 @@ def test_json_matches_what_was_printed(gate):
 
 
 def test_selftest_is_wired_into_the_npm_key(gate):
-    """The control has to run on every real invocation. A --selftest that sits
-    behind a flag nothing passes is the exact failure check-gate-reachability
-    recorded for check-i18n-cross-locale, which shipped broken for months."""
+    """The control has to run on every real invocation. A --selftest that sits behind a flag nothing passes is the exact failure check-gate-reachability recorded for check-i18n-cross-locale, which shipped broken for months."""
     tsx = require_runner(gate)
     pkg = paths.from_root("package.json")
     if not pkg.is_file():
@@ -665,9 +660,7 @@ def test_selftest_is_wired_into_the_npm_key(gate):
 
 
 def test_missing_tool_fails_loudly(gate):
-    """A gate whose tool does not resolve must FAIL, never pass quietly. This is
-    not hypothetical: during this work an `npx biome` in a directory with no node_modules link exited 0 on a deliberately misformatted file, and the green came from a tool that never really ran. A runner that swallowed a 127
-    would turn that class of accident into a green CI report."""
+    """A gate whose tool does not resolve must FAIL, never pass quietly. This is not hypothetical: during this work an `npx biome` in a directory with no node_modules link exited 0 on a deliberately misformatted file, and the green came from a tool that never really ran. A runner that swallowed a 127 would turn that class of accident into a green CI report."""
     with harness.temp_dir() as work:
         mf = manifest(
             gate,

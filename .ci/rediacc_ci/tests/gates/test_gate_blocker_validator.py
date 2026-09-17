@@ -177,8 +177,7 @@ def test_validate_accepts_substantive_reason(gate):
 
 
 def test_validate_rejects_deferral_phrasing(gate):
-    """Routine-deferral phrasing is substring-matched, so it is rejected even when
-    the reason is long and not an exact low-effort phrase. This is the guardrail against blocklisting installable routine bumps "to keep this merge focused".
+    """Routine-deferral phrasing is substring-matched, so it is rejected even when the reason is long and not an exact low-effort phrase. This is the guardrail against blocklisting installable routine bumps "to keep this merge focused".
     """
     kick = (
         (
@@ -213,8 +212,7 @@ def test_validate_rejects_deferral_phrasing(gate):
 
 
 def test_validate_accepts_all_current_audit_entries(gate):
-    """Sanity check: every BLOCKER reason in the currently-shipped allowlists must
-    pass the quality gate. This catches regressions in BLOCKER_MIN_LENGTH or new banned phrases that collide with legitimate reasons.
+    """Sanity check: every BLOCKER reason in the currently-shipped allowlists must pass the quality gate. This catches regressions in BLOCKER_MIN_LENGTH or new banned phrases that collide with legitimate reasons.
     """
     checked = 0
     seen_files = 0

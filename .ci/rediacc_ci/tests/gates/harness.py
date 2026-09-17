@@ -292,8 +292,7 @@ class Harness:
         return "%s %s" % (word, text)
 
     def log_pass(self, message: str) -> None:
-        """A control PASSED. This is the line `run-all.sh` counts, so it is the
-        line the anti-vacuity refusal counts too."""
+        """A control PASSED. This is the line `run-all.sh` counts, so it is the line the anti-vacuity refusal counts too."""
         self.passes.append(message)
         self._record("pass", message)
         print(self._paint(GREEN, "PASS:", message))
@@ -335,8 +334,7 @@ class Harness:
             )
 
     def assert_exit_code(self, expected: int, actual: int, msg: str = "") -> None:
-        """`assert_exit_code <expected> <actual>`. EXPECTED FIRST -- the opposite
-        of `assert_eq`, and it is that way in bash. Normalising the two would flip the meaning of every existing call site silently, which is worse than the inconsistency.
+        """`assert_exit_code <expected> <actual>`. EXPECTED FIRST -- the opposite of `assert_eq`, and it is that way in bash. Normalising the two would flip the meaning of every existing call site silently, which is worse than the inconsistency.
 
         A SIGNAL IS NAMED, NOT LEFT AS A NUMBER. `got 143` reads as a verdict the subject chose and sends the reader looking for the branch that returned it; there is no such branch, because 143 is 128+15 and something killed it. This helper is used across the whole gate-test estate, so the naming belongs here rather than at each call site.
         """

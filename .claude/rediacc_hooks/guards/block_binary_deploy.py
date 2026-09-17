@@ -12,10 +12,8 @@ PORT NOTE ON THE LOOP THE BASH HAD TO GET RIGHT TWICE. The original's second arm
 
     while IFS= read -r clause; do ... done <<<"$(printf '%s' "$CMD" | tr ';&|' '\\n\\n\\n')"
 
-and its comment records both mistakes in one line. Piping put the loop in a
-subshell where `exit 2` could not leave the script; and `printf '%s'` gave the
-clauses no trailing newline, so `read` returned non-zero on the only line and the body never ran at all -- the guard reported every upload as ALLOWED while its block case went green on a no-op. Neither hazard exists in Python, so the prose above is the only surviving record of them, which is exactly what section 5c of the driver contract is about. What DOES survive as behaviour is
-the here-string's newline: `<<<` terminates its subject, so a command with no trailing newline still yields one final clause. `_here_string` supplies it.
+and its comment records both mistakes in one line. Piping put the loop in a subshell where `exit 2` could not leave the script; and `printf '%s'` gave the clauses no trailing newline, so `read` returned non-zero on the only line and the body never ran at all -- the guard reported every upload as ALLOWED while its block case went green on a no-op. Neither hazard exists in Python, so
+the prose above is the only surviving record of them, which is exactly what section 5c of the driver contract is about. What DOES survive as behaviour is the here-string's newline: `<<<` terminates its subject, so a command with no trailing newline still yields one final clause. `_here_string` supplies it.
 """
 
 from rediacc_hooks import hookio
@@ -70,8 +68,7 @@ def run(ev):
         ev.warn(MESSAGE)
         return hookio.DENY
 
-    # Each scp clause, judged by where it is sending things. `tr ';&|' '\n\n\n'`
-    # is a byte map, not a split: the separator becomes a newline, so a clause never carries the character that ended it.
+    # Each scp clause, judged by where it is sending things. `tr ';&|' '\n\n\n'` is a byte map, not a split: the separator becomes a newline, so a clause never carries the character that ended it.
     clauses = cmd
     for sep in ";&|":
         clauses = hookio._tr(clauses, sep, "\n")

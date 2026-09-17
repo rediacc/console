@@ -8,8 +8,7 @@ ANCHORED TO LINE START, deliberately. The sibling guard block-commit-meta.sh sta
 stops complaining. A commit whose prose merely mentions PR-TASK is not tagged;
 only a real trailer line is.
 
-THE `-F` BLIND SPOT WAS WIDER THAN IT NEEDED TO BE, and it mattered: measured 2026-08-27, `git commit -F -` was exempted outright, and that is the form every message longer than one line uses. Thirty-six consecutive commits in one session went through this guard without it ever looking at them. They happened
-to carry trailers; nothing checked.
+THE `-F` BLIND SPOT WAS WIDER THAN IT NEEDED TO BE, and it mattered: measured 2026-08-27, `git commit -F -` was exempted outright, and that is the form every message longer than one line uses. Thirty-six consecutive commits in one session went through this guard without it ever looking at them. They happened to carry trailers; nothing checked.
 
 Two of the three unreadable shapes were never unreadable:
   -F -  with a heredoc  -> the BODY is in the command string, right there
@@ -25,8 +24,7 @@ PORT NOTES
 
 THE PCRE. `grep -oP '(^|\\n|\\n)[[:space:]]*PR-TASK:[[:space:]]*\\K[0-9a-f]{6,32}'`
 is the only PCRE in the whole chain, and the alternation is not a typo: written in the shell it is `(^|\\n|\n)`, so the first alternative is a LITERAL backslash-n and the second is a real newline. That matters because the message text this reads can arrive either way -- a real multi-line `-m` body, or a command string in which the newline is still escaped. `\\K` drops everything
-matched so far, which Python spells as a capture group; a lookbehind cannot be
-used because the alternation is variable width.
+matched so far, which Python spells as a capture group; a lookbehind cannot be used because the alternation is variable width.
 
 `grep -oP` HAS NO POSIX EQUIVALENT and PCRE is not available in Python's `re`
 either, so the two features actually used (`\\K` and `{6,32}`) are reproduced
@@ -204,8 +202,7 @@ def run(ev):
     if shellscan.target_root(scan, root) != "":
         return hookio.ALLOW
 
-    # ---- what message text can we actually see? ----------------------------
-    # Everything readable is concatenated; the trailer only has to appear once.
+    # ---- what message text can we actually see? ---------------------------- Everything readable is concatenated; the trailer only has to appear once.
     msg = ""
 
     # 1. -m / --message: the raw command carries it.
@@ -234,8 +231,7 @@ def run(ev):
                 msg = msg + "\n" + hookio._command_substitution(body)
                 break
 
-    # Nothing readable -- a piped stdin or a command substitution. Allow, as the
-    # header says: this hook catches the common case cheaply; CI is the enforcement.
+    # Nothing readable -- a piped stdin or a command substitution. Allow, as the header says: this hook catches the common case cheaply; CI is the enforcement.
     # `${MSG//[[:space:]]/}` deletes every whitespace character, so a message of
     # only blanks counts as nothing readable.
     if re.sub(r"[ \t\n\v\f\r]", "", msg) == "":

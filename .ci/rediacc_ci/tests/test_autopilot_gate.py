@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.autopilot_gate` against its twin
-`.ci/scripts/autopilot/autopilot-gate.sh`.
+"""Differential: `rediacc_ci.autopilot.autopilot_gate` against its twin `.ci/scripts/autopilot/autopilot-gate.sh`.
 
 THE TWIN'S OWN SENTENCE IS THIS FILE'S BRIEF: "an untested branch in this file is an untested security decision". The subject is a 414-line decision tree with twenty-seven distinct exits, and a port that quietly dropped one of them would look exactly like a port that kept it -- on every input except the one the dropped check existed for. So the cases below walk the tree ARM BY ARM,
 in the twin's own order, and each arm is named after the refusal string it proves.
@@ -325,9 +324,7 @@ def test_a_fixture_that_is_not_json() -> None:
 
 
 def test_an_event_missing_its_run_identity() -> None:
-    """Exit 2, AFTER the stage flag: a wiring bug is loud, but a disabled stage
-    is still a no-go, so the ORDER of these two decides which one a misconfigured stage sees. The twin checks the flag first; both cases here
-    pin that."""
+    """Exit 2, AFTER the stage flag: a wiring bug is loud, but a disabled stage is still a no-go, so the ORDER of these two decides which one a misconfigured stage sees. The twin checks the flag first; both cases here pin that."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["event.json"] = json.dumps({"workflow_run": {"id": 1}}) + "\n"
     code, out, err, _ = _sides("no-conclusion", EVENT_ARGS, fixtures=fixtures, env=ARMED)
@@ -348,9 +345,7 @@ def test_an_event_missing_its_run_identity() -> None:
 
 
 def test_the_stage_flag_is_closed_by_default_and_by_anything_but_true() -> None:
-    """FAIL CLOSED, and the whole decision line is checked: a no-go before any
-    fixture has been read still carries round 1, sig_count 0 and armed_by none,
-    which is what the workflow's next state write records."""
+    """FAIL CLOSED, and the whole decision line is checked: a no-go before any fixture has been read still carries round 1, sig_count 0 and armed_by none, which is what the workflow's next state write records."""
     code, out, _, _ = _sides("stage-off", EVENT_ARGS, fixtures=BASE_FIXTURES)
     assert code == 0
     assert out == (
@@ -370,8 +365,7 @@ def test_the_stage_flag_is_closed_by_default_and_by_anything_but_true() -> None:
 
 
 def test_push_allowed_is_reported_but_does_not_arm() -> None:
-    """`AUTOPILOT_ALLOW_PUSH` is REPORTED for the harness and gates nothing
-    here, so it must show through even on a refusal."""
+    """`AUTOPILOT_ALLOW_PUSH` is REPORTED for the harness and gates nothing here, so it must show through even on a refusal."""
     _, out, _, _ = _sides(
         "push-on-stage-off",
         EVENT_ARGS,
@@ -420,9 +414,7 @@ def test_the_fork_guard_reads_the_pr_record() -> None:
 
 
 def test_the_blocked_label_beats_every_arming_path() -> None:
-    """`autopilot-blocked` is read FIRST, so it beats a label, a fresh dispatch
-    and an open campaign alike. Cancelling a run kills one round; this kills the
-    loop, and a port that checked it after arming would let a dispatch through."""
+    """`autopilot-blocked` is read FIRST, so it beats a label, a fresh dispatch and an open campaign alike. Cancelling a run kills one round; this kills the loop, and a port that checked it after arming would let a dispatch through."""
     for label, fixtures_over, env_over in (
         ("label", {"pr.json": pr_json(labels=["autopilot", "autopilot-blocked"])}, {}),
         (
@@ -447,9 +439,7 @@ def test_the_blocked_label_beats_every_arming_path() -> None:
 
 
 def test_the_blocked_label_is_found_at_index_zero() -> None:
-    """jq's `index` returns 0 for a first-position match, and 0 is TRUTHY in jq
-    and FALSY in Python. This is the case a `json`-based port fails, and it is
-    the commonest real shape: a PR carrying only the blocked label."""
+    """jq's `index` returns 0 for a first-position match, and 0 is TRUTHY in jq and FALSY in Python. This is the case a `json`-based port fails, and it is the commonest real shape: a PR carrying only the blocked label."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["pr.json"] = pr_json(labels=["autopilot-blocked"])
     _, out, _, _ = _sides("blocked-first", EVENT_ARGS, fixtures=fixtures, env=ARMED)
@@ -558,8 +548,7 @@ def test_the_author_allowlist_fails_closed_when_empty() -> None:
 def test_the_author_check_runs_after_arming() -> None:
     """A stranger's UNARMED PR is `not-armed`, not `author-not-allowlisted`.
 
-    ORDER, and it is the difference between telling an outsider that their PR
-    would otherwise qualify and telling them nothing."""
+    ORDER, and it is the difference between telling an outsider that their PR would otherwise qualify and telling them nothing."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["pr.json"] = pr_json(labels=[], author="stranger")
     _code, out, _, _ = _sides("order-arming-first", EVENT_ARGS, fixtures=fixtures, env=ARMED)
@@ -597,9 +586,7 @@ def test_the_dispatching_actor_is_checked_on_the_dispatch_path() -> None:
 
 
 def test_dispatch_trusted_is_not_the_same_claim_as_armed() -> None:
-    """A LABEL-armed round dispatched by nobody in particular: armed yes,
-    trusted no. The workflow gates a human shell on the runner on the second
-    one, so collapsing them would hand a shell to whoever pressed the button."""
+    """A LABEL-armed round dispatched by nobody in particular: armed yes, trusted no. The workflow gates a human shell on the runner on the second one, so collapsing them would hand a shell to whoever pressed the button."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["event.json"] = event_json(dispatch={"actor": "drive-by", "pr_input": ""})
     _, out, _, _ = _sides("armed-untrusted", EVENT_ARGS, fixtures=fixtures, env=ARMED)
@@ -613,9 +600,7 @@ def test_dispatch_trusted_is_not_the_same_claim_as_armed() -> None:
 
 
 def test_the_campaign_path_has_no_further_trust_check() -> None:
-    """The empty `campaign)` case arm, asserted rather than assumed: a campaign
-    round with a hostile `label_applier` and no dispatch actor still goes, because the state comment's AUTHORSHIP is the check and it happened
-    upstream."""
+    """The empty `campaign)` case arm, asserted rather than assumed: a campaign round with a hostile `label_applier` and no dispatch actor still goes, because the state comment's AUTHORSHIP is the check and it happened upstream."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["pr.json"] = pr_json(labels=[], label_applier="drive-by")
     fixtures["state.md"] = state_body(rounds=1, campaign="open", rounds_max="9")
@@ -769,8 +754,7 @@ def test_the_stuck_signature_escalates_before_the_cap() -> None:
 
 
 def test_a_green_run_never_looks_like_a_repeat_of_the_last_red_one() -> None:
-    """`sig` is `none` with no failed jobs, and `none` never matches a stored
-    signature even when the stored one is literally absent."""
+    """`sig` is `none` with no failed jobs, and `none` never matches a stored signature even when the stored one is literally absent."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["event.json"] = event_json("failure")
     fixtures["jobs.txt"] = ""
@@ -828,9 +812,7 @@ def test_a_cancelled_run_with_nothing_to_act_on() -> None:
 
 
 def test_the_four_success_arms_in_their_order() -> None:
-    """Review gate first, then draft, then threads, then done. The order is the
-    design's; each case here differs from the next by ONE field, so a port that
-    reordered them would land on a different mode."""
+    """Review gate first, then draft, then threads, then done. The order is the design's; each case here differs from the next by ONE field, so a port that reordered them would land on a different mode."""
     cases = [
         (
             "rerun-review",
@@ -881,8 +863,7 @@ def test_the_four_success_arms_in_their_order() -> None:
 
 
 def test_an_out_of_shape_thread_count_reads_as_zero() -> None:
-    """`^[0-9]+$` or 0, so a string, a negative or a float never reaches
-    `((...))` where it would be a syntax error rather than a decision."""
+    """`^[0-9]+$` or 0, so a string, a negative or a float never reaches `((...))` where it would be a syntax error rather than a decision."""
     for value in ("many", -1, 1.5, None):
         fixtures = dict(BASE_FIXTURES)
         fixtures["pr.json"] = pr_json(unresolved_threads=value)
@@ -906,9 +887,7 @@ def test_an_unhandled_conclusion() -> None:
 
 
 def test_model_resolution_in_the_designs_order() -> None:
-    """dispatch input > campaign record > default, and an unknown value at
-    either level degrades to the default WITH A WARNING rather than failing the
-    round after the runner has been paid for."""
+    """dispatch input > campaign record > default, and an unknown value at either level degrades to the default WITH A WARNING rather than failing the round after the runner has been paid for."""
     fixtures = dict(BASE_FIXTURES)
     # Default.
     _, out, err, _ = _sides("model-default", EVENT_ARGS, fixtures=fixtures, env=ARMED)
@@ -946,8 +925,7 @@ def test_model_resolution_in_the_designs_order() -> None:
 
 
 def test_the_campaign_field_carried_into_the_next_write() -> None:
-    """`campaign` on the decision line is what the NEXT state write records, not
-    what this round read. Three arms, and the third is the one with a guard."""
+    """`campaign` on the decision line is what the NEXT state write records, not what this round read. Three arms, and the third is the one with a guard."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["pr.json"] = pr_json(labels=[])
     argv = [*EVENT_ARGS, "--state", "state.md"]
@@ -1007,8 +985,7 @@ def test_round_cap_resolution_order() -> None:
 def test_the_campaign_cap_cannot_carry_an_octal_because_jq_launders_it() -> None:
     """MEASURED, AND IT REFUTES THE OBVIOUS GUESS.
 
-    `state-comment.sh fields` emits `rounds_max` through `jq --argjson`, which prints 12 for the input `012`, so the value the gate reads back from a state comment is ALREADY decimal. A test aimed here would pass while proving nothing about bash's grammar. The env-var and dispatch paths below are the
-    ones that actually reach `((...))` with the zero intact."""
+    `state-comment.sh fields` emits `rounds_max` through `jq --argjson`, which prints 12 for the input `012`, so the value the gate reads back from a state comment is ALREADY decimal. A test aimed here would pass while proving nothing about bash's grammar. The env-var and dispatch paths below are the ones that actually reach `((...))` with the zero intact."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["pr.json"] = pr_json(labels=[])
     fixtures["state.md"] = state_body(rounds=10, campaign="open", rounds_max="012")
@@ -1023,8 +1000,7 @@ def test_the_campaign_cap_cannot_carry_an_octal_because_jq_launders_it() -> None
 def test_an_octal_round_cap_is_enforced_as_octal_and_reported_as_decimal() -> None:
     """`AUTOPILOT_MAX_ROUNDS=012` is TEN to `((...))` and TWELVE to jq.
 
-    A twin inconsistency, preserved because it decides where a campaign stops. The case that proves it: ten recorded rounds against a cap that READS as 12
-    still hits the cap."""
+    A twin inconsistency, preserved because it decides where a campaign stops. The case that proves it: ten recorded rounds against a cap that READS as 12 still hits the cap."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["state.md"] = state_body(rounds=10, campaign="none", rounds_max="0")
     argv = [*EVENT_ARGS, "--state", "state.md"]
@@ -1055,8 +1031,7 @@ def test_an_invalid_octal_round_cap() -> None:
 
     THE ONE FILTERED CASE IN THIS FILE. Exit code, stdout and the gh log are compared byte for byte; the bash diagnostic (which carries the twin's script path and line number, unreproducible from Python) is dropped from BOTH sides and its presence on the twin's side is asserted, so the filter cannot become a way of hiding a divergence that is not this one.
 
-    THE DIRECTION MATTERS: the error reads as FALSE, so the cap is not reached and the round RUNS. A malformed cap fails open, which is a finding about the
-    twin rather than about this port."""
+    THE DIRECTION MATTERS: the error reads as FALSE, so the cap is not reached and the round RUNS. A malformed cap fails open, which is a finding about the twin rather than about this port."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["state.md"] = state_body(rounds=10, campaign="none", rounds_max="0")
     env = dict(ARMED)
@@ -1078,9 +1053,7 @@ def test_an_invalid_octal_round_cap() -> None:
 
 
 def test_a_mistyped_state_path_is_silently_no_state() -> None:
-    """HAZARD 1, PRESERVED AND PINNED. `--state` is `[[ -n && -s ]]`, never
-    `require_file`, so a typo reads as "no state comment yet": the round counter resets to 1 and an exhausted campaign is invisible. Fail OPEN, which is the wrong direction for this file; fixing it changes a live workflow step's
-    contract, so it is the cutover box's call."""
+    """HAZARD 1, PRESERVED AND PINNED. `--state` is `[[ -n && -s ]]`, never `require_file`, so a typo reads as "no state comment yet": the round counter resets to 1 and an exhausted campaign is invisible. Fail OPEN, which is the wrong direction for this file; fixing it changes a live workflow step's contract, so it is the cutover box's call."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["pr.json"] = pr_json(labels=[])
     fixtures["state.md"] = state_body(rounds=9, campaign="open", rounds_max="9")
@@ -1108,8 +1081,7 @@ def test_a_mistyped_state_path_is_silently_no_state() -> None:
 
 def test_the_allowlist_strips_interior_whitespace() -> None:
     """HAZARD 2, PRESERVED AND PINNED. `${item//[[:space:]]/}` deletes every
-    whitespace character rather than trimming the ends, so `a b` allowlists `ab`. GitHub logins cannot contain a space, so this cannot admit a real
-    account today; it is pinned because it guards a model invocation."""
+    whitespace character rather than trimming the ends, so `a b` allowlists `ab`. GitHub logins cannot contain a space, so this cannot admit a real account today; it is pinned because it guards a model invocation."""
     fixtures = dict(BASE_FIXTURES)
     # Both trust checks read the same list here (APPLIER falls back to AUTHOR), so both names have to be the one the entry collapses to; setting only the author gets `applier-not-allowlisted` and proves nothing about hazard 2.
     fixtures["pr.json"] = pr_json(author="ab", label_applier="ab")
@@ -1123,9 +1095,7 @@ def test_the_allowlist_strips_interior_whitespace() -> None:
 
 
 def test_a_multi_line_allowlist_stops_at_the_first_line() -> None:
-    """`read` reads ONE line, so a wrapped repo variable admits only the first
-    line's names. Fail CLOSED, which is the right direction, and it is a real
-    shape: a pasted list arrives wrapped."""
+    """`read` reads ONE line, so a wrapped repo variable admits only the first line's names. Fail CLOSED, which is the right direction, and it is a real shape: a pasted list arrives wrapped."""
     fixtures = dict(BASE_FIXTURES)
     env = {"AUTOPILOT_ENABLED": "true", "AUTOPILOT_AUTHOR_ALLOWLIST": "someone\noperator"}
     _, out, _, _ = _sides("allowlist-wrapped", EVENT_ARGS, fixtures=fixtures | {}, env=env)
@@ -1154,8 +1124,7 @@ def test_bash_cmp_treats_an_arithmetic_error_as_false_not_as_zero() -> None:
     """THE DIVERGENCE THE DIFFERENTIAL CAUGHT, pinned as a unit as well.
 
     `((10 >= 08))` is FALSE. Reading `08` as 0 makes it TRUE, which turns a
-    fail-open hazard in the twin into a refusal in the port. Both directions, because only the second one catches a `bash_cmp` that returns False for
-    everything."""
+    fail-open hazard in the twin into a refusal in the port. Both directions, because only the second one catches a `bash_cmp` that returns False for everything."""
     assert ag.bash_cmp("10", ">=", "08") is False
     assert ag.bash_cmp("08", ">", "0") is False
     assert ag.bash_cmp("10", ">=", "012") is True, "10 >= octal 10"
@@ -1190,8 +1159,7 @@ def test_non_empty_file_is_dash_s_and_not_require_file() -> None:
 
 
 def test_the_emit_program_and_its_key_order() -> None:
-    """The decision line's twelve keys, in program order, are the contract with
-    the workflow step that reads them."""
+    """The decision line's twelve keys, in program order, are the contract with the workflow step that reads them."""
     for key in (
         "decision",
         "mode",
@@ -1227,8 +1195,7 @@ def test_the_emit_program_and_its_key_order() -> None:
 
 
 def test_the_campaign_hand_off_is_a_pure_function_of_three_inputs() -> None:
-    """`emit`'s campaign arm, driven directly, so all four combinations are
-    exercised without needing four fixtures."""
+    """`emit`'s campaign arm, driven directly, so all four combinations are exercised without needing four fixtures."""
     for campaign, decision, mode, armed, expected in (
         ("open", "go", "done", "label", "closed"),
         ("none", "go", "done", "label", "none"),

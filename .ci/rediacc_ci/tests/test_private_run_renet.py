@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/private/run_renet.py` against its twin
-`.ci/scripts/private/run-renet.sh`, the registered gate `check:ci-renet`.
+"""Differential: `.ci/rediacc_ci/private/run_renet.py` against its twin `.ci/scripts/private/run-renet.sh`, the registered gate `check:ci-renet`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
@@ -114,9 +113,7 @@ def _fixture(tmp_path: pathlib.Path, *, marker: str = "script", rc: int = 0) -> 
 
 
 def _binder(tmp_path: pathlib.Path) -> str:
-    """The COMPLETE PATH for one case. Nothing the subject calls lives on it:
-    `ci.sh` is invoked by absolute path, so this only has to carry the two
-    interpreters and what `common.sh` asks at source time."""
+    """The COMPLETE PATH for one case. Nothing the subject calls lives on it: `ci.sh` is invoked by absolute path, so this only has to carry the two interpreters and what `common.sh` asks at source time."""
     binder = tmp_path.resolve() / "bin"
     binder.mkdir(parents=True, exist_ok=True)
     for tool in NEEDED:
@@ -276,8 +273,7 @@ def test_the_ci_arm_is_the_reason_the_guard_exists(tmp_path):
 
 
 def test_the_local_arm_is_a_silent_pass_and_that_is_the_hole(tmp_path):
-    """THE COMPLEMENT, and a REAL HOLE IN THE LOCAL GATE, pinned rather than
-    fixed. `npm run check:ci-renet` on a checkout without the submodule prints one warning and exits 0, so the gate reports success having run nothing. That is `common.sh`'s deliberate choice (a fresh clone without `--recursive` stays workable) and closing it is a cutover-box decision, not a port's.
+    """THE COMPLEMENT, and a REAL HOLE IN THE LOCAL GATE, pinned rather than fixed. `npm run check:ci-renet` on a checkout without the submodule prints one warning and exits 0, so the gate reports success having run nothing. That is `common.sh`'s deliberate choice (a fresh clone without `--recursive` stays workable) and closing it is a cutover-box decision, not a port's.
     """
     root = _fixture(tmp_path, marker="none")
     binder = _binder(tmp_path)
@@ -289,8 +285,7 @@ def test_the_local_arm_is_a_silent_pass_and_that_is_the_hole(tmp_path):
 
 
 def test_the_stage_runs_when_the_submodule_is_there(tmp_path):
-    """THE NEGATIVE CONTROL on the guard. A gate with only positive controls
-    will happily refuse on a tree where nothing is wrong."""
+    """THE NEGATIVE CONTROL on the guard. A gate with only positive controls will happily refuse on a tree where nothing is wrong."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -302,8 +297,7 @@ def test_the_stage_runs_when_the_submodule_is_there(tmp_path):
 
 def test_a_preset_gotoolchain_is_not_overwritten(tmp_path):
     """`${GOTOOLCHAIN:-auto}` keeps an explicit value and replaces an EMPTY one.
-    Both halves matter: a port using `os.environ.get("GOTOOLCHAIN", "auto")` would pass the first and fail the second, and the difference only shows up
-    in the environment the stage inherits."""
+    Both halves matter: a port using `os.environ.get("GOTOOLCHAIN", "auto")` would pass the first and fail the second, and the difference only shows up in the environment the stage inherits."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -314,8 +308,7 @@ def test_a_preset_gotoolchain_is_not_overwritten(tmp_path):
 
 
 def test_the_mask_does_not_hide_the_message(tmp_path):
-    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix
-    on both sides; if it were greedier it would hide real divergences and every
+    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix on both sides; if it were greedier it would hide real divergences and every
     case above would pass for the wrong reason."""
     sample = "/a/b/twin.sh: line 30: /x/ci.sh: Permission denied\nkept: line noise\n"
     masked = _mask(sample, pathlib.Path("/nowhere"), pathlib.Path("/nowhere-either"))

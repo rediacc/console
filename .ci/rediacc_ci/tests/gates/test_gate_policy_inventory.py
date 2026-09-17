@@ -1,8 +1,6 @@
 """The Python policy seam and the inventory gate that keeps it honest.
 
-TWO SUBJECTS, and they are deliberately in one file because neither is worth much without the other. `rediacc_ci.policy_paths` is the Python twin of
-`scripts/lib/policy-paths.ts`; `.ci/scripts/quality/check_policy_inventory.py` is
-what stops the two from drifting apart, which is the ONLY thing that makes writing the list twice acceptable.
+TWO SUBJECTS, and they are deliberately in one file because neither is worth much without the other. `rediacc_ci.policy_paths` is the Python twin of `scripts/lib/policy-paths.ts`; `.ci/scripts/quality/check_policy_inventory.py` is what stops the two from drifting apart, which is the ONLY thing that makes writing the list twice acceptable.
 
 WHAT IS PINNED HERE, and what is pinned elsewhere on purpose:
 
@@ -39,16 +37,14 @@ TS_SEAM = paths.from_root("scripts", "lib", "policy-paths.ts")
 REFUSED_FILE = ".ci/config/bws-secret-map.json"
 TSX = paths.from_root("node_modules", ".bin", "tsx")
 
-# A floor, not a count: sixteen names live in both lists today, and a list that has collapsed below this is a reader pointed at nothing. The EQUALITY of the
-# two lists is the gate's job; this only refuses a vacuous corpus here.
+# A floor, not a count: sixteen names live in both lists today, and a list that has collapsed below this is a reader pointed at nothing. The EQUALITY of the two lists is the gate's job; this only refuses a vacuous corpus here.
 MIN_KNOWN_NAMES = 15
 
 
 def test_policy_path_is_a_pure_join(gate):
     gate.log_test("policy_path resolves against a root that contains nothing at all")
     with harness.temp_dir() as empty:
-        # Deliberately EMPTY: no .ci, no .ci/policy, no dotfiles. A helper that stat'ed anything would have to either raise or answer a second
-        # location here; a pure join cannot tell the difference and says so.
+        # Deliberately EMPTY: no .ci, no .ci/policy, no dotfiles. A helper that stat'ed anything would have to either raise or answer a second location here; a pure join cannot tell the difference and says so.
         answered = policy_paths.policy_path(".deps-upgrade-blocklist", empty)
         gate.assert_eq(
             str(answered),

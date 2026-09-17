@@ -30,11 +30,9 @@ MALFORMED = ("", "1.3", "v1.3.1-rc1", "latest", "v1.3.1; rm -rf /")
 
 
 def make_gh(workdir: pathlib.Path, mode: str) -> pathlib.Path:
-    """A `gh` whose RELEASE VIEW behaves per `mode`; everything else succeeds
-    quietly so only the property under test can decide the outcome.
+    """A `gh` whose RELEASE VIEW behaves per `mode`; everything else succeeds quietly so only the property under test can decide the outcome.
 
-    `.object.sha` is asked twice: once on the ref (always succeeds here, already jq-filtered to the bare sha), once on the tag object itself when
-    `.object.type` was "tag" (the deref, which `deref-fails` breaks)."""
+    `.object.sha` is asked twice: once on the ref (always succeeds here, already jq-filtered to the bare sha), once on the tag object itself when `.object.type` was "tag" (the deref, which `deref-fails` breaks)."""
     bindir = workdir / ("bin-" + mode)
     bindir.mkdir(parents=True, exist_ok=True)
     script = bindir / "gh"

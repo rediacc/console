@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.build.build_renet` against its twin
-`.ci/scripts/build/build-renet.sh`.
+"""Differential: `rediacc_ci.build.build_renet` against its twin `.ci/scripts/build/build-renet.sh`.
 
 ONE REAL RUN EXECUTES `private/renet/build.sh embed_assets` (which compiles CRIU and rsync from source inside Docker), CREATES A CONTAINER FROM `rediacc/renet:latest`, AND CROSS-COMPILES SIX GO BINARIES. Every case here runs against recording fakes on a PATH that REPLACES the caller's rather than prepending to it, inside a fixture tree, and
 `test_the_scratch_path_cannot_reach_a_real_docker_go_or_zstd` asserts the seal before anything is driven.
@@ -455,8 +454,7 @@ def test_the_scratch_path_cannot_reach_a_real_docker_go_or_zstd(tmp_path) -> Non
 
 
 def test_the_ls_mask_hides_only_the_timestamp() -> None:
-    """The mask is the one place this suite could go blind, so it is asserted
-    directly: a differing MTIME is erased, a differing SIZE is not."""
+    """The mask is the one place this suite could go blind, so it is asserted directly: a differing MTIME is erased, a differing SIZE is not."""
     a = "-rwxr-xr-x 1 dev dev 23 Sep 14 09:27 criu-linux-amd64\n"
     b = "-rwxr-xr-x 1 dev dev 23 Oct  1 11:02 criu-linux-amd64\n"
     c = "-rwxr-xr-x 1 dev dev 99 Sep 14 09:27 criu-linux-amd64\n"
@@ -491,8 +489,7 @@ def test_no_version_refuses(tmp_path) -> None:
 
 
 def test_skip_embed_alone_still_needs_a_version(tmp_path) -> None:
-    """The arm that must NOT fire: `--skip-embed` parses fine and is not an
-    unknown option, so the refusal that follows is the VERSION one."""
+    """The arm that must NOT fire: `--skip-embed` parses fine and is not an unknown option, so the refusal that follows is the VERSION one."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--skip-embed",))
     assert old_t[0].returncode == 1
@@ -549,8 +546,7 @@ def test_skip_embed_builds_six_binaries_and_touches_no_asset(tmp_path) -> None:
 
 
 def test_the_cache_hit_path_reconstructs_every_asset_with_zstd(tmp_path) -> None:
-    """No builder image, so source B: five staged `.zst` decompressed into the
-    output directory and made executable."""
+    """No builder image, so source B: five staged `.zst` decompressed into the output directory and made executable."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root)
     old = old_t[0]
@@ -591,8 +587,7 @@ def test_the_builder_image_path_copies_every_asset_out_of_a_container(tmp_path) 
 
 
 def test_the_six_go_builds_carry_the_right_goos_goarch_cwd_and_ldflags(tmp_path) -> None:
-    """Six invocations, in the twin's order, every part invisible in the streams
-    -- including the TRAILING SPACE an empty `KEY_LDFLAGS` leaves behind."""
+    """Six invocations, in the twin's order, every part invisible in the streams -- including the TRAILING SPACE an empty `KEY_LDFLAGS` leaves behind."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--version", "9.9.9", "--skip-embed"))
     go_calls = _calls(old_t[1], "go")
@@ -674,8 +669,7 @@ def test_the_stripped_verdict_reports_both_ways(tmp_path) -> None:
 
 
 def test_a_file_that_errors_is_trusted_as_stripped_under_pipefail(tmp_path) -> None:
-    """`set -o pipefail` makes `file | grep -q` non-zero whenever EITHER side is,
-    so a `file` that printed "not stripped" and then exited 3 takes the SAME arm as one that found nothing. The twin reports the binary as stripped while the only tool that looked at it said the opposite.
+    """`set -o pipefail` makes `file | grep -q` non-zero whenever EITHER side is, so a `file` that printed "not stripped" and then exited 3 takes the SAME arm as one that found nothing. The twin reports the binary as stripped while the only tool that looked at it said the opposite.
 
     This is the control that a port collapsing the pipeline to "does the text contain it" would pass without: it is the only case in this suite where the text and the exit status disagree.
     """
@@ -695,8 +689,7 @@ def test_a_file_that_errors_is_trusted_as_stripped_under_pipefail(tmp_path) -> N
 
 
 def test_a_missing_grep_or_head_changes_the_twins_verdict_too(tmp_path) -> None:
-    """`file` is only the LEFT half of two pipelines, and under `pipefail` the
-    right half's absence is just as load-bearing.
+    """`file` is only the LEFT half of two pipelines, and under `pipefail` the right half's absence is just as load-bearing.
 
     Without `grep` the pipeline is 127 and every binary is reported stripped, INCLUDING the one whose `file` output says otherwise. Without `head` the windows description is empty even though `file` answered. A port that read `file`'s text directly instead of running the pipeline would disagree on both, and this is the control that says so: it was written after a ledger fixture
     with a broken `grep` symlink produced four `line 242: grep: command not found` lines on the twin's side and none on the port's.
@@ -721,9 +714,7 @@ def test_a_missing_grep_or_head_changes_the_twins_verdict_too(tmp_path) -> None:
 
 
 def test_the_staged_class_search_takes_base_before_cluster(tmp_path) -> None:
-    """`:161` searches `base` then `cluster` and BREAKS on the first hit, so an
-    asset staged under both classes must come out of `base`. Nothing in the lockfile forbids that overlap, and with only one copy per asset the order is unobservable, which is why this case stages a deliberate duplicate with
-    different content."""
+    """`:161` searches `base` then `cluster` and BREAKS on the first hit, so an asset staged under both classes must come out of `base`. Nothing in the lockfile forbids that overlap, and with only one copy per asset the order is unobservable, which is why this case stages a deliberate duplicate with different content."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, env_overrides={"FAKE_STAGE_DUP": "criu-linux-amd64"})
     assert old_t[0].returncode == 0, old_t[0].stderr
@@ -807,8 +798,7 @@ def test_a_missing_build_sh_dies_with_bashs_own_message(tmp_path) -> None:
 
 
 def test_a_missing_renet_directory_dies_at_the_cd(tmp_path) -> None:
-    """`--skip-embed` walks past the staging block and reaches `cd "$RENET_DIR"`
-    at `:196`, which is where an uninitialised submodule is finally noticed."""
+    """`--skip-embed` walks past the staging block and reaches `cd "$RENET_DIR"` at `:196`, which is where an uninitialised submodule is finally noticed."""
     root = fixture(tmp_path, renet_dir=False)
     old_t, new_t = run_both(root, args=("--version", "1.2.3", "--skip-embed"))
     assert old_t[0].returncode == 1
@@ -854,9 +844,7 @@ def test_a_failing_docker_create_stops_with_dockers_status(tmp_path) -> None:
 
 
 def test_defect_a_missing_file_reports_every_binary_as_stripped(tmp_path) -> None:
-    """DEFECT 1. `file` is never `require_cmd`ed, and `! file | grep -q` reads a
-    `command not found` as "no debug symbols". The binary that IS a debug build
-    is reported clean, and the run exits 0."""
+    """DEFECT 1. `file` is never `require_cmd`ed, and `! file | grep -q` reads a `command not found` as "no debug symbols". The binary that IS a debug build is reported clean, and the run exits 0."""
     root = fixture(tmp_path)
     with_tool, _ = run_both(
         root,
@@ -881,9 +869,7 @@ def test_defect_a_missing_file_reports_every_binary_as_stripped(tmp_path) -> Non
 
 
 def test_defect_an_output_parent_that_does_not_exist_dies_silently(tmp_path) -> None:
-    """DEFECT 2. `readlink -f` needs every component but the last to exist, and
-    `set -e` takes its status. Exit 1, both streams EMPTY, and the `mkdir -p` on
-    the next line that would have created the directory is never reached."""
+    """DEFECT 2. `readlink -f` needs every component but the last to exist, and `set -e` takes its status. Exit 1, both streams EMPTY, and the `mkdir -p` on the next line that would have created the directory is never reached."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
         root, args=("--version", "1.2.3", "--skip-embed", "--output", "private/absent/deep")
@@ -902,9 +888,7 @@ def test_defect_an_output_parent_that_does_not_exist_dies_silently(tmp_path) -> 
 
 
 def test_defect_a_malformed_lockfile_makes_the_completeness_check_vacuous(tmp_path) -> None:
-    """DEFECT 3. `jq` runs in a PROCESS SUBSTITUTION, so its failure is
-    invisible to `set -e`; the asset array stays empty and the "fail fast" loop whose comment says a missing asset "must break HERE" runs zero times. The build then ships exactly the incomplete artifact that check exists to
-    prevent, with exit 0."""
+    """DEFECT 3. `jq` runs in a PROCESS SUBSTITUTION, so its failure is invisible to `set -e`; the asset array stays empty and the "fail fast" loop whose comment says a missing asset "must break HERE" runs zero times. The build then ships exactly the incomplete artifact that check exists to prevent, with exit 0."""
     root = fixture(tmp_path, lockfile="{ this is not json\n")
     old_t, new_t = run_both(root)
     assert old_t[0].returncode == 0, "the defect is that this is a PASS"
@@ -919,9 +903,7 @@ def test_defect_a_malformed_lockfile_makes_the_completeness_check_vacuous(tmp_pa
 
 
 def test_defect_an_empty_component_set_reaches_the_same_vacuous_pass(tmp_path) -> None:
-    """The same defect through a door with no error message at all: valid JSON
-    declaring no components. `jq` exits 0, the matrix is empty, and nothing in
-    the output hints that zero assets were checked."""
+    """The same defect through a door with no error message at all: valid JSON declaring no components. `jq` exits 0, the matrix is empty, and nothing in the output hints that zero assets were checked."""
     root = fixture(tmp_path, lockfile='{"schemaVersion": 1, "components": {}}\n')
     old_t, new_t = run_both(root)
     assert old_t[0].returncode == 0, "the defect is that this is a PASS"
@@ -932,9 +914,7 @@ def test_defect_an_empty_component_set_reaches_the_same_vacuous_pass(tmp_path) -
 
 
 def test_defect_no_staged_assets_at_all_is_a_raw_ls_error(tmp_path) -> None:
-    """DEFECT 4. `ls -la .../assets/*/*/` with nothing staged gets the unmatched
-    glob LITERALLY, and `ls`'s exit 2 ends the run. The only diagnosis is `ls`
-    complaining about a path containing an asterisk."""
+    """DEFECT 4. `ls -la .../assets/*/*/` with nothing staged gets the unmatched glob LITERALLY, and `ls`'s exit 2 ends the run. The only diagnosis is `ls` complaining about a path containing an asterisk."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, env_overrides={"FAKE_NO_STAGE": "1"})
     assert old_t[0].returncode == 2, "ls(1)'s status, and no house refusal"
@@ -1007,9 +987,7 @@ def test_bash_glob_reproduces_both_of_the_shell_behaviours(tmp_path) -> None:
 
 
 def test_a_planted_defect_is_caught(tmp_path) -> None:
-    """The proof that this differential can fail. Dropping the `chmod +x` is
-    invisible in every stream and in the exit code, and it is the difference between a runtime image that works and one whose entrypoint cannot execute
-    the criu it just copied. Only the artifact MODE sees it."""
+    """The proof that this differential can fail. Dropping the `chmod +x` is invisible in every stream and in the exit code, and it is the difference between a runtime image that works and one whose entrypoint cannot execute the criu it just copied. Only the artifact MODE sees it."""
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(
         '            code = _run(["chmod", "+x", str(output / asset)])\n'

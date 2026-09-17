@@ -141,9 +141,8 @@ def quiet_wake_sig(st_sig, fold, session_id, live_bg, bg_facts, bg_verdicts):
     st_sig carries item STRUCTURE, task statuses and HEAD. Added on top for this session's OWN items: the update stamp AND the latest note. The stamp alone is not enough and the suite caught it -- stamps are second resolution, so an --update landing in the same second as the lease it follows moves nothing, and a session doing exactly what the liveness ladder asks of it read as
     silent. The note is content, so it moves whenever the session actually said something new.
 
-    The worker half is the OUTPUT SIZE rather than the stream's mtime-age (which advances on its own and would reset the streak every stop by simply existing), plus the live id set, plus each worker's OS-liveness verdict. The verdict is in here because it is the one thing about a background wait that can change while every byte on disk stays identical: a worker that was confirmed
-    alive and is now suspect must never be silenced by a streak
-    counter."""
+    The worker half is the OUTPUT SIZE rather than the stream's mtime-age (which advances on its own and would reset the streak every stop by simply existing), plus the live id set, plus each worker's OS-liveness verdict. The verdict is in here because it is the one thing about a background wait that can change while every byte on disk stays identical: a worker that was
+    confirmed alive and is now suspect must never be silenced by a streak counter."""
     rows = sorted(
         "%s:%s:%s" % (tid, "?" if size is None else size, bg_verdicts.get(tid, "?"))
         for tid, _desc, _age, size, _stale in bg_facts
@@ -171,9 +170,7 @@ def quiet_wake_sig(st_sig, fold, session_id, live_bg, bg_facts, bg_verdicts):
 
 
 def quiet_wake_bump(state_doc, sig, quiet):
-    """The consecutive-no-op-wake counter, and it persists in the per-session
-    state doc so it survives the process, a restart and a compaction. Any real event -- a changed signature or a stop that had something to say -- resets
-    it to zero, so the streak can only ever describe consecutive silence."""
+    """The consecutive-no-op-wake counter, and it persists in the per-session state doc so it survives the process, a restart and a compaction. Any real event -- a changed signature or a stop that had something to say -- resets it to zero, so the streak can only ever describe consecutive silence."""
     q = state_doc.setdefault("quietwake", {})
     if not quiet:
         q["n"], q["sig"] = 0, sig
@@ -185,11 +182,9 @@ def quiet_wake_bump(state_doc, sig, quiet):
 
 
 def quiet_wake_note(live_crons, streak):
-    """The ONE message a proven-quiet wake gets, or "" to fall through to the
-    normal report.
+    """The ONE message a proven-quiet wake gets, or "" to fall through to the normal report.
 
-    Empty when the poll cron is not a single recognisable rung: the cron-shape checks own that case, and collapsing the report to a reschedule instruction the session cannot act on would hide the real output and offer
-    nothing back."""
+    Empty when the poll cron is not a single recognisable rung: the cron-shape checks own that case, and collapsing the report to a reschedule instruction the session cannot act on would hide the real output and offer nothing back."""
     polls = [c for c in live_crons if is_poll_cron(c)]
     if len(polls) != 1:
         return ""
@@ -208,8 +203,7 @@ def quiet_wake_note(live_crons, streak):
 
 
 def broken_schedules(event, now=None):
-    """The scheduled tasks whose schedule this hook cannot parse, as
-    "<schedule> -- <label>" rows. Empty when every schedule is readable.
+    """The scheduled tasks whose schedule this hook cannot parse, as "<schedule> -- <label>" rows. Empty when every schedule is readable.
 
     THIS IS WHAT SURVIVES the v18 deletion of the NEXT WAKEUPS section (operator, 2026-08-04: "we don't need to print next wakeup times. We should just track the hook moments and notify/warn when needed. let's go
     for efficient ai context usage"). The section printed every task's next
@@ -439,8 +433,7 @@ def completion_evidence(root, text):
     Shapes, cheapest first: a run-id-sized number, an exit code, a URL, a file:line that RESOLVES (citation_state, so a fabricated path or line fails), or a hex string naming a REAL git object (verified, so a decorative 'deadbee' cannot pass; at most five candidates checked to bound the git calls). Deliberately shape-based: whether the evidence SUPPORTS the claim is the reggate
     judge's question, since every new tick already flows into it. This check only guarantees a completion leaves a RECORD, which is exactly what S-2 lacked.
 
-    THE FIVE ARE THE LONGEST CANDIDATES, NOT THE FIRST FIVE, and that is not a tidy-up: taking them in text order blocked five consecutive stops on 2026-08-23, because the mandatory session tag plus three cited worklist ids ate the budget before the real SHA at position 6. Do not "simplify" the
-    ordering back out -- pinned by case 96b in test-worklist-v5.sh."""
+    THE FIVE ARE THE LONGEST CANDIDATES, NOT THE FIRST FIVE, and that is not a tidy-up: taking them in text order blocked five consecutive stops on 2026-08-23, because the mandatory session tag plus three cited worklist ids ate the budget before the real SHA at position 6. Do not "simplify" the ordering back out -- pinned by case 96b in test-worklist-v5.sh."""
     if RUN_ID_RE.search(text) or EXIT_RE.search(text) or URL_RE.search(text):
         return True
     # EVERY citation, not just the first. citation_state uses CITE_RE.search and stops at the first match, which is right for its own job (a forcing
@@ -510,9 +503,7 @@ def deferral_waits_on_ci(rec):
 
 
 def deferral_is_justified(rec):
-    """Does this [?] carry a usable WHY and HOW (event field or inline
-    tokens)? The shape test only; whether the justification is TRUE is the
-    judge audit's question."""
+    """Does this [?] carry a usable WHY and HOW (event field or inline tokens)? The shape test only; whether the justification is TRUE is the judge audit's question."""
     j = S.deferral_justification(rec)
     return bool(j.get("why") and j.get("how"))
 
@@ -961,8 +952,7 @@ def plan_box_census(root, recs):
 
 
 def plans_block(root):
-    """(listing, live_records): the non-done plans, one line each, plus one
-    count line for the executed ones. ("", []) when there is nothing to say, so a project without plans emits no block at all.
+    """(listing, live_records): the non-done plans, one line each, plus one count line for the executed ones. ("", []) when there is nothing to say, so a project without plans emits no block at all.
 
     Each line carries its BOX COUNTS, and two summary lines carry the tree-wide totals -- see plan_box_census for why the per-stop advisory cannot supply them.
 
@@ -1023,9 +1013,7 @@ def _plan_census_summary(rows):
 
 
 def plan_status_excerpt(root, live):
-    """(relpath, body) of the newest non-done plan's '## Status' section,
-    capped. ("", "") when there is none, which is the honest answer for a
-    draft that has not been taken over yet."""
+    """(relpath, body) of the newest non-done plan's '## Status' section, capped. ("", "") when there is none, which is the honest answer for a draft that has not been taken over yet."""
     if not live:
         return "", ""
     rel = live[0][0]
@@ -1242,9 +1230,7 @@ SUBMODULE_DECIDED_LATCH_MIN = int(os.environ.get("WORKLIST_SUBMODULE_DECIDED_LAT
 
 
 def _json_or_none(line):
-    """One JSONL row, or None when the line is not a row. A ledger is
-    append-only under a lock, so a torn final line is possible and is not an
-    error worth propagating."""
+    """One JSONL row, or None when the line is not a row. A ledger is append-only under a lock, so a torn final line is possible and is not an error worth propagating."""
     try:
         return json.loads(line)
     except (ValueError, TypeError):
@@ -1314,8 +1300,7 @@ OUTQ_MAX = int(os.environ.get("WORKLIST_OUTQ_MAX", "40"))
 def _outq(state_doc):
     """The queue sub-doc, seeded from the v11 report_seen ledger on first sight.
 
-    Without the seed the first upgraded stop re-shows every already-latched advisory at once, which is precisely the symptom being fixed. report_seen is left in place unread rather than deleted: a sole-operator clean break
-    still should not make that stop the noisiest one the session ever saw."""
+    Without the seed the first upgraded stop re-shows every already-latched advisory at once, which is precisely the symptom being fixed. report_seen is left in place unread rather than deleted: a sole-operator clean break still should not make that stop the noisiest one the session ever saw."""
     q = state_doc.get("outq")
     if not isinstance(q, dict):
         q = {"seq": 0, "items": [], "shown": dict(state_doc.get("report_seen") or {})}
@@ -1327,9 +1312,7 @@ def _outq(state_doc):
 
 
 def _outq_cap(q):
-    """Hold OUTQ_MAX by dropping non-sticky entries, lowest priority first
-    then oldest first. A sticky entry is NEVER dropped, even when stickies
-    alone exceed the cap: a one-shot the cap ate is a one-shot lost."""
+    """Hold OUTQ_MAX by dropping non-sticky entries, lowest priority first then oldest first. A sticky entry is NEVER dropped, even when stickies alone exceed the cap: a one-shot the cap ate is a one-shot lost."""
     items = q["items"]
     if len(items) <= OUTQ_MAX:
         return
@@ -1349,8 +1332,7 @@ def outq_add(
 
     Returns True when an entry was added or refreshed, False when the call was absorbed (unchanged content inside its refresh window, or already queued). The return value is for the suite and for a caller that wants to skip building an expensive body; nothing in run_stop needs it.
 
-    PERSISTS ON EVERY CALL, deliberately. Six of run_stop's emit paths do not save the state doc before emitting, so a "save at the end" contract would lose exactly what this queue exists to keep. The cost is at most about ten tempfile+os.replace writes on a path that already runs git and gh
-    subprocesses."""
+    PERSISTS ON EVERY CALL, deliberately. Six of run_stop's emit paths do not save the state doc before emitting, so a "save at the end" contract would lose exactly what this queue exists to keep. The cost is at most about ten tempfile+os.replace writes on a path that already runs git and gh subprocesses."""
     q = _outq(state_doc)
     items = q["items"]
     sig = hashlib.sha1(text.encode("utf-8", "replace")).hexdigest()[:12]
@@ -1413,8 +1395,7 @@ def outq_add(
 def outq_drain(worklist, session_id, state_doc, n):
     """(texts, remaining): the n highest-priority entries, FIFO inside a class.
 
-    Removes exactly those entries BY IDENTITY (never by slicing or clearing -- a clear silently eats every one-shot that had not reached its turn), records shown[] for the volatile ones, and persists before returning,
-    because the caller emits and emit() exits the process."""
+    Removes exactly those entries BY IDENTITY (never by slicing or clearing -- a clear silently eats every one-shot that had not reached its turn), records shown[] for the volatile ones, and persists before returning, because the caller emits and emit() exits the process."""
     q = _outq(state_doc)
     take = sorted(q["items"], key=lambda e: (int(e.get("prio") or 0), int(e.get("seq") or 0)))[
         : max(0, n)
@@ -1600,9 +1581,7 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
 
 
 def mark_context_fresh(event, why):
-    """Record that this session's context was just (re)built, so the next
-    judged stop states the judge's FULL approval reason instead of the bare stamp. Never raises: a context marker must not be able to wedge a
-    SessionStart."""
+    """Record that this session's context was just (re)built, so the next judged stop states the judge's FULL approval reason instead of the bare stamp. Never raises: a context marker must not be able to wedge a SessionStart."""
     try:
         wl = C.worklist_for(C.project_start(event))
         sid = event.get("session_id", "")
@@ -1768,8 +1747,7 @@ PHANTOM_NOT_IDENTITIES = frozenset({"compact", "unknown", "md"})
 
 
 def phantom_identities(worklist, session_id, fold, reqs):
-    """([(prefix, events, age_min, owns)], blind_reason) for identities that
-    WRITE to this store but have never stopped.
+    """([(prefix, events, age_min, owns)], blind_reason) for identities that WRITE to this store but have never stopped.
 
     THE BACKSTOP for what the CLI check cannot reach: history already written, and the deliberate hole where the environment cannot name the caller. Both are real -- the incident put 240 events into the live store under an identity that never existed, and a plain operator terminal has no session id to check against.
 
@@ -2039,9 +2017,7 @@ ALWAYS_FULL_MAX = int(os.environ.get("WORKLIST_ALWAYS_FULL_MAX", "2"))
 
 
 def check_tier(key):
-    """Where a violation key sits on the priority ladder. Unknown keys are
-    HYGIENE, which is the safe default: a new check has to be argued upward
-    rather than inheriting a promotion it never asked for."""
+    """Where a violation key sits on the priority ladder. Unknown keys are HYGIENE, which is the safe default: a new check has to be argued upward rather than inheriting a promotion it never asked for."""
     head = str(key).split(":", 1)[0]
     for tier, keys in PRIORITY_LADDER:
         if key in keys or head in keys:
@@ -2146,8 +2122,7 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
 
 
 def _resprofile_report(worklist, session_id, state_doc):
-    """Report-only structural findings from the previous CI run's captures, and the
-    tier-0 -> tier-1 fold. NEVER blocks: the judge gates an exit so "cannot decide" must not be an escape, but this describes how work was done, so "we did not measure" must never become "you may not stop". Every failure is swallowed; the off switch is
+    """Report-only structural findings from the previous CI run's captures, and the tier-0 -> tier-1 fold. NEVER blocks: the judge gates an exit so "cannot decide" must not be an escape, but this describes how work was done, so "we did not measure" must never become "the stop is refused". Every failure is swallowed; the off switch is
     WORKLIST_PROFILE=off. See agent/PLAN-shell-resource-profiling.md section 3."""
     if os.environ.get("WORKLIST_PROFILE") == "off":
         return
@@ -2184,9 +2159,7 @@ def _resprofile_report(worklist, session_id, state_doc):
 
 
 def run_stop(event, event_ok, worklist, hook_file):
-    """The full stop battery. Gathers EVERY static violation, then emits ONE
-    block (five independent blocking checks would cost five turns to clear, which is the "stuck in a loop" the old MAX_BLOCKS existed to paper over), then consults the judge on stops where work remains, then allows with a
-    report."""
+    """The full stop battery. Gathers EVERY static violation, then emits ONE block (five independent blocking checks would cost five turns to clear, which is the "stuck in a loop" the old MAX_BLOCKS existed to paper over), then consults the judge on stops where work remains, then allows with a report."""
     session_id = event.get("session_id", "")
     me8 = (session_id or "unknown")[:8]
     # SESSION-SCOPED, like `.stuck-<sid8>` and `.state-<sid8>` beside it. It was a single shared `.blocks` for the whole worktree, so one peer's clean allow deleted MY judge streak and one peer's block inflated it. With ~48 addressable sessions here that is not a rare race, it is the normal case, and every decision keyed off the streak was reading someone else's work. Fixed before

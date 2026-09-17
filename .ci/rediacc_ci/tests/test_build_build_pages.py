@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.build.build_pages` against its twin
-`.ci/scripts/build/build-pages.sh`.
+"""Differential: `rediacc_ci.build.build_pages` against its twin `.ci/scripts/build/build-pages.sh`.
 
 THE FIXTURE SHAPE follows `test_build_build_www.py` and `test_build_build_json.py`:
 neither side takes a root override, so both are copied into a throwaway root;
@@ -272,8 +271,7 @@ def _agree(old_t, new_t, label: str) -> None:
 
 
 def test_the_scratch_path_holds_only_the_five_named_tools(tmp_path) -> None:
-    """A PREPENDED PATH would let the real npm, git or node reach the checkout.
-    This asserts the replacement holds in both directions.
+    """A PREPENDED PATH would let the real npm, git or node reach the checkout. This asserts the replacement holds in both directions.
     """
     root = default_fixture(tmp_path)
     sealed = scratch_bin(root)
@@ -286,8 +284,7 @@ def test_the_scratch_path_holds_only_the_five_named_tools(tmp_path) -> None:
 
 
 def test_the_recorder_really_runs_the_real_binary(tmp_path) -> None:
-    """A wrapper that logged and did nothing would make every case pass while
-    assembling nothing, so the wrapper itself is checked before it is trusted.
+    """A wrapper that logged and did nothing would make every case pass while assembling nothing, so the wrapper itself is checked before it is trusted.
     """
     root = default_fixture(tmp_path)
     log = root / "probe.log"
@@ -332,8 +329,7 @@ def test_a_complete_assembly_prints_eleven_lines_and_exits_zero(tmp_path) -> Non
 
 
 def test_the_glob_is_bashs_and_the_argv_cp_receives_is_sorted(tmp_path) -> None:
-    """`cp -r packages/www/dist/*` is expanded by the SHELL. The port has to
-    build the same argv, in the same order, or `cp` sees a different command.
+    """`cp -r packages/www/dist/*` is expanded by the SHELL. The port has to build the same argv, in the same order, or `cp` sees a different command.
     """
     root = default_fixture(
         tmp_path,
@@ -388,8 +384,7 @@ def test_a_missing_json_build_refuses_with_two_lines(tmp_path) -> None:
 def test_defect_1_the_default_output_deletes_the_manifest_it_then_looks_for(
     tmp_path,
 ) -> None:
-    """`rm -rf dist` at `:43` runs BEFORE the `-f dist/cli-manifest/manifest.json`
-    test at `:58`, and the default output directory IS `dist`. So with no `--output` the CLI-manifest block can never fire, the run exits 0, and the summary still advertises `/cli`.
+    """`rm -rf dist` at `:43` runs BEFORE the `-f dist/cli-manifest/manifest.json` test at `:58`, and the default output directory IS `dist`. So with no `--output` the CLI-manifest block can never fire, the run exits 0, and the summary still advertises `/cli`.
     """
     root = default_fixture(tmp_path, manifest='{"version":"1.2.3"}')
     old_t, new_t = run_both(root)
@@ -403,8 +398,7 @@ def test_defect_1_the_default_output_deletes_the_manifest_it_then_looks_for(
 
 
 def test_the_manifest_block_does_fire_when_the_output_is_elsewhere(tmp_path) -> None:
-    """The other half of defect 1: the block is not dead code, it is code the
-    DEFAULT can never reach. With `--output out` it runs and copies twice.
+    """The other half of defect 1: the block is not dead code, it is code the DEFAULT can never reach. With `--output out` it runs and copies twice.
     """
     root = default_fixture(tmp_path, manifest='{"version":"1.2.3"}')
     old_t, new_t = run_both(root, args=("--output", "out"))
@@ -430,8 +424,7 @@ def test_defect_4_an_empty_build_is_a_raw_cp_error_not_a_named_refusal(tmp_path)
 def test_defect_4_a_dotfile_only_build_is_indistinguishable_from_an_empty_one(
     tmp_path,
 ) -> None:
-    """`*` does not match a leading dot, and `nullglob` is not set, so a `dist/`
-    holding only `.nojekyll` produces the SAME `cannot stat` as an empty one and the dotfile is never copied.
+    """`*` does not match a leading dot, and `nullglob` is not set, so a `dist/` holding only `.nojekyll` produces the SAME `cannot stat` as an empty one and the dotfile is never copied.
     """
     root = default_fixture(tmp_path, www={".nojekyll": ""})
     old_t, new_t = run_both(root, args=("--output", "out"))
@@ -453,8 +446,7 @@ def test_defect_4_a_dotfile_beside_a_real_file_is_silently_left_behind(tmp_path)
 def test_defect_5_a_mistyped_flag_is_ignored_and_the_default_dist_is_deleted(
     tmp_path,
 ) -> None:
-    """`parse_args` has no `*)` arm. `--outupt out` sets `ARG_OUTUPT`, nobody
-    reads it, and `rm -rf dist` then destroys a `dist/` the caller meant to keep.
+    """`parse_args` has no `*)` arm. `--outupt out` sets `ARG_OUTUPT`, nobody reads it, and `rm -rf dist` then destroys a `dist/` the caller meant to keep.
     """
     root = default_fixture(tmp_path, manifest='{"keep":"me"}')
     old_t, new_t = run_both(root, args=("--outupt", "out"))
@@ -469,8 +461,7 @@ def test_defect_5_a_mistyped_flag_is_ignored_and_the_default_dist_is_deleted(
 def test_defect_5_a_dangling_output_flag_becomes_the_literal_directory_true(
     tmp_path,
 ) -> None:
-    """`parse_args` stores the string `true` for a flag with no value, so
-    `build-pages.sh --output` assembles the package into `./true/`.
+    """`parse_args` stores the string `true` for a flag with no value, so `build-pages.sh --output` assembles the package into `./true/`.
     """
     root = default_fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--output",))
@@ -500,8 +491,7 @@ def test_defect_6_a_missing_worker_directory_fails_after_the_package_is_built(
 
 
 def test_both_sides_cd_to_the_repo_root_whatever_the_caller_did(tmp_path) -> None:
-    """Driven from a directory holding a DECOY `packages/www/dist/index.html`
-    and no json build: a side reading paths relative to the caller would refuse on json rather than assembling the fixture's real build.
+    """Driven from a directory holding a DECOY `packages/www/dist/index.html` and no json build: a side reading paths relative to the caller would refuse on json rather than assembling the fixture's real build.
     """
     root = default_fixture(tmp_path)
     decoy = tmp_path / "elsewhere"
@@ -551,8 +541,7 @@ def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> N
 
 
 def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> None:
-    """Every mention of `dist/cli-manifest/` in the repository is a CONSUMER.
-    The producer (`generate-cli-manifest.sh`) writes `dist/cli/manifest.json`, so the block is dead under every `--output`.
+    """Every mention of `dist/cli-manifest/` in the repository is a CONSUMER. The producer (`generate-cli-manifest.sh`) writes `dist/cli/manifest.json`, so the block is dead under every `--output`.
 
     Asserted against the real tree rather than a fixture, because the claim is about the tree. If a producer is ever added this test goes red and the docstring's defect 2 has to be rewritten, which is the intent.
 

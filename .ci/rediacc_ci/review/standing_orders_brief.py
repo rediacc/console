@@ -110,9 +110,7 @@ def sort_unique(lines: list[str]) -> list[str]:
 
 
 def mangle_cwd(cwd: str) -> str:
-    """`pwd | tr -c 'A-Za-z0-9\\n' '-'`: every byte outside the keep set becomes
-    a dash. The newline is IN the keep set, which is why it survives `tr` and is
-    then stripped by the command substitution rather than becoming a dash."""
+    """`pwd | tr -c 'A-Za-z0-9\\n' '-'`: every byte outside the keep set becomes a dash. The newline is IN the keep set, which is why it survives `tr` and is then stripped by the command substitution rather than becoming a dash."""
     return "".join(ch if (ch.isascii() and ch.isalnum()) else "-" for ch in cwd)
 
 
@@ -325,8 +323,7 @@ def _peer_dirs(me: str) -> int:
 
 
 def _session_dirs() -> int:
-    """`ls -1d agent/*/ 2>/dev/null | wc -l`: the shell glob `agent/*/` matches
-    directories only, and skips dotted names."""
+    """`ls -1d agent/*/ 2>/dev/null | wc -l`: the shell glob `agent/*/` matches directories only, and skips dotted names."""
     agent = pathlib.Path("agent")
     if not agent.is_dir():
         return 0

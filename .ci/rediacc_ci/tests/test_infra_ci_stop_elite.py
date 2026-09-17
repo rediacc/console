@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.infra.ci_stop_elite` against its twin
-`.ci/scripts/infra/ci-stop-elite.sh`.
+"""Differential: `rediacc_ci.infra.ci_stop_elite` against its twin `.ci/scripts/infra/ci-stop-elite.sh`.
 
 Same technique as `test_infra_ci_stop.py` and for the same reason: the subject shells out to `docker`, so the seam is PATH, and a recording fake `docker` lets the comparison assert on the ARGV SEQUENCE both sides produced rather than only on stdout. A port that printed "Force removing" and never called `docker rm` would pass a stdout-only comparison and leave the container running.
 
@@ -173,8 +172,7 @@ def test_port_and_twin_agree() -> None:
 
 
 def test_the_fake_is_actually_reached() -> None:
-    """ANTI-VACUITY. Without this, every comparison above proves nothing: two
-    programs that never touched docker agree trivially."""
+    """ANTI-VACUITY. Without this, every comparison above proves nothing: two programs that never touched docker agree trivially."""
     with tempfile.TemporaryDirectory() as td:
         root = _fixture(pathlib.Path(td) / "v", elite_dir=True)
         _, calls = _run(PORT, root, ps_names=("rediacc-web",))
@@ -185,9 +183,7 @@ def test_the_fake_is_actually_reached() -> None:
 
 
 def test_the_force_removal_is_conditional() -> None:
-    """CONTROL for the case above: with no matching container, nothing is
-    removed. A port that removed unconditionally would satisfy every positive
-    assertion here and would `docker rm` a container another job is using."""
+    """CONTROL for the case above: with no matching container, nothing is removed. A port that removed unconditionally would satisfy every positive assertion here and would `docker rm` a container another job is using."""
     with tempfile.TemporaryDirectory() as td:
         root = _fixture(pathlib.Path(td) / "c", elite_dir=True)
         _, calls = _run(PORT, root, ps_names=())
@@ -196,9 +192,7 @@ def test_the_force_removal_is_conditional() -> None:
 
 
 def test_compose_down_failure_does_not_skip_force_removal() -> None:
-    """The twin falls through to the removal loop even when `docker compose ...
-    down` fails; an early return here would leave `rediacc-web` running whenever
-    compose already failed -- exactly the case force removal exists for."""
+    """The twin falls through to the removal loop even when `docker compose ... down` fails; an early return here would leave `rediacc-web` running whenever compose already failed -- exactly the case force removal exists for."""
     with tempfile.TemporaryDirectory() as td:
         root = _fixture(pathlib.Path(td) / "d", elite_dir=True)
         _, calls = _run(PORT, root, compose_rc=1, ps_names=("rediacc-web",))

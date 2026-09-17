@@ -53,8 +53,7 @@ def test_the_gate_is_green_on_the_real_tree(gate):
             gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(subject))
     result = _run()
     gate.assert_exit_code(0, result.rc, "clean tree (stderr: %s)" % result.err)
-    # The shape line, not just the verdict. A gate whose corpus collapsed to
-    # nothing would still print a tick; the numbers are what says it did not.
+    # The shape line, not just the verdict. A gate whose corpus collapsed to nothing would still print a tick; the numbers are what says it did not.
     gate.assert_contains(result.combined, "harness command entries", "prints its shape")
     gate.assert_contains(result.combined, "probe tool(s)", "and its probe-set size")
     gate.log_pass("the gate passes on the real tree and says how much it looked at")

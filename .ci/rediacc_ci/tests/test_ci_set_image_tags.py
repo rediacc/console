@@ -13,9 +13,7 @@ change to it cannot be missed by this file.
 
 `assert_scratch` re-derives `git rev-parse --show-toplevel` before any fixture is written to, and refuses anything inside `/home/developer/console`.
 
-WHAT IS NORMALISED, and it is one token. `derive_image_tag` prints `<program>: line 81: ...` for a tag build with no `GITHUB_REF_NAME`, and the program is a `.sh` on one side and a `.py` on the other. `strip_prog` replaces
-that one token; the LINE NUMBER is compared, because a drifting line number is
-the silent failure the pin exists to catch.
+WHAT IS NORMALISED, and it is one token. `derive_image_tag` prints `<program>: line 81: ...` for a tag build with no `GITHUB_REF_NAME`, and the program is a `.sh` on one side and a `.py` on the other. `strip_prog` replaces that one token; the LINE NUMBER is compared, because a drifting line number is the silent failure the pin exists to catch.
 
 The K=5 ledger is `.ci/shadow/w7p6-set-image-tags.observations.jsonl`
 (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-set-image-tags --assert --k 5`).
@@ -319,9 +317,8 @@ def test_an_unwritable_github_env_dies_in_the_sibling_and_the_port_dies_louder(
         Traceback (most recent call last): ... FileNotFoundError: [Errno 2] ...
         exit=1
 
-    The STATUS agrees; the stderr does not, and a traceback where the twin
-    prints one line reads as a crash in the porting harness rather than as a bad path. `derive_image_tag.py` is another wave's file and is not repaired from here, so the disagreement is PINNED instead of hidden: when `write_github_env` and `write_github_output` learn to catch OSError, this test goes red, and the fix is to delete the two `assert` lines about the traceback and call
-    `assert_identical` like every other case in this file.
+    The STATUS agrees; the stderr does not, and a traceback where the twin prints one line reads as a crash in the porting harness rather than as a bad path. `derive_image_tag.py` is another wave's file and is not repaired from here, so the disagreement is PINNED instead of hidden: when `write_github_env` and `write_github_output` learn to catch OSError, this test goes red, and the
+    fix is to delete the two `assert` lines about the traceback and call `assert_identical` like every other case in this file.
     """
     old, new, files = run_both(
         tmp_path,

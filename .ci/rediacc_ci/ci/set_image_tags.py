@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/set-image-tags.sh` (37 lines).
 
-Derive the base image tag into `$GITHUB_ENV`, then override the two per-image tags with the values the `initialize` job resolved, appending the `-amd64`
-suffix the fast single-arch build publishes. The twin's header owns the why; it
-is not restated here.
+Derive the base image tag into `$GITHUB_ENV`, then override the two per-image tags with the values the `initialize` job resolved, appending the `-amd64` suffix the fast single-arch build publishes. The twin's header owns the why; it is not restated here.
 
-LIVE CALLER, not repointed. The bash twin stays the registered gate; this module
-is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
+LIVE CALLER, not repointed. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
 Ledger: `.ci/shadow/w7p6-set-image-tags.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-set-image-tags --assert --k 5`).
 
@@ -57,9 +54,7 @@ disagree about the one fact the step exists to establish. Byte-for-byte reproduc
 -----------------------------------------------------------------------------
 `[[ -n ... ]] && echo` IS NOT A `set -e` HAZARD HERE, AND IT IS WORTH SAYING WHY
 -----------------------------------------------------------------------------
-An `A && B` list whose A fails does not trip `set -e`, because A is not the last command of the list. It would be a hazard if the list were the last command of
-the script or of a function, where its status becomes the caller's; here
-`log_info` follows it, so an empty `WEB_TAG` skips the write and the script continues. Driven, both arms.
+An `A && B` list whose A fails does not trip `set -e`, because A is not the last command of the list. It would be a hazard if the list were the last command of the script or of a function, where its status becomes the caller's; here `log_info` follows it, so an empty `WEB_TAG` skips the write and the script continues. Driven, both arms.
 """
 
 from __future__ import annotations

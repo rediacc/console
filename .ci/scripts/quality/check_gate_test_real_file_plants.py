@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""check:ci-gate-test-real-file-plants -- a test must never CLOBBER a REAL
-tracked file it also reads, even inside a try/finally restore.
+"""check:ci-gate-test-real-file-plants -- a test must never CLOBBER a REAL tracked file it also reads, even inside a try/finally restore.
 
 WHY THIS EXISTS. `test_gate_worklist_env_registry.py` had three such plants (two into `.ci/policy/worklist-env-registry.json`, one into `.claude/hooks/stop/worklist-cases/21-cadence.sh`): read the real file's bytes, mutate and write them, run the gate under test, restore from the in-memory original in a `finally`. A hard kill landing in the write-to-restore window leaves the
 tracked file genuinely corrupted with no backup -- and it happened
 for real, twice in one session, from two unrelated causes (a `check:ci-pytest`
-suite timeout, then a concurrent pytest invocation from a second live session). The fix there was a test-only env-var seam (`WORKLIST_REGISTRY_OVERRIDE_FILE`, `WORKLIST_SOURCE_OVERRIDE_FILE`) that redirects the gate under test onto a tmp copy instead. This gate exists so the
-NEXT test author who reaches for `TARGET.write_text(...); finally:
-TARGET.write_bytes(original)` is caught before they write it, not after a third real corruption.
+suite timeout, then a concurrent pytest invocation from a second live session). The fix there was a test-only env-var seam (`WORKLIST_REGISTRY_OVERRIDE_FILE`, `WORKLIST_SOURCE_OVERRIDE_FILE`) that redirects the gate under test onto a tmp copy instead. This gate exists so the NEXT test author who reaches for `TARGET.write_text(...); finally: TARGET.write_bytes(original)` is caught
+before they write it, not after a third real corruption.
 
 THE PATTERN, stated as a shape rather than a location. A name that resolves to a path under the repo root is a REAL-PATH name. If that name is the target of a `.write_text(`, `.write_bytes(` or `.unlink(` call, the test mutates the real tree -- regardless of whether a `finally` restores it, because the restore only helps a run that finishes.
 
@@ -63,15 +61,12 @@ CLOBBER versus STRAY, the distinction that keeps this gate honest in both direct
     CLOBBER, so renaming a probe onto a tracked path cannot sneak through on
     the "it never reads it" branch.
 
-WHAT THIS STILL DOES NOT CATCH, said out loud. A path built from a sandboxed copy (`shutil.copy2(REAL, tmp_copy)`, `tmp_path / "x"`, `harness.temp_dir()`) is the safe pattern and is skipped by construction -- correct, that is the pattern this gate wants MORE of. Dataflow tracking is same-function and same-name only: a real path handed to a helper as an ARGUMENT, or stashed on
-an object attribute, is not followed. That bound is deliberate; a full
-dataflow pass would buy little here and would be unreadable.
+WHAT THIS STILL DOES NOT CATCH, said out loud. A path built from a sandboxed copy (`shutil.copy2(REAL, tmp_copy)`, `tmp_path / "x"`, `harness.temp_dir()`) is the safe pattern and is skipped by construction -- correct, that is the pattern this gate wants MORE of. Dataflow tracking is same-function and same-name only: a real path handed to a helper as an ARGUMENT, or stashed on an
+object attribute, is not followed. That bound is deliberate; a full dataflow pass would buy little here and would be unreadable.
 
 ALLOWLIST: two entries, both live, both proven live on every run. It held three. `test_gate_hook_cross_os.py` came out, and the reason is the point of the STRAY
 class above rather than a relaxation: that entry's whole argument was "the target
-is verified NOT tracked by git", asserted once by a human in 2026-09-14 prose. The classifier now asks `git ls-files` that question on every run, so the entry would name no finding and fail the liveness check. A machine-checked claim
-replaced a hand-checked one; if the probe is ever moved onto a tracked path it
-becomes a hazard again by itself, with nobody having to remember.
+is verified NOT tracked by git", asserted once by a human in 2026-09-14 prose. The classifier now asks `git ls-files` that question on every run, so the entry would name no finding and fail the liveness check. A machine-checked claim replaced a hand-checked one; if the probe is ever moved onto a tracked path it becomes a hazard again by itself, with nobody having to remember.
 
 ---- gate ---- step: Gate-test real-file plants needs: none lane: quality-code selftest: true ---- end gate ----
 """
@@ -95,9 +90,8 @@ SCAN_DIRS = (
     ROOT / ".claude" / "rediacc_hooks" / "tests",
 )
 
-# ANTI-VACUITY FLOOR. This gate reports success by finding NOTHING, so a scan that collapsed -- a moved directory, a broken glob, a rename of the tests package -- is indistinguishable from a clean tree: both print a tick. The floor makes the
-# difference observable. 458 files present on 2026-09-15; the floor sits well below
-# that rather than at it, because a floor equal to today's count turns every deleted test into a failure and teaches people to lower the floor.
+# ANTI-VACUITY FLOOR. This gate reports success by finding NOTHING, so a scan that collapsed -- a moved directory, a broken glob, a rename of the tests package -- is indistinguishable from a clean tree: both print a tick. The floor makes the difference observable. 458 files present on 2026-09-15; the floor sits well below that rather than at it, because a floor equal to today's
+# count turns every deleted test into a failure and teaches people to lower the floor.
 MIN_SCANNED = 350
 
 RED = "\033[0;31m"
@@ -399,8 +393,7 @@ def _fail(message: str) -> None:
 def controls() -> None:
     """Both directions, on every shape the detector claims to see.
 
-    Positive controls prove each of the four blind spots stays closed; negative
-    controls prove the widening did not turn every probe-planting gate test into a finding, which is the failure mode a detector this eager falls into first.
+    Positive controls prove each of the four blind spots stays closed; negative controls prove the widening did not turn every probe-planting gate test into a finding, which is the failure mode a detector this eager falls into first.
     """
     with tempfile.TemporaryDirectory() as td:
         d = pathlib.Path(td)

@@ -130,8 +130,7 @@ class _Exit(Exception):  # noqa: N818
 
 
 def script_dir() -> pathlib.Path:
-    """The twin's `SCRIPT_DIR`: `.ci/scripts/autopilot`, where the two `.cjs`
-    controls live.
+    """The twin's `SCRIPT_DIR`: `.ci/scripts/autopilot`, where the two `.cjs` controls live.
 
     From THIS file's location, matching `dirname "${BASH_SOURCE[0]}"` and
     computed BEFORE the `cd "$ROOT"`, exactly as the twin computes it. `rediacc_ci.paths.repo_root()` is deliberately not used: it honours `$REDIACC_CI_ROOT` and the twin honours nothing, and a boundary script that could be pointed at a different validator by an environment variable would not be a boundary.
@@ -140,9 +139,7 @@ def script_dir() -> pathlib.Path:
 
 
 def _flush() -> None:
-    """Both streams, before every child. The children inherit fd 1 and fd 2, and
-    Python block-buffers stdout when it is a pipe -- so without this the
-    tripwire's quiet line would overtake a `log_info` written before it."""
+    """Both streams, before every child. The children inherit fd 1 and fd 2, and Python block-buffers stdout when it is a pipe -- so without this the tripwire's quiet line would overtake a `log_info` written before it."""
     sys.stdout.flush()
     sys.stderr.flush()
 
@@ -153,8 +150,7 @@ def _run(argv: list[str], **kwargs) -> subprocess.CompletedProcess:
 
 
 def _capture(argv: list[str], *, quiet: bool = False) -> tuple[int, str]:
-    """`$(cmd)`: stdout captured with trailing newlines stripped, stderr
-    INHERITED (or discarded when the twin wrote `2>/dev/null`)."""
+    """`$(cmd)`: stdout captured with trailing newlines stripped, stderr INHERITED (or discarded when the twin wrote `2>/dev/null`)."""
     proc = _run(
         argv,
         stdout=subprocess.PIPE,
@@ -252,8 +248,7 @@ def _sorted_file(source: str, target: str) -> None:
 
 def _staged_names_sorted(target: str, cwd: str | None = None) -> None:
     """`git diff --cached --name-only | LC_ALL=C sort >"$target"`, a `pipefail`
-    pipeline: the RIGHTMOST non-zero status wins, which is why `sort` is checked
-    before `git` below and not after."""
+    pipeline: the RIGHTMOST non-zero status wins, which is why `sort` is checked before `git` below and not after."""
     argv = ["git"] + (["-C", cwd] if cwd is not None else []) + ["diff", "--cached", "--name-only"]
     proc = _run(argv, stdout=subprocess.PIPE)
     env = dict(os.environ)
@@ -290,8 +285,7 @@ class Push:
 
     # -- phase 0: validate --------------------------------------------------
     def validate(self) -> str:
-        """Capture the tree's real status, hand it to the validator, publish the
-        verdict, and return the outcome.
+        """Capture the tree's real status, hand it to the validator, publish the verdict, and return the outcome.
 
         THE STATUS CAPTURE IS TAKEN HERE, BY THE HARNESS, so the validator judges REALITY rather than anything the model asserted about it. Passing it as a file is what keeps the validator pure and offline-testable.
         """

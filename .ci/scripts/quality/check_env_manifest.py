@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the environment-variable manifest gate.
 
-The logic lives in `rediacc_ci.quality.env_manifest`; this file exists so the
-registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring.
+The logic lives in `rediacc_ci.quality.env_manifest`; this file exists so the registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring.
 
 ---- gate ---- step: Env manifest needs: none lane: quality-static selftest: true why: an environment variable is an undeclared input, and nothing in this tree could
      answer "who supplies this value and who may read it" without a fresh grep that

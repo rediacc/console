@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.security.shellcheck` against its twin
-`.ci/scripts/security/shellcheck.sh`.
+"""Differential: `rediacc_ci.security.shellcheck` against its twin `.ci/scripts/security/shellcheck.sh`.
 
 TWO KINDS OF CASE.
 
@@ -18,9 +17,7 @@ TWO KINDS OF CASE.
   of 40 would produce different bytes on a real tree while passing every
   stdout comparison a single-batch fixture could make.
 
-EVERY GIT OPERATION IS `git -C <scratch>` AND NEVER A `cd`, and `_git` asserts that `rev-parse --show-toplevel` resolves inside the scratch directory before it runs anything. The repository this test file lives in normally holds several
-sessions' uncommitted work; a stray `git add -A` in the wrong tree is not
-recoverable.
+EVERY GIT OPERATION IS `git -C <scratch>` AND NEVER A `cd`, and `_git` asserts that `rev-parse --show-toplevel` resolves inside the scratch directory before it runs anything. The repository this test file lives in normally holds several sessions' uncommitted work; a stray `git add -A` in the wrong tree is not recoverable.
 
 WHAT IS NORMALISED: the scratch tool-cache path, which is per-side by construction so that a download in one side cannot satisfy the other. Nothing
 else. In particular the bash-4 block's `grep -r` order is NOT normalised, and
@@ -394,8 +391,7 @@ def test_deleting_the_last_sorted_file_kills_the_gate(fixture: pathlib.Path) -> 
 def test_a_path_with_a_space_is_the_one_named_divergence(fixture: pathlib.Path) -> None:
     """NOT a reproduction. xargs re-splits the path; this port does not.
 
-    Written down as a disagreement rather than hidden, because the twin's behaviour is plainly wrong and re-deriving xargs' quoting rules to be wrong in the same way would be a worse port. No such path exists in this tree
-    today; the day one does, the difference is already documented and tested.
+    Written down as a disagreement rather than hidden, because the twin's behaviour is plainly wrong and re-deriving xargs' quoting rules to be wrong in the same way would be a worse port. No such path exists in this tree today; the day one does, the difference is already documented and tested.
     """
     _write(fixture / "scripts" / "has space.sh", TRIVIAL_SH)
     _write(fixture / "zz-last.sh", TRIVIAL_SH)
@@ -548,8 +544,7 @@ def test_a_word_boundary_keeps_coprocess_out(fixture: pathlib.Path) -> None:
 def test_echo_e_mangles_a_backslash_in_a_matched_line(fixture: pathlib.Path) -> None:
     """THE DEFECT, both sides. `echo -e` re-expands the SOURCE line's escapes.
 
-    The matched line contains a literal backslash-n; the report shows a real
-    newline in the middle of the finding, so the `path:line:` prefix and the rest of the source line end up on different lines of the output.
+    The matched line contains a literal backslash-n; the report shows a real newline in the middle of the finding, so the `path:line:` prefix and the rest of the source line end up on different lines of the output.
     """
     _build(fixture, "#!/bin/bash\ndeclare -A m # printf 'a\\nb'\n")
     old = assert_agree(fixture)
@@ -562,8 +557,7 @@ def test_echo_e_mangles_a_backslash_in_a_matched_line(fixture: pathlib.Path) -> 
 def test_echo_e_backslash_c_truncates_the_whole_report(fixture: pathlib.Path) -> None:
     """The worst of the four: every finding after a `\\c` silently disappears.
 
-    The `declare -A` section comes first and carries the `\\c`; the `coproc`
-    section that follows it is found, assembled, and then thrown away by `echo -e`. So the operator is told about one construct and not the other,
+    The `declare -A` section comes first and carries the `\\c`; the `coproc` section that follows it is found, assembled, and then thrown away by `echo -e`. So the operator is told about one construct and not the other,
     with nothing indicating that anything was dropped.
     """
     _build(fixture, "#!/bin/bash\ndeclare -A m # \\c\ncoproc p { echo hi; }\n")

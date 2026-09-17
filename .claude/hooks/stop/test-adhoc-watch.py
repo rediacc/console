@@ -67,8 +67,7 @@ control(
     "",
 )
 
-# THE REGRESSION. A generic worker whose description says "watch" near a long number, with no gh call at all. This blocked the turn in b04809f6 and broke
-# an unrelated worklist case; it must never block again.
+# THE REGRESSION. A generic worker whose description says "watch" near a long number, with no gh call at all. This blocked the turn in b04809f6 and broke an unrelated worklist case; it must never block again.
 control(
     "CONTROL: a long sleep called 'silent watch' has no gh in it and must not block",
     W.adhoc_watch([bg("bwd", "sleep 371" + "7171718", "silent watch")])[0],

@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""check:ci-tmpfs-health -- fail while there is still headroom to fail safely,
-not after the inode table hits zero free.
+"""check:ci-tmpfs-health -- fail while there is still headroom to fail safely, not after the inode table hits zero free.
 
 WHY THIS EXISTS. `/tmp` (and CI runners generally) is a tmpfs with a FIXED inode count independent of `df -h`'s block/byte view: a tree can show 19G free of 29G and still be completely exhausted, because `df -i` (inodes) is a separate budget from `df` (bytes). That exact split caused a real incident this campaign: pytest's `tmp_path` fixture retained every run's temp tree
 (`tmp_path_retention_policy` defaulting to "all"), and `/tmp/pytest-of-*` alone accumulated ~70k inodes per run with no cleanup policy, until the filesystem's inode table hit 1,048,574 / 1,048,576 used -- 2 free -- and every subsequent Bash tool call in the session started failing with ENOSPC, even though disk space looked completely healthy the whole time. The root cause
 (`tmp_path_retention_policy = "failed"` in pyproject.toml) is fixed separately;
 this gate is the instrumented tripwire so the NEXT uninstrumented temp-file habit (a build script, a different test runner, a future fixture) is caught at 90% used instead of discovered at 100% used via a wall of unrelated failures.
 
-SCOPE, stated so it is not mistaken for more than it is. This measures CURRENT inode headroom at gate-run time -- a single point-in-time reading, not a before/after delta bracketing every CI phase. A delta needs a write on each side of every job step across every workflow, which is a wiring change to
-every job, not a single check script; open the design in a plan if that is
-wanted. A single-point threshold gate run in the quality lane already catches the actual failure mode above, because the exhaustion is monotonic within a run (nothing frees inodes mid-CI-job) -- by the time any phase's tmp usage is past 90%, the NEXT phase is the one that would have hit the wall.
+SCOPE, stated so it is not mistaken for more than it is. This measures CURRENT inode headroom at gate-run time -- a single point-in-time reading, not a before/after delta bracketing every CI phase. A delta needs a write on each side of every job step across every workflow, which is a wiring change to every job, not a single check script; open the design in a plan if that is wanted.
+A single-point threshold gate run in the quality lane already catches the actual failure mode above, because the exhaustion is monotonic within a run (nothing frees inodes mid-CI-job) -- by the time any phase's tmp usage is past 90%, the NEXT phase is the one that would have hit the wall.
 
 ---- gate ---- step: Tmpfs health needs: none lane: quality-code selftest: true ---- end gate ----
 """
@@ -26,8 +24,7 @@ NC = "\033[0m"
 
 THRESHOLD = 0.90
 
-# Every path checked. /tmp is where the real incident happened; TMPDIR is
-# checked too because some runners point it elsewhere and pytest/tempfile both honour it ahead of the hardcoded /tmp.
+# Every path checked. /tmp is where the real incident happened; TMPDIR is checked too because some runners point it elsewhere and pytest/tempfile both honour it ahead of the hardcoded /tmp.
 CHECK_PATHS = ["/tmp"]
 if os.environ.get("TMPDIR") and os.environ["TMPDIR"] not in CHECK_PATHS:
     CHECK_PATHS.append(os.environ["TMPDIR"])
@@ -49,8 +46,7 @@ def usage_ratio(vfs: Vfs) -> float:
 
 
 def check_path(path: str, threshold: float = THRESHOLD) -> tuple[float, bool]:
-    """(ratio, is_red) for one real path. Raises if the path does not exist --
-    callers only pass paths they already know are live filesystems."""
+    """(ratio, is_red) for one real path. Raises if the path does not exist -- callers only pass paths they already know are live filesystems."""
     st = os.statvfs(path)
     vfs = Vfs(f_files=st.f_files, f_ffree=st.f_ffree)
     ratio = usage_ratio(vfs)
@@ -58,9 +54,7 @@ def check_path(path: str, threshold: float = THRESHOLD) -> tuple[float, bool]:
 
 
 def controls() -> None:
-    """Control-first: the threshold logic is exercised on FAKE vfs tuples, not
-    real filesystem state, so the control proves the math rather than the
-    ambient health of whatever machine runs this."""
+    """Control-first: the threshold logic is exercised on FAKE vfs tuples, not real filesystem state, so the control proves the math rather than the ambient health of whatever machine runs this."""
     # A tmpfs one inode away from total exhaustion -- this is the actual shape of the real incident (1,048,574 / 1,048,576 used).
     exhausted = Vfs(f_files=1_048_576, f_ffree=2)
     if usage_ratio(exhausted) < THRESHOLD:

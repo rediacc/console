@@ -1,5 +1,4 @@
-"""wl_planindex: the PLAN CENSUS half of `agent/INDEX.md`, and the three-state
-reader that lets SessionStart print the plans block from ONE file read.
+"""wl_planindex: the PLAN CENSUS half of `agent/INDEX.md`, and the three-state reader that lets SessionStart print the plans block from ONE file read.
 
 THE DEFECT THIS CLOSES (W12 P1.7). `wl_checks.plans_block` is the SessionStart and PostCompact plans listing. It called `plan_records` and then `plan_box_census`, and BOTH of those open every `agent/PLAN-*.md` in full. Measured on this tree 2026-09-06, before this module existed:
 
@@ -251,9 +250,7 @@ def index_census(root, stats=None):
 
 
 def _names(paths, cap=4):
-    """A capped, comma-joined path list. Capped because a stale index right after
-    a compaction wave differs by dozens of files, and a banner that prints 33
-    paths is a banner the reader scrolls past."""
+    """A capped, comma-joined path list. Capped because a stale index right after a compaction wave differs by dozens of files, and a banner that prints 33 paths is a banner the reader scrolls past."""
     shown = ", ".join(paths[:cap])
     return shown + (" and %d more" % (len(paths) - cap) if len(paths) > cap else "")
 

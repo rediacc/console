@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.autopilot_push` against its twin
-`.ci/scripts/autopilot/autopilot-push.sh`.
+"""Differential: `rediacc_ci.autopilot.autopilot_push` against its twin `.ci/scripts/autopilot/autopilot-push.sh`.
 
 THIS IS THE SECURITY BOUNDARY'S TEST, so the first thing it establishes is that nothing here can reach a real remote or the real checkout.
 
@@ -18,9 +17,8 @@ Every subject runs with a curated PATH whose FIRST entry holds two fakes:
          remote URL also resolves inside it. Only then does it `execv` the real
          git.
 
-So the safety property is not "we were careful with the arguments"; it is a
-control that fires. `test_the_shim_refuses_the_real_checkout` aims the shim at `/home/developer/console` and asserts exit 97, and `test_the_shim_refuses_a_remote_outside_the_sandbox` points a push at `https://github.com/...` and asserts the same. Both are PLANTS: if either stops firing, every case in this file has been running unguarded. `test_the_fakes_win_the_path_lookup` asserts
-the resolution order itself, so a stub that stopped winning would be caught too.
+So the safety property is not "we were careful with the arguments"; it is a control that fires. `test_the_shim_refuses_the_real_checkout` aims the shim at `/home/developer/console` and asserts exit 97, and `test_the_shim_refuses_a_remote_outside_the_sandbox` points a push at `https://github.com/...` and asserts the same. Both are PLANTS: if either stops firing, every case in this
+file has been running unguarded. `test_the_fakes_win_the_path_lookup` asserts the resolution order itself, so a stub that stopped winning would be caught too.
 
 THE GIT CALL LOG IS A PRIMARY ARTIFACT. Which repository, in which order, with which arguments -- staging one path at a time versus `-A`, pushing an explicit SHA versus a branch name, whether a refusal happened BEFORE or AFTER a remote write -- is almost entirely invisible in stdout. Every case therefore compares the recorded git argv sequence as well as exit code, stdout and
 stderr.
@@ -75,8 +73,7 @@ REAL_GIT = shutil.which("git") or "/usr/bin/git"
 # `<sandbox>/tmp/tmp.AbCdEfGhIj` (bash mktemp) and `<sandbox>/tmp/tmpab12cd34` (Python). Applied AFTER the sandbox path itself has been folded.
 WORKDIR_RE = re.compile(rb"<sandbox>/tmp/tmp\.?[A-Za-z0-9_]+")
 
-# `diff -u` stamps each header line with the file's mtime, which is wall clock and therefore always different between the two runs. Only the TIMESTAMP is
-# folded; the +/- lines that carry the actual evidence are compared in full.
+# `diff -u` stamps each header line with the file's mtime, which is wall clock and therefore always different between the two runs. Only the TIMESTAMP is folded; the +/- lines that carry the actual evidence are compared in full.
 MTIME_RE = re.compile(rb"\t\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+ [+-]\d{4}")
 
 FIXED_DATE = "2026-01-01T00:00:00+00:00"
@@ -302,8 +299,7 @@ def _sides(
 ):
     """Both subjects, two identical private sandboxes.
 
-    `scenario(sandbox) -> console` builds the tree; `argv` is either a list or a
-    callable taking the console path, because most cases need to name it.
+    `scenario(sandbox) -> console` builds the tree; `argv` is either a list or a callable taking the console path, because most cases need to name it.
     """
     env_extra = {"AUTOPILOT_ALLOW_PUSH": "true"}
     env_extra.update(env or {})
@@ -343,8 +339,7 @@ def base_argv(console: pathlib.Path, *extra: str) -> list[str]:
 
 
 def test_the_fakes_win_the_path_lookup() -> None:
-    """If the stubs ever stop winning, every case in this file has been talking
-    to the real git and the real GitHub CLI."""
+    """If the stubs ever stop winning, every case in this file has been talking to the real git and the real GitHub CLI."""
     with tempfile.TemporaryDirectory() as td:
         sandbox = pathlib.Path(td)
         path = _stub_bin(sandbox)
@@ -356,8 +351,7 @@ def test_the_fakes_win_the_path_lookup() -> None:
 
 
 def test_the_shim_refuses_the_real_checkout() -> None:
-    """A PLANT. Aim the shim at this repository and it must refuse, so a case
-    that ever escaped its sandbox cannot touch the tree the operator is using."""
+    """A PLANT. Aim the shim at this repository and it must refuse, so a case that ever escaped its sandbox cannot touch the tree the operator is using."""
     with tempfile.TemporaryDirectory() as td:
         sandbox = pathlib.Path(td)
         stub = _stub_bin(sandbox).split(":")[0]
@@ -383,8 +377,7 @@ def test_the_shim_refuses_the_real_checkout() -> None:
 
 
 def test_the_shim_refuses_a_remote_outside_the_sandbox() -> None:
-    """The other half of the plant: a push whose remote is not a path inside the
-    sandbox must never reach the network."""
+    """The other half of the plant: a push whose remote is not a path inside the sandbox must never reach the network."""
     with tempfile.TemporaryDirectory() as td:
         sandbox = pathlib.Path(td)
         stub = _stub_bin(sandbox).split(":")[0]
@@ -461,8 +454,7 @@ def test_a_root_that_is_not_a_directory_is_refused_by_name() -> None:
 
 
 def test_the_stage_flag_fails_closed_before_any_git_runs() -> None:
-    """Absent is OFF; only the exact string `true` arms the push. And the refusal
-    happens BEFORE the tree is read, so a misconfigured stage cannot even look."""
+    """Absent is OFF; only the exact string `true` arms the push. And the refusal happens BEFORE the tree is read, so a misconfigured stage cannot even look."""
     for name, value in (("unset", ""), ("false", "false"), ("uppercase", "TRUE"), ("one", "1")):
         code, _, stderr, git_calls, _ = _sides(
             "flag-%s" % name, _plain, base_argv, env={"AUTOPILOT_ALLOW_PUSH": value}
@@ -473,8 +465,7 @@ def test_the_stage_flag_fails_closed_before_any_git_runs() -> None:
 
 
 def test_a_dry_run_needs_no_stage_flag() -> None:
-    """The exemption is deliberate and narrow: a dry run never writes a remote.
-    Pinned in both directions so a port cannot widen or close it."""
+    """The exemption is deliberate and narrow: a dry run never writes a remote. Pinned in both directions so a port cannot widen or close it."""
     code, stdout, _, git_calls, _ = _sides(
         "dry-run-no-flag",
         _plain,
@@ -488,9 +479,7 @@ def test_a_dry_run_needs_no_stage_flag() -> None:
 
 
 def test_the_committer_identity_is_required() -> None:
-    """The commits are attributed to the operator's noreply identity
-    (03-v2-autonomy.md section 0). An unset identity is a refusal, not a
-    fallback to whatever the runner happens to have configured."""
+    """The commits are attributed to the operator's noreply identity (03-v2-autonomy.md section 0). An unset identity is a refusal, not a fallback to whatever the runner happens to have configured."""
     for missing in ("AUTOPILOT_GIT_NAME", "AUTOPILOT_GIT_EMAIL"):
         code, _, stderr, git_calls, _ = _sides(
             "identity-%s" % missing, _plain, base_argv, env={missing: ""}
@@ -519,9 +508,7 @@ def test_branch_mismatch_refuses_before_reading_the_handoff() -> None:
 
 
 def test_the_default_branches_are_refused_unconditionally() -> None:
-    """renet/account/elite have no rulesets, so this is their only guard. The
-    checkout is genuinely ON the branch, so the mismatch check passes and this is
-    the thing doing the refusing."""
+    """renet/account/elite have no rulesets, so this is their only guard. The checkout is genuinely ON the branch, so the mismatch check passes and this is the thing doing the refusing."""
     for branch in ("main", "master"):
 
         def scenario(sandbox, branch=branch):
@@ -548,9 +535,7 @@ def test_the_default_branches_are_refused_unconditionally() -> None:
 
 
 def test_a_detached_head_is_refused_as_the_literal_head() -> None:
-    """`git rev-parse --abbrev-ref HEAD` answers `HEAD` when detached, and the
-    caller naming `HEAD` therefore passes the mismatch check -- which is exactly
-    why `HEAD` is in the forbidden list beside main and master."""
+    """`git rev-parse --abbrev-ref HEAD` answers `HEAD` when detached, and the caller naming `HEAD` therefore passes the mismatch check -- which is exactly why `HEAD` is in the forbidden list beside main and master."""
 
     def scenario(sandbox):
         console = build(sandbox)
@@ -579,8 +564,7 @@ def test_a_detached_head_is_refused_as_the_literal_head() -> None:
 
 
 def test_a_rejected_handoff_stages_nothing() -> None:
-    """Four rejection classes, one assertion each, and the same consequence:
-    nothing staged, nothing pushed, exit 1."""
+    """Four rejection classes, one assertion each, and the same consequence: nothing staged, nothing pushed, exit 1."""
 
     def missing(sandbox):
         console = build(sandbox)
@@ -624,9 +608,7 @@ def test_a_rejected_handoff_stages_nothing() -> None:
 
 
 def test_escalate_and_no_change_are_round_results_not_failures() -> None:
-    """Exit 0, nothing staged. Exiting 1 here (as the twin did until 2026-08-09)
-    made every escalating round paint the job red, which fired the generic
-    failure latch and LOST the model's reason."""
+    """Exit 0, nothing staged. Exiting 1 here (as the twin did until 2026-08-09) made every escalating round paint the job red, which fired the generic failure latch and LOST the model's reason."""
     for outcome in ("escalate", "no-change"):
 
         def scenario(sandbox, outcome=outcome):
@@ -648,8 +630,7 @@ def test_escalate_and_no_change_are_round_results_not_failures() -> None:
 
 
 def test_the_verdict_is_published_on_every_accepted_round() -> None:
-    """BEFORE any outcome branching, so the post-boundary steps see the same
-    validated object whether the round pushed, escalated or did nothing."""
+    """BEFORE any outcome branching, so the post-boundary steps see the same validated object whether the round pushed, escalated or did nothing."""
     for outcome in ("escalate", "no-change", "push"):
         with tempfile.TemporaryDirectory() as td:
             sandbox = pathlib.Path(td)
@@ -673,18 +654,14 @@ def test_the_verdict_is_published_on_every_accepted_round() -> None:
 
 
 def test_the_verdict_can_be_written_to_a_fifo() -> None:
-    """`--verdict-out /dev/stdout` is what a workflow step passes when it wants
-    the verdict in the run log, and `cat A >B` does not care that B is a pipe.
+    """`--verdict-out /dev/stdout` is what a workflow step passes when it wants the verdict in the run log, and `cat A >B` does not care that B is a pipe.
 
     THIS CAUGHT A REAL DIVERGENCE while porting: `shutil.copyfile` raises `SpecialFileError` on a fifo, so the port died where the twin wrote. Pinned so the plain open-and-write cannot be "tidied" back into a copyfile.
 
-    ONE HARNESS NOTE, so a reader who sees this fail elsewhere does not go hunting the port. Under `subprocess.PIPE` (here) the reopen succeeds on both
-    sides; under NODE's spawnSync it does not, because libuv backs a stdio pipe
+    ONE HARNESS NOTE, so a reader who sees this fail elsewhere does not go hunting the port. Under `subprocess.PIPE` (here) the reopen succeeds on both sides; under NODE's spawnSync it does not, because libuv backs a stdio pipe
     with a socketpair and reopening a socket through `/proc/self/fd` is ENXIO.
-    The shadow-gate ledger scenario therefore writes the verdict to a real file and `cat`s it, and the two sides differ there only in the WORDING of the refusal -- bash names its own line number, which no port can honestly reproduce. `test_an_unwritable_verdict_out_stops_the_round` pins the part
-    that matters (exit 1, nothing staged); the live workflow passes
-    `$RUNNER_TEMP/verdict.json`, so the diverging wording is off the real
-    path."""
+    The shadow-gate ledger scenario therefore writes the verdict to a real file and `cat`s it, and the two sides differ there only in the WORDING of the refusal -- bash names its own line number, which no port can honestly reproduce. `test_an_unwritable_verdict_out_stops_the_round` pins the part that matters (exit 1, nothing staged); the live workflow passes
+    `$RUNNER_TEMP/verdict.json`, so the diverging wording is off the real path."""
 
     def scenario(sandbox):
         console = build(sandbox)
@@ -701,9 +678,7 @@ def test_the_verdict_can_be_written_to_a_fifo() -> None:
 
 
 def test_an_unwritable_verdict_out_stops_the_round() -> None:
-    """Exit 1 either way; the twin says it in bash's words and the port in its
-    own, which is the one place the two diverge on fd 2. Compared on the code
-    and on the fact that nothing was staged, not on the sentence."""
+    """Exit 1 either way; the twin says it in bash's words and the port in its own, which is the one place the two diverge on fd 2. Compared on the code and on the fact that nothing was staged, not on the sentence."""
     with tempfile.TemporaryDirectory() as td:
         sandbox = pathlib.Path(td)
         console = build(sandbox)
@@ -728,8 +703,7 @@ def test_an_unwritable_verdict_out_stops_the_round() -> None:
 
 
 def test_the_happy_path_commits_and_pushes_one_explicit_sha() -> None:
-    """PUSH BY EXPLICIT SHA, never a bare branch name: the ref that leaves this
-    machine is exactly the commit minted a line earlier."""
+    """PUSH BY EXPLICIT SHA, never a bare branch name: the ref that leaves this machine is exactly the commit minted a line earlier."""
     code, stdout, stderr, git_calls, gh_calls = _sides("push", _plain, base_argv)
     assert code == 0
     # stdout carries the tripwire's own quiet line first; the SHA is the last.
@@ -747,9 +721,7 @@ def test_the_happy_path_commits_and_pushes_one_explicit_sha() -> None:
 
 
 def test_a_pathspec_that_expands_is_refused_before_the_commit() -> None:
-    """STAGED-SET EQUALITY, and the case it exists for. An UNTRACKED DIRECTORY is
-    reported by `git status` as `dir/`, which the validator accepts as a declared path -- and `git add -- dir/` then stages its two FILES. The staged set is therefore not the declared set, and the round stops with the unified diff on
-    fd 2 as the evidence."""
+    """STAGED-SET EQUALITY, and the case it exists for. An UNTRACKED DIRECTORY is reported by `git status` as `dir/`, which the validator accepts as a declared path -- and `git add -- dir/` then stages its two FILES. The staged set is therefore not the declared set, and the round stops with the unified diff on fd 2 as the evidence."""
 
     def scenario(sandbox):
         console = build(sandbox)
@@ -769,9 +741,7 @@ def test_a_pathspec_that_expands_is_refused_before_the_commit() -> None:
 
 
 def test_the_tripwire_stops_the_commit_before_it_is_made() -> None:
-    """Rule 2: any single NEW file adding more than 8 KB trips, regardless of
-    prefix. The diff is never uploaded and never printed -- byte counts and paths
-    only -- because console artifacts are public."""
+    """Rule 2: any single NEW file adding more than 8 KB trips, regardless of prefix. The diff is never uploaded and never printed -- byte counts and paths only -- because console artifacts are public."""
 
     def scenario(sandbox):
         console = build(sandbox)
@@ -789,8 +759,7 @@ def test_the_tripwire_stops_the_commit_before_it_is_made() -> None:
 
 def test_the_failed_jobs_path_is_one_argument_even_with_a_space() -> None:
     """`${FAILED_JOBS:+--failed-jobs "$FAILED_JOBS"}` keeps the inner quotes, so a
-    path with a space is ONE argument. A port that split it would hand node an
-    unknown argument and the round would die for the wrong reason."""
+    path with a space is ONE argument. A port that split it would hand node an unknown argument and the round would die for the wrong reason."""
 
     def scenario(sandbox):
         console = build(sandbox)
@@ -812,8 +781,7 @@ def test_the_failed_jobs_path_is_one_argument_even_with_a_space() -> None:
 
 
 def test_a_console_push_failure_is_the_scripts_last_word() -> None:
-    """No remote for console: the submodule half (there is none here) and every
-    validation have passed, and the failure surfaces as git's own status."""
+    """No remote for console: the submodule half (there is none here) and every validation have passed, and the failure surfaces as git's own status."""
 
     def scenario(sandbox):
         console = build(sandbox, remote=False)
@@ -826,8 +794,7 @@ def test_a_console_push_failure_is_the_scripts_last_word() -> None:
     code, stdout, stderr, git_calls, _ = _sides("console-push-fails", scenario, base_argv)
     assert code == 128, "git's own status, not the shim's 97 and not a smoothed 1"
     assert b"does not appear to be a git repository" in stderr
-    # The tripwire's quiet line is on stdout; the SHA is NOT, because `set -e`
-    # ends the run on git's status before the `echo`.
+    # The tripwire's quiet line is on stdout; the SHA is NOT, because `set -e` ends the run on git's status before the `echo`.
     assert b"exfil-tripwire quiet:" in stdout
     assert not any(len(line) == 40 for line in stdout.decode().strip().split("\n")), (
         "a sha was printed for a push that did not happen"
@@ -858,9 +825,7 @@ SUB_ENV = {"AUTOPILOT_ALLOW_SUBMODULES": "true"}
 
 
 def test_submodules_are_committed_then_pushed_before_console() -> None:
-    """THE ORDER IS THE DESIGN. The submodule push must precede the console push,
-    so the pointer console publishes always names a commit that already exists on the remote. The reverse order publishes a console commit pointing at a SHA
-    nobody else can fetch."""
+    """THE ORDER IS THE DESIGN. The submodule push must precede the console push, so the pointer console publishes always names a commit that already exists on the remote. The reverse order publishes a console commit pointing at a SHA nobody else can fetch."""
     code, stdout, stderr, git_calls, _ = _sides("sub-push", _sub_scenario, base_argv, env=SUB_ENV)
     assert code == 0, stderr
     pushes = [call for call in git_calls if "push" in call.split("\t")]
@@ -883,9 +848,7 @@ def _last_sha(git_calls: list[str]) -> str:
 
 
 def test_a_submodule_refusal_leaves_zero_remote_writes() -> None:
-    """The reason the phases are split. A file declared in the submodule that is
-    neither tracked nor on disk stops the round in phase 1, before anything has
-    been pushed anywhere."""
+    """The reason the phases are split. A file declared in the submodule that is neither tracked nor on disk stops the round in phase 1, before anything has been pushed anywhere."""
 
     def scenario(sandbox):
         console = _sub_scenario(sandbox)
@@ -909,9 +872,7 @@ def test_a_submodule_refusal_leaves_zero_remote_writes() -> None:
 
 
 def test_a_submodule_staged_set_mismatch_refuses() -> None:
-    """The identical check the console boundary applies, because a pathspec that
-    expands is the same bug here. Driven with a file the model left ALREADY
-    STAGED in the submodule index and did not declare."""
+    """The identical check the console boundary applies, because a pathspec that expands is the same bug here. Driven with a file the model left ALREADY STAGED in the submodule index and did not declare."""
 
     def scenario(sandbox):
         console = _sub_scenario(sandbox)
@@ -928,9 +889,7 @@ def test_a_submodule_staged_set_mismatch_refuses() -> None:
 
 
 def test_the_submodule_tripwire_sees_parent_relative_paths() -> None:
-    """The prefixes are rewritten to `a/private/renet/` so the same scope map
-    that governs a console fix governs this one; without them every byte would
-    look out of scope."""
+    """The prefixes are rewritten to `a/private/renet/` so the same scope map that governs a console fix governs this one; without them every byte would look out of scope."""
 
     def scenario(sandbox):
         console = build(sandbox, submodule=True)
@@ -955,9 +914,7 @@ def test_the_submodule_tripwire_sees_parent_relative_paths() -> None:
 
 
 def test_the_submodule_branch_is_created_at_current_head() -> None:
-    """NOT at origin/main. Section 5's anti-rollback rule is ancestry, and
-    branching at the recorded pointer makes it true by construction; branching at
-    origin/main would silently rebase the round's work onto a different base."""
+    """NOT at origin/main. Section 5's anti-rollback rule is ancestry, and branching at the recorded pointer makes it true by construction; branching at origin/main would silently rebase the round's work onto a different base."""
     code, _, stderr, git_calls, _ = _sides("sub-branch", _sub_scenario, base_argv, env=SUB_ENV)
     assert code == 0, stderr
     assert "-C\t<sandbox>/console/private/renet\tcheckout\t-q\t-b\twork" in git_calls, git_calls
@@ -967,8 +924,7 @@ def test_the_submodule_branch_is_created_at_current_head() -> None:
 
 
 def test_an_existing_local_branch_in_the_submodule_refuses() -> None:
-    """Checking it out would move HEAD across a tree the model has already
-    edited. Refuse rather than guess which side wins."""
+    """Checking it out would move HEAD across a tree the model has already edited. Refuse rather than guess which side wins."""
 
     def scenario(sandbox):
         console = _sub_scenario(sandbox)
@@ -986,8 +942,7 @@ def test_an_existing_local_branch_in_the_submodule_refuses() -> None:
 
 
 def test_a_submodule_push_that_is_not_a_non_fast_forward_refuses_to_guess() -> None:
-    """The adoption path exists for ONE failure shape. Anything else stops the
-    round rather than rewriting a branch on a hunch."""
+    """The adoption path exists for ONE failure shape. Anything else stops the round rather than rewriting a branch on a hunch."""
 
     def scenario(sandbox):
         console = build(sandbox, submodule=True, sub_remote=False)
@@ -1014,8 +969,7 @@ def test_a_submodule_push_that_is_not_a_non_fast_forward_refuses_to_guess() -> N
 
 
 def _orphan(sandbox: pathlib.Path, *, email: str, with_main: bool, conflicting: bool):
-    """Put a commit on the submodule remote's `work` branch, so this round's push
-    is rejected as a non-fast-forward.
+    """Put a commit on the submodule remote's `work` branch, so this round's push is rejected as a non-fast-forward.
 
     Built in a SEPARATE clone so the round's own submodule checkout is untouched, which is the real shape: the orphan was left by a PREVIOUS round.
     """
@@ -1055,9 +1009,7 @@ def _orphan(sandbox: pathlib.Path, *, email: str, with_main: bool, conflicting: 
 
 
 def test_a_foreign_branch_is_never_rewritten() -> None:
-    """ "Ours" is TWO independent facts and this is the first: the tip's committer
-    email must be the autopilot identity. Somebody else's branch stops the round
-    even though it sits at exactly the name this round wants."""
+    """"Ours" is TWO independent facts and this is the first: the tip's committer email must be the autopilot identity. Somebody else's branch stops the round even though it sits at exactly the name this round wants."""
 
     def scenario(sandbox):
         return _orphan(sandbox, email="stranger@example.invalid", with_main=True, conflicting=False)
@@ -1070,9 +1022,7 @@ def test_a_foreign_branch_is_never_rewritten() -> None:
 
 
 def test_an_unrelated_history_is_never_built_on() -> None:
-    """The second fact: the tip must share this round's merge-base with
-    origin/main. A branch that merely happens to sit at the same name is not a
-    continuation of this line of work."""
+    """The second fact: the tip must share this round's merge-base with origin/main. A branch that merely happens to sit at the same name is not a continuation of this line of work."""
 
     def scenario(sandbox):
         return _orphan(sandbox, email=BOT_EMAIL, with_main=False, conflicting=False)
@@ -1084,10 +1034,7 @@ def test_an_unrelated_history_is_never_built_on() -> None:
 
 
 def test_an_unresolvable_main_refuses_rather_than_adopting_on_identity_alone() -> None:
-    """BOTH checks are required, so an unresolvable main is a REFUSAL, not a
-    skip. A committer email is forgeable by anyone who can push, which makes the
-    identity check the weaker half; failing closed is the only reading under
-    which "both required" is true."""
+    """BOTH checks are required, so an unresolvable main is a REFUSAL, not a skip. A committer email is forgeable by anyone who can push, which makes the identity check the weaker half; failing closed is the only reading under which "both required" is true."""
 
     def scenario(sandbox):
         console = _orphan(sandbox, email=BOT_EMAIL, with_main=True, conflicting=False)
@@ -1118,9 +1065,7 @@ def test_an_orphan_that_does_not_apply_cleanly_stops_for_a_human() -> None:
 
 
 def test_a_provable_orphan_is_adopted_and_the_console_check_is_re_run() -> None:
-    """PHASE 4. The adoption moved the submodule SHA, so the gitlink console
-    staged in phase 2 now names a commit that is no longer the branch tip. Re-stage and re-run the SAME validation rather than patching the index and
-    trusting it -- which is why `gitlink verified` appears TWICE."""
+    """PHASE 4. The adoption moved the submodule SHA, so the gitlink console staged in phase 2 now names a commit that is no longer the branch tip. Re-stage and re-run the SAME validation rather than patching the index and trusting it -- which is why `gitlink verified` appears TWICE."""
 
     def scenario(sandbox):
         # An orphan touching a DIFFERENT file, so the cherry-pick applies.
@@ -1172,9 +1117,7 @@ def test_a_provable_orphan_is_adopted_and_the_console_check_is_re_run() -> None:
 
 
 def test_the_unreachable_refusals_are_unreachable_for_the_same_reason() -> None:
-    """Five refusals in the twin cannot be entered from the CLI. The honest
-    differential is to drive the gate that stops each one and assert BOTH sides
-    stop there, which is what this does."""
+    """Five refusals in the twin cannot be entered from the CLI. The honest differential is to drive the gate that stops each one and assert BOTH sides stop there, which is what this does."""
     # 1. submodules[] with the stage flag OFF: the VALIDATOR refuses, so the write-site's belt-and-braces copy is never reached.
     code, _, stderr, _, _ = _sides(
         "unreachable-subs-flag", _sub_scenario, base_argv, env={"AUTOPILOT_ALLOW_SUBMODULES": ""}
@@ -1239,11 +1182,9 @@ def test_the_unreachable_refusals_are_unreachable_for_the_same_reason() -> None:
 
 
 def test_the_toplevel_predicate_is_driven_directly() -> None:
-    """`submodule-not-initialized`'s PREDICATE, whose failure mode is committing
-    submodule content into console as ordinary files. Unreachable from the CLI (case 2 above), so it is driven here against three shapes: a real nested checkout, a plain directory inside a parent repo, and an absent path.
+    """`submodule-not-initialized`'s PREDICATE, whose failure mode is committing submodule content into console as ordinary files. Unreachable from the CLI (case 2 above), so it is driven here against three shapes: a real nested checkout, a plain directory inside a parent repo, and an absent path.
 
-    `--git-dir` WOULD ANSWER YES FOR THE SECOND ONE, which is the whole reason
-    the twin compares toplevels instead."""
+    `--git-dir` WOULD ANSWER YES FOR THE SECOND ONE, which is the whole reason the twin compares toplevels instead."""
     with tempfile.TemporaryDirectory() as td:
         sandbox = pathlib.Path(td)
         console = build(sandbox, submodule=True)

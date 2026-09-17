@@ -17,9 +17,8 @@ and the log is compared as well as the two streams.
   * `RESPONSE="$(curl -s ...)"` is an ASSIGNMENT, so a curl that cannot reach
     the host ends the run with CURL's status.
 
-Driven 2026-09-13: an HTML body prints `jq: parse error: Invalid numeric literal at line 2, column 0` TWICE (once for `.success`, once for `.errors` inside the
-`log_error` argument) and exits 1 with `✗ Purge failed: ` and an empty tail; a
-curl exiting 6 prints the step line and then nothing at all, exit 6. A `json.loads` port would get the count of messages, the text, and one of the two exit codes wrong.
+Driven 2026-09-13: an HTML body prints `jq: parse error: Invalid numeric literal at line 2, column 0` TWICE (once for `.success`, once for `.errors` inside the `log_error` argument) and exits 1 with `✗ Purge failed: ` and an empty tail; a curl exiting 6 prints the step line and then nothing at all, exit 6. A `json.loads` port would get the count of messages, the text, and one of
+the two exit codes wrong.
 
 `.success` HAS NO `// false` DEFAULT here, unlike the sibling
 `housekeeping/cleanup_cf_preview.py`. A body of `{}` therefore yields the STRING

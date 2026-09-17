@@ -167,8 +167,7 @@ def test_no_value_reaches_either_stream(tmp_path) -> None:
 
 
 def test_the_fake_bws_refuses_without_color_no(tmp_path) -> None:
-    """A CONTROL ON THE FIXTURE. If the fake stopped checking, dropping
-    `--color no` from either implementation would go unnoticed."""
+    """A CONTROL ON THE FIXTURE. If the fake stopped checking, dropping `--color no` from either implementation would go unnoticed."""
     root = fixture(tmp_path / "colour", BOTH)
     probe = diff.bash_streams(
         '"%s" secret list --output json' % (root / "bin" / "bws"), env=env_for(root)

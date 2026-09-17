@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.clone_d1` against its twin
-`.ci/scripts/deploy/clone-d1.sh`.
+"""Differential: `rediacc_ci.deploy.clone_d1` against its twin `.ci/scripts/deploy/clone-d1.sh`.
 
 RECORDING FAKES FOR `npx` AND `sqlite3` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Those two are the only programs in this script that can reach anything outside the machine or open a database; every other tool it uses (`grep`, `sed`, `wc`, `du`, `cut`, `jq`, `mktemp`, `rm`, `cat`) is the real binary symlinked into the same scratch directory, because both sides call the same one and
 that is the point of calling them at all.
@@ -356,9 +355,7 @@ def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
 
 
 def test_the_five_step_narration_is_byte_identical_on_stderr(tmp_path) -> None:
-    """Every line here is the twin's own literal string through `common.sh`'s
-    logger, so the glyphs are part of the comparison: `→` for a step and `✓` for information, both on stderr, both uncoloured because neither side has a
-    tty."""
+    """Every line here is the twin's own literal string through `common.sh`'s logger, so the glyphs are part of the comparison: `→` for a step and `✓` for information, both on stderr, both uncoloured because neither side has a tty."""
     _root, old, new = run_both(tmp_path)
     _agree(old, new, "narration")
 
@@ -374,11 +371,9 @@ def test_the_five_step_narration_is_byte_identical_on_stderr(tmp_path) -> None:
 
 
 def test_the_presigned_url_is_redacted_from_both_streams(tmp_path) -> None:
-    """The export's log holds a pre-signed R2 URL valid for one hour, and it
-    arrives on BOTH of wrangler's streams because the twin merges them into one file. Neither line may reach the job log.
+    """The export's log holds a pre-signed R2 URL valid for one hour, and it arrives on BOTH of wrangler's streams because the twin merges them into one file. Neither line may reach the job log.
 
-    THE CONTROL IS IN THE SAME TEST: the fake's third line, which is neither the URL nor the validity notice, MUST survive. A redaction that ate everything
-    would satisfy the first half alone."""
+    THE CONTROL IS IN THE SAME TEST: the fake's third line, which is neither the URL nor the validity notice, MUST survive. A redaction that ate everything would satisfy the first half alone."""
     _root, old, new = run_both(tmp_path)
     _agree(old, new, "redaction")
 
@@ -390,8 +385,7 @@ def test_the_presigned_url_is_redacted_from_both_streams(tmp_path) -> None:
 
 
 def test_the_generated_import_sql_is_byte_identical(tmp_path) -> None:
-    """THE ARTIFACT THIS SCRIPT EXISTS TO PRODUCE. It is assembled from two
-    pragmas, one generated DROP per CREATE TABLE, the stripped dump and a
+    """THE ARTIFACT THIS SCRIPT EXISTS TO PRODUCE. It is assembled from two pragmas, one generated DROP per CREATE TABLE, the stripped dump and a
     closing pragma, and nothing prints it. Both sides' copies are recovered from
     the temporary directory by a fake `npx` that stashes whatever `--file=`
     names before the EXIT trap removes it."""
@@ -445,8 +439,7 @@ def test_an_unknown_argument_names_itself_and_exits_1(tmp_path) -> None:
 
 
 def test_the_last_flag_wins_because_each_arm_assigns(tmp_path) -> None:
-    """`--source a --source b` clones `b`. Not a defect, and not obvious: an
-    arm that appended would clone both."""
+    """`--source a --source b` clones `b`. Not a defect, and not obvious: an arm that appended would clone both."""
     _root, old, new = run_both(
         tmp_path,
         args=("--source", "first", "--source", "second", "--target", "t"),
@@ -493,9 +486,7 @@ def test_the_wrangler_config_flag_is_word_split_into_two_arguments(tmp_path) -> 
 def test_a_transient_export_failure_is_retried_and_the_second_attempt_wins(
     tmp_path,
 ) -> None:
-    """One failure then success: two `d1 export` calls, one warning naming the
-    attempt, and a green run. The 10s sleep between attempts is the twin's and
-    is not shortened, which is why this is the only retry case driven twice."""
+    """One failure then success: two `d1 export` calls, one warning naming the attempt, and a green run. The 10s sleep between attempts is the twin's and is not shortened, which is why this is the only retry case driven twice."""
     _root, old, new = run_both(tmp_path, FAKE_EXPORT_FAIL_UNTIL="1")
     _agree(old, new, "retry-then-succeed")
 
@@ -512,9 +503,7 @@ def test_a_transient_export_failure_is_retried_and_the_second_attempt_wins(
 def test_three_failures_exhaust_the_retries_and_exit_with_wranglers_status(
     tmp_path,
 ) -> None:
-    """A database that genuinely cannot be exported still fails, three times
-    over, with the attempt count and wrangler's own output in the message. And the REDACTION STILL APPLIES on the failure path, which is the case the
-    twin's header says the old `| grep -v` form killed silently."""
+    """A database that genuinely cannot be exported still fails, three times over, with the attempt count and wrangler's own output in the message. And the REDACTION STILL APPLIES on the failure path, which is the case the twin's header says the old `| grep -v` form killed silently."""
     _root, old, new = run_both(tmp_path, FAKE_EXPORT_FAIL_UNTIL="3")
     _agree(old, new, "retry-exhausted")
 
@@ -538,8 +527,7 @@ def test_three_failures_exhaust_the_retries_and_exit_with_wranglers_status(
 
 def test_a_failing_import_ends_the_run_with_wranglers_status(tmp_path) -> None:
     """`npx wrangler d1 execute --file=` is unguarded, so `set -e` hands its
-    status straight out. The FK verification never runs, which is the important
-    half: a failed import must not be followed by a clean bill of health."""
+    status straight out. The FK verification never runs, which is the important half: a failed import must not be followed by a clean bill of health."""
     _root, old, new = run_both(tmp_path, FAKE_EXECUTE_FAILS_ON="2")
     _agree(old, new, "import-fails")
 
@@ -566,9 +554,7 @@ def test_real_fk_violations_are_reported_and_exit_1(tmp_path) -> None:
 def test_defect_a_the_sanitize_path_cannot_work_because_its_sql_file_is_gone(
     tmp_path,
 ) -> None:
-    """`sanitize-d1.sql` was deleted on 2026-04-06 (commit 57b61098c) and the
-    only caller that passes `--sanitize` is `edge-clone-d1.yml`. The run dies where the file is opened: AFTER the export, BEFORE the import, so it fails
-    closed and no unsanitised data reaches the target."""
+    """`sanitize-d1.sql` was deleted on 2026-04-06 (commit 57b61098c) and the only caller that passes `--sanitize` is `edge-clone-d1.yml`. The run dies where the file is opened: AFTER the export, BEFORE the import, so it fails closed and no unsanitised data reaches the target."""
     assert port.THE_SANITIZE_PATH_CANNOT_WORK
     assert not (ROOT / ".ci" / "scripts" / "deploy" / "sanitize-d1.sql").exists(), (
         "the file is back; DEFECT A needs re-reading rather than this assertion relaxing"
@@ -590,11 +576,9 @@ def test_defect_a_the_sanitize_path_cannot_work_because_its_sql_file_is_gone(
 
 
 def test_defect_a_the_same_path_completes_once_the_file_is_restored(tmp_path) -> None:
-    """THE CONTROL FOR THE ABOVE. With the deleted file recreated inside the
-    fixture, the sanitize path runs end to end: three `sqlite3` calls, then the
+    """THE CONTROL FOR THE ABOVE. With the deleted file recreated inside the fixture, the sanitize path runs end to end: three `sqlite3` calls, then the
     import. So the failure really is the missing file and not something else
-    about the branch, and the port's version of the branch is exercised rather
-    than merely refused early."""
+    about the branch, and the port's version of the branch is exercised rather than merely refused early."""
     _root, old, new = run_both(
         tmp_path,
         fixture_kw={"sanitize_sql": True},
@@ -616,8 +600,7 @@ def test_defect_a_the_same_path_completes_once_the_file_is_restored(tmp_path) ->
 
 
 def test_defect_a_a_missing_sqlite3_refuses_with_the_common_sh_wording(tmp_path) -> None:
-    """`require_cmd sqlite3` runs AFTER the step banner, so the refusal is the
-    second line rather than the first."""
+    """`require_cmd sqlite3` runs AFTER the step banner, so the refusal is the second line rather than the first."""
     _root, old, new = run_both(
         tmp_path,
         args=("--source", "s", "--target", "t", "--sanitize"),
@@ -633,9 +616,7 @@ def test_defect_a_a_missing_sqlite3_refuses_with_the_common_sh_wording(tmp_path)
 def test_defect_b_a_verification_that_could_not_run_reports_zero_violations(
     tmp_path,
 ) -> None:
-    """The FK probe exits 1 with nothing on stdout and its stderr discarded. The
-    script prints its success line and exits 0, which is the failure this whole
-    step exists to prevent, applied to itself."""
+    """The FK probe exits 1 with nothing on stdout and its stderr discarded. The script prints its success line and exits 0, which is the failure this whole step exists to prevent, applied to itself."""
     assert port.A_FAILED_FK_CHECK_REPORTS_ZERO_VIOLATIONS
     _root, old, new = run_both(tmp_path, FAKE_FK="silent")
     _agree(old, new, "fk-silent")
@@ -650,8 +631,7 @@ def test_defect_b_a_verification_that_could_not_run_reports_zero_violations(
 
 
 def test_defect_c_the_account_id_is_never_required(tmp_path) -> None:
-    """The header says the script requires it. `require_var` is called on the
-    token only, so a run without the account id gets all the way to wrangler."""
+    """The header says the script requires it. `require_var` is called on the token only, so a run without the account id gets all the way to wrangler."""
     assert port.THE_ACCOUNT_ID_GUARD_THE_HEADER_PROMISES_IS_ABSENT
     _root, old, new = run_both(tmp_path, drop_env=("CLOUDFLARE_ACCOUNT_ID",))
     _agree(old, new, "no-account-id")
@@ -665,8 +645,7 @@ def test_defect_c_the_account_id_is_never_required(tmp_path) -> None:
 
 
 def test_defect_d_the_blocker_comments_name_a_value_the_script_never_builds() -> None:
-    """A source-level assertion, because the defect is in the SUPPRESSION rather
-    than in any behaviour: both `# BLOCKER:` lines justify the unquoted
+    """A source-level assertion, because the defect is in the SUPPRESSION rather than in any behaviour: both `# BLOCKER:` lines justify the unquoted
     expansion with a value (`--env=X`, from a `cloneSource`) that appears
     nowhere in the file."""
     assert port.THE_BLOCKER_COMMENTS_NAME_A_VALUE_THAT_IS_NEVER_BUILT
@@ -685,9 +664,7 @@ def test_defect_d_the_blocker_comments_name_a_value_the_script_never_builds() ->
 
 
 def test_bash_arithmetic_gt_zero_follows_bash_rather_than_int() -> None:
-    """EVERY ROW HERE WAS PROBED AGAINST REAL BASH, and three of them are
-    surprising: a bare word is a VARIABLE and is fatal under `set -u`, `0x10` is
-    hex, and `08` is a malformed octal that evaluates FALSE without stopping."""
+    """EVERY ROW HERE WAS PROBED AGAINST REAL BASH, and three of them are surprising: a bare word is a VARIABLE and is fatal under `set -u`, `0x10` is hex, and `08` is a malformed octal that evaluates FALSE without stopping."""
     assert port.bash_arithmetic_gt_zero("1") is True
     assert port.bash_arithmetic_gt_zero("0") is False
     assert port.bash_arithmetic_gt_zero("") is False, "an empty count is zero, not an error"
@@ -735,9 +712,7 @@ def test_the_argv_builders_match_the_twins_words() -> None:
 
 
 def test_the_sed_programs_are_the_twins_own_bytes() -> None:
-    """A STALENESS GUARD ON THE TWO PROGRAMS THAT BUILD THE ARTIFACT. They are
-    quoted out of the twin rather than paraphrased, so a change to either one in
-    the bash file fails here instead of silently diverging."""
+    """A STALENESS GUARD ON THE TWO PROGRAMS THAT BUILD THE ARTIFACT. They are quoted out of the twin rather than paraphrased, so a change to either one in the bash file fails here instead of silently diverging."""
     text = TWIN.read_text(encoding="utf-8")
     assert port.STRIP_TRANSACTIONS_SED in text
     assert port.DROP_STATEMENTS_SED in text
@@ -787,9 +762,7 @@ def test_the_mktemp_mask_hides_only_the_random_suffix() -> None:
 
 
 def test_the_bash_diagnostic_normaliser_keeps_the_path_and_the_reason() -> None:
-    """A NORMALISER THAT SWALLOWED MORE WOULD MAKE `_agree` VACUOUS on the one
-    path that uses it. Both halves: the two spellings of the same diagnostic
-    collapse together, and a DIFFERENT path or reason still differs."""
+    """A NORMALISER THAT SWALLOWED MORE WOULD MAKE `_agree` VACUOUS on the one path that uses it. Both halves: the two spellings of the same diagnostic collapse together, and a DIFFERENT path or reason still differs."""
     bash_side = "/x/y/.ci/scripts/deploy/clone-d1.sh: line 117: /t/sanitize-d1.sql: No such file"
     port_side = "clone-d1.sh: /t/sanitize-d1.sql: No such file"
     assert _mask(bash_side) == _mask(port_side)
@@ -805,9 +778,7 @@ def test_the_bash_diagnostic_normaliser_keeps_the_path_and_the_reason() -> None:
 
 
 def test_the_port_declares_the_environment_it_reads() -> None:
-    """`CLOUDFLARE_API_TOKEN` is reached through `common.require_var`, which
-    reads `os.environ` inside `rediacc_ci.core.common` where the env-registry scanner already sees it. This module therefore owes no registry entry of its
-    own, and this assertion is what will notice the day it does."""
+    """`CLOUDFLARE_API_TOKEN` is reached through `common.require_var`, which reads `os.environ` inside `rediacc_ci.core.common` where the env-registry scanner already sees it. This module therefore owes no registry entry of its own, and this assertion is what will notice the day it does."""
     body = PORT_FILE.read_text(encoding="utf-8").split('"""', 2)[2]
     assert "os.environ" not in body
     assert "common.require_var(REQUIRED_VAR)" in body

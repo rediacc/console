@@ -21,8 +21,7 @@ THE VERIFY-BEFORE-USE CASE IS THE LOAD-BEARING ONE. `sha256sum -c` after the chm
 WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md` records six `test-breakpoint-*.sh` subjects as unportable by any agent under the standard brief and NOT on merit, because plant-verifying one means temporarily writing under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The brief's two ways out are to hand one batch owner
 that path explicitly or to exclude them in the derivation with the reason recorded, and it adds "Do not silently drop them a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
 
-NO `xdist_group`. Every case only READS tracked files; nothing is written, no port is
-bound, no module global is mutated.
+NO `xdist_group`. Every case only READS tracked files; nothing is written, no port is bound, no module global is mutated.
 """
 
 import re
@@ -93,9 +92,7 @@ def sha_declarations() -> list[tuple[str, str]]:
 
 
 def test_the_subjects_are_present(gate):
-    """The twin refuses at source time if any of the three is missing. Kept as a case
-    rather than an import-time check so an absent subject is a NAMED failure instead of
-    a collection error nobody can read."""
+    """The twin refuses at source time if any of the three is missing. Kept as a case rather than an import-time check so an absent subject is a NAMED failure instead of a collection error nobody can read."""
     for path in (VERSIONS, INSTALL_CF, INSTALL_TMATE):
         if not path.is_file():
             gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(path))
@@ -117,9 +114,7 @@ def test_every_sha_constant_is_a_real_sha256(gate):
 
 
 def test_every_sha_is_distinct(gate):
-    """A copy-paste that gives two arches the same hash makes one of them permanently
-    unverifiable -- it fails closed, but with a "CHECKSUM MISMATCH" that sends you
-    hunting for a supply-chain attack."""
+    """A copy-paste that gives two arches the same hash makes one of them permanently unverifiable -- it fails closed, but with a "CHECKSUM MISMATCH" that reads like a supply-chain attack."""
     values = [value for _, value in sha_declarations()]
     gate.assert_eq(len(set(values)), len(values), "every pinned artifact must have its own hash")
     gate.log_pass(
@@ -128,8 +123,7 @@ def test_every_sha_is_distinct(gate):
 
 
 def test_constants_are_readonly(gate):
-    """A pin a later `source` can quietly reassign is not a pin. `readonly` makes the
-    reassignment an error instead of a shrug."""
+    """A pin a later `source` can quietly reassign is not a pin. `readonly` makes the reassignment an error instead of a shrug."""
     text = lines_of(VERSIONS)
     declared = sum(1 for line in text if PIN_DECL.match(line))
     if declared < 6:
@@ -188,8 +182,7 @@ def test_no_pipe_to_interpreter_or_sudo(gate):
 
 
 def test_no_unpinned_download_urls(gate):
-    """`latest` in any form defeats the checksum: the bytes you hashed are not the bytes
-    you will get tomorrow."""
+    """`latest` in any form defeats the checksum: the bytes hashed today are not the bytes fetched tomorrow."""
     for path in (INSTALL_CF, INSTALL_TMATE, VERSIONS):
         name = path.name
         code = code_of(path)
@@ -214,9 +207,7 @@ def test_no_unpinned_download_urls(gate):
 
 
 def test_tmate_has_no_apt_fallback(gate):
-    """THE regression this file exists for. An apt path here is not a harmless
-    convenience: apt SUCCEEDS on every Ubuntu runner, so its mere presence makes the pinned, verified path dead code on the common path while the file still reads as if
-    it pins something."""
+    """THE regression this file exists for. An apt path here is not a harmless convenience: apt SUCCEEDS on every Ubuntu runner, so its mere presence makes the pinned, verified path dead code on the common path while the file still reads as if it pins something."""
     hits = [line for line in code_of(INSTALL_TMATE).splitlines() if APT.search(line)]
     gate.assert_eq(
         "\n".join(hits),
@@ -230,9 +221,7 @@ def test_tmate_has_no_apt_fallback(gate):
 
 
 def test_every_pinned_sha_is_actually_consumed(gate):
-    """A constant nothing reads is a pin that verifies nothing -- and it is the exact
-    residue an "unpinning" edit leaves behind, because deleting the usage is easier than
-    deleting the declaration."""
+    """A constant nothing reads is a pin that verifies nothing -- and it is the exact residue an "unpinning" edit leaves behind, because deleting the usage is easier than deleting the declaration."""
     installers = INSTALL_CF.read_text(encoding="utf-8") + INSTALL_TMATE.read_text(encoding="utf-8")
     for const in sorted(set(SHA_NAME.findall(VERSIONS.read_text(encoding="utf-8")))):
         if ("$" + const) not in installers:

@@ -79,9 +79,7 @@ _MODS = {}
 
 
 class _BrokenModule:
-    """Every attribute access raises, naming every unusable sibling, so the
-    first USE fails into the crash handler with the full picture. The message lists all broken modules because the first attribute touched is
-    rarely the interesting one."""
+    """Every attribute access raises, naming every unusable sibling, so the first USE fails into the crash handler with the full picture. The message lists all broken modules because the first attribute touched is rarely the interesting one."""
 
     def __init__(self, name):
         self._name = name
@@ -133,9 +131,8 @@ if "wl_ci" not in _BROKEN:
 
 
 def _local_project_start(event=None):
-    """Self-contained twin of wl_core.project_start, for the same reason
-    _local_worklist_path exists: --path and the self-contained append modes must answer even when every sibling module is broken, and reaching for C.project_start() there would raise out of _BrokenModule instead. Keep in lockstep with wl_core.project_start -- including the ladder ORDER, since a divergence here would silently point --path at a different store than the
-    hook writes to."""
+    """Self-contained twin of wl_core.project_start, for the same reason _local_worklist_path exists: --path and the self-contained append modes must answer even when every sibling module is broken, and reaching for C.project_start() there would raise out of _BrokenModule instead. Keep in lockstep with wl_core.project_start -- including the ladder ORDER, since a divergence here
+    would silently point --path at a different store than the hook writes to."""
     env = os.environ.get("CLAUDE_PROJECT_DIR")
     if env:
         return env
@@ -150,9 +147,7 @@ def _local_project_start(event=None):
 
 
 def _local_worklist_path(start):
-    """Self-contained twin of wl_core.worklist_for, used ONLY by --path, the
-    self-contained append modes and the broken-sibling block, so the queries every script depends on work even when every sibling is missing. Keep in
-    lockstep with wl_core.worklist_for."""
+    """Self-contained twin of wl_core.worklist_for, used ONLY by --path, the self-contained append modes and the broken-sibling block, so the queries every script depends on work even when every sibling is missing. Keep in lockstep with wl_core.worklist_for."""
     p = pathlib.Path(start).resolve()
     root = p
     for candidate in [p, *p.parents]:
@@ -171,15 +166,13 @@ def _emit(obj):
 
 
 def _die2(msg):
-    """The `sys.exit(2)` misuse exit the top-level verbs use, as a callable, so
-    _identity_or_die reports the same way whichever verb called it."""
+    """The `sys.exit(2)` misuse exit the top-level verbs use, as a callable, so _identity_or_die reports the same way whichever verb called it."""
     sys.stderr.write(msg.rstrip("\n") + "\n")
     sys.exit(2)
 
 
 def _identity_or_die(me, die):
-    """Refuse a `<me>` that this process cannot be. See wl_core.check_me for the
-    incident that bought this.
+    """Refuse a `<me>` that this process cannot be. See wl_core.check_me for the incident that bought this.
 
     Applied at EVERY `<me>` parse site, and the completeness is the point: the defect's shape is "a rule applied to some call sites and not others", so a partial rollout reproduces the bug in whichever verbs were missed. The suite's anti-vacuity case derives the verb list from this source and fails when a verb it finds has no coverage, so verb 14 cannot silently reopen it.
 
@@ -607,9 +600,7 @@ def _plantick_cli(argv):
 
 
 def _item_cli(argv, worklist):
-    """--add / --triage / --tick / --defer / --lease / --update / --list: the
-    v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be
-    mistaken for a delivered one."""
+    """--add / --triage / --tick / --defer / --lease / --update / --list: the v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be mistaken for a delivered one."""
 
     def die(msg):
         print(msg, file=sys.stderr)

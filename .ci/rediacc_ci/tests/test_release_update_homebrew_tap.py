@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.release.update_homebrew_tap` against its twin
-`.ci/scripts/release/update-homebrew-tap.sh`.
+"""Differential: `rediacc_ci.release.update_homebrew_tap` against its twin `.ci/scripts/release/update-homebrew-tap.sh`.
 
 NEITHER SIDE EVER SEES THE REAL TREE, and that is not a convenience here. The twin resolves its root through `get_repo_root` (common.sh:205-210), which takes no override, so run from this checkout it would `sed` the live `private/homebrew-tap/Formula/rediacc-cli.rb`, `git commit` inside that submodule and `git push origin HEAD:main`. Every case therefore copies BOTH subjects into a
 throwaway fixture tree at their real relative depths, one tree per side, and puts recording fakes for `git`, `curl` and `gh` on a PATH that contains no real copy of any of the three. `_assert_no_real_tool` proves the shadowing rather than assuming it.
@@ -367,9 +366,7 @@ def test_an_unknown_option_is_refused(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_missing_formula_is_refused_after_the_step_line(tmp_path: pathlib.Path) -> None:
-    """`require_file` runs AFTER `log_step`, so the operator sees the intent and
-    then the refusal. Order matters: a port that checked first would print one
-    fewer line on the only path where a human is reading."""
+    """`require_file` runs AFTER `log_step`, so the operator sees the intent and then the refusal. Order matters: a port that checked first would print one fewer line on the only path where a human is reading."""
     old2 = _rerun_without_formula(tmp_path, "old")
     new2 = _rerun_without_formula(tmp_path, "new")
     assert old2[0].returncode == 1
@@ -417,8 +414,7 @@ def _rerun_without_formula(tmp_path: pathlib.Path, side: str):
 def test_a_missing_toolchain_env_refuses_before_any_argument_is_read(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`source constants.sh` (:26) precedes the argument loop (:34), so a
-    checkout without `.devcontainer/toolchain.env` cannot even print --help."""
+    """`source constants.sh` (:26) precedes the argument loop (:34), so a checkout without `.devcontainer/toolchain.env` cannot even print --help."""
     old, new = run_both(tmp_path, ["--help"], with_pins=False)
     assert old[0].returncode == 1
     assert "constants.sh: gate toolchain pins missing:" in old[0].stderr
@@ -432,8 +428,7 @@ def test_a_missing_toolchain_env_refuses_before_any_argument_is_read(
 def test_divergence_help_and_unbound_operand_name_their_own_script(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`$0` AND bash's `set -u` DIAGNOSTIC BOTH NAME THE RUNNING PROGRAM, so the
-    two subjects cannot agree byte for byte and must not pretend to. Everything
+    """`$0` AND bash's `set -u` DIAGNOSTIC BOTH NAME THE RUNNING PROGRAM, so the two subjects cannot agree byte for byte and must not pretend to. Everything
     except the script path agrees, the exit codes agree, and both halves are
     asserted so nobody later "fixes" one of them."""
     old_help = _run(tmp_path, "old", ["-h"])
@@ -465,10 +460,7 @@ def test_divergence_help_and_unbound_operand_name_their_own_script(
 def test_the_download_path_writes_each_checksum_into_its_own_platform_block(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE STEP A PORT WOULD SILENTLY GET WRONG. Four `sha256` lines, one file,
-    and the only thing telling them apart is the awk state machine. Four
-    distinct fake checksums make a mix-up readable; the assertions below name
-    which one belongs where."""
+    """THE STEP A PORT WOULD SILENTLY GET WRONG. Four `sha256` lines, one file, and the only thing telling them apart is the awk state machine. Four distinct fake checksums make a mix-up readable; the assertions below name which one belongs where."""
     old, new = run_both(tmp_path, ["--version", "2.5.0"])
     assert old[0].returncode == 0, old[0].stderr
     formula = old[2]
@@ -499,9 +491,7 @@ def test_the_download_urls_are_exact(tmp_path: pathlib.Path) -> None:
 def test_releases_base_url_is_overridable_from_the_environment(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`.ci/config/constants.sh:200` uses `:-`, so a caller can point the
-    download at a staging bucket. A port that hardcoded the default would look
-    identical on every CI run and be wrong on every staging one."""
+    """`.ci/config/constants.sh:200` uses `:-`, so a caller can point the download at a staging bucket. A port that hardcoded the default would look identical on every CI run and be wrong on every staging one."""
     old, new = run_both(
         tmp_path, ["--version", "2.5.0"], RELEASES_BASE_URL="https://staging.example"
     )
@@ -534,9 +524,7 @@ def test_dry_run_downloads_nothing_and_writes_nothing(tmp_path: pathlib.Path) ->
 def test_dry_run_still_runs_fetch_and_rev_parse_and_still_says_synced(
     tmp_path: pathlib.Path,
 ) -> None:
-    """A QUIRK WORTH PINNING RATHER THAN TIDYING. `sync_to_origin_main` skips only
-    the `checkout` under --dry-run: the `fetch` and the `rev-parse` still run and
-    the "Synced" line still prints, so the message overstates what happened."""
+    """A QUIRK WORTH PINNING RATHER THAN TIDYING. `sync_to_origin_main` skips only the `checkout` under --dry-run: the `fetch` and the `rev-parse` still run and the "Synced" line still prints, so the message overstates what happened."""
     old, new = run_both(tmp_path, ["--version", "2.5.0", "--dry-run"])
     verbs = [c.split("\t")[1:] for c in old[1] if c.startswith("git\t")]
     flat = [" ".join(v) for v in verbs]
@@ -550,8 +538,7 @@ def test_dry_run_still_runs_fetch_and_rev_parse_and_still_says_synced(
 def test_an_unresolvable_origin_main_ends_the_run_with_gits_own_status(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The `rev-parse` is a bare assignment, so `set -e` kills the script with
-    git's status and git's stderr, before the "Synced" line."""
+    """The `rev-parse` is a bare assignment, so `set -e` kills the script with git's status and git's stderr, before the "Synced" line."""
     old, new = run_both(tmp_path, ["--version", "2.5.0"], FAKE_GIT_REVPARSE_RC="128")
     assert old[0].returncode == 128
     assert "fatal: ambiguous argument 'origin/main'" in old[0].stderr
@@ -579,9 +566,7 @@ def test_local_checksums_are_computed_and_reported(tmp_path: pathlib.Path) -> No
 def test_one_missing_local_binary_is_fatal_even_when_three_are_present(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The twin's own comment (:125-127) says the floor is PER ARTIFACT, and it
-    is the stricter reading: three of four present still exits 1, and it stops
-    at the missing one rather than reporting an aggregate."""
+    """The twin's own comment (:125-127) says the floor is PER ARTIFACT, and it is the stricter reading: three of four present still exits 1, and it stops at the missing one rather than reporting an aggregate."""
     present = tuple(n for n in port.BINARY_NAMES if n != "rdc-linux-x64")
     args = ["--version", "3.0.0", "--local-checksums", "@ROOT@/dist"]
     old, new = run_both(tmp_path, args, local_binaries=present)
@@ -595,8 +580,7 @@ def test_one_missing_local_binary_is_fatal_even_when_three_are_present(
 def test_a_local_checksum_directory_that_does_not_exist_is_fatal_on_the_first_name(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`find` on a missing directory writes its own diagnostic to the INHERITED
-    stderr and the empty result is what the script acts on."""
+    """`find` on a missing directory writes its own diagnostic to the INHERITED stderr and the empty result is what the script acts on."""
     args = ["--version", "3.0.0", "--local-checksums", "@ROOT@/nope"]
     old, new = run_both(tmp_path, args)
     assert old[0].returncode == 1
@@ -710,8 +694,7 @@ def test_a_missing_git_bot_name_kills_the_run_after_the_formula_was_written(
     tmp_path: pathlib.Path,
 ) -> None:
     """A REAL LATENT DEFECT, REPRODUCED RATHER THAN REPAIRED.
-    `.ci/config/constants.sh:164-166` deliberately does NOT declare GIT_BOT_NAME / GIT_BOT_EMAIL, and `set -u` makes reading an undeclared one fatal. So `--push` on a machine without the org variables rewrites the formula, stages it, and then dies -- leaving the submodule dirty with an
-    uncommitted change and no message explaining why."""
+    `.ci/config/constants.sh:164-166` deliberately does NOT declare GIT_BOT_NAME / GIT_BOT_EMAIL, and `set -u` makes reading an undeclared one fatal. So `--push` on a machine without the org variables rewrites the formula, stages it, and then dies -- leaving the submodule dirty with an uncommitted change and no message explaining why."""
     old = _run(tmp_path, "old", ["--version", "2.5.0", "--push"])
     new = _run(tmp_path, "new", ["--version", "2.5.0", "--push"])
     assert old[0].returncode == new[0].returncode == 1
@@ -737,9 +720,7 @@ def test_github_pat_installs_the_insteadof_rewrite_before_anything_else(
 
 
 def test_gh_is_never_invoked(tmp_path: pathlib.Path) -> None:
-    """A CONTROL ON THE STUB, not on the script. `gh` is on the PATH as a fake
-    that records and exits 91, so if either side ever reached for it the call log would say so and the run would fail loudly rather than silently
-    authenticating against the real account."""
+    """A CONTROL ON THE STUB, not on the script. `gh` is on the PATH as a fake that records and exits 91, so if either side ever reached for it the call log would say so and the run would fail loudly rather than silently authenticating against the real account."""
     old, new = run_both(
         tmp_path, ["--version", "2.5.0", "--push"], GIT_BOT_NAME="B", GIT_BOT_EMAIL="b@e"
     )
@@ -778,9 +759,7 @@ def test_constants_have_not_drifted() -> None:
 
 
 def test_the_fixture_matches_the_real_formulas_shape() -> None:
-    """ANTI-VACUITY ON THE FIXTURE. The awk state machine keys on five literal
-    markers; if the real formula stopped carrying them the differential would
-    still pass against a fixture nobody ships."""
+    """ANTI-VACUITY ON THE FIXTURE. The awk state machine keys on five literal markers; if the real formula stopped carrying them the differential would still pass against a fixture nobody ships."""
     real = ROOT / "private" / "homebrew-tap" / port.HOMEBREW_FORMULA_PATH
     if not real.is_file():
         return
@@ -795,9 +774,7 @@ def test_the_fixture_matches_the_real_formulas_shape() -> None:
 
 
 def test_planted_slot_swap_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted where a port would fail INVISIBLY: the two mac
-    checksums are swapped, so every stream is byte-identical, every git call is identical, and the only evidence is the formula file. Driven red, then the
-    source is confirmed byte-identical and green."""
+    """ANTI-VACUITY, planted where a port would fail INVISIBLY: the two mac checksums are swapped, so every stream is byte-identical, every git call is identical, and the only evidence is the formula file. Driven red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
         '    ("mac_arm64", "rdc-mac-arm64.sha256", "mac-arm64:  "),\n'

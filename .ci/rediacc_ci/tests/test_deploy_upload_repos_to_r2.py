@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.upload_repos_to_r2` against its twin
-`.ci/scripts/deploy/upload-repos-to-r2.sh`.
+"""Differential: `rediacc_ci.deploy.upload_repos_to_r2` against its twin `.ci/scripts/deploy/upload-repos-to-r2.sh`.
 
 RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare, and nothing here reads or writes the real checkout: every case builds a throwaway tree holding the twin, the port, the purge script it calls and a `dist/` of its own, then runs both sides against it. `.ci/shadow/w7p5a-status.json` records this path as blocked only
 for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
@@ -91,9 +90,8 @@ if rc:
 sys.stdout.write(json.dumps({"success": True, "errors": []}) + "\\n")
 """
 
-# Every real binary either side reaches for. `find`, `sed` and `mktemp` are called by BOTH implementations (the port shells out to the same three, for the
-# reasons in its docstring); `jq` belongs to cf-purge-urls.sh; `uname`, `dirname`,
-# `basename`, `rm` and `wc` are what the twin and common.sh need. Nothing else is on the scratch PATH, so a tool leaking in would show up as a behaviour change.
+# Every real binary either side reaches for. `find`, `sed` and `mktemp` are called by BOTH implementations (the port shells out to the same three, for the reasons in its docstring); `jq` belongs to cf-purge-urls.sh; `uname`, `dirname`, `basename`, `rm` and `wc` are what the twin and common.sh need. Nothing else is on the scratch PATH, so a tool leaking in would show up as a
+# behaviour change.
 PATH_MINIMUM = ("jq", "uname", "dirname", "basename", "find", "wc", "mktemp", "sed", "rm")
 
 TMP_RE = re.compile(r"/\S*/tmp\.[A-Za-z0-9]{10}")
@@ -193,9 +191,8 @@ def _run(
 
 
 def run_both(tmp_path: pathlib.Path, tree: dict[str, str] | None = None, **kw):
-    """BOTH SIDES RUN AGAINST ONE TREE, and that is a correctness requirement
-    rather than a saving. The URL list this script builds is `find`'s order, which is DIRECTORY order: two trees holding the same five files can enumerate them differently, and the comparison would then report a divergence that is the fixture's and not the port's. Measured on the first run of this file, where `dists/stable/Packages.gz` came out before `InRelease` in one tree.
-    Neither side writes into `dist/`, and the two call logs have different names.
+    """BOTH SIDES RUN AGAINST ONE TREE, and that is a correctness requirement rather than a saving. The URL list this script builds is `find`'s order, which is DIRECTORY order: two trees holding the same five files can enumerate them differently, and the comparison would then report a divergence that is the fixture's and not the port's. Measured on the first run of this file, where
+    `dists/stable/Packages.gz` came out before `InRelease` in one tree. Neither side writes into `dist/`, and the two call logs have different names.
     """
     root = fixture(tmp_path, tree)
     old, old_calls = _run(root, "old", **kw)
@@ -250,8 +247,7 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
 
 
 def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
-    """THE HAPPY PATH, PINNED AGAINST LITERAL BYTES. Two syncs (the two formats
-    that exist), two rewritten install scripts with their CONTENT, and one purge carrying all five URLs.
+    """THE HAPPY PATH, PINNED AGAINST LITERAL BYTES. Two syncs (the two formats that exist), two rewritten install scripts with their CONTENT, and one purge carrying all five URLs.
 
     THE FIVE URLS ARE ASSERTED AS A SET HERE and as an ORDER in the next test, because their order is the filesystem's rather than this file's: hard-coding it would pin the fixture's directory layout, which is not the subject.
     """
@@ -302,9 +298,8 @@ def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_purge_list_is_finds_order_not_sorted_order(tmp_path: pathlib.Path) -> None:
-    """WHY THE PORT SHELLS OUT TO `find`. The twin appends one URL per line of
-    `find -type f`, which is DIRECTORY order, and this fixture's directory order is not sorted order: measured here, `dists/stable/Packages.gz` comes out before `InRelease`, which `sorted()` would reverse. The expectation is computed by running the same `find`, so it is the filesystem's answer rather than a second implementation of the walk. Nothing on either stream would
-    show a port that reordered this."""
+    """WHY THE PORT SHELLS OUT TO `find`. The twin appends one URL per line of `find -type f`, which is DIRECTORY order, and this fixture's directory order is not sorted order: measured here, `dists/stable/Packages.gz` comes out before `InRelease`, which `sorted()` would reverse. The expectation is computed by running the same `find`, so it is the filesystem's answer rather
+    than a second implementation of the walk. Nothing on either stream would show a port that reordered this."""
     root = fixture(tmp_path)
     expected = find_urls(root)
     old, old_calls = _run(root, "old")
@@ -324,16 +319,14 @@ def test_the_purge_list_is_finds_order_not_sorted_order(tmp_path: pathlib.Path) 
 
 def test_a_nested_file_keeps_its_directories_in_the_url(tmp_path: pathlib.Path) -> None:
     """`${f#dist/repos/$dir/}` IS A PREFIX STRIP, NOT A BASENAME. A port using
-    `os.path.basename` would purge `.../apt/edge/Packages.gz`, a URL that does
-    not exist, and leave the real one cached."""
+    `os.path.basename` would purge `.../apt/edge/Packages.gz`, a URL that does not exist, and leave the real one cached."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert "https://releases.rediacc.com/apt/edge/dists/stable/Packages.gz" in old_calls
     _assert_agree(old, new, "prefix-strip", old_calls, new_calls)
 
 
 def test_the_install_scripts_are_rewritten_to_the_channel(tmp_path: pathlib.Path) -> None:
-    """BOTH SUBSTITUTIONS, on a channel that is neither `edge` nor `stable`, so a
-    port that only rewrote one of the two is visible."""
+    """BOTH SUBSTITUTIONS, on a channel that is neither `edge` nor `stable`, so a port that only rewrote one of the two is visible."""
     old, new, old_calls, new_calls = run_both(tmp_path, CHANNEL="pr-42")
     assert 'CONTENT<<<#!/bin/sh\n: "${REDIACC_CHANNEL:-pr-42}"\n>>>' in old_calls
     assert 'CONTENT<<<$c = if ($e) { "edge" } else { "pr-42" }\n>>>' in old_calls
@@ -342,8 +335,7 @@ def test_the_install_scripts_are_rewritten_to_the_channel(tmp_path: pathlib.Path
 
 
 def test_a_format_with_no_directory_is_skipped_silently(tmp_path: pathlib.Path) -> None:
-    """VACUITY FACT 1: not every channel builds every package format, so a
-    MISSING `dist/repos/<fmt>` is legitimate and produces no call and no line."""
+    """VACUITY FACT 1: not every channel builds every package format, so a MISSING `dist/repos/<fmt>` is legitimate and produces no call and no line."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, tree={"dist/repos/rpm/rediacc.rpm": "rpm body\n"}
     )
@@ -355,9 +347,7 @@ def test_a_format_with_no_directory_is_skipped_silently(tmp_path: pathlib.Path) 
 
 
 def test_a_format_directory_holding_nothing_is_refused(tmp_path: pathlib.Path) -> None:
-    """VACUITY FACT 1, the other half. A directory that EXISTS and holds no files
-    means the sync moved nothing, so the run is refused rather than reported as
-    an upload. Note the sync HAS already run when the refusal fires."""
+    """VACUITY FACT 1, the other half. A directory that EXISTS and holds no files means the sync moved nothing, so the run is refused rather than reported as an upload. Note the sync HAS already run when the refusal fires."""
     root = fixture(tmp_path, tree={})
     (root / "dist" / "repos" / "apt").mkdir(parents=True)
     old, old_calls = _run(root, "old")
@@ -376,11 +366,9 @@ def test_a_format_directory_holding_nothing_is_refused(tmp_path: pathlib.Path) -
 def test_defect_an_entirely_empty_dist_reports_a_successful_upload(
     tmp_path: pathlib.Path,
 ) -> None:
-    """VACUITY FACT 2, PINNED. With no `dist/repos/*` and no install script, every
-    loop body is skipped, nothing is uploaded, nothing is purged, and the script prints `Repos uploaded to R2 channel: edge` and exits 0. The per-directory guard above cannot see it, because its subject is one directory rather than the upload as a whole.
+    """VACUITY FACT 2, PINNED. With no `dist/repos/*` and no install script, every loop body is skipped, nothing is uploaded, nothing is purged, and the script prints `Repos uploaded to R2 channel: edge` and exits 0. The per-directory guard above cannot see it, because its subject is one directory rather than the upload as a whole.
 
-    Reproduced rather than repaired: agreement with the live twin is this wave's deliverable, and the fix is a cutover-box decision. If it is ever repaired,
-    this test goes red and names the port that must follow."""
+    Reproduced rather than repaired: agreement with the live twin is this wave's deliverable, and the fix is a cutover-box decision. If it is ever repaired, this test goes red and names the port that must follow."""
     old, new, old_calls, new_calls = run_both(tmp_path, tree={})
     assert old.returncode == 0
     assert old.stdout == "Repos uploaded to R2 channel: edge\n"
@@ -391,8 +379,7 @@ def test_defect_an_entirely_empty_dist_reports_a_successful_upload(
 
 
 def test_missing_aws_refuses_before_the_environment_is_read(tmp_path: pathlib.Path) -> None:
-    """ORDER IS OBSERVABLE: `require_cmd aws` runs before the five guards, so a
-    run missing both the binary and every variable names the binary."""
+    """ORDER IS OBSERVABLE: `require_cmd aws` runs before the five guards, so a run missing both the binary and every variable names the binary."""
     old, new, old_calls, new_calls = run_both(tmp_path, drop="aws", drop_env=tuple(BASE_ENV.keys()))
     assert old.returncode == 1
     assert old.stderr == "✗ Required command 'aws' is not available\n"
@@ -403,9 +390,7 @@ def test_missing_aws_refuses_before_the_environment_is_read(tmp_path: pathlib.Pa
 def test_divergence_each_of_the_five_guards_is_bashs_own_unbound_variable(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS FOR ALL FIVE GUARDS. bash
-    prints its own FILE and LINE NUMBER before the twin's message, and the twin's message already begins with the script name. The port prints the `VAR: message` half. Same stream, same status 1, no call from either side,
-    and the ORDER of the guards is identical: the first missing one wins."""
+    """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS FOR ALL FIVE GUARDS. bash prints its own FILE and LINE NUMBER before the twin's message, and the twin's message already begins with the script name. The port prints the `VAR: message` half. Same stream, same status 1, no call from either side, and the ORDER of the guards is identical: the first missing one wins."""
     for index, (name, message) in enumerate(port.REQUIRED_ENV):
         case = tmp_path / f"guard-{name}"
         # Drop this one and everything after it, so the FIRST missing variable is the one under test and the guard order is what selects the message.
@@ -422,9 +407,7 @@ def test_divergence_each_of_the_five_guards_is_bashs_own_unbound_variable(
 def test_an_empty_channel_refuses_exactly_as_an_absent_one_does(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`:?` IS AN UNSET-OR-EMPTY TEST. A port testing `"CHANNEL" in os.environ`
-    would sail past this and sync every format to `s3://rediacc-releases/apt//`,
-    which is every channel's parent prefix."""
+    """`:?` IS AN UNSET-OR-EMPTY TEST. A port testing `"CHANNEL" in os.environ` would sail past this and sync every format to `s3://rediacc-releases/apt//`, which is every channel's parent prefix."""
     old, new, old_calls, new_calls = run_both(tmp_path, CHANNEL="")
     assert old.returncode == new.returncode == 1
     assert new.stderr == "CHANNEL: upload-repos-to-r2.sh: CHANNEL must be set\n"
@@ -432,8 +415,7 @@ def test_an_empty_channel_refuses_exactly_as_an_absent_one_does(
 
 
 def test_skip_release_on_a_release_channel_writes_nothing(tmp_path: pathlib.Path) -> None:
-    """THE BUMP-NONE BANNER, byte for byte, on STDOUT and with exit 0: the twin's
-    own closing sentence says this is the intended outcome, not an error."""
+    """THE BUMP-NONE BANNER, byte for byte, on STDOUT and with exit 0: the twin's own closing sentence says this is the intended outcome, not an error."""
     for channel in port.RELEASE_CHANNELS:
         case = tmp_path / f"skip-{channel}"
         old, new, old_calls, new_calls = run_both(case, CHANNEL=channel, SKIP_RELEASE="true")
@@ -447,8 +429,7 @@ def test_skip_release_on_a_release_channel_writes_nothing(tmp_path: pathlib.Path
 
 
 def test_skip_release_on_a_pr_channel_uploads_as_usual(tmp_path: pathlib.Path) -> None:
-    """SCOPED TO THE RELEASE CHANNELS: a `pr-N` channel has no tag contract, so
-    the flag is announced and ignored rather than obeyed."""
+    """SCOPED TO THE RELEASE CHANNELS: a `pr-N` channel has no tag contract, so the flag is announced and ignored rather than obeyed."""
     old, new, old_calls, new_calls = run_both(tmp_path, CHANNEL="pr-9", SKIP_RELEASE="yes")
     assert old.returncode == 0
     assert old.stdout.startswith(
@@ -482,9 +463,7 @@ def test_the_skip_values_are_an_exact_list_not_a_lowercase_test(
 
 
 def test_a_failed_sync_ends_the_run_with_awss_status(tmp_path: pathlib.Path) -> None:
-    """`aws s3 sync` IS UNGUARDED, so `set -e` ends the run with its status and
-    aws's own stderr is the only explanation. The second format is never reached
-    and nothing is purged."""
+    """`aws s3 sync` IS UNGUARDED, so `set -e` ends the run with its status and aws's own stderr is the only explanation. The second format is never reached and nothing is purged."""
     old, new, old_calls, new_calls = run_both(tmp_path, FAKE_AWS_RC="2")
     assert old.returncode == 2
     assert old.stderr == "upload failed: the bucket said no\n"
@@ -496,9 +475,7 @@ def test_a_failed_sync_ends_the_run_with_awss_status(tmp_path: pathlib.Path) -> 
 def test_a_failed_purge_ends_the_run_with_the_purge_scripts_status(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE FINAL PIPELINE IS UNGUARDED TOO, under `pipefail`. A curl transport
-    failure inside cf-purge-urls.sh exits 6, and that becomes this script's
-    status AFTER `Repos uploaded to R2 channel: edge` has already printed."""
+    """THE FINAL PIPELINE IS UNGUARDED TOO, under `pipefail`. A curl transport failure inside cf-purge-urls.sh exits 6, and that becomes this script's status AFTER `Repos uploaded to R2 channel: edge` has already printed."""
     old, new, old_calls, new_calls = run_both(tmp_path, FAKE_CURL_RC="6")
     assert old.returncode == 6
     assert old.stdout.startswith("Repos uploaded to R2 channel: edge\n")
@@ -507,10 +484,7 @@ def test_a_failed_purge_ends_the_run_with_the_purge_scripts_status(
 
 
 def test_the_root_comes_from_the_script_location_not_cwd(tmp_path: pathlib.Path) -> None:
-    """`cd "$(get_repo_root)"`, PROVEN. Both sides are invoked from a
-    subdirectory of the fixture that holds no `dist/` at all; if either resolved
-    its paths from cwd, its loops would find nothing and it would print the
-    empty-upload line instead of uploading five URLs."""
+    """`cd "$(get_repo_root)"`, PROVEN. Both sides are invoked from a subdirectory of the fixture that holds no `dist/` at all; if either resolved its paths from cwd, its loops would find nothing and it would print the empty-upload line instead of uploading five URLs."""
     old_root = fixture(tmp_path / "old")
     new_root = fixture(tmp_path / "new")
     for root in (old_root, new_root):
@@ -608,8 +582,7 @@ def test_the_guard_list_is_the_twins_guard_list() -> None:
 
 
 def test_the_skip_values_are_the_twins_case_arms() -> None:
-    """STALENESS ALARM for the `case` arms, which sit between the two markers the
-    gate test `test-skip-release-channel-pointer.sh` splits the twin on."""
+    """STALENESS ALARM for the `case` arms, which sit between the two markers the gate test `test-skip-release-channel-pointer.sh` splits the twin on."""
     source = TWIN.read_text(encoding="utf-8")
     arm = re.search(r"case \"\$\{SKIP_RELEASE:-\}\" in\n\s*([^)]*)\) return 0", source)
     assert arm is not None, "the case shape changed; this alarm reads nothing"
@@ -617,8 +590,7 @@ def test_the_skip_values_are_the_twins_case_arms() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the CACHE-CONTROL header, which is the one field
-    whose loss caused the incident this script's header is written about: an `immutable` policy let CF serve a previous run's body under a URL the new APKINDEX points at, and apt-get reported `BAD signature`. Nothing on either stream carries it, both exits are 0, and only the call log sees it. Driven
+    """ANTI-VACUITY, planted on the CACHE-CONTROL header, which is the one field whose loss caused the incident this script's header is written about: an `immutable` policy let CF serve a previous run's body under a URL the new APKINDEX points at, and apt-get reported `BAD signature`. Nothing on either stream carries it, both exits are 0, and only the call log sees it. Driven
     red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('CC_MUTABLE = "no-cache"', 'CC_MUTABLE = "immutable"', 1)

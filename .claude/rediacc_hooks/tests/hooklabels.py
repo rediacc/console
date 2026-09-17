@@ -10,9 +10,7 @@ WHY THE LINE, AND NOT THE SOURCE TEXT. Reading labels out of the two sources wou
 
 so one regex reads both, and a case that exists but never ran contributes nothing, which is exactly the failure a static comparison cannot see.
 
-HOW THE PYTHON SIDE PRINTS IT. pytest captures stdout, so `record()` appends to a file named by $HOOK_LABEL_DIR instead. ONE FILE PER PROCESS, because the suite runs
-under `pytest -n <jobs> --dist loadgroup` and several workers append at once; a
-shared file would interleave partial lines and the extractor would read a corrupted label as a missing one.
+HOW THE PYTHON SIDE PRINTS IT. pytest captures stdout, so `record()` appends to a file named by $HOOK_LABEL_DIR instead. ONE FILE PER PROCESS, because the suite runs under `pytest -n <jobs> --dist loadgroup` and several workers append at once; a shared file would interleave partial lines and the extractor would read a corrupted label as a missing one.
 
     HOOK_LABEL_DIR=/tmp/labels <pytest ...>
     python3 -m rediacc_hooks.tests.hooklabels /tmp/labels <baseline.out>

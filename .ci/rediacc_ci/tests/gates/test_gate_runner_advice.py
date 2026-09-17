@@ -311,8 +311,7 @@ def test_stale_allowlist_entries_fail(gate):
 
 
 def test_slim_job_at_its_limit_fails(gate):
-    """THE OTHER DIRECTION, and it is not allowlistable. A job on slim that is at
-    or past its declared timeout is about to be reported as `cancelled`."""
+    """THE OTHER DIRECTION, and it is not allowlistable. A job on slim that is at or past its declared timeout is about to be reported as `cancelled`."""
     with harness.temp_dir() as d:
         workflow(d / "wf", "ubuntu-latest")
         baseline(d / "base.json", fresh_stamp())
@@ -381,9 +380,7 @@ def test_under_observed_move_is_an_advisory(gate):
 
 
 def test_empty_baseline_refuses(gate):
-    """ANTI-VACUITY. Zero jobs compared exits 0 and reads exactly like coverage.
-    `refreshed_at` is SET here, so this is not the pristine shape: something
-    wrote this file and left no jobs behind, which is a defect."""
+    """ANTI-VACUITY. Zero jobs compared exits 0 and reads exactly like coverage. `refreshed_at` is SET here, so this is not the pristine shape: something wrote this file and left no jobs behind, which is a defect."""
     with harness.temp_dir() as d:
         workflow(d / "wf", "ubuntu-latest")
         (d / "base.json").write_text(
@@ -412,9 +409,7 @@ def test_empty_baseline_refuses(gate):
 
 
 def test_pristine_baseline_warns_and_passes(gate):
-    """THE BOOTSTRAP EXCEPTION. Without it the gate is unsatisfiable: it goes red
-    on an unseeded baseline, the seed can only come from a run whose profiled jobs finished, and this gate failing ~5 minutes in is what stops them
-    finishing. Two rounds of that yielded 3 jobs against a floor of 5."""
+    """THE BOOTSTRAP EXCEPTION. Without it the gate is unsatisfiable: it goes red on an unseeded baseline, the seed can only come from a run whose profiled jobs finished, and this gate failing ~5 minutes in is what stops them finishing. Two rounds of that yielded 3 jobs against a floor of 5."""
     with harness.temp_dir() as d:
         workflow(d / "wf", "ubuntu-latest")
         (d / "base.json").write_text(
@@ -443,9 +438,7 @@ def test_pristine_baseline_warns_and_passes(gate):
 
 
 def test_pristine_shape_is_exact(gate):
-    """Every near-miss must still REFUSE. "Below the floor" and "never seeded"
-    are different states and only the second one is innocent; forgiving the
-    first would make truncating this file a way to silence a real finding."""
+    """Every near-miss must still REFUSE. "Below the floor" and "never seeded" are different states and only the second one is innocent; forgiving the first would make truncating this file a way to silence a real finding."""
     with harness.temp_dir() as d:
         workflow(d / "wf", "ubuntu-latest")
         (d / "allow").write_text("", encoding="utf-8")
@@ -492,9 +485,7 @@ def test_pristine_shape_is_exact(gate):
 
 
 def test_unknown_format_refuses(gate):
-    """A baseline with no machine-checked version reaches the gate as a KeyError
-    traceback or, worse, as a silent misparse that reports a clean tree over
-    numbers it misunderstood. Both are replaced by a NAMED incompatibility."""
+    """A baseline with no machine-checked version reaches the gate as a KeyError traceback or, worse, as a silent misparse that reports a clean tree over numbers it misunderstood. Both are replaced by a NAMED incompatibility."""
     with harness.temp_dir() as d:
         workflow(d / "wf", "ubuntu-latest")
         (d / "allow").write_text("", encoding="utf-8")
@@ -559,9 +550,7 @@ def test_unknown_format_refuses(gate):
 
 
 def test_bad_record_names_the_job_and_field(gate):
-    """The failure this replaces was `KeyError: 'mem_peak_bytes'` pointing at a
-    line of the gate, which tells the reader nothing about which record is
-    wrong. Every message names the job and the field."""
+    """The failure this replaces was `KeyError: 'mem_peak_bytes'` pointing at a line of the gate, which tells the reader nothing about which record is wrong. Every message names the job and the field."""
     with harness.temp_dir() as d:
         workflow(d / "wf", "ubuntu-latest")
         (d / "allow").write_text("", encoding="utf-8")
@@ -632,9 +621,7 @@ print(module.is_pristine({"refreshed_at": None, "jobs": {}}))
 
 
 def test_is_pristine_requires_the_format(gate):
-    """The format clause inside is_pristine is redundant when the predicate is
-    reached through load_baseline, so no end-to-end fixture can pin it. Driven
-    directly here instead, rather than left as a claim in a comment."""
+    """The format clause inside is_pristine is redundant when the predicate is reached through load_baseline, so no end-to-end fixture can pin it. Driven directly here instead, rather than left as a claim in a comment."""
     result = run_inline(gate, IS_PRISTINE_PY)
     if result.rc != 0:
         gate.log_fail(
@@ -682,9 +669,7 @@ sys.exit(
 
 
 def test_refresh_refuses_an_unreadable_format(gate):
-    """A refresh MERGES into the file it is given. A format it cannot read is a
-    file whose meaning is unknown, so nothing may be written into it -- and the
-    check runs before the network, so a refused refresh costs no API call."""
+    """A refresh MERGES into the file it is given. A format it cannot read is a file whose meaning is unknown, so nothing may be written into it -- and the check runs before the network, so a refused refresh costs no API call."""
     with harness.temp_dir() as d:
         workflow(d / "wf", "ubuntu-latest")
         baseline(d / "base.json", fresh_stamp())
@@ -750,9 +735,7 @@ sys.exit(
 
 
 def test_refresh_refuses_a_partial_harvest(gate):
-    """ALL OR NOTHING. This is what keeps the pristine exception honest: if a
-    harvest could write 2 jobs, "seeded" would stop meaning "enforceable" and the
-    gate would refuse every run afterwards with no way back."""
+    """ALL OR NOTHING. This is what keeps the pristine exception honest: if a harvest could write 2 jobs, "seeded" would stop meaning "enforceable" and the gate would refuse every run afterwards with no way back."""
     with harness.temp_dir() as d:
         workflow(d / "wf", "ubuntu-latest")
         (d / "base.json").write_text(
@@ -817,8 +800,7 @@ def test_empty_workflow_dir_refuses(gate):
 
 
 def synth_tsv(out, tier, cceil, mceil, label, src, hint, n, cpu, mem, env: str = "") -> None:
-    """`synth_tsv <out> <tier> <cpu_ceil> <mem_ceil> <label> <src> <hint> <samples>
-    <cpu_milli> <mem_base> [env]`.
+    """`synth_tsv <out> <tier> <cpu_ceil> <mem_ceil> <label> <src> <hint> <samples> <cpu_milli> <mem_base> [env]`.
 
     The schema is sampler-linux.sh's, field for field:
       #META  tier cpu_milli mem_bytes interval_s start_ms runner_label cpu_src mem_src
@@ -916,9 +898,7 @@ def assert_parity(gate, d, name, want, *args) -> None:
 
 
 def test_awk_and_python_agree_on_the_verdict(gate):
-    """THE COHERENCE CASE. Two implementations of the same thresholds, in two
-    languages, in two files. The panel's advisory and this gate's verdict are only the same claim for as long as these agree, and nothing else in the tree
-    would notice them drifting apart."""
+    """THE COHERENCE CASE. Two implementations of the same thresholds, in two languages, in two files. The panel's advisory and this gate's verdict are only the same claim for as long as these agree, and nothing else in the tree would notice them drifting apart."""
     with harness.temp_dir() as d:
         assert_parity(
             gate,
@@ -1099,8 +1079,7 @@ print(merged["fixture.yml:hosted"]["env"])
 
 
 def test_harvester_skip_rule(gate):
-    """merge_rows is the only place a row becomes a baseline number, so the skip
-    rule is driven directly rather than inferred from a --refresh run."""
+    """merge_rows is the only place a row becomes a baseline number, so the skip rule is driven directly rather than inferred from a --refresh run."""
     result = run_inline(gate, MERGE_ROWS_PY)
     if result.rc != 0:
         gate.log_fail(
@@ -1126,8 +1105,7 @@ def test_harvester_skip_rule(gate):
 def test_hosted_vm_record_fires_the_gate(gate):
     """END TO END, and the reason classify() had to learn about env: an
     ubuntu-latest job's record carries runner_label=unknown, so without the env
-    evidence the gate would re-derive NONE and quietly fire on nothing -- the
-    same blindness, one layer down."""
+    evidence the gate would re-derive NONE and quietly fire on nothing -- the same blindness, one layer down."""
     with harness.temp_dir() as d:
         workflow(d / "wf", "ubuntu-latest")
         baseline(d / "base.json", fresh_stamp())
@@ -1181,8 +1159,7 @@ def run_validator(gate, listfile) -> harness.RunResult:
 
 
 def test_real_allowlist_blockers_are_substantive(gate):
-    """The PROSE bar is the shared validator's, applied to the real file here so
-    the banned-phrase list lives in exactly one place."""
+    """The PROSE bar is the shared validator's, applied to the real file here so the banned-phrase list lives in exactly one place."""
     with harness.temp_dir() as d:
         if not REAL_ALLOWLIST.is_file():
             gate.log_fail(
@@ -1210,8 +1187,7 @@ def test_real_allowlist_blockers_are_substantive(gate):
 
 
 def test_real_tree_seam_free(gate):
-    """THE LOAD-BEARING CASE. No env seams: the real baseline, the real
-    .github/workflows, the real allowlist. Two outcomes are correct here and the test asserts WHICH one it got rather than accepting any exit code: once the baseline is seeded the gate passes, and until it is, the vacuity floor must refuse. Anything else -- a crash, a silent 0 over an empty baseline -- fails
+    """THE LOAD-BEARING CASE. No env seams: the real baseline, the real .github/workflows, the real allowlist. Two outcomes are correct here and the test asserts WHICH one it got rather than accepting any exit code: once the baseline is seeded the gate passes, and until it is, the vacuity floor must refuse. Anything else -- a crash, a silent 0 over an empty baseline -- fails
     this case."""
     python3 = require_python(gate)
     # The seams must be ABSENT, not merely unset in this process: `harness.run` overlays os.environ, so a `RUNNER_ADVICE_*` inherited from an outer shell would silently make this case seam-BEARING and its name a lie.

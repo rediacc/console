@@ -195,9 +195,7 @@ def test_the_pyyaml_comparison_can_actually_fail():
 def test_pyyaml_turns_the_on_key_into_a_boolean():
     """THE ONE DELIBERATE DIVERGENCE, measured in both directions.
 
-    PyYAML applies YAML 1.1 resolution to keys, so the `on:` block every workflow opens with arrives as the key `True`. `check_secret_reachability.py:151`
-    carries a workaround; a consumer that forgets it finds no triggers and says
-    nothing. This parser keeps keys as strings.
+    PyYAML applies YAML 1.1 resolution to keys, so the `on:` block every workflow opens with arrives as the key `True`. `check_secret_reachability.py:151` carries a workaround; a consumer that forgets it finds no triggers and says nothing. This parser keeps keys as strings.
     """
     raw = subprocess.run(
         [
@@ -300,8 +298,7 @@ def test_the_golden_is_the_real_lanes_ts_answer_when_tsx_is_installed():
 def test_lanes_ts_loses_a_runner_that_carries_a_trailing_comment():
     """DIVERGENCE 1, both directions, from the golden.
 
-    Live measurement over the real corpus this session: 8 of 124 jobs have a runner lanes.ts reports as ''. Two of them are plain `ubuntu-latest` with an
-    explanatory comment (`ci.yml:89` and `:638`); the other six are
+    Live measurement over the real corpus this session: 8 of 124 jobs have a runner lanes.ts reports as ''. Two of them are plain `ubuntu-latest` with an explanatory comment (`ci.yml:89` and `:638`); the other six are
     `${{ matrix.os }}`-style expressions, which its single-token `(\\S+)` cannot
     match either.
     """
@@ -334,8 +331,7 @@ def test_lanes_ts_loses_a_timeout_that_carries_a_trailing_comment():
 
 
 def test_a_targeted_submodule_is_suppressed_once_star_is_present():
-    """lanes.ts:111-114, reproduced. A job that took every submodule has this one,
-    and listing it again would make an exact-match need look unsatisfiable."""
+    """lanes.ts:111-114, reproduced. A job that took every submodule has this one, and listing it again would make an exact-match need look unsatisfiable."""
     mine = {c.job: c for c in workflows.lane_capabilities(workflows.load_workflow(FIXTURE))}
     assert mine["all-submodules"].submodules == ["*"]
     assert mine["targeted-submodule"].submodules == ["private/account", "private/renet"]

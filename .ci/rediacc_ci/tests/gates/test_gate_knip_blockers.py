@@ -3,17 +3,14 @@
 Behavioural test for `scripts/gates/check-knip-blockers.ts`, the validator that holds knip's suppression arrays to the repo-wide BLOCKER convention.
 
 WHAT IT GUARDS. `knip.jsonc`'s `ignore`, `ignoreDependencies`, `ignoreBinaries` and `ignoreUnresolved` arrays are the one place in the tree where a name can be made invisible to dead-code analysis by typing it. The convention is that every such entry carries a substantive `// BLOCKER:` reason, so a suppression cannot become permanent by being quiet. `entry` / `project` globs are
-CONFIGURATION and
-are exempt; the exemption is a case here rather than a comment, because an
-exemption nothing tests is an exemption that will silently widen.
+CONFIGURATION and are exempt; the exemption is a case here rather than a comment, because an exemption nothing tests is an exemption that will silently widen.
 
 STALENESS IS NOT THIS GATE'S JOB, and the twin says so out loud: an ignore entry that no longer suppresses anything is reported by knip itself under `--treat-config-hints-as-errors`. Two gates asking different questions.
 
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_accepts_real_config` drives the validator seam-free over the REAL `knip.jsonc` at the repo root, and the validator additionally shells out to `git grep` across the working tree and the `private/account` submodule to collect `@public` tags. A battery step rewriting either mid-read is a divergence that would be blamed on this
 port.
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured only because
-this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in
-`test_twin_parity.py`.
+this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
 THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from a real `npx tsx scripts/gates/check-knip-blockers.ts` run. The fixtures are the twin's, string
 for string.
@@ -96,8 +93,7 @@ def validated_count(gate, output: str) -> int:
 
 
 def test_accepts_real_config(gate):
-    """THE REAL-TREE CASE. Real `knip.jsonc`, real `git grep` over the tree and the
-    `private/account` submodule, no seams."""
+    """THE REAL-TREE CASE. Real `knip.jsonc`, real `git grep` over the tree and the `private/account` submodule, no seams."""
     if not REAL_CONFIG.is_file():
         gate.log_fail("knip.jsonc missing at repo root")
     result = run_validator(gate)
@@ -110,9 +106,7 @@ def test_accepts_real_config(gate):
 
 
 def test_accepts_group_blocker(gate):
-    """A `// BLOCKER:` line covers every entry after it until a blank line or the
-    end of the array, which is `parse_blockered_list`'s contract in the shared
-    shell validator. One reason for a coherent group beats N copies of it."""
+    """A `// BLOCKER:` line covers every entry after it until a blank line or the end of the array, which is `parse_blockered_list`'s contract in the shared shell validator. One reason for a coherent group beats N copies of it."""
     result = run_validator_with_config(
         gate,
         """{
@@ -143,9 +137,7 @@ def test_rejects_missing_blocker(gate):
 
 
 def test_rejects_low_effort_blocker(gate):
-    """A reason that is not a reason. Requiring the WORD `BLOCKER` and nothing else
-    would industrialise `// BLOCKER: tbd`, which is worse than no convention because
-    it reads as compliance."""
+    """A reason that is not a reason. Requiring the WORD `BLOCKER` and nothing else would industrialise `// BLOCKER: tbd`, which is worse than no convention because it reads as compliance."""
     result = run_validator_with_config(
         gate,
         """{
@@ -163,8 +155,7 @@ def test_rejects_low_effort_blocker(gate):
 
 
 def test_blank_line_resets_blocker(gate):
-    """THE SCOPE BOUNDARY. Without the reset, one reason at the top of an array
-    would cover everything anybody appended to it afterwards, forever."""
+    """THE SCOPE BOUNDARY. Without the reset, one reason at the top of an array would cover everything anybody appended to it afterwards, forever."""
     result = run_validator_with_config(
         gate,
         """{
@@ -184,8 +175,7 @@ def test_blank_line_resets_blocker(gate):
 def test_entry_project_exempt(gate):
     """THE CONVERSE, and without it every case above is satisfied by a validator
     that rejects everything. `entry` and `project` globs tell knip where to look;
-    they suppress nothing, so demanding a reason for them would be noise that
-    teaches readers to ignore the convention."""
+    they suppress nothing, so demanding a reason for them would be noise that teaches readers to ignore the convention."""
     result = run_validator_with_config(
         gate,
         """{
@@ -210,8 +200,7 @@ def test_the_real_config_declares_a_non_trivial_corpus(gate):
 
     `test_accepts_real_config` asserts exit 0 and nothing else, and exit 0 is also what a validator that parsed ZERO entries returns. The reader is a line-based JSONC walk over four hand-written regexes -- put an array on one line, change the quoting, let a formatter through, and `keyOpenArray` stops matching while the gate keeps reporting green over a corpus of nothing.
 
-    So the count is READ from the validator's own verdict line and required to be
-    non-trivial. Zero is a failure; so is a number that has fallen under the floor.
+    So the count is READ from the validator's own verdict line and required to be non-trivial. Zero is a failure; so is a number that has fallen under the floor.
     """
     if not REAL_CONFIG.is_file():
         gate.log_fail("knip.jsonc missing at repo root")

@@ -57,8 +57,7 @@ def _py_floor(script: pathlib.Path, var: str, value: str, func: str) -> harness.
 
 
 def test_every_impossible_floor_is_refused_and_says_vacuous(gate):
-    """Four floors, one function, because the exercised COUNT is the anti-vacuity
-    control for this test itself and must not become module state."""
+    """Four floors, one function, because the exercised COUNT is the anti-vacuity control for this test itself and must not become module state."""
     gate.log_test("an impossible floor must be refused, in the floor's own words")
     exercised = 0
 
@@ -159,9 +158,7 @@ def test_action_refs_accepts_the_real_corpus(gate):
 
 
 def test_the_four_subjects_are_all_present(gate):
-    """PORT-ONLY, and it is the refusal the twin cannot make cheaply. Every case
-    above runs a script BY PATH. A path that no longer exists produces a non-zero exit and no VACUOUS text, which the twin reports as `refused but never said VACUOUS` -- a message about wording for a file that is not there. Probing
-    first names the missing subject instead."""
+    """PORT-ONLY, and it is the refusal the twin cannot make cheaply. Every case above runs a script BY PATH. A path that no longer exists produces a non-zero exit and no VACUOUS text, which the twin reports as `refused but never said VACUOUS` -- a message about wording for a file that is not there. Probing first names the missing subject instead."""
     gate.log_test("each floor's subject is where this module drives it")
     missing = [
         paths.relative_to_root(p)

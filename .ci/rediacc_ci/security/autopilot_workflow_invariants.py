@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/security/check-autopilot-workflow-invariants.sh`.
 
-W7P6 wave 27. The bash twin stays the LIVE registered gate; this module is its
-VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by `.ci/rediacc_ci/tests/test_security_autopilot_workflow_invariants.py` and by the
+W7P6 wave 27. The bash twin stays the LIVE registered gate; this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by `.ci/rediacc_ci/tests/test_security_autopilot_workflow_invariants.py` and by the
 K=5 shadow ledger
 `.ci/shadow/w7p6-check-autopilot-workflow-invariants.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
-NAMING. `check_` is dropped to match `rediacc_ci.security.workflow_gates`, the
-nearest sibling in this package; see the same note in `ci_workflow_invariants`.
+NAMING. `check_` is dropped to match `rediacc_ci.security.workflow_gates`, the nearest sibling in this package; see the same note in `ci_workflow_invariants`.
 
 WHAT THE TWIN DOES. Static invariants over `.github/workflows/autopilot.yml`, the workflow that hands a model a shell over PR-authored code. Each invariant is a structural expression of a rule from `docs/ci-overhaul/03-v2-autonomy.md`, so a violation means the SECURITY design is broken rather than that a style rule is bent. The nine findings, and the twin's own one-line reason for
 each:
@@ -24,10 +22,8 @@ each:
   submodule-checkout-pre-model no pre-model checkout may request submodules
   model-round-file-tools       the model round's allowlist must carry Edit/Write/Read
 
-NO EXTERNAL PROCESS IS INVOLVED, ON EITHER SIDE. The twin shells out to `awk`
-(three separate programs) and `grep`, both of which are transcribed here; there
-is no `yq`, no `jq`, no `gh`, no network, and no YAML parser -- the twin walks the file as TEXT and this port must walk it the same way, because the invariants are partly about COMMENTS and about indentation, neither of which survives a parse. That is why the differential needs no recording fakes and drives both sides over fixture YAML through `$WORKFLOW_FILE`, the seam the twin
-already exposes for its own gate test.
+NO EXTERNAL PROCESS IS INVOLVED, ON EITHER SIDE. The twin shells out to `awk` (three separate programs) and `grep`, both of which are transcribed here; there is no `yq`, no `jq`, no `gh`, no network, and no YAML parser -- the twin walks the file as TEXT and this port must walk it the same way, because the invariants are partly about COMMENTS and about indentation, neither of which
+survives a parse. That is why the differential needs no recording fakes and drives both sides over fixture YAML through `$WORKFLOW_FILE`, the seam the twin already exposes for its own gate test.
 
 PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired.
 
@@ -329,8 +325,7 @@ def main(argv: list[str]) -> int:
         log.error("INVARIANT-FAIL: %s" % message)
         failed = 1
 
-    # `awk` reads bytes; a workflow with invalid UTF-8 must not raise here where
-    # the twin would simply walk the bytes. "surrogateescape" round-trips them.
+    # `awk` reads bytes; a workflow with invalid UTF-8 must not raise here where the twin would simply walk the bytes. "surrogateescape" round-trips them.
     with open(workflow_file, encoding="utf-8", errors="surrogateescape") as handle:
         text = handle.read()
 

@@ -100,8 +100,7 @@ def merged_pr(number: int, labels: str) -> dict:
 
 
 def open_pr(number: int, labels: str) -> dict:
-    """`open_pr`: contains the commit, but nothing is released from it yet, so
-    its label must not count."""
+    """`open_pr`: contains the commit, but nothing is released from it yet, so its label must not count."""
     return {
         "number": number,
         "merged_at": None,
@@ -126,9 +125,7 @@ class World:
         self.setup()
 
     def setup(self) -> None:
-        """Idempotent, exactly as the twin's is: a case that drives two worlds in
-        one directory calls this twice, and a leftover repo would make the second
-        world inherit the first one's tags."""
+        """Idempotent, exactly as the twin's is: a case that drives two worlds in one directory calls this twice, and a leftover repo would make the second world inherit the first one's tags."""
         for name in ("fixtures", "repo"):
             shutil.rmtree(self.root / name, ignore_errors=True)
         (self.root / "fixtures").mkdir(parents=True)

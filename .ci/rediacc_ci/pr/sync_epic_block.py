@@ -87,8 +87,7 @@ def _strip_existing_block(body: str) -> str:
 
 def _relative_to(path: pathlib.Path, root: pathlib.Path) -> str:
     """`${SNAP#"$REPO_ROOT"/}` -- strip the exact `<root>/` prefix; if the
-    path does not start with it (should not happen), the twin's parameter
-    expansion is a no-op and the original string passes through unchanged."""
+    path does not start with it (should not happen), the twin's parameter expansion is a no-op and the original string passes through unchanged."""
     return str(path).removeprefix(str(root) + "/")
 
 

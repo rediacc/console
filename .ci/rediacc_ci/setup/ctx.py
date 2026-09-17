@@ -1,9 +1,7 @@
 """The one seam every ported setup phase reaches the machine through.
 
-WHY A SEAM AND NOT `shutil.which` EVERYWHERE. The bash this replaces is proven by driving it, not by reading it: `.ci/rediacc_ci/setup/shadow_driver.py` runs
-`bash -c 'source .ci/lib/setup.sh; setup_node_toolchain'` beside the Python and
-compares. The bash side can only be steered by PATH and by the environment, because there is nothing else to inject into a sourced function. So the Python side must be steerable by exactly the same two things and by NOTHING ELSE. A port that reads `shutil.which` (which consults `os.environ` at call time, but also caches nothing and ignores an env dict a caller hands it) or
-`os.isatty(0)` directly cannot be pointed at a fixture the way the bash can, and the differential would then be comparing two different questions.
+WHY A SEAM AND NOT `shutil.which` EVERYWHERE. The bash this replaces is proven by driving it, not by reading it: `.ci/rediacc_ci/setup/shadow_driver.py` runs `bash -c 'source .ci/lib/setup.sh; setup_node_toolchain'` beside the Python and compares. The bash side can only be steered by PATH and by the environment, because there is nothing else to inject into a sourced function. So
+the Python side must be steerable by exactly the same two things and by NOTHING ELSE. A port that reads `shutil.which` (which consults `os.environ` at call time, but also caches nothing and ignores an env dict a caller hands it) or `os.isatty(0)` directly cannot be pointed at a fixture the way the bash can, and the differential would then be comparing two different questions.
 
 Hence: every probe in this package goes through a `Ctx`. `Ctx.which` resolves against `ctx.env["PATH"]`, `Ctx.run` passes `ctx.env` down, and `ctx.stdin_tty` is a value rather than a call. Point both sides at the same PATH and the same env and they are answering the same question about the same machine.
 
@@ -27,8 +25,7 @@ if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation her
 
 # `timeout(1)` is spelled out rather than imported from `rediacc_ci.proc` at module scope for one reason: `proc` is about wrapping a CHILD in the coreutils timeout binary, and everything here that needs a deadline gets it from
 # `subprocess.run(timeout=...)`, which needs no binary at all and therefore has
-# no macOS gap. The bash spells the same deadline `timeout 30 docker info`
-# (.ci/lib/setup.sh:576); the number is carried, the mechanism is not.
+# no macOS gap. The bash spells the same deadline `timeout 30 docker info` (.ci/lib/setup.sh:576); the number is carried, the mechanism is not.
 DEFAULT_TIMEOUT = 30
 
 

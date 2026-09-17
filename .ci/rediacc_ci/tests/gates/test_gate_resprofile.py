@@ -124,8 +124,7 @@ def _quiet_capture() -> str:
 
 
 def build_fixture(gate, work: pathlib.Path) -> pathlib.Path:
-    """A fixture repo root. The gate resolves everything under `RESPROFILE_ROOT`,
-    so the real baseline is never touched."""
+    """A fixture repo root. The gate resolves everything under `RESPROFILE_ROOT`, so the real baseline is never touched."""
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(GATE))
     root = work / "root"
@@ -199,8 +198,7 @@ def test_seed_refuses_empty_corpus(gate):
         # F rises, J rises: allowed.
         accumulate = run_gate(root, "--seed", str(work / "caps"))
         gate.assert_exit_code(0, accumulate.rc, "accumulating is the silent direction")
-        # An EMPTY corpus must be refused: a baseline seeded from nothing enshrines nothing. The twin's first draft asserted a "silent shrink" refusal that
-        # could never fire, because seeds accumulate; this case is what exposed it.
+        # An EMPTY corpus must be refused: a baseline seeded from nothing enshrines nothing. The twin's first draft asserted a "silent shrink" refusal that could never fire, because seeds accumulate; this case is what exposed it.
         empty = work / "empty"
         empty.mkdir()
         refused = run_gate(root, "--seed", str(empty))
@@ -235,11 +233,9 @@ def test_mutant_wall_scaling_removed(gate):
 
 
 def test_the_gate_is_green_on_its_own_selftest(gate):
-    """PORT-ONLY. Three of the four cases above read the gate's VERDICT, and a
-    verdict is only worth reading if the instrument behind it passes its own
+    """PORT-ONLY. Three of the four cases above read the gate's VERDICT, and a verdict is only worth reading if the instrument behind it passes its own
     controls on an unmutated tree. The mutant case proves the control can fail;
-    this proves it does not fail by default, which is the other direction and the
-    one that would otherwise make `test_mutant_wall_scaling_removed` pass for free."""
+    this proves it does not fail by default, which is the other direction and the one that would otherwise make `test_mutant_wall_scaling_removed` pass for free."""
     gate.log_test("CONTROL: the unmutated instrument passes its own selftest")
     result = harness.run(["python3", str(GATE), "--selftest"], cwd=paths.repo_root())
     gate.assert_exit_code(0, result.rc, "the gate's own controls pass on the real tree")

@@ -271,9 +271,7 @@ ALL_TOOLS = ["ruff", "go", "shfmt", "shellcheck", "actionlint"]
 
 
 def _path_without(tool, base):
-    """base's PATH entries, minus any that resolve `tool` -- except bash's own
-    directory, which must survive every strip or the subprocess call used to
-    exercise the guard can no longer find bash itself (see BASH_DIR above)."""
+    """base's PATH entries, minus any that resolve `tool` -- except bash's own directory, which must survive every strip or the subprocess call used to exercise the guard can no longer find bash itself (see BASH_DIR above)."""
     return os.pathsep.join(
         d
         for d in base.split(os.pathsep)

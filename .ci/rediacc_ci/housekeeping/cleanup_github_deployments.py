@@ -119,8 +119,7 @@ def main(argv: list[str]) -> int:
         ]
     )
     if listing.returncode != 0:
-        # `set -e` on a failed command substitution. gh has already written its
-        # own diagnostic to the inherited stderr; nothing is fabricated here.
+        # `set -e` on a failed command substitution. gh has already written its own diagnostic to the inherited stderr; nothing is fabricated here.
         return listing.returncode
     ids = listing.stdout.rstrip("\n")
 

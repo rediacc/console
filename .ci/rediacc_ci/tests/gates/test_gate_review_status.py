@@ -323,8 +323,7 @@ def marker_comment(sha: str) -> dict:
 
 
 def report_comments(n: int) -> list:
-    """`report_comments <n>` -- n finished review reports, in the shape both this
-    script and claude-review-gate.sh count against the cap."""
+    """`report_comments <n>` -- n finished review reports, in the shape both this script and claude-review-gate.sh count against the cap."""
     return [
         {
             "id": 100 + i,
@@ -336,8 +335,7 @@ def report_comments(n: int) -> list:
 
 
 def attempt_comments(n: int) -> list:
-    """Spent review passes: budget burned, NOTHING posted. Counted against the
-    same cap as a posted report, because the cost is identical."""
+    """Spent review passes: budget burned, NOTHING posted. Counted against the same cap as a posted report, because the cost is identical."""
     return [
         {
             "id": 200 + i,
@@ -353,8 +351,7 @@ def write_json(path, value) -> None:
 
 
 def setup(gate, t) -> None:
-    """`setup <TEMP>` -- default world: open non-draft PR #42, head NEW_SHA,
-    marker on NEW_SHA, no reports, all hygiene green."""
+    """`setup <TEMP>` -- default world: open non-draft PR #42, head NEW_SHA, marker on NEW_SHA, no reports, all hygiene green."""
     require_bash(gate)
     require_jq(gate)
     (t / "fixtures").mkdir(parents=True, exist_ok=True)
@@ -420,8 +417,7 @@ def run_status(gate, t, **env) -> Run:
 
 
 def jq_r(gate, expr: str, document: str) -> str:
-    """`jq -r <expr>` over a JSON document, so the twin's expressions are the
-    ones that run rather than a Python re-reading of what they mean."""
+    """`jq -r <expr>` over a JSON document, so the twin's expressions are the ones that run rather than a Python re-reading of what they mean."""
     jq = require_jq(gate)
     result = harness.run([jq, "-r", expr], stdin=document)
     if result.rc != 0:
@@ -820,10 +816,8 @@ def test_cap_reached_warns_instead_of_deadlocking(gate):
 
 
 def test_cap_reached_by_spent_attempts_alone(gate):
-    """THE SHAPE THAT ACTUALLY HAPPENED, and that the case above cannot see. PR
-    #553 hit its cap with ZERO posted reports and THREE spent attempts -- three reviews that burned their turn budget and posted nothing. review-status.sh counted posted reports alone, read 0/3, concluded the cap was NOT reached, and posted a REQUIRED failure, leaving a green, ready, thread-clean PR permanently unmergeable: exactly what the guard above exists to prevent. The
-    sibling case passes under EITHER numerator, because 3 posted reports look
-    identical to both."""
+    """THE SHAPE THAT ACTUALLY HAPPENED, and that the case above cannot see. PR #553 hit its cap with ZERO posted reports and THREE spent attempts -- three reviews that burned their turn budget and posted nothing. review-status.sh counted posted reports alone, read 0/3, concluded the cap was NOT reached, and posted a REQUIRED failure, leaving a green, ready, thread-clean PR
+    permanently unmergeable: exactly what the guard above exists to prevent. The sibling case passes under EITHER numerator, because 3 posted reports look identical to both."""
     with harness.temp_dir() as t:
         setup(gate, t)
         write_json(
@@ -1258,8 +1252,7 @@ SUMMARY_BODY = "\n".join(
 
 
 def summary_comment(id_: int, created: str, body: str = "") -> dict:
-    """The real shape: bot author, plus the machine-readable findings fence that
-    claude-review-gate.sh --post-findings uses to locate this very comment."""
+    """The real shape: bot author, plus the machine-readable findings fence that claude-review-gate.sh --post-findings uses to locate this very comment."""
     return {
         "id": id_,
         "created_at": created,
@@ -1273,8 +1266,7 @@ def chatter_comment(id_: int, created: str, author: str, body: str) -> dict:
 
 
 def human_answer_body() -> str:
-    """A per-finding answer of the shape the operator actually posted on #551
-    (2856 chars, no id citation) -- long-form, by a human."""
+    """A per-finding answer of the shape the operator actually posted on #551 (2856 chars, no id citation) -- long-form, by a human."""
     return (
         "The finding was correct and is fixed. The datastore-scoped stat now resolves the "
         "named datastore mount before measuring, mirroring recordedDatastoreMount, so a fork "
@@ -1604,9 +1596,7 @@ REPORT_BODY = "\n".join(
 
 
 def report_comment(id_: int, created: str, body: str = "") -> dict:
-    """Default body is the LIVE #551 SHAPE: the header, then the model's short
-    wrap-up. No findings fence, no "### Review" heading -- the exact shape the
-    old selector could not see."""
+    """Default body is the LIVE #551 SHAPE: the header, then the model's short wrap-up. No findings fence, no "### Review" heading -- the exact shape the old selector could not see."""
     return {
         "id": id_,
         "created_at": created,
@@ -1616,9 +1606,7 @@ def report_comment(id_: int, created: str, body: str = "") -> dict:
 
 
 def epic_report_comment(id_: int, epic: str, created: str) -> dict:
-    """The per-epic producer header. It is the SAME constant with the epic
-    appended, which is what makes the fan-out an extension by dimension rather
-    than a second, drifting key."""
+    """The per-epic producer header. It is the SAME constant with the epic appended, which is what makes the fan-out an extension by dimension rather than a second, drifting key."""
     return report_comment(
         id_,
         created,
@@ -1652,9 +1640,8 @@ def marker_issue_comment(id_: int, created: str) -> dict:
 
 
 def run_report_gate(gate, t, *, head_ref: str = "", publish_root: str = "", **env) -> Run:
-    """PIN THE BRANCH. The reply gate fans out per epic by reading
-    agent/pr/<branch>.md from the CHECKOUT, so with no pin it read whatever branch the developer happened to be on: on a branch that declares epics, every flat-path assertion below silently inverted, because the planted bare "**Claude finished" fixture does not match a per-epic header. A test must not depend on the tree it is running in. Callers that want the fan-out set
-    `head_ref` to a branch whose snapshot they planted."""
+    """PIN THE BRANCH. The reply gate fans out per epic by reading agent/pr/<branch>.md from the CHECKOUT, so with no pin it read whatever branch the developer happened to be on: on a branch that declares epics, every flat-path assertion below silently inverted, because the planted bare "**Claude finished" fixture does not match a per-epic header. A test must not depend on the
+    tree it is running in. Callers that want the fan-out set `head_ref` to a branch whose snapshot they planted."""
     # The CALL is the assertion, not the value: it proves bash exists and that the three bash subjects are on disk. The gate below is invoked by its own shebang, so nothing here needs the interpreter path any more.
     require_bash(gate)
     base = {
@@ -1690,11 +1677,9 @@ def test_report_prefix_is_shared_with_the_pipeline(gate):
 
 
 def test_per_epic_fanout_gates_every_epic_not_just_the_newest(gate):
-    """THE PIN ABOVE HAS A COST, AND THIS PAYS IT. Pinning PR_HEAD_REF to a
-    branch with no snapshot makes every flat-path test deterministic, but it would also hide a fan-out that had stopped working entirely: with zero epics the gate takes the flat path, which is exactly what those tests assert. So drive the OTHER side here, with a snapshot the test plants itself.
+    """THE PIN ABOVE HAS A COST, AND THIS PAYS IT. Pinning PR_HEAD_REF to a branch with no snapshot makes every flat-path test deterministic, but it would also hide a fan-out that had stopped working entirely: with zero epics the gate takes the flat path, which is exactly what those tests assert. So drive the OTHER side here, with a snapshot the test plants itself.
 
-    WORKLIST_PUBLISH_ROOT points review_epic_ids() at the fixture, so this reads the planted snapshot and never the real tree's. It is the same override --publish honours, for the same reason: a test must not write into, or read
-    its answer out of, the working tree another session is using."""
+    WORKLIST_PUBLISH_ROOT points review_epic_ids() at the fixture, so this reads the planted snapshot and never the real tree's. It is the same override --publish honours, for the same reason: a test must not write into, or read its answer out of, the working tree another session is using."""
     with harness.temp_dir() as t:
         setup_comments(gate, t)
         (t / "agent" / "pr").mkdir(parents=True, exist_ok=True)
@@ -1720,8 +1705,7 @@ def test_per_epic_fanout_gates_every_epic_not_just_the_newest(gate):
 
 
 def test_report_without_fence_or_heading_blocks(gate):
-    """THE REGRESSION PIN. This is the exact live shape that slipped through: a
-    real finished report with neither the fence nor a "### Review" heading."""
+    """THE REGRESSION PIN. This is the exact live shape that slipped through: a real finished report with neither the fence nor a "### Review" heading."""
     with harness.temp_dir() as t:
         setup_comments(gate, t)
         comments_fixture(t, report_comment(901, "2026-08-05T08:07:03Z"))
@@ -1885,8 +1869,7 @@ def test_report_graphql_fallback_recovers_when_rest_fails(gate):
 
 
 def test_report_graphql_fallback_still_detects_unanswered(gate):
-    """THE CONTROL. Without this the case above proves only that the gate went
-    quiet."""
+    """THE CONTROL. Without this the case above proves only that the gate went quiet."""
     with harness.temp_dir() as t:
         setup_comments(gate, t)
         unanswered = (report_comment(901, "2026-08-05T08:07:03Z"),)
@@ -1999,9 +1982,7 @@ def parse_threshold(text: str, name: str) -> str:
 
 
 def test_reply_thresholds_match_across_both_gates(gate):
-    """Anti-drift for the property above: the shared rule is spelled out in two
-    files, so the thresholds must be asserted equal. If one file is tuned and the other is not, a reply can satisfy one gate and not the other, and the
-    property test above would start failing for a reason nobody could see."""
+    """Anti-drift for the property above: the shared rule is spelled out in two files, so the thresholds must be asserted equal. If one file is tuned and the other is not, a reply can satisfy one gate and not the other, and the property test above would start failing for a reason nobody could see."""
     comments_src = REVIEW_COMMENTS_SRC.read_text(encoding="utf-8")
     replies_src = REPORT_REPLIES_SRC.read_text(encoding="utf-8")
     for name in ("SUMMARY_MIN_CHARS", "SUMMARY_LONGFORM_CHARS"):
@@ -2194,9 +2175,7 @@ def head_is_exhausted(gate, table: str, head: str) -> int:
 
 
 def test_attempt_accounting_helpers(gate):
-    """PURE, so both directions are provable without a network. These functions
-    are the numerator the cap is measured against; the integration cases below
-    can only show one point of the curve each."""
+    """PURE, so both directions are provable without a network. These functions are the numerator the cap is measured against; the integration cases below can only show one point of the curve each."""
     # BLOCKER: the shared review-budget helpers both review scripts depend on
     gate.assert_eq(
         chargeable(gate, "aaa\t1\terror_max_turns"),
@@ -2281,8 +2260,7 @@ def marked_body(t) -> str:
 
 
 def test_mark_records_the_first_infra_attempt_as_retryable(gate):
-    """FIRES: the old code POSTed "Push a change to earn another pass" here,
-    which is the message that stalled #560."""
+    """FIRES: the old code POSTed "Push a change to earn another pass" here, which is the message that stalled #560."""
     with harness.temp_dir() as t:
         setup(gate, t)
         write_json(t / "fixtures" / "comments.json", [])
@@ -2307,8 +2285,7 @@ def test_mark_records_the_first_infra_attempt_as_retryable(gate):
 
 
 def test_mark_upserts_the_second_attempt(gate):
-    """The marker is upserted, not re-posted: N deaths on one head must be one
-    comment carrying N, or the count cannot be read back at all."""
+    """The marker is upserted, not re-posted: N deaths on one head must be one comment carrying N, or the count cannot be read back at all."""
     with harness.temp_dir() as t:
         setup(gate, t)
         write_json(
@@ -2329,8 +2306,7 @@ def test_mark_upserts_the_second_attempt(gate):
 
 
 def test_mark_closes_the_head_on_the_third_attempt(gate):
-    """CONTROL for the two above: the bound is real. The third reportless failure
-    on one head reverts to today's terminal message."""
+    """CONTROL for the two above: the bound is real. The third reportless failure on one head reverts to today's terminal message."""
     with harness.temp_dir() as t:
         setup(gate, t)
         write_json(
@@ -2350,8 +2326,7 @@ def test_mark_closes_the_head_on_the_third_attempt(gate):
 
 
 def test_mark_keeps_the_old_rule_for_unknown_failures(gate):
-    """CONTROL: a failure the pipeline cannot classify gets no free retries at
-    all. The relaxation is scoped to the classes it was argued for."""
+    """CONTROL: a failure the pipeline cannot classify gets no free retries at all. The relaxation is scoped to the classes it was argued for."""
     with harness.temp_dir() as t:
         setup(gate, t)
         write_json(t / "fixtures" / "comments.json", [])
@@ -2394,9 +2369,7 @@ def run_gate_decision(gate, t) -> Run:
 
 
 def test_gate_refuses_an_exhausted_head(gate):
-    """THE REFUSAL ITSELF. Free re-attempts have to end somewhere and it cannot
-    be the per-PR cap, because the free ones are not charged -- without this a
-    head that dies infra-class would be retried forever at no visible cost."""
+    """THE REFUSAL ITSELF. Free re-attempts have to end somewhere and it cannot be the per-PR cap, because the free ones are not charged -- without this a head that dies infra-class would be retried forever at no visible cost."""
     with harness.temp_dir() as t:
         setup(gate, t)
         write_json(
@@ -2430,9 +2403,7 @@ def test_gate_refuses_an_exhausted_head(gate):
 
 
 def test_head_exhaustion_does_not_deadlock_the_pr(gate):
-    """THE #553 SHAPE, ONE LEVEL DOWN. The free attempts are not charged, so a
-    head can exhaust its ceiling while the PR sits well under its cap. The gate then refuses this head; if review-status could not see that, it would post a
-    required FAILURE and leave a green PR permanently unmergeable."""
+    """THE #553 SHAPE, ONE LEVEL DOWN. The free attempts are not charged, so a head can exhaust its ceiling while the PR sits well under its cap. The gate then refuses this head; if review-status could not see that, it would post a required FAILURE and leave a green PR permanently unmergeable."""
     with harness.temp_dir() as t:
         setup(gate, t)
         write_json(
@@ -2471,8 +2442,7 @@ def test_retryable_head_with_a_stale_marker_still_fails(gate):
     the single capture file from the first METHOD= line onward -- a second
     run_status in the same directory appends a second check-run payload and makes it unparseable. One run per world, like every other case here.
 
-    One attempt fewer, so the head is still retryable and a stale marker is a real failure again. Without this the new guard could swallow every stale head
-    and nothing would notice."""
+    One attempt fewer, so the head is still retryable and a stale marker is a real failure again. Without this the new guard could swallow every stale head and nothing would notice."""
     with harness.temp_dir() as t:
         setup(gate, t)
         write_json(

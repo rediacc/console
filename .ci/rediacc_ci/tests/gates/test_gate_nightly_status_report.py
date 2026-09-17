@@ -6,14 +6,11 @@ consecutive red nights, zero successes, back to 2026-07-16, unnoticed.
 
 WHY BEHAVIOURAL. The claims worth testing are about API CALLS ("opens exactly one issue", "comments instead of opening a second", "closes on green"), so this drives the real module with a mocked GitHub client and asserts on the call trace. A pure-function test would only cover isGreen.
 
-THE NODE HARNESS IS THE TWIN'S, BYTE FOR BYTE. It is a CommonJS file that the twin heredocs into its scratch directory and this module writes from a string
-literal; nothing about it was translated, because translating the mock would
-change what the subject is driven with and the two sides would then be comparing different runs. The only Python here is the argv marshalling and the
+THE NODE HARNESS IS THE TWIN'S, BYTE FOR BYTE. It is a CommonJS file that the twin heredocs into its scratch directory and this module writes from a string literal; nothing about it was translated, because translating the mock would change what the subject is driven with and the two sides would then be comparing different runs. The only Python here is the argv marshalling and the
 assertions, which is exactly the seam the twin implements in `sed -n 's/^TRACE=//p'`
 and this implements with `str.startswith`. They agree because the harness emits
 one `TRACE=` line and at most one `BODY=` line, both on their own line and both
-last; `sed -n s///p` prints the remainder of every matching line and the Python
-form takes the remainder of the first matching line, which is the same string
+last; `sed -n s///p` prints the remainder of every matching line and the Python form takes the remainder of the first matching line, which is the same string
 while there is one match, and the harness JSON-encodes the body onto ONE line
 precisely so that stays true.
 

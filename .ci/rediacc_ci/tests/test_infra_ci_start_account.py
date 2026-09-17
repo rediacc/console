@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.infra.ci_start_account` against its twin
-`.ci/scripts/infra/ci-start-account.sh`.
+"""Differential: `rediacc_ci.infra.ci_start_account` against its twin `.ci/scripts/infra/ci-start-account.sh`.
 
 Same seam and same discipline as `test_infra_ci_start_elite.py`: both subjects derive the console root from their own file location, so every case copies both into a fresh tree at the right relative depth, runs the copies, and asserts on the DOCKER ARGV SEQUENCE as well as on both streams, the written `.env` and `$GITHUB_OUTPUT`. A port that printed "Account server is healthy"
 without ever inspecting anything would pass a stdout-only comparison.
@@ -346,9 +345,7 @@ def test_the_fake_docker_is_actually_reached() -> None:
 
 
 def test_the_secret_guards_run_before_anything_else() -> None:
-    """CONTROL for the three refusal cases: nothing is started and nothing is
-    written when a secret is absent. A port that sourced first would generate
-    keys and write a `.env` on a host with no secrets at all."""
+    """CONTROL for the three refusal cases: nothing is started and nothing is written when a secret is absent. A port that sourced first would generate keys and write a `.env` on a host with no secrets at all."""
     with tempfile.TemporaryDirectory() as td:
         root = _fixture(pathlib.Path(td) / "g")
         proc, calls, written, gho = _run(
@@ -414,8 +411,7 @@ def test_the_null_sleep_anchors_still_exist() -> None:
 
 
 def test_the_probe_count_is_the_real_one() -> None:
-    """ANTI-VACUITY for the null-sleep rewrite: the timeout path must perform
-    TIMEOUT/INTERVAL probes on both sides, not a shrunken few."""
+    """ANTI-VACUITY for the null-sleep rewrite: the timeout path must perform TIMEOUT/INTERVAL probes on both sides, not a shrunken few."""
     expected = REAL_TIMEOUT // REAL_INTERVAL
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
@@ -432,8 +428,7 @@ def test_the_probe_count_is_the_real_one() -> None:
 
 def test_the_progress_line_fires_only_on_multiples_of_fifteen() -> None:
     """`((elapsed % 15 == 0))` at a 3s interval: every fifth iteration and no
-    other. A port that printed it every iteration would still 'agree' on the
-    happy path, where the loop runs once."""
+    other. A port that printed it every iteration would still 'agree' on the happy path, where the loop runs once."""
     with tempfile.TemporaryDirectory() as td:
         root = _fixture(pathlib.Path(td) / "p", health=("starting",))
         proc, _, _, _ = _run("new", root)
@@ -445,7 +440,7 @@ def test_the_progress_line_fires_only_on_multiples_of_fifteen() -> None:
 
 
 def test_planted_defect_is_caught_by_this_differential() -> None:
-    """ "Fix" the substring match in a COPY of the port and watch it diverge.
+    """"Fix" the substring match in a COPY of the port and watch it diverge.
 
     Turning `grep -q "healthy"` into an equality test is the change a reader would make on sight, and it is a real behaviour change against the twin. This mutates an in-memory copy; the file on disk is never touched.
     """

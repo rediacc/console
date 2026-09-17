@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/build/build_pkg_repo.py` against its twin
-`.ci/scripts/build/build-pkg-repo.sh`.
+"""Differential: `.ci/rediacc_ci/build/build_pkg_repo.py` against its twin `.ci/scripts/build/build-pkg-repo.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that. This script's product is a published package repository, so "what it said" includes the FILES.
 
@@ -548,8 +547,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
 
 
 def _assert_agree(old: dict[str, object], new: dict[str, object]) -> None:
-    """Compare all five observables, and report the DIFFERENCE rather than both
-    sides in full.
+    """Compare all five observables, and report the DIFFERENCE rather than both sides in full.
 
     A whole-dict `assert a == b` over the artifact map prints two multi-kilobyte
     repr()s of binary content, which is unreadable and therefore unactionable. This names the paths that differ and shows only those.
@@ -870,8 +868,7 @@ def test_the_restated_constants_match_constants_sh():
 
 
 def test_source_common_exports_what_sourcing_the_library_would(monkeypatch):
-    """`common.sh` runs on SOURCE, before line 28 of the twin, so every child
-    inherits `CI_OS`, `CI_ARCH` and `CI_TEMP`. Compared against the library itself rather than against a constant, so a change to `detect_os` is caught.
+    """`common.sh` runs on SOURCE, before line 28 of the twin, so every child inherits `CI_OS`, `CI_ARCH` and `CI_TEMP`. Compared against the library itself rather than against a constant, so a change to `detect_os` is caught.
     """
     monkeypatch.delenv("CI_OS", raising=False)
     monkeypatch.delenv("CI_ARCH", raising=False)

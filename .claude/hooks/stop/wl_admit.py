@@ -1,5 +1,4 @@
-"""wl_admit: turn a session's own admission of an unpreventable mistake into
-tracked prevention work.
+"""wl_admit: turn a session's own admission of an unpreventable mistake into tracked prevention work.
 
 WHY THIS EXISTS, from this repo's own transcripts rather than from theory. A sweep of 906 session transcripts found seven distinct admissions where a session said, in its own words, that it had done something it could not take back. The decisive pair:
 

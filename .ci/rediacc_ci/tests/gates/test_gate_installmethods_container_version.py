@@ -14,9 +14,7 @@ WHY THE PORT STILL RUNS BASH. The subject's real implementations are shell funct
 Python side builds the same extraction prelude and drives the REAL functions;
 what moves into Python is the case structure and the assertions.
 
-ARGUMENT ORDER. The twin calls `assert_eq "0" "$(check ...)"`, i.e. EXPECTED first, which is the inverse of `assert_eq`'s own contract (actual first). Same
-verdict, inverted diagnostic; it is one of 67 such sites across six twins. The
-port uses the contract's order, so a failure here reads the right way round.
+ARGUMENT ORDER. The twin calls `assert_eq "0" "$(check ...)"`, i.e. EXPECTED first, which is the inverse of `assert_eq`'s own contract (actual first). Same verdict, inverted diagnostic; it is one of 67 such sites across six twins. The port uses the contract's order, so a failure here reads the right way round.
 """
 
 import pathlib
@@ -125,9 +123,7 @@ def test_correct_version_is_accepted(gate, tmp_path):
 
 
 def test_the_incident_is_caught(gate, tmp_path):
-    """The exact 2026-08-07 shape: a 1.2.16 binary installed under the 1.2.17
-    label, exiting 0 the whole way. This is what the seven methods could not
-    see."""
+    """The exact 2026-08-07 shape: a 1.2.16 binary installed under the 1.2.17 label, exiting 0 the whole way. This is what the seven methods could not see."""
     gate.assert_eq(
         check(gate, tmp_path, "1.2.17", "1.2.16"), "1", "a 1.2.16 binary must FAIL a 1.2.17 run"
     )
@@ -146,10 +142,7 @@ def test_nothing_reported_is_never_a_pass(gate, tmp_path):
 
 
 def test_transcript_noise_cannot_satisfy_the_check(gate, tmp_path):
-    """The reason the comparison is fenced. apt-get, npm and brew all print the
-    version they are installing; if the host matched against the whole
-    transcript, that line alone would satisfy the check even when the binary
-    reported something else entirely."""
+    """The reason the comparison is fenced. apt-get, npm and brew all print the version they are installing; if the host matched against the whole transcript, that line alone would satisfy the check even when the binary reported something else entirely."""
     noise = "Setting up rediacc-cli (1.2.17) ..."
     gate.assert_eq(
         check(gate, tmp_path, "1.2.17", "1.2.16", noise),

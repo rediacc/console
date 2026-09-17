@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.release.mark_production` against its twin
-`.ci/scripts/release/mark-production.sh`.
+"""Differential: `rediacc_ci.release.mark_production` against its twin `.ci/scripts/release/mark-production.sh`.
 
 A RECORDING FAKE `gh` ON PATH, the seam `test_housekeeping_cleanup_github_deployments.py` established this wave. Nothing here reaches GitHub, and the real `gh` is never on the PATH handed to either side. That matters more here than anywhere else in this box: the real script MOVES the `production` tag and re-points the "Latest release" badge on whatever repository
 `$GITHUB_REPOSITORY` names, and this machine has a logged-in
@@ -220,8 +219,7 @@ def test_the_leading_v_is_added_exactly_once(tmp_path: pathlib.Path) -> None:
 
 def test_a_double_v_is_not_stripped_twice_and_is_refused(tmp_path: pathlib.Path) -> None:
     """`v${VERSION#v}` strips ONE `v`, so `vv1.3.1` stays malformed and is
-    rejected by the semver test. Reproduced rather than tidied: this is the
-    rule that decides which strings can ever become the `production` tag."""
+    rejected by the semver test. Reproduced rather than tidied: this is the rule that decides which strings can ever become the `production` tag."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["vv1.3.1"])
     assert old.returncode == 1
     assert old.stderr == "✗ mark-production: 'vv1.3.1' is not strict semver (expected vX.Y.Z)\n"
@@ -245,8 +243,7 @@ def test_a_prerelease_suffix_is_refused(tmp_path: pathlib.Path) -> None:
 
 
 def test_missing_gh_is_refused_first(tmp_path: pathlib.Path) -> None:
-    """`require_cmd gh` runs BEFORE the version is even read, so a machine
-    without gh says so even with no arguments at all."""
+    """`require_cmd gh` runs BEFORE the version is even read, so a machine without gh says so even with no arguments at all."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], with_gh=False)
     assert old.returncode == 1
     assert old.stderr == "✗ Required command 'gh' is not available\n"
@@ -272,9 +269,7 @@ def test_an_unpublished_version_takes_the_never_published_branch(
 
 
 def test_a_403_is_could_not_tell_and_is_a_different_message(tmp_path: pathlib.Path) -> None:
-    """THE POINT OF THE WHOLE SCRIPT. A lookup that could not run must not be
-    filed as "no such release": the first is an unknown, the second is a fact.
-    Both exit 1, and the operator has to be able to tell them apart."""
+    """THE POINT OF THE WHOLE SCRIPT. A lookup that could not run must not be filed as "no such release": the first is an unknown, the second is a fact. Both exit 1, and the operator has to be able to tell them apart."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["v1.3.1"],
@@ -308,9 +303,7 @@ def test_a_lightweight_tag_is_not_dereferenced(tmp_path: pathlib.Path) -> None:
 
 
 def test_an_annotated_tag_is_dereferenced_to_its_commit(tmp_path: pathlib.Path) -> None:
-    """THE STEP A PORT WOULD SILENTLY DROP. An annotated tag's ref names a TAG
-    object; without the extra lookup `production` would point at the annotation and `git show production` would print the message instead of the code. The
-    only evidence is the call log and the sha in the message."""
+    """THE STEP A PORT WOULD SILENTLY DROP. An annotated tag's ref names a TAG object; without the extra lookup `production` would point at the annotation and `git show production` would print the message instead of the code. The only evidence is the call log and the sha in the message."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["v1.3.1"], FAKE_GH_REF_TYPE="tag")
     assert old.returncode == 0
     assert f"api\trepos/acme/widget/git/tags/{A40}\t--jq\t.object.sha" in old_calls
@@ -331,8 +324,7 @@ def test_a_missing_production_ref_is_created_with_post(tmp_path: pathlib.Path) -
 
 
 def test_the_existence_probes_output_is_swallowed(tmp_path: pathlib.Path) -> None:
-    """`>/dev/null 2>&1` on the probe. The fake writes to both streams so a port
-    that forgot one would be caught here rather than in production logs."""
+    """`>/dev/null 2>&1` on the probe. The fake writes to both streams so a port that forgot one would be caught here rather than in production logs."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["v1.3.1"])
     assert "must never be seen" not in old.stdout + old.stderr
     assert "must never be seen" not in new.stdout + new.stderr
@@ -342,9 +334,7 @@ def test_the_existence_probes_output_is_swallowed(tmp_path: pathlib.Path) -> Non
 def test_a_failed_mutation_kills_the_run_before_the_moved_line(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`set -e` on an unguarded `gh api --method PATCH`: the script exits with
-    gh's own status, gh's stderr reaches the caller because only stdout was redirected, and neither the "moved" line nor the `--latest` edit happens.
-    A port that reported success here would leave the badge lying."""
+    """`set -e` on an unguarded `gh api --method PATCH`: the script exits with gh's own status, gh's stderr reaches the caller because only stdout was redirected, and neither the "moved" line nor the `--latest` edit happens. A port that reported success here would leave the badge lying."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["v1.3.1"], FAKE_GH_MUTATE_RC="6")
     assert old.returncode == 6
     assert "gh: fake mutation failure" in old.stderr
@@ -357,8 +347,7 @@ def test_a_failed_mutation_kills_the_run_before_the_moved_line(
 def test_release_edit_writes_to_stdout_and_its_failure_is_fatal(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The ONE call with no redirection at all, so gh's confirmation URL is the
-    only thing this script ever puts on stdout -- and a failure there exits
+    """The ONE call with no redirection at all, so gh's confirmation URL is the only thing this script ever puts on stdout -- and a failure there exits
     with gh's status, without the final line."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["v1.3.1"], FAKE_GH_EDIT_RC="4")
     assert old.returncode == 4
@@ -429,8 +418,7 @@ def test_the_fallback_logger_world_puts_info_on_stdout_without_a_glyph(
 ) -> None:
     """THE BRANCH THAT ONLY EXISTS WHEN common.sh IS MISSING. `source ... ||
     { log_info() { echo "$*"; }; ... }` moves every info line to STDOUT and
-    drops the glyph, and `log_error` keeps stderr but loses its `✗`. A port that implemented only the library path would be byte-identical in CI and
-    wrong on exactly the machine the fallback was written for."""
+    drops the glyph, and `log_error` keeps stderr but loses its `✗`. A port that implemented only the library path would be byte-identical in CI and wrong on exactly the machine the fallback was written for."""
     twin_copy, port_copy = _fixture_tree(tmp_path)
     old, old_calls = _run(twin_copy, tmp_path, ["v1.3.1"])
     new, new_calls = _run(port_copy, tmp_path, ["v1.3.1"])
@@ -460,9 +448,8 @@ def test_divergence_common_sh_interprets_backslash_escapes_in_gh_error_text(
     tmp_path: pathlib.Path,
 ) -> None:
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. common.sh's loggers use `echo -e`, which interprets backslash escapes IN THE MESSAGE, and this script interpolates gh's own output into that message. `rediacc_ci.log` formats the message as data (see its module docstring), so the twin turns a literal backslash-n in an API error into a newline and the port keeps the two characters. The FALLBACK world uses a
-    bare `echo` and does NOT interpret, which is asserted here too:
-    the divergence belongs to common.sh, not to the script."""
+    "FIXED" BY ACCIDENT. common.sh's loggers use `echo -e`, which interprets backslash escapes IN THE MESSAGE, and this script interpolates gh's own output into that message. `rediacc_ci.log` formats the message as data (see its module docstring), so the twin turns a literal backslash-n in an API error into a newline and the port keeps the two characters. The FALLBACK world
+    uses a bare `echo` and does NOT interpret, which is asserted here too: the divergence belongs to common.sh, not to the script."""
     err = "HTTP 500: boom\\nline two\n"
     old, new, _old_calls, _new_calls = run_both(
         tmp_path, ["v1.3.1"], FAKE_GH_VIEW_RC="1", FAKE_GH_VIEW_ERR=err
@@ -497,9 +484,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the annotated-tag dereference -- the one step
-    whose omission changes nothing a reader would notice. The mutant skips it, so `production` would point at the tag ANNOTATION; the message text is the same shape, only the sha differs, and the call log loses one entry. Driven
-    red, then the source is confirmed byte-identical and green."""
+    """ANTI-VACUITY, planted on the annotated-tag dereference -- the one step whose omission changes nothing a reader would notice. The mutant skips it, so `production` would point at the tag ANNOTATION; the message text is the same shape, only the sha differs, and the call log loses one entry. Driven red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('    if obj_type == "tag":', "    if False:")
     assert mutated != original, "the line this plant targets is no longer present verbatim"

@@ -186,9 +186,7 @@ def bash_uncalled(root: pathlib.Path, names: list[str]) -> list[str]:
     used" for a function nothing runs. A line matching `^<name>() {` is skipped;
     so is a line that is only a comment.
 
-    WRONG IN THE SAFE DIRECTION, and the direction is chosen. A bare mention inside a live shell file counts as a call, so a name discussed in a shell COMMENT that does not start at column zero would read as live. That
-    over-counts life, which costs a stale row in `DEFINED_BUT_UNCALLED`; the
-    other direction would report a live function as dead and invite its deletion.
+    WRONG IN THE SAFE DIRECTION, and the direction is chosen. A bare mention inside a live shell file counts as a call, so a name discussed in a shell COMMENT that does not start at column zero would read as live. That over-counts life, which costs a stale row in `DEFINED_BUT_UNCALLED`; the other direction would report a live function as dead and invite its deletion.
     """
     # `untracked=True` and `existing=True`: a brand-new caller is untracked on the
     # commit that adds it, and this predicate's whole job is to say what nothing calls, so missing the new caller would report a live function as dead. `.ci/rediacc_ci/gitx.py:421` records the same argument for the same flag.

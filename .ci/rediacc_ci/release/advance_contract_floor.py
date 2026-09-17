@@ -3,8 +3,7 @@
 
 Advances the release-contract-floor RATCHET to the oldest cli `.released` sentinel on R2, and commits the new value.
 
-Usage: advance_contract_floor.py   (no arguments; everything comes from the
-environment, exactly as the workflow block that used to hold this code did)
+Usage: advance_contract_floor.py (no arguments; everything comes from the environment, exactly as the workflow block that used to hold this code did)
 
 WHY A RATCHET AT ALL. The release-state bijection gate
 (`Committed(v) <=> sentinel AND tag`) excludes tags older than the oldest
@@ -77,8 +76,7 @@ FLOOR_LINE_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 NO_FLOOR_COMPARES_AS = "v0.0.0"
 NO_FLOOR_READS_AS = "<unset>"
 
-# The product prefix the ratchet is derived from (:56). Only `cli` sentinels
-# count; the floor is about the CLI release contract.
+# The product prefix the ratchet is derived from (:56). Only `cli` sentinels count; the floor is about the CLI release contract.
 PRODUCT = "cli"
 
 # The environment the twin demands, IN ITS ORDER (:38-42). Order is observable: only the first missing one is ever named.
@@ -118,9 +116,7 @@ def read_floor(text: str) -> str:
 def newer_of(left: str, right: str) -> str:
     """`printf '%s\\n%s\\n' "$a" "$b" | sort -V | tail -1` (:61).
 
-    `sort -V` then `tail -1` is "the larger under version order", and on a tie the two strings are equal anyway so which copy survives cannot be observed.
-    `rsv.version_key` is the `sort -V` key this repo already uses; both inputs
-    here are strict semver or the `v0.0.0` literal.
+    `sort -V` then `tail -1` is "the larger under version order", and on a tie the two strings are equal anyway so which copy survives cannot be observed. `rsv.version_key` is the `sort -V` key this repo already uses; both inputs here are strict semver or the `v0.0.0` literal.
     """
     return right if rsv.version_key(right) > rsv.version_key(left) else left
 

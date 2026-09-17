@@ -1,7 +1,7 @@
 """Which OS and which architecture, in the exact spellings this repo's URLs use.
 
-WHAT IT REPLACES. FOURTEEN `case "$(uname -s)"` blocks and TWELVE `case "$(uname -m)"` blocks, spread across twelve tracked files, agreeing about nothing except that they all start from uname. Enumerated with `git grep -n 'case "$(uname -s)"' -- '*.sh'` on 2026-09-06, private/ excluded (the numbers in the first draft of this docstring were guessed from a partial
-grep and were wrong in both directions; these are the grep's):
+WHAT IT REPLACES. FOURTEEN `case "$(uname -s)"` blocks and TWELVE `case "$(uname -m)"` blocks, spread across twelve tracked files, agreeing about nothing except that they all start from uname. Enumerated with `git grep -n 'case "$(uname -s)"' -- '*.sh'` on 2026-09-06, private/ excluded (the numbers in the first draft of this docstring were guessed from a partial grep and were wrong
+in both directions; these are the grep's):
 
   OS, 14 sites
     .ci/scripts/lib/toolchain.sh:304    linux | darwin           (asset URL)
@@ -36,9 +36,7 @@ grep and were wrong in both directions; these are the grep's):
 THREE SPELLINGS OF THE SAME TWO ARCHITECTURES, and every one of them is right: they are the names three different UPSTREAMS publish their assets under. So this module does NOT invent a fourth. `ARCH_NAMES` below is a table keyed by the consumer, with the file and line each row was read from, and `arch_for()` is how a caller says which of the three it needs. A helper that returned
 one "normalized arch" would be a fourth scheme that every call site then has to translate, which is how a fourth scheme starts.
 
-TWO SPELLINGS OF THE OS, for the same reason and with the same treatment. The download URLs want `linux | darwin | windows`, and this repo's OWN artefact names want `linux | mac | win` (`rdc-mac-arm64`, `rdc-win-x64.exe`). `OS_NAMES` carries
-both and `os_for()` selects; `os_name()` is the asset spelling, because that is
-what every third-party URL in the tree asks for.
+TWO SPELLINGS OF THE OS, for the same reason and with the same treatment. The download URLs want `linux | darwin | windows`, and this repo's OWN artefact names want `linux | mac | win` (`rdc-mac-arm64`, `rdc-win-x64.exe`). `OS_NAMES` carries both and `os_for()` selects; `os_name()` is the asset spelling, because that is what every third-party URL in the tree asks for.
 
 `.ci/scripts/lib/common.sh:64` is a THIRD spelling (`macos`, `windows`) and it is deliberately NOT a row here, because it also carries a fail-open default arm -- an unrecognised uname yields the string `unknown` rather than a refusal, and every caller then compares against a value that reads like an answer. Adopting it would import that behaviour. Reported to the driver rather than
 reproduced.
@@ -47,9 +45,7 @@ reproduced.
 THE DEFECT THIS MODULE IS SHAPED BY
 --------------------------------------------------------------------------
 `toolchain.sh` used to hardcode the literal string `linux` into both of its download URLs while deriving only the ARCH from uname. On an arm64 Mac that was not a 404, which is what made it dangerous: `uname -m` says arm64, the ARM64 checksum is present and matches, so a LINUX binary downloads, VERIFIES, gets chmod +x, and fails much later with "cannot execute binary file" from a
-gate that has no idea it installed another OS's tool. `_toolchain_os` (toolchain.sh:303)
-and `uv_target` (bootstrap.sh:91) are the bash fixes; `os_name()` and
-`uv_target()` here are the same decision in one place, and `uv_target()` is checked byte for byte against the bash in the tests.
+gate that has no idea it installed another OS's tool. `_toolchain_os` (toolchain.sh:303) and `uv_target` (bootstrap.sh:91) are the bash fixes; `os_name()` and `uv_target()` here are the same decision in one place, and `uv_target()` is checked byte for byte against the bash in the tests.
 
 The sibling defect is `sha256sum`, which does not exist on macOS -- it is `shasum -a 256` there. Verifying with the bare GNU name on a Mac does not report "cannot verify", it reports a checksum MISMATCH that never happened, and the
 caller's `|| { refuse }` arm fires for a reason that is not true. THREE copies of
@@ -146,8 +142,7 @@ MACHINE_ALIASES = {
     "arm64": "aarch64",
 }
 
-# THE THREE PUBLISHED SPELLINGS, each row read from the file that builds the URL.
-# Do not add a fourth scheme; add a row when a fourth UPSTREAM appears.
+# THE THREE PUBLISHED SPELLINGS, each row read from the file that builds the URL. Do not add a fourth scheme; add a row when a fourth UPSTREAM appears.
 #
 # goarch Go's GOARCH, which is how mvdan.cc/sh and go.dev name their assets. shfmt_v3.13.1_linux_amd64 .ci/scripts/lib/toolchain.sh:339 go1.26.6.linux-amd64.tar.gz .ci/lib/setup.sh:378 uname the raw machine name, which is how koalaman/shellcheck and astral-sh/uv name theirs. shellcheck-v0.10.0.linux.x86_64.tar.xz .ci/scripts/lib/toolchain.sh:422 uv-x86_64-unknown-linux-gnu.tar.gz
 # .ci/bootstrap.sh:182 node Node's own release naming, reused by this repo's SEA artefacts. node-v22.13.0-linux-x64.tar.xz .ci/lib/setup.sh:105 rdc-linux-x64 rdc.sh:98
@@ -248,9 +243,7 @@ def exe_suffix(system: str | None = None) -> str:
 def machine_key(machine: str | None = None) -> str:
     """`uname -m` folded to x86_64 | aarch64. Raises UnsupportedPlatformError.
 
-    The refusal is the important half. Every bash `case` in the tree ends its arch block with an explicit failure and a message that says "add a checksum
-    rather than downloading unverified"; falling through to a default would
-    download an asset for an architecture nobody recorded a hash for.
+    The refusal is the important half. Every bash `case` in the tree ends its arch block with an explicit failure and a message that says "add a checksum rather than downloading unverified"; falling through to a default would download an asset for an architecture nobody recorded a hash for.
     """
     raw = (_stdlib_platform.machine() if machine is None else machine).strip().lower()
     if raw not in MACHINE_ALIASES:
@@ -379,8 +372,7 @@ def require_native_host(system: str | None = None) -> str:
 def sha256_command(env: dict[str, str] | None = None) -> list[str]:
     """The argv of a working sha256 tool. Raises MissingToolError when there is none.
 
-    THE ARGV, not the digest, because the three bash copies this replaces are all invoked in different shapes -- `... -c -` against a planted line, `... file | cut -d' ' -f1`, and a pipeline stdin form -- and a function that computed a
-    digest would serve none of them. Python callers should use `hashlib`; this is
+    THE ARGV, not the digest, because the three bash copies this replaces are all invoked in different shapes -- `... -c -` against a planted line, `... file | cut -d' ' -f1`, and a pipeline stdin form -- and a function that computed a digest would serve none of them. Python callers should use `hashlib`; this is
     for the shell.
 
     RAISES rather than returning `["sha256sum"]` and hoping. That distinction is the entire defect: on macOS the bare GNU name is "command not found", the
@@ -448,8 +440,7 @@ def main(argv: list[str]) -> int:
     verb, rest = argv[0], argv[1:]
 
     if verb == "wsl":
-        # The verdict is the EXIT CODE, so a caller writes `if ... wsl; then`.
-        # The signals go to stdout either way, because the reason is the useful part in both directions.
+        # The verdict is the EXIT CODE, so a caller writes `if ... wsl; then`. The signals go to stdout either way, because the reason is the useful part in both directions.
         evidence = detect_wsl()
         print(evidence.describe())
         return 0 if evidence.is_wsl else 1
@@ -461,8 +452,7 @@ def main(argv: list[str]) -> int:
 
     try:
         if verb == "os":
-            # A bare `os` keeps the asset spelling, which is what every URL in
-            # the tree wants; `os sea` asks for the artefact spelling.
+            # A bare `os` keeps the asset spelling, which is what every URL in the tree wants; `os sea` asks for the artefact spelling.
             print(os_for(rest[0]) if rest else os_name())
         elif verb == "machine":
             print(machine_key())

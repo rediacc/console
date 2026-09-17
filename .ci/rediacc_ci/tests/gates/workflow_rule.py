@@ -1,13 +1,10 @@
-"""`.ci/scripts/test/lib/workflow-rule.sh`, ported. The harness for the rules
-that live inside `.ci/scripts/quality/check_workflows.py`.
+"""`.ci/scripts/test/lib/workflow-rule.sh`, ported. The harness for the rules that live inside `.ci/scripts/quality/check_workflows.py`.
 
 WHY IT IS SHARED, and why between exactly these callers rather than every workflow test. check-workflows.sh hosts several banned-pattern rules, and each gets its own gate test driving it against a fixture tree. The incantation is
 exact and easy to get subtly wrong: `WORKFLOW_INLINE_ONLY=1` is what empties
 GITHUB_YAMLS (check-workflows.sh:38-40) so the banned-pattern scans become no-ops and the FIXTURE TREE is the only thing judged. Without it a test both trips on and depends on the real `.github` state.
 
-test-workflow-contracts.sh looks like it belongs here and does NOT: it drives `.ci/scripts/security/check-workflow-gates.sh` with `WORKFLOWS_DIR` -- a different script, a different variable, no inline-only switch. The five lines
-rhyme; the contract does not. Folding it in would produce a helper with two
-meanings.
+test-workflow-contracts.sh looks like it belongs here and does NOT: it drives `.ci/scripts/security/check-workflow-gates.sh` with `WORKFLOWS_DIR` -- a different script, a different variable, no inline-only switch. The five lines rhyme; the contract does not. Folding it in would produce a helper with two meanings.
 
 THE ONE DIFFERENCE FROM THE BASH ORIGINAL, and it is a real one rather than a
 translation artefact. `workflow-rule.sh` hard-codes `CI=true`, and

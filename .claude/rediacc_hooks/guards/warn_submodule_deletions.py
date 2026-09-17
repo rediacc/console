@@ -1,5 +1,4 @@
-"""WARN (never block) when a commit would carry a staged deletion of tracked
-files inside a submodule.
+"""WARN (never block) when a commit would carry a staged deletion of tracked files inside a submodule.
 
 Why warn and not block: removing a file from a submodule is ordinary work, so a guard that refuses it would be wrong most of the times it fires, and a guard whose usual outcome is a false positive teaches people to route around it. What is worth surfacing is the case where the deletion is not YOURS: a submodule checkout carried a staged `rm` of Formula/rediacc-cli.rb and README.md
 -- the entire content of rediacc/homebrew-tap -- from before the session that found it. It sat unnoticed for hours because the parent reports only "m private/homebrew-tap", with no per-file detail, and `git status` in the parent never shows what was staged inside.
@@ -18,9 +17,7 @@ directory. The port passes `cwd=root` on each call instead of moving this
 process, because a chained dispatcher runs several guards in one interpreter and a guard that chdir'd would move the ones after it.
 
 FINDING, CARRIED ACROSS RATHER THAN FIXED. This guard matches its `git commit` on the RAW command, not on `hook_scan_target`, so `echo "git commit"` -- a worklist note, a doc line, a message explaining the rule -- reaches the submodule scan and can produce the note. Its neighbour warn-stale-index.sh routes through lib/command-scan.sh for exactly this reason and says so in its own
-header. The cost here is one spurious advisory rather than a refused
-command, which is presumably why it was never chased; the edge case below pins
-the behaviour so a future change to it is a decision and not an accident.
+header. The cost here is one spurious advisory rather than a refused command, which is presumably why it was never chased; the edge case below pins the behaviour so a future change to it is a decision and not an accident.
 """
 
 import os
@@ -35,8 +32,7 @@ ORDER = 6
 # Without the "did anything get deleted" test every submodule in .gitmodules is reported, with `wc -l` counting the empty string as one line -- so a clean checkout is announced as having one of its files staged for deletion, and the loudest arm ("this is EVERY tracked file") fires on a submodule where nothing was touched at all.
 DEFECT = ('if dels == "":\n            continue', "if False:\n            continue")
 
-# `(^|[;&|[:space:]])git[[:space:]]+(-C[[:space:]]+\\S+[[:space:]]+)?commit\\b`
-# -- only interesting just before a commit is created. The optional `-C <path>` arm is what lets a submodule commit typed from the parent match.
+# `(^|[;&|[:space:]])git[[:space:]]+(-C[[:space:]]+\\S+[[:space:]]+)?commit\\b` -- only interesting just before a commit is created. The optional `-C <path>` arm is what lets a submodule commit typed from the parent match.
 COMMIT = hookio.rx(r"(^|[;&|{S}])git[{S}]+(-C[{S}]+\S+[{S}]+)?commit\b")
 
 

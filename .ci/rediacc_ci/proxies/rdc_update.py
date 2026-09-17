@@ -1,8 +1,7 @@
 """Port of `.ci/scripts/test/proxies/proxy-rdc-update.sh`.
 
-Local proxy for the CI job that drives `rdc update` end to end, wired as the registered gate `check:ci-proxy-rdc-update` (`package.json:386`). CI runs `.ci/scripts/test/test-rdc-update.sh all` in the update-flow job of
-`.github/workflows/ct-update-flow.yml` against a REAL SEA binary; that workflow
-is outside the parity surface, so nothing in `npm run ci` has ever touched the updater.
+Local proxy for the CI job that drives `rdc update` end to end, wired as the registered gate `check:ci-proxy-rdc-update` (`package.json:386`). CI runs `.ci/scripts/test/test-rdc-update.sh all` in the update-flow job of `.github/workflows/ct-update-flow.yml` against a REAL SEA binary; that workflow is outside the parity surface, so nothing in `npm run ci` has ever touched the
+updater.
 
 The SUBJECT stays bash and is run as bash. Only the proxy is ported.
 
@@ -69,8 +68,7 @@ def _proxy_root() -> pathlib.Path:
 def parse_declared(subject_text: str) -> list[str]:
     """`:73`, the whole pipeline: grep -oE | sed | sort.
 
-    The `sed 's/) scenario_//; s/^ *//'` reduces each match to the bare name,
-    which is exactly the capture group here.
+    The `sed 's/) scenario_//; s/^ *//'` reduces each match to the bare name, which is exactly the capture group here.
     """
     return sorted(DISPATCH_RE.findall(subject_text))
 

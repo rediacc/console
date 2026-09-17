@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/build-cli-musl.sh` (165 lines).
 
-Builds the CLI as a musl-linked SEA binary by running `build-cli-executables.sh`
-INSIDE a `node:22-alpine` container, then renaming the container's glibc-named
-output (`dist/cli/rdc-linux-<arch>`) to the musl name
-(`dist/cli/rdc-linux-musl-<arch>`) and carrying its checksum across.
+Builds the CLI as a musl-linked SEA binary by running `build-cli-executables.sh` INSIDE a `node:22-alpine` container, then renaming the container's glibc-named output (`dist/cli/rdc-linux-<arch>`) to the musl name (`dist/cli/rdc-linux-musl-<arch>`) and carrying its checksum across.
 
-The whole build lives in a single `docker run ... sh -c '<script>'`. That inline
-script is the twin's, character for character, including the `'"$ARCH"'`
-quote-dance that splices the host's `$ARCH` into a single-quoted heredoc-ish
-string; see `CONTAINER_SCRIPT` below for why it is stored as a plain format
-string here instead.
+The whole build lives in a single `docker run ... sh -c '<script>'`. That inline script is the twin's, character for character, including the `'"$ARCH"'` quote-dance that splices the host's `$ARCH` into a single-quoted heredoc-ish string; see `CONTAINER_SCRIPT` below for why it is stored as a plain format string here instead.
 
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHAT IS NOT
@@ -33,19 +26,13 @@ SHELLED OUT, because each one is the twin's actual contract with the machine:
     file at all and still exits 0.
 
 NOT SHELLED OUT: `id -u` / `id -g`, which are `os.getuid()` / `os.getgid()`;
-`wc -c`, which is `os.path.getsize`; `mkdir -p`, `mv`, `rm -f` and the `-f`
-tests. The `id` substitution is the one place a machine could tell the two
-apart: `$(id -u)` on a box with no `id` yields the empty string and the twin
-then runs `sudo chown -R : <dir>`, which fails and is swallowed. Python cannot
-lose the number, so on that machine the port repairs ownership and the twin does
-not. Named rather than emulated.
+`wc -c`, which is `os.path.getsize`; `mkdir -p`, `mv`, `rm -f` and the `-f` tests. The `id` substitution is the one place a machine could tell the two apart: `$(id -u)` on a box with no `id` yields the empty string and the twin then runs `sudo chown -R : <dir>`, which fails and is swallowed. Python cannot lose the number, so on that machine the port repairs ownership and the twin
+does not. Named rather than emulated.
 
 -----------------------------------------------------------------------------
 DEFECTS CARRIED, NOT FIXED
 -----------------------------------------------------------------------------
-DEFECT 1, `--dry-run` PREVIEWS A BUILD THAT COULD NEVER RUN. The architecture
-`case` that rejects anything other than `x64`/`arm64` sits at `:90-97`, AFTER the
-dry-run `exit 0` at `:68`. Driven:
+DEFECT 1, `--dry-run` PREVIEWS A BUILD THAT COULD NEVER RUN. The architecture `case` that rejects anything other than `x64`/`arm64` sits at `:90-97`, AFTER the dry-run `exit 0` at `:68`. Driven:
 
     $ bash .ci/scripts/build/build-cli-musl.sh --arch banana --dry-run
     -> Building musl-linked CLI SEA executable: rdc-linux-musl-banana
@@ -53,17 +40,12 @@ dry-run `exit 0` at `:68`. Driven:
     ok [DRY-RUN] Would build rdc-linux-musl-banana
     ; echo $? -> 0
 
-A preview whose only job is to say what would happen says the wrong thing, with
-a zero exit, for an input the real run rejects in one line. `require_cmd docker`
+A preview whose only job is to say what would happen says the wrong thing, with a zero exit, for an input the real run rejects in one line. `require_cmd docker`
 (`:71`) is skipped by the same early return, which is defensible for a preview;
 validating the argument is not.
 
 DEFECT 2, THE OUTPUT CHECK IS EXISTENCE-ONLY, SO A STALE BINARY SHIPS AS A MUSL
-ONE. `:133` asks only whether `dist/cli/rdc-linux-<arch>` is a file. Nothing
-records when it appeared. A `dist/cli/rdc-linux-x64` left by an earlier GLIBC
-build satisfies it, gets renamed to `rdc-linux-musl-x64`, gets a freshly
-computed and entirely valid checksum, and is reported as a completed musl build.
-Driven against a `docker` stub that produces no output:
+ONE. `:133` asks only whether `dist/cli/rdc-linux-<arch>` is a file. Nothing records when it appeared. A `dist/cli/rdc-linux-x64` left by an earlier GLIBC build satisfies it, gets renamed to `rdc-linux-musl-x64`, gets a freshly computed and entirely valid checksum, and is reported as a completed musl build. Driven against a `docker` stub that produces no output:
 
     ok Musl binary: <out>/rdc-linux-musl-x64 (0MB)
     ok Checksum: d936b9b8...  rdc-linux-musl-x64
@@ -72,22 +54,16 @@ Driven against a `docker` stub that produces no output:
     $ cat <out>/rdc-linux-musl-x64
     STALE-GLIBC-BINARY
 
-Both are reproduced here rather than repaired: the twin stays the registered
-gate and a cutover is a separate box.
+Both are reproduced here rather than repaired: the twin stays the registered gate and a cutover is a separate box.
 
-DEFECT 3, THE SIZE IS FLOOR-DIVIDED TWICE. `$((BINARY_SIZE / 1024 / 1024))MB`
-reports `0MB` for anything under a megabyte, which is exactly the size a wrong
-artifact tends to be. Carried as `//`.
+DEFECT 3, THE SIZE IS FLOOR-DIVIDED TWICE. `$((BINARY_SIZE / 1024 / 1024))MB` reports `0MB` for anything under a megabyte, which is exactly the size a wrong artifact tends to be. Carried as `//`.
 
 -----------------------------------------------------------------------------
 ENVIRONMENT IS READ AT THE CALL SITE
 -----------------------------------------------------------------------------
-`RELEASE_BUILD`, `CLI_VERSION` and `CI` are each read with a literal
-`os.environ.get("NAME", "")` where they are used. No dict comprehension, no
+`RELEASE_BUILD`, `CLI_VERSION` and `CI` are each read with a literal `os.environ.get("NAME", "")` where they are used. No dict comprehension, no
 `env = dict(os.environ)` alias: `check:ci-python-env-registry` derives a
-module's declared inputs from the AST and records a non-literal key as the
-EXPRESSION, so an alias would leave every real input undeclared while the gate
-stayed green.
+module's declared inputs from the AST and records a non-literal key as the EXPRESSION, so an alias would leave every real input undeclared while the gate stayed green.
 """
 
 from __future__ import annotations
@@ -104,8 +80,7 @@ from rediacc_ci.core import common
 # `:60`. The musl artifact name, and the only thing `--arch` really selects.
 BINARY_PREFIX = "rdc-linux-musl-"
 
-# `:90-97`. The two accepted architectures and the docker `--platform` each maps
-# to, in the twin's `case` order.
+# `:90-97`. The two accepted architectures and the docker `--platform` each maps to, in the twin's `case` order.
 DOCKER_PLATFORMS = {
     "x64": "linux/amd64",
     "arm64": "linux/arm64",
@@ -117,11 +92,8 @@ INJECT_ENV_REL = ".ci/scripts/version/inject-env.sh"
 # `:111`. The image the build runs in.
 CONTAINER_IMAGE = "node:22-alpine"
 
-# `:111-128`, verbatim. The twin writes this inside single quotes and splices the
-# host `$ARCH` in with `'"$ARCH"'`; stored here as a `%s` slot because the
-# quote-dance is a bash-only way of saying "substitute one value", and carrying
-# it would reproduce the workaround rather than the string that reaches `sh -c`.
-# The leading newline is the twin's: its single quote opens at the end of `:111`.
+# `:111-128`, verbatim. The twin writes this inside single quotes and splices the host `$ARCH` in with `'"$ARCH"'`; stored here as a `%s` slot because the quote-dance is a bash-only way of saying "substitute one value", and carrying it would reproduce the workaround rather than the string that reaches `sh -c`. The leading newline is the twin's: its single quote opens at the end of
+# `:111`.
 CONTAINER_SCRIPT = """
 set -e
 
@@ -141,19 +113,14 @@ echo "\u2192 Building CLI bundle and SEA binary..."
 .ci/scripts/build/build-cli-executables.sh --platform linux --arch %s
 """
 
-# The lines bash names in a `set -u` death when an option's value is missing.
-# `--arch "$2"` is `:28`; `--output "$2"` is `:32`.
+# The lines bash names in a `set -u` death when an option's value is missing. `--arch "$2"` is `:28`; `--output "$2"` is `:32`.
 UNBOUND_LINES = {"--arch": 28, "--output": 32}
 
 
 def console_root() -> pathlib.Path:
     """The repository root, from this file's own location.
 
-    `get_repo_root` (common.sh:205-210) has no environment override, so
-    `rediacc_ci.paths.repo_root()` -- which honours `$REDIACC_CI_ROOT` -- is
-    deliberately not used: a differential in which one side follows an override
-    and the other does not diverges for a reason that says nothing about the
-    port. Same derivation as `build/build_linux_packages.py`.
+    `get_repo_root` (common.sh:205-210) has no environment override, so `rediacc_ci.paths.repo_root()` -- which honours `$REDIACC_CI_ROOT` -- is deliberately not used: a differential in which one side follows an override and the other does not diverges for a reason that says nothing about the port. Same derivation as `build/build_linux_packages.py`.
     """
     # This file: <root>/.ci/rediacc_ci/build/build_cli_musl.py
     return pathlib.Path(__file__).resolve().parents[3]
@@ -174,8 +141,7 @@ def docker_argv(
 ) -> list[str]:
     """`:104-128`, argument for argument.
 
-    Exported so the differential can compare it against the recording fake's
-    argv rather than inferring it from output. `CLI_VERSION` carries the twin's
+    Exported so the differential can compare it against the recording fake's argv rather than inferring it from output. `CLI_VERSION` carries the twin's
     `${CLI_VERSION:-0.0.0-dev}` default; `CI` and `RELEASE_BUILD` are forwarded
     EMPTY when unset (`${VAR:-}`), which is not the same as being absent inside
     the container.
@@ -206,16 +172,10 @@ def docker_argv(
 def parse_args(argv: list[str]) -> tuple[str, str, bool, int | None, str]:
     """`:25-48`. Returns `(arch, output_dir, dry_run, exit_code, message)`.
 
-    `exit_code` is `None` when parsing succeeded. When it is not, `message` is
-    the line to print and the caller decides the stream: `-h/--help` prints its
-    usage on STDOUT and exits 0, every refusal goes to stderr.
+    `exit_code` is `None` when parsing succeeded. When it is not, `message` is the line to print and the caller decides the stream: `-h/--help` prints its usage on STDOUT and exits 0, every refusal goes to stderr.
 
-    THE `set -u` DEATHS ARE REPRODUCED. `--arch` as the final argument makes
-    bash expand `"$2"` with nothing behind it, which under `set -u` prints
-    `<script>: line 28: $2: unbound variable` and exits 1 BEFORE `shift 2` runs.
-    Driven on bash 5.3.9. The sentence names the script and the line, so the
-    port forges it with `sys.argv[0]` and the twin's line number; the
-    differential masks `$0` on both sides and compares the rest byte for byte.
+    THE `set -u` DEATHS ARE REPRODUCED. `--arch` as the final argument makes bash expand `"$2"` with nothing behind it, which under `set -u` prints `<script>: line 28: $2: unbound variable` and exits 1 BEFORE `shift 2` runs. Driven on bash 5.3.9. The sentence names the script and the line, so the port forges it with `sys.argv[0]` and the twin's line number; the differential masks
+    `$0` on both sides and compares the rest byte for byte.
     """
     arch = ""
     output_dir = ""
@@ -256,9 +216,7 @@ def parse_args(argv: list[str]) -> tuple[str, str, bool, int | None, str]:
 def _run(command: list[str], **kw) -> int:
     """A child process whose streams the caller inherits unless told otherwise.
 
-    Returns bash's status for the three outcomes bash distinguishes: the child's
-    own code, 126 for "cannot execute", 127 for "command not found". A real
-    status is never flattened to 1.
+    Returns bash's status for the three outcomes bash distinguishes: the child's own code, 126 for "cannot execute", 127 for "command not found". A real status is never flattened to 1.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -310,8 +268,7 @@ def main(argv: list[str]) -> int:
         exc.report()
         return exc.code
 
-    # `:77-86`. The release seam, checked here as well as inside the container so
-    # a release build fails in seconds instead of after an `npm ci` in Alpine.
+    # `:77-86`. The release seam, checked here as well as inside the container so a release build fails in seconds instead of after an `npm ci` in Alpine.
     if os.environ.get("RELEASE_BUILD", "") == "true":
         cli_version = os.environ.get("CLI_VERSION", "")
         if not cli_version:
@@ -395,8 +352,7 @@ def main(argv: list[str]) -> int:
             return status
         docker_checksum.unlink(missing_ok=True)
     else:
-        # `command -v` for each, in the twin's order. When NEITHER is present the
-        # twin writes no checksum file and carries on, so neither does this.
+        # `command -v` for each, in the twin's order. When NEITHER is present the twin writes no checksum file and carries on, so neither does this.
         if shutil.which("sha256sum") is not None:
             checksum_argv = ["sha256sum", binary_name]
         elif shutil.which("shasum") is not None:

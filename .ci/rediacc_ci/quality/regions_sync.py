@@ -57,8 +57,7 @@ BAKED_FILE_ENV = "REGIONS_BAKED_FILE"
 DEFAULT_ROOT_FILE = "regions.json"
 DEFAULT_BAKED_FILE = "packages/shared/src/regions/data.json"
 
-# The floor. One region is the smallest list that is not vacuous; the twin's
-# comment for it -- "an empty list would make this comparison vacuous" -- is the load-bearing half, because two empty files compare EQUAL and a gate with no floor would report success over two broken ones.
+# The floor. One region is the smallest list that is not vacuous; the twin's comment for it -- "an empty list would make this comparison vacuous" -- is the load-bearing half, because two empty files compare EQUAL and a gate with no floor would report success over two broken ones.
 MIN_REGIONS = 1
 
 # The cap on the divergence hunk, carried from `head -20` in the twin.

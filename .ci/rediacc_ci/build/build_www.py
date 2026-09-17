@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/build-www.sh` (29 lines).
 
-Builds the Astro marketing site in `packages/www` by shelling out to
-`npm run build:www` from the REPO ROOT, then refuses unless the build actually
-left `packages/www/dist/index.html` behind. Nine executable lines; every one of
-them is load-bearing and three of them are surprising, which is why this
-docstring is longer than the twin.
+Builds the Astro marketing site in `packages/www` by shelling out to `npm run build:www` from the REPO ROOT, then refuses unless the build actually left `packages/www/dist/index.html` behind. Nine executable lines; every one of them is load-bearing and three of them are surprising, which is why this docstring is longer than the twin.
 
 LIVE CALLERS, none repointed by this port:
   * `.github/workflows/ci-build-docker.yml:123`  `- run: .ci/scripts/build/build-www.sh`
@@ -20,8 +16,7 @@ LIVE CALLERS, none repointed by this port:
 -----------------------------------------------------------------------------
 `npm` IS SHELLED OUT TO, AND THE `if` AROUND IT IS THE WHOLE ERROR STORY
 -----------------------------------------------------------------------------
-`if npm run build:www; then ... else log_error; exit 1; fi` (:18-23) has three
-observable consequences the twin never states, and all three are reproduced:
+`if npm run build:www; then ... else log_error; exit 1; fi` (:18-23) has three observable consequences the twin never states, and all three are reproduced:
 
   * `set -e` IS SUSPENDED INSIDE AN `if` CONDITION, so npm's non-zero status
     does not kill the script; the `else` arm does, with a flat `exit 1`.
@@ -34,34 +29,20 @@ observable consequences the twin never states, and all three are reproduced:
     rather than letting Python's `FileNotFoundError` traceback out: that line
     is the ONLY thing on either stream that says the tool was absent.
 
-npm's own stdout and stderr are INHERITED, exactly as under the twin. An Astro
-build prints thousands of lines and a caller reading them through a pipe is the
-normal case, so nothing here captures or re-emits them.
+npm's own stdout and stderr are INHERITED, exactly as under the twin. An Astro build prints thousands of lines and a caller reading them through a pipe is the normal case, so nothing here captures or re-emits them.
 
 -----------------------------------------------------------------------------
 THE REPO ROOT IS THIS FILE'S OWN LOCATION, and `paths.repo_root()` is NOT used
 -----------------------------------------------------------------------------
-Same call, and for the same reason, as `rediacc_ci.build.ensure_nfpm`:
-`paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin has no such
-override, so a fixture that pointed one side at a tree and not the other would
-diverge silently. The twin's root is `common.sh`'s `get_repo_root`
-(`.ci/scripts/lib/common.sh:205-210`), which is `SCRIPT_DIR/../../..` FROM
-common.sh -- `.ci/scripts/lib` -- and NOT from `build-www.sh`. The two happen
-to agree here because both files sit three levels down, but the answer belongs
-to the library, not the caller.
+Same call, and for the same reason, as `rediacc_ci.build.ensure_nfpm`: `paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin has no such override, so a fixture that pointed one side at a tree and not the other would diverge silently. The twin's root is `common.sh`'s `get_repo_root` (`.ci/scripts/lib/common.sh:205-210`), which is `SCRIPT_DIR/../../..` FROM common.sh --
+`.ci/scripts/lib` -- and NOT from `build-www.sh`. The two happen to agree here because both files sit three levels down, but the answer belongs to the library, not the caller.
 
-THE `cd` IS OBSERVABLE, not housekeeping. Every path after it is RELATIVE
-(`packages/www/dist`), so the refusal messages carry the relative spelling and
-not an absolute path. `os.chdir` is therefore part of the contract, and
-`test_both_sides_cd_to_the_repo_root_whatever_the_caller_did` pins it against a
-DECOY tree in the caller's directory.
+THE `cd` IS OBSERVABLE, not housekeeping. Every path after it is RELATIVE (`packages/www/dist`), so the refusal messages carry the relative spelling and not an absolute path. `os.chdir` is therefore part of the contract, and `test_both_sides_cd_to_the_repo_root_whatever_the_caller_did` pins it against a DECOY tree in the caller's directory.
 
 -----------------------------------------------------------------------------
 THREE DEFECTS IN THE TWIN, REPRODUCED HERE RATHER THAN FIXED
 -----------------------------------------------------------------------------
-Fixing any of them changes what a live CI job prints, which is outside this
-port's ownership (W7P6: the bash twin stays the registered gate). All three are
-pinned by tests in `.ci/rediacc_ci/tests/test_build_build_www.py`.
+Fixing any of them changes what a live CI job prints, which is outside this port's ownership (W7P6: the bash twin stays the registered gate). All three are pinned by tests in `.ci/rediacc_ci/tests/test_build_build_www.py`.
 
   1. THE SECOND ARGUMENT TO `require_dir` / `require_file` IS SILENTLY DROPPED
      (`build-www.sh:26-27`). Both calls pass a human label -- `"www build
@@ -90,13 +71,8 @@ pinned by tests in `.ci/rediacc_ci/tests/test_build_build_www.py`.
 -----------------------------------------------------------------------------
 ONE NAMED DIVERGENCE THAT IS NOT REPRODUCED
 -----------------------------------------------------------------------------
-`$0`. bash prints the path it was invoked with in the `command not found`
-line; `sys.argv[0]` is this file, whose name ends `.py` and not `.sh`. There is
-no way for two files to have one name, so the differential MASKS the two paths
-to `<SELF>` and asserts everything else byte-for-byte. `scripts/lib/shadow-gate.ts`
-files that line as chatter on both sides (no `✗`/`ERROR:`/`::error::` marker and
-no `<path>:<line>:` shape, because bash writes `: line 18:` with a space), so it
-plays no part in any recorded ledger verdict either.
+`$0`. bash prints the path it was invoked with in the `command not found` line; `sys.argv[0]` is this file, whose name ends `.py` and not `.sh`. There is no way for two files to have one name, so the differential MASKS the two paths to `<SELF>` and asserts everything else byte-for-byte. `scripts/lib/shadow-gate.ts` files that line as chatter on both sides (no
+`✗`/`ERROR:`/`::error::` marker and no `<path>:<line>:` shape, because bash writes `: line 18:` with a space), so it plays no part in any recorded ledger verdict either.
 
 K=5 LEDGER: `.ci/shadow/w7p6-build-www.observations.jsonl`.
 """
@@ -115,18 +91,13 @@ from rediacc_ci.core import common
 # this module sits at `.ci/rediacc_ci/build/`, which is the same depth.
 _ROOT_PARENT_INDEX = 3
 
-# The npm script name (`build-www.sh:18`). `package.json:22` maps it to
-# `npm run build -w @rediacc/www`.
+# The npm script name (`build-www.sh:18`). `package.json:22` maps it to `npm run build -w @rediacc/www`.
 NPM_SCRIPT = "build:www"
 
-# The line of the `if npm run build:www` in the twin, for the `command not
-# found` diagnostic bash writes when npm is absent from PATH.
+# The line of the `if npm run build:www` in the twin, for the `command not found` diagnostic bash writes when npm is absent from PATH.
 NPM_LINE = 18
 
-# The two outputs the twin demands afterwards (`:26-27`), RELATIVE to the repo
-# root because the twin has already `cd`-ed there. The dead second argument of
-# each call -- see defect 1 -- is recorded beside the path so a reader can see
-# what the message was supposed to say and does not.
+# The two outputs the twin demands afterwards (`:26-27`), RELATIVE to the repo root because the twin has already `cd`-ed there. The dead second argument of each call -- see defect 1 -- is recorded beside the path so a reader can see what the message was supposed to say and does not.
 DIST_DIR = "packages/www/dist"
 DIST_DIR_LABEL = "www build output"
 INDEX_HTML = "packages/www/dist/index.html"
@@ -146,13 +117,9 @@ def bash_not_found_line(binary: str, line: int, reason: str) -> str:
 def run_npm(script: str, line: int) -> int:
     """`npm run <script>` with both streams INHERITED. Returns bash's status.
 
-    127 for "not found" and 126 for "permission denied" are bash's numbers, not
-    Python's, and the accompanying stderr line is bash's too: the twin's `if`
-    swallows the status but NOT the shell's diagnostic, so a port that stayed
-    silent here would lose the only evidence that npm was missing.
+    127 for "not found" and 126 for "permission denied" are bash's numbers, not Python's, and the accompanying stderr line is bash's too: the twin's `if` swallows the status but NOT the shell's diagnostic, so a port that stayed silent here would lose the only evidence that npm was missing.
     """
-    # stdout is inherited by the child, so anything already buffered here must
-    # land first or the build log interleaves wrongly.
+    # stdout is inherited by the child, so anything already buffered here must land first or the build log interleaves wrongly.
     sys.stdout.flush()
     sys.stderr.flush()
     try:
@@ -181,9 +148,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     try:
-        # Defect 1: the label argument is passed by the twin and read by nobody,
-        # so it is NOT part of the message. Kept as an argument-shaped constant
-        # so the dead label is visible in the port too.
+        # Defect 1: the label argument is passed by the twin and read by nobody, so it is NOT part of the message. Kept as an argument-shaped constant so the dead label is visible in the port too.
         common.require_dir(DIST_DIR)
         common.require_file(INDEX_HTML)
     except common.RefusalError as exc:

@@ -171,8 +171,7 @@ def test_a_negative_floor_is_a_programming_error():
 
 
 def test_a_zero_floor_is_allowed_but_has_to_be_typed():
-    """Writable, deliberately -- a suite built at runtime has no fixed count --
-    but only at the call site, where a reviewer sees the number.
+    """Writable, deliberately -- a suite built at runtime has no fixed count -- but only at the call site, where a reviewer sees the number.
     """
     assert Controls("runtime built", floor=0).floor == 0
 
@@ -198,8 +197,7 @@ def test_a_failure_line_names_got_and_wanted_on_stderr(capsys):
 
 
 def test_a_red_report_prints_nothing_on_stdout(capsys):
-    """A red suite whose verdict lands on stdout is a red the harness can miss,
-    and stdout is where the SUCCESS line lives.
+    """A red suite whose verdict lands on stdout is a red the harness can miss, and stdout is where the SUCCESS line lives.
     """
     c = Controls("red", floor=0)
     c.check("a", 1, 2)
@@ -251,8 +249,7 @@ def test_exit_is_one_when_only_the_floor_failed():
 
 
 def test_two_runners_do_not_share_state():
-    """`class Tally` with class attributes is shared by every instance and every
-    importer. Two suites in one process silently added up.
+    """`class Tally` with class attributes is shared by every instance and every importer. Two suites in one process silently added up.
     """
     a = Controls("a", floor=0)
     b = Controls("b", floor=0)
@@ -288,11 +285,9 @@ def test_plant_refuses_a_needle_that_is_not_there():
 
 
 def test_plant_refuses_replacing_a_string_with_itself():
-    """ITS OWN REFUSAL, distinct from the missing-needle one, because it is a
-    different author mistake: a typo, not a drifted fixture. This is the case that catches the real one found in the tree on 2026-09-08 --
+    """ITS OWN REFUSAL, distinct from the missing-needle one, because it is a different author mistake: a typo, not a drifted fixture. This is the case that catches the real one found in the tree on 2026-09-08 --
     `_FIXTURE_HEALTHY.replace("max_turns=140", "max_turns=140")` in
-    `rediacc_ci/quality/review_turn_capacity.py`, a dead leg chained ahead of a live substitution inside the port of the very gate `control_vacuity` uses as
-    its own control."""
+    `rediacc_ci/quality/review_turn_capacity.py`, a dead leg chained ahead of a live substitution inside the port of the very gate `control_vacuity` uses as its own control."""
     with pytest.raises(VacuousPlantError) as exc:
         plant("max_turns=140 here", "max_turns=140", "max_turns=140")
     # ASSERT ON WHAT ONLY THIS BRANCH SAYS. `old == new` is also caught further
@@ -306,8 +301,7 @@ def test_plant_refuses_replacing_a_string_with_itself():
 
 def test_plant_refuses_a_count_that_replaces_nothing():
     """`count=0` is the ONE way to reach the byte-identical arm: the needle is
-    present and differs from its replacement, yet nothing is substituted. Found by planting -- deleting that arm left the suite green until this case
-    existed, which meant the branch was asserted by nothing."""
+    present and differs from its replacement, yet nothing is substituted. Found by planting -- deleting that arm left the suite green until this case existed, which meant the branch was asserted by nothing."""
     with pytest.raises(VacuousPlantError) as exc:
         plant("aa", "a", "b", 0)
     assert "byte-identical" in str(exc.value)
@@ -326,8 +320,7 @@ def test_plant_re_matches_or_refuses():
 
 
 def test_plant_re_refuses_a_match_that_changes_nothing():
-    """A pattern CAN match and still produce identical bytes -- the count check
-    alone would pass this, so the byte comparison is not redundant."""
+    """A pattern CAN match and still produce identical bytes -- the count check alone would pass this, so the byte comparison is not redundant."""
     with pytest.raises(VacuousPlantError) as exc:
         plant_re("abc", r"b", "b")
     assert "byte-identical" in str(exc.value)

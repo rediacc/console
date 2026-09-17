@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/private/renet_csi_sanity.py` against its twin
-`.ci/scripts/private/renet-csi-sanity.sh`.
+"""Differential: `.ci/rediacc_ci/private/renet_csi_sanity.py` against its twin `.ci/scripts/private/renet-csi-sanity.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
@@ -372,9 +371,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, binder_kw, run_kw):
 
 
 def test_every_external_is_actually_reached_in_order(tmp_path):
-    """ANTI-VACUITY, and the strongest claim in the file. Every comparison above
-    is worthless if the datastore setup never happened, and a port that printed the same three log lines while touching no block device would satisfy a
-    stdout-only comparison exactly."""
+    """ANTI-VACUITY, and the strongest claim in the file. Every comparison above is worthless if the datastore setup never happened, and a port that printed the same three log lines while touching no block device would satisfy a stdout-only comparison exactly."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root)
     out = _run(PORT_REL, root, tmp_path, binder)
@@ -404,8 +401,7 @@ def test_every_external_is_actually_reached_in_order(tmp_path):
 
 def test_the_ginkgo_skip_expression_survives_as_one_argument(tmp_path):
     """THE CONTRACT NO STREAM CAN SHOW. `-ginkgo.skip=<a>|<b>` carries spaces and
-    an alternation pipe, and it must reach ginkgo as ONE argument. A port that word-split it would run 50 of 50 specs and go red on two ruled deviations (spec 09 section 16) for a reason that has nothing to do with the driver.
-    Both subjects are asserted, character for character."""
+    an alternation pipe, and it must reach ginkgo as ONE argument. A port that word-split it would run 50 of 50 specs and go red on two ruled deviations (spec 09 section 16) for a reason that has nothing to do with the driver. Both subjects are asserted, character for character."""
     expected = [
         "test",
         "-tags",
@@ -436,9 +432,7 @@ def test_the_ginkgo_skip_expression_survives_as_one_argument(tmp_path):
 
 
 def test_the_zero_spec_guard_is_the_reason_the_script_exists(tmp_path):
-    """`go test` exits 0 for a run in which every spec skipped, which is exactly
-    what happens off-root or off-BTRFS. Both subjects must REFUSE that, on stdout, as a GitHub annotation, with exit 1. This is the single assertion in
-    the file whose failure would mean the step had become vacuous."""
+    """`go test` exits 0 for a run in which every spec skipped, which is exactly what happens off-root or off-BTRFS. Both subjects must REFUSE that, on stdout, as a GitHub annotation, with exit 1. This is the single assertion in the file whose failure would mean the step had become vacuous."""
     root = _fixture(tmp_path)
     binder = _binder(
         tmp_path, root, go_out=b"Ran 0 of 50 Specs in 0.1s\n--- PASS: TestCSISanity (0.1s)\n"
@@ -454,8 +448,7 @@ def test_the_zero_spec_guard_is_the_reason_the_script_exists(tmp_path):
 
 
 def test_a_healthy_run_is_not_refused(tmp_path):
-    """THE NEGATIVE CONTROL on both guards. A gate with only positive controls
-    will happily refuse a run where nothing is wrong."""
+    """THE NEGATIVE CONTROL on both guards. A gate with only positive controls will happily refuse a run where nothing is wrong."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root)
     for subject in (TWIN_REL, PORT_REL):
@@ -467,9 +460,7 @@ def test_a_healthy_run_is_not_refused(tmp_path):
 
 
 def test_the_two_guards_fire_in_order_and_only_one_speaks(tmp_path):
-    """The count guard is evaluated FIRST and returns immediately, so a run that
-    fails both says only the first thing. A port that checked the PASS guard first, or reported both, would be more informative and would not be the same
-    script."""
+    """The count guard is evaluated FIRST and returns immediately, so a run that fails both says only the first thing. A port that checked the PASS guard first, or reported both, would be more informative and would not be the same script."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root, go_out=b"Ran 0 of 50 Specs in 0.1s\nFAIL\n")
     for subject in (TWIN_REL, PORT_REL):
@@ -482,8 +473,7 @@ def test_the_two_guards_fire_in_order_and_only_one_speaks(tmp_path):
 def test_a_failing_go_run_loses_its_exit_code(tmp_path):
     """A (minor) DEFECT IN THE TWIN, PINNED RATHER THAN FIXED.
     `|| { echo "$out"; exit 1; }` flattens every non-zero go status to 1, so a
-    build failure (2) and a test failure (1) are indistinguishable to a caller. Both subjects are asserted; the day the twin propagates the real status,
-    this goes red and names the decision."""
+    build failure (2) and a test failure (1) are indistinguishable to a caller. Both subjects are asserted; the day the twin propagates the real status, this goes red and names the decision."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root, go_rc=2, go_out=b"build failed\n")
     for subject in (TWIN_REL, PORT_REL):
@@ -494,9 +484,7 @@ def test_a_failing_go_run_loses_its_exit_code(tmp_path):
 
 
 def test_go_stderr_is_folded_into_stdout(tmp_path):
-    """`2>&1` inside the capture. The script's own stderr must carry ONLY its
-    three log lines; everything the toolchain wrote belongs on stdout. A port
-    that let go's stderr through would split a caller's transcript in two."""
+    """`2>&1` inside the capture. The script's own stderr must carry ONLY its three log lines; everything the toolchain wrote belongs on stdout. A port that let go's stderr through would split a caller's transcript in two."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root, go_err=b"go: downloading something\n")
     for subject in (TWIN_REL, PORT_REL):
@@ -506,9 +494,7 @@ def test_go_stderr_is_folded_into_stdout(tmp_path):
 
 
 def test_the_install_arm_fires_once_for_either_missing_tool(tmp_path):
-    """Two separate `command -v` probes, `||`-joined, so EITHER absence installs
-    BOTH packages -- and this script therefore does NOT have the `require_cmd`-only-validates-its-first-argument defect. Driven from both sides, because a port that probed only the first name would pass the
-    `mkfs.btrfs` case and silently skip the install for `cryptsetup`."""
+    """Two separate `command -v` probes, `||`-joined, so EITHER absence installs BOTH packages -- and this script therefore does NOT have the `require_cmd`-only-validates-its-first-argument defect. Driven from both sides, because a port that probed only the first name would pass the `mkfs.btrfs` case and silently skip the install for `cryptsetup`."""
     root = _fixture(tmp_path)
     for missing in ("mkfs.btrfs", "cryptsetup"):
         binder = _binder(tmp_path, root, absent=(missing,))
@@ -571,8 +557,7 @@ def test_a_failing_apt_get_update_is_swallowed_and_that_is_a_defect(tmp_path):
 
 
 def test_the_mask_does_not_hide_the_message(tmp_path):
-    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix
-    on both sides; if it were greedier it would hide real divergences and every
+    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix on both sides; if it were greedier it would hide real divergences and every
     case above would pass for the wrong reason."""
     sample = "/a/b/twin.sh: line 38: mkfs.btrfs: command not found\nkept: line noise\n"
     masked = _mask(sample, pathlib.Path("/nowhere"), pathlib.Path("/nowhere-either"))

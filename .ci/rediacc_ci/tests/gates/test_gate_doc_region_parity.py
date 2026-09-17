@@ -117,8 +117,7 @@ GEN_ENTRY = "scripts/gen-docs.ts"
 # this repository's own modules have to be copied into the fixture.
 IMPORT_RE = re.compile(r"""(?:from|import)\s*\(?\s*['"](\.[^'"\n]+)['"]""")
 
-# A quoted literal that COULD be a repository-relative path. Deliberately permissive; the
-# filter that matters is applied afterwards and is "does git track this file or directory", which no regex can answer.
+# A quoted literal that COULD be a repository-relative path. Deliberately permissive; the filter that matters is applied afterwards and is "does git track this file or directory", which no regex can answer.
 PATHISH_RE = re.compile(r"""['"`]([A-Za-z0-9_.][A-Za-z0-9_./-]*)['"`]""")
 
 # Path characters, for pulling a filename back out of a node stack trace or an error line.
@@ -235,8 +234,7 @@ def tracked_index(gate) -> tuple[set[str], set[str]]:
 def derive_pathspecs(gate) -> tuple[list[pathlib.Path], list[str]]:
     """(the generator's import closure, the pathspecs its literals resolve to).
 
-    A provider cannot read a seam without naming it, so the literal IS the declaration.
-    Anything that resolves to a tracked file or a tracked directory is copied; everything
+    A provider cannot read a seam without naming it, so the literal IS the declaration. Anything that resolves to a tracked file or a tracked directory is copied; everything
     else in the source is not a path and is dropped by that test alone, never by a
     hand-kept list.
     """
@@ -317,9 +315,7 @@ def copy_tracked(gate, fixture: pathlib.Path, pathspecs: list[str]) -> int:
     # case that matters, which is how the first attempt at this failed.
     #
     # THE FIXTURE MUST CARRY EXACTLY ONE DOCUMENT, the REGISTRY.md it writes itself with one region per provider. Every case works by perturbing that document -- case F strips the first region and requires the gate to report the provider "used by NO region". A second document holding a region for the same provider keeps it used, the gate stays green, and the control stops firing in
-    # silence. Measured 2026-09-09: a new provider naming the literal `scripts/data` pulled in the real registry and case F
-    # went quiet within the hour. The module docstring warned about this coupling; this
-    # makes the warning enforceable.
+    # silence. Measured 2026-09-09: a new provider naming the literal `scripts/data` pulled in the real registry and case F went quiet within the hour. The module docstring warned about this coupling; this makes the warning enforceable.
     carriers = [n for n in names if n.endswith(".md") and OPEN_MARKER in read_text(ROOT / n)]
     if carriers:
         gate.log_info(

@@ -57,9 +57,7 @@ def derive(gate, tmp, *args: str) -> harness.RunResult:
 
 
 def test_zone_is_what_the_expectations_assume(gate):
-    """Runs FIRST in the twin's order, and for a reason: every hostname assertion
-    below hard-codes the zone, so a conf that moved it must fail here rather than in
-    eight confusing places."""
+    """Runs FIRST in the twin's order, and for a reason: every hostname assertion below hard-codes the zone, so a conf that moved it must fail here rather than in eight confusing places."""
     conf = CONF.read_text(encoding="utf-8")
     gate.assert_contains(
         conf,
@@ -99,8 +97,7 @@ def test_exact_hostname_and_url(gate):
 
 
 def test_missing_run_id_refuses_and_invents_nothing(gate):
-    """No `GITHUB_RUN_ID` in the environment (the replaced env guarantees it) and no
-    `--run-id`."""
+    """No `GITHUB_RUN_ID` in the environment (the replaced env guarantees it) and no `--run-id`."""
     with harness.temp_dir() as tmp:
         run = derive(gate, tmp, "--field", "name", "--label", "rdc-ci")
         out = run.out.rstrip("\n")
@@ -128,9 +125,7 @@ def test_non_numeric_run_id_rejected(gate):
 
 
 def test_unlisted_label_rejected(gate):
-    """The sweeper's regex is BUILT from `BREAKPOINT_TUNNEL_LABELS`, so a label that is
-    used but not listed is invisible to cleanup permanently. Refusing here is the only
-    thing keeping that promise true."""
+    """The sweeper's regex is BUILT from `BREAKPOINT_TUNNEL_LABELS`, so a label that is used but not listed is invisible to cleanup permanently. Refusing here is the only thing keeping that promise true."""
     with harness.temp_dir() as tmp:
         run = derive(gate, tmp, "--field", "name", "--label", "rdc-notalabel", "--run-id", "99")
         gate.assert_exit_code(
@@ -185,9 +180,7 @@ def test_different_runs_get_different_names(gate):
 
 
 def test_dns_label_capped_at_63(gate):
-    """An 80-digit run id is not realistic; the CAP is, and it has to be exercised by
-    an input that actually EXCEEDS it -- a 40-digit id produces a 49-octet label, so the truncation branch never runs and the assertion is decorative. Over-long labels are rejected by the DNS API with a message that does not point back here, so
-    truncation must happen before the call."""
+    """An 80-digit run id is not realistic; the CAP is, and it has to be exercised by an input that actually EXCEEDS it -- a 40-digit id produces a 49-octet label, so the truncation branch never runs and the assertion is decorative. Over-long labels are rejected by the DNS API with a message that does not point back here, so truncation must happen before the call."""
     with harness.temp_dir() as tmp:
         run = derive(gate, tmp, "--field", "hostname", "--label", "rdc-demo", "--run-id", "7" * 80)
         gate.assert_exit_code(0, run.rc, "an over-long descriptor must be truncated, not refused")

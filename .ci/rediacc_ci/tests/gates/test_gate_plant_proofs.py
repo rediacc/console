@@ -26,9 +26,7 @@ WRITE_BASELINE = "--write-" + "baseline"
 GATE = paths.from_root(".ci", "scripts", "quality", "check_plant_proofs.py")
 BASH_SUBJECT = ".ci/scripts/test/gates/test-run-sh.sh"
 TS_SUBJECT = "scripts/gates/check-docs-browse-invariants.ts"
-# A REAL subject that is currently UNPROVEN, so the mirror's baseline is not empty. Without it every drain and trim case below asserted against a zero-row
-# baseline, which is the vacuous-fixture shape this whole gate is about; the
-# `if not obj[KEY]` guards caught it on the first run.
+# A REAL subject that is currently UNPROVEN, so the mirror's baseline is not empty. Without it every drain and trim case below asserted against a zero-row baseline, which is the vacuous-fixture shape this whole gate is about; the `if not obj[KEY]` guards caught it on the first run.
 DEBT_SUBJECT = ".ci/scripts/test/gates/test-ci-parity.sh"
 
 # The proof pair this gate requires, lifted verbatim from the real bash subject.
@@ -95,8 +93,7 @@ def test_the_gate_is_green_on_the_real_tree(gate):
         gate.log_fail("subject under test is missing: %s" % GATE)
     result = _run(paths.repo_root())
     gate.assert_exit_code(0, result.rc, "clean tree (stderr: %s)" % result.err[-400:])
-    # The SHAPE, not just the verdict. A corpus that collapsed to nothing would
-    # still print a tick; these numbers are what says it did not.
+    # The SHAPE, not just the verdict. A corpus that collapsed to nothing would still print a tick; these numbers are what says it did not.
     gate.assert_contains(result.combined, "tracked .sh", "prints the shell corpus size")
     gate.assert_contains(result.combined, "TS control region(s)", "and the TS region count")
     gate.assert_contains(result.combined, "prove the plant landed", "and how many are proven")

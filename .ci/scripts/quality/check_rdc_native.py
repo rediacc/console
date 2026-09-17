@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the `rdc.sh` wrapper-budget and `--native` platform-arm gate.
 
-The logic lives in `rediacc_ci.quality.rdc_native`; contract section 5d puts a gate's
-entry point where `scripts/gate-bind.ts` can see it. There is no bash twin: this gate is NEW, written in the same change that moved the SEA build out of `rdc.sh`, so invariant 5 has nothing to keep.
+The logic lives in `rediacc_ci.quality.rdc_native`; contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it. There is no bash twin: this gate is NEW, written in the same change that moved the SEA build out of `rdc.sh`, so invariant 5 has nothing to keep.
 
 ---- gate ---- step: rdc.sh wrapper budget and --native arms needs: none selftest: true lane: quality-static why: the `--native` SEA build left rdc.sh for rediacc_ci.native, and two things
      undo that invisibly. The wrapper re-absorbs logic one special case at a

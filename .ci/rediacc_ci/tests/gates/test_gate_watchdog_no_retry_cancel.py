@@ -131,8 +131,7 @@ def pending(gate, jobs: list[dict], exclude: str = "") -> str:
 
 
 def test_patterns_are_real(gate):
-    """ANTI-VACUITY. If the pattern list stopped covering Quality, every case
-    below would pass for the wrong reason."""
+    """ANTI-VACUITY. If the pattern list stopped covering Quality, every case below would pass for the wrong reason."""
     patterns = no_retry_patterns(gate)
     gate.assert_contains(
         patterns, "Quality", "watchdog-monitor.yml still lists Quality as no-retry"
@@ -177,8 +176,7 @@ def test_no_suppression_hatch_remains(gate):
 
 
 def test_non_no_retry_job_is_unaffected(gate):
-    """A job outside the no-retry list never took this branch; it falls through to
-    AI classification downstream."""
+    """A job outside the no-retry list never took this branch; it falls through to AI classification downstream."""
     gate.assert_eq(
         verdict(gate, "Build (Renet) / Renet (Full)", "1"),
         "continue",
@@ -188,9 +186,7 @@ def test_non_no_retry_job_is_unaffected(gate):
 
 
 def test_cancellation_is_not_a_failure(gate):
-    """Branch 1 is gated on `failed.includes(job)` on purpose: a non-stuck
-    CANCELLATION of a Quality job is an infra flake, and nuking a 0-failure run for
-    it is wrong."""
+    """Branch 1 is gated on `failed.includes(job)` on purpose: a non-stuck CANCELLATION of a Quality job is an infra flake, and nuking a 0-failure run for it is wrong."""
     gate.assert_eq(
         verdict(gate, "Quality / Packages", "0"),
         "continue",
@@ -200,8 +196,7 @@ def test_cancellation_is_not_a_failure(gate):
 
 
 def test_review_gate_skips_the_drain(gate):
-    """CLAUDE.md: Review Gate fails immediately, full stop. There is no sibling
-    verdict worth collecting when the red means "reply to the review"."""
+    """CLAUDE.md: Review Gate fails immediately, full stop. There is no sibling verdict worth collecting when the red means "reply to the review"."""
     gate.assert_eq(
         drain_mode(gate, "Review Gate"), "instant", "Review Gate kills the run without draining"
     )
@@ -240,9 +235,7 @@ def test_drain_releases_when_all_terminal(gate):
 
 
 def test_drain_ignores_expensive_jobs(gate):
-    """The whole point of force-cancelling is to stop the expensive legs. Those are
-    NOT in the no-retry list, so they must never hold the cancel open -- otherwise a
-    lint error would wait 50 minutes for the E2E matrix."""
+    """The whole point of force-cancelling is to stop the expensive legs. Those are NOT in the no-retry list, so they must never hold the cancel open -- otherwise a lint error would wait 50 minutes for the E2E matrix."""
     jobs = [
         {"name": "Tests + Infra / E2E Workers (fedora-43)", "status": "in_progress"},
         {"name": "OPS Tests / OPS Provision (linux-amd64)", "status": "in_progress"},
@@ -258,8 +251,7 @@ def test_drain_never_waits_on_review_gate(gate):
 
 
 def test_drain_honours_exclude_patterns(gate):
-    """The watchdog's own job is excluded from monitoring; it must not be able to
-    hold its own cancel open forever."""
+    """The watchdog's own job is excluded from monitoring; it must not be able to hold its own cancel open forever."""
     jobs = [
         {"name": "Quality / Watchdog Helper", "status": "in_progress"},
         {"name": "Quality / Code", "status": "in_progress"},

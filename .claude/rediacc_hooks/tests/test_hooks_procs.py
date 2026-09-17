@@ -189,8 +189,7 @@ def test_block_edit_of_running_script(tmp_path):
 
 @pytest.mark.xdist_group(test_guards_differential.XDIST_GROUP)
 def test_block_bash_write_to_running_script(tmp_path):
-    """block_bash_write_to_running_script shipped 2026-08-27 with ZERO cases in either
-    direction -- the only guard in the tree in that state, and the reason check:ci-hook-integrity was red.
+    """block_bash_write_to_running_script shipped 2026-08-27 with ZERO cases in either direction -- the only guard in the tree in that state, and the reason check:ci-hook-integrity was red.
     """
     block = hookblocks.Block("bash-write")
     bash_json = hookcases.bash_json

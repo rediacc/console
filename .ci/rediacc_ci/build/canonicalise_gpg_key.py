@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/canonicalise-gpg-key.sh`.
 
-Rewrites an armored GPG private key into CANONICAL armor, in place. See the
-twin's own header for the incident (run 33990640584, 2026-09-05) and the
-structural repair this performs: a key stored as two Bitwarden fields gets
-welded when the halves are concatenated without a newline, producing one
-over-long armor line that gpg reads leniently and Go's `openpgp.ReadArmoredKeyRing`
-rejects outright. Importing and re-exporting through gpg repairs every variant
-gpg can read.
+Rewrites an armored GPG private key into CANONICAL armor, in place. See the twin's own header for the incident (run 33990640584, 2026-09-05) and the structural repair this performs: a key stored as two Bitwarden fields gets welded when the halves are concatenated without a newline, producing one over-long armor line that gpg reads leniently and Go's `openpgp.ReadArmoredKeyRing`
+rejects outright. Importing and re-exporting through gpg repairs every variant gpg can read.
 
-Usage: canonicalise_gpg_key.py <key-file> [passphrase]
-Exit 0  the key was ALREADY canonical; the file is unchanged in substance
+Usage: canonicalise_gpg_key.py <key-file> [passphrase] Exit 0 the key was ALREADY canonical; the file is unchanged in substance
      10 the key was REPAIRED -- the stored value is malformed and should be
         fixed at source, not left to this script
      1  gpg could not read the key at all
@@ -19,48 +13,25 @@ PORT NOTES.
 
 THE USAGE-ERROR TEXT DOES NOT MATCH THE TWIN BYTE FOR BYTE, and that is a
 deliberate, checked call rather than an oversight. The twin's `${1:?msg}`
-prints a bash-INTERNAL diagnostic that embeds the invoking script's own path
-and an interpreter line number (`<script>: line 43: 1: usage: ...`), which is
-not a thing a second language can reproduce and which a caller has no reason
-to depend on: `scripts/lib/shadow-gate.ts`'s `PATH_LINE`/`MARKERS` classifiers
-do not recognise that shape (no `:digits` immediately after `.sh`, no
-`::error::`/`✗`/`ERROR:` marker), so it normalizes to CHATTER on both sides and
-plays no part in any recorded verdict. Exit code 1 is what is being ported.
+prints a bash-INTERNAL diagnostic that embeds the invoking script's own path and an interpreter line number (`<script>: line 43: 1: usage: ...`), which is not a thing a second language can reproduce and which a caller has no reason to depend on: `scripts/lib/shadow-gate.ts`'s `PATH_LINE`/`MARKERS` classifiers do not recognise that shape (no `:digits` immediately after `.sh`, no
+`::error::`/`✗`/`ERROR:` marker), so it normalizes to CHATTER on both sides and plays no part in any recorded verdict. Exit code 1 is what is being ported.
 
-EVERY OTHER ERROR MESSAGE IS TRANSLITERATED VERBATIM, because those ARE the
-finding text a reader diffs: "<path> is missing or empty", "gpg is not
-installed", "gpg could not import the key", "no secret key after import",
-"re-export produced nothing".
+EVERY OTHER ERROR MESSAGE IS TRANSLITERATED VERBATIM, because those ARE the finding text a reader diffs: "<path> is missing or empty", "gpg is not installed", "gpg could not import the key", "no secret key after import", "re-export produced nothing".
 
 `GNUPGHOME` IS SET VIA A COPIED ENVIRONMENT, never a bare `{"GNUPGHOME": ...}`,
 matching the twin's `GNUPGHOME="$HOME_DIR" gpg ...` prefix form, which inherits
-the rest of the calling shell's environment (PATH, HOME, etc.) rather than
-replacing it.
+the rest of the calling shell's environment (PATH, HOME, etc.) rather than replacing it.
 
-THE REPAIR CHECK RUNS ON THE ORIGINAL BYTES, before the file is overwritten,
-matching the twin's ordering: `awk ... "$KEY_FILE"` runs before `cat "$OUT"
->"$KEY_FILE"`. `_max_body_line_length` transliterates
+THE REPAIR CHECK RUNS ON THE ORIGINAL BYTES, before the file is overwritten, matching the twin's ordering: `awk ... "$KEY_FILE"` runs before `cat "$OUT" >"$KEY_FILE"`. `_max_body_line_length` transliterates
 `awk 'BEGIN{m=0} !/-----/ { if (length($0) > m) m = length($0) } END { print
 m+0 }'`: skip any line containing the literal substring `-----` (awk's `/-----/`
-is a substring match, not an anchored one), track the longest line among the
-rest, by character count. AWK's default record separator drops a final
-trailing newline into no extra empty record, which `str.split("\n")` does not
-match on its own -- a length-1 trailing empty element is trimmed to mirror it,
-though it is inert here either way since an empty string never becomes the max.
+is a substring match, not an anchored one), track the longest line among the rest, by character count. AWK's default record separator drops a final trailing newline into no extra empty record, which `str.split("\n")` does not match on its own -- a length-1 trailing empty element is trimmed to mirror it, though it is inert here either way since an empty string never becomes the max.
 
 `_fpr_from_colons` transliterates `awk -F: '$1=="fpr"{print $10; exit}'`
-against `gpg --list-secret-keys --with-colons`: colon-delimited records, first
-line whose field 1 (0-indexed 0) is exactly `fpr`, field 10 (0-indexed 9). AWK
-is 1-indexed; Python's split gives 0-indexed fields, hence `fields[9]`.
+against `gpg --list-secret-keys --with-colons`: colon-delimited records, first line whose field 1 (0-indexed 0) is exactly `fpr`, field 10 (0-indexed 9). AWK is 1-indexed; Python's split gives 0-indexed fields, hence `fields[9]`.
 
-GPG'S OWN OUTPUT NEVER REACHES EITHER STREAM ON THE SUCCESS PATH, matching the
-twin's `2>/dev/null` on every gpg invocation and its stdout never being
-inherited (import's stdout is not redirected in the twin, but gpg 2.4 writes
-its own progress there almost never -- the status lines observed in manual
-testing all landed on stderr, which both the twin and this port discard).
-Nothing here relies on that being true; it is recorded because it is what
-makes the byte-identical, empty-both-streams success case documented in
-`rediacc_ci.quality.release_key_canonical`'s own header possible.
+GPG'S OWN OUTPUT NEVER REACHES EITHER STREAM ON THE SUCCESS PATH, matching the twin's `2>/dev/null` on every gpg invocation and its stdout never being inherited (import's stdout is not redirected in the twin, but gpg 2.4 writes its own progress there almost never -- the status lines observed in manual testing all landed on stderr, which both the twin and this port discard). Nothing
+here relies on that being true; it is recorded because it is what makes the byte-identical, empty-both-streams success case documented in `rediacc_ci.quality.release_key_canonical`'s own header possible.
 """
 
 from __future__ import annotations
@@ -177,10 +148,7 @@ def main(argv: list[str]) -> int:
             print("canonicalise-gpg-key: re-export produced nothing", file=sys.stderr)
             return 1
 
-        # JUDGE THE INPUT, NOT A DIFF AGAINST THE OUTPUT -- see the twin's own
-        # comment. gpg re-encrypts with fresh salt on every export, so the
-        # body differs every time even for a canonical key; the weld leaves a
-        # structural signature (one armor line over 64 columns) instead.
+        # JUDGE THE INPUT, NOT A DIFF AGAINST THE OUTPUT -- see the twin's own comment. gpg re-encrypts with fresh salt on every export, so the body differs every time even for a canonical key; the weld leaves a structural signature (one armor line over 64 columns) instead.
         repaired = _max_body_line_length(key_file) > 64
 
         shutil.copyfile(out_path, key_file)

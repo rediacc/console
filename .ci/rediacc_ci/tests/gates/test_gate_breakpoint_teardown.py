@@ -75,17 +75,14 @@ def kill_quietly(proc: subprocess.Popen) -> None:
 
 
 def record_pid(state, name: str, pid: int) -> None:
-    """Write the pidfile exactly as `bp_record_pid` does, WITHOUT sourcing
-    `breakpoint-common.sh`: the test must exercise the FILE LAYOUT contract, not share
-    an implementation with the thing it is testing."""
+    """Write the pidfile exactly as `bp_record_pid` does, WITHOUT sourcing `breakpoint-common.sh`: the test must exercise the FILE LAYOUT contract, not share an implementation with the thing it is testing."""
     pids = state / "pids"
     pids.mkdir(parents=True, exist_ok=True)
     (pids / ("%s.pid" % name)).write_text("%d\n" % pid, encoding="utf-8")
 
 
 def run_stop(tmp, **extra: str) -> harness.RunResult:
-    """Invoke teardown against the temp state dir, streams MERGED as the twin merges
-    them, and the environment REPLACED as the twin's `env -i` replaces it."""
+    """Invoke teardown against the temp state dir, streams MERGED as the twin merges them, and the environment REPLACED as the twin's `env -i` replaces it."""
     bash = harness.require_tool("bash", "install bash; the subject is a bash script")
     env = {
         "PATH": os.environ.get("PATH", ""),
@@ -138,9 +135,7 @@ def test_kills_recorded_pids(gate):
 
 
 def test_second_teardown_is_clean(gate):
-    """`GITHUB_RUN_ID` is set for BOTH calls so the second one still has a derivable
-    identity and walks the whole script (the sweeper's shape) rather than taking the early "nothing to do" exit. That is the call that has to be green, and the early
-    exit would hide it."""
+    """`GITHUB_RUN_ID` is set for BOTH calls so the second one still has a derivable identity and walks the whole script (the sweeper's shape) rather than taking the early "nothing to do" exit. That is the call that has to be green, and the early exit would hide it."""
     with harness.temp_dir() as tmp:
         state = prepared(tmp)
         proc = start_sleeper()
@@ -176,8 +171,7 @@ def test_no_state_dir_at_all(gate):
 
 
 def test_stale_pidfile_is_not_an_error(gate):
-    """A pid that has already exited: the normal state after a runner reboot, or when
-    the process died on its own before teardown ran."""
+    """A pid that has already exited: the normal state after a runner reboot, or when the process died on its own before teardown ran."""
     with harness.temp_dir() as tmp:
         state = prepared(tmp)
         dead = subprocess.Popen(["true"])
@@ -223,8 +217,7 @@ def test_does_not_touch_unrecorded_processes(gate):
 
 
 def test_no_pattern_kill_or_tmp_glob(gate):
-    """The banned constructs are present in the header comment as an explanation of what
-    NOT to do, so the scan has to look at code only."""
+    """The banned constructs are present in the header comment as an explanation of what NOT to do, so the scan has to look at code only."""
     body = STOP.read_text(encoding="utf-8")
     code = "\n".join(line for line in body.splitlines() if not line.lstrip().startswith("#"))
     gate.assert_not_contains(code, "pkill -f", "pkill -f reaches into a concurrent job's processes")
@@ -241,9 +234,7 @@ def test_no_pattern_kill_or_tmp_glob(gate):
 
 
 def test_workflow_teardown_is_always(gate):
-    """`if: always()` is what makes teardown run after a FAILED or CANCELLED session.
-    Without it the tunnel outlives the job on exactly the runs where something went
-    wrong -- the runs most likely to have left a shell open."""
+    """`if: always()` is what makes teardown run after a FAILED or CANCELLED session. Without it the tunnel outlives the job on exactly the runs where something went wrong -- the runs most likely to have left a shell open."""
     if not WORKFLOW.is_file():
         gate.log_fail("workflow template is missing: %s" % paths.relative_to_root(WORKFLOW))
     lines = WORKFLOW.read_text(encoding="utf-8").splitlines()

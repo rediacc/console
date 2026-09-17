@@ -592,8 +592,7 @@ def jq_group_by(items: list, key) -> list:
 
 
 def jq_unique(items: list) -> list:
-    """`unique`: sorted, duplicates removed. jq sorts first, so the output is
-    in jq order and not in input order."""
+    """`unique`: sorted, duplicates removed. jq sorts first, so the output is in jq order and not in input order."""
     out: list = []
     for item in sorted(items, key=_ord):
         if not out or _ord(out[-1]) != _ord(item):
@@ -602,8 +601,7 @@ def jq_unique(items: list) -> list:
 
 
 def jq_flatten(items: list) -> list:
-    """`flatten` with no argument: RECURSIVE, to any depth. Objects are not
-    touched, only arrays."""
+    """`flatten` with no argument: RECURSIVE, to any depth. Objects are not touched, only arrays."""
     out: list = []
     for item in items:
         if isinstance(item, list):
@@ -897,8 +895,7 @@ def _iterate_result_optional(blob: str) -> list:
 
 
 def _soft_length_text(blob: str) -> str:
-    """`jq 'length'` inside the twin's `set +e` region: a failure is an EMPTY
-    string, not a dead run.
+    """`jq 'length'` inside the twin's `set +e` region: a failure is an EMPTY string, not a dead run.
 
     `aws --query 'Uploads[]...'` renders `null` when there are no uploads, and `null | length` is a jq error. The twin's `mpu_count` is then empty, and `[[ "" -eq 0 ]]` is true, so the phase reports "no ongoing multipart uploads". Getting this wrong in either direction changes what an empty bucket prints.
     """
@@ -2257,8 +2254,7 @@ class Housekeeping:
         log.info("  Deleted s3://%s/%s%s" % (self.r2_bucket, prefix, suffix))
 
     def cleanup_r2(self) -> None:
-        """`cleanup_r2` (:1187-1553). Six sub-phases, in the twin's ORDER OF
-        EXECUTION, which is 8a, 8b, 8c, 8d, 8f, 8e -- 8f really does run before 8e in the file, and the labels really are out of order.
+        """`cleanup_r2` (:1187-1553). Six sub-phases, in the twin's ORDER OF EXECUTION, which is 8a, 8b, 8c, 8d, 8f, 8e -- 8f really does run before 8e in the file, and the labels really are out of order.
 
         `set +e` FOR THE WHOLE PHASE, restored at the end. The twin relaxes errexit here because several `aws | awk` pipes have SIGPIPE edges that would otherwise kill the job silently; every destructive call carries its own guard. The port has no errexit to relax, and the one place the difference shows is 8e's `jq 'length'` over an `aws` response of `null`, which is a soft failure
         here and a soft failure there.

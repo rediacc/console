@@ -3,9 +3,8 @@
 Ported from `.ci/scripts/quality/check-renet-tier-map.sh`, which is not deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-THE TWIN IS DECLARED `kind: local-only`, AND ITS BLOCKER IS ABOUT WIRING RATHER THAN ABOUT THE TIER MAP, so it stays with the bash file rather than moving here:
-"no CI step invokes this script; the seven tier-map tests it drives already run
-in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step 'Run renet tests'), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes". A port does not inherit a registration, so nothing here re-states it as a live suppression, and this module is deliberately NOT wired into anything either.
+THE TWIN IS DECLARED `kind: local-only`, AND ITS BLOCKER IS ABOUT WIRING RATHER THAN ABOUT THE TIER MAP, so it stays with the bash file rather than moving here: "no CI step invokes this script; the seven tier-map tests it drives already run in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step 'Run renet tests'), which resolves to that leaf and not
+this one, so a step pointer would claim CI runs a script it never invokes". A port does not inherit a registration, so nothing here re-states it as a live suppression, and this module is deliberately NOT wired into anything either.
 
 WHY THE TWIN EXISTS AT ALL, given CI already runs those tests. `npm run ci` had no leg for them, so a tier-map regression could only be found after a push. The CLI now DERIVES its licence-issuance class from this map through the generated contract (`packages/shared/src/renet-contract/data/license-tiers.generated.ts`, consumed by
 `packages/cli/src/services/renet/renet-license-contract.ts`), which makes the map's completeness a console-side correctness property, not only a renet one.
@@ -27,9 +26,8 @@ THE THREE PHASES, AND WHY THE FIRST AND THIRD EXIST AT ALL. Phase 2 on its own -
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE SUBMODULE GUARD IS A THREE-WAY BRANCH, NOT A TWO-WAY ONE. `require_submodule` answers "present", "absent under CI" (hard failure, exit 1, three lines naming the fix) and "absent locally" (warn, and the caller's `|| exit 0` makes it a
-skip). All three rungs are carried; see `rediacc_ci.quality.renet_types` for the
-same note and for common.sh's own reason ("a gate that silently skips is worse than no gate at all").
+THE SUBMODULE GUARD IS A THREE-WAY BRANCH, NOT A TWO-WAY ONE. `require_submodule` answers "present", "absent under CI" (hard failure, exit 1, three lines naming the fix) and "absent locally" (warn, and the caller's `|| exit 0` makes it a skip). All three rungs are carried; see `rediacc_ci.quality.renet_types` for the same note and for common.sh's own reason ("a gate that silently
+skips is worse than no gate at all").
 
 `sort` IS BYTE ORDER HERE, AND THE PORT'S `sorted()` MATCHES IT. The twin sorts both lists with coreutils `sort`, whose result depends on the locale. Every
 caller that matters -- CI, and the shadow differential -- pins `LC_ALL=C`, and
@@ -38,9 +36,8 @@ else's machine.
 
 A ZERO-TEST SELECTION ABORTS THE TWIN SILENTLY, and that is a defect this port
 reproduces. `LISTED="$(... | grep '^Test' | sort)"` runs under `set -euo
-pipefail`, so when `grep` matches nothing the pipeline fails, the assignment fails, and the script exits 1 having printed NOTHING beyond `go test`'s own output. The reader sees an exit code and no explanation, for the exact condition phase 1 was written to explain. The port exits with the same code at
-the same point; the defect is reported, not repaired, because repairing it
-would change what the gate prints.
+pipefail`, so when `grep` matches nothing the pipeline fails, the assignment fails, and the script exits 1 having printed NOTHING beyond `go test`'s own output. The reader sees an exit code and no explanation, for the exact condition phase 1 was written to explain. The port exits with the same code at the same point; the defect is reported, not repaired, because repairing it would
+change what the gate prints.
 
 `2>&1` IS THE TWIN'S OWN MERGE AND IS NOT THIS PORT'S CHOICE. Phase 2 captures the test run with the two streams merged, then re-prints the whole thing on stderr when the run failed. `rediacc_ci.tests.differential` refuses to merge streams for exactly the reason the 2026-09-06 emit-advisory incident showed, and this is not that: the merge here is INSIDE the subject, part of what
 the gate prints, so the port merges too and the gate's own two streams stay separate.
@@ -234,9 +231,8 @@ _LISTING = "\n".join(EXPECTED_TESTS) + "\nok  \tgithub.com/rediacc/renet/pkg/fun
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
-    THE PURE HALF ONLY, AND THAT IS A DECISION. The end-to-end path compiles and runs a Go package, which needs a toolchain, the submodule, and tens of
-    seconds; a selftest that silently degraded when any of those was missing
-    would be the vacuity this package exists to refuse. The two functions that decide the verdict are pure, so they are driven directly here, and the whole gate is proven end to end by the committed shadow ledger `.ci/shadow/w7p2-renet-tiermap.observations.jsonl` over five distinct trees.
+    THE PURE HALF ONLY, AND THAT IS A DECISION. The end-to-end path compiles and runs a Go package, which needs a toolchain, the submodule, and tens of seconds; a selftest that silently degraded when any of those was missing would be the vacuity this package exists to refuse. The two functions that decide the verdict are pure, so they are driven directly here, and the whole gate is
+    proven end to end by the committed shadow ledger `.ci/shadow/w7p2-renet-tiermap.observations.jsonl` over five distinct trees.
     """
     ctl = Controls("renet-tier-map", floor=18, verbose=True)
 

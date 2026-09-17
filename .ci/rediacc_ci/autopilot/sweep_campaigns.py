@@ -9,10 +9,8 @@ armed. The port does not re-implement that check -- it CALLS the same `state-com
 WHY THE SIBLING STAYS BASH. `state-comment.sh` is not ported yet, and re-implementing its `select`/`fields` here would create a SECOND parser of the state comment, which is the specific thing its own header says must not happen ("autopilot-gate.sh reads the metadata line through state-comment.sh instead of re-parsing it"). The port therefore resolves it the way the twin's
 `SCRIPT_DIR` does, relative to its own file, and spawns it.
 
-"COULD NOT LOOK" IS NOT "NOT ARMED". A PR with no comment dump is skipped with
-a warning and does NOT count as scanned; the summary reports the scanned count
-separately for exactly that reason. Preserved verbatim, including the fact that a sweep over an empty PR list prints `0 open campaign(s) across 0 scanned PR(s)` and exits 0. That is the twin's documented "an empty sweep is a normal, quiet result", so the port keeps it -- but a reader should know that this line is also what a completely broken input produces, and it is the summary,
-not the exit code, that tells the two apart.
+"COULD NOT LOOK" IS NOT "NOT ARMED". A PR with no comment dump is skipped with a warning and does NOT count as scanned; the summary reports the scanned count separately for exactly that reason. Preserved verbatim, including the fact that a sweep over an empty PR list prints `0 open campaign(s) across 0 scanned PR(s)` and exits 0. That is the twin's documented "an empty sweep is a
+normal, quiet result", so the port keeps it -- but a reader should know that this line is also what a completely broken input produces, and it is the summary, not the exit code, that tells the two apart.
 
 WHERE jq IS SPAWNED AND WHERE IT IS NOT, which is a rule this wave applies to all four ports:
 
@@ -185,8 +183,7 @@ def main(argv: list[str]) -> int:
 
 
 def _sweep(prs: str, comments_dir: str, bot: str, work: str) -> int:
-    """The scan itself. Split out so the work directory has one owner and one
-    cleanup path, which is what the twin's EXIT trap gives it."""
+    """The scan itself. Split out so the work directory has one owner and one cleanup path, which is what the twin's EXIT trap gives it."""
     code, numbers = pr_numbers(prs)
     if code != 0:
         return code

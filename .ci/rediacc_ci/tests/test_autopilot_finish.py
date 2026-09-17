@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.finish` against its twin
-`.ci/scripts/autopilot/finish.sh`.
+"""Differential: `rediacc_ci.autopilot.finish` against its twin `.ci/scripts/autopilot/finish.sh`.
 
 A DECISION TREE, SO EVERY BRANCH GETS A CASE. This subject has three subcommands, an unknown-subcommand arm, a usage refusal per subcommand, a fail-closed write gate, two `gh` pipelines and jq's own exit codes leaking through `set -e`. The cases below walk each of them, and the ones that pin the EXIT CODE rather than the message are the load-bearing half: 0 and 1 out of
 `check-done` are how the babysit loop decides whether to stop, and 5 out of a broken pipeline is jq's, not this script's.
@@ -186,9 +185,7 @@ def test_check_done_names_every_unmet_condition() -> None:
 
 
 def test_check_done_fails_closed_on_an_absent_draft_field() -> None:
-    """The twin's own comment: NOT `.draft // true | not`. A PR whose fixture
-    never mentions `draft` is NOT done, and a non-draft PR (`draft: false`) is not read as a draft. Both directions, because only one of them catches the
-    `//` bug the comment describes."""
+    """The twin's own comment: NOT `.draft // true | not`. A PR whose fixture never mentions `draft` is NOT done, and a non-draft PR (`draft: false`) is not read as a draft. Both directions, because only one of them catches the `//` bug the comment describes."""
     absent = dict(DONE)
     del absent["draft"]
     code, out, _, _ = _sides(
@@ -212,8 +209,7 @@ def test_check_done_unresolved_threads_defaults_to_one() -> None:
 
 
 def test_check_done_on_a_fixture_jq_cannot_read() -> None:
-    """jq's exit code, not this script's: `set -e` ends the run at 5 and
-    nothing is printed to stdout."""
+    """jq's exit code, not this script's: `set -e` ends the run at 5 and nothing is printed to stdout."""
     exit_code, stdout, stderr, _ = _sides(
         "bad-json", ["check-done", "--pr", "pr.json"], fixtures={"pr.json": b"not json\n"}
     )
@@ -269,8 +265,7 @@ def test_the_write_gate_is_closed_by_default() -> None:
 
 
 def test_the_usage_refusal_comes_before_the_write_gate() -> None:
-    """ORDER, not just outcome: a missing `--repo` is exit 2 even with the
-    stage flag off, so a caller cannot mistake a typo for a closed stage."""
+    """ORDER, not just outcome: a missing `--repo` is exit 2 even with the stage flag off, so a caller cannot mistake a typo for a closed stage."""
     for argv in (["ready-flip", "--pr", "5"], ["ready-flip", "--repo", "r/c"]):
         exit_code, _, stderr, calls = _sides("usage-%s" % len(argv), argv)
         assert exit_code == 2, argv
@@ -316,8 +311,7 @@ def test_rerun_review_walks_head_then_run_then_rerun() -> None:
 
 
 def test_rerun_review_when_no_review_run_exists() -> None:
-    """`first` over an empty list is `null`, which jq prints as the STRING
-    `null`. Both spellings of "nothing" are refused."""
+    """`first` over an empty list is `null`, which jq prints as the STRING `null`. Both spellings of "nothing" are refused."""
     for label, body in (("null-id", '{"id":null}'), ("empty-id", '{"id":""}')):
         exit_code, _, stderr, calls = _sides(
             label,
@@ -344,9 +338,7 @@ def test_rerun_review_when_the_body_cannot_be_indexed() -> None:
 
 
 def test_slow_a_failing_flip_retries_three_times_and_replays_its_stderr() -> None:
-    """18 seconds, and the only case that proves the `_gh_probe` loop: two
-    warnings, the final error carrying the last exit code, and gh's captured
-    stderr replayed indented four spaces."""
+    """18 seconds, and the only case that proves the `_gh_probe` loop: two warnings, the final error carrying the last exit code, and gh's captured stderr replayed indented four spaces."""
     exit_code, stdout, stderr, calls = _sides(
         "flip-fails",
         ["ready-flip", "--pr", "5", "--repo", "r/c"],

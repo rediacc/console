@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.quality.page_density` against its twin
-`.ci/scripts/quality/page-density.sh`.
+"""Differential: `rediacc_ci.quality.page_density` against its twin `.ci/scripts/quality/page-density.sh`.
 
 THE SUBJECT IS A LAUNCHER, so what is under test is the LAUNCH: which binary,
 with exactly which argv, from which working directory, after which stdout
@@ -13,8 +12,7 @@ DOCKER ABSENCE IS SIMULATED BY OMITTING THE STUB, never by an environment flag, 
 TWO CASES ASSERT AGREEMENT ON EXIT CODE AND SUBSTANCE RATHER THAN BYTES, and they are the two the port's docstring names as divergences: a missing `node` and a missing `npx` both produce bash's own `<script>: line NN: ...` text, which carries a line number no port should reproduce. Everything else in this file is byte-for-byte.
 
 K=5 LEDGER: `.ci/shadow/w7p6-page-density.observations.jsonl` -- five
-distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty
-tree; `--record` refuses one) with the same recording stubs on PATH, varying
+distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty tree; `--record` refuses one) with the same recording stubs on PATH, varying
 the branch across trees: REDIACC_SMOKE_NO_DOCKER=1, docker absent, two
 different playwright versions, and a failing node.
 
@@ -181,8 +179,7 @@ def test_docker_absent_prints_the_note_then_execs_npx(tmp_path: pathlib.Path) ->
 
 
 def test_docker_present_derives_the_image_and_execs_docker(tmp_path: pathlib.Path) -> None:
-    """The whole point of the script: the tag comes from the installed
-    playwright package, never from a hand-typed pin."""
+    """The whole point of the script: the tag comes from the installed playwright package, never from a hand-typed pin."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ("npx", "node", "docker"), STUB_NODE_STDOUT="1.55.0"
     )
@@ -204,9 +201,7 @@ def test_docker_present_derives_the_image_and_execs_docker(tmp_path: pathlib.Pat
 
 
 def test_ipc_host_is_present_in_the_docker_argv(tmp_path: pathlib.Path) -> None:
-    """Named separately because it is the one flag whose absence produces a
-    Chromium crash rather than a clean failure (the twin's own comment: the
-    default 64MB /dev/shm)."""
+    """Named separately because it is the one flag whose absence produces a Chromium crash rather than a clean failure (the twin's own comment: the default 64MB /dev/shm)."""
     old, _new, old_calls, _new_calls = run_both(
         tmp_path, ("npx", "node", "docker"), STUB_NODE_STDOUT="1.55.0"
     )
@@ -229,8 +224,7 @@ def test_node_failure_propagates_its_exit_code(tmp_path: pathlib.Path) -> None:
 
 
 def test_node_stderr_is_not_swallowed(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY for the inherited-stderr requirement. `$(...)` captures
-    stdout only, so node's diagnostic must reach the caller. A port that used
+    """ANTI-VACUITY for the inherited-stderr requirement. `$(...)` captures stdout only, so node's diagnostic must reach the caller. A port that used
     `capture_output=True` would exit with the same code and print the same
     (empty) stdout, so every other assertion in this file would still pass."""
     old, new, old_calls, new_calls = run_both(
@@ -245,9 +239,7 @@ def test_node_stderr_is_not_swallowed(tmp_path: pathlib.Path) -> None:
 
 
 def test_missing_node_exits_127_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """DOCUMENTED DIVERGENCE: bash's own `line NN: node: command not found`
-    carries a line number, so agreement is on the exit code, the stream and
-    the named binary rather than on the bytes."""
+    """DOCUMENTED DIVERGENCE: bash's own `line NN: node: command not found` carries a line number, so agreement is on the exit code, the stream and the named binary rather than on the bytes."""
     old, new, _old_calls, _new_calls = run_both(tmp_path, ("npx", "docker"))
     assert old.returncode == 127
     assert new.returncode == 127
@@ -259,8 +251,7 @@ def test_missing_node_exits_127_on_both_sides(tmp_path: pathlib.Path) -> None:
 
 
 def test_missing_npx_exits_127_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """The other documented divergence, on the `exec` rather than the
-    substitution."""
+    """The other documented divergence, on the `exec` rather than the substitution."""
     old, new, _old_calls, _new_calls = run_both(tmp_path, ("node",), REDIACC_SMOKE_NO_DOCKER="1")
     assert old.returncode == 127
     assert new.returncode == 127
@@ -273,8 +264,7 @@ def test_missing_npx_exits_127_on_both_sides(tmp_path: pathlib.Path) -> None:
 def test_exec_replaces_the_process_so_the_child_exit_code_is_the_gate_s(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`exec` on both sides: a non-zero gate must not be softened into 0 by a
-    wrapper that forgot to propagate."""
+    """`exec` on both sides: a non-zero gate must not be softened into 0 by a wrapper that forgot to propagate."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ("npx", "docker", "node"), REDIACC_SMOKE_NO_DOCKER="1", STUB_NPX_RC="7"
     )
@@ -294,8 +284,7 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY. Drop `--ipc=host` from the docker argv -- the exact edit a
-    reader who did not know why it was there would make, and one that turns a passing gate into a Chromium crash inside the container. Driven red, then
-    the source is restored byte-identical and re-verified green."""
+    reader who did not know why it was there would make, and one that turns a passing gate into a Chromium crash inside the container. Driven red, then the source is restored byte-identical and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('        "--ipc=host",\n', "")
     assert mutated != original, "the line this plant targets is no longer present verbatim"

@@ -138,8 +138,7 @@ case(
     True,
 )
 
-# A second scratch repo for the ALLOWED push, so the first repo's now-diverged
-# history (it was blocked, never actually pushed) does not contaminate this case.
+# A second scratch repo for the ALLOWED push, so the first repo's now-diverged history (it was blocked, never actually pushed) does not contaminate this case.
 push_repo2 = scratch_repo()
 remote2 = tempfile.mkdtemp()
 git(remote2, "init", "-q", "--bare")

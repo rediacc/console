@@ -77,8 +77,7 @@ ARG_LOGIC_RE = re.compile(r"\b(shift|case|while|if)\b")
 
 
 def shim_sandbox(directory: pathlib.Path, shim: str, target: str) -> pathlib.Path:
-    """The smallest tree in which the shim resolves: the shim at its real relative
-    depth, and a RECORDER where the relocated program would be.
+    """The smallest tree in which the shim resolves: the shim at its real relative depth, and a RECORDER where the relocated program would be.
 
     THE TARGET IS A RECORDER, NOT THE REAL PROGRAM, and that is the point. What is under test is the forward, and the forward has to be observable independently of whatever the far side does with the arguments.
     """

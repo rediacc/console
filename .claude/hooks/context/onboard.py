@@ -100,8 +100,7 @@ def my_open_items(session_id):
         return rows, len(rows)
     # EXIT CODE ALONE CANNOT ANSWER THIS, and reading it as if it could was a real bug here: `--list --open <session-with-nothing>` exits 1, so a plain
     # `returncode != 0 -> unknown` collapsed "owns nothing" into "cannot say"
-    # and arm (b) could never fire. The empty slice announces itself in words,
-    # so key on those; anything else genuinely is unknown.
+    # and arm (b) could never fire. The empty slice announces itself in words, so key on those; anything else genuinely is unknown.
     blob = (r.stdout or "") + (r.stderr or "")
     if "no actionable items" in blob or "nothing open" in blob:
         return [], 0
@@ -178,8 +177,7 @@ def main():
         print(json.dumps(load_marker(session_id), sort_keys=True))
         sys.exit(0)
 
-    # A subagent has its own id and its own short life; it is not the session
-    # that will face the Stop hook, so telling it about the store is pure noise.
+    # A subagent has its own id and its own short life; it is not the session that will face the Stop hook, so telling it about the store is pure noise.
     if ev.get("parent_tool_use_id") or os.environ.get("CLAUDE_AGENT_TYPE"):
         sys.exit(0)
 

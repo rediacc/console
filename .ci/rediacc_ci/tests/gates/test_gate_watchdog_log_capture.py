@@ -12,9 +12,8 @@ Both directions matter:
   - Capture must happen on the fail-fast path too (that log is the one a human
     reads to fix the break).
 
-ONE DELIBERATE DIFFERENCE FROM THE TWIN, and it is about parallelism rather than about the subject. The twin's `test_captured_content_*` and `test_capture_filename_*` READ `$WORK/retry`, a directory the EARLIER
-`test_capture_before_the_rerun` produced; run out of order, or in isolation, they
-find nothing and assert on an empty path. pytest does not promise that ordering once `-n 8 --dist loadgroup` distributes items, so each case here mints its own capture directory under `tmp_path` via `capture_retry()`. Same claim, no inter-test coupling.
+ONE DELIBERATE DIFFERENCE FROM THE TWIN, and it is about parallelism rather than about the subject. The twin's `test_captured_content_*` and `test_capture_filename_*` READ `$WORK/retry`, a directory the EARLIER `test_capture_before_the_rerun` produced; run out of order, or in isolation, they find nothing and assert on an empty path. pytest does not promise that ordering once `-n 8
+--dist loadgroup` distributes items, so each case here mints its own capture directory under `tmp_path` via `capture_retry()`. Same claim, no inter-test coupling.
 """
 
 import pathlib
@@ -181,9 +180,7 @@ def capture_retry(gate, tmp_path: pathlib.Path) -> pathlib.Path:
 
 
 def test_capture_on_the_fail_fast_path(gate, tmp_path):
-    """Stage Artifacts is not on the retry allowlist, so with the classifier
-    unavailable this force-cancels. The log must still be on disk: it is the one
-    a human reads to fix the break."""
+    """Stage Artifacts is not on the retry allowlist, so with the classifier unavailable this force-cancels. The log must still be on disk: it is the one a human reads to fix the break."""
     trace = run_monitor(gate, tmp_path, FAST_FAIL_JOB, "in_progress", "fastfail")
     gate.assert_contains(
         trace,
@@ -199,9 +196,7 @@ def test_capture_on_the_fail_fast_path(gate, tmp_path):
 
 
 def test_capture_before_the_rerun(gate, tmp_path):
-    """THE ORDERING CLAIM. An allowlisted (known-flaky) job with the classifier
-    down takes the retry path. The capture must already be on disk by the time
-    the rerun is dispatched -- after it, attempt 1's logs are unreachable."""
+    """THE ORDERING CLAIM. An allowlisted (known-flaky) job with the classifier down takes the retry path. The capture must already be on disk by the time the rerun is dispatched -- after it, attempt 1's logs are unreachable."""
     trace = run_monitor(gate, tmp_path, RETRY_JOB, "completed", "retry")
     gate.assert_contains(
         trace, "rerun", "an allowlisted failure still reruns when the classifier is down"
@@ -221,9 +216,7 @@ def test_capture_before_the_rerun(gate, tmp_path):
 
 
 def test_captured_content_is_the_whole_log_not_the_excerpt(gate, tmp_path):
-    """The excerpt is tuned for the classifier's context window and stops at the
-    first error block. A human debugging afterwards wants everything, and this is the last moment it exists -- so the file must contain the post-error cleanup
-    lines the 80-line excerpt deliberately cuts."""
+    """The excerpt is tuned for the classifier's context window and stops at the first error block. A human debugging afterwards wants everything, and this is the last moment it exists -- so the file must contain the post-error cleanup lines the 80-line excerpt deliberately cuts."""
     body = capture_retry(gate, tmp_path).read_text(encoding="utf-8")
     gate.assert_contains(
         body, "Post job cleanup.", "the captured file holds the COMPLETE log, not the excerpt"
@@ -235,9 +228,7 @@ def test_captured_content_is_the_whole_log_not_the_excerpt(gate, tmp_path):
 
 
 def test_capture_filename_is_traceable(gate, tmp_path):
-    """A job name carries slashes, spaces and parentheses, none of which belong
-    in a filename; the job id disambiguates legs that sanitise alike. The name
-    must still be recognisable or the artifact is useless."""
+    """A job name carries slashes, spaces and parentheses, none of which belong in a filename; the job id disambiguates legs that sanitise alike. The name must still be recognisable or the artifact is useless."""
     base = capture_retry(gate, tmp_path).name
     gate.assert_contains(base, "E2E_Workers", "the sanitised filename still names the job")
     gate.assert_contains(base, "4242", "the filename carries the job id for disambiguation")
@@ -245,8 +236,7 @@ def test_capture_filename_is_traceable(gate, tmp_path):
 
 
 def test_no_capture_dir_means_no_capture_and_no_crash(gate, tmp_path):
-    """Capture is best-effort by design: an ad-hoc or local invocation sets no
-    directory, and that must not break the watchdog."""
+    """Capture is best-effort by design: an ad-hoc or local invocation sets no directory, and that must not break the watchdog."""
     trace = run_monitor(gate, tmp_path, FAST_FAIL_JOB, "in_progress", "")
     gate.assert_not_contains(trace, "THREW", "an unset capture directory must not throw")
     gate.assert_contains(
@@ -258,8 +248,7 @@ def test_no_capture_dir_means_no_capture_and_no_crash(gate, tmp_path):
 
 
 def test_a_scheduled_run_records_the_failure_and_keeps_monitoring(gate, tmp_path):
-    """THE NIGHTLY PATH. A scheduled run must never be cancelled -- cancelling
-    rewrites its conclusion from `failure` to `cancelled`, which is what hid twelve consecutive red nights.
+    """THE NIGHTLY PATH. A scheduled run must never be cancelled -- cancelling rewrites its conclusion from `failure` to `cancelled`, which is what hid twelve consecutive red nights.
 
     The half that is easy to get wrong is "keeps monitoring". If the exemption merely suppressed the cancel and returned, the watchdog chain would END at the first failing job, the nightly would run unwatched from there, and no later failure would get its log captured or its name into a roster.
     """
@@ -285,9 +274,7 @@ def test_a_scheduled_run_records_the_failure_and_keeps_monitoring(gate, tmp_path
 
 
 def test_a_scheduled_run_still_retries_a_known_flaky_leg(gate, tmp_path):
-    """The nightly must not cry wolf. Suppressing the CANCEL must not also
-    suppress the RETRY: a flaky E2E leg blipping on the network should be re-run,
-    not turned into a red nightly that trains everyone to ignore the signal."""
+    """The nightly must not cry wolf. Suppressing the CANCEL must not also suppress the RETRY: a flaky E2E leg blipping on the network should be re-run, not turned into a red nightly that trains everyone to ignore the signal."""
     trace = run_monitor(gate, tmp_path, RETRY_JOB, "completed", "schedretry", "schedule")
     gate.assert_contains(
         trace, "request:rerun", "an allowlisted flaky leg is still retried on the nightly"
@@ -298,13 +285,10 @@ def test_a_scheduled_run_still_retries_a_known_flaky_leg(gate, tmp_path):
 
 
 def test_a_stuck_job_on_a_scheduled_run_is_never_retried(gate, tmp_path):
-    """THE REVIEW FINDING (PR #541, high severity), and a regression from the
-    forceCancel-returns-bool refactor two commits earlier.
+    """THE REVIEW FINDING (PR #541, high severity), and a regression from the forceCancel-returns-bool refactor two commits earlier.
 
-    Branch 0 exists to say: a STUCK cancellation never goes near AI or retry, because "the job hung once, retrying would just hang again". It ended with
-    `if (await forceCancel(msg)) return;`. Once forceCancel began returning FALSE
-    on a cancel-exempt run, that return stopped firing on the nightly and execution fell through into branches 1-5. Branch 5 then received `isFailure: false` -- correct, it IS a cancellation -- and the "non-stuck cancellation is a runner/infra flake" path resolved it to retry:true. So the one run type that must never burn a pointless hour would have re-run a job that had already
-    hung for STUCK_THRESHOLD_MIN.
+    Branch 0 exists to say: a STUCK cancellation never goes near AI or retry, because "the job hung once, retrying would just hang again". It ended with `if (await forceCancel(msg)) return;`. Once forceCancel began returning FALSE on a cancel-exempt run, that return stopped firing on the nightly and execution fell through into branches 1-5. Branch 5 then received `isFailure: false`
+    -- correct, it IS a cancellation -- and the "non-stuck cancellation is a runner/infra flake" path resolved it to retry:true. So the one run type that must never burn a pointless hour would have re-run a job that had already hung for STUCK_THRESHOLD_MIN.
     """
     trace = run_monitor(
         gate, tmp_path, RETRY_JOB, "completed", "stuck", "schedule", "1", "cancelled", "90"
@@ -320,9 +304,7 @@ def test_a_stuck_job_on_a_scheduled_run_is_never_retried(gate, tmp_path):
 
 
 def test_a_stuck_job_on_a_PR_run_still_cancels(gate, tmp_path):  # noqa: N802 -- the twin's case name; parity compares by name
-    """The other direction: on a normal PR the stuck branch must still terminate
-    the run exactly as before. If this regressed, the fix would have traded one
-    bug for another."""
+    """The other direction: on a normal PR the stuck branch must still terminate the run exactly as before. If this regressed, the fix would have traded one bug for another."""
     trace = run_monitor(
         gate, tmp_path, RETRY_JOB, "completed", "stuckpr", "pull_request", "1", "cancelled", "90"
     )

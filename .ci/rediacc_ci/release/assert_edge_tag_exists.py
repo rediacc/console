@@ -109,7 +109,7 @@ SHIFT2_UNDERFLOW_IS_SILENT_EXIT_1 = True
 
 
 def one_line(text: str) -> str:
-    """`tr '\\n' ' ' | sed 's/  */ /g'` fed by `<<<"$out"` (:99).
+    """`tr '\\n' ' ' | sed 's/ */ /g'` fed by `<<<"$out"` (:99).
 
     THE TRAILING SPACE IS PART OF THE ANSWER. The here-string appends a newline that `tr` turns into a space; `sed` collapses runs of spaces to one, and command substitution strips trailing NEWLINES, not spaces. So every `unknown:` detail ends with exactly one space, including the empty case, where the answer is a single space and nothing else.
 
@@ -119,8 +119,7 @@ def one_line(text: str) -> str:
 
 
 def unknown(detail: str) -> str:
-    """`printf 'unknown:%s\\n' "$(one_line <<<"$out")"`, minus the newline that
-    command substitution would strip anyway."""
+    """`printf 'unknown:%s\\n' "$(one_line <<<"$out")"`, minus the newline that command substitution would strip anyway."""
     return UNKNOWN_PREFIX + one_line(detail)
 
 

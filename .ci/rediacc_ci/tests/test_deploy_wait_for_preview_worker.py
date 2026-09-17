@@ -150,9 +150,7 @@ def test_slow_worker_still_becomes_ready_on_both_sides() -> None:
 
 
 def test_a_200_with_an_empty_keys_array_is_never_ready_on_either_side() -> None:
-    """The counterexample from the twin's own header: `"keys"` is present even
-    when the array is empty, so a check that greps for `"keys"` would wrongly
-    pass. Both sides must exhaust MAX_ATTEMPTS and fail."""
+    """The counterexample from the twin's own header: `"keys"` is present even when the array is empty, so a check that greps for `"keys"` would wrongly pass. Both sides must exhaust MAX_ATTEMPTS and fail."""
     old_rc, _, _ = probe("emptykeys")
     new_rc, _, _ = probe_new("emptykeys")
     assert old_rc == 1
@@ -186,8 +184,7 @@ def test_override_needs_no_pr_number(tmp_path: pathlib.Path) -> None:
 
 
 def test_pr_number_still_required_without_override_reworded() -> None:
-    """Exit code and the identified variable agree; wording does not, and is
-    not supposed to -- see the port's module docstring."""
+    """Exit code and the identified variable agree; wording does not, and is not supposed to -- see the port's module docstring."""
     old_env = diff.env_for(PR_NUMBER=None, PREVIEW_URL_OVERRIDE=None)
     new_env = diff.env_for(
         PR_NUMBER=None, PREVIEW_URL_OVERRIDE=None, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1"
@@ -201,9 +198,7 @@ def test_pr_number_still_required_without_override_reworded() -> None:
 
 
 def test_ci_defaults_are_still_strict() -> None:
-    """The knobs are test-only; if the DEFAULTS drift apart, CI silently
-    changes behaviour and every case above would still pass because they all
-    set their own values."""
+    """The knobs are test-only; if the DEFAULTS drift apart, CI silently changes behaviour and every case above would still pass because they all set their own values."""
     twin_src = diff.repo()
 
     bash_src = (pathlib.Path(twin_src) / TWIN).read_text(encoding="utf-8")

@@ -2,19 +2,15 @@
 
 Unit test for the pure core of the CI scope engine: `.ci/scripts/ci/scope-map.cjs` and `.ci/scripts/ci/scope-engine.cjs`.
 
-WHAT THIS GUARDS. The engine replaces `detect-pointer-bump.sh` (defect D9: its ancestor walk aborted on the `refs/pull/N/merge` commit and NEVER fired) and decides which CI jobs a PR may skip. The one rule that makes that safe is fail-CLOSED classification: every ambiguous input, an unknown path, an empty delta, a malformed
-line, resolves to FULL CI. A false full run costs 70 minutes; a false reduced run
-merges untested code.
+WHAT THIS GUARDS. The engine replaces `detect-pointer-bump.sh` (defect D9: its ancestor walk aborted on the `refs/pull/N/merge` commit and NEVER fired) and decides which CI jobs a PR may skip. The one rule that makes that safe is fail-CLOSED classification: every ambiguous input, an unknown path, an empty delta, a malformed line, resolves to FULL CI. A false full run costs 70
+minutes; a false reduced run merges untested code.
 
 Every case here is CONTROL-PROVEN: for each rule asserted there is also an input that produces the OPPOSITE outcome, so a classifier hardcoded to "always full" (or "always reduced") fails this file. A validator that passes when given nothing is broken by definition.
 
-Edge-case numbers cite the Wave B edge-case matrix (17, 19-24 here; the baseline
-cases 1/2/4/5 via the exported pure helpers).
+Edge-case numbers cite the Wave B edge-case matrix (17, 19-24 here; the baseline cases 1/2/4/5 via the exported pure helpers).
 
-WHAT THE PORT CHANGES, and it is one thing. The twin reads plan fields through a `pget` helper that evaluates a JS expression against the parsed plan in a nested
-`node`; here the plan is parsed by Python and the predicates are Python. That removes
-one interpreter hop per assertion and nothing else: the plan itself is still produced by the REAL `node .ci/scripts/ci/scope-engine.cjs --classify`, and every assertion whose subject is a JS export (`computeWorkflowClosure`, `evaluateBaselineCandidate`, `resolveBaseline`, `isBaseUnchanged`, `validateJobSurfaces`, `JOB_SURFACES`) still shells out to node, because those cannot be
-reimplemented without becoming a second copy of the thing under test.
+WHAT THE PORT CHANGES, and it is one thing. The twin reads plan fields through a `pget` helper that evaluates a JS expression against the parsed plan in a nested `node`; here the plan is parsed by Python and the predicates are Python. That removes one interpreter hop per assertion and nothing else: the plan itself is still produced by the REAL `node .ci/scripts/ci/scope-engine.cjs
+--classify`, and every assertion whose subject is a JS export (`computeWorkflowClosure`, `evaluateBaselineCandidate`, `resolveBaseline`, `isBaseUnchanged`, `validateJobSurfaces`, `JOB_SURFACES`) still shells out to node, because those cannot be reimplemented without becoming a second copy of the thing under test.
 
 ONE DETAIL THAT IS EASY TO GET WRONG AND WAS. Where the twin greps a stringified
 array, this port stringifies with `ensure_ascii=False`. Python's default escapes
@@ -88,8 +84,7 @@ CLOSURE_JS = (
 
 
 def test_unclassified_path_fails_closed(gate):
-    """Edge case 17, the single most important behaviour: a path matching NO rule
-    yields full with the diagnostic pinned, so a new subtree can never silently skip."""
+    """Edge case 17, the single most important behaviour: a path matching NO rule yields full with the diagnostic pinned, so a new subtree can never silently skip."""
     plan = classify(["totally/new/tree/file.bin"])
     gate.assert_eq(plan["mode"], "full", "an unmatched path must force full CI")
     gate.assert_contains(
@@ -143,8 +138,7 @@ def test_rename_classifies_both_sides_union_wins(gate):
 
 
 def test_hostile_paths_survive_the_parser(gate):
-    """Edge case 21: spaces, unicode, and git C-quoting (the default core.quotepath
-    form, octal UTF-8 bytes plus escaped quotes)."""
+    """Edge case 21: spaces, unicode, and git C-quoting (the default core.quotepath form, octal UTF-8 bytes plus escaped quotes)."""
     plan = classify(
         [
             "docs/has space.md",
@@ -177,8 +171,7 @@ def test_hostile_paths_survive_the_parser(gate):
 
 
 def test_ci_lib_forces_full(gate):
-    """Edge case 23: `.ci/scripts/lib` is sourced by ~150 scripts, so touching it
-    invalidates everything, with its own reason distinct from the harness bucket."""
+    """Edge case 23: `.ci/scripts/lib` is sourced by ~150 scripts, so touching it invalidates everything, with its own reason distinct from the harness bucket."""
     plan = classify([".ci/scripts/lib/common.sh"])
     gate.assert_eq(plan["mode"], "full", ".ci/scripts/lib/** must force full")
     gate.assert_contains(
@@ -205,9 +198,7 @@ def test_ci_lib_forces_full(gate):
 
 
 def test_workflow_closure_is_computed_not_name_matched(gate, tmp_path):
-    """Edge case 24: the closure is computed at RUNTIME by iterating
-    `uses: ./.github/workflows/` from ci.yml. ci.yml:560 calls cd-stage.yml, so a
-    `cd-*` name exclusion would drop a workflow that IS inside the CI closure."""
+    """Edge case 24: the closure is computed at RUNTIME by iterating `uses: ./.github/workflows/` from ci.yml. ci.yml:560 calls cd-stage.yml, so a `cd-*` name exclusion would drop a workflow that IS inside the CI closure."""
     closure = node_eval(CLOSURE_JS, str(ENGINE), str(paths.repo_root()))
     gate.assert_contains(
         closure,
@@ -254,9 +245,7 @@ def test_workflow_closure_is_computed_not_name_matched(gate, tmp_path):
 
 
 def test_vm_e2e_surfaces_carry_the_mandated_inputs(gate):
-    """The 8 VM/E2E jobs check out with `submodules: true` and run setup-workspace
-    (verified against ct-tests.yml), so their surface must include packages/shared,
-    packages/provisioning and every submodule pointer."""
+    """The 8 VM/E2E jobs check out with `submodules: true` and run setup-workspace (verified against ct-tests.yml), so their surface must include packages/shared, packages/provisioning and every submodule pointer."""
     check = node_eval(
         """
 const m = require(process.argv[1]);
@@ -306,8 +295,7 @@ process.stdout.write(missing.length ? missing.join("; ") : "ok");
 
 
 def test_submodule_pointer_classifies_like_content(gate):
-    """A gitlink path (`private/renet`, no slash) and expanded submodule content
-    (`private/account/web/...`) land in the same module bucket."""
+    """A gitlink path (`private/renet`, no slash) and expanded submodule content (`private/account/web/...`) land in the same module bucket."""
     plan = classify(["private/renet"])
     gate.assert_eq(plan["mode"], "reduced", "a renet pointer bump is classifiable")
     gate.assert_eq(dumps(plan["modules"]), '["renet"]', "to the renet module")
@@ -330,8 +318,7 @@ def test_submodule_pointer_classifies_like_content(gate):
 
 
 def test_docs_only_delta_reduces_everything(gate):
-    """The reduced happy path: docs-only means every scoped job is out of scope.
-    migration-test is deliberately not in the vector at all (case 26)."""
+    """The reduced happy path: docs-only means every scoped job is out of scope. migration-test is deliberately not in the vector at all (case 26)."""
     plan = classify(["docs/ci-overhaul/03-something.md", "CLAUDE.md", ".claude/settings.json"])
     gate.assert_eq(plan["mode"], "reduced", "a docs-only delta is reduced")
     gate.assert_eq(
@@ -353,8 +340,7 @@ def test_docs_only_delta_reduces_everything(gate):
 
 
 def test_agent_notes_tree_is_a_zero_job_module(gate):
-    """`agent/` is the TRACKED agent working-notes root, and STATE.md is rewritten many
-    times per session. Unclassified it would be full CI each time."""
+    """`agent/` is the TRACKED agent working-notes root, and STATE.md is rewritten many times per session. Unclassified it would be full CI each time."""
     plan = classify(
         [
             "agent/97604f47/STATE.md",
@@ -414,8 +400,7 @@ def test_full_mode_runs_every_job(gate):
 
 
 def test_classify_mode_is_pure(gate, tmp_path):
-    """`--classify` must never touch git, gh, or the network. Shim all three commands
-    to leave a sentinel and prove no sentinel appears."""
+    """`--classify` must never touch git, gh, or the network. Shim all three commands to leave a sentinel and prove no sentinel appears."""
     shim = tmp_path / "shim"
     shim.mkdir()
     for tool in ("git", "gh", "curl"):
@@ -526,8 +511,7 @@ process.stdout.write(v.usable + ":" + v.reason);
         "an empty jobs vector proves nothing",
     )
 
-    # MALFORMED ENTRIES MUST READ AS "NOT COVERED", and the asymmetry is why this block exists. Reading garbage as coverage reduces a round on evidence nobody
-    # checked; reading it as a gap costs one full round. An earlier form asked
+    # MALFORMED ENTRIES MUST READ AS "NOT COVERED", and the asymmetry is why this block exists. Reading garbage as coverage reduces a round on evidence nobody checked; reading it as a gap costs one full round. An earlier form asked
     # `run !== false`, and every case below answered COVERS under it.
     no_run_key = (
         '{"conclusion":"success","plan":{"mode":"reduced","reconciled":true,"jobs":{'
@@ -587,9 +571,7 @@ process.stdout.write(String(e.isBaseUnchanged({planBaseSha: process.argv[2], mer
 
 
 def test_baseline_resolution_fails_open_on_every_defect(gate):
-    """`resolveBaseline` with an INJECTED io: no git, no gh, no network. Each case
-    states the mode AND the machine-readable reason, because "full" alone cannot
-    distinguish a correct full round from a permanently stuck one."""
+    """`resolveBaseline` with an INJECTED io: no git, no gh, no network. Each case states the mode AND the machine-readable reason, because "full" alone cannot distinguish a correct full round from a permanently stuck one."""
 
     def resolve(io_override: str, opts_override: str = "{}") -> str:
         return node_eval(
@@ -675,9 +657,7 @@ process.stdout.write(r.plan.mode + ":" + (r.plan.full_reasons[0] || r.plan.modul
 
 
 def test_resolve_baseline_needs_a_repo(gate):
-    """A misspelled/absent --repo must be a USAGE error. Failing open to full here
-    would hide a caller bug as a permanently expensive pipeline, which is precisely
-    how D9 stayed false for twelve runs."""
+    """A misspelled/absent --repo must be a USAGE error. Failing open to full here would hide a caller bug as a permanently expensive pipeline, which is precisely how D9 stayed false for twelve runs."""
     result = harness.run(
         [node_bin(), str(ENGINE), "--resolve-baseline", "--head", "deadbeef"], timeout=120
     )
@@ -688,8 +668,7 @@ def test_resolve_baseline_needs_a_repo(gate):
 
 
 def test_surface_table_is_self_validating(gate):
-    """A surface naming a module the table cannot produce would be a job that never
-    re-enters scope. The load-time validator must throw on it."""
+    """A surface naming a module the table cannot produce would be a job that never re-enters scope. The load-time validator must throw on it."""
     out = node_eval(
         """
 const m = require(process.argv[1]);
@@ -741,8 +720,7 @@ process.stdin.on("data", (d) => (raw += d)).on("end", () => {
 
 
 def classify_verdict(engine: pathlib.Path, *file_paths: str) -> str:
-    """`<mode>|<total keys>|<sorted running keys>`, or a SENTINEL that can never
-    equal an expectation.
+    """`<mode>|<total keys>|<sorted running keys>`, or a SENTINEL that can never equal an expectation.
 
     The sentinel is the whole point. A classification that produced nothing must not read as "no keys to run": here that is the vacuity shape, and it fails toward skipping everything. So a dead engine, unparseable bytes and a plan with no job vector each answer with a distinct string rather than an empty key list, and the `total` field means a zero-key row still has to prove it saw
     all eighteen keys before finding none of them running.
@@ -760,9 +738,7 @@ def classify_verdict(engine: pathlib.Path, *file_paths: str) -> str:
 
 
 def expect_classify(gate, label: str, expected: str, *file_paths: str) -> None:
-    """An ACTIONABLE failure. A legitimate JOB_SURFACES change must be a one-line edit
-    here, not a stare at two fourteen-item blobs: a regression test that is a puzzle to
-    update is a regression test that gets suppressed instead of updated."""
+    """An ACTIONABLE failure. A legitimate JOB_SURFACES change must be a one-line edit here, not a stare at two fourteen-item blobs: a regression test that is a puzzle to update is a regression test that gets suppressed instead of updated."""
     actual = classify_verdict(ENGINE, *file_paths)
     gate.assertions += 1
     if actual == expected:
@@ -782,9 +758,7 @@ def expect_classify(gate, label: str, expected: str, *file_paths: str) -> None:
 
 
 def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
-    """Each partial set is named ONCE and reused by every row that expects it, so a
-    legitimate map change edits one line rather than several rows. The sets are the measured truth as of 2026-08-05, taken from the real --classify path rather than
-    read off JOB_SURFACES by hand."""
+    """Each partial set is named ONCE and reused by every row that expects it, so a legitimate map change edits one line rather than several rows. The sets are the measured truth as of 2026-08-05, taken from the real --classify path rather than read off JOB_SURFACES by hand."""
     cli_keys = (
         "drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate "
         "e2e_workers fork_isolation install_methods ops package_tests unit update_flow"

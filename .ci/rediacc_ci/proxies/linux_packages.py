@@ -62,8 +62,7 @@ RUN_TEST_RE = re.compile(r'^run_test "')
 # `grep -oE 'Results: [0-9]+ passed, [0-9]+ failed \(total [0-9]+\)'` (:89).
 RESULTS_RE = re.compile(r"Results: ([0-9]+) passed, ([0-9]+) failed \(total ([0-9]+)\)")
 
-# `grep -cE 'TEST: '` (:127) and `grep -cF -- "$DRY_MARKER"` (:128). Both are
-# literal; `DRY_MARKER` is the twin's own variable and this is the same string.
+# `grep -cE 'TEST: '` (:127) and `grep -cF -- "$DRY_MARKER"` (:128). Both are literal; `DRY_MARKER` is the twin's own variable and this is the same string.
 TEST_BANNER = "TEST: "
 DRY_STUB = "[DRY-RUN] Would"
 
@@ -210,8 +209,7 @@ def run() -> int:
         else:
             p.bad(f"{failed} subtest(s) failed")
 
-    # :110-138. The anti-vacuity check, corroborated against the subject's
-    # SOURCE before the subtraction is trusted; see this module's docstring.
+    # :110-138. The anti-vacuity check, corroborated against the subject's SOURCE before the subtraction is trusted; see this module's docstring.
     sites = marker_sites(pathlib.Path(subject).read_text(encoding="utf-8"))
     stubbed = count_lines(both, TEST_BANNER)
     drystub = count_lines(both, DRY_STUB)

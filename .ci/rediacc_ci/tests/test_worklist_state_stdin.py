@@ -72,9 +72,7 @@ def test_a_silent_stdin_is_refused_in_bounded_time():
 
 
 def test_a_plain_read_on_that_same_pipe_really_does_hang():
-    """THE CONTROL, and without it the case above proves nothing. If this pipe
-    shape did not actually block a naive read, the regression test would pass
-    against the very code that shipped the defect."""
+    """THE CONTROL, and without it the case above proves nothing. If this pipe shape did not actually block a naive read, the regression test would pass against the very code that shipped the defect."""
     mod = _load()
     r, w = os.pipe()
     finished = threading.Event()
@@ -98,8 +96,7 @@ def test_a_plain_read_on_that_same_pipe_really_does_hang():
 
 
 def test_a_document_that_does_arrive_is_read_whole():
-    """THE QUIET DIRECTION. The deadline is on the FIRST byte, so a writer that
-    starts must still be read to EOF rather than truncated at the bound."""
+    """THE QUIET DIRECTION. The deadline is on the FIRST byte, so a writer that starts must still be read to EOF rather than truncated at the bound."""
     mod = _load()
     r, w = os.pipe()
     payload = "## Where it is\n\n%s\n" % ("x" * 4000)
@@ -124,8 +121,7 @@ def test_a_document_that_does_arrive_is_read_whole():
 
 
 def test_the_default_budget_is_a_real_bound():
-    """A deadline nobody would wait out is a deadline in name only, and one of a
-    few seconds would refuse a legitimate slow writer."""
+    """A deadline nobody would wait out is a deadline in name only, and one of a few seconds would refuse a legitimate slow writer."""
     mod = _load()
     assert 5.0 <= mod.STATE_STDIN_WAIT_SECONDS <= 120.0
     assert mod.STATE_STDIN_WAIT_SECONDS > mod.STDIN_WAIT_SECONDS, (

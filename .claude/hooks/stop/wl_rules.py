@@ -141,8 +141,7 @@ class Demand:
         return d
 
     def peek(self, path=None):
-        """The raw record, cap ignored. For a rule whose cap suppresses the FIRE
-        rather than the demand -- it still has to see the count it is capped at."""
+        """The raw record, cap ignored. For a rule whose cap suppresses the FIRE rather than the demand -- it still has to see the count it is capped at."""
         return self._read(path)
 
     def load(self, path=None):

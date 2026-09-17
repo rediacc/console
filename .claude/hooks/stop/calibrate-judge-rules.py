@@ -198,9 +198,7 @@ SHAPE_CASES = [
         ],
     ),
     # A THIRD FIRE FIXTURE WAS REMOVED RATHER THAN GUESSED AGAIN. It cited check-em-dash-surfaces.ts:629 / check-dead-css.ts:181 / check-landmarks.ts:48 as one "selftest verdict tail" cluster. Checked line by line, they are not one shape: :629 is a `main()` argv preamble, a different cluster entirely. The model answered `already`, naming the real harness, with the divergence
-    # "em-dash-surfaces uses a
-    # failures array, not a counter; belongs to a different cluster" -- correct, and the
-    # fixture was wrong.
+    # "em-dash-surfaces uses a failures array, not a counter; belongs to a different cluster" -- correct, and the fixture was wrong.
     #
     # That was the SECOND fixture here transcribed from a survey table without checking the lines. Rather than transcribe a third, it is gone: two verified fire cases and three verified controls are a calibration set, and a fixture built on unverified coordinates is worse than no fixture, because it teaches the rubric to agree with a mistake. Build any replacement from the
     # counter's own output -- which is how the line-numbering bug in 5607b136d was found.
@@ -214,8 +212,7 @@ SHAPE_CASES = [
         ],
     ),
     (
-        # THE FIRST VERSION OF THIS FIXTURE WAS WRONG, and the model caught it. It cited check-dead-css.ts:187 / check-ssr-locale.ts:62 / check-svg-theme-reach.ts:60 as
-        # "the findings report"; those three lines are in fact a byte-identical `check`
+        # THE FIRST VERSION OF THIS FIXTURE WAS WRONG, and the model caught it. It cited check-dead-css.ts:187 / check-ssr-locale.ts:62 / check-svg-theme-reach.ts:60 as "the findings report"; those three lines are in fact a byte-identical `check`
         # closure, so `consolidatable: yes` was the CORRECT answer and want=silent was the
         # error. A negative fixture pointing at real duplication does not test the rubric, it tests whether the rubric will agree with a mistake. These lines are the actual bespoke report prose.
         "CONTROL: the findings report is ten distinct shapes, not one",
@@ -239,8 +236,7 @@ SHAPE_CASES = [
 
 
 def run_shape_case(expected, instances):
-    """A FRESH stop per fixture, same reason as run_case: a banked demand would
-    silence the next fixture and make this harness measure itself."""
+    """A FRESH stop per fixture, same reason as run_case: a banked demand would silence the next fixture and make this harness measure itself."""
     for h in ("sh-cal",):
         SD.demand_for(h).clear()
     out, err = SD.ask(instances)

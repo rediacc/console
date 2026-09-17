@@ -101,8 +101,7 @@ def test_main_refuses_an_absent_npmrc(tmp_path: pathlib.Path, monkeypatch) -> No
 
 
 def test_main_passes_a_hardened_npmrc(tmp_path: pathlib.Path, monkeypatch) -> None:
-    """Its mirror: the gate must be capable of returning 0, or the line above
-    proves only that it refuses everything."""
+    """Its mirror: the gate must be capable of returning 0, or the line above proves only that it refuses everything."""
     (tmp_path / ".npmrc").write_text(
         "ignore-scripts=true\nallow-git=none\nminimum-release-age=1440\n", encoding="utf-8"
     )
@@ -116,6 +115,5 @@ def test_selftest_is_green() -> None:
 
 
 def test_the_real_tree_is_hardened() -> None:
-    """The gate against the actual repository. A port that cannot run here is
-    not a port, and this is the only case that touches the real `.npmrc`."""
+    """The gate against the actual repository. A port that cannot run here is not a port, and this is the only case that touches the real `.npmrc`."""
     assert npmrc.main([]) == 0

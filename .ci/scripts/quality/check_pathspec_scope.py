@@ -10,9 +10,7 @@ every script sitting directly under `.ci/`. `.ci/bootstrap.sh` was the first fil
 WHY A COUNT FLOOR CANNOT CATCH THIS, which is the whole reason this gate exists. Both spellings return 453 tracked files today. They differ only on the files one of them cannot see, so an anti-vacuity floor on the corpus SIZE reads clean under either. The scanner skips files and still reports success, which is the exact failure this repo's gates are built to refuse. Only a check on
 the pathspec SHAPE can see it.
 
-`:(glob)` MAGIC IS THE ONE LEGITIMATE USE. Prefixing a pathspec with `:(glob)` turns on WM_PATHNAME, under which `**` means what people expect and `*` stops crossing `/`. A
-pathspec that opts in that way is correct and is left alone; the bug is `**` under the
-DEFAULT semantics, where it is not a wildcard for depth but a demand for a slash.
+`:(glob)` MAGIC IS THE ONE LEGITIMATE USE. Prefixing a pathspec with `:(glob)` turns on WM_PATHNAME, under which `**` means what people expect and `*` stops crossing `/`. A pathspec that opts in that way is correct and is left alone; the bug is `**` under the DEFAULT semantics, where it is not a wildcard for depth but a demand for a slash.
 """
 
 import re

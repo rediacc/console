@@ -7,9 +7,7 @@ THE FAKE `git` IS RECORDING, AND IT REFUSES `fetch`. The twin's shallow-clone ar
 is one `git remote add` away from dialling out. So the fetch arm is driven through a fake `git` that logs its exact argv and exits non-zero for `fetch` while delegating everything else to the real binary. Both sides get the same fake and the two call logs are compared.
 
 WHAT IS NORMALISED. Two of the twin's exits are bash's own `${...?message}`
-diagnostics, which begin `<program>: line <N>:`, and the help text interpolates `$0`. The program NAME necessarily differs between a `.sh` and a module file, so `strip_prog` replaces that one token and `help_body` drops it from the help
-lines; the line NUMBERS are compared, because a drifting line number is exactly
-the silent failure this pinning exists to catch.
+diagnostics, which begin `<program>: line <N>:`, and the help text interpolates `$0`. The program NAME necessarily differs between a `.sh` and a module file, so `strip_prog` replaces that one token and `help_body` drops it from the help lines; the line NUMBERS are compared, because a drifting line number is exactly the silent failure this pinning exists to catch.
 
 The K=5 ledger is `.ci/shadow/w7p6-derive-image-tag.observations.jsonl`
 (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-derive-image-tag --assert --k 5`).
@@ -65,9 +63,7 @@ _HELP_PROG = re.compile(r"\S*derive[-_]image[-_]tag\.(?:sh|py)")
 def help_body(stdout: str) -> list[str]:
     """The help text with the program's own name replaced and runs collapsed.
 
-    `$0` appears five times (the usage line and four examples), and the column alignment of the four example comments is padded to a fixed width, so the LENGTH of the name changes the trailing spacing too. The name becomes
-    `<prog>` and whitespace runs collapse; every option, every description and
-    both auto-derivation lines survive and are compared.
+    `$0` appears five times (the usage line and four examples), and the column alignment of the four example comments is padded to a fixed width, so the LENGTH of the name changes the trailing spacing too. The name becomes `<prog>` and whitespace runs collapse; every option, every description and both auto-derivation lines survive and are compared.
     """
     return [
         re.sub(r"\s+", " ", _HELP_PROG.sub("<prog>", line)).strip() for line in stdout.split("\n")

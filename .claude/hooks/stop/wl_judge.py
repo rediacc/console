@@ -581,8 +581,7 @@ def msg_hash(message):
 
 
 def cached_stop_verdict(state_doc, sig, message):
-    """A previously banked 'stop' verdict for this exact world+message, or
-    None. Any doubt is a miss."""
+    """A previously banked 'stop' verdict for this exact world+message, or None. Any doubt is a miss."""
     c = state_doc.get("judge_cache")
     if not isinstance(c, dict):
         return None
@@ -631,8 +630,7 @@ def judge_log_path(worklist, me8):
 
 
 def log_verdict(path, verdict, reason, error=None):
-    """Append one line. Best-effort: a log that cannot be written must never
-    take a stop with it, so every failure here is swallowed deliberately."""
+    """Append one line. Best-effort: a log that cannot be written must never take a stop with it, so every failure here is swallowed deliberately."""
     try:
         rec = {
             "ts": int(time.time()),
@@ -652,9 +650,7 @@ def log_verdict(path, verdict, reason, error=None):
 
 
 def continue_streak(path):
-    """Consecutive trailing `continue` verdicts. Anything else -- a stop, an
-    unavailable judge -- ends the run, because the sentence in the prompt is
-    about advice that kept not landing, and a stop means it landed."""
+    """Consecutive trailing `continue` verdicts. Anything else -- a stop, an unavailable judge -- ends the run, because the sentence in the prompt is about advice that kept not landing, and a stop means it landed."""
     try:
         lines = pathlib.Path(path).read_text(encoding="utf-8").splitlines()
     except OSError:

@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.update_state` against its twin
-`.ci/scripts/autopilot/update-state.sh`.
+"""Differential: `rediacc_ci.autopilot.update_state` against its twin `.ci/scripts/autopilot/update-state.sh`.
 
 A RECORDING FAKE `gh` ON A PREPENDED PATH, and the fake is not a convenience: this script's success path is an `api --method POST|PATCH` against a real repository, and a case that reached the real binary would write a comment onto whatever PR the argument named. Three independent things stop that, because one would be a claim rather than a control:
 
@@ -188,8 +187,7 @@ def test_post_when_there_is_no_comment_yet() -> None:
 
 
 def test_patch_when_the_comment_exists() -> None:
-    """The update arm, which is what makes this idempotent: the same comment is
-    rewritten in place rather than a second one appearing per round."""
+    """The update arm, which is what makes this idempotent: the same comment is rewritten in place rather than a second one appearing per round."""
     exit_code, _, stderr, calls, body = _sides("patch", [*BASE_ARGV, "--comment-id", "9001"])
     assert exit_code == 0
     assert calls == [
@@ -200,8 +198,7 @@ def test_patch_when_the_comment_exists() -> None:
 
 
 def test_the_previous_body_is_carried_forward() -> None:
-    """Round 2 renders round 1's ledger and ruled-out lines again, and does NOT
-    close the campaign that round 1 opened, because `--campaign` is absent."""
+    """Round 2 renders round 1's ledger and ruled-out lines again, and does NOT close the campaign that round 1 opened, because `--campaign` is absent."""
     previous = (
         b"### Autopilot state (machine-maintained, do not edit)\n"
         b"state: fixing | round: 1/8 | head: aaa | last_run: 1/1 handled | "
@@ -230,8 +227,7 @@ def test_the_previous_body_is_carried_forward() -> None:
 
 
 def test_the_verdict_becomes_one_bullet_per_entry() -> None:
-    """The anti-thrash memory only works if it records more than the first
-    entry, and a multi-line entry must collapse to ONE line."""
+    """The anti-thrash memory only works if it records more than the first entry, and a multi-line entry must collapse to ONE line."""
     exit_code, _, _, _, body = _sides(
         "verdict",
         [*BASE_ARGV, "--verdict", "verdict.json"],
@@ -253,9 +249,7 @@ def test_the_verdict_becomes_one_bullet_per_entry() -> None:
 
 
 def test_a_mistyped_verdict_path_is_silent() -> None:
-    """PRESERVED DEFECT. `--verdict` is `[[ -n && -s ]]`-checked, never
-    `require_file`-checked, so a path that does not exist renders empty sections
-    and exits 0. If this ever starts refusing, this test goes red first."""
+    """PRESERVED DEFECT. `--verdict` is `[[ -n && -s ]]`-checked, never `require_file`-checked, so a path that does not exist renders empty sections and exits 0. If this ever starts refusing, this test goes red first."""
     exit_code, _, stderr, _, body = _sides(
         "mistyped-verdict", [*BASE_ARGV, "--verdict", "nope.json"]
     )
@@ -266,15 +260,12 @@ def test_a_mistyped_verdict_path_is_silent() -> None:
 
 
 def test_an_empty_verdict_file_is_also_silent() -> None:
-    """`-s` is a SIZE test, which is the right one: an empty file is the shape a
-    failed validator leaves behind."""
+    """`-s` is a SIZE test, which is the right one: an empty file is the shape a failed validator leaves behind."""
     _sides("empty-verdict", [*BASE_ARGV, "--verdict", "verdict.json"], files={"verdict.json": b""})
 
 
 def test_a_non_string_ruled_out_entry_kills_the_write() -> None:
-    """PRESERVED DEFECT. `gsub` refuses a number, jq exits 5, `set -e` takes the
-    state write with it -- so the round runs UNRECORDED, which is the one
-    outcome this script exists to prevent."""
+    """PRESERVED DEFECT. `gsub` refuses a number, jq exits 5, `set -e` takes the state write with it -- so the round runs UNRECORDED, which is the one outcome this script exists to prevent."""
     exit_code, _, stderr, calls, _ = _sides(
         "non-string-entry",
         [*BASE_ARGV, "--verdict", "verdict.json"],
@@ -312,9 +303,7 @@ def test_dry_run_writes_nothing_and_prints_the_body() -> None:
 
 
 def test_body_bytes_are_not_decoded() -> None:
-    """A carried-over line that is not valid UTF-8 must survive the round trip.
-    The comment carries model-authored text, and a port that decoded would fail
-    the round on a stray byte the twin passed through."""
+    """A carried-over line that is not valid UTF-8 must survive the round trip. The comment carries model-authored text, and a port that decoded would fail the round on a stray byte the twin passed through."""
     previous = (
         b"### Autopilot state (machine-maintained, do not edit)\n"
         b"state: fixing | round: 1/8 | head: aaa | last_run: 1/1 handled | "
@@ -355,8 +344,7 @@ def test_the_stage_flag_fails_closed() -> None:
 
 
 def test_usage_refusals() -> None:
-    """The six required flags, each dropped in turn. `--body`, `--rounds-max`,
-    `--comment-id` and `--verdict` are NOT required, and that is pinned too."""
+    """The six required flags, each dropped in turn. `--body`, `--rounds-max`, `--comment-id` and `--verdict` are NOT required, and that is pinned too."""
     required = ("--pr", "--repo", "--state", "--round", "--head", "--last-run")
     for drop in required:
         argv = []
@@ -381,8 +369,7 @@ def test_usage_refusals() -> None:
 
 
 def test_a_failing_gh_is_never_a_success() -> None:
-    """Three attempts, the warnings between them, the indented child stderr, and
-    exit 1 -- the swallowed-failure shape `_gh_probe` exists to end.
+    """Three attempts, the warnings between them, the indented child stderr, and exit 1 -- the swallowed-failure shape `_gh_probe` exists to end.
 
     SLOW ON PURPOSE (9 seconds per side): the retry sleeps are 3s then 6s, and a port that dropped them would stop being a retry past a rate limit.
     """
@@ -404,9 +391,7 @@ def test_a_failing_gh_is_never_a_success() -> None:
 
 
 def test_renderer_stderr_reaches_fd_2() -> None:
-    """The renderer is spawned, not re-implemented, so its diagnostics have to
-    arrive on this process's stderr. A DIRECTORY as `--body` makes awk warn six
-    times without failing, which is a cheap way to prove the passthrough."""
+    """The renderer is spawned, not re-implemented, so its diagnostics have to arrive on this process's stderr. A DIRECTORY as `--body` makes awk warn six times without failing, which is a cheap way to prove the passthrough."""
     exit_code, _, stderr, _, _ = _sides(
         "renderer-chatter",
         [*BASE_ARGV, "--dry-run", "--body", "olddir"],
@@ -417,8 +402,7 @@ def test_renderer_stderr_reaches_fd_2() -> None:
 
 
 def test_the_fake_gh_is_the_gh() -> None:
-    """CONTROL for the whole file. If the stub ever stops winning the PATH
-    lookup, every case above would be talking to the real GitHub CLI."""
+    """CONTROL for the whole file. If the stub ever stops winning the PATH lookup, every case above would be talking to the real GitHub CLI."""
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
         path = _stub_bin(base)

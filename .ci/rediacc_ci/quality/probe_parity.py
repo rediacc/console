@@ -157,8 +157,7 @@ def _read(path: pathlib.Path) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the gate. Exit 0 on parity, 1 on a missing input, an empty extraction
-    or a real gap.
+    """Run the gate. Exit 0 on parity, 1 on a missing input, an empty extraction or a real gap.
 
     `--selftest` is intercepted BEFORE any real read, per the anti-vacuity rule: a control that runs after the scan cannot stop the scan's verdict being reported. The twin documents itself as taking no arguments ("Usage: check-probe-parity.sh") and ignores any it is given.
     """

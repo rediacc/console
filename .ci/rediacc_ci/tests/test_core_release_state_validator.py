@@ -87,9 +87,8 @@ FLOORS = {
 class Deck:
     """A deterministic sampler. NOT `random`, and not only because of a lint rule.
 
-    A corpus that is re-sampled by `random.Random` is reproducible only for as long as CPython's Mersenne stream and `random.sample`'s internals stay put. This is nine lines of arithmetic that will produce the same corpus on every interpreter forever, which is the actual property a frozen differential
-    needs. The constants are the Numerical Recipes LCG; nothing here is
-    cryptographic and nothing here pretends to be.
+    A corpus that is re-sampled by `random.Random` is reproducible only for as long as CPython's Mersenne stream and `random.sample`'s internals stay put. This is nine lines of arithmetic that will produce the same corpus on every interpreter forever, which is the actual property a frozen differential needs. The constants are the Numerical Recipes LCG; nothing here is cryptographic
+    and nothing here pretends to be.
     """
 
     def __init__(self, seed: int) -> None:
@@ -376,9 +375,8 @@ def test_a_planted_defect_makes_the_differential_fail(
         encoding="utf-8",
     )
 
-    # THE POINTER ARGUMENTS VARY, and that is not decoration. The first draft held them at ('v1.3.1', 'v1.3.1') for every case, so the "an unreadable pointer becomes a pass" mutation flipped a branch NO CASE EVER ENTERED and the control reported that the mutation "changed nothing
-    # the differential can see". The mutation was fine; the probe was blind. A
-    # control that cannot fire is a claim about the control before it is a claim about the code, so the empty-pointer shapes are here explicitly.
+    # THE POINTER ARGUMENTS VARY, and that is not decoration. The first draft held them at ('v1.3.1', 'v1.3.1') for every case, so the "an unreadable pointer becomes a pass" mutation flipped a branch NO CASE EVER ENTERED and the control reported that the mutation "changed nothing the differential can see". The mutation was fine; the probe was blind. A control that cannot fire is a
+    # claim about the control before it is a claim about the code, so the empty-pointer shapes are here explicitly.
     cases = [
         ["v1.3.0", "v1.10.0", "", "v1.3.1", "v1.3.1"],
         ["v1.3.0\nv1.10.0", "v1.3.0", "", "", "v1.3.1"],

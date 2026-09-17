@@ -77,8 +77,7 @@ def test_extraction_matches_the_twins_grep(tmp_path: pathlib.Path) -> None:
 
 
 def test_extraction_matches_on_the_real_test_tree() -> None:
-    """The corpus the gate actually judges. A recogniser that narrowed would
-    still pass a hand-built fixture and go quiet here."""
+    """The corpus the gate actually judges. A recogniser that narrowed would still pass a hand-built fixture and go quiet here."""
     root = paths.repo_root() / ".ci" / "scripts" / "test"
     assert root.is_dir(), "the test scan root moved; retarget the gate deliberately"
     got = sorted(dca.extract_case_keys([str(root)], paths.repo_root()))
@@ -110,8 +109,7 @@ def test_key_liveness_matches_the_twins_pipeline(tmp_path: pathlib.Path) -> None
 
 def test_exclude_dir_test_matches_the_twin(tmp_path: pathlib.Path) -> None:
     """`--exclude-dir=test` is an exact directory-NAME match, so `testdata`
-    still counts. A port that treated it as a substring would silently shrink
-    the set of code that can vouch for a key."""
+    still counts. A port that treated it as a substring would silently shrink the set of code that can vouch for a key."""
     code = tmp_path / "code"
     (code / "test").mkdir(parents=True)
     (code / "testdata").mkdir()
@@ -124,10 +122,7 @@ def test_exclude_dir_test_matches_the_twin(tmp_path: pathlib.Path) -> None:
 
 
 def test_ugrep_skips_a_binary_file_and_so_does_the_port(tmp_path: pathlib.Path) -> None:
-    """MEASURED, NOT ASSUMED. `grep` on this host is ugrep, which reports
-    nothing at all for a file containing a NUL byte; GNU grep would print
-    `Binary file X matches`. The port follows the grep the differential
-    actually runs, and this pins which one that is."""
+    """MEASURED, NOT ASSUMED. `grep` on this host is ugrep, which reports nothing at all for a file containing a NUL byte; GNU grep would print `Binary file X matches`. The port follows the grep the differential actually runs, and this pins which one that is."""
     (tmp_path / "bin.sh").write_bytes(b'case "$1" in\n    *"binprobe=1"*) exit 1 ;;\nesac\n\x00\n')
     assert _bash_extract(tmp_path) == []
     assert dca.extract_case_keys([str(tmp_path)], tmp_path) == []
@@ -142,9 +137,7 @@ def test_key_tokens_need_three_characters() -> None:
 
 
 def test_media_count_is_top_level_only(tmp_path: pathlib.Path) -> None:
-    """`for _f in "$_d"/*.sh` does not recurse, and the count is the vacuity
-    floor: a recursive count would keep the floor satisfied by files the scan
-    root's own glob no longer reaches."""
+    """`for _f in "$_d"/*.sh` does not recurse, and the count is the vacuity floor: a recursive count would keep the floor satisfied by files the scan root's own glob no longer reaches."""
     (tmp_path / "a.sh").write_text("x\n", encoding="utf-8")
     (tmp_path / "deep").mkdir()
     (tmp_path / "deep" / "b.sh").write_text("x\n", encoding="utf-8")
@@ -152,8 +145,7 @@ def test_media_count_is_top_level_only(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_real_media_root_is_not_empty() -> None:
-    """THE VACUITY FLOOR, checked against the live tree. If this ever reds the
-    gate is scanning nothing and its green would mean nothing."""
+    """THE VACUITY FLOOR, checked against the live tree. If this ever reds the gate is scanning nothing and its green would mean nothing."""
     root = paths.repo_root()
     assert dca.media_shell_files([dca.DEFAULT_MEDIA_DIRS], root) > 0
 

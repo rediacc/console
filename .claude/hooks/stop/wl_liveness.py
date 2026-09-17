@@ -79,8 +79,7 @@ def blocking_rung_due(state_doc, key, age_min, stampkey, gone=False, idle=False)
 
 
 def _proc_table_linux():
-    """[(pid, ppid, cmdline)] for every readable /proc entry. A few ms for a
-    few hundred processes; never raises."""
+    """[(pid, ppid, cmdline)] for every readable /proc entry. A few ms for a few hundred processes; never raises."""
     out = []
     try:
         entries = os.listdir("/proc")
@@ -135,9 +134,8 @@ def proc_table():
 
 
 def harness_ancestors(table):
-    """The pid set of this process's ancestors (a few hops: hook -> sh ->
-    harness -> ...). WORKLIST_HARNESS_PID overrides for tests and for setups where the walk cannot see the harness. Matching workers against ANY ancestor is deliberate: it needs no knowledge of which ancestor is the harness binary, and a false positive requires an unrelated ancestor to
-    have spawned a child whose cmdline embeds this exact command text."""
+    """The pid set of this process's ancestors (a few hops: hook -> sh -> harness -> ...). WORKLIST_HARNESS_PID overrides for tests and for setups where the walk cannot see the harness. Matching workers against ANY ancestor is deliberate: it needs no knowledge of which ancestor is the harness binary, and a false positive requires an unrelated ancestor to have spawned a child
+    whose cmdline embeds this exact command text."""
     override = os.environ.get("WORKLIST_HARNESS_PID", "")
     if override.isdigit():
         return {int(override)}
@@ -154,9 +152,8 @@ def harness_ancestors(table):
 
 
 def _needle(command):
-    """A distinctive, quote-free substring of a declared command, or ''.
-    The harness wraps the command in an eval with shell re-quoting, so quote characters may be rewritten in the child cmdline; but re-quoting only inserts or replaces QUOTE characters, so any maximal quote-free run of the original text survives contiguously. Segments, not whole lines: the CI-watch poll loop is one long line with a quoted middle, and requiring the whole line
-    quote-free left exactly that worker unverifiable, which
+    """A distinctive, quote-free substring of a declared command, or ''. The harness wraps the command in an eval with shell re-quoting, so quote characters may be rewritten in the child cmdline; but re-quoting only inserts or replaces QUOTE characters, so any maximal quote-free run of the original text survives contiguously. Segments, not whole lines: the CI-watch poll loop is one
+    long line with a quoted middle, and requiring the whole line quote-free left exactly that worker unverifiable, which
     let the pure-wait check-in call a healthy silent poll loop POSSIBLY
     STUCK (2026-07-31)."""
     best = ""
@@ -547,9 +544,7 @@ def prune_background(event_bg, worklist, session_id, cwd):
 
 
 def output_quiet_min(session_id, task_id):
-    """Minutes since the task's output file (or its symlink target, the
-    subagent transcript) last grew, or None if unreadable. The freshest
-    signal wins; a symlink whose target moved is read through."""
+    """Minutes since the task's output file (or its symlink target, the subagent transcript) last grew, or None if unreadable. The freshest signal wins; a symlink whose target moved is read through."""
     if not session_id or not task_id:
         return None
     scratch_roots = []
@@ -584,14 +579,12 @@ ROSTER_MAX = int(os.environ.get("WORKLIST_ROSTER_MAX", "6"))
 
 
 def worker_facts(event, session_id):
-    """One human line per RUNNING background task, with everything the OS
-    could add. This is the raw material for the ladder messages: facts, not verdicts, in the submodule_pointer_moves handover style.
+    """One human line per RUNNING background task, with everything the OS could add. This is the raw material for the ladder messages: facts, not verdicts, in the submodule_pointer_moves handover style.
 
     CAPPED since v19, and the cap is ordered by usefulness rather than by arrival. A session running ~48 agents printed ~48 lines into EVERY ladder message and every bg-report, which is a context bill charged on the stop that can least afford it -- and the rows that matter are always the few that are suspect, quiet, or gone, never the forty that are streaming normally. So:
     actionable rows first and in full, ordinary ones only until the budget runs out, then ONE counted summary line.
 
-    The summary line is not decoration. A silent truncation reads as "that is everything", which is the failure this file's own doctrine names; the
-    count is what keeps a capped list honest."""
+    The summary line is not decoration. A silent truncation reads as "that is everything", which is the failure this file's own doctrine names; the count is what keeps a capped list honest."""
     live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
     verdicts = verify_background(live_bg)
     hot, cold = [], []

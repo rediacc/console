@@ -71,9 +71,7 @@ def _children(pid: int) -> list[int]:
 
 
 def _stat_fields_path(path: str) -> list[str] | None:
-    """Parse any /proc stat file. `comm` may contain spaces AND parens, so it is
-    delimited by the LAST ')' -- splitting on whitespace loses every field for a
-    process whose name contains one, and this repo runs several."""
+    """Parse any /proc stat file. `comm` may contain spaces AND parens, so it is delimited by the LAST ')' -- splitting on whitespace loses every field for a process whose name contains one, and this repo runs several."""
     raw = _read(path)
     if not raw:
         return None

@@ -1,7 +1,6 @@
 """`rediacc_ci.quality.no_app_admin_perm` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-no-app-admin-perm.sh` over a fixture, with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's over the same fixture. The committed ledger (`.ci/shadow/w7p2-appadmin.observations.jsonl`) records the same comparison over
-K distinct trees; these cases are what catch a regression on the day someone
+A bash child runs the REAL `.ci/scripts/quality/check-no-app-admin-perm.sh` over a fixture, with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's over the same fixture. The committed ledger (`.ci/shadow/w7p2-appadmin.observations.jsonl`) records the same comparison over K distinct trees; these cases are what catch a regression on the day someone
 edits either file.
 
 ORDER IS COMPARED AS A SET, DELIBERATELY. GNU grep walks with fts in readdir order and this module walks sorted, so the two agree about WHICH lines and not about the order of them. `shadow-gate.ts` compares a multiset for the same reason. Comparing the sequence would fail on a machine whose directory happened to be laid out differently, which is a difference in the filesystem

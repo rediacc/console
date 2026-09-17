@@ -3,11 +3,8 @@
 Announces, loudly, which gates a CI-control label removed from a run. The twin's own header carries the WHY and it is worth restating because it is the reason this file is not just a `case` statement: the repo's label opt-outs are STEP-level `if:` conditions, and a skipped step leaves the job `success` and prints NOTHING. A run whose media gates were all removed by
 `no-media-quality` therefore looks exactly like a run where they all passed. The announcer runs UNCONDITIONALLY, outside that `if:`, so the hold is visible in the log.
 
-NOT A REGISTERED GATE, so there is no `package.json:<line>` to cite the way the `check:ci-*` ports do. `grep -n announce-gate-skips package.json` matches
-nothing; it is a plain workflow step, invoked at `ci-quality.yml:1313` (`no-media-quality
-check:ci-tutorial-casts check:ci-tutorial-parity`) and `ci-quality.yml:1644` (`no-media-quality check:ci-i18n-media`). Its own coverage lives in the bash gate test `.ci/scripts/test/gates/test-gate-skip-announcer.sh`, which ALSO reads those two workflow lines back and checks that every gate behind a `no-media-quality` `if:` is named in an announcer call. That test still drives
-the bash twin; this port is a second implementation beside it, not a
-replacement for it.
+NOT A REGISTERED GATE, so there is no `package.json:<line>` to cite the way the `check:ci-*` ports do. `grep -n announce-gate-skips package.json` matches nothing; it is a plain workflow step, invoked at `ci-quality.yml:1313` (`no-media-quality check:ci-tutorial-casts check:ci-tutorial-parity`) and `ci-quality.yml:1644` (`no-media-quality check:ci-i18n-media`). Its own coverage
+lives in the bash gate test `.ci/scripts/test/gates/test-gate-skip-announcer.sh`, which ALSO reads those two workflow lines back and checks that every gate behind a `no-media-quality` `if:` is named in an announcer call. That test still drives the bash twin; this port is a second implementation beside it, not a replacement for it.
 
 THE FOUR STATES, reproduced exactly, and the two refusals are the interesting half:
 

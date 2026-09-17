@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.build.extract_renet_from_image` against its twin
-`.ci/scripts/build/extract-renet-from-image.sh`.
+"""Differential: `rediacc_ci.build.extract_renet_from_image` against its twin `.ci/scripts/build/extract-renet-from-image.sh`.
 
 ONE REAL RUN CREATES A CONTAINER FROM `ghcr.io/rediacc/renet:<tag>`, COPIES BINARIES OUT OF IT, DELETES AND REWRITES `private/renet/pkg/embed/assets/`, AND CROSS-COMPILES FOUR GO BINARIES. Every case here runs against recording fakes on a PATH that REPLACES the caller's rather than prepending to it, inside a fixture tree, and `test_the_scratch_path_cannot_reach_a_real_docker_or_go`
 asserts the seal before anything is driven.
@@ -397,8 +396,7 @@ def test_the_scratch_path_cannot_reach_a_real_docker_or_go(tmp_path) -> None:
 
 
 def test_the_ls_mask_hides_only_the_timestamp(tmp_path) -> None:
-    """The mask is the one place this suite could go blind, so it is asserted
-    directly: a differing MTIME is erased, a differing SIZE is not."""
+    """The mask is the one place this suite could go blind, so it is asserted directly: a differing MTIME is erased, a differing SIZE is not."""
     del tmp_path
     a = "-rw-r--r-- 1 dev dev 23 Sep 14 09:27 criu-linux-amd64.zst\n"
     b = "-rw-r--r-- 1 dev dev 23 Oct  1 11:02 criu-linux-amd64.zst\n"
@@ -420,8 +418,7 @@ def test_no_tag_refuses(tmp_path) -> None:
 
 
 def test_defect_help_is_an_error_here(tmp_path) -> None:
-    """DEFECT 2. There is no `-h`/`--help` arm, so the flag both sibling build
-    scripts answer with a usage and exit 0 is an ERROR in this one."""
+    """DEFECT 2. There is no `-h`/`--help` arm, so the flag both sibling build scripts answer with a usage and exit 0 is an ERROR in this one."""
     root = fixture(tmp_path)
     for flag in ("-h", "--help"):
         old_t, new_t = run_both(root, args=(flag,))
@@ -532,9 +529,7 @@ def test_zstd_is_invoked_with_the_twins_exact_flags(tmp_path) -> None:
 def test_the_proxy_compose_is_staged_through_build_sh_from_the_renet_directory(
     tmp_path,
 ) -> None:
-    """`:211` is `(cd "$REPO_ROOT/private/renet" && ./build.sh embed_proxy)`, and
-    the fake records its own `$PWD` so the directory is asserted rather than assumed. Only the PROXY step is delegated; the asset staging deliberately is
-    not."""
+    """`:211` is `(cd "$REPO_ROOT/private/renet" && ./build.sh embed_proxy)`, and the fake records its own `$PWD` so the directory is asserted rather than assumed. Only the PROXY step is delegated; the asset staging deliberately is not."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root)
     calls = _calls(old_t[1], "build.sh")
@@ -545,9 +540,7 @@ def test_the_proxy_compose_is_staged_through_build_sh_from_the_renet_directory(
 
 
 def test_a_stale_zst_from_a_previous_run_is_removed_first(tmp_path) -> None:
-    """`:106`. The stale payload has DIFFERENT content from what this run
-    produces, so an implementation that skipped the cleanup would leave it in
-    place and the comparison would see it."""
+    """`:106`. The stale payload has DIFFERENT content from what this run produces, so an implementation that skipped the cleanup would leave it in place and the comparison would see it."""
     root = fixture(tmp_path, stale_zst=True)
     old_t, new_t = run_both(root, stale_zst=True)
     assert old_t[0].returncode == 0, old_t[0].stderr
@@ -603,8 +596,7 @@ def test_an_asset_absent_from_the_image_refuses_and_names_every_one(tmp_path) ->
 
 
 def test_a_version_the_lockfile_forbids_refuses(tmp_path) -> None:
-    """The whole point of the lockfile check: the CACHED image carries criu
-    3.17.1 while the lockfile declares 4.2.1."""
+    """The whole point of the lockfile check: the CACHED image carries criu 3.17.1 while the lockfile declares 4.2.1."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, env_overrides={"FAKE_CRIU_VERSION": "3.17.1"})
     assert old_t[0].returncode == 1
@@ -620,9 +612,7 @@ def test_a_version_the_lockfile_forbids_refuses(tmp_path) -> None:
 
 
 def test_defect_a_silent_strings_turns_the_version_check_into_a_warning(tmp_path) -> None:
-    """DEFECT 1. `strings` is never `require_cmd`ed and its stderr is discarded,
-    so when it produces nothing the check that exists to catch a stale criu reports `cannot verify` and the run EXITS 0 -- with the very same stale
-    3.17.1 that the previous test refuses."""
+    """DEFECT 1. `strings` is never `require_cmd`ed and its stderr is discarded, so when it produces nothing the check that exists to catch a stale criu reports `cannot verify` and the run EXITS 0 -- with the very same stale 3.17.1 that the previous test refuses."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
         root,
@@ -637,9 +627,7 @@ def test_defect_a_silent_strings_turns_the_version_check_into_a_warning(tmp_path
 
 
 def test_defect_a_missing_strings_binary_reaches_the_same_pass(tmp_path) -> None:
-    """The same defect through the door an operator is far more likely to walk
-    through: `strings` (binutils) simply not installed. `2>/dev/null` swallows
-    bash's own `command not found`, so nothing at all says the tool is absent."""
+    """The same defect through the door an operator is far more likely to walk through: `strings` (binutils) simply not installed. `2>/dev/null` swallows bash's own `command not found`, so nothing at all says the tool is absent."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, drop=("strings",), env_overrides={"FAKE_CRIU_VERSION": "3.17.1"})
     assert old_t[0].returncode == 0, "the defect is that this is a PASS"
@@ -718,9 +706,7 @@ def test_parse_args_is_exercised_directly_in_both_directions() -> None:
 
 
 def test_a_planted_defect_is_caught_only_by_the_staged_tree(tmp_path) -> None:
-    """The proof that this differential can fail. Flattening the per-arch layout
-    is the exact regression the twin's comment says once shipped assetless darwin/windows binaries, and it changes neither the exit code, nor stderr,
-    nor the call log's `docker cp` count -- only where the files land."""
+    """The proof that this differential can fail. Flattening the per-arch layout is the exact regression the twin's comment says once shipped assetless darwin/windows binaries, and it changes neither the exit code, nor stderr, nor the call log's `docker cp` count -- only where the files land."""
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(
         "        target_dir = embed_dir / arch / klass\n",

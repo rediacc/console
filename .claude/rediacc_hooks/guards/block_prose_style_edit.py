@@ -1,8 +1,6 @@
 """Refuse an Edit or Write whose NEW prose breaks the house writing style.
 
-THE STYLE, in one line: make the work, the event or the artifact the subject, or use the shared `we`. Never `you`, never `I`. The eighteen rules, their severities, their scopes and their examples live in
-`.ci/config/prose-style-rules.json` and nowhere else; this guard loads them and
-holds no rule text of its own, so a rule edited there is enforced here with no edit to this file.
+THE STYLE, in one line: make the work, the event or the artifact the subject, or use the shared `we`. Never `you`, never `I`. The eighteen rules, their severities, their scopes and their examples live in `.ci/config/prose-style-rules.json` and nowhere else; this guard loads them and holds no rule text of its own, so a rule edited there is enforced here with no edit to this file.
 
 =============================================================================
 THIS GUARD HAS NO BASH TWIN, AND IT IS THE FIRST ONE THAT DOES NOT
@@ -275,9 +273,8 @@ def _relative(root, file_path, cwd=None):
 def _in_scope(engine, globals_, rel):
     """Whether an edited file is scanned at all.
 
-    SUFFIX ALONE IS NOT ENOUGH, since `.json` widened `include` to two directories (`.ci/config/*.json`, `.ci/policy/*.json`) rather than every tracked `.json` -- the 740-finding flood a whole-tree `.json` scan would produce, most of it translated CLI copy where second person is the correct register. `SCOPE_BY_SUFFIX` answers "what SCANNER", `include`
-    answers "which FILES"; a suffix present in the first without being
-    checked against the second would scan every `.json` in the tree the moment `discover()`'s own corpus wants only two directories of it.
+    SUFFIX ALONE IS NOT ENOUGH, since `.json` widened `include` to two directories (`.ci/config/*.json`, `.ci/policy/*.json`) rather than every tracked `.json` -- the 740-finding flood a whole-tree `.json` scan would produce, most of it translated CLI copy where second person is the correct register. `SCOPE_BY_SUFFIX` answers "what SCANNER", `include` answers "which FILES"; a
+    suffix present in the first without being checked against the second would scan every `.json` in the tree the moment `discover()`'s own corpus wants only two directories of it.
     """
     if not rel or rel.startswith(".."):
         return False
@@ -316,8 +313,7 @@ def run(ev):
         )
         return hookio.ALLOW
 
-    # THE PAYLOAD'S OWN `cwd` FIRST. Claude Code sends it on every hook event, and it is the only value that describes where the TOOL CALL is happening rather than where this interpreter happens to have been started. `str(root)` is the
-    # fallback, never `os.getcwd()`; see `_relative` for the measurement.
+    # THE PAYLOAD'S OWN `cwd` FIRST. Claude Code sends it on every hook event, and it is the only value that describes where the TOOL CALL is happening rather than where this interpreter happens to have been started. `str(root)` is the fallback, never `os.getcwd()`; see `_relative` for the measurement.
     rel = _relative(
         root,
         ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path")),

@@ -9,8 +9,7 @@ goes red. The number is simply wrong, and every conclusion drawn from it is wron
 
 MEASURED IN THIS REPO, 2026-09-01, which is why the gate exists. A local checkout was
 grafted at 2026-08-28. `git show --diff-filter=A --name-only 609314a41 | wc -l` reported
-**4,531 added files**; with real history that commit adds **4**. Every per-month arrival
-rate computed from it was wrong by three orders of magnitude, and the analysis built on those rates looked entirely reasonable for hours. The fix was one `git fetch --unshallow` by hand, with nothing to stop the same thing happening in CI where nobody is watching a shell.
+**4,531 added files**; with real history that commit adds **4**. Every per-month arrival rate computed from it was wrong by three orders of magnitude, and the analysis built on those rates looked entirely reasonable for hours. The fix was one `git fetch --unshallow` by hand, with nothing to stop the same thing happening in CI where nobody is watching a shell.
 
 WHY NO EXISTING GATE CATCHES IT. Every gate here runs in a tree somebody already checked out correctly, so the dependency is invisible: the command succeeds, prints a number, and the number is wrong only in the job whose checkout was shallow. The dependency lives across two parts of one file that nothing reads together -- the job's `actions/checkout` step and a `run:` line further
 down.

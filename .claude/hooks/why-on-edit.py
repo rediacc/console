@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse: push the compacted history at the moment somebody edits the file,
-and refuse a NEW plan that is a near-duplicate of one already on disk.
+"""PreToolUse: push the compacted history at the moment somebody edits the file, and refuse a NEW plan that is a near-duplicate of one already on disk.
 
 ------------------------------------------------------------------------------
 WHY THIS EXISTS, and it is the other half of compaction.
@@ -39,14 +38,11 @@ FOUR PROPERTIES, each of which is what keeps a push from becoming a wall.
 ------------------------------------------------------------------------------
 THE ONE THING IT BLOCKS, and why that one is worth a refusal.
 
-A `Write` that CREATES a new `agent/PLAN-<slug>.md` whose slug is a near duplicate of a plan already on disk. This tree holds 79 plans and 2.0 MB, and it
-got there one reasonable plan at a time; the housekeeping gate now demands 33 of
-them be dealt with on a dated deadline. A second plan about the same thing is not a second plan, it is the first one forgotten, and by the time anyone notices both are on the clock.
+A `Write` that CREATES a new `agent/PLAN-<slug>.md` whose slug is a near duplicate of a plan already on disk. This tree holds 79 plans and 2.0 MB, and it got there one reasonable plan at a time; the housekeeping gate now demands 33 of them be dealt with on a dated deadline. A second plan about the same thing is not a second plan, it is the first one forgotten, and by the time
+anyone notices both are on the clock.
 
 The refusal is narrow on purpose. It fires only on CREATION (an existing file is being edited, and editing a plan is the normal thing to do), only on a slug whose significant tokens are a SUBSET of a neighbour's or overlap it past `WHY_ON_EDIT_SIMILAR`, and only when both slugs carry at least two significant tokens. `PLAN-w12-records.md` against `PLAN-w12-registers.md` is one
-shared
-token out of three and is NOT refused; `PLAN-secret-migration-2.md` against
-`PLAN-secret-migration.md` is a subset and is.
+shared token out of three and is NOT refused; `PLAN-secret-migration-2.md` against `PLAN-secret-migration.md` is a subset and is.
 
 FAILS OPEN IN EVERY OTHER DIRECTION. No event, no path, an unreadable payload, a missing module, an unparseable index: exit 0, silently. This hook can only ever turn an allowed edit into a refused one, so every uncertainty resolves to allowing it, and `check:ci-plan-record` is the backstop for anything it misses.
 """

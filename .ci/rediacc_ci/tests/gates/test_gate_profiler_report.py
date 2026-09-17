@@ -11,16 +11,14 @@ with the near-identical PASS case it was derived from.
 records paying for. panel.sh reads `SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"`
 and GitHub Actions ALWAYS sets that variable, so on a runner the panel wrote to the step-summary FILE while the helper captured stdout and asserted against "". The suite passed locally (variable unset) and failed in CI for that reason alone. An unset variable is not a neutral default.
 
-WHERE THIS REIMPLEMENTS printf, grep -c AND wc, AND WHY THE ANSWERS AGREE. The fixture writers are the twin's `printf` format strings with the same field order and the same tab separators, written through Python's `%` with the same specifiers. The two row counts are `grep -c '^| [0-9][0-9]-'` and
-`grep -c '^| [0-9][0-9]*-'`, which count matching LINES; the Python forms count
+WHERE THIS REIMPLEMENTS printf, grep -c AND wc, AND WHY THE ANSWERS AGREE. The fixture writers are the twin's `printf` format strings with the same field order and the same tab separators, written through Python's `%` with the same specifiers. The two row counts are `grep -c '^| [0-9][0-9]-'` and `grep -c '^| [0-9][0-9]*-'`, which count matching LINES; the Python forms count
 lines matching the same anchored patterns. `${#PANEL_OUT}` is a character count in
 bash and `len()` is a character count in Python, and the panel is ASCII apart from its box drawing, so the 1 MiB ceiling means the same thing on both sides.
 
 THE THREE LIVE CASES ARE NOT SIMULATED. `test_sampler_rejects_host_leak` drives the real sampler against a fake cgroup tree, `test_sampler_produces_a_real_profile` captures six real seconds on THIS machine, and `test_sampler_reads_a_real_containers_ceiling` proves the premise the whole advisor rests on against a kernel that is actually enforcing a quota. The last one keeps the
 twin's THREE-WAY structure exactly, including its two SKIP-shaped passes, because narrowing it to the docker branch would turn the strongest proof into a silent skip the day this suite moves to ubuntu-slim (which has no docker, and which IS the container whose ceiling we care about).
 
-NO `xdist_group`. Every case writes only into pytest's own `tmp_path`; panel.sh and
-the sampler are executed read-only, and the one docker invocation mounts the sampler's directory read-only and its own scratch directory read-write. Nothing is bound and no module global is mutated.
+NO `xdist_group`. Every case writes only into pytest's own `tmp_path`; panel.sh and the sampler are executed read-only, and the one docker invocation mounts the sampler's directory read-only and its own scratch directory read-write. Nothing is bound and no module global is mutated.
 """
 
 import pathlib
@@ -73,9 +71,7 @@ def write_meta(
 def write_samples(
     path: pathlib.Path, count: int, interval: int, cpu: int, mem_mb: int, step: int = 1
 ) -> None:
-    """`write_samples`. Samples walk slightly so nothing is accidentally
-    degenerate: a fixture that happened to be flat would make the degeneracy tests
-    pass for the wrong reason."""
+    """`write_samples`. Samples walk slightly so nothing is accidentally degenerate: a fixture that happened to be flat would make the degeneracy tests pass for the wrong reason."""
     rx = 0
     tx = 0
     rows = []
@@ -296,8 +292,7 @@ def test_proc_host_tier_advises_only_when_the_label_disambiguates(gate, tmp_path
 
 
 def test_mislabelled_container_is_caught(gate, tmp_path):
-    # The most dangerous shape of all, and the one a label-armed guard cannot see: a slim job whose label WRONGLY says ubuntu-latest. HOST_LEAK is armed off the label so it never fires, and before this check the report answered with a
-    # confident "MOVE TO ubuntu-slim". Missing labels go mute; wrong labels lie.
+    # The most dangerous shape of all, and the one a label-armed guard cannot see: a slim job whose label WRONGLY says ubuntu-latest. HOST_LEAK is armed off the label so it never fires, and before this check the report answered with a confident "MOVE TO ubuntu-slim". Missing labels go mute; wrong labels lie.
     mislabelled = tmp_path / "mislabelled.tsv"
     write_meta(
         mislabelled,
@@ -380,8 +375,7 @@ def test_unlabelled_cgroup_job_is_sized_by_its_ceiling(gate, tmp_path):
         result.combined, "MOVE TO ubuntu-slim", "must not tell a slim job to move to slim"
     )
 
-    # A WRONG label must lose to the enforced quota exactly as a missing one does. This was live: a job under a kernel-enforced 1-core/5GB quota, labelled ubuntu-latest, was told it was "on a 4-vCPU VM" and should move to slim,
-    # where it already was. A label is a claim; a quota is a fact.
+    # A WRONG label must lose to the enforced quota exactly as a missing one does. This was live: a job under a kernel-enforced 1-core/5GB quota, labelled ubuntu-latest, was told it was "on a 4-vCPU VM" and should move to slim, where it already was. A label is a claim; a quota is a fact.
     mislabelled = tmp_path / "mislabelled.tsv"
     write_meta(mislabelled, "CGROUP_V2", "ubuntu-latest", 10, "CONTAINER")
     write_samples(mislabelled, 37, 10, 420, 1200)

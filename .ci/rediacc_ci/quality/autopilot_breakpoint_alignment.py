@@ -1,5 +1,4 @@
-"""The autopilot's hold-open debug session COPIES three dispatch inputs from
-breakpoint. This gate holds the copies to the original.
+"""The autopilot's hold-open debug session COPIES three dispatch inputs from breakpoint. This gate holds the copies to the original.
 
 Ported from `.ci/scripts/quality/check-autopilot-breakpoint-alignment.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 

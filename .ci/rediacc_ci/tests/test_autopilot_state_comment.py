@@ -1,18 +1,14 @@
-"""Differential: `rediacc_ci.autopilot.state_comment` against its twin
-`.ci/scripts/autopilot/state-comment.sh`.
+"""Differential: `rediacc_ci.autopilot.state_comment` against its twin `.ci/scripts/autopilot/state-comment.sh`.
 
 NO NETWORK STUB IS NEEDED HERE AND THAT IS WORTH SAYING OUT LOUD. All three subcommands are pure and offline: `select` reads a JSON file, `render` writes to stdout, `fields` reads a body back. The write half of the state comment lives in `update-state.sh` (`test_autopilot_update_state.py` stubs `gh` for it), and the one-comment-per-PR upsert is the composition of the two: `select`
 finds the id, `render` rebuilds the body, `update-state.sh` POSTs when there was no id and PATCHes when there was.
 
 SO THE UPSERT IS COVERED FROM BOTH ENDS: this file drives `select`'s three outcomes exhaustively -- a trusted comment exists, none does, and the lookup itself cannot be believed -- and the third is the one that matters most. A
 failed lookup that returned `{"found":false}` would be indistinguishable from
-"no state comment yet", and every flaky read would POST ANOTHER state comment until the loop had several memories. `jq` exits 5 and `set -e` ends the run
-instead; `test_a_malformed_comments_file_is_an_error_not_an_empty_answer` pins
-it.
+"no state comment yet", and every flaky read would POST ANOTHER state comment until the loop had several memories. `jq` exits 5 and `set -e` ends the run instead; `test_a_malformed_comments_file_is_an_error_not_an_empty_answer` pins it.
 
-THE BYTES ARE THE INTERFACE, not a rendering. The next round's carry-over parser reads this round's output back, so a changed blank line changes what survives a
-round; `autopilot-gate.sh` reads `fields`'s compact JSON with `--argjson`, so a
-changed key order or a string where a number belongs is a gate misreading a round cap. Every case therefore compares raw stdout bytes, stderr bytes and the exit code.
+THE BYTES ARE THE INTERFACE, not a rendering. The next round's carry-over parser reads this round's output back, so a changed blank line changes what survives a round; `autopilot-gate.sh` reads `fields`'s compact JSON with `--argjson`, so a changed key order or a string where a number belongs is a gate misreading a round cap. Every case therefore compares raw stdout bytes, stderr
+bytes and the exit code.
 
 BOTH LOCALES ARE DRIVEN, deliberately. `cap_line` is `${#line}` and
 `${line:0:400}`, which count CHARACTERS under a UTF-8 LC_CTYPE and BYTES under
@@ -161,8 +157,7 @@ def comments(*items: dict) -> bytes:
 
 
 def test_select_finds_the_existing_comment() -> None:
-    """The PATCH arm's input: an id comes back, and `update-state.sh` rewrites
-    that comment in place instead of posting a second one."""
+    """The PATCH arm's input: an id comes back, and `update-state.sh` rewrites that comment in place instead of posting a second one."""
     (code, stdout, _), _ = _sides(
         "select-found",
         ["select", "--comments", "c.json", "--bot", "autopilot[bot]"],
@@ -182,8 +177,7 @@ def test_select_finds_the_existing_comment() -> None:
 
 
 def test_select_finds_nothing_on_a_fresh_pr() -> None:
-    """The POST arm's input, and the only case that may legitimately create a
-    second comment on a PR."""
+    """The POST arm's input, and the only case that may legitimately create a second comment on a PR."""
     (code, stdout, _), _ = _sides(
         "select-empty",
         ["select", "--comments", "c.json", "--bot", "autopilot[bot]"],
@@ -222,8 +216,7 @@ def test_select_requires_the_exact_header_prefix() -> None:
 
 
 def test_select_takes_the_newest_when_the_bot_posted_twice() -> None:
-    """A duplicate must not wedge a campaign, so highest id wins rather than
-    refusing on ambiguity."""
+    """A duplicate must not wedge a campaign, so highest id wins rather than refusing on ambiguity."""
     (_, stdout, _), _ = _sides(
         "select-newest",
         ["select", "--comments", "c.json", "--bot", "bot"],
@@ -238,9 +231,7 @@ def test_select_takes_the_newest_when_the_bot_posted_twice() -> None:
 
 
 def test_a_malformed_comments_file_is_an_error_not_an_empty_answer() -> None:
-    """THE THIRD CASE, and the important one. A lookup that cannot be believed
-    must NOT read as "no comment yet": that answer POSTs a new state comment, so
-    a flaky read would leave the loop with several memories."""
+    """THE THIRD CASE, and the important one. A lookup that cannot be believed must NOT read as "no comment yet": that answer POSTs a new state comment, so a flaky read would leave the loop with several memories."""
     (code, stdout, stderr), _ = _sides(
         "select-malformed",
         ["select", "--comments", "c.json", "--bot", "bot"],
@@ -319,9 +310,7 @@ def test_an_explicit_field_beats_the_carried_one() -> None:
 
 
 def test_every_field_fails_closed_to_its_sentinel() -> None:
-    """These values flow into a MODEL SELECTION and a ROUND CAP. A surprise value
-    must collapse, not propagate -- on the way in AND on the way back out of a
-    previous body."""
+    """These values flow into a MODEL SELECTION and a ROUND CAP. A surprise value must collapse, not propagate -- on the way in AND on the way back out of a previous body."""
     hostile = [
         ("--campaign", "OPEN", b"campaign: none"),
         ("--campaign", "open; rm -rf /", b"campaign: none"),
@@ -356,8 +345,7 @@ def test_every_field_fails_closed_to_its_sentinel() -> None:
 
 
 def test_the_carry_over_parser_drops_everything_it_does_not_recognise() -> None:
-    """THE ANTI-TAMPER RULE. A body someone edited by hand cannot smuggle text
-    into the next round, and an injected heading closes the section it sits in."""
+    """THE ANTI-TAMPER RULE. A body someone edited by hand cannot smuggle text into the next round, and an injected heading closes the section it sits in."""
     tampered = (
         HEADER + "\n"
         "state: fixing | round: 1/8 | head: a | last_run: 1 | campaign: none | "
@@ -386,8 +374,7 @@ def test_the_carry_over_parser_drops_everything_it_does_not_recognise() -> None:
 
 
 def test_a_second_state_line_can_never_win() -> None:
-    """Only the FIRST `state: ` line counts, the same first-match discipline
-    `select` applies to comments."""
+    """Only the FIRST `state: ` line counts, the same first-match discipline `select` applies to comments."""
     body = (
         HEADER + "\n"
         "state: fixing | campaign: none | model: none\n"
@@ -402,8 +389,7 @@ def test_a_second_state_line_can_never_win() -> None:
 
 
 def test_the_entries_files_append_one_bullet_per_line() -> None:
-    """The anti-thrash memory only works if it records more than its first
-    entry, which is what the `--*-file` variants exist for."""
+    """The anti-thrash memory only works if it records more than its first entry, which is what the `--*-file` variants exist for."""
     (_, stdout, _), _ = _sides(
         "render-files",
         [*RENDER_BASE, "--ruled-out-file", "r.txt", "--decisions-file", "d.txt"],
@@ -416,9 +402,7 @@ def test_the_entries_files_append_one_bullet_per_line() -> None:
 
 def test_a_final_unterminated_entry_line_is_dropped() -> None:
     """`while IFS= read -r` returns non-zero at EOF and the body does not run, so
-    a truncated `--ruled-out-file` loses its last line. The awk that reads the
-    BODY keeps its final record; the two rules are both in this script and the
-    difference is preserved."""
+    a truncated `--ruled-out-file` loses its last line. The awk that reads the BODY keeps its final record; the two rules are both in this script and the difference is preserved."""
     (_, stdout, _), _ = _sides(
         "render-partial",
         [*RENDER_BASE, "--ruled-out-file", "r.txt"],
@@ -450,9 +434,7 @@ def test_an_absent_or_empty_entries_file_appends_nothing() -> None:
 
 
 def test_the_line_cap_is_locale_dependent_in_the_twin() -> None:
-    """A DIVERGENCE IN THE TWIN, reproduced rather than chosen against. bash
-    counts characters under a UTF-8 LC_CTYPE and bytes under C, so the same ledger line caps at a different point depending on how the step was invoked.
-    Both are driven; the port resolves the locale the same way bash does."""
+    """A DIVERGENCE IN THE TWIN, reproduced rather than chosen against. bash counts characters under a UTF-8 LC_CTYPE and bytes under C, so the same ledger line caps at a different point depending on how the step was invoked. Both are driven; the port resolves the locale the same way bash does."""
     long_ascii = "x" * 500
     # 404 characters, 405 bytes: over the cap either way, and the two rules cut it in DIFFERENT places, which is the whole point of driving both.
     accented = "a" * 399 + "é" + "tail"
@@ -491,8 +473,7 @@ def test_the_line_cap_is_locale_dependent_in_the_twin() -> None:
 
 
 def test_the_ledger_compacts_above_55_kb() -> None:
-    """Above the bound, every ledger round but the newest eight collapses to a
-    one-line pointer; the run id keeps the detail reachable in the run logs."""
+    """Above the bound, every ledger round but the newest eight collapses to a one-line pointer; the run id keeps the detail reachable in the run logs."""
     rounds = "".join(
         "r%d | run %d | commit %s | %s\n" % (i, 1000 + i, "a" * 8, "d" * 300) for i in range(1, 200)
     )
@@ -509,8 +490,7 @@ def test_the_ledger_compacts_above_55_kb() -> None:
 
 
 def test_just_under_the_bound_compacts_nothing() -> None:
-    """The other side of the boundary, so the test is not satisfied by a port
-    that always compacts."""
+    """The other side of the boundary, so the test is not satisfied by a port that always compacts."""
     rounds = "".join("r%d | run %d | %s\n" % (i, 1000 + i, "d" * 300) for i in range(1, 100))
     (_, stdout, _), _ = _sides(
         "render-nocompact",
@@ -545,8 +525,7 @@ def test_render_usage() -> None:
 
 
 def test_fields_reads_the_metadata_line_back() -> None:
-    """`autopilot-gate.sh` consumes this with `--argjson`, so the TYPES matter as
-    much as the values: rounds_max and sig_count are numbers, the rest strings."""
+    """`autopilot-gate.sh` consumes this with `--argjson`, so the TYPES matter as much as the values: rounds_max and sig_count are numbers, the rest strings."""
     (code, stdout, _), _ = _sides(
         "fields", ["fields", "--body", "prev.md"], files={"prev.md": previous_body()}
     )
@@ -592,9 +571,7 @@ def test_an_unknown_subcommand_and_no_subcommand_both_refuse() -> None:
 
 
 def test_a_directory_as_the_body_warns_five_times_and_renders_empty() -> None:
-    """gawk WARNS on a directory argument and continues; `render` reads the body
-    six times (five metadata fields plus the carry-over walk) and every one of them warns. The count is asserted so a gawk that rewords this turns the test
-    red instead of the port diverging silently."""
+    """gawk WARNS on a directory argument and continues; `render` reads the body six times (five metadata fields plus the carry-over walk) and every one of them warns. The count is asserted so a gawk that rewords this turns the test red instead of the port diverging silently."""
     (code, stdout, stderr), _ = _sides(
         "body-dir", [*RENDER_BASE, "--body", "olddir"], dirs=("olddir",)
     )
@@ -608,11 +585,9 @@ def test_a_directory_as_the_body_warns_five_times_and_renders_empty() -> None:
 
 
 def test_an_unreadable_body_is_fatal_for_render_and_survivable_for_fields() -> None:
-    """`set -e` DOES NOT REACH INTO `$( )` (`inherit_errexit` is off), so the
-    five metadata reads swallow gawk's fatal and fall back to the sentinel, while the top-level carry-over walk ends the run with gawk's status.
+    """`set -e` DOES NOT REACH INTO `$( )` (`inherit_errexit` is off), so the five metadata reads swallow gawk's fatal and fall back to the sentinel, while the top-level carry-over walk ends the run with gawk's status.
 
-    That asymmetry is the twin's, and a port that "tidied" it would either turn a
-    readable-enough body into a hard failure or let an unreadable one render."""
+    That asymmetry is the twin's, and a port that "tidied" it would either turn a readable-enough body into a hard failure or let an unreadable one render."""
     results = []
     with tempfile.TemporaryDirectory() as td:
         for subject in (TWIN, PORT):
@@ -650,8 +625,7 @@ def test_an_unreadable_body_is_fatal_for_render_and_survivable_for_fields() -> N
 def test_a_directory_as_an_entries_file_is_the_one_named_divergence() -> None:
     """THE ONLY PLACE THE TWO SIDES DIFFER, and it is one line on fd 2.
 
-    A directory passes `-s`, bash opens it (Linux allows that) and `read` then fails, so the twin prints BASH'S OWN diagnostic naming state-comment.sh's own path and line number -- a message no port can emit without lying about where
-    it came from. Exit code and stdout are identical; the port is silent.
+    A directory passes `-s`, bash opens it (Linux allows that) and `read` then fails, so the twin prints BASH'S OWN diagnostic naming state-comment.sh's own path and line number -- a message no port can emit without lying about where it came from. Exit code and stdout are identical; the port is silent.
 
     Asserted as EXACTLY that difference, so if the twin ever starts refusing here this test goes red rather than the port drifting.
 
@@ -660,8 +634,7 @@ def test_a_directory_as_an_entries_file_is_the_one_named_divergence() -> None:
         bash 5.3.9   read: 0: read error: Is a directory
         bash 5.2.37  read: read error: 0: Is a directory
 
-    The failing file descriptor moved from after the phrase to before it. The literal `read error: Is a directory` that used to be spelled here is the 5.3 tail, so this passed on every machine in this tree and failed in CI run 34970782616, which is ubuntu-24.04 and therefore bash 5.2. Asked of the
-    running bash now."""
+    The failing file descriptor moved from after the phrase to before it. The literal `read error: Is a directory` that used to be spelled here is the 5.3 tail, so this passed on every machine in this tree and failed in CI run 34970782616, which is ubuntu-24.04 and therefore bash 5.2. Asked of the running bash now."""
     (twin_code, twin_out, twin_err), (port_code, port_out, port_err) = _sides(
         "entries-dir",
         [*RENDER_BASE, "--ruled-out-file", "olddir"],
@@ -681,8 +654,7 @@ def test_a_directory_as_an_entries_file_is_the_one_named_divergence() -> None:
 
 
 def test_pure_helpers_are_exercised_directly() -> None:
-    """BOTH DIRECTIONS on every validator: a value that must collapse and a value
-    that must survive."""
+    """BOTH DIRECTIONS on every validator: a value that must collapse and a value that must survive."""
     assert sc.normalize_field("campaign", "open") == "open"
     assert sc.normalize_field("campaign", "closed") == "closed"
     assert sc.normalize_field("campaign", "opened") == "none"
@@ -697,8 +669,7 @@ def test_pure_helpers_are_exercised_directly() -> None:
     assert sc.normalize_field("last_sig", "0123ABCD") == "none"
     assert sc.normalize_field("sig_count", "12") == "12"
     assert sc.normalize_field("sig_count", "") == "0"
-    # A trailing newline must NOT be accepted by an anchored match; `$` in
-    # Python would have let it through.
+    # A trailing newline must NOT be accepted by an anchored match; `$` in Python would have let it through.
     assert sc.normalize_field("last_sig", "deadbeef\n") == "deadbeef", "the newline is stripped"
 
     # An unknown field name must REFUSE, not pass the value through: the alternative is a typo that silently disables a validator.
@@ -746,9 +717,7 @@ def test_pure_helpers_are_exercised_directly() -> None:
 
 
 def test_the_locale_rule_is_a_function_and_not_a_guess() -> None:
-    """CONTROL for the cap: `char_semantics` must actually answer, and the two
-    branches of `cap_line` must differ on a multi-byte input. If this collapses
-    to one branch the locale case above would pass vacuously."""
+    """CONTROL for the cap: `char_semantics` must actually answer, and the two branches of `cap_line` must differ on a multi-byte input. If this collapses to one branch the locale case above would pass vacuously."""
     sc._CHAR_SEMANTICS = True
     try:
         assert sc.cap_line(("é" * 500).encode()) == ("é" * 400).encode()

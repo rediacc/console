@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.review.review_status` against its twin
-`.ci/scripts/review/review-status.sh`.
+"""Differential: `rediacc_ci.review.review_status` against its twin `.ci/scripts/review/review-status.sh`.
 
 THIS SCRIPT WRITES TO GITHUB, so the fake `gh` is not a convenience. Its success path POSTs or PATCHes a check-run against whatever repository and SHA the environment names, and a required check-run posted on a real head is a merge decision. Three independent things keep the real binary out of reach:
 
@@ -166,8 +165,7 @@ GITMODULES = """[submodule "private/renet"]
 \turl = git@github.com:rediacc/account.git
 """
 
-# The endpoints the two sides legitimately ask for differently. See the module
-# docstring; this list is the ONLY place the raw-argv comparison is relaxed.
+# The endpoints the two sides legitimately ask for differently. See the module docstring; this list is the ONLY place the raw-argv comparison is relaxed.
 BUDGET_ENDPOINTS = ("/issues/", "pr")
 
 
@@ -368,9 +366,7 @@ def test_the_fake_gh_is_the_gh() -> None:
 
 
 def test_the_real_gate_still_carries_both_prefixes() -> None:
-    """ANTI-VACUITY. Every case below points `REVIEW_STATUS_GATE_SCRIPT` at the
-    REAL gate script, so if either assignment is ever reworded this suite would
-    exercise the parse-failure arm and nothing else."""
+    """ANTI-VACUITY. Every case below points `REVIEW_STATUS_GATE_SCRIPT` at the REAL gate script, so if either assignment is ever reworded this suite would exercise the parse-failure arm and nothing else."""
     text = REAL_GATE.read_text(encoding="utf-8")
     assert rs.parse_prefix(text, "MARKER_PREFIX") == "<!-- claude-reviewed:"
     assert rs.parse_prefix(text, "ATTEMPT_PREFIX") == "<!-- claude-review-attempt:"
@@ -462,9 +458,7 @@ def test_non_gitlink_count_agrees_with_the_twins_jq() -> None:
 
 
 def test_the_first_submodule_is_not_special_cased_away() -> None:
-    """jq's `index` answers 0 for the FIRST element and `0 | not` is FALSE, so
-    the first submodule counts as a gitlink like every other. A hand-rolled
-    truthiness test is where a reimplementation of this filter goes wrong."""
+    """jq's `index` answers 0 for the FIRST element and `0 | not` is FALSE, so the first submodule counts as a gitlink like every other. A hand-rolled truthiness test is where a reimplementation of this filter goes wrong."""
     assert rs.non_gitlink_count(["private/renet"], ["private/renet", "private/account"]) == 0
 
 
@@ -539,9 +533,7 @@ def test_an_unparseable_marker_prefix_names_the_fix() -> None:
 
 
 def test_an_unparseable_attempt_prefix_names_the_553_failure_mode() -> None:
-    """FOUR lines, and the last two are the point: without the attempt prefix
-    the cap reads LOWER here than in the gate, and the deadlock guard cannot
-    fire on a capped PR."""
+    """FOUR lines, and the last two are the point: without the attempt prefix the cap reads LOWER here than in the gate, and the deadlock guard cannot fire on a capped PR."""
 
     def build(world: World) -> None:
         (world.base / "gate.sh").write_text(
@@ -599,9 +591,7 @@ def test_a_draft_pr_posts_a_neutral_check_run_and_stops() -> None:
 
 
 def test_a_non_numeric_pr_number_reaches_the_api_unvalidated() -> None:
-    """PRESERVED HAZARD. `PR_NUMBER` is `require_var`-checked for emptiness and
-    never for shape, so junk lands in the API path. If this ever starts being
-    validated, this test goes red first."""
+    """PRESERVED HAZARD. `PR_NUMBER` is `require_var`-checked for emptiness and never for shape, so junk lands in the API path. If this ever starts being validated, this test goes red first."""
     old = _sides("junk-pr", {**BASE_ENV, "PR_NUMBER": "not-a-number"})
     assert "GET\trepos/acme/widget/pulls/not-a-number" in old.calls, old.calls
     assert b"PR #not-a-number head" in old.stderr
@@ -644,9 +634,7 @@ def test_a_workflow_run_artifact_resolves_the_pr() -> None:
 
 
 def test_an_artifact_with_no_pr_number_is_loud() -> None:
-    """ABSENT IS SILENT, PRESENT IS BINDING. An artifact that exists and cannot
-    be honoured is a REPORTER failure, which is the case that used to be
-    indistinguishable from the main-push case."""
+    """ABSENT IS SILENT, PRESENT IS BINDING. An artifact that exists and cannot be honoured is a REPORTER failure, which is the case that used to be indistinguishable from the main-push case."""
 
     def build(world: World) -> None:
         world.write("run-artifacts", {"artifacts": [{"name": "review-target", "id": 55}]})
@@ -685,8 +673,7 @@ def test_a_failed_triggering_review_run_is_a_failure_with_its_url() -> None:
 
 
 def test_a_cancelled_review_run_is_a_note_not_a_failure() -> None:
-    """cancel-in-progress means a superseded push cancels the older run BY
-    DESIGN, and a newer run is already on its way."""
+    """cancel-in-progress means a superseded push cancels the older run BY DESIGN, and a newer run is already on its way."""
     old = _sides(
         "wr-cancelled",
         {
@@ -771,9 +758,7 @@ def test_a_submodule_pointer_only_diff_passes() -> None:
 
 
 def test_a_failed_compare_fails_closed() -> None:
-    """`claude-review-gate.sh` fails OPEN on a compare failure (worst case: one
-    extra review). Here failing open would ASSERT a head was reviewed when
-    nothing proved it."""
+    """`claude-review-gate.sh` fails OPEN on a compare failure (worst case: one extra review). Here failing open would ASSERT a head was reviewed when nothing proved it."""
     old = _sides(
         "compare-fails",
         {**BASE_ENV, "FAKE_GH_FAIL_ON": "/compare/"},
@@ -787,8 +772,7 @@ def test_a_failed_compare_fails_closed() -> None:
 
 
 def test_the_last_sha_in_a_multi_line_marker_body_wins() -> None:
-    """A marker body is multi-line, so the SHA is extracted from EVERY line and
-    the last is taken -- `tail` first would read the wrong one."""
+    """A marker body is multi-line, so the SHA is extracted from EVERY line and the last is taken -- `tail` first would read the wrong one."""
 
     def build(world: World) -> None:
         world.write(
@@ -814,9 +798,7 @@ def test_the_last_sha_in_a_multi_line_marker_body_wins() -> None:
 
 
 def test_a_capped_pr_passes_with_a_warning_rather_than_becoming_unmergeable() -> None:
-    """THE #553 GUARD. Three posted reports against a 140-line diff is the
-    smallest tier's cap, so the pipeline will never review this head again and the marker can never advance. Failing here would make the PR permanently
-    unmergeable through no fault of its author."""
+    """THE #553 GUARD. Three posted reports against a 140-line diff is the smallest tier's cap, so the pipeline will never review this head again and the marker can never advance. Failing here would make the PR permanently unmergeable through no fault of its author."""
 
     def build(world: World) -> None:
         world.write("comments", [_marker(OLD_SHA), _report(1), _report(2), _report(3)])
@@ -834,8 +816,7 @@ def test_a_capped_pr_passes_with_a_warning_rather_than_becoming_unmergeable() ->
 
 
 def test_a_bigger_diff_raises_the_cap_and_the_same_pr_fails_again() -> None:
-    """The denominator is sized to the diff, so the guard above is not a way to
-    pass by accumulating reports: 3/5 is under the cap and reds."""
+    """The denominator is sized to the diff, so the guard above is not a way to pass by accumulating reports: 3/5 is under the cap and reds."""
 
     def build(world: World) -> None:
         world.write("comments", [_marker(OLD_SHA), _report(1), _report(2), _report(3)])
@@ -851,10 +832,7 @@ def test_a_bigger_diff_raises_the_cap_and_the_same_pr_fails_again() -> None:
 
 
 def test_an_exhausted_head_passes_with_a_warning_too() -> None:
-    """THE SAME DEADLOCK ONE LEVEL DOWN. Free re-attempts are deliberately not
-    charged, so a head can exhaust its own ceiling while the PR is still well
-    under its cap; the gate then refuses this head and the cap branch cannot
-    see why."""
+    """THE SAME DEADLOCK ONE LEVEL DOWN. Free re-attempts are deliberately not charged, so a head can exhaust its own ceiling while the PR is still well under its cap; the gate then refuses this head and the cap branch cannot see why."""
 
     def build(world: World) -> None:
         world.write(
@@ -873,8 +851,7 @@ def test_an_exhausted_head_passes_with_a_warning_too() -> None:
 
 
 def test_a_non_infra_attempt_never_exhausts_a_head() -> None:
-    """Only the infra classes earn free re-attempts, so an unclassified failure
-    is not per-head blocked and the stale head is a plain failure."""
+    """Only the infra classes earn free re-attempts, so an unclassified failure is not per-head blocked and the stale head is a plain failure."""
 
     def build(world: World) -> None:
         world.write(
@@ -893,9 +870,7 @@ def test_a_non_infra_attempt_never_exhausts_a_head() -> None:
 
 
 def test_spent_attempts_count_against_the_cap_beside_posted_reports() -> None:
-    """ "spent", not "posted": the numerator is reports PLUS attempts that
-    burned their budget and posted nothing. Counting reports alone is what read
-    0/3 here while the gate read 3/3."""
+    """"spent", not "posted": the numerator is reports PLUS attempts that burned their budget and posted nothing. Counting reports alone is what read 0/3 here while the gate read 3/3."""
 
     def build(world: World) -> None:
         world.write(
@@ -947,9 +922,7 @@ def test_hygiene_output_is_echoed_to_stdout_whether_it_passed_or_failed() -> Non
 
 
 def test_a_missing_hygiene_script_is_fatal_rather_than_skipped() -> None:
-    """ANTI-VACUITY, and it is the twin's own comment: a wrong HYGIENE_DIR would
-    silently reduce this check to the currency assertion alone and still report
-    success."""
+    """ANTI-VACUITY, and it is the twin's own comment: a wrong HYGIENE_DIR would silently reduce this check to the currency assertion alone and still report success."""
     old = _sides("hygiene-missing", {**BASE_ENV, "REVIEW_STATUS_HYGIENE_DIR": "/nonexistent/dir"})
     assert old.exit == 1
     assert b"hygiene script missing or not executable: /nonexistent/dir/" in old.stderr

@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.ci.detect_pointer_bump` against its twin
-`.ci/scripts/ci/detect-pointer-bump.sh`.
+"""Differential: `rediacc_ci.ci.detect_pointer_bump` against its twin `.ci/scripts/ci/detect-pointer-bump.sh`.
 
 A REAL GIT REPOSITORY, BUILT WITH PLUMBING, AND A RECORDING FAKE FOR `gh`.
 
@@ -379,9 +378,7 @@ def _reason(proc) -> str:
 
 
 def test_the_fast_path_fires_when_every_step_of_the_proof_holds(tmp_path) -> None:
-    """HEAD IS THE TIP HERE, deliberately: this is the only shape in which the
-    whole proof can complete, and it is NOT the shape a `pull_request` job has.
-    See DEFECT A and DEFECT B for what the real shape does."""
+    """HEAD IS THE TIP HERE, deliberately: this is the only shape in which the whole proof can complete, and it is NOT the shape a `pull_request` job has. See DEFECT A and DEFECT B for what the real shape does."""
     repo, old, new = run_both(tmp_path, fixture_kw={"merge_head": False})
     _agree(old, new, "fast-path")
 
@@ -408,9 +405,7 @@ def test_the_fast_path_fires_when_every_step_of_the_proof_holds(tmp_path) -> Non
 
 
 def test_the_two_tokens_are_the_two_different_variables(tmp_path) -> None:
-    """`CHECKS_TOKEN` has checks:read on the console repo and `GITHUB_PAT` has
-    contents:read on the submodule repos. Swapping them would leave every call
-    in the same place and every one of them unauthorised in production."""
+    """`CHECKS_TOKEN` has checks:read on the console repo and `GITHUB_PAT` has contents:read on the submodule repos. Swapping them would leave every call in the same place and every one of them unauthorised in production."""
     _repo, old, new = run_both(tmp_path, fixture_kw={"merge_head": False})
     _agree(old, new, "tokens")
 
@@ -434,8 +429,7 @@ def test_an_unset_token_is_still_exported_as_the_empty_string(tmp_path) -> None:
 
 
 def test_the_output_file_receives_both_pairs_and_stdout_still_does(tmp_path) -> None:
-    """`$GITHUB_OUTPUT` is APPENDED to, because other steps' pairs are already
-    in it. Both sides also print to stdout unconditionally."""
+    """`$GITHUB_OUTPUT` is APPENDED to, because other steps' pairs are already in it. Both sides also print to stdout unconditionally."""
     repo = fixture(tmp_path, merge_head=False)
     out_old = repo.root / "old-output.txt"
     out_new = repo.root / "new-output.txt"
@@ -488,9 +482,7 @@ def test_a_push_event_never_reaches_git_at_all(tmp_path) -> None:
 
 
 def test_a_merge_commit_in_the_walk_stops_it(tmp_path) -> None:
-    """The event payload is REMOVED here, so `current` falls back to
-    `git rev-parse HEAD`, which on this fixture is the merge commit. That is exactly the pre-D9 behaviour the twin's header describes, and it still
-    happens whenever the payload is unreadable."""
+    """The event payload is REMOVED here, so `current` falls back to `git rev-parse HEAD`, which on this fixture is the merge commit. That is exactly the pre-D9 behaviour the twin's header describes, and it still happens whenever the payload is unreadable."""
     repo, old, new = run_both(tmp_path, with_event=False)
     _agree(old, new, "merge-in-walk")
 
@@ -521,9 +513,7 @@ def test_a_baseline_with_no_green_ci_complete_is_refused(tmp_path) -> None:
 def test_a_check_runs_lookup_that_fails_is_refused_and_not_assumed_green(
     tmp_path,
 ) -> None:
-    """AN API CALL THAT COULD NOT RUN IS NOT A PASS. This is the one place this
-    script gets that right, and it is worth pinning: `gh` exits 1, its stderr is discarded, and the script refuses rather than treating an unknown as a
-    green."""
+    """AN API CALL THAT COULD NOT RUN IS NOT A PASS. This is the one place this script gets that right, and it is worth pinning: `gh` exits 1, its stderr is discarded, and the script refuses rather than treating an unknown as a green."""
     repo, old, new = run_both(tmp_path, fixture_kw={"merge_head": False}, FAKE_CHECKRUNS_FAILS="1")
     _agree(old, new, "checkruns-fails")
 
@@ -535,8 +525,7 @@ def test_a_check_runs_lookup_that_fails_is_refused_and_not_assumed_green(
 
 def test_an_empty_check_runs_answer_is_zero_and_refuses(tmp_path) -> None:
     """`[[ "${green:-0}" -ge 1 ]]` is ARITHMETIC, so an EMPTY answer takes the
-    `:-0` default and refuses. That is the well-behaved half; the other half is
-    DEFECT D below."""
+    `:-0` default and refuses. That is the well-behaved half; the other half is DEFECT D below."""
     _repo, old, new = run_both(tmp_path, fixture_kw={"merge_head": False}, FAKE_GREEN="")
     _agree(old, new, "empty-green")
     proc, _log = old
@@ -545,8 +534,7 @@ def test_an_empty_check_runs_answer_is_zero_and_refuses(tmp_path) -> None:
 
 
 def test_defect_d_a_non_numeric_check_runs_answer_is_a_hard_exit_1(tmp_path) -> None:
-    """A BARE WORD IN A BASH ARITHMETIC CONTEXT IS A VARIABLE REFERENCE, and an
-    unset one under `set -u` ends the script: exit 1, nothing on stdout, and no `pointer_bump_only` pair for the caller to read. Every other doubt in this file is exit 0 with a reason.
+    """A BARE WORD IN A BASH ARITHMETIC CONTEXT IS A VARIABLE REFERENCE, and an unset one under `set -u` ends the script: exit 1, nothing on stdout, and no `pointer_bump_only` pair for the caller to read. Every other doubt in this file is exit 0 with a reason.
 
     Not reachable through today's `gh --jq '... | length'`, which answers with a number or fails; one shape change in that jq program away, and the same
     class as DEFECT C."""
@@ -561,9 +549,7 @@ def test_defect_d_a_non_numeric_check_runs_answer_is_a_hard_exit_1(tmp_path) -> 
 
 
 def test_a_malformed_number_is_false_without_stopping(tmp_path) -> None:
-    """`08` and `1a` are BAD NUMBERS rather than variables: bash complains,
-    evaluates the test as false, and carries on. The distinction is the whole
-    reason DEFECT D is about bare words specifically."""
+    """`08` and `1a` are BAD NUMBERS rather than variables: bash complains, evaluates the test as false, and carries on. The distinction is the whole reason DEFECT D is about bare words specifically."""
     _repo, old, new = run_both(tmp_path, fixture_kw={"merge_head": False}, FAKE_GREEN="08")
     _agree(old, new, "octal-green")
     proc, _log = old
@@ -595,8 +581,7 @@ def test_a_commit_the_pat_cannot_read_is_refused(tmp_path) -> None:
 
 
 def test_a_new_commit_that_is_not_on_the_submodules_main_is_refused(tmp_path) -> None:
-    """`behind` and `diverged` both mean the pointer moved somewhere that is not
-    an ancestor of main, which is the case this whole check exists for."""
+    """`behind` and `diverged` both mean the pointer moved somewhere that is not an ancestor of main, which is the case this whole check exists for."""
     for status in ("behind", "diverged"):
         _repo, old, new = run_both(tmp_path, fixture_kw={"merge_head": False}, FAKE_COMPARE=status)
         _agree(old, new, f"compare-{status}")
@@ -608,8 +593,7 @@ def test_a_new_commit_that_is_not_on_the_submodules_main_is_refused(tmp_path) ->
 
 
 def test_identical_counts_as_merged_and_ahead_does_too(tmp_path) -> None:
-    """THE POSITIVE CONTROL FOR THE ABOVE. Without it, a port that refused
-    everything would pass every one of these refusal tests."""
+    """THE POSITIVE CONTROL FOR THE ABOVE. Without it, a port that refused everything would pass every one of these refusal tests."""
     _repo, old, new = run_both(tmp_path, fixture_kw={"merge_head": False}, FAKE_COMPARE="identical")
     _agree(old, new, "compare-identical")
     proc, _log = old
@@ -629,8 +613,7 @@ def test_a_compare_call_that_fails_is_refused(tmp_path) -> None:
 def test_defect_a_the_head_guard_cannot_fire_on_a_pull_request(tmp_path) -> None:
     """A PR whose tip is an ORDINARY commit. `current` is the tip (from the
     payload) and `head_sha` is the merge commit, so the `current == head_sha`
-    test at :138 is false, the loop breaks with no baseline, and the operator is told `no baseline within 5 commits` about a branch whose very first commit
-    was the answer."""
+    test at :138 is false, the loop breaks with no baseline, and the operator is told `no baseline within 5 commits` about a branch whose very first commit was the answer."""
     assert port.THE_HEAD_GUARD_IS_UNREACHABLE_ON_A_PULL_REQUEST
     _repo, old, new = run_both(tmp_path, fixture_kw={"tip_is_pointer_only": False})
     _agree(old, new, "defect-a")
@@ -645,9 +628,7 @@ def test_defect_a_the_head_guard_cannot_fire_on_a_pull_request(tmp_path) -> None
 def test_defect_a_control_the_guard_does_fire_when_head_really_is_the_tip(
     tmp_path,
 ) -> None:
-    """THE CONTROL. The identical repository WITHOUT the synthetic merge commit
-    reports the intended message, which is what makes the case above a defect in
-    the SHAPE rather than dead code."""
+    """THE CONTROL. The identical repository WITHOUT the synthetic merge commit reports the intended message, which is what makes the case above a defect in the SHAPE rather than dead code."""
     _repo, old, new = run_both(
         tmp_path, fixture_kw={"tip_is_pointer_only": False, "merge_head": False}
     )
@@ -658,9 +639,7 @@ def test_defect_a_control_the_guard_does_fire_when_head_really_is_the_tip(
 
 
 def test_defect_b_step_three_diffs_against_the_merge_commit(tmp_path) -> None:
-    """A PR whose tip IS pointer-only, on a target branch that has moved. The
-    walk succeeds and the baseline passes CI, and then the net diff -- taken against HEAD, the merge -- carries main's file change and the fast path is
-    refused for a branch that qualifies."""
+    """A PR whose tip IS pointer-only, on a target branch that has moved. The walk succeeds and the baseline passes CI, and then the net diff -- taken against HEAD, the merge -- carries main's file change and the fast path is refused for a branch that qualifies."""
     assert port.STEP_THREE_STILL_COMPARES_AGAINST_THE_MERGE_COMMIT
     _repo, old, new = run_both(tmp_path, fixture_kw={"main_moves": True})
     _agree(old, new, "defect-b")
@@ -672,8 +651,7 @@ def test_defect_b_step_three_diffs_against_the_merge_commit(tmp_path) -> None:
 
 
 def test_defect_b_control_an_unmoved_target_branch_still_fast_paths(tmp_path) -> None:
-    """THE CONTROL. Same PR shape, same merge commit, main NOT moved: the
-    merge's tree equals the tip's, the net diff is gitlink-only, and the fast path fires. So the refusal above is caused by main moving and by nothing
+    """THE CONTROL. Same PR shape, same merge commit, main NOT moved: the merge's tree equals the tip's, the net diff is gitlink-only, and the fast path fires. So the refusal above is caused by main moving and by nothing
     else."""
     repo, old, new = run_both(tmp_path, fixture_kw={"main_moves": False})
     _agree(old, new, "defect-b-control")
@@ -684,9 +662,7 @@ def test_defect_b_control_an_unmoved_target_branch_still_fast_paths(tmp_path) ->
 
 
 def test_defect_c_a_gitmodules_with_no_entries_is_a_hard_exit_1(tmp_path) -> None:
-    """EVERY OTHER DOUBT IN THIS SCRIPT IS EXIT 0 WITH A REASON. This one is
-    exit 1 with nothing: `git config --get-regexp` matches nothing, `pipefail` makes that the assignment's status, and `set -e` ends the run before the guard on the next line is reached. The caller (`initialize.sh`) sees a
-    failed step."""
+    """EVERY OTHER DOUBT IN THIS SCRIPT IS EXIT 0 WITH A REASON. This one is exit 1 with nothing: `git config --get-regexp` matches nothing, `pipefail` makes that the assignment's status, and `set -e` ends the run before the guard on the next line is reached. The caller (`initialize.sh`) sees a failed step."""
     assert port.AN_EMPTY_GITMODULES_IS_A_HARD_EXIT_NOT_A_FAIL_SAFE
     _repo, old, new = run_both(tmp_path, fixture_kw={"merge_head": False, "gitmodules": None})
     _agree(old, new, "defect-c")
@@ -700,9 +676,7 @@ def test_defect_c_a_gitmodules_with_no_entries_is_a_hard_exit_1(tmp_path) -> Non
 def test_defect_c_control_a_gitmodules_naming_another_path_does_reach_the_guard(
     tmp_path,
 ) -> None:
-    """THE CONTROL, and the reason DEFECT C is about the EMPTY case specifically.
-    With `.gitmodules` naming some OTHER submodule, `git config` succeeds, the
-    awk filter finds no match, and the intended fail-safe message appears."""
+    """THE CONTROL, and the reason DEFECT C is about the EMPTY case specifically. With `.gitmodules` naming some OTHER submodule, `git config` succeeds, the awk filter finds no match, and the intended fail-safe message appears."""
     _repo, old, new = run_both(
         tmp_path, fixture_kw={"merge_head": False, "gitmodules": "private/other"}
     )
@@ -784,8 +758,7 @@ def test_at_least_one_is_bash_arithmetic_including_the_fatal_rows() -> None:
 
 
 def test_the_bash_diagnostic_normaliser_keeps_the_message() -> None:
-    """A NORMALISER THAT SWALLOWED MORE WOULD MAKE `_agree` VACUOUS on the one
-    path that uses it."""
+    """A NORMALISER THAT SWALLOWED MORE WOULD MAKE `_agree` VACUOUS on the one path that uses it."""
     bash_side = "/x/.ci/scripts/ci/detect-pointer-bump.sh: line 154: null: unbound variable"
     port_side = "detect-pointer-bump.sh: null: unbound variable"
     assert _mask(bash_side) == _mask(port_side)
@@ -796,8 +769,7 @@ def test_the_bash_diagnostic_normaliser_keeps_the_message() -> None:
 
 
 def test_the_port_carries_no_gate_header() -> None:
-    """Neither file declares a gate, and the twin is checked in the same breath
-    so "neither has one" cannot be satisfied by a broken matcher."""
+    """Neither file declares a gate, and the twin is checked in the same breath so "neither has one" cannot be satisfied by a broken matcher."""
     open_marker = re.compile(r"^\s*(?:#|//|\*)?\s*-{2,}\s*gate\s*-{2,}\s*$")
     for path in (TWIN, PORT_FILE):
         assert [
@@ -806,8 +778,7 @@ def test_the_port_carries_no_gate_header() -> None:
 
 
 def test_the_environment_this_module_reads_is_read_with_literal_keys() -> None:
-    """`check:ci-python-env-registry` derives a module's inputs by walking the
-    AST for literal `os.environ` reads, so a read through a local alias would be invisible and the module would report zero inputs while depending on six.
+    """`check:ci-python-env-registry` derives a module's inputs by walking the AST for literal `os.environ` reads, so a read through a local alias would be invisible and the module would report zero inputs while depending on six.
 
     THE LIST IS THE TWIN'S OWN HEADER, in its order."""
     source = PORT_FILE.read_text(encoding="utf-8")

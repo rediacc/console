@@ -9,9 +9,8 @@ claiming "retry uses the latest tag's version, which the artifacts already match
 newer artifacts under the older tag, which is precisely the mismatch the assertion exists to catch,
 with the assertion switched off.
 
-This is a text test rather than a YAML-object test on purpose: the condition is a GitHub expression inside a folded scalar, so its meaning lives in the string either
-way. The twin keeps awk to stay dependency-free; the port reimplements the same
-range extraction in Python and `test_the_extractor_matches_the_twins_awk` drives the twin's awk against the same file to prove the two agree, so the change of implementation is a claim this file has to earn rather than assume.
+This is a text test rather than a YAML-object test on purpose: the condition is a GitHub expression inside a folded scalar, so its meaning lives in the string either way. The twin keeps awk to stay dependency-free; the port reimplements the same range extraction in Python and `test_the_extractor_matches_the_twins_awk` drives the twin's awk against the same file to prove the two
+agree, so the change of implementation is a claim this file has to earn rather than assume.
 """
 
 import pathlib
@@ -33,8 +32,7 @@ AWK = """
 
 
 def step_block(path: pathlib.Path, name: str = STEP_NAME) -> str:
-    """The step's own YAML block: from its `- name:` line up to (not including)
-    the next step at the same indentation."""
+    """The step's own YAML block: from its `- name:` line up to (not including) the next step at the same indentation."""
     out = []
     printing = False
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -50,9 +48,7 @@ def step_block(path: pathlib.Path, name: str = STEP_NAME) -> str:
 
 
 def test_the_extractor_matches_the_twins_awk(gate):
-    """CONTROL FOR THE PORT ITSELF. The twin extracts with awk; this file
-    extracts with a Python loop. A port that changes the extractor and does not compare it against the original has replaced a tested reader with an untested one, and every assertion below would then be about the new reader's
-    idea of the step."""
+    """CONTROL FOR THE PORT ITSELF. The twin extracts with awk; this file extracts with a Python loop. A port that changes the extractor and does not compare it against the original has replaced a tested reader with an untested one, and every assertion below would then be about the new reader's idea of the step."""
     awk = harness.run(["awk", "-v", "name=" + STEP_NAME, AWK, str(WORKFLOW)])
     gate.assert_exit_code(0, awk.rc, "the twin's awk still runs")
     gate.assert_eq(step_block(WORKFLOW), awk.out, "the Python extractor agrees with the awk one")

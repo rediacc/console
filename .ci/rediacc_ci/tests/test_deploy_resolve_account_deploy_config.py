@@ -2,9 +2,8 @@
 
 W7P5-a (`agent/PLAN-tooling-transformation.md` line 607): `deploy/` and
 `release/` carried zero Python and zero ledgers before this box. The K=5
-shadow-gate ledger proving equivalence across five distinct committed specimens lives at `.ci/shadow/w7p5a-resolve-account-deploy-config.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-account-deploy-config
---assert --k 5` -> "equivalence holds over 5 distinct trees"); this file is
-the fast, permanent regression twin of that one-time proof, run against the REAL twin and REAL port in this tree rather than a throwaway fixture, since the script has no git-scanning surface for a fixture to vary.
+shadow-gate ledger proving equivalence across five distinct committed specimens lives at `.ci/shadow/w7p5a-resolve-account-deploy-config.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-account-deploy-config --assert --k 5` -> "equivalence holds over 5 distinct trees"); this file is the fast, permanent regression twin of that one-time proof, run against
+the REAL twin and REAL port in this tree rather than a throwaway fixture, since the script has no git-scanning surface for a fixture to vary.
 
 BOTH VALID PATHS ARE BYTE-IDENTICAL, deliberately, because the script is pure
 computation (no logging helper, no colour, no timestamp): four `key=value`
@@ -86,8 +85,7 @@ def test_stable_target_selects_stable_worker_and_no_sandbox(tmp_path: pathlib.Pa
 
 
 def test_missing_target_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> None:
-    """Exit codes and the identified variable agree; wording does not, and is
-    not supposed to -- see the port's module docstring."""
+    """Exit codes and the identified variable agree; wording does not, and is not supposed to -- see the port's module docstring."""
     env = {"MATRIX_ID": "eu", "MATRIX_SECRET_SUFFIX": "EU"}
     (old_exit, _, old_err), (new_exit, _, new_err), _, _ = run_both(tmp_path, env)
     assert old_exit == 1

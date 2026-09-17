@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.sweep_campaigns` against its twin
-`.ci/scripts/autopilot/sweep-campaigns.sh`.
+"""Differential: `rediacc_ci.autopilot.sweep_campaigns` against its twin `.ci/scripts/autopilot/sweep-campaigns.sh`.
 
 NO NETWORK AND NO STUBS, because the twin has none either: the sweeper's whole design is that the decision is made from a PR list and a directory of comment dumps, so it can be exercised offline. Both sides call the REAL `state-comment.sh`, which is the point -- the trust rule (author equality plus exact header prefix) lives there, and a test that stubbed it would prove the port
 calls something, not that a lookalike comment is refused.
@@ -169,8 +168,7 @@ def test_a_missing_dump_warns_and_is_not_counted_as_scanned() -> None:
 
 
 def test_empty_sweep() -> None:
-    """A documented, quiet zero. Named here so the number is visible: this is
-    also what a completely empty input directory produces."""
+    """A documented, quiet zero. Named here so the number is visible: this is also what a completely empty input directory produces."""
     exit_code, stdout, stderr = _sides("empty", [])
     assert exit_code == 0
     assert stdout == b""
@@ -202,8 +200,7 @@ def test_usage_and_missing_inputs() -> None:
 
 
 def test_a_malformed_pr_list_fails_with_jqs_own_words() -> None:
-    """The parse error IS the observable, which is why the port spawns jq here
-    rather than reproducing the message."""
+    """The parse error IS the observable, which is why the port spawns jq here rather than reproducing the message."""
     code, stdout, err = _sides("malformed-prs", None, prs_raw=b"{not json")
     assert code == 5, "jq's runtime exit code is 5, not 1 or 2"
     assert stdout == b""
@@ -211,8 +208,7 @@ def test_a_malformed_pr_list_fails_with_jqs_own_words() -> None:
 
 
 def test_an_unreadable_dump_stops_the_sweep_after_partial_output() -> None:
-    """`state-comment.sh select` failing takes the whole sweep down, and the
-    numbers already printed stay printed. Both halves are compared."""
+    """`state-comment.sh select` failing takes the whole sweep down, and the numbers already printed stay printed. Both halves are compared."""
     dumps = {1: [comment(1, BOT, body("open"))], 2: {"not": "an array"}}
     code, stdout, err = _sides("bad-dump", [1, 2], dumps)
     assert code != 0

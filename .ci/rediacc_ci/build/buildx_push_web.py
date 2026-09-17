@@ -1,46 +1,27 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/buildx-push-web.sh` (46 lines).
 
-Builds ONE single-arch web image variant and pushes it. The twin's header says
-why single-arch (emulated arm64 builds of this image were prohibitively slow, so
-amd64 and arm64 run as separate jobs on native runners and are joined into a
-manifest later) and that reasoning is not restated here.
+Builds ONE single-arch web image variant and pushes it. The twin's header says why single-arch (emulated arm64 builds of this image were prohibitively slow, so amd64 and arm64 run as separate jobs on native runners and are joined into a manifest later) and that reasoning is not restated here.
 
-Everything is driven by ENVIRONMENT, not argv: `PLATFORM`, `VARIANT`,
-`IMAGE_PATH`, `WEB_TAG` and `ACCOUNT_ENTRY` are required, and
-`ACCOUNT_ED25519_PUBLIC_KEY` is optional and may be empty on a non-release
-build.
+Everything is driven by ENVIRONMENT, not argv: `PLATFORM`, `VARIANT`, `IMAGE_PATH`, `WEB_TAG` and `ACCOUNT_ENTRY` are required, and `ACCOUNT_ED25519_PUBLIC_KEY` is optional and may be empty on a non-release build.
 
-LIVE CALLERS, none repointed by this port. Four workflow steps, two amd64 and
-two arm64, all in `.github/workflows/ci-build-docker.yml`:
+LIVE CALLERS, none repointed by this port. Four workflow steps, two amd64 and two arm64, all in `.github/workflows/ci-build-docker.yml`:
   * `:287`  `Build & push (amd64)`, `build-server-docker`,       PLATFORM=linux/amd64
   * `:387`  the arm64 twin of it,   `build-server-docker-arm64`, PLATFORM=linux/arm64
   * plus the two later variant jobs that reach it through the same step name.
-`.ci/scripts/ci/generate-tag.sh:220` and `rediacc_ci/ci/generate_tag.py:162`
-name the path in the change-detection table; neither EXECUTES it.
+`.ci/scripts/ci/generate-tag.sh:220` and `rediacc_ci/ci/generate_tag.py:162` name the path in the change-detection table; neither EXECUTES it.
 
 -----------------------------------------------------------------------------
 IT PUSHES TO ghcr.io, SO THE DIFFERENTIAL NEVER RUNS `docker`
 -----------------------------------------------------------------------------
-`--push` on the build means there is no dry-run mode and no local-only path:
-one real invocation is a registry write. Every case in
-`.ci/rediacc_ci/tests/test_build_buildx_push_web.py` runs against a RECORDING
-FAKE `docker` on a PATH that REPLACES the caller's rather than prepending to it,
-and the suite asserts that the real binary is unreachable from that PATH before
-it drives either side. The argv the fake records IS the evidence: swapping two
-`--build-arg` values, or dropping `--push`, produces identical stdout, identical
-stderr and an identical exit code, and only the call log can tell.
+`--push` on the build means there is no dry-run mode and no local-only path: one real invocation is a registry write. Every case in `.ci/rediacc_ci/tests/test_build_buildx_push_web.py` runs against a RECORDING FAKE `docker` on a PATH that REPLACES the caller's rather than prepending to it, and the suite asserts that the real binary is unreachable from that PATH before it drives
+either side. The argv the fake records IS the evidence: swapping two `--build-arg` values, or dropping `--push`, produces identical stdout, identical stderr and an identical exit code, and only the call log can tell.
 
 -----------------------------------------------------------------------------
 THE FIVE `: "${VAR:?...}"` REFUSALS ARE bash's, AND THEY ARE FORGED
 -----------------------------------------------------------------------------
-`:27-31` refuse through parameter expansion, not through `common.sh`, so the
-message has no `✗` and no colour: bash writes
-`<script>: line 27: PLATFORM: PLATFORM is required (linux/amd64 or linux/arm64)`
-on stderr and exits 1. This port reproduces the sentence, following
-`rediacc_ci.docker.retag_image`'s precedent for `set -u` deaths, because the
-five sentences are the entire operator-facing contract of the script and a
-silent exit 1 would say nothing at all.
+`:27-31` refuse through parameter expansion, not through `common.sh`, so the message has no `✗` and no colour: bash writes `<script>: line 27: PLATFORM: PLATFORM is required (linux/amd64 or linux/arm64)` on stderr and exits 1. This port reproduces the sentence, following `rediacc_ci.docker.retag_image`'s precedent for `set -u` deaths, because the five sentences are the entire
+operator-facing contract of the script and a silent exit 1 would say nothing at all.
 
 Two properties of `:?` that are easy to get wrong and are pinned:
 
@@ -52,20 +33,13 @@ Two properties of `:?` that are easy to get wrong and are pinned:
     code. `require_cmd docker` (`:26`) runs BEFORE all five, so a machine with
     no docker hears about docker even when every variable is also missing.
 
-`$0` is the one thing that cannot agree between the two sides: bash prints the
-path it was invoked with and `sys.argv[0]` ends `.py`. The differential masks
-both to `<SELF>` and compares everything else byte-for-byte. `shadow-gate.ts`
-files the line as chatter on both sides -- no `✗`/`ERROR:`/`::error::` marker,
-and it does not match the `<path>:<line>:` finding shape either, because bash
-writes `: line 27:` with a space after the colon -- so it plays no part in any
-recorded ledger verdict.
+`$0` is the one thing that cannot agree between the two sides: bash prints the path it was invoked with and `sys.argv[0]` ends `.py`. The differential masks both to `<SELF>` and compares everything else byte-for-byte. `shadow-gate.ts` files the line as chatter on both sides -- no `✗`/`ERROR:`/`::error::` marker, and it does not match the `<path>:<line>:` finding shape either,
+because bash writes `: line 27:` with a space after the colon -- so it plays no part in any recorded ledger verdict.
 
 -----------------------------------------------------------------------------
 THREE DEFECTS IN THE TWIN, REPRODUCED HERE RATHER THAN FIXED
 -----------------------------------------------------------------------------
-Fixing any of them changes what four live release-path workflow steps do, which
-is outside this port's ownership (W7P6: the bash twin stays registered). All
-three are pinned by tests.
+Fixing any of them changes what four live release-path workflow steps do, which is outside this port's ownership (W7P6: the bash twin stays registered). All three are pinned by tests.
 
   1. THE BUILD CONTEXT IS THE CALLER'S CURRENT DIRECTORY, UNCHECKED (`:36,:44`).
      `--file Dockerfile` and the trailing `.` are both relative and the script
@@ -95,11 +69,7 @@ three are pinned by tests.
 -----------------------------------------------------------------------------
 ONE THING THAT IS NOT A DEFECT, stated so it is not "fixed" later
 -----------------------------------------------------------------------------
-`set -e` lets docker's exit status through unchanged: a build that fails with 17
-exits 17, and the success line is not printed. That is the OPPOSITE of
-`build-www.sh`, which flattens npm's status to 1 (see `build_www`, defect 2).
-The two are inconsistent with each other and this one is the correct half, so it
-is kept exactly.
+`set -e` lets docker's exit status through unchanged: a build that fails with 17 exits 17, and the success line is not printed. That is the OPPOSITE of `build-www.sh`, which flattens npm's status to 1 (see `build_www`, defect 2). The two are inconsistent with each other and this one is the correct half, so it is kept exactly.
 
 K=5 LEDGER: `.ci/shadow/w7p6-buildx-push-web.observations.jsonl`.
 """
@@ -124,13 +94,10 @@ REQUIRED_ENV: tuple[tuple[str, int, str], ...] = (
     ("ACCOUNT_ENTRY", 31, "ACCOUNT_ENTRY is required"),
 )
 
-# `:41`. Optional, and read with a `:-` default, so unset and empty are the same
-# thing to the twin.
+# `:41`. Optional, and read with a `:-` default, so unset and empty are the same thing to the twin.
 OPTIONAL_ENV = "ACCOUNT_ED25519_PUBLIC_KEY"
 
-# The line of the `docker buildx build` (`:35`), for the `command not found`
-# diagnostic bash would write if docker vanished between `require_cmd` and the
-# call.
+# The line of the `docker buildx build` (`:35`), for the `command not found` diagnostic bash would write if docker vanished between `require_cmd` and the call.
 DOCKER_LINE = 35
 
 
@@ -142,9 +109,7 @@ def bash_expansion_refusal(name: str, line: int, message: str) -> str:
 def arch_of(platform: str) -> str:
     """`ARCH="${PLATFORM##*/}"` (:33). Longest leading `*/` removed.
 
-    Not `os.path.basename` and not a validator: `linux/amd64` gives `amd64`,
-    `nonsense` gives `nonsense` (defect 2), `linux/` gives the empty string, and
-    `a/b/c` gives `c`. All four are pinned against the real shell.
+    Not `os.path.basename` and not a validator: `linux/amd64` gives `amd64`, `nonsense` gives `nonsense` (defect 2), `linux/` gives the empty string, and `a/b/c` gives `c`. All four are pinned against the real shell.
     """
     return platform.rsplit("/", 1)[-1]
 
@@ -159,9 +124,7 @@ def build_argv(
 ) -> list[str]:
     """`:35-44`, argument for argument, including the trailing `.` context.
 
-    Exported so the differential can compare it against the fake's recorded argv
-    without inferring the order from the output, and so a reader can see that
-    the context is `.` -- the CALLER's directory. See defect 1.
+    Exported so the differential can compare it against the fake's recorded argv without inferring the order from the output, and so a reader can see that the context is `.` -- the CALLER's directory. See defect 1.
     """
     return [
         "docker",
@@ -197,14 +160,8 @@ def main(argv: list[str]) -> int:
         exc.report()
         return exc.code
 
-    # `:27-31`. EVERY NAME IS A LITERAL AT ITS OWN `os.environ.get` CALL SITE,
-    # and the obvious `for name, ... in REQUIRED_ENV: os.environ.get(name)` is
-    # deliberately not used. `check:ci-python-env-registry` derives a module's
-    # declared inputs from the AST, and a non-literal key is recorded as the
-    # EXPRESSION -- `*name` -- so the loop form would leave all five of this
-    # script's actual inputs undeclared while the gate stayed green. Measured
-    # against the gate's own `scan_module`: the loop yields
-    # `['*name', 'ACCOUNT_ED25519_PUBLIC_KEY']`, this form yields all six names.
+    # `:27-31`. EVERY NAME IS A LITERAL AT ITS OWN `os.environ.get` CALL SITE, and the obvious `for name, ... in REQUIRED_ENV: os.environ.get(name)` is deliberately not used. `check:ci-python-env-registry` derives a module's declared inputs from the AST, and a non-literal key is recorded as the EXPRESSION -- `*name` -- so the loop form would leave all five of this script's actual
+    # inputs undeclared while the gate stayed green. Measured against the gate's own `scan_module`: the loop yields `['*name', 'ACCOUNT_ED25519_PUBLIC_KEY']`, this form yields all six names.
     values = {
         "PLATFORM": os.environ.get("PLATFORM", ""),
         "VARIANT": os.environ.get("VARIANT", ""),
@@ -212,9 +169,7 @@ def main(argv: list[str]) -> int:
         "WEB_TAG": os.environ.get("WEB_TAG", ""),
         "ACCOUNT_ENTRY": os.environ.get("ACCOUNT_ENTRY", ""),
     }
-    # Reading is side-effect-free, so reading all five above and REFUSING in the
-    # twin's order here is observationally identical to bash expanding them one
-    # at a time: the first empty one is the only one reported.
+    # Reading is side-effect-free, so reading all five above and REFUSING in the twin's order here is observationally identical to bash expanding them one at a time: the first empty one is the only one reported.
     for name, line, message in REQUIRED_ENV:
         if not values[name]:
             print(bash_expansion_refusal(name, line, message), file=sys.stderr, flush=True)

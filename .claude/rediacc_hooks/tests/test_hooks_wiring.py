@@ -81,9 +81,8 @@ def test_wiring_agrees_in_both_directions():
 
     # CONTROL, so the green above is agreement and not a check that cannot fire: one fixture drops a real registration, the other invents one. Each must fail AND name the offender -- a bare non-zero would pass either fixture.
     #
-    # THE SUBJECT OF THE DROP CONTROL HAD TO MOVE at the W5 P7 cutover, and the reason is worth stating because it is how a control quietly stops firing. It dropped
-    # block-worktree-add.sh's registration; that guard is a Python module now and
-    # settings.json does not name it, so the filter would have matched nothing, the fixture would have been identical to the real file, and the control would have reported the tree's own green as its own. A control that plants nothing proves nothing. block-pathspecless-git-commit.sh is the pre-bash guard still registered as a file, so it is the one that can be dropped.
+    # THE SUBJECT OF THE DROP CONTROL HAD TO MOVE at the W5 P7 cutover, and the reason is worth stating because it is how a control quietly stops firing. It dropped block-worktree-add.sh's registration; that guard is a Python module now and settings.json does not name it, so the filter would have matched nothing, the fixture would have been identical to the real file, and the
+    # control would have reported the tree's own green as its own. A control that plants nothing proves nothing. block-pathspecless-git-commit.sh is the pre-bash guard still registered as a file, so it is the one that can be dropped.
     dropped = json.loads(SETTINGS.read_text(encoding="utf-8"))
     for entries in (dropped.get("hooks") or {}).values():
         for entry in entries or []:

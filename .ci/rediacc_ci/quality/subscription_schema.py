@@ -1,7 +1,6 @@
 """The subscription schema must stay in step between TypeScript and Go.
 
-Ported from `.ci/scripts/quality/check-subscription-schema.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-subscription-schema.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER AND ITS THREE PHASES, CARRIED ACROSS.
@@ -17,9 +16,7 @@ GENERATE OUT OF TREE. Phase 1 used to regenerate `$SCHEMA_FILE` in place and the
 while the ~8.7x-parallel pool read the same tree -- the hazard class in
 scripts/ci-runner/manifest.ts:346-365, observed live with this exact file stamped mid-battery. The check only ever needed something to DIFF against, so it writes to $TEMP_DIR and the tracked file is never touched.
 
-Formatting goes through STDIN rather than `--write`, so biome still resolves this repo's config for the file's real path without that path being written.
-Formatting is cosmetic here; an unformatted comparison is still a valid
-staleness check, and failing the gate on a formatter hiccup would be worse, so a biome failure falls back to the unformatted text.
+Formatting goes through STDIN rather than `--write`, so biome still resolves this repo's config for the file's real path without that path being written. Formatting is cosmetic here; an unformatted comparison is still a valid staleness check, and failing the gate on a formatter hiccup would be worse, so a biome failure falls back to the unformatted text.
 
 THIS COMPARISON IS THE GATE, so it EXITS rather than warning. It used to warn, which was survivable only because phase 1 regenerated `$SCHEMA_FILE` in place and phase 3's `git diff` against HEAD then failed on the difference. Generating out of tree removed that side effect and, with it, the only path that could fail a stale schema: phase 3 now diffs an untouched file and is clean
 no matter how stale the committed output is. A gate whose green no longer depends on the thing it checks is worse than no gate.
@@ -45,13 +42,9 @@ it carries govulncheck (Go CVE scanning), deadcode and golangci-lint -- all thre
 
 `[[ -e "$marker" ]]` IS `-e`, NOT `-d`, so a submodule checked out as a FILE gitlink (`.git` file rather than directory) still counts. `os.path.exists` follows symlinks the same way `-e` does. A broken symlink is absent to both.
 
-THE ORDER OF THE `cd`s IS BEHAVIOUR. The twin `cd`s to the repo root, then into the submodule for `go test`, then back to the root for phase 3. Nothing here
-changes process-global state; each subprocess is given its own `cwd`, which is
-the same fact expressed without the hazard of leaving the interpreter somewhere unexpected if a phase returns early.
+THE ORDER OF THE `cd`s IS BEHAVIOUR. The twin `cd`s to the repo root, then into the submodule for `go test`, then back to the root for phase 3. Nothing here changes process-global state; each subprocess is given its own `cwd`, which is the same fact expressed without the hazard of leaving the interpreter somewhere unexpected if a phase returns early.
 
-STREAMS. `log_step`, `log_info`, `log_warn` and `log_error` are all stderr in `common.sh`, and `rediacc_ci.log` matches them byte for byte. The generator's stdout is discarded (`>/dev/null`) and its stderr is INHERITED, so a real
-failure still explains itself; `go test -v` inherits both, because its output is
-the evidence a reader needs.
+STREAMS. `log_step`, `log_info`, `log_warn` and `log_error` are all stderr in `common.sh`, and `rediacc_ci.log` matches them byte for byte. The generator's stdout is discarded (`>/dev/null`) and its stderr is INHERITED, so a real failure still explains itself; `go test -v` inherits both, because its output is the evidence a reader needs.
 """
 
 import os
@@ -106,8 +99,7 @@ def require_submodule(marker: pathlib.Path, label: str, env: dict[str, str] | No
 def generate(root: pathlib.Path, out: pathlib.Path) -> int:
     """Phase 1's generator, writing OUT OF TREE. Returns its exit status.
 
-    stdout is discarded exactly as the twin's `>/dev/null` discards it; stderr is
-    inherited, so the reason a generator failed is not swallowed. That asymmetry is the twin's and it is the right one: the schema itself is not wanted on a terminal, and the failure text is.
+    stdout is discarded exactly as the twin's `>/dev/null` discards it; stderr is inherited, so the reason a generator failed is not swallowed. That asymmetry is the twin's and it is the right one: the schema itself is not wanted on a terminal, and the failure text is.
     """
     env = dict(os.environ)
     env["SUBSCRIPTION_SCHEMA_OUT"] = str(out)
@@ -120,9 +112,7 @@ def generate(root: pathlib.Path, out: pathlib.Path) -> int:
             check=False,
         )
     except OSError:
-        # COMMAND NOT FOUND IS 127, NOT AN EXCEPTION, and getting this wrong is the single easiest way for a shell port to diverge. bash prints
-        # `npx: command not found` and exits 127; Python raises FileNotFoundError
-        # and, if nothing catches it, produces a traceback and exit 1. The twin cannot be traced back to, so neither is this.
+        # COMMAND NOT FOUND IS 127, NOT AN EXCEPTION, and getting this wrong is the single easiest way for a shell port to diverge. bash prints `npx: command not found` and exits 127; Python raises FileNotFoundError and, if nothing catches it, produces a traceback and exit 1. The twin cannot be traced back to, so neither is this.
         return NOT_FOUND
     return proc.returncode
 
@@ -163,9 +153,7 @@ def files_differ(a: pathlib.Path, b: pathlib.Path) -> bool:
             check=False,
         )
     except OSError:
-        # An ABSENT `diff` is 127 in a shell, which the twin's `if !` reads as "they differ". Erring toward STALE rather than toward clean is the
-        # right direction and it is the twin's; a port that raised here would
-        # turn a missing tool into a traceback.
+        # An ABSENT `diff` is 127 in a shell, which the twin's `if !` reads as "they differ". Erring toward STALE rather than toward clean is the right direction and it is the twin's; a port that raised here would turn a missing tool into a traceback.
         return True
     return proc.returncode != 0
 
@@ -234,8 +222,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # ---- Phase 2: the Go side must agree --------------------------------
     if not require_submodule(renet_dir, RENET_LABEL):
-        # `require_submodule ... || exit 0`. A fresh clone without --recursive is
-        # still workable; CI never reaches here because the helper exits 1 there.
+        # `require_submodule ... || exit 0`. A fresh clone without --recursive is still workable; CI never reaches here because the helper exits 1 there.
         return 0
 
     log.step("Running Go schema validation tests...")

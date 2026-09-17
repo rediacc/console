@@ -2,9 +2,8 @@
 
 A bash child runs the REAL `.ci/scripts/quality/check-resolved-threads.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-resolved-threads.observations.jsonl`.
 
-THE STUB DISPATCHES ON THE ENDPOINT ARGUMENT, and that detail is here because getting it wrong is invisible. `gh_json` calls `gh api <endpoint> --paginate`, so
-the endpoint is `$2`; a sibling fixture keyed on `$3` (which is `--paginate`) and
-therefore failed EVERY call. Both implementations then failed identically, byte for byte, and the differential scored EQUIVALENT over six trees. Only the comparator's distinct-fingerprint rule -- six trees, one finding set -- refused it. A stub that answers nothing is the both-empty trap wearing a costume.
+THE STUB DISPATCHES ON THE ENDPOINT ARGUMENT, and that detail is here because getting it wrong is invisible. `gh_json` calls `gh api <endpoint> --paginate`, so the endpoint is `$2`; a sibling fixture keyed on `$3` (which is `--paginate`) and therefore failed EVERY call. Both implementations then failed identically, byte for byte, and the differential scored EQUIVALENT over six
+trees. Only the comparator's distinct-fingerprint rule -- six trees, one finding set -- refused it. A stub that answers nothing is the both-empty trap wearing a costume.
 
 BOTH DIRECTIONS. The corpus carries a fully resolved PR (must be silent), an unresolved thread, an OUTDATED unresolved thread (must be silent, because it points at a line that no longer exists), a standing CHANGES_REQUESTED, a block that a later approval supersedes (must be silent), and a GraphQL error response, which is valid JSON and exits 0 and therefore has to be caught per
 page rather than by an exit code.
@@ -128,8 +127,7 @@ CASES = [
         1,
     ),
     (
-        # SUPERSEDED. Reviewers can change their review, and the LATEST per
-        # reviewer is what counts; without this the gate could never be cleared.
+        # SUPERSEDED. Reviewers can change their review, and the LATEST per reviewer is what counts; without this the gate could never be cleared.
         "a later approval from the same reviewer supersedes the block",
         graphql([DONE_THREAD]),
         json.dumps(

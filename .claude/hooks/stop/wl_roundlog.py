@@ -1,5 +1,4 @@
-"""wl_roundlog: replace a pr-babysit round log's STATUS block WITHOUT eating the
-history underneath it.
+"""wl_roundlog: replace a pr-babysit round log's STATUS block WITHOUT eating the history underneath it.
 
 THE DEFECT THIS CLOSES, and it is a real one from 2026-08-19. The round log's contract (`.claude/agents/pr-babysitter.md`, the round-log section) is three parts in a fixed order:
 
@@ -52,8 +51,7 @@ def split(current):
     """
     m = STATUS_RE.search(current)
     if m is None:
-        # No STATUS yet. It goes directly under the wave header, so the boundary
-        # is the next level-2 heading after it; failing that, end of document.
+        # No STATUS yet. It goes directly under the wave header, so the boundary is the next level-2 heading after it; failing that, end of document.
         wave = WAVE_HEADER_RE.search(current)
         if wave is not None:
             nxt = H2_RE.search(current, wave.end())

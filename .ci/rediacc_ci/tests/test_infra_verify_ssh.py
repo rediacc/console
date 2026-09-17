@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.infra.verify_ssh` against its twin
-`.ci/scripts/infra/verify-ssh.sh`.
+"""Differential: `rediacc_ci.infra.verify_ssh` against its twin `.ci/scripts/infra/verify-ssh.sh`.
 
 SSH IS MOCKED, NOT REQUIRED. The subject's whole job is a retry loop around a network call, so the interesting behaviour is entirely in HOW it calls ssh and how many times: a differential that needed a reachable host would be skipped on every developer machine and would then be no differential at all. The seam is PATH. A recording stub `ssh` on a scratch PATH lets every case assert
 the ARGV SEQUENCE both implementations produced, which is the half a stdout comparison cannot see -- a port that printed "SSH connection successful" without ever running ssh would pass a stdout-only check.
@@ -294,9 +293,7 @@ def test_exhausted_retries() -> None:
     """Outcome 3 of 3, and THE DEFECT THIS PORT PRESERVES.
 
     `succeed_on=0` means the stub never answers. Note the trailing `sleep` in
-    the expected sequence: the twin prints "retrying in 5s..." and sleeps AFTER the final attempt, when there is nothing left to retry. The port reproduces
-    it; this assertion is what pins the defect so a future cutover cannot fix
-    one side and quietly diverge from the other.
+    the expected sequence: the twin prints "retrying in 5s..." and sleeps AFTER the final attempt, when there is nothing left to retry. The port reproduces it; this assertion is what pins the defect so a future cutover cannot fix one side and quietly diverge from the other.
     """
     exit_code, _, stderr, calls = _compare(
         "exhausted", ["host-a"], {**KEY, "ATTEMPTS": "2"}, succeed_on=0
@@ -312,8 +309,7 @@ def test_exhausted_retries() -> None:
 
 
 def test_any_target_is_enough() -> None:
-    """The quantifier: the loop is over attempts, and within one attempt over
-    every target, and the FIRST target to answer ends the run."""
+    """The quantifier: the loop is over attempts, and within one attempt over every target, and the FIRST target to answer ends the run."""
     exit_code, _, stderr, calls = _compare(
         "second-target-answers",
         ["host-a", "host-b"],
@@ -326,8 +322,7 @@ def test_any_target_is_enough() -> None:
 
 
 def test_target_parsing() -> None:
-    """`host`, `host:port`, and the `a:b:c` shape the twin's two substitutions
-    genuinely produce (first colon for the host, LAST for the port)."""
+    """`host`, `host:port`, and the `a:b:c` shape the twin's two substitutions genuinely produce (first colon for the host, LAST for the port)."""
     for name, target, want_host, want_port in (
         ("bare", "host-a", "fixtureuser@host-a", "22"),
         ("host-port", "localhost:2201", "fixtureuser@localhost", "2201"),
@@ -341,8 +336,7 @@ def test_target_parsing() -> None:
 
 
 def test_ssh_user_and_chown() -> None:
-    """SSH_USER replaces `whoami` for the login name; CHOWN_PATH adds a
-    `sudo chown -R` that still resolves the name through `whoami`."""
+    """SSH_USER replaces `whoami` for the login name; CHOWN_PATH adds a `sudo chown -R` that still resolves the name through `whoami`."""
     _, _, _, calls = _compare("ssh-user", ["h"], {**KEY, "SSH_USER": "someone"}, succeed_on=1)
     assert [c.split("\t")[0] for c in calls] == ["ssh"], "whoami must not run when SSH_USER is set"
     assert "someone@h" in calls[0]
@@ -355,8 +349,7 @@ def test_ssh_user_and_chown() -> None:
 
 
 def test_chown_failure_aborts() -> None:
-    """`set -e` on a failing `sudo chown`: the run stops with sudo's status and
-    never reaches ssh."""
+    """`set -e` on a failing `sudo chown`: the run stops with sudo's status and never reaches ssh."""
     exit_code, _, _, calls = _compare(
         "chown-fails",
         ["h"],
@@ -369,8 +362,7 @@ def test_chown_failure_aborts() -> None:
 
 
 def test_ssh_streams_pass_through() -> None:
-    """The twin redirects NEITHER of ssh's streams, so a banner on stderr and
-    the command's output on stdout both reach the caller."""
+    """The twin redirects NEITHER of ssh's streams, so a banner on stderr and the command's output on stdout both reach the caller."""
     _, stdout, stderr, _ = _compare(
         "streams",
         ["h"],
@@ -403,9 +395,7 @@ def test_missing_ssh_binary() -> None:
 
 
 def test_refusals_that_diverge_only_in_text() -> None:
-    """The two bash-diagnostic refusals. Exit code, stream and call sequence
-    are compared exactly; the text is compared by shape, for the reasons in the
-    module docstring."""
+    """The two bash-diagnostic refusals. Exit code, stream and call sequence are compared exactly; the text is compared by shape, for the reasons in the module docstring."""
     exit_code, stdout, stderr, calls = _compare(
         "no-key", ["h"], {}, succeed_on=1, exact_stderr=False
     )

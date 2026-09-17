@@ -120,18 +120,15 @@ VARS_CTX = re.compile(r"(?<![A-Za-z0-9_.])vars\s*[.\[]\s*['\"]?$", re.IGNORECASE
 # rewrote both sides of `NEW: ${{ secrets.OLD }}` across 267 expressions: every
 # app-token mint, both GPG signing steps, every R2 upload and the whole account deploy would have run with "" . Two of the new names were worse than wrong, they were impossible -- `gh secret set GITHUB_ZZ_PROBE` answers `HTTP 422: Secret names must not start with GITHUB_.` (probed 2026-09-02).
 #
-# Same shape as VARS_CTX one line up, and for the same reason: a name this tool does not own is reported, never rewritten. Surviving old spellings used to be
-# recorded in .ci/config/github-secret-preimage.json; that file was DELETED once
-# the last rename landed, which its own docstring called the end state. There is no dictionary to consult any more because there is nothing left to translate.
+# Same shape as VARS_CTX one line up, and for the same reason: a name this tool does not own is reported, never rewritten. Surviving old spellings used to be recorded in .ci/config/github-secret-preimage.json; that file was DELETED once the last rename landed, which its own docstring called the end state. There is no dictionary to consult any more because there is nothing left to
+# translate.
 SECRETS_CTX = re.compile(r"(?<![A-Za-z0-9_.])secrets\s*[.\[]\s*['\"]?$", re.IGNORECASE)
 
 INDIRECTION = re.compile(r"\$\{!|key_var=|_VAR=\"|\bSUFFIX\b.*\$\{|\$\{[A-Z_]+_\$\{SUFFIX\}")
 
 
 class Rules:
-    """ONE alternation, longest-first, applied in a single pass per file. The
-    first cut of this script ran 75 separate substitutions over every tracked
-    file and did not finish in two minutes; one pass finishes in seconds."""
+    """ONE alternation, longest-first, applied in a single pass per file. The first cut of this script ran 75 separate substitutions over every tracked file and did not finish in two minutes; one pass finishes in seconds."""
 
     def __init__(self) -> None:
         self.map = dict(RENAMES)
@@ -296,9 +293,7 @@ def main() -> int:
     # OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA} -> OBS_OTLP_CREDENTIALS_{EU,US,ASIA},
     # where none of the three targets existed in the map and no scan on either side could see it, because set-account-worker-secrets.sh:134 builds the name
     # at RUNTIME ("OBS_OTLP_CREDENTIALS_${SUFFIX}") so it never appears as a
-    # literal anywhere. Applying the rename would have failed _require_nonempty in all three regions -- the founding OTLP incident, reproduced by the
-    # migration built to prevent it. A dry run still reports; only --apply is
-    # refused, so this cannot block the measurement it is meant to inform.
+    # literal anywhere. Applying the rename would have failed _require_nonempty in all three regions -- the founding OTLP incident, reproduced by the migration built to prevent it. A dry run still reports; only --apply is refused, so this cannot block the measurement it is meant to inform.
     try:
         bws_map = json.loads((ROOT / ".ci" / "config" / "bws-secret-map.json").read_text())[
             "secrets"

@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.fetch_review_threads` against its twin
-`.ci/scripts/autopilot/fetch-review-threads.sh`.
+"""Differential: `rediacc_ci.autopilot.fetch_review_threads` against its twin `.ci/scripts/autopilot/fetch-review-threads.sh`.
 
 A RECORDING FAKE `gh` ON A STUB PATH, and here the fake is not a convenience: it is the only thing standing between a test run and a real GraphQL query against whatever repository a fixture names. The fake answers from a SCRIPT of per-call responses handed to it in the environment, so a case can make page two fail, or return a GraphQL error object, or hand back a cursor that never
 advances, without any of it leaving the process tree.
@@ -220,9 +219,7 @@ def test_the_three_required_flags() -> None:
 
 
 def test_the_pr_number_must_be_a_number() -> None:
-    """The ONLY validated input, and it is validated because it travels as a
-    TYPED GraphQL variable: a bad value would be a server error paid for after
-    the request rather than a refusal before it."""
+    """The ONLY validated input, and it is validated because it travels as a TYPED GraphQL variable: a bad value would be a server error paid for after the request rather than a refusal before it."""
     for value in ("abc", "31a", "", "-1", "3 1", "31.0"):
         argv = ["--pr", value, "--repo", "acme/console", "--out", "threads.json"]
         code, _, err, calls, written = _sides("pr-%r" % value, argv)
@@ -263,8 +260,7 @@ def test_a_single_page_of_threads() -> None:
 
 
 def test_an_empty_thread_set_is_a_success_with_an_empty_array() -> None:
-    """Zero threads is a legitimate answer and must be distinguishable from a
-    failure: exit 0, `[]` on disk, and the count in the summary line."""
+    """Zero threads is a legitimate answer and must be distinguishable from a failure: exit 0, `[]` on disk, and the count in the summary line."""
     code, _, err, _calls, written = _sides("empty", script=[ok(page([]))])
     assert code == 0
     assert written == b"[]\n"
@@ -272,8 +268,7 @@ def test_an_empty_thread_set_is_a_success_with_an_empty_array() -> None:
 
 
 def test_pagination_follows_the_cursor() -> None:
-    """The lesson `check-resolved-threads.sh` already paid for: without the
-    cursor, thread 101 being unresolved reads as "all resolved"."""
+    """The lesson `check-resolved-threads.sh` already paid for: without the cursor, thread 101 being unresolved reads as "all resolved"."""
     code, _, err, calls, written = _sides(
         "paged",
         script=[
@@ -291,8 +286,7 @@ def test_pagination_follows_the_cursor() -> None:
 
 
 def test_a_cursor_that_does_not_advance_fails_closed() -> None:
-    """`hasNextPage: true` with no cursor is a loop, and the twin refuses it
-    rather than spinning."""
+    """`hasNextPage: true` with no cursor is a loop, and the twin refuses it rather than spinning."""
     for cursor in (None, ""):
         code, _, err, _calls, written = _sides(
             "cursor-%r" % cursor,
@@ -305,8 +299,7 @@ def test_a_cursor_that_does_not_advance_fails_closed() -> None:
 
 
 def test_the_page_limit_stops_a_runaway() -> None:
-    """50 pages is 5000 threads; reaching it means the cursor stopped advancing
-    in a way the emptiness check cannot see (a cursor that repeats)."""
+    """50 pages is 5000 threads; reaching it means the cursor stopped advancing in a way the emptiness check cannot see (a cursor that repeats)."""
     script = [ok(page([thread("T_%d" % i)], has_next=True, cursor="CUR%d" % i)) for i in range(50)]
     code, _, err, calls, written = _sides("page-limit", script=script)
     assert code == 1
@@ -319,9 +312,7 @@ def test_the_page_limit_stops_a_runaway() -> None:
 
 
 def test_a_graphql_error_object_is_not_an_empty_thread_set() -> None:
-    """THE CHECK THAT MATTERS MOST HERE. A GraphQL error is valid JSON and exits
-    0, so `gh_json` is happy with it; without this per-page check a permission error would read as "this PR has no threads" and a review round would
-    resolve everything it could not see."""
+    """THE CHECK THAT MATTERS MOST HERE. A GraphQL error is valid JSON and exits 0, so `gh_json` is happy with it; without this per-page check a permission error would read as "this PR has no threads" and a review round would resolve everything it could not see."""
     body = json.dumps({"errors": [{"message": "Resource not accessible by integration"}]})
     code, _, err, _calls, written = _sides("graphql-error", script=[ok(body)])
     assert code == 1
@@ -334,8 +325,7 @@ def test_a_graphql_error_object_is_not_an_empty_thread_set() -> None:
 
 
 def test_an_error_on_a_later_page_is_caught_too() -> None:
-    """Per page, not only on the last one: pages 1 and 2 succeeded and their
-    threads are DISCARDED, because a partial array is not an answer."""
+    """Per page, not only on the last one: pages 1 and 2 succeeded and their threads are DISCARDED, because a partial array is not an answer."""
     body = json.dumps({"errors": [{"message": "rate limited"}]})
     code, _, err, calls, written = _sides(
         "graphql-error-page-2",
@@ -363,9 +353,7 @@ def test_the_out_file_is_absent_after_every_failure() -> None:
 
 
 def test_a_body_that_exits_zero_but_is_not_usable_json() -> None:
-    """`jq -e`'s rule, not `json.loads`': a body of `null` or `false` is
-    UNUSABLE even though `gh` exited 0, and gets the retry loop rather than
-    being handed on as a page."""
+    """`jq -e`'s rule, not `json.loads`': a body of `null` or `false` is UNUSABLE even though `gh` exited 0, and gets the retry loop rather than being handed on as a page."""
     code, _, err, calls, _ = _sides("null-body-detail", script=[ok("null")] * 3)
     assert code == 1
     assert len(calls) == 3, "an unusable body is retried, not accepted: %r" % calls
@@ -381,8 +369,7 @@ LINKED_BODY = """Some description.
 
 
 def test_linked_submodule_prs_are_fetched_and_tagged() -> None:
-    """The whole reason `--body` exists: a round that answers every console
-    finding and stays red on a complaint in another repository."""
+    """The whole reason `--body` exists: a round that answers every console finding and stays red on a complaint in another repository."""
     code, _out, err, calls, written = _sides(
         "linked",
         [*BASE_ARGV, "--body", "body.md"],
@@ -402,9 +389,7 @@ def test_linked_submodule_prs_are_fetched_and_tagged() -> None:
 
 
 def test_a_linked_target_that_cannot_be_read() -> None:
-    """BEST EFFORT, AND LOUD. The gate holds no cross-repo token, so a private
-    submodule's PR is simply unreadable from here; killing the round over it would take fix rounds down with it. The annotation is on STDOUT because an
-    Actions workflow command has to be, and console's own threads survive."""
+    """BEST EFFORT, AND LOUD. The gate holds no cross-repo token, so a private submodule's PR is simply unreadable from here; killing the round over it would take fix rounds down with it. The annotation is on STDOUT because an Actions workflow command has to be, and console's own threads survive."""
     code, out, err, _calls, written = _sides(
         "linked-denied",
         [*BASE_ARGV, "--body", "body.md"],
@@ -424,8 +409,7 @@ def test_a_linked_target_that_cannot_be_read() -> None:
 
 
 def test_the_console_target_is_not_best_effort() -> None:
-    """The mirror of the case above, and the reason the two cannot be one code
-    path: console failing kills the round."""
+    """The mirror of the case above, and the reason the two cannot be one code path: console failing kills the round."""
     code, out, _err, calls, written = _sides(
         "console-required",
         [*BASE_ARGV, "--body", "body.md"],
@@ -439,9 +423,7 @@ def test_the_console_target_is_not_best_effort() -> None:
 
 
 def test_a_body_naming_no_known_submodule() -> None:
-    """`linked-sub-prs.sh` recognises only the four known submodules, and that
-    allowlist is the security boundary: this output decides which repositories
-    the gate will fetch model-visible text from."""
+    """`linked-sub-prs.sh` recognises only the four known submodules, and that allowlist is the security boundary: this output decides which repositories the gate will fetch model-visible text from."""
     for label, body in (
         ("unknown-repo", "- attacker/evil#7\n"),
         ("no-links", "just a description\n"),
@@ -459,9 +441,7 @@ def test_a_body_naming_no_known_submodule() -> None:
 
 
 def test_a_mistyped_body_path_is_silent() -> None:
-    """`[[ -n && -s ]]`, never `require_file`. A typo reads as "no linked PRs",
-    which is the same silence the LINKED SUBMODULE paragraph exists to prevent, reached by a typo rather than by a missing token. Preserved; fixing it
-    changes a live workflow step's contract."""
+    """`[[ -n && -s ]]`, never `require_file`. A typo reads as "no linked PRs", which is the same silence the LINKED SUBMODULE paragraph exists to prevent, reached by a typo rather than by a missing token. Preserved; fixing it changes a live workflow step's contract."""
     code, _, err, calls, _written = _sides(
         "body-typo",
         [*BASE_ARGV, "--body", "nope.md"],
@@ -478,9 +458,7 @@ def test_a_mistyped_body_path_is_silent() -> None:
 
 
 def test_slow_a_failing_fetch_retries_three_times_and_replays_its_stderr() -> None:
-    """Eighteen seconds per side, and the only case that proves the `_gh_probe`
-    loop: two warnings, the final error carrying the last exit code, and gh's
-    captured stderr replayed indented four spaces."""
+    """Eighteen seconds per side, and the only case that proves the `_gh_probe` loop: two warnings, the final error carrying the last exit code, and gh's captured stderr replayed indented four spaces."""
     code, _, err, calls, written = _sides(
         "retry",
         script=[{"rc": 4, "err": "gh: HTTP 401 Bad credentials\n"}] * 3,
@@ -494,8 +472,7 @@ def test_slow_a_failing_fetch_retries_three_times_and_replays_its_stderr() -> No
 
 
 def test_a_transient_failure_recovers_on_the_second_attempt() -> None:
-    """The direction that proves the loop is a RETRY and not a counter: the
-    first attempt fails, the second succeeds, and the run continues."""
+    """The direction that proves the loop is a RETRY and not a counter: the first attempt fails, the second succeeds, and the run continues."""
     code, _, err, calls, written = _sides(
         "retry-recovers",
         script=[{"rc": 1, "err": "flake\n"}, ok(page([thread("T_1")]))],
@@ -515,8 +492,7 @@ def test_a_broken_accumulator_does_not_end_the_run() -> None:
 
     `fetch_target` is only ever called from an `||` list and an `if !`, and bash DISABLES `set -e` for the whole body of a function invoked that way. So a failing accumulator does not fail the run: the array becomes the empty string and the script writes a blank line to `--out` and reports `fetched review thread(s)` with the count missing.
 
-    Reaching it needs a page whose `nodes` is not an array, which `gh_json` happily passes through because it IS valid JSON. Every real page comes from a schema that cannot produce it, so this is defence-in-depth failing quietly rather than a live bug -- and it is the one place in this script where a
-    failure does not fail closed."""
+    Reaching it needs a page whose `nodes` is not an array, which `gh_json` happily passes through because it IS valid JSON. Every real page comes from a schema that cannot produce it, so this is defence-in-depth failing quietly rather than a live bug -- and it is the one place in this script where a failure does not fail closed."""
     broken = json.dumps(
         {
             "data": {

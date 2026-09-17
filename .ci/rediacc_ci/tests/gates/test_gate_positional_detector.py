@@ -45,9 +45,8 @@ CASES: list[tuple[str, bool, str]] = [
     # MUST NOT FLAG -- nothing positional is being taught at all.
     ("rdc repo secret list", False, "no token after the command path"),
     ("rdc machine list --name x", False, "a flag is not a positional"),
-    # MUST NOT FLAG -- a PROSE WORD that ends the clause is not an argument. German splits separable verbs (ausfuehren -> "fuehren Sie ... aus"), so the particle lands AFTER the command and the detector read it as a positional. The
-    # German is correct German; the detector was wrong, and it un-translated real work
-    # to satisfy a parser bug. Dutch and the Nordic languages split verbs the same way.
+    # MUST NOT FLAG -- a PROSE WORD that ends the clause is not an argument. German splits separable verbs (ausfuehren -> "fuehren Sie ... aus"), so the particle lands AFTER the command and the detector read it as a positional. The German is correct German; the detector was wrong, and it un-translated real work to satisfy a parser bug. Dutch and the Nordic languages split verbs the
+    # same way.
     (
         "Falls er bereits angehaengt ist, fuehren Sie rdc config reconcile aus.",
         False,
@@ -103,8 +102,7 @@ def scan_all(gate) -> dict[str, bool]:
 
 
 def test_the_case_table_is_not_empty(gate):
-    """PORT-ONLY anti-vacuity. A table that emptied, or a driver that returned no
-    rows, makes `test_detector_both_ways` report "no mismatches" having compared nothing. Both halves are checked, because either one alone can go quiet.
+    """PORT-ONLY anti-vacuity. A table that emptied, or a driver that returned no rows, makes `test_detector_both_ways` report "no mismatches" having compared nothing. Both halves are checked, because either one alone can go quiet.
     """
     if not CASES:
         gate.log_fail("the case table is EMPTY, so the both-ways case below compares nothing")

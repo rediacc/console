@@ -27,13 +27,11 @@ the file, and a caller asks for the names it wants.
 --------------------------------------------------------------------------
 WHY THE SHELL WINS OVER THE FILE
 --------------------------------------------------------------------------
-This INVERTS `set -a; source`, which lets the file overwrite the shell, and the
-inversion is deliberate rather than incidental.
+This INVERTS `set -a; source`, which lets the file overwrite the shell, and the inversion is deliberate rather than incidental.
 
 `.ci/lib/account.sh:432-440` is the case this was written from, and the specifics were WRONG until 2026-09-09: `account_allocate_ports` computes GATEWAY_PORT into the shell four lines before `source .env`, but GATEWAY_PORT is not a key the file has ever carried (measured against the live `private/account/.env`, and against the template at `.ci/lib/account.sh:206-250` that writes
-it). What the file DOES carry, and therefore did overwrite, is `PORT`, `ROOT_EMAIL`, `REDIACC_ACCOUNT_SERVER` and `WEBAUTHN_ORIGIN`. The
-argument is unchanged and the fix is the same; only the example was fiction, and
-a fiction in the paragraph explaining WHY is the kind that gets quoted onward. Every override this repo ships arrives through the environment -- a workflow `env:` block, a `GITHUB_ENV` append, a
+it). What the file DOES carry, and therefore did overwrite, is `PORT`, `ROOT_EMAIL`, `REDIACC_ACCOUNT_SERVER` and `WEBAUTHN_ORIGIN`. The argument is unchanged and the fix is the same; only the example was fiction, and a fiction in the paragraph explaining WHY is the kind that gets quoted onward. Every override this repo ships arrives through the environment -- a workflow `env:`
+block, a `GITHUB_ENV` append, a
 developer typing `PORT=4900 ./run.sh` -- and file-wins silently discards all of
 them in favour of a value written to disk months earlier. An override that is ignored without a word is worse than one that is refused.
 
@@ -210,8 +208,7 @@ def apply(
 ) -> list[str]:
     """Put the file's keys into `environ` where it does not already carry them.
 
-    Returns the sorted names ASSIGNED. This is the `set -a; source` replacement,
-    minus the execution and minus the file-wins precedence.
+    Returns the sorted names ASSIGNED. This is the `set -a; source` replacement, minus the execution and minus the file-wins precedence.
 
     `names` restricts it to the keys the caller asked for, which is the rdc.sh:246-248 posture generalised: a process that needs two values does not have to take forty-nine.
     """
@@ -262,9 +259,7 @@ def _lines(text: str) -> list[tuple[int, str]]:
     That is worth stating because the first draft did not believe it and added `raw.rstrip("CR")` here as well. The line was DEAD: planting a defect that deleted it left all 36 cases in test_core_env.py green, including two written specifically to catch it. A guard that cannot fail is the shape this repository hunts, so it is gone rather than kept for comfort, and this paragraph is
     what stops it being re-added.
 
-    See `.ci/lib/local-common.sh:815` for what a surviving CR costs and why the bash had to say `tr -d` at all: a carriage return riding on the end of a public key, which looks right in a log and fails every signature check. The
-    bash was reading with `sed -n`, which has no notion of a CRLF file; this
-    reads with a function that does.
+    See `.ci/lib/local-common.sh:815` for what a surviving CR costs and why the bash had to say `tr -d` at all: a carriage return riding on the end of a public key, which looks right in a log and fails every signature check. The bash was reading with `sed -n`, which has no notion of a CRLF file; this reads with a function that does.
     """
     out = []
     for index, raw in enumerate(text.splitlines(), start=1):

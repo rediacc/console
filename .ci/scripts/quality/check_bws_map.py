@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""check:ci-bws-map -- every secret a workflow requests from Bitwarden must be
-one the committed map can resolve, and the map must be fresh.
+"""check:ci-bws-map -- every secret a workflow requests from Bitwarden must be one the committed map can resolve, and the map must be fresh.
 
 THE GATE THIS REPLACES. check-workflow-gates.sh CHECK 2 proves that a reusable workflow reads only secrets its caller passes, by comparing `secrets.X` reads against `secrets:` declarations. It exists because OTLP_CLIENT_CREDENTIALS once shipped EMPTY to every account Worker and nothing caught it. The moment secrets arrive as $GITHUB_ENV injections from bitwarden/sm-action, there is
 no `secrets.X` left to read, CHECK 2's USE_RE matches nothing, and it goes green asserting nothing. This gate is its replacement on the Bitwarden side, and it must be in place BEFORE the first workflow flips.
@@ -128,9 +127,7 @@ ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def parse_requests(yaml_text: str) -> list[tuple[int, str, str]]:
-    """[(line_no, name, env_name)] for every `secrets:` block under a
-    `uses: ./.github/actions/bws-secrets` step. A hand parser on purpose: the shape is fixed and pulling in a YAML dependency for it would add a way for
-    this gate to go stale."""
+    """[(line_no, name, env_name)] for every `secrets:` block under a `uses: ./.github/actions/bws-secrets` step. A hand parser on purpose: the shape is fixed and pulling in a YAML dependency for it would add a way for this gate to go stale."""
     out: list[tuple[int, str, str]] = []
     lines = yaml_text.split("\n")
     i = 0
@@ -187,8 +184,7 @@ def call_sites() -> list[Path]:
 def rename_pairs() -> list[tuple[str, str]]:
     """(old, new) from secret-rename.py's RENAMES, read as data.
 
-    Imported by exec rather than by parsing, because a second copy of the table is a second thing to get wrong -- and this gate's whole subject is two
-    records disagreeing about a name."""
+    Imported by exec rather than by parsing, because a second copy of the table is a second thing to get wrong -- and this gate's whole subject is two records disagreeing about a name."""
     ns: dict = {}
     text = RENAME_TABLE.read_text(encoding="utf-8")
     m = re.search(r"^RENAMES: list\[tuple\[str, str\]\] = \[.*?^\]", text, re.DOTALL | re.MULTILINE)
@@ -610,8 +606,7 @@ def load_no_fetch_jobs(path: Path | None = None) -> dict:
 def load_exemptions(path: Path | None = None) -> tuple[dict, list[str]]:
     """The only escape hatch, and it is re-derived rather than believed.
 
-    `path` is injectable so selftest() can drive every refusal against a fixture
-    instead of against the real allowlist."""
+    `path` is injectable so selftest() can drive every refusal against a fixture instead of against the real allowlist."""
     src = path or EXEMPT
     label = src.relative_to(ROOT) if src.is_relative_to(ROOT) else src
     problems: list[str] = []
@@ -690,8 +685,7 @@ def read_order_problems() -> tuple[list[str], int]:
 
 
 def read_order_in(lines: list[str], label: str) -> tuple[list[str], int]:
-    """The pure half of assertion 13, so the controls can plant a workflow instead of
-    a repo. Returns (problems, reads seen)."""
+    """The pure half of assertion 13, so the controls can plant a workflow instead of a repo. Returns (problems, reads seen)."""
     problems: list[str] = []
     n = 0
     index = job_index(lines)

@@ -23,9 +23,8 @@ the code under test is the code that ships. Then it does the same with the PRE-F
 THE CONTROL'S FIRST BRANCH IS UNEXERCISED ON THIS TREE, and that is worth saying plainly rather than discovering it in CI. `HEAD` no longer contains the buggy increment, so `test_prefix_version_could_not_count_at_all` takes its second arm on every run here, exactly as the twin does. The first arm -- recover the old text, build a harness from it, prove it echoes nothing -- is
 carried faithfully and has never run in this checkout. If it ever fires, it is because somebody reintroduced `((unreplied_count++))` into a commit, which is itself the finding.
 
-ONE DELIBERATE ADDITION over the twin. Where the twin's second arm prints two `INFO` lines and returns having asserted NOTHING, this port asserts the thing those lines assume: that `HEAD` really is free of the buggy increment. A bash test may return
-without a `PASS:` line; a ported test may not (`conftest.py` here refuses a green
-that recorded no control), and inventing a decorative pass to satisfy that refusal would be exactly the vacuity it exists to catch. So the arm makes a real claim.
+ONE DELIBERATE ADDITION over the twin. Where the twin's second arm prints two `INFO` lines and returns having asserted NOTHING, this port asserts the thing those lines assume: that `HEAD` really is free of the buggy increment. A bash test may return without a `PASS:` line; a ported test may not (`conftest.py` here refuses a green that recorded no control), and inventing a
+decorative pass to satisfy that refusal would be exactly the vacuity it exists to catch. So the arm makes a real claim.
 
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Two of its cases read the working tree directly: the extraction reads `.ci/scripts/quality/check-submodule-branches.sh` line by line, and the structural sweep greps every `.sh` under `.ci/scripts/quality/` and `.ci/scripts/security/`. A battery step rewriting one of
 those mid-sweep is a flake that would be blamed on this port. `REAL_TREE_TWIN = True`
@@ -108,8 +107,7 @@ def build_harness(source: str, out: pathlib.Path) -> pathlib.Path:
     parts = [
         "#!/bin/bash",
         "set -euo pipefail",
-        # The counting loop is all we exercise; these stubs stand in for the sourced
-        # common.sh so the harness has no repo dependencies.
+        # The counting loop is all we exercise; these stubs stand in for the sourced common.sh so the harness has no repo dependencies.
         "log_warn() { :; }",
         "log_error() { :; }",
         # gh_json is the third common.sh helper the gate now uses: the fetch was `gh api ... 2>/dev/null || echo "[]"`, which turned an API failure into a PR with no review comments. The stub keeps this harness about the COUNTING loop by passing the call straight through to the shimmed gh, exactly as the real helper does on its first successful attempt.
@@ -125,8 +123,7 @@ def build_harness(source: str, out: pathlib.Path) -> pathlib.Path:
 
 
 def run_harness(script: pathlib.Path, shim: pathlib.Path) -> harness.RunResult:
-    """`run_harness`. The shim goes FIRST on PATH; stderr is discarded by the twin,
-    so callers here read `.out` only."""
+    """`run_harness`. The shim goes FIRST on PATH; stderr is discarded by the twin, so callers here read `.out` only."""
     bash = harness.require_tool("bash", "install bash; the subject IS a bash script")
     return harness.run(
         [bash, os.fspath(script)],
@@ -142,9 +139,7 @@ def gate_source(gate) -> str:
 
 
 def test_extraction_is_not_vacuous(gate):
-    """Anti-vacuity: if the sed ranges stop matching (renamed function, reflowed
-    file), both harnesses would be empty and both would "agree", which would look
-    like a pass. Assert the real thing was actually extracted."""
+    """Anti-vacuity: if the sed ranges stop matching (renamed function, reflowed file), both harnesses would be empty and both would "agree", which would look like a pass. Assert the real thing was actually extracted."""
     with harness.temp_dir() as work:
         built = build_harness(gate_source(gate), work / "new.sh")
         text = built.read_text(encoding="utf-8")
@@ -171,9 +166,7 @@ def test_fixed_version_counts_every_unreplied_comment(gate):
 
 
 def test_prefix_version_could_not_count_at_all(gate):
-    """THE CONTROL. Recover the pre-fix text from git and prove it breaks. If this
-    ever starts returning 2, the bug is gone from git history and this whole test is
-    measuring nothing, so it fails loudly instead."""
+    """THE CONTROL. Recover the pre-fix text from git and prove it breaks. If this ever starts returning 2, the bug is gone from git history and this whole test is measuring nothing, so it fails loudly instead."""
     git = harness.require_tool("git", "install git; the control is recovered from history")
     show = harness.run([git, "-C", os.fspath(paths.repo_root()), "show", "HEAD:" + GATE_REL])
     if show.rc != 0:
@@ -214,8 +207,7 @@ def test_prefix_version_could_not_count_at_all(gate):
 
 
 def test_bash_semantics_are_what_we_think(gate):
-    """The claim underneath the whole fix, asserted directly rather than assumed:
-    `((x++))` at zero is fatal under set -e, and the replacement form is not."""
+    """The claim underneath the whole fix, asserted directly rather than assumed: `((x++))` at zero is fatal under set -e, and the replacement form is not."""
     bash = harness.require_tool("bash", "install bash; the claim is about bash itself")
     before = harness.run([bash, "-c", "set -euo pipefail; w=0; ((w++)); echo reached"])
     after = harness.run([bash, "-c", "set -euo pipefail; w=0; w=$((w + 1)); echo reached"])
@@ -225,8 +217,7 @@ def test_bash_semantics_are_what_we_think(gate):
 
 
 def test_no_standalone_increments_remain(gate):
-    """Structural sweep, so a future edit cannot quietly reintroduce the class into
-    any gate that runs under set -e."""
+    """Structural sweep, so a future edit cannot quietly reintroduce the class into any gate that runs under set -e."""
     root = paths.repo_root()
     files = sorted(
         [

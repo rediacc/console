@@ -1,10 +1,7 @@
-r"""check:ci-env-manifest -- every environment variable this repo reads or supplies,
-classified by WHO SUPPLIES THE VALUE and WHO MAY READ IT.
+r"""check:ci-env-manifest -- every environment variable this repo reads or supplies, classified by WHO SUPPLIES THE VALUE and WHO MAY READ IT.
 
-THE NUMBER IS NOT THE ACCEPTANCE, AND THAT IS THE WHOLE DESIGN. The plan box that
-asked for this file carried a union of 1,014 names; its own design annotation
-re-measured 745, then 721 over tracked files and 777 over everything on disk, and not one of the five component counts reproduced. The 56-name swing was entirely gitignored `.env` files, one of them a single developer's `.env.pre-rename.bak`. A manifest whose size depends on whether a stray backup is present is not a manifest, so no count is written down anywhere in this module or
-in `.ci/config/env-manifest.json`. Every number in the output below is derived on the run that prints it.
+THE NUMBER IS NOT THE ACCEPTANCE, AND THAT IS THE WHOLE DESIGN. The plan box that asked for this file carried a union of 1,014 names; its own design annotation re-measured 745, then 721 over tracked files and 777 over everything on disk, and not one of the five component counts reproduced. The 56-name swing was entirely gitignored `.env` files, one of them a single developer's
+`.env.pre-rename.bak`. A manifest whose size depends on whether a stray backup is present is not a manifest, so no count is written down anywhere in this module or in `.ci/config/env-manifest.json`. Every number in the output below is derived on the run that prints it.
 
 THE CORPUS IS TRACKED FILES ONLY, for the same reason `paths.py` answers from a tracked path set: an untracked file is one machine's opinion, and a gate whose verdict changes when you `cp` something into the tree is not measuring the tree.
 
@@ -544,9 +541,8 @@ def proof_site_findings(suppress, seen, lists):
 def collision_findings(manifest, root, lists):
     """A name dead in one scope and alive in another must name its authority.
 
-    THE MATCH IS WORD-BOUNDED, and it was a plain substring until a plant refused to fire. Repointing DEBUG's authority at a file that has nothing to do with it still passed, because `REDIACC_DEBUG` contains `DEBUG` -- so any file mentioning the REPLACEMENT would have satisfied the check for the retired name. The plant
-    was the only thing that said so; the selftest agreed with the bug, because its
-    fixtures used names that are not substrings of anything.
+    THE MATCH IS WORD-BOUNDED, and it was a plain substring until a plant refused to fire. Repointing DEBUG's authority at a file that has nothing to do with it still passed, because `REDIACC_DEBUG` contains `DEBUG` -- so any file mentioning the REPLACEMENT would have satisfied the check for the retired name. The plant was the only thing that said so; the selftest agreed with the
+    bug, because its fixtures used names that are not substrings of anything.
     """
     findings = []
     tombstones = set(lists[TOMBSTONE_SHARD])

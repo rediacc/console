@@ -286,8 +286,7 @@ def strip_path_suffix(sm_key: str) -> str:
 
 
 class Outputs:
-    """`write_output` (twin :46-53): the pair goes to stdout ALWAYS, and to
-    `$OUTPUT_FILE` as well when `--output` named one.
+    """`write_output` (twin :46-53): the pair goes to stdout ALWAYS, and to `$OUTPUT_FILE` as well when `--output` named one.
 
     THE FILE IS APPENDED TO, never truncated, because the caller's `$GITHUB_OUTPUT` already holds other steps' pairs.
     """

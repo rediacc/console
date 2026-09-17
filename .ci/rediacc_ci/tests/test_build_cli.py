@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/build/build_cli.py` against its twin
-`.ci/scripts/build/build-cli.sh`.
+"""Differential: `.ci/rediacc_ci/build/build_cli.py` against its twin `.ci/scripts/build/build-cli.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
@@ -257,9 +256,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
 
 
 def test_the_fakes_are_actually_reached(tmp_path):
-    """ANTI-VACUITY. Every comparison above is worthless if npm never ran, and
-    this also pins the exact argv and the CWD: the twin builds from the
-    REPOSITORY ROOT, not from `packages/cli`."""
+    """ANTI-VACUITY. Every comparison above is worthless if npm never ran, and this also pins the exact argv and the CWD: the twin builds from the REPOSITORY ROOT, not from `packages/cli`."""
     root = _fixture(tmp_path / "v")
     out = _run(PORT_REL, root)
     assert out["calls"] == [
@@ -274,9 +271,7 @@ def test_the_fakes_are_actually_reached(tmp_path):
 
 
 def test_no_bundle_really_skips_the_bundle(tmp_path):
-    """CONTROL in the other direction: `--no-bundle` must run NO bundle command.
-    A port that bundled unconditionally would satisfy every positive assertion in
-    this file and would double the cost of five CI jobs."""
+    """CONTROL in the other direction: `--no-bundle` must run NO bundle command. A port that bundled unconditionally would satisfy every positive assertion in this file and would double the cost of five CI jobs."""
     root = _fixture(tmp_path / "s")
     out = _run(PORT_REL, root, argv=("--no-bundle",))
     assert not [c for c in out["calls"] if "build:bundle" in c], out["calls"]
@@ -320,8 +315,7 @@ def test_the_delegates_exit_code_is_thrown_away_in_both(tmp_path):
 
 
 def test_verify_only_checks_that_two_paths_exist(tmp_path):
-    """What `--verify` does NOT do, pinned in both, because the step is named
-    "Verifying CLI build output" and a reader assumes more of it.
+    """What `--verify` does NOT do, pinned in both, because the step is named "Verifying CLI build output" and a reader assumes more of it.
 
     An EMPTY `index.js` -- the shape a half-finished build leaves -- passes.
     """

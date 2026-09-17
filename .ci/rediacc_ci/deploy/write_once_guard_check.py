@@ -10,9 +10,7 @@ The guard's behaviours (see `.ci/scripts/lib/release-state-validator.sh`):
 The guard NEVER runs `aws s3 rm` -- orphan cleanup is the nightly housekeeping job's responsibility, so a retried/cancelled release can't lose its binaries.
 
 WHAT IS PORTED AND WHAT DELIBERATELY IS NOT. The HARNESS moves to Python: the temp dir, the fake `aws`, the bundle assembly, the four cases, the PASS/FAIL lines and the exit code. The SUBJECT stays bash and is still driven as bash -- `write_once_guard` is a bash function that is `sed`-extracted out of `upload-to-r2.sh` and sourced beside the real `release-state-validator.sh`. A
-Python reimplementation of the guard would be a second instrument certifying itself, which is the reason `.ci/scripts/test/lib/git-fixture.sh` and
-`mutate-check.sh` were allowlisted rather than ported; here only the wrapper
-around the instrument moves, so the same objection does not apply.
+Python reimplementation of the guard would be a second instrument certifying itself, which is the reason `.ci/scripts/test/lib/git-fixture.sh` and `mutate-check.sh` were allowlisted rather than ported; here only the wrapper around the instrument moves, so the same objection does not apply.
 
 PORT NOTES.
 
@@ -26,12 +24,9 @@ Driven before this was written, because the whole fixture depends on it:
 grandchild (the fake `aws` sees `SENTINEL_EXISTS=true`), and the variable is
 UNSET again in the caller afterwards. Neither is obvious -- POSIX mode makes such assignments persist -- and a port that set them once on the process would leak state from one case into the next. Here they are passed per invocation.
 
-`grep -q ... && log_fail ...` DOES NOT ABORT WHEN THE GREP FAILS, even under `set -e`, because a command that is not the last in an `&&` list is exempt. So a
-clean `aws.log` means the scrub assertion simply does not fire; it is not a
-silent early exit. Ported as a plain `if`.
+`grep -q ... && log_fail ...` DOES NOT ABORT WHEN THE GREP FAILS, even under `set -e`, because a command that is not the last in an `&&` list is exempt. So a clean `aws.log` means the scrub assertion simply does not fire; it is not a silent early exit. Ported as a plain `if`.
 
-THE ONE THING THIS PORT COULD NOT KEEP is the shell's own `mktemp -d` name; both
-sides make their own temp dir, so any output quoting a temp path would differ. Nothing in the twin's output quotes one, which is why the differential can compare bytes.
+THE ONE THING THIS PORT COULD NOT KEEP is the shell's own `mktemp -d` name; both sides make their own temp dir, so any output quoting a temp path would differ. Nothing in the twin's output quotes one, which is why the differential can compare bytes.
 
 Exit: 0 all four cases pass, 1 the first case that does not.
 """
@@ -185,8 +180,7 @@ class Harness:
         ).returncode
 
 
-# PREFIX_KEYCOUNT drives BOTH the mock's list-objects-v2 responses; the guard
-# only calls rsv_binary_count when the sentinel exists, so it doubles as the "binary count" for the sealed cases below.
+# PREFIX_KEYCOUNT drives BOTH the mock's list-objects-v2 responses; the guard only calls rsv_binary_count when the sentinel exists, so it doubles as the "binary count" for the sealed cases below.
 
 
 def test_sealed_with_binaries_skips(h: Harness) -> None:

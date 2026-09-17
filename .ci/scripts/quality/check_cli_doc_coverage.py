@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported cli-doc-coverage gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.cli_doc_coverage`.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.cli_doc_coverage`.
 
 CUT OVER FROM BASH 2026-09-07 (W7 P4), on the condition this docstring used to be waiting for. Measured that day:
 
@@ -22,8 +21,7 @@ WHY AN ENTRY POINT AT ALL, rather than registering the module. Both reasons are 
      wrong: `check:ci-parity`'s tokenizer cannot read `-m`, so it resolves the
      leaves to `[python3]`. The registered command is the bare path to this file.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-cli-doc-coverage.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-cli-doc-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
 
 ---- gate ---- step: CLI docs stay in sync with their scripts' real flags
      # The EXISTING step name, character for character, not a tidier one.

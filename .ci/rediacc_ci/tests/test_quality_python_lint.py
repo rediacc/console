@@ -234,8 +234,7 @@ def test_the_pin_the_twin_compares_against_matches_the_pins_file():
 
     `toolchain_load` exports the pins-file value and the next line overwrites it
     with `RUFF_VERSION="0.16.1"`, which is what `toolchain_pin_for ruff` then
-    reads. The two agree today; this asserts that, so the day they diverge the
-    divergence is a red test rather than a gate silently demanding an old version.
+    reads. The two agree today; this asserts that, so the day they diverge the divergence is a red test rather than a gate silently demanding an old version.
     """
     pins = (pathlib.Path(diff.repo()) / ".devcontainer" / "toolchain.env").read_text(
         encoding="utf-8"

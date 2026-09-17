@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/private/compose_healthcheck_smoke_test.py`
-against its twin `.ci/scripts/private/compose-healthcheck-smoke-test.sh`.
+"""Differential: `.ci/rediacc_ci/private/compose_healthcheck_smoke_test.py` against its twin `.ci/scripts/private/compose-healthcheck-smoke-test.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
@@ -538,9 +537,7 @@ def test_port_and_twin_agree(tmp_path, binder_kw, run_kw):
 
 
 def test_every_external_is_reached_in_the_same_order(tmp_path):
-    """ANTI-VACUITY, and the strongest claim in the file. Every comparison above
-    is worthless if the orchestration never happened, and a port that printed the same log lines while talking to nothing would satisfy a stdout-only
-    comparison exactly."""
+    """ANTI-VACUITY, and the strongest claim in the file. Every comparison above is worthless if the orchestration never happened, and a port that printed the same log lines while talking to nothing would satisfy a stdout-only comparison exactly."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     out = _run(PORT_REL, root, tmp_path, binder)
@@ -581,8 +578,7 @@ def test_every_external_is_reached_in_the_same_order(tmp_path):
 
 
 def test_the_four_remote_programs_survive_as_single_arguments(tmp_path):
-    """THE CONTRACT NO STREAM CAN SHOW. Each remote program is multi-line shell
-    carrying quotes, `$` and a pipe, and each must reach ssh as ONE argument after five fixed options. A port that reflowed one line of it, or let the LOCAL shell expand `$sock`, would print exactly the same transcript and run a different program on the VM. Compared character for character, from both
+    """THE CONTRACT NO STREAM CAN SHOW. Each remote program is multi-line shell carrying quotes, `$` and a pipe, and each must reach ssh as ONE argument after five fixed options. A port that reflowed one line of it, or let the LOCAL shell expand `$sock`, would print exactly the same transcript and run a different program on the VM. Compared character for character, from both
     subjects, on the arm where all four are sent."""
     root = _fixture(tmp_path)
     binder = _binder(
@@ -623,8 +619,7 @@ def test_the_four_remote_programs_survive_as_single_arguments(tmp_path):
 
 
 def test_the_healthy_run_is_not_refused(tmp_path):
-    """THE NEGATIVE CONTROL. A smoke test with only positive controls will
-    happily fail a deployment where nothing is wrong."""
+    """THE NEGATIVE CONTROL. A smoke test with only positive controls will happily fail a deployment where nothing is wrong."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -636,9 +631,7 @@ def test_the_healthy_run_is_not_refused(tmp_path):
 
 
 def test_a_container_that_never_converges_is_the_failure_this_exists_for(tmp_path):
-    """THE POSITIVE CONTROL, and the single assertion whose failure would mean
-    the smoke test had become vacuous: a `db` that stays `starting` for the whole
-    window must exit 1, say so, and dump diagnostics. Both subjects."""
+    """THE POSITIVE CONTROL, and the single assertion whose failure would mean the smoke test had become vacuous: a `db` that stays `starting` for the whole window must exit 1, say so, and dump diagnostics. Both subjects."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, replies=_replies(poll=[("starting|7\n", "", 0)]))
     for subject in (TWIN_REL, PORT_REL):
@@ -660,9 +653,7 @@ def test_a_container_that_never_converges_is_the_failure_this_exists_for(tmp_pat
 
 
 def test_the_app_assertion_is_a_second_independent_verdict(tmp_path):
-    """`db` healthy and `app` not running is a DIFFERENT regression class from
-    the healthcheck itself, and the twin reports it with no diagnostic dump at all. A port that folded the two into one check would still exit 1 here and
-    would have lost the distinction."""
+    """`db` healthy and `app` not running is a DIFFERENT regression class from the healthcheck itself, and the twin reports it with no diagnostic dump at all. A port that folded the two into one check would still exit 1 here and would have lost the distinction."""
     root = _fixture(tmp_path)
     binder = _binder(
         tmp_path, replies=_replies(poll=[("healthy|0\n", "", 0)], app=[("exited\n", "", 0)])
@@ -678,8 +669,7 @@ def test_the_app_assertion_is_a_second_independent_verdict(tmp_path):
 def test_the_exit_trap_runs_on_every_path_including_the_happy_one(tmp_path):
     """`trap cleanup EXIT` plus one hand-called pre-clean. Four `rdc repo
     down`/`delete` calls and TWO "Cleanup (best-effort)" lines on a healthy run;
-    two calls and one line when the run dies before the pre-clean. A port that cleaned up only on failure would leave a 2 GB repo on the VM after every
-    green run."""
+    two calls and one line when the run dies before the pre-clean. A port that cleaned up only on failure would leave a 2 GB repo on the VM after every green run."""
     root = _fixture(tmp_path)
 
     binder = _binder(tmp_path)
@@ -699,8 +689,7 @@ def test_the_exit_trap_runs_on_every_path_including_the_happy_one(tmp_path):
 def test_the_environment_block_dies_before_the_trap_is_installed(tmp_path):
     """ORDERING THAT ONLY THE CALL LOG CAN SHOW. `VM_WORKERS="   "` collapses to
     an empty array and `${WORKER_IDS[0]}` is a `set -u` violation, and it happens
-    ABOVE `trap cleanup EXIT`, so NOTHING is cleaned up and no `rdc` runs at all. A port that installed its trap at the top of `main` would run two pointless
-    `rdc` calls against a machine it never registered."""
+    ABOVE `trap cleanup EXIT`, so NOTHING is cleaned up and no `rdc` runs at all. A port that installed its trap at the top of `main` would run two pointless `rdc` calls against a machine it never registered."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -789,9 +778,7 @@ def test_an_invalid_timeout_token_does_not_stop_the_run_where_it_should(tmp_path
 
 
 def test_the_poll_fallback_is_appended_not_substituted(tmp_path):
-    """`$(_ssh ... 2>/dev/null || echo "ssh-error|")` captures the whole AND-OR
-    list, so an ssh that PRINTS and then FAILS contributes both. The resulting two-line state splits into `starting` and `1\\nssh-error|`, and the streak the transcript reports therefore contains a newline. Ugly, real, and the
-    exact shape a port that used the fallback as an else-branch would miss."""
+    """`$(_ssh ... 2>/dev/null || echo "ssh-error|")` captures the whole AND-OR list, so an ssh that PRINTS and then FAILS contributes both. The resulting two-line state splits into `starting` and `1\\nssh-error|`, and the streak the transcript reports therefore contains a newline. Ugly, real, and the exact shape a port that used the fallback as an else-branch would miss."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, replies=_replies(poll=[("starting|1\n", "", 4)]))
     for subject in (TWIN_REL, PORT_REL):
@@ -801,8 +788,7 @@ def test_the_poll_fallback_is_appended_not_substituted(tmp_path):
 
 
 def test_a_missing_ssh_is_silently_indistinguishable_from_a_failing_one(tmp_path):
-    """Bash performs `2>/dev/null` BEFORE the command lookup fails, so during
-    POLLING `command not found` is discarded along with everything else ssh would have said, and the `||` arm reports `ssh-error`. Nothing in the transcript says the binary was missing.
+    """Bash performs `2>/dev/null` BEFORE the command lookup fails, so during POLLING `command not found` is discarded along with everything else ssh would have said, and the `||` arm reports `ssh-error`. Nothing in the transcript says the binary was missing.
 
     THE DIAGNOSTIC DUMP HAS NO SUCH REDIRECTION, so there the same missing binary IS reported, twice. That asymmetry is the assertion: five silent lookups followed by two loud ones. Counting rather than testing for absence is deliberate -- a bare `not in` over the whole transcript was the first draft, and it failed on the two lines it should have been counting.
     """
@@ -826,9 +812,7 @@ def test_a_missing_ssh_is_silently_indistinguishable_from_a_failing_one(tmp_path
 
 
 def test_the_log_glyph_is_doubled_on_both_success_lines(tmp_path):
-    """A COSMETIC DEFECT IN THE TWIN, PINNED RATHER THAN FIXED. `log_info`
-    already prefixes U+2713, and both call sites pass a second one in the message, so the transcript reads `<check> <check> db reached healthy`. A
-    port that tidied it would be nicer and would not be the same script."""
+    """A COSMETIC DEFECT IN THE TWIN, PINNED RATHER THAN FIXED. `log_info` already prefixes U+2713, and both call sites pass a second one in the message, so the transcript reads `<check> <check> db reached healthy`. A port that tidied it would be nicer and would not be the same script."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -838,9 +822,7 @@ def test_the_log_glyph_is_doubled_on_both_success_lines(tmp_path):
 
 
 def test_only_the_config_ssh_set_stdout_is_discarded(tmp_path):
-    """`>/dev/null` appears exactly once, on `rdc config ssh set`. Every other
-    `rdc` call's stdout reaches the caller, and the two cleanup calls have their STDERR discarded instead. Three different redirection shapes in one script, and a port that used one shape everywhere would look identical on the happy
-    path and hide a credential error on the first call."""
+    """`>/dev/null` appears exactly once, on `rdc config ssh set`. Every other `rdc` call's stdout reaches the caller, and the two cleanup calls have their STDERR discarded instead. Three different redirection shapes in one script, and a port that used one shape everywhere would look identical on the happy path and hide a credential error on the first call."""
     root = _fixture(tmp_path)
     binder = _binder(
         tmp_path,
@@ -860,8 +842,7 @@ def test_only_the_config_ssh_set_stdout_is_discarded(tmp_path):
 
 
 def test_the_mask_does_not_hide_the_message(tmp_path):
-    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix
-    on both sides; if it were greedier it would hide real divergences and every
+    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix on both sides; if it were greedier it would hide real divergences and every
     case above would pass for the wrong reason. And if the two prefixes were
     already equal the mask would be unnecessary, so that is asserted too."""
     sample = "/a/b/twin.sh: line 38: HOME: unbound variable\nkept: line noise\n"

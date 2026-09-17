@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.build.canonicalise_gpg_key` against its twin
-`.ci/scripts/build/canonicalise-gpg-key.sh`.
+"""Differential: `rediacc_ci.build.canonicalise_gpg_key` against its twin `.ci/scripts/build/canonicalise-gpg-key.sh`.
 
 REAL GPG, NEVER REIMPLEMENTED, on both sides -- same argument as `rediacc_ci.quality.release_key_canonical`'s own header: a Python OpenPGP library would answer a different question than "what does the real gpg binary do to these bytes", and the whole point of this module is that question. One throwaway RSA key (module-scoped: key generation is the slow part, ~2-3s, and nothing here
 needs more than one) is generated with `%no-protection` OFF, i.e. genuinely passphrase-protected, because that is the shape the twin's own comment says it is designed for (`PASSPHRASE`, `--pinentry-mode loopback`).
@@ -99,8 +98,7 @@ def real_key(tmp_path_factory: pytest.TempPathFactory) -> str:
 
 
 def _weld(armored: str) -> str:
-    """Join armor lines 5 and 6 (1-indexed) without a newline, the exact welding
-    the twin's own header describes: two Bitwarden halves concatenated raw."""
+    """Join armor lines 5 and 6 (1-indexed) without a newline, the exact welding the twin's own header describes: two Bitwarden halves concatenated raw."""
     lines = armored.split("\n")
     return "\n".join([*lines[:4], lines[4] + lines[5], *lines[6:]])
 
@@ -174,9 +172,7 @@ def test_empty_file(tmp_path: pathlib.Path) -> None:
 
 
 def test_gpg_not_installed(tmp_path: pathlib.Path) -> None:
-    """PATH carries `bash`/`python3` (symlinked in, so the RUNNER can still be
-    found) but nothing else -- deliberately not `/usr/bin` wholesale, which
-    would put the real `gpg` right back on PATH and defeat the test."""
+    """PATH carries `bash`/`python3` (symlinked in, so the RUNNER can still be found) but nothing else -- deliberately not `/usr/bin` wholesale, which would put the real `gpg` right back on PATH and defeat the test."""
     key = tmp_path / "some.asc"
     key.write_text("not a real key but non-empty\n", encoding="utf-8")
     bin_dir = tmp_path / "bin-without-gpg"
@@ -300,8 +296,7 @@ def test_welded_key_is_repaired(tmp_path: pathlib.Path, real_key: str) -> None:
 
 def test_planted_defect_is_caught() -> None:
     """ANTI-VACUITY. Flip the repair boundary from `> 64` to `>= 64` (an
-    off-by-one on the exact column RFC 4880 wraps at) and confirm the differential rejects it on the CLEAN-key case, whose longest line sits exactly on that boundary. Driven red, then the source is restored
-    byte-identical and re-verified green."""
+    off-by-one on the exact column RFC 4880 wraps at) and confirm the differential rejects it on the CLEAN-key case, whose longest line sits exactly on that boundary. Driven red, then the source is restored byte-identical and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
         "repaired = _max_body_line_length(key_file) > 64",

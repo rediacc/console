@@ -145,8 +145,7 @@ def test_the_planted_control_entry_still_fires_against_the_real_lock(
 ) -> None:
     """CONTROL 1's plant, run against the REAL lock and the REAL package.json.
 
-    This is the control the gate itself runs on every invocation; asserting it
-    here means a change to either real file that made the plant stop firing is a test failure rather than a gate that quietly cannot detect its own defect.
+    This is the control the gate itself runs on every invocation; asserting it here means a change to either real file that made the plant stop firing is a test failure rather than a gate that quietly cannot detect its own defect.
     """
     root = paths.repo_root()
     entries = json.loads((root / gi.LOCK_REL).read_text(encoding="utf-8"))

@@ -1,7 +1,6 @@
 """Block a BLANKET `git add` -- `-A`/`--all` with no pathspec, a lone `.`, or `:/`.
 
-WHY. This checkout is routinely shared by several live sessions, so "stage everything" does not mean "stage my work", it means "stage whatever every other session happens to have uncommitted right now". The tree is the shared
-surface; the index is not a private scratchpad.
+WHY. This checkout is routinely shared by several live sessions, so "stage everything" does not mean "stage this session's work", it means "stage whatever every other session happens to have uncommitted right now". The tree is the shared surface; the index is not a private scratchpad.
 
 Found live, twice, and the second one is why this exists as a HOOK rather than a paragraph:
   - docs/agent-reference/TRAPS.md, "A blanket `git add -A` sweep imports
@@ -47,9 +46,7 @@ GIT_ADD = hookio.rx(
 # What counts as "nothing followed it". End of line, another command, OR a REDIRECTION: `git add -A > /dev/null` and `git add -A 2>&1` stage the entire tree exactly like the bare form, and an earlier version of this guard let both through because `>` was not in the terminator set. Caught in review of PR #566 and confirmed by running the guard: all three shapes exited 0.
 END = hookio.rx(r"[{S}]*($|[;&|<>]|[0-9]*>)")
 
-# A trailing `--` with NO pathspec after it is also blanket. git treats `git add -A --` as no restriction at all, so the escape this guard advertises
-# (name a pathspec) must actually contain one; an empty pathspec list is the
-# bare form wearing the escape's clothes.
+# A trailing `--` with NO pathspec after it is also blanket. git treats `git add -A --` as no restriction at all, so the escape this guard advertises (name a pathspec) must actually contain one; an empty pathspec list is the bare form wearing the escape's clothes.
 BARE_DDASH = hookio.rx(r"([{S}]+--[{S}]*)?")
 
 BLANKET_ALL = GIT_ADD + r"(-A|--all)" + BARE_DDASH + END
@@ -116,8 +113,7 @@ def run(ev):
     # OUTSIDE THE PROJECT TREE, not merely a different toplevel. A SUBMODULE is a different toplevel and is emphatically not foreign: private/account is shared, frozen, and full of other people's work, and a `git -C private/account add -A` is the exact sweep this guard exists to refuse. Standing down on "different toplevel" alone allowed it -- caught by asking, before shipping,
     # which repos the new predicate had just stopped protecting.
     #
-    # Empty target means "this root, or unresolvable", so the guard keeps guarding by
-    # default; a resolvable target under the project directory keeps guarding too.
+    # Empty target means "this root, or unresolvable", so the guard keeps guarding by default; a resolvable target under the project directory keeps guarding too.
     _target = shellscan.target_root(scan, shellscan.repo_root_env())
     if _target != "" and not _is_inside(_target, shellscan.repo_root_env()):
         return hookio.ALLOW

@@ -185,8 +185,7 @@ def test_skip_mode_without_a_summary_file_still_exits_zero() -> None:
 
 
 def test_unknown_mode_refuses_with_exit_two() -> None:
-    """The ONLY place a typo'd mode string is ever reported. The step `if:`
-    treats any unrecognised value as "run", which is fail-closed and silent."""
+    """The ONLY place a typo'd mode string is ever reported. The step `if:` treats any unrecognised value as "run", which is fail-closed and silent."""
     old, new = run_both(["no-media-quality", "check:ci-i18n-media"], mode="Hard")
     assert old == (
         2,
@@ -197,8 +196,7 @@ def test_unknown_mode_refuses_with_exit_two() -> None:
 
 
 def test_zero_gate_names_is_a_refusal_not_a_clean_run() -> None:
-    """The script's own anti-vacuity rule: one argument is a label with nothing
-    behind it, and an announcer with nothing to announce is miswired."""
+    """The script's own anti-vacuity rule: one argument is a label with nothing behind it, and an announcer with nothing to announce is miswired."""
     old, new = run_both(["no-media-quality"], mode="skip")
     assert old[0] == 2
     assert old[1] == ""
@@ -214,9 +212,7 @@ def test_no_arguments_at_all_is_the_same_refusal() -> None:
 
 
 def test_the_usage_refusal_outranks_an_unknown_mode() -> None:
-    """Order matters and is easy to get wrong: the twin checks `$#` BEFORE it
-    validates the mode, so a one-argument call under a bogus mode reports the
-    usage error, not the mode error."""
+    """Order matters and is easy to get wrong: the twin checks `$#` BEFORE it validates the mode, so a one-argument call under a bogus mode reports the usage error, not the mode error."""
     old, new = run_both(["no-media-quality"], mode="nonsense")
     assert old[0] == 2
     assert old[2].startswith("usage: GATE_SKIP_MODE=hard|skip")
@@ -225,9 +221,7 @@ def test_the_usage_refusal_outranks_an_unknown_mode() -> None:
 
 
 def test_gate_names_with_spaces_join_the_way_dollar_star_does() -> None:
-    """`$*` joins with the first character of IFS, a plain space, and the twin
-    never re-quotes the elements. A gate name that itself contains a space is therefore indistinguishable from two gates in the printed line, on BOTH sides -- reproduced rather than corrected, because the announcement text is
-    what the bash gate test greps."""
+    """`$*` joins with the first character of IFS, a plain space, and the twin never re-quotes the elements. A gate name that itself contains a space is therefore indistinguishable from two gates in the printed line, on BOTH sides -- reproduced rather than corrected, because the announcement text is what the bash gate test greps."""
     old, new = run_both(["lbl", "a b", "c"], mode="skip")
     assert old[0] == 0
     assert "removed 2 gate(s) from this job: a b c\n" in old[1]

@@ -1,59 +1,32 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/private/concurrent-fork-isolation-test.sh`.
 
-Reproduces the renet#60 race (and its renet#59 prerequisite) on a worker VM
-provisioned by `renet ops up`, then rules on four things: that `rdc repo up` of
-a fork of a RUNNING parent exits 0, that the two postgres listeners are distinct
-`127.0.x.x:5432` and never `0.0.0.0:5432`, that no per-network docker daemon
-owns more than one compose project, and that `repo fork --checkpoint` restores
-process state in the fork while the parent keeps running (console#440).
+Reproduces the renet#60 race (and its renet#59 prerequisite) on a worker VM provisioned by `renet ops up`, then rules on four things: that `rdc repo up` of a fork of a RUNNING parent exits 0, that the two postgres listeners are distinct `127.0.x.x:5432` and never `0.0.0.0:5432`, that no per-network docker daemon owns more than one compose project, and that `repo fork --checkpoint`
+restores process state in the fork while the parent keeps running (console#440).
 
 THE BASH TWIN REMAINS THE ONLY CALL SITE, AND IT IS NOT A REGISTERED GATE.
-Nothing in `package.json`, `scripts/ci-runner/manifest.ts` or any workflow
-invokes either subject; the twin is a hand-run private reproduction script
-(`private/renet/docs/CRIU_STATUS.md:137` is the only reference to it). NEITHER
-FILE CARRIES A `---- gate ----` HEADER, and this one must not grow one: that
-header is what `scripts/gate-bind.ts` reads, and a second owner for an id would
-break the parity meta-gates. Cutover is a separate, later, driver-only step.
+Nothing in `package.json`, `scripts/ci-runner/manifest.ts` or any workflow invokes either subject; the twin is a hand-run private reproduction script (`private/renet/docs/CRIU_STATUS.md:137` is the only reference to it). NEITHER FILE CARRIES A `---- gate ----` HEADER, and this one must not grow one: that header is what `scripts/gate-bind.ts` reads, and a second owner for an id
+would break the parity meta-gates. Cutover is a separate, later, driver-only step.
 
 -----------------------------------------------------------------------------
 WHY THIS IS PORTABLE AT ALL, GIVEN IT NEEDS A VM
 -----------------------------------------------------------------------------
-Everything this script knows about the world arrives as the STDOUT of a child
-process: `ssh` (eight distinct remote command strings), `rdc` (23 invocations on
-a passing run, twelve of them the two cleanups), and the small pipeline tools it
-composes them with. There is no socket it opens itself, no file under `/proc` it
+Everything this script knows about the world arrives as the STDOUT of a child process: `ssh` (eight distinct remote command strings), `rdc` (23 invocations on a passing run, twelve of them the two cleanups), and the small pipeline tools it composes them with. There is no socket it opens itself, no file under `/proc` it
 reads, and no library it links. The VM decides what the fakes would have said;
-it does not decide what the script does with the answer. So the differential
-drives BOTH subjects through the same
-recording fakes on a scratch PATH, and what it pins is the whole of the script's
-own contribution: argument parsing, the argv of every child, the order they run
-in, the four verdicts, the message bytes and the exit code.
+it does not decide what the script does with the answer. So the differential drives BOTH subjects through the same recording fakes on a scratch PATH, and what it pins is the whole of the script's own contribution: argument parsing, the argv of every child, the order they run in, the four verdicts, the message bytes and the exit code.
 
-WHAT THAT DELIBERATELY DOES NOT PROVE: that a real `ss -Hltnp4` prints what the
-fixture prints, or that CRIU restores anything. Neither subject can prove that
-either; only a live run can, and a live run is what the twin is for.
+WHAT THAT DELIBERATELY DOES NOT PROVE: that a real `ss -Hltnp4` prints what the fixture prints, or that CRIU restores anything. Neither subject can prove that either; only a live run can, and a live run is what the twin is for.
 
 -----------------------------------------------------------------------------
 EVERY EXTERNAL IS SHELLED OUT TO, INCLUDING THE ONES PYTHON COULD DO ITSELF
 -----------------------------------------------------------------------------
-`cat` writes the two sidecar files, `sort -u` deduplicates the bind list,
-`head -1` takes a first line, `mktemp`/`rm` manage two temp paths, `sleep` waits,
-`grep`/`tail`/`tee` inspect one log. Every one of those has a one-line Python
-equivalent, and none of them is used, because THE RECORDED CALL LOG IS THE
-COMPARISON. A port that wrote the compose file with `pathlib.write_text` would
-produce byte-identical output on both streams and a different process tree, and
-the differential exists precisely to notice that.
+`cat` writes the two sidecar files, `sort -u` deduplicates the bind list, `head -1` takes a first line, `mktemp`/`rm` manage two temp paths, `sleep` waits, `grep`/`tail`/`tee` inspect one log. Every one of those has a one-line Python equivalent, and none of them is used, because THE RECORDED CALL LOG IS THE COMPARISON. A port that wrote the compose file with `pathlib.write_text`
+would produce byte-identical output on both streams and a different process tree, and the differential exists precisely to notice that.
 
 THE ONE EXTERNAL THE PORT DOES NOT MAKE: `uname`. The twin sources
 `.ci/scripts/lib/common.sh`, whose line 509 runs `CI_OS="$(detect_os)"` at
-source time; that is the LIBRARY probing its host, not this script doing
-anything, it writes nothing to either stream, and no branch here reads the
-result. `rediacc_ci.log` replaces the whole of common.sh's logging without it.
-The differential therefore keeps a REAL `uname` on the scratch PATH rather than
-a recording fake, so the twin's two probes leave no trace to diverge on. Named
-here because an unrecorded external is exactly the kind of thing that should be
-stated rather than discovered.
+source time; that is the LIBRARY probing its host, not this script doing anything, it writes nothing to either stream, and no branch here reads the result. `rediacc_ci.log` replaces the whole of common.sh's logging without it. The differential therefore keeps a REAL `uname` on the scratch PATH rather than a recording fake, so the twin's two probes leave no trace to diverge on.
+Named here because an unrecorded external is exactly the kind of thing that should be stated rather than discovered.
 
 -----------------------------------------------------------------------------
 THREE PROPERTIES OF THE TWIN THAT A NAIVE PORT LOSES, ALL PINNED
@@ -79,9 +52,7 @@ THREE PROPERTIES OF THE TWIN THAT A NAIVE PORT LOSES, ALL PINNED
 -----------------------------------------------------------------------------
 BASH ARITHMETIC IS AN OUTPUT FORMAT HERE, NOT AN IMPLEMENTATION DETAIL
 -----------------------------------------------------------------------------
-Five comparisons (`-gt`, `-ge`, `-lt`, `-le`) take a string that came off a
-remote `docker logs | grep -o | cut`, so what bash DOES with a non-numeric one
-is observable. Driven against bash 5 on 2026-09-14, and `_arith` reproduces each:
+Five comparisons (`-gt`, `-ge`, `-lt`, `-le`) take a string that came off a remote `docker logs | grep -o | cut`, so what bash DOES with a non-numeric one is observable. Driven against bash 5 on 2026-09-14, and `_arith` reproduces each:
 
     ""      -> 0            "  7  " -> 7        "010"  -> 8 (octal)
     "0x1f"  -> 31           "+5"    -> 5        "-3"   -> -3
@@ -92,11 +63,8 @@ is observable. Driven against bash 5 on 2026-09-14, and `_arith` reproduces each
     "08"    -> `[[: 08: value too great for base (error token is "08")`,
                likewise FALSE
 
-`_arith` does NOT implement operators, `base#digits`, or arrays. Nothing in this
-script can produce one: every operand is either a literal from the source or a
-single field of remote output. A shape it cannot classify is reported as the
-same syntax error bash reports for `1 2`, and the differential drives only the
-eight shapes above, which is the honest boundary rather than a silent one.
+`_arith` does NOT implement operators, `base#digits`, or arrays. Nothing in this script can produce one: every operand is either a literal from the source or a single field of remote output. A shape it cannot classify is reported as the same syntax error bash reports for `1 2`, and the differential drives only the eight shapes above, which is the honest boundary rather than a
+silent one.
 
 -----------------------------------------------------------------------------
 TWO DEFECTS IN THE TWIN, REPRODUCED RATHER THAN REPAIRED
@@ -146,8 +114,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import bash_dialect
 
-# The repo and tag names, verbatim. `FORK_REPO`/`CP_FORK_REPO` are the composed
-# `name:tag` refs the CLI takes as a positional.
+# The repo and tag names, verbatim. `FORK_REPO`/`CP_FORK_REPO` are the composed `name:tag` refs the CLI takes as a positional.
 PARENT_REPO = "bindrace-parent"
 FORK_TAG = "child"
 FORK_REPO = "%s:%s" % (PARENT_REPO, FORK_TAG)
@@ -159,11 +126,7 @@ DEFAULT_NET_BASE = "192.168.111"
 DEFAULT_WORKERS = "11"
 DEFAULT_MACHINE = "worker-1"
 
-# EM DASHES ARE SPELLED AS ESCAPES, NOT AS THE CHARACTER. The twin's messages
-# carry literal U+2014; `check:ci-em-dash-surfaces` scans
-# `.ci/rediacc_ci/**/*.py` against a shrink-only baseline and would be right to
-# call a literal one here a new finding. The escape emits the identical byte
-# sequence, which is what the differential compares.
+# EM DASHES ARE SPELLED AS ESCAPES, NOT AS THE CHARACTER. The twin's messages carry literal U+2014; `check:ci-em-dash-surfaces` scans `.ci/rediacc_ci/**/*.py` against a shrink-only baseline and would be right to call a literal one here a new finding. The escape emits the identical byte sequence, which is what the differential compares.
 DASH = "\u2014"
 TICK = "\u2713"
 
@@ -174,14 +137,11 @@ LOOPBACK_BIND = re.compile(r"127\.0\.[0-9]+\.[0-9]+:5432")
 # The two wildcard spellings the bind-rewrite contract forbids (services.md:101).
 WILDCARD_BINDS = ("0.0.0.0:5432", "*:5432")
 
-# The counter must reach this before the checkpoint fork is taken, so that a
-# freshly started container cannot be mistaken for a restored one.
+# The counter must reach this before the checkpoint fork is taken, so that a freshly started container cannot be mistaken for a restored one.
 COUNTER_TARGET = 15
 COUNTER_ATTEMPTS = 30
 
-# The two sidecar files, byte for byte as the quoted heredocs write them. BOTH
-# HEREDOCS ARE QUOTED (`<<'COMPOSE'`, `<<'REDIACCFILE'`), so `$$` and `$i` reach
-# the file UNEXPANDED and must not be interpolated here either.
+# The two sidecar files, byte for byte as the quoted heredocs write them. BOTH HEREDOCS ARE QUOTED (`<<'COMPOSE'`, `<<'REDIACCFILE'`), so `$$` and `$i` reach the file UNEXPANDED and must not be interpolated here either.
 COMPOSE_YML = """services:
   counter:
     image: alpine:3.20
@@ -201,19 +161,14 @@ down() {
 """
 
 # ---------------------------------------------------------------------------
-# The eight remote command strings, exactly as bash's double-quote processing
-# hands them to `ssh` as ONE argument. Recovered on 2026-09-14 by running the
-# twin under a recording `ssh` and printing the repr of argv[-1], not by
-# re-typing them: `\\$` and `\\"` inside the twin's outer quotes collapse, and a
-# hand transcription that got one wrong would send a subtly different script to
-# a real VM.
+# The eight remote command strings, exactly as bash's double-quote processing hands them to `ssh` as ONE argument. Recovered on 2026-09-14 by running the twin under a recording `ssh` and printing the repr of argv[-1], not by re-typing them: `\\$` and `\\"` inside the twin's outer quotes collapse, and a hand transcription that got one wrong would send a subtly different script to a
+# real VM.
 # ---------------------------------------------------------------------------
 
 # Phase 3. `awk` runs REMOTELY, inside this string; it is not a local external.
 BINDS_CMD = "ss -Hltnp4 'sport = :5432' 2>/dev/null | awk '{print $4}'"
 
-# Phase 4. NOTE THE LEADING AND TRAILING NEWLINES: the twin opens the argument
-# on the line after `_ssh "` and closes it on its own line.
+# Phase 4. NOTE THE LEADING AND TRAILING NEWLINES: the twin opens the argument on the line after `_ssh "` and closes it on its own line.
 PROJECTS_CMD = """
 sudo bash -c '
 set -e
@@ -233,10 +188,7 @@ echo 0
 
 # Phase 5. Every per-network socket that runs a counter container.
 #
-# The `[ -n "$(... | grep ...)" ]` is the twin's pipefail/`grep -q` conversion,
-# carried here VERBATIM because the differential compares the exact string both
-# sides hand to ssh. See the twin's comment above `counter_sockets()` for why the
-# site was converted even though the remote shell sets no pipefail.
+# The `[ -n "$(... | grep ...)" ]` is the twin's pipefail/`grep -q` conversion, carried here VERBATIM because the differential compares the exact string both sides hand to ssh. See the twin's comment above `counter_sockets()` for why the site was converted even though the remote shell sets no pipefail.
 COUNTER_SOCKETS_CMD = """sudo bash -c '
       for sock in /var/run/rediacc/docker-*.sock; do
         [ -S "$sock" ] || continue
@@ -269,10 +221,7 @@ DIAG_DB_LOGS = """sudo bash -c '
 def counter_value_cmd(sock: str) -> str:
     """`counter_value <socket>`, with `$1` expanded by the LOCAL shell.
 
-    The socket path is interpolated into the single-quoted remote script by the
-    caller's own shell, so an odd socket name would break the remote quoting on
-    both sides identically. Exported so the differential can build the expected
-    argv without reading this module's private state.
+    The socket path is interpolated into the single-quoted remote script by the caller's own shell, so an odd socket name would break the remote quoting on both sides identically. Exported so the differential can build the expected argv without reading this module's private state.
     """
     return (
         "sudo bash -c '\n"
@@ -302,9 +251,7 @@ def counter_diag_cmd(sock: str) -> str:
 class _ExitScriptError(Exception):
     """`set -e` fired, or the script reached an explicit `exit`.
 
-    Carries the status bash would carry. Raised rather than returned so a helper
-    six frames down can abort the run the way a failed command does, and so the
-    EXIT trap can be a `finally` rather than a call at every exit point.
+    Carries the status bash would carry. Raised rather than returned so a helper six frames down can abort the run the way a failed command does, and so the EXIT trap can be a `finally` rather than a call at every exit point.
     """
 
     def __init__(self, code: int) -> None:
@@ -315,9 +262,7 @@ class _ExitScriptError(Exception):
 class _ArithError(Exception):
     """Bash's arithmetic evaluator refused the operand.
 
-    `fatal` separates the two outcomes, which are NOT the same: a nounset error
-    kills the shell (status 1) even inside an `if` condition, while a syntax
-    error prints and lets `[[ ]]` return false.
+    `fatal` separates the two outcomes, which are NOT the same: a nounset error kills the shell (status 1) even inside an `if` condition, while a syntax error prints and lets `[[ ]]` return false.
     """
 
     def __init__(self, message: str, *, fatal: bool) -> None:
@@ -329,10 +274,7 @@ class _ArithError(Exception):
 def _shell_diagnostic(message: str) -> str:
     """`<$0>: line <n>: <message>`, the shape bash puts on a script's stderr.
 
-    The line number is the CALLER's, read off the live frame rather than
-    hard-coded, so it cannot go stale when this file is reflowed. The
-    differential masks the whole prefix on both sides, because the two can never
-    name the same file.
+    The line number is the CALLER's, read off the live frame rather than hard-coded, so it cannot go stale when this file is reflowed. The differential masks the whole prefix on both sides, because the two can never name the same file.
     """
     frame = inspect.currentframe()
     back = frame.f_back if frame is not None else None
@@ -348,16 +290,13 @@ def _diagnose(message: str) -> None:
 def _status(code: int) -> int:
     """A child's status as BASH reports it: a signal becomes 128 + signum.
 
-    `subprocess` returns -N for a child killed by signal N, and `pipefail`
-    compares statuses, so the two spellings must be reconciled before any
-    comparison or the SIGPIPE a `| head -1` produces would read as success.
+    `subprocess` returns -N for a child killed by signal N, and `pipefail` compares statuses, so the two spellings must be reconciled before any comparison or the SIGPIPE a `| head -1` produces would read as success.
     """
     return 128 - code if code < 0 else code
 
 
 # ---------------------------------------------------------------------------
-# Bash arithmetic, to the extent this script can reach it. See the module
-# docstring for the eight driven shapes and the stated boundary.
+# Bash arithmetic, to the extent this script can reach it. See the module docstring for the eight driven shapes and the stated boundary.
 # ---------------------------------------------------------------------------
 
 _IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
@@ -370,9 +309,7 @@ _DIGIT_LED = re.compile(r"[0-9]")
 def _literal(text: str, token: str) -> int:
     """One arithmetic token to its value, or the error bash would print.
 
-    `text` is the WHOLE operand and `token` the piece being read, because bash's
-    message names both: `[[: <text>: value too great for base (error token is
-    "<token>")`.
+    `text` is the WHOLE operand and `token` the piece being read, because bash's message names both: `[[: <text>: value too great for base (error token is "<token>")`.
     """
     body = token
     sign = 1
@@ -387,8 +324,7 @@ def _literal(text: str, token: str) -> int:
     if _DECIMAL.match(body):
         return sign * int(body, 10)
     if _IDENTIFIER.match(body):
-        # `set -u` and an unset variable: bash names the variable and DIES,
-        # even from inside an `if` condition. Driven with "abc" and "abc def".
+        # `set -u` and an unset variable: bash names the variable and DIES, even from inside an `if` condition. Driven with "abc" and "abc def".
         raise _ArithError("%s: unbound variable" % body, fatal=True)
     if _DIGIT_LED.match(body[:1]):
         raise _ArithError(
@@ -425,9 +361,7 @@ def arith(text: str) -> int:
 def _compare(left: str, op: str, right: str) -> bool:
     """`[[ left <op> right ]]`, with bash's two failure modes intact.
 
-    A nounset error aborts the whole run with status 1; a syntax error prints
-    and makes the test FALSE, which is what bash's `[[ ]]` returns when its
-    arithmetic did not evaluate.
+    A nounset error aborts the whole run with status 1; a syntax error prints and makes the test FALSE, which is what bash's `[[ ]]` returns when its arithmetic did not evaluate.
     """
     try:
         lhs = arith(left)
@@ -453,9 +387,7 @@ def _compare(left: str, op: str, right: str) -> bool:
 def _spawn(argv: list[str], **kwargs) -> subprocess.Popen:
     """`Popen`, with bash's `command not found` in place of `FileNotFoundError`.
 
-    Raises `_ExitScriptError(127)` after printing the diagnostic, which is what a
-    missing binary does under `set -e` in a simple command. Callers that swallow
-    the status catch it back.
+    Raises `_ExitScriptError(127)` after printing the diagnostic, which is what a missing binary does under `set -e` in a simple command. Callers that swallow the status catch it back.
     """
     try:
         return subprocess.Popen(argv, **kwargs)
@@ -476,8 +408,7 @@ def _lenient(argv: list[str]) -> None:
     """`cmd 2>/dev/null || true`: the status, the stderr AND the missing-binary
     case are all discarded.
 
-    The third is the one to read twice: bash's own `command not found` goes to
-    the stderr that `2>/dev/null` throws away, and `|| true` eats the 127.
+    The third is the one to read twice: bash's own `command not found` goes to the stderr that `2>/dev/null` throws away, and `|| true` eats the 127.
     """
     with open(os.devnull, "wb") as devnull, contextlib.suppress(FileNotFoundError):
         subprocess.run(argv, stderr=devnull, check=False)
@@ -486,8 +417,7 @@ def _lenient(argv: list[str]) -> None:
 def _capture(argv: list[str], **kwargs) -> str:
     """`x=$(cmd)` under `set -e`: output with ALL trailing newlines stripped.
 
-    Stderr is NOT captured, matching the twin: a remote script's `>&2` lines
-    reach this script's stderr and are part of the transcript.
+    Stderr is NOT captured, matching the twin: a remote script's `>&2` lines reach this script's stderr and are part of the transcript.
     """
     proc = _spawn(argv, stdout=subprocess.PIPE, **kwargs)
     out, _ = proc.communicate()
@@ -500,8 +430,7 @@ def _capture(argv: list[str], **kwargs) -> str:
 def _capture_lenient(argv: list[str], **kwargs) -> str:
     """`x=$(cmd || true)`: whatever it printed before failing, status discarded.
 
-    A missing binary is swallowed too, because the `|| true` is INSIDE the
-    substitution and bash's 127 never reaches the assignment.
+    A missing binary is swallowed too, because the `|| true` is INSIDE the substitution and bash's 127 never reaches the assignment.
     """
     try:
         proc = subprocess.Popen(argv, stdout=subprocess.PIPE, **kwargs)
@@ -516,17 +445,13 @@ def _lines(text: str) -> list[str]:
     """`while IFS= read -r line; do [[ -z "$line" ]] && continue; ...` fed by
     `printf '%s\\n' "$text"`.
 
-    The `printf` re-terminates the (already newline-stripped) capture, so every
-    field is newline-delimited and the empty ones are dropped. A text that is
-    itself empty yields ONE empty line and therefore an empty list.
+    The `printf` re-terminates the (already newline-stripped) capture, so every field is newline-delimited and the empty ones are dropped. A text that is itself empty yields ONE empty line and therefore an empty list.
     """
     return [line for line in text.split("\n") if line]
 
 
 class _State:
-    """The two temp paths the EXIT trap has to know about, plus the identity of
-    the worker. A class rather than module globals so the differential can build
-    one without importing side effects."""
+    """The two temp paths the EXIT trap has to know about, plus the identity of the worker. A class rather than module globals so the differential can build one without importing side effects."""
 
     def __init__(self) -> None:
         self.vm_ip = ""
@@ -558,15 +483,12 @@ class _State:
 def resolve(state: _State) -> None:
     """The six environment reads, in the twin's order and with its `set -u`.
 
-    ORDER MATTERS: `VM_WORKERS` is consumed before `SSH_KEY`, so a
-    whitespace-only `VM_WORKERS` aborts with `WORKER_IDS[0]: unbound variable`
-    even on a host with no `$HOME`.
+    ORDER MATTERS: `VM_WORKERS` is consumed before `SSH_KEY`, so a whitespace-only `VM_WORKERS` aborts with `WORKER_IDS[0]: unbound variable` even on a host with no `$HOME`.
     """
     net_base = os.environ.get("VM_NET_BASE", "") or DEFAULT_NET_BASE
 
     # `read -ra WORKER_IDS <<<"${VM_WORKERS:-11}"` reads ONE line and splits it
-    # on IFS. A second line in the value is silently unreachable, which is the
-    # twin's behaviour and not a transcription slip.
+    # on IFS. A second line in the value is silently unreachable, which is the twin's behaviour and not a transcription slip.
     workers = (os.environ.get("VM_WORKERS", "") or DEFAULT_WORKERS).split("\n")[0].split()
     if not workers:
         # This fires BEFORE `trap cleanup EXIT` is installed, so no cleanup runs.
@@ -597,11 +519,9 @@ def resolve(state: _State) -> None:
 def cleanup(state: _State) -> None:
     """`cleanup()` and the EXIT trap it is installed as.
 
-    THE `&&` GUARDS ARE NOT `if` STATEMENTS. `[[ -n "$x" ]] && rm ...` is an
-    AND-OR list: an empty variable makes the list fail WITHOUT aborting the
+    THE `&&` GUARDS ARE NOT `if` STATEMENTS. `[[ -n "$x" ]] && rm ...` is an AND-OR list: an empty variable makes the list fail WITHOUT aborting the
     function, because the failing member is not the last one. A failing `rm` IS
-    the last member and does abort, which is why the two are spelled
-    differently below.
+    the last member and does abort, which is why the two are spelled differently below.
     """
     log.step("Cleanup (best-effort)")
     if state.counter_dir:
@@ -620,9 +540,7 @@ def _phase_0(state: _State) -> None:
     with open(os.devnull, "wb") as devnull:
         _strict(["rdc", "config", "ssh", "set", "--key", state.ssh_key], stdout=devnull)
 
-    # `rdc machine add ... 2>/dev/null || log_warn`. The stdout is NOT
-    # suppressed, only the stderr, so a CLI that reports the conflict on stdout
-    # still shows it.
+    # `rdc machine add ... 2>/dev/null || log_warn`. The stdout is NOT suppressed, only the stderr, so a CLI that reports the conflict on stdout still shows it.
     with open(os.devnull, "wb") as devnull:
         try:
             proc = subprocess.Popen(
@@ -647,8 +565,7 @@ def _phase_0(state: _State) -> None:
     log.step("Provisioning renet on worker")
     _strict(["rdc", "machine", "setup", state.machine_name])
 
-    # Pre-clean any debris from prior runs so create does not conflict. This is
-    # the SAME function the EXIT trap runs, called directly.
+    # Pre-clean any debris from prior runs so create does not conflict. This is the SAME function the EXIT trap runs, called directly.
     cleanup(state)
 
 
@@ -696,14 +613,10 @@ def _phase_1(state: _State) -> None:
 def _write_via_cat(path: str, payload: str) -> None:
     """`cat >"$path" <<'EOF'`, as a real `cat` with a real redirection.
 
-    `pathlib.write_text` would be one line and would not appear in the call log.
-    The redirection is opened FIRST, exactly as bash does, so a directory that
-    does not exist fails before `cat` is ever looked up.
+    `pathlib.write_text` would be one line and would not appear in the call log. The redirection is opened FIRST, exactly as bash does, so a directory that does not exist fails before `cat` is ever looked up.
     """
     with contextlib.ExitStack() as stack:
-        # OPENED INSIDE ITS OWN `try`, because the redirection failing is a
-        # DIFFERENT event from `cat` failing: bash reports it as its own
-        # diagnostic and never looks the command up at all.
+        # OPENED INSIDE ITS OWN `try`, because the redirection failing is a DIFFERENT event from `cat` failing: bash reports it as its own diagnostic and never looks the command up at all.
         try:
             handle = stack.enter_context(open(path, "wb"))
         except OSError as exc:
@@ -717,8 +630,7 @@ def _write_via_cat(path: str, payload: str) -> None:
 
 
 def _phase_2(state: _State) -> None:
-    """Fork the RUNNING parent and bring the fork up. This is the failure path
-    on main: without the fix the fork's postgres cannot bind."""
+    """Fork the RUNNING parent and bring the fork up. This is the failure path on main: without the fix the fork's postgres cannot bind."""
     log.step("Forking parent into '%s' (parent stays running)" % FORK_TAG)
     _strict(["rdc", "repo", "fork", state.ref(PARENT_REPO), "--tag", FORK_TAG])
 
@@ -743,8 +655,7 @@ def _phase_2(state: _State) -> None:
         ("[diag] db container logs (parent + fork sockets)", DIAG_DB_LOGS),
     ):
         log.step(message)
-        # `_ssh ... || true`: every diagnostic is best-effort, including a
-        # missing `ssh`, whose 127 the `|| true` also swallows.
+        # `_ssh ... || true`: every diagnostic is best-effort, including a missing `ssh`, whose 127 the `|| true` also swallows.
         with contextlib.suppress(_ExitScriptError):
             _strict(state.ssh_argv(command))
 
@@ -759,8 +670,7 @@ def _phase_3(state: _State) -> None:
 
     log.step("Found %d listener(s):" % len(binds))
     # `for b in "${binds[@]:-}"` yields ONE EMPTY ELEMENT when the array is
-    # empty, so an empty result still prints a bare indented line. Reproduced
-    # rather than tidied.
+    # empty, so an empty result still prints a bare indented line. Reproduced rather than tidied.
     for bind in binds or [""]:
         log.step("  %s" % bind)
 
@@ -780,9 +690,7 @@ def _phase_3(state: _State) -> None:
             raise _ExitScriptError(1)
 
     # `printf '%s\n' "${binds[@]}" | sort -u`, inside a process substitution. A
-    # process substitution's status is NEVER checked, not even under pipefail,
-    # so a failing or missing `sort` silently yields no unique addresses and the
-    # run fails on the count below rather than on the tool.
+    # process substitution's status is NEVER checked, not even under pipefail, so a failing or missing `sort` silently yields no unique addresses and the run fails on the count below rather than on the tool.
     unique = _lines(_sort_unique(binds))
     if len(unique) < 2:
         log.error(
@@ -806,8 +714,7 @@ def _sort_unique(binds: list[str]) -> str:
 def _phase_4(state: _State) -> None:
     """renet#59: no per-network daemon may own more than one compose project."""
     log.step("Asserting no per-network daemon hosts more than one compose-project (renet#59)")
-    # NO `|| true` HERE, unlike phase 3: a broken `ssh` ends the run rather than
-    # being read as "zero foreign projects".
+    # NO `|| true` HERE, unlike phase 3: a broken `ssh` ends the run rather than being read as "zero foreign projects".
     foreign = _capture(state.ssh_argv(PROJECTS_CMD))
     if _compare(foreign or "0", "-gt", "1"):
         log.error(
@@ -852,8 +759,7 @@ def _pipe2(
         THE PIPE, not onto this script's stderr, so the log file the guard reads
         afterwards contains the diagnostic. `left_stderr_to_pipe` is that.
 
-    Returns the PIPEFAIL status (the last member to exit non-zero) and, when
-    asked, the right-hand side's stdout.
+    Returns the PIPEFAIL status (the last member to exit non-zero) and, when asked, the right-hand side's stdout.
     """
     read_fd, write_fd = os.pipe()
     left_proc: subprocess.Popen | None = None
@@ -899,8 +805,7 @@ def _pipe2(
 def _first_counter_socket(state: _State) -> str:
     """`counter_sockets | head -1`, with pipefail.
 
-    A real pipeline rather than a slice of the captured list, because `head` is
-    an external and the call log is what the differential compares.
+    A real pipeline rather than a slice of the captured list, because `head` is an external and the call log is what the differential compares.
     """
     code, out = _pipe2(state.ssh_argv(COUNTER_SOCKETS_CMD), ["head", "-1"], capture=True)
     if code != 0:
@@ -909,8 +814,7 @@ def _first_counter_socket(state: _State) -> str:
 
 
 def _phase_5(state: _State) -> None:
-    """console#440: a `--checkpoint` fork of the RUNNING parent must restore
-    process state in the fork while the parent keeps running."""
+    """console#440: a `--checkpoint` fork of the RUNNING parent must restore process state in the fork while the parent keeps running."""
     log.step("Locating parent's counter container")
     parent_sock = _first_counter_socket(state)
     if not parent_sock:
@@ -921,9 +825,7 @@ def _phase_5(state: _State) -> None:
     parent_count = "0"
     for _attempt in range(COUNTER_ATTEMPTS):
         parent_count = _counter_value(state, parent_sock)
-        # `[[ ... ]] && break` is an AND-OR list, so a false test does NOT abort
-        # the loop under `set -e`; and the `sleep` below runs even on the last
-        # pass, which is the wasted minute named in the module docstring.
+        # `[[ ... ]] && break` is an AND-OR list, so a false test does NOT abort the loop under `set -e`; and the `sleep` below runs even on the last pass, which is the wasted minute named in the module docstring.
         if _compare(parent_count or "0", "-ge", str(COUNTER_TARGET)):
             break
         _strict(["sleep", "2"])
@@ -996,10 +898,7 @@ def _phase_5(state: _State) -> None:
 def _up_through_tee(state: _State) -> int:
     """`rdc repo up <ref> --debug 2>&1 | tee "$log"`, with pipefail.
 
-    `2>&1` IS APPLIED TO `rdc`, NOT TO THE PIPELINE, so a missing `rdc` puts
-    bash's own diagnostic INTO the log file rather than onto this script's
-    stderr, and the checkpoint guard below then reads a log that says
-    `command not found`. Driven, not assumed.
+    `2>&1` IS APPLIED TO `rdc`, NOT TO THE PIPELINE, so a missing `rdc` puts bash's own diagnostic INTO the log file rather than onto this script's stderr, and the checkpoint guard below then reads a log that says `command not found`. Driven, not assumed.
     """
     argv = ["rdc", "repo", "up", state.ref(CP_FORK_REPO), "--debug"]
     code, _ = _pipe2(argv, ["tee", state.cp_up_log], left_stderr_to_pipe=True)
@@ -1007,8 +906,7 @@ def _up_through_tee(state: _State) -> int:
 
 
 def _grep_quiet(pattern: str, path: str) -> bool:
-    """`grep -q <pattern> <path>`. A missing `grep` is a 127, which is not 0, so
-    the guard fires exactly as it would for an absent line."""
+    """`grep -q <pattern> <path>`. A missing `grep` is a 127, which is not 0, so the guard fires exactly as it would for an absent line."""
     try:
         return subprocess.run(["grep", "-q", pattern, path], check=False).returncode == 0
     except FileNotFoundError:
@@ -1019,12 +917,9 @@ def _grep_quiet(pattern: str, path: str) -> bool:
 def _grep_tail(path: str) -> None:
     """`grep -iE "checkpoint|restor" <log> | tail -20 || true`.
 
-    ITS OUTPUT GOES TO STDOUT while the two `log_error` lines above it go to
-    stderr, so a caller reading only one stream sees half the report. That is
-    the twin's shape and it is reproduced.
+    ITS OUTPUT GOES TO STDOUT while the two `log_error` lines above it go to stderr, so a caller reading only one stream sees half the report. That is the twin's shape and it is reproduced.
 
-    The trailing `|| true` means the status is discarded, so `_pipe2`'s return
-    is deliberately dropped.
+    The trailing `|| true` means the status is discarded, so `_pipe2`'s return is deliberately dropped.
     """
     _pipe2(["grep", "-iE", "checkpoint|restor", path], ["tail", "-20"])
 
@@ -1044,13 +939,9 @@ def _body(state: _State) -> None:
 
 
 def main(argv: list[str]) -> int:
-    """The twin ignores its arguments entirely; so does this, and `argv` is
-    accepted only so the signature matches every other module in the package.
+    """The twin ignores its arguments entirely; so does this, and `argv` is accepted only so the signature matches every other module in the package.
 
-    THE TRAP IS INSTALLED AFTER `resolve`, NOT BEFORE, because the twin installs
-    it on line 67 and reads `VM_WORKERS` on line 35. The unbound-array abort
-    therefore runs NO cleanup, and a reader who moved the `finally` up would
-    silently add six `rdc` calls to that path.
+    THE TRAP IS INSTALLED AFTER `resolve`, NOT BEFORE, because the twin installs it on line 67 and reads `VM_WORKERS` on line 35. The unbound-array abort therefore runs NO cleanup, and a reader who moved the `finally` up would silently add six `rdc` calls to that path.
     """
     del argv
     state = _State()
@@ -1066,8 +957,7 @@ def main(argv: list[str]) -> int:
     else:
         code = 0
 
-    # `trap cleanup EXIT`. The body's status survives a clean cleanup and is
-    # REPLACED by a cleanup that dies under `set -e`, which is what bash does.
+    # `trap cleanup EXIT`. The body's status survives a clean cleanup and is REPLACED by a cleanup that dies under `set -e`, which is what bash does.
     try:
         cleanup(state)
     except _ExitScriptError as exc:

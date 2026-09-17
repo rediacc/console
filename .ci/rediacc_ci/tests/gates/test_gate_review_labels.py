@@ -185,8 +185,7 @@ class World:
         self.rc = 0
 
     def setup(self) -> None:
-        """Reset to the default world: an ordinary source-code PR, no prior ledger,
-        every managed label except `ci` already live on the repo."""
+        """Reset to the default world: an ordinary source-code PR, no prior ledger, every managed label except `ci` already live on the repo."""
         shutil.rmtree(self.fixtures, ignore_errors=True)
         shutil.rmtree(self.bin, ignore_errors=True)
         self.fixtures.mkdir(parents=True)
@@ -356,9 +355,7 @@ def test_valid_verdict_applies_exactly_that_set(gate, tmp_path):
 
 
 def test_kind_vocabulary_maps_to_the_repo_labels(gate, tmp_path):
-    """`feature` and `docs` are the model's vocabulary; the repo's labels are
-    `enhancement` and `documentation`. A pass-through would create two new labels on
-    the repo and fail the inventory gate."""
+    """`feature` and `docs` are the model's vocabulary; the repo's labels are `enhancement` and `documentation`. A pass-through would create two new labels on the repo and fail the inventory gate."""
     world = make_world(gate, tmp_path)
     world.execution_file(
         report_with_verdict('{"bump": "patch", "kind": ["feature", "docs"], "why": "x"}')
@@ -406,8 +403,7 @@ def test_major_verdict_is_never_applied(gate, tmp_path):
 
 
 def test_managed_set_excludes_bump_major_by_construction(gate):
-    """Behaviour proves the `major` BRANCH does not apply it. This proves no OTHER
-    branch could either: the label is absent from the whitelist every write passes."""
+    """Behaviour proves the `major` BRANCH does not apply it. This proves no OTHER branch could either: the label is absent from the whitelist every write passes."""
     match = re.search(
         r"^MANAGED_LABELS=\((.*)\)$", UNDER_TEST.read_text(encoding="utf-8"), re.MULTILINE
     )
@@ -538,8 +534,7 @@ def test_docs_only_diff_yields_documentation(gate, tmp_path):
 
 
 def test_agent_notes_tree_is_documentation_whatever_the_extension(gate, tmp_path):
-    """The tracked agent working-notes root. This arm exists SEPARATELY from the
-    `\\.md$` alternative on purpose, and only a non-.md path can tell them apart."""
+    """The tracked agent working-notes root. This arm exists SEPARATELY from the `\\.md$` alternative on purpose, and only a non-.md path can tell them apart."""
     world = make_world(gate, tmp_path)
     world.files_fixture(
         "agent/97604f47/STATE.md",
@@ -631,9 +626,8 @@ def test_ci_label_is_created_before_first_use(gate, tmp_path):
 
 
 def test_create_on_demand_metadata_matches_the_declaration(gate):
-    """The applier cannot read labels.yml (the post-review steps run from a staged
-    copy of .ci alone), so colour and description are duplicated in the script. A duplicate with no gate drifts, and a drifted colour is a label that looks foreign in the UI forever. EVERY ROW, not just the first: the three scalars became a table
-    when bump-none arrived, and a check reading only row one would leave row two free."""
+    """The applier cannot read labels.yml (the post-review steps run from a staged copy of .ci alone), so colour and description are duplicated in the script. A duplicate with no gate drifts, and a drifted colour is a label that looks foreign in the UI forever. EVERY ROW, not just the first: the three scalars became a table when bump-none arrived, and a check reading only row
+    one would leave row two free."""
     block = re.search(
         r"^CREATE_ON_DEMAND_LABELS=\(\n(.*?)^\)$",
         UNDER_TEST.read_text(encoding="utf-8"),
@@ -666,8 +660,7 @@ def test_create_on_demand_metadata_matches_the_declaration(gate):
 
 
 def test_ci_is_on_the_inventory_allowlist(gate):
-    """Without this entry, `ci` is declared and absent and check:ci-label-inventory
-    fails the repo until the first review creates it."""
+    """Without this entry, `ci` is declared and absent and check:ci-label-inventory fails the repo until the first review creates it."""
     if '"ci|.ci/scripts/review/claude-review-gate.sh"' not in INVENTORY_GATE.read_text(
         encoding="utf-8"
     ):
@@ -689,8 +682,7 @@ def test_ci_is_on_the_inventory_allowlist(gate):
 
 
 def test_bump_none_verdict_applies_the_label(gate, tmp_path):
-    """THE FEATURE. "none" means no user-facing surface, and the label it applies makes
-    the merge skip the whole release (dispatch-release.sh reads it)."""
+    """THE FEATURE. "none" means no user-facing surface, and the label it applies makes the merge skip the whole release (dispatch-release.sh reads it)."""
     world = make_world(gate, tmp_path)
     world.execution_file(
         report_with_verdict('{"bump": "none", "kind": ["ci"], "why": "CI plumbing only"}')
@@ -708,9 +700,7 @@ def test_bump_none_verdict_applies_the_label(gate, tmp_path):
 
 
 def test_a_release_worthy_verdict_removes_a_stale_bump_none(gate, tmp_path):
-    """THE OPERATOR'S EXACT CONCERN: a PR that was CI-only earns bump-none, then a later
-    commit adds real product code. The fresh verdict must win, or a stale bump-none
-    silently suppresses that PR's release forever."""
+    """THE OPERATOR'S EXACT CONCERN: a PR that was CI-only earns bump-none, then a later commit adds real product code. The fresh verdict must win, or a stale bump-none silently suppresses that PR's release forever."""
     world = make_world(gate, tmp_path)
     world.comments_fixture(ledger_comment(900, HEAD_SHA, "bump-none,ci"))
     world.execution_file(
@@ -726,8 +716,7 @@ def test_a_release_worthy_verdict_removes_a_stale_bump_none(gate, tmp_path):
 
 
 def test_bump_none_survives_a_re_review_that_still_says_none(gate, tmp_path):
-    """CONTROL. Removal must be driven by the NEW verdict, not by the mere presence of a
-    ledger entry: a second CI-only round must leave the label rather than churning it."""
+    """CONTROL. Removal must be driven by the NEW verdict, not by the mere presence of a ledger entry: a second CI-only round must leave the label rather than churning it."""
     world = make_world(gate, tmp_path)
     world.comments_fixture(ledger_comment(900, HEAD_SHA, "bump-none,ci"))
     world.execution_file(
@@ -744,8 +733,7 @@ def test_bump_none_survives_a_re_review_that_still_says_none(gate, tmp_path):
 
 
 def test_bump_none_is_created_before_first_use(gate, tmp_path):
-    """Same ordering trap as `ci`: the label is brand new, so the applier creates it
-    immediately before applying it rather than demanding a human do it."""
+    """Same ordering trap as `ci`: the label is brand new, so the applier creates it immediately before applying it rather than demanding a human do it."""
     world = make_world(gate, tmp_path)
     world.live_labels(
         "bug",
@@ -779,8 +767,7 @@ def test_bump_none_is_on_the_inventory_allowlist(gate):
 
 
 def test_none_is_in_the_prompt_vocabulary(gate):
-    """The applier accepts "none"; if the prompt never offers it, the verdict can never
-    arrive and the whole feature is dead code that still passes its unit tests."""
+    """The applier accepts "none"; if the prompt never offers it, the verdict can never arrive and the whole feature is dead code that still passes its unit tests."""
     if '"none"' not in INITIAL_PROMPT.read_text(encoding="utf-8"):
         gate.log_fail('the initial prompt never offers "none" as a bump value')
     if "none|patch|minor|major" not in FOLLOWUP_PROMPT.read_text(encoding="utf-8"):
@@ -811,8 +798,7 @@ def test_stale_ledger_label_is_removed(gate, tmp_path):
 
 
 def test_hand_applied_labels_are_never_removed(gate, tmp_path):
-    """The PR carries full-ci and bump-minor by hand. The ledger only ever recorded
-    `bug`, and the new verdict wants nothing."""
+    """The PR carries full-ci and bump-minor by hand. The ledger only ever recorded `bug`, and the new verdict wants nothing."""
     world = make_world(gate, tmp_path)
     world.comments_fixture(ledger_comment(900, HEAD_SHA, "bug"))
     world.execution_file(report_with_verdict('{"bump": "patch", "kind": [], "why": "nothing"}'))
@@ -828,8 +814,7 @@ def test_hand_applied_labels_are_never_removed(gate, tmp_path):
 
 
 def test_tampered_ledger_cannot_delete_arbitrary_labels(gate, tmp_path):
-    """The ledger is a PR comment, so anyone with write access can edit it. It must not
-    become a delete-anything primitive."""
+    """The ledger is a PR comment, so anyone with write access can edit it. It must not become a delete-anything primitive."""
     world = make_world(gate, tmp_path)
     world.comments_fixture(ledger_comment(900, HEAD_SHA, "rollback,no-cancel-push,bug"))
     world.execution_file(report_with_verdict('{"bump": "patch", "kind": [], "why": "x"}'))
@@ -845,9 +830,7 @@ def test_tampered_ledger_cannot_delete_arbitrary_labels(gate, tmp_path):
 
 
 def test_ledger_prefix_is_invisible_to_the_other_counters(gate):
-    """Three comment prefixes now live on a PR. If the ledger shared a prefix with the
-    marker it would satisfy last_marker_sha and suppress reviews; if it started with
-    the report header it would consume review budget."""
+    """Three comment prefixes now live on a PR. If the ledger shared a prefix with the marker it would satisfy last_marker_sha and suppress reviews; if it started with the report header it would consume review budget."""
     source = UNDER_TEST.read_text(encoding="utf-8")
 
     def scalar(name: str) -> str:
@@ -872,8 +855,7 @@ def test_ledger_prefix_is_invisible_to_the_other_counters(gate):
 
 
 def test_mark_does_not_count_the_ledger_comment_as_output(gate, tmp_path):
-    """THE HONESTY GUARD, driven for real. `--mark` refuses to stamp a SHA as reviewed
-    unless the pass actually POSTED something. The ledger comment is written by this pipeline about itself seconds earlier, so counting it would let the pipeline vouch
+    """THE HONESTY GUARD, driven for real. `--mark` refuses to stamp a SHA as reviewed unless the pass actually POSTED something. The ledger comment is written by this pipeline about itself seconds earlier, so counting it would let the pipeline vouch
     for itself: a review that "succeeded" and posted nothing (the 36-permission-denials
     shape that motivated the guard) would be marked reviewed on its own bookkeeping."""
     world = make_world(gate, tmp_path)
@@ -917,10 +899,7 @@ def test_mark_does_not_count_the_ledger_comment_as_output(gate, tmp_path):
 
 
 def test_fence_only_in_posted_comment_is_found(gate, tmp_path):
-    """The feature's FIRST LIVE RUN (#559, run 31267699743): the model posted its
-    summary itself and put the fence in the COMMENT; its result text back to the
-    harness did not repeat it. The old extraction read only the result text, logged "no json:pr-labels block", and applied nothing beside a PR whose verdict comment
-    plainly carried a verdict."""
+    """The feature's FIRST LIVE RUN (#559, run 31267699743): the model posted its summary itself and put the fence in the COMMENT; its result text back to the harness did not repeat it. The old extraction read only the result text, logged "no json:pr-labels block", and applied nothing beside a PR whose verdict comment plainly carried a verdict."""
     world = make_world(gate, tmp_path)
     world.execution_file(report_with_verdict(""))
     world.comments_fixture(
@@ -938,8 +917,7 @@ def test_fence_only_in_posted_comment_is_found(gate, tmp_path):
 
 
 def test_result_fence_wins_over_comment_fence(gate, tmp_path):
-    """Priority pin: when BOTH carry a fence, the result text stays the primary source.
-    The comment path is a fallback, not a second voter."""
+    """Priority pin: when BOTH carry a fence, the result text stays the primary source. The comment path is a fallback, not a second voter."""
     world = make_world(gate, tmp_path)
     world.execution_file(
         report_with_verdict('{"bump": "patch", "kind": ["ci"], "why": "from the result"}')
@@ -1003,10 +981,7 @@ def test_fence_key_is_shared_by_prompt_and_parser(gate):
 
 
 def test_workflow_step_is_guarded_against_the_arm_not_being_on_main(gate):
-    """Review scripts execute from console@main, the workflow comes from the PR. An
-    unguarded call to a brand-new arm takes the job red for the whole life of the
-    introducing PR; that exact mistake is documented at the "Record the review
-    invocation" step (run 30552035566)."""
+    """Review scripts execute from console@main, the workflow comes from the PR. An unguarded call to a brand-new arm takes the job red for the whole life of the introducing PR; that exact mistake is documented at the "Record the review invocation" step (run 30552035566)."""
     workflow = REUSABLE_WF.read_text(encoding="utf-8")
     if "--apply-labels" not in workflow:
         gate.log_fail(

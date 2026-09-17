@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.review.epic_context` against its twin
-`.ci/scripts/review/epic-context.sh`.
+"""Differential: `rediacc_ci.review.epic_context` against its twin `.ci/scripts/review/epic-context.sh`.
 
 A disposable local git repo (never GitHub -- `git log`/`git show` need no remote), on the `test_version_resolve_version.py` strategy: real commits, a real `origin/main` ref built as a plain local branch (nothing here needs an actual remote, only something `git rev-parse --verify` resolves), and a worklist snapshot file the twin reads by convention
 (`agent/pr/<branch-with-slashes-as-dashes>.md`).
@@ -141,9 +140,7 @@ def test_no_matching_commits_is_named(tmp_path: pathlib.Path) -> None:
 
 
 def test_two_items_under_one_heading_duplicates_it(tmp_path: pathlib.Path) -> None:
-    """THE QUIRK, driven for real: two trailer-matching lines under one heading
-    print that heading twice. If the port ever "cleaned this up" to print once,
-    this is the case that catches it."""
+    """THE QUIRK, driven for real: two trailer-matching lines under one heading print that heading twice. If the port ever "cleaned this up" to print once, this is the case that catches it."""
     repo = _repo(tmp_path)
     _git(repo, "checkout", "-q", "-b", "feature/dup")
     snap = (
@@ -188,8 +185,7 @@ def test_current_branch_is_used_when_omitted(tmp_path: pathlib.Path) -> None:
 
 
 def test_pure_helpers_match_the_real_awk_directly() -> None:
-    """Exercise the exported helpers without shelling out, on the fixture that
-    forced the analysis in the first place."""
+    """Exercise the exported helpers without shelling out, on the fixture that forced the analysis in the first place."""
     lines = [
         "### Epic Alpha",
         "- item1 evidence",

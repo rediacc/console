@@ -3,12 +3,9 @@
 Unit test for the attested skip-plan reconciler, `.ci/scripts/ci/skip-plan-reconcile.cjs` (Wave B edge cases 25-32, section E).
 
 WHAT THIS GUARDS. `ci-complete` sees only caller-level scalars, and for a reusable caller that scalar reads `success` when every inner job succeeded OR self-skipped. Per-inner-job conclusions are not exposed to sibling jobs by any expression, so an inner job silently skipping while its siblings pass (the invisible cell) is undetectable at caller level. The reconciler closes that
-hole by checking the attested plan against the Jobs API at leaf level. Until it provably hard-fails on a planted
-mismatch, the scope engine's vector must never gate a real job; this file is that proof.
+hole by checking the attested plan against the Jobs API at leaf level. Until it provably hard-fails on a planted mismatch, the scope engine's vector must never gate a real job; this file is that proof.
 
-THE PLAN IS THE ALLOWLIST. Run 30307775327 (healthy) had ELEVEN skipped inner jobs against zero failures, all legitimate: cached-vs-uncached variants, unexpanded matrix
-legs, one push-gated job. That exact shape is a fixture here and must NOT fire; only
-jobs the plan marked `run` may.
+THE PLAN IS THE ALLOWLIST. Run 30307775327 (healthy) had ELEVEN skipped inner jobs against zero failures, all legitimate: cached-vs-uncached variants, unexpanded matrix legs, one push-gated job. That exact shape is a fixture here and must NOT fire; only jobs the plan marked `run` may.
 
 PRE-EXISTING SKIPS ARE THE SECOND HALF. ci.yml skipped whole columns long before the scope engine existed: `full_suite` is false on every push-to-main, `pointer_bump_only` cuts the entire expensive pipeline on a submodule-pointer PR, `is_bot` cuts the staging chain. Against an unannotated plan a pointer bump reports SEVENTEEN failures on a run where nothing went wrong, which is why
 the gate could not be wired. The cases below pin the exemption AND its edges, each as a pair: a fixture where the new logic must FIRE and a twin where it must stay SILENT.
@@ -163,8 +160,7 @@ class World:
     # -- driving -----------------------------------------------------------
 
     def reconcile(self, plan: pathlib.Path, jobs: pathlib.Path, run_id: str | None = None) -> int:
-        """`run_reconcile`. Streams captured SEPARATELY: failures land on stderr,
-        warnings on stdout, and several cases assert exactly that split."""
+        """`run_reconcile`. Streams captured SEPARATELY: failures land on stderr, warnings on stdout, and several cases assert exactly that split."""
         result = harness.run(
             [
                 node_bin(),
@@ -183,9 +179,7 @@ class World:
         return result.rc
 
     def annotate(self, source: pathlib.Path, name: str, conditions: dict) -> pathlib.Path:
-        """Run a plan through the REAL `annotatePlan`, the same entry point
-        `scope-shadow.sh` calls. Going through the production writer rather than hand-writing the annotation is what makes these cases test the shipped writer
-        instead of a paraphrase of it."""
+        """Run a plan through the REAL `annotatePlan`, the same entry point `scope-shadow.sh` calls. Going through the production writer rather than hand-writing the annotation is what makes these cases test the shipped writer instead of a paraphrase of it."""
         target = self.root / name
         node_eval(
             """
@@ -206,8 +200,7 @@ fs.writeFileSync(process.argv[3], JSON.stringify(plan, null, 2));
         self, plan: pathlib.Path, jobs: pathlib.Path, honor_preexisting: bool
     ) -> str:
         """`<ok>|<first failure>|exempt=<n>`. The CLI always honors, so the strict
-        default is only reachable through the module API, which is exactly how
-        scope-engine's `attestPlan` calls it. Without this the default is untestable."""
+        default is only reachable through the module API, which is exactly how scope-engine's `attestPlan` calls it. Without this the default is untestable."""
         return node_eval(
             """
 const fs = require("fs");
@@ -244,9 +237,7 @@ def skipped_count(jobs: list[dict]) -> int:
 
 
 def test_mandatory_invisible_cell_hard_fails(gate, tmp_path):
-    """Edge case 25, the planted mismatch this whole chunk exists for: plan says
-    `Tests + Infra / Unit` runs, the leaf is skipped, every sibling succeeded, so every
-    caller scalar would read success."""
+    """Edge case 25, the planted mismatch this whole chunk exists for: plan says `Tests + Infra / Unit` runs, the leaf is skipped, every sibling succeeded, so every caller scalar would read success."""
     world = make_world(gate, tmp_path)
     jobs = healthy_jobs()
     find(jobs, "Tests + Infra / Unit")["conclusion"] = "skipped"
@@ -273,11 +264,9 @@ def test_mandatory_invisible_cell_hard_fails(gate, tmp_path):
 
 
 def test_planned_run_but_cancelled_is_named(gate, tmp_path):
-    """A CANCELLED JOB DID NOT RUN, and reconcile used to record it as having run: the
-    branch complained only on `skipped`, so `cancelled` took the silent path under a comment that said "any non-skipped conclusion counts as 'it ran'".
+    """A CANCELLED JOB DID NOT RUN, and reconcile used to record it as having run: the branch complained only on `skipped`, so `cancelled` took the silent path under a comment that said "any non-skipped conclusion counts as 'it ran'".
 
-    Both real shapes produce it. The watchdog force-cancels siblings when one job fails, and a job over its own timeout-minutes reports `cancelled` too: Quality / Code did exactly that at 15m19s on 2026-09-03 with 52 of 92 steps executed, and no message
-    anywhere said "timeout"."""
+    Both real shapes produce it. The watchdog force-cancels siblings when one job fails, and a job over its own timeout-minutes reports `cancelled` too: Quality / Code did exactly that at 15m19s on 2026-09-03 with 52 of 92 steps executed, and no message anywhere said "timeout"."""
     world = make_world(gate, tmp_path)
     jobs = healthy_jobs()
     find(jobs, "Tests + Infra / Unit")["conclusion"] = "cancelled"
@@ -312,8 +301,7 @@ def test_planned_run_but_cancelled_is_named(gate, tmp_path):
 
 
 def test_healthy_eleven_must_not_fire(gate, tmp_path):
-    """Section E: the plan is the allowlist. First prove the fixture SHAPE, or the
-    silence below would be a test of nothing."""
+    """Section E: the plan is the allowlist. First prove the fixture SHAPE, or the silence below would be a test of nothing."""
     world = make_world(gate, tmp_path)
     gate.assert_eq(
         skipped_count(healthy_jobs()),
@@ -352,8 +340,7 @@ def test_healthy_eleven_must_not_fire(gate, tmp_path):
 
 
 def test_planned_job_missing_hard_fails(gate, tmp_path):
-    """Edge case 27: planned to run, absent from the Jobs API entirely (a rename, a
-    dropped workflow call, a DAG break)."""
+    """Edge case 27: planned to run, absent from the Jobs API entirely (a rename, a dropped workflow call, a DAG break)."""
     world = make_world(gate, tmp_path)
     jobs = [j for j in healthy_jobs() if j["name"] != "Tests + Infra / Unit"]
     no_unit = world.write_jobs("jobs-no-unit.json", jobs)
@@ -372,8 +359,7 @@ def test_planned_job_missing_hard_fails(gate, tmp_path):
 
 
 def test_over_running_warns_only(gate, tmp_path):
-    """Edge case 28: plan says skip, job ran and passed. Over-running is the safe
-    direction (extra evidence), so it must warn and NOT block; blocking it would punish
+    """Edge case 28: plan says skip, job ran and passed. Over-running is the safe direction (extra evidence), so it must warn and NOT block; blocking it would punish
     the fail-open `!= 'false'` YAML polarity."""
     world = make_world(gate, tmp_path)
     plan = world.base_plan()
@@ -400,8 +386,7 @@ def test_over_running_warns_only(gate, tmp_path):
 
 
 def test_missing_plan_hard_fails_polarity_inverted(gate, tmp_path):
-    """Edge case 29, THE POLARITY INVERSION: the engine degrades toward more CI, the
-    reconciler degrades toward red. A missing attestation must never read as green."""
+    """Edge case 29, THE POLARITY INVERSION: the engine degrades toward more CI, the reconciler degrades toward red. A missing attestation must never read as green."""
     world = make_world(gate, tmp_path)
     gate.assert_eq(
         world.reconcile(tmp_path / "does-not-exist.json", world.jobs_path),
@@ -425,8 +410,7 @@ def test_missing_plan_hard_fails_polarity_inverted(gate, tmp_path):
 
 
 def test_run_id_mismatch_is_tamper(gate, tmp_path):
-    """Edge case 30, anti-tamper: the plan must name THIS run, or a stale or substituted
-    artifact could vouch for skips it never planned."""
+    """Edge case 30, anti-tamper: the plan must name THIS run, or a stale or substituted artifact could vouch for skips it never planned."""
     world = make_world(gate, tmp_path)
     gate.assert_eq(
         world.reconcile(world.plan_path, world.jobs_path, "999999"),
@@ -451,9 +435,7 @@ def test_run_id_mismatch_is_tamper(gate, tmp_path):
 
 
 def test_naming_trap_uses_explicit_table(gate, tmp_path):
-    """Edge case 31: ci.yml's `update-flow-test` is a CALLER display-named
-    `Tests + Infra / Update Flow` whose real leaf is three segments deep, while `package-tests` is a PLAIN job named `Tests + Infra / Linux Packages`, NOT inside
-    ct-tests.yml. The name shape lies in both directions."""
+    """Edge case 31: ci.yml's `update-flow-test` is a CALLER display-named `Tests + Infra / Update Flow` whose real leaf is three segments deep, while `package-tests` is a PLAIN job named `Tests + Infra / Linux Packages`, NOT inside ct-tests.yml. The name shape lies in both directions."""
     world = make_world(gate, tmp_path)
     names = node_eval(
         """
@@ -491,9 +473,7 @@ process.stdout.write(JSON.stringify({
 
 
 def test_matrix_match_by_prefix_never_sloppy(gate, tmp_path):
-    """Edge case 32: matrix legs match by expected-name + " (". That must cover the
-    unexpanded-template form a skipped matrix reports, and must NOT let `E2E Ceph`
-    swallow `E2E Ceph Workers`."""
+    """Edge case 32: matrix legs match by expected-name + " (". That must cover the unexpanded-template form a skipped matrix reports, and must NOT let `E2E Ceph` swallow `E2E Ceph Workers`."""
     world = make_world(gate, tmp_path)
     jobs = healthy_jobs()
     jobs.append(
@@ -511,8 +491,7 @@ def test_matrix_match_by_prefix_never_sloppy(gate, tmp_path):
         "as e2e_workers, template form and all",
     )
 
-    # Precision: remove the plain `E2E Ceph` job. `E2E Ceph Workers` is still present
-    # and green; if the matcher were bare startsWith it would satisfy e2e_ceph.
+    # Precision: remove the plain `E2E Ceph` job. `E2E Ceph Workers` is still present and green; if the matcher were bare startsWith it would satisfy e2e_ceph.
     jobs = [j for j in healthy_jobs() if j["name"] != "Tests + Infra / E2E Ceph"]
     no_ceph = world.write_jobs("jobs-no-ceph.json", jobs)
     gate.assert_eq(
@@ -535,8 +514,7 @@ def test_matrix_match_by_prefix_never_sloppy(gate, tmp_path):
 
 
 def test_flat_job_never_blames_a_lookalike_caller(gate, tmp_path):
-    """Edge case 33: caller-derivation must not fire for a FLAT job whose display name
-    merely shares a prefix with a reusable caller.
+    """Edge case 33: caller-derivation must not fire for a FLAT job whose display name merely shares a prefix with a reusable caller.
 
     `package-tests` is a plain top-level job named "Tests + Infra / Linux Packages" (ci.yml:572-573). The `tests` reusable caller's own display name is exactly "Tests + Infra" (ci.yml:673-674). Splitting the expected name on ' / ' regardless would derive 'Tests + Infra' and then blame that unrelated job, converting a real
     case-27 rename or DAG break into a bogus case-25 caller-skip."""
@@ -608,9 +586,7 @@ def test_unknown_plan_key_fails_closed(gate, tmp_path):
 
 
 def test_name_table_parity_with_scope_map(gate):
-    """`EXPECTED_JOB_NAMES` and scope-map's `JOB_SURFACES` must cover the same keys; the
-    module throws at load on drift. Prove the validator fires in BOTH directions, then
-    that the real tables pass."""
+    """`EXPECTED_JOB_NAMES` and scope-map's `JOB_SURFACES` must cover the same keys; the module throws at load on drift. Prove the validator fires in BOTH directions, then that the real tables pass."""
     verdicts = node_eval(
         """
 const r = require(process.argv[1]);
@@ -670,8 +646,7 @@ def test_jobs_payload_forms_and_absence(gate, tmp_path):
 
 
 def test_warnings_never_mask_failures(gate, tmp_path):
-    """A run can over-run one key and under-run another; the warning must not eat the
-    failure, and the streams must stay separate."""
+    """A run can over-run one key and under-run another; the warning must not eat the failure, and the streams must stay separate."""
     world = make_world(gate, tmp_path)
     plan = world.base_plan()
     plan["jobs"]["unit"] = {"run": False, "reason": "out-of-scope"}
@@ -694,14 +669,12 @@ def test_warnings_never_mask_failures(gate, tmp_path):
 
 
 def pointer_bump_jobs() -> list[dict]:
-    """Every job skipped: `build-renet` skips on a pointer-bump PR (ci.yml:493) and the
-    entire expensive pipeline goes with it."""
+    """Every job skipped: `build-renet` skips on a pointer-bump PR (ci.yml:493) and the entire expensive pipeline goes with it."""
     return [{"name": j["name"], "conclusion": "skipped"} for j in healthy_jobs()]
 
 
 def push_jobs() -> list[dict]:
-    """The push-to-main shape: everything full_suite gates skipped, the install matrix
-    still green."""
+    """The push-to-main shape: everything full_suite gates skipped, the install matrix still green."""
     return [
         {
             "name": j["name"],
@@ -712,8 +685,7 @@ def push_jobs() -> list[dict]:
 
 
 def test_pointer_bump_exempts_every_key(gate, tmp_path):
-    """THE case this whole extension exists for. All eighteen planned keys skip while
-    nothing is wrong, so an unannotated plan reports eighteen failures on a healthy run."""
+    """THE case this whole extension exists for. All eighteen planned keys skip while nothing is wrong, so an unannotated plan reports eighteen failures on a healthy run."""
     world = make_world(gate, tmp_path)
     jobs = pointer_bump_jobs()
     pb_jobs = world.write_jobs("jobs-pointer-bump.json", jobs)
@@ -764,9 +736,7 @@ def test_pointer_bump_exempts_every_key(gate, tmp_path):
 
 
 def test_full_suite_exempts_seventeen_but_never_install_methods(gate, tmp_path):
-    """The condition sets are NOT interchangeable. `validate-install` (ci.yml:1081-1083)
-    hangs off `stage-artifacts`, which carries no full_suite clause (ci.yml:658), so the install matrix genuinely DOES run on push-to-main. Exempting it under full_suite
-    would excuse a real skip for ever."""
+    """The condition sets are NOT interchangeable. `validate-install` (ci.yml:1081-1083) hangs off `stage-artifacts`, which carries no full_suite clause (ci.yml:658), so the install matrix genuinely DOES run on push-to-main. Exempting it under full_suite would excuse a real skip for ever."""
     world = make_world(gate, tmp_path)
     push_plan = world.annotate(
         world.plan_path,
@@ -829,8 +799,7 @@ def test_full_suite_exempts_seventeen_but_never_install_methods(gate, tmp_path):
 
 
 def test_is_bot_exempts_exactly_one_key(gate, tmp_path):
-    """`is_bot` (ci.yml:105) reaches only install_methods, via stage-artifacts
-    (ci.yml:658). A narrow exemption must stay narrow, so plant a skip OUTSIDE it."""
+    """`is_bot` (ci.yml:105) reaches only install_methods, via stage-artifacts (ci.yml:658). A narrow exemption must stay narrow, so plant a skip OUTSIDE it."""
     world = make_world(gate, tmp_path)
     bot_plan = world.annotate(
         world.plan_path,
@@ -859,9 +828,7 @@ def test_is_bot_exempts_exactly_one_key(gate, tmp_path):
 
 
 def test_exemption_needs_a_real_boolean(gate, tmp_path):
-    """Missing information must never WIDEN an exemption, so the condition test is a
-    strict boolean compare. A plan whose conditions came through as strings (a shell
-    variable passed unparsed) gets nothing."""
+    """Missing information must never WIDEN an exemption, so the condition test is a strict boolean compare. A plan whose conditions came through as strings (a shell variable passed unparsed) gets nothing."""
     world = make_world(gate, tmp_path)
     pb_jobs = world.write_jobs("jobs-pointer-bump.json", pointer_bump_jobs())
     plan = world.base_plan()
@@ -901,9 +868,7 @@ def test_exemption_needs_a_real_boolean(gate, tmp_path):
 
 
 def test_annotation_must_agree_with_the_conditions(gate, tmp_path):
-    """Anti-tamper. The exemption is DERIVED from `plan.conditions`; the per-job field is
-    only ever cross-checked. A hand-edited artifact claiming an exemption its own conditions do not support must not buy a free pass on the one check that can see an
-    invisible cell."""
+    """Anti-tamper. The exemption is DERIVED from `plan.conditions`; the per-job field is only ever cross-checked. A hand-edited artifact claiming an exemption its own conditions do not support must not buy a free pass on the one check that can see an invisible cell."""
     world = make_world(gate, tmp_path)
     jobs = healthy_jobs()
     find(jobs, "Tests + Infra / Unit")["conclusion"] = "skipped"
@@ -971,8 +936,7 @@ def test_annotation_must_agree_with_the_conditions(gate, tmp_path):
 
 def test_strict_mode_is_the_module_default(gate, tmp_path):
     """The two consumers want opposite things. The GATE must not red a pointer-bump run;
-    the BASELINE READER (scope-engine's attestPlan) must not accept that run as proof, because it validated nothing. Same plan, same jobs, opposite verdict, decided by the
-    flag alone."""
+    the BASELINE READER (scope-engine's attestPlan) must not accept that run as proof, because it validated nothing. Same plan, same jobs, opposite verdict, decided by the flag alone."""
     world = make_world(gate, tmp_path)
     pb_jobs = world.write_jobs("jobs-pointer-bump.json", pointer_bump_jobs())
     pb_plan = world.annotate(
@@ -1013,9 +977,7 @@ def test_strict_mode_is_the_module_default(gate, tmp_path):
 
 
 def test_exempt_key_that_ran_warns_only(gate, tmp_path):
-    """An exemption handed out where the job ran anyway means the condition table
-    over-claims. Worth saying, never worth blocking: there is no failure to mask when a
-    planned-run job actually ran."""
+    """An exemption handed out where the job ran anyway means the condition table over-claims. Worth saying, never worth blocking: there is no failure to mask when a planned-run job actually ran."""
     world = make_world(gate, tmp_path)
     pb_plan = world.annotate(
         world.plan_path,
@@ -1045,8 +1007,7 @@ def test_exempt_key_that_ran_warns_only(gate, tmp_path):
 
 
 def test_exemptions_never_mask_a_failure(gate, tmp_path):
-    """The house invariant, restated for the new path: warnings never mask failures, and
-    neither do exemptions. Mix all three in one run."""
+    """The house invariant, restated for the new path: warnings never mask failures, and neither do exemptions. Mix all three in one run."""
     world = make_world(gate, tmp_path)
     push_plan_path = world.annotate(
         world.plan_path,
@@ -1086,9 +1047,7 @@ def test_exemptions_never_mask_a_failure(gate, tmp_path):
 
 
 def test_condition_table_cannot_rot_silently(gate):
-    """Same discipline as the name-table parity check: an entry naming a key that no
-    longer exists is an exemption that can never apply, and a condition missing from
-    CONDITION_ORDER would be evaluated by nothing. Both are silent, both are rot."""
+    """Same discipline as the name-table parity check: an entry naming a key that no longer exists is an exemption that can never apply, and a condition missing from CONDITION_ORDER would be evaluated by nothing. Both are silent, both are rot."""
     verdicts = node_eval(
         """
 const r = require(process.argv[1]);

@@ -3,9 +3,8 @@
 Creates the GitHub Release for a version and uploads every built asset to it. Runs LAST in cd-v2.yml, after edge deploys, smoke tests and post-publish install validation, so a broken release never gets a Release page pointing at it.
 
 REFUSES RATHER THAN PUBLISHES AN EMPTY RELEASE. `dist/{cli,packages}` matching
-nothing means the download step upstream produced nothing, and a Release with no assets looks published and installs nothing. That refusal is the one behaviour here worth more than the `gh` call itself, so it keeps its own exit-1 path and
-its `::error::` line on STDOUT (the twin's plain `echo`, not `>&2`; reproduced
-because a workflow annotation is parsed off either stream and moving it would change what a `2>/dev/null` caller sees).
+nothing means the download step upstream produced nothing, and a Release with no assets looks published and installs nothing. That refusal is the one behaviour here worth more than the `gh` call itself, so it keeps its own exit-1 path and its `::error::` line on STDOUT (the twin's plain `echo`, not `>&2`; reproduced because a workflow annotation is parsed off either stream and
+moving it would change what a `2>/dev/null` caller sees).
 
 THE ASSET ORDER IS BASH'S GLOB ORDER, AND `sorted(glob(...))` REPRODUCES IT.
 `shopt -s globstar nullglob; assets=(dist/cli/**/* dist/packages/**/*)` sorts
@@ -55,8 +54,7 @@ def _require_cmd(name: str) -> int | None:
 def _require_var(name: str) -> str:
     """`${NAME:?message}`: unset AND empty both refuse, with exit 1.
 
-    The wording is the port's, not bash's `<script>: line N: NAME: ...`; the exit
-    code and the named variable are what the differential compares, as in every sibling port here.
+    The wording is the port's, not bash's `<script>: line N: NAME: ...`; the exit code and the named variable are what the differential compares, as in every sibling port here.
     """
     value = os.environ.get(name)
     if not value:

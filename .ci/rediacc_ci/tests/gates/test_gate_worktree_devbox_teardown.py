@@ -190,9 +190,7 @@ def test_control_ordering_can_fail(gate, tmp_path: pathlib.Path):
 
 
 def test_the_lift_really_found_both_shipped_bodies(gate):
-    """PORT-ONLY. `lift()` refuses an empty match, but nothing above proves the
-    text it returned is the FUNCTION rather than a one-line stub that happens to match the anchors. A body that no longer calls the devbox teardown at all
-    would satisfy `test_no_docker_keeps_todays_behaviour` on its own."""
+    """PORT-ONLY. `lift()` refuses an empty match, but nothing above proves the text it returned is the FUNCTION rather than a one-line stub that happens to match the anchors. A body that no longer calls the devbox teardown at all would satisfy `test_no_docker_keeps_todays_behaviour` on its own."""
     gate.log_test("the lifted bodies are the shipped ones")
     removal = lift(gate, "remove_worktree")
     gate.assert_contains(

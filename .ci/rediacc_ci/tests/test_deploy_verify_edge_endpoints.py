@@ -113,8 +113,7 @@ def slug_for(url: str) -> str:
 
 
 def region_domains(field: str = "edgeDomain") -> list[str]:
-    """Read `regions.json` the same way the subject does, so the fixture cannot
-    go stale when a region is added."""
+    """Read `regions.json` the same way the subject does, so the fixture cannot go stale when a region is added."""
     proc = subprocess.run(
         ["jq", "-r", ".regions[] | .%s" % field, str(REGIONS)],
         capture_output=True,
@@ -295,8 +294,7 @@ def test_install_sh_baked_to_the_wrong_channel(tmp_path: pathlib.Path) -> None:
 
 def test_install_sh_that_404s_leaves_the_diagnostic_grep_empty(tmp_path: pathlib.Path) -> None:
     """`INSTALL_SH=$(curl ...) || return 1` still ASSIGNS, so the error path
-    greps an empty body rather than a stale one. A port that skipped the
-    assignment on failure would print the previous attempt's body."""
+    greps an empty body rather than a stale one. A port that skipped the assignment on failure would print the previous attempt's body."""
 
     def mutate(d: pathlib.Path) -> None:
         (d / ("%s.body" % slug_for("edge.rediacc.com/install.sh"))).unlink()
@@ -339,9 +337,7 @@ def test_a_stale_worker_bundle_fails_the_redirect_table_fingerprint(
 
 
 def test_a_transport_failure_on_a_fingerprint_probe_is_a_000(tmp_path: pathlib.Path) -> None:
-    """Inside `fetch_retry` the predicate runs in an `if`, so `set -e` is
-    SUSPENDED and curl's non-zero status becomes a retryable "000" rather than an abort. The stable twin, whose identical probe is at top level, exits 7
-    instead; that asymmetry is asserted in the stable differential."""
+    """Inside `fetch_retry` the predicate runs in an `if`, so `set -e` is SUSPENDED and curl's non-zero status becomes a retryable "000" rather than an abort. The stable twin, whose identical probe is at top level, exits 7 instead; that asymmetry is asserted in the stable differential."""
 
     def mutate(d: pathlib.Path) -> None:
         _put(d, "edge.rediacc.com/en", "code", "000")
@@ -363,9 +359,7 @@ def test_asset_path_guard_fingerprint(tmp_path: pathlib.Path) -> None:
 
 
 def test_footer_diagnostic_prints_at_most_three_matches(tmp_path: pathlib.Path) -> None:
-    """`grep -oE ... | head -3`. FOUR candidates are planted, one of them the
-    SECOND match on its own line, so a port that iterated lines instead of
-    matches would print a different set."""
+    """`grep -oE ... | head -3`. FOUR candidates are planted, one of them the SECOND match on its own line, so a port that iterated lines instead of matches would print a different set."""
 
     def mutate(d: pathlib.Path) -> None:
         _put(
@@ -388,9 +382,7 @@ def test_footer_diagnostic_prints_at_most_three_matches(tmp_path: pathlib.Path) 
 
 
 def test_the_html_comment_stripper_is_load_bearing(tmp_path: pathlib.Path) -> None:
-    """Astro SSR inserts `<!-- -->` between the `v` and the semver. Without the
-    `sed` both sides must FAIL; with it both must pass. Asserting only the
-    passing direction would leave a port that dropped the sed looking correct."""
+    """Astro SSR inserts `<!-- -->` between the `v` and the semver. Without the `sed` both sides must FAIL; with it both must pass. Asserting only the passing direction would leave a port that dropped the sed looking correct."""
 
     def mutate(d: pathlib.Path) -> None:
         _put(
@@ -429,9 +421,7 @@ def test_r2_ps1_backstop_not_rebaked(tmp_path: pathlib.Path) -> None:
 def test_latest_json_absent_empty_and_malformed_all_read_as_unreadable(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`jq -re '.version'` answers with THREE different exit codes here (4 on
-    empty input, 1 on a JSON `null`, 5 on a parse error) and the twin folds all three into one message. Each is driven; the parse-error case also proves
-    jq's stderr reaches the log unredirected on both sides."""
+    """`jq -re '.version'` answers with THREE different exit codes here (4 on empty input, 1 on a JSON `null`, 5 on a parse error) and the twin folds all three into one message. Each is driven; the parse-error case also proves jq's stderr reaches the log unredirected on both sides."""
     for body in (None, "{}\n", "not json at all\n"):
 
         def mutate(d: pathlib.Path, body: str | None = body) -> None:
@@ -449,9 +439,7 @@ def test_latest_json_absent_empty_and_malformed_all_read_as_unreadable(
 
 
 def test_a_version_mismatch_is_tolerated_not_failed(tmp_path: pathlib.Path) -> None:
-    """The retry-mode carve-out. A port that treated this as an error would fail
-    every legitimate re-run of the smoke test, and the happy path would not
-    notice."""
+    """The retry-mode carve-out. A port that treated this as an error would fail every legitimate re-run of the smoke test, and the happy path would not notice."""
 
     def mutate(d: pathlib.Path) -> None:
         _put(d, "releases.rediacc.com/cli/edge/latest.json", "body", '{"version":"9.9.9"}\n')
@@ -468,8 +456,7 @@ def test_a_version_mismatch_is_tolerated_not_failed(tmp_path: pathlib.Path) -> N
 
 
 def test_a_surface_that_agrees_on_the_second_attempt_passes(tmp_path: pathlib.Path) -> None:
-    """The 2026-08-08 incident in miniature: one unlucky sample must not fail a
-    healthy deploy."""
+    """The 2026-08-08 incident in miniature: one unlucky sample must not fail a healthy deploy."""
 
     def mutate(d: pathlib.Path) -> None:
         _put(d, "edge.rediacc.com/about", "code@1", "500")
@@ -481,9 +468,7 @@ def test_a_surface_that_agrees_on_the_second_attempt_passes(tmp_path: pathlib.Pa
 
 
 def test_the_retry_budget_is_load_bearing(tmp_path: pathlib.Path) -> None:
-    """Anti-vacuity for the case above: with the budget cut to ONE attempt the
-    same fixture must FAIL on both sides, or "agreed on attempt 2" proved
-    nothing about retrying."""
+    """Anti-vacuity for the case above: with the budget cut to ONE attempt the same fixture must FAIL on both sides, or "agreed on attempt 2" proved nothing about retrying."""
 
     def mutate(d: pathlib.Path) -> None:
         _put(d, "edge.rediacc.com/about", "code@1", "500")
@@ -565,8 +550,7 @@ def test_an_integer_retry_sleep_is_still_byte_identical(tmp_path: pathlib.Path) 
 def test_a_non_200_region_fails_the_run_and_reports_finding_2(tmp_path: pathlib.Path) -> None:
     """FINDING 2, REPRODUCED NOT FIXED. `HTTP_CODE=$(curl -sf -w '%{http_code}'
     ... || echo "000")` puts BOTH outputs inside the substitution, so a real 404
-    is reported as `HTTP 404000`. Driven against the live script; a reader of a
-    CI log sees a status code that does not exist."""
+    is reported as `HTTP 404000`. Driven against the live script; a reader of a CI log sees a status code that does not exist."""
     domain = region_domains()[1]
 
     def mutate(d: pathlib.Path) -> None:
@@ -592,8 +576,7 @@ def test_an_unreachable_region_reports_http_000000(tmp_path: pathlib.Path) -> No
 
 
 def test_hsts_without_nosniff_is_a_finding(tmp_path: pathlib.Path) -> None:
-    """The header gate activates the moment HSTS appears. Case is mixed on
-    purpose: both greps are `-i`."""
+    """The header gate activates the moment HSTS appears. Case is mixed on purpose: both greps are `-i`."""
     domain = region_domains()[2]
 
     def mutate(d: pathlib.Path) -> None:
@@ -611,8 +594,7 @@ def test_hsts_without_nosniff_is_a_finding(tmp_path: pathlib.Path) -> None:
 
 
 def test_no_hsts_yet_still_passes(tmp_path: pathlib.Path) -> None:
-    """The pre-Phase-1 no-op branch. Without this the gate above could be a port
-    that simply always fires."""
+    """The pre-Phase-1 no-op branch. Without this the gate above could be a port that simply always fires."""
     domain = region_domains()[2]
 
     def mutate(d: pathlib.Path) -> None:
@@ -630,8 +612,7 @@ def test_no_hsts_yet_still_passes(tmp_path: pathlib.Path) -> None:
 
 
 def test_nosniff_with_no_space_after_the_colon_still_matches(tmp_path: pathlib.Path) -> None:
-    """`grep -qi '^x-content-type-options: *nosniff'` is ` *`, ZERO or more. A
-    port that transcribed it as one-or-more would flag a compliant region."""
+    """`grep -qi '^x-content-type-options: *nosniff'` is ` *`, ZERO or more. A port that transcribed it as one-or-more would flag a compliant region."""
     domain = region_domains()[0]
 
     def mutate(d: pathlib.Path) -> None:
@@ -687,8 +668,7 @@ def test_a_missing_regions_json_checks_zero_regions_and_still_passes(
 def test_the_same_tree_with_regions_json_present_does_check_them(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The control for the case above: the fixture tree is not the reason the
-    regions vanished."""
+    """The control for the case above: the fixture tree is not the reason the regions vanished."""
     tree = fixture_tree(tmp_path, with_regions=True)
     old, new = drive(tmp_path, tree=tree, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 0
@@ -700,9 +680,7 @@ def test_the_same_tree_with_regions_json_present_does_check_them(
 
 
 def test_version_unset_refuses_on_both_sides_reworded(tmp_path: pathlib.Path) -> None:
-    """Exit code and the named variable agree; the wording does not, and is not
-    supposed to (the twin's carries bash's own `line 87:` prefix). This is the ONLY path in the script where the bytes are allowed to differ, which is why
-    it is asserted narrowly here rather than through `assert_same`."""
+    """Exit code and the named variable agree; the wording does not, and is not supposed to (the twin's carries bash's own `line 87:` prefix). This is the ONLY path in the script where the bytes are allowed to differ, which is why it is asserted narrowly here rather than through `assert_same`."""
     old, new = drive(tmp_path, env_extra={"VERSION": None})
     assert old.rc == 1
     assert new.rc == 1
@@ -716,8 +694,7 @@ def test_version_unset_refuses_on_both_sides_reworded(tmp_path: pathlib.Path) ->
 
 
 def test_a_missing_curl_refuses_identically(tmp_path: pathlib.Path) -> None:
-    """`require_cmd curl`. The message and the exit code are `common.sh`'s, and
-    `rediacc_ci.core.common.require_cmd` is the ported same."""
+    """`require_cmd curl`. The message and the exit code are `common.sh`'s, and `rediacc_ci.core.common.require_cmd` is the ported same."""
     lean = tmp_path / "leanbin"
     lean.mkdir()
     # `uname` and `dirname` are common.sh's own needs; omitting them turns this

@@ -94,9 +94,7 @@ WIRING_DIRS = (".github/workflows/",)
 PROSE_PREFIXES = ("agent/", "docs/", ".ci/shadow/")
 PROSE_SUFFIXES = (".md", ".txt")
 
-# Roots a dotted module name is resolved against, in the order the running programs really use them. `.ci` and `.claude` are on sys.path via
-# `pyproject.toml`'s `pythonpath` and via `_cipath`; the repository root and
-# `scripts/` are how the flat script directories reach their neighbours.
+# Roots a dotted module name is resolved against, in the order the running programs really use them. `.ci` and `.claude` are on sys.path via `pyproject.toml`'s `pythonpath` and via `_cipath`; the repository root and `scripts/` are how the flat script directories reach their neighbours.
 IMPORT_ROOTS = (".ci", ".claude", "", "scripts")
 
 # GLOB DISCOVERY, declared by name with the site that does it, exactly as `.ci/policy/.dead-bash-allowlist` declares `glob:` for shell. Never inferred: `HERE.glob("*.py")` filtered by a prefix tuple is not something a static reader can be trusted to recognise, and guessing wrong in the permissive direction would admit a whole directory.
@@ -194,9 +192,7 @@ def tracked_files(root: pathlib.Path) -> list[str]:
         check=False,
     )
     if out.returncode != 0:
-        # A fixture root is not a checkout. Walk it instead, and skip the same directories git would have skipped for us. `.git` and `node_modules` are `paths.walk_tree`'s standing prune (along with `.claude/worktrees`,
-        # a peer's sibling checkout that git also hides); `__pycache__` is this
-        # gate's own, because a `.pyc` is not a Python source file to audit.
+        # A fixture root is not a checkout. Walk it instead, and skip the same directories git would have skipped for us. `.git` and `node_modules` are `paths.walk_tree`'s standing prune (along with `.claude/worktrees`, a peer's sibling checkout that git also hides); `__pycache__` is this gate's own, because a `.pyc` is not a Python source file to audit.
         found = []
         for dirpath, _dirnames, filenames in paths.walk_tree(root, exclude_dirs=("__pycache__",)):
             found.extend(os.path.relpath(os.path.join(dirpath, name), root) for name in filenames)
@@ -421,8 +417,7 @@ def scan(
             "registration route is empty and every gate entry point would read as dead"
         )
 
-    # READ AS BYTES AND FILTER BEFORE DECODING. The referrer corpus is 93 MiB, two thirds of it generated site search indexes and PNGs that cannot name a
-    # Python file; decoding all of it costs 3.4s against 1.1s for this. A file
+    # READ AS BYTES AND FILTER BEFORE DECODING. The referrer corpus is 93 MiB, two thirds of it generated site search indexes and PNGs that cannot name a Python file; decoding all of it costs 3.4s against 1.1s for this. A file
     # with no `.py` byte sequence in it contributes nothing to any route, so
     # skipping it changes no verdict, which a control pins.
     texts: dict[str, str] = {}
@@ -501,8 +496,7 @@ def scan(
 
     close_imports(list(routes))
     while True:
-        # Every non-Python referrer is a live source of mentions; a Python file
-        # is one only once something reaches it, which is what stops two dead modules from vouching for each other.
+        # Every non-Python referrer is a live source of mentions; a Python file is one only once something reaches it, which is what stops two dead modules from vouching for each other.
         added: list[str] = []
         for rel in referrers + list(routes):
             for hit in mentions.get(rel, ()):

@@ -56,8 +56,7 @@ def repo(tmp_path, monkeypatch):
 
 
 def test_the_fixture_really_is_a_repository(repo):
-    """Without this, every case below could be running against a plain directory
-    and reporting the empty answers that a plain directory gives."""
+    """Without this, every case below could be running against a plain directory and reporting the empty answers that a plain directory gives."""
     assert gitx.is_work_tree(repo) is True
     assert gitx.is_work_tree(repo.parent) is False
     assert gitx.head_sha(repo) is not None
@@ -355,8 +354,7 @@ def test_the_three_hardcoded_submodule_lists_still_agree_with_gitmodules():
 
 
 def test_parse_gitmodules_reads_text_with_no_repository_at_all():
-    """A text parser, so a fixture needs no git. The three `git config -f` sites
-    cannot be tested without building a repository, which is why none of them is."""
+    """A text parser, so a fixture needs no git. The three `git config -f` sites cannot be tested without building a repository, which is why none of them is."""
     parsed = gitx.parse_gitmodules(
         '[submodule "renet"]\n'
         "\tpath = private/renet\n"
@@ -373,8 +371,7 @@ def test_parse_gitmodules_reads_text_with_no_repository_at_all():
 
 
 def test_a_section_without_a_path_is_skipped_rather_than_half_parsed():
-    """A malformed entry must not become a Submodule with an empty path, which
-    would then be joined onto the root and enumerate the whole repository."""
+    """A malformed entry must not become a Submodule with an empty path, which would then be joined onto the root and enumerate the whole repository."""
     parsed = gitx.parse_gitmodules(
         '[submodule "broken"]\n\turl = x\n[submodule "ok"]\n\tpath = p\n'
     )
@@ -401,8 +398,7 @@ def test_sibling_repos_finds_gitignored_checkouts_that_are_not_submodules(tmp_pa
 
 
 def test_a_worktree_git_file_still_counts_as_a_repository(tmp_path):
-    """In a git WORKTREE -- how every session in this repo works -- `.git` is a
-    FILE holding a gitdir pointer, so an is_dir() test says 'not a repository'."""
+    """In a git WORKTREE -- how every session in this repo works -- `.git` is a FILE holding a gitdir pointer, so an is_dir() test says 'not a repository'."""
     (tmp_path / "private" / "wt").mkdir(parents=True)
     (tmp_path / "private" / "wt" / ".git").write_text("gitdir: /somewhere/else\n")
     assert gitx.sibling_repos(tmp_path) == ["private/wt"]

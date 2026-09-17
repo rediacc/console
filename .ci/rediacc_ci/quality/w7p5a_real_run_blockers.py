@@ -1,5 +1,4 @@
-"""check:ci-w7p5a-real-run-blockers -- FRAGMENT, drafted and driven by a writer
-agent outside the real tree (scripts/ and .ci/rediacc_ci/** are outside its write grant). Intended final home: .ci/rediacc_ci/quality/w7p5a_real_run_blockers.py,
+"""check:ci-w7p5a-real-run-blockers -- FRAGMENT, drafted and driven by a writer agent outside the real tree (scripts/ and .ci/rediacc_ci/** are outside its write grant). Intended final home: .ci/rediacc_ci/quality/w7p5a_real_run_blockers.py,
 with a thin entry point at .ci/scripts/quality/check_w7p5a_real_run_blockers.py
 (see check_go_deps.py / check_worklist_env_registry.py for the split).
 
@@ -72,8 +71,7 @@ def _load_status_paths(root: pathlib.Path) -> dict[str, str]:
 
 
 def _load_status_notes(root: pathlib.Path) -> dict[str, str]:
-    """path -> note, for `ledger`-status rows only. Reuses the file _load_status_paths
-    already validated; a second, narrower read rather than widening that function's
+    """path -> note, for `ledger`-status rows only. Reuses the file _load_status_paths already validated; a second, narrower read rather than widening that function's
     return shape, since every other caller of it wants only the status."""
     sp = _status_path(root)
     data = json.loads(sp.read_text())

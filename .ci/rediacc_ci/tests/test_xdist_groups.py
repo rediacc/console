@@ -49,8 +49,7 @@ EXTRA_TOOLS=(
 
 
 class _Module:
-    """A stand-in for an imported test module. `group_for` reads attributes, so
-    the smallest honest fixture is an object with attributes."""
+    """A stand-in for an imported test module. `group_for` reads attributes, so the smallest honest fixture is an object with attributes."""
 
     def __init__(self, **attrs) -> None:
         self.__dict__.update(attrs)
@@ -77,8 +76,7 @@ def test_the_union_takes_both_claims_from_the_lock_and_the_runner_arrays(tmp_pat
 
 
 def test_a_gate_declaring_no_tree_resource_is_not_in_the_union(tmp_path) -> None:
-    """CONTROL. Without this the union could be "every gate in the lock" and
-    every assertion above would still pass."""
+    """CONTROL. Without this the union could be "every gate in the lock" and every assertion above would still pass."""
     lock, runner = _write(tmp_path)
     assert "test-quiet.sh" not in xdist_groups.real_tree_twins(lock, runner)
 
@@ -90,8 +88,7 @@ def test_a_tree_claim_outside_the_gates_directory_is_not_a_gate_test(tmp_path) -
 
 
 def test_only_fallback_arrays_are_read_from_the_runner(tmp_path) -> None:
-    """CONTROL. The runner declares other arrays; reading them all would inflate
-    the union with names that are not gate tests.
+    """CONTROL. The runner declares other arrays; reading them all would inflate the union with names that are not gate tests.
 
     THE FIRST SPELLING OF THIS FIXTURE WAS BROKEN, AND IT IS WORTH THE LINE. The non-fallback array was named `NOT_A_FALLBACK`, which `endswith("_FALLBACK")` is perfectly happy with, so the control fired against the control rather than against the reader. The name here must not end in `_FALLBACK` for the same reason a probe file must not be named so the glob matches it.
     """
@@ -100,8 +97,7 @@ def test_only_fallback_arrays_are_read_from_the_runner(tmp_path) -> None:
 
 
 def test_an_unreadable_lock_leaves_the_runner_half_standing(tmp_path) -> None:
-    """A broken lock must not empty the answer. It contributes nothing and does
-    not raise, which is `classify_from_lock`'s documented contract."""
+    """A broken lock must not empty the answer. It contributes nothing and does not raise, which is `classify_from_lock`'s documented contract."""
     _lock, runner = _write(tmp_path)
     assert xdist_groups.real_tree_twins(tmp_path / "absent.json", runner) == {"test-from-runner.sh"}
 
@@ -115,9 +111,7 @@ def test_an_absent_runner_leaves_the_lock_half_standing(tmp_path) -> None:
 
 
 def test_both_sources_absent_yields_an_empty_union_rather_than_an_exception(tmp_path) -> None:
-    """The empty case is REACHABLE and returns cleanly, because the refusal
-    belongs to the callers -- who can tell an empty union apart from a crash and
-    say which one happened."""
+    """The empty case is REACHABLE and returns cleanly, because the refusal belongs to the callers -- who can tell an empty union apart from a crash and say which one happened."""
     assert xdist_groups.real_tree_twins(tmp_path / "no.json", tmp_path / "no.sh") == set()
 
 
@@ -175,8 +169,7 @@ def test_an_explicit_group_attribute_is_the_group() -> None:
 
 
 def test_an_explicit_group_beats_the_lock_join() -> None:
-    """Precedence, stated in the module docstring and asserted here: a module may
-    name its own resource without also being a real-tree twin."""
+    """Precedence, stated in the module docstring and asserted here: a module may name its own resource without also being a real-tree twin."""
     module = _Module(XDIST_GROUP="ports", BASH_TWIN=".ci/scripts/test/gates/test-writes.sh")
     assert xdist_groups.group_for(module, {"test-writes.sh"}) == "ports"
 
@@ -187,8 +180,7 @@ def test_a_twin_in_the_union_gets_the_shared_real_tree_group() -> None:
 
 
 def test_two_real_tree_twins_get_the_same_group_not_two_groups() -> None:
-    """Two groups may run on two workers at once, so a reader and a writer in
-    different groups is exactly the collision being prevented. One name."""
+    """Two groups may run on two workers at once, so a reader and a writer in different groups is exactly the collision being prevented. One name."""
     unsafe = {"test-writes.sh", "test-scans.sh"}
     first = xdist_groups.group_for(_Module(BASH_TWIN="a/test-writes.sh"), unsafe)
     second = xdist_groups.group_for(_Module(BASH_TWIN="b/test-scans.sh"), unsafe)
@@ -196,8 +188,7 @@ def test_two_real_tree_twins_get_the_same_group_not_two_groups() -> None:
 
 
 def test_a_twin_outside_the_union_is_ungrouped() -> None:
-    """CONTROL, and the important one: ungrouped items distribute FREELY. A
-    derivation that grouped everything would be green and serial."""
+    """CONTROL, and the important one: ungrouped items distribute FREELY. A derivation that grouped everything would be green and serial."""
     module = _Module(BASH_TWIN=".ci/scripts/test/gates/test-quiet.sh")
     assert xdist_groups.group_for(module, {"test-writes.sh"}) is None
 
@@ -208,8 +199,7 @@ def test_a_module_declaring_neither_is_ungrouped() -> None:
 
 def test_an_empty_group_string_is_not_a_group() -> None:
     """CONTROL. `XDIST_GROUP = ""` would otherwise become a real group named the
-    empty string, silently serialising the module against every other module that
-    got it wrong the same way."""
+    empty string, silently serialising the module against every other module that got it wrong the same way."""
     assert xdist_groups.group_for(_Module(XDIST_GROUP=""), set()) is None
 
 

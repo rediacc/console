@@ -7,8 +7,7 @@ WHY THE LINK IS NOT COSMETIC. `.ci/scripts/quality/check-submodule-branches.sh` 
 console red on a gate no later round can clear by editing code. So the link is part of the push, not a nicety after it.
 
 THE LINK FORMAT IS A SHARED CONTRACT WITH `linked-sub-prs.sh`, which is the READER of what this script writes: it greps the console body for `(https://github.com/)?<owner>/<repo>(/pull/|#)<digits>` and turns the links back into fetch targets so the review machinery can see findings raised in a submodule PR. Two consequences worth stating, since the two files are edited by different
-hands: the URL written here must keep its `owner/repo/pull/N` shape (the `- \\`path\\` -> ` prefix is decoration, the URL is the contract), and the `--dry-run` placeholder `.../pull/DRY-RUN` deliberately does NOT match that grep, which is correct -- a dry run has no PR to fetch from. That file is not
-touched by this port; this paragraph exists so the coupling is written down
+hands: the URL written here must keep its `owner/repo/pull/N` shape (the `- \\`path\\` -> ` prefix is decoration, the URL is the contract), and the `--dry-run` placeholder `.../pull/DRY-RUN` deliberately does NOT match that grep, which is correct -- a dry run has no PR to fetch from. That file is not touched by this port; this paragraph exists so the coupling is written down
 somewhere both ends can find it.
 
 PLAIN PRs, NOT DRAFTS. The four submodules are private repos on a free plan where draft pull requests do not exist and `gh pr create --draft` fails. Console is the repo with the draft flow.
@@ -38,8 +37,7 @@ DEFECT FOUND WHILE PORTING, REPRODUCED NOT REPAIRED, and it is the loudest thing
 arithmetic syntax error, and `set -e` DOES NOT CATCH IT. Driven against the twin on 2026-09-10: the diagnostic prints, the loop body never runs, the script walks on with an empty links file, PATCHes the console PR body with an EMPTY `**Submodule PRs**` block -- destroying whatever links the previous round put there -- and exits 0 with "linked 3.5 submodule PR(s)". Since
 `check-submodule-branches.sh` reads those links from that body, the result is a required gate red on a complaint no later round can clear by editing code.
 
-The handoff validator's enum bounds `submodules` to an array of known paths, so
-this is defence-in-depth failing OPEN rather than a live break; the fix is one
+The handoff validator's enum bounds `submodules` to an array of known paths, so this is defence-in-depth failing OPEN rather than a live break; the fix is one
 `[[ "$count" =~ ^[0-9]+$ ]]` guard, and it belongs to the cutover box, because
 this wave's contract is that the twin stays live and the port is proven equivalent to it. Pinned by `test_a_non_integer_count_wipes_the_block_and_exits_0`.
 
@@ -103,8 +101,7 @@ GH_ATTEMPTS = 3
 # error. jq's `length` never emits a leading zero, so no octal case arises.
 COUNT_RE = re.compile(r"^[0-9]+$")
 
-# The URL a dry run pretends to have opened. Deliberately unmatchable by
-# `linked-sub-prs.sh`'s digit-bounded grep; see the module docstring.
+# The URL a dry run pretends to have opened. Deliberately unmatchable by `linked-sub-prs.sh`'s digit-bounded grep; see the module docstring.
 DRY_RUN_URL = "https://github.com/%s/pull/DRY-RUN"
 
 
@@ -185,8 +182,7 @@ def link_line(path: str, url: str) -> str:
 
 
 def jq_r(program: str, path: str) -> tuple[int, str]:
-    """`jq -r '<program>' <file>`, stderr INHERITED so jq's own diagnostic lands
-    on fd 2 in real time, exactly as the twin's unredirected jq does."""
+    """`jq -r '<program>' <file>`, stderr INHERITED so jq's own diagnostic lands on fd 2 in real time, exactly as the twin's unredirected jq does."""
     proc = subprocess.run(
         ["jq", "-r", program, path],
         stdout=subprocess.PIPE,

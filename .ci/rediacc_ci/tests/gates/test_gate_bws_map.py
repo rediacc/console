@@ -173,8 +173,7 @@ def test_empty_tree_is_not_a_pass(gate, tmp_path):
 
 
 def test_the_instrument_runs_before_any_verdict(gate):
-    """PORT-ONLY. Every case above reads a VERDICT out of the gate, and a verdict
-    is worth nothing if the instrument that produced it was never proven.
+    """PORT-ONLY. Every case above reads a VERDICT out of the gate, and a verdict is worth nothing if the instrument that produced it was never proven.
 
     `check_bws_map.py` runs its own `selftest()` ahead of every judgement (its `main` calls it and refuses when it fails), so this drives that path directly and requires it green. A gate whose pure logic is broken must never reach the tree at all, and this is the case that says so out loud rather than trusting the ordering to stay put.
     """

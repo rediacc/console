@@ -200,9 +200,7 @@ def run(ev):
     if not shellscan.gh_pr_at_command_pos(scan, "merge"):
         return hookio.ALLOW
 
-    # SCAN is the only parsed view: it already carries the prose-stripped command plus any unwrapped shell-wrapper payload. A second, separately-built stripped
-    # view used to exist for field parsing; keeping two views in sync is the drift
-    # hazard lib/command-scan.sh already records, so fields are read from SCAN.
+    # SCAN is the only parsed view: it already carries the prose-stripped command plus any unwrapped shell-wrapper payload. A second, separately-built stripped view used to exist for field parsing; keeping two views in sync is the drift hazard lib/command-scan.sh already records, so fields are read from SCAN.
 
     # --admin ban: match the flag in ANY form on the raw command (=value,
     # assignment, inside a wrapper payload). Over-blocking is the safe direction.
@@ -217,9 +215,8 @@ def run(ev):
         root = hookio.git_out(["rev-parse", "--show-toplevel"])
     cwd = ev.field("cwd")
 
-    # Every field (repo, selector, --auto) is read from the SEGMENT that carries this `gh pr merge`, and EACH merge on the line is checked on its own. Parsing line-wide cross-attributed fields between sibling invocations -- observed
-    # live: `gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo
-    # rediacc/account` resolved as rediacc/renet#66, an unrelated long-merged PR, and blocked the merge on THAT PR's threads. It also examined only one of several merges on a line. See hook_gh_pr_segment.
+    # Every field (repo, selector, --auto) is read from the SEGMENT that carries this `gh pr merge`, and EACH merge on the line is checked on its own. Parsing line-wide cross-attributed fields between sibling invocations -- observed live: `gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo rediacc/account` resolved as rediacc/renet#66, an unrelated long-merged PR, and
+    # blocked the merge on THAT PR's threads. It also examined only one of several merges on a line. See hook_gh_pr_segment.
     segs = shellscan.gh_pr_segment(scan, "merge")
     records, _ = shellscan._records(shellscan._here_string(segs))
     for seg in records:
@@ -252,8 +249,7 @@ def run(ev):
                 )
                 return hookio.DENY
 
-        # Report-reply hygiene (both --auto and immediate): the newest finished review report must have a substantive id-referencing reply. Reuses the CI
-        # gate script verbatim; fails CLOSED on script/network failure.
+        # Report-reply hygiene (both --auto and immediate): the newest finished review report must have a substantive id-referencing reply. Reuses the CI gate script verbatim; fails CLOSED on script/network failure.
         token = hookio.run_out(["gh", "auth", "token"])
         out, rc = _run_capture(
             [

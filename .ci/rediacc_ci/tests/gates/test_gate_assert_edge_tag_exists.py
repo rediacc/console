@@ -17,9 +17,8 @@ WHAT IT ASSERTS, with a fake `gh` and a fake `aws` (no network, no promotion):
   7. ANTI-VACUITY: the passing case must have actually CALLED all three probes. A
      script returning 0 without probing would satisfy 4 alone.
 
-CONTROL-FIRST. The mutant is assembled BY CONSTRUCTION -- head, a literal replacement arm written here, tail, split on the subject's own `COULD_NOT_TELL_ARM_BEGIN` / `_END` anchors -- in which "could not tell" returns 0
-instead of failing. Case 5 must go GREEN against it; if it does not, this module
-declares itself broken. The mutant is also proven LIVE (case 4 still 0, case 1 still 1) so a mutant that merely crashes cannot masquerade as a firing control.
+CONTROL-FIRST. The mutant is assembled BY CONSTRUCTION -- head, a literal replacement arm written here, tail, split on the subject's own `COULD_NOT_TELL_ARM_BEGIN` / `_END` anchors -- in which "could not tell" returns 0 instead of failing. Case 5 must go GREEN against it; if it does not, this module declares itself broken. The mutant is also proven LIVE (case 4 still 0, case 1
+still 1) so a mutant that merely crashes cannot masquerade as a firing control.
 
 NO PATTERN SUBSTITUTION OF A LIVE LINE, and that is the point of the anchors: a reworded arm cannot silently yield a "mutant" identical to the source. The port keeps both refusals the twin has -- anchors missing, and mutant identical to source -- because either one turns the control into decoration.
 

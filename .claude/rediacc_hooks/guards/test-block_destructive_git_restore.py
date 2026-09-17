@@ -65,8 +65,7 @@ ALLOW = [
     "git diff -- packages/www",
     "git add -- src/file.ts",
     "npm run check:i18n",
-    # Prose mentioning the command must not trip it; hooks scan commands, and a
-    # commit message or an echo is not an invocation.
+    # Prose mentioning the command must not trip it; hooks scan commands, and a commit message or an echo is not an invocation.
     "echo 'never run git restore in a shared tree'",
 ]
 

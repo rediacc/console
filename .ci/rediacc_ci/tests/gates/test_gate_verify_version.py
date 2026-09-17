@@ -116,9 +116,7 @@ def test_latest_still_requires_a_real_version(gate):
 
 
 def test_the_founding_defect_fires(gate):
-    """The control on every case above: the OLD body must ACCEPT what the new one
-    refuses. If it did not, these tests would be decorative and would have let
-    the incident through unchanged."""
+    """The control on every case above: the OLD body must ACCEPT what the new one refuses. If it did not, these tests would be decorative and would have let the incident through unchanged."""
     gate.assert_eq(
         old_verify("rdc 1.2.17", ""),
         0,
@@ -133,9 +131,7 @@ def test_the_founding_defect_fires(gate):
 
 
 def test_the_extraction_anchor_is_present(gate):
-    """PORT-ONLY. The twin refuses at load time when the anchor is gone; a pytest
-    module cannot refuse at import without taking the whole file down, so the
-    refusal becomes its own case and stays visible in the report."""
+    """PORT-ONLY. The twin refuses at load time when the anchor is gone; a pytest module cannot refuse at import without taking the whole file down, so the refusal becomes its own case and stays visible in the report."""
     require_subject(gate)
     gate.log_pass(
         "verify_version() extracted from %s (%d lines)"

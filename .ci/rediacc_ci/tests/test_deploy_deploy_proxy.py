@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.deploy_proxy` against its twin
-`.ci/scripts/deploy/deploy-proxy.sh`.
+"""Differential: `rediacc_ci.deploy.deploy_proxy` against its twin `.ci/scripts/deploy/deploy-proxy.sh`.
 
 RECORDING FAKE `npm` AND `npx` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT. NOTHING IS BUILT HERE. The twin's first real act is two `npm run build --workspace` runs from the repo root (:33-34), and the fake `npm` is what stops them: a differential that let those run would compile `@rediacc/shared` and `@rediacc/cli` for real, twice per case. The root is made to agree across the two
 implementations exactly as in the two sibling differentials -- a COPY of `common.sh` inside `tmp_path` for the bash side, `$REDIACC_CI_ROOT` for the port -- and `test_the_copied_twin_is_the_real_twin` keeps the copy honest.
@@ -34,8 +33,7 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "deploy_proxy.py"
 COMMON_SH = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# `uname` and `dirname` are what `common.sh` needs at source time; `tr` is
-# `to_upper` (common.sh:302), which every `parse_args` key goes through.
+# `uname` and `dirname` are what `common.sh` needs at source time; `tr` is `to_upper` (common.sh:302), which every `parse_args` key goes through.
 PATH_MINIMUM = ("tr", "uname", "dirname")
 
 FAKE_NPX = """#!/usr/bin/python3
@@ -197,9 +195,7 @@ def test_the_copied_twin_is_the_real_twin(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_default_run_is_a_real_deploy_and_is_pinned_in_full(tmp_path: pathlib.Path) -> None:
-    """TWO BUILDS FROM THE ROOT, THEN ONE BARE `wrangler deploy` FROM THE WORKER
-    DIRECTORY. Note the deploy carries no `--config`, unlike both siblings, and
-    that `--dry-run` defaults to false so the DEFAULT is the deploying path."""
+    """TWO BUILDS FROM THE ROOT, THEN ONE BARE `wrangler deploy` FROM THE WORKER DIRECTORY. Note the deploy carries no `--config`, unlike both siblings, and that `--dry-run` defaults to false so the DEFAULT is the deploying path."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root)
     assert old.returncode == 0, old.stderr
@@ -217,9 +213,7 @@ def test_the_default_run_is_a_real_deploy_and_is_pinned_in_full(tmp_path: pathli
 
 
 def test_the_three_closing_lines_all_carry_the_check_glyph(tmp_path: pathlib.Path) -> None:
-    """THEY GO THROUGH `log_info`, INCLUDING THE ONE THAT IS A COMMAND TO COPY
-    (:49). A reader pasting that line pastes a `✓ ` and two spaces with it, so
-    the port must not "clean up" the middle line into a plain print."""
+    """THEY GO THROUGH `log_info`, INCLUDING THE ONE THAT IS A COMMAND TO COPY (:49). A reader pasting that line pastes a `✓ ` and two spaces with it, so the port must not "clean up" the middle line into a plain print."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root)
     for line in port.CLOSING_LINES:
@@ -229,9 +223,7 @@ def test_the_three_closing_lines_all_carry_the_check_glyph(tmp_path: pathlib.Pat
 
 
 def test_the_region_is_printed_and_never_passed_to_wrangler(tmp_path: pathlib.Path) -> None:
-    """`REGION` REACHES ONE LOG LINE AND NO ARGV (:26, :45). Two regions produce
-    two different messages and byte-identical calls, which is the whole point of
-    comparing the call log rather than the streams alone."""
+    """`REGION` REACHES ONE LOG LINE AND NO ARGV (:26, :45). Two regions produce two different messages and byte-identical calls, which is the whole point of comparing the call log rather than the streams alone."""
     root = _fixture_root(tmp_path)
     eu_old, eu_new, eu_old_calls, eu_new_calls = run_both(tmp_path, root)
     as_old, as_new, as_old_calls, as_new_calls = run_both(tmp_path, root, "--region", "asia")
@@ -245,8 +237,7 @@ def test_the_region_is_printed_and_never_passed_to_wrangler(tmp_path: pathlib.Pa
 
 def test_an_absent_region_defaults_to_eu(tmp_path: pathlib.Path) -> None:
     """`${ARG_REGION:-eu}` (:26), and `--region=` is EMPTY, which the `:-` form
-    also replaces. A port using `args.get("ARG_REGION", "eu")` would print an
-    empty region for the second case."""
+    also replaces. A port using `args.get("ARG_REGION", "eu")` would print an empty region for the second case."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--region=")
     assert "(region: %s)" % port.DEFAULT_REGION in old.stderr
@@ -276,8 +267,7 @@ def test_a_bare_dry_run_flag_takes_the_dry_run_path(tmp_path: pathlib.Path) -> N
 
 
 def test_the_dry_run_still_builds_first(tmp_path: pathlib.Path) -> None:
-    """THE BUILD IS NOT SKIPPED ON A DRY RUN (:31-34 run before the branch at
-    :38), which is what makes the dry run a real check of the CLI bundle."""
+    """THE BUILD IS NOT SKIPPED ON A DRY RUN (:31-34 run before the branch at :38), which is what makes the dry run a real check of the CLI bundle."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--dry-run")
     assert old_calls.count("npm\trun\tbuild") == 2
@@ -285,9 +275,7 @@ def test_the_dry_run_still_builds_first(tmp_path: pathlib.Path) -> None:
 
 
 def test_only_the_literal_true_is_a_dry_run(tmp_path: pathlib.Path) -> None:
-    """`--dry-run yes` IS A REAL DEPLOY. The comparison at :38 is against the
-    string `true` and nothing else, so a plausible-looking value deploys the
-    executor. Driven in both directions rather than argued."""
+    """`--dry-run yes` IS A REAL DEPLOY. The comparison at :38 is against the string `true` and nothing else, so a plausible-looking value deploys the executor. Driven in both directions rather than argued."""
     root = _fixture_root(tmp_path)
     for value, deploying in (("true", False), ("false", True), ("yes", True), ("1", True)):
         old, new, old_calls, new_calls = run_both(tmp_path, root, "--dry-run", value)
@@ -298,8 +286,7 @@ def test_only_the_literal_true_is_a_dry_run(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_dry_run_outdir_is_a_fixed_tmp_path(tmp_path: pathlib.Path) -> None:
-    """NOT A `mktemp` (:40). Two concurrent dry runs write the same directory,
-    and so does anything else that picks the name. Reproduced as the literal."""
+    """NOT A `mktemp` (:40). Two concurrent dry runs write the same directory, and so does anything else that picks the name. Reproduced as the literal."""
     del tmp_path
     assert port.DRY_RUN_OUTDIR in _twin_source()
     assert "mktemp" not in _twin_source()
@@ -335,9 +322,7 @@ def test_an_empty_token_refuses_exactly_as_an_absent_one_does(tmp_path: pathlib.
 
 
 def test_the_account_id_is_documented_and_never_checked(tmp_path: pathlib.Path) -> None:
-    """DEFECT, REPRODUCED NOT FIXED. The header (:16) lists
-    `CLOUDFLARE_ACCOUNT_ID` under "Requires:" and no line reads it, so a run
-    without it builds the CLI and calls wrangler anyway."""
+    """DEFECT, REPRODUCED NOT FIXED. The header (:16) lists `CLOUDFLARE_ACCOUNT_ID` under "Requires:" and no line reads it, so a run without it builds the CLI and calls wrangler anyway."""
     source = _twin_source()
     assert source.count("CLOUDFLARE_ACCOUNT_ID") == 1, "the header mention, and nothing else"
     assert "require_var" not in source
@@ -350,11 +335,9 @@ def test_the_account_id_is_documented_and_never_checked(tmp_path: pathlib.Path) 
 
 
 def test_the_build_runs_before_the_directory_is_checked(tmp_path: pathlib.Path) -> None:
-    """DEFECT, REPRODUCED NOT FIXED. There is no guard on `workers/proxy` (:36),
-    unlike the `-f` checks both siblings do FIRST, so a missing worker directory costs a full CLI build before bash's own `cd` diagnostic ends the run.
+    """DEFECT, REPRODUCED NOT FIXED. There is no guard on `workers/proxy` (:36), unlike the `-f` checks both siblings do FIRST, so a missing worker directory costs a full CLI build before bash's own `cd` diagnostic ends the run.
 
-    The divergence in that diagnostic is the usual one: bash prefixes it with
-    the script path and a line number."""
+    The divergence in that diagnostic is the usual one: bash prefixes it with the script path and a line number."""
     root = _fixture_root(tmp_path, worker="absent")
     old, new, old_calls, new_calls = run_both(tmp_path, root)
     assert old.returncode == 1
@@ -369,9 +352,7 @@ def test_the_build_runs_before_the_directory_is_checked(tmp_path: pathlib.Path) 
 
 
 def test_a_worker_path_that_is_a_file_says_not_a_directory(tmp_path: pathlib.Path) -> None:
-    """THE REASON COMES FROM THE OPERATING SYSTEM, NOT FROM A LITERAL. A port
-    that hard-coded "No such file or directory" would be wrong here, and the
-    only way to notice is to drive the case."""
+    """THE REASON COMES FROM THE OPERATING SYSTEM, NOT FROM A LITERAL. A port that hard-coded "No such file or directory" would be wrong here, and the only way to notice is to drive the case."""
     root = _fixture_root(tmp_path, worker="file")
     old, new, old_calls, new_calls = run_both(tmp_path, root)
     assert old.returncode == new.returncode == 1
@@ -382,8 +363,7 @@ def test_a_worker_path_that_is_a_file_says_not_a_directory(tmp_path: pathlib.Pat
 
 
 def test_a_failed_first_build_stops_before_the_second(tmp_path: pathlib.Path) -> None:
-    """`set -e` on :33. `@rediacc/cli` must NOT be built, and the status is
-    npm's own."""
+    """`set -e` on :33. `@rediacc/cli` must NOT be built, and the status is npm's own."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, FAKE_NPM_RC="2")
     assert old.returncode == 2
@@ -411,9 +391,7 @@ def test_a_failed_deploy_prints_none_of_the_closing_lines(tmp_path: pathlib.Path
 
 
 def test_a_flag_that_is_not_a_shell_identifier_exits_two(tmp_path: pathlib.Path) -> None:
-    """`parse_args` IS CALLED HERE (:22), unlike in `deploy-edge.sh`, so a flag
-    bash cannot turn into a variable name kills the run with `printf`'s status
-    before the token is even looked at."""
+    """`parse_args` IS CALLED HERE (:22), unlike in `deploy-edge.sh`, so a flag bash cannot turn into a variable name kills the run with `printf`'s status before the token is even looked at."""
     root = _fixture_root(tmp_path)
     old, new, old_calls, new_calls = run_both(tmp_path, root, "--foo.bar", "x")
     assert old.returncode == 2
@@ -442,8 +420,7 @@ def test_the_literals_are_still_the_twins(tmp_path: pathlib.Path) -> None:
 def test_the_deploy_call_still_carries_no_config_flag(tmp_path: pathlib.Path) -> None:
     """THE DIFFERENCE FROM BOTH SIBLINGS, re-derived rather than remembered.
 
-    The twin names `--config` exactly ONCE, and it is inside the closing `log_info` that tells a human what to paste next -- never on a line this script runs. If a `--config` ever appears on the deploy itself, this fails
-    instead of the port silently deploying a different Worker."""
+    The twin names `--config` exactly ONCE, and it is inside the closing `log_info` that tells a human what to paste next -- never on a line this script runs. If a `--config` ever appears on the deploy itself, this fails instead of the port silently deploying a different Worker."""
     del tmp_path
     source = _twin_source()
     assert "npx wrangler deploy\n" in source

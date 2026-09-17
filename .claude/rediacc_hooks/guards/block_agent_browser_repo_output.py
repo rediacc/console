@@ -118,8 +118,7 @@ EDGE_CASES = [
 def _expand(word):
     """One unquoted word, after bash pathname expansion.
 
-    A word with no glob character is itself; one that matches nothing is left
-    literally (nullglob is off); otherwise it becomes its sorted matches.
+    A word with no glob character is itself; one that matches nothing is left literally (nullglob is off); otherwise it becomes its sorted matches.
     """
     if not any(char in word for char in "*?["):
         return [word]

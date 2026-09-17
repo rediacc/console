@@ -282,9 +282,8 @@ def controls_fired(matcher, min_score, min_margin) -> list[str]:
 def glued_stopword_seams(src: str) -> list:
     """Literal seams in _STOPWORD_TEXT that silently merge two words into one.
 
-    THE DEFECT, 2026-08-26. Adjacent Python string literals concatenate with NOTHING between them, so a literal that does not end in a space glues its last word to the next literal's first word. Two waves rebased together each
-    appended a line to this list; one lacked the trailing space, `touched` and
-    `see` became `touchedsee`, and BOTH tokens stopped being stopwords. Nothing failed: the list still parsed, still had a plausible length, and the two lost words simply started scoring as domain terms again.
+    THE DEFECT, 2026-08-26. Adjacent Python string literals concatenate with NOTHING between them, so a literal that does not end in a space glues its last word to the next literal's first word. Two waves rebased together each appended a line to this list; one lacked the trailing space, `touched` and `see` became `touchedsee`, and BOTH tokens stopped being stopwords. Nothing
+    failed: the list still parsed, still had a plausible length, and the two lost words simply started scoring as domain terms again.
 
     That is the shape this whole gate exists for -- a matcher that is quietly less healthy than it looks -- so the check belongs here rather than in a new gate of its own.
 
@@ -448,8 +447,7 @@ def main() -> int:
         ),
         # THE FOUR THAT ACTUALLY MISFIRED, 2026-08-26, verbatim.
         #
-        # Each drew a push-back from a specialist on ORDINARY ENGLISH, because discriminative() asks only whether a term is unique across 13 documents, and uniqueness there is a weak proxy for specificity. `while` reached media-pipeline ("render finished pairs WHILE the GPU
-        # narrates"); `miss`/`see`/`suite` reached e2e-local ("MISSING
+        # Each drew a push-back from a specialist on ORDINARY ENGLISH, because discriminative() asks only whether a term is unique across 13 documents, and uniqueness there is a weak proxy for specificity. `while` reached media-pipeline ("render finished pairs WHILE the GPU narrates"); `miss`/`see`/`suite` reached e2e-local ("MISSING
         # bin/renet", "just push and SEE what CI says", "E2E SUITES");
         # `step`/`stop` reached gate-author; `next` reached media-pipeline.
         #
@@ -460,19 +458,16 @@ def main() -> int:
         # The fix could NOT have been to raise PUSHBACK_MIN_SCORE: it sits below the hint's floor deliberately, and the sentence this whole check was built for -- "neither local worker has /etc/ceph" -- scores exactly 1.0 on `ceph`, so lifting it to 2 would silence the motivating incident, which is pinned as a positive regression a few lines below. THE MISFIRE THAT ACTUALLY
         # REPRODUCES, 2026-08-26, verbatim.
         #
-        # `while` reached media-pipeline because its description says "render finished pairs WHILE the GPU narrates", and discriminative() asks only whether a term is unique across 13 documents. Uniqueness there is a weak proxy for specificity, so ordinary English scored as a domain term. Deleting the conjunction line from wl_agents._STOPWORD_TEXT makes
-        # this line fire and this gate exit 1; that was measured, not assumed.
+        # `while` reached media-pipeline because its description says "render finished pairs WHILE the GPU narrates", and discriminative() asks only whether a term is unique across 13 documents. Uniqueness there is a weak proxy for specificity, so ordinary English scored as a domain term. Deleting the conjunction line from wl_agents._STOPWORD_TEXT makes this line fire and this gate
+        # exit 1; that was measured, not assumed.
         #
         # ONLY ONE OF THE FOUR MISFIRES IS PINNED HERE, deliberately. The other three (miss/see/suite, step/stop, next) score above the push-back floor but are suppressed by pushback_for's mention-is-not-a-claim rule, which is correct behaviour, so no phrasing of them can fail this gate. They were written, measured silent under their own planted defects, and removed rather than
         # left in looking like coverage. A control that cannot fire is worse than an absent one: it reports protection nobody has. Their stopwords are still covered by the four planted defects the anti-vacuity harness runs above.
         "pre-existing bug fixed while there: setup ran bare npm install",
         #
         # THE `verb` MISFIRE, 2026-09-08, verbatim, and the same shape one class wider. `verb` sits in exactly ONE description (backup-storage: "the rdc backup and rdc datastore CLI verbs") so discriminative() hands it over at full weight, while the word is house vocabulary everywhere else -- CLAUDE.md says "Use the VERBS, not the file", and worklist_messages.py prints it back at
-        # the session every stop. This sentence is about a stdin
-        # hang in worklist.py itself; `no way to` supplied the impossibility half
-        # and `verb` the whole of the domain half, scoring on the single term ['verb']. Deleting `"verb verbs"` from wl_agents._STOPWORD_TEXT makes
-        # this line fire and this gate exit 1; that was measured in a scratch
-        # repo root, not assumed. A real backup claim still fires, on ['chunk', 'datastore', 'prune', 'restore', 'snapshot', 'store'].
+        # the session every stop. This sentence is about a stdin hang in worklist.py itself; `no way to` supplied the impossibility half and `verb` the whole of the domain half, scoring on the single term ['verb']. Deleting `"verb verbs"` from wl_agents._STOPWORD_TEXT makes this line fire and this gate exit 1; that was measured in a scratch repo root, not assumed. A real backup
+        # claim still fires, on ['chunk', 'datastore', 'prune', 'restore', 'snapshot', 'store'].
         (
             "the verb that writes the compaction-recovery document therefore had "
             "no way to fail; it just stopped, and the liveness check reports it as alive"

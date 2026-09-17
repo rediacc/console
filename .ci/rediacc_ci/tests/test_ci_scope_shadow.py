@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.ci.scope_shadow` against its twin
-`.ci/scripts/ci/scope-shadow.sh`.
+"""Differential: `rediacc_ci.ci.scope_shadow` against its twin `.ci/scripts/ci/scope-shadow.sh`.
 
 THREE LAYERS, because this pair has three genuinely different risks.
 
@@ -444,8 +443,7 @@ def test_a_crashed_baseline_engine_produces_no_plan_and_no_outputs(
 
 
 def test_a_drifted_key_set_refuses_to_emit_any_output(tmp_path: pathlib.Path) -> None:
-    """The drift detector at `scope-shadow.sh:247-249`: an 18th surface the
-    workflow's inputs do not describe makes the whole round full."""
+    """The drift detector at `scope-shadow.sh:247-249`: an 18th surface the workflow's inputs do not describe makes the whole round full."""
     fixture = build_fixture(tmp_path, base_conf(baseline_keys=[*SURFACES, "an_eighteenth_surface"]))
     old, new = run_both(fixture, HEAD_SHA="deadbeefcafe")
     assert "_**the output emitter FAILED**" in old[1]
@@ -552,8 +550,7 @@ def test_a_planted_sort_in_the_digest_is_caught(tmp_path: pathlib.Path) -> None:
 
     awk emits them in FIRST-SEEN order, which for greenlight is cost-descending (`greenlight.cjs:81-85`), and a reader uses that order to see which keys the budget reached. Sorting looks like an improvement and destroys the signal. If this ever passes, the layer-3 comparison has stopped comparing anything.
 
-    The real file is hashed before and after; the mutation lives in the fixture
-    copy only.
+    The real file is hashed before and after; the mutation lives in the fixture copy only.
     """
     before = PORT.read_bytes()
     source = PORT.read_text(encoding="utf-8")

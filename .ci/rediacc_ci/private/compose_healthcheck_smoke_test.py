@@ -1,24 +1,15 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/private/compose-healthcheck-smoke-test.sh`.
 
-Deploys the `app-postgres` template on the worker VM through the production
-`rdc` orchestration path and asserts that the `db` container's Docker
-healthcheck (`pg_isready -h localhost`, which traverses the eBPF connect4
-rewrite `127.0.0.1 -> SERVICE_IP4`) converges to `healthy` inside a bounded
-window, then that the `app` container reached `running` on the strength of its
+Deploys the `app-postgres` template on the worker VM through the production `rdc` orchestration path and asserts that the `db` container's Docker healthcheck (`pg_isready -h localhost`, which traverses the eBPF connect4 rewrite `127.0.0.1 -> SERVICE_IP4`) converges to `healthy` inside a bounded window, then that the `app` container reached `running` on the strength of its
 `depends_on: db.condition: service_healthy`.
 
-THE BASH TWIN REMAINS THE LIVE CALL SITE. Nothing in `package.json`,
-`scripts/ci-runner/manifest.ts` or any workflow points at this module, and this
-module carries NO `---- gate ----` header, exactly as the twin carries none: the
-twin is invoked by hand and by the private CT lane, not by the gate estate.
-Cutover is a separate, later, driver-only step and is not done here.
+THE BASH TWIN REMAINS THE LIVE CALL SITE. Nothing in `package.json`, `scripts/ci-runner/manifest.ts` or any workflow points at this module, and this module carries NO `---- gate ----` header, exactly as the twin carries none: the twin is invoked by hand and by the private CT lane, not by the gate estate. Cutover is a separate, later, driver-only step and is not done here.
 
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHY EVEN THE CLOCK IS
 -----------------------------------------------------------------------------
-Four externals, each with the twin's argv verbatim: `rdc`, `ssh`, `date` and
-`sleep`. Two of those could obviously have been done in-process and are not:
+Four externals, each with the twin's argv verbatim: `rdc`, `ssh`, `date` and `sleep`. Two of those could obviously have been done in-process and are not:
 
   * `date +%s` could have been `time.time()`. It is not, because the recorded
     call log is the only place the polling cadence is observable at all, and
@@ -29,25 +20,16 @@ Four externals, each with the twin's argv verbatim: `rdc`, `ssh`, `date` and
     plus one more: a differential that really slept would take minutes and would
     be quietly deleted the first time someone ran the suite in a hurry.
 
-`whoami` is a FIFTH external, reached only when both `SSH_USER` and `USER` are
-unset or empty.
+`whoami` is a FIFTH external, reached only when both `SSH_USER` and `USER` are unset or empty.
 
 -----------------------------------------------------------------------------
 THE EXIT TRAP RUNS TWICE ON EVERY SUCCESSFUL RUN, AND THAT IS THE TWIN
 -----------------------------------------------------------------------------
-`cleanup` is installed with `trap cleanup EXIT` AND called once explicitly as a
-pre-clean before `repo create`. So "Cleanup (best-effort)" appears twice on a
-healthy run and the four `rdc repo down` / `rdc repo delete` calls appear in
-pairs. Reproduced exactly, including the doubled log line.
+`cleanup` is installed with `trap cleanup EXIT` AND called once explicitly as a pre-clean before `repo create`. So "Cleanup (best-effort)" appears twice on a healthy run and the four `rdc repo down` / `rdc repo delete` calls appear in pairs. Reproduced exactly, including the doubled log line.
 
-The trap is installed AFTER the environment block, so a run that dies parsing
-`VM_WORKERS` or `HOME` produces NO cleanup at all. That ordering is load-bearing
-(there is nothing to clean up yet) and is reproduced: the `try` starts where the
-`trap` does, not at the top of `main`.
+The trap is installed AFTER the environment block, so a run that dies parsing `VM_WORKERS` or `HOME` produces NO cleanup at all. That ordering is load-bearing (there is nothing to clean up yet) and is reproduced: the `try` starts where the `trap` does, not at the top of `main`.
 
-Bash preserves the status that triggered an EXIT trap unless the handler exits
-itself; this one does not, so a `rdc repo up` failing with 7 leaves the script
-exiting 7 after cleanup. Driven with a fake `rdc` returning 7; pinned.
+Bash preserves the status that triggered an EXIT trap unless the handler exits itself; this one does not, so a `rdc repo up` failing with 7 leaves the script exiting 7 after cleanup. Driven with a fake `rdc` returning 7; pinned.
 
 -----------------------------------------------------------------------------
 THE POLL CAPTURE IS AN OUTPUT FORMAT, NOT JUST A READ
@@ -70,8 +52,7 @@ the third is the one a port gets wrong:
      of `healthy|0` are the same string.
 
 `${state%%|*}` / `${state#*|}` are NOT symmetric: with no `|` in the reply at
-all, `status` and `streak` are BOTH the whole string. `split_state` reproduces
-that rather than tidying it.
+all, `status` and `streak` are BOTH the whole string. `split_state` reproduces that rather than tidying it.
 
 -----------------------------------------------------------------------------
 TIMEOUT_SECS IS EVALUATED AS BASH ARITHMETIC, WHICH IS A REAL DEFECT
@@ -79,21 +60,15 @@ TIMEOUT_SECS IS EVALUATED AS BASH ARITHMETIC, WHICH IS A REAL DEFECT
 `deadline=$(($(date +%s) + TIMEOUT_SECS))` puts the variable inside `$(( ))`, so
 its value is an ARITHMETIC EXPRESSION and not a decimal count of seconds. A
 LEADING ZERO THEREFORE SELECTS OCTAL: `TIMEOUT_SECS=060` waits 48 seconds, not
-60, while the log line one row above still prints `timeout 060s` because that
-one is a plain string interpolation. Measured 2026-09-14 against a stepped clock
-fake: 5 poll iterations at `120`, 2 at `060`.
+60, while the log line one row above still prints `timeout 060s` because that one is a plain string interpolation. Measured 2026-09-14 against a stepped clock fake: 5 poll iterations at `120`, 2 at `060`.
 
-Reported as a finding against the twin and REPRODUCED here rather than repaired,
-because a port whose window differed from its twin's would not be a port.
+Reported as a finding against the twin and REPRODUCED here rather than repaired, because a port whose window differed from its twin's would not be a port.
 
-`arith` covers the literal forms bash accepts for a value of this shape -- signed
-decimal, `0`-prefixed octal, `0x` hex, surrounding whitespace -- plus the two
-error shapes below. IT DELIBERATELY DOES NOT IMPLEMENT OPERATORS: `TIMEOUT_SECS`
+`arith` covers the literal forms bash accepts for a value of this shape -- signed decimal, `0`-prefixed octal, `0x` hex, surrounding whitespace -- plus the two error shapes below. IT DELIBERATELY DOES NOT IMPLEMENT OPERATORS: `TIMEOUT_SECS`
 is documented by the twin as "Max seconds to wait", and `TIMEOUT_SECS=1+1` is
 outside the ported subset. That boundary is stated here rather than discovered.
 
-Both error shapes are reproduced because they behave DIFFERENTLY, and the
-difference is a bash quirk nobody would guess:
+Both error shapes are reproduced because they behave DIFFERENTLY, and the difference is a bash quirk nobody would guess:
 
   * An UNSET IDENTIFIER (`TIMEOUT_SECS=abc`) is a `set -u` violation. It is
     fatal: one diagnostic, exit 1.
@@ -106,14 +81,9 @@ difference is a bash quirk nobody would guess:
 -----------------------------------------------------------------------------
 LOG GLYPHS ARE DOUBLED, AND THAT TOO IS THE TWIN
 -----------------------------------------------------------------------------
-`log_info` already prefixes a green check, so `log_info "<check> db reached
-healthy"` prints TWO of them. Cosmetic, reported, reproduced.
+`log_info` already prefixes a green check, so `log_info "<check> db reached healthy"` prints TWO of them. Cosmetic, reported, reproduced.
 
-Two authored strings carry U+2014. They are SPELLED AS ESCAPES, not as the
-character: `check:ci-em-dash-surfaces` scans `.ci/rediacc_ci/**/*.py` against a
-shrink-only baseline and a literal here would be a new finding in a gate that is
-right to object. The escape emits the identical bytes, which is what the
-differential compares.
+Two authored strings carry U+2014. They are SPELLED AS ESCAPES, not as the character: `check:ci-em-dash-surfaces` scans `.ci/rediacc_ci/**/*.py` against a shrink-only baseline and a literal here would be a new finding in a gate that is right to object. The escape emits the identical bytes, which is what the differential compares.
 
 -----------------------------------------------------------------------------
 ENVIRONMENT
@@ -132,12 +102,9 @@ see every name:
     TIMEOUT_SECS  default 120
 
 `${VAR:-default}` means UNSET OR EMPTY both take the default. `HOME` is the
-exception in shape: it is a BARE `$HOME` inside another default, so it is only
-read when `SSH_KEY` is unset or empty, and it is a `set -u` violation when that
-happens and `HOME` is not set. Both halves reproduced.
+exception in shape: it is a BARE `$HOME` inside another default, so it is only read when `SSH_KEY` is unset or empty, and it is a `set -u` violation when that happens and `HOME` is not set. Both halves reproduced.
 
-`read -ra WORKER_IDS <<<"..."` reads ONE LINE and splits it on spaces and tabs.
-A value that is only whitespace therefore yields an EMPTY ARRAY, and
+`read -ra WORKER_IDS <<<"..."` reads ONE LINE and splits it on spaces and tabs. A value that is only whitespace therefore yields an EMPTY ARRAY, and
 `${WORKER_IDS[0]}` under `set -u` is fatal before the trap is installed.
 """
 
@@ -160,8 +127,7 @@ DEFAULT_TIMEOUT_SECS = "120"
 # `REPO_NAME="healthcheck-smoke"`. Not overridable, in either subject.
 REPO_NAME = "healthcheck-smoke"
 
-# `sleep 5` between polls. A string because it is an argv element, never a
-# number: the differential compares the recorded argument, not an int.
+# `sleep 5` between polls. A string because it is an argv element, never a number: the differential compares the recorded argument, not an int.
 POLL_INTERVAL = "5"
 
 # The `ssh` options, in the twin's order. `StrictHostKeyChecking=no` is right
@@ -171,12 +137,8 @@ SSH_OPTIONS = ("-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=15")
 # ---------------------------------------------------------------------------
 # THE FOUR REMOTE PROGRAMS, BYTE FOR BYTE.
 #
-# Each is ONE argument to ssh, newlines and indentation included, and each was
-# extracted from a recorded run of the twin rather than retyped from the source:
-# the twin writes them inside double quotes with `\"` and `\$` escapes, and
-# transcribing those by eye is how a port ends up sending `$sock` where the twin
-# sent a literal `$sock` that the REMOTE shell expands. The differential asserts
-# every one of them character for character against the twin's recorded argv.
+# Each is ONE argument to ssh, newlines and indentation included, and each was extracted from a recorded run of the twin rather than retyped from the source: the twin writes them inside double quotes with `\"` and `\$` escapes, and transcribing those by eye is how a port ends up sending `$sock` where the twin sent a literal `$sock` that the REMOTE shell expands. The differential
+# asserts every one of them character for character against the twin's recorded argv.
 # ---------------------------------------------------------------------------
 
 POLL_REMOTE = """sudo bash -c '
@@ -218,26 +180,18 @@ APP_REMOTE = """sudo bash -c '
   echo "missing"
 '"""
 
-# The fallbacks the `||` arms of the two command substitutions supply. They
-# differ by one character (`|`) and the difference matters: the poll reply is
-# split on `|` and the app reply is compared whole.
+# The fallbacks the `||` arms of the two command substitutions supply. They differ by one character (`|`) and the difference matters: the poll reply is split on `|` and the app reply is compared whole.
 POLL_FALLBACK = "ssh-error|"
 APP_FALLBACK = "ssh-error"
 
-# U+2713 and U+2014 AS ESCAPES, NOT AS CHARACTERS. See the docstring: a literal
-# em dash here would be a new finding in `check:ci-em-dash-surfaces`, which
-# scans this directory against a shrink-only baseline and is right to object.
-# The check glyph is spelled the same way only so the two look alike in source.
-# Both emit the identical bytes, which is what the differential compares.
+# U+2713 and U+2014 AS ESCAPES, NOT AS CHARACTERS. See the docstring: a literal em dash here would be a new finding in `check:ci-em-dash-surfaces`, which scans this directory against a shrink-only baseline and is right to object. The check glyph is spelled the same way only so the two look alike in source. Both emit the identical bytes, which is what the differential compares.
 _CHECK = "\u2713"
 _EMDASH = "\u2014"
 
-# `read -ra` splits on IFS, whose default is space, tab and newline; the newline
-# is what TERMINATED the line, so only the first two can appear inside it.
+# `read -ra` splits on IFS, whose default is space, tab and newline; the newline is what TERMINATED the line, so only the first two can appear inside it.
 _IFS_WHITESPACE = " \t"
 
-# The literal forms bash's arithmetic accepts for a value of this shape. Order
-# matters: octal must be tried before decimal or `060` reads as sixty.
+# The literal forms bash's arithmetic accepts for a value of this shape. Order matters: octal must be tried before decimal or `060` reads as sixty.
 _HEX = re.compile(r"0[xX][0-9a-fA-F]+\Z")
 _OCTAL = re.compile(r"0[0-7]*\Z")
 _DECIMAL = re.compile(r"[1-9][0-9]*\Z")
@@ -249,10 +203,7 @@ class BashUnboundVariableError(Exception):
 
 
 class BashArithmeticError(Exception):
-    """An arithmetic expansion error. Bash prints
-    `<token>: value too great for base (error token is "<token>")` and, in a
-    SCRIPT FILE, DOES NOT EXIT. The caller decides what happens next, because
-    what happens next is the interesting half."""
+    """An arithmetic expansion error. Bash prints `<token>: value too great for base (error token is "<token>")` and, in a SCRIPT FILE, DOES NOT EXIT. The caller decides what happens next, because what happens next is the interesting half."""
 
 
 class _BashExitError(Exception):
@@ -266,11 +217,7 @@ class _BashExitError(Exception):
 def worker_ids(value: str) -> list[str]:
     """`read -ra WORKER_IDS <<<"$value"`, as a list.
 
-    ONE LINE ONLY: a here-string is fed to `read`, which stops at the first
-    newline, so `$'11\\n12'` yields `["11"]` and not two ids. Leading and
-    trailing IFS whitespace is discarded, runs of it collapse, and an
-    all-whitespace value yields an EMPTY LIST -- which is not a quiet default
-    but the `set -u` failure the twin dies on.
+    ONE LINE ONLY: a here-string is fed to `read`, which stops at the first newline, so `$'11\\n12'` yields `["11"]` and not two ids. Leading and trailing IFS whitespace is discarded, runs of it collapse, and an all-whitespace value yields an EMPTY LIST -- which is not a quiet default but the `set -u` failure the twin dies on.
 
     Exported so the differential can exercise the splitting directly.
     """
@@ -283,13 +230,9 @@ def worker_ids(value: str) -> list[str]:
 def arith(text: str) -> int:
     """One bash arithmetic OPERAND, evaluated as bash would evaluate it.
 
-    Empty is 0, which is what `$(( ))` and `[[ "" -lt 1 ]]` both do, and is the
-    value a command substitution of a missing `date` collapses to.
+    Empty is 0, which is what `$(( ))` and `[[ "" -lt 1 ]]` both do, and is the value a command substitution of a missing `date` collapses to.
 
-    Raises `BashUnboundVariableError` for a bare name that is not in the environment
-    and `BashArithmeticError` for anything else that is not a literal. See the
-    module docstring for why the two are not interchangeable and for the
-    operators this deliberately does not implement.
+    Raises `BashUnboundVariableError` for a bare name that is not in the environment and `BashArithmeticError` for anything else that is not a literal. See the module docstring for why the two are not interchangeable and for the operators this deliberately does not implement.
     """
     token = text.strip()
     if not token:
@@ -307,15 +250,13 @@ def arith(text: str) -> int:
     if _HEX.match(body):
         return sign * int(body, 0)
     if _OCTAL.match(body):
-        # THE DEFECT THIS LINE REPRODUCES. `060` is 48, not 60. `08` reaches
-        # neither this branch nor the decimal one and is bash's "value too great
+        # THE DEFECT THIS LINE REPRODUCES. `060` is 48, not 60. `08` reaches neither this branch nor the decimal one and is bash's "value too great
         # for base", which is exactly right: `8` is not an octal digit.
         return sign * int(body, 8)
     if _DECIMAL.match(body):
         return sign * int(body, 10)
     if _IDENTIFIER.match(body):
-        # Bash resolves the name as a shell variable. An exported one is a shell
-        # variable; an unset one is a `set -u` violation.
+        # Bash resolves the name as a shell variable. An exported one is a shell variable; an unset one is a `set -u` violation.
         resolved = os.environ.get(body)
         if resolved is None:
             raise BashUnboundVariableError(body)
@@ -326,31 +267,23 @@ def arith(text: str) -> int:
 def split_state(state: str) -> tuple[str, str]:
     """`status="${state%%|*}"` and `streak="${state#*|}"`, together.
 
-    ASYMMETRIC ON PURPOSE. With no `|` present, `%%|*` leaves the string
-    untouched and `#*|` also leaves it untouched, so BOTH come back as the whole
-    reply. A port that returned `("healthy", "")` there would be tidier and
-    would not be the same script.
+    ASYMMETRIC ON PURPOSE. With no `|` present, `%%|*` leaves the string untouched and `#*|` also leaves it untouched, so BOTH come back as the whole reply. A port that returned `("healthy", "")` there would be tidier and would not be the same script.
 
-    Only the FIRST `|` splits, on both sides: a reply of `a|b|c` is `a` and
-    `b|c`, never `a` and `c`.
+    Only the FIRST `|` splits, on both sides: a reply of `a|b|c` is `a` and `b|c`, never `a` and `c`.
     """
     head, sep, tail = state.partition("|")
     return head, tail if sep else state
 
 
 def ssh_argv(key: str, user: str, host: str, command: str) -> list[str]:
-    """The `_ssh` wrapper's full argv. Exported so the differential can assert
-    the option order without reaching into this module's private state."""
+    """The `_ssh` wrapper's full argv. Exported so the differential can assert the option order without reaching into this module's private state."""
     return ["ssh", "-i", key, *SSH_OPTIONS, "%s@%s" % (user, host), command]
 
 
 def _diagnostic(message: str) -> str:
     """`<$0>: line <n>: <message>`, the shape bash puts on a script's stderr.
 
-    The line number is the CALLER's, read from the live frame rather than
-    hard-coded, so it cannot go stale when this file is reflowed. The
-    differential masks the whole prefix on both sides, because the two can never
-    be equal, and pins that the mask hides only the prefix.
+    The line number is the CALLER's, read from the live frame rather than hard-coded, so it cannot go stale when this file is reflowed. The differential masks the whole prefix on both sides, because the two can never be equal, and pins that the mask hides only the prefix.
     """
     frame = inspect.currentframe()
     back = frame.f_back if frame is not None else None
@@ -366,10 +299,7 @@ def _warn_to_stderr(message: str) -> None:
 def _reconfigure_streams() -> None:
     """Let bytes that are not UTF-8 travel through this process unharmed.
 
-    A container name, a docker error or an ssh banner is whatever the remote
-    host sent. Bash moves those bytes without decoding them; a port that decoded
-    strictly would raise where the twin merely printed, so both streams are put
-    into `surrogateescape` and every capture is decoded the same way.
+    A container name, a docker error or an ssh banner is whatever the remote host sent. Bash moves those bytes without decoding them; a port that decoded strictly would raise where the twin merely printed, so both streams are put into `surrogateescape` and every capture is decoded the same way.
     """
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
@@ -384,8 +314,7 @@ def _decode(raw: bytes) -> str:
 def _strict(argv: list[str], *, stdout=None) -> None:
     """One command under `set -e`: return on 0, raise `_BashExitError` otherwise.
 
-    A missing binary becomes bash's own `command not found` on STDERR and status
-    127, because the only redirection at these call sites is on stdout.
+    A missing binary becomes bash's own `command not found` on STDERR and status 127, because the only redirection at these call sites is on stdout.
     """
     try:
         completed = subprocess.run(argv, stdout=stdout, check=False)
@@ -399,9 +328,7 @@ def _strict(argv: list[str], *, stdout=None) -> None:
 def _quiet(argv: list[str]) -> int:
     """`<cmd> 2>/dev/null || true`: status returned, stderr and ENOENT swallowed.
 
-    THE ENOENT IS THE SUBTLE PART. Bash applies the redirection BEFORE the
-    lookup fails, so its own `command not found` goes to `/dev/null` too and the
-    caller sees a silent 127. Verified directly against bash, not assumed.
+    THE ENOENT IS THE SUBTLE PART. Bash applies the redirection BEFORE the lookup fails, so its own `command not found` goes to `/dev/null` too and the caller sees a silent 127. Verified directly against bash, not assumed.
     """
     try:
         with open(os.devnull, "wb") as devnull:
@@ -411,8 +338,7 @@ def _quiet(argv: list[str]) -> int:
 
 
 def _loud(argv: list[str]) -> None:
-    """`<cmd> || true` with NO redirection: both streams inherited, status and a
-    missing binary both swallowed, but the `command not found` IS printed."""
+    """`<cmd> || true` with NO redirection: both streams inherited, status and a missing binary both swallowed, but the `command not found` IS printed."""
     try:
         subprocess.run(argv, check=False)
     except FileNotFoundError:
@@ -422,10 +348,7 @@ def _loud(argv: list[str]) -> None:
 def _capture_or(argv: list[str], fallback: str) -> str:
     """`$(<cmd> 2>/dev/null || echo "<fallback>")`.
 
-    The fallback is APPENDED to whatever the command already printed, not
-    substituted for it, because the substitution captures the AND-OR list as a
-    whole. Trailing newlines are then stripped from the result, once, exactly as
-    `$()` strips them.
+    The fallback is APPENDED to whatever the command already printed, not substituted for it, because the substitution captures the AND-OR list as a whole. Trailing newlines are then stripped from the result, once, exactly as `$()` strips them.
     """
     try:
         with open(os.devnull, "wb") as devnull:
@@ -445,8 +368,7 @@ def _clock() -> tuple[str, int]:
 
     Returns the text and the status, because the two call sites disagree about
     the status: inside the `deadline=` assignment a failing `date` is fatal
-    under `set -e`, while inside the `while [[ ... ]]` condition it is not.
-    A missing `date` prints bash's diagnostic and reports 127 in both.
+    under `set -e`, while inside the `while [[ ... ]]` condition it is not. A missing `date` prints bash's diagnostic and reports 127 in both.
     """
     try:
         completed = subprocess.run(["date", "+%s"], stdout=subprocess.PIPE, check=False)
@@ -459,9 +381,7 @@ def _clock() -> tuple[str, int]:
 def _cleanup(machine: str) -> None:
     """The EXIT trap, and also a hand-called pre-clean. Both, on every run.
 
-    Nothing here can fail the script: each `rdc` call has its stderr discarded
-    and its status swallowed, which is what "best-effort" means and also why a
-    completely absent `rdc` leaves no trace in the transcript at this point.
+    Nothing here can fail the script: each `rdc` call has its stderr discarded and its status swallowed, which is what "best-effort" means and also why a completely absent `rdc` leaves no trace in the transcript at this point.
     """
     log.step("Cleanup (best-effort)")
     target = "%s@%s" % (REPO_NAME, machine)
@@ -472,8 +392,7 @@ def _cleanup(machine: str) -> None:
 def _resolve_ssh_user() -> str:
     """`SSH_USER="${SSH_USER:-${USER:-$(whoami)}}"`, one env read per name.
 
-    The `whoami` arm is a command substitution inside an ASSIGNMENT, so its
-    failure is fatal under `set -e` and its status is the script's.
+    The `whoami` arm is a command substitution inside an ASSIGNMENT, so its failure is fatal under `set -e` and its status is the script's.
     """
     explicit = os.environ.get("SSH_USER", "")
     if explicit:
@@ -495,8 +414,7 @@ def _resolve_ssh_key() -> str:
     """`SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"`.
 
     `$HOME` is BARE, not `${HOME:-}`, and it sits inside the default word: it is
-    read only when `SSH_KEY` is unset or empty, and it is a `set -u` violation
-    when that happens and `HOME` is not set.
+    read only when `SSH_KEY` is unset or empty, and it is a `set -u` violation when that happens and `HOME` is not set.
     """
     explicit = os.environ.get("SSH_KEY", "")
     if explicit:
@@ -513,15 +431,13 @@ def _poll(key: str, user: str, vm_ip: str, timeout_text: str) -> tuple[str, str]
 
     The loop's shape is the twin's, including the two things a tidier port would
     change: the deadline is tested BEFORE the first probe (so `TIMEOUT_SECS=0`
-    never probes at all and reports `unknown`), and the `sleep` happens AFTER
-    the last probe even when the next deadline test is certain to end the loop.
+    never probes at all and reports `unknown`), and the `sleep` happens AFTER the last probe even when the next deadline test is certain to end the loop.
     """
     log.step("Polling db healthcheck (timeout %ss)" % timeout_text)
 
     now_text, status_code = _clock()
     if status_code != 0:
-        # A failing or missing `date` inside the ASSIGNMENT is fatal: the
-        # assignment takes the substitution's status and `set -e` fires.
+        # A failing or missing `date` inside the ASSIGNMENT is fatal: the assignment takes the substitution's status and `set -e` fires.
         raise _BashExitError(status_code)
     try:
         deadline: int | None = arith(now_text) + arith(timeout_text)
@@ -529,8 +445,7 @@ def _poll(key: str, user: str, vm_ip: str, timeout_text: str) -> tuple[str, str]
         _warn_to_stderr(_diagnostic("%s: unbound variable" % exc.args[0]))
         raise _BashExitError(1) from None
     except BashArithmeticError as exc:
-        # NOT FATAL IN A SCRIPT FILE. The diagnostic is printed, `deadline` is
-        # left UNSET, and the next line is the one that kills the run.
+        # NOT FATAL IN A SCRIPT FILE. The diagnostic is printed, `deadline` is left UNSET, and the next line is the one that kills the run.
         _warn_to_stderr(
             _diagnostic(
                 '%s: value too great for base (error token is "%s")' % (exc.args[0], exc.args[0])
@@ -541,11 +456,7 @@ def _poll(key: str, user: str, vm_ip: str, timeout_text: str) -> tuple[str, str]
     status = "unknown"
     streak = ""
     while True:
-        # `while [[ $(date +%s) -lt $deadline ]]`. THE ORDER OF THESE THREE
-        # STEPS IS BASH'S, not a convenience. Word expansion runs left to right
-        # and completes BEFORE `[[` evaluates any arithmetic, so the clock runs
-        # first, then an unset `$deadline` is a fatal `set -u` violation, and
-        # only then is either side read as a number.
+        # `while [[ $(date +%s) -lt $deadline ]]`. THE ORDER OF THESE THREE STEPS IS BASH'S, not a convenience. Word expansion runs left to right and completes BEFORE `[[` evaluates any arithmetic, so the clock runs first, then an unset `$deadline` is a fatal `set -u` violation, and only then is either side read as a number.
         now_text, _ = _clock()
         if deadline is None:
             _warn_to_stderr(_diagnostic("deadline: unbound variable"))
@@ -556,10 +467,7 @@ def _poll(key: str, user: str, vm_ip: str, timeout_text: str) -> tuple[str, str]
             _warn_to_stderr(_diagnostic("%s: unbound variable" % exc.args[0]))
             raise _BashExitError(1) from None
         except BashArithmeticError as exc:
-            # Inside `[[ ]]` bash prefixes its own name to the diagnostic and
-            # the test returns FALSE, which ends the loop WITHOUT `set -e`
-            # firing: a `while` condition is exempt. The run then takes the
-            # timeout path with whatever status it last saw.
+            # Inside `[[ ]]` bash prefixes its own name to the diagnostic and the test returns FALSE, which ends the loop WITHOUT `set -e` firing: a `while` condition is exempt. The run then takes the timeout path with whatever status it last saw.
             _warn_to_stderr(
                 _diagnostic(
                     '[[: %s: value too great for base (error token is "%s")'
@@ -582,9 +490,7 @@ def _poll(key: str, user: str, vm_ip: str, timeout_text: str) -> tuple[str, str]
 
 
 def _dump_diagnostics(key: str, user: str, vm_ip: str) -> None:
-    """The failure dump. Neither call redirects stderr and neither can fail the
-    run; the container listing lands on STDOUT, where a caller collecting the
-    transcript will find it next to whatever ssh wrote to stderr."""
+    """The failure dump. Neither call redirects stderr and neither can fail the run; the container listing lands on STDOUT, where a caller collecting the transcript will find it next to whatever ssh wrote to stderr."""
     log.step("[diag] db container state + recent logs")
     _loud(ssh_argv(key, user, vm_ip, DIAG_REMOTE))
     log.step("[diag] postgres listening sockets on host")
@@ -615,10 +521,7 @@ def _body(argv: list[str]) -> int:
         with open(os.devnull, "wb") as devnull:
             _strict(["rdc", "config", "ssh", "set", "--key", ssh_key], stdout=devnull)
         if _quiet(["rdc", "machine", "add", machine, "--ip", vm_ip, "--user", ssh_user]) != 0:
-            # EVERY failure warns, including "rdc is not installed" and "that IP
-            # is malformed". The twin's own wording says "already registered",
-            # which is a guess it does not verify; `rdc machine setup` on the
-            # next line is what actually catches the other cases.
+            # EVERY failure warns, including "rdc is not installed" and "that IP is malformed". The twin's own wording says "already registered", which is a guess it does not verify; `rdc machine setup` on the next line is what actually catches the other cases.
             log.warn("Machine '%s' already registered (continuing)" % machine)
         log.step("Provisioning renet on worker")
         _strict(["rdc", "machine", "setup", machine])
@@ -660,22 +563,17 @@ def _body(argv: list[str]) -> int:
     except _BashExitError as exc:
         return exc.code
     finally:
-        # `trap cleanup EXIT`. It runs on the healthy path, on every `set -e`
-        # death after this point, and on both explicit `exit 1`s -- and it does
-        # NOT change the status, which is why it is a `finally` and not a
-        # `return`.
+        # `trap cleanup EXIT`. It runs on the healthy path, on every `set -e` death after this point, and on both explicit `exit 1`s -- and it does NOT change the status, which is why it is a `finally` and not a `return`.
         _cleanup(machine)
 
 
 def main(argv: list[str]) -> int:
-    """The twin ignores its arguments entirely; so does this, and `argv` is
-    accepted only so the signature matches every other module in the package."""
+    """The twin ignores its arguments entirely; so does this, and `argv` is accepted only so the signature matches every other module in the package."""
     _reconfigure_streams()
     try:
         return _body(argv)
     except _BashExitError as exc:
-        # The environment block, which runs BEFORE the trap is installed. A
-        # death here produces no cleanup, exactly as in the twin.
+        # The environment block, which runs BEFORE the trap is installed. A death here produces no cleanup, exactly as in the twin.
         return exc.code
 
 

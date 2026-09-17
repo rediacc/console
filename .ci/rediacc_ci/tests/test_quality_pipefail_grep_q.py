@@ -99,8 +99,7 @@ def test_port_and_twin_agree_byte_for_byte(tmp_path: pathlib.Path, count: int) -
 
 
 def test_a_clean_corpus_is_green_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """The mirror the parametrized cases need: a gate that flagged everything
-    would satisfy all five of them and be useless."""
+    """The mirror the parametrized cases need: a gate that flagged everything would satisfy all five of them and be useless."""
     root = build(tmp_path, 0)
     (old_exit, old_out, old_err), (new_exit, new_out, new_err) = run_both(root)
     assert old_exit == 0
@@ -183,8 +182,7 @@ def test_offenders_in(text: str, hits: int) -> None:
 def test_a_line_naming_two_local_functions_is_reported_twice() -> None:
     """One `grep -n` per function name, so a line matching two is two hits.
 
-    Pinned because it looks like a missing de-duplication and is the twin's
-    shape; a port that collapsed it would disagree on the count.
+    Pinned because it looks like a missing de-duplication and is the twin's shape; a port that collapsed it would disagree on the count.
     """
     text = "set -o pipefail\nabe() { :; }\nzed() { :; }\nif abe zed | %s x; then :; fi\n" % GQ
     assert len(gate.offenders_in(text)) == 2
@@ -227,9 +225,7 @@ def test_the_mechanism_control_reproduces_on_this_host(tmp_path: pathlib.Path) -
 def test_the_builtin_mechanism_control_reproduces_on_this_host(tmp_path: pathlib.Path) -> None:
     """The OTHER half of the OS claim, and a different kernel path from the above.
 
-    bash traps SIGPIPE for its own builtins, so `printf` does not die -- it takes EPIPE from write(2) and returns non-zero, which pipefail promotes. The gate
-    flags eleven `printf`/`echo` sites on the strength of that; if it ever stops
-    reproducing, those flags are guarding a myth and this must go red rather than skip.
+    bash traps SIGPIPE for its own builtins, so `printf` does not die -- it takes EPIPE from write(2) and returns non-zero, which pipefail promotes. The gate flags eleven `printf`/`echo` sites on the strength of that; if it ever stops reproducing, those flags are guarding a myth and this must go red rather than skip.
     """
     assert gate.mechanism_builtin_output(tmp_path) == "MISSED"
 

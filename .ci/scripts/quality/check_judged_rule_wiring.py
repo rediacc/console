@@ -80,8 +80,7 @@ def wiring_of(module, drivers):
             r"^\s*import\s+%s\s+as\s+([A-Za-z_][A-Za-z0-9_]*)" % module, src, re.MULTILINE
         )
         names = [module] + ([alias.group(1)] if alias else [])
-        # A CALL, not a mention: the name followed by a dot, an attribute, and an open
-        # paren. `wl_shapedup.run(` counts; the word inside a comment does not.
+        # A CALL, not a mention: the name followed by a dot, an attribute, and an open paren. `wl_shapedup.run(` counts; the word inside a comment does not.
         if any(re.search(r"\b%s\.[A-Za-z_][A-Za-z0-9_]*\(" % re.escape(n), src) for n in names):
             called.append(name)
     return imported, called

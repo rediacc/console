@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported rubric-calibration gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.rubric_calibration`.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.rubric_calibration`.
 
 CUT OVER FROM BASH 2026-09-07 (W7 P4). Measured that day:
 
@@ -15,8 +14,7 @@ rubrics in the same order, byte for byte.
 
 WHY AN ENTRY POINT AT ALL. A port cannot be run by path (`from rediacc_ci ...` fails with `.ci` off `sys.path`, which the insert below fixes), and the `-m` form that does work is unreadable to `check:ci-parity`'s tokenizer, which resolves its leaves to `[python3]`. `check_npmrc.py` records both measurements.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-rubric-calibration.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-rubric-calibration.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
 
 ---- gate ---- step: Rubric calibration
      # The EXISTING step name. Renaming a step is a separate change from

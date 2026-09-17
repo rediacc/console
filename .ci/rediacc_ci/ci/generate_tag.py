@@ -2,15 +2,12 @@
 """Port of `.ci/scripts/ci/generate-tag.sh` (362 lines, 4 tag modes).
 
 Mints the tag a CI-built Docker image is published under. The twin is mostly COMMENT -- roughly 200 of its 362 lines argue for the membership of each hashed input, record the measured incidents that shaped the closure key (the v1.2.12 "Version mismatch: expected '1.2.13', got '1.2.12'" runs, the weekly bucket, the 12-hex widening after 3-char collisions), and name what the key
-still does not
-cover. All of that stays in the twin and is not restated here; what follows is
-only what a reader of THIS file needs.
+still does not cover. All of that stays in the twin and is not restated here; what follows is only what a reader of THIS file needs.
 
 FOUR MODES, in the twin's own precedence order (`--submodule` > `--closure` > `--self` > time-based). The precedence is silent: `--self --closure web` runs the closure and says nothing about the ignored flag.
 
-LIVE CALLERS, not repointed: `.ci/scripts/ci/initialize.sh` calls `--submodule private/renet`, `--closure web` and `--closure rdc`, publishing the last two as `web_tag`/`rdc_tag`, which `cd-stage.yml` retags straight onto a release
-channel. The bash twin stays the registered gate; this module is its
-verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
+LIVE CALLERS, not repointed: `.ci/scripts/ci/initialize.sh` calls `--submodule private/renet`, `--closure web` and `--closure rdc`, publishing the last two as `web_tag`/`rdc_tag`, which `cd-stage.yml` retags straight onto a release channel. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only
+step.
 
 Ledger: `.ci/shadow/w7p6-generate-tag.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-generate-tag --assert --k 5`).
 
@@ -44,9 +41,7 @@ The message sends the reader to `BUILD_CONFIG_FILES` when the fault is the worki
 -----------------------------------------------------------------------------
 DEFECT I: THE `else CI_TAG="$SUBMODULE_COMMIT"` ARM IS UNREACHABLE
 -----------------------------------------------------------------------------
-`BUILD_CONFIG_HASH` is built from a NON-EMPTY hard-coded list whose every miss exits 1, so `[[ -n "$BUILD_CONFIG_HASH" ]]` is always true and the bare-commit tag can never be produced. Dead code that reads as a supported fallback.
-`UNREACHABLE_BARE_COMMIT_TAG` names it; the port keeps the arm so the two files
-stay line-comparable.
+`BUILD_CONFIG_HASH` is built from a NON-EMPTY hard-coded list whose every miss exits 1, so `[[ -n "$BUILD_CONFIG_HASH" ]]` is always true and the bare-commit tag can never be produced. Dead code that reads as a supported fallback. `UNREACHABLE_BARE_COMMIT_TAG` names it; the port keeps the arm so the two files stay line-comparable.
 
 -----------------------------------------------------------------------------
 DEFECT J: A MISSING OPTION VALUE DIES AS BASH, NOT AS THE SCRIPT

@@ -24,8 +24,7 @@ THE HEADER'S "ALWAYS EXITS 0" CLAIM IS NOT TRUE, AND THE PORT REPRODUCES THE UNT
     saying a purge was skipped.
   * A NON-JSON BODY. Exit 5, as above.
 
-`ALWAYS_EXITS_ZERO_IS_FALSE` names it so a test can assert it by name. Both are reproduced because the acceptance rule for this wave is agreement with the live
-twin; repairing either is a cutover-box decision, not this one's.
+`ALWAYS_EXITS_ZERO_IS_FALSE` names it so a test can assert it by name. Both are reproduced because the acceptance rule for this wave is agreement with the live twin; repairing either is a cutover-box decision, not this one's.
 
 TWO DIVERGENCES, BOTH IN TEXT THAT ONLY A HUMAN READS:
 
@@ -228,8 +227,7 @@ def _jq(args: list[str], stdin_text: str) -> tuple[int, str]:
 def payload_for(batch: list[str]) -> str:
     """`printf '%s\\n' "${BATCH[@]}" | jq -R . | jq -sc '{files: .}'` (:89).
 
-    `jq -R .` makes each LINE a JSON string, `jq -sc` slurps them into one array. Under `pipefail` the pipeline's status is the last command to fail, and the
-    assignment then feeds `set -e`; that is why this raises rather than returns.
+    `jq -R .` makes each LINE a JSON string, `jq -sc` slurps them into one array. Under `pipefail` the pipeline's status is the last command to fail, and the assignment then feeds `set -e`; that is why this raises rather than returns.
     """
     printed = "".join(url + "\n" for url in batch)
     rc_r, quoted = _jq(["-R", "."], printed)
@@ -244,8 +242,7 @@ def _curl(argv: list[str]) -> str:
     """`RESPONSE=$(curl ...)`: stdout captured, stderr inherited, `set -e` armed."""
     proc = subprocess.run(argv, stdout=subprocess.PIPE, text=True, check=False)
     if proc.returncode != 0:
-        # THE FIRST HALF OF THE DEFECT NAMED IN THE DOCSTRING. The header promises
-        # exit 0; this is curl's status ending the run instead.
+        # THE FIRST HALF OF THE DEFECT NAMED IN THE DOCSTRING. The header promises exit 0; this is curl's status ending the run instead.
         raise BashExitError(proc.returncode)
     return proc.stdout.rstrip("\n")
 

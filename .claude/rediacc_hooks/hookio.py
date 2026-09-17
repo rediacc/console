@@ -166,8 +166,7 @@ class Event:
         return got if got != "" else fallback
 
     def texts(self, *paths):
-        """The `[.content, .new_string, .new_source, (.edits[]?.new_string)]`
-        collector four pre-edit guards share, joined by newlines.
+        """The `[.content, .new_string, .new_source, (.edits[]?.new_string)]` collector four pre-edit guards share, joined by newlines.
 
         jq prints an array under `-r` as one element per line, so the bash receives a newline-joined string and greps it as a whole. Nulls are printed as the word `null` by `-r`, and the four guards that use this
         all filter them out with `| select(. != null)`, so this does too.

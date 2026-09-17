@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.pr.sync_epic_block` against its twin
-`.ci/scripts/pr/sync-epic-block.sh`.
+"""Differential: `rediacc_ci.pr.sync_epic_block` against its twin `.ci/scripts/pr/sync-epic-block.sh`.
 
 A DISPOSABLE LOCAL GIT REPO (never GitHub), on the same strategy as `test_review_epic_context.py`: real commits, an `agent/pr/<branch>.md` snapshot the twin reads by convention, `git rev-parse --show-toplevel` resolving the fixture root rather than this checkout's.
 
@@ -152,9 +151,7 @@ def _assert_agree(old, new, label: str) -> None:
 
 
 def _normalize_edit_call(calls: list[str]) -> list[str]:
-    """The last token of the `pr edit` call is a per-run mktemp path, which
-    necessarily differs between the two independent subprocess runs; every
-    other token (the verb sequence and its fixed flags) must still match."""
+    """The last token of the `pr edit` call is a per-run mktemp path, which necessarily differs between the two independent subprocess runs; every other token (the verb sequence and its fixed flags) must still match."""
     return [c.rsplit("\t", 1)[0] if c.startswith("pr\tedit") else c for c in calls]
 
 
@@ -236,9 +233,7 @@ def test_gh_pr_edit_replaces_existing_block_and_url_passes_through(tmp_path: pat
 
 
 def test_gh_edit_stdout_is_not_swallowed(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY for the pass-through requirement. `gh pr edit`'s own
-    stdout (the PR URL) must appear BEFORE the final checkmark line on both sides -- a port that captured and discarded it would still exit 0 and
-    print the checkmark, passing every other assertion in this file."""
+    """ANTI-VACUITY for the pass-through requirement. `gh pr edit`'s own stdout (the PR URL) must appear BEFORE the final checkmark line on both sides -- a port that captured and discarded it would still exit 0 and print the checkmark, passing every other assertion in this file."""
     repo = _repo(tmp_path)
     _snapshot(repo, "0906-1", "- [x] a\n")
     gh_env = {"FAKE_GH_BODY": "plain body\n"}
@@ -272,8 +267,8 @@ def test_gh_pr_edit_failure_propagates(tmp_path: pathlib.Path) -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY. Flip `line == BEGIN` to `line.startswith(BEGIN)` in the
-    marker-strip helper -- a plausible-looking "more lenient" rewrite that breaks exact-line equality, which the twin's own header calls out explicitly ("exact-line equality on the markers (not a substring match)"). Driven red on a body whose begin marker has trailing content on the same line as real prose containing the marker text, then the
-    source is restored byte-identical and re-verified green."""
+    marker-strip helper -- a plausible-looking "more lenient" rewrite that breaks exact-line equality, which the twin's own header calls out explicitly ("exact-line equality on the markers (not a substring match)"). Driven red on a body whose begin marker has trailing content on the same line as real prose containing the marker text, then the source is restored byte-identical
+    and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
         "if line == BEGIN:\n            skip = True",

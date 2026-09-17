@@ -166,9 +166,7 @@ def test_display_status_scans_the_whole_file_unlike_the_exemption_reader(
 def test_blob_is_real_answers_yes_for_a_minted_blob_and_no_for_a_fake(
     tmp_path: pathlib.Path,
 ) -> None:
-    """BOTH DIRECTIONS. A `blob_is_real` that always answers yes exempts every
-    plan carrying the word `compacted`, which is the worse of the two failures
-    and the reason the twin plants both."""
+    """BOTH DIRECTIONS. A `blob_is_real` that always answers yes exempts every plan carrying the word `compacted`, which is the worse of the two failures and the reason the twin plants both."""
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=False, capture_output=True)
     minted = subprocess.run(
         ["git", "-C", str(tmp_path), "hash-object", "-w", "--stdin"],

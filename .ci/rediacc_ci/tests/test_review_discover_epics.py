@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.review.discover_epics` against its twin
-`.ci/scripts/review/discover-epics.sh`.
+"""Differential: `rediacc_ci.review.discover_epics` against its twin `.ci/scripts/review/discover-epics.sh`.
 
 A DISPOSABLE LOCAL GIT REPO, same strategy as `test_review_epic_context.py` and `test_pr_sync_epic_block.py`, and here it is not merely convenient: the subject resolves its snapshot root through `git rev-parse --show-toplevel`, so a fixture that is not a git repository would silently fall back to `.` and BOTH sides would then read the same wrong place and agree. Every case below
 runs with cwd inside a real fixture repo carrying a real `agent/pr/<branch>.md`.
@@ -177,9 +176,7 @@ def test_two_epics_and_a_slash_in_the_branch_name(tmp_path: pathlib.Path) -> Non
 
 
 def test_indented_and_uppercase_trailers_are_invisible(tmp_path: pathlib.Path) -> None:
-    """BOTH DIRECTIONS in one fixture: the anchored, lowercase-only grep must
-    ignore an indented line, an uppercase id and a trailing-comment line, and
-    must still see the one well-formed trailer below them."""
+    """BOTH DIRECTIONS in one fixture: the anchored, lowercase-only grep must ignore an indented line, an uppercase id and a trailing-comment line, and must still see the one well-formed trailer below them."""
     repo = _repo(tmp_path)
     _snapshot(
         repo,
@@ -196,8 +193,7 @@ def test_indented_and_uppercase_trailers_are_invisible(tmp_path: pathlib.Path) -
 
 
 def test_github_output_file_receives_the_assignment(tmp_path: pathlib.Path) -> None:
-    """The FILE is the artifact here. A port that wrote the assignment to
-    stdout instead would produce an identical human line and an empty file."""
+    """The FILE is the artifact here. A port that wrote the assignment to stdout instead would produce an identical human line and an empty file."""
     repo = _repo(tmp_path)
     _snapshot(repo, "0906-1", "`PR-TASK: ab12cd34`\n")
     old_out = tmp_path / "old-output.txt"
@@ -237,8 +233,7 @@ def test_empty_github_output_reads_as_unset(tmp_path: pathlib.Path) -> None:
 
 
 def test_worklist_publish_root_override_is_honoured(tmp_path: pathlib.Path) -> None:
-    """common.sh:610's override, which is how the two sides can be pointed at
-    a snapshot outside whatever checkout they are standing in."""
+    """common.sh:610's override, which is how the two sides can be pointed at a snapshot outside whatever checkout they are standing in."""
     repo = _repo(tmp_path)
     elsewhere = _repo(tmp_path, name="elsewhere")
     _snapshot(elsewhere, "0906-1", "`PR-TASK: 99aabb00`\n")
@@ -249,10 +244,7 @@ def test_worklist_publish_root_override_is_honoured(tmp_path: pathlib.Path) -> N
 
 
 def test_missing_jq_refuses_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """`require_cmd jq` is the twin's FIRST statement, so a machine without jq
-    refuses before it ever looks at PR_HEAD_REF. The port keeps the check even though it never shells out to jq -- see its docstring. The seam is a PATH
-    carrying every other binary the two need and nothing named jq; the port is
-    invoked by absolute interpreter path so it can still start."""
+    """`require_cmd jq` is the twin's FIRST statement, so a machine without jq refuses before it ever looks at PR_HEAD_REF. The port keeps the check even though it never shells out to jq -- see its docstring. The seam is a PATH carrying every other binary the two need and nothing named jq; the port is invoked by absolute interpreter path so it can still start."""
     repo = _repo(tmp_path)
     old, new = run_both(repo, PATH=_path_without_jq(tmp_path), PR_HEAD_REF="0906-1")
     assert old.returncode == 1
@@ -308,8 +300,7 @@ def test_defect_fixed_stdout_as_a_socket_no_longer_loses_the_assignment(
         port rc=0 stdout='no epics declared ...\nepics=[""]\n'
 
     GITHUB_OUTPUT is always set in Actions, so the live matrix never hit it;
-    every local run and every Node-harness run did, including the shadow-gate recording this port's own ledger, which is how it was found. Both sides
-    are asserted here, so a revert of either turns this red."""
+    every local run and every Node-harness run did, including the shadow-gate recording this port's own ledger, which is how it was found. Both sides are asserted here, so a revert of either turns this red."""
     repo = _repo(tmp_path)
     _snapshot(repo, "0906-1", "`PR-TASK: ab12cd34`\n")
     env = dict(BASE_ENV, PR_HEAD_REF="0906-1")
@@ -322,8 +313,7 @@ def test_defect_fixed_stdout_as_a_socket_no_longer_loses_the_assignment(
 
 
 def test_defect_fixed_socket_stdout_on_the_empty_case_too(tmp_path: pathlib.Path) -> None:
-    """The same defect on the OTHER call site -- the flat-pass `[""]` line,
-    which is the one whose loss would leave a PR with no review at all."""
+    """The same defect on the OTHER call site -- the flat-pass `[""]` line, which is the one whose loss would leave a PR with no review at all."""
     repo = _repo(tmp_path)
     env = dict(BASE_ENV, PR_HEAD_REF="0906-1")
     old = _run_with_socket_stdout(TWIN, repo, env)
@@ -334,9 +324,7 @@ def test_defect_fixed_socket_stdout_on_the_empty_case_too(tmp_path: pathlib.Path
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the one line the twin's header calls the whole
-    reason the script exists: `[""]` for the no-epics case. `[]` is the plausible-looking "correct" JSON, and it makes the review matrix expand to zero jobs -- a PR with no epics would get NO review at all. Driven red,
-    then the source is restored byte-identical and re-verified green."""
+    """ANTI-VACUITY, planted on the one line the twin's header calls the whole reason the script exists: `[""]` for the no-epics case. `[]` is the plausible-looking "correct" JSON, and it makes the review matrix expand to zero jobs -- a PR with no epics would get NO review at all. Driven red, then the source is restored byte-identical and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace("_emit('epics=[\"\"]\\n', env)", "_emit('epics=[]\\n', env)")
     assert mutated != original, "the line this plant targets is no longer present verbatim"

@@ -1,8 +1,7 @@
 """Enforce the draft-PR flow on `gh pr create`.
 
-The org is on the GitHub FREE plan: draft PRs exist only on PUBLIC repos. console + homebrew-tap are public -> their PRs MUST be created as drafts
-(the PR stays draft until CI is green; `gh pr ready` is gated by
-block-premature-ready.sh). renet/account/elite are private -> GitHub rejects --draft there, so the hook blocks it up front with a real message instead of letting the API fail cryptically.
+The org is on the GitHub FREE plan: draft PRs exist only on PUBLIC repos. console + homebrew-tap are public -> their PRs MUST be created as drafts (the PR stays draft until CI is green; `gh pr ready` is gated by block-premature-ready.sh). renet/account/elite are private -> GitHub rejects --draft there, so the hook blocks it up front with a real message instead of letting the API
+fail cryptically.
 
 Target-repo resolution order: explicit --repo/-R flag > a cd/`git -C` into a private/<submodule> path inside the command > the session cwd's origin remote. Unknown/foreign repos are not policed.
 
@@ -91,8 +90,7 @@ EDGE_CASES = [
 
 def run(ev):
     cmd = ev.field("tool_input", "command")
-    # Bypass-resistant scanning (unwraps sh -c/eval, strips heredocs+prose); a
-    # `sh -c 'gh pr create'` must not slip a non-draft past this. SCAN is the only parsed view -- it already carries the prose-stripped command plus any unwrapped payload. See lib/command-scan.sh.
+    # Bypass-resistant scanning (unwraps sh -c/eval, strips heredocs+prose); a `sh -c 'gh pr create'` must not slip a non-draft past this. SCAN is the only parsed view -- it already carries the prose-stripped command plus any unwrapped payload. See lib/command-scan.sh.
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
 
     # REST bypass, checked before the `gh pr` early return two lines down: a REST call carries no `gh pr create` verb, so that anchor treats it as out of scope and everything below is skipped for a command reaching the identical mutation.
@@ -107,9 +105,8 @@ def run(ev):
     if not shellscan.gh_pr_at_command_pos(scan, "create"):
         return hookio.ALLOW
 
-    # --repo and --draft both come from the SEGMENT carrying this `gh pr create`, and EVERY create on the line is judged on its own: line-wide parsing let a sibling invocation donate its repo or its --draft, so
-    # `gh pr create --repo rediacc/renet -t x; gh pr create -t y` read as one
-    # compliant draft. The cd/-C hint stays line-wide, because a cd genuinely does apply to every later segment. No signal at all defaults to the console checkout, which fails toward draft. See hook_gh_pr_segment / hook_target_repo.
+    # --repo and --draft both come from the SEGMENT carrying this `gh pr create`, and EVERY create on the line is judged on its own: line-wide parsing let a sibling invocation donate its repo or its --draft, so `gh pr create --repo rediacc/renet -t x; gh pr create -t y` read as one compliant draft. The cd/-C hint stays line-wide, because a cd genuinely does apply to every later
+    # segment. No signal at all defaults to the console checkout, which fails toward draft. See hook_gh_pr_segment / hook_target_repo.
     cwd = ev.field("cwd")
     segs = shellscan.gh_pr_segment(scan, "create")
     records, _ = shellscan._records(shellscan._here_string(segs))

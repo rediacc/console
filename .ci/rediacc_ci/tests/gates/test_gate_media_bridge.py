@@ -24,15 +24,11 @@ WHERE THIS REIMPLEMENTS grep AND sed, AND WHY THE ANSWERS AGREE.
   BEFORE the write, so an anchor that has moved is a red naming the anchor rather
   than a control that passes for the wrong reason.
 
-WHY THE OFF-BY-ONE IS PLANTED IN THE STATE-FILE BRANCH AND NOT THE FALLBACK. The fixture cases stage a `.provision-state`, so the `VM_WORKERS` fallback line is
-never reached; planting there would leave the control green while proving nothing.
-The twin's comment records that this mistake was made once while writing it, and the same trap applies verbatim to this file.
+WHY THE OFF-BY-ONE IS PLANTED IN THE STATE-FILE BRANCH AND NOT THE FALLBACK. The fixture cases stage a `.provision-state`, so the `VM_WORKERS` fallback line is never reached; planting there would leave the control green while proving nothing. The twin's comment records that this mistake was made once while writing it, and the same trap applies verbatim to this file.
 
 ONE PLACE THIS PORT IS STRICTLY STRONGER THAN ITS TWIN, measured 2026-09-07 while plant-verifying. With the off-by-one planted in the REAL `bridge.sh`, the twin's `test_a_planted_mutation_is_visible_to_the_behaviour_cases` PASSES VACUOUSLY: its `sed` finds nothing to substitute and exits 0, its follow-up `grep -q 'f"$((idx + 1))"'` is satisfied by the plant that is already there,
 and the mutant it builds is byte-identical to the module, so "the original is gone, the plant is present" holds for the wrong reason. This port counts the anchor BEFORE writing and refuses when it is not present exactly once, so the same tree turns that case red as well. The VERDICT is unchanged either way -- both sides went red on
-`test_address_resolution_reads_state_then_falls_back` -- which is what
-the parity driver compares; the difference is in composition, and it is in the
-direction of noticing more.
+`test_address_resolution_reads_state_then_falls_back` -- which is what the parity driver compares; the difference is in composition, and it is in the direction of noticing more.
 
 NO `xdist_group`. Every fixture is under pytest's own `tmp_path`, the chain sandbox is built there too, and the only shared mutable state is `os.environ["PATH"]`, which `harness.fake_bin` saves and restores per process. pytest never runs two tests at once inside one worker, so no case can observe another's PATH. The one thing that WOULD need a group -- writing into the real
 `.ci/media` -- is exactly what `media_chain_sandbox` exists to avoid, and `media_assert_ownership_control` refuses to proceed if that sandbox ever went back to symlinking `.ci/legacy`.

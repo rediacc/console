@@ -262,9 +262,7 @@ def test_the_backoff_schedule_matches_common_sh_exactly(attempts, delay):
 
 
 def test_the_schedule_probe_really_sees_the_sleeps():
-    """CONTROL: if the `sleep` shadow stopped working, every list would be empty
-    and every comparison above would compare [] to [] for the 1-attempt case and
-    fail loudly for the rest. This pins the interesting direction directly."""
+    """CONTROL: if the `sleep` shadow stopped working, every list would be empty and every comparison above would compare [] to [] for the 1-attempt case and fail loudly for the rest. This pins the interesting direction directly."""
     assert bash_schedule(3, 2) == [2, 4]
     assert bash_schedule(1, 5) == []
 
@@ -447,8 +445,7 @@ def test_describe_says_killed_when_a_signal_ended_the_child():
 
 
 def test_describe_does_not_say_killed_for_an_ordinary_failure():
-    """THE MIRROR. Without it the three above are satisfied by a `describe()`
-    that says KILLED unconditionally, which is the same defect inverted."""
+    """THE MIRROR. Without it the three above are satisfied by a `describe()` that says KILLED unconditionally, which is the same defect inverted."""
     assert "KILLED" not in _described(1)
     assert "exited 1" in _described(1)
     assert "KILLED" not in _described(2)

@@ -87,8 +87,7 @@ def _live_client_fingerprint() -> str:
 
 
 def warn_if_token_expiring() -> None:
-    """A machine-account token carries no expiry inside it, so nothing can derive
-    this -- it is written down at mint time or it is discovered as an outage.
+    """A machine-account token carries no expiry inside it, so nothing can derive this -- it is written down at mint time or it is discovered as an outage.
 
     Advisory on purpose: a hard refusal here would block the refresh on a clock even when the token still works, and this script has real refusals for the things it can actually verify. What it prevents is the failure MODE: `bws` answers an expired token with an opaque auth error, so without this the first symptom is every local command breaking at once for no stated reason.
 

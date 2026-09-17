@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.review.claude_review_gate` against its twin
-`.ci/scripts/review/claude-review-gate.sh`.
+"""Differential: `rediacc_ci.review.claude_review_gate` against its twin `.ci/scripts/review/claude-review-gate.sh`.
 
 THIS SCRIPT WRITES TO GITHUB ON THE WORD OF A LANGUAGE MODEL, so the fake `gh` is not a convenience. `--post-report` posts a comment, `--post-findings` posts line-anchored review comments, `--apply-labels` CREATES and DELETES labels, and `--mark` upserts the marker that decides whether the next green push pays for another review pass. Four independent things keep the real binary
 out of reach:
@@ -59,8 +58,7 @@ OLD_SHA = "1" * 40
 NEW_SHA = "2" * 40
 THIRD_SHA = "3" * 40
 
-# Three literal backticks inside a shell-ish string are a parsing hazard for no
-# benefit; the same trick `test-review-labels.sh` uses.
+# Three literal backticks inside a shell-ish string are a parsing hazard for no benefit; the same trick `test-review-labels.sh` uses.
 TICKS = "```"
 
 FAKE_GH = r'''#!/usr/bin/python3
@@ -474,9 +472,7 @@ def test_the_fake_gh_is_the_gh() -> None:
 
 
 def test_every_jq_program_is_verbatim_from_the_twin() -> None:
-    """ANTI-DRIFT. A reworded jq program on one side alone is a divergence no
-    fixture in this file would notice, because both sides would still be asked
-    the same QUESTION by the fake."""
+    """ANTI-DRIFT. A reworded jq program on one side alone is a divergence no fixture in this file would notice, because both sides would still be asked the same QUESTION by the fake."""
     text = TWIN.read_text(encoding="utf-8")
     for name in (
         "RESULT_TEXT_JQ",
@@ -589,9 +585,7 @@ def test_the_labels_scanner_agrees_with_the_twins_awk(text: str) -> None:
 
 
 def test_the_two_scanners_are_not_the_same_scanner() -> None:
-    """CONTROL for the pair above: a nested fence separates them, and if either
-    were quietly rewritten to the other's rule this asserts the difference is
-    still real rather than merely parameterised."""
+    """CONTROL for the pair above: a nested fence separates them, and if either were quietly rewritten to the other's rule this asserts the difference is still real rather than merely parameterised."""
     text = "%sjson:review-findings\na\n%s\nb\n%s\n" % (TICKS, TICKS, TICKS)
     assert gate.extract_findings_fence(text) == "a\n%s\nb" % TICKS
     labels = "%sjson:pr-labels\na\n%s\nb\n%s\n" % (TICKS, TICKS, TICKS)
@@ -624,8 +618,7 @@ def test_the_gitlink_filter_agrees_with_grep_fxv(names: list[str], subs: str) ->
 
 
 def test_awk_second_fields_agrees_with_awk() -> None:
-    """`_awk` strips the trailing newline, exactly as `$(...)` does around the
-    twin's pipeline, so the port's join is compared on the same footing."""
+    """`_awk` strips the trailing newline, exactly as `$(...)` does around the twin's pipeline, so the port's join is compared on the same footing."""
     raw = "submodule.private/renet.path private/renet\nsubmodule.a.path a\nshort\n"
     assert gate.awk_second_fields(raw).rstrip("\n") == _awk("{print $2}", raw)
 
@@ -721,9 +714,7 @@ def test_a_pending_required_check_is_refused_too() -> None:
 
 
 def test_a_check_runs_lookup_failure_is_reported_as_a_lookup_failure() -> None:
-    """UNKNOWN IS NOT GREEN AND NOT RED. This is the one read in the gate that
-    distinguishes "the check is not green" from "I could not ask", and both
-    implementations keep the distinction."""
+    """UNKNOWN IS NOT GREEN AND NOT RED. This is the one read in the gate that distinguishes "the check is not green" from "the check could not be asked", and both implementations keep the distinction."""
     side = sides(
         "pr-lookup-failed",
         {**GATE_PR, "REQUIRED_CHECK": "CI Complete", "FAKE_GH_FAIL_ON": "check-runs"},
@@ -777,8 +768,7 @@ def test_a_submodule_pointer_bump_only_delta_is_refused() -> None:
 
 
 def test_a_pointer_bump_plus_one_real_file_is_reviewed() -> None:
-    """CONTROL for the case above. A rule that refused both would look identical
-    on the negative case alone."""
+    """CONTROL for the case above. A rule that refused both would look identical on the negative case alone."""
 
     def build(world: World) -> None:
         world.write("comments", [marker(OLD_SHA)])
@@ -887,8 +877,7 @@ def test_a_missing_github_output_refuses_before_anything_else() -> None:
 
 def test_an_epic_scoped_pass_says_so_in_the_prompt_and_scopes_its_budget() -> None:
     def build(world: World) -> None:
-        # Three FLAT reports. Under a flat count this PR is capped; per-epic it
-        # has spent nothing, which is the whole point of the epic dimension.
+        # Three FLAT reports. Under a flat count this PR is capped; per-epic it has spent nothing, which is the whole point of the epic dimension.
         world.write("comments", [report(i) for i in range(3)])
 
     side = sides("epic", {**GATE_PR, "REVIEW_EPIC": "abc123"}, build=build)
@@ -922,8 +911,7 @@ def test_the_turn_budget_scales_continuously_with_the_diff(additions: int, turns
 def test_defect1_a_failed_marker_read_re_reviews_an_already_reviewed_head() -> None:
     """DEFECT 1. `last_marker_sha`'s `|| true` turns a gh failure into "never
     reviewed", so the gate emits go=true with the INITIAL prompt for a head whose
-    marker comment is present and current. `FAKE_GH_FAIL_ON_JQ` targets that one read: the two budget reads hit the same endpoint and must still succeed, or
-    the case would prove nothing about this call."""
+    marker comment is present and current. `FAKE_GH_FAIL_ON_JQ` targets that one read: the two budget reads hit the same endpoint and must still succeed, or the case would prove nothing about this call."""
 
     def build(world: World) -> None:
         world.write("comments", [marker(NEW_SHA)])
@@ -952,11 +940,9 @@ def test_defect1_control_the_same_world_refuses_when_the_read_works() -> None:
 
 
 def test_defect2_a_non_numeric_diff_size_kills_the_gate() -> None:
-    """DEFECT 2. `emit_review_turns` feeds `gh pr view`'s answer straight into
-    `$(( ))` with no `^[0-9]+$` guard, unlike `pr_diff_loc` two functions away. A `null` answer is `null: unbound variable` under `set -u`.
+    """DEFECT 2. `emit_review_turns` feeds `gh pr view`'s answer straight into `$(( ))` with no `^[0-9]+$` guard, unlike `pr_diff_loc` two functions away. A `null` answer is `null: unbound variable` under `set -u`.
 
-    stderr is compared by SUFFIX here: bash prefixes the message with the script's own path, which is `.sh` on one side and `.py` on the other. Exit code and `$GITHUB_OUTPUT` are compared exactly, and the point of the case is
-    that `$GITHUB_OUTPUT` holds NO `go` key at all."""
+    stderr is compared by SUFFIX here: bash prefixes the message with the script's own path, which is `.sh` on one side and `.py` on the other. Exit code and `$GITHUB_OUTPUT` are compared exactly, and the point of the case is that `$GITHUB_OUTPUT` holds NO `go` key at all."""
     with tempfile.TemporaryDirectory() as td:
         world = World(pathlib.Path(td))
         world.write("pr-size", {"additions": None, "deletions": None})
@@ -971,9 +957,7 @@ def test_defect2_a_non_numeric_diff_size_kills_the_gate() -> None:
 
 
 def test_defect2_control_pr_diff_loc_does_have_the_guard() -> None:
-    """The same unparseable answer reaches `pr_diff_loc` FIRST and is coerced to
-    0 there, which is why the crash happens later, in `emit_review_turns`. If
-    both had the guard the case above could not fire at all."""
+    """The same unparseable answer reaches `pr_diff_loc` FIRST and is coerced to 0 there, which is why the crash happens later, in `emit_review_turns`. If both had the guard the case above could not fire at all."""
     text = TWIN.read_text(encoding="utf-8")
     lib = (ROOT / ".ci" / "scripts" / "lib" / "common.sh").read_text(encoding="utf-8")
     assert '[[ "$n" =~ ^[0-9]+$ ]] || n=0' in lib
@@ -981,11 +965,9 @@ def test_defect2_control_pr_diff_loc_does_have_the_guard() -> None:
 
 
 def test_defect3_a_failed_attempt_read_restarts_the_per_head_count() -> None:
-    """DEFECT 3. The nested command substitution in `--mark` discards
-    `review_attempt_states`' failure, so a head that has already spent 3 of 3 attempts records "attempt 1 of 3" and the per-head ceiling resets.
+    """DEFECT 3. The nested command substitution in `--mark` discards `review_attempt_states`' failure, so a head that has already spent 3 of 3 attempts records "attempt 1 of 3" and the per-head ceiling resets.
 
-    This case pays `gh_retry`'s real backoff (3s + 6s) on BOTH sides, because the
-    twin pays it and the stderr comparison is the point."""
+    This case pays `gh_retry`'s real backoff (3s + 6s) on BOTH sides, because the twin pays it and the stderr comparison is the point."""
 
     def build(world: World) -> None:
         world.write("comments", [attempt(NEW_SHA, 3, "error_max_turns")])
@@ -1021,9 +1003,7 @@ def test_defect3_control_the_same_world_counts_four_when_the_read_works() -> Non
 
 
 def test_a_failed_budget_read_stops_the_gate_instead_of_reviewing() -> None:
-    """The DEFECT-1 fix that DID land, on the other half of the same endpoint:
-    `review_report_count` routes through `gh_retry` and propagates, so a rate
-    limit stops the run rather than reading as a zero numerator."""
+    """The DEFECT-1 fix that DID land, on the other half of the same endpoint: `review_report_count` routes through `gh_retry` and propagates, so a rate limit stops the run rather than reading as a zero numerator."""
     side = sides(
         "budget-read-failed",
         {**GATE_PR, "FAKE_GH_FAIL_ON_JQ": "Claude finished"},
@@ -1073,8 +1053,7 @@ def test_post_report_names_the_epic_in_the_header() -> None:
 
 
 def test_post_report_keeps_the_head_and_the_tail_when_it_truncates() -> None:
-    """The tail carries the findings fence `--post-findings` parses, so a plain
-    truncation would silently disable inline comments on every long report."""
+    """The tail carries the findings fence `--post-findings` parses, so a plain truncation would silently disable inline comments on every long report."""
 
     def build(world: World) -> dict[str, str]:
         text = "H" * 40000 + "MIDDLE" + "T" * 40000 + "\nFENCE-TAIL"
@@ -1219,8 +1198,7 @@ def test_defect4_control_the_same_finding_posts_without_the_sibling_fence() -> N
 
 
 def test_defect4_the_prompt_really_does_ask_for_both_fences_in_that_order() -> None:
-    """ANTI-VACUITY for the case above: if the prompt stopped asking for the
-    second fence, DEFECT 4 would be unreachable and the case would be theatre."""
+    """ANTI-VACUITY for the case above: if the prompt stopped asking for the second fence, DEFECT 4 would be unreachable and the case would be theatre."""
     text = (PROMPTS / "initial.md").read_text(encoding="utf-8")
     assert text.index("%sjson:review-findings" % TICKS) < text.index("%sjson:pr-labels" % TICKS), (
         "the labels fence must come AFTER the findings fence for the swallow to happen"
@@ -1412,8 +1390,7 @@ def test_apply_labels_removes_a_stale_label_it_applied_itself() -> None:
 
 
 def test_apply_labels_refuses_to_remove_a_label_the_ledger_should_not_name() -> None:
-    """A ledger comment is editable by anyone with write access, so a tampered
-    `applied:` line must not become a delete-arbitrary-label primitive."""
+    """A ledger comment is editable by anyone with write access, so a tampered `applied:` line must not become a delete-arbitrary-label primitive."""
 
     def build(world: World) -> None:
         world.write("comments", [ledger(OLD_SHA, "full-ci")])
@@ -1514,8 +1491,7 @@ def test_mark_stops_giving_free_re_attempts_at_the_ceiling() -> None:
 
 
 def test_mark_refuses_to_stamp_a_sha_when_the_review_posted_nothing() -> None:
-    """The honesty guard. The reviewer once "succeeded" with 36 permission
-    denials and posted nothing, and the marker then suppressed the retry."""
+    """The honesty guard. The reviewer once "succeeded" with 36 permission denials and posted nothing, and the marker then suppressed the retry."""
     side = sides("mark-nothing", {**POST_ENV, "REVIEW_OUTCOME": "success"}, args=["--mark"])
     assert side.exit == 1
     assert b"posted NOTHING in the last hour; refusing to mark 2222222" in side.stderr
@@ -1523,9 +1499,7 @@ def test_mark_refuses_to_stamp_a_sha_when_the_review_posted_nothing() -> None:
 
 
 def test_mark_does_not_let_the_pipelines_own_bookkeeping_vouch_for_it() -> None:
-    """A ledger comment written seconds earlier by `--apply-labels` must not
-    satisfy the guard: EVERY bookkeeping prefix is excluded, not just the
-    marker."""
+    """A ledger comment written seconds earlier by `--apply-labels` must not satisfy the guard: EVERY bookkeeping prefix is excluded, not just the marker."""
 
     def build(world: World) -> None:
         world.write(

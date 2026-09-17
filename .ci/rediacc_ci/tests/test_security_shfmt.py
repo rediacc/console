@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.security.shfmt` against its twin
-`.ci/scripts/security/shfmt.sh`.
+"""Differential: `rediacc_ci.security.shfmt` against its twin `.ci/scripts/security/shfmt.sh`.
 
 TWO KINDS OF CASE.
 

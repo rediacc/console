@@ -6,9 +6,7 @@ WHAT BROKE. The gate gathered its data with
 
     go list -u -m -json all 2>/dev/null | jq ... 2>/dev/null || true
 
-so ANY failure of either command produced an empty result set, which is byte-identical to a clean tree. The gate then printed "All Go direct dependencies
-are up-to-date" and exited 0. It was not reporting that deps were fine; it was
-reporting nothing at all, in the voice of success.
+so ANY failure of either command produced an empty result set, which is byte-identical to a clean tree. The gate then printed "All Go direct dependencies are up-to-date" and exited 0. It was not reporting that deps were fine; it was reporting nothing at all, in the voice of success.
 
 Observed 2026-07-27: a local `npm run ci` reported all-clean while CI failed on the SAME commit for an outdated csi-spec. The gate was not disagreeing with CI --
 `go list` was exiting 1 locally (go.mod requires go >= 1.25, the toolchain on
@@ -50,9 +48,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-go-deps-probe-failure.sh"
 
 REAL_GATE = paths.from_root(".ci", "scripts", "quality", "check-go-deps.sh")
 
-# The five behaviours of the fake `go`, lifted from the twin's heredoc verbatim so a reader can diff the two. `clean` emits only the main module, which is what
-# a real `go list -m` always emits at minimum; `empty` is the mode a genuinely
-# broken toolchain cannot easily produce and is the subtlest of the five.
+# The five behaviours of the fake `go`, lifted from the twin's heredoc verbatim so a reader can diff the two. `clean` emits only the main module, which is what a real `go list -m` always emits at minimum; `empty` is the mode a genuinely broken toolchain cannot easily produce and is the subtlest of the five.
 GO_SHIM = """#!/bin/bash
 mode="%s"
 case "$mode" in

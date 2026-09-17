@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.build.buildx_push_web` against its twin
-`.ci/scripts/build/buildx-push-web.sh`.
+"""Differential: `rediacc_ci.build.buildx_push_web` against its twin `.ci/scripts/build/buildx-push-web.sh`.
 
 THE REAL SCRIPT PUSHES TO ghcr.io. `--push` is unconditional and there is no dry-run branch, so one real invocation is a registry write; every case here runs against a RECORDING FAKE `docker` on a PATH that REPLACES the caller's rather than prepending to it, and `test_the_scratch_path_cannot_reach_a_real_docker` asserts the real binary is unreachable before anything is driven. A
 prepended PATH is not good enough: it still resolves whatever the developer has installed.
@@ -205,8 +204,7 @@ def _argv_line(calls: str) -> list[str]:
 
 
 def test_the_scratch_path_cannot_reach_a_real_docker(tmp_path) -> None:
-    """One real run of this script is a push to ghcr.io, so the seal on the
-    PATH is load-bearing rather than tidy. Asserted in both directions: the fake is reachable, and removing it leaves nothing behind it.
+    """One real run of this script is a push to ghcr.io, so the seal on the PATH is load-bearing rather than tidy. Asserted in both directions: the fake is reachable, and removing it leaves nothing behind it.
     """
     root = fixture(tmp_path)
     sealed = scratch_bin(root)
@@ -263,8 +261,7 @@ def test_arm64_differs_only_in_the_platform_and_the_tag_suffix(tmp_path) -> None
 
 
 def test_the_ported_argv_builder_matches_what_the_twin_actually_ran(tmp_path) -> None:
-    """`build_argv` is exported so the order can be asserted directly rather
-    than inferred from output, and this pins it against the BASH side's recorded argv rather than against itself.
+    """`build_argv` is exported so the order can be asserted directly rather than inferred from output, and this pins it against the BASH side's recorded argv rather than against itself.
     """
     root = fixture(tmp_path)
     old, _old_calls = _run(root, "old")
@@ -310,8 +307,7 @@ def test_a_missing_docker_refuses_before_any_variable_is_read(tmp_path) -> None:
 
 
 def test_each_required_variable_refuses_in_bashs_own_words(tmp_path) -> None:
-    """One case per expansion (:27-31), each removing exactly that variable so
-    the message names it rather than an earlier one.
+    """One case per expansion (:27-31), each removing exactly that variable so the message names it rather than an earlier one.
     """
     for index, (name, line, message) in enumerate(port.REQUIRED_ENV):
         root = fixture(tmp_path / name)
@@ -340,8 +336,7 @@ def test_an_empty_variable_refuses_exactly_as_an_unset_one_does(tmp_path) -> Non
 
 
 def test_with_nothing_set_the_first_expansion_is_the_one_reported(tmp_path) -> None:
-    """ORDER IS OBSERVABLE: five missing variables produce ONE sentence, and it
-    is PLATFORM's. A port that validated in any other order would exit 1 with a different message, which no exit-code comparison would catch.
+    """ORDER IS OBSERVABLE: five missing variables produce ONE sentence, and it is PLATFORM's. A port that validated in any other order would exit 1 with a different message, which no exit-code comparison would catch.
     """
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(root, env_overrides=dict.fromkeys(FULL_ENV))
@@ -352,8 +347,7 @@ def test_with_nothing_set_the_first_expansion_is_the_one_reported(tmp_path) -> N
 
 
 def test_dockers_own_exit_status_is_propagated_not_flattened(tmp_path) -> None:
-    """`set -e` lets docker's 17 through unchanged, and the success line is not
-    printed. This is the OPPOSITE of `build-www.sh`, which flattens npm's status to 1; the two twins are inconsistent with each other and this is the correct half, so a port that normalised it would be wrong here and right there.
+    """`set -e` lets docker's 17 through unchanged, and the success line is not printed. This is the OPPOSITE of `build-www.sh`, which flattens npm's status to 1; the two twins are inconsistent with each other and this is the correct half, so a port that normalised it would be wrong here and right there.
     """
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(root, FAKE_DOCKER_RC="17")
@@ -408,8 +402,7 @@ def test_defect_the_optional_build_arg_is_always_passed(tmp_path) -> None:
 
 
 def test_defect_the_build_context_is_the_callers_directory(tmp_path) -> None:
-    """DEFECT 1. `--file Dockerfile` and the trailing `.` are relative and the
-    script never `cd`s -- unlike BOTH neighbours in the same directory, which open with `cd "$(get_repo_root)"`. Driven from a scratch directory holding a DIFFERENT one-line Dockerfile: the run succeeds, pushes under the production tag, and the fake records the decoy as its working directory.
+    """DEFECT 1. `--file Dockerfile` and the trailing `.` are relative and the script never `cd`s -- unlike BOTH neighbours in the same directory, which open with `cd "$(get_repo_root)"`. Driven from a scratch directory holding a DIFFERENT one-line Dockerfile: the run succeeds, pushes under the production tag, and the fake records the decoy as its working directory.
     """
     root = fixture(tmp_path)
     decoy = tmp_path / "elsewhere"

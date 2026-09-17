@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.setup.install_cli_global` against its twin
-`.ci/scripts/setup/install-cli-global.sh`.
+"""Differential: `rediacc_ci.setup.install_cli_global` against its twin `.ci/scripts/setup/install-cli-global.sh`.
 
 NOTHING HERE INSTALLS ANYTHING GLOBALLY. A recording fake `npm` on a scratch PATH logs its argv, writes a tarball-shaped file where `npm pack` would, and exits with whatever the fixture says. `ls`, `head` and `rm` are the real binaries, because the twin's tarball selection is a `ls | head` pipeline whose exact exit status under `pipefail` is the subject of the most important case
 in this file.
@@ -82,8 +81,7 @@ if argv[:1] == ["pack"]:
 sys.exit(int(os.environ.get("FAKE_INSTALL_RC") or 0))
 """
 
-# A stand-in for the installed CLI, so the `command -v` arms can be driven. It is
-# never executed; only its presence on PATH is asked about.
+# A stand-in for the installed CLI, so the `command -v` arms can be driven. It is never executed; only its presence on PATH is asked about.
 FAKE_CLI = "#!/bin/sh\nexit 0\n"
 
 
@@ -119,8 +117,7 @@ def _tree(tmp_path: pathlib.Path) -> pathlib.Path:
 
 
 def _layout(tree: pathlib.Path, spec: dict[str, str]) -> None:
-    """Rebuild `packages/` from scratch. `spec` maps a relative path to its
-    contents; a value of `""` makes a directory."""
+    """Rebuild `packages/` from scratch. `spec` maps a relative path to its contents; a value of `""` makes a directory."""
     shutil.rmtree(tree / "packages", ignore_errors=True)
     for rel, body in spec.items():
         target = tree / rel
@@ -208,9 +205,7 @@ def _assert_agree(old3, new3, label: str) -> None:
 
 
 def test_the_default_run_packs_installs_and_cleans_up(tmp_path: pathlib.Path) -> None:
-    """PINNED AGAINST LITERAL BYTES. Two npm calls, four stderr lines, and no
-    tarball left behind. The closing arm here is the WARNING one, because nothing named `rdc` or `rediacc` is on the stub PATH -- which is also fact 3: a
-    successful install of nothing exits 0."""
+    """PINNED AGAINST LITERAL BYTES. Two npm calls, four stderr lines, and no tarball left behind. The closing arm here is the WARNING one, because nothing named `rdc` or `rediacc` is on the stub PATH -- which is also fact 3: a successful install of nothing exits 0."""
     old3, new3 = run_both(tmp_path)
     old, old_calls, old_fs = old3
     assert old.returncode == 0
@@ -236,9 +231,7 @@ def test_rdc_on_path_takes_the_first_arm(tmp_path: pathlib.Path) -> None:
 
 
 def test_rediacc_without_rdc_takes_the_second_arm(tmp_path: pathlib.Path) -> None:
-    """THE ORDER IS THE CONTRACT: `rdc` is probed first, so this arm is only
-    reachable when `rdc` is absent. A port that probed the two in the other order
-    would pass the previous test and fail this one."""
+    """THE ORDER IS THE CONTRACT: `rdc` is probed first, so this arm is only reachable when `rdc` is absent. A port that probed the two in the other order would pass the previous test and fail this one."""
     old3, new3 = run_both(tmp_path, present=("rediacc",))
     assert old3[0].stderr.endswith("✓ CLI available as 'rediacc'\n")
     _assert_agree(old3, new3, "rediacc-present")
@@ -285,9 +278,7 @@ def test_an_absent_package_dir_is_refused(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_bare_package_dir_flag_becomes_the_string_true(tmp_path: pathlib.Path) -> None:
-    """`parse_args` stores `true` for a `--flag` with no following value, so the
-    refusal names a directory called `true`. It reads like a bug in the port the
-    first time it is seen and it is the twin exactly."""
+    """`parse_args` stores `true` for a `--flag` with no following value, so the refusal names a directory called `true`. It reads like a bug in the port the first time it is seen and it is the twin exactly."""
     old3, new3 = run_both(tmp_path, ["--package-dir"])
     assert old3[0].returncode == 1
     assert old3[0].stderr == "✗ Required directory 'true' does not exist\n"
@@ -307,8 +298,7 @@ def test_an_empty_package_dir_value_falls_back_to_the_default(
 
 
 def test_a_positional_argument_is_ignored(tmp_path: pathlib.Path) -> None:
-    """`parse_args` skips anything not starting with `--`, so a caller who types
-    the directory without the flag gets the default and no complaint."""
+    """`parse_args` skips anything not starting with `--`, so a caller who types the directory without the flag gets the default and no complaint."""
     old3, new3 = run_both(
         tmp_path, ["packages/other"], spec={"packages/cli": "", "packages/other": ""}
     )
@@ -320,12 +310,9 @@ def test_a_positional_argument_is_ignored(tmp_path: pathlib.Path) -> None:
 
 
 def test_no_tarball_exits_2_with_zero_bytes(tmp_path: pathlib.Path) -> None:
-    """THE DEAD BRANCH. `npm pack` exits 0 and writes nothing; `ls` cannot stat
-    the unexpanded pattern and exits 2; `pipefail` makes the pipeline 2; `set -e`
-    ends the script at the ASSIGNMENT, before the `if [[ -z "$TARBALL" ]]` that would have printed `No tarball found after npm pack`.
+    """THE DEAD BRANCH. `npm pack` exits 0 and writes nothing; `ls` cannot stat the unexpanded pattern and exits 2; `pipefail` makes the pipeline 2; `set -e` ends the script at the ASSIGNMENT, before the `if [[ -z "$TARBALL" ]]` that would have printed `No tarball found after npm pack`.
 
-    So the observable behaviour is exit 2 with NOTHING on stderr beyond the three step lines, and the message written for exactly this case never runs. The string is asserted ABSENT, which is what makes this a test of the deadness
-    rather than of the exit code alone."""
+    So the observable behaviour is exit 2 with NOTHING on stderr beyond the three step lines, and the message written for exactly this case never runs. The string is asserted ABSENT, which is what makes this a test of the deadness rather than of the exit code alone."""
     old3, new3 = run_both(tmp_path, FAKE_PACK_NAME="")
     old = old3[0]
     assert old.returncode == 2
@@ -344,9 +331,7 @@ def test_no_tarball_exits_2_with_zero_bytes(tmp_path: pathlib.Path) -> None:
 def test_a_failing_npm_pack_exits_with_npms_own_code_and_no_message(
     tmp_path: pathlib.Path,
 ) -> None:
-    """Fact 2: `npm pack` is unguarded, so `set -e` propagates its status
-    verbatim -- 7 stays 7, it is not normalised to 1 the way the sibling
-    `build-packages.sh` normalises its build failure. No `log_error` at all."""
+    """Fact 2: `npm pack` is unguarded, so `set -e` propagates its status verbatim -- 7 stays 7, it is not normalised to 1 the way the sibling `build-packages.sh` normalises its build failure. No `log_error` at all."""
     old3, new3 = run_both(tmp_path, FAKE_PACK_RC="7")
     old = old3[0]
     assert old.returncode == 7
@@ -358,9 +343,7 @@ def test_a_failing_npm_pack_exits_with_npms_own_code_and_no_message(
 def test_a_failing_global_install_leaves_the_tarball_behind(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`set -e` ends the run at `npm install -g`, which is BEFORE `rm -f`. The
-    tarball survives -- and, per fact 1, will be a candidate again on the next
-    run. Again no message of the script's own."""
+    """`set -e` ends the run at `npm install -g`, which is BEFORE `rm -f`. The tarball survives -- and, per fact 1, will be a candidate again on the next run. Again no message of the script's own."""
     old3, new3 = run_both(tmp_path, FAKE_INSTALL_RC="4")
     old = old3[0]
     assert old.returncode == 4
@@ -374,10 +357,8 @@ def test_a_failing_global_install_leaves_the_tarball_behind(
 
 
 def test_a_stale_tarball_wins_over_the_one_just_packed(tmp_path: pathlib.Path) -> None:
-    """FACT 1, DRIVEN. `npm pack` creates `rediacc-cli-0.8.3.tgz` and prints that
-    name; the script ignores the printed name and takes the lexicographically
-    first entry of the directory, which is the leftover `rediacc-cli-0.0.0-dev.tgz` -- the placeholder version every package.json in this repo carries. That stale file is what gets installed globally, and `rm -f` then removes it while leaving the freshly packed one behind to lose
-    again next time."""
+    """FACT 1, DRIVEN. `npm pack` creates `rediacc-cli-0.8.3.tgz` and prints that name; the script ignores the printed name and takes the lexicographically first entry of the directory, which is the leftover `rediacc-cli-0.0.0-dev.tgz` -- the placeholder version every package.json in this repo carries. That stale file is what gets installed globally, and `rm -f` then removes it
+    while leaving the freshly packed one behind to lose again next time."""
     old3, new3 = run_both(
         tmp_path,
         spec={"packages/cli": "", "packages/cli/rediacc-cli-0.0.0-dev.tgz": "stale\n"},
@@ -393,8 +374,7 @@ def test_a_stale_tarball_wins_over_the_one_just_packed(tmp_path: pathlib.Path) -
 
 
 def test_byte_ordering_not_version_ordering(tmp_path: pathlib.Path) -> None:
-    """`ls | head -n 1` sorts bytes, so `0.10.0` precedes `0.9.0`. Neither
-    implementation understands semantic versions and neither should start."""
+    """`ls | head -n 1` sorts bytes, so `0.10.0` precedes `0.9.0`. Neither implementation understands semantic versions and neither should start."""
     old3, new3 = run_both(
         tmp_path,
         spec={"packages/cli": "", "packages/cli/rediacc-cli-0.9.0.tgz": "older\n"},
@@ -427,6 +407,5 @@ def test_choose_tarball_returns_none_when_nothing_matches(
 
 
 def test_remove_tarball_tolerates_absence(tmp_path: pathlib.Path) -> None:
-    """`-f`. Not reachable from `main`, and a port that raised here would turn a
-    race with a concurrent cleanup into a traceback."""
+    """`-f`. Not reachable from `main`, and a port that raised here would turn a race with a concurrent cleanup into a traceback."""
     port.remove_tarball(str(tmp_path / "gone.tgz"))

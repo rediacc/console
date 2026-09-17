@@ -184,8 +184,7 @@ def wrangler_argv(worker: str) -> list[str]:
 
 
 def _wrangler(argv: list[str], payload: str) -> int:
-    """The right half of the pipe. BOTH streams inherited, as the twin leaves
-    them: wrangler's own progress is what a workflow log shows for this step."""
+    """The right half of the pipe. BOTH streams inherited, as the twin leaves them: wrangler's own progress is what a workflow log shows for this step."""
     proc = subprocess.run(argv, input=payload, text=True, check=False)
     return proc.returncode
 

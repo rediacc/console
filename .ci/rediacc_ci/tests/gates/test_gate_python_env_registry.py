@@ -7,9 +7,7 @@ The selftest calls `run()` and `write_baseline()` directly, so every one of its 
 function whose value `main()` discarded. Those are the failures that make a gate
 green for a reason that has nothing to do with the tree.
 
-THE REAL TREE IS NEVER MUTATED. Every tamper below happens inside a temporary git repository the test builds, reached through `$REDIACC_CI_ROOT`. Other
-sessions share this worktree; a registry that is wrong for a second is a
-registry some other session's run read.
+THE REAL TREE IS NEVER MUTATED. Every tamper below happens inside a temporary git repository the test builds, reached through `$REDIACC_CI_ROOT`. Other sessions share this worktree; a registry that is wrong for a second is a registry some other session's run read.
 """
 
 import json

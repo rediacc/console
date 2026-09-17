@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.delete_r2_channel` against its twin
-`.ci/scripts/deploy/delete-r2-channel.sh`.
+"""Differential: `rediacc_ci.deploy.delete_r2_channel` against its twin `.ci/scripts/deploy/delete-r2-channel.sh`.
 
 A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches R2: the fake logs its exact argv and answers from the environment, and every case pins a fixture bucket, endpoint and credential, so even a bypassed fake would not name a real bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked
 parity ledger is a separate, achievable piece of work. This is that piece.
@@ -7,9 +6,7 @@ parity ledger is a separate, achievable piece of work. This is that piece.
 THE CALL LOG IS THE EVIDENCE HERE, MORE THAN THE STREAMS, and the fake is built to make that true rather than to hide it: its stdout line is CONSTANT, not derived from the prefix it was handed. So a port that deleted `s3://bucket/cli/pr-1_promoted/` instead of `s3://bucket/cli/pr-1-promoted/` would produce identical stdout, identical stderr and an identical exit code, and only the
 recorded argv catches it. `test_planted_defect_is_caught` plants exactly that and shows all three agreeing while the log does not.
 
-THE VACUITY DEFECT IS PINNED. `test_defect_a_refused_delete_reads_as_deleted` drives an `aws` that fails every call and asserts the twin still prints "deleted from R2" and exits 0. Reproduced because agreement with the live twin
-is the deliverable; repaired, the test goes red and names the port that must
-follow.
+THE VACUITY DEFECT IS PINNED. `test_defect_a_refused_delete_reads_as_deleted` drives an `aws` that fails every call and asserts the twin still prints "deleted from R2" and exits 0. Reproduced because agreement with the live twin is the deliverable; repaired, the test goes red and names the port that must follow.
 """
 
 from __future__ import annotations
@@ -150,9 +147,7 @@ def rm_call(prefix: str) -> str:
 
 
 def test_the_twelve_calls_are_asserted_in_full(tmp_path: pathlib.Path) -> None:
-    """THE WHOLE CALL SEQUENCE, PINNED AGAINST LITERAL BYTES rather than against
-    the port's own helpers, so a change in both would still be caught: six
-    formats, each with its channel prefix and its `-promoted` twin, in order."""
+    """THE WHOLE CALL SEQUENCE, PINNED AGAINST LITERAL BYTES rather than against the port's own helpers, so a change in both would still be caught: six formats, each with its channel prefix and its `-promoted` twin, in order."""
     old, new, old_calls, new_calls = run_both(tmp_path, [])
     assert old.returncode == 0
     assert old_calls == [
@@ -217,9 +212,7 @@ def test_the_twelve_calls_are_asserted_in_full(tmp_path: pathlib.Path) -> None:
 
 
 def test_aws_stderr_is_discarded(tmp_path: pathlib.Path) -> None:
-    """`2>/dev/null` on every call. The fake writes a loud `fatal error` line and
-    NONE of it may appear: a port that let it through would change what a PR-close
-    workflow log says on every failed clean-up."""
+    """`2>/dev/null` on every call. The fake writes a loud `fatal error` line and NONE of it may appear: a port that let it through would change what a PR-close workflow log says on every failed clean-up."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_AWS_RC="1")
     assert "fatal error" not in old.stderr
     assert "AccessDenied" not in old.stderr
@@ -227,8 +220,7 @@ def test_aws_stderr_is_discarded(tmp_path: pathlib.Path) -> None:
 
 
 def test_defect_a_refused_delete_reads_as_deleted(tmp_path: pathlib.Path) -> None:
-    """THE VACUITY DEFECT, PINNED. Every one of the twelve deletes is refused, and
-    the run is indistinguishable from a clean-up that worked: same two log lines, same exit 0. The header justifies `|| true` with "a channel that was never created is not an error", which is true and does not distinguish that case
+    """THE VACUITY DEFECT, PINNED. Every one of the twelve deletes is refused, and the run is indistinguishable from a clean-up that worked: same two log lines, same exit 0. The header justifies `|| true` with "a channel that was never created is not an error", which is true and does not distinguish that case
     from a credential that stopped working.
 
     Reproduced because agreement with the live twin is the deliverable;
@@ -247,9 +239,7 @@ def test_defect_a_refused_delete_reads_as_deleted(tmp_path: pathlib.Path) -> Non
 
 
 def test_one_refused_delete_does_not_stop_the_sweep(tmp_path: pathlib.Path) -> None:
-    """`|| true` per call, not per run: the remaining eleven formats are still
-    cleaned up. Driven separately from the all-refused case because a port using
-    a single try/except around the loop would pass that one and fail this."""
+    """`|| true` per call, not per run: the remaining eleven formats are still cleaned up. Driven separately from the all-refused case because a port using a single try/except around the loop would pass that one and fail this."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_FAIL_ON_CALL="3")
     assert old.returncode == 0
     assert len(old_calls) == 12
@@ -258,8 +248,7 @@ def test_one_refused_delete_does_not_stop_the_sweep(tmp_path: pathlib.Path) -> N
 
 
 def test_a_missing_aws_binary_is_refused_first(tmp_path: pathlib.Path) -> None:
-    """`require_cmd aws` runs BEFORE the five env guards, so a run missing both
-    the binary and every variable names the BINARY. Order is observable."""
+    """`require_cmd aws` runs BEFORE the five env guards, so a run missing both the binary and every variable names the BINARY. Order is observable."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         [],
@@ -276,8 +265,7 @@ def test_a_missing_aws_binary_is_refused_first(tmp_path: pathlib.Path) -> None:
 def test_divergence_the_env_guards_are_bashs_own_diagnostic(tmp_path: pathlib.Path) -> None:
     """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED" BY
     ACCIDENT. `: "${VAR:?msg}"` is bash refusing, so the twin's line carries the
-    bash FILE and a bash LINE NUMBER. The port prints the `VAR: msg` half alone,
-    on the same stream, with the same exit status, and makes no calls."""
+    bash FILE and a bash LINE NUMBER. The port prints the `VAR: msg` half alone, on the same stream, with the same exit status, and makes no calls."""
     for name, message in port.REQUIRED_ENV:
         old, new, old_calls, new_calls = run_both(tmp_path, [], drop_env=(name,))
         assert old.returncode == new.returncode == 1, name
@@ -291,8 +279,7 @@ def test_divergence_the_env_guards_are_bashs_own_diagnostic(tmp_path: pathlib.Pa
 
 def test_the_guards_fire_in_the_twins_order(tmp_path: pathlib.Path) -> None:
     """All five missing at once names CHANNEL, because `${VAR:?}` ends the shell
-    at the first one. A port that validated them all and reported the set would
-    print four extra lines."""
+    at the first one. A port that validated them all and reported the set would print four extra lines."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         [],
@@ -311,9 +298,7 @@ def test_the_guards_fire_in_the_twins_order(tmp_path: pathlib.Path) -> None:
 
 
 def test_an_empty_channel_is_refused_not_treated_as_a_prefix(tmp_path: pathlib.Path) -> None:
-    """`:?` IS AN UNSET-OR-EMPTY TEST. This is the case that matters most: an
-    empty CHANNEL would make the prefix `s3://bucket/cli//`, the parent of every
-    channel, and `--recursive` would take all of them. Both sides refuse."""
+    """`:?` IS AN UNSET-OR-EMPTY TEST. This is the case that matters most: an empty CHANNEL would make the prefix `s3://bucket/cli//`, the parent of every channel, and `--recursive` would take all of them. Both sides refuse."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], CHANNEL="")
     assert old.returncode == new.returncode == 1
     assert new.stderr == "CHANNEL: CHANNEL is required (e.g. pr-123)\n"
@@ -328,9 +313,7 @@ def test_an_empty_secret_is_refused_too(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_channel_with_a_space_is_one_argument_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """The prefix is interpolated into a quoted word in the twin and passed as
-    one argv element here, so a channel name with a space stays ONE path rather
-    than becoming two arguments to `aws s3 rm`."""
+    """The prefix is interpolated into a quoted word in the twin and passed as one argv element here, so a channel name with a space stays ONE path rather than becoming two arguments to `aws s3 rm`."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], CHANNEL="pr 1")
     assert old.returncode == 0
     assert old_calls[0] == rm_call("s3://bucket-fixture/cli/pr 1/")
@@ -339,9 +322,7 @@ def test_a_channel_with_a_space_is_one_argument_on_both_sides(tmp_path: pathlib.
 
 
 def test_extra_arguments_are_ignored_by_both(tmp_path: pathlib.Path) -> None:
-    """The twin parses nothing at all, so `--dry-run` is NOT a dry run: it is
-    silently ignored and the deletes happen. Driven so a port cannot invent a
-    flag the callers do not have."""
+    """The twin parses nothing at all, so `--dry-run` is NOT a dry run: it is silently ignored and the deletes happen. Driven so a port cannot invent a flag the callers do not have."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--dry-run", "extra"])
     assert old.returncode == 0
     assert len(old_calls) == 12, "an ignored flag became a dry run"
@@ -352,8 +333,8 @@ def test_divergence_common_sh_interprets_backslash_escapes_in_the_channel(
     tmp_path: pathlib.Path,
 ) -> None:
     """A DELIBERATE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE
-    "FIXED" BY ACCIDENT. Both log lines interpolate `$CHANNEL`, which comes from the environment, and common.sh logs through `echo -e`. A channel name holding a literal backslash-n therefore renders as a newline through the twin and as two characters here, while the `aws` argv stays identical on both sides because that path is data rather than a format string.
-    `rediacc_ci.log` formats the message as data on purpose (see its docstring)."""
+    "FIXED" BY ACCIDENT. Both log lines interpolate `$CHANNEL`, which comes from the environment, and common.sh logs through `echo -e`. A channel name holding a literal backslash-n therefore renders as a newline through the twin and as two characters here, while the `aws` argv stays identical on both sides because that path is data rather than a format string. `rediacc_ci.log`
+    formats the message as data on purpose (see its docstring)."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], CHANNEL="pr\\n1")
     assert old.returncode == new.returncode == 0
     assert "channel: pr\n1..." in old.stderr, "the twin no longer interprets escapes"
@@ -397,8 +378,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the `-promoted` suffix -- the one character whose
-    loss leaves the promotion-simulation artifacts in the bucket forever while both streams and the exit code stay IDENTICAL. Driven red, then the source is confirmed byte-identical and green.
+    """ANTI-VACUITY, planted on the `-promoted` suffix -- the one character whose loss leaves the promotion-simulation artifacts in the bucket forever while both streams and the exit code stay IDENTICAL. Driven red, then the source is confirmed byte-identical and green.
     """
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('PROMOTED_SUFFIX = "-promoted"', 'PROMOTED_SUFFIX = "_promoted"', 1)

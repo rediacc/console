@@ -13,9 +13,8 @@ THE STOP-HOOK SUITE IS DELEGATED, NOT DROPPED (2026-09-06).
 `check:ci-hook-worklist-suite` runs the very same `test-worklist-v5.sh` as a first-class manifest gate, and both were scheduled in the same full local run, so the 802-case suite executed TWICE per `npm run ci`. Measured by sampling the process table: two top-level `test-worklist-v5.sh` processes alive for 775 seconds each. A DELEGATION NOBODY CHECKS REOPENS THE HOLE THIS FILE WAS
 WRITTEN ABOUT the moment the key is renamed, deleted, repointed, or flipped to `gate: false` -- every one of those a silent, green-looking change -- so the delegate is verified on every run, in four separate ways, each with its own diagnostic.
 
-A FLAT TWIN, so the parity floor is its runtime `PASS:` count. Measured 2026-09-07: the twin emits TWO lines matching `^PASS:` (the delegation control and the final summary) and, separately, `PASS[report-inbox]:` and `PASS[stop-hook]:` lines that do NOT match that anchor because of the bracket. This module records five controls, so
-the floor is cleared with room; the count is stated here rather than left implicit
-because a reader comparing the two files will otherwise wonder where the bracketed lines went.
+A FLAT TWIN, so the parity floor is its runtime `PASS:` count. Measured 2026-09-07: the twin emits TWO lines matching `^PASS:` (the delegation control and the final summary) and, separately, `PASS[report-inbox]:` and `PASS[stop-hook]:` lines that do NOT match that anchor because of the bracket. This module records five controls, so the floor is cleared with room; the count is
+stated here rather than left implicit because a reader comparing the two files will otherwise wonder where the bracketed lines went.
 
 WHERE THIS REIMPLEMENTS grep, awk AND sed, AND WHY THE ANSWERS AGREE.
 
@@ -102,9 +101,7 @@ def delegation_problem(
 ) -> str | None:
     """None when all five hold, else the ONE that did not, as the twin's own message.
 
-    RETURNS THE REASON RATHER THAN RAISING, so the control can observe a verdict. The twin gets the same property by running the function in a SUBSHELL and reading its
-    exit status; here a value is cheaper and, unlike a caught exception, cannot be
-    confused with a bug in the control itself.
+    RETURNS THE REASON RATHER THAN RAISING, so the control can observe a verdict. The twin gets the same property by running the function in a SUBSHELL and reading its exit status; here a value is cheaper and, unlike a caught exception, cannot be confused with a bug in the control itself.
     """
     if not (ROOT / relative).is_file():
         return "FAIL[%s]: %s does not exist, so nothing runs it anywhere." % (name, relative)
@@ -175,9 +172,7 @@ def test_the_delegation_assertion_fires_when_the_delegate_npm_key_is_removed(gat
 
 
 def test_the_manifest_entry_reader_stops_at_the_entrys_own_brace(gate):
-    """ADDED CASE, not in the twin. The awk this reimplements is the one piece of the
-    twin whose failure mode is SILENT: an extractor that ran past the closing brace would read the NEXT entry's `gate: true` as this one's and report a delegation
-    that is not there. So the reader is shown both directions on the real manifest."""
+    """ADDED CASE, not in the twin. The awk this reimplements is the one piece of the twin whose failure mode is SILENT: an extractor that ran past the closing brace would read the NEXT entry's `gate: true` as this one's and report a delegation that is not there. So the reader is shown both directions on the real manifest."""
     source = MANIFEST.read_text(encoding="utf-8")
     key = DELEGATED[0][1]
     entry = manifest_entry(source, key)

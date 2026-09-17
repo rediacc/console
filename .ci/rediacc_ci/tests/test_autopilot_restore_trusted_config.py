@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.restore_trusted_config` against its twin
-`.ci/scripts/autopilot/restore-trusted-config.sh`.
+"""Differential: `rediacc_ci.autopilot.restore_trusted_config` against its twin `.ci/scripts/autopilot/restore-trusted-config.sh`.
 
 THE FILESYSTEM IS THE OUTPUT, so comparing streams and exit codes would test the announcements rather than the work. Every case here runs a SEQUENCE of invocations against a fixture tree built identically for both sides, and then compares three whole trees -- `checkout`, `snapshot`, `quarantine` -- entry by entry: type, permission bits, symlink TARGET, and file bytes. A port that
 restored the right content with the executable bit missing would leave a hook that cannot run, and only the mode comparison catches it.
@@ -17,8 +16,7 @@ THE FIXTURE IS DELIBERATELY AWKWARD, because the easy tree proves nothing:
 
 `assert` IS THE CONTROL AND IT IS DRIVEN IN BOTH DIRECTIONS. A control that has only ever been seen passing is not a control: `test_assert_passes_on_an_ untouched_checkout` and the four tamper cases below (content, a new file, a directory replaced by a file, a file replaced by a symlink) are the pair.
 
-NO STUBS AT ALL. This subject makes no network call and runs no `gh`; the one
-thing it shells out to is `diff`, which both sides use.
+NO STUBS AT ALL. This subject makes no network call and runs no `gh`; the one thing it shells out to is `diff`, which both sides use.
 
 K=5 LEDGER: `.ci/shadow/w7p6-restore-trusted-config.observations.jsonl`,
 recorded in a disposable scratch git repository outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean.
@@ -178,8 +176,7 @@ RESTORE = [
 
 
 def test_snapshot_captures_the_protected_set_and_nothing_else() -> None:
-    """Including the two negative members: a DANGLING symlink is not captured
-    (`[[ -e ]]` follows links), and an absent member is simply absent."""
+    """Including the two negative members: a DANGLING symlink is not captured (`[[ -e ]]` follows links), and an absent member is simply absent."""
     steps, trees = _sides("snapshot", [SNAPSHOT])
     exit_code, stdout, stderr = steps[0]
     assert exit_code == 0
@@ -207,9 +204,7 @@ def test_assert_passes_on_an_untouched_checkout() -> None:
 
 
 def test_assert_reds_on_every_shape_of_tamper() -> None:
-    """CONTROL, the direction that matters. Four different edits, each of which
-    a `filecmp` shallow comparison or a name-only walk would miss at least one
-    of."""
+    """CONTROL, the direction that matters. Four different edits, each of which a `filecmp` shallow comparison or a name-only walk would miss at least one of."""
 
     def edit(kind):
         def apply(index: int, base: pathlib.Path) -> None:
@@ -249,9 +244,7 @@ def test_assert_reds_on_every_shape_of_tamper() -> None:
 
 
 def test_restore_overwrites_the_checkout_and_quarantines_the_branch_copies() -> None:
-    """The end-to-end path, and the assertion is on the TREES: the checkout
-    holds the trusted bytes, the quarantine holds the branch's, and a
-    branch-introduced file is moved out rather than left behind."""
+    """The end-to-end path, and the assertion is on the TREES: the checkout holds the trusted bytes, the quarantine holds the branch's, and a branch-introduced file is moved out rather than left behind."""
 
     def tamper(index: int, base: pathlib.Path) -> None:
         if index != 1:
@@ -276,13 +269,10 @@ def test_restore_overwrites_the_checkout_and_quarantines_the_branch_copies() -> 
 
 
 def test_a_dangling_symlink_over_a_protected_directory_aborts_the_restore() -> None:
-    """A branch can stop the restore dead, and the two implementations stop at
-    the same place with the same tree.
+    """A branch can stop the restore dead, and the two implementations stop at the same place with the same tree.
 
-    `[[ -e ]]` is false for a dangling symlink, so `.claude -> /nonexistent`
-    is NOT quarantined; the restore loop then tries to copy the snapshot's
-    `.claude` DIRECTORY onto that link and fails. Exit 1, and the checkout is left PARTLY QUARANTINED: the entries the loop had already moved (`.claude.json`, `.gitmodules`, `CLAUDE.md`, `.husky`) are in the quarantine and nothing has been restored. That is fail-closed rather than fail-safe -- the step fails, so the workflow stops -- but the intermediate state is real and is
-    asserted here rather than left to be discovered.
+    `[[ -e ]]` is false for a dangling symlink, so `.claude -> /nonexistent` is NOT quarantined; the restore loop then tries to copy the snapshot's `.claude` DIRECTORY onto that link and fails. Exit 1, and the checkout is left PARTLY QUARANTINED: the entries the loop had already moved (`.claude.json`, `.gitmodules`, `CLAUDE.md`, `.husky`) are in the quarantine and nothing has been
+    restored. That is fail-closed rather than fail-safe -- the step fails, so the workflow stops -- but the intermediate state is real and is asserted here rather than left to be discovered.
 
     STDERR IS MASKED FOR THIS CASE ONLY: the diagnostic is coreutils' on one side ("cannot overwrite non-directory") and Python's errno on the other. Exit code, stdout and all three trees are compared exactly.
     """
@@ -310,9 +300,7 @@ def test_a_dangling_symlink_over_a_protected_directory_aborts_the_restore() -> N
 
 
 def test_both_fail_closed_without_a_manifest() -> None:
-    """`restore` and `assert` each refuse rather than proceeding over nothing.
-    Their messages differ on purpose and both are asserted, because "no
-    baseline" and "nothing to assert" are different sentences to a reader."""
+    """`restore` and `assert` each refuse rather than proceeding over nothing. Their messages differ on purpose and both are asserted, because "no baseline" and "nothing to assert" are different sentences to a reader."""
     steps, trees = _sides("no-manifest", [RESTORE, ASSERT])
     assert steps[0][0] == 1
     assert (
@@ -328,8 +316,7 @@ def test_both_fail_closed_without_a_manifest() -> None:
 
 
 def test_restore_requires_a_quarantine() -> None:
-    """Exit 2, and NOTHING is moved: a restore that dropped the branch's copies
-    on the floor would destroy the evidence it exists to preserve."""
+    """Exit 2, and NOTHING is moved: a restore that dropped the branch's copies on the floor would destroy the evidence it exists to preserve."""
     steps, trees = _sides(
         "no-quarantine",
         [SNAPSHOT, ["restore", "--checkout", "@B@/checkout", "--snapshot", "@B@/snapshot"]],
@@ -340,8 +327,7 @@ def test_restore_requires_a_quarantine() -> None:
 
 
 def test_usage_and_unknown_subcommands() -> None:
-    """The ORDER is the interesting part: both required flags are checked, and
-    the checkout directory is required, BEFORE the subcommand is looked at."""
+    """The ORDER is the interesting part: both required flags are checked, and the checkout directory is required, BEFORE the subcommand is looked at."""
     steps, _ = _sides(
         "usage",
         [
@@ -363,8 +349,7 @@ def test_usage_and_unknown_subcommands() -> None:
 
 
 def test_defect_snapshotting_twice_poisons_the_baseline() -> None:
-    """A DEFECT IN THE TWIN, reproduced by the port and pinned here so a fix
-    turns this red rather than sliding past.
+    """A DEFECT IN THE TWIN, reproduced by the port and pinned here so a fix turns this red rather than sliding past.
 
     `cp -a SRC DEST` puts SRC INSIDE DEST when DEST is an existing directory, so a second `snapshot` into the same directory writes `snapshot/.claude/ .claude`. `assert` then compares that against a checkout nobody touched, finds an extra entry, and reports drift on `.claude` and `.husky` -- every DIRECTORY-valued protected entry. The file-valued ones are overwritten and stay
     correct, which is what makes the failure look selective and puzzling.

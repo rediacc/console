@@ -1,5 +1,4 @@
-"""Block launching a long-lived waiter/watcher with a shell `&` instead of the
-harness's run_in_background.
+"""Block launching a long-lived waiter/watcher with a shell `&` instead of the harness's run_in_background.
 
 WHY. On 2026-08-08 a session launched wl_wait.py with a trailing `&`. A shell-backgrounded process is untracked: the harness cannot notify on its exit, so the waiter fires into the void and the session stops hearing cross-session mail without any visible failure. The same session then spent three rounds chasing "respawning" waiters that were its own pgrep wrappers
 self-matching. Every instruction file already says run_in_background: true;
@@ -102,9 +101,8 @@ def _strip_heredoc_bodies(text):
 def run(ev):
     cmd = ev.raw("tool_input", "command")
 
-    # Strip quoted strings so an `&` inside a commit message or echo cannot false-positive, and strip fd-redirect forms (2>&1, >&2, 3>&-) whose `&` is not backgrounding -- caught as a live false positive during the hook's own
-    # proving run; then look for <waiter> ... & at a command boundary.
-    # ORDER MATTERS, and getting it wrong reopened the very false positive the heredoc stripper below was added to close. Quote-stripping runs `s/'[^']*'//g`, which turns a QUOTED heredoc delimiter `<<'EOF'` into a bare `<<` -- so the awk stripper then finds no delimiter name, never enters the body, and scans the document as command text. It worked
+    # Strip quoted strings so an `&` inside a commit message or echo cannot false-positive, and strip fd-redirect forms (2>&1, >&2, 3>&-) whose `&` is not backgrounding -- caught as a live false positive during the hook's own proving run; then look for <waiter> ... & at a command boundary. ORDER MATTERS, and getting it wrong reopened the very false positive the heredoc stripper
+    # below was added to close. Quote-stripping runs `s/'[^']*'//g`, which turns a QUOTED heredoc delimiter `<<'EOF'` into a bare `<<` -- so the awk stripper then finds no delimiter name, never enters the body, and scans the document as command text. It worked
     # for `<<EOF` and failed for `<<'EOF'`, which is the form this repo's own guidance uses.
     #
     # Measured 2026-09-01: a session writing its recovery document with `worklist.py --state <<'EOF'` was blocked because the DOCUMENT contained the sentence "never with a shell `&`" -- the hook forbidding its own documentation, a second time.

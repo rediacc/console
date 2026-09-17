@@ -23,9 +23,7 @@ verdict, which reads as a broken harness rather than a slow subject.
 
 The number, re-measured 2026-09-14 rather than inherited: the harness takes 931.14s
 standalone and uncontended (PASS=2269, rc=0), and it is SERIAL -- 478 sub-suites one
-after another, no worker pool -- so more cores cannot help it and CI's slower per-core `ubuntu-latest` makes it worse. 1000s therefore leaves 6.9% headroom, which is thin. If this ever needs more than the 1800s cap the answer is to SHARD the
-harness, not to raise it; that is tracked as O-3 in
-docs/ci-overhaul/07-tooling-decisions.md with the measurements attached.
+after another, no worker pool -- so more cores cannot help it and CI's slower per-core `ubuntu-latest` makes it worse. 1000s therefore leaves 6.9% headroom, which is thin. If this ever needs more than the 1800s cap the answer is to SHARD the harness, not to raise it; that is tracked as O-3 in docs/ci-overhaul/07-tooling-decisions.md with the measurements attached.
 """
 
 import pathlib
@@ -128,9 +126,7 @@ def test_the_harness_is_delegated_to_its_registered_gate(gate):
 def test_the_delegation_assertion_fires_when_the_delegate_is_de_gated(gate, tmp_path):
     """CONTROL. An assertion that cannot fail is worth what no assertion is worth.
 
-    The failure guarded against -- a harness that runs nowhere -- looks identical to a harness that ran and passed, so the SAME predicate is driven against a manifest whose delegate entry has been stripped of `gate: true`. A pass there is itself a
-    failure. The doctored copy goes to `tmp_path`; the real manifest is never written,
-    which is the seam T-12 exists to require.
+    The failure guarded against -- a harness that runs nowhere -- looks identical to a harness that ran and passed, so the SAME predicate is driven against a manifest whose delegate entry has been stripped of `gate: true`. A pass there is itself a failure. The doctored copy goes to `tmp_path`; the real manifest is never written, which is the seam T-12 exists to require.
     """
     gate.log_test("CONTROL: de-gating the delegate must be caught")
     original = MANIFEST.read_text(encoding="utf-8")

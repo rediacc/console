@@ -6,9 +6,7 @@ WHAT THIS GUARDS, unchanged from the twin. The channel decides whether a run upl
 
 The script's final `*)` arm WARNS AND ACCEPTS ANY CHANNEL, so a new event type lands exempt from the guard unless someone remembers to add an arm. The fall-through is deliberately KEPT (failing closed on an unknown event would break CI the moment GitHub adds one), which is precisely why every event the repo actually uses needs an explicit arm and a test pinning it.
 
-THE PORT CHANGES ONE THING AND IT IS NOT A VERDICT. The twin keeps the last run's output in a single `$OUT/log.txt` and two of its cases read it after the
-fact; here `check()` returns the output alongside the verdict, so a case reads the
-output of the call it made rather than of whichever call ran last. Same bytes, same assertions, no shared mutable file.
+THE PORT CHANGES ONE THING AND IT IS NOT A VERDICT. The twin keeps the last run's output in a single `$OUT/log.txt` and two of its cases read it after the fact; here `check()` returns the output alongside the verdict, so a case reads the output of the call it made rather than of whichever call ran last. Same bytes, same assertions, no shared mutable file.
 """
 
 from rediacc_ci import paths

@@ -12,12 +12,9 @@ EACH SIDE GETS ITS OWN FIXTURE, `old-root` and `new-root`, because both write in
 with `<root>`, so the two are compared on everything except the one string that
 must differ.
 
-THE PATH IS A CLOSED LIST. `<root>/bin` holds the fakes; `<tmp>/minbin` holds
-symlinks to the real coreutils the twin needs by name, and NOTHING ELSE. That is what makes the "docker is not installed" arm testable on a host that has docker: the arm is the default here, and the one case that needs docker adds the fake explicitly.
+THE PATH IS A CLOSED LIST. `<root>/bin` holds the fakes; `<tmp>/minbin` holds symlinks to the real coreutils the twin needs by name, and NOTHING ELSE. That is what makes the "docker is not installed" arm testable on a host that has docker: the arm is the default here, and the one case that needs docker adds the fake explicitly.
 
-WHAT IS NORMALISED. Two of the twin's exits are bash's own diagnostics, which begin `<program>: line <N>:`. The program NAME necessarily differs between a
-`.sh` and a module, so `strip_prog` replaces that one token; the LINE NUMBERS are
-compared, because a drifting line number is exactly the silent failure the pins exist to catch.
+WHAT IS NORMALISED. Two of the twin's exits are bash's own diagnostics, which begin `<program>: line <N>:`. The program NAME necessarily differs between a `.sh` and a module, so `strip_prog` replaces that one token; the LINE NUMBERS are compared, because a drifting line number is exactly the silent failure the pins exist to catch.
 
 The K=5 ledger is `.ci/shadow/w7p6-initialize.observations.jsonl`
 (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).

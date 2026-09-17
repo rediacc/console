@@ -3,9 +3,8 @@
 WHY. The console PR description is not free text any more: it carries a delimited worklist-epics block generated from agent/pr/<branch>.md, and CI gates on that block matching the published snapshot. A raw `gh pr edit --body`/`--body-file` writes the WHOLE body, so it silently drops the block, and the next thing anyone learns is a red gate several minutes later with no hint of what
 removed it.
 
-THE SAME CLASS ALREADY BIT THIS REPO ONCE, one level down: .ci/scripts/autopilot/submodule-prs.sh's header warns that its block must not share markers with refresh-pr-body.sh, "because that hook rewrites the WHOLE body on every push and anything inside its markers is destroyed on the next
-one." A whole-body writer is the hazard; this guard is that lesson applied to
-the model's own hands.
+THE SAME CLASS ALREADY BIT THIS REPO ONCE, one level down: .ci/scripts/autopilot/submodule-prs.sh's header warns that its block must not share markers with refresh-pr-body.sh, "because that hook rewrites the WHOLE body on every push and anything inside its markers is destroyed on the next one." A whole-body writer is the hazard; this guard is that lesson applied to the model's own
+hands.
 
 NOT BLOCKED, deliberately:
   - the sanctioned tool itself, .ci/scripts/pr/sync-epic-block.sh, which
@@ -28,9 +27,8 @@ PORT NOTE: A DEAD VARIABLE, REPRODUCED RATHER THAN REPAIRED
 =============================================================================
 
 The bash declares `HOOK_SAW_BODY_FILE=0` and sets it to 1 inside
-`hook_visible_body`. That function is only ever called in a command substitution, so the assignment happens in a SUBSHELL and cannot reach the
-caller; and nothing reads the variable afterwards in any case. It is dead twice
-over. The port keeps neither the variable nor a Python stand-in for it, because reproducing a value nobody reads would be reproducing nothing, and the record of why it is gone is this paragraph. Reported as a finding rather than fixed in the bash, which must stay byte-identical until the P6 cutover.
+`hook_visible_body`. That function is only ever called in a command substitution, so the assignment happens in a SUBSHELL and cannot reach the caller; and nothing reads the variable afterwards in any case. It is dead twice over. The port keeps neither the variable nor a Python stand-in for it, because reproducing a value nobody reads would be reproducing nothing, and the record of
+why it is gone is this paragraph. Reported as a finding rather than fixed in the bash, which must stay byte-identical until the P6 cutover.
 """
 
 import pathlib
@@ -274,8 +272,7 @@ def run(ev):
         # What body text can we actually see? Same readability rule as block-untagged-commit.sh: judge what can be read, ALLOW what cannot, rather than refusing blind.
         body, saw_file = _visible_body(cmd, create_seg, root)
 
-        # A --body-file naming a path that does not exist yet (written by a later step of the same command, or by a heredoc this scan stripped) is genuinely
-        # unreadable. Allow it; CI still gates the result.
+        # A --body-file naming a path that does not exist yet (written by a later step of the same command, or by a heredoc this scan stripped) is genuinely unreadable. Allow it; CI still gates the result.
         if (
             shellscan.flag_present(create_seg, "body-file")
             and not saw_file

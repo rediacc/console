@@ -253,8 +253,7 @@ def test_contradictory_duplicate_raises(tmp_path) -> None:
 
 
 def test_duplicate_control_the_same_value_twice_is_fine(tmp_path) -> None:
-    """CONTROL. A repeated identical line is noise, not a contradiction, and
-    raising on it would make the refusal above untestably broad."""
+    """CONTROL. A repeated identical line is noise, not a contradiction, and raising on it would make the refusal above untestably broad."""
     assert toolchain.load_pins(_write_env(tmp_path, "A_VERSION=1\nA_VERSION=1\n")) == {
         "A_VERSION": "1"
     }

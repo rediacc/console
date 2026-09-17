@@ -145,9 +145,7 @@ def scaffold(gate, d):
 
 
 def test_all_declared_passes(gate):
-    """THE CONTROL FOR EVERY FIRING CASE, and the one that proves all ten
-    extractors still extract. A pattern that silently stopped matching would drop
-    its shape from the count, and the count is asserted exactly."""
+    """THE CONTROL FOR EVERY FIRING CASE, and the one that proves all ten extractors still extract. A pattern that silently stopped matching would drop its shape from the count, and the count is asserted exactly."""
     with harness.temp_dir() as d:
         names = scaffold(gate, d)
         result = run_gate(gate, d / "scan", d / "labels.yml", len(names))
@@ -194,9 +192,7 @@ def test_declared_but_unreferenced_is_fine(gate):
 
 
 def test_floor_catches_a_dead_sweep(gate):
-    """Anti-vacuity, IN THE SUBJECT: a scan surface with almost nothing in it must
-    REFUSE, not report clean. That is how a wrong SCAN_DIRS would present, and
-    reporting it clean is the exact shape this whole estate exists to refuse."""
+    """Anti-vacuity, IN THE SUBJECT: a scan surface with almost nothing in it must REFUSE, not report clean. That is how a wrong SCAN_DIRS would present, and reporting it clean is the exact shape this whole estate exists to refuse."""
     with harness.temp_dir() as d:
         scan = d / "scan"
         scan.mkdir(parents=True, exist_ok=True)

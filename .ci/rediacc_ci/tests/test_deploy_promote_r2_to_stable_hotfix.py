@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.promote_r2_to_stable_hotfix` against its twin
-`.ci/scripts/deploy/promote-r2-to-stable-hotfix.sh`.
+"""Differential: `rediacc_ci.deploy.promote_r2_to_stable_hotfix` against its twin `.ci/scripts/deploy/promote-r2-to-stable-hotfix.sh`.
 
 RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare: the `aws` fake serves an on-disk directory standing in for the bucket, logs its exact argv, and logs the CONTENT of every uploaded file; the `curl` fake answers cf-purge-urls.sh from a constant. Every case pins a fixture endpoint, bucket and credential.
 `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
@@ -503,8 +502,7 @@ def test_each_required_variable_refuses_with_the_same_status(tmp_path, missing) 
 
 
 def test_an_empty_variable_refuses_exactly_as_an_absent_one_does(tmp_path) -> None:
-    """`:?` IS AN UNSET-OR-EMPTY TEST. A port checking `in os.environ` would sail
-    past this and then hand `aws` an `--endpoint-url` with no value."""
+    """`:?` IS AN UNSET-OR-EMPTY TEST. A port checking `in os.environ` would sail past this and then hand `aws` an `--endpoint-url` with no value."""
     root = fixture(tmp_path)
     old, _ = _run(root, "old", CLOUDFLARE_R2_ENDPOINT="")
     new, _ = _run(root, "new", CLOUDFLARE_R2_ENDPOINT="")
@@ -519,8 +517,7 @@ def test_an_empty_variable_refuses_exactly_as_an_absent_one_does(tmp_path) -> No
 
 
 def test_a_missing_aws_refuses_before_the_variable_guards(tmp_path) -> None:
-    """ORDER IS OBSERVABLE: a run missing both the binary and every variable
-    names the binary."""
+    """ORDER IS OBSERVABLE: a run missing both the binary and every variable names the binary."""
     root = fixture(tmp_path)
     kw = {"drop": "aws", "drop_env": tuple(BASE_ENV)}
     old, old_calls = _run(root, "old", **kw)
@@ -531,8 +528,7 @@ def test_a_missing_aws_refuses_before_the_variable_guards(tmp_path) -> None:
 
 
 def test_an_aws_failure_mid_run_stops_with_awss_status(tmp_path) -> None:
-    """UNGUARDED UNDER `set -e`: the failing call's own stderr is the whole
-    explanation, and the promotion is left half-done."""
+    """UNGUARDED UNDER `set -e`: the failing call's own stderr is the whole explanation, and the promotion is left half-done."""
     _root, old, new, old_calls, new_calls = run_both(tmp_path, FAKE_AWS_FAIL_ON_CALL="4")
     _agree(old, new, "aws-fails", old_calls, new_calls)
     assert old.returncode == 1
@@ -643,8 +639,7 @@ def test_strip_prefix_and_read_lines_follow_bash_rather_than_python() -> None:
 
 
 def test_the_purge_script_is_still_the_bash_one_and_still_exists() -> None:
-    """The cutover has NOT happened, and this is what would notice if it did
-    silently. `PURGE_SCRIPT_RELATIVE` is the one place a cutover box edits."""
+    """The cutover has NOT happened, and this is what would notice if it did silently. `PURGE_SCRIPT_RELATIVE` is the one place a cutover box edits."""
     assert port.PURGE_SCRIPT_RELATIVE == ".ci/scripts/deploy/cf-purge-urls.sh"
     assert PURGE.is_file()
     assert port.purge_argv("z")[-2:] == ["--zone", "z"]

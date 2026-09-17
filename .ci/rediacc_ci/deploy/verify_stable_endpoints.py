@@ -19,8 +19,7 @@ port decision. `INSTALL_SH=$(curl -fsSL https://www.rediacc.com/install.sh)` is
 a TOP-LEVEL assignment under `set -e`, so a transport failure kills the script
 with curl's own exit code and NO `::error::` annotation at all. Driven:
 `bash -c 'set -eu; S=$(curl -sI -o /dev/null -w "%{http_code}"
-http://127.0.0.1:19999/x 2>/dev/null); echo "[$S]"'` exits 7 and prints
-nothing. The edge twin cannot do this because the identical code sits inside a `fetch_retry` predicate, where `set -e` is suspended. Reproduced here, not fixed: see FINDING 4 in the differential.
+http://127.0.0.1:19999/x 2>/dev/null); echo "[$S]"'` exits 7 and prints nothing. The edge twin cannot do this because the identical code sits inside a `fetch_retry` predicate, where `set -e` is suspended. Reproduced here, not fixed: see FINDING 4 in the differential.
 
 Exit: 0 verification complete, 1 any assertion failed, or curl's own exit code on a transport failure (see above).
 """
@@ -120,8 +119,7 @@ def _verify() -> int:
         return 1
     print("  marketing (install.ps1): OK (channel=stable)", flush=True)
 
-    # Worker fingerprints. `$RANDOM$RANDOM` cache-busters; see the edge port's
-    # docstring for why this is `secrets` and not `random`.
+    # Worker fingerprints. `$RANDOM$RANDOM` cache-busters; see the edge port's docstring for why this is `secrets` and not `random`.
     rnda = "%d%d" % (secrets.randbelow(32768), secrets.randbelow(32768))
     rndb = "%d%d" % (secrets.randbelow(32768), secrets.randbelow(32768))
     rndc = "%d%d" % (secrets.randbelow(32768), secrets.randbelow(32768))
@@ -183,8 +181,7 @@ def _verify() -> int:
 def _region_domains() -> list[str]:
     """`done < <(jq -r '.regions[] | .domain' regions.json)`.
 
-    `.domain`, NOT `.edgeDomain`: that one field is the entire difference between this loop and the edge twin's. A failing jq yields zero domains and
-    no error, exactly as in the edge port; see FINDING 1 in the differential.
+    `.domain`, NOT `.edgeDomain`: that one field is the entire difference between this loop and the edge twin's. A failing jq yields zero domains and no error, exactly as in the edge port; see FINDING 1 in the differential.
     """
     _rc, out = edge.jq_run(["-r", ".regions[] | .domain", "regions.json"])
     return [line.strip(" \t") for line in out.split("\n")[:-1]]
@@ -201,8 +198,7 @@ def _region_health() -> None:
             text=True,
             check=False,
         )
-        # `$(curl ... || echo "000")`: BOTH outputs land in the substitution, so
-        # a real 404 becomes the string "404000". Carried; see FINDING 2.
+        # `$(curl ... || echo "000")`: BOTH outputs land in the substitution, so a real 404 becomes the string "404000". Carried; see FINDING 2.
         http_code = (proc.stdout + "000\n" if proc.returncode != 0 else proc.stdout).rstrip("\n")
         if http_code != "200":
             print("::warning::%s health check returned HTTP %s" % (domain, http_code), flush=True)

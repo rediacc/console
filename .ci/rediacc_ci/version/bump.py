@@ -18,14 +18,10 @@ THAN FIXED, on the same contract this box's siblings state: agreement with the t
     $ echo $?
     1
 
-Every `package.json` in this repository carries the `0.0.0-dev` placeholder, because the version source of truth moved to git tags and is injected at build time (CLAUDE.md, "Versioning"). `increment_patch` splits that on `.` into
-`0`, `0`, `0-dev` and evaluates `$((patch + 1))`; bash arithmetic reads `0-dev`
-as `0 - dev`, `dev` is not a variable, and `set -u` kills the script.
+Every `package.json` in this repository carries the `0.0.0-dev` placeholder, because the version source of truth moved to git tags and is injected at build time (CLAUDE.md, "Versioning"). `increment_patch` splits that on `.` into `0`, `0`, `0-dev` and evaluates `$((patch + 1))`; bash arithmetic reads `0-dev` as `0 - dev`, `dev` is not a variable, and `set -u` kills the script.
 
 WHICH FLAGS THAT ACTUALLY BREAKS, measured rather than assumed: `--auto` and `--patch` die, because they are the two that touch the PATCH field. `--minor` and `--major` survive by luck, because the placeholder's major and minor are plain `0` and the suffix rides along in a field neither of them evaluates. So the script silently works for two of its five flags and dies for two
-others, on the same input. `bash_arith` reproduces all of it, exit code and
-wording included; only the script name and line number are the port's own,
-because they are true of the port.
+others, on the same input. `bash_arith` reproduces all of it, exit code and wording included; only the script name and line number are the port's own, because they are true of the port.
 
 CONSTANTS ARE LITERALS WITH A DRIFT TEST, not a bash parser. `VERSION_FILES_JSON` and `CONSOLE_ROOT_DIR`'s default are reproduced below with their line references, and `test_constants_have_not_drifted` reads constants.sh and asserts they still match. A live parse would silently FOLLOW a change to the file list, and this gate's whole subject is which files get written, so a red test
 is the answer that gets read.
@@ -349,8 +345,7 @@ def update_package_json(path: str, version: str, *, dry_run: bool) -> tuple[bool
 
 
 def require_sources(root: pathlib.Path) -> None:
-    """`source common.sh` (:25) and `source constants.sh` (:26), in that order,
-    plus the one thing the second refuses on."""
+    """`source common.sh` (:25) and `source constants.sh` (:26), in that order, plus the one thing the second refuses on."""
     frame = inspect.currentframe()
     line = frame.f_lineno if frame else 0
     for rel in (".ci/scripts/lib/common.sh", ".ci/config/constants.sh"):

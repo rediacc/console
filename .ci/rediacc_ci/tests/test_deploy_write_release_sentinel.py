@@ -14,8 +14,7 @@ The ARTIFACT is a JSON object that a forensic sweep reads months later to recons
 uploaded `{}` as equivalent.
 
 THE ONE NORMALISATION, AND IT IS NOT THIS PORT'S DOING.
-`rediacc_ci.core.release_state_validator._log_error` deliberately omits `common.sh`'s `✗ ` glyph -- its own docstring says so, and that module was ported and ledgered in an earlier wave. So on the one path that surfaces a library error (`rsv_binary_count` failing) the twin's stderr carries `✗ ` and
-the port's does not. `_normalise_err` strips that prefix and NOTHING else; the
+`rediacc_ci.core.release_state_validator._log_error` deliberately omits `common.sh`'s `✗ ` glyph -- its own docstring says so, and that module was ported and ledgered in an earlier wave. So on the one path that surfaces a library error (`rsv_binary_count` failing) the twin's stderr carries `✗ ` and the port's does not. `_normalise_err` strips that prefix and NOTHING else; the
 message text, the indented aws diagnostic beneath it and the exit code are all compared unmasked.
 
 `released_at` CANNOT AGREE and is not supposed to: the twin stamps `date -u`, the port stamps `datetime.now(UTC)`, and the two processes run seconds apart. Only that field is masked, and `test_released_at_has_the_same_shape_on_both_sides` asserts the FORMAT separately so the masking cannot hide a port that wrote a Unix epoch there.
@@ -48,9 +47,7 @@ TWIN = ROOT / ".ci" / "scripts" / "deploy" / "write-release-sentinel.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "write_release_sentinel.py"
 MODULE = "rediacc_ci.deploy.write_release_sentinel"
 
-# The recording fake. Dispatches on the first two argv words, exactly as the `write_once_guard` differential's fake does, so each subcommand is scripted independently. `s3 cp -` is the WRITE (stdin captured to uploaded.json) and
-# `s3 cp s3://... -` is the READBACK; telling them apart by which side of the
-# pair is `-` is what the real CLI does too.
+# The recording fake. Dispatches on the first two argv words, exactly as the `write_once_guard` differential's fake does, so each subcommand is scripted independently. `s3 cp -` is the WRITE (stdin captured to uploaded.json) and `s3 cp s3://... -` is the READBACK; telling them apart by which side of the pair is `-` is what the real CLI does too.
 FAKE_AWS = r"""#!/bin/bash
 printf 'aws %s\n' "$*" >>"$FAKE_LOG"
 d="$FAKE_DIR"
@@ -186,9 +183,7 @@ def test_a_sealed_release_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_uploaded_payload_is_exactly_the_twins_bytes(tmp_path: pathlib.Path) -> None:
-    """Key ORDER, types and escaping, not just "the same fields". `jq`'s object
-    literal preserves the written order and `--arg` makes every value a string,
-    so a `json.dumps` port would differ on both counts."""
+    """Key ORDER, types and escaping, not just "the same fields". `jq`'s object literal preserves the written order and `--arg` makes every value a string, so a `json.dumps` port would differ on both counts."""
     old, new = drive(tmp_path, HAPPY)
     assert old.payload is not None
     assert new.payload is not None
@@ -203,8 +198,7 @@ def test_the_uploaded_payload_is_exactly_the_twins_bytes(tmp_path: pathlib.Path)
 
 
 def test_released_at_has_the_same_shape_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """The one masked field, checked directly so the mask cannot hide a port
-    that wrote a Unix epoch or a fractional-second timestamp there."""
+    """The one masked field, checked directly so the mask cannot hide a port that wrote a Unix epoch or a fractional-second timestamp there."""
     old, new = drive(tmp_path, HAPPY)
     shape = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
     old_ts = json.loads(old.payload)["released_at"]
@@ -224,8 +218,7 @@ def test_the_stable_channel_is_also_accepted(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_three_aws_calls_are_made_in_order(tmp_path: pathlib.Path) -> None:
-    """Probe, write, read back. A port that skipped the readback would produce
-    identical stdout, identical stderr and an identical payload."""
+    """Probe, write, read back. A port that skipped the readback would produce identical stdout, identical stderr and an identical payload."""
     old, new = drive(tmp_path, HAPPY)
     calls = [line for line in old.log.split("\n") if line]
     assert len(calls) == 3, old.log
@@ -243,8 +236,7 @@ def test_the_three_aws_calls_are_made_in_order(tmp_path: pathlib.Path) -> None:
 
 def test_releases_bucket_is_honoured(tmp_path: pathlib.Path) -> None:
     """`RSV_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"`. Every one of the
-    three keys is built from it, so a port that hard-coded the default would
-    write the sentinel into the wrong bucket in a staging run."""
+    three keys is built from it, so a port that hard-coded the default would write the sentinel into the wrong bucket in a staging run."""
     old, new = drive(tmp_path, HAPPY, env_extra={"RELEASES_BUCKET": "rediacc-staging"})
     assert old.rc == 0
     assert old.log.count("rediacc-staging") == 3, old.log
@@ -256,8 +248,7 @@ def test_releases_bucket_is_honoured(tmp_path: pathlib.Path) -> None:
 
 
 def test_an_empty_prefix_is_refused_rather_than_sealed(tmp_path: pathlib.Path) -> None:
-    """The sealed-but-empty state: sentinel present, binaries absent, so the
-    sentinel blocks re-upload and every versioned install 404s forever."""
+    """The sealed-but-empty state: sentinel present, binaries absent, so the sentinel blocks re-upload and every versioned install 404s forever."""
     old, new = drive(tmp_path, HAPPY, env_extra={"FAKE_BINCOUNT": "0"})
     assert old.rc == 1
     assert "refusing to seal cli/v1.0.5/: prefix has no binaries (count=0)." in old.err
@@ -268,8 +259,7 @@ def test_an_empty_prefix_is_refused_rather_than_sealed(tmp_path: pathlib.Path) -
 
 
 def test_a_prefix_holding_only_the_sentinel_is_also_refused(tmp_path: pathlib.Path) -> None:
-    """`--query length(Contents[?...] || \\`[]\\`)` answers `None` when the
-    prefix is genuinely absent, and the library maps that to 0."""
+    """`--query length(Contents[?...] || \\`[]\\`)` answers `None` when the prefix is genuinely absent, and the library maps that to 0."""
     old, new = drive(tmp_path, HAPPY, env_extra={"FAKE_BINCOUNT": "None"})
     assert old.rc == 1
     assert "prefix has no binaries (count=0)." in old.err
@@ -278,10 +268,7 @@ def test_a_prefix_holding_only_the_sentinel_is_also_refused(tmp_path: pathlib.Pa
 
 
 def test_a_failed_probe_refuses_too_and_says_which(tmp_path: pathlib.Path) -> None:
-    """FINDING 6, REPRODUCED NOT FIXED. The library separates "the prefix is
-    empty" from "the question could not be answered" on purpose; this caller
-    collapses both to exit 1, so only the stderr text tells them apart. A release engineer reading `exit 1` cannot know whether to investigate R2 or
-    the credentials."""
+    """FINDING 6, REPRODUCED NOT FIXED. The library separates "the prefix is empty" from "the question could not be answered" on purpose; this caller collapses both to exit 1, so only the stderr text tells them apart. A release engineer reading `exit 1` cannot know whether to investigate R2 or the credentials."""
     old, new = drive(tmp_path, HAPPY, env_extra={"FAKE_LIST_RC": "254"})
     assert old.rc == 1, "same code as the genuine refusal above; that is the finding"
     assert "rsv_binary_count: list-objects-v2 failed for s3://rediacc-releases/cli/v1.0.5/" in (
@@ -294,9 +281,7 @@ def test_a_failed_probe_refuses_too_and_says_which(tmp_path: pathlib.Path) -> No
 
 
 def test_a_failed_upload_propagates_aws_own_exit_code(tmp_path: pathlib.Path) -> None:
-    """This script keeps `pipefail` ON, unlike its two verify- siblings, so
-    `printf | aws` reports aws's status and `set -e` carries it out. 254 is the
-    awscli's own code; a port that normalised it to 1 would lose the signal."""
+    """This script keeps `pipefail` ON, unlike its two verify- siblings, so `printf | aws` reports aws's status and `set -e` carries it out. 254 is the awscli's own code; a port that normalised it to 1 would lose the signal."""
     old, new = drive(tmp_path, HAPPY, env_extra={"FAKE_UPLOAD_RC": "254"})
     assert old.rc == 254
     assert "→ writing sentinel:" in old.err
@@ -352,8 +337,7 @@ def test_each_required_flag_is_named_when_absent(tmp_path: pathlib.Path) -> None
 
 
 def test_a_non_release_channel_is_refused(tmp_path: pathlib.Path) -> None:
-    """A PR channel must never get a sentinel: the sentinel is what makes a
-    version permanently unoverwritable."""
+    """A PR channel must never get a sentinel: the sentinel is what makes a version permanently unoverwritable."""
     old, new = drive(tmp_path, ["--version", "1.0.5", "--channel", "pr-7", "--commit-sha", "abc"])
     assert old.rc == 2
     assert old.err == (
@@ -379,8 +363,7 @@ def test_a_flag_with_no_value_exits_1_in_silence(tmp_path: pathlib.Path) -> None
 
 
 def test_missing_credentials_are_named_one_at_a_time(tmp_path: pathlib.Path) -> None:
-    """`require_var` refuses on the FIRST absent variable, so a run with none of
-    the three set names only the first. Reproduced rather than improved."""
+    """`require_var` refuses on the FIRST absent variable, so a run with none of the three set names only the first. Reproduced rather than improved."""
     old, new = drive(tmp_path, HAPPY, creds={})
     assert old.rc == 1
     assert old.err == ("✗ Required environment variable 'CLOUDFLARE_R2_ACCESS_KEY_ID' is not set\n")
@@ -395,8 +378,7 @@ def test_missing_credentials_are_named_one_at_a_time(tmp_path: pathlib.Path) -> 
 
 def test_an_empty_credential_counts_as_absent(tmp_path: pathlib.Path) -> None:
     """`[[ -z "${!var_name:-}" ]]` is an EMPTINESS test, so an exported empty
-    string refuses. A port using `"X" in os.environ` would sail past it and hand
-    an empty key to aws."""
+    string refuses. A port using `"X" in os.environ` would sail past it and hand an empty key to aws."""
     creds = dict(CREDS)
     creds["CLOUDFLARE_R2_SECRET_ACCESS_KEY"] = ""
     old, new = drive(tmp_path, HAPPY, creds=creds)
@@ -459,16 +441,14 @@ def test_build_payload_is_jqs_bytes_not_pythons() -> None:
 
 
 def test_build_payload_escapes_through_jq_not_through_python() -> None:
-    """A commit message is not the input here, but a channel or version could
-    still carry a quote through a mis-quoted caller. jq owns the escaping."""
+    """A commit message is not the input here, but a channel or version could still carry a quote through a mis-quoted caller. jq owns the escaping."""
     got = port.build_payload('v"1', "edge", "a\\b", "cli", "2026-01-01T00:00:00Z")
     assert json.loads(got)["version"] == 'v"1'
     assert json.loads(got)["commit_sha"] == "a\\b"
 
 
 def test_released_at_now_matches_the_date_format_the_twin_uses() -> None:
-    """Compared against `date -u` ITSELF, run here, rather than against a format
-    string copied from the twin by eye."""
+    """Compared against `date -u` ITSELF, run here, rather than against a format string copied from the twin by eye."""
     from_date = subprocess.run(
         ["date", "-u", "+%Y-%m-%dT%H:%M:%SZ"], capture_output=True, text=True, check=True
     ).stdout.strip()

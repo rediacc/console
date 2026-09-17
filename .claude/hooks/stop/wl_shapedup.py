@@ -95,8 +95,7 @@ def _clean(obj, key, limit):
 
 
 def harness_is_real(harness, root=None):
-    """Does the named module exist on disk? A claim of prior consolidation is exactly the
-    claim most worth checking, and one `os.path.exists` checks it."""
+    """Does the named module exist on disk? A claim of prior consolidation is exactly the claim most worth checking, and one `os.path.exists` checks it."""
     if not harness:
         return False
     root = root or os.getcwd()

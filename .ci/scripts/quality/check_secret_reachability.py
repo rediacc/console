@@ -9,9 +9,8 @@ For eleven days two repositories appeared to have automated review and had none.
 
 WHAT IT CHECKS. Every `secrets.NAME` reference in every workflow of this repo and its submodules must have a committed record saying that repository can read that secret. A reference with no record, or with a record saying `false`, fails.
 
-WHY A COMMITTED BASELINE. `npm run ci` must work offline and deterministically, and reading secret visibility needs an org-admin token that most runs do not
-have. So the gate compares committed facts; the network lives only in
-`--refresh`, which rewrites them from the API. A gate that needs a token is a gate that silently degrades to "passed" wherever the token is absent -- which is the same failure shape as the thing it is here to catch.
+WHY A COMMITTED BASELINE. `npm run ci` must work offline and deterministically, and reading secret visibility needs an org-admin token that most runs do not have. So the gate compares committed facts; the network lives only in `--refresh`, which rewrites them from the API. A gate that needs a token is a gate that silently degrades to "passed" wherever the token is absent -- which
+is the same failure shape as the thing it is here to catch.
 
 WHAT IT CANNOT DO. It cannot see an org admin removing a repo from an allowlist after the last refresh. That is what MAX_BASELINE_AGE_DAYS is for: the record going stale is itself a failure, so the blind window is bounded and visible rather than open-ended.
 
@@ -31,9 +30,8 @@ import yaml
 # Refresh cadence. An allowlist can change without any commit touching this repo, so a stale record is a failure rather than a warning.
 MAX_BASELINE_AGE_DAYS = 45
 
-# Vacuity floor. These trees reference dozens of secrets; a handful means the
-# scan broke and every comparison below would be over an empty set. 1 since 2026-09-09, down from 5, down from 10. The corpus shrinks because references are RETIRED, not because the scan breaks -- and it has now reached its floor in the literal sense: ONE is the TERMINAL STATE of this migration, because `BWS_ACCESS_TOKEN` is the bootstrap credential every other secret is fetched
-# WITH, so it can never itself be fetched. Everything else is in Bitwarden.
+# Vacuity floor. These trees reference dozens of secrets; a handful means the scan broke and every comparison below would be over an empty set. 1 since 2026-09-09, down from 5, down from 10. The corpus shrinks because references are RETIRED, not because the scan breaks -- and it has now reached its floor in the literal sense: ONE is the TERMINAL STATE of this migration, because
+# `BWS_ACCESS_TOKEN` is the bootstrap credential every other secret is fetched WITH, so it can never itself be fetched. Everything else is in Bitwarden.
 #
 # ANY FLOOR ABOVE 1 REDS AT THE FINISH LINE, which is the trap this repository keeps paying for: a threshold calibrated mid-migration becomes a false failure at the moment the migration succeeds. On 2026-09-09 the operator deleted every non-BWS repo secret on all three repositories, deliberately, to force the stragglers into the open -- so the count was always going to arrive here.
 #
@@ -50,9 +48,8 @@ BUILTIN = {"GITHUB_TOKEN"}
 
 # References that are OPTIONAL BY DESIGN: the workflow is written so that an empty value degrades to a documented behaviour rather than a failure. Each entry is a claim about the calling code, and it is reviewable -- the reason must name the line that makes the absence safe.
 #
-# Keep this list tiny. "It is failing and I want green" is not a reason; that is
-# the escape hatch that turned the cli-manifest guard into decoration for its whole life. EMPTY, and that is the healthy state. It held one entry, ANTHROPIC_API_KEY, excusing a reference to a credential that did not exist. On 2026-09-02 the operator ruled out pay-as-you-go API billing, so the key will never exist and the REFERENCE was deleted rather than excused -- which is the
-# right end for every entry here: a suppression outlives its reason silently, a deleted reference cannot.
+# Keep this list tiny. "It is failing and green is wanted" is not a reason; that is the escape hatch that turned the cli-manifest guard into decoration for its whole life. EMPTY, and that is the healthy state. It held one entry, ANTHROPIC_API_KEY, excusing a reference to a credential that did not exist. On 2026-09-02 the operator ruled out usage-based API billing, so the key will
+# never exist and the REFERENCE was deleted rather than excused -- which is the right end for every entry here: a suppression outlives its reason silently, a deleted reference cannot.
 OPTIONAL = {}
 
 # KNOWN-UNREACHABLE, with an EXPIRY. These are real defects that this session cannot fix, because the remedy is a GitHub secret operation and that is an operator power. Blocking every CI run on something no engineer here can action would make the gate a hostage rather than a guard.
@@ -95,8 +92,7 @@ def declared_secrets(text):
     Inside a reusable, `secrets.X` reads the DECLARED INPUT, not an org secret of that name -- the caller supplies it, under whatever name the caller has. Once the two name-spaces diverge (the org keeps `R2_ACCESS_KEY_ID` while the workflow layer says `CLOUDFLARE_R2_ACCESS_KEY_ID`) that distinction stops being academic: 18 declared inputs read as unreachable org secrets, which is a
     false red on the callee for something only the CALLER can get wrong -- and the caller's passthrough is still scanned, so nothing is lost by excluding these.
 
-    Parsed, not regexed. `on` is the YAML boolean True after safe_load, which is
-    the one gotcha; both spellings are tried.
+    Parsed, not regexed. `on` is the YAML boolean True after safe_load, which is the one gotcha; both spellings are tried.
     """
     try:
         doc = yaml.safe_load(text)

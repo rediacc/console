@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/ensure-nfpm.sh` (74 lines).
 
-Install the pinned `nfpm` if it is not already usable, and print the directory
-holding it. Idempotent: a second run downloads nothing. The twin's own header
-carries WHY it exists (two copies of the six install lines had already drifted,
-so the checksum was verified on one of the two installs and not the other) and
-that reasoning is not restated here.
+Install the pinned `nfpm` if it is not already usable, and print the directory holding it. Idempotent: a second run downloads nothing. The twin's own header carries WHY it exists (two copies of the six install lines had already drifted, so the checksum was verified on one of the two installs and not the other) and that reasoning is not restated here.
 
 LIVE CALLERS, none repointed by this port:
   * `.github/workflows/ci.yml:880`      `ensure-nfpm.sh >>"$GITHUB_PATH"`
@@ -20,9 +16,7 @@ LIVE CALLERS, none repointed by this port:
 -----------------------------------------------------------------------------
 WHY THE EXTERNAL BINARIES ARE CALLED RATHER THAN REIMPLEMENTED
 -----------------------------------------------------------------------------
-`curl`, `sha256sum` and `tar` are invoked as subprocesses, exactly as the twin
-invokes them, and their stderr is INHERITED. Two reasons, both of them things a
-differential would otherwise catch as a divergence:
+`curl`, `sha256sum` and `tar` are invoked as subprocesses, exactly as the twin invokes them, and their stderr is INHERITED. Two reasons, both of them things a differential would otherwise catch as a divergence:
 
   * THE EXIT CODE IS THE CONTRACT. `set -e` in the twin means the script exits
     with curl's 22, or sha256sum's 1, or tar's 2. `hashlib.sha256` and
@@ -38,12 +32,9 @@ differential would otherwise catch as a divergence:
 THE PIN IS READ BY SOURCING `constants.sh`, NOT BY PARSING IT
 -----------------------------------------------------------------------------
 `.ci/config/constants.sh` is a bash program, not a KEY=value table: it re-sources
-`.devcontainer/toolchain.env` under `set -a` (constants.sh:20-32), guards against
-double-sourcing with `REDIACC_CONSTANTS_LOADED`, and `return 1`s with a message on
-stderr when the pins file is unreadable. A regex reader would silently disagree
+`.devcontainer/toolchain.env` under `set -a` (constants.sh:20-32), guards against double-sourcing with `REDIACC_CONSTANTS_LOADED`, and `return 1`s with a message on stderr when the pins file is unreadable. A regex reader would silently disagree
 with all three. So this port runs the same `source` in a bash child with BOTH
-STREAMS INHERITED and collects the two values over a side channel (a temp file),
-which reproduces:
+STREAMS INHERITED and collects the two values over a side channel (a temp file), which reproduces:
 
   * a missing `.devcontainer/toolchain.env` printing
     `constants.sh: gate toolchain pins missing: <path>` on stderr and exiting 1
@@ -52,30 +43,19 @@ which reproduces:
     stdout, which matters because every caller substitutes this script's stdout
     straight into `PATH`.
 
-`.devcontainer/toolchain.env` is resolved by constants.sh from ITS OWN location,
-so a fixture root gets the fixture's pins; nothing here passes a path.
+`.devcontainer/toolchain.env` is resolved by constants.sh from ITS OWN location, so a fixture root gets the fixture's pins; nothing here passes a path.
 
 -----------------------------------------------------------------------------
 THE REPO ROOT IS THIS FILE'S OWN LOCATION, and `paths.repo_root()` is NOT used
 -----------------------------------------------------------------------------
-Same call as `rediacc_ci.infra.ci_start_elite._console_root`: `paths.repo_root()`
-honours `$REDIACC_CI_ROOT` and the twin has no such override, so a fixture that
-pointed one side at a tree and not the other would diverge silently. The twin's
-`SCRIPT_DIR/../../..` from `.ci/scripts/build/` is `parents[3]` of this file's
-directory chain, since this module sits one level deeper.
+Same call as `rediacc_ci.infra.ci_start_elite._console_root`: `paths.repo_root()` honours `$REDIACC_CI_ROOT` and the twin has no such override, so a fixture that pointed one side at a tree and not the other would diverge silently. The twin's `SCRIPT_DIR/../../..` from `.ci/scripts/build/` is `parents[3]` of this file's directory chain, since this module sits one level deeper.
 
-One named, unreproducible difference: the twin's `cd "$(dirname ...)" && pwd`
-resolves symlinks in the DIRECTORY only, while `Path.resolve()` also resolves a
-symlinked file. Reaching this file through a symlink is not something any caller
-does, and the alternative (`os.path.abspath`) is the spelling
-`rediacc_ci.paths`' own docstring calls out as differently wrong.
+One named, unreproducible difference: the twin's `cd "$(dirname ...)" && pwd` resolves symlinks in the DIRECTORY only, while `Path.resolve()` also resolves a symlinked file. Reaching this file through a symlink is not something any caller does, and the alternative (`os.path.abspath`) is the spelling `rediacc_ci.paths`' own docstring calls out as differently wrong.
 
 -----------------------------------------------------------------------------
 TWO REAL DEFECTS IN THE TWIN, REPRODUCED HERE RATHER THAN FIXED
 -----------------------------------------------------------------------------
-Fixing either would change a live gate's and two workflows' behaviour, which is
-outside this port's ownership. Both are pinned by tests in
-`.ci/rediacc_ci/tests/test_build_ensure_nfpm.py`.
+Fixing either would change a live gate's and two workflows' behaviour, which is outside this port's ownership. Both are pinned by tests in `.ci/rediacc_ci/tests/test_build_ensure_nfpm.py`.
 
   1. A WARM CACHE IS NEVER CHECKED AGAINST THE PIN (`ensure-nfpm.sh:42-45`).
      The cached-binary branch tests only that `$BIN_DIR/nfpm --version` exits 0;
@@ -102,14 +82,8 @@ outside this port's ownership. Both are pinned by tests in
 -----------------------------------------------------------------------------
 ONE NAMED DIVERGENCE THAT IS NOT REPRODUCED
 -----------------------------------------------------------------------------
-When `constants.sh` sources cleanly but defines no `NFPM_VERSION`, the twin dies
-at `:54` with bash's own `line 54: NFPM_VERSION: unbound variable`, an internal
-diagnostic carrying the interpreter's path and line number. That is not a
-sentence a second language can produce, and `scripts/lib/shadow-gate.ts` files
-it as CHATTER on both sides (no `::error::`/`✗`/`ERROR:` marker), so it plays no
-part in any recorded verdict. The port exits 1 with the same empty stdout and
-does not forge the text. Pinned by
-`test_unpinned_version_exits_1_without_forging_bash_text`.
+When `constants.sh` sources cleanly but defines no `NFPM_VERSION`, the twin dies at `:54` with bash's own `line 54: NFPM_VERSION: unbound variable`, an internal diagnostic carrying the interpreter's path and line number. That is not a sentence a second language can produce, and `scripts/lib/shadow-gate.ts` files it as CHATTER on both sides (no `::error::`/`✗`/`ERROR:` marker), so
+it plays no part in any recorded verdict. The port exits 1 with the same empty stdout and does not forge the text. Pinned by `test_unpinned_version_exits_1_without_forging_bash_text`.
 
 K=5 LEDGER: `.ci/shadow/w7p6-ensure-nfpm.observations.jsonl`.
 """
@@ -133,8 +107,7 @@ _BIN_RELPATH = (".ci", "cache", "bin")
 # `.ci/scripts/build/ensure-nfpm.sh:30`.
 _CONSTANTS_RELPATH = (".ci", "config", "constants.sh")
 
-# The two names read out of constants.sh (`:54-55`). Named rather than inlined so
-# a test can assert the twin still reads exactly these.
+# The two names read out of constants.sh (`:54-55`). Named rather than inlined so a test can assert the twin still reads exactly these.
 VERSION_KEY = "NFPM_VERSION"
 SHA_KEY = "NFPM_SHA256_LINUX_X86_64"
 
@@ -183,9 +156,7 @@ def fetching_message(version: str, arch: str) -> str:
 def _binary_answers(binary: str | pathlib.Path) -> bool:
     """`"$BIN_DIR/nfpm" --version >/dev/null 2>&1` -- ask the binary, not the file.
 
-    The twin's own comment (:34-37) is the reason this is not a `-x` test alone:
-    a truncated download and an interrupted extraction both leave a path `test -x`
-    is happy with.
+    The twin's own comment (:34-37) is the reason this is not a `-x` test alone: a truncated download and an interrupted extraction both leave a path `test -x` is happy with.
     """
     try:
         return (
@@ -198,27 +169,17 @@ def _binary_answers(binary: str | pathlib.Path) -> bool:
             == 0
         )
     except OSError:
-        # `command -v` found it and exec then failed (a text-file-busy, a bad
-        # interpreter line). Bash's `if` treats a failed exec as a false
-        # condition and falls through to the next branch; so does this.
+        # `command -v` found it and exec then failed (a text-file-busy, a bad interpreter line). Bash's `if` treats a failed exec as a false condition and falls through to the next branch; so does this.
         return False
 
 
 def machine_arch() -> tuple[int, str]:
     """`ARCH="$(uname -m)"` (:51). Returns (rc, arch).
 
-    `uname` IS RESOLVED THROUGH `PATH`, NOT `os.uname()`, and the difference is
-    load-bearing rather than pedantic. The REGISTERED gate
-    `.ci/scripts/test/proxies/proxy-ensure-nfpm.sh:149-158` drives the
-    unpinned-architecture refusal by putting a `uname` shim on `PATH` that
-    answers `riscv64` -- "a real execution of the branch rather than a claim
-    about it", in its own words. `os.uname()` is a raw syscall that no shim can
-    reach, so a port spelled that way would take the x86_64 arm under the gate's
-    refusal case and try to download instead of refusing.
+    `uname` IS RESOLVED THROUGH `PATH`, NOT `os.uname()`, and the difference is load-bearing rather than pedantic. The REGISTERED gate `.ci/scripts/test/proxies/proxy-ensure-nfpm.sh:149-158` drives the unpinned-architecture refusal by putting a `uname` shim on `PATH` that answers `riscv64` -- "a real execution of the branch rather than a claim about it", in its own words.
+    `os.uname()` is a raw syscall that no shim can reach, so a port spelled that way would take the x86_64 arm under the gate's refusal case and try to download instead of refusing.
 
-    Command substitution strips TRAILING newlines and inherits stderr; a failing
-    `uname` makes the assignment itself fail, which under `set -e` exits with
-    uname's own status.
+    Command substitution strips TRAILING newlines and inherits stderr; a failing `uname` makes the assignment itself fail, which under `set -e` exits with uname's own status.
     """
     proc = subprocess.run(["uname", "-m"], stdout=subprocess.PIPE, text=True, check=False)
     if proc.returncode != 0:
@@ -229,16 +190,11 @@ def machine_arch() -> tuple[int, str]:
 def read_pins(constants: pathlib.Path) -> tuple[int, str, str]:
     """`source "$REPO_ROOT/.ci/config/constants.sh"` (:30). Returns (rc, version, sha).
 
-    BOTH STREAMS ARE INHERITED, so constants.sh's own stderr (`:30-31`, the
-    missing-pins refusal) reaches the caller exactly as it does under the twin's
-    `source`. A non-zero rc is the twin's `set -e` firing on a failed source.
+    BOTH STREAMS ARE INHERITED, so constants.sh's own stderr (`:30-31`, the missing-pins refusal) reaches the caller exactly as it does under the twin's `source`. A non-zero rc is the twin's `set -e` firing on a failed source.
     """
     with tempfile.TemporaryDirectory() as sidechannel:
         out = pathlib.Path(sidechannel) / "pins"
-        # `%s` below is printf's, not Python's: the two values are interpolated
-        # as SHELL parameter expansions, one per line, so a value containing a
-        # `%` cannot re-enter either formatter. Concatenated rather than
-        # `%`-formatted for exactly that reason.
+        # `%s` below is printf's, not Python's: the two values are interpolated as SHELL parameter expansions, one per line, so a value containing a `%` cannot re-enter either formatter. Concatenated rather than `%`-formatted for exactly that reason.
         body = (
             "set -euo pipefail\n"
             'source "$1"\n'
@@ -289,16 +245,14 @@ def run(argv: list[str]) -> int:
         return 1
 
     if not version or not want:
-        # The `set -u` abort at :54-55. See the module docstring: the text is
-        # bash-internal and deliberately not forged.
+        # The `set -u` abort at :54-55. See the module docstring: the text is bash-internal and deliberately not forged.
         return 1
 
     tarball = tarball_name(version)
     tmp = tempfile.mkdtemp()
     try:
         url = download_url(version, tarball)
-        # :66. stderr, before the network call, so a hung fetch still says what
-        # it is hung on.
+        # :66. stderr, before the network call, so a hung fetch still says what it is hung on.
         print(fetching_message(version, arch), file=sys.stderr, flush=True)
         archive = os.path.join(tmp, tarball)
         rc = subprocess.run(
@@ -319,9 +273,7 @@ def run(argv: list[str]) -> int:
         if rc != 0:
             return rc
 
-        # :70. VERIFY BEFORE EXTRACTING. stdout to /dev/null (that is where the
-        # `<file>: FAILED` line goes); stderr inherited (that is where the
-        # WARNING goes).
+        # :70. VERIFY BEFORE EXTRACTING. stdout to /dev/null (that is where the `<file>: FAILED` line goes); stderr inherited (that is where the WARNING goes).
         rc = subprocess.run(
             ["sha256sum", "-c", "-"],
             input="%s  %s\n" % (want, archive),
@@ -340,12 +292,8 @@ def run(argv: list[str]) -> int:
         ).returncode
         if rc != 0:
             return rc
-        # `chmod +x "$BIN_DIR/nfpm"` (:73). Bare `+x` is `a+x` MASKED BY UMASK,
-        # not a flat 0755: it adds execute where the umask permits and touches
-        # no other bit, so a tar member that arrived 0644 becomes 0755 under the
-        # usual 022 while one that arrived 0600 becomes 0700. Writing 0o755 here
-        # would ADD group and world READ on that second file, which the twin
-        # never does. `os.umask` has no reader, so it is set-and-restored.
+        # `chmod +x "$BIN_DIR/nfpm"` (:73). Bare `+x` is `a+x` MASKED BY UMASK, not a flat 0755: it adds execute where the umask permits and touches no other bit, so a tar member that arrived 0644 becomes 0755 under the usual 022 while one that arrived 0600 becomes 0700. Writing 0o755 here would ADD group and world READ on that second file, which the twin never does. `os.umask` has
+        # no reader, so it is set-and-restored.
         mask = os.umask(0)
         os.umask(mask)
         os.chmod(str(cached), os.stat(str(cached)).st_mode | (0o111 & ~mask))

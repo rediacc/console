@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.build.build_cli_executables` against its twin
-`.ci/scripts/build/build-cli-executables.sh`.
+"""Differential: `rediacc_ci.build.build_cli_executables` against its twin `.ci/scripts/build/build-cli-executables.sh`.
 
 WHAT IS COMPARED. Four things per case, separately, never folded together: stdout, stderr, exit code, and the FAKE-BINARY CALL LOG -- one tab-separated line of argv per invocation of `node`, `uname`, `strip`, `codesign` and `prepare-cli-assets.sh`. Plus, on every build that gets that far, the ARTIFACTS: every file the run left under `dist/` and `packages/cli/dist/`, with its
 content and its executable bit.
@@ -357,8 +356,7 @@ def test_the_scratch_path_is_sealed(tmp_path) -> None:
 
 
 def test_the_fakes_really_record_and_never_touch_stdout(tmp_path) -> None:
-    """If a fake logged to stdout it would land inside the JSON `jq` parses, and
-    every doctor case below would be comparing corruption to corruption."""
+    """If a fake logged to stdout it would land inside the JSON `jq` parses, and every doctor case below would be comparing corruption to corruption."""
     root = fixture(tmp_path)
     old_t, _ = run_both(root, args=NATIVE)
     assert old_t[0].returncode == 0, old_t[0].stderr
@@ -453,8 +451,7 @@ def test_auto_detects_mingw_as_win_and_appends_exe(tmp_path) -> None:
 
 
 def test_an_unnameable_platform_refuses_and_calls_uname_twice(tmp_path) -> None:
-    """The error arm re-runs `uname -s` to build its own message; the count is
-    observable in the call log and a port that cached the value would diverge."""
+    """The error arm re-runs `uname -s` to build its own message; the count is observable in the call log and a port that cached the value would diverge."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--dry-run",), env_overrides={"FAKE_UNAME_S": "Plan9"})
     assert old_t[0].returncode == 1
@@ -465,8 +462,7 @@ def test_an_unnameable_platform_refuses_and_calls_uname_twice(tmp_path) -> None:
 
 
 def test_the_arch_case_has_no_globs_so_x86_64h_refuses(tmp_path) -> None:
-    """`Linux*` is a pattern but `x86_64|amd64` is not, so a Haswell Darwin
-    `x86_64h` is refused where a `Linux-anything` would have been accepted."""
+    """`Linux*` is a pattern but `x86_64|amd64` is not, so a Haswell Darwin `x86_64h` is refused where a `Linux-anything` would have been accepted."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--dry-run",), env_overrides={"FAKE_UNAME_M": "x86_64h"})
     assert old_t[0].returncode == 1
@@ -498,8 +494,7 @@ def test_a_missing_node_is_a_silent_exit_one(tmp_path) -> None:
 
 
 def test_the_dry_run_still_needs_node_because_the_lookup_is_above_it(tmp_path) -> None:
-    """`:99` runs before `:107`, so `--dry-run` inherits DEFECT 1 wholesale: a
-    preview that cannot preview anything without a toolchain it never names."""
+    """`:99` runs before `:107`, so `--dry-run` inherits DEFECT 1 wholesale: a preview that cannot preview anything without a toolchain it never names."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=(*NATIVE, "--dry-run"), drop=("node",))
     assert old_t[0].returncode == 1
@@ -568,8 +563,7 @@ def test_the_injector_argv_carries_the_sentinel_fuse_and_no_macho_flag_on_linux(
 
 
 def test_mac_signs_twice_never_strips_and_names_the_macho_segment(tmp_path) -> None:
-    """Order matters and is asserted: the signature is REMOVED before the strip
-    would have run and re-applied after the injection, never the other way."""
+    """Order matters and is asserted: the signature is REMOVED before the strip would have run and re-applied after the injection, never the other way."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--platform", "mac", "--arch", "arm64"))
     assert old_t[0].returncode == 0, old_t[0].stderr
@@ -596,9 +590,7 @@ def test_win_appends_exe_and_neither_strips_nor_signs(tmp_path) -> None:
 
 
 def test_a_relative_output_resolves_against_packages_cli_not_the_cwd(tmp_path) -> None:
-    """`:143` chdirs, and `--output` is used AFTER it. A port that resolved the
-    flag against the invocation directory would write to a different tree and
-    still print the same log lines."""
+    """`:143` chdirs, and `--output` is used AFTER it. A port that resolved the flag against the invocation directory would write to a different tree and still print the same log lines."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=(*NATIVE, "--output", "out"))
     assert old_t[0].returncode == 0, old_t[0].stderr
@@ -609,8 +601,7 @@ def test_a_relative_output_resolves_against_packages_cli_not_the_cwd(tmp_path) -
 
 
 def test_the_size_lines_report_real_byte_counts(tmp_path) -> None:
-    """Four `wc -c` sites are `stat().st_size` in the port. If either side were
-    reading a different file the digits would disagree here."""
+    """Four `wc -c` sites are `stat().st_size` in the port. If either side were reading a different file the digits would disagree here."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=NATIVE)
     assert "\u2713 Bundle created: 17 bytes\n" in old_t[0].stderr
@@ -621,8 +612,7 @@ def test_the_size_lines_report_real_byte_counts(tmp_path) -> None:
 
 
 def test_the_checksum_is_written_beside_the_binary_with_a_bare_name(tmp_path) -> None:
-    """`(cd "$OUTPUT_DIR" && sha256sum "$BINARY_NAME")`: the subshell is what
-    keeps a PATH out of the `.sha256`, and `sha256sum -c` later depends on it."""
+    """`(cd "$OUTPUT_DIR" && sha256sum "$BINARY_NAME")`: the subshell is what keeps a PATH out of the `.sha256`, and `sha256sum -c` later depends on it."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=NATIVE)
     body = old_t[2]["dist/cli/rdc-linux-x64.sha256"][0]
@@ -636,9 +626,7 @@ def test_the_checksum_is_written_beside_the_binary_with_a_bare_name(tmp_path) ->
 
 
 def test_a_missing_strip_dies_with_bashs_own_message_and_127(tmp_path) -> None:
-    """DEFECT 2. No `require_cmd strip` anywhere, so the diagnosis comes from the
-    shell, one line after a `→ Stripping debug symbols...` that already claimed
-    the step had started."""
+    """DEFECT 2. No `require_cmd strip` anywhere, so the diagnosis comes from the shell, one line after a `→ Stripping debug symbols...` that already claimed the step had started."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=NATIVE, drop=("strip",))
     assert old_t[0].returncode == 127
@@ -649,8 +637,7 @@ def test_a_missing_strip_dies_with_bashs_own_message_and_127(tmp_path) -> None:
 
 
 def test_no_checksum_tool_is_a_warning_and_the_build_still_passes(tmp_path) -> None:
-    """DEFECT 3. The artifact ships with nothing to verify it against and the
-    step is green."""
+    """DEFECT 3. The artifact ships with nothing to verify it against and the step is green."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=NATIVE, drop=("sha256sum",))
     assert old_t[0].returncode == 0
@@ -678,8 +665,7 @@ def test_a_release_build_without_a_version_refuses(tmp_path) -> None:
 
 
 def test_a_release_build_refuses_the_placeholder_with_both_messages(tmp_path) -> None:
-    """inject-env's own refusal reaches stderr FIRST, then this script's. Two
-    lines, two authors, and the order is the observable."""
+    """inject-env's own refusal reaches stderr FIRST, then this script's. Two lines, two authors, and the order is the observable."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
         root,
@@ -728,8 +714,7 @@ def test_a_release_build_with_a_real_version_builds_and_compares_it(tmp_path) ->
 
 def test_release_build_is_a_string_test_so_one_is_not_true(tmp_path) -> None:
     """`[[ "${RELEASE_BUILD:-}" == "true" ]]`. `RELEASE_BUILD=1` takes the DEV
-    branch and quietly builds a 0.0.0-dev artifact on what the caller believed
-    was a release path."""
+    branch and quietly builds a 0.0.0-dev artifact on what the caller believed was a release path."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
         root,
@@ -747,8 +732,7 @@ def test_release_build_is_a_string_test_so_one_is_not_true(tmp_path) -> None:
 
 
 def test_the_injected_version_reaches_the_bundler_environment(tmp_path) -> None:
-    """The whole reason inject-env is SOURCED rather than run: `node bundle.mjs`
-    must inherit `CLI_VERSION`. Proved by making the fake node write it out."""
+    """The whole reason inject-env is SOURCED rather than run: `node bundle.mjs` must inherit `CLI_VERSION`. Proved by making the fake node write it out."""
     root = fixture(tmp_path)
     probe = root / "fixture-bin" / "node"
     for side, argv in (
@@ -809,8 +793,7 @@ def test_a_sea_config_that_writes_no_blob_is_caught_too(tmp_path) -> None:
 
 
 def test_a_failing_bundler_propagates_its_own_status_not_a_flattened_one(tmp_path) -> None:
-    """A real exit code flattened to 1 is a defect class this campaign keeps
-    finding. This script does not have it, and neither may the port."""
+    """A real exit code flattened to 1 is a defect class this campaign keeps finding. This script does not have it, and neither may the port."""
     root = fixture(tmp_path)
     for code in ("3", "42"):
         old_t, new_t = run_both(
@@ -849,8 +832,7 @@ def test_a_failing_version_smoke_test_reports_its_code(tmp_path) -> None:
 
 
 def test_defect_4_the_version_test_cannot_tell_a_signal_from_a_verdict(tmp_path) -> None:
-    """137 is SIGKILL. `doctor` decodes that; `--version`, twelve lines earlier,
-    reports it as an exit code and says nothing about the kill."""
+    """137 is SIGKILL. `doctor` decodes that; `--version`, twelve lines earlier, reports it as an exit code and says nothing about the kill."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=NATIVE, env_overrides={"FAKE_RDC_VERSION_RC": "137"})
     assert old_t[0].returncode == 1
@@ -922,8 +904,7 @@ def test_a_non_sea_install_method_refuses(tmp_path) -> None:
 
 
 def test_a_version_mismatch_refuses_and_names_both_versions(tmp_path) -> None:
-    """The check release 31154305287 needed: binaries built as 1.2.16 shipped
-    under the label 1.2.17 and the step said nothing."""
+    """The check release 31154305287 needed: binaries built as 1.2.16 shipped under the label 1.2.17 and the step said nothing."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(
         root,
@@ -973,8 +954,7 @@ def test_a_bad_node_status_refuses(tmp_path) -> None:
 
 
 def test_a_corrupt_embedded_asset_refuses_and_prints_every_offender(tmp_path) -> None:
-    """The one RUNTIME check a shredded blob cannot pass. Its detail line goes to
-    STDOUT, not stderr, which is itself worth pinning."""
+    """The one RUNTIME check a shredded blob cannot pass. Its detail line goes to STDOUT, not stderr, which is itself worth pinning."""
     root = fixture(tmp_path)
     corrupt = [
         {"name": "linux-amd64", "value": "corrupt \u2014 sha256 mismatch"},
@@ -996,9 +976,7 @@ def test_a_corrupt_embedded_asset_refuses_and_prints_every_offender(tmp_path) ->
 
 
 def test_an_absent_renet_list_is_not_a_corruption(tmp_path) -> None:
-    """`.Renet[]?` -- the `?` is why a doctor with no Renet section reports 0
-    rather than dying. A port that dropped it would fail the build on a shape
-    that is merely different."""
+    """`.Renet[]?` -- the `?` is why a doctor with no Renet section reports 0 rather than dying. A port that dropped it would fail the build on a shape that is merely different."""
     root = fixture(tmp_path)
     body = json.loads(doctor_json())
     del body["Renet"]
@@ -1012,9 +990,7 @@ def test_an_absent_renet_list_is_not_a_corruption(tmp_path) -> None:
 
 
 def test_an_unvalidated_platform_builds_a_nonsense_name(tmp_path) -> None:
-    """DEFECT 5. `--platform banana` is never checked; the build succeeds, names
-    the artifact `rdc-banana-x64`, and the smoke tests -- the one thing that
-    would have noticed -- are skipped BECAUSE the platform does not match."""
+    """DEFECT 5. `--platform banana` is never checked; the build succeeds, names the artifact `rdc-banana-x64`, and the smoke tests -- the one thing that would have noticed -- are skipped BECAUSE the platform does not match."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--platform", "banana", "--arch", "x64"))
     assert old_t[0].returncode == 0, old_t[0].stderr
@@ -1027,8 +1003,7 @@ def test_an_unvalidated_platform_builds_a_nonsense_name(tmp_path) -> None:
 def test_an_arch_mismatch_skips_the_smoke_tests_without_calling_detect_arch(
     tmp_path,
 ) -> None:
-    """`&&` SHORT-CIRCUITS. When the platform already disagrees, `detect_arch`
-    never runs, so there is exactly ONE `uname` in the log instead of two."""
+    """`&&` SHORT-CIRCUITS. When the platform already disagrees, `detect_arch` never runs, so there is exactly ONE `uname` in the log instead of two."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=("--platform", "win", "--arch", "x64"))
     tail = [line for line in old_t[1].splitlines() if line.startswith("FAKEBIN uname")]
@@ -1052,8 +1027,7 @@ def test_a_matching_platform_with_a_different_arch_calls_both_unames(tmp_path) -
 
 
 def test_an_unknown_detect_os_never_matches_and_smoke_tests_are_skipped(tmp_path) -> None:
-    """`detect_os`'s fail-open `unknown` arm. It reads like an answer and it is
-    compared against `linux` as though it were one."""
+    """`detect_os`'s fail-open `unknown` arm. It reads like an answer and it is compared against `linux` as though it were one."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=NATIVE, env_overrides={"FAKE_UNAME_S": "Plan9"})
     assert old_t[0].returncode == 0, old_t[0].stderr
@@ -1065,8 +1039,7 @@ def test_an_unknown_detect_os_never_matches_and_smoke_tests_are_skipped(tmp_path
 
 
 def test_a_planted_defect_is_caught(tmp_path) -> None:
-    """Four separate plants, each caught by a DIFFERENT assertion, so a green
-    suite cannot be green because one comparison does all the work."""
+    """Four separate plants, each caught by a DIFFERENT assertion, so a green suite cannot be green because one comparison does all the work."""
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
 
     # 1. Wrong sentinel fuse: invisible on both streams, visible only in argv.
@@ -1163,8 +1136,7 @@ def test_console_root_is_this_checkout() -> None:
 
 
 def test_the_module_reads_env_at_the_call_site() -> None:
-    """The env-registry alias trap, confirmed in waves 15, 18, 45 and 46: a name
-    read through a dict alias is invisible to the manifest scanner."""
+    """The env-registry alias trap, confirmed in waves 15, 18, 45 and 46: a name read through a dict alias is invisible to the manifest scanner."""
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     assert 'os.environ.get("RELEASE_BUILD", "")' in source
     assert 'os.environ.get("CLI_VERSION", "")' in source

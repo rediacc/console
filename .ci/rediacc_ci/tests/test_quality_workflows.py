@@ -215,29 +215,23 @@ _PY_OFFENDER = (
 
 
 def test_a_wrapped_python_gh_call_is_seen():
-    """THE REGRESSION. A per-line `ends with an open bracket` test was written first and
-    this refused it: the `"gh", "api", ...` line opens nothing, so a suffix test ends the
-    join two lines before `--slurp` and `--jq` ever meet."""
+    """THE REGRESSION. A per-line `ends with an open bracket` test was written first and this refused it: the `"gh", "api", ...` line opens nothing, so a suffix test ends the join two lines before `--slurp` and `--jq` ever meet."""
     assert mod.slurp_jq_offenders(_PY_OFFENDER) == [2]
 
 
 def test_the_bash_form_still_fires():
-    """The corpus this was written against must not move. Depth and backslash are
-    independent tests, ORed, so bash sees exactly what it saw before."""
+    """The corpus this was written against must not move. Depth and backslash are independent tests, ORed, so bash sees exactly what it saw before."""
     assert mod.slurp_jq_offenders(
         'gh api repos/x/issues --paginate --slurp \\\n    --jq ".[]"\n'
     ) == [1]
 
 
 def test_a_wrapped_python_call_without_slurp_is_not_a_finding():
-    """THE ANTI-SILENCER HALF, and the one that makes joining safe to widen: joining more
-    lines together must not start inventing pairs. The same five-line call with no
-    `--slurp` is clean."""
+    """THE ANTI-SILENCER HALF, and the one that makes joining safe to widen: joining more lines together must not start inventing pairs. The same five-line call with no `--slurp` is clean."""
     clean = _PY_OFFENDER.replace('"--paginate", "--slurp",', '"--paginate",')
     assert mod.slurp_jq_offenders(clean) == []
 
 
 def test_a_comment_still_resets_the_join():
-    """Unchanged behaviour, asserted because the depth counter is reset in the same arm
-    and a reset that forgot one of the two would leak a bracket across a comment."""
+    """Unchanged behaviour, asserted because the depth counter is reset in the same arm and a reset that forgot one of the two would leak a bracket across a comment."""
     assert mod.slurp_jq_offenders('gh api x --slurp \\\n# a comment\n    --jq ".[]"\n') == []

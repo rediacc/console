@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Shared command scanning for the gh-pr guardrail hooks (block-admin-merge,
-block-nondraft-pr-create, block-premature-ready).
+"""Shared command scanning for the gh-pr guardrail hooks (block-admin-merge, block-nondraft-pr-create, block-premature-ready).
 
 The old inline approach (strip every quoted span, then anchor `gh pr <verb>` at a command position) had a review-found bypass class: stripping ALL quotes also erases a command hidden inside a shell-execution wrapper, so `sh -c 'gh pr merge --admin'`, `bash -c "..."`, `eval "..."`, variable
 indirection (`X=--admin; gh pr merge $X`), and `--admin=true` all sailed past
@@ -110,8 +109,7 @@ def _command_substitution(text):
 
 
 def _here_string(text):
-    """`<<<"$x"` feeds `x` plus one newline, so an empty subject is one empty
-    record and not zero records. grep is then run over exactly one line.
+    """`<<<"$x"` feeds `x` plus one newline, so an empty subject is one empty record and not zero records. grep is then run over exactly one line.
     """
     return text + "\n"
 
@@ -461,8 +459,7 @@ def _printf_line(text):
 
 
 def _grep_only(pattern, text):
-    """`grep -oE <pattern>` -- every non-overlapping match, in order, one per
-    line, across every record. Python's finditer scans left to right and resumes after each match, which is GNU grep's rule too; what differs is leftmost-longest versus leftmost-first, and the module docstring records why the alternations here do not feel it.
+    """`grep -oE <pattern>` -- every non-overlapping match, in order, one per line, across every record. Python's finditer scans left to right and resumes after each match, which is GNU grep's rule too; what differs is leftmost-longest versus leftmost-first, and the module docstring records why the alternations here do not feel it.
     """
     compiled = re.compile(pattern)
     records, _ = _records(text)

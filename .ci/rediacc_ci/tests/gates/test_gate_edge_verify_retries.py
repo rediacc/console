@@ -5,9 +5,8 @@ Assert the edge smoke test cannot be failed by ONE unlucky sample.
 WHY THIS EXISTS, AND WHY IT IS A PR GATE. On 2026-08-08 release run 31234422166 deployed edge successfully and then failed `edge.rediacc.com footer does not render v1.2.19` -- while edge was ALREADY serving v1.2.19. The assertion sampled an eventually-consistent CDN exactly once, moments after the deploy, and lost the race. The failure cascaded: `Tag & GitHub Release` was skipped,
 so a good release shipped with NO git tag and NO GitHub Release.
 
-`verify-edge-endpoints.sh` runs ONLY from cd-v2.yml, which is dispatch-only and main-only. So the DEPLOY it verifies genuinely cannot be exercised on a PR -- and that was the reasoning that nearly left this unguarded. The reasoning was wrong.
-The defect was never "edge served the wrong version"; it was "the assertion samples
-once". That is a property of a shell script, and a shell script can be driven against a FAKE curl on any PR, with no deploy at all.
+`verify-edge-endpoints.sh` runs ONLY from cd-v2.yml, which is dispatch-only and main-only. So the DEPLOY it verifies genuinely cannot be exercised on a PR -- and that was the reasoning that nearly left this unguarded. The reasoning was wrong. The defect was never "edge served the wrong version"; it was "the assertion samples once". That is a property of a shell script, and a shell
+script can be driven against a FAKE curl on any PR, with no deploy at all.
 
 WHAT IT ASSERTS
   1. RETRIES     a surface that is stale then correct is ACCEPTED (the incident).
@@ -72,8 +71,7 @@ def run_case(fn_source: str, fails: int, retries: int, state: pathlib.Path) -> b
 def test_the_extractor_matches_the_twins_awk(gate):
     """CONTROL FOR THE PORT ITSELF. The twin extracts the function with an awk
     RANGE (`/^fetch_retry\\(\\) \\{/,/^\\}/`); this file uses a Python regex. A
-    port that swaps the reader without comparing it against the original has replaced a tested extractor with an untested one, and every case below would
-    then be exercising whatever the new one happened to grab."""
+    port that swaps the reader without comparing it against the original has replaced a tested extractor with an untested one, and every case below would then be exercising whatever the new one happened to grab."""
     awk = harness.run(["awk", r"/^fetch_retry\(\) \{/,/^\}/", str(TARGET)])
     gate.assert_exit_code(0, awk.rc, "the twin's awk still runs")
     gate.assert_eq(

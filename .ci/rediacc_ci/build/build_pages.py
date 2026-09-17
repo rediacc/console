@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/build-pages.sh` (78 lines).
 
-Assembles the Cloudflare Pages deployment package: `packages/www/dist` at the
-root, `packages/json/dist` under `/json/`, optionally a CLI manifest under
-`/cli/edge/` and `/cli/stable/`, and then a copy of the whole thing into
-`workers/www/dist` so the www worker serves it as static assets.
+Assembles the Cloudflare Pages deployment package: `packages/www/dist` at the root, `packages/json/dist` under `/json/`, optionally a CLI manifest under `/cli/edge/` and `/cli/stable/`, and then a copy of the whole thing into `workers/www/dist` so the www worker serves it as static assets.
 
 LIVE CALLERS, neither repointed by this port:
   * `.github/workflows/cd-stage.yml:185`  `.ci/scripts/build/build-pages.sh --output dist/pages`
@@ -13,20 +10,12 @@ LIVE CALLERS, neither repointed by this port:
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHY IT IS NOT `shutil`
 -----------------------------------------------------------------------------
-`rm -rf`, `mkdir -p` and `cp -r` are spawned exactly as the twin spawns them,
-rather than reimplemented with `shutil.rmtree` / `os.makedirs` / `shutil.copytree`.
+`rm -rf`, `mkdir -p` and `cp -r` are spawned exactly as the twin spawns them, rather than reimplemented with `shutil.rmtree` / `os.makedirs` / `shutil.copytree`.
 
-The reason is that this script's ONLY output on a failure is the diagnostic
-those three tools print. There is no `require_*` guard on any of the six copies:
-an empty `packages/www/dist` reports `cp: cannot stat 'packages/www/dist/*': No
-such file or directory` and a missing `workers/www` reports `cp: cannot create
-directory '<root>/workers/www/dist': No such file or directory`. Those sentences
-ARE the failure surface a CI log carries, and `shutil` writes different ones.
-Reproducing the tool would mean reproducing the tool's error catalogue.
+The reason is that this script's ONLY output on a failure is the diagnostic those three tools print. There is no `require_*` guard on any of the six copies: an empty `packages/www/dist` reports `cp: cannot stat 'packages/www/dist/*': No such file or directory` and a missing `workers/www` reports `cp: cannot create directory '<root>/workers/www/dist': No such file or directory`.
+Those sentences ARE the failure surface a CI log carries, and `shutil` writes different ones. Reproducing the tool would mean reproducing the tool's error catalogue.
 
-The GLOB, by contrast, is BASH's and not `cp`'s (`cp -r packages/www/dist/*`
-is expanded by the shell before `cp` ever runs), so it is reproduced here in
-`bash_glob` rather than delegated.
+The GLOB, by contrast, is BASH's and not `cp`'s (`cp -r packages/www/dist/*` is expanded by the shell before `cp` ever runs), so it is reproduced here in `bash_glob` rather than delegated.
 
 -----------------------------------------------------------------------------
 SIX DEFECTS IN THE TWIN, ALL REPRODUCED RATHER THAN REPAIRED
@@ -123,8 +112,7 @@ NO_JSON_LINES = (
     "Run 'npm run build:json' first",
 )
 
-# The twin's line numbers for every spawned command, because bash's
-# `command not found` diagnostic names the line and a reader diffs on it.
+# The twin's line numbers for every spawned command, because bash's `command not found` diagnostic names the line and a reader diffs on it.
 RM_OUTPUT_LINE = 43
 MKDIR_OUTPUT_LINE = 44
 CP_WWW_LINE = 48
@@ -172,9 +160,7 @@ def bash_glob(pattern: str) -> list[str]:
 def run(argv: list[str], line: int) -> int:
     """One spawned command with both streams INHERITED. Returns bash's status.
 
-    127 for "not found" and 126 for "permission denied" are bash's numbers, and
-    the accompanying stderr line is bash's too. Same shape as
-    `rediacc_ci.build.build_www.run_npm`.
+    127 for "not found" and 126 for "permission denied" are bash's numbers, and the accompanying stderr line is bash's too. Same shape as `rediacc_ci.build.build_www.run_npm`.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -223,13 +209,11 @@ def main(argv: list[str]) -> int:
             log.error(line)
         return 1
 
-    # `:43-44`. Defect 1: under the default this deletes the directory holding
-    # the CLI manifest that `:58` is about to look for.
+    # `:43-44`. Defect 1: under the default this deletes the directory holding the CLI manifest that `:58` is about to look for.
     _errexit(["rm", "-rf", output_dir], RM_OUTPUT_LINE)
     _errexit(["mkdir", "-p", output_dir], MKDIR_OUTPUT_LINE)
 
-    # `:47-49`. The trailing slash on the destination is the twin's and is kept:
-    # it changes what `cp` says when the destination is not a directory.
+    # `:47-49`. The trailing slash on the destination is the twin's and is kept: it changes what `cp` says when the destination is not a directory.
     log.step("Copying www to root...")
     _errexit(["cp", "-r", *bash_glob(WWW_DIST + "/*"), output_dir + "/"], CP_WWW_LINE)
     log.info("Copied www to %s/" % output_dir)
@@ -243,8 +227,7 @@ def main(argv: list[str]) -> int:
     )
     log.info("Copied json to %s/json/" % output_dir)
 
-    # `:58-64`. Defects 1 and 2: unreachable under the default output directory,
-    # and dead under every output directory because nothing writes the source.
+    # `:58-64`. Defects 1 and 2: unreachable under the default output directory, and dead under every output directory because nothing writes the source.
     if pathlib.Path(CLI_MANIFEST).is_file():
         log.step("Copying CLI manifest to /cli/edge/ and /cli/stable/...")
         _errexit(

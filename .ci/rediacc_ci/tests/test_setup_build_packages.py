@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.setup.build_packages` against its twin
-`.ci/scripts/setup/build-packages.sh`.
+"""Differential: `rediacc_ci.setup.build_packages` against its twin `.ci/scripts/setup/build-packages.sh`.
 
 NOTHING HERE RUNS A REAL BUILD. A recording fake `npm` on a scratch PATH logs its argv and, when the fixture asks it to, creates `packages/shared/dist` the way a real build would. `rm` is NOT faked: the deletion is half of what this script does and the only way to check it is to let it happen in a fixture tree and look at what survived.
 
@@ -221,9 +220,7 @@ def _assert_agree(old3, new3, label: str) -> None:
 
 
 def test_the_default_run_wipes_builds_and_verifies(tmp_path: pathlib.Path) -> None:
-    """PINNED AGAINST LITERAL BYTES. One npm call, three stderr lines, and the
-    stale `dist/stale.js` gone -- proof the wipe happened before the build rather
-    than being skipped because the directory already existed."""
+    """PINNED AGAINST LITERAL BYTES. One npm call, three stderr lines, and the stale `dist/stale.js` gone -- proof the wipe happened before the build rather than being skipped because the directory already existed."""
     old3, new3 = run_both(tmp_path)
     old, old_calls, old_fs = old3
     assert old.returncode == 0
@@ -241,8 +238,7 @@ def test_the_default_run_wipes_builds_and_verifies(tmp_path: pathlib.Path) -> No
 
 
 def test_debug_true_reveals_the_otherwise_silent_deletion(tmp_path: pathlib.Path) -> None:
-    """`log_debug` (common.sh:51-55) is the only announcement the `rm -rf` gets,
-    and it needs `DEBUG` to be exactly `true`."""
+    """`log_debug` (common.sh:51-55) is the only announcement the `rm -rf` gets, and it needs `DEBUG` to be exactly `true`."""
     old3, new3 = run_both(tmp_path, DEBUG="true")
     assert old3[0].stderr.splitlines()[1] == "[DEBUG] Cleaning TypeScript build cache..."
     _assert_agree(old3, new3, "DEBUG=true")
@@ -262,9 +258,7 @@ def test_debug_1_is_not_debug_true(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_build_that_emits_nothing_warns_and_exits_zero(tmp_path: pathlib.Path) -> None:
-    """THE VACUITY CLASS, IN THE SCRIPT WHOSE JOB IS TO BUILD. The script deletes
-    `packages/shared/dist`, runs a build that produces nothing, finds the directory gone, calls that `(may be expected)` and exits 0. That is exactly the tsbuildinfo no-op the wipe eleven lines above exists to prevent, and it
-    is reported as a warning nobody greps for."""
+    """THE VACUITY CLASS, IN THE SCRIPT WHOSE JOB IS TO BUILD. The script deletes `packages/shared/dist`, runs a build that produces nothing, finds the directory gone, calls that `(may be expected)` and exits 0. That is exactly the tsbuildinfo no-op the wipe eleven lines above exists to prevent, and it is reported as a warning nobody greps for."""
     old3, new3 = run_both(tmp_path, emit=False)
     old = old3[0]
     assert old.returncode == 0
@@ -278,8 +272,7 @@ def test_a_build_that_emits_nothing_warns_and_exits_zero(tmp_path: pathlib.Path)
 
 
 def test_a_failing_build_stops_before_the_verification(tmp_path: pathlib.Path) -> None:
-    """Exit 1, and the `Verified:`/`not found` line never prints -- so a reader
-    cannot tell from the output whether `dist` survived. It did not."""
+    """Exit 1, and the `Verified:`/`not found` line never prints -- so a reader cannot tell from the output whether `dist` survived. It did not."""
     old3, new3 = run_both(tmp_path, emit=False, FAKE_NPM_RC="3")
     old = old3[0]
     assert old.returncode == 1, "the twin normalises npm's 3 to its own 1"
@@ -293,9 +286,7 @@ def test_a_failing_build_stops_before_the_verification(tmp_path: pathlib.Path) -
 
 
 def test_no_tsbuildinfo_files_is_a_silent_no_op(tmp_path: pathlib.Path) -> None:
-    """With no match, bash hands `rm` the PATTERN as a literal operand and `-f`
-    swallows the resulting error: nothing is printed and the exit code is untouched. The port globs to an empty list, which is the same outcome by a different route -- and the route matters, because a port that passed the
-    unexpanded pattern to `Path.unlink` would raise."""
+    """With no match, bash hands `rm` the PATTERN as a literal operand and `-f` swallows the resulting error: nothing is printed and the exit code is untouched. The port globs to an empty list, which is the same outcome by a different route -- and the route matters, because a port that passed the unexpanded pattern to `Path.unlink` would raise."""
     old3, new3 = run_both(
         tmp_path,
         spec={"packages/shared/dist": "dir", "packages/shared/src.ts": "file"},
@@ -326,9 +317,7 @@ def test_every_tsbuildinfo_goes_not_just_the_first(tmp_path: pathlib.Path) -> No
 
 
 def test_a_dotfile_tsbuildinfo_survives_both(tmp_path: pathlib.Path) -> None:
-    """`*` matches no leading dot in bash and none in `glob`, so `.tsbuildinfo`
-    is invisible to both. The case exists because that is the single most likely
-    place two glob implementations disagree."""
+    """`*` matches no leading dot in bash and none in `glob`, so `.tsbuildinfo` is invisible to both. The case exists because that is the single most likely place two glob implementations disagree."""
     old3, new3 = run_both(
         tmp_path,
         spec={"packages/shared/dist": "dir", "packages/shared/.tsbuildinfo": "file"},
@@ -338,8 +327,7 @@ def test_a_dotfile_tsbuildinfo_survives_both(tmp_path: pathlib.Path) -> None:
 
 
 def test_dist_as_a_regular_file_is_removed_too(tmp_path: pathlib.Path) -> None:
-    """`rm -rf` does not care what `dist` is; `shutil.rmtree` would raise
-    `NotADirectoryError`. The build then recreates it as a directory."""
+    """`rm -rf` does not care what `dist` is; `shutil.rmtree` would raise `NotADirectoryError`. The build then recreates it as a directory."""
     old3, new3 = run_both(
         tmp_path, spec={"packages/shared/dist": "file", "packages/shared/x.tsbuildinfo": "file"}
     )
@@ -351,9 +339,7 @@ def test_dist_as_a_regular_file_is_removed_too(tmp_path: pathlib.Path) -> None:
 def test_dist_as_a_symlink_loses_the_link_and_keeps_the_target(
     tmp_path: pathlib.Path,
 ) -> None:
-    """A stale `dist` symlink into another worktree is a real state in a repo
-    that uses git worktrees. `rm -rf` unlinks it and never touches what it points at; a port that resolved the link first would silently delete somebody else's build output, with byte-identical stdout and stderr. The snapshot includes
-    `keepsake/` precisely so that deletion would be visible here."""
+    """A stale `dist` symlink into another worktree is a real state in a repo that uses git worktrees. `rm -rf` unlinks it and never touches what it points at; a port that resolved the link first would silently delete somebody else's build output, with byte-identical stdout and stderr. The snapshot includes `keepsake/` precisely so that deletion would be visible here."""
     old3, new3 = run_both(
         tmp_path,
         emit=False,
@@ -373,8 +359,7 @@ def test_dist_as_a_symlink_loses_the_link_and_keeps_the_target(
 
 
 def test_arguments_are_ignored_including_help(tmp_path: pathlib.Path) -> None:
-    """The twin has no `parse_args` and no `case`, so `--help` builds the
-    packages. An argparse in the port would exit 2 with a usage block instead."""
+    """The twin has no `parse_args` and no `case`, so `--help` builds the packages. An argparse in the port would exit 2 with a usage block instead."""
     old3, new3 = run_both(tmp_path, ["--help", "nonsense"])
     assert old3[0].returncode == 0
     assert old3[1] == ["npm\trun\tbuild:packages"]
@@ -385,9 +370,7 @@ def test_arguments_are_ignored_including_help(tmp_path: pathlib.Path) -> None:
 
 
 def test_clean_targets_lists_dist_first_and_always(tmp_path: pathlib.Path) -> None:
-    """`dist` is handed to `rm -rf` unconditionally, present or not, so it is in
-    the list either way -- a caller counting targets should see what bash built,
-    not the subset that happened to exist."""
+    """`dist` is handed to `rm -rf` unconditionally, present or not, so it is in the list either way -- a caller counting targets should see what bash built, not the subset that happened to exist."""
     shared = tmp_path / "packages" / "shared"
     shared.mkdir(parents=True)
     (shared / "b.tsbuildinfo").write_text("", encoding="utf-8")

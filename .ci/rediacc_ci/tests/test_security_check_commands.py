@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.security.check_commands` against its twin
-`.ci/scripts/security/check-commands.sh` (registered gate `check:ci-shell-commands`, `ci-quality.yml:351`).
+"""Differential: `rediacc_ci.security.check_commands` against its twin `.ci/scripts/security/check-commands.sh` (registered gate `check:ci-shell-commands`, `ci-quality.yml:351`).
 
 A FIXTURE TREE, NOT THE REAL REPOSITORY. Both subjects derive the console root from their own file location (`.ci/scripts/security/` for the twin, `.ci/rediacc_ci/security/` for the port, both three directories up), so each
 case COPIES both subjects into a fresh tree at the right relative depth and
@@ -140,9 +139,7 @@ def test_yaml_style_key_is_not_a_finding(tmp_path: pathlib.Path) -> None:
 
 
 def test_first_disallowed_command_in_array_order_wins(tmp_path: pathlib.Path) -> None:
-    """`bc | tac` on one line: `bc` is checked before `tac` in `DISALLOWED`'s
-    own array order and the twin `break`s on its first hit, so only `bc` is
-    reported even though `tac` also appears and would independently match."""
+    """`bc | tac` on one line: `bc` is checked before `tac` in `DISALLOWED`'s own array order and the twin `break`s on its first hit, so only `bc` is reported even though `tac` also appears and would independently match."""
     root = _fixture(tmp_path)
     _write(root, ".ci/x/order.sh", "#!/bin/bash\nbc | tac\n")
     old, new = run_both(root)
@@ -154,9 +151,7 @@ def test_first_disallowed_command_in_array_order_wins(tmp_path: pathlib.Path) ->
 
 
 def test_command_substitution_form_is_now_caught(tmp_path: pathlib.Path) -> None:
-    """FIXED 2026-09-10: `$(shuf ...)` is now caught by both the twin and the
-    port, which now agree with each other instead of agreeing on a shared
-    blindness. If this goes red, the fix has regressed."""
+    """FIXED 2026-09-10: `$(shuf ...)` is now caught by both the twin and the port, which now agree with each other instead of agreeing on a shared blindness. If this goes red, the fix has regressed."""
     root = _fixture(tmp_path)
     _write(root, ".ci/x/subst.sh", '#!/bin/bash\nx=$(shuf -n1 file.txt)\necho "$x"\n')
     old, new = run_both(root)
@@ -166,9 +161,7 @@ def test_command_substitution_form_is_now_caught(tmp_path: pathlib.Path) -> None
 
 
 def test_if_guarded_form_is_now_caught(tmp_path: pathlib.Path) -> None:
-    """FIXED 2026-09-10: the narrow per-command check now carries the `if\\s+`
-    branch the wide filter always had, so `if seq 1 10; then` is now caught
-    by both sides."""
+    """FIXED 2026-09-10: the narrow per-command check now carries the `if\\s+` branch the wide filter always had, so `if seq 1 10; then` is now caught by both sides."""
     root = _fixture(tmp_path)
     _write(root, ".ci/x/ifguard.sh", "#!/bin/bash\nif seq 1 10; then\n    echo hi\nfi\n")
     old, new = run_both(root)
@@ -195,9 +188,7 @@ def test_run_sh_absent_is_not_an_error(tmp_path: pathlib.Path) -> None:
 
 
 def test_scripts_directory_is_also_scanned(tmp_path: pathlib.Path) -> None:
-    """The twin's own comment: `scripts/` joined the corpus after a bash-4-only
-    `mapfile` sat unreported in `scripts/dev/reset-bench.sh` for as long as
-    anyone could remember; keep it in the port's corpus too."""
+    """The twin's own comment: `scripts/` joined the corpus after a bash-4-only `mapfile` sat unreported in `scripts/dev/reset-bench.sh` for as long as anyone could remember; keep it in the port's corpus too."""
     root = _fixture(tmp_path)
     _write(root, "scripts/dev/thing.sh", "#!/bin/bash\nmapfile -t x < f\n")
     old, new = run_both(root)
@@ -235,9 +226,7 @@ def test_multiple_files_aggregate_and_ci_env_disables_color(tmp_path: pathlib.Pa
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-REGRESSION, two independent plants. Each reintroduces one of the
-    two now-fixed bugs into the PORT ALONE, leaving the (now-fixed) twin untouched, and asserts the mutated port diverges from the twin -- i.e. the differential would catch either bug creeping back into just one side. Driven red, then the source is restored byte-identical and
-    re-verified green."""
+    """ANTI-REGRESSION, two independent plants. Each reintroduces one of the two now-fixed bugs into the PORT ALONE, leaving the (now-fixed) twin untouched, and asserts the mutated port diverges from the twin -- i.e. the differential would catch either bug creeping back into just one side. Driven red, then the source is restored byte-identical and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
 
     # Plant A: regress Bug 1 (the $( escape) in the port only.

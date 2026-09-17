@@ -143,9 +143,7 @@ def test_differential(tmp_path, consumer, probe, want_exit):
 def test_selftest_exits_zero_and_prints_a_count():
     """`--selftest` is a real run, not an import.
 
-    EXIT 0 WITH ZERO PASS LINES IS A FAILURE, so the count line is asserted as well as the status. A selftest whose cases stopped executing would still exit
-    0, and the `Controls` floor is what turns that into a red; this asserts the
-    floor is actually reported.
+    EXIT 0 WITH ZERO PASS LINES IS A FAILURE, so the count line is asserted as well as the status. A selftest whose cases stopped executing would still exit 0, and the `Controls` floor is what turns that into a red; this asserts the floor is actually reported.
     """
     code, out, err = diff.bash_streams(
         "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.ci python3 -m rediacc_ci.quality.%s --selftest"

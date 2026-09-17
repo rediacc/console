@@ -55,8 +55,7 @@ def test_accepts_real_inventories(gate):
 
 
 def test_rejects_dockerfile_pin_drift(gate, tmp_path):
-    """The Dockerfile keeps its own ARG defaults so `docker build` works standalone.
-    This is the check that stops those defaults drifting from the lockfile.
+    """The Dockerfile keeps its own ARG defaults so `docker build` works standalone. This is the check that stops those defaults drifting from the lockfile.
     """
     require_submodule(gate)
     lines = DOCKERFILE.read_text(encoding="utf-8").splitlines(keepends=True)
@@ -84,8 +83,7 @@ def test_rejects_dockerfile_pin_drift(gate, tmp_path):
 
 
 def test_rejects_stale_generated_artifact(gate, tmp_path):
-    """The attribution artifacts are generated from the lockfile; a hand-edit or a
-    forgotten regenerate must be caught rather than silently shipped.
+    """The attribution artifacts are generated from the lockfile; a hand-edit or a forgotten regenerate must be caught rather than silently shipped.
     """
     require_submodule(gate)
     fixture = tmp_path / "credits_data.go"

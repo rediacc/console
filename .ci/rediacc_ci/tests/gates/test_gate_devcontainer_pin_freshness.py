@@ -136,8 +136,7 @@ def run_gate(gate, directory, dockerfile, fixture: str, *args: str) -> harness.R
 
 
 def run_gate_blocklist(gate, directory, dockerfile, fixture: str, blocklist: str):
-    """The gate with a fixture map AND a fixture blocklist, so the BLOCKER
-    validation is exercised in isolation from the network.
+    """The gate with a fixture map AND a fixture blocklist, so the BLOCKER validation is exercised in isolation from the network.
 
     Both fixtures are refused when absent, for the reason `run_gate` gives about the upstream map, and for a second one about the blocklist: an absent `DEVCONTAINER_BLOCKLIST_FILE` reads as an EMPTY blocklist, which is indistinguishable from "every entry is well formed".
     """

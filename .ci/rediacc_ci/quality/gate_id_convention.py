@@ -1,7 +1,6 @@
 """A manifest entry that RUNS a gates/ script must be `gate-test:<name>`.
 
-Ported from `.ci/scripts/quality/check-gate-id-convention.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-gate-id-convention.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 The twin's header, carried whole because the review quote, the narrowness argument, the accepted limitation and the subject change are each load-bearing:
 
@@ -115,8 +114,7 @@ from rediacc_ci.controls import Controls
 # The prefix that makes a `run` string a gates/ script. THE COLOURS ARE UNCONDITIONAL IN THE TWIN, and so they are here. The twin
 # assigns `RED=$'\033[0;31m'` at check-gate-id-convention.sh:81-83 with no tty
 # test at all, so it writes escape bytes into a pipe as readily as into a terminal. The first draft of this port printed the glyphs bare, and the W7 P4 cutover differential caught it: same exit code, same words, stdout 311 bytes against the twin's 322. Eleven bytes of escape is not a cosmetic gap, it is the differential failing, and a port that cannot be compared byte for byte
-# cannot be cut over. Matching the twin exactly is the requirement; TTY-gating
-# is a separate change for both sides at once, not something to introduce on one side during a move.
+# cannot be cut over. Matching the twin exactly is the requirement; TTY-gating is a separate change for both sides at once, not something to introduce on one side during a move.
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"

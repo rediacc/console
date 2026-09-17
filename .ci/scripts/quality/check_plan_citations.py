@@ -508,9 +508,7 @@ def corpus_citations(root):
 
 
 def selftest(root):
-    """Plant one unresolvable pointer per kind and require a finding; then the
-    same four kinds resolvable and require SILENCE. Returns the number of
-    control failures."""
+    """Plant one unresolvable pointer per kind and require a finding; then the same four kinds resolvable and require SILENCE. Returns the number of control failures."""
     bad = 0
 
     def ck(label, ok, detail=""):

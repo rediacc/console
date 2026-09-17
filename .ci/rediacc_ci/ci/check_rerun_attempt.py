@@ -3,8 +3,7 @@
 
 The dumb, deterministic backstop under the AI-driven watchdog: read the run's current attempt and refuse to rerun at or past the cap. The twin's header owns why the exported name is `WATCHDOG_SKIP_RERUN` (it is the CONSUMER's spelling, read by `watchdog-monitor.cjs`), and that is not restated here.
 
-LIVE CALLER, not repointed. The bash twin stays the registered gate; this module
-is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
+LIVE CALLER, not repointed. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
 Ledger: `.ci/shadow/w7p6-check-rerun-attempt.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-check-rerun-attempt --assert --k 5`).
 
@@ -54,9 +53,7 @@ WHY THE BASH DIAGNOSTICS ARE REPRODUCED CHARACTER BY CHARACTER
 -----------------------------------------------------------------------------
 Three of this script's five exits are bash's own messages rather than the
 script's: `${RUN_ID:?...}`, `${GH_REPO:?...}` and the `null` arithmetic above.
-They carry `<program>: line <N>:`, so the port carries the twin's line numbers as named constants and `test_the_pinned_line_numbers_still_point_at_the_twins _lines` re-derives all three from the twin on every run. The program NAME
-necessarily differs (`.sh` there, the module path here); the differential
-normalises exactly that one token and compares the rest byte-for-byte.
+They carry `<program>: line <N>:`, so the port carries the twin's line numbers as named constants and `test_the_pinned_line_numbers_still_point_at_the_twins _lines` re-derives all three from the twin on every run. The program NAME necessarily differs (`.sh` there, the module path here); the differential normalises exactly that one token and compares the rest byte-for-byte.
 """
 
 from __future__ import annotations
@@ -96,9 +93,8 @@ class BashArithError(Exception):
 def bash_ge(left_word: str, right_word: str) -> bool:
     """`[[ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]]`, with bash's arithmetic rules.
 
-    Empty is 0 (DEFECT B's fail-open arm). A decimal is itself. A bare identifier is an unset variable and therefore fatal under `set -u` (DEFECT B's fail-closed arm, which is how `null` behaves). Anything else -- `1abc`, `0x10` -- is an arithmetic syntax error in the twin, `[[ ]]` answers
-    false, and the script continues; that arm is not reachable from `gh --jq`
-    output and is deliberately mapped onto the same false answer rather than given a second synthetic message.
+    Empty is 0 (DEFECT B's fail-open arm). A decimal is itself. A bare identifier is an unset variable and therefore fatal under `set -u` (DEFECT B's fail-closed arm, which is how `null` behaves). Anything else -- `1abc`, `0x10` -- is an arithmetic syntax error in the twin, `[[ ]]` answers false, and the script continues; that arm is not reachable from `gh --jq` output and is
+    deliberately mapped onto the same false answer rather than given a second synthetic message.
     """
     values = []
     for word in (left_word.strip(), right_word.strip()):

@@ -61,9 +61,7 @@ def credential_hits(path) -> list[str]:
 
 
 def test_no_credential_expression_in_workflow(gate):
-    """Deliberately WHOLE-FILE rather than scoped to `env:` blocks. A credential has no
-    legitimate use in workflow text at all -- `run:` interpolation is already banned as script injection, and `env:` is this leak -- so whole-file is both stricter and
-    simpler to reason about than a YAML-aware env-block parse."""
+    """Deliberately WHOLE-FILE rather than scoped to `env:` blocks. A credential has no legitimate use in workflow text at all -- `run:` interpolation is already banned as script injection, and `env:` is this leak -- so whole-file is both stricter and simpler to reason about than a YAML-aware env-block parse."""
     if not WORKFLOW.is_file():
         gate.log_fail("workflow template is missing: %s" % paths.relative_to_root(WORKFLOW))
     hits = credential_hits(WORKFLOW)
@@ -81,8 +79,7 @@ def test_no_credential_expression_in_workflow(gate):
 
 
 def test_detector_fires_on_the_real_leak(gate):
-    """ANTI-VACUITY, BY MUTATION AND NOT BY ASSERTION. A gate that has only ever been
-    seen to pass has not been verified. This reconstructs the exact line that leaked in run 30254567365, points the detector at it, and asserts it trips; weaken the expression list or the scan and THIS case goes red rather than the gate going quietly blind.
+    """ANTI-VACUITY, BY MUTATION AND NOT BY ASSERTION. A gate that has only ever been seen to pass has not been verified. This reconstructs the exact line that leaked in run 30254567365, points the detector at it, and asserts it trips; weaken the expression list or the scan and THIS case goes red rather than the gate going quietly blind.
 
     It also avoids the trap the twin's first version fell into: asserting the guarded output names still exist in the scripts. After the fix they legitimately do not -- the whole point is that nothing emits them any more -- so that check failed on a correct tree and would have been "fixed" by deleting it.
     """
@@ -115,9 +112,8 @@ def test_publish_reads_state(gate):
 
 
 def test_shell_does_not_mask_unconditionally(gate):
-    """The first version of this feature masked the tmate strings the moment they were
-    created. Masking is irreversible within a run, so on the logs channel the operator got `SSH: ***` -- a shell nobody could reach. Same rule as the URL, opposite direction: never mask without a working alternative channel, and never publish without one either. `publish-endpoints.sh` owns both decisions because it is the
-    only thing that knows which channel is live."""
+    """The first version of this feature masked the tmate strings the moment they were created. Masking is irreversible within a run, so on the logs channel the operator got `SSH: ***` -- a shell nobody could reach. Same rule as the URL, opposite direction: never mask without a working alternative channel, and never publish without one either. `publish-endpoints.sh` owns both
+    decisions because it is the only thing that knows which channel is live."""
     script = BP / "scripts" / "start-shell.sh"
     if not script.is_file():
         gate.log_fail("missing %s" % paths.relative_to_root(script))
@@ -131,8 +127,7 @@ def test_shell_does_not_mask_unconditionally(gate):
 
 
 def test_live_workflow_matches_template(gate):
-    """The leak was fixed in the template; if the copy under `.github/workflows/` is
-    stale, the fix is not deployed and the next dispatch leaks again."""
+    """The leak was fixed in the template; if the copy under `.github/workflows/` is stale, the fix is not deployed and the next dispatch leaks again."""
     if not LIVE_WORKFLOW.is_file():
         gate.log_pass("no live workflow copy in this repo (template-only checkout)")
         return
@@ -155,8 +150,7 @@ def test_live_workflow_matches_template(gate):
 
 
 def test_workflow_commands_never_hit_stdout(gate):
-    """`bp_gha_mask`/`bp_gha_warning` emit `::add-mask::` / `::warning::` lines. Several
-    scripts here have a stdout DATA CONTRACT (`start-tunnel.sh` prints exactly one line,
+    """`bp_gha_mask`/`bp_gha_warning` emit `::add-mask::` / `::warning::` lines. Several scripts here have a stdout DATA CONTRACT (`start-tunnel.sh` prints exactly one line,
     the URL, and the workflow does `URL=$(start-tunnel.sh ...)`), so a workflow command
     on stdout is CAPTURED INTO the value. That killed the first real named-mode run after it had already created the tunnel, DNS record and Access app::
 

@@ -60,8 +60,7 @@ def test_full_summary_is_byte_identical(tmp_path: pathlib.Path) -> None:
 
 
 def test_appends_rather_than_overwrites(tmp_path: pathlib.Path) -> None:
-    """`$GITHUB_STEP_SUMMARY` already carries other jobs' output by the time
-    this step runs; both sides must `>>`, never truncate."""
+    """`$GITHUB_STEP_SUMMARY` already carries other jobs' output by the time this step runs; both sides must `>>`, never truncate."""
     out_old = tmp_path / "old-summary.md"
     out_new = tmp_path / "new-summary.md"
     out_old.write_text("# earlier job output\n", encoding="utf-8")

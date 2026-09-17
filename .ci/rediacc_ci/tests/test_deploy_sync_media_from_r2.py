@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.sync_media_from_r2` against its twin
-`.ci/scripts/deploy/sync-media-from-r2.sh`.
+"""Differential: `rediacc_ci.deploy.sync_media_from_r2` against its twin `.ci/scripts/deploy/sync-media-from-r2.sh`.
 
 A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches Cloudflare R2: the fake logs its exact argv, answers from the environment, and the only real credential name in the file is an environment KEY, never a value. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
 separate, achievable piece of work. This is that piece.
@@ -221,8 +220,7 @@ def _call(tree: pathlib.Path, remote_prefix: str, local_relative: str, *flags: s
 
 
 def test_the_default_run_restores_three_prefixes_in_order(tmp_path: pathlib.Path) -> None:
-    """THE WHOLE CONTRACT, PINNED AGAINST LITERAL BYTES rather than against the
-    port's own helpers, so a change in both would still be caught. Three calls, in the twin's order, each with the endpoint and `--no-progress` and nothing
+    """THE WHOLE CONTRACT, PINNED AGAINST LITERAL BYTES rather than against the port's own helpers, so a change in both would still be caught. Three calls, in the twin's order, each with the endpoint and `--no-progress` and nothing
     else."""
     old, new, old_calls, new_calls = run_both(tmp_path, [])
     tree = _tree(tmp_path)
@@ -255,9 +253,7 @@ def test_the_default_run_restores_three_prefixes_in_order(tmp_path: pathlib.Path
 
 
 def test_dry_run_appends_dryrun_last_and_drops_the_closing_line(tmp_path: pathlib.Path) -> None:
-    """`--dryrun` is APPENDED to `SYNC_ARGS`, so it TRAILS `--no-progress`. aws
-    does not care about the position and the recorded argv does, which is the
-    whole reason the flag order is asserted rather than the flag set."""
+    """`--dryrun` is APPENDED to `SYNC_ARGS`, so it TRAILS `--no-progress`. aws does not care about the position and the recorded argv does, which is the whole reason the flag order is asserted rather than the flag set."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--dry-run"])
     tree = _tree(tmp_path)
     assert old.returncode == 0
@@ -296,9 +292,7 @@ def test_audio_only_restores_one_prefix(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_only_flags_are_not_additive_and_the_last_one_wins(tmp_path: pathlib.Path) -> None:
-    """Each `--*-only` arm assigns ALL THREE booleans, so the flags overwrite
-    rather than accumulate. A port that OR-ed them would restore two prefixes
-    where the twin restores one, and would still print a plausible log."""
+    """Each `--*-only` arm assigns ALL THREE booleans, so the flags overwrite rather than accumulate. A port that OR-ed them would restore two prefixes where the twin restores one, and would still print a plausible log."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--tutorials-only", "--audio-only"])
     assert old.returncode == 0
     assert len(old_calls) == 1, "the two flags accumulated instead of overwriting"
@@ -309,9 +303,7 @@ def test_the_only_flags_are_not_additive_and_the_last_one_wins(tmp_path: pathlib
 def test_an_unknown_argument_is_refused_before_any_credential_check(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The parse loop runs FIRST, so a typo is reported on a machine with no
-    credentials and no `aws` at all. Driven with the access key removed as well,
-    which would otherwise be the refusal."""
+    """The parse loop runs FIRST, so a typo is reported on a machine with no credentials and no `aws` at all. Driven with the access key removed as well, which would otherwise be the refusal."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--bogus"],
@@ -325,9 +317,7 @@ def test_an_unknown_argument_is_refused_before_any_credential_check(
 
 
 def test_an_empty_argument_is_refused_with_a_trailing_space(tmp_path: pathlib.Path) -> None:
-    """`log_error "Unknown argument: $1"` with an empty `$1` renders a trailing
-    space, and a port that stripped it would disagree on bytes for an input a
-    caller reaches by writing `"$FLAG"` around an unset variable."""
+    """`log_error "Unknown argument: $1"` with an empty `$1` renders a trailing space, and a port that stripped it would disagree on bytes for an input a caller reaches by writing `"$FLAG"` around an unset variable."""
     old, new, old_calls, new_calls = run_both(tmp_path, [""])
     assert old.returncode == 1
     assert old.stderr == "✗ Unknown argument: \n"
@@ -335,8 +325,7 @@ def test_an_empty_argument_is_refused_with_a_trailing_space(tmp_path: pathlib.Pa
 
 
 def test_an_empty_access_key_is_refused(tmp_path: pathlib.Path) -> None:
-    """`require_var` tests EMPTINESS through indirect expansion, so exported-empty
-    and unset are one outcome for the one variable it actually checks."""
+    """`require_var` tests EMPTINESS through indirect expansion, so exported-empty and unset are one outcome for the one variable it actually checks."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--audio-only"], CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=""
     )
@@ -360,9 +349,7 @@ def test_an_unset_access_key_is_refused(tmp_path: pathlib.Path) -> None:
 def test_missing_aws_is_refused_after_the_access_key_and_before_the_secret(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE ORDER OF THE REFUSALS IS THE CONTRACT. Driven with the secret ALSO
-    unset, so the only thing that decides which message appears is the order: `require_cmd aws` sits above the `export`, and a port that validated
-    credentials first would report the wrong problem on a fresh machine."""
+    """THE ORDER OF THE REFUSALS IS THE CONTRACT. Driven with the secret ALSO unset, so the only thing that decides which message appears is the order: `require_cmd aws` sits above the `export`, and a port that validated credentials first would report the wrong problem on a fresh machine."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--audio-only"],
@@ -423,9 +410,7 @@ def test_divergence_set_u_names_the_bash_file_and_line(tmp_path: pathlib.Path) -
 
 
 def test_an_unset_endpoint_is_reported_after_the_secret(tmp_path: pathlib.Path) -> None:
-    """The secret is expanded three lines above the endpoint, so with BOTH unset
-    the secret is the one named. Driven with only the endpoint unset to show the
-    second half of the same ordering."""
+    """The secret is expanded three lines above the endpoint, so with BOTH unset the secret is the one named. Driven with only the endpoint unset to show the second half of the same ordering."""
     tree = _tree(tmp_path)
     _layout(tree, ())
     old, _oc = _run(TWIN_REL, tree, ["--audio-only"], drop_env=("CLOUDFLARE_R2_MEDIA_ENDPOINT",))
@@ -456,8 +441,7 @@ def test_an_unset_endpoint_is_reported_after_the_secret(tmp_path: pathlib.Path) 
 def test_a_failing_aws_ends_the_run_with_its_status_and_no_further_legs(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`set -e` on the unguarded `aws s3 sync`: the first failure is the last
-    call, the closing line never prints, and the script's status is aws's."""
+    """`set -e` on the unguarded `aws s3 sync`: the first failure is the last call, the closing line never prints, and the script's status is aws's."""
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_AWS_RC="3")
     assert old.returncode == 3
     assert len(old_calls) == 1, "the run continued past a failed leg"
@@ -466,8 +450,7 @@ def test_a_failing_aws_ends_the_run_with_its_status_and_no_further_legs(
 
 
 def test_defect_dry_run_still_creates_the_local_directories(tmp_path: pathlib.Path) -> None:
-    """THE DEFECT, PINNED. `mkdir -p "$local_dir"` sits above the `aws` call in
-    `restore_dir` and is not conditioned on `DRY_RUN`, so the flag documented as "download nothing" writes three directories into the working copy. Harmless in a git sense and still a write from a read-only flag.
+    """THE DEFECT, PINNED. `mkdir -p "$local_dir"` sits above the `aws` call in `restore_dir` and is not conditioned on `DRY_RUN`, so the flag documented as "download nothing" writes three directories into the working copy. Harmless in a git sense and still a write from a read-only flag.
 
     `run_both` already asserts the two sides leave the SAME directories behind;
     this names what those directories are, so the shared assertion cannot pass by both sides creating nothing.
@@ -490,9 +473,7 @@ def test_defect_dry_run_still_creates_the_local_directories(tmp_path: pathlib.Pa
 
 
 def test_a_failing_mkdir_stops_before_the_step_line(tmp_path: pathlib.Path) -> None:
-    """`mkdir` IS THE REAL BINARY ON BOTH SIDES, which is why its bytes agree.
-    A regular file where `tutorials/video/` belongs makes `mkdir -p` fail, and because it runs ABOVE `log_step` the caller learns the run died without ever learning which prefix it died on. `os.makedirs` would print a traceback and
-    a different status here."""
+    """`mkdir` IS THE REAL BINARY ON BOTH SIDES, which is why its bytes agree. A regular file where `tutorials/video/` belongs makes `mkdir -p` fail, and because it runs ABOVE `log_step` the caller learns the run died without ever learning which prefix it died on. `os.makedirs` would print a traceback and a different status here."""
     tree = _tree(tmp_path)
     _layout(tree, ())
     (tree / "packages/www/public/assets/tutorials").mkdir(parents=True, exist_ok=True)
@@ -507,8 +488,7 @@ def test_a_failing_mkdir_stops_before_the_step_line(tmp_path: pathlib.Path) -> N
 
 
 def test_pure_helpers() -> None:
-    """The exported helpers, driven directly. Both directions on the parse loop:
-    something that must be refused, and flag combinations that must NOT be."""
+    """The exported helpers, driven directly. Both directions on the parse loop: something that must be refused, and flag combinations that must NOT be."""
     assert port.BUCKET == "rediacc-www-media"
     assert port.TUTORIALS == ("tutorials/video/", "packages/www/public/assets/tutorials/video/")
     assert port.SOLUTIONS == ("videos/", "packages/www/public/assets/videos/")
@@ -561,8 +541,8 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on `--no-progress` -- a flag whose absence changes
-    NOTHING a reader can see through this harness (the fake aws prints the same line either way, the exit code is 0 either way, and the call COUNT is unchanged) while changing what the real `aws` writes to the terminal on every one of the three legs. Driven red, then the source is confirmed byte-identical and green.
+    """ANTI-VACUITY, planted on `--no-progress` -- a flag whose absence changes NOTHING a reader can see through this harness (the fake aws prints the same line either way, the exit code is 0 either way, and the call COUNT is unchanged) while changing what the real `aws` writes to the terminal on every one of the three legs. Driven red, then the source is confirmed byte-identical
+    and green.
     """
     original = (ROOT / PORT_REL).read_text(encoding="utf-8")
     mutated = original.replace(

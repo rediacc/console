@@ -5,9 +5,8 @@ this guard existed: plan_tasks() returned 21 "tasks", of which 8 were the operat
 
 So the failure is not "the plan is badly written". It is that the author and the enforcement layer are reading two different documents, and nothing says so until a stop is refused for a reason the author cannot act on.
 
-THE RULE, and it is one line: a plan file must contain at least one CHECKBOX task, `- [ ]` or `- [x]`. That is the only construct wl_planfid.plan_tasks
-treats as a task WHEREVER it appears; everything else it counts is a plain
-bullet that happens to sit under a heading whose first three words name work, which is precisely the accident that turns a Decisions section into a task list.
+THE RULE, and it is one line: a plan file must contain at least one CHECKBOX task, `- [ ]` or `- [x]`. That is the only construct wl_planfid.plan_tasks treats as a task WHEREVER it appears; everything else it counts is a plain bullet that happens to sit under a heading whose first three words name work, which is precisely the accident that turns a Decisions section into a task
+list.
 
 WHY NOT "zero parsed tasks". That weaker rule is the obvious one and it would have MISSED the incident above completely -- 21 > 0. A rule that cannot fire on the case that motivated it is the vacuous-gate shape TRAPS.md is about.
 
@@ -28,8 +27,7 @@ within a week. The scope is therefore drawn where authorship actually happens:
 
 THE PARSER IS IMPORTED, NEVER RE-DERIVED. This calls wl_planfid.plan_tasks and wl_planfid.CHECKBOX_RE directly, so the guard and the Stop hook cannot drift into disagreeing about what a task is -- the same discipline test-plan-status-parse.py uses on plan_records.
 
-FAILS OPEN on a missing python3, a missing module, or unreadable input. A guard about DOCUMENT SHAPE has no business walling a session in because an
-interpreter is absent; the Stop hook still enforces the real rule.
+FAILS OPEN on a missing python3, a missing module, or unreadable input. A guard about DOCUMENT SHAPE has no business walling a session in because an interpreter is absent; the Stop hook still enforces the real rule.
 
 RESIDUAL, stated rather than pretended away: an Edit that DELETES the last checkbox from a plan that has one is still allowed, because the union sees the on-disk list and cannot know the line is on its way out. Whole-file Writes -- the shape that actually produced the incident -- are checked exactly.
 
@@ -260,8 +258,7 @@ def run(ev):
     if fragments == "":
         return hookio.ALLOW
 
-    # A Write replaces the file outright; an Edit only amends it, so the resulting
-    # document is at least the union of what is there and what is arriving.
+    # A Write replaces the file outright; an Edit only amends it, so the resulting document is at least the union of what is there and what is arriving.
     tool = ev.field("tool_name")
     subject = fragments
     if tool != "Write" and os.path.isfile(file_path):

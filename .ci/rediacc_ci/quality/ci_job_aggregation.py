@@ -1,7 +1,6 @@
 """Every top-level job in `ci.yml` must reach the `ci-complete` verdict.
 
-Ported from `.ci/scripts/quality/check-ci-job-aggregation.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-ci-job-aggregation.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 The twin's header, carried in full because the four checks and the direction argument are the gate:
 
@@ -57,17 +56,13 @@ become ones: a real parser would see `needs:` under an `if:` expression, would r
 THE EXEMPT SET IS CARRIED VERBATIM, REASONS INCLUDED. It is a suppression list, so its five BLOCKER reasons are the part that must survive a port intact: each one records why `ci-complete` genuinely cannot aggregate that job, and one of them (build-renet) is an explicit note that the current safety is ACCIDENTAL and should be removed the next time the tier logic is touched.
 Deleting that paragraph would delete the only record that the hole is known.
 
-`parse_blockered_list` AND `verify_all_blockers` COME FROM `rediacc_ci.core.allowlist`, which is the one implementation of this repository's BLOCKER contract and is proved byte-compatible with `.ci/scripts/lib/blocker-validator.sh` over a frozen
-corpus. The twin sources the bash copy; using a fourth hand-rolled reader here
-would be exactly the duplication that module exists to end.
+`parse_blockered_list` AND `verify_all_blockers` COME FROM `rediacc_ci.core.allowlist`, which is the one implementation of this repository's BLOCKER contract and is proved byte-compatible with `.ci/scripts/lib/blocker-validator.sh` over a frozen corpus. The twin sources the bash copy; using a fourth hand-rolled reader here would be exactly the duplication that module exists to end.
 
 THE VALIDATOR ARM CANNOT FIRE FROM A FIXTURE, and that is worth stating rather than discovering. The exempt block lives INSIDE the gate file, so a differential fixture cannot plant a low-effort reason without editing the twin, which invariant 5 forbids. The arm is therefore exercised by the selftest, in both directions, against blocks written by construction.
 
 BASH ASSOCIATIVE-ARRAY ORDER IS NOT REPRODUCED, and it does not matter. The
 twin's `for n in "${!NEEDS[@]}"` walks a hash, so its phantom / untiered /
-orphan lists come out in an order that is neither insertion nor sorted. This port sorts them. Every one of those lines is an `echo` on STDOUT under a `log_error` header on STDERR, so the differential reads them as progress and
-compares the headers, which carry the COUNTS; a reader gets a stable order
-instead of a hash order, which is strictly better and changes no verdict.
+orphan lists come out in an order that is neither insertion nor sorted. This port sorts them. Every one of those lines is an `echo` on STDOUT under a `log_error` header on STDERR, so the differential reads them as progress and compares the headers, which carry the COUNTS; a reader gets a stable order instead of a hash order, which is strictly better and changes no verdict.
 
 `tr '[:lower:]-' '[:upper:]_'` IS A TWO-SET TRANSLATION, NOT AN UPPERCASE. The set on the left is the 26 lowercase letters PLUS the hyphen, and the right is the 26 uppercase letters PLUS the underscore. Digits, dots and any character outside those sets pass through untouched, and an already-uppercase letter is not touched either. `result_var_for` reproduces exactly that, because a
 port that called `.upper().replace("-", "_")` would agree on every job name this workflow has ever had and would diverge the first time one contains a character the translation leaves alone.
@@ -127,8 +122,7 @@ def top_level_jobs(text: str) -> list[str]:
             in_jobs && /^  [A-Za-z0-9_-]+:[[:space:]]*$/ { ... print key }
         '
 
-    Job keys are the only 2-space-indented bare keys after the `jobs:` line; job
-    bodies sit at 4 spaces or deeper. Scoping to the jobs block keeps the `on:` / `permissions:` / `concurrency:` keys (also 2-space) out.
+    Job keys are the only 2-space-indented bare keys after the `jobs:` line; job bodies sit at 4 spaces or deeper. Scoping to the jobs block keeps the `on:` / `permissions:` / `concurrency:` keys (also 2-space) out.
 
     THE `next` MATTERS: the `jobs:` line itself never reaches the third rule, so a file whose first job is on the same line as `jobs:` yields nothing rather than a phantom entry.
     """
@@ -178,8 +172,7 @@ def needs_names(block: str) -> list[str]:
 
         awk '/^[[:space:]]*needs:/ { strip the key, turn []`,` into spaces, split }'
 
-    `needs: [a, b, c]` is the form ci.yml uses. The brackets, commas and the key
-    itself are stripped; a bare `needs: a` form also survives.
+    `needs: [a, b, c]` is the form ci.yml uses. The brackets, commas and the key itself are stripped; a bare `needs: a` form also survives.
     """
     out: list[str] = []
     for line in block.split("\n"):
@@ -349,8 +342,7 @@ def main(argv: list[str] | None = None) -> int:
     missing_needs: list[str] = []
     missing_results: list[str] = []
 
-    # Liveness. A BLOCKER proves a reason existed once; it cannot prove the
-    # reason is still true. An exemption for a job that no longer exists is a hole held open by nothing, and it is invisible unless something asks. See the liveness section of docs/agent-reference/suppressions.md.
+    # Liveness. A BLOCKER proves a reason existed once; it cannot prove the reason is still true. An exemption for a job that no longer exists is a hole held open by nothing, and it is invisible unless something asks. See the liveness section of docs/agent-reference/suppressions.md.
     dead_exemptions = [entry for entry in sorted(exempt) if entry not in is_job]
 
     for job in jobs:

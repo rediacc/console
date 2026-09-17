@@ -1,7 +1,6 @@
 """The two review scripts measure the SAME thing against the SAME cap.
 
-Ported from `.ci/scripts/quality/check-review-cap-coherence.sh`, which is not
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-review-cap-coherence.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHY THE TWIN EXISTS, carried over from its own header because the incident IS the specification. On 2026-08-07 PR #553 became green, ready, thread-clean and PERMANENTLY UNMERGEABLE. `review-status.sh` carries an explicit DEADLOCK GUARD
 for exactly that outcome: when the cap is reached the marker can never advance,
@@ -37,8 +36,7 @@ THE BEHAVIOURAL HALF STAYS IN BASH, AND IT HAS TO. Assertion 4 extracts the `cur
 parameter expansions. Reimplementing it in Python would mean reimplementing the thing under test, which is the one rewrite a differential cannot catch. So the port shells out to `bash -c` exactly as the twin does, with the same wrapper text.
 
 `$g$s` IS CONCATENATED WITHOUT A SEPARATOR, AND THAT IS CARRIED. The ONE-DEFINITION scan greps `<<<"$g$s"`, and `$(cat file)` has already stripped the trailing newline from `$g`, so the last line of claude-review-gate.sh and the FIRST line of review-status.sh are joined into one line. A helper redefined on line 1 of review-status.sh would therefore be invisible to the `^` anchor.
-It is a shebang there today, so nothing is missed in practice; the port
-reproduces the join rather than quietly fixing it, and the defect is reported instead. Fixing it would change the verdict, which is not a port's business.
+It is a shebang there today, so nothing is missed in practice; the port reproduces the join rather than quietly fixing it, and the defect is reported instead. Fixing it would change the verdict, which is not a port's business.
 
 `printf ' %s\\n' "$REAL_OUT"` INDENTS ONLY THE FIRST LINE. printf receives ONE argument holding embedded newlines, so the two-space prefix is applied once and every subsequent finding is flush left. That is the twin's output and the port prints the same bytes. Also reported.
 
@@ -164,8 +162,7 @@ def run_guard(guard: str) -> str:
         env=env,
     )
     # `out="$( ... )"` STRIPS EVERY TRAILING NEWLINE, and forgetting that is a
-    # real bug this port shipped for one run. The finding text interpolates this value -- "(got: GUARD_MISSED)" -- so an unstripped "\n" put the closing paren on the next line and the shadow differential scored MISMATCH_FINDINGS against the twin on the one fixture that reaches this
-    # branch. The comparator earned its keep; the strip is the fix.
+    # real bug this port shipped for one run. The finding text interpolates this value -- "(got: GUARD_MISSED)" -- so an unstripped "\n" put the closing paren on the next line and the shadow differential scored MISMATCH_FINDINGS against the twin on the one fixture that reaches this branch. The comparator earned its keep; the strip is the fix.
     return proc.stdout.rstrip("\n")
 
 

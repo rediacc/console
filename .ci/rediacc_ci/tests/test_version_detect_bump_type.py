@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.version.detect_bump_type` against its twin
-`.ci/scripts/version/detect-bump-type.sh`.
+"""Differential: `rediacc_ci.version.detect_bump_type` against its twin `.ci/scripts/version/detect-bump-type.sh`.
 
 REAL GIT REPOSITORIES, NOT A STUBBED `git`. Every case builds an actual repository in `tmp_path` -- commits, tags, a branch that is not an ancestor of HEAD -- and both subjects run against it with the same cwd. Stubbing `git` would mean the two sides agreeing about a fake, and the interesting inputs here
 are exactly the ones a fake gets wrong: `--sort=-v:refname` is git's own version
@@ -98,8 +97,7 @@ def merged_pr(number: int, labels: str = "") -> dict:
 
 
 def open_pr(number: int, labels: str = "") -> dict:
-    """Contains the commit, but nothing has been released from it, so its label
-    describes a release that has not happened."""
+    """Contains the commit, but nothing has been released from it, so its label describes a release that has not happened."""
     return {
         "number": number,
         "merged_at": None,
@@ -271,8 +269,7 @@ def test_a_missing_gh_binary_is_a_fallback(tmp_path: pathlib.Path) -> None:
 
 
 def test_without_verbose_the_only_output_is_the_word(tmp_path: pathlib.Path) -> None:
-    """THE CONTRACT WITH THE CALLER: one word on stdout, and stderr silent, so
-    `$(detect-bump-type.sh)` is safe to interpolate into a version calculation."""
+    """THE CONTRACT WITH THE CALLER: one word on stdout, and stderr silent, so `$(detect-bump-type.sh)` is safe to interpolate into a version calculation."""
     world = World(tmp_path)
     world.commit("work")
     old, new, old_calls, new_calls = world.both(args=[], GITHUB_REPOSITORY=None)
@@ -316,9 +313,7 @@ def test_no_tag_scans_head_alone_and_a_minor_label_wins(tmp_path: pathlib.Path) 
 
 
 def test_the_range_starts_after_the_latest_tag(tmp_path: pathlib.Path) -> None:
-    """COMMITS BEFORE THE TAG ARE OUT OF RANGE ON PURPOSE: their labels were
-    consumed by the release that tagged them, and re-reading them would
-    escalate a version twice. The only evidence is the call log."""
+    """COMMITS BEFORE THE TAG ARE OUT OF RANGE ON PURPOSE: their labels were consumed by the release that tagged them, and re-reading them would escalate a version twice. The only evidence is the call log."""
     world = World(tmp_path)
     released = world.commit("released work")
     world.git("tag", "v1.0.0", released)
@@ -347,9 +342,7 @@ def test_an_empty_range_is_patch_not_a_wider_search(tmp_path: pathlib.Path) -> N
 def test_a_tag_that_is_not_an_ancestor_falls_back_to_head_alone(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`git merge-base --is-ancestor` is a real question about the object
-    graph, which is why this fixture is a real repository: the tag sits on a
-    branch HEAD cannot reach."""
+    """`git merge-base --is-ancestor` is a real question about the object graph, which is why this fixture is a real repository: the tag sits on a branch HEAD cannot reach."""
     world = World(tmp_path)
     base = world.commit("base")
     world.git("checkout", "-q", "-b", "side")
@@ -367,8 +360,7 @@ def test_a_tag_that_is_not_an_ancestor_falls_back_to_head_alone(
 
 def test_git_version_collation_picks_the_highest_tag(tmp_path: pathlib.Path) -> None:
     """`--sort=-v:refname` is git's own version ordering: `v0.10.0` is newer
-    than `v0.9.0`, which a byte sort gets backwards. The range description in
-    the verbose log names the tag that was chosen."""
+    than `v0.9.0`, which a byte sort gets backwards. The range description in the verbose log names the tag that was chosen."""
     world = World(tmp_path)
     old_release = world.commit("v0.9.0 work")
     world.git("tag", "v0.9.0", old_release)
@@ -383,9 +375,7 @@ def test_git_version_collation_picks_the_highest_tag(tmp_path: pathlib.Path) -> 
 
 
 def test_major_short_circuits_the_scan(tmp_path: pathlib.Path) -> None:
-    """Priority is major > minor > patch, and the scan STOPS at the first
-    major: the commits below it are never looked up. Only the call log shows
-    it -- the printed word would be `major` either way."""
+    """Priority is major > minor > patch, and the scan STOPS at the first major: the commits below it are never looked up. Only the call log shows it -- the printed word would be `major` either way."""
     world = World(tmp_path)
     released = world.commit("released")
     world.git("tag", "v1.0.0", released)
@@ -402,8 +392,7 @@ def test_major_short_circuits_the_scan(tmp_path: pathlib.Path) -> None:
 
 def test_an_open_pr_label_does_not_count(tmp_path: pathlib.Path) -> None:
     """`merged_at != null`. An open PR can contain the commit, and its label
-    describes a release that has not happened. The API WAS reached, which is
-    what separates this `patch` from a fallback."""
+    describes a release that has not happened. The API WAS reached, which is what separates this `patch` from a fallback."""
     world = World(tmp_path)
     head = world.commit("work")
     world.pulls_for(head, open_pr(20, "bump-major"))
@@ -416,8 +405,7 @@ def test_an_open_pr_label_does_not_count(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_near_miss_label_does_not_count(tmp_path: pathlib.Path) -> None:
-    """BOTH DIRECTIONS ON THE MATCH: `grep -qx` is whole-segment, so
-    `bump-majority` and `xbump-minor` are not bumps."""
+    """BOTH DIRECTIONS ON THE MATCH: `grep -qx` is whole-segment, so `bump-majority` and `xbump-minor` are not bumps."""
     world = World(tmp_path)
     head = world.commit("work")
     world.pulls_for(head, merged_pr(30, "bump-majority,xbump-minor,documentation"))
@@ -478,8 +466,7 @@ def test_one_failed_lookup_is_skipped_and_the_others_still_answer(
 
 
 def test_every_lookup_failing_is_reported_as_a_fallback(tmp_path: pathlib.Path) -> None:
-    """THE UNKNOWN-IS-NOT-FINE CASE. Nothing was checked, so the `patch` is
-    labelled as a fallback rather than presented as a verdict."""
+    """THE UNKNOWN-IS-NOT-FINE CASE. Nothing was checked, so the `patch` is labelled as a fallback rather than presented as a verdict."""
     world = World(tmp_path)
     world.commit("work")
     old, new, old_calls, new_calls = world.both(FAKE_GH_FAIL_ALL="1")
@@ -490,9 +477,7 @@ def test_every_lookup_failing_is_reported_as_a_fallback(tmp_path: pathlib.Path) 
 
 
 def test_max_commits_caps_the_range(tmp_path: pathlib.Path) -> None:
-    """DETECT_BUMP_MAX_COMMITS is a bound on what a long release window costs
-    in API calls, and it is applied by `git log -n`, so the CAPPED-OUT commit
-    is never even a candidate."""
+    """DETECT_BUMP_MAX_COMMITS is a bound on what a long release window costs in API calls, and it is applied by `git log -n`, so the CAPPED-OUT commit is never even a candidate."""
     world = World(tmp_path)
     released = world.commit("released")
     world.git("tag", "v1.0.0", released)
@@ -509,8 +494,7 @@ def test_max_commits_caps_the_range(tmp_path: pathlib.Path) -> None:
 
 
 def test_an_unknown_flag_is_ignored(tmp_path: pathlib.Path) -> None:
-    """`for arg in "$@"` matches only `--verbose`; anything else is silently
-    ignored, so a typo does not fail a release step."""
+    """`for arg in "$@"` matches only `--verbose`; anything else is silently ignored, so a typo does not fail a release step."""
     world = World(tmp_path)
     world.commit("work")
     old, new, old_calls, new_calls = world.both(args=["--wat"], GITHUB_REPOSITORY=None)
@@ -535,9 +519,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the range selection -- the exact defect that
-    made the PREVIOUS implementation of this script useless. The mutant scans HEAD alone even when a tag is usable, which still prints a plausible word and only shows up in the call log and the range description. Driven red,
-    then the source is confirmed byte-identical and green."""
+    """ANTI-VACUITY, planted on the range selection -- the exact defect that made the PREVIOUS implementation of this script useless. The mutant scans HEAD alone even when a tag is usable, which still prints a plausible word and only shows up in the call log and the range description. Driven red, then the source is confirmed byte-identical and green."""
     world = World(tmp_path)
     released = world.commit("released")
     world.git("tag", "v1.0.0", released)

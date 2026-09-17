@@ -1,8 +1,7 @@
 """Port of `.ci/scripts/test/gates/test-ci-parity.sh`.
 
-Subject: `scripts/gates/check-ci-parity.ts`, the meta-gate whose promise is that the local gate set and the CI quality surface agree in BOTH directions -- a local run catches CI failures before a push, and nothing runs locally that CI never
-enforces. It replaced two gates that each covered one direction; the third
-relation (locally-run, never CI-run) had no gate at all, which is rediacc/console#549.
+Subject: `scripts/gates/check-ci-parity.ts`, the meta-gate whose promise is that the local gate set and the CI quality surface agree in BOTH directions -- a local run catches CI failures before a push, and nothing runs locally that CI never enforces. It replaced two gates that each covered one direction; the third relation (locally-run, never CI-run) had no gate at all, which is
+rediacc/console#549.
 
 WHY CASE 3 IS THE IMPORTANT ONE, transcribed from the twin because it is the reason the whole file exists. The analysis this gate came from first reported ZERO findings, because it matched whole workflow FILE TEXT for `npm run <key>` and a step NAME contained the literal `npm run ci`. That made the entire gate set look CI-executed and the reverse direction vacuously empty -- a gate
 built that way reports perfect parity forever. `test_step_name_is_not_an_invocation` pins the defect as a regression case, on a fixture whose step name names the very gate its `run:` block does not run.
@@ -137,8 +136,7 @@ def run_gate(root: pathlib.Path) -> harness.RunResult:
 
 
 def assert_manifest_is_json(gate, body: str) -> None:
-    """A fixture manifest that is not parseable JSON makes the subject refuse for
-    a reason no case is about, and the refusal looks like a finding."""
+    """A fixture manifest that is not parseable JSON makes the subject refuse for a reason no case is about, and the refusal looks like a finding."""
     try:
         json.loads(body)
     except ValueError as exc:
@@ -188,8 +186,7 @@ def test_chain_only_gate_fails(gate):
 
 
 def test_step_name_is_not_an_invocation(gate):
-    """The live defect from the plan's section 1.4, pinned as a regression case:
-    the step NAME contains `npm run check:ci-beta` while its `run:` does not."""
+    """The live defect from the plan's section 1.4, pinned as a regression case: the step NAME contains `npm run check:ci-beta` while its `run:` does not."""
     with harness.temp_dir() as d:
         scaffold(
             d,
@@ -247,9 +244,7 @@ def test_ci_only_gate_fails(gate):
 
 
 def test_defined_gate_absent_from_the_manifest_fails(gate):
-    """R1: a `check:ci-*` key that exists in package.json but is scheduled by
-    nothing is inert -- it looks present, it greps, it passes review, and it
-    examines nothing."""
+    """R1: a `check:ci-*` key that exists in package.json but is scheduled by nothing is inert -- it looks present, it greps, it passes review, and it examines nothing."""
     with harness.temp_dir() as d:
         scaffold(d, STEP_ALPHA, SCRIPTS_ALPHA_BETA)
         manifest(
@@ -267,9 +262,7 @@ def test_defined_gate_absent_from_the_manifest_fails(gate):
 
 
 def test_aggregator_transitivity(gate):
-    """`check:ci-nested` is named by no workflow step directly; it is reached
-    through `check:i18n`. A naive substring test over the aggregator reports it
-    as dead and is simply wrong, so the resolver walks the graph."""
+    """`check:ci-nested` is named by no workflow step directly; it is reached through `check:i18n`. A naive substring test over the aggregator reports it as dead and is simply wrong, so the resolver walks the graph."""
     local_only = (
         '"ci":{"kind":"local-only","blocker":"needs release credentials no developer '
         'machine holds, so no workflow can run it"}'
@@ -295,9 +288,7 @@ def test_aggregator_transitivity(gate):
 
 
 def test_workspace_scoping(gate):
-    """`npm run test:unit -w @rediacc/cli` resolves in that workspace's manifest,
-    not the root one. Without this the key looks undefined and the existence
-    check false-positives."""
+    """`npm run test:unit -w @rediacc/cli` resolves in that workspace's manifest, not the root one. Without this the key looks undefined and the existence check false-positives."""
     with harness.temp_dir() as d:
         scaffold(d, "      - name: CLI units\n        run: npm run test:unit -w @rediacc/cli")
         (d / "packages/cli").mkdir(parents=True, exist_ok=True)
@@ -378,8 +369,7 @@ def test_low_effort_blocker_is_rejected(gate):
 
 
 def test_missing_direction_tag_is_rejected(gate):
-    """The tag is load-bearing: the liveness oracle differs per direction, so an
-    untagged entry cannot be checked for staleness at all."""
+    """The tag is load-bearing: the liveness oracle differs per direction, so an untagged entry cannot be checked for staleness at all."""
     with harness.temp_dir() as d:
         scaffold(
             d,
@@ -394,8 +384,7 @@ def test_missing_direction_tag_is_rejected(gate):
 
 
 def test_path_in_a_yaml_comment_is_not_an_invocation(gate):
-    """Too-loud guard: ci-build-renet.yml carries a comment naming a lint script.
-    Prose is not a step."""
+    """Too-loud guard: ci-build-renet.yml carries a comment naming a lint script. Prose is not a step."""
     with harness.temp_dir() as d:
         scaffold(
             d,
@@ -410,8 +399,7 @@ def test_path_in_a_yaml_comment_is_not_an_invocation(gate):
 
 
 def test_non_gate_scripts_are_not_swept_in(gate):
-    """Build, deploy and release helpers are steps, not gates, and have no
-    business in a local gate set."""
+    """Build, deploy and release helpers are steps, not gates, and have no business in a local gate set."""
     with harness.temp_dir() as d:
         scaffold(
             d,
@@ -425,9 +413,7 @@ def test_non_gate_scripts_are_not_swept_in(gate):
 
 
 def test_test_dir_gates_are_swept_in(gate):
-    """The widened rule, and the reason it was widened: two test-dir gates ran in
-    Quality/Static and nowhere else, and the old quality|security-only pattern
-    could not see either (plan finding F3)."""
+    """The widened rule, and the reason it was widened: two test-dir gates ran in Quality/Static and nowhere else, and the old quality|security-only pattern could not see either (plan finding F3)."""
     with harness.temp_dir() as d:
         scaffold(
             d,
@@ -444,9 +430,7 @@ def test_test_dir_gates_are_swept_in(gate):
 
 
 def test_ported_python_gates_are_swept_in(gate):
-    """THE WIDENING THIS SUITE DID NOT PIN. On 2026-09-08 `GATE_SHAPED` went from
-    `check-[\\w.-]+\\.sh` to `check[-_][\\w.-]+\\.(?:sh|py)`, because W7 P4 repoints these very workflow lines at Python ports and the old spelling stopped judging a gate the moment it was ported -- silently, since a matcher that stops
-    matching reports nothing."""
+    """THE WIDENING THIS SUITE DID NOT PIN. On 2026-09-08 `GATE_SHAPED` went from `check-[\\w.-]+\\.sh` to `check[-_][\\w.-]+\\.(?:sh|py)`, because W7 P4 repoints these very workflow lines at Python ports and the old spelling stopped judging a gate the moment it was ported -- silently, since a matcher that stops matching reports nothing."""
     with harness.temp_dir() as d:
         scaffold(
             d,
@@ -495,9 +479,7 @@ def test_empty_workflow_tree_refuses(gate):
 
 
 def test_missing_entry_job_collapses_the_surface(gate):
-    """Renaming ci.yml's `quality` job must not silently shrink the surface to
-    nothing while still reporting a clean run. That is the vacuity failure the
-    whole gate exists to prevent, so it refuses instead."""
+    """Renaming ci.yml's `quality` job must not silently shrink the surface to nothing while still reporting a clean run. That is the vacuity failure the whole gate exists to prevent, so it refuses instead."""
     with harness.temp_dir() as d:
         scaffold(d, STEP_ALPHA)
         ci = d / ".github/workflows/ci.yml"
@@ -521,9 +503,7 @@ def test_missing_entry_job_collapses_the_surface(gate):
 
 
 def test_parity_surface_is_computed_not_named(gate):
-    """A lane workflow reachable only through `uses:` is in the surface without
-    being named anywhere in the gate. A hand-listed surface could be silently
-    retired by renaming a file; a computed closure cannot."""
+    """A lane workflow reachable only through `uses:` is in the surface without being named anywhere in the gate. A hand-listed surface could be silently retired by renaming a file; a computed closure cannot."""
     with harness.temp_dir() as d:
         scaffold(d, STEP_ALPHA)
         with (d / ".github/workflows/ci-quality.yml").open("a", encoding="utf-8") as fh:
@@ -550,9 +530,7 @@ def test_parity_surface_is_computed_not_named(gate):
 
 
 def test_external_wrapper_is_transparent(gate):
-    """`run-external-gate.sh` executes its arguments and only changes what a
-    failure MEANS (soft on schedule, hard on a PR). The resolver must see through it to the wrapped gate, or every external gate's CI pointer breaks the moment
-    it adopts the wrapper."""
+    """`run-external-gate.sh` executes its arguments and only changes what a failure MEANS (soft on schedule, hard on a PR). The resolver must see through it to the wrapped gate, or every external gate's CI pointer breaks the moment it adopts the wrapper."""
     with harness.temp_dir() as d:
         scaffold(
             d,
@@ -568,9 +546,7 @@ def test_external_wrapper_is_transparent(gate):
 
 
 def test_unknown_wrapper_is_not_transparent(gate):
-    """CONTROL for the case above: transparency is specific to the known wrapper.
-    An arbitrary wrapper script hiding the same command must still fail the
-    pointer check, or any indirection would count as coverage."""
+    """CONTROL for the case above: transparency is specific to the known wrapper. An arbitrary wrapper script hiding the same command must still fail the pointer check, or any indirection would count as coverage."""
     with harness.temp_dir() as d:
         scaffold(
             d,
@@ -588,8 +564,7 @@ def test_unknown_wrapper_is_not_transparent(gate):
 
 
 def test_battery_equality_is_enforced(gate):
-    """Without this, flattening run-all.sh recreates #549 once per test: a new
-    test would run in CI via the battery and never locally."""
+    """Without this, flattening run-all.sh recreates #549 once per test: a new test would run in CI via the battery and never locally."""
     with harness.temp_dir() as d:
         scaffold(
             d,

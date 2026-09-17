@@ -130,9 +130,7 @@ def _fs_safe(text, fallback):
 
 
 def _append_line(path, obj):
-    """ONE `os.write` of ONE line on an O_APPEND handle. No lock (see module
-    docstring). O_BINARY where it exists, so Windows does not rewrite the `\\n`
-    into `\\r\\n` and push a line that was measured at 1024 bytes over the cap."""
+    """ONE `os.write` of ONE line on an O_APPEND handle. No lock (see module docstring). O_BINARY where it exists, so Windows does not rewrite the `\\n` into `\\r\\n` and push a line that was measured at 1024 bytes over the cap."""
     line = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
     data = (line + "\n").encode("utf-8")
     if len(data) > INDEX_LINE_MAX:
@@ -199,8 +197,7 @@ def is_phantom(agent_type, transcript):
 
 
 def read_index(store, max_bytes=INDEX_READ_MAX_BYTES):
-    """Parseable index lines, oldest first. An UNPARSEABLE line is skipped, never
-    fatal -- same rule every `.requests` reader follows, and the reason a crash mid-append cannot wedge the inbox.
+    """Parseable index lines, oldest first. An UNPARSEABLE line is skipped, never fatal -- same rule every `.requests` reader follows, and the reason a crash mid-append cannot wedge the inbox.
 
     BOUNDED BY DEFAULT, because since v18 this file is read on EVERY stop and it grows forever by design (a line is the durable record that an agent ran and whether it said anything, so nothing prunes it; only bodies are pruned). At roughly 200 bytes a line and ~140 agents a session, an unbounded read would be a few megabytes per stop within months. The index is append-ordered, so
     the tail is the recent end -- exactly what every hook path wants. `--list --all` passes None to see the whole history.
@@ -238,8 +235,7 @@ def reader_id(explicit=None):
     function's hard-won note verbatim: the variable is CLAUDE_CODE_SESSION_ID
     and CLAUDE_SESSION_ID does not exist, checked against a live environment rather than assumed, because a wrong name resolves to the empty reader forever -- which reads as "has read nothing" and would surface every report on every stop while looking like it worked.
 
-    It moved because this was the ONLY place in the CLI that ever asked the environment who it was, and the answer was never generalised past this one verb. Two definitions of "who am I" is how the drift starts; there is now
-    one, and every `<me>` argument is checked against it."""
+    It moved because this was the ONLY place in the CLI that ever asked the environment who it was, and the answer was never generalised past this one verb. Two definitions of "which session is this" is how the drift starts; there is now one, and every `<me>` argument is checked against it."""
     if explicit:
         return str(explicit)
     return C.resolve_session_id()
@@ -297,9 +293,7 @@ def unread(store, branch=None, reader=None):
 
 
 def resolve(store, ident):
-    """An index entry by exact id, else by unique prefix. An AMBIGUOUS prefix
-    returns nothing rather than an arbitrary winner: showing the wrong report is
-    worse than saying the id was not specific enough."""
+    """An index entry by exact id, else by unique prefix. An AMBIGUOUS prefix returns nothing rather than an arbitrary winner: showing the wrong report is worse than saying the id was not specific enough."""
     entries = read_index(store)
     exact = [e for e in entries if str(e["id"]) == ident]
     if exact:
@@ -363,8 +357,7 @@ def capture(
     sends=0,
     tx="ok",
 ):
-    """Write the body whole, then append one index line. Returns the entry, or
-    None when this exact report is already indexed, so the hook and `--scan` can both run over the same agent without producing a duplicate.
+    """Write the body whole, then append one index line. Returns the entry, or None when this exact report is already indexed, so the hook and `--scan` can both run over the same agent without producing a duplicate.
 
     DEDUP IS ON (agent, BODY), NOT ON AGENT ALONE, and the difference is a whole
     class of lost report. An agent stops MANY times here: `SendMessage` resumes
@@ -489,9 +482,7 @@ def _branch_of(start):
 
 
 def handle_subagent_stop(event):
-    """A CAPTURE HOOK MUST NEVER WEDGE A SUB-AGENT'S STOP. Every failure path
-    here exits 0 with no output: an unwritable store, a full disk or a malformed
-    payload costs a lost report, while raising would cost the agent its exit."""
+    """A CAPTURE HOOK MUST NEVER WEDGE A SUB-AGENT'S STOP. Every failure path here exits 0 with no output: an unwritable store, a full disk or a malformed payload costs a lost report, while raising would cost the agent its exit."""
     agent_id = event.get("agent_id")
     if not agent_id:
         return  # main thread, not a subagent
@@ -527,11 +518,9 @@ def handle_subagent_stop(event):
 
 
 def surface_block(store, branch, hook_path, reader):
-    """The unread index, COLLAPSED. Bodies are never inlined: at a median of
-    17.5 KB and a max of 115 KB, even a handful would be a context bomb on every single compaction, which is the moment context is scarcest.
+    """The unread index, COLLAPSED. Bodies are never inlined: at a median of 17.5 KB and a max of 115 KB, even a handful would be a context bomb on every single compaction, which is the moment context is scarcest.
 
-    The collapse matters more under per-reader marks than it would have under branch-level ones: a restarted session legitimately re-sees every report on its branch, so this is the lever that keeps that honest rather than overwhelming. It bounds the LINES, never the SET -- the count always names
-    the full total."""
+    The collapse matters more under per-reader marks than it would have under branch-level ones: a restarted session legitimately re-sees every report on its branch, so this is the lever that keeps that honest rather than overwhelming. It bounds the LINES, never the SET -- the count always names the full total."""
     items = unread(store, branch, reader)
     if not items:
         return ""
@@ -578,9 +567,7 @@ def surface_block(store, branch, hook_path, reader):
 
 
 def handle_surface(event, hook_event, hook_path):
-    """SessionStart and PostCompact both emit; SessionStart declines the
-    `compact` source. Claude Code fires SessionStart *and* PostCompact on every compaction, and emitting from both was a real, shipped defect in the sibling
-    handler (`wl_checks.py:1232-1241`) -- the duplicate is not hypothetical."""
+    """SessionStart and PostCompact both emit; SessionStart declines the `compact` source. Claude Code fires SessionStart *and* PostCompact on every compaction, and emitting from both was a real, shipped defect in the sibling handler (`wl_checks.py:1232-1241`) -- the duplicate is not hypothetical."""
     if hook_event == "SessionStart" and str(event.get("source") or "") == "compact":
         return
     start = C.project_start(event)
@@ -658,9 +645,7 @@ def _projects_dir():
 
 
 def _munged(root):
-    """Claude Code's own project-directory naming: every non-alphanumeric run in
-    the absolute path becomes a `-`. Verified against this repo's live directory
-    (`/home/muhammed/monorepo/console` -> `-home-muhammed-monorepo-console`)."""
+    """Claude Code's own project-directory naming: every non-alphanumeric run in the absolute path becomes a `-`. Verified against this repo's live directory (`/home/muhammed/monorepo/console` -> `-home-muhammed-monorepo-console`)."""
     return re.sub(r"[^A-Za-z0-9]", "-", str(root))
 
 
@@ -678,8 +663,7 @@ def _resolves(path):
 def _bounded_lines(path, max_bytes=TRANSCRIPT_MAX_BYTES):
     """Every line of a JSONL file, or the last `max_bytes` worth of them.
 
-    A transcript here already reaches 1.4 MB and nothing bounds its growth, so an unconditional read_text() puts an unbounded file in memory inside a hook that must never wedge a sub-agent's stop. On overflow the first (necessarily partial) line is dropped, which the callers already tolerate: both of them
-    skip unparseable lines by rule."""
+    A transcript here already reaches 1.4 MB and nothing bounds its growth, so an unconditional read_text() puts an unbounded file in memory inside a hook that must never wedge a sub-agent's stop. On overflow the first (necessarily partial) line is dropped, which the callers already tolerate: both of them skip unparseable lines by rule."""
     try:
         size = path.stat().st_size
         with open(path, "rb") as f:
@@ -742,9 +726,7 @@ def harvest_transcript(jsonl):
 
 
 def assemble_body(sends, final):
-    """The durable artifact: every SendMessage payload in order, then the
-    sign-off. Whole and uncapped -- that is the point of storing bodies in their
-    own files rather than in any of the existing capped carriers."""
+    """The durable artifact: every SendMessage payload in order, then the sign-off. Whole and uncapped -- that is the point of storing bodies in their own files rather than in any of the existing capped carriers."""
     parts = []
     for i, s in enumerate(sends, 1):
         head = "## SendMessage %d -> %s" % (i, s["to"])
@@ -841,9 +823,7 @@ def scan(store, start, idle_min=None):
 
 
 def _iso_of(stamp):
-    """`2026-08-05T12:48:41.505Z` -> `2026-08-05T12:48:41Z`, the one format
-    `C.parse_stamp` accepts. A transcript timestamp carries milliseconds and
-    would otherwise parse as None and render every scanned report's age as `?`."""
+    """`2026-08-05T12:48:41.505Z` -> `2026-08-05T12:48:41Z`, the one format `C.parse_stamp` accepts. A transcript timestamp carries milliseconds and would otherwise parse as None and render every scanned report's age as `?`."""
     s = str(stamp or "")
     m = re.match(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})", s)
     return m.group(1) + "Z" if m else ""
@@ -852,8 +832,7 @@ def _iso_of(stamp):
 def prune(store):
     """Delete BODIES past the retention window; keep index lines forever.
 
-    The asymmetry is deliberate: a line is ~200 bytes and IS the history (it is what proves an agent ran and whether it said anything), while the bodies are the only part that costs real disk. A pruned body's index line still answers
-    the question (A) is about."""
+    The asymmetry is deliberate: a line is ~200 bytes and IS the history (it is what proves an agent ran and whether it said anything), while the bodies are the only part that costs real disk. A pruned body's index line still answers the question (A) is about."""
     if RETENTION_DAYS <= 0:
         return []
     cutoff = C.utcnow() - datetime.timedelta(days=RETENTION_DAYS)

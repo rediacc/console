@@ -118,8 +118,7 @@ def delete_path(account: str, deployment_id: str) -> str:
 
 
 def curl_argv(method: str, endpoint: str, token: str) -> list[str]:
-    """`cf_api` (:42-50), as an argv. Exposed so a test can assert the request
-    shape -- method, URL, and both headers -- without a network."""
+    """`cf_api` (:42-50), as an argv. Exposed so a test can assert the request shape -- method, URL, and both headers -- without a network."""
     return [
         "curl",
         "-s",
@@ -143,8 +142,7 @@ def _substitution(argv: list[str], fallback: str) -> str:
             argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, check=False
         )
     except FileNotFoundError:
-        # `require_cmd curl` ran first, so this is unreachable; a traceback here
-        # would read as a crash rather than as the failed request it is.
+        # `require_cmd curl` ran first, so this is unreachable; a traceback here would read as a crash rather than as the failed request it is.
         return fallback
     text = proc.stdout
     if proc.returncode != 0:
@@ -211,8 +209,7 @@ def main(argv: list[str]) -> int:
     try:
         return _sweep(branch, dry_run, token, account)
     except JqError as exc:
-        # `set -e` on a failed assignment. jq has already written its own
-        # diagnostic to stderr; the twin adds nothing and neither does this.
+        # `set -e` on a failed assignment. jq has already written its own diagnostic to stderr; the twin adds nothing and neither does this.
         return exc.code
 
 

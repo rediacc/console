@@ -14,9 +14,8 @@ module declares no `XDIST_GROUP` of its own.
 --------------------------------------------------------------------------
 IS THIS FILE VISIBLE TO THE SWEEP IT DRIVES? NO, AND IT IS CHECKED
 --------------------------------------------------------------------------
-The question is owed by any port whose fixtures are the very shapes its subject hunts for, and it was asked before a fixture was written. The subject enumerates `*.yml` under a workflow DIRECTORY and reconciles what it finds against an
-allowlist; this file is a `.py` under `.ci/rediacc_ci/tests/gates`, so it is
-outside the sweep on both counts and the fixtures are written out literally, as the twin writes them.
+The question is owed by any port whose fixtures are the very shapes its subject hunts for, and it was asked before a fixture was written. The subject enumerates `*.yml` under a workflow DIRECTORY and reconciles what it finds against an allowlist; this file is a `.py` under `.ci/rediacc_ci/tests/gates`, so it is outside the sweep on both counts and the fixtures are written out
+literally, as the twin writes them.
 
 What replaces that argument with a control is `test_this_module_plants_no_workflow_the_real_sweep_can_see`, added by the port: it points the REAL subject's workflow directory at this very directory and requires it to REFUSE with "ZERO workflow files". A `.yml` appearing beside these ports, or the walker widening, turns that control red HERE, by name, rather than reddening
 `check:ci-profiler-coverage` for whoever runs it next.
@@ -105,9 +104,7 @@ HEADER = "on:\n  workflow_dispatch:\njobs:\n"
 def write_workflow(gate, d, *jobs: str):
     """`$d/wf/fixture.yml` from a header plus job blocks, and the allowlist.
 
-    ANTI-VACUITY. A workflow with NO jobs is the fixture
-    `test_zero_jobs_refuses` builds on purpose, and it builds it directly; every
-    other case passing zero jobs through here would be driving the gate over a file it cannot classify and reading the refusal as whatever it expected. So an empty job list is a FAILURE here rather than a fixture that says nothing.
+    ANTI-VACUITY. A workflow with NO jobs is the fixture `test_zero_jobs_refuses` builds on purpose, and it builds it directly; every other case passing zero jobs through here would be driving the gate over a file it cannot classify and reading the refusal as whatever it expected. So an empty job list is a FAILURE here rather than a fixture that says nothing.
     """
     if not jobs:
         gate.log_fail(
@@ -206,8 +203,7 @@ def test_allowlisted_with_good_reason_passes(gate):
 
 
 def test_low_effort_blocker_rejected(gate):
-    """The rejection is INHERITED from .ci/scripts/lib/blocker-validator.sh, not
-    re-implemented here: 'tbd' is on the shared banned-phrase list."""
+    """The rejection is INHERITED from .ci/scripts/lib/blocker-validator.sh, not re-implemented here: 'tbd' is on the shared banned-phrase list."""
     with harness.temp_dir() as d:
         scaffold(gate, d)
         wf, allow = one_profiled_one_bare(gate, d)
@@ -234,8 +230,7 @@ def test_missing_blocker_rejected(gate):
 
 
 def test_non_linux_jobs_not_required(gate):
-    """macOS and Windows runners are out of scope: the sampler is Linux-only
-    (.ci/scripts/ci/profiler/sampler-linux.sh) and slim sizing is a Linux
+    """macOS and Windows runners are out of scope: the sampler is Linux-only (.ci/scripts/ci/profiler/sampler-linux.sh) and slim sizing is a Linux
     question. MIN_LINUX=0 because this fixture deliberately has none."""
     with harness.temp_dir() as d:
         wf, allow = write_workflow(
@@ -258,8 +253,7 @@ def test_non_linux_jobs_not_required(gate):
 
 
 def test_caller_job_not_required(gate):
-    """A `uses: ./.github/workflows/...` job has no runner of its own; its steps
-    are the called workflow's jobs, which the gate sees in that file."""
+    """A `uses: ./.github/workflows/...` job has no runner of its own; its steps are the called workflow's jobs, which the gate sees in that file."""
     with harness.temp_dir() as d:
         wf, allow = write_workflow(
             gate,
@@ -328,8 +322,7 @@ def test_matrix_without_linux_leg_is_not_required(gate):
 
 
 def test_unresolvable_runs_on_is_required(gate):
-    """Fail-CLOSED: "we could not resolve it" must cost an allowlist line, not be
-    silently treated as out of scope."""
+    """Fail-CLOSED: "we could not resolve it" must cost an allowlist line, not be silently treated as out of scope."""
     with harness.temp_dir() as d:
         wf, allow = write_workflow(
             gate,
@@ -425,8 +418,7 @@ def test_runner_label_problems_fail(gate):
 
 
 def test_malformed_reference_fails(gate):
-    """`uses: .github/actions/profiler` (no leading ./) is not a local action
-    reference: GitHub reads it as owner/repo and the workflow fails to parse."""
+    """`uses: .github/actions/profiler` (no leading ./) is not a local action reference: GitHub reads it as owner/repo and the workflow fails to parse."""
     with harness.temp_dir() as d:
         wf, allow = write_workflow(
             gate,
@@ -459,9 +451,7 @@ NESTED_JOB = (
 
 
 def test_nest_probe_is_not_coverage(gate):
-    """Nesting works (run 31252148469), but that did NOT make every composite
-    coverage: only a DECLARED, verified wrapper counts. nest-probe is the probe's own instrument and is deliberately not one, so a job carrying it is
-    still uncovered."""
+    """Nesting works (run 31252148469), but that did NOT make every composite coverage: only a DECLARED, verified wrapper counts. nest-probe is the probe's own instrument and is deliberately not one, so a job carrying it is still uncovered."""
     with harness.temp_dir() as d:
         wf, allow = write_workflow(gate, d, NESTED_JOB)
         result = run_gate(gate, wf, allow, 1, 1, 1)
@@ -480,9 +470,7 @@ def test_nest_probe_is_not_coverage(gate):
 
 
 def test_declared_wrapper_counts_as_coverage(gate):
-    """The UNVERIFIED extension seam, for a wrapper that lives outside this
-    repo's action tree: a ref named in PROFILER_COVERAGE_COVERING_ACTIONS is taken on trust. Exercised here so it is live code rather than a comment that has never run. (The built-in wrapper list is the verified path, and is
-    pinned by test_setup_workspace_is_builtin_coverage below.)"""
+    """The UNVERIFIED extension seam, for a wrapper that lives outside this repo's action tree: a ref named in PROFILER_COVERAGE_COVERING_ACTIONS is taken on trust. Exercised here so it is live code rather than a comment that has never run. (The built-in wrapper list is the verified path, and is pinned by test_setup_workspace_is_builtin_coverage below.)"""
     with harness.temp_dir() as d:
         wf, allow = write_workflow(gate, d, NESTED_JOB)
         result = run_gate(
@@ -506,11 +494,9 @@ def test_declared_wrapper_counts_as_coverage(gate):
 
 
 def test_setup_workspace_is_builtin_coverage(gate):
-    """THE PHASE-1 INVARIANT. profiler-probe.yml run 31252148469 proved a nested
-    post: hook fires, so ./.github/actions/setup-workspace carries the profiler and every job calling it is covered. Driven with NO wrapper seam at all here:
+    """THE PHASE-1 INVARIANT. profiler-probe.yml run 31252148469 proved a nested post: hook fires, so ./.github/actions/setup-workspace carries the profiler and every job calling it is covered. Driven with NO wrapper seam at all here:
     if somebody reverts the built-in wrapper list to empty, or deletes the
-    profiler step out of setup-workspace, this case goes red -- which is the only thing standing between that edit and ~26 jobs that report as profiled while
-    profiling nothing."""
+    profiler step out of setup-workspace, this case goes red -- which is the only thing standing between that edit and ~26 jobs that report as profiled while profiling nothing."""
     with harness.temp_dir() as d:
         wf, allow = write_workflow(
             gate,
@@ -537,8 +523,7 @@ def test_setup_workspace_is_builtin_coverage(gate):
 
 
 def test_other_composite_is_not_coverage(gate):
-    """CONTROL for the case above: a DIFFERENT local composite, same shape. Only
-    a verified wrapper counts; "uses some composite" must not."""
+    """CONTROL for the case above: a DIFFERENT local composite, same shape. Only a verified wrapper counts; "uses some composite" must not."""
     with harness.temp_dir() as d:
         wf, allow = write_workflow(
             gate,
@@ -693,8 +678,7 @@ def test_missing_workflow_dir_refuses(gate):
 
 
 def test_zero_jobs_refuses(gate):
-    """A workflow file the job parser cannot read looks exactly like a clean tree
-    unless zero is treated as broken."""
+    """A workflow file the job parser cannot read looks exactly like a clean tree unless zero is treated as broken."""
     with harness.temp_dir() as d:
         wf = d / "wf"
         wf.mkdir(parents=True, exist_ok=True)
@@ -733,9 +717,7 @@ def test_floors_refuse_a_shrunken_sweep(gate):
 
 
 def test_missing_action_yml_refuses(gate):
-    """The input contract is DERIVED from action.yml. Without it the gate can
-    assert nothing about configuration, so it must refuse rather than check
-    coverage only and call that a pass."""
+    """The input contract is DERIVED from action.yml. Without it the gate can assert nothing about configuration, so it must refuse rather than check coverage only and call that a pass."""
     with harness.temp_dir() as d:
         wf, allow = scaffold(gate, d)
         result = run_gate(
@@ -755,9 +737,7 @@ def test_missing_action_yml_refuses(gate):
 
 
 def test_real_tree_seam_free(gate):
-    """THE LOAD-BEARING CASE. No env seams at all: the real workflow dir, the
-    real allowlist, the real action.yml, the real floors. This is what the
-    manifest's BLOCKER claims runs on every CI run."""
+    """THE LOAD-BEARING CASE. No env seams at all: the real workflow dir, the real allowlist, the real action.yml, the real floors. This is what the manifest's BLOCKER claims runs on every CI run."""
     bash = require_gate(gate)
     result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root())
     gate.assert_exit_code(

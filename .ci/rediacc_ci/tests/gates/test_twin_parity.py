@@ -195,8 +195,7 @@ def run_port(module_path: pathlib.Path, ledger: pathlib.Path, timeout: int):
 
 
 def test_the_registry_is_not_empty(gate):
-    """ANTI-VACUITY. Zero ported modules means the parametrize below compared
-    nothing, and an empty parametrize is green."""
+    """ANTI-VACUITY. Zero ported modules means the parametrize below compared nothing, and an empty parametrize is green."""
     if not MODULES:
         gate.log_fail(
             "no ported gate module under %s declares a BASH_TWIN. Either the glob %r "
@@ -214,9 +213,7 @@ def test_the_registry_is_not_empty(gate):
 
 
 class _Stub:
-    """A module-shaped object. `group_for` reads attributes, so this is the same
-    input shape the real thing gets -- see `test_xdist_groups.py`, which stubs
-    the identical way."""
+    """A module-shaped object. `group_for` reads attributes, so this is the same input shape the real thing gets -- see `test_xdist_groups.py`, which stubs the identical way."""
 
     def __init__(self, **attrs):
         for k, v in attrs.items():
@@ -366,9 +363,7 @@ def test_record_parity_writes_a_hash_keyed_row_and_never_raises(gate, tmp_path, 
 
 
 def test_the_real_tree_opt_in_still_discriminates(gate):
-    """CONTROL-FIRST for `real_tree_admission`. An opt-in that admits everything
-    is the blanket refusal inverted, which is strictly worse than the refusal:
-    it would let an unisolated twin race the battery while reporting green."""
+    """CONTROL-FIRST for `real_tree_admission`. An opt-in that admits everything is the blanket refusal inverted, which is strictly worse than the refusal: it would let an unisolated twin race the battery while reporting green."""
     unsafe = {"test-writes.sh"}
     writer = ".ci/scripts/test/gates/test-writes.sh"
     quiet = ".ci/scripts/test/gates/test-quiet.sh"
@@ -485,8 +480,7 @@ def last_agreement(name: str, ledger: pathlib.Path | None = None) -> dict | None
 
 
 def may_reuse(name: str, twin_sha: str, port_sha: str, ledger: pathlib.Path | None = None) -> bool:
-    """True when this exact pair has already been PROVEN equal, so re-driving it
-    would re-prove a differential nothing has changed.
+    """True when this exact pair has already been PROVEN equal, so re-driving it would re-prove a differential nothing has changed.
 
     THE TRADE-OFF, STATED WHERE IT IS MADE. `check:ci-pytest` costs 1879s and 1661s of that is one subject -- `test-claude-hooks` -- driving its twin and its port serially inside one test. Reusing an agreement makes that cost land once per CHANGE instead of once per COMMIT. What is given up is real: a commit touching neither side no longer re-proves their equality, so a divergence
     caused by something OUTSIDE both files (an interpreter bump, a changed shared helper, an environment difference) survives longer before a run notices it. The key covers only the two files it hashes.

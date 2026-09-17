@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.infra.ci_pull_images` against its twin
-`.ci/scripts/infra/ci-pull-images.sh`.
+"""Differential: `rediacc_ci.infra.ci_pull_images` against its twin `.ci/scripts/infra/ci-pull-images.sh`.
 
 A RECORDING FAKE `docker` ON A PREPENDED PATH, the seam `rediacc_ci.tests.test_infra_docker_prepull` established. It is not a convenience here, it is the only safe way to run this subject at all: the twin's second line is `docker login ghcr.io --password-stdin`, and a case that reached the real binary would WRITE A CREDENTIAL into the developer's `~/.docker/config.json`, then pull
 two multi-hundred-megabyte images, then LOG THE MACHINE OUT of ghcr.io. Four independent things keep the real one out of reach:
@@ -286,8 +285,7 @@ def test_the_happy_path_is_five_docker_calls_in_this_order() -> None:
 
 
 def test_the_final_grep_drops_rows_that_are_neither_rediacc_nor_the_header() -> None:
-    """`grep -E "(rediacc|REPOSITORY)"` is what decides these bytes, and both
-    sides run the SAME grep binary rather than one of them re-implementing it."""
+    """`grep -E "(rediacc|REPOSITORY)"` is what decides these bytes, and both sides run the SAME grep binary rather than one of them re-implementing it."""
     _, stdout, _, _, _ = _sides(
         "grep",
         FAKE_DOCKER_IMAGES="REPOSITORY:TAG\tSIZE\nubuntu:24.04\t80MB\nghcr.io/rediacc/renet:1\t9MB\n",
@@ -299,8 +297,7 @@ def test_the_final_grep_drops_rows_that_are_neither_rediacc_nor_the_header() -> 
 
 
 def test_no_matching_images_still_exits_zero() -> None:
-    """`|| true` on the last pipeline: grep's exit 1 must not become the
-    script's. A port that let it through would fail every clean runner."""
+    """`|| true` on the last pipeline: grep's exit 1 must not become the script's. A port that let it through would fail every clean runner."""
     exit_code, stdout, _, _, _ = _sides("grep-empty", FAKE_DOCKER_IMAGES="ubuntu:24.04\t80MB\n")
     assert exit_code == 0
     assert stdout.decode().splitlines()[-1] == "Pulled images:"
@@ -317,9 +314,7 @@ def test_tag_feeds_both_images_and_either_can_override_it() -> None:
 
 
 def test_docker_registry_moves_renet_and_not_server() -> None:
-    """PRESERVED SHAPE. The header documents DOCKER_REGISTRY as "Registry URL",
-    but line 54 hard-codes `ghcr.io/rediacc/server`, so this variable moves ONE
-    of the two images. If that ever changes, this test goes red first."""
+    """PRESERVED SHAPE. The header documents DOCKER_REGISTRY as "Registry URL", but line 54 hard-codes `ghcr.io/rediacc/server`, so this variable moves ONE of the two images. If that ever changes, this test goes red first."""
     _, _, _, calls, _ = _sides("registry", DOCKER_REGISTRY="ghcr.io/example")
     assert "docker\tpull\t--quiet\tghcr.io/rediacc/server:latest" in calls
     assert "docker\tpull\t--quiet\tghcr.io/example/renet:latest" in calls
@@ -333,8 +328,7 @@ def test_a_failing_login_stops_before_any_pull() -> None:
 
 
 def test_the_subshells_exit_status_is_dockers_own() -> None:
-    """`set -e` propagates the STATUS, not a canned 1. A port returning 1 for
-    every failure would lose the distinction between docker's exit codes."""
+    """`set -e` propagates the STATUS, not a canned 1. A port returning 1 for every failure would lose the distinction between docker's exit codes."""
     exit_code, _, _, _, _ = _sides(
         "login-rc", FAKE_DOCKER_FAIL_ON="login", FAKE_DOCKER_FAIL_RC="42"
     )
@@ -342,9 +336,7 @@ def test_the_subshells_exit_status_is_dockers_own() -> None:
 
 
 def test_a_failing_pull_skips_the_credential_cleanup_on_both_sides() -> None:
-    """THE HAZARD, PINNED. No `trap`, so a failed pull leaves the GHCR
-    credential in `~/.docker/config.json` and the job continues into whatever comes next. Both sides do it; neither is allowed to quietly start being better than the other. Fixing it is a change to the TWIN, out of scope for a
-    one-for-one port, and reported to the driver instead."""
+    """THE HAZARD, PINNED. No `trap`, so a failed pull leaves the GHCR credential in `~/.docker/config.json` and the job continues into whatever comes next. Both sides do it; neither is allowed to quietly start being better than the other. Fixing it is a change to the TWIN, out of scope for a one-for-one port, and reported to the driver instead."""
     exit_code, stdout, stderr, calls, _ = _sides("pull-fails", FAKE_DOCKER_FAIL_ON="pull")
     assert exit_code == 1
     assert [c.split("\t")[1] for c in calls] == ["login", "pull"]
@@ -354,8 +346,7 @@ def test_a_failing_pull_skips_the_credential_cleanup_on_both_sides() -> None:
 
 
 def test_a_failing_logout_is_swallowed_and_the_run_still_succeeds() -> None:
-    """`docker logout ghcr.io 2>/dev/null || true`, and the `2>/dev/null` half
-    matters as much as the `|| true`: the complaint must not reach stderr."""
+    """`docker logout ghcr.io 2>/dev/null || true`, and the `2>/dev/null` half matters as much as the `|| true`: the complaint must not reach stderr."""
     exit_code, _, stderr, calls, _ = _sides("logout-fails", FAKE_DOCKER_FAIL_ON="logout")
     assert exit_code == 0
     assert b"fixture: docker logout refused" not in stderr
@@ -397,9 +388,7 @@ def test_a_config_without_a_ghcr_entry_is_left_valid() -> None:
 
 
 def test_an_unparseable_config_is_left_exactly_as_it_was() -> None:
-    """`jq ... >tmp && mv tmp cfg || rm -f tmp`: a jq that fails must NOT leave
-    the truncated temporary in place of the user's file. The `>` truncates the temporary BEFORE jq runs, so a port that moved unconditionally would replace
-    a broken config with an empty one."""
+    """`jq ... >tmp && mv tmp cfg || rm -f tmp`: a jq that fails must NOT leave the truncated temporary in place of the user's file. The `>` truncates the temporary BEFORE jq runs, so a port that moved unconditionally would replace a broken config with an empty one."""
 
     def seed(base: pathlib.Path) -> None:
         cfg = base / ".docker"
@@ -418,9 +407,7 @@ def test_no_docker_config_at_all_is_not_an_error() -> None:
 
 
 def test_a_missing_docker_is_127_on_both_sides_with_a_named_text_divergence() -> None:
-    """THE ONE NAMED DIVERGENCE. There is no `require_cmd docker` in this twin
-    (unlike `docker-pull-ghcr.sh`), so bash's own `command not found` is the message, and it carries `<script>: line 49: `. Everything that a caller can act on -- the status, the words, the absence of any further work -- is
-    asserted equal; only the prefix differs."""
+    """THE ONE NAMED DIVERGENCE. There is no `require_cmd docker` in this twin (unlike `docker-pull-ghcr.sh`), so bash's own `command not found` is the message, and it carries `<script>: line 49: `. Everything that a caller can act on -- the status, the words, the absence of any further work -- is asserted equal; only the prefix differs."""
     results = []
     with tempfile.TemporaryDirectory() as td:
         for subject in (TWIN, PORT):

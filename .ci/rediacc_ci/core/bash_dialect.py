@@ -19,9 +19,8 @@ WHY THIS EXISTS. Bash 5.3 reworded several diagnostics that ported modules and t
 
 THREE independent changes: a uniform `arithmetic ` prefix on all three arithmetic shapes, `[`'s integer complaint losing the word `expression`, and `cd ""` going from silent to refused. The third is the odd one out and the reason this module returns a STRING rather than a flag -- on 5.2 the honest answer is the empty string, so a caller can append it unconditionally.
 
-HOW IT HID FOR 53 WAVES. Every port here is verified against its bash twin by a differential test asserting the two produce the same bytes. Both sides run on the same host, so a literal baked into the port agrees with the twin **on the machine that wrote it** and disagrees nowhere a developer can see. This tree's
-hosts run bash 5.3; every GitHub runner is ubuntu-24.04, which is bash 5.2. The
-divergence was therefore invisible locally by construction and unreachable in CI, because `quality-security` -- the only lane that runs this suite -- had been watchdog-cancelled on every run of the wave. It surfaced in run 34970782616, the first that ever let that lane finish, as fourteen failures.
+HOW IT HID FOR 53 WAVES. Every port here is verified against its bash twin by a differential test asserting the two produce the same bytes. Both sides run on the same host, so a literal baked into the port agrees with the twin **on the machine that wrote it** and disagrees nowhere a developer can see. This tree's hosts run bash 5.3; every GitHub runner is ubuntu-24.04, which is
+bash 5.2. The divergence was therefore invisible locally by construction and unreachable in CI, because `quality-security` -- the only lane that runs this suite -- had been watchdog-cancelled on every run of the wave. It surfaced in run 34970782616, the first that ever let that lane finish, as fourteen failures.
 
 WHY IT PROBES INSTEAD OF COMPARING VERSION NUMBERS. `BASH_VERSINFO >= (5, 3)`
 would be a claim about where the boundary is, inferred from two measurements at 5.2.21 and 5.3.9 and blind to a distro that backports the strings without the version. Asking bash what it actually prints cannot be wrong about that, costs one subprocess per process, and is the same move the rest of this campaign makes: run the thing that decides.
@@ -38,17 +37,14 @@ from __future__ import annotations
 import functools
 import subprocess
 
-# Every diagnostic from ONE bash, so a single probe answers all of them and a host cannot be seen half-5.2 and half-5.3. `[[ ]]` yields the arithmetic shape,
-# `[` the integer one, and `cd ""` the null-directory one; none writes to stdout,
-# and `cd ""` does not move the shell (it is refused on 5.3 and a no-op on 5.2).
+# Every diagnostic from ONE bash, so a single probe answers all of them and a host cannot be seen half-5.2 and half-5.3. `[[ ]]` yields the arithmetic shape, `[` the integer one, and `cd ""` the null-directory one; none writes to stdout, and `cd ""` does not move the shell (it is refused on 5.3 and a no-op on 5.2).
 _PROBE = '[[ "1 2" -gt 0 ]]; [ abc -gt 1 ]; cd ""; read -r _bd < /'
 
 _ARITH_53 = "arithmetic syntax error"
 _ARITH_52 = "syntax error"
 _INTEGER_53 = "integer expected"
 _INTEGER_52 = "integer expression expected"
-# 5.3 REFUSES `cd ""` OUT LOUD; 5.2 says nothing at all, so the 5.2 answer is the
-# empty string rather than a different wording. A caller that appends this to an expected stderr therefore appends nothing on 5.2, which is correct.
+# 5.3 REFUSES `cd ""` OUT LOUD; 5.2 says nothing at all, so the 5.2 answer is the empty string rather than a different wording. A caller that appends this to an expected stderr therefore appends nothing on 5.2, which is correct.
 _CD_NULL_53 = "cd: null directory"
 # The `read` builtin names the failing FD, and 5.3 MOVED it: 5.3.9 read: 0: read error: Is a directory 5.2.37 read: read error: 0: Is a directory A word ORDER change, not a rewording, so it cannot be expressed as a swappable noun the way the pairs above can.
 _READ_FD_AFTER_REASON = "read error: 0:"  # the 5.2 shape, as the probe emits it

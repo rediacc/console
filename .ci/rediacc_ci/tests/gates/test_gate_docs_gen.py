@@ -89,8 +89,7 @@ def digest(path: pathlib.Path) -> str:
 
 
 def region_targets() -> list[pathlib.Path]:
-    """Every `.md` file `--write` could rewrite, discovered the way the generator
-    discovers them: a real marker line, not a mention of one.
+    """Every `.md` file `--write` could rewrite, discovered the way the generator discovers them: a real marker line, not a mention of one.
 
     THIS IS WHAT MAKES THE `--write` CASES AUDITABLE. Digesting only `doc-registry.md` would miss `CLAUDE.md`, which the same run rewrites, so a non-deterministic render there would go unnoticed by a test that claims to prove determinism.
     """
@@ -241,8 +240,7 @@ def test_two_write_runs_are_byte_identical(gate):
 
 
 def test_selftest_passes_and_still_plants_its_defects(gate):
-    """D. The exit code alone would keep passing after someone deletes the
-    controls; asserting the LABELS is what makes this non-vacuous."""
+    """D. The exit code alone would keep passing after someone deletes the controls; asserting the LABELS is what makes this non-vacuous."""
     require_inputs(gate)
     result = gen("--selftest")
     if result.rc != 0:
@@ -261,9 +259,7 @@ def test_selftest_passes_and_still_plants_its_defects(gate):
 
 
 def test_the_preport_snapshot_is_recorded_and_well_formed(gate):
-    """E. A snapshot that is absent, truncated or quietly re-baselined catches
-    nothing, and the reasoning is part of the artifact: a snapshot whose file does not say WHY a set beats a count is a pile of strings the next reader will feel
-    free to regenerate."""
+    """E. A snapshot that is absent, truncated or quietly re-baselined catches nothing, and the reasoning is part of the artifact: a snapshot whose file does not say WHY a set beats a count is a pile of strings the next reader will feel free to regenerate."""
     require_inputs(gate)
     try:
         snap = json.loads(SNAPSHOT.read_text(encoding="utf-8"))

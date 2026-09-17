@@ -3,9 +3,7 @@
 
 Contract section 5d: "a gate's ENTRY POINT lives in `.ci/scripts/quality/` ... even when all of its logic lives in the package and the entry point is three lines of import and dispatch", because `scripts/gate-bind.ts` enumerates its subjects with `git ls-files '.ci/scripts' 'scripts'` and a header anywhere else is INERT with nothing reporting the silence.
 
-The sys.path hop is written by hand here and nowhere else. `rediacc_ci.paths` owns every other path question, but a script that wants the package has to put
-`.ci` on the path BEFORE it can import the module that would do it for it; see
-that module's `ensure_importable` docstring for the same bootstrap stated from the other end.
+The sys.path hop is written by hand here and nowhere else. `rediacc_ci.paths` owns every other path question, but a script that wants the package has to put `.ci` on the path BEFORE it can import the module that would do it for it; see that module's `ensure_importable` docstring for the same bootstrap stated from the other end.
 
 CUT OVER FROM BASH 2026-09-07 (W7 P4). The condition the previous version of this docstring was waiting for is met. Measured that day:
 

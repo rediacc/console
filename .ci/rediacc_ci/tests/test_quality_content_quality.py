@@ -69,8 +69,7 @@ def test_exempt_lines_match_the_twins_awk(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_third_dash_rule_is_not_frontmatter(tmp_path: pathlib.Path) -> None:
-    """The rule most likely to be "simplified" into exempting everything after
-    the second `---`. Both implementations must leave lines 10 and 11 alone."""
+    """The rule most likely to be "simplified" into exempting everything after the second `---`. Both implementations must leave lines 10 and 11 alone."""
     got = cq.exempt_lines(DOC)
     assert got == _bash_exempt(tmp_path, DOC)
     assert 10 not in got
@@ -78,9 +77,7 @@ def test_a_third_dash_rule_is_not_frontmatter(tmp_path: pathlib.Path) -> None:
 
 
 def test_an_unterminated_fence_swallows_the_rest(tmp_path: pathlib.Path) -> None:
-    """A document whose fence never closes exempts everything after it. That is
-    a real blind spot in the gate, and the port must have exactly the same one
-    rather than a narrower or a wider version of it."""
+    """A document whose fence never closes exempts everything after it. That is a real blind spot in the gate, and the port must have exactly the same one rather than a narrower or a wider version of it."""
     text = "at its core\n```\nat its core\nat its core\n"
     assert cq.exempt_lines(text) == _bash_exempt(tmp_path, text) == {2, 3, 4}
 
@@ -111,9 +108,7 @@ def test_blank_is_spaces_only_not_whitespace() -> None:
 
 
 def test_the_real_patterns_file_loads_into_two_non_empty_lists() -> None:
-    """ZERO PATTERNS IS A GATE THAT CANNOT FIRE. The twin has no floor on this
-    and would print "Loaded 0 error patterns" and pass every file, so the count
-    is asserted here rather than left to a reader noticing the banner."""
+    """ZERO PATTERNS IS A GATE THAT CANNOT FIRE. The twin has no floor on this and would print "Loaded 0 error patterns" and pass every file, so the count is asserted here rather than left to a reader noticing the banner."""
     text = cq.read_text(paths.repo_root() / cq.PATTERNS_FILE)
     errors, warns = cq.load_patterns(text)
     assert len(errors) >= 30, errors
@@ -123,9 +118,7 @@ def test_the_real_patterns_file_loads_into_two_non_empty_lists() -> None:
 
 def test_short_is_measured_in_bytes_under_lc_all_c() -> None:
     """`${#p}` on a three-byte em dash. The differential pins LC_ALL=C, so the
-    twin sees 3 there; a UTF-8 locale would say 1. Both take the fast path, and
-    the point of the assertion is that the DIVERGENCE is pinned rather than
-    discovered later."""
+    twin sees 3 there; a UTF-8 locale would say 1. Both take the fast path, and the point of the assertion is that the DIVERGENCE is pinned rather than discovered later."""
     code, out, err = diff.bash_streams('p="\u2014"; echo "${#p}"')
     assert (code, err) == (0, "")
     assert out.strip() == "3", "LC_ALL=C should count bytes"
@@ -158,8 +151,7 @@ def test_identify_pattern_prefers_the_short_pattern_regardless_of_order() -> Non
 
 
 def test_the_fast_path_is_case_sensitive_and_can_report_unknown() -> None:
-    """The twin's asymmetry, preserved: grep matched it, the reporter cannot
-    name it. A port that "fixed" this would print a different Pattern: line."""
+    """The twin's asymmetry, preserved: grep matched it, the reporter cannot name it. A port that "fixed" this would print a different Pattern: line."""
     assert cq.grep_in_file("AB x\n", "ab") == [(1, "AB x")]
     assert cq.identify_pattern("AB x", ["ab"]) == "(unknown)"
 
@@ -169,6 +161,5 @@ def test_selftest_is_green() -> None:
 
 
 def test_the_real_tree_is_clean() -> None:
-    """The gate against the actual repository. If this ever reds, the finding is
-    real content debt rather than a broken port."""
+    """The gate against the actual repository. If this ever reds, the finding is real content debt rather than a broken port."""
     assert cq.main([]) == 0

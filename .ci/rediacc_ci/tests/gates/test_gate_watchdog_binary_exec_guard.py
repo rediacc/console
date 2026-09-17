@@ -16,8 +16,7 @@ which is: the key at any indentation, a single-quoted value, captured without th
 `awk '/if \\(guard\\?\\.defer\\)/,/^      \\}/'` to slice the defer block, which is
 awk's RANGE form: from the first line matching the opening pattern through the first subsequent line matching the closing one. That is reimplemented literally below rather than approximated, because the case is a COUNT inside a WINDOW and a window off by one line would change the count silently.
 
-NO `xdist_group`. Every case is a short-lived `node -e` subprocess or a file
-read; nothing is bound and no module global moves.
+NO `xdist_group`. Every case is a short-lived `node -e` subprocess or a file read; nothing is bound and no module global moves.
 """
 
 import json

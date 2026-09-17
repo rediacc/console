@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.autopilot.review_payload` against its twin
-`.ci/scripts/autopilot/review-payload.sh`.
+"""Differential: `rediacc_ci.autopilot.review_payload` against its twin `.ci/scripts/autopilot/review-payload.sh`.
 
 NO STUBS AND NO NETWORK, because the subject genuinely has neither. The twin's own header calls itself PURE -- one JSON file in, one JSON object out -- so every case here is a real JSON fixture written to a temp directory, and the comparison is the exact bytes of stdout, the exact bytes of stderr, the exit code, and (when `--out` is used) the file the subject wrote.
 
@@ -8,9 +7,7 @@ carried through. A test that only fed matching threads would agree with the twin
 
 THREE CONTROLS PIN THE THREE MEASURED jq/PYTHON DIVERGENCES the port documents:
 `test_zero_is_not_false` (jq's `0 == false` is false, Python's is true),
-`test_del_is_escaped_like_jq` (U+007F costs six bytes in `tojson`, one in `json.dumps`), and `test_byte_cap_counts_bytes_not_codepoints` (a CJK payload measures three times what `length` would say). Each is written so it FAILS if
-the port reverts to the naive Python spelling; that is checked by mutating the
-port in-memory in `test_the_controls_can_fire`.
+`test_del_is_escaped_like_jq` (U+007F costs six bytes in `tojson`, one in `json.dumps`), and `test_byte_cap_counts_bytes_not_codepoints` (a CJK payload measures three times what `length` would say). Each is written so it FAILS if the port reverts to the naive Python spelling; that is checked by mutating the port in-memory in `test_the_controls_can_fire`.
 
 THE jq ERROR SURFACE IS COMPARED EXACTLY, not by shape: the port reproduces jq's `jq: error (at <file>:<n>): ...` frame including the newline-count offset, and these cases are what proves the reproduction rather than the docstring.
 
@@ -147,8 +144,7 @@ def _sides(
 
 
 def test_the_filter_keeps_and_drops_the_right_threads() -> None:
-    """The security control, driven in one array: only the unresolved, current,
-    bot-rooted thread survives, and it keeps its outsider REPLY."""
+    """The security control, driven in one array: only the unresolved, current, bot-rooted thread survives, and it keeps its outsider REPLY."""
     fixture = [
         _thread("T-keep", bodies=["root finding", "outsider reply with detail"]),
         _thread("T-resolved", resolved=True),
@@ -291,8 +287,7 @@ def test_usage_refusals() -> None:
 
 
 def test_not_a_json_array() -> None:
-    """Everything the twin reports as "not a JSON array", including the empty
-    file (`jq -e` exits 4 there) and a bare scalar."""
+    """Everything the twin reports as "not a JSON array", including the empty file (`jq -e` exits 4 there) and a bare scalar."""
     for name, body in (
         ("object", b"{}"),
         ("scalar", b"42"),
@@ -378,8 +373,7 @@ def test_pure_helpers_are_exercised_directly() -> None:
 def test_the_controls_can_fire() -> None:
     """A gate whose controls have never fired is a claim, not a control.
 
-    Each mutation below is the naive Python spelling the port documents as
-    wrong; every one must change the answer.
+    Each mutation below is the naive Python spelling the port documents as wrong; every one must change the answer.
     """
     # Divergence 1: `== False` instead of `is False` keeps an `isResolved: 0`.
     naive_zero = [t for t in [_thread("T1", resolved=0)] if (t.get("isResolved") or False) == False]  # noqa: E712

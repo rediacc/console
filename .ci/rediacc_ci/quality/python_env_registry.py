@@ -1,5 +1,4 @@
-r"""check:ci-python-env-registry -- the pinned SET of every `module:NAME` pair
-where a tracked Python module reads an environment variable, held shrink-only.
+r"""check:ci-python-env-registry -- the pinned SET of every `module:NAME` pair where a tracked Python module reads an environment variable, held shrink-only.
 
 THE GENERAL CASE OF `check:ci-worklist-env-registry`. That gate, landed the same day, asks one question about one PREFIX: is every `WORKLIST_*` name registered, and is every registered name read. This one asks the whole-tree question with no prefix at all, and keys on the PAIR rather than the name, because "who reads it" is the half a name-keyed registry throws away. The two are
 complements and the narrow one is NOT subsumed: it additionally pins the DEFAULT SPELLING each name is read with and an authored KIND per name, neither of which this file has any opinion about. See the section "WHAT THIS DOES NOT CLAIM" below.

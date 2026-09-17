@@ -577,7 +577,7 @@ def _go(directory: str, args: list[str]) -> tuple[int, str, str]:
 
 
 def _echo_probe(stderr_text: str) -> None:
-    """`[[ -s "$probe_err" ]] && sed 's/^/    /' "$probe_err" >&2`.
+    """`[[ -s "$probe_err" ]] && sed 's/^/ /' "$probe_err" >&2`.
 
     Four spaces in front of every LINE, including a trailing partial one, and nothing at all when the file is empty.
     """

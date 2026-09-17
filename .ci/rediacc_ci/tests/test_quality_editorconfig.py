@@ -41,25 +41,19 @@ def test_classifier_matches_the_twins_awk_on_the_two_control_inputs() -> None:
 
 
 def test_classifier_matches_on_padded_output() -> None:
-    """`file` pads the filename column when given more than one path, so the
-    real input to awk is not `a: b` but `a: b`. A classifier that split on
-    ':' rather than ': ' would still pass the control above and fail here."""
+    """`file` pads the filename column when given more than one path, so the real input to awk is not `a: b` but `a: b`. A classifier that split on ':' rather than ': ' would still pass the control above and fail here."""
     lines = ["a.sh:       us-ascii", "b.png:      binary", "c.woff:     binary"]
     assert ec.classify_binary(lines) == _bash_classify(lines) == ["b.png", "c.woff"]
 
 
 def test_classifier_matches_on_a_path_containing_a_colon_space() -> None:
-    """`sub(/: [^:]*$/)` strips only the LAST field, so a path holding ': '
-    survives intact. Python's `re.sub` and awk's `sub` agree here and the
-    agreement is asserted rather than assumed."""
+    """`sub(/: [^:]*$/)` strips only the LAST field, so a path holding ': ' survives intact. Python's `re.sub` and awk's `sub` agree here and the agreement is asserted rather than assumed."""
     lines = ["odd: name.png: binary", "plain.txt: us-ascii"]
     assert ec.classify_binary(lines) == _bash_classify(lines) == ["odd: name.png"]
 
 
 def test_classifier_treats_a_line_with_no_separator_as_its_own_last_field() -> None:
-    """awk's $NF on a line with no ': ' is the whole line. Not a real `file`
-    output shape, and asserted anyway because it is the branch a defensive
-    rewrite would get wrong in silence."""
+    """awk's $NF on a line with no ': ' is the whole line. Not a real `file` output shape, and asserted anyway because it is the branch a defensive rewrite would get wrong in silence."""
     lines = ["binary", "notbinary-word"]
     assert ec.classify_binary(lines) == _bash_classify(lines)
 
@@ -67,9 +61,7 @@ def test_classifier_treats_a_line_with_no_separator_as_its_own_last_field() -> N
 def test_file_calls_a_short_text_file_binary(tmp_path: pathlib.Path) -> None:
     """A REPORTED TWIN BLIND SPOT, pinned so it cannot change unnoticed.
 
-    `file --mime-encoding` answers "binary" for a one-byte text file, so such a file is exempted from the final-newline, BOM and CRLF checks entirely. The gate cannot see a missing newline on it. Both implementations share the
-    oracle, so both share the hole; this asserts the hole is where it is
-    believed to be rather than somewhere worse.
+    `file --mime-encoding` answers "binary" for a one-byte text file, so such a file is exempted from the final-newline, BOM and CRLF checks entirely. The gate cannot see a missing newline on it. Both implementations share the oracle, so both share the hole; this asserts the hole is where it is believed to be rather than somewhere worse.
     """
     (tmp_path / "tiny.ts").write_bytes(b"x")
     (tmp_path / "longer.ts").write_bytes(b"const x = 1;")
@@ -80,8 +72,7 @@ def test_file_calls_a_short_text_file_binary(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_nul_control_fires(tmp_path: pathlib.Path) -> None:
-    """The twin refuses to report anything if this control does not fire, and
-    so does the port. Driven directly rather than through main()."""
+    """The twin refuses to report anything if this control does not fire, and so does the port. Driven directly rather than through main()."""
     assert ec.nul_control(tmp_path) is True
 
 
@@ -90,9 +81,7 @@ def test_the_classifier_control_passes() -> None:
 
 
 def test_tracked_files_matches_git_ls_files(tmp_path: pathlib.Path) -> None:
-    """The enumeration, against the real git. THE `--recurse-submodules` FLAG IS
-    CARRIED FROM THE TWIN AND IS A REPORTED DEFECT: the manifest lane checks out without submodules, so the flag buys nothing there. Compared as-is, because
-    the port's job is to keep the corpus, not to widen it."""
+    """The enumeration, against the real git. THE `--recurse-submodules` FLAG IS CARRIED FROM THE TWIN AND IS A REPORTED DEFECT: the manifest lane checks out without submodules, so the flag buys nothing there. Compared as-is, because the port's job is to keep the corpus, not to widen it."""
     (tmp_path / "a.ts").write_bytes(b"const a = 1;\n")
     (tmp_path / "sub").mkdir()
     (tmp_path / "sub" / "b.md").write_bytes(b"# b\n")
@@ -141,7 +130,6 @@ def test_selftest_is_green() -> None:
 
 
 def test_the_real_tree_complies() -> None:
-    """The gate against the actual repository. A red here is real editorconfig
-    debt, not a broken port."""
+    """The gate against the actual repository. A red here is real editorconfig debt, not a broken port."""
     assert ec.main([]) == 0, "run `bash .ci/scripts/quality/check-editorconfig.sh` for the list"
     assert paths.repo_root().is_dir()

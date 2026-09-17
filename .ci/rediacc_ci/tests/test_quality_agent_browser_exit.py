@@ -5,9 +5,7 @@ from reading it: an ERE with a POSIX character class (`-[a-z]*e`), five `case`
 patterns matched against the RAW line, a `while IFS= read -r` loop that silently
 drops a file's last line when it has no trailing newline, and a two-line `printf` whose second line is post-processed by `sed`. A table of expected strings would be a table of what the PORT does, asserted against itself.
 
-These are the seams the committed ledger cannot isolate. `.ci/shadow/w7p2-agent-browser-exit.observations.jsonl` compares the WHOLE gate
-over five distinct trees; it cannot tell you which of the five `case` arms
-rejected a line, because both sides simply printed nothing for it. This file takes each arm on its own.
+These are the seams the committed ledger cannot isolate. `.ci/shadow/w7p2-agent-browser-exit.observations.jsonl` compares the WHOLE gate over five distinct trees; it cannot say which of the five `case` arms rejected a line, because both sides simply printed nothing for it. This file takes each arm on its own.
 
 THE FRAGMENTS BELOW ARE LIFTED FROM `.ci/scripts/quality/check-agent-browser-exit.sh` lines 31-49 with the variables substituted and nothing else changed. Where a fragment is a `case`, it is reproduced as a `case` rather than as an equivalent `if`, because the equivalence is the thing under test.
 """
@@ -21,9 +19,7 @@ from rediacc_ci.tests import differential as diff
 
 # --------------------------------------------------------------------------- The `set -e` eligibility test: grep -qE '^[[:space:]]*set[[:space:]]+-[a-z]*e' ---------------------------------------------------------------------------
 
-# Every shape of `set` this repo actually contains, plus the two that look like they should qualify and do not. The comment on each line is the property it is
-# there for; a case with no property is a case that will be deleted the first
-# time someone tidies this file.
+# Every shape of `set` this repo actually contains, plus the two that look like they should qualify and do not. The comment on each line is the property it is there for; a case with no property is a case that will be deleted the first time someone tidies this file.
 SET_E_CASES = [
     "set -e",  # the bare form
     "set -eu",  # e first
@@ -174,7 +170,7 @@ REPORT_CASES = [
 
 @pytest.mark.parametrize("line", REPORT_CASES)
 def test_report_shape_matches_printf_and_sed(tmp_path: pathlib.Path, line: str) -> None:
-    """`printf '  %s:%d\\n    %s\\n' "$rel" "$n" "$(echo "$line" | sed ...)"`.
+    """`printf ' %s:%d\\n %s\\n' "$rel" "$n" "$(echo "$line" | sed ...)"`.
 
     The `sed 's/^[[:space:]]*//'` strips the LEADING indent only, and the whole thing sits inside a command substitution, which strips trailing NEWLINES but not trailing spaces. Both halves of that are in the table.
     """
@@ -245,8 +241,7 @@ def test_js_half_runs_first_and_hides_the_shell_half(tmp_path: pathlib.Path) -> 
     (tmp_path / "b.sh").write_text('set -e\nagent-browser open "$u"\n', encoding="utf-8")
     assert len(abe.scan_js(str(tmp_path))) == 1
     assert len(abe.scan(str(tmp_path))) == 1
-    # Both fire independently; main() prints only the first. That ordering is
-    # asserted by the ledger row rather than re-driven here, because main() resolves its root from the environment.
+    # Both fire independently; main() prints only the first. That ordering is asserted by the ledger row rather than re-driven here, because main() resolves its root from the environment.
 
 
 def test_selftest_is_green() -> None:

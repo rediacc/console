@@ -1,7 +1,6 @@
 """There is ONE way to read CI, and every surface points at it.
 
-Ported from `.ci/scripts/quality/check-ci-watch-recipe.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-ci-watch-recipe.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 The twin's header, carried whole:
 
@@ -66,9 +65,7 @@ THE SIGPIPE RACE THAT THIS GATE WAS BUILT AROUND CANNOT EXIST IN PYTHON, and tha
 
 This port reads each file into memory and filters it, which has no producer to kill. The LARGE-FILE CONTROL IS KEPT ANYWAY, at its full ~240 KB, because it is also a control on the DETECTOR and because deleting it would delete the record of why the detector is shaped this way. The twin's sizing note is kept with it.
 
-CHECK D SHELLS OUT TO THE SAME HELPER, on purpose. `check_sanctioned_registry.py` already IS Python, and importing it here would mean re-implementing its argv contract and its module loading. The twin runs it as `python3 <path> <registry>
-<root>` and reads its combined output; so does this, which makes check D
-byte-identical by construction rather than by care.
+CHECK D SHELLS OUT TO THE SAME HELPER, on purpose. `check_sanctioned_registry.py` already IS Python, and importing it here would mean re-implementing its argv contract and its module loading. The twin runs it as `python3 <path> <registry> <root>` and reads its combined output; so does this, which makes check D byte-identical by construction rather than by care.
 
 CHECK E EXECUTES THE REAL SCRIPT, also on purpose. `[ -x "$TRACE" ]` is a PERMISSION test, not an existence test, and the twin's message says "missing or not executable" for that reason: a gate script whose executable bit was stripped in a rebase is exactly the failure this arm catches. The port keeps `os.access(path, os.X_OK)`.
 
@@ -95,8 +92,7 @@ TRACE_REL = ".ci/scripts/ci/ci-trace.py"
 REGISTRY_REL = ".claude/hooks/lib/sanctioned.py"
 REGISTRY_CHECKER_REL = ".ci/scripts/quality/lib/check_sanctioned_registry.py"
 
-# The three pathspecs check B and check C scan. Passed to git verbatim; see the
-# port notes for why they are not re-implemented as a walk.
+# The three pathspecs check B and check C scan. Passed to git verbatim; see the port notes for why they are not re-implemented as a walk.
 SCAN_PATHSPECS = (".claude/**/*.md", ".claude/**/*.sh", "docs/agent-reference/*.md")
 
 # Lines that are DATA or ASSERTIONS, not advice. Both were real false positives: a worklist test carries a background task's command as a JSON value, and the hook suite asserts `check 2 ...` on the banned shape precisely BECAUSE it is banned. Flagging either would push someone to weaken the test to satisfy the gate, which is backwards.
@@ -393,9 +389,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             fail("E. %s --help exited non-zero" % TRACE_REL)
 
-    # ---- F. the skill teaches --run for a DISPATCHED run ------------------ `--wait --ref main` cannot see a workflow_dispatch run's check runs at all -- a branch's statusCheckRollup structurally excludes them (incidents.md,
-    # 2026-08-26). That is not fixable in ci-trace.py itself; the only defense is
-    # that the taught recipe says to use --run for that case, and stays saying so.
+    # ---- F. the skill teaches --run for a DISPATCHED run ------------------ `--wait --ref main` cannot see a workflow_dispatch run's check runs at all -- a branch's statusCheckRollup structurally excludes them (incidents.md, 2026-08-26). That is not fixable in ci-trace.py itself; the only defense is that the taught recipe says to use --run for that case, and stays saying so.
     if not skill.is_file():
         fail("F. %s is missing" % skill)
     else:

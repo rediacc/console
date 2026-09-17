@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/assert-ci-complete.sh` (89 lines).
 
-The body of the `CI Complete` gate: fail unless every CI job reached an acceptable conclusion. The twin's header owns the contract -- the HARD/SOFT tiers, why `RUN_SH_TESTS` is hard, why `MIGRATION_TEST` is absent, why `BREAKPOINT_LIFECYCLE` and `LABEL_GUIDE` are soft -- and it is not restated
-here. The tier membership below is a copy of the twin's two arrays; the
-per-member reasoning stays in the twin, which is the file `.ci/rediacc_ci/tests/gates/test_gate_ci_complete_tiers.py` reads.
+The body of the `CI Complete` gate: fail unless every CI job reached an acceptable conclusion. The twin's header owns the contract -- the HARD/SOFT tiers, why `RUN_SH_TESTS` is hard, why `MIGRATION_TEST` is absent, why `BREAKPOINT_LIFECYCLE` and `LABEL_GUIDE` are soft -- and it is not restated here. The tier membership below is a copy of the twin's two arrays; the per-member
+reasoning stays in the twin, which is the file `.ci/rediacc_ci/tests/gates/test_gate_ci_complete_tiers.py` reads.
 
-LIVE CALLER, not repointed: `.github/workflows/ci.yml:1736` `run: .ci/scripts/ci/assert-ci-complete.sh`, with one `RESULT_*` env var per
-job at :1738-1760. The bash twin stays the registered gate; this module is its
-verified-equivalent alternative and the cutover is a separate, later, driver-only step.
+LIVE CALLER, not repointed: `.github/workflows/ci.yml:1736` `run: .ci/scripts/ci/assert-ci-complete.sh`, with one `RESULT_*` env var per job at :1738-1760. The bash twin stays the registered gate; this module is its verified-equivalent alternative and the cutover is a separate, later, driver-only step.
 
 Ledger: `.ci/shadow/w7p6-assert-ci-complete.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-ci-complete --assert --k 5`).
 

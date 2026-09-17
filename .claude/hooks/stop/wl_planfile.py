@@ -1,5 +1,4 @@
-"""wl_planfile: keep a committed `agent/PLAN-*.md` checkbox list and the
-worklist IN STEP, so a plan survives compaction as something traceable rather than as eighteen boxes nobody can account for.
+"""wl_planfile: keep a committed `agent/PLAN-*.md` checkbox list and the worklist IN STEP, so a plan survives compaction as something traceable rather than as eighteen boxes nobody can account for.
 
 WHY THIS EXISTS, from a measurement rather than from theory. On 2026-09-02 `agent/PLAN-secret-namespace-migration.md` carried 18 open `- [ ]` lines and 4 ticked ones, and its own `## Tasks` section stated the contract in as many words:
 
@@ -86,9 +85,8 @@ PARSING IS `wl_planfid.plan_tasks`, CALLED THREE TIMES, NOT FORKED.
 A plain bullet under an action heading survives both deletions, so it lands in NEITHER set and is never reported -- which is the conservative reading of the contract, whose subject is checkbox lines. `- [?]` and `- [>]` lines are not checkboxes to `CHECKBOX_RE` and survive both deletions too, so they are excluded for free rather than by a second rule that could drift out of step.
 
 ------------------------------------------------------------------------------
-WHICH DIRECTION A WRONG ANSWER COSTS MORE. A false "untracked" sends a session to `--add` an item that already exists, which is duplicate tracking and real
-harm; a missed one leaves today's status quo. So matching is GENEROUS: a plan
-task counts as tracked when any worklist item in ANY state (open, done, deferred, leased) contains it or is contained by it at `wl_planfid.TASK_MATCH`, in EITHER direction, and items belonging to any session count. The constants are imported rather than restated so the calibration stays in one place.
+WHICH DIRECTION A WRONG ANSWER COSTS MORE. A false "untracked" sends a session to `--add` an item that already exists, which is duplicate tracking and real harm; a missed one leaves today's status quo. So matching is GENEROUS: a plan task counts as tracked when any worklist item in ANY state (open, done, deferred, leased) contains it or is contained by it at
+`wl_planfid.TASK_MATCH`, in EITHER direction, and items belonging to any session count. The constants are imported rather than restated so the calibration stays in one place.
 
 BLINDNESS IS REPORTED, NEVER PASSED. A plan holding raw `- [ ]` lines that the parser resolves to zero open tasks is named as unreadable rather than counted as clean, per the V_PR_UNREADABLE convention: a check that cannot see must say so.
 """
@@ -100,17 +98,14 @@ import re
 import wl_core as C
 import wl_planfid as P
 
-# --------------------------------------------------------------------------- Bounds. Every one of these exists so a pathological file cannot turn the Stop
-# hook into a slow path; none of them may silently drop a finding without the
-# render saying it did.
+# --------------------------------------------------------------------------- Bounds. Every one of these exists so a pathological file cannot turn the Stop hook into a slow path; none of them may silently drop a finding without the render saying it did.
 
 # In-scope plans whose BODY is read per stop, newest mtime first. Applied AFTER the status and ownership filters, and the remainder is REPORTED rather than dropped: a cap that hides the plan you needed reads exactly like a clean run, which is the failure this whole module exists to stop. Measured on this repo: 62 plans, 36 in scope by status, ~10 ms to read them all, so the cap is
 # headroom against a pathological directory and not a routine truncation.
 PLAN_MAX_READ = int(os.environ.get("WORKLIST_PLANFILE_MAX_READ", "40"))
 # Untracked tasks QUOTED. The rest are counted. See design note 2.
 PLAN_TASK_SHOW = int(os.environ.get("WORKLIST_PLANFILE_SHOW", "3"))
-# S2: plans rendered per stop. Design note 2 capped this at 1 and its ARGUMENT was about quoted lines being a wall -- so the number moves and the reason is kept by making PLAN_TASK_SHOW a budget shared ACROSS the plans shown, not a per-plan
-# allowance. Three one-line headers is not a wall; nine quoted `--add` recipes is.
+# S2: plans rendered per stop. Design note 2 capped this at 1 and its ARGUMENT was about quoted lines being a wall -- so the number moves and the reason is kept by making PLAN_TASK_SHOW a budget shared ACROSS the plans shown, not a per-plan allowance. Three one-line headers is not a wall; nine quoted `--add` recipes is.
 PLAN_PLANS_SHOW = int(os.environ.get("WORKLIST_PLANFILE_PLANS_SHOW", "3"))
 # Stale-box examples quoted in the reverse direction.
 PLAN_STALE_SHOW = int(os.environ.get("WORKLIST_PLANFILE_STALE_SHOW", "2"))
@@ -193,9 +188,7 @@ def plan_boxes(text):
 def raw_box_counts(text):
     """(open, done) counted straight off the raw lines, with no parser at all.
 
-    The anti-vacuity control. If a plan plainly holds `- [ ]` lines and plan_boxes resolves none of them, the check is BLIND on that file and says
-    so; without this second, dumber count there is nothing to compare against
-    and 'no findings' would be indistinguishable from 'saw nothing'.
+    The anti-vacuity control. If a plan plainly holds `- [ ]` lines and plan_boxes resolves none of them, the check is BLIND on that file and says so; without this second, dumber count there is nothing to compare against and 'no findings' would be indistinguishable from 'saw nothing'.
     """
     o = d = 0
     for ln in (text or "").splitlines():
@@ -296,8 +289,7 @@ def reconcile(open_tasks, done_tasks, rows):
 
 
 def _read(path):
-    """A plan's text, or None. NEVER raises: this runs on the path that lets
-    every session in the repo end a turn."""
+    """A plan's text, or None. NEVER raises: this runs on the path that lets every session in the repo end a turn."""
     try:
         p = pathlib.Path(path)
         if p.stat().st_size > PLAN_MAX_BYTES:
@@ -324,8 +316,7 @@ def in_scope_status(status):
 
 
 def plan_rows(root, recs, fold, session_id, plan_owner):
-    """[dict] of findings, newest plan first. `recs` and `plan_owner` are passed
-    in rather than imported so this module never depends on wl_checks, which imports it (and so the selftest can drive it with fixtures).
+    """[dict] of findings, newest plan first. `recs` and `plan_owner` are passed in rather than imported so this module never depends on wl_checks, which imports it (and so the selftest can drive it with fixtures).
 
     Returns (rows, unread) where `unread` is how many in-scope plans the read cap kept this stop from opening. Never silently zero-truncated: see
     PLAN_MAX_READ.
@@ -335,8 +326,7 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
     rows = item_rows(fold)
     # Status first because it is free (plan_records already parsed it), then ownership, which costs a header read. Only what survives both is capped, so the cap counts plans this session actually had a reason to open. S3: THREE tiers, not two. FINISHED is still skipped outright -- demanding that history stay in step with a live worklist is how a check earns its way into being
     # ignored, and design note 4 is right about that half. NOT_STARTED is no longer EXEMPT though: it becomes a one-line census row with no quotes and no recipes. The premise that made it an exemption ("a proposal's boxes are a sketch") stopped being true here -- measured 2026-09-02, `draft` is this repo's default header on plans under ACTIVE execution, and six of eight
-    # box-carrying files carried it, hiding 72 of 88 open boxes. One line each is the price of
-    # seeing them; the full treatment stays for plans that claim to be running.
+    # box-carrying files carried it, hiding 72 of 88 open boxes. One line each is the price of seeing them; the full treatment stays for plans that claim to be running.
     owned = [
         rec
         for rec in list(recs)

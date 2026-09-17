@@ -41,9 +41,7 @@ SCAN_EVERY_S = float(os.environ.get("WORKLIST_WAIT_SCAN_S", "300"))
 
 
 def _stat(path):
-    """(size, mtime_ns), or None when absent. The ONLY watch primitive portable
-    to linux, macOS and Windows. `.requests` is strictly append-only and never compacted, so size alone is a sound change detector there; the pair is used
-    anyway so an index rewrite could not hide behind an equal size."""
+    """(size, mtime_ns), or None when absent. The ONLY watch primitive portable to linux, macOS and Windows. `.requests` is strictly append-only and never compacted, so size alone is a sound change detector there; the pair is used anyway so an index rewrite could not hide behind an equal size."""
     try:
         st = path.stat()
     except OSError:
@@ -52,8 +50,7 @@ def _stat(path):
 
 
 def arm(worklist, store, branch, me):
-    """Snapshot what this session has ALREADY SEEN, and wake only on what is new
-    relative to it.
+    """Snapshot what this session has ALREADY SEEN, and wake only on what is new relative to it.
 
     ARMING AGAINST A BASELINE RATHER THAN AGAINST EMPTINESS IS THE WHOLE
     CORRECTNESS ARGUMENT. There is no recipient-side read marker anywhere in the request system: "unread" there is computed as "not resolved and not escalated", which conflates *I have not seen it* with *I have seen it and am deliberately still working on it*. So the classified slice is NOT an inbox of unseen things. A waiter armed on "wake when the slice is non-empty" would fire
@@ -86,8 +83,7 @@ def _new_requests(worklist, me, base):
 
 
 def _safe_scan(store, start):
-    """--scan, but a failure here must never end the wait: an unwritable store
-    costs a self-heal pass, while raising would cost the session its wake-up."""
+    """--scan, but a failure here must never end the wait: an unwritable store costs a self-heal pass, while raising would cost the session its wake-up."""
     try:
         import wl_report as RPT  # noqa: PLC0415
 
@@ -132,9 +128,7 @@ def bump_ask_nolisten(worklist, me):
 
 
 def reset_ask_nolisten(worklist, me):
-    """Back to rung 1. Called whenever the session is listening again OR has no
-    open ask left -- the ladder must describe what is true now, not what the
-    session did an hour ago."""
+    """Back to rung 1. Called whenever the session is listening again OR has no open ask left -- the ladder must describe what is true now, not what the session did an hour ago."""
     with contextlib.suppress(OSError):
         ask_nolisten_path(worklist, me).unlink(missing_ok=True)
 
@@ -168,8 +162,7 @@ def tombstone(path, why):
 
 
 def waiter_lapsed(worklist, me):
-    """("", None) when no waiter has ever been armed for this session, or
-    (why, age_minutes) when the last one EXITED and was never relaunched.
+    """("", None) when no waiter has ever been armed for this session, or (why, age_minutes) when the last one EXITED and was never relaunched.
 
     A live waiter answers ("", None) too -- a fresh heartbeat is not a lapse -- so the caller does not have to re-derive liveness. NO GRACE PERIOD is warranted on the answer: unlike "you have never armed one", a lapse means the session already accepted the contract and then stopped listening.
     """
@@ -339,9 +332,7 @@ def _fresh(path, max_age_s):
 
 
 def _is_tombstone(path):
-    """Is this heartbeat file a waiter's EXIT marker rather than a live pulse?
-    Unreadable counts as NOT a tombstone: the failure direction is one extra
-    nudge, never a session accused of losing a waiter it still has."""
+    """Is this heartbeat file a waiter's EXIT marker rather than a live pulse? Unreadable counts as NOT a tombstone: the failure direction is one extra nudge, never a session accused of losing a waiter it still has."""
     try:
         return path.read_text(encoding="utf-8").startswith(TOMBSTONE)
     except OSError:
@@ -378,8 +369,7 @@ def nudges_ignored(worklist, me):
 
 
 def outstanding_work(worklist, session_id, transcript_path=""):
-    """Does this session still owe anything? OPEN items, IN-FLIGHT items, and
-    pending harness tasks -- the same three slices the Stop hook already calls `actionable_remains` (wl_checks.py, beside remaining_lines), computed the same way so the two ends of this mechanism cannot drift apart.
+    """Does this session still owe anything? OPEN items, IN-FLIGHT items, and pending harness tasks -- the same three slices the Stop hook already calls `actionable_remains` (wl_checks.py, beside remaining_lines), computed the same way so the two ends of this mechanism cannot drift apart.
 
     WHAT IS DELIBERATELY NOT COUNTED, and why:
 
@@ -415,8 +405,7 @@ def outstanding_work(worklist, session_id, transcript_path=""):
 
 
 def nudge(event):
-    """PostToolUse: tell a session with no live waiter to start one -- unless
-    it has nothing left to do, in which case it is told nothing at all.
+    """PostToolUse: tell a session with no live waiter to start one -- unless it has nothing left to do, in which case it is told nothing at all.
 
     ORDERED BY COST, cheapest gate first, because this runs on every tool call: one stat for the throttle, one stat for the heartbeat, then a read of the briefs file, and only past all three the item fold behind outstanding_work.
     """

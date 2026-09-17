@@ -198,9 +198,7 @@ def test_no_baseline_escape_hatch(gate):
 
 def test_empty_tree_is_not_a_pass(gate):
     gate.log_test("ANTI-VACUITY: a workflow dir with no workflows is not clean")
-    # If the workflow directory moves or empties, the rule is asserting nothing and must say so instead of reporting clean. `assert_vacuous_tree_fails` is
-    # the harness's port of the bash helper of the same name; it takes a runner
-    # returning a RunResult, where the bash original left the output in $LAST_OUT.
+    # If the workflow directory moves or empties, the rule is asserting nothing and must say so instead of reporting clean. `assert_vacuous_tree_fails` is the harness's port of the bash helper of the same name; it takes a runner returning a RunResult, where the bash original left the output in $LAST_OUT.
     with harness.temp_dir() as d:
         gate.assert_vacuous_tree_fails(
             lambda path: run_check(gate, path),

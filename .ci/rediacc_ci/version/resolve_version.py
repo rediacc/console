@@ -1,8 +1,7 @@
 """Port of `.ci/scripts/version/resolve-version.sh`.
 
-Resolves the current published version from git tags (`git tag -l 'v*'`, newest first by version sort) and, given `--bump-type`, the next patch/minor/major version after it. This is the single place that decides
-what version number an artifact ships with; `inject-env.sh` calls it as a
-subprocess (never sources it), and this port preserves that shape: it is a plain stdout-producing CLI, not a library a caller sources into its own shell.
+Resolves the current published version from git tags (`git tag -l 'v*'`, newest first by version sort) and, given `--bump-type`, the next patch/minor/major version after it. This is the single place that decides what version number an artifact ships with; `inject-env.sh` calls it as a subprocess (never sources it), and this port preserves that shape: it is a plain stdout-producing
+CLI, not a library a caller sources into its own shell.
 
 GIT IS SHELLED OUT TO, NOT REIMPLEMENTED, on the `resolve_backfill_commit.py` precedent: `git tag -l` is the twin's own probe, run with the same arguments against whatever repository the process's cwd belongs to. This port never `cd`s, matching the twin.
 
@@ -26,8 +25,7 @@ USAGE = "Usage: resolve-version.sh [--current | --bump-type patch|minor|major]"
 def _split_version_core(core: str) -> tuple[str, str, str]:
     """Mirror `IFS='.' read -r MAJOR MINOR PATCH <<<"$core"` exactly.
 
-    The first two dot-separated fields go to MAJOR/MINOR; every remaining
-    field (zero or more) is rejoined with '.' into PATCH, matching bash's "extra fields land in the last variable" rule. A field that does not exist reads as "", exactly as an unset bash variable would.
+    The first two dot-separated fields go to MAJOR/MINOR; every remaining field (zero or more) is rejoined with '.' into PATCH, matching bash's "extra fields land in the last variable" rule. A field that does not exist reads as "", exactly as an unset bash variable would.
     """
     parts = core.split(".")
     major = parts[0] if len(parts) >= 1 else ""
@@ -39,9 +37,7 @@ def _split_version_core(core: str) -> tuple[str, str, str]:
 def _latest_tag() -> str:
     """`git tag -l 'v*' --sort=-v:refname | head -1`, tolerating no repo/tags.
 
-    The twin wraps the whole pipeline in `|| true` so a failing `git tag` (e.g. not a git repository) falls through to the "no tags found" branch
-    rather than propagating a different error; a failed subprocess here does
-    the same by returning "".
+    The twin wraps the whole pipeline in `|| true` so a failing `git tag` (e.g. not a git repository) falls through to the "no tags found" branch rather than propagating a different error; a failed subprocess here does the same by returning "".
     """
     try:
         completed = subprocess.run(

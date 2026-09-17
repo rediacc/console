@@ -1,11 +1,9 @@
-"""Differential: `rediacc_ci.ci.profiler_panel` against its twin
-`.ci/scripts/ci/profiler/panel.sh`.
+"""Differential: `rediacc_ci.ci.profiler_panel` against its twin `.ci/scripts/ci/profiler/panel.sh`.
 
 BOTH SIDES ARE COMPARED BYTE FOR BYTE ON THREE CHANNELS -- stdout, stderr and the summary file -- plus the exit code, because this program's whole output is text a human reads in a job panel and a machine (`check_runner_advice.py --refresh`) harvests out of one `::notice` annotation. A finding-set comparison would let the machine row drift.
 
-NOTHING HERE TOUCHES THE NETWORK, DOCKER, OR THE REAL TREE. Every case builds its own sampler TSV under pytest's `tmp_path` and both subjects read it through
-`PROFILER_SAMPLE_FILE`; the only repository files either side opens are
-`panel.sh` and `report.awk` themselves, and both open the SAME `report.awk` deliberately -- the aggregator is not ported, it is invoked, so a differential that gave each side its own copy would be comparing two awk runs rather than two wrappers.
+NOTHING HERE TOUCHES THE NETWORK, DOCKER, OR THE REAL TREE. Every case builds its own sampler TSV under pytest's `tmp_path` and both subjects read it through `PROFILER_SAMPLE_FILE`; the only repository files either side opens are `panel.sh` and `report.awk` themselves, and both open the SAME `report.awk` deliberately -- the aggregator is not ported, it is invoked, so a differential
+that gave each side its own copy would be comparing two awk runs rather than two wrappers.
 
 THE PLANTED DEFECT (`test_planted_defect_is_caught_by_this_differential`) mutates a COPY of the port in `tmp_path`, never the file on disk: it drops the `%`-escaping from `escape_workflow_command`, which is invisible on every other
 case in this file and corrupts exactly one line of one annotation. That is the
@@ -393,11 +391,8 @@ def test_a_budget_the_panel_fits_inside_leaves_no_trim_note(tmp_path: pathlib.Pa
 def test_non_numeric_budget_is_a_bash_diagnostic_only(tmp_path: pathlib.Path) -> None:
     """THE ONE NAMED DIVERGENCE, pinned rather than papered over.
 
-    `[ "$SIZE" -gt abc ]` makes bash print `[: abc: integer expected` on stderr
-    and evaluate false; an `if` condition is exempt from `set -e`, so the run
-    continues and produces an untrimmed panel. The port reaches the same decision without forging a bash diagnostic that carries the twin's own path
-    and line number. stdout, the panel and the exit code all still agree; only
-    stderr differs, and this test exists so that stops being invisible.
+    `[ "$SIZE" -gt abc ]` makes bash print `[: abc: integer expected` on stderr and evaluate false; an `if` condition is exempt from `set -e`, so the run continues and produces an untrimmed panel. The port reaches the same decision without forging a bash diagnostic that carries the twin's own path and line number. stdout, the panel and the exit code all still agree; only stderr
+    differs, and this test exists so that stops being invisible.
     """
     sample = healthy(tmp_path)
     old, new, ob, nb = run_both(

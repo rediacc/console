@@ -161,8 +161,7 @@ REGISTRY: tuple[tuple[str, str], ...] = (
 
 
 def run_against_empty_tree(script: str) -> harness.RunResult:
-    """Execute `script` with the tooling trees copied into an otherwise empty
-    directory, so every `__dirname/../packages/...` and `__dirname/../private/...` lookup resolves to nothing.
+    """Execute `script` with the tooling trees copied into an otherwise empty directory, so every `__dirname/../packages/...` and `__dirname/../private/...` lookup resolves to nothing.
 
     COPYING (rather than deleting the real trees) is what makes this safe to run against a working tree holding other sessions' uncommitted work.
 
@@ -255,8 +254,7 @@ def twin_registry() -> list[tuple[str, str]]:
 
 
 def test_fixture_can_import_package(gate):
-    """THE COPY LIST IS AN INPUT TO EVERY GATE RUN IN HERE, so it needs a control
-    of its own.
+    """THE COPY LIST IS AN INPUT TO EVERY GATE RUN IN HERE, so it needs a control of its own.
 
     `import rediacc_ci` must work INSIDE the fixture; if it does not, a gate that uses the package fails here for a reason that has nothing to do with what the gate asserts, and that failure looks exactly like the empty-tree rejection this file is built to observe.
 
@@ -460,8 +458,7 @@ def test_harness_catches_a_vacuous_validator(gate):
 
 
 def test_registry_is_not_empty(gate):
-    """Control for this file itself: an empty registry would make every assertion
-    below vacuous -- the precise failure mode being policed."""
+    """Control for this file itself: an empty registry would make every assertion below vacuous -- the precise failure mode being policed."""
     if not REGISTRY:
         gate.log_fail("REGISTRY is empty -- this meta-gate would assert nothing")
     gate.log_pass("registry holds %d validator(s)" % len(REGISTRY))
@@ -480,9 +477,7 @@ def test_registry_entries_exist(gate):
 
 
 def test_validator_rejects_empty_tree(gate):
-    """THE REGISTRY LOOP, one case rather than 42, and the difference is only in
-    the report: every entry is driven and every failure is named, instead of the
-    twin's exit-on-first."""
+    """THE REGISTRY LOOP, one case rather than 42, and the difference is only in the report: every entry is driven and every failure is named, instead of the twin's exit-on-first."""
     if not REGISTRY:
         gate.log_fail("REGISTRY is empty, so this loop compared nothing")
     problems = []

@@ -17,9 +17,8 @@ IT IS THE ODD ONE OUT OF THE THREE DEPLOY SCRIPTS, in four ways that all matter 
   * IT PASSES NO `--config` TO WRANGLER. The other two name their config file;
     this one relies on wrangler's own discovery from cwd.
 
-NOTHING HERE REACHES CLOUDFLARE, AND NOTHING BUILDS, IN A TEST. `npm` and `npx` are the only external tools, so the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_proxy.py`) puts RECORDING FAKES for
-both on a scratch PATH and points both sides at a fixture repo root; the fake
-`npm` is what stops the real `@rediacc/shared` and `@rediacc/cli` builds from running. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is separate, achievable work. This is that piece.
+NOTHING HERE REACHES CLOUDFLARE, AND NOTHING BUILDS, IN A TEST. `npm` and `npx` are the only external tools, so the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_proxy.py`) puts RECORDING FAKES for both on a scratch PATH and points both sides at a fixture repo root; the fake `npm` is what stops the real `@rediacc/shared` and `@rediacc/cli` builds from running.
+`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is separate, achievable work. This is that piece.
 
 TWO DIVERGENCES IN TEXT NOBODY PARSES, both bash's own diagnostics:
 
@@ -58,8 +57,7 @@ if typing.TYPE_CHECKING:
 SELF = "deploy-proxy.sh"
 
 # The `${CLOUDFLARE_API_TOKEN:?...}` stand-in named in the docstring. The twin's
-# message already begins with the variable name, so this reads it twice; kept,
-# because that is the text.
+# message already begins with the variable name, so this reads it twice; kept, because that is the text.
 MISSING_TOKEN = (
     "CLOUDFLARE_API_TOKEN: CLOUDFLARE_API_TOKEN is required "  # noqa: S105 -- a refusal message, not a credential
     "(use a scoped token, never the global API key)"
@@ -69,9 +67,7 @@ MISSING_TOKEN = (
 WORKER_SUBDIR = ("workers", "proxy")
 
 # `REGION="${ARG_REGION:-eu}"` (:27). READ AND PRINTED, NEVER PASSED ON: it
-# appears in exactly one log line (:44) and in no argv, because the region for the proxy lives in `workers/proxy/wrangler.toml` rather than in a flag. A caller passing `--region us` therefore gets a message saying `us` and a deploy
-# of whatever the config names. Reproduced; the differential pins it by
-# comparing the recorded `npx` argv across regions.
+# appears in exactly one log line (:44) and in no argv, because the region for the proxy lives in `workers/proxy/wrangler.toml` rather than in a flag. A caller passing `--region us` therefore gets a message saying `us` and a deploy of whatever the config names. Reproduced; the differential pins it by comparing the recorded `npx` argv across regions.
 DEFAULT_REGION = "eu"
 
 # `DRY_RUN="${ARG_DRY_RUN:-false}"` (:28) and the one value that branches (:38).
@@ -93,9 +89,7 @@ CLOSING_LINES = (
     "That token must carry the proxy:exec scope and belong to the Rediacc org.",
 )
 
-# THE TWO DEFECTS NAMED IN THE DOCSTRING, as constants so the differential can assert them by name rather than restating the sentences. Both driven against
-# the real twin on 2026-09-13 in a fixture tree; both reproduced, not repaired,
-# because repairing a twin is a cutover decision and this file is not it.
+# THE TWO DEFECTS NAMED IN THE DOCSTRING, as constants so the differential can assert them by name rather than restating the sentences. Both driven against the real twin on 2026-09-13 in a fixture tree; both reproduced, not repaired, because repairing a twin is a cutover decision and this file is not it.
 #
 # 1. THE BUILD RUNS BEFORE THE DIRECTORY IS CHECKED. With `workers/proxy` absent, both `npm run build` calls complete and only then does the run die on `cd`. Measured in the fixture: two recorded npm calls, then `line 36: cd: .../workers/proxy: No such file or directory`, exit 1. 2. THE ACCOUNT ID IS DOCUMENTED AND UNCHECKED. The header lists `CLOUDFLARE_ACCOUNT_ID` under
 # "Requires:" and no line reads it. A deploy

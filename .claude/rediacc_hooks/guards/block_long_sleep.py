@@ -17,8 +17,7 @@ Two corrections landed 2026-08-25, both found while landing console#574.
    block-ci-polling.sh still catches real foreground polling shapes.
 
 Known false positive, shared with block-ci-polling.sh and accepted for the same reason: this reads the command TEXT, so a command that merely describes a long sleep -- a commit message quoting the recipe, a doc edit -- is blocked as if it were one. Taking the maximum widened that slightly (the first-sleep reading used to let such text through by accident). Narrowing it to exempt
-heredoc bodies would exempt the shape most likely to hide a real long sleep,
-so it stays; write the file with the Write tool and pass it by path instead.
+heredoc bodies would exempt the shape most likely to hide a real long sleep, so it stays; write the file with the Write tool and pass it by path instead.
 
 RE-CONFIRMED 2026-08-27. Nine sibling guards were routed through lib/command-scan.sh that day to stop them matching prose, and this one was routed with them. The suite case pinning the 2026-08-25 ruling turned red and reverted it: the shared scanner drops heredoc bodies, which is the option the ruling names as the most tempting and the worst. The pin worked as designed.
 
@@ -80,9 +79,7 @@ EDGE_CASES = [
 # NO DECLARED DIVERGENCES, and the one that used to be here is worth recording as an absence. It was `sleep 08`: not valid octal, so the twin wrote a bash arithmetic error naming its own file and line number and then evaluated FALSE, permitting the command. The port agreed on the decision and said nothing, so the stderr difference was declared rather than faked -- emitting a path
 # and a line number belonging to the file being replaced is a fabrication, not a transliteration.
 #
-# The twin was fixed on 2026-09-06 to force base ten. It no longer errors, both sides now allow `08` silently, and the divergence dissolved rather than being
-# waived. An empty list is the honest state; the harness still asserts it, so a new
-# divergence cannot arrive unannounced.
+# The twin was fixed on 2026-09-06 to force base ten. It no longer errors, both sides now allow `08` silently, and the divergence dissolved rather than being waived. An empty list is the honest state; the harness still asserts it, so a new divergence cannot arrive unannounced.
 KNOWN_DIVERGENCES = []
 
 

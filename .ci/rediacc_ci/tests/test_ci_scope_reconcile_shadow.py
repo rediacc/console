@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.ci.scope_reconcile_shadow` against its twin
-`.ci/scripts/ci/scope-reconcile-shadow.sh` (`ci.yml:1781`).
+"""Differential: `rediacc_ci.ci.scope_reconcile_shadow` against its twin `.ci/scripts/ci/scope-reconcile-shadow.sh` (`ci.yml:1781`).
 
 A FIXTURE TREE, not the real repository: both subjects derive the reconciler path and (by default) the cache directory from their own file location, so each case copies both subjects, PLUS a controllable fake `.cjs` reconciler, into a tree shaped like the repository at the right relative depth.
 
@@ -106,9 +105,7 @@ _ALWAYS_NEEDED = ("bash", "python3", "dirname", "mkdir", "tee", "timeout", "rm",
 
 
 def _curated_bin(where: pathlib.Path, *, omit: str) -> pathlib.Path:
-    """A fresh PATH directory with symlinks to every tool this script (and
-    its own runner) needs, EXCEPT `omit` -- which is genuinely absent, not merely shadowed, so `shutil.which`/`command -v` correctly report it
-    missing without also losing `bash` or `python3` in the process."""
+    """A fresh PATH directory with symlinks to every tool this script (and its own runner) needs, EXCEPT `omit` -- which is genuinely absent, not merely shadowed, so `shutil.which`/`command -v` correctly report it missing without also losing `bash` or `python3` in the process."""
     where.mkdir(parents=True, exist_ok=True)
     for tool in (*_ALWAYS_NEEDED, "gh", "node"):
         if tool == omit:
@@ -150,8 +147,7 @@ def _run(
 def _base_env(
     tmp_path: pathlib.Path, label: str, **extra: str
 ) -> tuple[dict[str, str], pathlib.Path]:
-    """A minimal, deterministic env: real GITHUB_STEP_SUMMARY file, a fresh
-    SCOPE_SHADOW_OUT, short GH_TIMEOUT so the timeout tests stay fast."""
+    """A minimal, deterministic env: real GITHUB_STEP_SUMMARY file, a fresh SCOPE_SHADOW_OUT, short GH_TIMEOUT so the timeout tests stay fast."""
     out_dir = tmp_path / f"out-{label}"
     summary = tmp_path / f"summary-{label}.md"
     env = {
@@ -260,8 +256,7 @@ def test_download_retries_once_then_succeeds(tmp_path: pathlib.Path) -> None:
         FAKE_GH_DOWNLOAD_FAIL_FIRST="1",
         FAKE_GH_DOWNLOAD_ATTEMPT_FILE=str(old_attempt),
     )
-    # The port's own recording gets a DIFFERENT attempt-marker file so the two subjects' independent "fail once, then succeed" states do not share
-    # state; re-run the port explicitly with its own marker.
+    # The port's own recording gets a DIFFERENT attempt-marker file so the two subjects' independent "fail once, then succeed" states do not share state; re-run the port explicitly with its own marker.
     new_env, _ = _base_env(
         tmp_path,
         "dl-retry-new-2",
@@ -335,9 +330,7 @@ def test_reconciler_timeout_is_hard_when_reduced(tmp_path: pathlib.Path) -> None
 
 
 def test_reconcile_output_is_truncated_and_teed(tmp_path: pathlib.Path) -> None:
-    """`head -c 3000`/`head -c 1500` truncation of the reconciler's own
-    stderr/stdout, verified with output that exceeds neither bound but is long enough that a naive re-implementation forgetting the cap would still
-    happen to match -- so the bound itself is exercised in the next test."""
+    """`head -c 3000`/`head -c 1500` truncation of the reconciler's own stderr/stdout, verified with output that exceeds neither bound but is long enough that a naive re-implementation forgetting the cap would still happen to match -- so the bound itself is exercised in the next test."""
     root = _fixture(tmp_path)
     old, new, _, _ = run_both(
         root,
@@ -367,13 +360,13 @@ def test_reconcile_stderr_truncated_at_3000_bytes(tmp_path: pathlib.Path) -> Non
 def test_summary_unset_falls_back_to_stdout_but_diverges_on_corruption(
     tmp_path: pathlib.Path,
 ) -> None:
-    """NAMED DIVERGENCE, not an equivalence claim -- see the port module's own
-    docstring. With `GITHUB_STEP_SUMMARY` unset, `$SUMMARY` falls back to `/dev/stdout` and the twin's per-`emit` `tee -a /dev/stdout` corrupts its own duplicate output via a kernel file-offset race. The port's single buffered `sys.stdout` cannot exhibit that race and duplicates cleanly instead. Unreachable in production: `ci.yml:1781` always sets `GITHUB_STEP_SUMMARY`.
+    """NAMED DIVERGENCE, not an equivalence claim -- see the port module's own docstring. With `GITHUB_STEP_SUMMARY` unset, `$SUMMARY` falls back to `/dev/stdout` and the twin's per-`emit` `tee -a /dev/stdout` corrupts its own duplicate output via a kernel file-offset race. The port's single buffered `sys.stdout` cannot exhibit that race and duplicates cleanly instead. Unreachable
+    in production: `ci.yml:1781` always sets `GITHUB_STEP_SUMMARY`.
 
     THE RACE IS SPECIFIC TO A REGULAR FILE, not a pipe -- measured directly:
     under `subprocess.run(capture_output=True)` (a pipe) the twin's output
-    comes back perfectly clean, exactly double the reference length; the
-    corruption reproduces only when stdout is redirected to a real file with `>`, the documented LOCAL RUN shape this script's own header describes. So this one test redirects both subjects' stdout to real files rather than capturing through a pipe, to exercise the actual condition rather than one that happens not to trigger it.
+    comes back perfectly clean, exactly double the reference length; the corruption reproduces only when stdout is redirected to a real file with `>`, the documented LOCAL RUN shape this script's own header describes. So this one test redirects both subjects' stdout to real files rather than capturing through a pipe, to exercise the actual condition rather than one that happens not
+    to trigger it.
     """
     root = _fixture(tmp_path)
     fake_bin = _fake_gh_bin(tmp_path / "fakebin-summary-unset")
@@ -450,8 +443,7 @@ def test_summary_unset_falls_back_to_stdout_but_diverges_on_corruption(
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY. Flip the polarity comparison `scope_mode == "reduced"` to
     `scope_mode != "reduced"` -- a one-character-class of mistake that inverts
-    HARD_GATE entirely. Driven red on a plain download failure (soft in the twin, hard in the mutant), then the source is restored byte-identical and
-    re-verified green."""
+    HARD_GATE entirely. Driven red on a plain download failure (soft in the twin, hard in the mutant), then the source is restored byte-identical and re-verified green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
         'hard_gate = scope_mode == "reduced"',

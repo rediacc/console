@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.security.actionlint` against its twin
-`.ci/scripts/security/actionlint.sh`.
+"""Differential: `rediacc_ci.security.actionlint` against its twin `.ci/scripts/security/actionlint.sh`.
 
 TWO KINDS OF CASE, AND THE SPLIT IS THE POINT.
 

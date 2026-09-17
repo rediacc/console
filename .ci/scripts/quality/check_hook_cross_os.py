@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the hook cross-OS seam gate.
 
-The logic lives in `rediacc_ci.quality.hook_cross_os`; this file exists so the
-registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring. The `---- gate ----` header is on the MODULE.
+The logic lives in `rediacc_ci.quality.hook_cross_os`; this file exists so the registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring. The `---- gate ----` header is on the MODULE.
 
 ---- gate ---- step: Hook cross-OS seams needs: none lane: quality-static selftest: true why: .claude/rediacc_hooks has exactly one platform seam today and nothing was
      keeping it that way. A `/proc` read added to a guard works for every

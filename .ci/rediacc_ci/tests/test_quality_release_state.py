@@ -75,8 +75,7 @@ POINTER_CASES = [
 
 @pytest.mark.parametrize("payload", POINTER_CASES)
 def test_pointer_version_matches_the_sed_pipeline(tmp_path: pathlib.Path, payload: str) -> None:
-    """The three shell stages, verbatim, including the `v` that is stripped then
-    re-added and the bare `v` the twin rewrites to the empty string."""
+    """The three shell stages, verbatim, including the `v` that is stripped then re-added and the bare `v` the twin rewrites to the empty string."""
     (tmp_path / "p.json").write_text(payload, encoding="utf-8")
     script = (
         """v="v$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' p.json """

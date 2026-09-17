@@ -275,8 +275,7 @@ def fetch_argv(key: str, target: str, endpoint: str) -> list[str]:
 
 
 def put_argv(source: str, key: str, endpoint: str) -> list[str]:
-    """`aws s3 cp <source> s3://<bucket>/<key> $EP --quiet --cache-control no-cache`
-    (twin :92-93, :110-111)."""
+    """`aws s3 cp <source> s3://<bucket>/<key> $EP --quiet --cache-control no-cache` (twin :92-93, :110-111)."""
     return [
         "aws",
         "s3",

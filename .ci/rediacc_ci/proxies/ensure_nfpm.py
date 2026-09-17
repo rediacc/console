@@ -3,9 +3,7 @@
 Local proxy for `.ci/scripts/build/ensure-nfpm.sh`, wired as the registered gate `check:ci-proxy-ensure-nfpm` (`package.json:392`, `scripts/ci-runner/manifest.ts:7496-7499`). See the twin's header for what it guards in CI and why it builds a THROWAWAY fixture root instead of running in this checkout: the warm `.ci/cache/bin/nfpm` here would take the early-exit branch and the
 download and checksum would never be reached.
 
-The SUBJECT stays bash and is run as bash, exactly as the twin runs it. Only the proxy is ported, same division as `rediacc_ci.proxies.docker_prepull`. A Python
-port of the subject also exists at `rediacc_ci.build.ensure_nfpm`; this proxy
-does NOT point at it, because the thing under test is what CI executes.
+The SUBJECT stays bash and is run as bash, exactly as the twin runs it. Only the proxy is ported, same division as `rediacc_ci.proxies.docker_prepull`. A Python port of the subject also exists at `rediacc_ci.build.ensure_nfpm`; this proxy does NOT point at it, because the thing under test is what CI executes.
 
 -----------------------------------------------------------------------------
 A REAL DEFECT IN THE TWIN, REPRODUCED RATHER THAN FIXED
@@ -66,9 +64,7 @@ exec /usr/bin/uname "$@"
 def _proxy_root() -> pathlib.Path:
     """`ROOT_DIR="$PROXY_DIR/../../../.."` (:35-36).
 
-    The twin resolves it from its own location under
-    `.ci/scripts/test/proxies/`; this module sits at `.ci/rediacc_ci/proxies/`,
-    which is `parents[3]` rather than four `..` from a deeper directory. `rediacc_ci.paths.repo_root()` is not used, for the reason `rediacc_ci.infra.ci_start_elite._console_root` states: it honours $REDIACC_CI_ROOT and the twin has no such override.
+    The twin resolves it from its own location under `.ci/scripts/test/proxies/`; this module sits at `.ci/rediacc_ci/proxies/`, which is `parents[3]` rather than four `..` from a deeper directory. `rediacc_ci.paths.repo_root()` is not used, for the reason `rediacc_ci.infra.ci_start_elite._console_root` states: it honours $REDIACC_CI_ROOT and the twin has no such override.
     """
     return pathlib.Path(__file__).resolve().parents[3]
 

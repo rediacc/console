@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""A hook that CALLS a shared-lib function it never sourced fails at runtime, not at
-review time -- and the failure looks like success.
+"""A hook that CALLS a shared-lib function it never sourced fails at runtime, not at review time -- and the failure looks like success.
 
 WHY THIS EXISTS. check-hook-integrity.sh proves every guard has a case that expects it to BLOCK/WARN and a case that expects it to stay SILENT. Neither direction tells you whether the guard actually evaluated its real logic or crashed before reaching it: a guard that calls an undefined function dies with `bash: <name>: command not found` on stderr, and the "expect non-empty output"
 half of a warn/block assertion cannot tell that crash apart from a real warning -- both are just non-empty text.

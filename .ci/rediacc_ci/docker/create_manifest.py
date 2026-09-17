@@ -21,11 +21,8 @@ identical printed bytes. A failed verification only WARNS (`may still be pushing
 
 `--push-latest` IS NEVER VERIFIED. Only `$MANIFEST_TAG` is inspected, so a `:latest` that failed to become readable passes silently. Same class, same treatment: pinned, not repaired.
 
-grep AND head ARE IMPLEMENTED IN PYTHON, unlike jq in `cleanup_staging`. The distinction is whether the external tool's semantics DECIDE anything. jq picks
-which package version gets deleted; here the pipeline only selects lines for a
-human to read, `grep -E "(Platform:|Name:)"` is an unanchored substring alternation with no metacharacters, `head -10` is the first ten lines, and the whole pipeline's exit status is discarded by `|| true`. Reproducing that in Python removes two more processes from the differential's fake-PATH surface
-without changing a byte; `test_the_platform_filter_matches_grep_e_on_a_corpus`
-checks the two against real grep on a corpus that includes the awkward cases.
+grep AND head ARE IMPLEMENTED IN PYTHON, unlike jq in `cleanup_staging`. The distinction is whether the external tool's semantics DECIDE anything. jq picks which package version gets deleted; here the pipeline only selects lines for a human to read, `grep -E "(Platform:|Name:)"` is an unanchored substring alternation with no metacharacters, `head -10` is the first ten lines, and
+the whole pipeline's exit status is discarded by `|| true`. Reproducing that in Python removes two more processes from the differential's fake-PATH surface without changing a byte; `test_the_platform_filter_matches_grep_e_on_a_corpus` checks the two against real grep on a corpus that includes the awkward cases.
 """
 
 from __future__ import annotations
@@ -88,8 +85,7 @@ def platform_lines(inspect_stdout: str) -> list[str]:
 
     grep works on LINES and re-adds the newline it split on, so a final line
     with no terminator still prints with one. `splitlines()` plus a per-line
-    `print` reproduces that; a trailing empty segment is not a line and is
-    dropped, which is also what grep does.
+    `print` reproduces that; a trailing empty segment is not a line and is dropped, which is also what grep does.
     """
     hits = [
         line for line in inspect_stdout.splitlines() if any(n in line for n in PLATFORM_NEEDLES)

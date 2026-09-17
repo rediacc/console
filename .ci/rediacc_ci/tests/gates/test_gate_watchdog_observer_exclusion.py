@@ -2,10 +2,7 @@
 
 The watchdog must never read an OBSERVER check as a failed CI job.
 
-WHY: minutes after "Review Complete" became a ruleset-required check (2026-07-31, run 30660765759), a push deadlocked. The not-yet-re-reviewed head's
-Review Complete check-run FAILED, correctly; it lands in the same github-actions
-check suite as the CI jobs; the watchdog's failure scan counted it and
-force-cancelled the run; and the re-review that would flip the check green only
+WHY: minutes after "Review Complete" became a ruleset-required check (2026-07-31, run 30660765759), a push deadlocked. The not-yet-re-reviewed head's Review Complete check-run FAILED, correctly; it lands in the same github-actions check suite as the CI jobs; the watchdog's failure scan counted it and force-cancelled the run; and the re-review that would flip the check green only
 starts on a GREEN run. The fix is one config line (`WATCHDOG_EXCLUDE_PATTERNS` in watchdog-monitor.yml), and this gate is what stops that line from quietly losing an entry and reintroducing the cycle.
 
 CONTROL-FIRST, per the house rule: the checker is proven to FIRE on a planted copy missing one exclusion BEFORE it is run against the real workflow.

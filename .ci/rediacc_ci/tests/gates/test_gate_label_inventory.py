@@ -12,12 +12,10 @@ NO NETWORK. The live list is injected through `LABEL_INVENTORY_LIVE_FILE`, which
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases read the working tree directly: the two real-tree cases derive their live list from `.github/labels.yml` and drive the subject at it in place (real parse, real floor, real allowlist verification against the real `report-nightly-status.cjs`), and the malformed-JSON
 case copies the subject itself. A battery step rewriting either mid-read is a
 divergence that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
-the serialisation, and it is honoured only because this module declares no
-`XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
+the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
-THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from the real `bash check-label-inventory.sh`. The one piece of the twin rewritten in Python is the mutant construction in `test_malformed_live_json_fails_closed`, which the twin
-already writes in Python via a heredoc; the three anchors and their
-count-exactly-one assertions are carried over verbatim, because a mutation that lands somewhere else is a control that fires for the wrong reason.
+THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from the real `bash check-label-inventory.sh`. The one piece of the twin rewritten in Python is the mutant construction in `test_malformed_live_json_fails_closed`, which the twin already writes in Python via a heredoc; the three anchors and their count-exactly-one assertions are carried over verbatim, because a mutation that
+lands somewhere else is a control that fires for the wrong reason.
 """
 
 import os
@@ -99,8 +97,7 @@ def real_declared_names(gate) -> list[str]:
 
 
 def test_matching_sets_are_clean(gate):
-    """The control for everything below. Without it, a gate that failed on ANYTHING
-    would pass all four firing cases."""
+    """The control for everything below. Without it, a gate that failed on ANYTHING would pass all four firing cases."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "six")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\nsix\n", encoding="utf-8")
@@ -115,8 +112,7 @@ def test_matching_sets_are_clean(gate):
 
 
 def test_declared_but_absent_fires(gate):
-    """THE ROLLBACK CASE. A declared label that does not exist makes every search
-    and filter on it fail open, silently."""
+    """THE ROLLBACK CASE. A declared label that does not exist makes every search and filter on it fail open, silently."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "ghost-label")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\n", encoding="utf-8")
@@ -146,8 +142,7 @@ def test_live_but_undeclared_fires(gate):
 
 
 def test_both_directions_report_together(gate):
-    """A gate that exits on the first problem makes fixing an N-label drift an
-    N-round job."""
+    """A gate that exits on the first problem makes fixing an N-label drift an N-round job."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "ghost-label")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\nstowaway\n", encoding="utf-8")
@@ -160,9 +155,7 @@ def test_both_directions_report_together(gate):
 
 
 def test_create_on_demand_label_is_forgiven_when_absent(gate):
-    """`nightly-red` does not exist until the first red night, because
-    `report-nightly-status.cjs` creates it right before opening the rolling issue.
-    Declared-and-absent is its NORMAL state."""
+    """`nightly-red` does not exist until the first red night, because `report-nightly-status.cjs` creates it right before opening the rolling issue. Declared-and-absent is its NORMAL state."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "nightly-red")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\n", encoding="utf-8")
@@ -181,8 +174,7 @@ def test_create_on_demand_label_is_forgiven_when_absent(gate):
 
 
 def test_create_on_demand_label_is_still_fine_when_present(gate):
-    """The exemption forgives ABSENCE only; once the label exists it must not start
-    failing the other direction."""
+    """The exemption forgives ABSENCE only; once the label exists it must not start failing the other direction."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "nightly-red")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\nnightly-red\n", encoding="utf-8")
@@ -196,8 +188,7 @@ def test_create_on_demand_label_is_still_fine_when_present(gate):
 
 
 def test_a_stale_allowlist_entry_is_refused(gate):
-    """The exemption must self-expire. If `nightly-red` stops being declared, the
-    allowlist entry is a permanent hole pointing at nothing.
+    """The exemption must self-expire. If `nightly-red` stops being declared, the allowlist entry is a permanent hole pointing at nothing.
 
     The verification is scoped to the real declaration file (a fixture tree legitimately has no `nightly-red`), so the flag is driven on explicitly here rather than left to the scoping heuristic.
     """
@@ -215,8 +206,7 @@ def test_a_stale_allowlist_entry_is_refused(gate):
 
 
 def test_empty_live_list_is_a_refusal_not_a_clean_tree(gate):
-    """An empty list would make direction (b) vacuously green. This repo cannot have
-    zero labels, so empty means the read failed."""
+    """An empty list would make direction (b) vacuously green. This repo cannot have zero labels, so empty means the read failed."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five")
         (d / "live.txt").write_text("", encoding="utf-8")
@@ -237,9 +227,7 @@ def test_unreadable_live_source_is_a_refusal(gate):
 
 
 def test_a_broken_declaration_read_trips_the_floor(gate):
-    """A parse yielding almost nothing is a broken parse, and treating it as a small
-    declaration set would make direction (b) scream about every live label while
-    direction (a) stayed silent."""
+    """A parse yielding almost nothing is a broken parse, and treating it as a small declaration set would make direction (b) scream about every live label while direction (a) stayed silent."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two")
         (d / "live.txt").write_text("one\ntwo\n", encoding="utf-8")
@@ -282,9 +270,7 @@ def test_a_stale_list_read_is_re_verified_before_accusing(gate):
 
 
 def test_a_genuinely_absent_label_still_fires_after_re_verification(gate):
-    """THE CONTROL, and the one that matters most: re-verification must not become a
-    blanket excuse. When both reads agree the label is gone, the finding stands with
-    its full message."""
+    """THE CONTROL, and the one that matters most: re-verification must not become a blanket excuse. When both reads agree the label is gone, the finding stands with its full message."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "ghost-label")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\n", encoding="utf-8")
@@ -306,9 +292,7 @@ def test_a_genuinely_absent_label_still_fires_after_re_verification(gate):
 
 
 def test_re_verification_does_not_touch_the_undeclared_direction(gate):
-    """An EXTRA name cannot be a partial-read artifact -- a stale read loses entries,
-    it does not invent them -- so direction (b) must fire whatever the probe says. A probe set that "confirms" the stowaway must not silence it, which is the mistake
-    a symmetric implementation would make."""
+    """An EXTRA name cannot be a partial-read artifact -- a stale read loses entries, it does not invent them -- so direction (b) must fire whatever the probe says. A probe set that "confirms" the stowaway must not silence it, which is the mistake a symmetric implementation would make."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\nstowaway\n", encoding="utf-8")
@@ -327,9 +311,7 @@ def test_re_verification_does_not_touch_the_undeclared_direction(gate):
 
 
 def test_injected_mode_without_a_probe_seam_still_reports(gate):
-    """The offline seam must keep working. With no probe file and no API to re-read,
-    the injected list stands as its own authority: the probe reports "could not", and the finding is REPORTED rather than dropped. Failing the other way would make
-    every offline run of this gate vacuously green."""
+    """The offline seam must keep working. With no probe file and no API to re-read, the injected list stands as its own authority: the probe reports "could not", and the finding is REPORTED rather than dropped. Failing the other way would make every offline run of this gate vacuously green."""
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "ghost-label")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\n", encoding="utf-8")
@@ -340,9 +322,8 @@ def test_injected_mode_without_a_probe_seam_still_reports(gate):
 
 
 def test_indented_fields_are_never_mistaken_for_names(gate):
-    """`.github/labels.yml` carries `color:`, `description:` and `guide:` under each
-    entry. The name extraction anchors on `^- name:`, so an indented field cannot be picked up -- but "it currently passes" is not the same as "it cannot". If a field value ever leaked in, the gate would report a phantom label (`false`, a hex colour) as declared-but-absent, and the fix would be hunting a label that was
-    never a label."""
+    """`.github/labels.yml` carries `color:`, `description:` and `guide:` under each entry. The name extraction anchors on `^- name:`, so an indented field cannot be picked up -- but "it currently passes" is not the same as "it cannot". If a field value ever leaked in, the gate would report a phantom label (`false`, a hex colour) as declared-but-absent, and the fix would be
+    hunting a label that was never a label."""
     with harness.temp_dir() as d:
         (d / "labels.yml").write_text(
             "- name: one\n"
@@ -382,9 +363,7 @@ def test_indented_fields_are_never_mistaken_for_names(gate):
 def test_real_tree_reconciles_against_an_injected_live_list(gate):
     """THE REAL-TREE CASE, and the one the manifest BLOCKER points at.
 
-    The gate runs seam-free over the REAL `.github/labels.yml` -- real parse, real floor, real allowlist verification against the real `report-nightly-status.cjs` -- with the live list injected so no network is touched. The live GitHub read
-    itself cannot run in the quality lane (no label-read token there); it runs on
-    `npm run check:ci-label-inventory`.
+    The gate runs seam-free over the REAL `.github/labels.yml` -- real parse, real floor, real allowlist verification against the real `report-nightly-status.cjs` -- with the live list injected so no network is touched. The live GitHub read itself cannot run in the quality lane (no label-read token there); it runs on `npm run check:ci-label-inventory`.
     """
     bash = require_gate(gate)
     names = real_declared_names(gate)
@@ -526,8 +505,7 @@ def _mutate_subject(gate) -> str:
 
 
 def test_the_real_declaration_file_is_non_trivial(gate):
-    """ADDED BY THE PORT: print the shape of the real corpus, so a collapse is
-    visible rather than silent.
+    """ADDED BY THE PORT: print the shape of the real corpus, so a collapse is visible rather than silent.
 
     `real_declared_names` already REFUSES an empty parse, which is the anti-vacuity half. This case states the number out loud on every run, because "the real gate reconciled" says nothing about how many labels it reconciled, and a declaration file that quietly shrank to the gate's floor of five would still read as green.
     """

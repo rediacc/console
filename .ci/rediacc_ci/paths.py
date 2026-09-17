@@ -41,8 +41,7 @@ cwd IS NEVER A RUNG, and that is the one thing in here worth arguing for. This t
 private/growth happened to be on main, confirmed twice (see wl_core.project_start). `find_repo_root()` below exists for callers that genuinely have only a path to start from, and its docstring repeats the warning at the point of use.
 
 NO `.git` MARKER CHECK IN `repo_root()`, deliberately. It would be the obvious validation and it would break the anti-vacuity harness: `.ci/scripts/test/gates/test-gate-anti-vacuity.sh` builds a fixture tree by copying `scripts`, `.ci/scripts`, `.ci/config` and `.ci/rediacc_ci` into a tempdir with no `.git` in it, then runs gates there and requires `import rediacc_ci` to work. A
-marker check would make every gate importing this module refuse inside the fixture, and the red would name neither the gate nor the reason. `looks_like_repo_root()` is offered separately for callers that want
-to ASK; the resolver does not decide for them.
+marker check would make every gate importing this module refuse inside the fixture, and the red would name neither the gate nor the reason. `looks_like_repo_root()` is offered separately for callers that want to ASK; the resolver does not decide for them.
 """
 
 import os
@@ -96,9 +95,8 @@ def ci_dir(root: pathlib.Path | None = None) -> pathlib.Path:
 def hooks_stop_dir(root: pathlib.Path | None = None) -> pathlib.Path:
     """`<root>/.claude/hooks/stop`.
 
-    Named here because it is the single most common target of the 33 sys.path hops: five test files, `ci-trace.py`, `check_plan_boxes.py`, `check_resprofile.py`, `check_agent_hint_liveness.py` and `check_gate_reachability_coverage.py` all reach into it. Phase 5 moves that
-    program to `.claude/rediacc_hooks`; this function is where the one-line
-    change lands when it does, instead of in nine call sites.
+    Named here because it is the single most common target of the 33 sys.path hops: five test files, `ci-trace.py`, `check_plan_boxes.py`, `check_resprofile.py`, `check_agent_hint_liveness.py` and `check_gate_reachability_coverage.py` all reach into it. Phase 5 moves that program to `.claude/rediacc_hooks`; this function is where the one-line change lands when it does, instead of
+    in nine call sites.
     """
     return (root or repo_root()) / ".claude" / "hooks" / "stop"
 
@@ -129,9 +127,7 @@ def relative_to_root(path: os.PathLike[str] | str, root: pathlib.Path | None = N
 def looks_like_repo_root(path: os.PathLike[str] | str) -> bool:
     """Does `path` carry this repository's markers?
 
-    Offered SEPARATELY from `repo_root()` on purpose -- see this module's docstring for why the resolver must not apply it. A caller that genuinely needs to know (a harness validating an override, a walker deciding where to
-    stop) asks; a gate that just needs its root does not pay for a check that
-    the anti-vacuity fixture cannot satisfy.
+    Offered SEPARATELY from `repo_root()` on purpose -- see this module's docstring for why the resolver must not apply it. A caller that genuinely needs to know (a harness validating an override, a walker deciding where to stop) asks; a gate that just needs its root does not pay for a check that the anti-vacuity fixture cannot satisfy.
 
     `.git` is checked with `exists()`, not `is_dir()`: in a git WORKTREE -- which is how every session in this repo works -- `.git` is a FILE containing a gitdir pointer, and an `is_dir()` test says "not a repository" in the one place it is asked most.
     """

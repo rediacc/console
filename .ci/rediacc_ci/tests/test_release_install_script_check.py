@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.release.install_script_check` against its twin
-`.ci/scripts/test/test-install-script.sh` (gate `test:install-script`).
+"""Differential: `rediacc_ci.release.install_script_check` against its twin `.ci/scripts/test/test-install-script.sh` (gate `test:install-script`).
 
 THE TWIN STOPS AT THE FIRST FAILURE -- its `log_fail` is an immediate `exit 1` -- so a green run says nothing about the thirteen assertions behind whichever one fired. Every case below therefore mutates a COPY of `packages/www/public/install.sh` so that exactly one chosen assertion is the one reached, and compares both sides byte for byte from there.
 
@@ -140,9 +139,7 @@ def test_real_tree_agrees_byte_for_byte() -> None:
 
 
 def test_a_piped_run_carries_no_ansi_escape_on_either_side() -> None:
-    """install.sh blanks the colours when stdout is not a tty, and the twin's
-    own constants are already gone by then. A port that emitted its own escapes
-    would look right in a terminal and wrong in every CI log."""
+    """install.sh blanks the colours when stdout is not a tty, and the twin's own constants are already gone by then. A port that emitted its own escapes would look right in a terminal and wrong in every CI log."""
     old = _run(TWIN, ROOT)
     new = _run(PORT, ROOT)
     assert "\033[" not in old.stdout
@@ -235,8 +232,7 @@ def test_a_reintroduced_versions_constant_is_caught(tmp_path: pathlib.Path) -> N
 
 
 def test_a_broken_channel_inheritance_is_caught(tmp_path: pathlib.Path) -> None:
-    """The asymmetry that caused a real user-visible bug: a stable install
-    followed by an immediate `rdc update` jumping to edge."""
+    """The asymmetry that caused a real user-visible bug: a stable install followed by an immediate `rdc update` jumping to edge."""
     fixture = build_fixture(tmp_path)
     mutate(fixture, CHANNEL_GREP, '\'"noSuchKey"[[:space:]]*:[[:space:]]*"[^"]+"\'')
     old, new = run_both(fixture)

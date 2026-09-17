@@ -14,9 +14,7 @@ One of the three breaks behind twelve consecutive red nightlies.
 
 THE DANGEROUS DIRECTION. A channel gate is a WEAKENED CHECK, and the whole reason this bug survived is that nobody was watching a weakened signal. So the tests that matter most here are the ones proving the skip is NARROW: the assertions must still fire on a real release channel, and every other artifact assertion must still fire when the channel is empty.
 
-THE PORT BUILDS ITS FIXTURE PER TEST rather than once per file. The twin shares one `$FIXTURE` and each case re-seeds it, which is the only isolation a flat shell
-script can offer; a fixture here is cheap and removes the ordering coupling
-entirely. No case's inputs change, so no case's verdict changes.
+THE PORT BUILDS ITS FIXTURE PER TEST rather than once per file. The twin shares one `$FIXTURE` and each case re-seeds it, which is the only isolation a flat shell script can offer; a fixture here is cheap and removes the ordering coupling entirely. No case's inputs change, so no case's verdict changes.
 """
 
 import pathlib

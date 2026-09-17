@@ -1,8 +1,7 @@
 """Port of `.ci/scripts/infra/verify-ssh.sh`.
 
-Polls one or more hosts until SSH answers, or fails after N attempts, and succeeds as soon as ANY target answers. `ops up` returns when libvirt has
-started the domain; sshd comes up later, and every later step SSHes in, so
-waiting here turns a confusing mid-suite connection refusal into one clear timeout with an attempt count. A target is `host` or `host:port` (the `localhost:2201` shape `ops` emits).
+Polls one or more hosts until SSH answers, or fails after N attempts, and succeeds as soon as ANY target answers. `ops up` returns when libvirt has started the domain; sshd comes up later, and every later step SSHes in, so waiting here turns a confusing mid-suite connection refusal into one clear timeout with an attempt count. A target is `host` or `host:port` (the `localhost:2201`
+shape `ops` emits).
 
 HOST-KEY CHECKING STAYS OFF, and the twin's reason is carried over verbatim rather than "improved": these are ephemeral CI VMs whose keys are regenerated
 on every provision, so `StrictHostKeyChecking=no` with
@@ -59,8 +58,7 @@ DIVERGENCES THAT ARE DELIBERATE, all three in refusal text nobody parses:
      message that says which value was rejected.
 
 THE DEFECT THIS PORT PRESERVES, reported rather than fixed. On the FINAL attempt the twin still prints "retrying in 5s..." and still sleeps 5 seconds before giving up. The message is false at that point and the sleep is pure latency on the failure path (75s of a 15-attempt run's tail is not, but the last 5s are). It is preserved here because the acceptance rule for this wave is
-byte-equivalence with the live twin; fixing it means changing both files in one
-edit, which is a behaviour change to a live CI script and belongs to whoever owns the cutover.
+byte-equivalence with the live twin; fixing it means changing both files in one edit, which is a behaviour change to a live CI script and belongs to whoever owns the cutover.
 
 K=5 LEDGER: `.ci/shadow/w7p6-verify-ssh.observations.jsonl`.
 """
@@ -156,8 +154,7 @@ def main(argv: list[str]) -> int:
 
     chown_path = os.environ.get("CHOWN_PATH", "")
     if chown_path:
-        # `ops` writes the key as root; the twin chowns it back before reading
-        # it. Not captured: sudo's own prompt and diagnostics belong on this process's stderr exactly as they do for the twin.
+        # `ops` writes the key as root; the twin chowns it back before reading it. Not captured: sudo's own prompt and diagnostics belong on this process's stderr exactly as they do for the twin.
         who = subprocess.run(["whoami"], capture_output=True, text=True, check=False)
         if who.returncode != 0:
             sys.stderr.write(who.stderr)

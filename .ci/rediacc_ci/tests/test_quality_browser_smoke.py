@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.quality.browser_smoke` against its twin
-`.ci/scripts/quality/browser-smoke.sh`.
+"""Differential: `rediacc_ci.quality.browser_smoke` against its twin `.ci/scripts/quality/browser-smoke.sh`.
 
 THE SUBJECT IS A LAUNCHER, so what is under test is the LAUNCH: which binary,
 with exactly which argv, from which working directory, after which stdout
@@ -25,8 +24,7 @@ is no `-e CI=true`. Both are the exact edits a reader who had just read the
 sibling would make, and neither would break any other assertion here.
 
 K=5 LEDGER: `.ci/shadow/w7p6-browser-smoke.observations.jsonl` -- five
-distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty
-tree; `--record` refuses one) with recording stubs of the same shape on PATH,
+distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty tree; `--record` refuses one) with recording stubs of the same shape on PATH,
 varying the branch across trees: REDIACC_SMOKE_NO_DOCKER=1, docker absent, the
 docker path at playwright 1.55.0, the docker path at 1.61.1 with different ids, and a failing node.
 
@@ -222,9 +220,7 @@ def test_docker_absent_prints_the_note_then_execs_npx(tmp_path: pathlib.Path) ->
 
 
 def test_docker_present_derives_the_image_and_execs_docker(tmp_path: pathlib.Path) -> None:
-    """The whole point of the script: the tag comes from the installed
-    playwright package, never from a hand-typed pin. The full docker argv is asserted token for token, because every token in it was put there for a
-    reason the twin states."""
+    """The whole point of the script: the tag comes from the installed playwright package, never from a hand-typed pin. The full docker argv is asserted token for token, because every token in it was put there for a reason the twin states."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ("npx", "node", "docker", "id"), STUB_NODE_STDOUT="1.55.0"
     )
@@ -244,9 +240,7 @@ def test_docker_present_derives_the_image_and_execs_docker(tmp_path: pathlib.Pat
 
 
 def test_uid_and_gid_are_read_separately_and_in_that_order(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY for `-u`. The two stub values differ, so a port that read
-    the gid twice, or swapped the pair, produces `4343:4343` or `4343:4242`
-    here rather than passing on two identical numbers."""
+    """ANTI-VACUITY for `-u`. The two stub values differ, so a port that read the gid twice, or swapped the pair, produces `4343:4343` or `4343:4242` here rather than passing on two identical numbers."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ("npx", "node", "docker", "id"), STUB_NODE_STDOUT="1.55.0"
     )
@@ -260,9 +254,7 @@ def test_uid_and_gid_are_read_separately_and_in_that_order(tmp_path: pathlib.Pat
 
 
 def test_ipc_host_is_present_in_the_docker_argv(tmp_path: pathlib.Path) -> None:
-    """Named separately because it is the one flag whose absence produces a
-    Chromium crash rather than a clean failure (the twin's own comment: the
-    default 64MB /dev/shm)."""
+    """Named separately because it is the one flag whose absence produces a Chromium crash rather than a clean failure (the twin's own comment: the default 64MB /dev/shm)."""
     old, _new, old_calls, _new_calls = run_both(
         tmp_path, ("npx", "node", "docker", "id"), STUB_NODE_STDOUT="1.55.0"
     )
@@ -271,9 +263,7 @@ def test_ipc_host_is_present_in_the_docker_argv(tmp_path: pathlib.Path) -> None:
 
 
 def test_mount_target_is_work_and_not_the_host_path(tmp_path: pathlib.Path) -> None:
-    """PINS A DIFFERENCE FROM THE SIBLING `page-density.sh`, which mounts the
-    repo at its own absolute path. Copying that line across would still run the
-    gate and still pass every other case in this file."""
+    """PINS A DIFFERENCE FROM THE SIBLING `page-density.sh`, which mounts the repo at its own absolute path. Copying that line across would still run the gate and still pass every other case in this file."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ("npx", "node", "docker", "id"), STUB_NODE_STDOUT="1.55.0"
     )
@@ -298,9 +288,7 @@ def test_no_ci_true_is_passed(tmp_path: pathlib.Path) -> None:
 
 
 def test_home_and_npm_cache_are_redirected_for_the_non_root_user(tmp_path: pathlib.Path) -> None:
-    """`-u` drops to a user with no writable home in the image, so these two
-    are what keep `npx` from failing on an unwritable cache. They travel with
-    `-u` and are meaningless without it."""
+    """`-u` drops to a user with no writable home in the image, so these two are what keep `npx` from failing on an unwritable cache. They travel with `-u` and are meaningless without it."""
     _old, _new, old_calls, _new_calls = run_both(
         tmp_path, ("npx", "node", "docker", "id"), STUB_NODE_STDOUT="1.55.0"
     )
@@ -328,8 +316,7 @@ def test_node_failure_propagates_its_exit_code(tmp_path: pathlib.Path) -> None:
 
 
 def test_node_stderr_is_not_swallowed(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY for the inherited-stderr requirement. `$(...)` captures
-    stdout only, so node's diagnostic must reach the caller. A port that used
+    """ANTI-VACUITY for the inherited-stderr requirement. `$(...)` captures stdout only, so node's diagnostic must reach the caller. A port that used
     `capture_output=True` would exit with the same code and print the same
     (empty) stdout, so every other assertion in this file would still pass."""
     old, new, old_calls, new_calls = run_both(
@@ -346,9 +333,7 @@ def test_node_stderr_is_not_swallowed(tmp_path: pathlib.Path) -> None:
 def test_id_stderr_is_not_swallowed_and_its_exit_code_is_ignored(
     tmp_path: pathlib.Path,
 ) -> None:
-    """The asymmetry the port's docstring names: `$(id -u)` sits inside an
-    argument list, so `set -e` cannot see its status. `id` printing a value and THEN failing must still yield that value, and its stderr must still reach
-    the caller."""
+    """The asymmetry the port's docstring names: `$(id -u)` sits inside an argument list, so `set -e` cannot see its status. `id` printing a value and THEN failing must still yield that value, and its stderr must still reach the caller."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ("npx", "node", "docker", "id"),
@@ -367,13 +352,11 @@ def test_id_stderr_is_not_swallowed_and_its_exit_code_is_ignored(
 
 
 def test_missing_id_yields_a_bare_colon_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """REPRODUCED DEFECT (`browser-smoke.sh:51`). With `id` off PATH, bash's
-    `set -euo pipefail` does NOT abort: a failed command substitution inside an argument list is not a failed command. The twin prints `id: command not found` twice, substitutes the empty string for both, and hands docker a literal `-u :`.
+    """REPRODUCED DEFECT (`browser-smoke.sh:51`). With `id` off PATH, bash's `set -euo pipefail` does NOT abort: a failed command substitution inside an argument list is not a failed command. The twin prints `id: command not found` twice, substitutes the empty string for both, and hands docker a literal `-u :`.
 
     The twin's behaviour is asserted FIRST. If bash ever started aborting here this case fails on the old side, rather than quietly testing a port behaviour that no longer mirrors anything.
 
-    Text diverges (bash's prefix carries a line number), so agreement is on the
-    exit code, the docker argv and the stderr shape."""
+    Text diverges (bash's prefix carries a line number), so agreement is on the exit code, the docker argv and the stderr shape."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ("npx", "node", "docker"), STUB_NODE_STDOUT="1.55.0"
     )
@@ -398,9 +381,7 @@ def test_missing_id_yields_a_bare_colon_on_both_sides(tmp_path: pathlib.Path) ->
 
 
 def test_missing_node_exits_127_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """DOCUMENTED DIVERGENCE: bash's own `line NN: node: command not found`
-    carries a line number, so agreement is on the exit code, the stream and
-    the named binary rather than on the bytes."""
+    """DOCUMENTED DIVERGENCE: bash's own `line NN: node: command not found` carries a line number, so agreement is on the exit code, the stream and the named binary rather than on the bytes."""
     old, new, _old_calls, _new_calls = run_both(tmp_path, ("npx", "docker", "id"))
     assert old.returncode == 127
     assert new.returncode == 127
@@ -412,8 +393,7 @@ def test_missing_node_exits_127_on_both_sides(tmp_path: pathlib.Path) -> None:
 
 
 def test_missing_npx_exits_127_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """The other documented divergence, on the `exec` rather than the
-    substitution."""
+    """The other documented divergence, on the `exec` rather than the substitution."""
     old, new, _old_calls, _new_calls = run_both(
         tmp_path, ("node", "id"), REDIACC_SMOKE_NO_DOCKER="1"
     )
@@ -428,8 +408,7 @@ def test_missing_npx_exits_127_on_both_sides(tmp_path: pathlib.Path) -> None:
 def test_exec_replaces_the_process_so_the_child_exit_code_is_the_gate_s(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`exec` on both sides: a non-zero gate must not be softened into 0 by a
-    wrapper that forgot to propagate."""
+    """`exec` on both sides: a non-zero gate must not be softened into 0 by a wrapper that forgot to propagate."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ("npx", "docker", "node", "id"),
@@ -466,8 +445,7 @@ def test_pure_helpers() -> None:
 
 
 def test_id_value_strips_only_trailing_newlines() -> None:
-    """`$(...)` removes trailing newlines and nothing else, so a leading space
-    survives on both sides. `.strip()` would eat it."""
+    """`$(...)` removes trailing newlines and nothing else, so a leading space survives on both sides. `.strip()` would eat it."""
     assert browser_smoke.id_value("-u") == browser_smoke.id_value("-u")
     assert browser_smoke.id_value("-u").isdigit(), "the real id -u did not return a number"
     assert browser_smoke.id_value("-u") == str(os.getuid())
@@ -475,8 +453,7 @@ def test_id_value_strips_only_trailing_newlines() -> None:
 
 def test_planted_defect_ipc_host(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY. Drop `--ipc=host` from the docker argv -- the exact edit a
-    reader who did not know why it was there would make, and one that turns a passing gate into a Chromium crash inside the container. Driven red, then
-    the source is restored byte-identical and re-verified green."""
+    reader who did not know why it was there would make, and one that turns a passing gate into a Chromium crash inside the container. Driven red, then the source is restored byte-identical and re-verified green."""
     _plant(
         tmp_path,
         '        "--ipc=host",\n',
@@ -487,9 +464,7 @@ def test_planted_defect_ipc_host(tmp_path: pathlib.Path) -> None:
 
 
 def test_planted_defect_getuid_instead_of_id(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY for the reproduced defect. Replace the `id` shell-out with
-    `os.getuid()`, which is what a reviewer would call an improvement. The port then stops calling `id` at all, so the call log loses two entries and the
-    missing-`id` path silently repairs itself."""
+    """ANTI-VACUITY for the reproduced defect. Replace the `id` shell-out with `os.getuid()`, which is what a reviewer would call an improvement. The port then stops calling `id` at all, so the call log loses two entries and the missing-`id` path silently repairs itself."""
     _plant(
         tmp_path,
         '    uid = id_value("-u")\n    gid = id_value("-g")\n',
@@ -500,9 +475,7 @@ def test_planted_defect_getuid_instead_of_id(tmp_path: pathlib.Path) -> None:
 
 
 def test_planted_defect_mounts_the_host_path(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY for the sibling pin. Mount the repo at its own path the way
-    `page-density.sh` does. The gate still runs, still exits 0, and only the
-    argv shows it."""
+    """ANTI-VACUITY for the sibling pin. Mount the repo at its own path the way `page-density.sh` does. The gate still runs, still exits 0, and only the argv shows it."""
     _plant(
         tmp_path,
         'WORKDIR = "/work"',
@@ -521,8 +494,7 @@ def _plant(
     port_ok,
     extra: tuple[str, str] | None = None,
 ) -> None:
-    """Run one plant: mutate a COPY, prove the differential goes red, prove the
-    on-disk port is byte-identical afterwards and still agrees with the twin.
+    """Run one plant: mutate a COPY, prove the differential goes red, prove the on-disk port is byte-identical afterwards and still agrees with the twin.
 
     The mutation is never written to `PORT`. A plant that edited the real file and restored it would leave the tree wrong if the assertion in between raised, and this tree has no safety net.
     """

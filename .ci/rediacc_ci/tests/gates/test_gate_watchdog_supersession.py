@@ -86,9 +86,7 @@ def first_line_with(gate, needle: str) -> int:
 
 
 def test_the_predicate_is_real(gate):
-    """Anti-vacuity: if evaluateSupersession were not exported, every verdict
-    below would throw rather than silently pass, but a typo in the export name
-    would make the whole module meaningless in a quieter way. Read it."""
+    """Anti-vacuity: if evaluateSupersession were not exported, every verdict below would throw rather than silently pass, but a typo in the export name would make the whole module meaningless in a quieter way. Read it."""
     result = node(
         gate, "process.stdout.write(typeof require(process.argv[1]).evaluateSupersession)"
     )
@@ -97,9 +95,7 @@ def test_the_predicate_is_real(gate):
 
 
 def test_the_measured_incident_is_now_quiet(gate):
-    """THE CONTROL, SILENT DIRECTION. The exact numbers from the [0m] poll of
-    watchdog run 30534675663: zero failed, two cancelled, and run 30534726467
-    already existing. Before the fix this reached the classifier and setFailed."""
+    """THE CONTROL, SILENT DIRECTION. The exact numbers from the [0m] poll of watchdog run 30534675663: zero failed, two cancelled, and run 30534726467 already existing. Before the fix this reached the classifier and setFailed."""
     gate.assert_eq(
         verdict(gate, 0, 2, "true"),
         "superseded",
@@ -109,9 +105,7 @@ def test_the_measured_incident_is_now_quiet(gate):
 
 
 def test_a_real_failure_still_fires_even_with_a_newer_run(gate):
-    """THE CONTROL, FIRE DIRECTION, and the single most important case in this
-    module. Pushing a fix while the old run is still red is the NORMAL way this situation arises, so "a newer run exists" must never on its own excuse a
-    failure. If this ever returns "superseded", the watchdog has gone blind."""
+    """THE CONTROL, FIRE DIRECTION, and the single most important case in this module. Pushing a fix while the old run is still red is the NORMAL way this situation arises, so "a newer run exists" must never on its own excuse a failure. If this ever returns "superseded", the watchdog has gone blind."""
     gate.assert_eq(
         verdict(gate, 1, 2, "true"),
         "normal",
@@ -132,8 +126,7 @@ def test_cancellations_without_a_newer_run_still_fire(gate):
 
 
 def test_a_healthy_run_is_not_superseded(gate):
-    """No failures and no cancellations is simply a healthy run. It must not
-    match, or the watchdog would exit early on every poll of every green run."""
+    """No failures and no cancellations is simply a healthy run. It must not match, or the watchdog would exit early on every poll of every green run."""
     gate.assert_eq(
         verdict(gate, 0, 0, "true"),
         "normal",
@@ -143,9 +136,7 @@ def test_a_healthy_run_is_not_superseded(gate):
 
 
 def test_unreadable_lookup_fails_closed(gate):
-    """hasNewerRun returns false on any API error. Prove the predicate treats a
-    MISSING answer as NOT superseded, so an outage costs a spurious red rather
-    than a swallowed failure."""
+    """hasNewerRun returns false on any API error. Prove the predicate treats a MISSING answer as NOT superseded, so an outage costs a spurious red rather than a swallowed failure."""
     gate.assert_eq(
         verdict(gate, 0, 2, "missing"),
         "normal",
@@ -164,9 +155,7 @@ def test_truthiness_is_not_accepted_for_newer_run(gate):
 
 
 def test_verdict_is_checked_before_classification(gate):
-    """ORDERING IS THE WHOLE FIX. Reaching classifyFailure is what spends the
-    billed AI request and what leads to core.setFailed; a supersession check
-    placed after it would be decorative."""
+    """ORDERING IS THE WHOLE FIX. Reaching classifyFailure is what spends the billed AI request and what leads to core.setFailed; a supersession check placed after it would be decorative."""
     check_line = first_line_with(gate, "evaluateSupersession({")
     classify_line = first_line_with(gate, "classifyFailure(")
     if not check_line or not classify_line:
@@ -186,9 +175,7 @@ def test_verdict_is_checked_before_classification(gate):
 
 
 def test_the_api_lookup_fails_closed_in_source(gate):
-    """The predicate cannot protect itself from hasNewerRun throwing. Assert the
-    catch arm exists and returns false, because a `throw` escaping there would
-    crash the poll loop and a `return true` would swallow failures wholesale."""
+    """The predicate cannot protect itself from hasNewerRun throwing. Assert the catch arm exists and returns false, because a `throw` escaping there would crash the poll loop and a `return true` would swallow failures wholesale."""
     body = harness.block_from(
         subject(gate).read_text(encoding="utf-8"), "async function hasNewerRun"
     )

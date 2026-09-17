@@ -235,9 +235,7 @@ def page_args(query: str, owner: str, name: str, number: str, after: str) -> lis
 
 
 class Fetcher:
-    """`fetch_target`'s closure over `ALL_NODES`, which the twin mutates as a
-    global. A class rather than a `nonlocal`, so the accumulator can be read by
-    the differential's unit half without running the whole script."""
+    """`fetch_target`'s closure over `ALL_NODES`, which the twin mutates as a global. A class rather than a `nonlocal`, so the accumulator can be read by the differential's unit half without running the whole script."""
 
     def __init__(self, *, sleeper=time.sleep) -> None:
         self.all_nodes = "[]"

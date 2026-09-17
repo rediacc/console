@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the hook exec baseline gate.
 
-The logic lives in `rediacc_ci.quality.hook_exec_baseline`; this file exists so the
-registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring.
+The logic lives in `rediacc_ci.quality.hook_exec_baseline`; this file exists so the registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring.
 
 The `---- gate ----` header is on the MODULE rather than here, which is the shape `check-swallowed-failures` and the rest of the ported family use.
 

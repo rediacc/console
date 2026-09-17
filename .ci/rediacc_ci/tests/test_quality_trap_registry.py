@@ -86,8 +86,7 @@ def test_the_floor_is_the_twins_number() -> None:
 def test_the_summary_count_is_the_twins_boolean() -> None:
     """The twin prints a BOOLEAN where its message says "finding(s)".
 
-    `scan` in bash ends with `[ "$errors" -eq 0 ]` on purpose (a shell return is mod 256), and `main` then prints that status as the count. The port carries the bug rather than the intent, because a port that changed it would be non-equivalent to the gate CI runs. This assertion is the record of that
-    decision; delete it in the same change that fixes both files.
+    `scan` in bash ends with `[ "$errors" -eq 0 ]` on purpose (a shell return is mod 256), and `main` then prints that status as the count. The port carries the bug rather than the intent, because a port that changed it would be non-equivalent to the gate CI runs. This assertion is the record of that decision; delete it in the same change that fixes both files.
     """
     text = TWIN.read_text(encoding="utf-8")
     assert '[ "$errors" -eq 0 ]' in text

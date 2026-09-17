@@ -27,9 +27,8 @@ WHAT IS EXECUTED RATHER THAN REIMPLEMENTED
     if date --version >/dev/null 2>&1; then date -u -d "N minutes ago" +FMT
     else                                    date -u -v-NM +FMT
 
-Reimplementing with `datetime` would have bought a divergence on every input the twin does not validate. `--max-age abc` makes GNU date print `invalid date 'abc minutes ago'` and exit 1, and under `set -e` the command substitution takes
-the script down with that status; `--max-age -30` reaches into the FUTURE and
-selects everything. Executing `date` reproduces all of it for free, including the BSD arm on a Mac, which no amount of Python could be differentially checked against on this machine.
+Reimplementing with `datetime` would have bought a divergence on every input the twin does not validate. `--max-age abc` makes GNU date print `invalid date 'abc minutes ago'` and exit 1, and under `set -e` the command substitution takes the script down with that status; `--max-age -30` reaches into the FUTURE and selects everything. Executing `date` reproduces all of it for free,
+including the BSD arm on a Mac, which no amount of Python could be differentially checked against on this machine.
 
 `jq` IS NOT RUN, and that is the one deliberate reimplementation. The twin uses it three times -- `jq empty` to validate, `jq 'length'` to count, and a `jq -r` filter to select -- and Python's `json` answers all three for the data wrangler actually returns. `require_cmd jq` IS STILL CALLED, on purpose: dropping it would silently widen the set of hosts the script runs on, which is a
 cutover decision and not a porting one. So the guard fires identically and the parsing is native. Three edges where jq and `json.loads` genuinely differ, none of them reachable from wrangler output, all named rather than left to be discovered:
@@ -51,17 +50,15 @@ Python's `<` on `str`, which is the same ordering. A port that parsed both into 
 
 A DATABASE WITH NO `created_at` IS NOT SELECTED, on both sides: jq compares `null < "..."`, and null sorts below every string, so `null` WOULD be selected. This port matches that by treating a missing key as `None` and ordering it below any string, rather than by skipping the row. Pinned by `test_a_database_with_no_created_at_is_stale_on_both_sides`.
 
-A DATABASE WITH NO `name` IS THE ONE SHAPE THAT DIVERGES, and it is named rather than reproduced. `null | startswith("migration-test-")` is a jq TYPE ERROR, so
-the twin's `set -e` ends the whole run with jq's status and jq's message; this
-port skips the entry. Reproducing a type error to stay bug-compatible would mean writing a jq error emulator into a reaper, and no wrangler response omits `name`. Stated here so a future reader does not read the skip as an oversight.
+A DATABASE WITH NO `name` IS THE ONE SHAPE THAT DIVERGES, and it is named rather than reproduced. `null | startswith("migration-test-")` is a jq TYPE ERROR, so the twin's `set -e` ends the whole run with jq's status and jq's message; this port skips the entry. Reproducing a type error to stay bug-compatible would mean writing a jq error emulator into a reaper, and no wrangler
+response omits `name`. Stated here so a future reader does not read the skip as an oversight.
 
 -----------------------------------------------------------------------------
 HAZARDS, REPORTED RATHER THAN REPAIRED
 -----------------------------------------------------------------------------
 HAZARD 1 -- "COULD NOT REACH CLOUDFLARE" AND "NOTHING TO DO" ARE THE SAME EXIT.
 `RAW_OUTPUT="$(npx wrangler d1 list --json 2>/dev/null || true)"` throws away
-both the status and the stderr, so an expired token, a 5xx, a rate limit, an npx that cannot resolve wrangler and a genuinely empty account all reach `log_info "No D1 databases found (or API unavailable)"` and `exit 0`. The message even names the ambiguity in parentheses and then exits green anyway. A
-gate would have to fail here; this is a reaper, and a reaper that exits 0 leaves
+both the status and the stderr, so an expired token, a 5xx, a rate limit, an npx that cannot resolve wrangler and a genuinely empty account all reach `log_info "No D1 databases found (or API unavailable)"` and `exit 0`. The message even names the ambiguity in parentheses and then exits green anyway. A gate would have to fail here; this is a reaper, and a reaper that exits 0 leaves
 the orphans it was scheduled to remove, silently, on every run. Preserved exactly, and pinned by `test_an_unreachable_api_is_a_green_exit_on_both_sides`.
 
 HAZARD 2 -- A FAILED DELETE IS A WARNING, AND THE FINAL LINE STILL READS LIKE
@@ -71,8 +68,7 @@ HAZARD 3 -- `--max-age` IS NEVER VALIDATED. It is interpolated straight into `da
 
 Exit: 0 on every path the twin reaches, including both early returns and a run
 where every delete failed; `date`'s status when the cutoff cannot be computed;
-1 from `require_cmd` / `require_var`; 2 from `parse_args` on a key that is not a
-shell identifier.
+1 from `require_cmd` / `require_var`; 2 from `parse_args` on a key that is not a shell identifier.
 
 K=5 LEDGER: `.ci/shadow/w7p6-cleanup-stale-d1.observations.jsonl`.
 """

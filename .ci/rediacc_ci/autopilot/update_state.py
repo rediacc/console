@@ -14,14 +14,12 @@ ONE WRITER, THREE CALLERS, AND THAT IS WHY THE IDEMPOTENCY LIVES IN ONE `if`. `-
 The comment is REWRITTEN WHOLE rather than appended to, and the carry-over of the previous rounds is `state-comment.sh render`'s job, fed the old body through `--body`. So the second round on a PR is not "the first round plus a line" -- it is a fresh render of everything, and the only thing that makes it idempotent is that `--comment-id` and `--body` name the same comment.
 `endpoint_for` below is that decision, exported so the differential can drive both arms without a PR.
 
-WHAT THIS PORT DOES NOT RE-IMPLEMENT. `state-comment.sh` (the renderer) and `gh` are spawned, exactly as the twin spawns them. Re-implementing the renderer would create a second writer of a format whose whole design is one reader and one
-writer; re-implementing `gh` is not a thing anyone can do.
+WHAT THIS PORT DOES NOT RE-IMPLEMENT. `state-comment.sh` (the renderer) and `gh` are spawned, exactly as the twin spawns them. Re-implementing the renderer would create a second writer of a format whose whole design is one reader and one writer; re-implementing `gh` is not a thing anyone can do.
 
 WHERE jq IS SPAWNED, and the rule is this wave's: the `--verdict` file comes
 from `autopilot-push.sh --verdict-out` and can be truncated, and when it is, the
-observable is JQ's parse error and JQ's exit code (5, measured on 1.8.1) via `set -e`. Neither is reproducible by hand, so the two `jq -r` calls are run as
-`jq`. `gsub("[\\r\\n]+"; " ")` is part of that program and is load-bearing: the
-carry-over parser in `state-comment.sh` keeps only lines beginning with `- `, so a multi-line entry would lose its own continuation on the next round.
+observable is JQ's parse error and JQ's exit code (5, measured on 1.8.1) via `set -e`. Neither is reproducible by hand, so the two `jq -r` calls are run as `jq`. `gsub("[\\r\\n]+"; " ")` is part of that program and is load-bearing: the carry-over parser in `state-comment.sh` keeps only lines beginning with `- `, so a multi-line entry would lose its own continuation on the next
+round.
 
   DEFECT THE jq CALL CARRIES, PRESERVED: `gsub` refuses a non-string, so a
   verdict whose `ruled_out[]` holds a number dies with
@@ -126,8 +124,7 @@ def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
 def endpoint_for(repo: str, pr: str, comment_id: str) -> tuple[str, str]:
     """(endpoint, method). The whole idempotency decision, in one place.
 
-    An EMPTY `--comment-id` is "no comment yet" and means POST; any non-empty
-    value means PATCH, including the literal `true` that `parse_args` stores for a value-less `--comment-id`. That last one is the twin's behaviour, not a tidy-up: the flag is passed by a workflow that either has an id or omits the flag, and a port that "fixed" it would refuse an invocation the twin accepts.
+    An EMPTY `--comment-id` is "no comment yet" and means POST; any non-empty value means PATCH, including the literal `true` that `parse_args` stores for a value-less `--comment-id`. That last one is the twin's behaviour, not a tidy-up: the flag is passed by a workflow that either has an id or omits the flag, and a port that "fixed" it would refuse an invocation the twin accepts.
     """
     if comment_id:
         return "repos/%s/issues/comments/%s" % (repo, comment_id), "PATCH"

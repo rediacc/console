@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/build/pack_cli_npm.py` against its twin
-`.ci/scripts/build/pack-cli-npm.sh`.
+"""Differential: `.ci/rediacc_ci/build/pack_cli_npm.py` against its twin `.ci/scripts/build/pack-cli-npm.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
@@ -345,9 +344,7 @@ def test_the_fakes_are_actually_reached(tmp_path):
 
 
 def test_the_placeholder_really_skips_jq(tmp_path):
-    """CONTROL for the case above, in the other direction: `0.0.0-dev` must call
-    NO jq at all. A port that injected unconditionally would satisfy every positive assertion in this file and would dirty `package.json` on every dev
-    build."""
+    """CONTROL for the case above, in the other direction: `0.0.0-dev` must call NO jq at all. A port that injected unconditionally would satisfy every positive assertion in this file and would dirty `package.json` on every dev build."""
     root = _fixture(tmp_path / "s")
     out = _run(PORT_REL, root)
     assert not [c for c in out["calls"] if c.startswith("call: jq")], out["calls"]
@@ -463,8 +460,7 @@ def mkdir_is_gnu() -> bool:
 
 
 def test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text(tmp_path):
-    """DIVERGENCE 2, pinned rather than asserted away -- and it depends on WHICH
-    coreutils is installed, which is the part this case used to get wrong.
+    """DIVERGENCE 2, pinned rather than asserted away -- and it depends on WHICH coreutils is installed, which is the part this case used to get wrong.
 
     `mkdir -p` on an unwritable parent: the exit code is the script's and agrees. The diagnostic belongs to coreutils, and the port SYNTHESISES GNU's wording, so whether the two texts differ is a property of the host's mkdir:
 

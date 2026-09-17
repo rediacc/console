@@ -74,8 +74,7 @@ CORPUS = [line.split("|") for line in CORPUS_TEXT.splitlines() if line]
 
 COLUMN_LABELS = ("typescript", "bash      ", "breakpoint")
 
-# The `.ts` driver the twin heredocs into a temp file. `$lib` and `$reasons`
-# become the two format arguments; nothing else changes.
+# The `.ts` driver the twin heredocs into a temp file. `$lib` and `$reasons` become the two format arguments; nothing else changes.
 TS_DRIVER = """import fs from 'node:fs';
 import { validateBlockerQuality } from '%(lib)s';
 const raw = fs.readFileSync('%(reasons)s', 'utf-8').split('\\n');
@@ -125,8 +124,7 @@ def corpus_expected(column: int) -> list[str]:
 
 
 def write_reasons(directory: pathlib.Path) -> pathlib.Path:
-    """The corpus reasons, one per line. Reasons never contain newlines, which is
-    what makes line-per-case safe for all three runners."""
+    """The corpus reasons, one per line. Reasons never contain newlines, which is what makes line-per-case safe for all three runners."""
     path = directory / "reasons"
     path.write_text("".join(row[1] + "\n" for row in CORPUS), encoding="utf-8")
     return path
@@ -208,8 +206,7 @@ def compare_column(column: int, label: str, actual: str) -> list[str]:
 def perturb(gate, source: pathlib.Path, target: pathlib.Path, old: str, new: str) -> None:
     """A perturbation that REFUSES when its anchor is missing.
 
-    The twin's TypeScript control checks the shape with a follow-up grep; this
-    applies the same discipline to all three, because a perturbation that did not land makes the control pass for the wrong reason and there is no way to tell
+    The twin's TypeScript control checks the shape with a follow-up grep; this applies the same discipline to all three, because a perturbation that did not land makes the control pass for the wrong reason and there is no way to tell
     from the outside.
     """
     text = source.read_text(encoding="utf-8")
@@ -223,8 +220,7 @@ def perturb(gate, source: pathlib.Path, target: pathlib.Path, old: str, new: str
 
 
 def test_corpus_is_large_enough_and_real(gate):
-    # No field may contain a `|`; the twin states that and this asserts it,
-    # because it is what makes the split-based readers on both sides agree.
+    # No field may contain a `|`; the twin states that and this asserts it, because it is what makes the split-based readers on both sides agree.
     for row in CORPUS:
         if len(row) != 5:
             gate.log_fail(
@@ -293,9 +289,8 @@ def test_recorded_divergence_is_still_exactly_five(gate):
 def scratch_canonical(gate, scratch: pathlib.Path) -> pathlib.Path:
     """A four-file minimum `rediacc_ci` under <scratch>/.ci, with "tbd" removed.
 
-    THE TWIN'S `scratch_canonical`, function for function. Both clients used to carry their own copy of the banned list, so "drop one phrase" was a sed on
-    each file; they are CLIENTS now, and a sed on the bash mirror would perturb
-    nothing while still looking like a control. The phrase is dropped from the CANONICAL instead, and the assertion is that the clients FOLLOW, which is a strictly stronger claim: it proves the delegation is live.
+    THE TWIN'S `scratch_canonical`, function for function. Both clients used to carry their own copy of the banned list, so "drop one phrase" was a sed on each file; they are CLIENTS now, and a sed on the bash mirror would perturb nothing while still looking like a control. The phrase is dropped from the CANONICAL instead, and the assertion is that the clients FOLLOW, which is a
+    strictly stronger claim: it proves the delegation is live.
     """
     root = paths.repo_root()
     core = scratch / "canonical" / ".ci" / "rediacc_ci" / "core"
@@ -392,8 +387,7 @@ def test_perturbing_the_typescript_normaliser_is_caught(gate, tmp_path):
 def test_perturbing_breakpoint_copy_is_caught(gate, tmp_path):
     require_inputs(gate)
     reasons = write_reasons(tmp_path)
-    # A COPY. .ci/breakpoint/lib/breakpoint-blocker.sh is drift-locked and
-    # vendored into other repositories; this test never writes to it.
+    # A COPY. .ci/breakpoint/lib/breakpoint-blocker.sh is drift-locked and vendored into other repositories; this test never writes to it.
     perturbed = tmp_path / "perturbed-bp.sh"
     perturb(gate, BP_LIB, perturbed, '"tbd" "wip"', '"wip"')
     problems = compare_column(2, "breakpoint(perturbed)", run_bp(gate, perturbed, reasons))

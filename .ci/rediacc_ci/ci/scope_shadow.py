@@ -126,8 +126,7 @@ GREENLIGHT_BUDGET = "90"
 def _console_root() -> pathlib.Path:
     """The twin's `SCRIPT_DIR/../..` root.
 
-    This file is `<root>/.ci/rediacc_ci/ci/scope_shadow.py`; the twin is
-    `<root>/.ci/scripts/ci/scope-shadow.sh`. `paths.repo_root()` is deliberately not used: it honours $REDIACC_CI_ROOT and the twin has no such override, so a fixture pointing one side at a tree and not the other would diverge silently.
+    This file is `<root>/.ci/rediacc_ci/ci/scope_shadow.py`; the twin is `<root>/.ci/scripts/ci/scope-shadow.sh`. `paths.repo_root()` is deliberately not used: it honours $REDIACC_CI_ROOT and the twin has no such override, so a fixture pointing one side at a tree and not the other would diverge silently.
     """
     return pathlib.Path(__file__).resolve().parents[3]
 
@@ -153,8 +152,7 @@ _STRIP_ROW_PREFIX_RE = re.compile(r"^ +[0-9]+ +[0-9a-f]* +")
 def greenlight_digest(text: str) -> str:
     """`greenlight_digest` (:326-374), transliterated from its awk.
 
-    ONE LINE PER KEY instead of the raw trail; see the twin's comment at
-    :310-325 for why (~450 rows at eighteen keys truncated mid-line under the old `head -c 3000`, so sixteen keys were simply absent).
+    ONE LINE PER KEY instead of the raw trail; see the twin's comment at :310-325 for why (~450 rows at eighteen keys truncated mid-line under the old `head -c 3000`, so sixteen keys were simply absent).
 
     FOUR AWK BEHAVIOURS ARE REPRODUCED DELIBERATELY, and each one is a place a Python rewrite naturally differs:
 

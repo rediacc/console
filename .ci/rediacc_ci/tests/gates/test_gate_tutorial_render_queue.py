@@ -80,9 +80,7 @@ def test_empty_tree_refuses(gate):
 
 
 def test_half_populated_tree_refuses(gate):
-    """Half a tree is the nastier case: casts present, timelines absent (or the
-    reverse) is what a partial checkout or a half-finished narration run actually
-    looks like."""
+    """Half a tree is the nastier case: casts present, timelines absent (or the reverse) is what a partial checkout or a half-finished narration run actually looks like."""
     with harness.temp_dir() as tmp:
         tutorials = tmp / "packages" / "www" / "public" / "assets" / "tutorials"
         tutorials.mkdir(parents=True, exist_ok=True)
@@ -102,9 +100,7 @@ def test_selftest_passes(gate):
 
 
 def test_selftest_has_controls(gate):
-    """A self-test made only of cases that expect a hit cannot detect an
-    over-reporting predicate. Require controls: cases asserting something is NOT
-    listed."""
+    """A self-test made only of cases that expect a hit cannot detect an over-reporting predicate. Require controls: cases asserting something is NOT listed."""
     result = run_predicate(gate, "--selftest")
     body = result.combined
     # `grep -c -i control`: COUNT OF MATCHING LINES, not of occurrences. A line naming "control" twice counts once on the bash side, so it must count once here too or the port's floor would be looser than the twin's.
@@ -119,8 +115,7 @@ def test_selftest_has_controls(gate):
 
 
 def test_gate_runs_the_selftest(gate):
-    """The gate is worthless if the npm script does not actually run the self-test,
-    or runs it in a way that ignores its exit code."""
+    """The gate is worthless if the npm script does not actually run the self-test, or runs it in a way that ignores its exit code."""
     if not PACKAGE_JSON.is_file():
         gate.log_fail("no package.json at %s, so this assertion would be vacuous" % PACKAGE_JSON)
     scripts = json.loads(PACKAGE_JSON.read_text(encoding="utf-8")).get("scripts") or {}
@@ -160,9 +155,7 @@ def test_gate_is_in_the_gate_manifest(gate):
 
 
 def test_harness_can_actually_fail(gate):
-    """CONTROL for this file: a deliberately broken predicate must make the
-    empty-tree assertion FAIL. Without this, every test above could be passing
-    because `node` errors on everything."""
+    """CONTROL for this file: a deliberately broken predicate must make the empty-tree assertion FAIL. Without this, every test above could be passing because `node` errors on everything."""
     binary = node(gate)
     with harness.temp_dir() as tmp:
         # A predicate that cheerfully reports zero pairs on an empty tree -- the exact defect.
@@ -181,8 +174,7 @@ def test_harness_can_actually_fail(gate):
 
 
 def test_the_manifest_and_script_table_are_not_empty(gate):
-    """ADDED BY THE PORT: the anti-vacuity claim the two file-reading cases above
-    leave implicit.
+    """ADDED BY THE PORT: the anti-vacuity claim the two file-reading cases above leave implicit.
 
     Both of them answer by SEARCHING a file. A file that had been truncated, or a manifest whose entries moved elsewhere, would make the searches above answer "not found" and read as a wiring regression -- or, if the assertions were ever softened, answer nothing at all. Printing the shape makes a collapse visible: a reader can see the numbers were non-trivial rather than taking
     "OK" on faith.

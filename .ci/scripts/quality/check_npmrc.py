@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported `.npmrc` supply-chain hardening gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.npmrc`.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.npmrc`.
 
 THIS ONE CARRIES A HEADER, AND ITS SIBLINGS DELIBERATELY DO NOT. The pattern file `check_autopilot_breakpoint_alignment.py` states the condition in its own docstring: no header, because "the bash twin remains the registered gate until the differential ledger says the port kept its verdict". For this pair the ledger now says it. Measured 2026-09-07:
 
@@ -25,10 +24,9 @@ WHY AN ENTRY POINT AT ALL, rather than registering the module directly. Two inde
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-npmrc.sh` is NOT deleted by this change. It stays on disk as the twin, and deleting it is W7 P5's job, in a later change. What moves here is only which of the two the registry invokes.
 
-A HEADER MOVE MUST CARRY EVERY FIELD, and this one did not on its first pass. The twin's header held `emit: false`, its blocker, `needs: none` and
-`selftest: true`; the port was written with only `step`, `lane` and `why`, and
-SEVEN GATES PASSED ANYWAY. They could not see it: `emit: false` suppresses only the three workflow-region checks (`gate-bind.ts:1724`), while the registration assertions above it still ran and still agreed. The loss would have surfaced first as damage -- on the next `gate:bind --write` a second copy of this step lands inside the emitted region, `gate-bind` reds with two steps of
-one name in `quality-code`, and the guard the blocker exists to protect is gone. Restored 2026-09-07, verbatim from the twin, by a reviewer reading the two headers side by side rather than by any gate.
+A HEADER MOVE MUST CARRY EVERY FIELD, and this one did not on its first pass. The twin's header held `emit: false`, its blocker, `needs: none` and `selftest: true`; the port was written with only `step`, `lane` and `why`, and SEVEN GATES PASSED ANYWAY. They could not see it: `emit: false` suppresses only the three workflow-region checks (`gate-bind.ts:1724`), while the registration
+assertions above it still ran and still agreed. The loss would have surfaced first as damage -- on the next `gate:bind --write` a second copy of this step lands inside the emitted region, `gate-bind` reds with two steps of one name in `quality-code`, and the guard the blocker exists to protect is gone. Restored 2026-09-07, verbatim from the twin, by a reviewer reading the two
+headers side by side rather than by any gate.
 
 ---- gate ---- step: Block legacy-peer-deps workarounds
      # The step name is the EXISTING one, not a tidier one. gate-bind matches a

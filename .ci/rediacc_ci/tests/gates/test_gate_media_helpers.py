@@ -233,8 +233,7 @@ def test_an_empty_media_root_is_vacuous_not_clean(gate, tmp_path: pathlib.Path):
 def test_the_real_media_folder_is_not_itself_empty(gate):
     """PORT-ONLY, and it closes the gap between the two cases above.
 
-    `test_the_real_media_folder_is_clean_and_counted` asserts the verdict does not carry the literal `(0 media shell file(s)` phrase, which is a claim about the gate's WORDING. If that phrase were ever reworded, the assertion would keep passing over a scan of nothing. Counting the files on disk is the same claim
-    made about the tree instead of about a string."""
+    `test_the_real_media_folder_is_clean_and_counted` asserts the verdict does not carry the literal `(0 media shell file(s)` phrase, which is a claim about the gate's WORDING. If that phrase were ever reworded, the assertion would keep passing over a scan of nothing. Counting the files on disk is the same claim made about the tree instead of about a string."""
     gate.log_test("the media root this gate scans really holds shell files")
     if not MEDIA.is_dir():
         gate.log_fail(

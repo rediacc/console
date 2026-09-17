@@ -1,5 +1,4 @@
-"""Differential: `rediacc_ci.deploy.cf_purge_urls` against its twin
-`.ci/scripts/deploy/cf-purge-urls.sh`.
+"""Differential: `rediacc_ci.deploy.cf_purge_urls` against its twin `.ci/scripts/deploy/cf-purge-urls.sh`.
 
 A RECORDING FAKE `curl` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv, answers from the environment, and every case pins a fixture zone id and a fixture credential, so even a bypassed fake would not name a real zone. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the
 mocked parity ledger is a separate, achievable piece of work. This is that piece.
@@ -159,9 +158,7 @@ def purge_call(urls: list[str], headers: list[str] | None = None) -> str:
 
 
 def test_the_request_shape_is_asserted_in_full(tmp_path: pathlib.Path) -> None:
-    """THE REQUEST, PINNED AGAINST LITERAL BYTES rather than against the port's
-    own helpers, so a change in both would still be caught. Method, URL, both
-    headers, and the JSON body jq builds."""
+    """THE REQUEST, PINNED AGAINST LITERAL BYTES rather than against the port's own helpers, so a change in both would still be caught. Method, URL, both headers, and the JSON body jq builds."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--zone", ZONE, "https://a", "https://b"])
     assert old.returncode == 0
     assert old_calls == [
@@ -183,8 +180,7 @@ def test_the_request_shape_is_asserted_in_full(tmp_path: pathlib.Path) -> None:
 
 
 def test_help_is_byte_identical(tmp_path: pathlib.Path) -> None:
-    """`--help` is a program printing its own source through two `sed` passes on
-    one side and a string constant on the other. The bytes must agree."""
+    """`--help` is a program printing its own source through two `sed` passes on one side and a string constant on the other. The bytes must agree."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--help"])
     assert old.returncode == 0
     assert old.stdout.startswith("Purge a list of URLs from Cloudflare cache.\n")
@@ -234,8 +230,7 @@ def test_a_missing_zone_is_refused(tmp_path: pathlib.Path) -> None:
 
 
 def test_no_urls_is_a_clean_no_op(tmp_path: pathlib.Path) -> None:
-    """THE ZERO-INPUT CASE, and note it is a PASS in this script rather than a
-    refusal: nothing to purge is a legitimate state after an upload that changed
+    """THE ZERO-INPUT CASE, and note it is a PASS in this script rather than a refusal: nothing to purge is a legitimate state after an upload that changed
     no files. Pinned so a port cannot turn it into a request against `{files:[]}`."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--zone", ZONE])
     assert old.returncode == 0
@@ -245,8 +240,7 @@ def test_no_urls_is_a_clean_no_op(tmp_path: pathlib.Path) -> None:
 
 
 def test_the_zero_check_runs_before_the_credential_check(tmp_path: pathlib.Path) -> None:
-    """ORDER IS OBSERVABLE: no URLs and no credentials says "no URLs to purge",
-    not "no Cloudflare credentials"."""
+    """ORDER IS OBSERVABLE: no URLs and no credentials says "no URLs to purge", not "no Cloudflare credentials"."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--zone", ZONE], drop_env=("CLOUDFLARE_API_TOKEN",)
     )
@@ -270,8 +264,7 @@ def test_no_credentials_skips_the_purge_and_still_exits_zero(tmp_path: pathlib.P
 
 
 def test_half_a_global_key_is_not_a_credential(tmp_path: pathlib.Path) -> None:
-    """`CF_GLOBAL_API_KEY` without `CF_EMAIL` is the no-credential branch, not a
-    request with a missing header."""
+    """`CF_GLOBAL_API_KEY` without `CF_EMAIL` is the no-credential branch, not a request with a missing header."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--zone", ZONE, "https://a"],
@@ -318,8 +311,7 @@ def test_a_token_wins_over_a_global_key(tmp_path: pathlib.Path) -> None:
 
 
 def test_stdin_urls_are_appended_to_the_positional_ones(tmp_path: pathlib.Path) -> None:
-    """POSITIONAL FIRST, THEN STDIN, and an EMPTY LINE is skipped rather than
-    purged as the empty string."""
+    """POSITIONAL FIRST, THEN STDIN, and an EMPTY LINE is skipped rather than purged as the empty string."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["--zone", ZONE, "https://pos"],
@@ -332,9 +324,7 @@ def test_stdin_urls_are_appended_to_the_positional_ones(tmp_path: pathlib.Path) 
 
 
 def test_a_final_line_without_a_newline_is_dropped(tmp_path: pathlib.Path) -> None:
-    """THE BASH FACT A `for line in sys.stdin` PORT GETS WRONG. `read` stores the
-    partial last line and then returns non-zero at EOF, so the loop body never runs for it: the twin purges ONE url here, not two. A port that kept it
-    would purge a URL the twin does not."""
+    """THE BASH FACT A `for line in sys.stdin` PORT GETS WRONG. `read` stores the partial last line and then returns non-zero at EOF, so the loop body never runs for it: the twin purges ONE url here, not two. A port that kept it would purge a URL the twin does not."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--zone", ZONE], stdin="https://kept\nhttps://dropped"
     )
@@ -359,8 +349,7 @@ def test_thirty_one_urls_are_two_batches_of_thirty_and_one(tmp_path: pathlib.Pat
 
 
 def test_a_failed_second_batch_reports_index_thirty_and_stops(tmp_path: pathlib.Path) -> None:
-    """THE INDEX IN THE WARNING IS THE URL OFFSET, not the batch number, and the
-    loop STOPS at the first failure rather than trying the rest."""
+    """THE INDEX IN THE WARNING IS THE URL OFFSET, not the batch number, and the loop STOPS at the first failure rather than trying the rest."""
     urls = ["https://x/%d" % n for n in range(1, 70)]
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--zone", ZONE, *urls], FAKE_FAIL_ON_CALL="2"
@@ -391,9 +380,7 @@ def test_an_unsuccessful_body_prints_the_errors_array_on_stderr(
 
 
 def test_a_body_with_no_errors_key_prints_null(tmp_path: pathlib.Path) -> None:
-    """`jq -c '.errors'` over a body without the key emits `null` rather than
-    failing, so the warning is followed by the word null. Pinned because a port
-    guarding the lookup would print an empty line instead."""
+    """`jq -c '.errors'` over a body without the key emits `null` rather than failing, so the warning is followed by the word null. Pinned because a port guarding the lookup would print an empty line instead."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--zone", ZONE, "https://a"], FAKE_CURL_BODY='{"success":false}\n'
     )
@@ -403,9 +390,7 @@ def test_a_body_with_no_errors_key_prints_null(tmp_path: pathlib.Path) -> None:
 
 
 def test_an_empty_body_warns_and_prints_nothing_after_it(tmp_path: pathlib.Path) -> None:
-    """The third jq shape: EMPTY input makes both `jq -r '.success // false'` and
-    `jq -c '.errors'` emit nothing at all and exit 0, so the run warns and ends
-    green with no errors line. Not a parse error, and not a pass."""
+    """The third jq shape: EMPTY input makes both `jq -r '.success // false'` and `jq -c '.errors'` emit nothing at all and exit 0, so the run warns and ends green with no errors line. Not a parse error, and not a pass."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--zone", ZONE, "https://a"], FAKE_CURL_BODY=""
     )
@@ -421,8 +406,7 @@ def test_an_empty_body_warns_and_prints_nothing_after_it(tmp_path: pathlib.Path)
 def test_defect_a_non_json_body_exits_five_despite_the_always_zero_promise(
     tmp_path: pathlib.Path,
 ) -> None:
-    """DEFECT 1, PINNED. The header (twin lines 21-28) promises the script
-    "always exits 0 even on credential/auth/API failures". An HTML error page reaches an unguarded `jq` inside an ASSIGNMENT, so jq's parse error goes to stderr and `set -e` ends the run with jq's status 5.
+    """DEFECT 1, PINNED. The header (twin lines 21-28) promises the script "always exits 0 even on credential/auth/API failures". An HTML error page reaches an unguarded `jq` inside an ASSIGNMENT, so jq's parse error goes to stderr and `set -e` ends the run with jq's status 5.
 
     Reproduced because agreement with the live twin is the deliverable;
     repaired, this test goes red and names the port that must follow.
@@ -441,8 +425,7 @@ def test_defect_a_transport_failure_exits_six_despite_the_always_zero_promise(
     tmp_path: pathlib.Path,
 ) -> None:
     """DEFECT 2, PINNED. `RESPONSE=$(curl -sS ...)` is an assignment, so a curl
-    that cannot resolve the host ends the run with CURL's status. The "purging N URL(s)" line has already printed, so the caller sees a started purge, curl's
-    own message, and a non-zero exit the header says cannot happen."""
+    that cannot resolve the host ends the run with CURL's status. The "purging N URL(s)" line has already printed, so the caller sees a started purge, curl's own message, and a non-zero exit the header says cannot happen."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--zone", ZONE, "https://a"], FAKE_CURL_RC="6"
     )
@@ -454,8 +437,7 @@ def test_defect_a_transport_failure_exits_six_despite_the_always_zero_promise(
 
 
 def test_an_unknown_flag_is_purged_as_a_url(tmp_path: pathlib.Path) -> None:
-    """There is no unknown-flag refusal: the `*)` arm takes anything. Driven so a
-    port cannot "improve" the parser into rejecting it."""
+    """There is no unknown-flag refusal: the `*)` arm takes anything. Driven so a port cannot "improve" the parser into rejecting it."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--zone", ZONE, "--dry-run"])
     assert old.returncode == 0
     assert '{"files":["--dry-run"]}' in old_calls[0]
@@ -474,10 +456,7 @@ def test_a_repeated_zone_flag_keeps_the_last_one(tmp_path: pathlib.Path) -> None
 def test_divergence_a_trailing_zone_flag_is_bashs_own_unbound_variable(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED"
-    BY ACCIDENT. `--zone` as the last token reads `"$2"` under `set -u`, and the twin dies with bash's own message naming the bash FILE and a bash LINE. The
-    port cannot honestly print that; it prints its own sentence. Same stream,
-    same exit status, no request from either."""
+    """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED" BY ACCIDENT. `--zone` as the last token reads `"$2"` under `set -u`, and the twin dies with bash's own message naming the bash FILE and a bash LINE. The port cannot honestly print that; it prints its own sentence. Same stream, same exit status, no request from either."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--zone"])
     assert old.returncode == new.returncode == 1
     assert old.stderr.endswith("line 38: $2: unbound variable\n")
@@ -532,8 +511,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the batch size -- the one number whose loss is
-    invisible in the exit code and in every printed line, and which in production means Cloudflare rejecting an oversized purge while the script reports success. Driven red, then the source is confirmed byte-identical and green.
+    """ANTI-VACUITY, planted on the batch size -- the one number whose loss is invisible in the exit code and in every printed line, and which in production means Cloudflare rejecting an oversized purge while the script reports success. Driven red, then the source is confirmed byte-identical and green.
     """
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace("BATCH_SIZE = 30", "BATCH_SIZE = 60", 1)

@@ -12,9 +12,8 @@ The load-bearing case is `test_streak_is_load_bearing`: it re-runs the flapping
 case with `REQUIRED_STREAK=1`, the pre-fix behaviour, and demands that it PASSES.
 Without that, the flapping case failing would prove nothing about why -- it could be the stub, the URL, or the budget.
 
-THE STUB IS A PYTHON `http.server` RATHER THAN THE TWIN'S NODE SCRIPT, and it runs IN THIS PROCESS on a thread. Two things follow, both improvements on the twin. The twin backgrounds `node stub.cjs`, polls for a port file for up to five seconds, and
-`kill`s the pid on the way out; a case that raised before `stop_stub` leaked the
-process, and its ONE shared `$STUB_PID` meant a leak from one case was inherited by the next. Here the server's lifetime is a context manager, so a raising body still tears it down, and the port is read off the socket rather than off a file that has to be waited for. The RESPONSE BEHAVIOUR -- /health always fine, server-info
+THE STUB IS A PYTHON `http.server` RATHER THAN THE TWIN'S NODE SCRIPT, and it runs IN THIS PROCESS on a thread. Two things follow, both improvements on the twin. The twin backgrounds `node stub.cjs`, polls for a port file for up to five seconds, and `kill`s the pid on the way out; a case that raised before `stop_stub` leaked the process, and its ONE shared `$STUB_PID` meant a leak
+from one case was inherited by the next. Here the server's lifetime is a context manager, so a raising body still tears it down, and the port is read off the socket rather than off a file that has to be waited for. The RESPONSE BEHAVIOUR -- /health always fine, server-info
 steady/flap/late -- is unchanged, including the `n %% 3 == 1` flap cadence that is
 what keeps the streak from reaching 2.
 """
@@ -67,8 +66,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(body)
 
     def log_message(self, *_args) -> None:
-        """Silence. The stub's access log is not part of any assertion, and on
-        stderr it would interleave with the subject's own diagnostics."""
+        """Silence. The stub's access log is not part of any assertion, and on stderr it would interleave with the subject's own diagnostics."""
 
 
 @contextlib.contextmanager
@@ -125,8 +123,7 @@ def test_flapping_worker_is_not_ready(gate):
 
 
 def test_streak_is_load_bearing(gate):
-    """ANTI-VACUITY. Same stub, same URL, same budget -- only REQUIRED_STREAK drops
-    to 1, which is exactly what this script did before the fix. If this does NOT pass, the flapping case above is failing for some other reason and proves nothing about the streak.
+    """ANTI-VACUITY. Same stub, same URL, same budget -- only REQUIRED_STREAK drops to 1, which is exactly what this script did before the fix. If this does NOT pass, the flapping case above is failing for some other reason and proves nothing about the streak.
     """
     result = probe(gate, "flap", {"REQUIRED_STREAK": "1"})
     gate.assert_eq(
@@ -145,8 +142,7 @@ def test_slow_worker_still_becomes_ready(gate):
 
 
 def test_override_does_not_need_a_pr_number(gate):
-    """PREVIEW_URL_OVERRIDE exists so this script is testable without being copied
-    through sed. It has to work with PR_NUMBER unset, or the tests above are quietly exercising a different code path than CI does.
+    """PREVIEW_URL_OVERRIDE exists so this script is testable without being copied through sed. It has to work with PR_NUMBER unset, or the tests above are quietly exercising a different code path than CI does.
     """
     with stub("steady") as url:
         result = run_wait(
@@ -170,8 +166,7 @@ def test_pr_number_still_required_without_override(gate):
 
 
 def test_ci_defaults_are_still_strict(gate):
-    """The knobs are test-only. If someone weakens the DEFAULTS, CI silently goes
-    back to sampling one probe, and every test above would still pass because they all set their own values.
+    """The knobs are test-only. If someone weakens the DEFAULTS, CI silently goes back to sampling one probe, and every test above would still pass because they all set their own values.
     """
     if not WAIT_SCRIPT.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(WAIT_SCRIPT))

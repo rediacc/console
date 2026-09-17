@@ -90,9 +90,7 @@ def test_a_missing_manifest_skips_on_both_sides(tmp_path: pathlib.Path) -> None:
 def test_a_manifest_missing_release_date_prints_jq_null_on_both_sides(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`jq -r '.releaseDate'` on an absent field prints the literal string
-    "null", never an empty string -- this is the case that would drift if the
-    port used Python's `None` instead."""
+    """`jq -r '.releaseDate'` on an absent field prints the literal string "null", never an empty string -- this is the case that would drift if the port used Python's `None` instead."""
     bindir = _make_fake_curl(tmp_path, body='{"version":"9.9.9"}')
     (old_exit, old_out, _old_err), (new_exit, new_out, _new_err), old_output, new_output = run_both(
         tmp_path, bindir
@@ -105,8 +103,7 @@ def test_a_manifest_missing_release_date_prints_jq_null_on_both_sides(
 
 
 def test_missing_github_output_fails_the_same_way_reworded() -> None:
-    """Exit codes agree; wording does not, and is not supposed to -- see the
-    port's module docstring."""
+    """Exit codes agree; wording does not, and is not supposed to -- see the port's module docstring."""
     old_env = diff.env_for(GITHUB_OUTPUT=None)
     new_env = diff.env_for(GITHUB_OUTPUT=None, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
     old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30)

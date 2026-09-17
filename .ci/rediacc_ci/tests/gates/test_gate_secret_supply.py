@@ -2,8 +2,7 @@
 
 NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name here and nothing to compare against. What it tests is the half a selftest structurally cannot: the gate as a PROCESS, invoked the way CI invokes it, against the REAL `.ci/config/secret-supply.json`, the REAL env manifest and the REAL vault map.
 
-WHY THAT DISTINCTION EARNS ITS KEEP HERE SPECIFICALLY. Every control in `secret_supply.selftest()` runs against a five-name fixture. The clauses that matter most on this gate are the ones about the SIZE and SHAPE of the real corpus: 84 declared names, 58 in the map, 26 unstated. A fixture proves the
-arithmetic; only the real tree proves the gate is pointed at it.
+WHY THAT DISTINCTION EARNS ITS KEEP HERE SPECIFICALLY. Every control in `secret_supply.selftest()` runs against a five-name fixture. The clauses that matter most on this gate are the ones about the SIZE and SHAPE of the real corpus: 84 declared names, 58 in the map, 26 unstated. A fixture proves the arithmetic; only the real tree proves the gate is pointed at it.
 
 NOTHING THE REPOSITORY OWNS IS MUTATED. The plants below all run against a MIRROR: a scratch root holding copies of the three real config files plus every file the spec cites as evidence, with `$REDIACC_CI_ROOT` pointed at it. Other sessions share this worktree, and a config that is wrong for even a second is a config some other session's gate ran against.
 
@@ -68,8 +67,7 @@ def test_the_gate_is_green_on_the_real_tree(gate):
             gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(subject))
     result = _run()
     gate.assert_exit_code(0, result.rc, "clean tree (stderr: %s)" % result.err)
-    # THE SHAPE, NOT JUST THE VERDICT. A gate whose corpus collapsed to nothing
-    # would still print a tick; these numbers are what say it did not.
+    # THE SHAPE, NOT JUST THE VERDICT. A gate whose corpus collapsed to nothing would still print a tick; these numbers are what say it did not.
     gate.assert_contains(result.combined, "name(s) in the `secret` shard", "prints its shape")
     gate.assert_contains(result.combined, "unstated", "and how many names are unstated")
     gate.assert_contains(result.combined, "name(s) routed out of", "and the truncation size")
@@ -182,8 +180,7 @@ def test_a_dead_evidence_citation_reds(gate):
         root = _mirror(tmp)
         gate.assert_exit_code(0, _run(root).rc, "the untouched copy is green first")
         spec = _spec()
-        # Pick a name whose citation mentions it exactly where a rename would
-        # take it away. Any entry does; the first sorted one keeps this stable.
+        # Pick a name whose citation mentions it exactly where a rename would take it away. Any entry does; the first sorted one keeps this stable.
         name = min(spec["residue"])
         cited = root / spec["residue"][name]["evidence"]
         cited.write_text(

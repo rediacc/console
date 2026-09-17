@@ -6,10 +6,8 @@ WHY THIS EXISTS. .ci/config/docker-npm-pin-exclusions.json is keyed `<path>:<lin
 claimed the LONG key's line, the long entry matched nothing, and the dead-entry report
 named the correct key as the one to delete. The fix was to match with `==`.
 
-THE INVARIANT THIS GATES is the matcher, not the key shape. A first draft of this gate
-refused configs where one key is a prefix of another; run against the tree it flagged
-those two npm-install keys, which are both live, both correct, and harmless under equality. That gate would have made a correct config carry an exemption for a
-non-problem. Key shapes are the SYMPTOM; `in` is the DEFECT.
+THE INVARIANT THIS GATES is the matcher, not the key shape. A first draft of this gate refused configs where one key is a prefix of another; run against the tree it flagged those two npm-install keys, which are both live, both correct, and harmless under equality. That gate would have made a correct config carry an exemption for a non-problem. Key shapes are the SYMPTOM; `in` is
+the DEFECT.
 
 THE RULE. In a script that loads a config under .ci/config/, a key drawn from that config
 must not be tested against a line of text with `in` or `.startswith(`. Compare with `==`,

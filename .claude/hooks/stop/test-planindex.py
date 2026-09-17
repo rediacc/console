@@ -32,9 +32,7 @@ import wl_planrec as R
 
 
 class Tally:
-    """A class attribute rather than a module global, matching test-planrec.py.
-    Same reason there: `global` in every assertion helper is the shape that lets
-    a counter silently stop counting when one helper forgets the declaration."""
+    """A class attribute rather than a module global, matching test-planrec.py. Same reason there: `global` in every assertion helper is the shape that lets a counter silently stop counting when one helper forgets the declaration."""
 
     count = 0
     fails = 0
@@ -75,9 +73,7 @@ def plan_text(slug, status="draft", body="Prose.", open_n=0, done_n=0, pad=0):
 
 
 class Tree:
-    """A throwaway repo root with an agent/ directory. NOTHING under the real
-    agent/ is touched by this suite -- W12's standing decision is never-delete, and a test that perturbs the live corpus to prove a staleness check would be
-    the exact accident that decision exists to prevent."""
+    """A throwaway repo root with an agent/ directory. NOTHING under the real agent/ is touched by this suite -- W12's standing decision is never-delete, and a test that perturbs the live corpus to prove a staleness check would be the exact accident that decision exists to prevent."""
 
     def __init__(self, plans):
         self.td = tempfile.TemporaryDirectory()
@@ -99,9 +95,7 @@ class Tree:
 
 
 def reads_during(fn):
-    """(result, [paths read]). The measurement the whole change is judged on:
-    the fresh path must open ZERO plan files, and asserting that needs the actual
-    call list, not a timing that a fast disk would make meaningless."""
+    """(result, [paths read]). The measurement the whole change is judged on: the fresh path must open ZERO plan files, and asserting that needs the actual call list, not a timing that a fast disk would make meaningless."""
     seen = []
     orig = pathlib.Path.read_text
 
@@ -202,8 +196,7 @@ eq("  and it is reported as RESIZED", detail[2], ["agent/PLAN-alpha.md"])
 ck("  and the banner says so", "changed size" in PI.banner(state, detail, 3))
 
 # 3d. THE NAMED BLIND SPOT, asserted so it cannot quietly widen. A same-length edit is invisible to `stat` -- and `Status: draft` -> `Status: ready` is exactly that, which is why the gap is worth an assertion rather than a footnote. R8's byte-equality in check_plan_record.py is what catches it. If this control ever starts FAILING, the hook grew a stronger signal and this comment is
-# the thing
-# to update; it must never be deleted to make a red go away.
+# the thing to update; it must never be deleted to make a red go away.
 before = p_alpha.read_text(encoding="utf-8")
 t.write_index()
 swapped = before.replace("Status: draft", "Status: ready", 1)
@@ -309,8 +302,7 @@ ck("  and the block carries the tree-wide totals", "tree-wide" in dl, dl)
 all_done.close()
 
 print("== 7. ORDER AND ARITHMETIC MATCH THE OLD PATH EXACTLY ==")
-# plan_status_excerpt takes live[0] as "the newest live plan", so an index that lost mtime order would silently change which plan a compacted session is handed.
-# The census is stored by PATH (stable across a clone); the order is re-imposed
+# plan_status_excerpt takes live[0] as "the newest live plan", so an index that lost mtime order would silently change which plan a compacted session is handed. The census is stored by PATH (stable across a clone); the order is re-imposed
 # from the same `stat` the freshness check already does.
 order = Tree(
     [

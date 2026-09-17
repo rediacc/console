@@ -127,8 +127,7 @@ def build_fixture_tree(gate, root: pathlib.Path) -> None:
 
 
 def invoke(gate, cwd: pathlib.Path, *args: str) -> harness.RunResult:
-    """The real script, run from `cwd`. Streams are kept apart, as the twin does
-    when it reads stdout alone and again when it reads `2>&1`."""
+    """The real script, run from `cwd`. Streams are kept apart, as the twin does when it reads stdout alone and again when it reads `2>&1`."""
     bash = require_gate(gate)
     return harness.run([bash, ".ci/scripts/ci/generate-tag.sh", *args], cwd=cwd)
 
@@ -204,8 +203,7 @@ def test_declared_inputs_match_the_script(gate):
 
 
 def test_tag_is_deterministic(gate):
-    """Baseline. Without it, "the tag changed" below proves nothing: it could
-    change on every invocation."""
+    """Baseline. Without it, "the tag changed" below proves nothing: it could change on every invocation."""
     with harness.temp_dir() as tmp:
         root = tmp / "repo"
         build_fixture_tree(gate, root)
@@ -217,9 +215,7 @@ def test_tag_is_deterministic(gate):
 
 
 def test_every_declared_input_changes_the_tag(gate):
-    """THE CONTROL PROOF, one per entry. An entry that does not move the tag is
-    decoration: it is in the list but not in the key, and a change to it would reuse a stale image. This is the assertion that would have caught a path pointed at the wrong build-renet.sh, because the wrong path cannot be
-    perturbed into changing anything."""
+    """THE CONTROL PROOF, one per entry. An entry that does not move the tag is decoration: it is in the list but not in the key, and a change to it would reuse a stale image. This is the assertion that would have caught a path pointed at the wrong build-renet.sh, because the wrong path cannot be perturbed into changing anything."""
     with harness.temp_dir() as tmp:
         root = tmp / "repo"
         build_fixture_tree(gate, root)
@@ -242,9 +238,8 @@ def test_every_declared_input_changes_the_tag(gate):
 
 
 def test_infra_build_renet_is_not_an_input(gate):
-    """The other direction, and the finding that prompted the twin. Nine CI steps
-    run `.ci/scripts/infra/build-renet.sh` and it is NOT in the list -- correctly, because it compiles a dev binary for ct-tests / ci-ops-test, which never pull the renet image and are never handed this tag. Pinning it here means the next reader gets the answer instead of re-deriving it, and a future decision to
-    include it has to change this case deliberately."""
+    """The other direction, and the finding that prompted the twin. Nine CI steps run `.ci/scripts/infra/build-renet.sh` and it is NOT in the list -- correctly, because it compiles a dev binary for ct-tests / ci-ops-test, which never pull the renet image and are never handed this tag. Pinning it here means the next reader gets the answer instead of re-deriving it, and a future
+    decision to include it has to change this case deliberately."""
     with harness.temp_dir() as tmp:
         root = tmp / "repo"
         build_fixture_tree(gate, root)
@@ -260,9 +255,7 @@ def test_infra_build_renet_is_not_an_input(gate):
 
 
 def test_missing_input_fails_loudly(gate):
-    """THE REGRESSION. Before the fix this exited 0 and printed a tag: a DIFFERENT
-    tag, because the remaining digests concatenate differently, so the only
-    symptom was a cache miss nobody would investigate."""
+    """THE REGRESSION. Before the fix this exited 0 and printed a tag: a DIFFERENT tag, because the remaining digests concatenate differently, so the only symptom was a cache miss nobody would investigate."""
     with harness.temp_dir() as tmp:
         root = tmp / "repo"
         build_fixture_tree(gate, root)
@@ -286,8 +279,7 @@ def test_missing_input_fails_loudly(gate):
 def test_missing_input_does_not_emit_a_tag(gate):
     """The specific shape of the old bug: the caller (`initialize.sh:141`,
     `RENET_TAG=$(...)`) captures stdout. Under the old behaviour it captured a
-    plausible-looking tag computed from a narrowed key. Nothing may reach stdout
-    on this path."""
+    plausible-looking tag computed from a narrowed key. Nothing may reach stdout on this path."""
     with harness.temp_dir() as tmp:
         root = tmp / "repo"
         build_fixture_tree(gate, root)
@@ -303,9 +295,7 @@ def test_missing_input_does_not_emit_a_tag(gate):
 
 
 def test_every_declared_input_is_individually_load_bearing_for_the_failure(gate):
-    """Sweep the class: the guard must cover every entry, not just the one that
-    prompted it. A guard that only checks the last element of a list is a classic
-    partial fix."""
+    """Sweep the class: the guard must cover every entry, not just the one that prompted it. A guard that only checks the last element of a list is a classic partial fix."""
     with harness.temp_dir() as tmp:
         root = tmp / "repo"
         for rel in DECLARED_INPUTS:
@@ -318,11 +308,9 @@ def test_every_declared_input_is_individually_load_bearing_for_the_failure(gate)
 
 
 def test_other_modes_are_untouched(gate):
-    """The guard lives in the `--submodule` branch. `--self` and the time-based
-    default must keep working even though `initialize.sh` no longer uses `--self`
+    """The guard lives in the `--submodule` branch. `--self` and the time-based default must keep working even though `initialize.sh` no longer uses `--self`
     for WEB_TAG (it moved to `--closure web` when D5 landed). Both modes are still
-    reachable and still pinned here, because nothing else guards them and a silent
-    regression in either would only surface as a mystery tag."""
+    reachable and still pinned here, because nothing else guards them and a silent regression in either would only surface as a mystery tag."""
     git = require_git()
     with harness.temp_dir() as tmp:
         root = tmp / "repo"
@@ -359,9 +347,7 @@ def test_other_modes_are_untouched(gate):
 
 
 def test_real_tree_still_produces_a_tag(gate):
-    """The fixture proves the logic; this proves the guard is satisfiable by the
-    ACTUAL repo. If any declared path were wrong TODAY, this fails -- which is the
-    whole point of turning the silent skip into an error."""
+    """The fixture proves the logic; this proves the guard is satisfiable by the ACTUAL repo. If any declared path were wrong TODAY, this fails -- which is the whole point of turning the silent skip into an error."""
     result = invoke(gate, paths.repo_root(), "--submodule", "private/renet")
     out = result.out.rstrip("\n")
     gate.assert_exit_code(0, result.rc, "the real tree must still generate a renet tag: %s" % out)
@@ -447,9 +433,7 @@ def test_closure_tag_moves_when_the_released_version_moves(gate):
 
 
 def test_closure_tag_survives_an_unresolvable_version(gate):
-    """This script also runs where no tag is reachable (a shallow clone, a fresh
-    fork). Failing to resolve must degrade to a well-defined key, never break the
-    build, so the marker is added even when empty."""
+    """This script also runs where no tag is reachable (a shallow clone, a fresh fork). Failing to resolve must degrade to a well-defined key, never break the build, so the marker is added even when empty."""
     root = paths.repo_root()
     with harness.temp_dir() as tmp:
         backup = tmp / "resolve-version.real2"

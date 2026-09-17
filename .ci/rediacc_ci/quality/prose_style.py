@@ -865,8 +865,7 @@ LIST_ITEM = re.compile(r"^\s*(?:[-*+]\s|\d+[.)]\s)")
 
 
 def markdown_segments(text):
-    """Yield `("raw", lineno, line)` for a structural line, or `("para",
-    start_lineno, [lines])` for a run of joinable plain-prose lines.
+    """Yield `("raw", lineno, line)` for a structural line, or `("para", start_lineno, [lines])` for a run of joinable plain-prose lines.
 
     THE SINGLE SOURCE OF TRUTH FOR A MARKDOWN PARAGRAPH BOUNDARY, factored out of `reflow_markdown`'s own loop so `underwrap_findings` (R19) consumes the IDENTICAL boundary logic instead of a second, driftable copy of it. This is a mechanical extraction, not a rewrite: every branch below is the same branch `reflow_markdown` always had, just yielding instead of appending to a shared
     `out` list. `test_reflow*` (which exercises `reflow_markdown`, now a thin consumer of this generator) is what proves the extraction changed nothing.
@@ -945,8 +944,8 @@ UNDERWRAP_MAX_RATIO = 0.4
 
 
 def _looks_hard_wrapped(buffer, width):
-    """Whether `buffer` (already known joinable, by construction of the
-    segment generators) is a NARROW HARD-WRAP rather than an ordinary short paragraph -- the R19 heuristic gate from `agent/PLAN-prose-style-under- wrap.md`, measured against a naive "would `_join_and_wrap` change anything" test that fires on 99.99% of this repo's real markdown corpus and is therefore not a debt detector at all.
+    """Whether `buffer` (already known joinable, by construction of the segment generators) is a NARROW HARD-WRAP rather than an ordinary short paragraph -- the R19 heuristic gate from `agent/PLAN-prose-style-under- wrap.md`, measured against a naive "would `_join_and_wrap` change anything" test that fires on 99.99% of this repo's real markdown corpus and is therefore not a debt
+    detector at all.
 
     Four conditions, ALL required:
       1. 3+ lines. A 2-line paragraph almost always just ends there -- a
@@ -975,8 +974,7 @@ def _looks_hard_wrapped(buffer, width):
 
 
 def underwrap_findings(path, text, rule, scope, max_len):
-    """R19's findings for one document or message: a hard-wrapped paragraph
-    that should have used more of the available width.
+    """R19's findings for one document or message: a hard-wrapped paragraph that should have used more of the available width.
 
     Reuses `markdown_segments`/`comment_segments` for boundaries -- the SAME generators `reflow_markdown`/`reflow_comments` use to actually fix the paragraphs this rule flags, so detection and remedy agree by construction about what one paragraph is. `Finding.text` is the whole paragraph joined by `\\n`, not a single line, so rewriting ANY line inside it re-keys the baseline entry
     -- exactly the "a rewrite is when a human looks again" contract every other multi-line Finding in this module already uses.
@@ -996,8 +994,11 @@ def underwrap_findings(path, text, rule, scope, max_len):
         for item in comment_segments(text, suffix):
             if item[0] != "para":
                 continue
-            _, start, indent, marker, payload = item
-            avail = max(max_len - len(_comment_prefix(indent, marker)), 20)
+            _, start, indent, marker, payload, open_delim, close_delim = item
+            avail = max(
+                max_len - len(_comment_prefix(indent, marker)) - _delimiter_reserve(open_delim, close_delim),
+                20,
+            )
             if _looks_hard_wrapped(payload, avail):
                 findings.append(
                     Finding(
@@ -1412,17 +1413,51 @@ def _is_structural_comment_line(piece):
 # A LEXER DECIDES WHAT A COMMENT OR A DOCSTRING IS, never `^\s*#`. Measured 2026-09-17: a regex version of this map once rewrote 52 of 1051 `.py` files in this repository into a DIFFERENT `ast.dump`, because a docstring quoting an example `# ...` line reads to a per-line regex exactly like the real comment paragraph underneath it. `_python_scan` is the fix: ONE tokenize pass,
 # shared with `python_comment_lines` above, so the reflow side sees a docstring as a docstring instead of never seeing it at all -- which was the actual defect this pair of functions used to carry: the reflow map had no entry for a docstring's prose whatsoever, so R19 (fed from this same map, see `comment_segments`/`underwrap_findings`) could not see a single narrow-wrapped
 # docstring paragraph in the whole tree.
+_DOCSTRING_OPEN = re.compile(r"^[rRbBuUfF]{0,2}('''|\"\"\"|'|\")")
+
+
+def _ends_in_odd_backslash_run(piece):
+    """Whether `piece` ends in an escaping (odd-count) run of `\\`, the shape that would swallow the next character -- here, a glued-on delimiter's own first quote -- into the string instead of ending it. Measured live at `.ci/rediacc_ci/deploy/promote_r2_to_stable_hotfix.py:248`, a docstring whose opening line ends `--quiet \\` on purpose (a shown shell line continuation):
+    stripped of everything but this check, this class would silently fold and then glue a delimiter onto an escaped position."""
+    tail = len(piece) - len(piece.rstrip("\\"))
+    return tail % 2 == 1
+
+
+def _delimiter_reserve(open_delim, close_delim):
+    """Width to hold back before wrapping, so gluing either delimiter back on afterward can never push a line over budget. SUMMED, not `max()`-ed: a short paragraph can collapse to ONE output line carrying BOTH delimiters at once, and `max()` under-reserves that case -- found live against `.ci/rediacc_ci/tests/test_housekeeping_cleanup_github_deployments.py:332`, a 386-char
+    line against a 384 budget, before this was `+len(close)` too. The `+1` holds a defensive separating space (see `_glue_delimiters`)."""
+    return len(open_delim or "") + len(close_delim or "") + (1 if close_delim else 0)
+
+
+def _glue_delimiters(lines, open_delim, close_delim, quote):
+    """Attach a docstring's own opening/closing delimiter to the first/last line `_join_and_wrap` produced, never into the wrapped TEXT.
+
+    A trailing quote character or an escaping backslash run right before the glue point is not cosmetic: appending a triple-quote straight after content ending in the same quote character produces a run of FOUR quote characters, an UNTERMINATED STRING in real Python (reproduced
+    with `ast.parse`; the real shape this pins is the author's own protective space at `.ci/rediacc_ci/tests/test_autopilot_post_escalation.py:335`, ending `failure."` then a space then the closing triple-quote). One inserted space breaks the run unconditionally, regardless of how
+    many quote/backslash characters precede it, which is why a single check suffices.
+    """
+    if open_delim:
+        lines = [open_delim + lines[0], *lines[1:]]
+    if close_delim:
+        tail = lines[-1]
+        if tail.endswith(quote[0]) or _ends_in_odd_backslash_run(tail):
+            tail += " "
+        lines = [*lines[:-1], tail + close_delim]
+    return lines
+
+
 def _python_reflow_lines(text):
-    """1-based line number -> (indent, body, marker) for each Python line SAFE to fold into a reflowed paragraph.
+    """1-based line number -> (indent, body, marker, (open_delim, close_delim)) for each Python line SAFE to fold into a reflowed paragraph.
 
-    Two shapes, sharing one map so `comment_segments` need not know which kind it is looking at: a WHOLE-LINE `#` comment (`marker` is `"#"`; a comment whose physical line carries code before it is TRAILING and is absent here). Or a FLUSH interior line of a docstring (`marker` is `None`, meaning "prose text, no marker to reproduce").
+    Three shapes, sharing one map so `comment_segments` need not know which kind it is looking at: a WHOLE-LINE `#` comment (`marker` is `"#"`; a comment whose physical line carries code before it is TRAILING and is absent here); a FLUSH interior line of a docstring (`marker` is `None`); or a docstring's OPENING or CLOSING physical line, also `marker=None`, tagged with the
+    delimiter text (`open_delim`/`close_delim`) that must be glued back onto the reconstructed paragraph's first/last output line rather than ever entering the wrapped text itself (see `_glue_delimiters`). A comment or an ordinary interior line always carries `(None, None)` here.
 
-    A DOCSTRING'S FIRST AND LAST PHYSICAL LINE ARE NEVER INCLUDED. The first carries the opening quote (and, for a one-line docstring, the whole thing); the last carries the closing quote, sometimes with a trailing comment beside it. Joining either into a reconstructed paragraph would mean splicing prose around a string delimiter instead of between two lines of plain text -- a risk
-    a `#` comment never carries, since it owns no delimiter to protect. Losing the two boundary lines to reflow is the same conservative trade `reflow_markdown` states for a list item: it loses some reflow and cannot corrupt a document.
+    A DOCSTRING'S FIRST AND LAST PHYSICAL LINE ARE EXCLUDED ONLY WHEN THAT LINE CARRIES NO PROSE ALONGSIDE ITS DELIMITER -- e.g. a bare triple-quote alone on its own line, or (for the closing side) a one-line docstring, where shortening it would mean relocating the opening quote onto its own line, a strictly bigger transform than a fold and out of scope here. When real prose shares
+    the physical line with the quote (a lead sentence opening directly against the triple-quote, this repository's own convention on every one of 7,111 measured multi-line docstrings), that prose folds and wraps exactly like an interior line, with the delimiter reattached afterward.
 
-    AN INTERIOR LINE ONLY JOINS WHEN IT SITS FLUSH WITH THE DOCSTRING'S OWN LEFT MARGIN -- the same `base` column `python_comment_lines` already measures indentation against for its own `>= base + 4` code-block rule.
-    A line indented by 1-3 columns is neither prose nor a code block by that rule, and is exactly the shape a hand-written flag list or enumerated block uses in this repository's own docstrings (`retire-shadowed-secrets.py`'s `Usage:` section is a real, currently-tracked example). Never joined, each such line is kept on its own. A doctest prompt/continuation or a reST
-    field/directive is excluded the same way and for the same reason: its line structure is its content, not a paragraph waiting to be rewrapped.
+    AN INTERIOR LINE ONLY JOINS WHEN IT SITS FLUSH WITH THE DOCSTRING'S OWN LEFT MARGIN -- the same `base` column `python_comment_lines` already measures indentation against for its own `>= base + 4` code-block rule. A closing line keeps this same flush-margin gate (it is what protects a
+    `Usage:` block's own last line, `retire-shadowed-secrets.py`'s being a real, currently-tracked example); an opening line does not need one, since prose glued directly to the quote has no margin of its own to measure and `_join_and_wrap` strips each piece regardless. A doctest prompt/continuation or a reST field/directive is excluded the same way and for the same reason on any
+    of the three shapes: its line structure is its content, not a paragraph waiting to be rewrapped. A line ending in an odd backslash run (a real line-continuation escape) is excluded the same way, so a glued-on delimiter can never land on an escaped position.
     """
     found = {}
     for chunk in _python_scan(text):
@@ -1437,20 +1472,50 @@ def _python_reflow_lines(text):
             # tracked `.py` files: 8,859 comment bodies sit at the conventional one space after the hash and 218 at none, while just 51 sit two columns or deeper, so requiring a flush body costs almost no reflow and protects every hanging line.
             if len(body) - len(body.lstrip(" ")) >= COMMENT_BODY_FLUSH:
                 continue
-            found[chunk.start] = (indent, body, "#")
+            found[chunk.start] = (indent, body, "#", (None, None))
             continue
         base = chunk.col
         body_lines = chunk.text.splitlines()
         last = len(body_lines) - 1
+        if last == 0:
+            continue  # a one-line docstring has no second line to fold with; see the module design note on this exclusion
+        m = _DOCSTRING_OPEN.match(chunk.text)
+        quote, open_delim = m.group(1), m.group(0)
         for offset, piece in enumerate(body_lines):
-            if offset in (0, last):
+            if offset == 0:
+                open_prose = piece[len(open_delim) :]
+                if not open_prose.strip():
+                    continue
+                if _is_structural_comment_line(open_prose) or _ends_in_odd_backslash_run(open_prose):
+                    continue
+                indent_text = _nth_line(text, chunk.start)[: chunk.col]
+                found[chunk.start] = (indent_text, open_prose, None, (open_delim, None))
+                continue
+            if offset == last:
+                close_prose = piece[: len(piece) - len(quote)]
+                if _indent(close_prose) != base or not close_prose.strip():
+                    continue
+                if _is_structural_comment_line(close_prose) or _ends_in_odd_backslash_run(close_prose):
+                    continue
+                # A TRAILING TOKEN AFTER THE CLOSING QUOTE (a real comment, or more code on the same physical line) is not part of this string and a reconstruction gluing `close_delim` back on alone would silently drop it -- found live in this session's own test corpus, the trailing note on a docstring's own closing line vanishing on the first implementation attempt. `piece` never
+                # contains it (the tokenizer's own string text ends at the quote), so only the raw source line carries it.
+                raw_line = _nth_line(text, chunk.start + offset)
+                if raw_line[len(piece) :].strip():
+                    continue
+                indent_text = close_prose[: len(close_prose) - len(close_prose.lstrip(" \t"))]
+                found[chunk.start + offset] = (
+                    indent_text,
+                    close_prose[len(indent_text) :],
+                    None,
+                    (None, quote),
+                )
                 continue
             if _indent(piece) != base or not piece.strip():
                 continue
             if _is_structural_comment_line(piece):
                 continue
             indent_text = piece[: len(piece) - len(piece.lstrip(" \t"))]
-            found[chunk.start + offset] = (indent_text, piece[len(indent_text) :], None)
+            found[chunk.start + offset] = (indent_text, piece[len(indent_text) :], None, (None, None))
     return found
 
 
@@ -1472,12 +1537,14 @@ def _cstyle_reflow_lines(text):
             continue
         if len(body) - len(body.lstrip(" ")) >= COMMENT_BODY_FLUSH:
             continue
-        found[lineno] = (indent, body, "//")
+        found[lineno] = (indent, body, "//", (None, None))
     return found
 
 
 def comment_segments(text, suffix):
-    """Yield `("raw", lineno, line)` or `("para", start_lineno, indent, marker, [bodies])` for `text`'s whole-line comments AND (Python only) its flush docstring interior lines.
+    """Yield `("raw", lineno, line)` or `("para", start_lineno, indent, marker, [bodies], open_delim, close_delim)` for `text`'s whole-line comments AND (Python only) its flush docstring interior lines.
+
+    `open_delim`/`close_delim` are non-`None` only for a Python docstring paragraph that starts or ends on the physical line carrying the opening/closing quote -- see `_python_reflow_lines` -- and must be glued onto the reconstructed paragraph's first/last output line by whichever caller wraps it, never folded into the text `_join_and_wrap` sees.
 
     THE SINGLE SOURCE OF TRUTH FOR A COMMENT-OR-DOCSTRING PARAGRAPH BOUNDARY, factored out of `reflow_comments`'s own loop for the same reason `markdown_segments` was: `underwrap_findings` (R19) must consume the IDENTICAL boundary logic, not a second copy of it. `marker` is `"#"`/`"//"` for a real comment paragraph and `None` for a docstring paragraph, which is how
     `reflow_comments` knows not to invent a marker that was never there. Nothing yielded at all means the suffix is not a known comment language, or the lexer could not read the file -- both cases the caller must treat as "nothing to say", never as an empty result implying a clean file.
@@ -1493,6 +1560,8 @@ def comment_segments(text, suffix):
     start = None
     buf_indent = None
     buf_marker = None
+    buf_open = None
+    buf_close = None
 
     # `split("\n")`, not `splitlines()`. The scanners above number lines the way `StringIO.readline` does, on `\n` alone, while `splitlines()` also breaks on `\f`, `\v` and U+2028 (named, not written -- a literal one here would break this very file). A single one of those anywhere in a file would slide every later line number by one against the map, and rejoining
     # with `\n` would rewrite the separator itself. Splitting on `\n` also makes
@@ -1502,11 +1571,11 @@ def comment_segments(text, suffix):
         entry = eligible.get(lineno)
         if entry is None:
             if buffer:
-                yield "para", start, buf_indent, buf_marker, buffer
+                yield "para", start, buf_indent, buf_marker, buffer, buf_open, buf_close
                 buffer = []
             yield "raw", lineno, raw
             continue
-        indent, body, marker = entry
+        indent, body, marker, delim = entry
         # The "does the body start with a space" directive check (`#!shebang`, `##header`, an ASCII `#---` divider) only means something for a real comment, where a marker and its text are conventionally separated by one space. A docstring interior line carries no marker to separate from, so that check is skipped for it (`marker is not None` below);
         # `DOCTEST_PROMPT`/`REST_FIELD`/`REST_DIRECTIVE` already excluded the docstring shapes that need the same protection, one level up in `_python_reflow_lines`.
         if (
@@ -1516,20 +1585,22 @@ def comment_segments(text, suffix):
             or (marker is not None and body and not body[0].isspace())
         ):
             if buffer:
-                yield "para", start, buf_indent, buf_marker, buffer
+                yield "para", start, buf_indent, buf_marker, buffer, buf_open, buf_close
                 buffer = []
             yield "raw", lineno, raw
             continue
         if buffer and (indent != buf_indent or marker != buf_marker):
-            yield "para", start, buf_indent, buf_marker, buffer
+            yield "para", start, buf_indent, buf_marker, buffer, buf_open, buf_close
             buffer = []
         if not buffer:
             start = lineno
             buf_indent = indent
             buf_marker = marker
+            buf_open = delim[0]
+        buf_close = delim[1]
         buffer.append(body)
     if buffer:
-        yield "para", start, buf_indent, buf_marker, buffer
+        yield "para", start, buf_indent, buf_marker, buffer, buf_open, buf_close
 
 
 def _comment_prefix(indent, marker):
@@ -1545,8 +1616,8 @@ def reflow_comments(text, suffix, width):
 
     Same join-then-wrap contract as `reflow_markdown`, over a narrower and more conservative corpus.
     A paragraph ends on: a blank line, a code line (including a line with a TRAILING comment -- `x = 1  # note` is left alone, not partially joined), an indentation change (a different nesting level, not a continuation, and -- for a docstring -- anything other than its own flush margin), a marker this suffix does not use, a `COMMENT_DIRECTIVE` line, or a `CODE_SHAPED_COMMENT` line.
-    Or, for a comment only, a body whose first character is not whitespace (`#!shebang`, `##header`, `/// <reference>`, an ASCII divider `#---`). None of that is prose a reader would want rewrapped with its neighbours, and each is emitted unchanged. A docstring's own first and last physical line, an indented sub-block inside one, a doctest line and a reST field or directive are
-    excluded one level down, in `_python_reflow_lines`.
+    Or, for a comment only, a body whose first character is not whitespace (`#!shebang`, `##header`, `/// <reference>`, an ASCII divider `#---`). None of that is prose a reader would want rewrapped with its neighbours, and each is emitted unchanged. A docstring's own first and last physical line join and wrap like any other line WHEN they carry real prose alongside their delimiter,
+    which is glued back on afterward (see `_glue_delimiters`); excluded only when the line is delimiter-only, a one-line docstring's own single line, an indented sub-block, a doctest line or a reST field or directive -- one level down, in `_python_reflow_lines`.
 
     A FILE THE LEXER CANNOT READ IS RETURNED UNCHANGED, which is where this contract differs from `python_comment_lines`. That function lets the error reach a caller that reports the file as UNCHECKED, because a lint result nobody produced must not read as clean. A rewriter has no equivalent honest partial answer: guessing at the shape of a file Python itself rejects is how a
     broken file becomes a differently broken file.
@@ -1564,10 +1635,12 @@ def reflow_comments(text, suffix, width):
             _, _lineno, raw = item
             out.append(raw)
             continue
-        _, _start, indent, marker, buffer = item
+        _, _start, indent, marker, buffer, open_delim, close_delim = item
         prefix = _comment_prefix(indent, marker)
-        avail = max(width - len(prefix), 20)
-        out.extend(prefix + piece for piece in _join_and_wrap(buffer, avail))
+        avail = max(width - len(prefix) - _delimiter_reserve(open_delim, close_delim), 20)
+        lines = _join_and_wrap(buffer, avail)
+        lines = _glue_delimiters(lines, open_delim, close_delim, close_delim or open_delim)
+        out.extend(prefix + piece for piece in lines)
     return "\n".join(out)
 
 

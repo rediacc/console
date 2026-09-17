@@ -169,8 +169,7 @@ def test_slurp_reads_back_to_back_objects_with_no_separator() -> None:
 def test_slurp_raises_on_garbage_rather_than_returning_empty() -> None:
     """A PARSE FAILURE MUST NOT LOOK LIKE A CLEAN TREE.
 
-    This is the 2026-07-27 defect in miniature: the old pipeline sent both commands' errors to /dev/null and `|| true`d the result, so an unreadable stream produced zero records, which is byte-identical to "nothing is outdated". The caller turns this exception into a `__PROBE_FAILED__`
-    sentinel; returning `[]` here would put the defect straight back.
+    This is the 2026-07-27 defect in miniature: the old pipeline sent both commands' errors to /dev/null and `|| true`d the result, so an unreadable stream produced zero records, which is byte-identical to "nothing is outdated". The caller turns this exception into a `__PROBE_FAILED__` sentinel; returning `[]` here would put the defect straight back.
     """
     for bad in ("{oops", "[1,2", "not json at all"):
         try:
@@ -243,8 +242,7 @@ def test_emit_advisory_omits_an_absent_action_line(capsys) -> None:
 def test_module_record_projection_matches_the_gates_own_json_helper() -> None:
     """A guard on the test's own fixture builder, not on the gate.
 
-    `_module_json` is what the selftest plants with; if it stopped producing an
-    `Update` block, every plant below would fire against a module the gate is not even meant to report.
+    `_module_json` is what the selftest plants with; if it stopped producing an `Update` block, every plant below would fire against a module the gate is not even meant to report.
     """
     record = json.loads(go_deps._module_json("a", "v1", "v2", "2024-01-01T00:00:00Z"))
     assert record["Update"]["Version"] == "v2"

@@ -6,14 +6,11 @@ WHY, measured 2026-09-01. `Build (Docker) / Devcontainer (amd64)` died on:
     curl: (22) The requested URL returned error: 500
     https://go.dev/dl/go1.26.6.linux-amd64.tar.gz
 
-go.dev was briefly unwell; probed minutes later the same URL answered 302. Nothing was
-wrong with the image, the pin or the checksum -- a ten-minute multi-arch build that gates every PR simply had no second attempt. Two apt steps in that file carried hand-rolled five-attempt retry loops while EIGHT other fetches had none, so the asymmetry, not the outage, was the defect.
+go.dev was briefly unwell; probed minutes later the same URL answered 302. Nothing was wrong with the image, the pin or the checksum -- a ten-minute multi-arch build that gates every PR simply had no second attempt. Two apt steps in that file carried hand-rolled five-attempt retry loops while EIGHT other fetches had none, so the asymmetry, not the outage, was the defect.
 
 Fixed by hand across nine call sites. This gate is what stops a tenth landing bare, which is the whole i18n lesson: the thing was fixed and nothing prevented its return.
 
-NOT COVERED BY check_dockerfile_mirror_resilience.py, and that is deliberate on both sides. Its own docstring says it checks that apt is not pinned to a single mirror and
-explicitly NOT "a particular retry count". Retrying a dead mirror is its problem; not
-retrying a live one that hiccuped is this one's.
+NOT COVERED BY check_dockerfile_mirror_resilience.py, and that is deliberate on both sides. Its own docstring says it checks that apt is not pinned to a single mirror and explicitly NOT "a particular retry count". Retrying a dead mirror is its problem; not retrying a live one that hiccuped is this one's.
 
 SCOPED TO THE SHAPE, NOT THE FILE. The sibling gate learned this the hard way -- shipped Dockerfile-only, then the same defect took down CI from a shell script hours later. So this reuses its `tracked_files()` (Dockerfiles AND shell scripts) and its `run_blocks()` rather than re-deriving either.
 
@@ -66,9 +63,7 @@ def in_scope(path):
 
     The defect that was actually paid for is narrower and worth stating exactly: a fetch inside an IMAGE BUILD, where one upstream hiccup discards ten minutes of work that every PR waits on. A `curl` in a local dev helper or a CI diagnostic retries by being re-run by a human who is already watching. Same command, different cost.
 
-    In this scope the tree had FOUR offences, all in `.devcontainer/` shell scripts that the Dockerfile-only parser could not see. All four were fixed rather than baselined.
-    Widening later is a decision with its own evidence; it is not this gate's job to
-    smuggle it in.
+    In this scope the tree had FOUR offences, all in `.devcontainer/` shell scripts that the Dockerfile-only parser could not see. All four were fixed rather than baselined. Widening later is a decision with its own evidence; it is not this gate's job to smuggle it in.
     """
     rel = os.path.relpath(str(path), ROOT)
     name = os.path.basename(rel)
@@ -83,8 +78,7 @@ def logical_blocks(text, is_dockerfile):
     A SHELL SCRIPT HAS NO `RUN` INSTRUCTIONS, and that is how this gate shipped vacuous. It reused `run_blocks` -- a Dockerfile parser -- for a corpus that is mostly shell, and measured after the fact: 25 blocks for `.devcontainer/Dockerfile`, **0** for `.devcontainer/download-extensions.sh`. The gate printed "551 file(s) scanned" while every shell script contributed nothing, so
     three real unretried fetches under `.devcontainer/` sat inside its own corpus and it called the tree clean.
 
-    That is the exact vacuity this repo gates against, in a gate written to catch a class.
-    Reusing the corpus was right; reusing a parser that cannot read it was not.
+    That is the exact vacuity this repo gates against, in a gate written to catch a class. Reusing the corpus was right; reusing a parser that cannot read it was not.
     """
     if is_dockerfile:
         return MIRROR.run_blocks(text)

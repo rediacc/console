@@ -1,5 +1,4 @@
-"""Differential: `.ci/rediacc_ci/private/run_account.py` against its twin
-`.ci/scripts/private/run-account.sh`, the registered gate `check:ci-account-server`.
+"""Differential: `.ci/rediacc_ci/private/run_account.py` against its twin `.ci/scripts/private/run-account.sh`, the registered gate `check:ci-account-server`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
@@ -295,9 +294,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, binder_kw, run_kw):
 
 
 def test_the_recording_npm_is_actually_reached(tmp_path):
-    """ANTI-VACUITY. Every comparison above is worthless if npm never ran, and a
-    port that printed the same banner while running nothing would satisfy a
-    stdout-only comparison and test no account code at all."""
+    """ANTI-VACUITY. Every comparison above is worthless if npm never ran, and a port that printed the same banner while running nothing would satisfy a stdout-only comparison and test no account code at all."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
     out = _run(PORT_REL, root, tmp_path, binder, argv=("test",))
@@ -335,9 +332,7 @@ def test_the_ci_arm_is_the_reason_the_guard_exists(tmp_path):
 
 
 def test_the_local_arm_is_a_silent_pass_and_that_is_the_hole(tmp_path):
-    """THE COMPLEMENT, and a REAL HOLE IN THE LOCAL GATE, pinned rather than
-    fixed. `npm run check:ci-account-server` on a checkout without the submodule prints two warnings and exits 0, so the gate reports success having run nothing. The twin says why in its own comment, and closing it is a
-    cutover-box decision, not a port's."""
+    """THE COMPLEMENT, and a REAL HOLE IN THE LOCAL GATE, pinned rather than fixed. `npm run check:ci-account-server` on a checkout without the submodule prints two warnings and exits 0, so the gate reports success having run nothing. The twin says why in its own comment, and closing it is a cutover-box decision, not a port's."""
     root = _fixture(tmp_path, account="none")
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -349,8 +344,7 @@ def test_the_local_arm_is_a_silent_pass_and_that_is_the_hole(tmp_path):
 
 
 def test_the_stage_runs_when_the_submodule_is_there(tmp_path):
-    """THE NEGATIVE CONTROL on the guard. A gate with only positive controls
-    will happily refuse on a tree where nothing is wrong."""
+    """THE NEGATIVE CONTROL on the guard. A gate with only positive controls will happily refuse on a tree where nothing is wrong."""
     root = _fixture(tmp_path, node_modules=True)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -378,9 +372,7 @@ def test_an_unknown_stage_still_pays_for_npm_ci(tmp_path):
 
 
 def test_deploy_refuses_with_all_five_lines_and_names_the_real_script(tmp_path):
-    """The refusal is the feature: it exists because this stage once published
-    an orphan worker from `private/account`'s local-dev wrangler.toml. All five lines are contract, and the last one is the route a caller must take
-    instead."""
+    """The refusal is the feature: it exists because this stage once published an orphan worker from `private/account`'s local-dev wrangler.toml. All five lines are contract, and the last one is the route a caller must take instead."""
     root = _fixture(tmp_path, node_modules=True)
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):
@@ -396,8 +388,7 @@ def test_deploy_refuses_with_all_five_lines_and_names_the_real_script(tmp_path):
 
 
 def test_the_mask_does_not_hide_the_message(tmp_path):
-    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix
-    on both sides; if it were greedier it would hide real divergences and every
+    """A CONTROL ON THE CONTROL. `_mask` collapses the `<$0>: line <n>: ` prefix on both sides; if it were greedier it would hide real divergences and every
     case above would pass for the wrong reason."""
     sample = "/a/b/twin.sh: line 47: npm: command not found\nkept: line noise\n"
     masked = _mask(sample, pathlib.Path("/nowhere"), pathlib.Path("/nowhere-either"))
