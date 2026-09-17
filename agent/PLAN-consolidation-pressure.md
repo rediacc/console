@@ -28,7 +28,7 @@ A plan about eliminating duplication had duplicated an existing plan. The rule t
 - [x] Fold the family-widening question into agent/PLAN-extension-shaped-matchers.md commit 3 and remove it from this plan's scope
 - [x] Build the sibling-differential harness by generalising the corpus and compare halves of test_guards_differential.py, which stays alive
 - [x] Register the prose-decision pair as its first entry: python_comment_lines against _python_reflow_lines
-- [ ] Register the C-style pair beside it: cstyle_comment_lines against the `.ts`/`.js`/`.go` segment path, which has no region-kind axis and so needs a different coverage signal
+- [x] Register the C-style pair beside it: cstyle_comment_lines against the `.ts`/`.js`/`.go` segment path, which has no region-kind axis and so needs a different coverage signal
 - [x] Add a per-family COUNT floor to the pair registry so an unregistered new sibling fails rather than going quiet
 - [x] Write the shape-cluster diff as a reusable script: normalise every changed line to its shape, cluster, diff per-cluster counts against HEAD
 - [x] Wire the missing-proof refusal into the stop judge, matching the enforcement shape wl_classsweep.py already uses

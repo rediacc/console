@@ -9,8 +9,11 @@ detector asks is "is this the Nth copy", and the question that mattered was "do 
 THE FORM IS A PAIR OF CALLABLES OVER A SHARED CORPUS, never a declarative list of paths that claim to agree. This repository already keeps roughly twelve executable parity gates that recompute both sides and compare, and that shape is honest by construction: a stale entry cannot go quiet, because both sides are recomputed on every run; a renamed function fails at import with
 no allowlist to hide in; and a new sibling that nobody registered is caught by the coverage arm rather than silently omitted. A registry file has none of those three properties.
 
-TWO ARMS, AND NEITHER ALONE IS ENOUGH. Containment asks whether the reflow ever folds a line the linter does not police, which catches a rewriter reaching past what the rules cover. Coverage asks whether each REGION KIND the linter sees is also seen by the reflow, which is the arm that catches the real incident: before the two scanners were unified the reflow side saw 17,826
-docstring lines as zero, while the linter saw 39,019 of them. Containment alone would have passed that day, because a subset of nothing is still a subset.
+TWO ARMS, AND NEITHER ALONE IS ENOUGH. Containment asks whether the reflow ever folds a line the linter does not police, which catches a rewriter reaching past what the rules cover. Coverage asks whether the reflow sees close to what the linter sees, which is the arm that catches the real incident: before the two scanners were unified the reflow side saw 17,826 docstring lines
+as zero, while the linter saw 39,019 of them. Containment alone would have passed that day, because a subset of nothing is still a subset.
+
+A SECOND PAIR, LOWER IN THIS FILE, covers `cstyle_comment_lines` against `_cstyle_reflow_lines` for `.ts`/`.js`/`.go`. It has no region-kind axis to measure coverage against -- a C-style language carries one comment convention, not two -- so its coverage arm is a SHARE of whole-line comments instead, guarding against the incident that would recur if `_cstyle_scan`'s single shared
+walk were ever re-split back into the two independently maintained copies it replaced.
 """
 
 import pathlib
@@ -162,4 +165,102 @@ def test_the_coverage_arm_can_actually_fail(label, blind_to):
     )
     assert blind_to in blind_kinds(lint_by_kind, flow_by_kind), (
         "%s: the planted blindness was NOT detected, so the coverage arm cannot fail" % label
+    )
+
+
+# --------------------------------------------------------------------------- THE C-STYLE PAIR: cstyle_comment_lines against _cstyle_reflow_lines ---------------------------------------------------------------------------
+#
+# NO REGION-KIND AXIS HERE, which is why the Python pair's coverage arm does not simply generalise. A `.ts`/`.js`/`.go` file has one comment convention, not two: there is no docstring for a reflow side to go blind to. Both functions already derive from the SAME `_cstyle_scan` walk (unified for exactly the reason `test_sibling_agreement.py`'s header names -- two independently
+# maintained copies of one quote/template state machine disagreed on a line-continuation edge case neither author had noticed), so the incident this pair specifically guards against is a FUTURE re-split back into two scanners, not a currently-live docstring-shaped blind spot.
+#
+# THE COVERAGE SIGNAL IS THEREFORE A SHARE OF WHOLE-LINE COMMENTS, not of region kinds. `cstyle_comment_lines` reports every comment, whole-line AND trailing (`x = 1; // note`), so comparing its raw total against the reflow side's whole-line-only total measures the wrong thing -- trailing comments are never eligible for folding by design, and a naive share came out at 27%
+# purely from that mismatch, not from any blindness. The correct baseline restricts the lint side to WHOLE-LINE `//` comments only, which both functions are equally positioned to see. Measured 2026-09-17 across 1,196 tracked `.ts`/`.tsx`/`.js`/`.cjs`/`.mjs`/`.go` files: 11,454 whole-line comments, 10,634 reflow-eligible lines, a 92.8% share -- the gap being `COMMENT_DIRECTIVE`/
+# `CODE_SHAPED_COMMENT` exclusions the reflow side applies and the plain lint side does not, which is conservatism, not blindness.
+
+CSTYLE_SUFFIXES = (".ts", ".tsx", ".js", ".cjs", ".mjs", ".go")
+CSTYLE_COVERAGE_FLOOR = 0.50  # measured share is 0.93; the floor sits far below it and far above the zero a re-split scanner would produce
+
+
+def tracked_cstyle_files():
+    return [f for f in ps.discover(".", GLOBALS) if pathlib.Path(f).suffix in CSTYLE_SUFFIXES]
+
+
+def cstyle_whole_line_count(text):
+    """Whole-line `//` comments only, the shape both sides are equally positioned to see."""
+    return sum(1 for item in ps._cstyle_scan(text) if item[0] == "line" and not item[2].strip())
+
+
+def test_the_cstyle_reflow_never_folds_a_line_the_linter_does_not_police():
+    """CONTAINMENT, the C-style twin of the Python arm above."""
+    offenders = []
+    for rel in tracked_cstyle_files():
+        try:
+            text = pathlib.Path(rel).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        try:
+            lint = {line.lineno for line in ps.cstyle_comment_lines(text)}
+            flow = ps._cstyle_reflow_lines(text)
+        except (SyntaxError, ValueError):
+            continue
+        extra = sorted(
+            n
+            for n, (_i, body, _m) in flow.items()
+            if n not in lint and ps.scrub(ps._strip_quotes(body)).strip()
+        )
+        if extra:
+            offenders.append((rel, extra[:3]))
+    assert not offenders, (
+        "the C-style reflow folds %d file(s) worth of prose the linter never sees: %s"
+        % (len(offenders), offenders[:5])
+    )
+
+
+def cstyle_coverage_ok(whole_total, flow_total):
+    """The verdict BOTH the real arm and its planted control call, on the same reasoning `blind_kinds` above does: a control that re-implements the arithmetic it is meant to be testing proves the control's copy works, not the arm's."""
+    assert whole_total > 0, "no whole-line // comments to measure coverage against"
+    return (flow_total / whole_total) >= CSTYLE_COVERAGE_FLOOR
+
+
+def test_the_cstyle_reflow_sees_most_whole_line_comments_the_linter_sees():
+    """COVERAGE, expressed as a SHARE of whole-line comments rather than a region-kind axis, since a `//` language has only one comment convention to be blind to. This is the arm that would catch a future re-split of `_cstyle_scan` back into two independently maintained copies -- the exact history this pair's own docstring records."""
+    whole_total = flow_total = 0
+    for rel in tracked_cstyle_files():
+        try:
+            text = pathlib.Path(rel).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        try:
+            whole_total += cstyle_whole_line_count(text)
+            flow_total += len(ps._cstyle_reflow_lines(text))
+        except (SyntaxError, ValueError):
+            continue
+    assert cstyle_coverage_ok(whole_total, flow_total), (
+        "the C-style reflow sees only %.1f%% of whole-line comments the linter sees (floor %.0f%%), "
+        "which is the shape a re-split scanner would produce"
+        % (100 * flow_total / whole_total, CSTYLE_COVERAGE_FLOOR * 100)
+    )
+
+
+def test_the_cstyle_coverage_arm_can_actually_fail():
+    """THE ANTI-VACUITY CONTROL: plant the historical defect (the reflow side blind to line comments entirely, as it would be if a future edit re-split `_cstyle_scan` into two copies and the reflow copy lost its `line` branch) and confirm the SAME verdict function the real arm calls actually calls it."""
+    whole_total = 0
+    for rel in tracked_cstyle_files()[:150]:
+        try:
+            text = pathlib.Path(rel).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        try:
+            whole_total += cstyle_whole_line_count(text)
+        except (SyntaxError, ValueError):
+            continue
+    assert whole_total > 0, "the sampled corpus carries no whole-line // comments to be blind to"
+    healthy_flow_total = whole_total  # a 100% share must read as healthy before trusting the plant
+    assert cstyle_coverage_ok(whole_total, healthy_flow_total), (
+        "the control's own healthy baseline already reads as blind"
+    )
+    planted_flow_total = 0  # the historical defect: the reflow side sees nothing at all
+    assert not cstyle_coverage_ok(whole_total, planted_flow_total), (
+        "the planted blindness (0 reflow-eligible lines against %d whole-line comments) was not "
+        "detected, so the coverage arm cannot fail" % whole_total
     )
