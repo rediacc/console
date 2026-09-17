@@ -55,7 +55,7 @@ import re
 import shlex
 import sys
 
-from rediacc_hooks import hookio
+from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 TWIN = None
@@ -157,6 +157,10 @@ EDGE_CASES = [
         'git commit -m "fix: x" -m "%s" && gh pr create --title "fix: x" --body "short body"'
         % ("x" * 400),
     ),
+    (
+        "a cat heredoc quoting a commit+pr example as prose is not a target",
+        "cat > /tmp/note.md <<'EOF'\nExample: git commit -m \"fix: x\" && gh pr create --title x --body y\nEOF",
+    ),
 ]
 
 
@@ -175,7 +179,26 @@ def _engine(root):
 
 
 def _is_target(command):
-    return bool(GIT_COMMIT.search(command) or GH_PR.search(command))
+    """Whether `command` invokes `git commit` or a write-shaped `gh pr` verb.
+
+    RUNS AGAINST `shellscan.scan_target(command)`, NOT the raw string. Found live by
+    review 2026-09-17: a `cat > file <<'EOF' ... EOF` heredoc whose BODY quoted an
+    example (`git commit -m "..." && gh pr create ...`, written as illustrative prose
+    in a reply) tripped this function, because the raw-string regex has no notion of
+    "this text is data being written to a file, not a command being executed" -- the
+    literal `&&` immediately before `gh` satisfied the separator class regardless of
+    where it sat. `shellscan.scan_target` already exists to solve exactly this for
+    the `gh`-guard family (`block_admin_merge.py` and siblings): it strips heredoc
+    BODIES (keeping the introducer line, so `git commit -F - <<'EOF'` itself still
+    matches) and quoted spans before a command-position anchor ever runs, which is
+    the shared, tested defense this guard should have used from the start instead of
+    scanning the raw command directly. `messages()` below is unaffected: it re-parses
+    the RAW command on its own (shlex plus its own HEREDOC regex) to extract the
+    actual bodies to LINT, which is a different question from "is this a target" and
+    still needs the real, unstripped text.
+    """
+    scanned = shellscan._command_substitution(shellscan.scan_target(command))
+    return bool(GIT_COMMIT.search(scanned) or GH_PR.search(scanned))
 
 
 def messages(command, cwd=None):

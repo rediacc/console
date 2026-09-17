@@ -61,10 +61,12 @@ are frozen at real scale (thousands, not dozens).
 
 ## Tasks
 
-- [ ] Confirm with the operator, before writing code, the scope and blast-radius decisions below
-      (they are default recommendations, not settled -- the numbers above are surprising enough
-      that silent execution would be wrong per the operator's own instruction not to silently
-      defer or silently narrow).
+- [x] Confirm with the operator, before writing code, the scope and blast-radius decisions.
+      DONE 2026-09-17: operator answered "we go all in all but in a smarter way -- investigate
+      the existing formatting tools" -- scope is now `["markdown", "pr", "comment"]`, and the
+      tooling investigation above replaced the hand-rolled-heuristic guesswork with an evidenced
+      conclusion (no external tool does under-wrap detection; `textwrap` stays the shared
+      wrapping primitive, matching what `reflow_markdown` already uses).
 - [ ] Factor `reflow_markdown`'s paragraph-buffering loop (fence/frontmatter/list-item/
       REFLOW_STOP handling) out of the function body into a reusable `paragraphs(text)`
       generator yielding `(start_lineno, list[str])`, used by both `reflow_markdown` (unchanged
@@ -128,19 +130,49 @@ are frozen at real scale (thousands, not dozens).
 
 ## Detection algorithm
 
-**Reuse, don't reinvent.** `reflow_markdown` already answers "would these lines join and still
-fit" for markdown; the new rule's whole job is to turn a version of that same answer into a "did
-NOT join, but should have" finding. Concretely: `paragraphs(text)` (factored out, see Tasks)
-yields the same buffers `reflow_markdown` already collects; for each buffer with 2+ lines, call
-`reflow_markdown("\n".join(buffer) + "\n", width)` and compare to the original -- this is the
-literal reflow computation, not a second implementation of it.
+**Tooling investigation (2026-09-17), evidence not assumption.** The operator asked, on seeing
+the naive-test numbers, to find and use an EXISTING, documented formatting tool as the
+join/reflow engine rather than inventing one. Every candidate with a plausible fit was checked
+against its own official docs, or its own repository's stated scope where no hosted doc site
+exists. Results, one line each:
 
-**Why this can't be a bare "any paragraph reflow changes" test (the naive definition measured
-above):** it flags 99.99% of the corpus. The gate needs a heuristic that isolates "this looks
-like an accidental narrow hard-wrap" from "this is a normal short paragraph, a normal
-sentence-ending short last line, or this repo's universal ~80-115 char authoring habit".
-Recommended gate, to be validated against real numbers before landing (see the 7,228/371
-measurement above as the current best estimate):
+| Tool | Scope checked | Verdict |
+|---|---|---|
+| Prettier `proseWrap: "always"` | markdown | Genuinely reflows existing narrow paragraphs to `printWidth` (confirmed from prettier.io's own worked example). Not present anywhere in this repo today; adopting it means a new, large npm dependency under `.npmrc`'s supply-chain hardening. |
+| remark-lint | markdown | Has a "too long" rule (`remark-lint-maximum-line-length`). No rule anywhere in its catalogue for "too narrow". Same gap this plan fills, not a tool that fills it. |
+| remark-stringify | markdown | 16 documented stringify options, none a fill/wrap-width control. Prettier's reflow is Prettier's own printer over an AST, not something remark exposes as a reusable primitive. |
+| mdformat | markdown | `wrap` defaults to `"keep"` (no-op); an explicit width does reflow, but GFM tables need a separate plugin this repo's own `reflow_markdown` already handles natively. New Python dependency; this host has no `pip`/`pip3` at all, only `uv`. |
+| `ruff format` | comment | Its own docs (docs.astral.sh/ruff/formatter) document no comment-reflow behavior at all. |
+| `docformatter` | comment | README scopes it explicitly to PEP 257 docstrings. No bare `#`/`//` comment prose handling. |
+| `clang-format` `ReflowComments` | comment | Real feature, but its documented language list excludes Python and Go -- the two languages dominating this repo's comment scope. |
+| `gofmt` / `gofumpt` | comment | Official docs describe only indentation/alignment/rewrite rules. No comment-text reflow documented. |
+| Python stdlib `textwrap.wrap`/`fill` | both | **Already the wrapping primitive `reflow_markdown` uses today** (`prose_style.py`'s `flush()` closure). No new dependency; already imported and exercised by `test_reflow*`. |
+
+**Conclusion.** For markdown, no external tool changes the outcome that matters: the near-100%
+naive-fire rate is a property of the CORPUS (virtually every paragraph, once joined, still fits
+under 384 chars), not an artifact of which program performs the join -- Prettier, mdformat and
+this repo's own `textwrap`-based `reflow_markdown` all answer "yes, joinable" on the same set of
+paragraphs. This is a STATED adoption of "use an existing tool's algorithm as the wrapping
+primitive, keep this repo's own paragraph-boundary logic" -- and explicitly the reason not to add
+Prettier or mdformat as dependencies: doing so swaps a working, dependency-free stdlib primitive
+for a heavier one producing the same verdict on the same inputs.
+
+For comment scope (now IN, per "all in"), no full external tool reflows `#`/`//` comment prose at
+all -- confirmed absence across ruff, docformatter, clang-format and gofmt/gofumpt, each from its
+own documentation. The same reuse pattern applies, newly built for the boundary logic (nothing to
+factor out, since no comment-scope reflow exists today): a new `comment_paragraphs(lines)`
+function, fed the SAME `Line` objects `extract()`/`python_comment_lines`/`cstyle_comment_lines`
+already produce for R1-R18, grouping contiguous same-indent, same-marker comment lines into
+buffers (a blank comment line, a code line, an indent change, or a docstring/comment-kind change
+ends a buffer), then reusing `textwrap.wrap` on the buffer exactly as `reflow_markdown`'s
+`flush()` does.
+
+**The heuristic gate itself does not change, and this is now an evidenced decision, not a
+fallback.** None of the nine tools/ecosystems surveyed documents any concept of "this prose is
+artificially narrow relative to its ceiling" -- every one does either too-long detection or
+unconditional reflow-on-request, never "is this narrow-wrap accidental." The gate from the
+original draft is kept, applied identically to both `markdown` and `comment` buffers now that
+both are produced by a `paragraphs()`-shaped function:
 
 - the paragraph has **3 or more lines** (a 2-line paragraph almost always just ends there -- a
   short final line is not evidence of hard-wrap, it's evidence of a sentence ending);
@@ -150,8 +182,8 @@ measurement above as the current best estimate):
 - that common width is well under the limit (candidate: <= 40% of `max_line_length`, i.e. <=154
   chars) -- a paragraph already wrapped near 300+ chars is not under-wrapped even if one more
   word would technically fit;
-- `reflow_markdown` on the paragraph in isolation actually produces fewer lines (guards against a
-  paragraph that only differs from its reflow by trailing whitespace).
+- the shared reflow primitive (`textwrap.wrap` via `reflow_markdown` for markdown, the same call
+  directly for comment buffers) actually produces fewer lines when applied to the buffer.
 
 **Must NOT fire (false-positive list, verified against the extractors):**
 - the **last line** of a paragraph (a paragraph is expected to end short; `reflow_markdown`'s own
@@ -177,42 +209,44 @@ measurement above as the current best estimate):
   `Edit`/`MultiEdit` call (which covers the operator's actual triggering case -- the comment
   block was written in one shot), not one assembled a line at a time.
 
-## Scope decision (recommended, needs operator confirmation)
+## Scope decision (operator-confirmed: "we go all in")
 
-`R19` scopes: **`["markdown", "pr"]`**. Explicitly excludes `comment` and `commit`.
+`R19` scopes: **`["markdown", "pr", "comment"]`**. Still excludes `commit`.
 
-- **`comment` excluded.** Not because of a tooling conflict (verified there isn't one: `ruff`
-  has `E501` disabled and doesn't reformat comments; no `eslint` `max-len` found) but because of
-  scale and rewrite-hazard false positives: 94,201 joinable pairs across 1,941 of 2,061
-  comment-scope files is not a debt pile, it is the default comment-wrapping convention across
-  the entire codebase (matching `pyproject.toml`'s `line-length = 100`). Blocking on it would
-  mean any edit that touches one line inside an existing multi-line comment block -- an
-  extremely common edit shape -- has a high chance of tripping R19 on the untouched sibling lines
-  the moment their combined text is re-hashed, which is exactly the false-positive-teaches-
-  suppression-marker failure mode `prose_style.py`'s own header names. This is a candidate for a
-  **separate, much larger, future plan** (extending `reflow_markdown`'s reach to `comment` scope
-  is itself a prerequisite that doesn't exist today), explicitly flagged here rather than
-  silently done or silently dropped.
-- **`commit` excluded**, on the same precedent R18 and R11 already set: R18's own `scopes` list
-  already omits `commit` and R11's `exempt_scopes_why` measured this repo's actual commit
-  convention (median 71, p90 84, max 98 chars) to justify excluding `commit` from the imperative
-  rule. Git's own 50/72 convention is a **deliberate** narrow wrap, not accidental debt, and a
-  rule that "fixes" it toward 384 would fight a fifteen-year-old universal git norm this repo's
-  own guard docstring already respects.
-- **`pr` included** because it is prose meant to be read like a document (unlike a commit
-  subject/body) and already carries R18/R11 in its scope list; it is the "and others" half of
-  "also for commit and others" that survives scrutiny once `commit` itself is excluded for cause.
+- **`comment` now INCLUDED**, reversing the earlier default recommendation, per the operator's
+  explicit "we go all in ... in a smarter way" instruction. The scale concern that justified
+  exclusion before (94,201 naive pairs) does not disappear, but it was measured with the wrong
+  instrument: a naive adjacent-line-pair join test, not the same banded heuristic gating
+  markdown. Re-measured with the real gate (see Debt-pile decision): 6,100 paragraphs across
+  1,416 of 2,149 comment-bearing files -- large, but a real, boundable pile the shrink-only
+  baseline mechanism already knows how to carry, not an unbounded one.
+- **`commit` stays excluded**, unchanged rationale: R18's own `scopes` list already omits
+  `commit`, and R11's `exempt_scopes_why` measured this repo's actual commit convention (median
+  71, p90 84, max 98 chars) to justify the same exclusion for the imperative rule. Git's own
+  50/72 convention is a deliberate narrow wrap, not accidental debt.
+- **`pr` included**, unchanged rationale: prose meant to be read like a document, already carries
+  R18/R11 in its scope list.
 
-## Debt-pile decision (recommended)
+## Debt-pile decision (measured, not naive)
 
 Baseline it via the **existing, unmodified** shrink-only mechanism (`write_baseline`,
 `baseline_additions`, `write_verdict`) -- the same one that already carries 3,222 findings across
-the other 17 rules. This is technically routine at this scale; nothing new needs to be built for
-it. It does NOT mean "fix them all inline this session" -- a 400-file, tens-of-thousands-of-
-lines-changed reflow is its own reviewable PR (`check_prose_style.py reflow --write`, which
-already exists and is markdown-only, matching R19's scope exactly), scheduled separately from the
-detector landing so the diff that adds enforcement and the diff that rewrites the corpus can each
-be reviewed on their own terms.
+the other 17 rules. The size estimate is now real for BOTH scopes, using the banded heuristic
+(not the naive join test) as the actual detector would compute it:
+
+| Scope | Real (banded) count | Files | Naive count (comparison only, NOT what gets baselined) |
+|---|---|---|---|
+| `markdown` | 7,228 paragraphs | 371/436 | 11,816 paragraphs |
+| `comment` | 6,100 paragraphs | 1,416/2,149 | 96,913 adjacent pairs (corroborates the earlier 94,201 order of magnitude) |
+| **Combined R19 baseline at landing** | **~13,328 findings** | -- | -- |
+
+This is larger than the sum of every other rule's current baseline (3,222 findings, R1-R18
+combined) -- stated plainly, not softened, now that `comment` scope is included. It is still
+mechanically the same shrink-only baseline; nothing new needs to be built to carry it. It does
+NOT mean bulk-fixing 13,328 paragraphs inline this session -- markdown's bulk fix already has an
+instrument (`check_prose_style.py reflow --write`); comment scope has NO bulk-reflow instrument
+yet (this plan adds detection, not an auto-fixer for comments), so the comment-scope pile rides
+the baseline as debt with no scheduled bulk-fix PR until one is separately planned.
 
 ## Wiring summary (files touched)
 
@@ -226,10 +260,14 @@ be reviewed on their own terms.
 - `.claude/rediacc_hooks/guards/block_prose_style_commit.py` -- no logic change; new
   `EDGE_CASES` entries in `test-block_prose_style_commit.py`.
 - `.ci/config/prose-style-baseline.json` -- regenerated via `--write-baseline` once R19 lands,
-  absorbing the measured markdown pile (expect low thousands under the banded heuristic, not the
-  11,816 naive count).
+  absorbing the measured pile (~13,328 findings across markdown + comment, per the Debt-pile
+  decision above, not the much larger naive counts).
 - `.ci/rediacc_ci/tests/test_quality_prose_style.py` -- new `test_underwrap_*` cases mirroring
   `test_reflow_*`.
+- `.ci/rediacc_ci/quality/prose_style.py` -- also add `comment_paragraphs(lines)`, mirroring the
+  factored-out `paragraphs(text)` but consuming the `Line` objects `extract()` already produces
+  for comment-scope files, so `underwrap_findings()` can run against BOTH markdown text and
+  comment-scope `Line` lists via one shared gate function.
 
 ## Verification
 

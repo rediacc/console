@@ -121,6 +121,12 @@ CASES = [
         % (COMMIT, "z" * 400),
         False,
     ),
+    (
+        "a cat heredoc quoting a commit+pr example as PROSE is not a target",
+        "cat > /tmp/note.md <<'EOF'\nExample: %s -m \"fix: x\" && gh pr create --title x --body y\nEOF"
+        % COMMIT,
+        False,
+    ),
 ]
 
 
