@@ -25,7 +25,7 @@ A plan about eliminating duplication had duplicated an existing plan. The rule t
 
 ## Tasks
 
-- [ ] Fold the family-widening question into agent/PLAN-extension-shaped-matchers.md commit 3 and remove it from this plan's scope
+- [x] Fold the family-widening question into agent/PLAN-extension-shaped-matchers.md commit 3 and remove it from this plan's scope
 - [x] Build the sibling-differential harness by generalising the corpus and compare halves of test_guards_differential.py, which stays alive
 - [x] Register the prose-decision pair as its first entry: python_comment_lines against _python_reflow_lines
 - [ ] Register the C-style pair beside it: cstyle_comment_lines against the `.ts`/`.js`/`.go` segment path, which has no region-kind axis and so needs a different coverage signal
@@ -35,7 +35,8 @@ A plan about eliminating duplication had duplicated an existing plan. The rule t
 - [ ] Wire the same refusal into the pre-bash commit, push and gh guards, so the proof is demanded where the change leaves the tree
 - [ ] Add the pre-bash staged-files-only duplication probe against a cached index, budget 200ms, failing OPEN and LOUD when the cache is stale
 - [ ] Record the batch-size-scales-with-proof rule in docs/agent-reference/TRAPS.md with a Trap-Id and an Enforced-By pointer
-- [ ] Re-measure the Python family widening AFTER commit 3 lands, and only then re-ask whether a further family is worth adding
+The two family-widening boxes this plan started with are GONE rather than ticked-by-doing, and that is the fold. `agent/PLAN-extension-shaped-matchers.md` owns commit 3, has re-checked its sequencing three times, and has deliberately not started it; carrying a duplicate box here would be this plan committing the defect it was written to detect. The operator's question about
+seeding versus draining belongs to that plan and to the numbers it re-measures, not to this one.
 
 ## The four incidents this answers to
 
