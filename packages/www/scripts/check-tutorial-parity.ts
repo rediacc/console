@@ -33,8 +33,7 @@ const castDir = path.join(wwwRoot, 'public', 'assets', 'tutorials');
 const docsDir = path.join(wwwRoot, 'src', 'content', 'docs', 'en');
 const baselinePath = path.join(scriptDir, 'tutorial-parity-baseline.json');
 
-// A storyboard command that disagrees with the recorded marker it narrates. Carries both
-// texts so the backlog below can defer ONE known pair without muting the class.
+// A storyboard command that disagrees with the recorded marker it narrates. Carries both texts so the backlog below can defer ONE known pair without muting the class.
 interface Drift {
   key: string;
   commandFull: string;
@@ -54,18 +53,10 @@ function isAuthored(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && !value.startsWith('TODO:');
 }
 
-// The command "path" — used to assert a storyboard's full command matches the
-// recorded cast command without requiring identical argument *values* (the web
-// page templates them, e.g. `<machine-name>` vs recorded `machine-11`).
+// The command "path" — used to assert a storyboard's full command matches the recorded cast command without requiring identical argument *values* (the web page templates them, e.g. `<machine-name>` vs recorded `machine-11`).
 //
-// For `rdc` this is resolved against the real command tree. It used to be
-// guessed as "leading tokens up to the first `-` or `<`", which held only while
-// every target was a flag. Once the CLI moved to positional refs the guess broke
-// in a way that pointed at the wrong culprit: `rdc machine add <machine-name>`
-// stopped at the placeholder (path `rdc machine add`) while the recording
-// `rdc machine add machine-11` swallowed the value (path `rdc machine add
-// machine-11`), so identical commands "differed". Every such pair — 68 of them —
-// was then absorbed into the baseline as if the storyboards were at fault.
+// For `rdc` this is resolved against the real command tree. It used to be guessed as "leading tokens up to the first `-` or `<`", which held only while every target was a flag. Once the CLI moved to positional refs the guess broke in a way that pointed at the wrong culprit: `rdc machine add <machine-name>` stopped at the placeholder (path `rdc machine add`) while the recording
+// `rdc machine add machine-11` swallowed the value (path `rdc machine add machine-11`), so identical commands "differed". Every such pair — 68 of them — was then absorbed into the baseline as if the storyboards were at fault.
 function commandPath(cmd: string): string {
   const rdcPath = rdcCommandPath(cmd);
   if (rdcPath !== null) return rdcPath;
@@ -85,12 +76,8 @@ const SHORT_FLAG_LONG: Record<string, string> = {
   '-c': '--command (or --container for `repo tunnel`)',
 };
 
-// rdc commands must read self-documentingly: a short flag is allowed ONLY when
-// its value is a `<placeholder>` (which names the flag), e.g. `-m <machine-name>`.
-// A short flag followed by a literal value (e.g. `-r my-app`) is opaque and must
-// use the long form. Standard shell tools (ssh, ssh-keygen, ls, cat, …) are exempt.
-// Returns the first offending flag, or null. `cmd` may be a recorded cast marker
-// or a card.commandFull string.
+// rdc commands must read self-documentingly: a short flag is allowed ONLY when its value is a `<placeholder>` (which names the flag), e.g. `-m <machine-name>`. A short flag followed by a literal value (e.g. `-r my-app`) is opaque and must use the long form. Standard shell tools (ssh, ssh-keygen, ls, cat, …) are exempt. Returns the first offending flag, or null. `cmd` may be a
+// recorded cast marker or a card.commandFull string.
 /** What to suggest for a short flag with no known long spelling. */
 const LONG_FORM_SUGGESTION = 'the long form';
 
@@ -107,9 +94,7 @@ function rdcShortFlagViolation(cmd: string): { flag: string; suggestion: string 
   }
   if (tokens[i] !== 'rdc') return null; // not an rdc invocation — exempt
   for (let j = i + 1; j < tokens.length; j++) {
-    // Everything after --command (or a -c payload) is the REMOTE command —
-    // shell idioms like `df -h .` are fine there. Stop scanning rdc flags,
-    // but still hold `-c` itself to the placeholder rule first.
+    // Everything after --command (or a -c payload) is the REMOTE command — shell idioms like `df -h .` are fine there. Stop scanning rdc flags, but still hold `-c` itself to the placeholder rule first.
     if (tokens[j] === '--command') break;
     if (/^-[a-z]$/.test(tokens[j])) {
       const value = tokens.at(j + 1);
@@ -123,11 +108,8 @@ function rdcShortFlagViolation(cmd: string): { flag: string; suggestion: string 
   return null;
 }
 
-// Fields that extract-tutorial-events.js knows to carry across a re-extraction.
-// MUST stay in sync with that script. The meta-guard below fails if a transcript
-// contains any key outside these sets, which means someone added a hand-authored
-// field but didn't teach extract to preserve it — exactly the regression that
-// silently wiped cardLabel/chapters/title/prose (rediacc/console tutorial work).
+// Fields that extract-tutorial-events.js knows to carry across a re-extraction. MUST stay in sync with that script. The meta-guard below fails if a transcript contains any key outside these sets, which means someone added a hand-authored field but didn't teach extract to preserve it — exactly the regression that silently wiped cardLabel/chapters/title/prose (rediacc/console
+// tutorial work).
 const PRESERVED_DOC_KEYS = new Set([
   'cast',
   'language',
@@ -187,8 +169,7 @@ function checkTutorial(slug: string, issues: Issue[]): void {
   // Storyboard is structural; load first.
   const storyboard = readStoryboard(sbPath);
 
-  // Drafts skip all per-tutorial checks. They're in-progress and not yet
-  // expected to have full transcripts/mdx pages.
+  // Drafts skip all per-tutorial checks. They're in-progress and not yet expected to have full transcripts/mdx pages.
   if (storyboard.draft === true) {
     return;
   }
@@ -230,9 +211,7 @@ function checkTutorial(slug: string, issues: Issue[]): void {
     }
   }
 
-  // 4b. Every cast-narrated scene must carry card.commandFull (the full,
-  // copy-pasteable command rendered on the web page), and its command path must
-  // match the recorded cast marker so the page can't silently drift from the video.
+  // 4b. Every cast-narrated scene must carry card.commandFull (the full, copy-pasteable command rendered on the web page), and its command path must match the recorded cast marker so the page can't silently drift from the video.
   for (const scene of castNarrated) {
     const full = scene.card?.commandFull;
     if (!isAuthored(full)) {
@@ -282,8 +261,7 @@ function checkTutorial(slug: string, issues: Issue[]): void {
     push(trEnPath, 'top-level "title" missing or TODO');
   }
 
-  // Meta-guard: every key in the transcript must be in extract's preserve-list,
-  // otherwise re-running `www tutorials extract` would silently drop it.
+  // Meta-guard: every key in the transcript must be in extract's preserve-list, otherwise re-running `www tutorials extract` would silently drop it.
   const trRaw = readJson<Record<string, unknown>>(trEnPath);
   for (const key of Object.keys(trRaw)) {
     if (!PRESERVED_DOC_KEYS.has(key)) {
@@ -488,8 +466,7 @@ function selftest(): boolean {
 
   for (const c of sharedSelftestCases()) check(c.name, c.ok, c.detail ?? '');
 
-  // This gate's own id shape: the scene KEY. A re-cut scene re-keys its entry, which is why
-  // the refusal carries the hand-edit hint rather than telling anyone to reseed.
+  // This gate's own id shape: the scene KEY. A re-cut scene re-keys its entry, which is why the refusal carries the hand-edit hint rather than telling anyone to reseed.
   const frozen = ['add-server:3', 'forking:7'];
   const verdict = (live: string[]) =>
     writeBaselineVerdict({
@@ -558,13 +535,10 @@ function main(): number {
     }
     const sorted = Object.fromEntries(Object.entries(next).sort(([a], [b]) => a.localeCompare(b)));
 
-    // COMPOSITION. This backlog re-froze unconditionally, so a reseed could retire two
-    // re-recorded scenes and enshrine a third that had just drifted, while printing a
-    // smaller number. The id is the scene KEY, so a scene renamed or re-cut re-keys its
+    // COMPOSITION. This backlog re-froze unconditionally, so a reseed could retire two re-recorded scenes and enshrine a third that had just drifted, while printing a smaller number. The id is the scene KEY, so a scene renamed or re-cut re-keys its
     // entry; hand-edit that line rather than reseeding when that happens.
     //
-    // The baseline file does not exist today, this backlog having been drained to zero,
-    // so recreating it is a deliberate act and needs --first-seed.
+    // The baseline file does not exist today, this backlog having been drained to zero, so recreating it is a deliberate act and needs --first-seed.
     const had = existsSync(baselinePath);
     const previous = Object.keys(had ? loadBaseline() : {});
     const verdict = writeBaselineVerdict({

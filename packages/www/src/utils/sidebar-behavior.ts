@@ -70,11 +70,7 @@ export function generateTOCFromHtml(htmlContent: string, options: TOCOptions = {
       continue;
     }
 
-    // The heading tag already carries the id the page will render, written by the
-    // rehype pipeline. Read it instead of re-deriving one: re-derivation is how the
-    // TOC and the document ended up running two different slug algorithms, which
-    // left half the site's in-page links dead. Attribute order is not guaranteed,
-    // so parse the attribute soup rather than assuming a position.
+    // The heading tag already carries the id the page will render, written by the rehype pipeline. Read it instead of re-deriving one: re-derivation is how the TOC and the document ended up running two different slug algorithms, which left half the site's in-page links dead. Attribute order is not guaranteed, so parse the attribute soup rather than assuming a position.
     const idMatch = /\bid\s*=\s*(?:"([^"]*)"|'([^']*)')/.exec(match[2]);
     const id = idMatch ? idMatch[1] || idMatch[2] || '' : '';
 

@@ -175,8 +175,7 @@ for (const file of files) {
         changed = true;
       }
 
-      // Sync narrations[] (intro/slide/browser/outro narrations) by id.
-      // Add missing ids as TODO placeholders, remove extras, preserve translations.
+      // Sync narrations[] (intro/slide/browser/outro narrations) by id. Add missing ids as TODO placeholders, remove extras, preserve translations.
       const sourceNarrations = Array.isArray(source.narrations) ? source.narrations : [];
       const existingNarrations = Array.isArray(existing.narrations) ? existing.narrations : [];
       const existingNarrationByID = new Map(
@@ -192,10 +191,7 @@ for (const file of files) {
         }
         return { id: src.id, text: `TODO: translate narration ${src.id}` };
       });
-      // Detect drift: id-set difference or count change
-      // Boolean(): the transcripts come out of JSON.parse, so `existing` is `any`
-      // and `.some()` on it is typed `any` too. Coercing states the obvious — this
-      // is a drift PREDICATE — and keeps `||` from reading as a value fallback.
+      // Detect drift: id-set difference or count change Boolean(): the transcripts come out of JSON.parse, so `existing` is `any` and `.some()` on it is typed `any` too. Coercing states the obvious — this is a drift PREDICATE — and keeps `||` from reading as a value fallback.
       const idsDiffer =
         sourceNarrations.length !== existingNarrations.length ||
         Boolean(
@@ -206,9 +202,7 @@ for (const file of files) {
         existing.narrations = nextNarrations;
         changed = true;
       } else if (sourceNarrations.length === 0 && existingNarrations.length > 0) {
-        // SAFETY: do NOT auto-delete locale narrations when EN has none.
-        // This usually indicates EN was inadvertently wiped (e.g. by an old
-        // version of extract). Auto-delete would destroy translation work.
+        // SAFETY: do NOT auto-delete locale narrations when EN has none. This usually indicates EN was inadvertently wiped (e.g. by an old version of extract). Auto-delete would destroy translation work.
         console.warn(
           `SKIP-DELETE: ${path.relative(ROOT, targetPath)} has narrations[] but EN does not. Reconcile EN before re-running.`
         );

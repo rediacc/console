@@ -174,8 +174,7 @@ function setManifestEntry(
   saveManifest(manifest);
 }
 
-// ─── CLI entry point (used by upload-media-to-r2.sh and Python callers) ───
-// Usage: npx tsx update-video-manifest.ts --kind tutorials --key <castKey> \
+// ─── CLI entry point (used by upload-media-to-r2.sh and Python callers) ─── Usage: npx tsx update-video-manifest.ts --kind tutorials --key <castKey> \
 //          --lang <lang> --field mp4 --path <bucket-key> --size <bytes> --sha256 <hex>
 function parseCliArgs(argv: string[]): Record<string, string> {
   const out: Record<string, string> = {};
@@ -204,9 +203,7 @@ if (isMain) {
     path: args.path,
     size: Number(args.size),
     sha256: args.sha256,
-    // Omit the key entirely when not supplied, rather than writing `engine: undefined`:
-    // JSON.stringify drops undefined values, so both forms serialize identically, but
-    // only this one keeps the in-memory object honest for anything that checks `in`.
+    // Omit the key entirely when not supplied, rather than writing `engine: undefined`: JSON.stringify drops undefined values, so both forms serialize identically, but only this one keeps the in-memory object honest for anything that checks `in`.
     ...(args.engine ? { engine: args.engine } : {}),
     ...(args.renderer ? { renderer: args.renderer } : {}),
   });

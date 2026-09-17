@@ -103,9 +103,7 @@ const LeadMagnetModal: React.FC = () => {
 
     if (captchaEnabled && !captcha.token) {
       setState('error');
-      // Two different situations, and telling them apart is the whole fix: the widget is
-      // there and untouched, or the widget never loaded. The second one needs to say so
-      // and offer the retry, not repeat an instruction that points at nothing.
+      // Two different situations, and telling them apart is the whole fix: the widget is there and untouched, or the widget never loaded. The second one needs to say so and offer the retry, not repeat an instruction that points at nothing.
       setErrorMsg(
         captchaMessage(
           captcha,
@@ -119,9 +117,7 @@ const LeadMagnetModal: React.FC = () => {
     setState('loading');
     setErrorMsg('');
 
-    // Open the tab synchronously inside the click handler so popup blockers
-    // honor the user-activation token. We point it to about:blank and rewrite
-    // the URL after the API responds. If the API errors we close the tab.
+    // Open the tab synchronously inside the click handler so popup blockers honor the user-activation token. We point it to about:blank and rewrite the URL after the API responds. If the API errors we close the tab.
     const pdfWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
 
     try {

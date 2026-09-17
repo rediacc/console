@@ -147,9 +147,7 @@ function main(): void {
     }
   }
 
-  // Batch the manifest for the bulk modes only. A single --cast/--lang publish
-  // keeps the per-file path, so the common interactive case is unchanged and the
-  // batch code cannot silently become the only tested route.
+  // Batch the manifest for the bulk modes only. A single --cast/--lang publish keeps the per-file path, so the common interactive case is unchanged and the batch code cannot silently become the only tested route.
   const bulk = args.all || args.allLangs;
   let tmpDir: string | null = null;
   if (bulk) {

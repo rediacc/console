@@ -50,8 +50,7 @@ const MAX_RESULTS = 50;
 
 // When a Fuse match lands in the body field, replace the pre-computed excerpt
 // with a window centered on the first match — so users see the relevant
-// paragraph for buried terms (e.g. REDIACC_ALLOW_GRAND_REPO) instead of the
-// section's opening sentence.
+// paragraph for buried terms (e.g. REDIACC_ALLOW_GRAND_REPO) instead of the section's opening sentence.
 function buildResultExcerpt(item: SearchItem, matches?: readonly FuseResultMatch[]): SearchItem {
   if (!item.body || !matches?.length) return item;
   const bodyMatch = matches.find((m) => m.key === 'body');
@@ -125,8 +124,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
   const resultsContainerRef = useRef<HTMLDivElement>(null);
 
   // Per-locale Fuse cache. The combined index was 1.6 MB gzipped; per-locale
-  // files are ~167-247 KB. We fetch on first modal open for the current
-  // locale, then cache so locale switches don't re-pay the cost.
+  // files are ~167-247 KB. We fetch on first modal open for the current locale, then cache so locale switches don't re-pay the cost.
   //
   // Three pieces of locale-keyed state, each with a distinct job:
   //   - fuseByLang (state)     — drives `fuse` for handleSearch (must be reactive).
@@ -154,9 +152,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
 
   // Lazy-load the locale-specific index the first time the user opens search
   // for that locale. No fetch happens for visitors who never open search.
-  // While the fetch is in flight we mark the locale as loading so the UI
-  // shows "Searching…" instead of a misleading "No results" if the user
-  // types ahead of the network round-trip.
+  // While the fetch is in flight we mark the locale as loading so the UI shows "Searching…" instead of a misleading "No results" if the user types ahead of the network round-trip.
   useEffect(() => {
     if (!isOpen) return;
     if (fuseByLang.has(currentLang)) return;
@@ -232,12 +228,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
     [fuse, allowedCategories, scope]
   );
 
-  // Re-run the active query when the user switches locale OR when the
-  // locale's Fuse index lands (so a query typed during the first fetch
-  // gets results as soon as the index arrives). Uses the previous-value
-  // pattern in render so we don't trip react-hooks/set-state-in-effect —
-  // calling handleSearch during render is legitimate derived state, the
-  // cycle converges in one extra render.
+  // Re-run the active query when the user switches locale OR when the locale's Fuse index lands (so a query typed during the first fetch gets results as soon as the index arrives). Uses the previous-value pattern in render so we don't trip react-hooks/set-state-in-effect — calling handleSearch during render is legitimate derived state, the cycle converges in one extra render.
   const [prevLang, setPrevLang] = useState(currentLang);
   const [prevFuse, setPrevFuse] = useState<Fuse<SearchItem> | null>(fuse);
   if (prevLang !== currentLang || prevFuse !== fuse) {

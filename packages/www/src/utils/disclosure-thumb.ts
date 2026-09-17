@@ -21,8 +21,7 @@ const thumbModules = import.meta.glob<string>('../assets/images/disclosure/*.svg
   eager: true,
   query: '?raw',
   import: 'default',
-  // Index access on a glob record is `string` per TS, but a missing key is `undefined`
-  // at runtime, so widen and let the null fallback stay sound.
+  // Index access on a glob record is `string` per TS, but a missing key is `undefined` at runtime, so widen and let the null fallback stay sound.
 }) as Record<string, string | undefined>;
 
 /** `'trigger-calculator'`, `'trigger-tech-diff'`, `'trigger-comparison'`, `'trigger-problem-detail'`, `'mechanism-cow'`. */

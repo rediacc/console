@@ -202,10 +202,7 @@ function resolveFamilyFile(family: string): string | null {
     const out = execFileSync('fc-match', ['-f', '%{file}\t%{family}', family], {
       encoding: 'utf8',
     });
-    // Split on LENGTH rather than on a nullish check. `fc-match` omits the tab when it has
-    // no family to report, so the second field really can be absent, but TypeScript types
-    // `split()` as `string[]` and therefore treats `families ?? ''` as a dead branch. A
-    // length test is a runtime fact it cannot dismiss, so the defence survives the linter.
+    // Split on LENGTH rather than on a nullish check. `fc-match` omits the tab when it has no family to report, so the second field really can be absent, but TypeScript types `split()` as `string[]` and therefore treats `families ?? ''` as a dead branch. A length test is a runtime fact it cannot dismiss, so the defence survives the linter.
     const parts = out.split('\t');
     const file = parts[0];
     const families = parts.length > 1 ? parts[1] : '';

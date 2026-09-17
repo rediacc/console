@@ -16,17 +16,14 @@ import { SITE_LOCALES } from '@rediacc/locales';
 // ---------------------------------------------------------------------------
 // Positional-syntax pre-scan
 //
-// The existing `validateCodeFences` only checks shell-fenced lines that
-// START with `rdc`. It misses:
+// The existing `validateCodeFences` only checks shell-fenced lines that START with `rdc`. It misses:
 //   - command substitution:  result=$(rdc machine query prod-1)
 //   - inline prose:          "Claude Code runs: rdc machine query prod-1"
 //   - markdown list items:   - `rdc machine query <machine>`
 //   - table cells:           | ... `rdc machine query <machine>` ... |
 //   - markdown fences:       copy-paste AGENTS.md templates nested in ```markdown
 //
-// The shared detector at scripts/lib/positional-cli-detector.ts derives the
-// zero-positional command set from packages/cli/scripts/command-tree.json
-// and scans any text blob for the positional-teaching pattern.
+// The shared detector at scripts/lib/positional-cli-detector.ts derives the zero-positional command set from packages/cli/scripts/command-tree.json and scans any text blob for the positional-teaching pattern.
 // ---------------------------------------------------------------------------
 
 const COMMAND_TREE_PATH = path.resolve(
@@ -85,10 +82,7 @@ const getPathsFromTree = () => {
   const tree = JSON.parse(fs.readFileSync(COMMAND_TREE_PATH, 'utf-8'));
   const leaves = new Set();
   const parents = new Set();
-  // Mirrors scripts/lib/positional-cli-detector.ts (getZeroPositionalCommands /
-  // getPlaceholderOnlyParents): only a command that accepts NO positional of
-  // its own can teach wrong positional syntax. Post-P4 most leaves take a
-  // positional ref (`repo up <ref>`), so flagging `rdc <cmd> <placeholder>`
+  // Mirrors scripts/lib/positional-cli-detector.ts (getZeroPositionalCommands / getPlaceholderOnlyParents): only a command that accepts NO positional of its own can teach wrong positional syntax. Post-P4 most leaves take a positional ref (`repo up <ref>`), so flagging `rdc <cmd> <placeholder>`
   // for EVERY path — what this set did before — reds the CORRECT documented
   // form; that stale copy grew the P7 backlog by ~1000 false positives when
   // the docs migrated to positional syntax.
@@ -243,9 +237,7 @@ function suggestedFix(parsed) {
 }
 
 function validateCodeFences(content, file, errors) {
-  // First pass: full-content positional-syntax scan. Catches wrapped forms
-  // (command substitution, inline prose, list items, table cells, markdown
-  // fences) that the per-line shell-fence scanner below misses.
+  // First pass: full-content positional-syntax scan. Catches wrapped forms (command substitution, inline prose, list items, table cells, markdown fences) that the per-line shell-fence scanner below misses.
   for (const hit of scanPositional(content)) {
     addError(
       errors,
@@ -280,9 +272,7 @@ function validateCodeFences(content, file, errors) {
     let commandText = merged.command;
     i = merged.endIndex;
 
-    // Normalise placeholders to dummy values so they're validated as real commands
-    // instead of silently skipped. This catches wrong flag/positional syntax even
-    // when the example uses <placeholder> tokens.
+    // Normalise placeholders to dummy values so they're validated as real commands instead of silently skipped. This catches wrong flag/positional syntax even when the example uses <placeholder> tokens.
     commandText = commandText.replaceAll(/<([a-zA-Z][\w-]*)>/g, 'PLACEHOLDER');
 
     const parsed = parseRdcCommand(commandText);
@@ -352,8 +342,7 @@ function printSummary(errors) {
   console.log(colors.red(`\n✗ CLI-usage backlog is OUT OF SYNC (the ratchet turns both ways):\n`));
   for (const r of regressions) console.log(colors.red(`  ✗ ${r}`));
 
-  // Show the violations for the OFFENDING files only. Dumping all ~3300 backlog entries
-  // would bury the regression in the very debt the baseline exists to set aside.
+  // Show the violations for the OFFENDING files only. Dumping all ~3300 backlog entries would bury the regression in the very debt the baseline exists to set aside.
   const offending = new Set(regressions.map((r) => r.split(':')[0]));
   printSummaryDetail(errors.filter((e) => offending.has(e.file)));
   console.log(

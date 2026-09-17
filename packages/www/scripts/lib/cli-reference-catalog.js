@@ -33,8 +33,7 @@ const TARGET_DOC_CATEGORIES = new Set([
   'Use Cases',
 ]);
 const SHELL_FENCE_LANGS = new Set(['bash', 'sh', 'shell', 'zsh', 'powershell', 'ps1']);
-// Flags always valid on any command. Includes options not exported in command-tree.json
-// but registered globally by the CLI framework (output formatting, confirmations, etc.)
+// Flags always valid on any command. Includes options not exported in command-tree.json but registered globally by the CLI framework (output formatting, confirmations, etc.)
 const GLOBAL_ALWAYS_VALID = new Set([
   '--help',
   '--help-all',
@@ -51,8 +50,7 @@ const GLOBAL_ALWAYS_VALID = new Set([
   '--fields',
   '--no-color',
 ]);
-// Subset of GLOBAL_ALWAYS_VALID that accept a value argument but are not
-// listed in command-tree.json root options (so optionExpectsValue misses them).
+// Subset of GLOBAL_ALWAYS_VALID that accept a value argument but are not listed in command-tree.json root options (so optionExpectsValue misses them).
 const GLOBAL_VALUE_FLAGS = new Set(['--output', '-o']);
 
 const COMMAND_TREE_PATH = path.resolve(__dirname, '../../../cli/scripts/command-tree.json');
@@ -279,12 +277,8 @@ function stripInlineComment(text) {
       return text.slice(0, ci).trimEnd();
     }
     // A shell operator ends the rdc command; everything after it belongs to the
-    // shell, not to rdc. Without this, `rdc config audit log --since 1h > out.json`
-    // parsed `>` and `out.json` as two positional args and reported a spurious
-    // "excess positional" error -- a false positive, and a noisy gate is the
-    // failure mode that gets gates suppressed.
-    // `>` must be WHITESPACE-PRECEDED to count as a redirect. Docs are full of
-    // `<ref>` / `<source>` / `<machine-name>` placeholders whose closing bracket
+    // shell, not to rdc. Without this, `rdc config audit log --since 1h > out.json` parsed `>` and `out.json` as two positional args and reported a spurious "excess positional" error -- a false positive, and a noisy gate is the failure mode that gets gates suppressed. `>` must be WHITESPACE-PRECEDED to count as a redirect. Docs are full of `<ref>` / `<source>` / `<machine-name>`
+    // placeholders whose closing bracket
     // is preceded by a letter; treating those as redirects truncated the command
     // mid-placeholder and made every mandatory option after it look missing.
     if (!inQuote && ch === '>' && ci > 0 && /\s/.test(text[ci - 1])) {

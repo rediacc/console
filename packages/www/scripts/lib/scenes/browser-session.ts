@@ -106,8 +106,7 @@ export function createSessionManager(opts: {
   const closeInfo = new Map<string, { wallCloseMs: number }>();
   let currentSceneIndex = -1;
 
-  // Precompute each named session's last referencing scene index so it can
-  // be closed eagerly (bounds the recording length).
+  // Precompute each named session's last referencing scene index so it can be closed eagerly (bounds the recording length).
   const lastUse = new Map<string, number>();
   opts.storyboard.scenes.forEach((scene, i) => {
     if (scene.type === 'browser' && scene.session) lastUse.set(scene.session, i);
@@ -247,8 +246,7 @@ export function createSessionManager(opts: {
     async acquireAnonymous(spec, need, sceneId) {
       const name = `__anon:${sceneId}:${live.size + closed.size}`;
       console.log(`[video] creating anonymous session for scene ${sceneId}...`);
-      // Anonymous sessions live exactly as long as their own scene: the
-      // loop's closeFinished(currentSceneIndex) call closes them.
+      // Anonymous sessions live exactly as long as their own scene: the loop's closeFinished(currentSceneIndex) call closes them.
       return create(name, { ...spec, width: need }, sceneId, currentSceneIndex);
     },
 
@@ -302,8 +300,7 @@ export function createSessionManager(opts: {
       const durSec = end - start;
       cutSegmentMp4(session.result.webm, start, durSec, outMp4, padFilter);
       if (opts.debugFramesDir) {
-        // Sanitize ':' (and other Windows-illegal chars) from scene IDs like
-        // 'vscode-versions:left' so debug frame filenames never break checkout.
+        // Sanitize ':' (and other Windows-illegal chars) from scene IDs like 'vscode-versions:left' so debug frame filenames never break checkout.
         const safeId = sceneId.replaceAll(/[:<>"|?*]/g, '-');
         extractPosterJpg(
           session.result.webm,

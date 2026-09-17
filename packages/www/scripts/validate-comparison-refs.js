@@ -27,8 +27,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 const TRANSLATIONS_DIR = path.join(ROOT_DIR, 'src', 'i18n', 'translations');
 
-// Domains with aggressive bot protection that block automated requests.
-// These are verified manually via agent-browser and skipped in --online checks.
+// Domains with aggressive bot protection that block automated requests. These are verified manually via agent-browser and skipped in --online checks.
 const BOT_PROTECTED_DOMAINS = new Set(['www.rubrik.com', 'www.zerto.com']);
 
 const colors = {
@@ -163,11 +162,7 @@ function validateOffline(translations, errors) {
       }
     }
 
-    // Rule 4: duplicate-column-ref — each check cell in a column must use a unique ref
-    // A shared ref means multiple feature claims cite the same generic source instead of
-    // feature-specific evidence. The same URL may appear in multiple reference items with
-    // different text descriptions — that is the correct way to cite the same source for
-    // different claims.
+    // Rule 4: duplicate-column-ref — each check cell in a column must use a unique ref A shared ref means multiple feature claims cite the same generic source instead of feature-specific evidence. The same URL may appear in multiple reference items with different text descriptions — that is the correct way to cite the same source for different claims.
     const numCols = comparison.features[0]?.values?.length ?? 0;
     for (let col = 0; col < numCols - 1; col++) {
       // skip last column (Rediacc)

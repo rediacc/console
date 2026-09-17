@@ -46,10 +46,7 @@
 
 import fs from 'node:fs';
 
-// The repo-wide composition guard. Imported as `.ts` DELIBERATELY: three of this module's
-// four consumers run under plain `node`, not tsx, and Node 22.18+ strips types natively,
-// so `.ts` is the only specifier that resolves under BOTH runners. A `.js` specifier
-// resolves under tsx and throws ERR_MODULE_NOT_FOUND under node.
+// The repo-wide composition guard. Imported as `.ts` DELIBERATELY: three of this module's four consumers run under plain `node`, not tsx, and Node 22.18+ strips types natively, so `.ts` is the only specifier that resolves under BOTH runners. A `.js` specifier resolves under tsx and throws ERR_MODULE_NOT_FOUND under node.
 import {
   countAdditions,
   renderRefusal,
@@ -131,22 +128,16 @@ export function writeBacklog(baselinePath, errors, fileOf = (e) => e.file) {
 
   // COMPOSITION, ENFORCED AT THE CHOKE POINT.
   //
-  // The ratchet above is RED in both directions on the READ path, and this function was an
-  // unconditional re-freeze on the WRITE path. Those are different claims: the read path
-  // stops the table drifting between runs, and nothing at all stopped a `--write-baseline`
+  // The ratchet above is RED in both directions on the READ path, and this function was an unconditional re-freeze on the WRITE path. Those are different claims: the read path stops the table drifting between runs, and nothing at all stopped a `--write-baseline`
   // from retiring three drained files while silently enshrining a fourth that had just
   // broken. It prints a smaller number while doing it, so it reads as progress.
   //
-  // Guarded HERE rather than in each caller because this is the single point all four
-  // share, and because one of them was under another session's hand when this was written.
-  // Growth in a COUNT table wears two faces and a set-only check catches one: a file absent
+  // Guarded HERE rather than in each caller because this is the single point all four share, and because one of them was under another session's hand when this was written. Growth in a COUNT table wears two faces and a set-only check catches one: a file absent
   // from the old table, and a file whose allowance goes UP.
   //
   // WHY process.exit RATHER THAN A THROW OR A RETURN CODE. Callers destructure the return
   // value and log it; none of them can act on a refusal, and none should have to learn to.
-  // A throw would surface as an unhandled stack trace, which reads as a flake rather than
-  // as a decision. Exiting non-zero with the reason printed is the behaviour every other
-  // gate in this repo already has, and it needs no change in any caller.
+  // A throw would surface as an unhandled stack trace, which reads as a flake rather than as a decision. Exiting non-zero with the reason printed is the behaviour every other gate in this repo already has, and it needs no change in any caller.
   const had = fs.existsSync(baselinePath);
   const previous = had ? loadBacklog(baselinePath) : {};
   const verdict = writeBaselineVerdict({

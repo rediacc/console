@@ -110,9 +110,7 @@ async function main(): Promise<void> {
   const scriptDir = path.dirname(fileURLToPath(import.meta.url));
   const wwwRoot = path.resolve(scriptDir, '..');
   const wwwPublicRoot = path.join(wwwRoot, 'public');
-  // Tracked artifact dir: browser silent segments are expensive to record
-  // (live lab/Playwright) and tiny to store, so they're committed alongside
-  // the other tutorial assets and reused across languages, machines, and CI.
+  // Tracked artifact dir: browser silent segments are expensive to record (live lab/Playwright) and tiny to store, so they're committed alongside the other tutorial assets and reused across languages, machines, and CI.
   const browserCacheDir = path.join(wwwPublicRoot, 'assets', 'tutorials', 'browser-segments');
 
   const castPath = path.join(wwwPublicRoot, 'assets', 'tutorials', `${tutorial}.cast`);
@@ -133,12 +131,8 @@ async function main(): Promise<void> {
   );
   const outDir = path.join(wwwPublicRoot, 'assets', 'tutorials', 'video', lang);
   const outPath = path.join(outDir, `${tutorial}.mp4`);
-  // The mp4 is rendered to a staging path and renamed into place LAST, after every
-  // sidecar exists. Without that, a killed or crashed render leaves a truncated file at
-  // the final path with a FRESH mtime — and the render-queue predicate
-  // (list-tutorial-render-pairs.js) treats "timeline older than mp4" as done, so that
-  // pair would never be re-rendered and would ship broken. rename(2) within one directory
-  // is atomic, so a reader sees the old video or the new one, never a half-written one.
+  // The mp4 is rendered to a staging path and renamed into place LAST, after every sidecar exists. Without that, a killed or crashed render leaves a truncated file at the final path with a FRESH mtime — and the render-queue predicate (list-tutorial-render-pairs.js) treats "timeline older than mp4" as done, so that pair would never be re-rendered and would ship broken. rename(2)
+  // within one directory is atomic, so a reader sees the old video or the new one, never a half-written one.
   const stagePath = `${outPath}.partial`;
   mkdirSync(outDir, { recursive: true });
 
@@ -148,8 +142,7 @@ async function main(): Promise<void> {
   const castEnd = castDurationSec(parsedCast);
   const narrations = loadNarrationLookup(timelinePath, wwwPublicRoot);
 
-  // Transcripts hold all user-visible card text (title, chapters, cardLabel).
-  // Per-lang first, English second as fallback for not-yet-translated locales.
+  // Transcripts hold all user-visible card text (title, chapters, cardLabel). Per-lang first, English second as fallback for not-yet-translated locales.
   const transcriptPath = path.join(
     wwwRoot,
     'src',
@@ -185,12 +178,9 @@ async function main(): Promise<void> {
 
   // Storyboard-level environment hooks: setupCommand prepares live resources
   // browser scenes depend on (demo forks, tunnels, stacks); teardownCommand
-  // is guaranteed below even when compilation throws. Both run from the
-  // monorepo root — storyboard commands reference repo-root-relative paths
-  // (e.g. .ci/tutorials/lib/…) regardless of where the generator is invoked.
+  // is guaranteed below even when compilation throws. Both run from the monorepo root — storyboard commands reference repo-root-relative paths (e.g. .ci/tutorials/lib/…) regardless of where the generator is invoked.
   //
-  // Skip the lab hooks entirely when every browser scene reuses a cached
-  // silent segment — a fully-cached locale render needs no live resources.
+  // Skip the lab hooks entirely when every browser scene reuses a cached silent segment — a fully-cached locale render needs no live resources.
   const browserCache = { dir: browserCacheDir, reuse: cacheReuse, refresh: cacheRefresh };
   const needsLab = storyboard.scenes.some(
     (s) =>
@@ -206,10 +196,7 @@ async function main(): Promise<void> {
     console.log('[video] all browser scenes cached → skipping setupCommand (no lab)');
   }
 
-  // The cast-narrated timing collector is always active — the VTT emitter
-  // needs it to compute absolute after-narration start times. The --debug
-  // flag only controls whether the JSON sidecar + per-scene last-frame PNGs
-  // are written to disk.
+  // The cast-narrated timing collector is always active — the VTT emitter needs it to compute absolute after-narration start times. The --debug flag only controls whether the JSON sidecar + per-scene last-frame PNGs are written to disk.
   const debugFramesDir = debug ? path.join(outDir, `${tutorial}.debug-frames`) : '';
   if (debug) mkdirSync(debugFramesDir, { recursive: true });
   const debugCollector: DebugCollector = {
@@ -246,12 +233,8 @@ async function main(): Promise<void> {
       transcriptEn,
     };
 
-    // --captions-only: recover each scene's duration analytically (no
-    // ffmpeg, no live sessions) instead of actually rendering it. Falls
-    // back to a full render (by throwing, so the caller re-invokes without
-    // the flag) when any scene's timing genuinely cannot be known without
-    // one -- currently only a browser/browser-split scene with a cold
-    // silent-segment cache. See scenes/index.ts::computeSceneDurationDry.
+    // --captions-only: recover each scene's duration analytically (no ffmpeg, no live sessions) instead of actually rendering it. Falls back to a full render (by throwing, so the caller re-invokes without the flag) when any scene's timing genuinely cannot be known without one -- currently only a browser/browser-split scene with a cold silent-segment cache. See
+    // scenes/index.ts::computeSceneDurationDry.
     const sceneAbsStart: Record<string, number> = {};
     const sceneAbsEnd: Record<string, number> = {};
     let finalDuration: number | undefined;
@@ -264,15 +247,8 @@ async function main(): Promise<void> {
       .map((s, i) => isBrowserScene(s.type) || isBrowserScene(storyboard.scenes[i + 1].type));
 
     if (captionsOnly) {
-      // --captions-only assumes the mp4 already exists (that's the entire
-      // premise -- "the video didn't change, just re-derive captions for
-      // it"). Silently proceeding without one produces vtt/chapters/
-      // words.json for a video that was never downloaded/rendered locally,
-      // which publish-tutorial-video-to-r2.ts's --all mode won't even
-      // discover (it finds tutorials by scanning for .mp4 files) -- the
-      // sidecars would be written and then silently never published. Fail
-      // loudly instead: restore/render the mp4 first (`sync-media-from-r2.sh`
-      // doesn't cover video/, only audio -- there's no per-tutorial video
+      // --captions-only assumes the mp4 already exists (that's the entire premise -- "the video didn't change, just re-derive captions for it"). Silently proceeding without one produces vtt/chapters/ words.json for a video that was never downloaded/rendered locally, which publish-tutorial-video-to-r2.ts's --all mode won't even discover (it finds tutorials by scanning for .mp4
+      // files) -- the sidecars would be written and then silently never published. Fail loudly instead: restore/render the mp4 first (`sync-media-from-r2.sh` doesn't cover video/, only audio -- there's no per-tutorial video
       // restore command; use a full render for now).
       if (!existsSync(outPath)) {
         throw new Error(
@@ -293,11 +269,7 @@ async function main(): Promise<void> {
           );
         }
         if (dry.castNarratedDebug) debugCollector.recordCastNarrated(dry.castNarratedDebug);
-        // Mirror the real render's padding/fade accounting exactly so
-        // sceneAbsStart/End land on the same absolute timeline a full
-        // compile would have produced -- TAIL_PAD_SEC is added by
-        // addTailPad to every non-last chunk before assembly, and each
-        // crossfade overlaps the boundary by FADE_SEC.
+        // Mirror the real render's padding/fade accounting exactly so sceneAbsStart/End land on the same absolute timeline a full compile would have produced -- TAIL_PAD_SEC is added by addTailPad to every non-last chunk before assembly, and each crossfade overlaps the boundary by FADE_SEC.
         const dur = dry.durationSec + (isLast ? 0 : TAIL_PAD_SEC);
         sceneAbsStart[scene.id] = cursorSec;
         sceneAbsEnd[scene.id] = cursorSec + dur;
@@ -325,8 +297,7 @@ async function main(): Promise<void> {
       }
       await sessions.closeAll();
 
-      // Phase 2 — materialize deferred chunks (cut + mux session slices),
-      // then pad and assemble exactly as before.
+      // Phase 2 — materialize deferred chunks (cut + mux session slices), then pad and assemble exactly as before.
       const finalChunks: string[] = [];
       for (let i = 0; i < storyboard.scenes.length; i++) {
         const scene = storyboard.scenes[i];
@@ -353,9 +324,7 @@ async function main(): Promise<void> {
       console.log(`[video] assembling ${finalChunks.length} chunks → ${concatOut}`);
       assembleWithTransitions(finalChunks, fadeAfter, concatOut, tmp, FADE_SEC);
 
-      // Add 1s of silent leading + trailing padding so the video doesn't
-      // start/end abruptly. Held first/last frames mean the eye has a beat to
-      // settle before audio begins and after it ends.
+      // Add 1s of silent leading + trailing padding so the video doesn't start/end abruptly. Held first/last frames mean the eye has a beat to settle before audio begins and after it ends.
       console.log(`[video] adding 1s edge padding → ${outPath}`);
       addEdgePad(concatOut, stagePath, 1.0, 1.0);
 
@@ -364,9 +333,7 @@ async function main(): Promise<void> {
     }
 
     const EDGE_LEAD = 1.0;
-    // Value typed `| undefined`: `noUncheckedIndexedAccess` is off repo-wide, so
-    // without it every lookup below reads as guaranteed-present. It is not — the
-    // debug sidecar keys some of them off debugCollector, not off storyboard.scenes.
+    // Value typed `| undefined`: `noUncheckedIndexedAccess` is off repo-wide, so without it every lookup below reads as guaranteed-present. It is not — the debug sidecar keys some of them off debugCollector, not off storyboard.scenes.
     const sceneTimingAbs: Record<string, { start: number; end: number } | undefined> = {};
     for (const s of storyboard.scenes) {
       sceneTimingAbs[s.id] = {
@@ -406,16 +373,14 @@ async function main(): Promise<void> {
 
     // Poster: extract a frame from the first cast-narrated scene (so the
     // poster shows a terminal, not the title card); fall back to 1s in.
-    // Skipped in --captions-only: the mp4 (and therefore its poster) is
-    // unchanged, nothing to re-extract.
+    // Skipped in --captions-only: the mp4 (and therefore its poster) is unchanged, nothing to re-extract.
     if (!captionsOnly) {
       const firstCastNarrated = storyboard.scenes.find((s) => s.type === 'cast-narrated');
       const posterAtSec = firstCastNarrated
         ? (sceneTimingAbs[firstCastNarrated.id]?.start ?? 1.0) + 0.5
         : 1.0;
       const posterPath = path.join(outDir, `${tutorial}.${lang}.poster.jpg`);
-      // Only a full render reaches here (the enclosing branch excludes
-      // captions-only), so the frame always comes out of the stage file.
+      // Only a full render reaches here (the enclosing branch excludes captions-only), so the frame always comes out of the stage file.
       extractPosterJpg(stagePath, posterAtSec, posterPath);
       console.log(`[video] poster    → ${posterPath} (at ${posterAtSec.toFixed(2)}s)`);
     }
@@ -461,23 +426,18 @@ async function main(): Promise<void> {
       console.log(`[video] debug frames  → ${debugFramesDir}`);
     }
 
-    // COMMIT POINT. Everything above can fail, crash or be killed and the published mp4
-    // stays exactly as it was — which is what keeps the render-queue predicate honest,
-    // since a fresh mtime on a truncated file would mark the pair permanently done.
-    // Last, so the mp4 only appears once its vtt/chapters/words/poster are all on disk.
+    // COMMIT POINT. Everything above can fail, crash or be killed and the published mp4 stays exactly as it was — which is what keeps the render-queue predicate honest, since a fresh mtime on a truncated file would mark the pair permanently done. Last, so the mp4 only appears once its vtt/chapters/words/poster are all on disk.
     if (!captionsOnly) {
       renameSync(stagePath, outPath);
     }
   } finally {
-    // A stage file surviving to here means the render did not reach its commit point.
-    // Leaving it would be harmless but confusing, and it would accumulate one per crash.
+    // A stage file surviving to here means the render did not reach its commit point. Leaving it would be harmless but confusing, and it would accumulate one per crash.
     try {
       if (existsSync(stagePath)) rmSync(stagePath, { force: true });
     } catch {
       /* best effort */
     }
-    // Sessions hold chromium instances and tunnel processes pointed at
-    // resources teardownCommand may destroy — release them first.
+    // Sessions hold chromium instances and tunnel processes pointed at resources teardownCommand may destroy — release them first.
     await sessions.closeAll().catch((err: unknown) => {
       console.error(`[video] session cleanup failed: ${String(err)}`);
     });

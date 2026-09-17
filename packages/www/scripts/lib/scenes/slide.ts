@@ -84,16 +84,14 @@ function buildTitleCardSubs(
   activeIndex: number | null
 ): { subs: Record<string, string>; raw: Record<string, string> } {
   // Intro card (activeIndex === null) keeps full brightness everywhere.
-  // Step cards spotlight one row by dimming the header AND all other rows to
-  // the same low opacity, so the active row is the only fully bright element.
+  // Step cards spotlight one row by dimming the header AND all other rows to the same low opacity, so the active row is the only fully bright element.
   const isStepCard = activeIndex !== null;
   const subs: Record<string, string> = {
     TITLE: lookupTitle(ctx.transcript, ctx.transcriptEn, ctx.tutorial),
     SUBTITLE: '',
     HEADER_OPACITY: isStepCard ? STEP_CARD_INACTIVE_OPACITY : STEP_CARD_ACTIVE_OPACITY,
   };
-  // Commands are injected as raw SVG fragments so long commands can wrap
-  // onto a second <tspan> line instead of being truncated with an ellipsis.
+  // Commands are injected as raw SVG fragments so long commands can wrap onto a second <tspan> line instead of being truncated with an ellipsis.
   const raw: Record<string, string> = {};
   const subItems = buildSubItems(ctx);
   for (let i = 0; i < SUB_ITEM_SLOTS; i++) {
@@ -256,8 +254,7 @@ function buildSubItems(ctx: SceneContext): { label: string; command: string }[] 
     if (scene.type !== 'cast-narrated') continue;
     const castNarrated = scene;
     const label = lookupCardLabel(events, eventsEn, castNarrated.markerIndex);
-    // Cards show the FULL command (wrapped onto two lines when long) — the
-    // recorded marker text, with `card.command` as an authored override.
+    // Cards show the FULL command (wrapped onto two lines when long) — the recorded marker text, with `card.command` as an authored override.
     const command = castNarrated.card?.command ?? markerCommand(ctx.cast, castNarrated.markerIndex);
     items.push({ label, command });
     if (items.length >= SUB_ITEM_SLOTS) break;

@@ -70,8 +70,7 @@ function run() {
       if (typeof existingEvent?.cardLabel === 'string') {
         event.cardLabel = existingEvent.cardLabel;
       }
-      // Preserve optional prose / afterProse (written-doc narration variants
-      // used by the MDX tutorial pages + locale scaffolding). Hand-authored.
+      // Preserve optional prose / afterProse (written-doc narration variants used by the MDX tutorial pages + locale scaffolding). Hand-authored.
       if (typeof existingEvent?.prose === 'string') {
         event.prose = existingEvent.prose;
       }
@@ -86,8 +85,7 @@ function run() {
       language: 'en',
       version: 1,
       // Preserve doc-level authored fields. title is the tutorial display name;
-      // chapters maps storyboard scene.id -> human chapter label (drives the
-      // chapters.vtt labels). Both hand-authored, not derivable from the cast.
+      // chapters maps storyboard scene.id -> human chapter label (drives the chapters.vtt labels). Both hand-authored, not derivable from the cast.
       ...(typeof existing?.title === 'string' ? { title: existing.title } : {}),
       ...(existing?.chapters && typeof existing.chapters === 'object'
         ? { chapters: existing.chapters }

@@ -176,9 +176,7 @@ export function makeScrollPanSilent(
   mp4Path: string,
   padFilter: string = PAD_FILTER
 ): void {
-  // y(t): hold 0 until panStartSec, ramp linearly to maxY over panDurSec, then
-  // hold maxY. Commas inside the crop expression are escaped so the filtergraph
-  // parser does not read them as filter-argument separators.
+  // y(t): hold 0 until panStartSec, ramp linearly to maxY over panDurSec, then hold maxY. Commas inside the crop expression are escaped so the filtergraph parser does not read them as filter-argument separators.
   const y = `min(${maxY}\\,max(0\\,${maxY}*(t-${panStartSec.toFixed(3)})/${panDurSec.toFixed(3)}))`;
   run(FFMPEG_BIN, [
     '-y',
@@ -379,11 +377,7 @@ export function addEdgePad(inMp4: string, outMp4: string, leadSec: number, trail
     '44100',
     '-ac',
     '2',
-    // Name the container explicitly rather than letting ffmpeg infer it from the
-    // extension. This is the LAST render step, and its caller writes to a staging path
-    // ending in `.partial`, renaming into place only once every sidecar exists — so the
-    // output filename deliberately is not `.mp4`, and inference fails with
-    // "Error initializing the muxer ... Invalid argument".
+    // Name the container explicitly rather than letting ffmpeg infer it from the extension. This is the LAST render step, and its caller writes to a staging path ending in `.partial`, renaming into place only once every sidecar exists — so the output filename deliberately is not `.mp4`, and inference fails with "Error initializing the muxer ... Invalid argument".
     '-f',
     'mp4',
     outMp4,

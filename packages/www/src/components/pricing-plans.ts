@@ -54,8 +54,7 @@ export function buildPlans(): PricingPlan[] {
 export function buildMetricsFor(lang: Language) {
   const { ta, to } = createTranslator(lang);
   // `ta()` is typed `string[]`; this branch holds objects. Double cast, the
-  // same shape ResourceBriefPage.astro:60 uses. Without it `tsc --noEmit` fails
-  // TS2352 on this file, and it is the only .ts (not .astro) `ta()` call site
+  // same shape ResourceBriefPage.astro:60 uses. Without it `tsc --noEmit` fails TS2352 on this file, and it is the only .ts (not .astro) `ta()` call site
   // with an object array, so it is the only one tsc sees.
   const metrics = ta('pages.pricing.technicalSummary.metrics') as unknown as {
     key: string;

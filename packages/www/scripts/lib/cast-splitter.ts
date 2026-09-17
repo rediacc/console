@@ -191,8 +191,7 @@ export function countDisplayRows(
   // Keep only what's on screen after the last clear (run_cmd emits ESC[3J ESC[2J).
   const clearIdx = Math.max(text.lastIndexOf(`${ESC}[2J`), text.lastIndexOf(`${ESC}[3J`));
   if (clearIdx >= 0) text = text.slice(clearIdx);
-  // Strip CSI / OSC escape sequences so they don't count toward visible width.
-  // Regexes built from String.fromCharCode so no literal control char appears.
+  // Strip CSI / OSC escape sequences so they don't count toward visible width. Regexes built from String.fromCharCode so no literal control char appears.
   const clean = text
     .replaceAll(new RegExp(`${ESC}\\[[0-9;?]*[a-zA-Z]`, 'g'), '')
     .replaceAll(new RegExp(`${ESC}\\][^${BEL}]*${BEL}`, 'g'), '');

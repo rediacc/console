@@ -103,14 +103,9 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
     | Record<string, { tagline: string; cta: string }>
     | undefined;
 
-  // Dismissal is the browser's job now. The panel is an `auto` popover, so the UA gives us
-  // light-dismiss, Esc, top-layer stacking (no z-index race), the ::backdrop that dims the
-  // page, and mutual exclusion with the CTA menu, which is also an auto popover.
+  // Dismissal is the browser's job now. The panel is an `auto` popover, so the UA gives us light-dismiss, Esc, top-layer stacking (no z-index race), the ::backdrop that dims the page, and mutual exclusion with the CTA menu, which is also an auto popover.
   //
-  // `isOpen` stays the single source of truth because FOUR of Navigation's closes are not
-  // dismissals the popover knows anything about: scroll past 80px, opening the sidebar,
-  // opening search, and astro:after-swap. Those set React state, so state drives the
-  // popover here, and the `toggle` event drives state back when the UA dismisses.
+  // `isOpen` stays the single source of truth because FOUR of Navigation's closes are not dismissals the popover knows anything about: scroll past 80px, opening the sidebar, opening search, and astro:after-swap. Those set React state, so state drives the popover here, and the `toggle` event drives state back when the UA dismisses.
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
@@ -131,9 +126,7 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
     return () => panel.removeEventListener('toggle', onToggleEvent);
   }, [onClose]);
 
-  // Keyboard navigation. The popover closes ITSELF on Esc, but roving focus across the
-  // cards is a menu behaviour the Popover API does not provide, so this listener stays.
-  // Deleting it wholesale (which the line count invites) would strip arrow-key navigation
+  // Keyboard navigation. The popover closes ITSELF on Esc, but roving focus across the cards is a menu behaviour the Popover API does not provide, so this listener stays. Deleting it wholesale (which the line count invites) would strip arrow-key navigation
   // from the nav on every page.
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -141,8 +134,7 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
       switch (event.key) {
         case 'Escape':
           // Closing is the UA's; only the focus return is ours, and it must be explicit
-          // because this popover is opened by showPopover() rather than by a
-          // popovertarget invoker, so there is no invoker for the UA to restore to.
+          // because this popover is opened by showPopover() rather than by a popovertarget invoker, so there is no invoker for the UA to restore to.
           triggerRef.current?.focus();
           break;
         case 'ArrowDown':
@@ -183,12 +175,8 @@ const PersonaMegaMenu: React.FC<PersonaMegaMenuProps> = ({ isOpen, onToggle, onC
     }
   }, [isOpen, handleKeyDown]);
 
-  // Hover-to-open is GONE, deliberately, and this is a behaviour change rather than a
-  // refactor: the menu is now click-only, like claude.com's. The two hover timers carried
-  // two bugs that had already been paid for in live waves (a hover-open whose own click
-  // slammed it shut, and an orphaned 100ms timer that reopened what a click had closed),
-  // and neither bug can exist without the feature. Hover also has no keyboard or touch
-  // equivalent, so nothing that hover offered is lost for those users.
+  // Hover-to-open is GONE, deliberately, and this is a behaviour change rather than a refactor: the menu is now click-only, like claude.com's. The two hover timers carried two bugs that had already been paid for in live waves (a hover-open whose own click slammed it shut, and an orphaned 100ms timer that reopened what a click had closed), and neither bug can exist without the
+  // feature. Hover also has no keyboard or touch equivalent, so nothing that hover offered is lost for those users.
 
   return (
     <div className="persona-menu-wrapper">

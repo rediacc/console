@@ -31,43 +31,24 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
   const [isCtaMenuOpen, setIsCtaMenuOpen] = useState(false);
   const [isLearnMenuOpen, setIsLearnMenuOpen] = useState(false);
-  // Where-you-are trail for the condensed bar. Server-rendered EMPTY on
-  // purpose: it is invisible until the visitor scrolls, which cannot happen
-  // before hydration, so deriving it client-side costs nothing and keeps the
-  // SSR HTML free of a second locale-sensitive surface.
+  // Where-you-are trail for the condensed bar. Server-rendered EMPTY on purpose: it is invisible until the visitor scrolls, which cannot happen before hydration, so deriving it client-side costs nothing and keeps the SSR HTML free of a second locale-sensitive surface.
   const [trail, setTrail] = useState<{ href: string; label: string }[]>([]);
   const wordmarkRef = useRef<HTMLSpanElement>(null);
   const detectedLang = useLanguage();
   const currentLang = lang ?? detectedLang;
   const { t } = useTranslation(currentLang);
 
-  // Drives `.nav-translate` groups: center nav + utility cluster slide up and
-  // fade out 1:1 with the first 80px of scroll, then clamp. The icon and CTA
-  // stay, and the breadcrumb cross-fades in, so the collapsed nav is a slim
-  // context bar (mark, where-you-are, search, CTA) rather than an empty strip.
-  // The WORDMARK fades and collapses on the same 80px range, so the brand is
-  // still present at the top of a scrolled page without spending width on a
-  // word the visitor has already read.
-  // Opacity is paired with translate because the items would otherwise hide
-  // behind the higher-z announcement banner mid-slide and look abrupt.
-  // body[data-nav-collapsed] suppresses pointer events on faded items so they
-  // don't intercept clicks meant for the page below.
+  // Drives `.nav-translate` groups: center nav + utility cluster slide up and fade out 1:1 with the first 80px of scroll, then clamp. The icon and CTA stay, and the breadcrumb cross-fades in, so the collapsed nav is a slim context bar (mark, where-you-are, search, CTA) rather than an empty strip. The WORDMARK fades and collapses on the same 80px range, so the brand is still
+  // present at the top of a scrolled page without spending width on a word the visitor has already read. Opacity is paired with translate because the items would otherwise hide behind the higher-z announcement banner mid-slide and look abrupt. body[data-nav-collapsed] suppresses pointer events on faded items so they don't intercept clicks meant for the page below.
   //
-  // SCROLLING UP BRINGS THE FULL NAV BACK at any depth: any deliberate upward
-  // motion (>2px, to filter scroll jitter) restores it, any downward motion
-  // condenses it again. Near the top the fade stays position-linked so it
-  // tracks the first 80px 1:1 like it always has.
+  // SCROLLING UP BRINGS THE FULL NAV BACK at any depth: any deliberate upward motion (>2px, to filter scroll jitter) restores it, any downward motion condenses it again. Near the top the fade stays position-linked so it tracks the first 80px 1:1 like it always has.
   //
   // ONE listener, deliberately. Everything scroll-linked in this header goes
   // through this handler; a second listener would double the work per frame and
   // let the two states disagree mid-scroll. The direction detection lives in
   // the same handler and the same rAF for the same reason.
   //
-  // The wordmark's natural width is REMEASURED at scrollY 0 rather than baked
-  // into the stylesheet: `.nav-wordmark` steps down a font size below 48rem, so
-  // a literal would be wrong on phones, and `scrollWidth` reports the content
-  // width even while the box is clamped, which makes the reading self-correcting
-  // instead of needing a resize listener.
+  // The wordmark's natural width is REMEASURED at scrollY 0 rather than baked into the stylesheet: `.nav-wordmark` steps down a font size below 48rem, so a literal would be wrong on phones, and `scrollWidth` reports the content width even while the box is clamped, which makes the reading self-correcting instead of needing a resize listener.
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
@@ -75,18 +56,12 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
     let measured = 0;
     let lastY = window.scrollY;
     let returned = false; // full nav re-shown by an upward scroll while deep
-    // Lifted out of `update` to keep that function under the cognitive-complexity
-    // limit. It is a self-contained branch, so extracting it changes nothing about
-    // when it runs -- still only on frames that land at scrollY 0.
+    // Lifted out of `update` to keep that function under the cognitive-complexity limit. It is a self-contained branch, so extracting it changes nothing about when it runs -- still only on frames that land at scrollY 0.
     const remeasureWordmark = () => {
       const el = wordmarkRef.current;
       if (el === null) return;
-      // Measure with the clamp OFF. `scrollWidth` on the clamped box returns
-      // max(clientWidth, content), so it only ever corrects the stored width
-      // UPWARD: at 390px the wordmark steps down a font size to ~96px of text and
-      // the reading stayed pinned at the 120px fallback, padding a nav that
-      // already overflows that viewport. Clearing the inline size first costs one
-      // synchronous layout, and only on frames where the width is not animating.
+      // Measure with the clamp OFF. `scrollWidth` on the clamped box returns max(clientWidth, content), so it only ever corrects the stored width UPWARD: at 390px the wordmark steps down a font size to ~96px of text and the reading stayed pinned at the 120px fallback, padding a nav that already overflows that viewport. Clearing the inline size first costs one synchronous layout,
+      // and only on frames where the width is not animating.
       el.style.inlineSize = 'auto';
       const width = Math.ceil(el.getBoundingClientRect().width);
       el.style.inlineSize = '';
@@ -106,9 +81,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
       // Position-linked fade over the first 80px; a scroll-up return pins it
       // fully visible until the next downward motion.
       const fade = returned ? 1 : 1 - y / 80;
-      // Translate range is half the scroll range so items progressively clip
-      // against the nav top edge instead of jumping out of view in the first
-      // few pixels (item center is ~16px from the nav's top edge).
+      // Translate range is half the scroll range so items progressively clip against the nav top edge instead of jumping out of view in the first few pixels (item center is ~16px from the nav's top edge).
       root.style.setProperty('--nav-scroll-y', `${-(1 - fade) * 40}px`);
       root.style.setProperty('--nav-scroll-fade', `${fade}`);
       if (rawY === 0) remeasureWordmark();
@@ -154,10 +127,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
     setIsPersonaMenuOpen(false);
     setIsCtaMenuOpen(false);
     setIsLearnMenuOpen(false);
-    // Tell the docs-scoped modal to close. Docs pages mount their own SearchModal, and
-    // without this the two can be open at once via the CLICK paths (the CTA menu entry and
-    // the mobile drawer row). The HOTKEY path was already covered, because both mounts
-    // listen for this same event.
+    // Tell the docs-scoped modal to close. Docs pages mount their own SearchModal, and without this the two can be open at once via the CLICK paths (the CTA menu entry and the mobile drawer row). The HOTKEY path was already covered, because both mounts listen for this same event.
     document.dispatchEvent(new CustomEvent('search:open'));
   };
 
@@ -177,8 +147,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
   };
   const closeCtaMenu = () => setIsCtaMenuOpen(false);
 
-  // Native auto-popovers already close each other, so these siblings are
-  // belt-and-braces for React state rather than the dismissal mechanism.
+  // Native auto-popovers already close each other, so these siblings are belt-and-braces for React state rather than the dismissal mechanism.
   const toggleLearnMenu = () => {
     setIsLearnMenuOpen((prev) => !prev);
     setIsPersonaMenuOpen(false);
@@ -186,13 +155,9 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
   };
   const closeLearnMenu = () => setIsLearnMenuOpen(false);
 
-  // Build the condensed bar's breadcrumb from the path. Labels come from the
-  // EXISTING navigation.* catalog entries where a segment has one (so the
+  // Build the condensed bar's breadcrumb from the path. Labels come from the EXISTING navigation.* catalog entries where a segment has one (so the
   // trail is localized and no new i18n keys exist for the gates to police);
-  // the last segment falls back to the document title's own name (the part
-  // before the "| Rediacc"-style suffix), which is already localized per page,
-  // and any remaining segment is de-slugged. The homepage renders no trail:
-  // the mark is the breadcrumb there.
+  // the last segment falls back to the document title's own name (the part before the "| Rediacc"-style suffix), which is already localized per page, and any remaining segment is de-slugged. The homepage renders no trail: the mark is the breadcrumb there.
   useEffect(() => {
     const SEGMENT_KEYS: Record<string, string> = {
       pricing: 'navigation.pricing',
@@ -396,10 +361,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
               getStartedLabel={t('common.buttons.getStarted')}
               loginLabel={t('navigation.login')}
               searchLabel={t('navigation.search')}
-              // navigation.moreOptions, not navigation.toggleMenu: the hamburger already
-              // announces "Toggle menu" in this same bar, and two controls sharing one
-              // accessible name is indistinguishable by ear. The panel takes its name from
-              // this trigger via aria-labelledby, so this one prop names both.
+              // navigation.moreOptions, not navigation.toggleMenu: the hamburger already announces "Toggle menu" in this same bar, and two controls sharing one accessible name is indistinguishable by ear. The panel takes its name from this trigger via aria-labelledby, so this one prop names both.
               menuLabel={t('navigation.moreOptions')}
               isOpen={isCtaMenuOpen}
               onToggle={toggleCtaMenu}

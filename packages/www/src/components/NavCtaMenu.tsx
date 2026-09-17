@@ -67,10 +67,7 @@ const NavCtaMenu: React.FC<NavCtaMenuProps> = ({
   const panelRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
 
-  // Dismissal is the UA's, exactly as in PersonaMegaMenu: light-dismiss, Esc, top layer,
-  // the dimming ::backdrop, and mutual exclusion with the persona menu, which is the other
-  // auto popover. `isOpen` remains the source of truth because Navigation closes both menus
-  // on scroll, sidebar, search and astro:after-swap, none of which the popover can see.
+  // Dismissal is the UA's, exactly as in PersonaMegaMenu: light-dismiss, Esc, top layer, the dimming ::backdrop, and mutual exclusion with the persona menu, which is the other auto popover. `isOpen` remains the source of truth because Navigation closes both menus on scroll, sidebar, search and astro:after-swap, none of which the popover can see.
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
@@ -135,11 +132,9 @@ const NavCtaMenu: React.FC<NavCtaMenuProps> = ({
     }
   }, [isOpen, handleKeyDown]);
 
-  // Hover-to-open is gone here too, for the same reason as in PersonaMegaMenu: the two
-  // timers existed only to serve hover, and both carried bugs that had already been paid
+  // Hover-to-open is gone here too, for the same reason as in PersonaMegaMenu: the two timers existed only to serve hover, and both carried bugs that had already been paid
   // for. Click-only also removes the special case this menu needed on top of the persona
-  // one, where hover had to cover the caret segment but NOT the primary `Get Started`
-  // button, so a pointer travelling to the CTA was not answered with a menu.
+  // one, where hover had to cover the caret segment but NOT the primary `Get Started` button, so a pointer travelling to the CTA was not answered with a menu.
 
   const handleSearchClick = () => {
     onClose();

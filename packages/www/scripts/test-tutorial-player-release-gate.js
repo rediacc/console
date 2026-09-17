@@ -40,8 +40,7 @@ let exitCode = 0;
  */
 let serverDiedMidRun = null;
 let navigationRetries = 0;
-// PIPED SINCE FOREVER AND NEVER READ. On a navigation timeout this is the only record
-// of what the server thought it was doing, so it is kept and written out on failure.
+// PIPED SINCE FOREVER AND NEVER READ. On a navigation timeout this is the only record of what the server thought it was doing, so it is kept and written out on failure.
 const serverLog = [];
 let intentionalShutdown = false;
 
@@ -76,36 +75,27 @@ function runAgent(args) {
   let out = null;
   // A phrase rather than a number: the caller has to render it either way, and
   // `${status ?? 'with no status'}` is both a hardcoded nullish default (banned by
-  // custom/no-hardcoded-nullish-defaults) and, once `status` is inferred as a number, an
-  // unnecessary conditional. Deciding the wording once at the throw site avoids both.
+  // custom/no-hardcoded-nullish-defaults) and, once `status` is inferred as a number, an unnecessary conditional. Deciding the wording once at the throw site avoids both.
   let exitInfo = 'exited 0';
   try {
     out = execFileSync('agent-browser', commandArgs, {
       cwd: repoRoot,
       encoding: 'utf8',
       maxBuffer: 8 * 1024 * 1024,
-      // Both streams piped, so a non-zero exit hands its output to the catch instead of
-      // leaking to the console and vanishing from the error object.
+      // Both streams piped, so a non-zero exit hands its output to the catch instead of leaking to the console and vanishing from the error object.
       stdio: ['ignore', 'pipe', 'pipe'],
     });
   } catch (error) {
-    // THE EXIT STATUS OF `agent-browser open` IS NOT EVIDENCE, and this repo already
-    // knows it: `.ci/scripts/quality/check-agent-browser-exit.sh` measured the same
+    // THE EXIT STATUS OF `agent-browser open` IS NOT EVIDENCE, and this repo already knows it: `.ci/scripts/quality/check-agent-browser-exit.sh` measured the same
     // binary returning rc=0 on a terminal and rc=1 with stdout redirected, for a page
-    // that loaded correctly both ways, and states the invariant as "no script may let
-    // that exit status decide control flow". That gate scans SHELL scripts under
+    // that loaded correctly both ways, and states the invariant as "no script may let that exit status decide control flow". That gate scans SHELL scripts under
     // `set -e`; this is the same defect in JavaScript, where `execFileSync` throws on
     // the same worthless status.
     //
-    // THE RED THIS EXPLAINS: CI run 33430885467, job 99616335703, died on the FIRST
-    // navigation of the first scenario with the single line `Error: Command failed:
-    // agent-browser --session ... open http://127.0.0.1:4511/en/docs/tutorial-production-mode`
-    // -- no status, no output, and the identical command passing locally on the same
-    // tree. `String(error)` produces exactly that and drops `.status`/`.stdout`/`.stderr`.
+    // THE RED THIS EXPLAINS: CI run 33430885467, job 99616335703, died on the FIRST navigation of the first scenario with the single line `Error: Command failed: agent-browser --session ... open http://127.0.0.1:4511/en/docs/tutorial-production-mode` -- no status, no output, and the identical command passing locally on the same tree. `String(error)` produces exactly that and drops
+    // `.status`/`.stdout`/`.stderr`.
     //
-    // So: the ENVELOPE decides, never the status. agent-browser prints its verdict as
-    // JSON on STDOUT even when it exits 1 (verified against the real binary: a failed
-    // open exits 1 with an empty stderr and
+    // So: the ENVELOPE decides, never the status. agent-browser prints its verdict as JSON on STDOUT even when it exits 1 (verified against the real binary: a failed open exits 1 with an empty stderr and
     // `{"success":false,...,"error":"Navigation failed: net::ERR_UNSAFE_PORT"}` on
     // stdout). A real failure therefore still fails below, with its reason quoted.
     out = String(error.stdout ?? '');
@@ -124,8 +114,7 @@ function runAgent(args) {
   try {
     parsed = JSON.parse(out);
   } catch {
-    // `--json` printing something unparseable is its own distinct failure, and calling
-    // it a JSON SyntaxError hides the bytes that caused it.
+    // `--json` printing something unparseable is its own distinct failure, and calling it a JSON SyntaxError hides the bytes that caused it.
     throw new Error(
       `agent-browser ${args.join(' ')} ${exitInfo} with unparseable --json output:` +
         `\n  ${String(out).trim().slice(0, 2000) || '(empty)'}`
@@ -193,9 +182,7 @@ function reportInconclusiveCauses(resources) {
     return;
   }
   if (resources.slowBoot) {
-    // THE OPPOSITE READING, SAID OUT LOUD. A slow boot on an IDLE machine is the
-    // signature of something that never became ready, not of a busy runner, and the
-    // reader needs pushing toward the evidence rather than away from it.
+    // THE OPPOSITE READING, SAID OUT LOUD. A slow boot on an IDLE machine is the signature of something that never became ready, not of a busy runner, and the reader needs pushing toward the evidence rather than away from it.
     process.stderr.write(
       `\n⚠ THE SERVER TOOK ${resources.bootMs}ms TO BOOT, but the machine was IDLE ` +
         `(load/core=${resources.loadPerCore.toFixed(2)}). That is NOT resource contention. ` +
@@ -223,8 +210,7 @@ function isPlaying(state) {
 function resourceSnapshot(bootMs) {
   const cpuCount = os.cpus().length || 1;
   const loadPerCore = os.loadavg()[0] / cpuCount;
-  // Half the boot budget: a clean cold boot measured 84s, so crossing 90s is
-  // already an outlier, not just "a bit slow".
+  // Half the boot budget: a clean cold boot measured 84s, so crossing 90s is already an outlier, not just "a bit slow".
   const slowBoot = bootMs !== null && bootMs > 90000;
   const highLoad = loadPerCore > 1.2;
   return {
@@ -233,12 +219,9 @@ function resourceSnapshot(bootMs) {
     loadPerCore,
     bootMs,
     slowBoot,
-    // PRESSURE IS WHAT THE LOAD AVERAGE SAYS, NOTHING ELSE. This used to be
-    // `slowBoot || highLoad`, which made every boot timeout announce "SYSTEM UNDER
-    // LOAD" -- because slowBoot is the timeout restated, not evidence about the
+    // PRESSURE IS WHAT THE LOAD AVERAGE SAYS, NOTHING ELSE. This used to be `slowBoot || highLoad`, which made every boot timeout announce "SYSTEM UNDER LOAD" -- because slowBoot is the timeout restated, not evidence about the
     // machine. Printed verbatim in CI on 2026-09-01: "SYSTEM UNDER LOAD (load/core=0.06)".
-    // An instrument that tells you to dismiss the failure it just detected is worse
-    // than one that says nothing, and this one bought five re-runs of a real bug.
+    // An instrument that tells you to dismiss the failure it just detected is worse than one that says nothing, and this one bought five re-runs of a real bug.
     pressureDetected: highLoad,
   };
 }
@@ -256,12 +239,8 @@ async function startDevServer() {
       '--port',
       String(port),
     ];
-    // `detached: true` makes this its own process group leader. PROVEN NECESSARY,
-    // not precautionary: `npm run dev` spawns `astro` as a grandchild, and killing
-    // just the npm PID does not propagate to it -- verified live 2026-08-28, a fully
-    // successful gate run (exit 0, all 5 scenarios passing) still left `astro`
-    // running and holding port 4511 afterward. stopDevServer() below signals the
-    // whole group (`-proc.pid`), which reaches the grandchild too.
+    // `detached: true` makes this its own process group leader. PROVEN NECESSARY, not precautionary: `npm run dev` spawns `astro` as a grandchild, and killing just the npm PID does not propagate to it -- verified live 2026-08-28, a fully successful gate run (exit 0, all 5 scenarios passing) still left `astro` running and holding port 4511 afterward. stopDevServer() below signals
+    // the whole group (`-proc.pid`), which reaches the grandchild too.
     serverProc = spawn('npm', args, {
       cwd: repoRoot,
       env: process.env,
@@ -276,9 +255,7 @@ async function startDevServer() {
       reject(new Error('Timed out waiting for astro dev server to start'));
     }, 180000);
 
-    // WAITING FOR THE BANNER. Three defects lived here, in order, and the middle one
-    // was a WRONG DIAGNOSIS of the third -- worth recording, because it cost four
-    // re-runs that each looked like infrastructure flake.
+    // WAITING FOR THE BANNER. Three defects lived here, in order, and the middle one was a WRONG DIAGNOSIS of the third -- worth recording, because it cost four re-runs that each looked like infrastructure flake.
     //
     // 1. The original test was `text.includes('ready')`. "address already in use"
     //    CONTAINS "ready", so an EADDRINUSE line read as "the server is up" and the run
@@ -295,12 +272,9 @@ async function startDevServer() {
     //    byte. So it could never go green in CI and always went green locally, which is
     //    precisely the shape that reads as a flaky runner.
     //
-    // The fix is to strip ANSI on INGEST (see ./lib/dev-server-ready.js), not to teach one
-    // regex about escape codes. That keeps the artifact readable and makes every future
-    // matcher over this buffer colour-proof by construction rather than by remembering.
+    // The fix is to strip ANSI on INGEST (see ./lib/dev-server-ready.js), not to teach one regex about escape codes. That keeps the artifact readable and makes every future matcher over this buffer colour-proof by construction rather than by remembering.
     //
-    // Both host spellings are matched because astro prints the host it was GIVEN:
-    // `localhost` by default, and `127.0.0.1` under `--host 127.0.0.1`, which is how this
+    // Both host spellings are matched because astro prints the host it was GIVEN: `localhost` by default, and `127.0.0.1` under `--host 127.0.0.1`, which is how this
     // gate starts it. An earlier comment here asserted astro "never prints 127.0.0.1";
     // that was wrong, and a real capture is what settled it.
     const onData = (chunk) => {
@@ -328,15 +302,9 @@ async function stopDevServer() {
   const proc = serverProc;
   serverProc = null;
   intentionalShutdown = true;
-  // `proc`'s own 'exit' event is NOT a reliable signal that the whole group is
-  // dead -- PROVEN live 2026-08-28: npm (the direct child, `proc` here) exits
-  // fast on SIGTERM while `astro` (its grandchild, still in its own graceful
+  // `proc`'s own 'exit' event is NOT a reliable signal that the whole group is dead -- PROVEN live 2026-08-28: npm (the direct child, `proc` here) exits fast on SIGTERM while `astro` (its grandchild, still in its own graceful
   // shutdown) keeps running; the old code resolved on npm's exit and
-  // `process.exit()` in main()'s finally then killed the whole script before the
-  // SIGKILL safety-net timer (`timer.unref()`'d, so it never survives
-  // process.exit()) got a chance to fire. astro was left holding the port on
-  // EVERY run, including fully passing ones. Fix: always send an unconditional
-  // group-wide SIGKILL after a short grace window, never conditionally.
+  // `process.exit()` in main()'s finally then killed the whole script before the SIGKILL safety-net timer (`timer.unref()`'d, so it never survives process.exit()) got a chance to fire. astro was left holding the port on EVERY run, including fully passing ones. Fix: always send an unconditional group-wide SIGKILL after a short grace window, never conditionally.
   try {
     process.kill(-proc.pid, 'SIGTERM');
   } catch {
@@ -358,16 +326,10 @@ async function stopDevServer() {
   }
 }
 
-// PLAYER SELECTORS, verified against packages/www/src/components/TutorialVideoPlayer.tsx
-// at HEAD (2026-08-28): the player root is `.tvp-shell > .tvp-root`, hydrated by
-// tutorial-video-hydrate.ts onto `.tutorial-video-container[data-video-src]` (docs) or
-// `.video-player-mount[data-video-src]` (solution-page hero). Plyr wraps the real
+// PLAYER SELECTORS, verified against packages/www/src/components/TutorialVideoPlayer.tsx at HEAD (2026-08-28): the player root is `.tvp-shell > .tvp-root`, hydrated by tutorial-video-hydrate.ts onto `.tutorial-video-container[data-video-src]` (docs) or `.video-player-mount[data-video-src]` (solution-page hero). Plyr wraps the real
 // `<video>` and renders standard `[data-plyr="X"]` control buttons (controls list at
-// TutorialVideoPlayer.tsx:362-376 includes 'play' and 'fullscreen'), toggling
-// `.plyr--playing` / `.plyr--fullscreen-active` on the `.plyr` wrapper it inserts.
-// This replaces the TerminalPlayer-era `.ap-control-bar`/`.terminal-tutorial`/
-// `window.__tutorialDebug` surface, deleted wholesale in 80a000965 (2026-05-27) --
-// see agent/PLAN-fix-tutorial-player-debug-hook-attachment.md for the full trace.
+// TutorialVideoPlayer.tsx:362-376 includes 'play' and 'fullscreen'), toggling `.plyr--playing` / `.plyr--fullscreen-active` on the `.plyr` wrapper it inserts. This replaces the TerminalPlayer-era `.ap-control-bar`/`.terminal-tutorial`/ `window.__tutorialDebug` surface, deleted wholesale in 80a000965 (2026-05-27) -- see agent/PLAN-fix-tutorial-player-debug-hook-attachment.md for
+// the full trace.
 
 /**
  * A click dispatched via `evalInPage(...).click()` is NOT a trusted user gesture --
@@ -507,11 +469,7 @@ function scenarioSeekNoSnapback() {
 
   assertCondition(clickPlaybackButton().ok, 'play click failed before seek');
   wait(1200);
-  // Direct media-element seek rather than driving a .tvp-chapter-tick click: the
-  // chapter overlay only paints once the <track> cues have loaded (async, no
-  // reliable ready signal to poll for here), so a direct write is the more robust
-  // check for "does a seek stick" -- the SPA-history-triggered snapback this
-  // scenario exists to catch happens downstream of the media element's own
+  // Direct media-element seek rather than driving a .tvp-chapter-tick click: the chapter overlay only paints once the <track> cues have loaded (async, no reliable ready signal to poll for here), so a direct write is the more robust check for "does a seek stick" -- the SPA-history-triggered snapback this scenario exists to catch happens downstream of the media element's own
   // currentTime, not upstream of it.
   const seekTarget = 48;
   evalInPage(`(() => {
@@ -548,8 +506,7 @@ function scenarioFullscreenAndLayering() {
   assertCondition(clickPlaybackButton().ok, 'play click failed before fullscreen');
   wait(900);
 
-  // The Fullscreen API refuses requestFullscreen() without a trusted user gesture,
-  // same root cause as the play button -- must be a native click, not eval'd .click().
+  // The Fullscreen API refuses requestFullscreen() without a trusted user gesture, same root cause as the play button -- must be a native click, not eval'd .click().
   const enter = clickSelector('.tvp-root [data-plyr="fullscreen"]');
   assertCondition(enter.ok, 'failed to click fullscreen button', enter);
   wait(700);
@@ -559,10 +516,7 @@ function scenarioFullscreenAndLayering() {
     captionPresent: Boolean(document.querySelector('.tvp-root .tvp-caption'))
   }))()`);
   assertCondition(fsState.fullscreen, 'fullscreen not active after toggle', fsState);
-  // .tvp-caption is not swapped for a fullscreen-only element (unlike the deleted
-  // TerminalPlayer's `.terminal-player-caption-layer--fullscreen`): it is the SAME
-  // element, repositioned by `.plyr--fullscreen-active .tvp-caption` CSS. Its
-  // continued presence in the DOM is what matters here.
+  // .tvp-caption is not swapped for a fullscreen-only element (unlike the deleted TerminalPlayer's `.terminal-player-caption-layer--fullscreen`): it is the SAME element, repositioned by `.plyr--fullscreen-active .tvp-caption` CSS. Its continued presence in the DOM is what matters here.
   assertCondition(
     fsState.captionPresent,
     'caption element missing after entering fullscreen',
@@ -574,12 +528,8 @@ function scenarioFullscreenAndLayering() {
   const exitState = evalInPage(`(() => ({ fullscreen: Boolean(document.fullscreenElement) }))()`);
   assertCondition(!exitState.fullscreen, 'fullscreen did not exit', exitState);
 
-  // The docs-vs-heading-share layering comparison from the deleted TerminalPlayer era
-  // is retired, not adapted: `.heading-share` does not exist anywhere in the current
-  // site (verified: grep -rn "heading-share" packages/www/src -> no hits), and the
-  // layout it belonged to is gone. See
-  // agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, scenario 5, for why no
-  // replacement invariant was invented here.
+  // The docs-vs-heading-share layering comparison from the deleted TerminalPlayer era is retired, not adapted: `.heading-share` does not exist anywhere in the current site (verified: grep -rn "heading-share" packages/www/src -> no hits), and the layout it belonged to is gone. See agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, scenario 5, for why no replacement invariant
+  // was invented here.
   const docsZ = evalInPage(`(() => {
     const s = (el, prop) => el ? getComputedStyle(el)[prop] : null;
     return {
@@ -591,26 +541,15 @@ function scenarioFullscreenAndLayering() {
 }
 
 function scenarioMountConsistency() {
-  // The homepage no longer carries a tutorial/video player -- SPHomeHero.astro
-  // deliberately removed the old "fake terminal" (operator-approved: it "failed
-  // contrast... shipped a disclaimer apologising for being simulated"). The docs
-  // route and a solution-page hero are the two mount paths that both go through
-  // TutorialVideoPlayer today (tutorial-video-hydrate.ts:25), so THIS is the pair
-  // worth checking for consistency: same component, two different placements.
+  // The homepage no longer carries a tutorial/video player -- SPHomeHero.astro deliberately removed the old "fake terminal" (operator-approved: it "failed contrast... shipped a disclaimer apologising for being simulated"). The docs route and a solution-page hero are the two mount paths that both go through TutorialVideoPlayer today (tutorial-video-hydrate.ts:25), so THIS is the
+  // pair worth checking for consistency: same component, two different placements.
   log('→ scenario: docs/solution-page mount consistency');
 
   // ONE PROBE SHAPE for both pages, because the point of this scenario is that the
   // two surfaces answer it DIFFERENTLY. Docs mounts build immediately; solution
-  // mounts carry `data-click-to-load` and render a server-side poster instead of
-  // building the 122 KB player. Measured across all 44 English mount-carrying pages
-  // at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so an
-  // IntersectionObserver fires on load and defers nothing -- which is why the
-  // deferral had to become a click.
+  // mounts carry `data-click-to-load` and render a server-side poster instead of building the 122 KB player. Measured across all 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so an IntersectionObserver fires on load and defers nothing -- which is why the deferral had to become a click.
   //
-  // The solution assertions are the REAL contract and strictly stronger than the
-  // single `hasPlayer` this used to carry: no player before the click, a poster to
-  // click, a player after it, and the poster gone. The old form could not tell a
-  // working deferral from a broken mount.
+  // The solution assertions are the REAL contract and strictly stronger than the single `hasPlayer` this used to carry: no player before the click, a poster to click, a player after it, and the poster gone. The old form could not tell a working deferral from a broken mount.
   const probe = () =>
     evalInPage(
       `(() => { const q = (s) => document.querySelector(s); const c = q('.tvp-root .tvp-caption'); return { hasPlayer: Boolean(q('.tvp-root video')), hasPoster: Boolean(q('.video-poster-play')), captionZ: c ? getComputedStyle(c).zIndex : null }; })()`
@@ -640,14 +579,8 @@ function scenarioMountConsistency() {
     after
   );
 
-  // NOT a docs-vs-solution caption z-index comparison: solution videos have no
-  // `words` manifest entry (verified: packages/www/src/data/video-manifest.json ->
-  // solutions.rapid-recovery.en has only mp4/vertical/poster, no words) because their
-  // captions are burned into the video pixels, per TutorialVideoPlayer.tsx:713's own
-  // `activeWords &&` guard on rendering `.tvp-caption` at all. Asserting the two
-  // mounts' caption z-index MATCH would fail by design, not by defect -- checked
-  // instead is the one invariant that is actually guaranteed: a caption element,
-  // when present, sits at the CSS-defined z-index (tutorial-video.css:63).
+  // NOT a docs-vs-solution caption z-index comparison: solution videos have no `words` manifest entry (verified: packages/www/src/data/video-manifest.json -> solutions.rapid-recovery.en has only mp4/vertical/poster, no words) because their captions are burned into the video pixels, per TutorialVideoPlayer.tsx:713's own `activeWords &&` guard on rendering `.tvp-caption` at all.
+  // Asserting the two mounts' caption z-index MATCH would fail by design, not by defect -- checked instead is the one invariant that is actually guaranteed: a caption element, when present, sits at the CSS-defined z-index (tutorial-video.css:63).
   assertCondition(
     docs.captionZ === '3',
     'docs caption z-index does not match the CSS-defined value',
@@ -755,8 +688,7 @@ async function main() {
     exitCode = 0;
   } catch (error) {
     fail('release gate execution crashed', { error: String(error) });
-    // If the crash happened before startDevServer resolved (its own timeout, or a
-    // crash mid-boot), `resources` above still holds the pre-boot snapshot with
+    // If the crash happened before startDevServer resolved (its own timeout, or a crash mid-boot), `resources` above still holds the pre-boot snapshot with
     // bootMs=null. Recompute against elapsed wall time so a boot-phase crash is
     // judged on how long it actually ran, not treated as instant.
     if (resources.bootMs === null) {
@@ -772,10 +704,7 @@ async function main() {
       baseUrl,
       resources,
       serverDiedMidRun,
-      // THE BOOT TIMEOUT IS THE ONE FAILURE THAT CANNOT BE READ WITHOUT THIS, and it
-      // was the one path that omitted it. `serverLog` was written on the navigation
-      // path only, so five boot-timeout artifacts in a row reported that the server
-      // "timed out" while discarding the banner proving it had started in 4.7s. The
+      // THE BOOT TIMEOUT IS THE ONE FAILURE THAT CANNOT BE READ WITHOUT THIS, and it was the one path that omitted it. `serverLog` was written on the navigation path only, so five boot-timeout artifacts in a row reported that the server "timed out" while discarding the banner proving it had started in 4.7s. The
       // header comment above already claimed this was "written out on failure"; now
       // it is.
       serverLog,

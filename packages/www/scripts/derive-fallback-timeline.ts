@@ -30,18 +30,12 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-// EMPTY, and that is the correct value: no locale falls back to English audio any more.
-// VoxCPM2 voices all 13 site locales natively, each from its own committed voice
-// reference, so ar/et/tr — the last three that used to be derived from English — now have
-// real narration, real per-locale mp3s and real word timings.
+// EMPTY, and that is the correct value: no locale falls back to English audio any more. VoxCPM2 voices all 13 site locales natively, each from its own committed voice reference, so ar/et/tr — the last three that used to be derived from English — now have real narration, real per-locale mp3s and real word timings.
 //
-// Leaving ['ar','et','tr'] here was a loaded gun: running this script would have
-// overwritten those genuine timelines with English-derived ones, replacing native
-// narration with English audio and stripping the word timings. The guard in deriveOne()
+// Leaving ['ar','et','tr'] here was a loaded gun: running this script would have overwritten those genuine timelines with English-derived ones, replacing native narration with English audio and stripping the word timings. The guard in deriveOne()
 // below is the real protection; this list being empty is the first line of it.
 //
-// If a genuinely new locale is ever added WITHOUT narration, add it here — the guard will
-// still refuse to touch any locale that has its own audio.
+// If a genuinely new locale is ever added WITHOUT narration, add it here — the guard will still refuse to touch any locale that has its own audio.
 const FALLBACK_LANGUAGES: readonly string[] = [];
 type FallbackLang = string;
 
@@ -133,19 +127,12 @@ function deriveOne(lang: FallbackLang, slug: string): { wrote: boolean; reason?:
   if (!fs.existsSync(transcriptPath))
     return { wrote: false, reason: `transcript missing: ${transcriptPath}` };
 
-  // REFUSE to overwrite a locale that already has its own narration. This output points
-  // audioSrc at ENGLISH mp3s and deliberately strips wordTimings, so writing it over a
-  // natively-narrated timeline silently swaps that locale's audio to English and deletes
-  // its karaoke timings — a destructive, hard-to-notice regression, since the file stays
-  // valid JSON and every structural gate keeps passing.
+  // REFUSE to overwrite a locale that already has its own narration. This output points audioSrc at ENGLISH mp3s and deliberately strips wordTimings, so writing it over a natively-narrated timeline silently swaps that locale's audio to English and deletes its karaoke timings — a destructive, hard-to-notice regression, since the file stays valid JSON and every structural gate keeps
+  // passing.
   //
-  // The test is the artifact, not a language list: a timeline that names a TTS provider
-  // and carries word timings was produced by a real synthesis run, and nothing derived
-  // ever has both.
+  // The test is the artifact, not a language list: a timeline that names a TTS provider and carries word timings was produced by a real synthesis run, and nothing derived ever has both.
   if (fs.existsSync(outPath)) {
-    // Partial<>: this is `JSON.parse(…) as T`, which promises a shape rather than
-    // checking one. A half-written timeline with no `steps` must not crash the
-    // guard that exists to REFUSE overwriting native narration.
+    // Partial<>: this is `JSON.parse(…) as T`, which promises a shape rather than checking one. A half-written timeline with no `steps` must not crash the guard that exists to REFUSE overwriting native narration.
     const existing = readJson<Partial<Timeline> & { provider?: string }>(outPath);
     const hasOwnAudio = typeof existing.provider === 'string' && existing.provider.length > 0;
     const hasWordTimings = (existing.steps ?? []).some(

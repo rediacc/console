@@ -24,8 +24,7 @@ import {
 
 interface RemarkFile {
   data: Record<string, unknown>;
-  // VFile.value is `string | Uint8Array` in newer @types/vfile. We only ever
-  // read string content, but the type must accept both for assignability.
+  // VFile.value is `string | Uint8Array` in newer @types/vfile. We only ever read string content, but the type must accept both for assignability.
   value?: string | Uint8Array;
   path?: string;
 }
@@ -56,8 +55,7 @@ export function remarkResolveTranslations(options: RemarkResolveTranslationsOpti
     // Extract language from file content (frontmatter)
     let language = defaultLang;
 
-    // Try multiple methods to get the language
-    // Method 1: From file.data.astro.frontmatter (Astro content collections)
+    // Try multiple methods to get the language Method 1: From file.data.astro.frontmatter (Astro content collections)
     const astroData = file.data.astro as { frontmatter?: { language?: string } } | undefined;
     if (astroData?.frontmatter?.language) {
       language = astroData.frontmatter.language;

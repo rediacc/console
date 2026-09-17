@@ -2,8 +2,7 @@ import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import React, { useRef, useState } from 'react';
 import { captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
 import { useLanguage } from '../hooks/useLanguage';
-// Route-scoped translations: this island hydrates on ONE page, so its strings ride
-// this component's chunk instead of the catalog every route downloads.
+// Route-scoped translations: this island hydrates on ONE page, so its strings ride this component's chunk instead of the catalog every route downloads.
 import { useRouteTranslation } from '../i18n/react-route';
 
 /**
@@ -22,8 +21,7 @@ type PartnerType = (typeof PARTNER_TYPES)[number];
 const HOW_HEARD_OPTIONS = ['search', 'referral', 'event', 'socialMedia', 'blog', 'other'] as const;
 
 // Country names are shown in the site language; the field stores the chosen
-// name as a plain string (schema: country, max 128 chars). Kept as a flat list
-// so the select has no extra dependency.
+// name as a plain string (schema: country, max 128 chars). Kept as a flat list so the select has no extra dependency.
 const COUNTRIES = [
   'Argentina',
   'Australia',
@@ -208,8 +206,7 @@ const PartnerApplicationForm: React.FC = () => {
     } catch (err) {
       setState('error');
       setErrorMsg(err instanceof Error ? err.message : t(`${NS}.errors.generic`));
-      // Turnstile tokens are single-use: the failed request consumed this one,
-      // so reset the widget or every retry would fail captcha until a reload.
+      // Turnstile tokens are single-use: the failed request consumed this one, so reset the widget or every retry would fail captcha until a reload.
       captcha.reset();
       turnstileRef.current?.reset();
     }

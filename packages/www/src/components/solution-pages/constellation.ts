@@ -183,14 +183,11 @@ export function buildConstellation(
   const edge = (a: CxPlaced, b: CxPlaced) => {
     let sx = a.x;
     let sy = a.y;
-    // Edges radiating from the centre start at the rim of the headline's
-    // exclusion ellipse, so no hairline runs under the text.
+    // Edges radiating from the centre start at the rim of the headline's exclusion ellipse, so no hairline runs under the text.
     if (a.kind === 'centre') {
       const dx = b.x - a.x;
       const dy = b.y - a.y;
-      // The point where the centre->b ray leaves the exclusion ellipse is
-      // exactly (dx, dy) / norm from the centre. Only trim when b is outside
-      // the ellipse (norm > 1), otherwise the edge would invert.
+      // The point where the centre->b ray leaves the exclusion ellipse is exactly (dx, dy) / norm from the centre. Only trim when b is outside the ellipse (norm > 1), otherwise the edge would invert.
       const norm = Math.hypot(dx / g.holeA, dy / g.holeB);
       if (norm > 1) {
         sx = a.x + dx / norm;

@@ -20,16 +20,13 @@ describe('dev server readiness', () => {
     expect(isDevServerReady(PLAIN_LOCAL)).toBe(true);
   });
 
-  // THE REGRESSION THIS FILE EXISTS FOR. The gate timed out five times in CI while
-  // passing locally, because the raw matcher cannot see through colour.
+  // THE REGRESSION THIS FILE EXISTS FOR. The gate timed out five times in CI while passing locally, because the raw matcher cannot see through colour.
   it('recognises the ANSI-coloured banner that CI actually produces', () => {
     expect(isDevServerReady(CI_BANNER)).toBe(true);
     expect(isDevServerReady(CI_LOCAL)).toBe(true);
   });
 
-  // The control proving the test above is not vacuous: without stripping, the CI bytes
-  // genuinely do NOT match. If this ever starts passing, the fixture stopped being
-  // coloured and the test above no longer proves anything.
+  // The control proving the test above is not vacuous: without stripping, the CI bytes genuinely do NOT match. If this ever starts passing, the fixture stopped being coloured and the test above no longer proves anything.
   it('CONTROL: the CI bytes do not match without stripping', () => {
     expect(DEV_SERVER_READY.test(CI_BANNER)).toBe(false);
     expect(DEV_SERVER_READY.test(CI_LOCAL)).toBe(false);
@@ -52,10 +49,7 @@ describe('dev server readiness', () => {
       buffer += chunk;
       return isDevServerReady(buffer);
     });
-    // The MIDDLE one is true, and that is correct rather than sloppy: after two chunks
-    // the buffer strips to `ready in 47`, which is already unambiguous. Recorded here
-    // because the first version of this test asserted [false, false, true] and the
-    // control caught the wrong expectation, not a wrong matcher.
+    // The MIDDLE one is true, and that is correct rather than sloppy: after two chunks the buffer strips to `ready in 47`, which is already unambiguous. Recorded here because the first version of this test asserted [false, false, true] and the control caught the wrong expectation, not a wrong matcher.
     expect(seen).toEqual([false, true, true]);
   });
 

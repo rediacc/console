@@ -46,8 +46,7 @@ const LANG_NAMES: Record<string, string> = {
 
 const MODEL = 'claude-sonnet-4-6';
 
-// Match either "TODO: translate <kind> (en: <english>)" or the older
-// pattern "TODO: translate <kind> for event N" / "TODO: translate event N".
+// Match either "TODO: translate <kind> (en: <english>)" or the older pattern "TODO: translate <kind> for event N" / "TODO: translate event N".
 const TODO_WITH_EN = /^TODO: translate ([^()]+?)\s*\(en:\s*(.+)\)\s*$/;
 const TODO_BARE = /^TODO: translate (.+?)\s*$/;
 
@@ -144,8 +143,7 @@ async function translateLocale(lang: string, slots: TodoSlot[]): Promise<string[
 Input:
 ${JSON.stringify(input, null, 2)}`;
 
-  // One single-turn, no-tools inference per batch, authenticated by the
-  // logged-in Claude Code subscription. settingSources:[] keeps the repo's
+  // One single-turn, no-tools inference per batch, authenticated by the logged-in Claude Code subscription. settingSources:[] keeps the repo's
   // CLAUDE.md / settings out of the prompt; allowedTools:[] disables all tools.
   let text = '';
   for await (const message of query({

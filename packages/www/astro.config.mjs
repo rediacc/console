@@ -2,14 +2,11 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import { execSync } from 'child_process';
-// Version is injected by CI via APP_VERSION (resolved from git tags).
-// Local dev shows 0.0.0-dev. No git-describe fallback — version resolution
-// is the caller's job, not the build's.
+// Version is injected by CI via APP_VERSION (resolved from git tags). Local dev shows 0.0.0-dev. No git-describe fallback — version resolution is the caller's job, not the build's.
 const version = process.env.APP_VERSION || '0.0.0-dev';
 
 import react from '@astrojs/react';
-// @astrojs/mdx is pinned at 4.x to track astro 5.x. v5 of the integration
-// requires astro 6 — see .deps-upgrade-blocklist.
+// @astrojs/mdx is pinned at 4.x to track astro 5.x. v5 of the integration requires astro 6 — see .deps-upgrade-blocklist.
 import mdx from '@astrojs/mdx';
 import sitemap, { ChangeFreqEnum } from '@astrojs/sitemap';
 import { remarkResolveTranslations } from './src/plugins/remark-resolve-translations.ts';
@@ -20,9 +17,7 @@ import { rehypeStableHeadingIds } from './src/plugins/rehype-stable-heading-ids.
 import jsonGeneratorIntegration from './src/integrations/json-generator.ts';
 import routeManifestIntegration from './src/integrations/route-manifest-generator.ts';
 
-// Integration to generate search index before build. A failure fails the BUILD:
-// the generator deletes the previous index files before writing, so swallowing
-// its error ships a site with no search index while exiting 0.
+// Integration to generate search index before build. A failure fails the BUILD: the generator deletes the previous index files before writing, so swallowing its error ships a site with no search index while exiting 0.
 const searchIndexIntegration = {
   name: 'search-index-generator',
   hooks: {
@@ -191,8 +186,7 @@ export default defineConfig({
       remarkDocsCliLinks,
       remarkResolveTranslations,
     ],
-    // Runs BEFORE Astro's default rehypeHeadingIds, which respects an existing
-    // id, so these ids win and also land in file.data.astro.headings.
+    // Runs BEFORE Astro's default rehypeHeadingIds, which respects an existing id, so these ids win and also land in file.data.astro.headings.
     rehypePlugins: [rehypeStableHeadingIds],
   },
 });

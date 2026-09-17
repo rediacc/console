@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import type { Platform } from '../config/install';
 import { detectPlatform, PLATFORMS } from '../config/install';
-// Route-scoped translations: this island hydrates on ONE page, so its strings ride
-// this component's chunk instead of the catalog every route downloads.
+// Route-scoped translations: this island hydrates on ONE page, so its strings ride this component's chunk instead of the catalog every route downloads.
 import { useRouteTranslation } from '../i18n/react-route';
 import type { Language } from '../i18n/types';
 import type { CLIFile, ReleaseData } from '../utils/release-parser';

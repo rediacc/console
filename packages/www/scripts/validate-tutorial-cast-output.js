@@ -313,9 +313,7 @@ function collectExpectFailLabels() {
     const content = fs.readFileSync(path.join(TUTORIAL_SCRIPTS_DIR, script), 'utf-8');
     for (const m of content.matchAll(/run_cmd_expect_fail\s+"((?:[^"\\]|\\.)*)"/g)) {
       const placeholder = '\u0001';
-      // The script source carries shell escapes (\" \\ \$ \`) that bash
-      // resolves before the label reaches the cast marker — unescape them
-      // the same way so the derived regex matches the recorded marker.
+      // The script source carries shell escapes (\" \\ \$ \`) that bash resolves before the label reaches the cast marker — unescape them the same way so the derived regex matches the recorded marker.
       const unescaped = m[1].replaceAll(/\\(["\\$`])/g, '$1');
       const templated = unescaped.replaceAll(/\$\{[^}]+\}|\$\w+/g, placeholder);
       const escaped = templated.replaceAll(/[.*+?^()|[\]\\{}$]/g, '\\$&');

@@ -83,18 +83,12 @@ type BundleName = keyof typeof BUNDLES;
 const CLIENT_KEY_PATHS: Record<BundleName, readonly string[]> = {
   client: [
     'captchaRequired',
-    // Its two siblings, added with the captcha recovery path: a widget that fails to
-    // mount now says so and offers a retry, and both strings render inside client
-    // islands (ContactForm, ContactModal, NewsletterSignup, SPRoiCalculator).
+    // Its two siblings, added with the captcha recovery path: a widget that fails to mount now says so and offers a retry, and both strings render inside client islands (ContactForm, ContactModal, NewsletterSignup, SPRoiCalculator).
     'captchaUnavailable',
     'captchaRetry',
     'common',
     'contactModal',
-    // LearnMenu renders the six docs categories by their translated LABEL while
-    // routing on the English identifier. It is a client island, so without this
-    // the panel shipped "documentation.categories.tutorials" as visible text --
-    // caught in the browser, not by the type checker, because an unresolved t()
-    // key is a perfectly valid string.
+    // LearnMenu renders the six docs categories by their translated LABEL while routing on the English identifier. It is a client island, so without this the panel shipped "documentation.categories.tutorials" as visible text -- caught in the browser, not by the type checker, because an unresolved t() key is a perfectly valid string.
     'documentation.categories',
     'footer',
     'navigation',
@@ -180,9 +174,7 @@ function leavesUnder(catalog: Json, dotted: string): string[] {
 function graft(source: Json, target: { [k: string]: Json }, dotted: string): boolean {
   const segments = dotted.split('.');
 
-  // Resolve the source once, keeping every node on the way. The SHAPE of each container is
-  // decided by the source, so an array in en.json stays an array in the slice.
-  // An array in en.json must stay an array in the slice, or `ta()` breaks on it.
+  // Resolve the source once, keeping every node on the way. The SHAPE of each container is decided by the source, so an array in en.json stays an array in the slice. An array in en.json must stay an array in the slice, or `ta()` breaks on it.
   const chain: Json[] = [source];
   let cursor: Json = source;
   for (const segment of segments) {
@@ -197,8 +189,7 @@ function graft(source: Json, target: { [k: string]: Json }, dotted: string): boo
   for (let i = 0; i < segments.length - 1; i++) {
     const segment = segments[i];
     const key: string | number = Array.isArray(node) ? Number(segment) : segment;
-    // Explicit annotation: without it TS7022 fires, because `existing` feeds
-    // `isContainer`, which narrows back onto `existing` itself, and the inferred
+    // Explicit annotation: without it TS7022 fires, because `existing` feeds `isContainer`, which narrows back onto `existing` itself, and the inferred
     // type ends up referencing its own initializer.
     const existing: Json | undefined = (node as Record<string | number, Json>)[key];
     let child: { [k: string]: Json } | Json[];
