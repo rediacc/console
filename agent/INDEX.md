@@ -312,7 +312,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-plyr-css-on-demand-loading.md` | draft | 175 | 4 | 7 | 11070 |
 | `agent/PLAN-printf-echo-pipefail-sweep.md` | done | 306 | 0 | 33 | 24762 |
 | `agent/PLAN-promote-mutation-runner.md` | done | 923 | 0 | 0 | 51731 |
-| `agent/PLAN-prose-style-under-wrap.md` | draft | 261 | 13 | 0 | 18084 |
+| `agent/PLAN-prose-style-under-wrap.md` | draft | 299 | 12 | 1 | 21783 |
 | `agent/PLAN-pytest-parallelism.md` | done | 266 | 0 | 10 | 16119 |
 | `agent/PLAN-rclone-decommission.md` | compacted | 56 | 0 | 0 | 3004 |
 | `agent/PLAN-reggate-effort-cap.md` | designed | 317 | 0 | 0 | 16667 |

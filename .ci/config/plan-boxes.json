@@ -664,15 +664,14 @@
     "agent/PLAN-prose-style-under-wrap.md": {
       "status": "draft",
       "owner": "d778be9d",
-      "open": 13,
-      "done": 0,
+      "open": 12,
+      "done": 1,
       "open_sigs": [
         "0253b9bf",
         "037ff64e",
         "0c71f11f",
         "0f2922c5",
         "5f0642e7",
-        "772a28ed",
         "8540cabb",
         "8db71822",
         "9af03d8c",
@@ -681,7 +680,9 @@
         "d4772b60",
         "de6c18f7"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "93bc3a14"
+      ]
     },
     "agent/PLAN-pytest-parallelism.md": {
       "status": "done",
