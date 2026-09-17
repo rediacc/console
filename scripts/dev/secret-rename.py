@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """GitHub-side secret rename (durable plan Part 10 + the Part 12 inventory), DRY-RUN by default.
 
-WHAT THIS IS. The Worker-side rename and the Bitwarden-side rename landed on
-2026-09-02. What remains is the GitHub side: the org secrets and every
-`secrets.X` read, env mapping, shell reader and doc that spells the OLD GitHub
-name. The operator sequenced that AFTER the CI cutover ("CI cutover first,
-rename after"), so this script exists to make the rename a five-minute, reviewable
+WHAT THIS IS. The Worker-side rename and the Bitwarden-side rename landed on 2026-09-02. What remains is the GitHub side: the org secrets and every `secrets.X` read, env mapping, shell reader and doc that spells the OLD GitHub name. The operator sequenced that AFTER the CI cutover ("CI cutover first, rename after"), so this script exists to make the rename a five-minute, reviewable
 act when that day comes, not to run it now. Without `--apply` it writes nothing.
 
 WHAT IT KNOWS THAT A SED DOES NOT (all measured in Part 12):
@@ -27,9 +23,7 @@ WHAT IT KNOWS THAT A SED DOES NOT (all measured in Part 12):
     listed separately so the duplicate is removed by hand.
   - Generated files are reported and skipped: regenerate them instead.
 
-WHAT IT DOES NOT DO: touch GitHub. Creating the new org secrets (copy, do not
-mint: decision 8ter) and deleting the old ones is `gh secret set` / `gh secret
-delete`, run by a person, after this diff is reviewed.
+WHAT IT DOES NOT DO: touch GitHub. Creating the new org secrets (copy, do not mint: decision 8ter) and deleting the old ones is `gh secret set` / `gh secret delete`, run by a person, after this diff is reviewed.
 
 Usage:
   python3 scripts/dev/secret-rename.py            # dry-run summary

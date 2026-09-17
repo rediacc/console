@@ -78,9 +78,7 @@ def _expiry_of(entry):
 def _live_client_fingerprint() -> str:
     """sha256 of the CLIENT ID half of BWS_ACCESS_TOKEN, or "" when absent.
 
-    The token's shape is `0.<client-id>.<secret>:<key>`. Only the identifier is
-    hashed, and only a prefix of the digest is kept, so nothing derived from the
-    secret can leave this function.
+    The token's shape is `0.<client-id>.<secret>:<key>`. Only the identifier is hashed, and only a prefix of the digest is kept, so nothing derived from the secret can leave this function.
     """
     token = os.environ.get("BWS_ACCESS_TOKEN", "")
     client_id = token.split(".")[1] if token.count(".") >= 2 else ""
@@ -93,15 +91,9 @@ def warn_if_token_expiring() -> None:
     """A machine-account token carries no expiry inside it, so nothing can derive
     this -- it is written down at mint time or it is discovered as an outage.
 
-    Advisory on purpose: a hard refusal here would block the refresh on a clock
-    even when the token still works, and this script has real refusals for the
-    things it can actually verify. What it prevents is the failure MODE: `bws`
-    answers an expired token with an opaque auth error, so without this the
-    first symptom is every local command breaking at once for no stated reason.
+    Advisory on purpose: a hard refusal here would block the refresh on a clock even when the token still works, and this script has real refusals for the things it can actually verify. What it prevents is the failure MODE: `bws` answers an expired token with an opaque auth error, so without this the first symptom is every local command breaking at once for no stated reason.
 
-    THE SCHEMA IS AN ARRAY because the replacement posture is a SPLIT -- a
-    read-only account for .env and CI, a read-write one supplied per rotation --
-    and a one-token file cannot describe the state during the swap, which is
+    THE SCHEMA IS AN ARRAY because the replacement posture is a SPLIT -- a read-only account for .env and CI, a read-write one supplied per rotation -- and a one-token file cannot describe the state during the swap, which is
     exactly when it is being read. One entry today; the loop is not speculative
     scaffolding, it is the shape the next mint produces.
     """
