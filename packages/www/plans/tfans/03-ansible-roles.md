@@ -1,15 +1,12 @@
 # Phase 1c: Ansible Role Definitions
 
-Roles combine modules into reusable workflows. Each role is a directory under
-`roles/` in the collection with standard Ansible structure.
+Roles combine modules into reusable workflows. Each role is a directory under `roles/` in the collection with standard Ansible structure.
 
 ## Role Design Conventions
 
 ### Variable Namespacing
 
-All role variables use the `rediacc_` prefix followed by the role context.
-This prevents collisions when multiple roles are used in the same play
-(Ansible best practice — see `geerlingguy` roles for examples):
+All role variables use the `rediacc_` prefix followed by the role context. This prevents collisions when multiple roles are used in the same play (Ansible best practice — see `geerlingguy` roles for examples):
 
 | Role | Variable prefix | Example |
 |------|----------------|---------|
@@ -35,13 +32,11 @@ ansible-playbook deploy.yml --tags rediacc_health
 ansible-playbook deploy.yml --skip-tags rediacc_snapshot
 ```
 
-Tags follow the pattern `rediacc_<action>` (e.g., `rediacc_deploy`,
-`rediacc_sync`, `rediacc_health`, `rediacc_snapshot`, `rediacc_autostart`).
+Tags follow the pattern `rediacc_<action>` (e.g., `rediacc_deploy`, `rediacc_sync`, `rediacc_health`, `rediacc_snapshot`, `rediacc_autostart`).
 
 ### Handler Patterns
 
-Roles use handlers with `listen` for event-driven actions. This allows
-multiple tasks to trigger the same handler without coupling:
+Roles use handlers with `listen` for event-driven actions. This allows multiple tasks to trigger the same handler without coupling:
 
 ```yaml
 # handlers/main.yml
@@ -70,16 +65,13 @@ Tasks notify the handler after state changes:
 
 ## JSON Output Convention
 
-All modules use `rdc_runner.py` which automatically unwraps the JSON envelope
-(`{success, command, data, ...}`). When a module registers output, `result.json`
-contains the `data` field directly — not the full envelope. For example:
+All modules use `rdc_runner.py` which automatically unwraps the JSON envelope (`{success, command, data, ...}`). When a module registers output, `result.json` contains the `data` field directly — not the full envelope. For example:
 
 - `rdc machine health` → `result.json` = `{status: "healthy", ...}`
 - `rdc machine containers` → `result.json` = `[{name: ..., state: ..., repository: ...}, ...]`
 - `rdc config repositories` → `result.json` = `{repo-name: {repositoryGuid: ..., networkId: ...}, ...}`
 
-Lifecycle commands (`repo create`, `repo up`, etc.) don't return JSON.
-Modules use `run_lifecycle()` for those and report `changed` based on exit code.
+Lifecycle commands (`repo create`, `repo up`, etc.) don't return JSON. Modules use `run_lifecycle()` for those and report `changed` based on exit code.
 
 ## Role 1: `setup_machine`
 

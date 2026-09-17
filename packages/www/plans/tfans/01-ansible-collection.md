@@ -116,21 +116,17 @@ This is the shared CLI wrapper used by all modules. It handles:
 
 ### JSON Envelope Format
 
-Query commands (`config show`, `machine containers`, `config repositories`, etc.)
-return a JSON envelope when `--output json` is used:
+Query commands (`config show`, `machine containers`, `config repositories`, etc.) return a JSON envelope when `--output json` is used:
 
 ```json
 { "success": true, "command": "...", "data": {...}, "errors": null, "warnings": [], "metrics": {} }
 ```
 
-The runner automatically extracts the `data` field so modules access it directly
-via `result['json']` without knowing about the envelope.
+The runner automatically extracts the `data` field so modules access it directly via `result['json']` without knowing about the envelope.
 
 ### Lifecycle Commands (No JSON)
 
-Lifecycle commands (`repo create`, `repo up`, `repo down`, `repo delete`, etc.)
-do NOT return structured JSON even with `--output json`. They stream renet's
-stdout/stderr directly. For these commands:
+Lifecycle commands (`repo create`, `repo up`, `repo down`, `repo delete`, etc.) do NOT return structured JSON even with `--output json`. They stream renet's stdout/stderr directly. For these commands:
 - **Exit code 0** = success, non-zero = failure
 - **stdout** contains renet's raw output (docker pull progress, compose logs)
 - **stderr** contains rdc's status messages (info, success, warn, error)
@@ -236,8 +232,7 @@ class RdcRunner:
 
 ## Common Argument Spec: `rdc_common.py`
 
-Shared argument specs avoid duplication across modules. The `COMMON_ARGS`
-dict is merged into every module's `argument_spec`.
+Shared argument specs avoid duplication across modules. The `COMMON_ARGS` dict is merged into every module's `argument_spec`.
 
 ```python
 # plugins/module_utils/rdc_common.py
@@ -259,8 +254,7 @@ REPO_ARG = dict(
 
 ## Documentation Fragment: `rdc_common`
 
-All modules share the same `rdc_binary`, `config_name`, and `debug` parameters.
-A doc_fragment avoids repeating documentation for these across all modules:
+All modules share the same `rdc_binary`, `config_name`, and `debug` parameters. A doc_fragment avoids repeating documentation for these across all modules:
 
 ```python
 # plugins/doc_fragments/rdc_common.py
@@ -298,15 +292,11 @@ extends_documentation_fragment:
 
 ## Dynamic Inventory Plugin
 
-The inventory plugin reads the rdc config file and generates Ansible inventory
-with all registered machines. This enables `hosts: all` in playbooks to target
-all rdc machines.
+The inventory plugin reads the rdc config file and generates Ansible inventory with all registered machines. This enables `hosts: all` in playbooks to target all rdc machines.
 
 ### Caching
 
-The plugin uses Ansible's `Cacheable` mixin for inventory caching. This avoids
-running `rdc config show` on every `ansible-playbook` invocation — important
-when the config is stable and rdc commands add SSH latency.
+The plugin uses Ansible's `Cacheable` mixin for inventory caching. This avoids running `rdc config show` on every `ansible-playbook` invocation — important when the config is stable and rdc commands add SSH latency.
 
 Users enable caching in `ansible.cfg`:
 ```ini
@@ -317,8 +307,7 @@ cache_timeout = 300
 cache_connection = ~/.ansible/cache
 ```
 
-The plugin checks the cache before calling rdc. If cached data exists and
-hasn't expired, it skips the subprocess call entirely.
+The plugin checks the cache before calling rdc. If cached data exists and hasn't expired, it skips the subprocess call entirely.
 
 ### Implementation
 

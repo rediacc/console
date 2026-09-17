@@ -14,8 +14,7 @@
 
 ## Architecture: `rdc` CLI Wrapper
 
-The provider calls the `rdc` CLI binary. Renet is a low-level internal
-component managed by rdc — the provider never calls renet directly.
+The provider calls the `rdc` CLI binary. Renet is a low-level internal component managed by rdc — the provider never calls renet directly.
 
 ```
 Terraform Provider (Go)
@@ -27,7 +26,7 @@ Terraform Provider (Go)
 
 **Why this is the only option:**
 - rdc manages everything: config, SSH keys, renet binary provisioning, vault
-  building, network ID allocation, cross-machine credential resolution
+building, network ID allocation, cross-machine credential resolution
 - renet requires a RenetVault payload that only rdc knows how to build
 - If rdc is missing a command or JSON output, the fix goes into rdc
 - Same approach as Ansible modules — one consistent interface
@@ -155,9 +154,7 @@ Every provider attribute has an env var fallback (AWS/Hetzner pattern):
 | `config_path` | `REDIACC_CONFIG_PATH` | auto-detect |
 | `rdc_path` | `REDIACC_RDC_PATH` | `rdc` on PATH |
 
-Resolution order: HCL → env var → default. This keeps `.tf` files
-portable and credential-free. CI/CD sets `REDIACC_CONFIG_NAME=production`
-without modifying Terraform configs.
+Resolution order: HCL → env var → default. This keeps `.tf` files portable and credential-free. CI/CD sets `REDIACC_CONFIG_NAME=production` without modifying Terraform configs.
 ```
 
 ## Provider Implementation (Go)
@@ -234,8 +231,7 @@ import (
     "os/exec"
 )
 
-// Envelope is the JSON output format for rdc query commands.
-type Envelope struct {
+// Envelope is the JSON output format for rdc query commands. type Envelope struct {
     Success  bool            `json:"success"`
     Command  string          `json:"command"`
     Data     json.RawMessage `json:"data"`
@@ -261,9 +257,7 @@ func (c *RdcClient) Verify(ctx context.Context) error {
     return err
 }
 
-// RunQuery executes a query command with --output json and unwraps the envelope.
-// Returns the 'data' field from the JSON envelope.
-func (c *RdcClient) RunQuery(ctx context.Context, args ...string) (json.RawMessage, error) {
+// RunQuery executes a query command with --output json and unwraps the envelope. // Returns the 'data' field from the JSON envelope. func (c *RdcClient) RunQuery(ctx context.Context, args ...string) (json.RawMessage, error) {
     cmdArgs := []string{"--output", "json"}
     if c.ConfigName != "" {
         cmdArgs = append(cmdArgs, "--config", c.ConfigName)
@@ -297,9 +291,7 @@ func (c *RdcClient) RunQuery(ctx context.Context, args ...string) (json.RawMessa
     return raw, nil
 }
 
-// RunLifecycle executes a lifecycle command (create, up, down, delete).
-// Does NOT add --output json. Only checks exit code for success/failure.
-func (c *RdcClient) RunLifecycle(ctx context.Context, args ...string) error {
+// RunLifecycle executes a lifecycle command (create, up, down, delete). // Does NOT add --output json. Only checks exit code for success/failure. func (c *RdcClient) RunLifecycle(ctx context.Context, args ...string) error {
     cmdArgs := []string{}
     if c.ConfigName != "" {
         cmdArgs = append(cmdArgs, "--config", c.ConfigName)
@@ -512,17 +504,12 @@ data loss.
 Every resource supports import from v0.1.0:
 
 ```
-terraform import rediacc_machine.web web-1
-terraform import rediacc_repository.app "my-app:server-1"
-terraform import rediacc_backup_schedule.daily "server-1"
+terraform import rediacc_machine.web web-1 terraform import rediacc_repository.app "my-app:server-1" terraform import rediacc_backup_schedule.daily "server-1"
 ```
 
 Terraform 1.5+ import blocks (no CLI required):
 ```hcl
-import {
-  to = rediacc_repository.app
-  id = "my-app:server-1"
-}
+import { to = rediacc_repository.app id = "my-app:server-1" }
 ```
 
 Import reads `config repositories` + `machine containers` to populate state.
@@ -550,12 +537,7 @@ rdc CLI improvements (add JSON output to `autostart list`, `repo status`).
 ### GNUmakefile
 
 ```makefile
-HOSTNAME=registry.terraform.io
-NAMESPACE=rediacc
-NAME=rediacc
-BINARY=terraform-provider-${NAME}
-VERSION=0.1.0
-OS_ARCH=$(shell go env GOOS)_$(shell go env GOARCH)
+HOSTNAME=registry.terraform.io NAMESPACE=rediacc NAME=rediacc BINARY=terraform-provider-${NAME} VERSION=0.1.0 OS_ARCH=$(shell go env GOOS)_$(shell go env GOARCH)
 
 default: install
 
@@ -587,22 +569,15 @@ The recommended workflow uses `dev_overrides` — no `make install` or
 
 ```bash
 # ~/.terraformrc (one-time setup)
-cat > ~/.terraformrc <<'EOF'
-provider_installation {
-  dev_overrides {
+cat > ~/.terraformrc <<'EOF' provider_installation { dev_overrides {
     "rediacc/rediacc" = "/home/user/monorepo/console/packages/terraform/terraform-provider-rediacc"
-  }
-  direct {}
-}
-EOF
+} direct {} } EOF
 
 # Development workflow
-cd packages/terraform/terraform-provider-rediacc
-go build -o terraform-provider-rediacc   # Just rebuild, no install step
+cd packages/terraform/terraform-provider-rediacc go build -o terraform-provider-rediacc # Just rebuild, no install step
 
 # Test in any directory — Terraform finds the binary via dev_overrides
-cd /tmp/test-project
-terraform plan   # Skips terraform init, uses local build directly
+cd /tmp/test-project terraform plan # Skips terraform init, uses local build directly
 ```
 
 This pattern is used by most Terraform provider developers. The
@@ -639,11 +614,9 @@ signs:
   - artifacts: checksum
     args: ["--batch", "--local-user", "{{ .Env.GPG_FINGERPRINT }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
 
-release:
-  draft: false
+release: draft: false
 
-changelog:
-  sort: asc
+changelog: sort: asc
 ```
 
 Published to Terraform Registry via GitHub releases + GoReleaser.

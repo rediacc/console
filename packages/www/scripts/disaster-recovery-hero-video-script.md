@@ -43,9 +43,7 @@ You lose everything."
 
 "Here's what works:
 
-**Verified backups** - every single one tested automatically.
-**Unlimited history** - months of data, incremental deduplication.
-**Incremental speed** - only backup what changed.
+**Verified backups** - every single one tested automatically. **Unlimited history** - months of data, incremental deduplication. **Incremental speed** - only backup what changed.
 
 No compromises. No hoping. Just backups that actually work."
 
@@ -67,8 +65,7 @@ Or keep hoping your backups work...
 ### END CARD (75-90 seconds)
 **[Text on screen]**
 
-**REDIACC**
-*Disaster Recovery Done Right*
+**REDIACC** *Disaster Recovery Done Right*
 
 Verified backups • Unlimited history • Incremental speed
 
@@ -164,7 +161,6 @@ The script creates **self-liquidating value** - even if they don't click, they l
 
 ---
 
-**Total Runtime**: 60-90 seconds
-**Recommended Length**: 75 seconds
+**Total Runtime**: 60-90 seconds **Recommended Length**: 75 seconds
 **Tone**: Direct, authoritative, problem-focused
 **Goal**: Get scroll for more info, not immediate conversion

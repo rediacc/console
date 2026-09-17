@@ -43,9 +43,7 @@ Hepsi gidiyor."
 
 "Bak, işe yarayan ne:
 
-**Test edilmiş yedekler** - hepsi otomatik kontrol edilmiş.
-**Sınırsız geçmiş** - aylarca veri, incremental sistem.
-**Hız** - sadece değişeni al.
+**Test edilmiş yedekler** - hepsi otomatik kontrol edilmiş. **Sınırsız geçmiş** - aylarca veri, incremental sistem. **Hız** - sadece değişeni al.
 
 Taviz verme. Umutla bekleme. Çalışan yedek yap."
 
@@ -67,8 +65,7 @@ Ya da umutla bekle yedeklerin çalışır diye...
 ### BİTİŞ KARTI (75-90 saniye)
 **[Ekranda yazı]**
 
-**REDIACC**
-*Doğru Yapılmış Felaket Kurtarma*
+**REDIACC** *Doğru Yapılmış Felaket Kurtarma*
 
 Doğrulanmış yedekler • Sınırsız geçmiş • Incremental hız
 
@@ -215,7 +212,6 @@ Script **kendi kendini finanse eden değer** yaratıyor - tıklamasalar bile yed
 
 ---
 
-**Toplam Süre**: 60-90 saniye
-**Önerilen Uzunluk**: 75 saniye
+**Toplam Süre**: 60-90 saniye **Önerilen Uzunluk**: 75 saniye
 **Ton**: Direkt, otoriter, problem odaklı
 **Hedef**: Daha fazla bilgi için kaydırma, anında dönüşüm değil

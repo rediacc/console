@@ -3,40 +3,31 @@
 ## Design Principles
 
 1. **Query commands for state, lifecycle commands for mutations.** Never parse
-   lifecycle command stdout — only check exit codes. Use separate query commands
-   to verify state changes.
+lifecycle command stdout — only check exit codes. Use separate query commands to verify state changes.
 
 2. **Per-machine locking.** Every resource targets a machine. Acquire the machine
-   mutex before any rdc operation. Config-modifying operations also acquire the
-   config mutex. See `05-terraform-provider.md` concurrency design.
+mutex before any rdc operation. Config-modifying operations also acquire the config mutex. See `05-terraform-provider.md` concurrency design.
 
 3. **Dry-run for plan.** `repo up/down/delete --dry-run` returns JSON — use this
-   during `terraform plan` to show what would change without side effects.
+during `terraform plan` to show what would change without side effects.
 
 4. **Machine CRUD commands have JSON support.** The `machine add/delete/rename`
-   commands use `createResourceCommands()` factory which calls `outputService.print()`.
-   This means machine Create/Delete can parse structured responses directly,
-   unlike repo lifecycle commands which need execute-then-query.
+commands use `createResourceCommands()` factory which calls `outputService.print()`. This means machine Create/Delete can parse structured responses directly, unlike repo lifecycle commands which need execute-then-query.
 
 5. **Design for `for_each`, not just `count`.** Resources use string identifiers
-   so they work naturally with `for_each` maps. This prevents the index-shifting
-   problem that plagues `count`-based resources when items are removed from the
-   middle of a list.
+so they work naturally with `for_each` maps. This prevents the index-shifting problem that plagues `count`-based resources when items are removed from the middle of a list.
 
 6. **Import is day-one.** Every resource supports `ImportState` from v0.1.0.
-   Users with existing rdc setups can adopt Terraform without recreating
-   infrastructure. This is the #1 adoption barrier (see `00-overview.md`).
+Users with existing rdc setups can adopt Terraform without recreating infrastructure. This is the #1 adoption barrier (see `00-overview.md`).
 
 7. **Minimize required attributes.** Only require what's truly necessary for
-   Create. Everything else is optional with sensible defaults. This keeps the
-   minimum viable configuration small (3-line resource blocks).
+Create. Everything else is optional with sensible defaults. This keeps the minimum viable configuration small (3-line resource blocks).
 
 8. **Avoid phantom diffs.** Never store computed values that change between
-   reads (timestamps, dynamic IDs) as plan-visible attributes. Use `UseStateForUnknown`
-   plan modifiers for computed attributes that are stable after creation.
+reads (timestamps, dynamic IDs) as plan-visible attributes. Use `UseStateForUnknown` plan modifiers for computed attributes that are stable after creation.
 
 9. **Attribute-path diagnostics.** Error messages should reference the specific
-   attribute that caused the failure, not just "rdc command failed".
+attribute that caused the failure, not just "rdc command failed".
 
 ## Resources (Managed, CRUD Lifecycle)
 
@@ -120,9 +111,7 @@ Import:
   → Read machine config from config show, populate ip/user/port/datastore
 ```
 
-**Concurrency note:** Creating/deleting machines modifies the config file.
-Must hold config mutex to prevent version conflicts with other machine or
-repo operations that also write config.
+**Concurrency note:** Creating/deleting machines modifies the config file. Must hold config mutex to prevent version conflicts with other machine or repo operations that also write config.
 
 ---
 
@@ -215,9 +204,7 @@ resource "rediacc_repository" "test_copy" {
 
 **CRUD Implementation**:
 
-All repo operations use the execute-then-query pattern because repo lifecycle
-commands lack JSON output. Every operation acquires the machine mutex AND
-config mutex (repo create/delete modify config).
+All repo operations use the execute-then-query pattern because repo lifecycle commands lack JSON output. Every operation acquires the machine mutex AND config mutex (repo create/delete modify config).
 
 ```
 Create:  (acquire config mutex + machine mutex, timeout: 30 min)
@@ -264,17 +251,14 @@ Import:
   → Cannot import: size, source_dir, autostart (not queryable)
 ```
 
-**Planning with dry-run:** During `terraform plan`, the provider can use
-`rdc repo up --dry-run` / `rdc repo delete --dry-run` to get structured
-JSON showing what would happen without executing. This improves plan output.
+**Planning with dry-run:** During `terraform plan`, the provider can use `rdc repo up --dry-run` / `rdc repo delete --dry-run` to get structured JSON showing what would happen without executing. This improves plan output.
 
 **Known drift detection gaps (v0.x):**
 - Volume size is not queryable — can't detect external resize
 - Autostart state is not queryable — can't detect external changes
 - Sync content is not comparable — can't detect external file changes
 
-These are accepted limitations. Future rdc CLI improvements (JSON for
-`autostart list`, `repo status`) will close these gaps.
+These are accepted limitations. Future rdc CLI improvements (JSON for `autostart list`, `repo status`) will close these gaps.
 
 ---
 
@@ -418,12 +402,9 @@ Delete:  (acquire machine mutex, timeout: 5 min)
   Clone: ds-prod-fork-staging
   Mount: /mnt/rediacc
 ```
-Parse lines matching `Snapshot:`, `Clone:`, `Mount:` to extract metadata.
-Store in Terraform state as computed attributes for unfork.
+Parse lines matching `Snapshot:`, `Clone:`, `Mount:` to extract metadata. Store in Terraform state as computed attributes for unfork.
 
-**Important:** Fork mounts on the source machine, replacing `/mnt/rediacc` with
-a COW overlay. Plan accordingly — don't fork a production machine that needs to
-stay on its original datastore. Use staging/test machines as fork sources.
+**Important:** Fork mounts on the source machine, replacing `/mnt/rediacc` with a COW overlay. Plan accordingly — don't fork a production machine that needs to stay on its original datastore. Use staging/test machines as fork sources.
 
 ---
 
@@ -553,9 +534,7 @@ output "datastore_info" {
 
 ## Complete Example (using `for_each`)
 
-Using `for_each` instead of `count` prevents the index-shifting problem:
-removing a machine from the middle of a list doesn't force-replace all
-subsequent resources.
+Using `for_each` instead of `count` prevents the index-shifting problem: removing a machine from the middle of a list doesn't force-replace all subsequent resources.
 
 ```hcl
 terraform {
@@ -641,8 +620,7 @@ output "worker_health" {
 
 ## Import Workflow (Existing Infrastructure)
 
-For users with existing rdc setups, import blocks (Terraform 1.5+) let them
-adopt Terraform without recreating anything:
+For users with existing rdc setups, import blocks (Terraform 1.5+) let them adopt Terraform without recreating anything:
 
 ```hcl
 # Import existing machines — no rdc commands run, just reads current state
@@ -685,19 +663,16 @@ resource "rediacc_repository" "app" {
 }
 ```
 
-Run `terraform plan` after import to verify no drift. If plan shows changes,
-adjust the resource config to match actual state before applying.
+Run `terraform plan` after import to verify no drift. If plan shows changes, adjust the resource config to match actual state before applying.
 
 ## Go Client: Envelope Handling
 
-The Go client (`internal/client/rdc.go`) is defined in `05-terraform-provider.md`.
-Key methods used by resources:
+The Go client (`internal/client/rdc.go`) is defined in `05-terraform-provider.md`. Key methods used by resources:
 
 - **`RunQuery()`** — adds `--output json`, unwraps envelope, returns `data` field
 - **`RunLifecycle()`** — no `--output json`, only checks exit code
 - **Convenience methods** — `ConfigRepositories()`, `MachineContainers()`, `MachineHealth()`,
-  `RepoCreate()`, `RepoUp()`, `RepoDown()`, `RepoDelete()`, `DatastoreStatus()`,
-  `DatastoreFork()`, `DatastoreUnfork()`
+`RepoCreate()`, `RepoUp()`, `RepoDown()`, `RepoDelete()`, `DatastoreStatus()`, `DatastoreFork()`, `DatastoreUnfork()`
 
 ## Implementation Priority
 
