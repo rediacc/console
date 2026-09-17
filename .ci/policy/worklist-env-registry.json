@@ -375,6 +375,18 @@
         "'30'"
       ]
     },
+    "WORKLIST_MIGRATE_PLANS_SHOW": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_MIGRATE_PLAN_MIN_OPEN": {
+      "kind": "tuning",
+      "defaults": [
+        "'1'"
+      ]
+    },
     "WORKLIST_OUTQ_MAX": {
       "kind": "tuning",
       "defaults": [

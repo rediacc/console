@@ -1110,15 +1110,22 @@ def _migrate_cli(argv):
         for c in cands:
             n = c["counts"]
             total = n["open"] + n["inflight"] + n["deferred"]
-            # A candidate can carry ZERO worklist items and still belong here:
-            # every item ticked before the session died, with real unfinished
-            # work surviving only in its STATE.md "## Next action" section.
-            item_desc = (
-                "%d item(s) [open %d, in-flight %d, deferred %d]"
-                % (total, n["open"], n["inflight"], n["deferred"])
-                if total
-                else "0 worklist item(s), but a STATE.md Next action below"
-            )
+            # A candidate can carry ZERO worklist items and still belong here: every item ticked before the session died, with real unfinished work surviving only in its STATE.md "## Next action" section, or in a committed agent/PLAN-*.md this session never wrote a worklist item for at all.
+            plans = c.get("plans") or []
+            if total:
+                item_desc = "%d item(s) [open %d, in-flight %d, deferred %d]" % (
+                    total,
+                    n["open"],
+                    n["inflight"],
+                    n["deferred"],
+                )
+            elif plans:
+                item_desc = "0 worklist item(s), but %d committed plan(s) with %d open box(es)" % (
+                    len(plans),
+                    sum(p["open"] for p in plans),
+                )
+            else:
+                item_desc = "0 worklist item(s), but a STATE.md Next action below"
             print(
                 "  %s  %s  %s  %s%s"
                 % (
@@ -1132,11 +1139,78 @@ def _migrate_cli(argv):
             print("      %s: %s" % (c["verdict"], c["evidence"]))
             for it in c["items"][:3]:
                 print("      - [%s] #%s %s" % (it["state"], it["id"], it["text"][:110]))
+            plans_show = int(os.environ.get("WORKLIST_MIGRATE_PLANS_SHOW", "3"))
+            for p in plans[:plans_show]:
+                print(
+                    "      PLAN %s  [%s]  %d open / %d ticked"
+                    % (p["rel"], p["status"], p["open"], p["ticked"])
+                )
+            if len(plans) > plans_show:
+                print("      +%d more plan(s)" % (len(plans) - plans_show))
             if c.get("next_action"):
                 print("      STATE.md Next action (agent/%s/STATE.md):" % c["prefix"])
                 for line in c["next_action"][:400].splitlines()[:6]:
                     print("        %s" % line)
         print("\ncontinue one:  worklist.py --migrate %s <prefix> [<prefix>...]" % me)
+        return
+
+    if rest and rest[0] == "--plan":
+        paths = rest[1:]
+        if not paths:
+            sys.stderr.write(M.CLI_MIGRATE_USAGE)
+            sys.exit(2)
+        import wl_checks as WC  # noqa: PLC0415 -- only this branch needs the header parser
+        import wl_planfile as PF  # noqa: PLC0415 -- same, FINISHED_STATES only
+
+        updated_re = re.compile(r"^(\*{0,2}Updated\*{0,2}:\s*)\d{4}-\d{2}-\d{2}", re.MULTILINE)
+        today = time.strftime("%Y-%m-%d", time.gmtime())
+        any_written = False
+        for rel in paths:
+            path = pathlib.Path(root) / rel
+            try:
+                text = path.read_text(encoding="utf-8")
+            except OSError as exc:
+                print("cannot read %s: %s" % (rel, exc))
+                continue
+            lines = text.splitlines()
+            head = "\n".join(lines[: WC.PLAN_HEADER_LINES])
+            sm = WC.PLAN_STATUS_RE.search(head) or WC.PLAN_STATUS_INLINE_RE.search(head)
+            status = sm.group(1).lower() if sm else "UNKNOWN"
+            if status in PF.FINISHED_STATES:
+                print("refused: %s is Status: %s (finished); nothing to adopt" % (rel, status))
+                continue
+            open_n = len(re.findall(r"^- \[ \]", text, re.MULTILINE))
+            if open_n == 0:
+                print("refused: %s has no open boxes" % rel)
+                continue
+            owner = WC.plan_owner(root, rel)
+            if owner == me:
+                print("%s already belongs to %s; nothing changed" % (rel, me))
+                continue
+            om = WC.PLAN_OWNER_RE.search(head)
+            if not om:
+                print(
+                    "refused: %s has no Owner: line in its first %d header lines"
+                    % (rel, WC.PLAN_HEADER_LINES)
+                )
+                continue
+            owner_idx = head.count("\n", 0, om.start())
+            lines[owner_idx] = "Owner: %s (adopted from %s %s)" % (
+                me[:8],
+                (owner or "unowned")[:8],
+                today,
+            )
+            new_head = "\n".join(lines[: WC.PLAN_HEADER_LINES])
+            um = updated_re.search(new_head)
+            if um:
+                lines[new_head.count("\n", 0, um.start())] = updated_re.sub(
+                    r"\g<1>%s" % today, lines[new_head.count("\n", 0, um.start())]
+                )
+            path.write_text("\n".join(lines) + ("\n" if text.endswith("\n") else ""), encoding="utf-8")
+            print("adopted %s (was %s, %d open box(es))" % (rel, owner or "unowned", open_n))
+            any_written = True
+        if any_written:
+            print("\nnow: npm run check:ci-plan-record -- --update")
         return
 
     total_moved = 0
@@ -1174,6 +1248,16 @@ def _migrate_cli(argv):
             print("\n  HANDED OFF NEXT ACTION from %s (agent/%s/STATE.md):" % (prev, prev))
             for line in section.splitlines():
                 print("    %s" % line)
+        # A STORE MIGRATION MUST NOT SILENTLY REWRITE A COMMITTED DOCUMENT: the skill's own rule is that a predecessor's STATE.md is left alone as a peer's document, and a plan file is the same kind of document with a stronger claim to it (it is CI-gated). Print the exact command instead.
+        prev_plans = S.plan_candidates(root).get(prev) or []
+        if prev_plans:
+            print("\n  %s also owns %d open plan(s), not moved by this command:" % (prev, len(prev_plans)))
+            for p in prev_plans:
+                print("    PLAN %s  [%s]  %d open / %d ticked" % (p["rel"], p["status"], p["open"], p["ticked"]))
+            print(
+                "  adopt one:  worklist.py --migrate %s --plan %s"
+                % (me, " ".join(p["rel"] for p in prev_plans))
+            )
         print("\n  requests addressed to %s are NOT moved; read them with --requests" % prev)
         total_moved += len(moved)
         fold = S.load(worklist, sync=False)

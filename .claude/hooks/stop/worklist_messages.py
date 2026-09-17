@@ -772,10 +772,15 @@ CLI_REASSIGN_DONE = (
 CLI_MIGRATE_USAGE = (
     "usage: worklist.py --migrate <me> --candidates [--json]\n"
     "       worklist.py --migrate <me> <prev> [<prev>...]\n"
+    "       worklist.py --migrate <me> --plan <path> [<path>...]\n"
     "List sessions whose remaining work is not live here, then continue the ones\n"
     "you name: their open, in-flight and deferred items are re-tagged to you and\n"
     "the originals are ticked 'migrated to'. Nothing is deleted; a LIVE session is\n"
-    "refused. Use it after a restart or a machine switch (/migrate wraps it).\n"
+    "refused. A candidate can also be a committed agent/PLAN-*.md carrying open\n"
+    "boxes whose declared owner is idle -- --plan re-stamps that plan's Owner:\n"
+    "line to you (no box is touched); a store migration never does this on its\n"
+    "own, it only prints the command. Use it after a restart or a machine switch\n"
+    "(/migrate wraps it).\n"
 )
 
 CLI_ADOPT_USAGE = (

@@ -1572,6 +1572,7 @@
       "WORKLIST_DOCS_DRIFT_MAX",
       "WORKLIST_FOCUS",
       "WORKLIST_GUIDE_MAX",
+      "WORKLIST_MIGRATE_PLANS_SHOW",
       "WORKLIST_OUTQ_MAX",
       "WORKLIST_PHANTOM_MIN",
       "WORKLIST_PLAN_DRIFT_MAX",
@@ -1725,6 +1726,8 @@
       "WORKLIST_JUSTIFY_AGE_MIN",
       "WORKLIST_JUSTIFY_PER_STOP",
       "WORKLIST_LIVE_MIN",
+      "WORKLIST_MIGRATE_PLANS_SHOW",
+      "WORKLIST_MIGRATE_PLAN_MIN_OPEN",
       "WORKLIST_STORE_DIR"
     ],
     ".claude/hooks/stop/wl_wait.py": [
@@ -1741,6 +1744,7 @@
       "GITHUB_ACTIONS",
       "STOPHOOK_CHILD",
       "TMPDIR",
+      "WORKLIST_MIGRATE_PLANS_SHOW",
       "WORKLIST_PUBLISH_ROOT"
     ],
     ".claude/hooks/trapguard/dispatch.py": [

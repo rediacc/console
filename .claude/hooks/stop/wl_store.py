@@ -2039,6 +2039,7 @@ def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
                 "host": _host_label(hh),
                 "handed_off": owner in handed,
                 "next_action": agent_next_action(root, owner),
+                "plans": [],
                 "items": [
                     {"id": rid, "state": rec["state"], "text": brief_text(rec)[:160]}
                     for rid, rec in sorted(items, key=lambda kv: kv[0])
@@ -2101,9 +2102,39 @@ def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
                 "host": _host_label(hh),
                 "handed_off": owner in handed,
                 "next_action": na,
+                "plans": [],
                 "items": [],
             }
         )
+
+    # THIRD PASS: committed plans with open work whose owner is neither this session nor verifiably live. ADDITIVE ONLY -- an owner already in `out` (from a worklist item or a STATE.md handoff) is ENRICHED with its plans, never duplicated; an owner present only because of a plan gets a fresh, all-zero-counts candidate row. See `plan_candidates` for why this has no time cutoff
+    # and why FINISHED_STATES, not `in_scope_status`, is the filter.
+    by_prefix = {c["prefix"]: c for c in out}
+    for owner, plans in plan_candidates(root).items():
+        if owner in mine:
+            continue
+        if owner in by_prefix:
+            by_prefix[owner]["plans"] = plans
+            continue
+        verdict, why = session_liveness(worklist, owner, projects_dir, events)
+        if verdict in ("live", "unknown"):
+            continue
+        newest, branch, hh = _newest_branch_host(owner)
+        row = {
+            "prefix": owner,
+            "verdict": verdict,
+            "evidence": why,
+            "counts": {"open": 0, "inflight": 0, "deferred": 0},
+            "newest": newest,
+            "branch": branch,
+            "host": _host_label(hh),
+            "handed_off": owner in handed,
+            "next_action": agent_next_action(root, owner),
+            "plans": plans,
+            "items": [],
+        }
+        out.append(row)
+        by_prefix[owner] = row
 
     out.sort(
         key=lambda c: (
@@ -2112,6 +2143,47 @@ def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
             c["newest"],
         )
     )
+    return out
+
+
+def plan_candidates(root):
+    """{owner8: [{"rel", "status", "open", "ticked"}]}: committed plans carrying open work whose declared owner is neither this session nor verifiably live.
+
+    THE GAP THIS CLOSES. Measured 2026-09-17: 96 `agent/PLAN-*.md` files exist, 15 carry open boxes, 151 open boxes total -- 99 of them owned by a session `migrate_candidates` above already treats as idle, and none of them named anywhere `--candidates` prints. `wl_checks.plan_drift_rows` and `wl_planfile.plan_rows` both answer "does THIS session's own plan need attention" by
+    design (`C.owned_by_me` gates both), so neither can answer "what committed, undone design exists that nobody live is driving". This is the one place that answers it, and `migrate_candidates` is its only caller.
+
+    SOURCED FROM THE CENSUS, NOT A FRESH SCAN. `wl_planindex.index_census` is the same cache `plans_block` already trusts every SessionStart; scanning the directory again here would be a second, driftable answer to "how many plans exist". `wl_planindex` imports THIS module at its own top, so importing it back at module level here would cycle -- deferred into the function body,
+    same reason `wl_planindex.census_rows` gives for deferring its own `wl_checks` import.
+
+    FILTERED TO `open > 0` AND STATUS NOT IN `wl_planfile.FINISHED_STATES` -- deliberately NOT `in_scope_status`, which also excludes NOT_STARTED_STATES (`draft`). Measured: `draft` is this repo's default header on a plan under active execution (6 of 8 box-carrying plans use it, hiding 72 of 88 open boxes), so filtering by `in_scope_status` would hide most of the very work this
+    exists to surface.
+
+    NO TIME CUTOFF, unlike the STATE.md fallback above. A plan candidate clears itself three ways instead: its owner goes live, its status becomes finished, or its last box is ticked -- there is no volatile cursor here to age out.
+
+    `plan_owner` (a real file read) runs only over the short list the census already narrowed to box-carrying, in-scope plans -- never over all 96.
+    """
+    import wl_checks  # noqa: PLC0415 -- plan_owner lives here; wl_checks imports wl_planindex,
+    # which imports wl_store (this module), so importing it at module level cycles.
+    import wl_planfile  # noqa: PLC0415 -- FINISHED_STATES lives here, same cycle shape.
+    import wl_planindex  # noqa: PLC0415 -- imports wl_store (this module) at its own top.
+
+    min_open = int(os.environ.get("WORKLIST_MIGRATE_PLAN_MIN_OPEN", "1"))
+    rows, state, _detail = wl_planindex.index_census(root)
+    if state != wl_planindex.CENSUS_FRESH:
+        rows = wl_planindex.census_rows(root)
+
+    out = {}
+    for rel, status, _lines, open_n, ticked_n, _size in rows:
+        if open_n < min_open or status in wl_planfile.FINISHED_STATES:
+            continue
+        owner = wl_checks.plan_owner(root, rel)
+        if not owner:
+            continue
+        out.setdefault(owner, []).append(
+            {"rel": rel, "status": status, "open": open_n, "ticked": ticked_n}
+        )
+    for owner in out:
+        out[owner].sort(key=lambda p: p["rel"])
     return out
 
 

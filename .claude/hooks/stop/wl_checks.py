@@ -3120,6 +3120,14 @@ def run_stop(event, event_ok, worklist, hook_file):
                 "      - [%s] #%s %s" % (it["state"], it["id"], it["text"][:110])
                 for it in c["items"][:3]
             )
+            plans_show = int(os.environ.get("WORKLIST_MIGRATE_PLANS_SHOW", "3"))
+            plans = c.get("plans") or []
+            lines.extend(
+                "      PLAN %s  [%s]  %d open / %d ticked" % (p["rel"], p["status"], p["open"], p["ticked"])
+                for p in plans[:plans_show]
+            )
+            if len(plans) > plans_show:
+                lines.append("      +%d more plan(s)" % (len(plans) - plans_show))
         lines.append(
             "  Continue one or more: /migrate  (it lists them, ASKS which, and moves "
             "nothing unasked)."
