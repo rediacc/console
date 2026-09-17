@@ -16,6 +16,7 @@ import time
 import wl_bravedefault as BD
 import wl_classsweep as CS
 import wl_proc
+import wl_proofcheck as PF
 import worklist_messages as M
 
 # v5: no cap. Kept as a name so the counter file (used only to TELL the judge it is repeating itself) reads clearly.
@@ -75,6 +76,8 @@ JUDGE_SCHEMA = {
         "class_sweep": CS.CLASS_SWEEP_SCHEMA,
         # v14, the second of the pair. Same optional-at-the-top-level shape and the same never-fails-closed semantics as class_sweep, asked on a different trigger: a `[?]` in the remaining list that carries a DEFAULT. See wl_bravedefault.
         "brave_default": BD.BRAVE_DEFAULT_SCHEMA,
+        # v18: rides the SAME fix-stop trigger as class_sweep, asking a different question about the same fix-set -- did a bulk mechanical transform inside it prove it did not destroy structure it does not know about. Same optional-at-the-top-level shape, same never-fails-closed semantics: the only thing this object can do is turn a stop into a continue. See wl_proofcheck.
+        "proof_obligation": PF.PROOF_SCHEMA,
         "regression_gate": {
             "type": "object",
             "properties": {
@@ -690,8 +693,8 @@ def is_fix_stop(extra):
 def judge_schema_for(extra):
     """JUDGE_SCHEMA, with each optional object required iff the prompt asks for it.
 
-    ONE rule, applied per marker: regression_gate for _REGGATE_MARKER, class_sweep for CS.SWEEP_MARKER, brave_default for BD.BRAVE_MARKER. The three markers are INDEPENDENT and must not collapse into one boolean: the sweep section is also appended on a carried-forward demand, and the brave section triggers on the remaining list, so either can arrive on a stop where no fix landed at
-    all. Requiring regression_gate on such a stop would fail the judge closed for a question nobody asked.
+    ONE rule, applied per marker: regression_gate for _REGGATE_MARKER, class_sweep for CS.SWEEP_MARKER, brave_default for BD.BRAVE_MARKER, proof_obligation for PF.PROOF_MARKER. The markers are INDEPENDENT and must not collapse into one boolean: the sweep and proof sections are also appended on a carried-forward demand, and the brave section triggers on the remaining list, so any of
+    them can arrive on a stop where no fix landed at all. Requiring regression_gate on such a stop would fail the judge closed for a question nobody asked.
     """
     text = extra or ""
     wanted = []
@@ -701,6 +704,8 @@ def judge_schema_for(extra):
         wanted.append("class_sweep")
     if BD.BRAVE_MARKER in text:
         wanted.append("brave_default")
+    if PF.PROOF_MARKER in text:
+        wanted.append("proof_obligation")
     missing = [k for k in wanted if k not in JUDGE_SCHEMA["required"]]
     if not missing:
         return JUDGE_SCHEMA
@@ -725,13 +730,16 @@ def run_judge(
     # field the schema requires.
     sweep_outstanding = None if _REGGATE_MARKER in (extra or "") else CS.load_outstanding()
     sweep_extra = CS.prompt_section(_REGGATE_MARKER in (extra or ""), sweep_outstanding)
+    # THE PROOF OBLIGATION rides the same call for the same reason the class sweep does: the question is about the same fix-set the regression gate already shows the judge, and a second model call would double the cost of every fix stop.
+    proof_outstanding = None if _REGGATE_MARKER in (extra or "") else PF.load_outstanding()
+    proof_extra = PF.prompt_section(_REGGATE_MARKER in (extra or ""), proof_outstanding)
     # THE BRAVE-DEFAULT rule rides the same call on its own trigger: a parked decision whose DEFAULT does nothing. Its trigger is the remaining list, not `extra`, so the two rules are independent and either may be asked alone.
     #
     # NOT ON A FIX STOP. A regression-gate stop is already asking the judge to
     # rule on a fix's test coverage AND its sibling sweep; adding "and by the
     # way, is that parked question's DEFAULT brave enough" makes one call carry three unrelated judgements, and the parked question is the one least connected to what the session just did. It is not dropped, only deferred: the trigger is the remaining list, which does not go away, so the same item is asked about on the next stop that is not a fix stop.
     brave_extra = "" if is_fix_stop(extra) else BD.prompt_section(remaining_lines)
-    extra = (extra or "") + sweep_extra + brave_extra
+    extra = (extra or "") + sweep_extra + proof_extra + brave_extra
     prompt = M.JUDGE_PROMPT % {
         "streak": streak,
         "remaining": "\n".join("  " + r for r in remaining_lines[:20]) or "  (none tracked)",
@@ -844,6 +852,14 @@ def run_judge(
             out["reason"] = ("%s [class-sweep not judged: %s]" % (out.get("reason", ""), note))[
                 :400
             ]
+    if proof_extra:
+        # BOTH RULES MAY FIRE ON ONE STOP, deliberately, on the same reasoning apply_order documents: a verdict already `continue` is APPENDED to, never overwritten, so a class-sweep order and a proof order both reach the session rather than one silently losing to the other.
+        kind, note = PF.apply_verdict(out, proof_outstanding)
+        fired = fired or kind == "fire"
+        if kind == "degraded":
+            out["reason"] = (
+                "%s [proof-obligation not judged: %s]" % (out.get("reason", ""), note)
+            )[:400]
     if brave_extra and not fired:
         # ONE ORDER PER STOP. A live defect still in the tree outranks a parked decision, and two orders in one block is how a block stops being read. Skipping is safe here and would not be for the sweep: this rule's trigger is the `[?]` itself, which is still there next stop.
         kind, note = BD.apply_verdict(out)

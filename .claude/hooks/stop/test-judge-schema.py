@@ -30,6 +30,7 @@ import wl_classsweep
 import wl_core
 import wl_judge
 import wl_proc
+import wl_proofcheck
 import wl_rules
 
 
@@ -1678,6 +1679,204 @@ control(
     False,
 )
 control("CONTROL: an empty extra is not a fix stop", wl_judge.is_fix_stop(""), False)
+
+# ===========================================================================
+# PART 3 -- wl_proofcheck: did the bulk transform prove itself?
+#
+# THE SAME SEAM AS PART 2, on the same reasoning: given a judge answer, does the machinery fire, stay silent, and produce an actionable order. Whether haiku correctly tells a bulk transform from a hand-written fix is calibrated live, not here; these controls pin the code around that judgement.
+# ===========================================================================
+
+PROOFSIG = "\n\n%s. ALSO fill the `proof_obligation` object, about the same fix-set.\n" % (
+    wl_proofcheck.PROOF_MARKER
+)
+
+PROOF_MARKER_PATH = pathlib.Path(_TMP.name) / "proofcheck-marker.json"
+
+
+def proof_fires(path):
+    try:
+        return json.loads(path.read_text())["fires"]
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def proof_answer(**kw):
+    """A judge verdict carrying a proof_obligation object, defaults to the fired shape."""
+    po = {
+        "applicable": True,
+        "transform_kind": "reflow --write across the .ci comment scope",
+        "scope": ".ci/rediacc_ci",
+        "proof_kind": "none",
+        "evidence": "",
+        "proof_attached": False,
+        "instruction": "run .ci/scripts/quality/shape_cluster_diff.py --rev HEAD .ci",
+    }
+    po.update(kw)
+    return {
+        "verdict": "stop",
+        "reason": "the board is clean",
+        "next_action": "",
+        "proof_obligation": po,
+    }
+
+
+# -- 3a. The schema pair, exactly as for class_sweep. ------------------------
+control(
+    "no proof section leaves proof_obligation optional",
+    "proof_obligation" in wl_judge.judge_schema_for("")["required"],
+    False,
+)
+control(
+    "the proof section makes proof_obligation required",
+    "proof_obligation" in wl_judge.judge_schema_for(PROOFSIG)["required"],
+    True,
+)
+proofboth = wl_judge.judge_schema_for(FIXSIG + PROOFSIG)
+control(
+    "both markers require both objects",
+    sorted(proofboth["required"][3:]),
+    ["proof_obligation", "regression_gate"],
+)
+control(
+    "the proof section alone does NOT require regression_gate",
+    "regression_gate" in wl_judge.judge_schema_for(PROOFSIG)["required"],
+    False,
+)
+control(
+    "the module constant survives the proof marker too",
+    "proof_obligation" in wl_judge.JUDGE_SCHEMA["required"],
+    False,
+)
+control(
+    "proof_obligation is still declared as a property",
+    wl_judge.JUDGE_SCHEMA["properties"]["proof_obligation"]["required"][0],
+    "applicable",
+)
+
+# -- 3b. THE PLANTED DEFECT. A bulk transform, no proof attached. -----------
+out = proof_answer()
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("PLANTED: a bulk transform with no proof fires", kind, "fire")
+control("PLANTED: the stop is flipped to continue", out["verdict"], "continue")
+control(
+    "PLANTED: the reason names the transform",
+    "reflow --write across the .ci comment scope" in out["reason"],
+    True,
+)
+control(
+    "PLANTED: the order runs the named tool",
+    out["next_action"].startswith("Run: run .ci/scripts/quality/shape_cluster_diff.py"),
+    True,
+)
+control("PLANTED: the demand is banked for the next stop", PROOF_MARKER_PATH.exists(), True)
+control("PLANTED: banked at one fire", proof_fires(PROOF_MARKER_PATH), 1)
+
+# -- 3c. THE SILENT PAIR. Real proof, and a genuine hand-written fix. -------
+out = proof_answer(
+    proof_kind="tool", proof_attached=True, evidence="shape-cluster diff: 0 files lost a shape"
+)
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("CONTROL: a tool run with real output is silent", kind, "silent")
+control("CONTROL: the verdict is left alone", out["verdict"], "stop")
+control("CONTROL: a silent answer discharges the banked demand", PROOF_MARKER_PATH.exists(), False)
+
+out = proof_answer(
+    proof_kind="manual", proof_attached=True, evidence="sampled 5 files, diffed by hand"
+)
+control(
+    "CONTROL: an explicit sampled-read statement is silent",
+    wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)[0],
+    "silent",
+)
+
+out = proof_answer(applicable=False, transform_kind="", instruction="")
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("CONTROL: a genuine hand-written fix never fires", kind, "silent")
+control("CONTROL: it keeps its stop", out["verdict"], "stop")
+
+# -- 3d. THE ASSERTION CASE, the point of the whole rule. -------------------
+# "884 files changed" or "ran the formatter" with proof_kind still `none` must
+# fire even when the model marks proof_attached=true, because the override in
+# read_verdict is what stops a bare assertion from counting as proof.
+out = proof_answer(proof_attached=True, proof_kind="none", evidence="884 files changed")
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("a bare file-count assertion still fires", kind, "fire")
+control("and the reason says proof was only asserted", "asserted" in out["reason"], True)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# -- 3e. DEGRADED, never blocked. -------------------------------------------
+out = {"verdict": "stop", "reason": "clean", "next_action": ""}
+kind, note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("a missing proof_obligation degrades", kind, "degraded")
+control("a degraded answer never flips the verdict", out["verdict"], "stop")
+control("and it says what was missing", "no proof_obligation object" in note, True)
+
+out = proof_answer(transform_kind="")
+kind, note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("firing with no transform named is unactionable, so it degrades", kind, "degraded")
+control("an unactionable answer never blocks", out["verdict"], "stop")
+
+out = proof_answer(proof_kind="whatever")
+control(
+    "an invalid proof_kind degrades",
+    wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)[0],
+    "degraded",
+)
+
+# -- 3f. THE SAFETY DOOR: a destructive or operator-reserved instruction is
+# dropped, never handed to the session as a runnable command. -------------
+out = proof_answer(instruction="git clean -xdf")
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("a destructive instruction still fires the rule", kind, "fire")
+control(
+    "but the destructive command is never handed over verbatim",
+    out["next_action"].startswith("Run: git clean"),
+    False,
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+out = proof_answer(instruction="commit the reflow now")
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control(
+    "an operator-reserved instruction is dropped too",
+    out["next_action"].startswith("Run: commit"),
+    False,
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# -- 3g. BOTH RULES CAN FIRE ON ONE STOP, and neither clobbers the other. ---
+out = wl_classsweep_answer = {
+    "verdict": "stop",
+    "reason": "clean",
+    "next_action": "",
+    "class_sweep": {
+        "applicable": True,
+        "defect_class": "a guard matching a mention instead of a target",
+        "locus": ".claude/hooks/pre-bash/",
+        "search": "grep -rln 'block-' .claude/hooks/pre-bash/",
+        "evidence": "",
+        "evidence_kind": "none",
+        "swept": False,
+        "instruction": "grep the sibling guards",
+    },
+    "proof_obligation": {
+        "applicable": True,
+        "transform_kind": "a tree-wide rename",
+        "scope": "packages/cli",
+        "proof_kind": "none",
+        "evidence": "",
+        "proof_attached": False,
+        "instruction": "run the shape-cluster diff",
+    },
+}
+wl_classsweep.apply_verdict(out, path=MARKER)
+wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("both rules fire on one stop: verdict is continue", out["verdict"], "continue")
+control("the class-sweep reason survives the second rule", "mention instead of a target" in out["reason"], True)
+control("the proof-obligation reason is appended, not lost", "a tree-wide rename" in out["reason"], True)
+wl_classsweep.clear_outstanding(MARKER)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
 
 if Tally.fails:
     print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)

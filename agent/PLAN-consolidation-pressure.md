@@ -31,7 +31,7 @@ A plan about eliminating duplication had duplicated an existing plan. The rule t
 - [ ] Register the C-style pair beside it: cstyle_comment_lines against the `.ts`/`.js`/`.go` segment path, which has no region-kind axis and so needs a different coverage signal
 - [x] Add a per-family COUNT floor to the pair registry so an unregistered new sibling fails rather than going quiet
 - [x] Write the shape-cluster diff as a reusable script: normalise every changed line to its shape, cluster, diff per-cluster counts against HEAD
-- [ ] Wire the missing-proof refusal into the stop judge, matching the enforcement shape wl_classsweep.py already uses
+- [x] Wire the missing-proof refusal into the stop judge, matching the enforcement shape wl_classsweep.py already uses
 - [ ] Wire the same refusal into the pre-bash commit, push and gh guards, so the proof is demanded where the change leaves the tree
 - [ ] Add the pre-bash staged-files-only duplication probe against a cached index, budget 200ms, failing OPEN and LOUD when the cache is stale
 - [ ] Record the batch-size-scales-with-proof rule in docs/agent-reference/TRAPS.md with a Trap-Id and an Enforced-By pointer

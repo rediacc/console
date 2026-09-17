@@ -364,10 +364,22 @@ V_ACTION_DROPPED = (
 
 
 def enforce(out, payload):
-    """Write the sweep order into a judge verdict, in place. Returns the note."""
+    """Write the sweep order into a judge verdict, in place. Returns the note.
+
+    `search` IS MODEL PROSE TOO, and `validate_search` was never asked to know that: it checks whether a string PARSES as a read-only shell command, not whether its English happens to name a reserved act. "commit the reflow now" carries no `git` token and no verb `_DESTRUCTIVE` recognises, so it validated as `ok` and would have reached the session as `Run: commit the reflow now`,
+    the exact second-door shape the comment two lines below was written about for `instruction` and left open here. Found by this module's own sibling, `wl_proofcheck`, planting the identical case against an `instruction` field and noticing `search` had never been asked the same question.
+    """
     reason = V_REASON % (payload["defect_class"], V_ASSERTED if payload["asserted"] else "")
     ok, why = validate_search(payload["search"])
-    if ok:
+    search_reserved = wl_rules.names_operator_reserved(payload["search"]) if ok else ""
+    search_verb = names_destructive(payload["search"]) if ok else ""
+    if ok and search_reserved:
+        action = V_ACTION_DROPPED % {
+            "why": "it names `%s`, which needs the operator's ask" % search_reserved
+        }
+    elif ok and search_verb:
+        action = V_ACTION_DROPPED % {"why": "it names `%s`, and a sweep only reads" % search_verb}
+    elif ok:
         action = V_ACTION % payload["search"]
     elif payload["search"]:
         action = V_ACTION_DROPPED % {"why": why[:70]}
