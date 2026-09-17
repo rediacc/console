@@ -26,6 +26,18 @@ CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 # --admin'` and `--admin=true` MUST. See lib/command-scan.sh.
 source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
 SCAN=$(hook_scan_target "$CMD")
+
+# REST bypass, checked before the `gh pr` early return one line down: a REST call carries no `gh pr merge` verb, so that anchor treats it as out of scope and everything below is skipped for a command reaching the identical mutation.
+# Split SCAN on the shell separators, keep the segment(s) with `gh api` at command position, then require the merge endpoint and the PUT method independently, since either flag may come first on the line.
+API_SEGS=$(printf '%s' "$SCAN" | sed -e 's/[;&|()`]/\n/g' |
+    grep -E '^[[:space:]]*gh[[:space:]]+api([[:space:]]|$)' |
+    grep -E 'pulls/[0-9]+/merge')
+if [ -n "$API_SEGS" ] && printf '%s' "$API_SEGS" |
+    grep -qE -- '(^|[[:space:]])(-X|--method)[[:space:]]+PUT([[:space:]]|$)'; then
+    echo "❌ BLOCKED: 'gh api .../pulls/<n>/merge' is banned outright. It reaches the same GitHub mutation as 'gh pr merge' but skips the --admin ban, the CI-green check and the review-thread/report-reply hygiene entirely -- this guard has no way to verify any of that against a raw REST call. The sanctioned path: 'gh pr ready' once CI Complete is green, then 'gh pr merge --rebase --auto'." >&2
+    exit 2
+fi
+
 hook_gh_pr_at_command_pos "$SCAN" merge || exit 0
 
 # SCAN is the only parsed view: it already carries the prose-stripped command

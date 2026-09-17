@@ -21,6 +21,16 @@ CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 # drift between two regexes. See lib/command-scan.sh.
 source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
 SCAN=$(hook_scan_target "$CMD")
+
+# GraphQL bypass, checked before the `gh pr` early return one line down: `gh api graphql -f query=markPullRequestReadyForReview` reaches the SAME mutation as `gh pr ready` and carries no `gh pr` verb, so it is invisible to that anchor -- without this arm it flips a draft PR ready with the CI-green check never running.
+# A TWO-PART test, not a single grep: hook_scan_target strips quoted spans, so the mutation name inside a quoted `-f query=` value is gone from SCAN entirely. This requires `gh api graphql` AT COMMAND POSITION in SCAN plus the literal mutation name in the RAW command -- the same raw-versus-scan split block-admin-merge.sh's --admin arm already uses.
+# A file-fed query is invisible to this test and stays allowed; no call site for one exists here, and banning file-fed GraphQL outright would over-block every OTHER GraphQL call this repo's guards make.
+if printf '%s' "$SCAN" | grep -qE -- '(^|[;&|(]|\$\(|`)[[:space:]]*gh[[:space:]]+api[[:space:]]+graphql([[:space:]]|$)' &&
+    printf '%s' "$CMD" | grep -qF -- 'markPullRequestReadyForReview'; then
+    echo "❌ BLOCKED: 'gh api graphql' carrying markPullRequestReadyForReview reaches the same mutation as 'gh pr ready' and skips its CI Complete = SUCCESS check entirely. Flip through the CLI: 'gh pr ready' once CI Complete is green (that flip is what triggers the automated Claude review)." >&2
+    exit 2
+fi
+
 hook_gh_pr_at_command_pos "$SCAN" ready || exit 0
 
 # Every field below is read from the SEGMENT that carries `gh pr ready`, never

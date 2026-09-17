@@ -19,6 +19,18 @@ CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 # unwrapped payload. See lib/command-scan.sh.
 source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
 SCAN=$(hook_scan_target "$CMD")
+
+# REST bypass, checked before the `gh pr` early return one line down: a REST call carries no `gh pr create` verb, so that anchor treats it as out of scope and everything below is skipped for a command reaching the identical mutation.
+# Endpoint and method are matched INDEPENDENTLY. The endpoint match requires "pulls" to END the path segment (a space or the line's end), not merely appear in it: `pulls/<n>/comments -X POST` posts a COMMENT, not a PR, and losing that boundary would ban it too.
+API_SEGS=$(printf '%s' "$SCAN" | sed -e 's/[;&|()`]/\n/g' |
+    grep -E '^[[:space:]]*gh[[:space:]]+api([[:space:]]|$)' |
+    grep -E 'pulls([[:space:]]|$)')
+if [ -n "$API_SEGS" ] && printf '%s' "$API_SEGS" |
+    grep -qE -- '(^|[[:space:]])(-X|--method)[[:space:]]+POST([[:space:]]|$)'; then
+    echo "❌ BLOCKED: 'gh api .../pulls -X POST' is banned outright. It reaches the same GitHub create mutation as 'gh pr create' but carries none of the repo/draft shape this guard reads off a 'gh pr create' invocation, so it can create a non-draft PR on a public repo with no check at all. Use 'gh pr create --draft' (console/homebrew-tap) or 'gh pr create' without --draft (renet/account/elite). This does not affect 'gh api .../pulls/<n> -X PATCH', the sanctioned PR-body edit gated separately by block_raw_pr_body_edit." >&2
+    exit 2
+fi
+
 hook_gh_pr_at_command_pos "$SCAN" create || exit 0
 
 # --repo and --draft both come from the SEGMENT carrying this `gh pr create`,

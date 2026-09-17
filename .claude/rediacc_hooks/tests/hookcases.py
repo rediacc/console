@@ -1507,6 +1507,41 @@ STATIC: list[Case] = [
     ),
     # NOT asserted here: per-segment --auto and per-segment PR selectors on block-admin-merge. Both only change behavior once a rediacc repo is resolved, which puts them on the network path this offline harness cannot drive (same limitation as the NOTE above). They are covered by the hook's live proofs, not by a case that would pass either way -- a green assertion that cannot fail
     # is worse than no assertion.
+    # REST/GraphQL parity (agent/PLAN-rest-graphql-guard-parity.md): the same three
+    # guards also police the REST or GraphQL call that reaches the identical GitHub
+    # mutation as the `gh pr` verb they already gate. One BLOCK and one ALLOW per
+    # guard, mirrored here because hook_integrity.covmap reads coverage off this
+    # exact "check <rc> guards/<module>.py" shape.
+    case(
+        "check 2 guards/block_admin_merge.py",
+        bash_json("gh api repos/o/r/pulls/589/merge -X PUT -f merge_method=squash"),
+        "admin-merge: REST merge bypass blocked",
+    ),
+    case(
+        "check 0 guards/block_admin_merge.py",
+        bash_json("gh api repos/o/r/pulls/589/merge"),
+        "admin-merge: a GET on the merge endpoint is not a merge",
+    ),
+    case(
+        "check 2 guards/block_nondraft_pr_create.py",
+        bash_json("gh api repos/o/r/pulls -X POST -f title=x -f head=b -f base=main"),
+        "nondraft-create: REST create bypass blocked",
+    ),
+    case(
+        "check 0 guards/block_nondraft_pr_create.py",
+        bash_json("gh api repos/o/r/pulls/42/comments -X POST -f body=hi"),
+        "nondraft-create: a POST to the comments sub-endpoint is not a create",
+    ),
+    case(
+        "check 2 guards/block_premature_ready.py",
+        bash_json("gh api graphql -f query=markPullRequestReadyForReview"),
+        "premature-ready: GraphQL ready bypass blocked",
+    ),
+    case(
+        "check 0 guards/block_premature_ready.py",
+        bash_json("gh api graphql -f query=someOtherQuery"),
+        "premature-ready: the same endpoint querying something else is not a flip",
+    ),
     case(
         "check 0 guards/block_git_amend.py",
         bash_json("git status"),

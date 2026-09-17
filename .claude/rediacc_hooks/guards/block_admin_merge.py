@@ -83,6 +83,20 @@ JQ_UNRESOLVED = (
     "[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length"
 )
 
+# REST parity for the --admin ban. `gh api .../pulls/<n>/merge -X PUT` reaches the SAME GitHub merge mutation as `gh pr merge` and carries no `gh pr` verb, so it is invisible to gh_pr_at_command_pos below -- without this arm it merges over the --admin ban, the CI-green check and the review-thread/report-reply hygiene checks all at once.
+# Endpoint and method are matched INDEPENDENTLY because `gh api` flags are order-independent (the method flag may precede or follow the endpoint), reusing the split-on-shell-separators idiom block_raw_pr_body_edit.py:246-249 already uses for the sanctioned PATCH form, rather than a new shared shellscan helper for a three-line regex.
+API_VERB = hookio.rx(r"^[{S}]*gh[{S}]+api([{S}]|$)")
+API_MERGE_ENDPOINT = r"pulls/[0-9]+/merge"
+API_PUT_METHOD = hookio.rx(r"(^|[{S}])(-X|--method)[{S}]+PUT([{S}]|$)")
+
+REST_MERGE_MESSAGE = (
+    "❌ BLOCKED: 'gh api .../pulls/<n>/merge' is banned outright. It reaches the same "
+    "GitHub mutation as 'gh pr merge' but skips the --admin ban, the CI-green check "
+    "and the review-thread/report-reply hygiene entirely -- this guard has no way to "
+    "verify any of that against a raw REST call. The sanctioned path: 'gh pr ready' "
+    "once CI Complete is green, then 'gh pr merge --rebase --auto'."
+)
+
 EDGE_CASES = [
     ("the banned flag", "gh pr merge 42 --admin"),
     # Over-blocking is the safe direction, so every flag SHAPE counts.
@@ -101,6 +115,20 @@ EDGE_CASES = [
     ),
     ("a foreign repo is not policed", "gh pr merge 42 --repo someone/other"),
     ("a different pr subcommand", "gh pr view 42"),
+    # REST parity: the same mutation reached through `gh api` instead of `gh pr merge`.
+    (
+        "the REST merge bypass",
+        "gh api repos/o/r/pulls/589/merge -X PUT -f merge_method=squash",
+    ),
+    (
+        "the REST merge bypass with flags reordered",
+        "gh api repos/o/r/pulls/589/merge -f merge_method=squash -X PUT",
+    ),
+    ("a GET on the merge endpoint is not a merge", "gh api repos/o/r/pulls/589/merge"),
+    (
+        "prose naming the REST bypass",
+        "git commit -m '...gh api repos/o/r/pulls/589/merge -X PUT...'",
+    ),
 ]
 
 
@@ -168,6 +196,17 @@ def run(ev):
     # "gh pr merge --admin" must not trip the ban, but `sh -c 'gh pr merge
     # --admin'` and `--admin=true` MUST. See lib/command-scan.sh.
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+
+    # REST bypass, checked before the `gh pr` early return two lines down: a REST call carries no `gh pr merge` verb, so that anchor treats it as out of scope and everything below is skipped for a command reaching the identical mutation.
+    # Split SCAN on the shell separators, keep the segment(s) with `gh api` at command position, then require the merge endpoint and the PUT method independently, since either flag may come first on the line.
+    split = hookio.sed_sub(r"[;&|()`]", "\n", scan)
+    api_lines = hookio.grep_lines(API_VERB, split)
+    api_lines = [line for line in api_lines if hookio.grep_q_line(API_MERGE_ENDPOINT, line)]
+    api_segs = hookio._command_substitution(hookio._grep_out(api_lines))
+    if api_segs and hookio.grep_q(API_PUT_METHOD, api_segs):
+        ev.warn(REST_MERGE_MESSAGE)
+        return hookio.DENY
+
     if not shellscan.gh_pr_at_command_pos(scan, "merge"):
         return hookio.ALLOW
 
