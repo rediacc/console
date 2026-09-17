@@ -924,6 +924,80 @@ REFLOW_STOP = (
 LIST_ITEM = re.compile(r"^\s*(?:[-*+]\s|\d+[.)]\s)")
 
 
+def markdown_segments(text):
+    """Yield `("raw", lineno, line)` for a structural line, or `("para",
+    start_lineno, [lines])` for a run of joinable plain-prose lines.
+
+    THE SINGLE SOURCE OF TRUTH FOR A MARKDOWN PARAGRAPH BOUNDARY, factored out
+    of `reflow_markdown`'s own loop so `underwrap_findings` (R19) consumes the
+    IDENTICAL boundary logic instead of a second, driftable copy of it. This is
+    a mechanical extraction, not a rewrite: every branch below is the same
+    branch `reflow_markdown` always had, just yielding instead of appending to
+    a shared `out` list. `test_reflow*` (which exercises `reflow_markdown`, now
+    a thin consumer of this generator) is what proves the extraction changed
+    nothing.
+    """
+    buffer = []
+    start = None
+    in_fence = None
+    in_frontmatter = False
+    for index, raw in enumerate(text.splitlines()):
+        lineno = index + 1
+        if index == 0 and raw.strip() == "---":
+            in_frontmatter = True
+            yield "raw", lineno, raw
+            continue
+        if in_frontmatter:
+            yield "raw", lineno, raw
+            if raw.strip() in ("---", "..."):
+                in_frontmatter = False
+            continue
+        fence = FENCE.match(raw)
+        if in_fence is not None:
+            yield "raw", lineno, raw
+            if fence and fence.group(1)[0] == in_fence[0] and len(fence.group(1)) >= len(in_fence):
+                in_fence = None
+            continue
+        if fence:
+            if buffer:
+                yield "para", start, buffer
+                buffer = []
+            yield "raw", lineno, raw
+            in_fence = fence.group(1)
+            continue
+        if not raw.strip():
+            if buffer:
+                yield "para", start, buffer
+                buffer = []
+            yield "raw", lineno, raw
+            continue
+        if LIST_ITEM.match(raw) or any(p.match(raw) for p in REFLOW_STOP):
+            if buffer:
+                yield "para", start, buffer
+                buffer = []
+            yield "raw", lineno, raw
+            continue
+        if not buffer:
+            start = lineno
+        buffer.append(raw)
+    if buffer:
+        yield "para", start, buffer
+
+
+def _join_and_wrap(buffer, width):
+    """One joined-then-wrapped paragraph, as the list of output lines it becomes.
+
+    Shared by `reflow_markdown` and `comment_segments`' caller-side wrap step
+    (via the same join-collapse-wrap arithmetic), so a width/whitespace
+    decision made once is made everywhere.
+    """
+    joined = " ".join(piece.strip() for piece in buffer)
+    joined = re.sub(r"\s{2,}", " ", joined).strip()
+    if len(joined) <= width:
+        return [joined]
+    return textwrap.wrap(joined, width=width, break_long_words=False, break_on_hyphens=False)
+
+
 def reflow_markdown(text, width):
     """Join hard-wrapped prose paragraphs to one line, then wrap at `width`.
 
@@ -940,60 +1014,11 @@ def reflow_markdown(text, width):
     conservative choice loses some reflow and cannot corrupt a document.
     """
     out = []
-    buffer = []
-    in_fence = None
-    in_frontmatter = False
-
-    def flush():
-        if not buffer:
-            return
-        joined = " ".join(piece.strip() for piece in buffer)
-        joined = re.sub(r"\s{2,}", " ", joined).strip()
-        if len(joined) <= width:
-            out.append(joined)
+    for kind, _start, payload in markdown_segments(text):
+        if kind == "raw":
+            out.append(payload)
         else:
-            out.extend(
-                textwrap.wrap(
-                    joined,
-                    width=width,
-                    break_long_words=False,
-                    break_on_hyphens=False,
-                )
-            )
-        buffer.clear()
-
-    raw_lines = text.splitlines()
-    for index, raw in enumerate(raw_lines):
-        if index == 0 and raw.strip() == "---":
-            in_frontmatter = True
-            out.append(raw)
-            continue
-        if in_frontmatter:
-            out.append(raw)
-            if raw.strip() in ("---", "..."):
-                in_frontmatter = False
-            continue
-        fence = FENCE.match(raw)
-        if in_fence is not None:
-            out.append(raw)
-            if fence and fence.group(1)[0] == in_fence[0] and len(fence.group(1)) >= len(in_fence):
-                in_fence = None
-            continue
-        if fence:
-            flush()
-            out.append(raw)
-            in_fence = fence.group(1)
-            continue
-        if not raw.strip():
-            flush()
-            out.append(raw)
-            continue
-        if LIST_ITEM.match(raw) or any(p.match(raw) for p in REFLOW_STOP):
-            flush()
-            out.append(raw)
-            continue
-        buffer.append(raw)
-    flush()
+            out.extend(_join_and_wrap(payload, width))
     trailing = "\n" if text.endswith("\n") else ""
     return "\n".join(out) + trailing
 
@@ -1421,6 +1446,64 @@ def _cstyle_reflow_lines(text):
     return found
 
 
+def comment_segments(text, suffix):
+    """Yield `("raw", lineno, line)` or `("para", start_lineno, indent, marker,
+    [bodies])` for `text`'s whole-line comments -- the single source of truth
+    for a COMMENT paragraph boundary, factored out of `reflow_comments`'s own
+    loop for the same reason `markdown_segments` was: `underwrap_findings`
+    (R19) must consume the IDENTICAL boundary logic, not a second copy of it.
+    `None, None, None` for `marker`/`eligible` means the suffix is not a known
+    comment language, or the lexer could not read the file -- both cases the
+    caller must treat as "nothing to say", never as an empty result implying a
+    clean file.
+    """
+    marker = COMMENT_LINE_BY_SUFFIX.get(suffix)
+    if marker is None:
+        return
+    try:
+        eligible = _python_reflow_lines(text) if suffix == ".py" else _cstyle_reflow_lines(text)
+    except (tokenize.TokenError, SyntaxError, ValueError):
+        return
+
+    buffer = []
+    start = None
+    buf_indent = None
+
+    # `split("\n")`, not `splitlines()`. The lexers above number lines the way `StringIO.readline` does, on `\n` alone, while `splitlines()` also breaks on `\f`, `\v` and U+2028 (named, not written -- a literal one here would break this very file). A single one of those anywhere in a file would slide every later line number by one against the map, and rejoining
+    # with `\n` would rewrite the separator itself. Splitting on `\n` also makes
+    # the round trip exact, so the trailing newline needs no special case.
+    for offset, raw in enumerate(text.split("\n")):
+        lineno = offset + 1
+        entry = eligible.get(lineno)
+        if entry is None:
+            if buffer:
+                yield "para", start, buf_indent, marker, buffer
+                buffer = []
+            yield "raw", lineno, raw
+            continue
+        indent, body = entry
+        if (
+            not body.strip()
+            or COMMENT_DIRECTIVE.search(raw)
+            or CODE_SHAPED_COMMENT.search(body)
+            or (body and not body[0].isspace())
+        ):
+            if buffer:
+                yield "para", start, buf_indent, marker, buffer
+                buffer = []
+            yield "raw", lineno, raw
+            continue
+        if buffer and indent != buf_indent:
+            yield "para", start, buf_indent, marker, buffer
+            buffer = []
+        if not buffer:
+            start = lineno
+            buf_indent = indent
+        buffer.append(body)
+    if buffer:
+        yield "para", start, buf_indent, marker, buffer
+
+
 def reflow_comments(text, suffix, width):
     """Join hard-wrapped WHOLE-LINE comment paragraphs, then wrap at `width`.
 
@@ -1441,62 +1524,25 @@ def reflow_comments(text, suffix, width):
     honest partial answer: guessing at the shape of a file Python itself
     rejects is how a broken file becomes a differently broken file.
     """
-    marker = COMMENT_LINE_BY_SUFFIX.get(suffix)
-    if marker is None:
+    if COMMENT_LINE_BY_SUFFIX.get(suffix) is None:
         return text
-    try:
-        eligible = _python_reflow_lines(text) if suffix == ".py" else _cstyle_reflow_lines(text)
-    except (tokenize.TokenError, SyntaxError, ValueError):
+    segments = list(comment_segments(text, suffix))
+    if not segments:
+        # The suffix check above already excludes the "unknown language" case,
+        # so reaching here means the lexer could not read the file -- returned
+        # UNCHANGED, per this function's own contract above.
         return text
 
     out = []
-    buffer = []
-    buf_indent = None
-
-    def flush():
-        if not buffer:
-            return
-        joined = " ".join(piece.strip() for piece in buffer)
-        joined = re.sub(r"\s{2,}", " ", joined).strip()
-        prefix = buf_indent + marker + " "
+    for item in segments:
+        if item[0] == "raw":
+            _, _lineno, raw = item
+            out.append(raw)
+            continue
+        _, _start, indent, marker, buffer = item
+        prefix = indent + marker + " "
         avail = max(width - len(prefix), 20)
-        if len(prefix) + len(joined) <= width:
-            out.append(prefix + joined)
-        else:
-            out.extend(
-                prefix + piece
-                for piece in textwrap.wrap(
-                    joined, width=avail, break_long_words=False, break_on_hyphens=False
-                )
-            )
-        buffer.clear()
-
-    # `split("\n")`, not `splitlines()`. The lexers above number lines the way `StringIO.readline` does, on `\n` alone, while `splitlines()` also breaks on `\f`, `\v` and U+2028 (named, not written -- a literal one here would break this very file). A single one of those anywhere in a file would slide every later line number by one against the map, and rejoining
-    # with `\n` would rewrite the separator itself. Splitting on `\n` also makes
-    # the round trip exact, so the trailing newline needs no special case.
-    for offset, raw in enumerate(text.split("\n")):
-        entry = eligible.get(offset + 1)
-        if entry is None:
-            flush()
-            buf_indent = None
-            out.append(raw)
-            continue
-        indent, body = entry
-        if (
-            not body.strip()
-            or COMMENT_DIRECTIVE.search(raw)
-            or CODE_SHAPED_COMMENT.search(body)
-            or (body and not body[0].isspace())
-        ):
-            flush()
-            buf_indent = None
-            out.append(raw)
-            continue
-        if buf_indent is not None and indent != buf_indent:
-            flush()
-        buf_indent = indent
-        buffer.append(body)
-    flush()
+        out.extend(prefix + piece for piece in _join_and_wrap(buffer, avail))
     return "\n".join(out)
 
 

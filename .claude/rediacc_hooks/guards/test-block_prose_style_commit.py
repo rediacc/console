@@ -34,9 +34,8 @@ COMMIT = "git " + "commit"
 
 # A REAL file on disk, for the `-F body=@<file>` case: `_read_file` genuinely
 # reads it, so the case proves the whole path, not just the inline-value arm.
-_body_file = tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False)
-_body_file.write("Did %s run the tests?" % Y)
-_body_file.close()
+with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as _body_file:
+    _body_file.write("Did %s run the tests?" % Y)
 BODY_FILE_PATH = _body_file.name
 
 CASES = [
@@ -121,7 +120,7 @@ CASES = [
     ("gh pr view is not a write", "gh pr view 1", False),
     (
         "gh api on pulls/<n> with GET is not a write",
-        "gh api repos/o/r/pulls/589 -X GET -F body=\"Did %s run it?\"" % Y,
+        'gh api repos/o/r/pulls/589 -X GET -F body="Did %s run it?"' % Y,
         False,
     ),
     (

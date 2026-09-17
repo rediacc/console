@@ -252,7 +252,11 @@ def messages(command, cwd=None):
             out.append(("-m", token[2:]))
             index += 1
             continue
-        if token in ("-F", "-f") and index + 1 < len(tokens) and tokens[index + 1].startswith("body="):
+        if (
+            token in ("-F", "-f")
+            and index + 1 < len(tokens)
+            and tokens[index + 1].startswith("body=")
+        ):
             # `gh api ... -F body=@<file>` / `-f body=<literal>`: the SANCTIONED
             # PR-body edit (see GH_API_PR_PATCH above). Checked BEFORE the bare
             # `-F <path>` arm below, since `gh api`'s `-F key=value` and git's

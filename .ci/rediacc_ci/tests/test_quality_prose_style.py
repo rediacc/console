@@ -729,6 +729,13 @@ def test_reflow_comments_preserves_the_ast_of_every_tracked_python_file():
     cannot move `ast.dump`. A reflow that mistakes a docstring line for a comment
     moves it on the first file that quotes one, which is what this asserts against
     the real corpus rather than a fixture.
+
+    WIDTH 40, NOT 384. The real corpus was reflowed to 384 tree-wide the same
+    session this test was written, so a 384-width run now finds almost nothing
+    LEFT to join -- not because the property stopped holding, but because the
+    debt it used to measure is gone. A narrow width forces real multi-line
+    comment blocks to rejoin regardless of the tree's current wrap state, so
+    the vacuity floor stays meaningful independent of when this runs.
     """
     files = gitx.ls_files("*.py", root=ROOT, existing=True)
     assert len(files) > 500, "the corpus collapsed to %d file(s); this asserts nothing" % len(files)
@@ -740,7 +747,7 @@ def test_reflow_comments_preserves_the_ast_of_every_tracked_python_file():
             expected = ast.dump(ast.parse(before))
         except SyntaxError:
             continue
-        after = ps.reflow_comments(before, ".py", 384)
+        after = ps.reflow_comments(before, ".py", 40)
         reflowed += after != before
         try:
             if ast.dump(ast.parse(after)) != expected:
