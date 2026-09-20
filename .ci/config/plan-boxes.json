@@ -132,7 +132,7 @@
       "done_sigs": []
     },
     "agent/PLAN-chunk-store-browse-DECISION.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "8f55d4f0",
       "open": 0,
       "done": 0,
@@ -188,7 +188,7 @@
       "done_sigs": []
     },
     "agent/PLAN-ci-trace-no-pr-branch.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "854ac1c6",
       "open": 0,
       "done": 0,
@@ -331,7 +331,7 @@
       "done_sigs": []
     },
     "agent/PLAN-docker-image-freshness-soak-filter.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "854ac1c6",
       "open": 0,
       "done": 0,
@@ -595,7 +595,7 @@
       "done_sigs": []
     },
     "agent/PLAN-nightly-retry-and-watchdog-noise.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "854ac1c6",
       "open": 0,
       "done": 0,
