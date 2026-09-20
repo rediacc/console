@@ -31,7 +31,7 @@ THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, diffed side by side rather than
 so it
 infers NOTHING. Carried whole, both sides resolve to {go, submodules}.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-renet-tier-map.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-renet-tier-map.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-renet-tiermap.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 ---- gate ----
 kind: local-only

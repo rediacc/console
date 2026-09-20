@@ -1,7 +1,6 @@
 """The renet-generated TypeScript types are up to date.
 
-Ported from `.ci/scripts/quality/check-renet-types.sh`, which is not deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-renet-types.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-renet-types.observations.jsonl` asserted equivalence over five distinct trees.
 
 WHAT THE TWIN DOES. It builds `renet` from the `private/renet` submodule, regenerates the contract into a temporary directory, and compares each generated file against the committed copy in `packages/shared/src/renet-contract/data`, IGNORING the version line. A difference means the committed contract is stale: the CLI would then be typed against a renet that no longer exists.
 

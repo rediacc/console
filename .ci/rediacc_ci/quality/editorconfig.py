@@ -1,7 +1,6 @@
 """`.editorconfig` compliance across every tracked text file.
 
-Ported from `.ci/scripts/quality/check-editorconfig.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-editorconfig.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-editorconfig.observations.jsonl` asserted equivalence over five distinct trees.
 
 WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the list IS the gate:
 

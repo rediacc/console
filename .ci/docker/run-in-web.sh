@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run a command inside the web image (Astro + agent-browser). Shape copied deliberately from
-# .ci/scripts/quality/browser-smoke.sh, which already solved this problem here.
+# .ci/rediacc_ci/quality/browser_smoke.py, which already solved this problem here.
 #
 #   REDIACC_NO_DOCKER=1   run on the host instead
 #

@@ -39,7 +39,7 @@ the quoted two-word docker command that is this gate's entire subject -- makes B
 ANSI-stripped stdout is identical on the red side too (sha256 86d11e691ed58dc5..., twin 552 bytes to the port's 530, again pure colour), stderr empty on both. The plant was removed by its exact inverse, `.ci/lib/devbox.sh` verified back at sha256 dd63548fda6b1264... and `git status --porcelain` diffed against its pre-plant capture with no difference, because a runner that writes
 into the real tree makes twin and port agree by both reading the same corrupted file.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-devbox-exec.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-devbox-exec.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-devbox-exec.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 ---- gate ----
 step: Devbox exec invocation

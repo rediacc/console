@@ -775,7 +775,7 @@ Residue: Only the HOOK half has a shared remedy, and two guards must deliberatel
 - **`check-toolchain-pins.sh` A6** ("does this gate invoke a pinned tool?")
 flagged `check-shell-size.sh`. Its only matches were two `echo` lines *printing* the `# shellcheck extended-analysis=false` directive the gate tells you to add. It never invokes shellcheck.
 - **`check-control-vacuity.sh`** ("does this control prove its plant landed?")
-flagged `check-devbox-exec.sh` and `check-shell-size.sh`. Their `sed` calls were `s/^/.../` — one indenting a message for display, one generating a fixture from `seq`. Neither mutates a copy of the subject, so neither has a plant that could fail to land.
+flagged the devbox-exec gate and `check-shell-size.sh`. Their `sed` calls were `s/^/.../` — one indenting a message for display, one generating a fixture from `seq`. Neither mutates a copy of the subject, so neither has a plant that could fail to land.
 - **`check-swallowed-failures.sh`** (2026-08-27), fired on
 `check-label-inventory.sh`'s label-drift capture — a capture that DOES check its own exit status (`|| drift_rc=$?` then `if [ "$drift_rc" -ne 0 ]`), the exact remedy the gate's own message recommends. The scanner folds a whole `VAR="$( <multi-line command> )"` into ONE logical line before matching `swallow_re` against it, so a COMMENT inside that same capture — explaining a *prior,
 already-fixed* incident by quoting its literal shape (`` `|| true` ``, `` `|| echo ""` ``) — made the current, correct capture match the pattern for the defect it was explaining. The fix text became indistinguishable from the bug it described.

@@ -1,6 +1,6 @@
 """A gate test that WRITES INTO THE REAL TREE must be registered as a WRITER.
 
-Ported from `.ci/scripts/quality/check-pool-writer-safety.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "Pool-registered tests do not write the real tree", needs none, selftest true.
+Ported from `.ci/scripts/quality/check-pool-writer-safety.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-pool-writer.observations.jsonl` asserted equivalence over five distinct trees. Its gate header registers it as step "Pool-registered tests do not write the real tree", needs none, selftest true.
 
 -----------------------------------------------------------------------------
 RETARGETED 2026-09-09 (W7P3-BAT): THE REGISTRATION IS THE LOCK, NOT THE RUNNER.

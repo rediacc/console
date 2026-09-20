@@ -833,7 +833,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/pr | 1 | .sh 1 |
 | .ci/scripts/private | 9 | .sh 9 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 199 | .py 139, .sh 57, .json 2, .mjs 1 |
+| .ci/scripts/quality | 181 | .py 139, .sh 39, .json 2, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/release | 21 | .sh 21 |
 | .ci/scripts/review | 4 | .sh 4 |

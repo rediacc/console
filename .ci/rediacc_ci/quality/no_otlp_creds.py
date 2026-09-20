@@ -1,7 +1,6 @@
 """No OTLP/Pyroscope credential may be baked into a built artifact.
 
-Ported from `.ci/scripts/quality/check-no-otlp-creds.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees.
+Ported from `.ci/scripts/quality/check-no-otlp-creds.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-otlp-creds.observations.jsonl` asserted equivalence over five distinct trees.
 
 WHAT THE TWIN ENFORCES, carried from its own header because the list IS the gate:
 

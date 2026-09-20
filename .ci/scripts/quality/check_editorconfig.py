@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Entry point for the ported EditorConfig gate. Logic is in the package.
 
-THIS ENTRY POINT IS DELIBERATELY HEADERLESS, and that is a carried property rather than an omission. `.ci/scripts/quality/check-editorconfig.sh` has NO `---- gate ----` block at all: an awk range over the twin returns ZERO lines and `bind()` on it returns null. A headerless twin gets a headerless entry point, because inventing a header here would be a new declaration and not a
-moved one.
+THIS ENTRY POINT IS DELIBERATELY HEADERLESS, and that is a carried property rather than an omission. `.ci/scripts/quality/check-editorconfig.sh` had NO `---- gate ----` block at all: an awk range over the twin returned ZERO lines and `bind()` on it returned null. A headerless twin gets a headerless entry point, because inventing a header here would be a new declaration and not a
+moved one. W7 P5 batch A2 retired that twin; this entry point stays headerless for the reason it was headerless.
 
-WHY THE TWIN HAS NO HEADER IS ALSO ON THE RECORD, which is what makes the absence safe to preserve. `scripts/gate-bind.ts:167` names this exact file as one of the two known reasons `--extract` refuses to write a header: the gate enumerates with `--recurse-submodules`, so `inferredNeeds` resolves
+WHY THE TWIN HAD NO HEADER IS ALSO ON THE RECORD, which is what makes the absence safe to preserve. `scripts/gate-bind.ts` names this gate as one of the two known reasons `--extract` refuses to write a header: the gate enumerates with `--recurse-submodules`, so `inferredNeeds` resolves
 `{submodules}`, and its registered lane does not check submodules out. A header
 written here would not bind, and the binder says so rather than writing one. Confirmed on this tree: `inferredNeeds` on the twin returns `[submodules]` while `bind()` returns null, so the need is inferred and never resolved.
 
@@ -39,7 +39,7 @@ The plant was reverted from a `cp` backup, verified back at its pre-plant sha256
 with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant
 capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-editorconfig.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-editorconfig.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-editorconfig.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 """
 

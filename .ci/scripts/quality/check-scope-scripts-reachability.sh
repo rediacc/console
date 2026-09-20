@@ -104,7 +104,7 @@ extract_refs() {
 # from `.ci/scripts/quality/` or `.ci/scripts/test/` are "quality-lane consumers"
 # and therefore unscopeable. That is false in the other direction: several
 # `.ci/scripts/quality/` files are executed from NON-quality jobs --
-# `.github/workflows/ci-build-renet.yml:131` runs check-no-otlp-creds.sh against
+# `.github/workflows/ci-build-renet.yml:131` ran the no-otlp-creds gate against
 # the real release binaries, `ci.yml:834` runs check_release_state.py, and
 # `ci.yml:531,536,539` run three `.ci/scripts/test/gates/` tests in `run-sh-tests`.
 # Those jobs happen to carry no `run_*` gate TODAY, which is luck rather than

@@ -1,12 +1,12 @@
-r"""`rediacc_ci.quality.config_migrations` against the shell it replaces.
+r"""`rediacc_ci.quality.config_migrations` against the shell it replaced.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Three of this gate's decisions are made by shell constructs whose behaviour is not inferable from reading them: a two-stage `grep -oE | grep -oE` whose second stage anchors to the FIRST stage's output, a `find | sort` whose order is byte order and not numeric, and -- most consequentially -- an assignment under `set -euo
+WHY A SHELL ORACLE AND NOT A TABLE OF EXPECTED STRINGS. Three of this gate's decisions are made by shell constructs whose behaviour is not inferable from reading them: a two-stage `grep -oE | grep -oE` whose second stage anchors to the FIRST stage's output, a `find | sort` whose order is byte order and not numeric, and -- most consequentially -- an assignment under `set -euo
 pipefail` whose failure kills the script BEFORE the error message written to handle it. A table of expected strings would be a table of what the PORT does, asserted against itself.
 
-The committed ledger `.ci/shadow/w7p2-config-migrations.observations.jsonl` compares the WHOLE gate over five distinct trees, with `npx` stubbed so the round-trip path is deterministic. It cannot show that the "Could not parse" message is unreachable, because on such a tree BOTH sides print nothing. This file proves that with bash.
+The committed ledger `.ci/shadow/w7p2-config-migrations.observations.jsonl` compared the WHOLE gate over five distinct trees, with `npx` stubbed so the round-trip path is deterministic. It could not show that the "Could not parse" message is unreachable, because on such a tree BOTH sides print nothing. This file proves that with bash.
 
-THE FRAGMENTS BELOW ARE LIFTED FROM
-`.ci/scripts/quality/check-config-migrations.sh` lines 45-69 with the variables substituted and nothing else changed.
+THE FRAGMENTS BELOW WERE LIFTED FROM
+`.ci/scripts/quality/check-config-migrations.sh` lines 45-69 with the variables substituted and nothing else changed. That twin was retired in W7 P5 once the ledger licensed the port at K=5, so bash itself is the oracle now and the case that compared the port's `TSX_SOURCE` against the twin's heredoc was retired with it.
 """
 
 import pathlib
@@ -162,28 +162,6 @@ def test_an_empty_and_an_absent_fixtures_dir_are_both_empty(tmp_path: pathlib.Pa
 
 
 # --------------------------------------------------------------------------- The generated tsx program ---------------------------------------------------------------------------
-
-
-def test_the_embedded_tsx_is_byte_identical_to_the_heredoc() -> None:
-    """The port's `TSX_SOURCE` against the twin's quoted heredoc, byte for byte.
-
-    THIS IS THE ONE PLACE A PORT MAY NOT REWORD. Everything else in this gate is a message a port is allowed to rephrase; the heredoc is a PROGRAM whose output the gate then re-emits line by line, so a single changed character changes the findings. Read out of the shell file at test time rather than pasted here, so the assertion cannot rot into a comparison of two stale copies.
-    """
-    sh = (
-        (
-            pathlib.Path(__file__).resolve().parents[3]
-            / ".ci"
-            / "scripts"
-            / "quality"
-            / "check-config-migrations.sh"
-        )
-        .read_text(encoding="utf-8")
-        .split("\n")
-    )
-    start = sh.index("        cat >\"$tmpscript\" <<'TSX'")
-    end = sh.index("TSX", start)
-    heredoc = "\n".join(sh[start + 1 : end]) + "\n"
-    assert heredoc == cm.TSX_SOURCE
 
 
 def test_the_scratch_file_lands_in_the_repository() -> None:

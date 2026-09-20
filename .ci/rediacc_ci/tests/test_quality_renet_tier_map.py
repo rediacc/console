@@ -1,6 +1,6 @@
-"""`rediacc_ci.quality.renet_tier_map` against the shell it replaces.
+"""`rediacc_ci.quality.renet_tier_map` against the shell it replaced.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. This gate's verdict is decided by two text transforms and one regular expression, and each of the three has an edge that is not inferable:
+WHY A SHELL ORACLE AND NOT A TABLE OF EXPECTED STRINGS. This gate's verdict is decided by two text transforms and one regular expression, and each of the three has an edge that is not inferable:
 
   * `go test -list <re> <pkg> | grep '^Test' | sort` -- the `grep` is not
     cosmetic. `go test -list` also prints the package result line
@@ -14,7 +14,8 @@ WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. This gate's verdict is d
     the port only for a control. If the two ever disagree, phase 1 verifies a
     different set from the one phase 2 runs.
 
-They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-renet-tiermap.observations.jsonl` compares over five distinct trees, against a minimal Go package standing in for `pkg/functions`. This file covers the seams that ledger cannot isolate.
+They are NOT the whole gate: the whole gate was compared over five distinct trees by the committed shadow ledger `.ci/shadow/w7p2-renet-tiermap.observations.jsonl`, against a minimal Go package standing in for `pkg/functions`. That ledger licensed the port at K=5 and the bash twin `.ci/scripts/quality/check-renet-tier-map.sh` was retired in W7 P5; the cases here cover the
+seams the ledger could not isolate and still run against the real shell and the real Go toolchain.
 """
 
 import pathlib
@@ -23,7 +24,6 @@ import tempfile
 
 import pytest
 
-from rediacc_ci import paths
 from rediacc_ci.quality import renet_tier_map as tm
 from rediacc_ci.tests import differential as diff
 
@@ -149,25 +149,6 @@ def test_the_run_regex_selects_exactly_the_expected_set_under_go() -> None:
         )
         assert code == 0, err
         assert tm.listed_from(out) == tm.wanted()
-
-
-def test_the_expected_list_still_matches_the_bash_twins_array() -> None:
-    """Drift between the two copies would make one of them verify nothing.
-
-    Read out of the twin rather than transcribed, so the assertion cannot be satisfied by editing this file.
-    """
-    twin = paths.repo_root() / ".ci/scripts/quality/check-renet-tier-map.sh"
-    text = twin.read_text(encoding="utf-8")
-    body = text.split("EXPECTED_TESTS=(", 1)[1].split(")", 1)[0]
-    names = [line.strip() for line in body.split("\n") if line.strip().startswith("Test")]
-    assert names == list(tm.EXPECTED_TESTS)
-
-
-def test_the_run_regex_still_matches_the_bash_twins() -> None:
-    twin = paths.repo_root() / ".ci/scripts/quality/check-renet-tier-map.sh"
-    text = twin.read_text(encoding="utf-8")
-    line = next(row for row in text.split("\n") if row.startswith("RUN_REGEX="))
-    assert line.split("=", 1)[1].strip("'") == tm.RUN_REGEX
 
 
 def test_require_submodule_has_all_three_rungs(

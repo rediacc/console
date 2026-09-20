@@ -1,124 +1,23 @@
-"""`rediacc_ci.quality.pipefail_grep_q` against its bash twin.
+"""`rediacc_ci.quality.pipefail_grep_q`, driven directly.
 
-A bash child runs the REAL `.ci/scripts/quality/check-pipefail-grep-q.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. The twin has no environment seam -- it resolves its root from its OWN location and enumerates through `git -C "$ROOT" ls-files` -- so the fixture is a real git repository holding BOTH implementations.
-Same recipe as the committed ledger, `.ci/shadow/w7p2-pipefail-grepq.observations.jsonl`.
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-pipefail-grep-q.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. The twin had no environment seam -- it resolved its root from its OWN location and enumerated through `git -C "$ROOT" ls-files` -- so the fixture was a real git
+repository holding BOTH implementations. Same recipe as the committed ledger, `.ci/shadow/w7p2-pipefail-grepq.observations.jsonl`, which licensed the port at K=5. The twin was retired in W7 P5 and the whole-gate cases went with it.
 
-THE MECHANISM CONTROL RUNS FOR REAL IN EVERY CASE BELOW, on both sides: a 300 KB producer piped into `grep -q` under pipefail, asserted to report MISSED. It is the one control that cannot be a pure assertion, because the claim is about what the kernel does to a writer whose reader has exited. If the host ever stops reproducing the race, both implementations go red together and
-these cases say so rather than quietly agreeing about a myth.
+THE MECHANISM CONTROL STILL RUNS FOR REAL, below: a 300 KB producer piped into `grep -q` under pipefail, asserted to report MISSED. It is the one control that cannot be a pure assertion, because the claim is about what the kernel does to a writer whose reader has exited. If the host ever stops reproducing the race, the gate is guarding a myth and these cases say so rather than
+quietly agreeing about one.
 
-THE RACING SHAPE IS ASSEMBLED AT RUNTIME in this file too, exactly as the twin assembles its own fixture, so that this file's TEXT never carries it contiguously. The twin flagged itself the first time it became a tracked file for precisely that reason.
+THE RACING SHAPE IS ASSEMBLED AT RUNTIME in this file, exactly as the twin assembled its own fixture, so that this file's TEXT never carries it contiguously. The twin flagged itself the first time it became a tracked file for precisely that reason.
 """
 
 import pathlib
-import shutil
-import subprocess
 
 import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.quality import pipefail_grep_q as gate
-from rediacc_ci.tests import differential as diff
-
-TWIN = ".ci/scripts/quality/check-pipefail-grep-q.sh"
-MODULE = "pipefail_grep_q"
 
 # Assembled, never written out. See the module docstring.
 GQ = "grep -q"
-
-
-def offender_file(count: int) -> str:
-    """A scanned script with `count` racing pipelines and three DECOYS.
-
-    The decoys are the negative half and they are not decoration: a comment naming the shape, a string literal quoting it, and the sanctioned command-substitution fix must all stay unflagged, or the gate is over-broad and gets switched off.
-    """
-    lines = [
-        "#!/bin/bash",
-        "set -uo pipefail",
-        'body() { cat "$1"; }',
-        '# never write: body "$1" | %s x' % GQ,
-        'echo "no racing body | %s here"' % GQ,
-        'if [ -n "$(body "$1" | grep x)" ]; then :; fi',
-    ]
-    lines += ['if body "$1" | %s marker%d; then :; fi' % (GQ, i) for i in range(1, count + 1)]
-    return "\n".join(lines) + "\n"
-
-
-def build(tmp_path: pathlib.Path, offenders: int) -> pathlib.Path:
-    """A sealed git specimen holding BOTH implementations and a planted file."""
-    src = pathlib.Path(diff.repo())
-    root = tmp_path / "fixture"
-    (root / ".ci" / "scripts" / "quality").mkdir(parents=True)
-    (root / ".ci" / "scripts" / "probe").mkdir(parents=True)
-    (root / ".ci" / "rediacc_ci" / "quality").mkdir(parents=True)
-    shutil.copytree(src / ".ci" / "scripts" / "lib", root / ".ci" / "scripts" / "lib")
-    shutil.copy2(src / TWIN, root / TWIN)
-    for name in ("__init__.py", "log.py", "paths.py", "controls.py"):
-        shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
-    for name in ("__init__.py", "%s.py" % MODULE):
-        shutil.copy2(
-            src / ".ci" / "rediacc_ci" / "quality" / name,
-            root / ".ci" / "rediacc_ci" / "quality" / name,
-        )
-    (root / ".ci" / "scripts" / "probe" / "a.sh").write_text(
-        offender_file(offenders), encoding="utf-8"
-    )
-    # A REAL GIT REPOSITORY, because the corpus is `git ls-files` and an unversioned tree makes the gate scan ZERO files -- which is its own anti-vacuity refusal, not the case under test.
-    env = diff.env_for()
-    for args in (
-        ["init", "-q", "-b", "main"],
-        ["config", "user.email", "gate@example.invalid"],
-        ["config", "user.name", "test"],
-        ["add", "-A"],
-        ["-c", "commit.gpgsign=false", "commit", "-q", "-m", "specimen"],
-    ):
-        subprocess.run(["git", "-C", str(root), *args], check=True, env=env)
-    return root
-
-
-def run_both(root: pathlib.Path) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
-    env = diff.env_for(PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
-    old = diff.bash_streams("bash %s" % TWIN, env=env, cwd=str(root), timeout=180)
-    new = diff.bash_streams(
-        "python3 -m rediacc_ci.quality.%s" % MODULE, env=env, cwd=str(root), timeout=180
-    )
-    return old, new
-
-
-@pytest.mark.parametrize("count", [1, 2, 3, 4, 5])
-def test_port_and_twin_agree_byte_for_byte(tmp_path: pathlib.Path, count: int) -> None:
-    root = build(tmp_path, count)
-    (old_exit, old_out, old_err), (new_exit, new_out, new_err) = run_both(root)
-    assert old_exit == 1
-    assert new_exit == old_exit
-    assert new_out == old_out
-    assert new_err == old_err
-    assert "%d racing pipeline(s)" % count in old_err
-    # THE MECHANISM CONTROL MUST HAVE FIRED on both sides, or the rest of this comparison is two gates agreeing about a myth.
-    assert "SIGPIPE under pipefail really does flip" in old_out
-    assert "SIGPIPE under pipefail really does flip" in new_out
-
-
-def test_a_clean_corpus_is_green_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """The mirror the parametrized cases need: a gate that flagged everything would satisfy all five of them and be useless."""
-    root = build(tmp_path, 0)
-    (old_exit, old_out, old_err), (new_exit, new_out, new_err) = run_both(root)
-    assert old_exit == 0
-    assert new_exit == 0
-    assert new_out == old_out
-    assert new_err == old_err
-    assert "no racing" in old_out
-    # The decoys are still in the file, so this green is a statement about them.
-    assert "Blind spot" in old_out
-
-
-def test_the_scanned_count_is_printed_and_non_trivial(tmp_path: pathlib.Path) -> None:
-    """ "N file(s) clean" is the anti-vacuity evidence a reader can check."""
-    root = build(tmp_path, 0)
-    (_, old_out, _), (_, new_out, _) = run_both(root)
-    assert "file(s) clean." in old_out
-    assert new_out == old_out
-    scanned = int(old_out.split("pipefail/grep -q: ")[1].split(" ")[0])
-    assert scanned > 1
 
 
 # --------------------------------------------------------------------------- The decision functions, driven directly. Both directions for every rule. ---------------------------------------------------------------------------

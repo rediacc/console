@@ -56,7 +56,7 @@ THE LEGACY BODY IS SCANNED TOO, and the twin records what leaving it out cost:
 THE OLD PREMISE WAS WRONG IN THE OTHER DIRECTION, and the correction is carried:
 
     Several `.ci/scripts/quality/` files are executed from NON-quality jobs --
-    `.github/workflows/ci-build-renet.yml:131` runs check-no-otlp-creds.sh against
+    `.github/workflows/ci-build-renet.yml:131` ran the no-otlp-creds gate against
     the real release binaries, `ci.yml:834` runs check_release_state.py, and
     `ci.yml:531,536,539` run three `.ci/scripts/test/gates/` tests in
     `run-sh-tests`. Those jobs happen to carry no `run_*` gate TODAY, which is
@@ -110,7 +110,7 @@ THE DISPATCH-HALF ANTI-VACUITY REFUSAL CALLS A FUNCTION THAT DOES NOT EXIST. The
 `log_fail` is defined in `.ci/scripts/test/lib/test-helpers.sh` and in four test scripts, in NONE of the libraries this gate loads. Under `set -euo pipefail` an unknown command exits 127 immediately, so the three explanatory `echo` lines and the `exit 1` beneath it never run: the refusal prints `...: line N: log_fail: command not found` and exits 127.
 
 THIS IS THE SAME DEFECT, IN THE SAME SHAPE, AS ONE ALREADY RECORDED IN THIS TREE.
-`.ci/scripts/test/run-all.sh:215-219` says of check-pool-writer-safety.sh: "the anti-vacuity refusal that exists for exactly that case called a log_fail() that does not exist, so the gate exited 127 rather than refusing. Two failures had to be repaired before this one line became visible." That gate was given its own `log_fail` at check-pool-writer-safety.sh:76; this one was not.
+`.ci/scripts/test/run-all.sh:215-219` says of the pool-writer-safety gate: "the anti-vacuity refusal that exists for exactly that case called a log_fail() that does not exist, so the gate exited 127 rather than refusing. Two failures had to be repaired before this one line became visible." That gate was given its own `log_fail` at its bash twin's line 76; this one was not.
 
 The port reproduces the 127 and the diagnostic's shape, because invariant 5 says the twin is not edited in the change that ports it and the differential rules on behaviour. See `dispatch_floor_refusal` for exactly how far the reproduction goes and where it stops.
 
@@ -340,7 +340,7 @@ def classify_mode(root: pathlib.Path, path: str) -> str:
 def dispatch_floor_refusal() -> int:
     """The twin's dispatch-half refusal, defect and all. Returns 127.
 
-    THIS REPRODUCES A BUG. `log_fail` is undefined in the twin, so bash exits 127 at that line and the three explanatory `echo`s below it never run. See the module docstring for the identical, already-recorded instance in check-pool-writer-safety.sh.
+    THIS REPRODUCES A BUG. `log_fail` is undefined in the twin, so bash exits 127 at that line and the three explanatory `echo`s below it never run. See the module docstring for the identical, already-recorded instance in the pool-writer-safety gate's own twin.
 
     HOW FAR THE REPRODUCTION GOES, stated so nobody reads more into it. bash's diagnostic is `<script as invoked>: line <n>: log_fail: command not found`, and both halves of that prefix belong to bash, not to the gate: the path is whatever argv[0] was, and the line number is the twin's. The port emits the canonical relative path and finds the line number by reading the twin, which
     is exact when the gate is invoked the way CI invokes it and merely approximate when it is invoked by absolute path. The STATUS, which is what a caller acts on, is exact either way.

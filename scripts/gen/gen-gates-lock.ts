@@ -5,7 +5,7 @@
  *
  * WHY A LOCK AT ALL. `scripts/ci-runner/manifest.ts` is TypeScript, and three things read
  * it as TEXT rather than as data because they are not TypeScript and cannot import it:
- * `.claude/hooks/stop/wl_reggate.py`, `.ci/scripts/quality/check-gate-id-convention.sh`
+ * `.claude/hooks/stop/wl_reggate.py`, `.ci/scripts/quality/check_gate_id_convention.py`
  * and `.ci/scripts/quality/check_test_file_orphans.py`. Every one of them re-implements a
  * fragment of a TS parser against a 5,700-line literal, and each fragment is wrong in its
  * own direction the first time an entry is written in a shape it did not anticipate. The

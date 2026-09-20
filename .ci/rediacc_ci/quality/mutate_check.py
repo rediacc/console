@@ -1,7 +1,6 @@
 """The mutation runner itself must keep working.
 
-Ported from `.ci/scripts/quality/check-mutate-check.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "Mutation runner self-test", needs none, selftest true.
+Ported from `.ci/scripts/quality/check-mutate-check.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-mutate-check.observations.jsonl` asserted equivalence over five distinct trees. Its gate header registers it as step "Mutation runner self-test", needs none, selftest true.
 
 WHAT THIS DOES AND DOES NOT PROTECT, carried whole from the twin because the distinction is the entire reason the gate is small:
 

@@ -87,8 +87,9 @@ fi
 #   2. log_error interpolated "$1", so `log_error a b` silently dropped "b"
 #      while common.sh's "$*" would have kept it. Every log_* below now uses
 #      "$*" for the same reason, standalone callers included.
-# check-pool-writer-safety.sh sources only common.sh, never reaches
-# blocker-validator.sh, and so was never affected by any of this.
+# The pool-writer-safety gate sourced only common.sh, never reached
+# blocker-validator.sh, and so was never affected by any of this. Its bash twin
+# is retired; the live gate is rediacc_ci/quality/pool_writer_safety.py.
 #
 # WHY set-vs-unset, and not `${RED-}`: common.sh DELIBERATELY sets RED='' (and
 # the rest) when stderr is not a tty. An emptiness test would read that

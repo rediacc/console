@@ -14,7 +14,7 @@ Code studied:
 - `packages/cli/src/adapters/config-file-storage.ts` (atomic save, unconditional version bump)
 - `packages/cli/src/services/account/cert-cache.ts`, `services/repo/repo-secrets-store.ts`
 - `private/renet/pkg/list/types.go` (`ListResult`, the `renet list all --json` contract)
-- `.ci/scripts/quality/check-config-migrations.sh` (the gate)
+- `.ci/rediacc_ci/quality/config_migrations.py` (the gate)
 
 ---
 
@@ -417,7 +417,7 @@ assert the pushed document contains clusters/providers/strategies and does NOT c
 
 ## 3. The v2→v3 migration (R2-F6)
 
-Exactly ONE migration, no v2 tolerance afterward. Built on the real machinery: `packages/shared/src/config-schema/migrations/` (registered in `index.ts` `MIGRATIONS`, pattern = `v1-to-v2.ts` + `__tests__/migrations.test.ts`), fixtures at `packages/cli/src/__tests__/fixtures/config/v*-sample.json`, gate = `.ci/scripts/quality/check-config-migrations.sh` (round-trips every fixture
+Exactly ONE migration, no v2 tolerance afterward. Built on the real machinery: `packages/shared/src/config-schema/migrations/` (registered in `index.ts` `MIGRATIONS`, pattern = `v1-to-v2.ts` + `__tests__/migrations.test.ts`), fixtures at `packages/cli/src/__tests__/fixtures/config/v*-sample.json`, gate = `.ci/rediacc_ci/quality/config_migrations.py` (round-trips every fixture
 through `runMigrations` + `RdcConfigSchema.safeParse`).
 
 ### 3.1 Machinery changes

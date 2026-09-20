@@ -1,8 +1,9 @@
-"""`rediacc_ci.quality.editorconfig` against the shell and the awk it replaces.
+"""`rediacc_ci.quality.editorconfig` against the shell and the awk it replaced.
 
-WHAT IS WORTH TESTING HERE, and it is not "does it see a CRLF". The shadow ledger `.ci/shadow/w7p2-editorconfig.observations.jsonl` drives the whole gate over five distinct trees carrying all four violation classes. What a ledger row cannot isolate is the two pieces that decide WHICH FILES ARE EVEN LOOKED AT:
+WHAT IS WORTH TESTING HERE, and it is not "does it see a CRLF". The shadow ledger `.ci/shadow/w7p2-editorconfig.observations.jsonl` drove the whole gate over five distinct trees carrying all four violation classes, and licensed the port at K=5; the bash twin `.ci/scripts/quality/check-editorconfig.sh` was retired in W7 P5 on the strength of it. What a ledger row could not
+isolate is the two pieces that decide WHICH FILES ARE EVEN LOOKED AT:
 
-  * the awk binary classifier, whose bug the twin's own header documents (a
+  * the awk binary classifier, whose bug the twin's own header documented (a
     path containing the substring "binary" used to exempt a us-ascii file from
     three of the four checks)
   * `file --mime-encoding`, the single binary oracle, whose verdict on a SHORT
@@ -18,7 +19,7 @@ from rediacc_ci import paths
 from rediacc_ci.quality import editorconfig as ec
 from rediacc_ci.tests import differential as diff
 
-# The classifier, verbatim from check-editorconfig.sh:56 and :94 (the same program appears twice in the twin, once in its control and once in the scan).
+# The classifier, verbatim from the retired twin's lines 56 and :94 (the same program appeared twice there, once in its control and once in the scan).
 AWK_CLASSIFY = "awk -F': ' '$NF ~ /binary/ { sub(/: [^:]*$/, \"\", $0); print }'"
 
 
@@ -131,5 +132,5 @@ def test_selftest_is_green() -> None:
 
 def test_the_real_tree_complies() -> None:
     """The gate against the actual repository. A red here is real editorconfig debt, not a broken port."""
-    assert ec.main([]) == 0, "run `bash .ci/scripts/quality/check-editorconfig.sh` for the list"
+    assert ec.main([]) == 0, "run `npm run check:ci-editorconfig` for the list"
     assert paths.repo_root().is_dir()

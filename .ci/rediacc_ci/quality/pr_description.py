@@ -1,7 +1,6 @@
 r"""Is the PR description still describing the PR?
 
-Ported from `.ci/scripts/quality/check-pr-description.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-pr-description.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-pr-description.observations.jsonl` asserted equivalence over five distinct trees.
 
 WHAT IT CHECKS, in the twin's own words:
 

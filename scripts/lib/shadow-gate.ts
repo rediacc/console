@@ -322,7 +322,7 @@ const CHATTER =
  * "This gate scanned nothing, so its verdict would be meaningless."),
  * `check_runner_advice.py:916,944` ("so no verdict is possible"),
  * `check-control-vacuity.sh:145` ("the corpus collapsed to zero"),
- * `check-release-key-canonical.sh:71` ("so NOTHING was verified"),
+ * `release_key_canonical.py` ("so NOTHING was verified"),
  * `gate-controls.sh:32` ("the battery is not being executed as written").
  *
  * WHY IT NEEDS ITS OWN CLASS. A refusal exits NON-ZERO with ZERO findings. Two

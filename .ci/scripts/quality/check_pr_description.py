@@ -5,10 +5,10 @@ The logic lives in `rediacc_ci.quality.pr_description`; this file exists so the 
 
 The three-line hop below is what makes a path invocation work at all: nothing puts `.ci` on `sys.path` for a gate run by path, so the import beneath it would die. Nothing follows the hop but that import, because a stdlib import placed after it fragments the block into a ruff I001.
 
-NO `---- gate ----` HEADER, deliberately. `.ci/scripts/quality/check-pr-description.sh` carries none either: this pair is hand-registered in `.github/workflows/ci-quality.yml` and excused from the local gate set by `.ci/policy/.ci-parity-exempt`, and `check:ci-parity` is what holds those two ends together. Writing a header here would hand the step to `gate:bind`, which is a
+NO `---- gate ----` HEADER, deliberately. `.ci/scripts/quality/check-pr-description.sh` carried none either: this pair is hand-registered in `.github/workflows/ci-quality.yml` and excused from the local gate set by `.ci/policy/.ci-parity-exempt`, and `check:ci-parity` is what holds those two ends together. Writing a header here would hand the step to `gate:bind`, which is a
 different change from moving which file the step runs.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-pr-description.sh` is NOT deleted by this change. It stays on disk as the twin this port is proven against; deleting it is W7 P5's job, in a later change.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-pr-description.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-pr-description.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 THE LEDGER CONDITION IS MET. Driven 2026-09-08:
 

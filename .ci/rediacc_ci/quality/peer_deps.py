@@ -1,6 +1,6 @@
 """`npm ls` must not report an invalid peer dependency.
 
-Ported from `.ci/scripts/quality/check-peer-deps.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees.
+Ported from `.ci/scripts/quality/check-peer-deps.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-peerdeps.observations.jsonl` asserted equivalence over five distinct trees.
 
 WHAT THE TWIN SAYS, carried whole because it is the entire statement of intent the original ever made:
 

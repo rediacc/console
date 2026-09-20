@@ -10,7 +10,7 @@ The trailer is how an epic's review finds its work: `git log --grep='^PR-TASK: <
 
 `.claude/hooks/pre-bash/block-untagged-commit.sh` catches the common case at the moment it is cheapest to fix. It sees only the raw Bash string, so `git commit -F file` and a command-substituted message are **opaque to it**, and it deliberately ALLOWS what it cannot read rather than refusing a commit it cannot judge. That blind spot is stated in its own header, not hidden.
 
-`scripts/gates/check-pr-task-trailers.ts` is the real enforcement. It walks the PR's commits through the API and fails **closed** on an unreadable response, following `check-claude-attribution.sh` rather than `check-pr-description.sh`, which fails open.
+`scripts/gates/check-pr-task-trailers.ts` is the real enforcement. It walks the PR's commits through the API and fails **closed** on an unreadable response, following `check-claude-attribution.sh` rather than the pr-description gate, which fails open.
 
 ## Anchored to line start, on purpose
 

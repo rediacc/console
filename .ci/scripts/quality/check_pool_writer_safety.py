@@ -29,7 +29,7 @@ DRIVEN RED AS WELL, which is the half that matters. NO REAL-TREE PLANT WAS NEEDE
 symlinked fixture makes a runner write the real tree, after which twin and port "agree" by both reading one corrupted tree. Into that copy goes one unregistered real-tree writer, `test-__gate_probe_pool_writer.sh`. BOTH DIRECTIONS were driven on the SAME fixture: with the plant both sides exit 1 and name it; with the plant deleted and nothing else changed both sides exit 0 with
 byte-identical streams, so the red is attributable to the plant and not to the fixture. Both sides -> exit 1, stdout EMPTY on both sides, stderr 563 bytes, sha256 136adf7621296d01....
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-pool-writer-safety.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_pool_writer_safety.py` compares this port against, and deleting it is W7 P5's job in a later change.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-pool-writer-safety.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-pool-writer.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 ---- gate ----
 step: Pool-registered tests do not write the real tree

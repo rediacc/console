@@ -66,7 +66,7 @@ declare -A UNSIGNED_ON_PURPOSE=(
 
 MIN_FORMATS=4
 
-# One copy of the tally, shared -- see check-release-key-canonical.sh for why this
+# One copy of the tally, shared -- see rediacc_ci/quality/release_key_canonical.py for why this
 # was still duplicated after the library existed.
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/gate-controls.sh"
 _c() { gate_check "$@"; }

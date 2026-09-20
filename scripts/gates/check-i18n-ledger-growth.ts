@@ -20,7 +20,7 @@
  *
  * WHY THIS GATE STOPS AT GROWTH, and says so rather than pretending to more. Requiring
  * coverage for the existing 55,825 would mean a multi-megabyte baseline nobody drains --
- * the shape `check-pipefail-grep-q.sh` refuses in its own header, where a baseline "would
+ * the shape the pipefail/grep -q gate refuses in its own header, where a baseline "would
  * have recorded ten provably-safe sites as debt and left three real risks sitting in a
  * list that says known, fine". So the invariant here is strictly non-retroactive and
  * therefore has ZERO existing debt and no baseline file: a key that is NEW in `en.json`

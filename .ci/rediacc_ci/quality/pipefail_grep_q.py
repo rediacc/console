@@ -1,8 +1,7 @@
 """Under `pipefail`, a locally-defined function piped into `grep -q` is a RACE.
 
-Ported from `.ci/scripts/quality/check-pipefail-grep-q.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "No racing pipefail/grep -q detectors", lane quality-code, emit false, and it carries this BLOCKER, which is about WIRING rather than about the defect class, so it stays with the bash file: "runs before this lane's `- id:
-setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails."
+Ported from `.ci/scripts/quality/check-pipefail-grep-q.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-pipefail-grepq.observations.jsonl` asserted equivalence over five distinct trees. Its gate header registers it as step "No racing pipefail/grep -q detectors", lane quality-code, emit false, and it carries this BLOCKER, which is about WIRING rather than about the defect
+class, so it stays with the bash file: "runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails."
 
 The twin's `why:` line, which is the one-sentence version: "A detector built as `producer | grep -q` under pipefail cannot reliably fail: grep -q exits at its first match, SIGPIPEs the producer, and pipefail makes that 141 the verdict. check-ci-watch-recipe.sh shipped exactly that in both detectors and certified 124 files clean over a real offender for as long as it existed."
 

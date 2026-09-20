@@ -76,7 +76,7 @@ def manifest_tokens():
     """Every file path the gate manifest names, as a set of strings.
 
     THE THIRD WAY OF BEING REACHED, and the one this gate got by accident until 2026-09-06. `scripts/ci-runner` was simply a REF_DIR, so "wired into the gate manifest" was decided by whether the basename appeared as text anywhere in a 5,700-line TypeScript literal. That is the same shape of reader that shipped wrong twice in this repo -- see `_manifest_entries` in
-    .claude/hooks/stop/wl_reggate.py (259 of 261 entries seen, found 2026-08-20) and check-gate-id-convention.sh (373 of 420, found 2026-09-06). A text match is not a registration; it happens to agree with one most of the time.
+    .claude/hooks/stop/wl_reggate.py (259 of 261 entries seen, found 2026-08-20) and the gate-id-convention gate (373 of 420, found 2026-09-06). A text match is not a registration; it happens to agree with one most of the time.
 
     PROVED EQUIVALENT BEFORE THE SWAP, which is the only thing that makes a drain a drain rather than a silent re-scoping. Both readers were run over the live tree at commit ac817a647 on 2026-09-06:
 

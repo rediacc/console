@@ -63,7 +63,7 @@ const DEF_STRICT =
  * file, any function it declares belongs to that file, so counting it as a definition here
  * makes the gate demand a caller for something this script never defines.
  *
- * Measured: `.ci/scripts/quality/check-pool-writer-safety.sh` writes two planted-writer
+ * Measured, on the pool-writer-safety gate's bash twin before W7 P5 retired it: it wrote two planted-writer
  * fixtures via `<<'PLANTED'`, each declaring `run_it()`. The gate reported
  * "shell function run_it is defined but never called anywhere in the tracked tree" and
  * demanded either a deletion, which would have destroyed the control the check under test

@@ -225,7 +225,7 @@ jobs:
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
-          preset: pr-read   # gh api reads in check-pr-description.sh
+          preset: pr-read   # gh api reads in the pr-description gate
           repositories: console
 
       - name: Load gate toolchain pins

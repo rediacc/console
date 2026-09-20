@@ -40,8 +40,6 @@
   ".ci/scripts/quality/check-go-deps.sh\tjq",
   ".ci/scripts/quality/check-label-inventory.sh\tgh",
   ".ci/scripts/quality/check-label-inventory.sh\tjq",
-  ".ci/scripts/quality/check-pr-description.sh\tgh",
-  ".ci/scripts/quality/check-pr-description.sh\tjq",
   ".ci/scripts/quality/check-resolved-threads.sh\tgh",
   ".ci/scripts/quality/check-resolved-threads.sh\tjq",
   ".ci/scripts/quality/check-review-comments.sh\tjq",

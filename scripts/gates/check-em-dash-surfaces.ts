@@ -125,7 +125,7 @@ const SURFACES: readonly Surface[] = [
   { dir: '.claude/agents', kind: 'markdown', exts: ['.md'], minFiles: 8 },
   { dir: '.claude/hooks', kind: 'source', exts: ['.sh', '.py'], minFiles: 20 },
   // THE CI TOOLING TREE, added 2026-09-08. The gate's own header calls these "the www surfaces", but `.claude/hooks` above has never been www, so the real boundary was never www: it was whichever directories somebody had got round to listing, and `.ci` was simply absent. The rule in CLAUDE.md binds comments, help text and error messages repo-wide, and these files carry all three
-  // -- `check_secret_reachability.py:289` put an em dash straight into a gate's CI output, and `check-command-tree.sh:70` still does, which is what surfaced the hole.
+  // -- `check_secret_reachability.py:289` put an em dash straight into a gate's CI output, and the command-tree gate's retired bash twin did the same at its line 70, which is what surfaced the hole.
   //
   // SEEDED, NOT CLEAN, and the difference is worth stating rather than burying in a baseline diff: 83 files under `.ci/scripts` and 3 under `.ci/rediacc_ci` carry em dashes today. Seeding grandfathers those and bans the 84th from this day. That is a real ban going forward and a paper one backwards; the drain is opportunistic, and `--write-baseline` REFUSES to add, so the number
   // can only fall from here.

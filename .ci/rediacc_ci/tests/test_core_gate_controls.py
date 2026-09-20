@@ -1,7 +1,7 @@
 """`rediacc_ci.core.gate_controls` against the live `gate-controls.sh`.
 
 THE TWIN IS LIVE HERE, NOT FROZEN, which is the opposite of `test_core_ports.py` and is correct for the opposite reason. `.ci/lib/find-port.sh` was shimmed, so "the bash original" no longer exists in the tree and had to be frozen into that file. `.ci/scripts/lib/gate-controls.sh` still carries its implementation and is still sourced by `check-staging-tag-guard.sh`,
-`check-release-key-canonical.sh` and `check-release-signing-coverage.sh`. Running the live file is therefore strictly better: a frozen copy could agree with a port while both had drifted away from what the three gates actually execute.
+`check-release-signing-coverage.sh` (and, until W7 P5 retired its bash twin, the release-key-canonical gate). Running the live file is therefore strictly better: a frozen copy could agree with a port while both had drifted away from what those gates actually execute.
 
 THE BASH DRIVER IS A STRING IN THIS FILE and not a script under `.ci/`. RULING 7 freezes the tracked `.sh` count, and a driver is exactly the kind of file that gets added without anyone deciding to. It is also the honest place for it: the driver is part of the TEST, not part of the tree under test.
 

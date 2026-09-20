@@ -1,7 +1,6 @@
 r"""Every shell script INVOKED as `./path.sh` must be committed executable.
 
-Ported from `.ci/scripts/quality/check-script-exec-bit.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live side by side.
+Ported from `.ci/scripts/quality/check-script-exec-bit.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-script-exec-bit.observations.jsonl` asserted equivalence over five distinct trees.
 
 WHY THIS EXISTS, in the twin's own words, because the incident is the design:
 

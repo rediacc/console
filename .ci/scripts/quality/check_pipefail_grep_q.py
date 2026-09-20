@@ -22,7 +22,7 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, including `emit: false`, its `blocker:`, `needs: none`, `selftest: true`, `lane:` and the whole `why:` block.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-pipefail-grep-q.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-pipefail-grep-q.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-pipefail-grepq.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 ---- gate ----
 step: No racing pipefail/grep -q detectors

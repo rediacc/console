@@ -38,7 +38,7 @@ The plant drops the `|| canon_rc=$?` guard from the canonicaliser call site in
 
 The fixture was restored from its `.orig` copy and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-release-key-canonical.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-release-key-canonical.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-release-key.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 ---- gate ----
 step: Release key canonical

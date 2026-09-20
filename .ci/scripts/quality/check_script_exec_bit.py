@@ -19,7 +19,7 @@ resolves the leaves to `[python3]`. The registered command is the bare path to t
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. `emit: false`, the `blocker:` it carries, `needs: none`, `selftest: true` and `lane: quality-code` all moved across unchanged. Dropping any of them is invisible to the gates for a while: `emit: false` suppresses only the three workflow-region checks while the registration assertions still agree, so the loss surfaces later as a
 duplicate step written into the emitted region by `gate:bind --write`.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-script-exec-bit.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-script-exec-bit.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-script-exec-bit.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 ---- gate ----
 step: Block non-executable invoked scripts

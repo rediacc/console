@@ -1,6 +1,6 @@
 """The release signing key must reach nfpm as CANONICAL armor.
 
-Ported from `.ci/scripts/quality/check-release-key-canonical.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "Release key canonical", needs none, lane quality-security.
+Ported from `.ci/scripts/quality/check-release-key-canonical.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-release-key.observations.jsonl` asserted equivalence over five distinct trees. Its gate header registers it as step "Release key canonical", needs none, lane quality-security.
 
 WHY THIS EXISTS, carried whole from the twin, dated incident included:
 

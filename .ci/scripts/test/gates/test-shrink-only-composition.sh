@@ -63,7 +63,7 @@ EXEMPT=(
 # importing the guard by name. So a file that imports p7-backlog IS guarded, and asserting
 # otherwise would flag three validators that are in fact protected.
 #
-# ONE HOP, deliberately, matching the precedent in check-gate-id-convention.sh: a two-hop
+# ONE HOP, deliberately, matching the precedent in the gate-id-convention gate: a two-hop
 # chain would escape this. No such chain exists today. If one appears, plant it as a control
 # and widen the resolver THEN, rather than speculatively complicating it now.
 GUARDED_VIA=(

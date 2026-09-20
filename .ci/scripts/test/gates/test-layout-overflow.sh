@@ -60,7 +60,7 @@ test_the_control_can_actually_fail() {
     # as though the controls were not load-bearing, when the gate had never started.
     #
     # Writing the mutant beside the gate fixed the imports and broke something else: it
-    # made this test a real-tree writer, which check-pool-writer-safety.sh correctly
+    # made this test a real-tree writer, which the pool-writer-safety gate correctly
     # flagged, because run-all.sh would then schedule it in the pool next to tests that
     # read the same paths.
     #

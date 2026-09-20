@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run a command inside the render image. Shape copied deliberately from
-# .ci/scripts/quality/browser-smoke.sh, which already solved this problem here.
+# .ci/rediacc_ci/quality/browser_smoke.py, which already solved this problem here.
 #
 # THE WORKSPACE IS MOUNTED AT ITS IDENTICAL HOST PATH, NOT AT /work. step6000_render.py
 # passes ABSOLUTE host paths (the output mp4, --props, and --browser-executable pointing

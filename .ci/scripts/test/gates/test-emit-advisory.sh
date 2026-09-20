@@ -107,9 +107,10 @@ test_emit_returns_zero_even_with_empty_hints() {
 # The defect is a stream swap; the `2>&1` used by every case above merges the
 # two streams back together and would hide it completely.
 #
-# Sibling note: check-pool-writer-safety.sh sources only common.sh and never
-# reaches blocker-validator.sh, which is why it was never affected. If it ever
-# grows a blocker-validator source, these cases are what keep it honest.
+# Sibling note: the pool-writer-safety gate sourced only common.sh and never
+# reached blocker-validator.sh, which is why it was never affected. Its bash
+# twin is retired and the live gate is rediacc_ci/quality/pool_writer_safety.py;
+# if a blocker-validator source ever appears, these cases keep it honest.
 # ---------------------------------------------------------------------------
 
 # Exit status of the last _run_split_streams child. Kept in a global rather

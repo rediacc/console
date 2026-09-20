@@ -9,7 +9,7 @@
  *
  * THE THREE TEXT PARSERS ARE GONE, and this paragraph used to give them as the reason
  * manifest.ts "has to keep containing every entry literally". wl_reggate.py, then
- * check-gate-id-convention.sh and check_test_file_orphans.py (both on 2026-09-06, W2.4a),
+ * the gate-id-convention gate and check_test_file_orphans.py (both on 2026-09-06, W2.4a),
  * were each moved onto `scripts/ci-runner/gates.lock.json`, the committed JSON projection
  * of this literal. All three had been wrong in the same silent direction: the regex read
  * 259 of 261 entries in one case and 373 of 420 in another, always short, always green.

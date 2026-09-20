@@ -1,7 +1,6 @@
 r"""A capability probe must exercise the operations its CONSUMER depends on.
 
-Ported from `.ci/scripts/quality/check-probe-parity.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-probe-parity.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-probe-parity.observations.jsonl` asserted equivalence over five distinct trees.
 
 WHY THIS EXISTS, in the twin's own words, because the incident is the design:
 

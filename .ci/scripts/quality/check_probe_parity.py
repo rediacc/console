@@ -22,7 +22,7 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. It is a SHORT header -- no `emit:`, no `blocker:`, no `lane:` -- which is the twin's shape, not an omission. This gate IS emitted, so `gate:bind --write` owns its step in `quality-static` and rewrites that step's `run:` from the twin's path to this file's path in the same pass.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-probe-parity.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-probe-parity.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-probe-parity.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 ---- gate ----
 step: Capability-probe parity

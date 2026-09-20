@@ -25,7 +25,7 @@ check-swallowed-failures.sh, check-ci-job-aggregation.sh and check-go-deps.sh --
   2. log_error interpolated `"$1"` rather than `"$*"`, so `log_error a b`
      printed only `a` and silently dropped the rest.
 
-`check-pool-writer-safety.sh` sources only common.sh, never reaches blocker-validator.sh, and so was never affected -- which is why nothing noticed.
+The pool-writer-safety gate sourced only common.sh, never reached blocker-validator.sh, and so was never affected -- which is why nothing noticed. Its bash twin is retired; the live gate is `rediacc_ci.quality.pool_writer_safety`.
 
 The fix there was a deference rule: every assignment guarded with `${RED+x}` and
 every definition guarded with `declare -F`. That is the correct repair for two libraries that must coexist. It is not a design; it is two implementations agreeing to take turns. THIS module is the design: one implementation, imported rather than sourced, so there is no second definition to defer to.

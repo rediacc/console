@@ -17,7 +17,7 @@ the port still drives a real `npx tsx` harness over every committed fixture.
 
 `selftest: true` IS INERT HERE and is carried anyway: `headerLines` emits that field only for `.ts` (`gate-bind.ts:598`), so for a `.py` gate it decides nothing. It is true of the port regardless.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-config-migrations.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-config-migrations.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-config-migrations.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 ---- gate ----
 step: Check config-migration runner + fixtures

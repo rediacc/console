@@ -422,7 +422,7 @@ def test_file_modes_report_what_git_recorded_not_what_is_on_disk(repo):
 
 
 def test_file_modes_equal_raw_ls_files_s_on_the_real_repository():
-    """Differential against check-script-exec-bit.sh:82's own query."""
+    """Differential against the query the script-exec-bit gate's retired bash twin ran at its line 82."""
     root = diff.repo()
     _, out, _ = diff.bash_streams("git ls-files -s -- '*.py' | awk '{print $1, $4}'", cwd=root)
     raw = {}

@@ -20,7 +20,7 @@
  * gate that quietly does nothing is the failure this repo names most often.
  *
  * FAILS CLOSED on an unreadable body, matching check-claude-attribution.sh
- * rather than check-pr-description.sh which fails open. An unreadable body is
+ * rather than the pr-description gate which fails open. An unreadable body is
  * not evidence that the block is fine.
  *
  * ---- gate ----

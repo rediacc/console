@@ -710,7 +710,7 @@ def census_append(root, row, expect_plans, expect_records):
     before = len(have)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        # A TRAILING NEWLINE ON EVERY ROW IS NOT COSMETIC. `check-editorconfig.sh` walks `git ls-files` extension-blind and fails any tracked file that does not end with one, so a writer that omitted it on the last row would red a whole-tree gate that has nothing to do with plan records.
+        # A TRAILING NEWLINE ON EVERY ROW IS NOT COSMETIC. the editorconfig gate walks `git ls-files` extension-blind and fails any tracked file that does not end with one, so a writer that omitted it on the last row would red a whole-tree gate that has nothing to do with plan records.
         with path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
     except (OSError, TypeError, ValueError) as exc:

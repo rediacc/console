@@ -16,7 +16,7 @@ WHICH IS WHY THE LAST THREE CASES SPLIT THE STREAMS AND THE FIRST FOUR DO NOT,
 and that difference is deliberate rather than sloppy. The defect is a stream SWAP; the `2>&1` the first four cases use merges the two streams back together and would hide it completely. The first four are about rendered text and merging is correct for them. `RunResult` keeps `.out`, `.err` and `.combined` apart precisely so a port can make that choice per case instead of once per
 file.
 
-Sibling note carried over: check-pool-writer-safety.sh sources only common.sh and never reaches blocker-validator.sh, which is why it was never affected. If it ever grows a blocker-validator source, these cases are what keep it honest.
+Sibling note carried over: the pool-writer-safety gate sourced only common.sh and never reached blocker-validator.sh, which is why it was never affected. Its bash twin is retired and the live gate is `rediacc_ci.quality.pool_writer_safety`; if a blocker-validator source ever appears, these cases keep it honest.
 
 WHAT THE PORT REIMPLEMENTS. The twin counts escape bytes with `tr -cd '\\033' < out | wc -c`; this counts `\\x1b` in the captured stdout string. The two agree because both count ESC OCCURRENCES rather than lines, and the harness captures the child's raw bytes as text without rewriting them.
 

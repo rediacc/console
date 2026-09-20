@@ -101,7 +101,7 @@ QUIRK 5 -- `get_repo_root` LEAKS A `cd` INTO THE CALLER'S SHELL. Its last line i
     /home/developer/console
 
 LATENT, NOT LIVE, AND THAT WAS MEASURED RATHER THAN ASSUMED. 99 `.sh` files name `get_repo_root`; grepping for the command-substitution spelling finds 97 occurrences of it, and a command substitution runs in a subshell, so the only three occurrences that are NOT are string literals inside two gates and one awk pattern (`test-breakpoint-portability.sh:174,176`,
-`check-pool-writer-safety.sh:188`). So there is no live caller that could be moved. `repo_root()` below delegates to `rediacc_ci.paths.repo_root()` and CANNOT chdir a process, which is a divergence stated rather than discovered.
+`check-pool-writer-safety.sh:188`, in a bash twin W7 P5 has since retired). So there is no live caller that could be moved. `repo_root()` below delegates to `rediacc_ci.paths.repo_root()` and CANNOT chdir a process, which is a divergence stated rather than discovered.
 
 --------------------------------------------------------------------------
 THREE MORE DIVERGENCES THAT ARE DECISIONS RATHER THAN BUGS

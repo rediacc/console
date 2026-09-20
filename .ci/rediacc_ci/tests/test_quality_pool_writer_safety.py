@@ -1,60 +1,35 @@
-"""`rediacc_ci.quality.pool_writer_safety` against its bash twin.
+"""`rediacc_ci.quality.pool_writer_safety`, driven directly.
 
-A bash child runs the REAL `.ci/scripts/quality/check-pool-writer-safety.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. The twin has TWO environment seams of its own -- `POOL_SAFETY_GATES_DIR` and `POOL_SAFETY_LOCK` -- so the gate battery and the registration are pointed at the fixture; the twin itself is copied in
-anyway, because the committed ledger (`.ci/shadow/w7p2-pool-writer.observations.jsonl`) records a tree id that has to be a claim about BOTH implementations.
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-pool-writer-safety.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. The twin had TWO environment seams of its own -- `POOL_SAFETY_GATES_DIR` and `POOL_SAFETY_LOCK` -- so the gate battery and the registration were pointed at the
+fixture; the twin itself was copied in anyway, because the committed ledger (`.ci/shadow/w7p2-pool-writer.observations.jsonl`) records a tree id that has to be a claim about BOTH implementations. That ledger licensed the port at K=5 and the twin was retired in W7 P5, so the whole-gate cases were retired with it.
 
 RETARGETED 2026-09-09 (W7P3-BAT) WITH ITS SUBJECT. The registration used to be the `WRITER_TESTS` / `WRITER_TESTS_FALLBACK` arrays in `.ci/scripts/test/run-all.sh`; `battery.py` replaced that runner and classifies
 from `scripts/ci-runner/gates.lock.json`'s `mutex: ["tree:..."]` declarations
 instead, so the seam is now `POOL_SAFETY_LOCK` and the fixtures are JSON. The three defects below are unchanged and still pinned, because they are properties of the GATE and not of the file it reads.
 
-THE THREE STACKED DEFECTS THIS GATE CARRIES ARE EACH PINNED HERE, because they are the reason the twin has the shape it has and every one of them was a green that meant nothing:
+THE THREE STACKED DEFECTS THIS GATE CARRIES ARE EACH ON THE RECORD, because they are the reason it has the shape it has and every one of them was a green that meant nothing:
 
   1. `log_fail` did not exist in common.sh, so all THREE anti-vacuity refusals
-     exited 127 instead of refusing. `test_a_lock_declaring_no_writers_refuses`
-     and `test_a_missing_lock_refuses` drive two of them and assert the message,
-     which is what a 127 cannot produce.
+     exited 127 instead of refusing. The refusals are the port's now and its
+     selftest drives them; the cases that proved a message a 127 cannot produce
+     ran the twin and were retired with it.
   2. W2.4b made WRITER_TESTS a DERIVED array, so the old `WRITER_TESTS=(`...`)`
      pattern parsed EMPTY and the gate would have passed everything. The retarget
      finishes that argument by reading the declaration itself;
      `test_registered_writers_reads_the_mutex_declaration` pins the new parse and
-     `test_a_reads_declaration_is_not_a_writer_registration` pins the half that
-     would silently re-open the same hole.
-  3. With both fixed the gate named a real unregistered writer. That is the
-     positive direction, and it is every parametrized case below.
+     `test_registered_writers_ignores_reads_and_non_tree_mutexes` pins the half
+     that would silently re-open the same hole.
+  3. With both fixed the gate named a real unregistered writer. That direction is
+     what `test_scan_text` and the plant controls below carry.
 """
 
 import json
 import pathlib
-import shutil
 
 import pytest
 
 from rediacc_ci.quality import pool_writer_safety as gate
 from rediacc_ci.tests import differential as diff
-
-TWIN = ".ci/scripts/quality/check-pool-writer-safety.sh"
-MODULE = "pool_writer_safety"
-
-WRITER = """#!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-run_it() {
-    local real="$REPO_ROOT/.ci/scripts/version/resolve-version.sh"
-    printf 'stub\\n' >"$real"
-}
-"""
-
-TEMPSAFE = """#!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-FIXTURE="$(mktemp -d)"
-ROOT="$FIXTURE/repo"
-run_it() {
-    mkdir -p "$ROOT/.ci"
-    cp "$REPO_ROOT/.ci/scripts/lib/common.sh" "$ROOT/.ci/"
-    printf 'seed\\n' >"$ROOT/seed.txt"
-}
-"""
 
 # A lock that names gate tests and declares NO mutex tree: resource on any of them. This is the retarget's equivalent of the derived-assignment shape: the file parses, the entries are real, and the registered set comes out EMPTY -- exactly the state the refusal exists to catch.
 NO_WRITERS = json.dumps(
@@ -90,169 +65,6 @@ def lock_text(*registered: str) -> str:
         for name in registered
     )
     return json.dumps(entries, indent=2)
-
-
-def build(
-    tmp_path: pathlib.Path, gates: dict[str, str], lock: str
-) -> tuple[pathlib.Path, pathlib.Path, pathlib.Path]:
-    """Returns (root, gates dir, lock path). The twin is copied in; see above."""
-    src = pathlib.Path(diff.repo())
-    root = tmp_path / "fixture"
-    (root / ".ci" / "scripts" / "quality").mkdir(parents=True)
-    (root / ".ci" / "rediacc_ci" / "quality").mkdir(parents=True)
-    gates_dir = root / ".ci" / "scripts" / "test" / "gates"
-    gates_dir.mkdir(parents=True)
-    shutil.copytree(src / ".ci" / "scripts" / "lib", root / ".ci" / "scripts" / "lib")
-    shutil.copy2(src / TWIN, root / TWIN)
-    for name in ("__init__.py", "log.py", "paths.py", "controls.py"):
-        shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
-    for name in ("__init__.py", "%s.py" % MODULE):
-        shutil.copy2(
-            src / ".ci" / "rediacc_ci" / "quality" / name,
-            root / ".ci" / "rediacc_ci" / "quality" / name,
-        )
-    for name, content in gates.items():
-        (gates_dir / name).write_text(content, encoding="utf-8")
-    lock_path = root / "scripts" / "ci-runner" / "gates.lock.json"
-    lock_path.parent.mkdir(parents=True)
-    lock_path.write_text(lock, encoding="utf-8")
-    return root, gates_dir, lock_path
-
-
-def run_both(
-    root: pathlib.Path, gates_dir: pathlib.Path, lock: pathlib.Path
-) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
-    env = diff.env_for(
-        PYTHONPATH=".ci",
-        PYTHONDONTWRITEBYTECODE="1",
-        POOL_SAFETY_GATES_DIR=str(gates_dir),
-        POOL_SAFETY_LOCK=str(lock),
-    )
-    old = diff.bash_streams("bash %s" % TWIN, env=env, cwd=str(root))
-    new = diff.bash_streams("python3 -m rediacc_ci.quality.%s" % MODULE, env=env, cwd=str(root))
-    return old, new
-
-
-@pytest.mark.parametrize(
-    ("gates", "registered", "violations"),
-    [
-        pytest.param(
-            {"test-a.sh": WRITER, "test-reg.sh": WRITER, "test-safe.sh": TEMPSAFE},
-            ("test-reg.sh",),
-            1,
-            id="one-unregistered-beside-a-registered-one",
-        ),
-        pytest.param(
-            {"test-a.sh": WRITER, "test-b.sh": WRITER, "test-reg.sh": WRITER},
-            ("test-reg.sh",),
-            2,
-            id="two-unregistered",
-        ),
-        pytest.param(
-            {"test-a.sh": WRITER, "test-b.sh": WRITER, "test-c.sh": WRITER},
-            # A NAME THAT IS NOT IN THE BATTERY, on purpose. An EMPTY tuple here would make the declared set empty and trip the anti-vacuity refusal instead, which is a different case (and is covered by `test_a_lock_declaring_no_writers_refuses`). The first draft of this parameter did exactly that and asserted three violations against a refusal.
-            ("test-elsewhere.sh",),
-            3,
-            id="three-unregistered",
-        ),
-    ],
-)
-def test_port_and_twin_agree_byte_for_byte(
-    tmp_path: pathlib.Path, gates: dict[str, str], registered: tuple[str, ...], violations: int
-) -> None:
-    root, gdir, lock = build(tmp_path, gates, lock_text(*registered))
-    (old_exit, old_out, old_err), (new_exit, new_out, new_err) = run_both(root, gdir, lock)
-    assert old_exit == 1
-    assert new_exit == old_exit
-    assert new_out == old_out
-    assert new_err == old_err
-    assert "%d unregistered real-tree writer(s)" % violations in old_err
-
-
-def test_a_registered_writer_alone_is_green_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """The mirror: the rule is ONE-DIRECTIONAL and a declared writer is fine."""
-    root, gdir, lock = build(
-        tmp_path, {"test-reg.sh": WRITER, "test-safe.sh": TEMPSAFE}, lock_text("test-reg.sh")
-    )
-    (old_exit, old_out, old_err), (new_exit, new_out, new_err) = run_both(root, gdir, lock)
-    assert old_exit == 0
-    assert new_exit == 0
-    assert new_out == old_out
-    assert new_err == old_err
-    # THE COUNT IS PRINTED IN THE GREEN LINE, so a reader can see the verdict was not trivial. BOTH counts: the battery scanned, and the set declared.
-    assert "among 2 gate tests" in old_err
-    assert "(1 declared" in old_err
-
-
-def test_a_reads_declaration_is_not_a_writer_registration(tmp_path: pathlib.Path) -> None:
-    """The half of the retarget that could silently re-open the old hole.
-
-    `reads` releases a test to run BESIDE other scanners; only `mutex` puts it in the serial W chain. A parser that accepted either would look correct on every positive case above and would bless exactly the misclassification this gate exists for.
-    """
-    lock = json.dumps(
-        [
-            {
-                "id": "gate-test:reg",
-                "run": ".ci/scripts/test/gates/test-reg.sh",
-                "reads": ["tree:repo"],
-            },
-            {
-                "id": "gate-test:other",
-                "run": ".ci/scripts/test/gates/test-other.sh",
-                "mutex": ["tree:repo"],
-            },
-        ]
-    )
-    root, gdir, lock_path = build(tmp_path, {"test-reg.sh": WRITER}, lock)
-    (old_exit, _, old_err), (new_exit, _, new_err) = run_both(root, gdir, lock_path)
-    assert (old_exit, new_exit) == (1, 1)
-    assert "1 unregistered real-tree writer(s)" in old_err
-    assert new_err == old_err
-
-
-def test_a_temp_only_writer_alone_is_green(tmp_path: pathlib.Path) -> None:
-    """A scanner that flagged every file would pass every positive case above."""
-    root, gdir, lock = build(tmp_path, {"test-safe.sh": TEMPSAFE}, lock_text("test-reg.sh"))
-    (old_exit, _, old_err), (new_exit, _, new_err) = run_both(root, gdir, lock)
-    assert (old_exit, new_exit) == (0, 0)
-    assert "among 1 gate tests" in old_err
-    assert new_err == old_err
-
-
-def test_a_lock_declaring_no_writers_refuses(tmp_path: pathlib.Path) -> None:
-    """Archaeology 1 and 2 together: the refusal that used to exit 127."""
-    root, gdir, lock = build(tmp_path, {"test-a.sh": WRITER}, NO_WRITERS)
-    (old_exit, _, old_err), (new_exit, _, new_err) = run_both(root, gdir, lock)
-    assert (old_exit, new_exit) == (1, 1)
-    assert "this gate would pass everything" in old_err
-    assert new_err == old_err
-
-
-def test_an_unparseable_lock_refuses(tmp_path: pathlib.Path) -> None:
-    """A broken lock must not read as "nothing needs isolating"."""
-    root, gdir, lock = build(tmp_path, {"test-a.sh": WRITER}, "{not json at all")
-    (old_exit, _, old_err), (new_exit, _, new_err) = run_both(root, gdir, lock)
-    assert (old_exit, new_exit) == (1, 1)
-    assert "this gate would pass everything" in old_err
-    assert new_err == old_err
-
-
-def test_a_missing_lock_refuses(tmp_path: pathlib.Path) -> None:
-    root, gdir, lock = build(tmp_path, {"test-a.sh": WRITER}, lock_text("x.sh"))
-    lock.unlink()
-    (old_exit, _, old_err), (new_exit, _, new_err) = run_both(root, gdir, lock)
-    assert (old_exit, new_exit) == (1, 1)
-    assert "refusing to pass while measuring nothing" in old_err
-    assert new_err == old_err
-
-
-def test_an_empty_gates_directory_refuses(tmp_path: pathlib.Path) -> None:
-    """ZERO INPUTS IS A FAILURE, never a pass."""
-    root, gdir, lock = build(tmp_path, {}, lock_text("test-reg.sh"))
-    (old_exit, _, old_err), (new_exit, _, new_err) = run_both(root, gdir, lock)
-    assert (old_exit, new_exit) == (1, 1)
-    assert "refusing to report a clean battery over an empty set" in old_err
-    assert new_err == old_err
 
 
 # --------------------------------------------------------------------------- The scanner, driven directly. Both directions for every rule. ---------------------------------------------------------------------------

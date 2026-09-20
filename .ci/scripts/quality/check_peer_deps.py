@@ -26,7 +26,7 @@ the twin's says only that it found nothing, which is the anti-vacuity rule appli
 DRIVEN RED AS WELL, which for this pair is the load-bearing half because the clean stdout is empty and an empty comparison proves only that neither side crashed. An `npm` shim ahead of the real one on PATH printed one `npm error invalid: ...` line to STDERR and exited 1, reproducing both halves of the twin's contract at once (the `2>&1` merge and the `|| true`). Both sides exit 1
 and print the same three-line stdout block, sha256 10eaeecd8b8bcaa38d75ae1ced463b52b5beade1d5a3e312efdc1784da70131a on both, and their stderr is identical too.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-peer-deps.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-peer-deps.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-peerdeps.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 ---- gate ----
 step: Verify no peer dependency conflicts

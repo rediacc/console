@@ -163,7 +163,7 @@ export function planExtract(
   // THE WRITE MODE NOW RUNS THE VERIFIER'S OWN CHECK. Everything above proves the header re-derives the right id, step and run; NONE of it proved the lane can provide what the file needs, which is precisely what the verifier asserts a moment later. So --extract happily wrote headers that gate-bind then rejected, and on 2026-09-06 two of them reddened check:ci-gate-bind mid-wave
   // and had to be stripped by hand. A tool whose write mode does not run its own verify is how a green plan produces a red tree.
   //
-  // Refusing HERE turns that into a named refusal the caller can act on, which is the difference between "this gate cannot be declared, and here is why" and a broken tree someone else has to diagnose. The two known causes are a genuine lane mismatch (check-editorconfig.sh needs submodules its lane does not check out) and a false positive in inferredNeeds (its npx probe has no
+  // Refusing HERE turns that into a named refusal the caller can act on, which is the difference between "this gate cannot be declared, and here is why" and a broken tree someone else has to diagnose. The two known causes are a genuine lane mismatch (the editorconfig gate needs submodules its lane does not check out) and a false positive in inferredNeeds (its npx probe has no
   // command position check, so it matches a parameter expansion). Both deserve a refusal rather than a write.
   const extractLane = caps.get(reg.job);
   if (extractLane === undefined) {
@@ -2400,7 +2400,7 @@ function main(argv: string[]): void {
 
   const problems: string[] = [];
   for (const b of declared) {
-    // A GATE-TEST IS REGISTERED DIFFERENTLY, AND ITS ABSENCE FROM package.json IS THE RULE RATHER THAN THE DEFECT. check-gate-id-convention.sh requires a gate-test to be registered as `gate-test:<name>` whose `run` points at the script directly, with no
+    // A GATE-TEST IS REGISTERED DIFFERENTLY, AND ITS ABSENCE FROM package.json IS THE RULE RATHER THAN THE DEFECT. The gate-id-convention gate requires a gate-test to be registered as `gate-test:<name>` whose `run` points at the script directly, with no
     // package.json entry at all: 148 keys that only ever restate a path would be 148 keys
     // against the package key budget for nothing. Checking these against package.json would therefore red all 148 the moment they became subjects, for a reason that has nothing to do with their headers. The lock's `run` is what they must agree with. THE PREDICATE IS "DOES THE LOCK RUN THIS SCRIPT DIRECTLY", not "is it flagged a gate-test". Those are the same set for the 148 under
     // .ci/scripts/test/gates, and they diverge for `test:install-script` and `test:write-once-guard`, which are registered exactly the same way (run: the .sh path, no package.json key) and carry no `qualityGateTest`. Keying on the flag refused both the moment they declared a header on 2026-09-06, for a convention they follow correctly.

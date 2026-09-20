@@ -1,6 +1,6 @@
-"""`rediacc_ci.quality.renet_types` against the shell it replaces.
+"""`rediacc_ci.quality.renet_types` against the shell it replaced.
 
-WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The whole verdict of this gate rests on one four-token shell function:
+WHY A SHELL ORACLE AND NOT A TABLE OF EXPECTED STRINGS. The whole verdict of this gate rests on one four-token shell function:
 
     diff -q <(grep -v '_VERSION = ' "$1") <(grep -v '_VERSION = ' "$2") >/dev/null 2>&1
 
@@ -10,7 +10,8 @@ The marker `_VERSION = ` is a SUBSTRING with a mandatory space on each side of
 the equals sign, not an anchor, so `A_VERSION=1` is compared and
 `  const X_VERSION = 1` is not. None of that is inferable; it is measured below.
 
-They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-renet-types.observations.jsonl` compares over five distinct trees, against a minimal Go stand-in for `renet functions generate-types`. This file covers the seams that ledger cannot isolate.
+They are NOT the whole gate: the whole gate was compared over five distinct trees by the committed shadow ledger `.ci/shadow/w7p2-renet-types.observations.jsonl`, against a minimal Go stand-in for `renet functions generate-types`. That ledger licensed the port at K=5 and the bash twin `.ci/scripts/quality/check-renet-types.sh` was retired in W7 P5; the cases here cover the
+seams the ledger could not isolate and still run against the real shell.
 """
 
 import pathlib
@@ -18,11 +19,10 @@ import tempfile
 
 import pytest
 
-from rediacc_ci import paths
 from rediacc_ci.quality import renet_types as rt
 from rediacc_ci.tests import differential as diff
 
-# The twin's helper, verbatim, with its two arguments substituted.
+# The shell helper the port replaced, carried verbatim with its two arguments substituted. The bash twin was retired in W7 P5; this snippet is the oracle now, and it is run for real below rather than reasoned about.
 _COMPARE = (
     """compare() { diff -q <(grep -v '_VERSION = ' "$1") <(grep -v '_VERSION = ' "$2") """
     """>/dev/null 2>&1; }; compare "$1" "$2" && echo same || echo differ"""
@@ -148,18 +148,6 @@ def test_the_compared_file_list_is_the_gate() -> None:
     assert len(rt.FILES) == 6
     assert "license-tiers.generated.ts" in rt.FILES
     assert len(set(rt.FILES)) == 6, "a duplicated entry would be compared twice"
-
-
-def test_the_list_still_matches_the_bash_twins_array() -> None:
-    """Drift between the two copies is invisible until a file goes stale.
-
-    Read out of the twin rather than transcribed, so the assertion cannot be satisfied by editing this file.
-    """
-    twin = paths.repo_root() / ".ci/scripts/quality/check-renet-types.sh"
-    text = twin.read_text(encoding="utf-8")
-    body = text.split("FILES=(", 1)[1].split(")", 1)[0]
-    names = [line.strip().strip('"') for line in body.split("\n") if line.strip().startswith('"')]
-    assert names == list(rt.FILES)
 
 
 def test_selftest_passes() -> None:

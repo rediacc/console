@@ -1,7 +1,6 @@
 """The exported command tree must still match the live CLI.
 
-Ported from `.ci/scripts/quality/check-command-tree.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "Command tree", needs node, selftest true.
+Ported from `.ci/scripts/quality/check-command-tree.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-cmdtree.observations.jsonl` asserted equivalence over five distinct trees. Its gate header registers it as step "Command tree", needs node, selftest true.
 
 WHY THIS EXISTS, carried whole from the twin because the list of dependants IS the argument:
 

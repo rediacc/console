@@ -21,9 +21,7 @@ THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files.
 THIS ENTRY POINT IS A SUBJECT OF THE GATE IT REGISTERS, which is the one thing worth checking twice here: this gate reads the registry and asserts every gate id follows the convention. Adding a ninth `.py` entry point in this batch does not change the id set at all, because the id is derived from the basename and this basename derives the id the manifest already carries. Verified
 behaviourally: the shape line the gate prints is identical on both sides of the cutover with all nine of this batch's entry points on disk.
 
-PINNED BY PATH IN ONE HARNESS, and it is a DIFFERENTIAL. `.ci/rediacc_ci/tests/test_quality_gate_id_convention.py:29` sets
-`TWIN = paths.from_root(".ci", "scripts", "quality", "check-gate-id-convention.sh")`
-and MUST KEEP NAMING THE TWIN. `.ci/scripts/test/gates/test-shrink-only-composition.sh:66` mentions the twin in a prose comment only and pins nothing.
+PINNED BY PATH IN ONE HARNESS WHILE THE TWIN LIVED. `.ci/rediacc_ci/tests/test_quality_gate_id_convention.py` set a `TWIN` constant, lifted the twin's heredoc out of it and ran the two side by side; W7 P5 batch A2 retired the twin and those cases with it, leaving the two that drive this port against the REAL lock and the REAL package.json.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -64,7 +62,7 @@ That red run also re-proves the colour fix on the FAILURE path, where the cross 
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate: `scripts/ci-runner/gates.lock.json` is untouched by this change and the planted copy lives only under the fixture.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-gate-id-convention.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-gate-id-convention.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-gate-id-convention.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 ---- gate ----
 step: Gate registration follows the gates/ convention

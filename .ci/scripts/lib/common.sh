@@ -174,7 +174,8 @@ require_dir() {
 # quality gates each hand-rolled that sentence with its own loop, existence test, two
 # log_error lines and an exit, and check:ci-shape-duplication found the tail of it on
 # 2026-09-06 as fingerprint 978cee6053c0 across check-ci-job-aggregation.sh,
-# check-no-app-admin-perm.sh and check-probe-parity.sh.
+# check-no-app-admin-perm.sh and the retired check-probe-parity.sh, now
+# rediacc_ci/quality/probe_parity.py.
 #
 # The lead line stays the caller's because it is CONTRACT, not decoration:
 # test-ci-job-aggregation.sh:333 asserts the literal "input not found" against

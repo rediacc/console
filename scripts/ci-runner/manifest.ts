@@ -3400,7 +3400,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check renet types freshness',
     },
   },
-  // No `renet-bin` mutex, deliberately: that group guards the shared WRITE of private/renet/bin/renet (check-renet-types.sh:26, and the renet quality battery that rebuilds it). This gate only runs `go test`, which writes nothing into bin/ and whose build cache is concurrency-safe, so serialising it behind the two binary writers would buy nothing.
+  // No `renet-bin` mutex, deliberately: that group guards the shared WRITE of private/renet/bin/renet (the renet-types gate, and the renet quality battery that rebuilds it). This gate only runs `go test`, which writes nothing into bin/ and whose build cache is concurrency-safe, so serialising it behind the two binary writers would buy nothing.
   //
   // `local-only` is measured, not assumed. The tier-map tests DO run in CI, but through ct-tests.yml job test-renet step "Run renet tests", which resolves to the leaf .ci/rediacc_ci/private/run_renet.py (renet's whole `go test ./...` suite) and never to this script. Declaring that as a `step` pointer fails R3 with "the pointer names a step that runs something else", which is the
   // oracle working correctly: a manifest pointer asserts CI runs THIS leaf.
@@ -4640,11 +4640,11 @@ export const GATES: readonly GateSpec[] = [
   //     wrote scripts/.gate-paths-exist{,-noise}-fixture.ts and broke check:lint
   //     with `ENOENT ... open '.../scripts/.gate-paths-exist-fixture.ts'`, exit 2
   //     (eslint enumerated the file, then the control deleted it). Its fixtures
-  // now go to .ci/scripts, which that gate's own scan_targets() walks and no linter does. Re-run green with both controls firing and zero dotfiles observed in scripts/ for the whole 142s run. OPEN .ci/scripts/quality/check-config-migrations.sh:68 -> packages/cli/.config-migrations-check.tmp.ts, which broke check:format. Cannot use the same fix: biome covers packages/**/*.ts, and
-  // the script must stay under packages/cli for node to resolve @rediacc/shared. OPEN .ci/scripts/test/gates/test-gate-anti-vacuity.sh:255 -> scripts/.gate-anti-vacuity-fixture.ts, same shape, no victim observed. Cannot use the same fix either: run_against_empty_tree() builds its fixture tree with `cp -r "$REPO_ROOT/scripts"`, so the file has to exist under the real scripts/ at
-  // copy time to reach the harness at all. The hazard PREDATES the runner: `npm run check:lint` in one terminal while `npm run check:ci-quality-gates` runs in another hits the same ENOENT, and that is how it was first seen here, not through the pool.
+  // now go to .ci/scripts, which that gate's own scan_targets() walks and no linter does. Re-run green with both controls firing and zero dotfiles observed in scripts/ for the whole 142s run. OPEN the config-migrations gate (its bash twin's line 68, now `rediacc_ci.quality.config_migrations`) -> packages/cli/.config-migrations-check.tmp.ts, which broke check:format. Cannot use the
+  // same fix: biome covers packages/**/*.ts, and the script must stay under packages/cli for node to resolve @rediacc/shared. OPEN .ci/scripts/test/gates/test-gate-anti-vacuity.sh:255 -> scripts/.gate-anti-vacuity-fixture.ts, same shape, no victim observed. Cannot use the same fix either: run_against_empty_tree() builds its fixture tree with `cp -r "$REPO_ROOT/scripts"`, so the
+  // file has to exist under the real scripts/ at copy time to reach the harness at all. The hazard PREDATES the runner: `npm run check:lint` in one terminal while `npm run check:ci-quality-gates` runs in another hits the same ENOENT, and that is how it was first seen here, not through the pool.
   //
-  // `mktemp` is NOT the fix, which is the trap: test-gate-paths-exist.sh's scan_targets() (:62-64) hardcodes `cd $REPO_ROOT` and `find scripts`, so a fixture outside the real tree stops being scanned and its control at :178-192 silently stops firing; and check-config-migrations.sh's generated script must sit under packages/cli for node to resolve @rediacc/shared and its relative
+  // `mktemp` is NOT the fix, which is the trap: test-gate-paths-exist.sh's scan_targets() (:62-64) hardcodes `cd $REPO_ROOT` and `find scripts`, so a fixture outside the real tree stops being scanned and its control at :178-192 silently stops firing; and the config-migrations gate's generated script must sit under packages/cli for node to resolve @rediacc/shared and its relative
   // fixtures dir. Both files have to stay in the tree.
   //
   // PREFER AN IGNORE RULE OVER A MUTEX, on measured cost. The insertion points
@@ -4666,7 +4666,7 @@ export const GATES: readonly GateSpec[] = [
   // A mutex group binding the three writers against check:lint / check:format / lint:unused is the fallback, and it is expensive. It would serialise 511.7s of work against an observed 264.2s wall, a 1.94x regression that drops the run from about 9x to about 4.7x. It also binds the two LONGEST gates in the set to each other, because one of the writers is the critical path:
   // test-gate-paths-exist.sh measured 142.6s standalone on an idle tree and 264.1s under parallel load, against check:lint at 194.8s under the same load. (The plan's 116.7s for check:lint is stale; do not cost this from it.) No mutex is declared here, deliberately, because that trade wants an explicit decision rather than a silent default.
   {
-    // The composition guard shared by every shrink-only baseline here. Registered as a gate-test rather than a `check:ci-*` npm alias because it RUNS a gates/ script directly, which is the convention check-gate-id-convention.sh enforces.
+    // The composition guard shared by every shrink-only baseline here. Registered as a gate-test rather than a `check:ci-*` npm alias because it RUNS a gates/ script directly, which is the convention the gate-id-convention gate enforces.
     id: 'gate-test:shrink-only-composition',
     run: '.ci/scripts/test/gates/test-shrink-only-composition.sh',
     gate: true,

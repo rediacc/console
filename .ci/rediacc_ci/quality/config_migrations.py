@@ -1,6 +1,6 @@
 r"""The config-migration runner, its file coverage, and its committed fixtures.
 
-Ported from `.ci/scripts/quality/check-config-migrations.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live and for the phase-5 decision that retires the twin.
+Ported from `.ci/scripts/quality/check-config-migrations.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-config-migrations.observations.jsonl` asserted equivalence over five distinct trees.
 
 THE TWIN'S OWN HEADER, carried over because the list of catches IS the gate:
 

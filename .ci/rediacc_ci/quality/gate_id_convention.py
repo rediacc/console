@@ -1,6 +1,6 @@
 """A manifest entry that RUNS a gates/ script must be `gate-test:<name>`.
 
-Ported from `.ci/scripts/quality/check-gate-id-convention.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-gate-id-convention.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-gate-id-convention.observations.jsonl` asserted equivalence over five distinct trees.
 
 The twin's header, carried whole because the review quote, the narrowness argument, the accepted limitation and the subject change are each load-bearing:
 

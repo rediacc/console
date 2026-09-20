@@ -1,7 +1,6 @@
 """`devbox_docker` CAN ANSWER TWO WORDS, and every consumer must treat it that way.
 
-Ported from `.ci/scripts/quality/check-devbox-exec.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-devbox-exec.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-devbox-exec.observations.jsonl` asserted equivalence over five distinct trees.
 
 The twin's header, carried whole because the incident, the "why static" argument and the scope limit are each load-bearing:
 

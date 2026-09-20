@@ -1,22 +1,19 @@
-"""Differential: `rediacc_ci.quality.page_density` against its twin `.ci/scripts/quality/page-density.sh`.
+"""`rediacc_ci.quality.page_density`, driven directly.
 
-THE SUBJECT IS A LAUNCHER, so what is under test is the LAUNCH: which binary,
-with exactly which argv, from which working directory, after which stdout
-line. The real `scripts/gates/check-page-density.ts` is never run here -- it drives three routes across four viewports in a Playwright container and takes minutes -- and it does not need to be, because it is TypeScript and is identical on both sides of this comparison by construction.
+THE SUBJECT IS A LAUNCHER, so what is under test is the LAUNCH: which binary, with exactly which argv, from which working directory, after which stdout line. The real `scripts/gates/check-page-density.ts` is never run here -- it drives three routes across four viewports in a Playwright container and takes minutes -- and it does not need to be, because it is TypeScript and was
+identical on both sides of the comparison this file used to carry.
 
-THE SEAM IS PATH, populated with recording stubs for `npx`, `node` and `docker` (ruling 7's shape, as in `test_pr_sync_epic_block.py`). Each stub prints its own name, its argv and its cwd, so a divergence in ANY of the three things the launcher decides shows up as a text difference rather than as a silent pass. The cwd line is not decoration: the twin `cd`s to `SCRIPT_DIR/../../..`
-and the port to `paths.repo_root()`, and those are two independent derivations of the same directory that could drift apart without any other assertion here noticing.
+THE SEAM IS PATH, populated with recording stubs for `npx`, `node` and `docker` (ruling 7's shape, as in `test_pr_sync_epic_block.py`). Each stub prints its own name, its argv and its cwd, so a divergence in ANY of the three things the launcher decides shows up as a text difference rather than as a silent pass.
 
-DOCKER ABSENCE IS SIMULATED BY OMITTING THE STUB, never by an environment flag, because `command -v docker` / `shutil.which("docker")` is the branch under test. The real docker on this machine is out of PATH for every case.
+K=5 LEDGER: `.ci/shadow/w7p6-page-density.observations.jsonl` -- five distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty tree; `--record` refuses one) with the same recording stubs on PATH, varying the branch across trees: REDIACC_SMOKE_NO_DOCKER=1, docker absent, two different
+playwright versions, and a failing node.
 
-TWO CASES ASSERT AGREEMENT ON EXIT CODE AND SUBSTANCE RATHER THAN BYTES, and they are the two the port's docstring names as divergences: a missing `node` and a missing `npx` both produce bash's own `<script>: line NN: ...` text, which carries a line number no port should reproduce. Everything else in this file is byte-for-byte.
+ON THE STRENGTH OF IT THE TWIN `.ci/scripts/quality/page-density.sh` was retired in W7 P5, and the cases that ran it went with it: the escape hatch, the docker-absent note, the derived image tag, `--ipc=host`, exit-code propagation from node, npx and the container, node's stderr reaching the caller, and the two 127 paths where bash's own `line NN:` prefix made agreement a
+matter of exit code and substance rather than bytes.
 
-K=5 LEDGER: `.ci/shadow/w7p6-page-density.observations.jsonl` -- five
-distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty tree; `--record` refuses one) with the same recording stubs on PATH, varying
-the branch across trees: REDIACC_SMOKE_NO_DOCKER=1, docker absent, two
-different playwright versions, and a failing node.
+BEYOND THE STUBS, THE REAL THING WAS DRIVEN ONCE, 2026-09-10: `npm run check:ci-page-density` (then the bash twin) and `python3 -m rediacc_ci.quality.page_density` both pulled the real `mcr.microsoft.com/playwright:v1.61.1-noble` container, ran the real gate and exited 0 with BYTE-IDENTICAL stdout and stderr.
 
-BEYOND THE STUBS, THE REAL THING WAS DRIVEN ONCE, 2026-09-10: `npm run check:ci-page-density` (the registered gate, the bash twin) and `python3 -m rediacc_ci.quality.page_density` both pulled the real `mcr.microsoft.com/playwright:v1.61.1-noble` container, ran the real gate and exited 0 with BYTE-IDENTICAL stdout and stderr.
+THE PLANT BELOW IS WHAT KEEPS THIS FILE HONEST WITHOUT A TWIN. It mutates a COPY of the port, proves the mutant's argv differs from the real port's, and proves the port source is byte-identical afterwards.
 """
 
 from __future__ import annotations
@@ -31,7 +28,6 @@ from rediacc_ci import paths
 from rediacc_ci.quality import page_density
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "quality" / "page-density.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "quality" / "page_density.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -44,7 +40,7 @@ name = os.path.basename(sys.argv[0])
 record = "%s argv=[%s] cwd=[%s]" % (name, " ".join(sys.argv[1:]), os.getcwd())
 with open(os.environ["STUB_LOG"], "a") as fh:
     fh.write(record + "\\n")
-# QUIET exists for `node` alone: the twin captures node's STDOUT into
+# QUIET exists for `node` alone: the gate captures node's STDOUT into
 # PW_VERSION, so a stub that chattered there would be feeding its own
 # recording into the image tag. Every other stub echoes, because for those the
 # recording IS the observable behaviour under test.
@@ -60,8 +56,7 @@ if err:
 sys.exit(rc)
 """
 
-# The twin needs `dirname` to compute its own REPO_ROOT (line 24). Nothing
-# else external is reached before the branch under test on either side.
+# `dirname` is on the stub PATH because the retired twin needed it to compute its own REPO_ROOT. Nothing else external is reached before the branch under test.
 PATH_MINIMUM = ("dirname",)
 
 
@@ -88,7 +83,7 @@ def _stub_path(tmp_path: pathlib.Path, *names: str) -> str:
 def _run(
     subject: pathlib.Path, env: dict[str, str], cwd: pathlib.Path
 ) -> tuple[subprocess.CompletedProcess[str], list[str]]:
-    """Run one side. Returns its streams AND the stub call log.
+    """Run one subject. Returns its streams AND the stub call log.
 
     The log is a separate artifact from stdout on purpose: `node`'s recording never reaches stdout (see STUB's QUIET note), so without it the image-derivation cases would assert nothing about how node was invoked.
     """
@@ -122,156 +117,6 @@ def _env(path: str, log: pathlib.Path, **overrides: str) -> dict[str, str]:
     return env
 
 
-def run_both(tmp_path: pathlib.Path, stubs: tuple[str, ...], **overrides: str):
-    """Both sides, each with its OWN stub log so the two can be compared."""
-    path = _stub_path(tmp_path, *stubs)
-    old_env = _env(path, tmp_path / "old-calls.log", **overrides)
-    new_env = _env(path, tmp_path / "new-calls.log", **overrides)
-    # cwd is deliberately NOT the repo: both subjects must cd to the root themselves, and starting them there would hide a port that did not.
-    old, old_calls = _run(TWIN, old_env, tmp_path)
-    new, new_calls = _run(PORT, new_env, tmp_path)
-    return old, new, old_calls, new_calls
-
-
-def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
-    assert new.returncode == old.returncode, (
-        f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
-    )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
-    )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
-    )
-    if old_calls is not None:
-        assert new_calls == old_calls, (
-            f"{label}: stub call log diverged:\nold: {old_calls}\nnew: {new_calls}"
-        )
-
-
-def test_no_docker_env_execs_npx_with_no_note(tmp_path: pathlib.Path) -> None:
-    """`REDIACC_SMOKE_NO_DOCKER=1` is the escape hatch, and it must NOT print
-    the "docker not found" note -- the operator asked for this path."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ("npx", "docker", "node"), REDIACC_SMOKE_NO_DOCKER="1"
-    )
-    assert old.returncode == 0
-    assert old.stdout == (
-        f"STUB npx argv=[tsx scripts/gates/check-page-density.ts --selftest] cwd=[{ROOT}]\n"
-    )
-    assert "note:" not in old.stdout
-    assert old_calls == [
-        f"npx argv=[tsx scripts/gates/check-page-density.ts --selftest] cwd=[{ROOT}]"
-    ]
-    _assert_agree(old, new, "no-docker-env", old_calls, new_calls)
-
-
-def test_docker_absent_prints_the_note_then_execs_npx(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls = run_both(tmp_path, ("npx", "node"))
-    assert old.returncode == 0
-    assert old.stdout.splitlines()[0] == (
-        "note: docker not found, running the gate directly (needs a local Chromium)"
-    )
-    assert old_calls == [
-        f"npx argv=[tsx scripts/gates/check-page-density.ts --selftest] cwd=[{ROOT}]"
-    ]
-    _assert_agree(old, new, "docker-absent", old_calls, new_calls)
-
-
-def test_docker_present_derives_the_image_and_execs_docker(tmp_path: pathlib.Path) -> None:
-    """The whole point of the script: the tag comes from the installed playwright package, never from a hand-typed pin."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ("npx", "node", "docker"), STUB_NODE_STDOUT="1.55.0"
-    )
-    assert old.returncode == 0
-    lines = old.stdout.splitlines()
-    assert lines[0] == (
-        "page density: mcr.microsoft.com/playwright:v1.55.0-noble "
-        "(tag derived from the installed playwright package)"
-    )
-    assert old_calls == [
-        f"node argv=[-p require('playwright/package.json').version] cwd=[{ROOT}]",
-        (
-            f"docker argv=[run --rm --ipc=host -v {ROOT}:{ROOT} -w {ROOT} -e CI=true "
-            "mcr.microsoft.com/playwright:v1.55.0-noble npx tsx "
-            f"scripts/gates/check-page-density.ts --selftest] cwd=[{ROOT}]"
-        ),
-    ]
-    _assert_agree(old, new, "docker-present", old_calls, new_calls)
-
-
-def test_ipc_host_is_present_in_the_docker_argv(tmp_path: pathlib.Path) -> None:
-    """Named separately because it is the one flag whose absence produces a Chromium crash rather than a clean failure (the twin's own comment: the default 64MB /dev/shm)."""
-    old, _new, old_calls, _new_calls = run_both(
-        tmp_path, ("npx", "node", "docker"), STUB_NODE_STDOUT="1.55.0"
-    )
-    assert "--ipc=host" in old.stdout
-    assert any("--ipc=host" in call for call in old_calls)
-
-
-def test_node_failure_propagates_its_exit_code(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls = run_both(
-        tmp_path,
-        ("npx", "node", "docker"),
-        STUB_NODE_RC="3",
-        STUB_NODE_STDERR="Cannot find module 'playwright/package.json'\n",
-    )
-    assert old.returncode == 3
-    assert not any(call.startswith("docker ") for call in old_calls), (
-        "docker was reached after node failed; set -e did not stop the twin"
-    )
-    _assert_agree(old, new, "node-fails", old_calls, new_calls)
-
-
-def test_node_stderr_is_not_swallowed(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY for the inherited-stderr requirement. `$(...)` captures stdout only, so node's diagnostic must reach the caller. A port that used
-    `capture_output=True` would exit with the same code and print the same
-    (empty) stdout, so every other assertion in this file would still pass."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path,
-        ("npx", "node", "docker"),
-        STUB_NODE_RC="1",
-        STUB_NODE_STDERR="playwright is not installed\n",
-    )
-    assert "playwright is not installed" in old.stderr, "the TWIN swallowed it; case is untested"
-    assert "playwright is not installed" in new.stderr, "the PORT swallowed node's stderr"
-    _assert_agree(old, new, "node-stderr", old_calls, new_calls)
-
-
-def test_missing_node_exits_127_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """DOCUMENTED DIVERGENCE: bash's own `line NN: node: command not found` carries a line number, so agreement is on the exit code, the stream and the named binary rather than on the bytes."""
-    old, new, _old_calls, _new_calls = run_both(tmp_path, ("npx", "docker"))
-    assert old.returncode == 127
-    assert new.returncode == 127
-    assert old.stdout == new.stdout == ""
-    assert "node" in old.stderr
-    assert "not found" in old.stderr
-    assert "node" in new.stderr
-    assert "not found" in new.stderr
-
-
-def test_missing_npx_exits_127_on_both_sides(tmp_path: pathlib.Path) -> None:
-    """The other documented divergence, on the `exec` rather than the substitution."""
-    old, new, _old_calls, _new_calls = run_both(tmp_path, ("node",), REDIACC_SMOKE_NO_DOCKER="1")
-    assert old.returncode == 127
-    assert new.returncode == 127
-    assert "npx" in old.stderr
-    assert "not found" in old.stderr
-    assert "npx" in new.stderr
-    assert "not found" in new.stderr
-
-
-def test_exec_replaces_the_process_so_the_child_exit_code_is_the_gate_s(
-    tmp_path: pathlib.Path,
-) -> None:
-    """`exec` on both sides: a non-zero gate must not be softened into 0 by a wrapper that forgot to propagate."""
-    old, new, old_calls, new_calls = run_both(
-        tmp_path, ("npx", "docker", "node"), REDIACC_SMOKE_NO_DOCKER="1", STUB_NPX_RC="7"
-    )
-    assert old.returncode == 7
-    _assert_agree(old, new, "exec-exit-code", old_calls, new_calls)
-
-
 def test_pure_helpers() -> None:
     """The two derivations, exercised directly rather than through a process."""
     assert page_density.image_for("1.55.0") == "mcr.microsoft.com/playwright:v1.55.0-noble"
@@ -283,8 +128,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY. Drop `--ipc=host` from the docker argv -- the exact edit a
-    reader who did not know why it was there would make, and one that turns a passing gate into a Chromium crash inside the container. Driven red, then the source is restored byte-identical and re-verified green."""
+    """ANTI-VACUITY. Drop `--ipc=host` from the docker argv -- the exact edit a reader who did not know why it was there would make, and one that turns a passing gate into a Chromium crash inside the container. Driven red against a mutated COPY, then the on-disk source is re-verified byte-identical."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('        "--ipc=host",\n', "")
     assert mutated != original, "the line this plant targets is no longer present verbatim"
@@ -292,23 +136,19 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     mutant = tmp_path / "mutant.py"
     mutant.write_text(mutated, encoding="utf-8")
     path = _stub_path(tmp_path, "npx", "node", "docker")
-    old_env = _env(path, tmp_path / "plant-old.log", STUB_NODE_STDOUT="1.55.0")
-    bad_env = _env(path, tmp_path / "plant-bad.log", STUB_NODE_STDOUT="1.55.0")
     good_env = _env(path, tmp_path / "plant-good.log", STUB_NODE_STDOUT="1.55.0")
+    bad_env = _env(path, tmp_path / "plant-bad.log", STUB_NODE_STDOUT="1.55.0")
 
-    old, old_calls = _run(TWIN, old_env, tmp_path)
+    _good, good_calls = _run(PORT, good_env, tmp_path)
     _bad, bad_calls = _run(mutant, bad_env, tmp_path)
-    assert any("--ipc=host" in c for c in old_calls), (
-        "the TWIN did not pass --ipc=host; the plant is untested"
+    assert any("--ipc=host" in c for c in good_calls), (
+        "the PORT did not pass --ipc=host; the plant is untested"
     )
     assert not any("--ipc=host" in c for c in bad_calls), (
         "the mutant still passed it; the plant did not fire"
     )
-    assert bad_calls != old_calls
+    assert bad_calls != good_calls
 
-    good, good_calls = _run(PORT, good_env, tmp_path)
-    assert good_calls == old_calls, "restored port no longer agrees with the twin"
-    assert good.stdout == old.stdout
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )

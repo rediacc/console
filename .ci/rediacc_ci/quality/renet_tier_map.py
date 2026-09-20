@@ -1,7 +1,6 @@
 """The renet licence tier map still covers every registered function.
 
-Ported from `.ci/scripts/quality/check-renet-tier-map.sh`, which is not deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-renet-tier-map.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-renet-tiermap.observations.jsonl` asserted equivalence over five distinct trees.
 
 THE TWIN IS DECLARED `kind: local-only`, AND ITS BLOCKER IS ABOUT WIRING RATHER THAN ABOUT THE TIER MAP, so it stays with the bash file rather than moving here: "no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step 'Run renet tests'), which resolves to that leaf and not this
 one, so a step pointer would claim CI runs a script it never invokes". A port does not inherit a registration, so nothing here re-states it as a live suppression, and this module is deliberately NOT wired into anything either.

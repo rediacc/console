@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/quality/page-density.sh`.
 
-THE REGISTERED GATE IS `check:ci-page-density`, wired at `package.json:266` (`"check:ci-page-density": ".ci/scripts/quality/page-density.sh"`), declared in `scripts/ci-runner/manifest.ts:4082-4094` with `gate: true`, `slow: true` and `leaves: ['.ci/scripts/quality/page-density.sh']`, and run in CI as the step named "Page density" in job `quality-www-build` of
-`.github/workflows/ci-quality.yml`. The twin's own `# ---- gate ----` header agrees (`step: Page density`, `needs: node`, `selftest: true`, `lane: quality-www-build`, `slow: true`). THE BASH TWIN REMAINS THE CALL SITE: this port is an alternative proven equivalent, and moving the npm script onto it is a separate, later, explicitly tracked step. Nothing here edits package.json, the
-manifest or the workflow.
+THE REGISTERED GATE IS `check:ci-page-density`, wired in `package.json` onto `python3 -m rediacc_ci.quality.page_density`, declared in `scripts/ci-runner/manifest.ts` with `gate: true`, `slow: true` and `leaves: ['.ci/rediacc_ci/quality/page_density.py']`, and run in CI as the step named "Page density" in job `quality-www-build` of `.github/workflows/ci-quality.yml`. THIS
+PORT IS THE CALL SITE: the bash twin `.ci/scripts/quality/page-density.sh` carried its own `# ---- gate ----` header (`step: Page density`, `needs: node`, `selftest: true`, `lane: quality-www-build`, `slow: true`) and agreed with this wiring until W7 P5 batch A2 retired it, on the strength of `.ci/shadow/w7p6-page-density.observations.jsonl` asserting equivalence over five
+distinct trees. Every reference to that file below is archaeology, and the line numbers are the ones it carried.
 
 WHAT THE SCRIPT ACTUALLY IS: a launcher, not a gate. All the judging lives in `scripts/gates/check-page-density.ts`, which is TypeScript and is NOT being ported. What is ported is the decision of WHERE that gate runs -- inside the official Playwright container by default, directly against a local Chromium
 when `REDIACC_SMOKE_NO_DOCKER=1` or when docker is absent -- and the derivation

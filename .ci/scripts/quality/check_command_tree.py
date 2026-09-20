@@ -28,7 +28,7 @@ exporter shim writes the UNRENAMED tree, so the committed copy is genuinely the 
 ONE DELIBERATE STDOUT DIVERGENCE, ON THE FAILING PATH ONLY, and it is recorded here rather than left for a future reader to call a regression. The twin's stale message spells that clause with a U+2014 EM DASH between "fails OPEN" and "they keep passing while checking nothing"; this repository forbids em dashes in authored text, so the port writes "fails OPEN, they keep passing
 while checking nothing" with a comma. The character is named rather than reproduced here, for the same reason. Everything else on that path, the header, the fix recipe and the 40-line indented diff, is byte for byte the twin's, and the clean path's stdout is empty on both sides.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-command-tree.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-command-tree.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-cmdtree.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 ---- gate ----
 step: Command tree

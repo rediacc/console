@@ -84,7 +84,7 @@
       "breaksIfMoved": [
         ".ci/scripts/ci/scope-map.cjs:233 matchPrefix('scripts/drills/') with full: 'harness'. A missed prefix downgrades CI scope, so a drill edit would classify reduced and skip the whole VM matrix.",
         ".ci/scripts/ci/greenlight.cjs:421 lists 'scripts/drills' in the cache-key closure. A missed prefix reuses a stale green.",
-        ".ci/scripts/quality/check-probe-parity.sh:45 PROBE=\"scripts/drills/transfer.sh\", hard fail at :56.",
+        ".ci/rediacc_ci/quality/probe_parity.py:92 PROBE = \"scripts/drills/transfer.sh\", hard fail at :176.",
         ".ci/rediacc_ci/quality/drill_verdicts.py:70 DRILL_LIB=\"scripts/drills/lib.sh\", hard fail at :236.",
         ".ci/scripts/quality/check-scope-scripts-reachability.sh:196 uses scripts/drills/lib.sh as its positive control.",
         ".ci/scripts/test/gates/test-scope-engine.sh:699 golden expectation, and test-gate-anti-vacuity.sh:61 fixture subject."

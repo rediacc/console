@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/quality/browser-smoke.sh`.
 
-THE REGISTERED GATE IS `check:ci-browser-smoke`, wired at `package.json:265` (`"check:ci-browser-smoke": ".ci/scripts/quality/browser-smoke.sh"`), declared in `scripts/ci-runner/manifest.ts:4056-4060` with `gate: true` and `leaves: ['.ci/scripts/quality/browser-smoke.sh']`, and run in CI as the step named "Browser smoke" in job `quality-www-build` of
-`.github/workflows/ci-quality.yml`. The twin's own `# ---- gate ----` header agrees (`step: Browser smoke`, `needs: node`, `selftest: true`, `lane: quality-www-build`, `slow: true`). THE BASH TWIN REMAINS THE CALL SITE: this port is an alternative proven equivalent, and moving the npm script onto it is a separate, later, explicitly tracked step. Nothing here edits package.json, the
-manifest or the workflow.
+THE REGISTERED GATE IS `check:ci-browser-smoke`, wired in `package.json` onto `python3 -m rediacc_ci.quality.browser_smoke`, declared in `scripts/ci-runner/manifest.ts` with `gate: true` and `leaves: ['.ci/rediacc_ci/quality/browser_smoke.py']`, and run in CI as the step named "Browser smoke" in job `quality-www-build` of `.github/workflows/ci-quality.yml`. THIS PORT IS THE
+CALL SITE: the bash twin `.ci/scripts/quality/browser-smoke.sh` carried its own `# ---- gate ----` header (`step: Browser smoke`, `needs: node`, `selftest: true`, `lane: quality-www-build`, `slow: true`) and agreed with this wiring until W7 P5 batch A2 retired it, on the strength of `.ci/shadow/w7p6-browser-smoke.observations.jsonl` asserting equivalence over five distinct
+trees. Every reference to that file below is archaeology, and the line numbers are the ones it carried.
 
 WHAT THE SCRIPT ACTUALLY IS: a launcher, not a gate. All the judging lives in `scripts/gates/check-browser-smoke.ts`, which is TypeScript and is NOT being ported. What is ported is the decision of WHERE that gate runs -- inside the official Playwright container by default, directly against a local Chromium
 when `REDIACC_SMOKE_NO_DOCKER=1` or when docker is absent -- and the derivation
@@ -31,8 +31,8 @@ THE TWIN'S FOUR REASONS ARE ITS BODY, NOT DECORATION, so they are kept here rath
     container. The workspace is MOUNTED rather than copied so the gate sees the
     `packages/www/dist` that was just built.
 
-HOW THIS DIFFERS FROM ITS NEAR-TWIN `page_density.py`, because the two launchers look interchangeable and are not. `page-density.sh` mounts the repo at its own
-absolute path, runs as root, and passes `-e CI=true`. `browser-smoke.sh` mounts
+HOW THIS DIFFERS FROM ITS NEAR-TWIN `page_density.py`, because the two launchers look interchangeable and are not. `page_density` mounts the repo at its own
+absolute path, runs as root, and passes `-e CI=true`. This one mounts
 at `/work`, drops to the invoking user with `-u "$(id -u):$(id -g)"`, and
 compensates for that non-root user with `-e HOME=/tmp` and
 `-e npm_config_cache=/tmp/.npm` (a non-root user cannot write root's `$HOME` or
@@ -132,7 +132,7 @@ IMAGE_TEMPLATE = "mcr.microsoft.com/playwright:v%s-noble"
 
 PW_VERSION_EXPR = "require('playwright/package.json').version"
 
-# Where the workspace is bound inside the container. The twin hard-codes this rather than mirroring the host path (its sibling page-density.sh does the opposite); `check-browser-smoke.ts` only ever prints `path.relative(ROOT, ...)` so nothing host-meaningless escapes, but the two launchers do differ here.
+# Where the workspace is bound inside the container. The twin hard-coded this rather than mirroring the host path (its sibling `page_density` does the opposite); `check-browser-smoke.ts` only ever prints `path.relative(ROOT, ...)` so nothing host-meaningless escapes, but the two launchers do differ here.
 WORKDIR = "/work"
 
 

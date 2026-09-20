@@ -1,4 +1,4 @@
-"""`rediacc_ci.quality.devbox_exec` against the grep it replaces.
+"""`rediacc_ci.quality.devbox_exec` against the grep it replaced.
 
 WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-devbox-exec.observations.jsonl` drives the whole gate over five distinct trees, but this gate emits exactly ONE finding line -- its failure count -- because every per-assertion line is unmarked and reads as progress. So a ledger row proves the counts agree and says nothing about WHICH assertion fired.
 
@@ -12,7 +12,7 @@ The interesting content is therefore entirely in three greps, and all three are 
     the floor and over-widening it hides a collapsed enumeration.
   * `code_of` is the reason a scan does not fire on its own documentation.
 
-Each is run through the real `grep -E` on the same input and compared, and the line-numbering defect the twin carries is pinned rather than described.
+Each is run through the real `grep -E` on the same input and compared, and the line-numbering defect the twin carried is pinned rather than described. The twin `.ci/scripts/quality/check-devbox-exec.sh` was retired in W7 P5 once that ledger licensed the port at K=5, so `grep` itself is the oracle here rather than the shell file.
 """
 
 import subprocess
@@ -20,9 +20,7 @@ import subprocess
 from rediacc_ci import paths
 from rediacc_ci.quality import devbox_exec as dx
 
-TWIN = paths.from_root(".ci", "scripts", "quality", "check-devbox-exec.sh")
-
-# The three patterns exactly as the twin spells them, in ERE.
+# The three patterns exactly as the retired bash twin spelled them, in ERE.
 BUG_ERE = r'(^|[;&|(]|then |else |do )[[:space:]]*"\$\{?d\}?"[[:space:]]'
 SITE_ERE = r"\$\{?d\}?[[:space:]]"
 NUMERIC_ERE = r"\-u[[:space:]]+\"?\$\(id -u\)"
@@ -110,12 +108,6 @@ def test_the_line_number_defect_is_reproduced_not_repaired() -> None:
     assert got == want == ['2:"$d" exec x']
     real = [i for i, line in enumerate(text.split("\n"), start=1) if dx.BUG_RE.search(line)]
     assert real == [4]
-
-
-def test_the_floor_still_matches_the_twin() -> None:
-    """Ten sites. Read from the twin so a change there reds here."""
-    body = TWIN.read_text(encoding="utf-8")
-    assert '"$sites" -ge %d' % dx.MIN_SITES in body
 
 
 def test_the_real_devbox_file_is_scanned_and_clean() -> None:
