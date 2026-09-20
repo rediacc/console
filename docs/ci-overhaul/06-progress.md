@@ -3160,7 +3160,7 @@ Plus `check:ci-greenlight-closures` (every closure path exists AND is tracked) a
 
 ### The defect class this cost, and it is worth carrying
 
-`secrets.X` names a secret that lives on **GitHub**. `scripts/dev/secret-rename.py` rewrote BOTH sides of `NEW: ${{ secrets.OLD }}`, and the operator had ruled the GitHub-side rename skipped — so 267 expressions across 22 workflow files pointed at secrets that do not exist. **GitHub does not error on an unknown secret; it substitutes the empty string.** Every app-token mint, both
+`secrets.X` names a secret that lives on **GitHub**. `scripts/ops/secret-rename.py` rewrote BOTH sides of `NEW: ${{ secrets.OLD }}`, and the operator had ruled the GitHub-side rename skipped — so 267 expressions across 22 workflow files pointed at secrets that do not exist. **GitHub does not error on an unknown secret; it substitutes the empty string.** Every app-token mint, both
 GPG signing steps, every R2 upload and the whole account deploy would have run with blank credentials, and nothing would have said so.
 
 Two of the chosen names were impossible rather than merely wrong:
@@ -3271,7 +3271,7 @@ the org secret would have changed nothing observable.
 
 `STRIPE_SANDBOX_WEBHOOK_SECRET` cannot be resolved by picking a side at all. It is a `stripe listen` CLI secret that expires 24h after minting, so neither stored copy is authoritative; and it cannot simply be deleted, because `cd-deploy-worker.yml:277-279` makes it the edge www worker's `STRIPE_WEBHOOK_SECRET` and `set-www-worker-secrets.sh:89` requires it non-empty.
 
-**The deletion still has not happened, and the reason is the rule this overhaul exists to prove.** The "42 agree" figure everyone was working from came from a run that was **CANCELLED** and whose logs no longer return a single verdict line. Re-derived from the workflows: of 45 org secrets only **25** are read by any compare at all. `scripts/dev/derive-shadow-pass-list.sh` now
+**The deletion still has not happened, and the reason is the rule this overhaul exists to prove.** The "42 agree" figure everyone was working from came from a run that was **CANCELLED** and whose logs no longer return a single verdict line. Re-derived from the workflows: of 45 org secrets only **25** are read by any compare at all. `scripts/ops/derive-shadow-pass-list.sh` now
 derives the deletable set from real run logs and prints the exact `gh secret delete` lines — today exactly **four**. Building it corrected an error of mine: filtering on the RUN conclusion discarded six genuine `match` verdicts from a run whose *job* had succeeded and printed them.
 
 ### `check:format` was inspecting a fraction of its own configured scope

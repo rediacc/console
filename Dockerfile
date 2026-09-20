@@ -9,7 +9,7 @@
 # The build CONTEXT must contain these pre-staged directories (CI populates
 # them by downloading the matching artifacts from build-www, build-cli, and
 # build-renet jobs; the local-dev wrapper at
-# scripts/docker/build-server.sh stages them from local source builds):
+# scripts/ops/build-server.sh stages them from local source builds):
 #
 #   ./www-assets/         packages/www/dist           (marketing site)
 #   ./account-web-assets/ private/account/web/dist    (account portal SPA)
@@ -29,7 +29,7 @@
 #   docker buildx build --file Dockerfile --target onprem --tag ... .
 #
 # Build (local with the wrapper):
-#   scripts/docker/build-server.sh onprem
+#   scripts/ops/build-server.sh onprem
 
 ARG NODE_IMAGE=node:22-alpine
 ARG ACCOUNT_ENTRY=on-premise          # the self-hosted account server entry

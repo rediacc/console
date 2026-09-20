@@ -2466,7 +2466,7 @@ class Housekeeping:
                 )
                 log.error(
                     "  remediation: re-run CD to tag/release %s, or scrub via "
-                    "scripts/dev/scrub-sentinel.sh %s --execute" % (ver, ver)
+                    "scripts/ops/scrub-sentinel.sh %s --execute" % (ver, ver)
                 )
             else:
                 log.error(

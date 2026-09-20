@@ -43,7 +43,7 @@
     "gate reds the tree on a quiet day for a condition no commit caused. Re-examined",
     "2026-09-09 after the outage above and the settlement HELD -- a fingerprint gate would",
     "have been green throughout, since the fingerprint matched right up until the swap.",
-    "The one reader is scripts/dev/bws-map-refresh.py, which warns and continues."
+    "The one reader is scripts/ops/bws-map-refresh.py, which warns and continues."
   ],
   "warn_days": 5,
   "tokens": [

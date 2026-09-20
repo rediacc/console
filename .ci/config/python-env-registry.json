@@ -1815,10 +1815,10 @@
     "packages/json/templates/networking/cloud-switch/web/app.py": [
       "FLASK_DEBUG"
     ],
-    "scripts/dev/bws-map-refresh.py": [
+    "scripts/ops/bws-map-refresh.py": [
       "BWS_ACCESS_TOKEN"
     ],
-    "scripts/dev/secret-rename.py": [
+    "scripts/ops/secret-rename.py": [
       "SECRET_RENAME_MIN_FILES"
     ]
   }

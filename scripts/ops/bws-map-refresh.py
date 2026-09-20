@@ -26,7 +26,7 @@ REFUSALS (a map that is wrong is worse than a map that is missing)
   - duplicate names in the listing.
 
 USAGE
-  BWS_ACCESS_TOKEN=... scripts/dev/bws-map-refresh.py [--bws /path/to/bws]
+  BWS_ACCESS_TOKEN=... scripts/ops/bws-map-refresh.py [--bws /path/to/bws]
                                                       [--dry-run]
   `bws` is not installed on the host; the devcontainer has it at
   /usr/local/bin/bws (.devcontainer/Dockerfile, hash-pinned 2.1.0). Pass
@@ -105,7 +105,7 @@ def warn_if_token_expiring() -> None:
     where = EXPIRY.relative_to(ROOT)
     warn_days = int(doc.get("warn_days", 5))
 
-    # BIND THE CLAIM TO THE TOKEN IT DESCRIBES. Every other state-changing script in scripts/dev/ derives applied-vs-pending from the live system -- apply-cf-redirect-rules.sh reads the Cloudflare ruleset, the R2 scrubs read R2, this script's own map carries refreshed_at behind a staleness gate. A hand-written date is the one shape that cannot self-check, so it gets the nearest
+    # BIND THE CLAIM TO THE TOKEN IT DESCRIBES. Every other state-changing script in scripts/ops/ derives applied-vs-pending from the live system -- apply-cf-redirect-rules.sh reads the Cloudflare ruleset, the R2 scrubs read R2, this script's own map carries refreshed_at behind a staleness gate. A hand-written date is the one shape that cannot self-check, so it gets the nearest
     # thing: a fingerprint of the token's client id. Mint a new token without updating the file and this says so, instead of the date quietly describing a token that no longer exists.
     #
     # WITH AN ARRAY THE FINGERPRINT ALSO SELECTS. When the live token matches one declared entry, only that entry's date is the one in force; the others describe accounts this process is not using. When it matches NONE, the file describes something else entirely and every date below is about the wrong account -- that is louder than any expiry warning, so it returns.

@@ -284,7 +284,7 @@ write_once_guard() {
         log_error "  This is the 'sealed-but-empty' failure — a prior run's orphan-scrub deleted the bytes."
         log_error "  The version cannot be silently re-uploaded (that breaks the immutable-URL promise)."
         log_error "  Remediation: scrub the sentinel, then re-run CI to repopulate the prefix:"
-        log_error "    scripts/dev/scrub-sentinel.sh ${version} --execute"
+        log_error "    scripts/ops/scrub-sentinel.sh ${version} --execute"
         exit 1
     fi
 

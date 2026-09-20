@@ -7,7 +7,7 @@ W7P6 wave 28. The bash twin stays the LIVE registered gate (`check:ci-shell-form
 
 WHAT IT DOES. Acquires shfmt AT THE PIN through `rediacc_ci.core.toolchain` (the already-landed port of `.ci/scripts/lib/toolchain.sh`), refuses to report a
 verdict if fewer than `${SHFMT_MIN_FILES:-200}` shell scripts are visible, then
-runs `shfmt -i 4 -ci -d` over four deliberately-asymmetric scopes: all of `.ci`, all of `.claude`, `./run.sh` alone, and `scripts/dev` plus `scripts/docker`.
+runs `shfmt -i 4 -ci -d` over four deliberately-asymmetric scopes: all of `.ci`, all of `.claude`, `./run.sh` alone, and `scripts/dev` plus `scripts/ops`.
 
 REAL RUNS OR STUBS: BOTH.
 
@@ -49,7 +49,7 @@ This port therefore enumerates in BYTE ORDER, which is deterministic everywhere,
 Nothing else is normalised.
 
 A DEFECT IN THE TWIN, REPRODUCED NOT REPAIRED. Under `set -e`, a scope whose `find ... -exec shfmt` reports differences ABORTS THE WHOLE SCRIPT, so the three scopes after the first failing one are NEVER CHECKED and the operator is never told. Measured on this tree 2026-09-14: `.ci` alone reports 36 diffs, the run exits 1 after `info: Checking .ci/**/*.sh`, and `.claude`,
-`./run.sh`, `scripts/dev` and `scripts/docker` produce no output at all. A reader who fixes the 36 `.ci` findings discovers the next scope's findings only on the next run.
+`./run.sh`, `scripts/dev` and `scripts/ops` produce no output at all. A reader who fixes the 36 `.ci` findings discovers the next scope's findings only on the next run.
 Reproduced exactly (this port stops at the same place with the same bytes);
 fixing it is a cutover-box decision, not a port's.
 
@@ -85,8 +85,8 @@ DEFAULT_MIN_FILES = "200"
 # The three roots the floor counts, in the twin's argv order (order is irrelevant to a count and is kept so the two reads match on inspection).
 FLOOR_ROOTS = (".ci", ".claude", "scripts")
 
-# The two optional scopes at the end of main, in the twin's `for dir in` order.
-OPTIONAL_SCOPES = ("scripts/dev", "scripts/docker")
+# The two optional scopes at the end of main, in the twin's `for dir in` order. `scripts/docker` became `scripts/ops` on 2026-09-20 with W9 P2's move; the `is_dir()` guard below skips a scope that has stopped existing, so a stale name here would leave the whole scope unformatted and still report success.
+OPTIONAL_SCOPES = ("scripts/dev", "scripts/ops")
 
 # ANSI, matching the twin's own literals. Not `rediacc_ci.log`'s; see the module docstring.
 RED = "\033[0;31m"
@@ -242,7 +242,7 @@ def main(argv: list[str]) -> int:
     if rc != 0:
         return rc
 
-    # The top-level scripts/*.sh files are intentionally excluded: they predate the formatter. New helper scripts go in scripts/dev/ or scripts/docker/.
+    # The top-level scripts/*.sh files are intentionally excluded: they predate the formatter. New helper scripts go in scripts/dev/ or scripts/ops/.
     for relative in OPTIONAL_SCOPES:
         if not pathlib.Path(relative).is_dir():
             continue

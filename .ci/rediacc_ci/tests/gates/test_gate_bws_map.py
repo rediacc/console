@@ -78,7 +78,7 @@ def fixture(gate, directory) -> None:
         ".ci/scripts/deploy",
         ".github/workflows",
         ".github/actions",
-        "scripts/dev",
+        "scripts/ops",
     ):
         (directory / sub).mkdir(parents=True, exist_ok=True)
     git = harness.require_tool(
@@ -100,7 +100,7 @@ def fixture(gate, directory) -> None:
         "# ORPHAN_TOKEN PREFIX_EU are named here so the corpus scan sees them\n",
     )
     write(
-        directory / "scripts/dev/secret-rename.py",
+        directory / "scripts/ops/secret-rename.py",
         'RENAMES: list[tuple[str, str]] = [\n    ("OLD_ALPHA", "ALPHA_TOKEN"),\n]\n',
     )
     write(directory / ".github/workflows/w.yml", WORKFLOW)

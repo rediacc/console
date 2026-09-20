@@ -19,18 +19,21 @@
 # you like against production.
 #
 # Usage:
-#   scripts/backup-cutover-preflight.sh                  # local/plan checks only
+#   scripts/ops/backup-cutover-preflight.sh                  # local/plan checks only
 #   ACCOUNT_BACKUP_S3_ENDPOINT=... ACCOUNT_BACKUP_S3_BUCKET=... \
 #   ACCOUNT_BACKUP_S3_ACCESS_KEY_ID=... ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY=... \
-#     scripts/backup-cutover-preflight.sh                # plus the live store leg
+#     scripts/ops/backup-cutover-preflight.sh                # plus the live store leg
 #
 # Exit 0 = every check that could run PASSED and none were skipped silently.
 # Exit 1 = at least one check failed, or a required input was absent.
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# shellcheck source=../.ci/scripts/lib/common.sh
+# Two levels up, not one: this script moved from scripts/ into scripts/ops/ with
+# W9 P2 on 2026-09-20, and a `..` that still named scripts/ would have resolved
+# every path below against the wrong root.
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck source=../../.ci/scripts/lib/common.sh
 source "$REPO_ROOT/.ci/scripts/lib/common.sh"
 
 FAILURES=0

@@ -16,7 +16,7 @@ with `set -eo pipefail`, that propagates through any pipe (`| wc -l`,
   - cleanup-versions.sh Phase 8 retention loop could die on a deleted-
     between-check-and-use race
 
-The lint scans every .sh under .ci/scripts/ and scripts/dev/ that has `set -eo pipefail` (or `set -e ... pipefail`) and flags occurrences of `aws s3 ls`, `find ...`, `grep ...` piped into `wc -l` / `head` / `tail` / `awk` without a `|| true` / `|| echo ...` guard on the same logical pipeline.
+The lint scans every .sh under .ci/scripts/, scripts/dev/ and scripts/ops/ that has `set -eo pipefail` (or `set -e ... pipefail`) and flags occurrences of `aws s3 ls`, `find ...`, `grep ...` piped into `wc -l` / `head` / `tail` / `awk` without a `|| true` / `|| echo ...` guard on the same logical pipeline.
 
 Exit 0 on no findings, 1 on any unguarded match. The shared helper r2_count_objects in .ci/scripts/lib/common.sh is the recommended fix.
 
@@ -76,8 +76,8 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The scopes: every shell script under these two root-relative directories.
-SCAN_DIRS = (".ci/scripts", "scripts/dev")
+# The scopes: every shell script under these three root-relative directories. scripts/ops joined on 2026-09-20, when W9 P2 moved the operator tools out of scripts/dev. A directory that stops existing contributes no files and the gate then reports success over the half of its corpus that moved, so the new home is named here in the same change as the move.
+SCAN_DIRS = (".ci/scripts", "scripts/dev", "scripts/ops")
 
 # The four matchers, transliterated from the twin's `-v` values. They are EREs there and are valid Python patterns unchanged, which is the whole reason they are quoted rather than rewritten: a "clearer" spelling is a different matcher.
 PIPE_HEADS_RE = re.compile(r"(aws s3 ls|aws s3api list-objects-v2 +--query|find [^|]|grep [^|]+)")
@@ -221,7 +221,9 @@ def main(argv: list[str] | None = None) -> int:
         if json_output:
             print('{"findings": [], "ok": true}')
         else:
-            log.info("No unguarded pipefail-risk pipelines found in .ci/scripts/ or scripts/dev/")
+            log.info(
+                "No unguarded pipefail-risk pipelines found in .ci/scripts/, scripts/dev/ or scripts/ops/"
+            )
         return 0
 
     if json_output:

@@ -38,7 +38,7 @@
  * never writing one.
  *
  * WHY NOTHING CAUGHT IT. There is exactly one rotation preflight in the repo:
- * the `rotation check --for=bench` call in scripts/dev/deploy-bench.sh, which covers
+ * the `rotation check --for=bench` call in scripts/ops/deploy-bench.sh, which covers
  * `.env.bench`. A stale BENCH key is blocked from shipping; a stale PRODUCTION
  * key just silently stops mail, and the failure surfaces somewhere unrelated
  * days later. This gate closes that asymmetry.

@@ -11,7 +11,7 @@ WHY THE SHIM LIVES UNDER `scripts/lib/` AND NOT `.ci/lib/`, WHICH IS WHERE ITS S
 `age-check.sh`, and `check:ci-language-policy` went rc=1 with `2 NEW bash
 file(s)`; the registration was unwound rather than allowlisted.
 
-A bash shim for bash callers cannot itself be Python, so the choice was an allowlist entry or a different address. `scripts/` is not a covered root, and the shim already serves callers on both sides of the line -- `scripts/dev/deploy-bench.sh` and `programs/backup-storage/start-local-plane.sh` were never under `.ci` at all -- so a shared location is the better description of what
+A bash shim for bash callers cannot itself be Python, so the choice was an allowlist entry or a different address. `scripts/` is not a covered root, and the shim already serves callers on both sides of the line -- `scripts/ops/deploy-bench.sh` and `programs/backup-storage/start-local-plane.sh` were never under `.ci` at all -- so a shared location is the better description of what
 it is, not merely the legal one. No exemption was added to any allowlist for this gate or for the shim.
 
 THREE CHECKS, because two of them can pass while the thing is broken:
@@ -64,7 +64,7 @@ SHIM_REL = "scripts/lib/env-file.sh"
 # The sites that adopted the shim. Each must still call it; see CHECK B.
 ADOPTED = (
     ".ci/lib/account.sh",
-    "scripts/dev/deploy-bench.sh",
+    "scripts/ops/deploy-bench.sh",
     "programs/backup-storage/start-local-plane.sh",
 )
 
@@ -383,7 +383,7 @@ def selftest():
         (planted / "programs/backup-storage/start-local-plane.sh").write_text(
             reverted, encoding="utf-8"
         )
-        for rel in (".ci/lib/account.sh", "scripts/dev/deploy-bench.sh", SHIM_REL):
+        for rel in (".ci/lib/account.sh", "scripts/ops/deploy-bench.sh", SHIM_REL):
             dst = planted / rel
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / rel, dst)

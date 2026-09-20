@@ -426,7 +426,7 @@ def test_sealed_but_empty_refuses_loudly_and_stops_the_run(tmp_path: pathlib.Pat
         "✗ Corrupt release state: s3://rediacc-releases/cli/v1.2.3/ is SEALED "
         "(.released present) but has NO binaries.\n" in old.stderr
     )
-    assert "scripts/dev/scrub-sentinel.sh v1.2.3 --execute" in old.stderr
+    assert "scripts/ops/scrub-sentinel.sh v1.2.3 --execute" in old.stderr
     assert "R2 upload complete" not in old.stderr, "the run continued past the refusal"
     assert old_calls.count("aws\ts3\tcp") == 0
     _assert_agree(old, new, "sealed-empty", old_calls, new_calls)
@@ -444,7 +444,7 @@ def test_defect_an_unanswered_count_reads_as_sealed_but_empty(tmp_path: pathlib.
     assert "is SEALED (.released present) but has NO binaries." in old.stderr, (
         "an unanswered probe stopped being reported as sealed-but-empty"
     )
-    assert "scripts/dev/scrub-sentinel.sh v1.2.3 --execute" in old.stderr
+    assert "scripts/ops/scrub-sentinel.sh v1.2.3 --execute" in old.stderr
     assert port.AN_UNANSWERED_COUNT_READS_AS_SEALED_BUT_EMPTY
     _assert_agree(old, new, "unanswered-count", old_calls, new_calls)
 

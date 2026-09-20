@@ -6,7 +6,7 @@
 # resources. Safe by default: nothing billable runs without --yes.
 #
 # Usage:
-#   ./scripts/dev/linode-cluster-validation.sh [phase...] [--yes]
+#   ./scripts/ops/linode-cluster-validation.sh [phase...] [--yes]
 #
 # Phases (default when none given: preflight plan):
 #   preflight     Inspect orphaned tofu state + query the live Linode API for any

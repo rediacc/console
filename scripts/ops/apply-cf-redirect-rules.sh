@@ -18,8 +18,8 @@
 #   CF_GLOBAL_API_KEY + CF_EMAIL (fallback for Global API Key)
 #
 # Usage:
-#   ./scripts/dev/apply-cf-redirect-rules.sh              # verify + create if missing
-#   ./scripts/dev/apply-cf-redirect-rules.sh --dry-run    # verify only, never mutate
+#   ./scripts/ops/apply-cf-redirect-rules.sh              # verify + create if missing
+#   ./scripts/ops/apply-cf-redirect-rules.sh --dry-run    # verify only, never mutate
 
 set -euo pipefail
 

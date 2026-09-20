@@ -109,11 +109,16 @@ main() {
     # shellcheck disable=SC2086
     "$SHFMT_BIN" $SHFMT_OPTS ./run.sh
 
-    # Check shell scripts under scripts/dev and scripts/docker subdirectories.
+    # Check shell scripts under the scripts/dev and scripts/ops subdirectories.
     # The top-level scripts/*.sh files are intentionally excluded — they
     # predate the formatter and reformatting them is out of scope for any
-    # given change. Add new helper scripts to scripts/dev/ or scripts/docker/.
-    for dir in scripts/dev scripts/docker; do
+    # given change. Add new helper scripts to scripts/dev/ or scripts/ops/.
+    #
+    # scripts/ops replaced scripts/docker here on 2026-09-20, when W9 P2 moved
+    # the operator tools into it. The [[ -d ]] guard below means a scope that
+    # stops existing is simply skipped, so a stale name leaves the whole scope
+    # unformatted and still reports success; the names move with the files.
+    for dir in scripts/dev scripts/ops; do
         if [[ -d "$dir" ]]; then
             log_info "Checking $dir/**/*.sh"
             # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry

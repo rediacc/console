@@ -10,7 +10,7 @@ Wave 5. This is the credential-free half, prepared so the credentialed legs are 
 
 **Nothing whose removal destroys the last restore path may go before the new restore is proven ON A MACHINE.**
 
-Until e2e suite 26's RESTORE tier goes green on a real two-worker fleet, rclone is the only way to get data back. `scripts/backup-cutover-preflight.sh` enforces this as a check rather than a sentence: it FAILS if the rclone schedule path has already been removed from the unit generator.
+Until e2e suite 26's RESTORE tier goes green on a real two-worker fleet, rclone is the only way to get data back. `scripts/ops/backup-cutover-preflight.sh` enforces this as a check rather than a sentence: it FAILS if the rclone schedule path has already been removed from the unit generator.
 
 Restore exists and is verified in the small (`go test -race` over the engine, 88 account test files, the drill's read-grant legs d/j/k). It has NOT been run by a machine against a real bucket, because no bucket exists. That gap is exactly what §2 closes.
 
@@ -35,7 +35,7 @@ There is a third client of this wire that is easy to forget: the drill (`scripts
 ## 1. Preflight, and it fails closed
 
 ```bash
-scripts/backup-cutover-preflight.sh
+scripts/ops/backup-cutover-preflight.sh
 ```
 
 Read-only: no bucket creation, no object writes, no credential minting, no
@@ -52,7 +52,7 @@ ACCOUNT_BACKUP_S3_ENDPOINT="https://<account>.r2.cloudflarestorage.com" \
 ACCOUNT_BACKUP_S3_BUCKET="rediacc-backups-probe" \
 ACCOUNT_BACKUP_S3_ACCESS_KEY_ID="..." \
 ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY="..." \
-  scripts/backup-cutover-preflight.sh
+  scripts/ops/backup-cutover-preflight.sh
 ```
 
 ---
@@ -92,7 +92,7 @@ ACCOUNT_BACKUP_S3_ENDPOINT="https://<account>.r2.cloudflarestorage.com" \
 ACCOUNT_BACKUP_S3_BUCKET="rediacc-backups-probe" \
 ACCOUNT_BACKUP_S3_ACCESS_KEY_ID="<key id>" \
 ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY="<secret>" \
-  scripts/backup-cutover-preflight.sh
+  scripts/ops/backup-cutover-preflight.sh
 
 # 2. NOTHING TO DO BY HAND ANY MORE. SUPERSEDED 2026-08-18.
 #    CD now pushes these four to every account Worker on every deploy, so a

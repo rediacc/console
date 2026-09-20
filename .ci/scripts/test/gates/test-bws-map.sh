@@ -37,7 +37,7 @@ GATE="$REPO_ROOT/.ci/scripts/quality/check_bws_map.py"
 fixture() {
     local d="$1"
     mkdir -p "$d/.ci/config" "$d/.ci/scripts/deploy" "$d/.github/workflows" \
-        "$d/.github/actions" "$d/scripts/dev"
+        "$d/.github/actions" "$d/scripts/ops"
     (cd "$d" && git init -q .)
     cat >"$d/.ci/config/bws-secret-map.json" <<'MAP'
 { "refreshed_at": "2099-01-01T00:00:00Z", "project": "p",
@@ -55,7 +55,7 @@ RE
     echo '{"regions":[{"secretSuffix":"EU"}]}' >"$d/regions.json"
     printf 'x_var="PREFIX_${SUFFIX}"\n' >"$d/.ci/scripts/deploy/build.sh"
     printf 'RENAMES: list[tuple[str, str]] = [\n    ("OLD_ALPHA", "ALPHA_TOKEN"),\n]\n' \
-        >"$d/scripts/dev/secret-rename.py"
+        >"$d/scripts/ops/secret-rename.py"
     cat >"$d/.github/workflows/w.yml" <<'WF'
 jobs:
   j:

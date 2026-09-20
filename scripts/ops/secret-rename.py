@@ -26,9 +26,9 @@ WHAT IT KNOWS THAT A SED DOES NOT (all measured in Part 12):
 WHAT IT DOES NOT DO: touch GitHub. Creating the new org secrets (copy, do not mint: decision 8ter) and deleting the old ones is `gh secret set` / `gh secret delete`, run by a person, after this diff is reviewed.
 
 Usage:
-  python3 scripts/dev/secret-rename.py            # dry-run summary
-  python3 scripts/dev/secret-rename.py --show FILE # unified diff for one file
-  python3 scripts/dev/secret-rename.py --apply     # rewrite the tree
+  python3 scripts/ops/secret-rename.py            # dry-run summary
+  python3 scripts/ops/secret-rename.py --show FILE # unified diff for one file
+  python3 scripts/ops/secret-rename.py --apply     # rewrite the tree
 """
 
 from __future__ import annotations
@@ -79,10 +79,10 @@ COLLAPSES = {"STRIPE_SECRET_KEY_EU", "STRIPE_SECRET_KEY_US", "STRIPE_SECRET_KEY_
 # Generated: regenerate, do not edit.
 GENERATED = {
     ".ci/config/secret-reachability.json": "npm run check:ci-secret-reachability -- --refresh",
-    ".ci/config/bws-secret-map.json": "scripts/dev/bws-map-refresh.py (already on the new names)",
+    ".ci/config/bws-secret-map.json": "scripts/ops/bws-map-refresh.py (already on the new names)",
 }
 # Never rewritten: history, session notes, this script, the plan that defines the table.
-SKIP_PREFIXES = ("agent/", "node_modules/", ".git/", "scripts/dev/secret-rename.py")
+SKIP_PREFIXES = ("agent/", "node_modules/", ".git/", "scripts/ops/secret-rename.py")
 SKIP_SUFFIXES = (
     ".png",
     ".jpg",
@@ -343,7 +343,7 @@ def main() -> int:
             src = [o for o, n in RENAMES if n == name]
             print(f"  {name}   <- {', '.join(src)}")
         print("  Create them first (./run.sh rotation rotate <slug>, which MINTS), then")
-        print("  refresh the map with scripts/dev/bws-map-refresh.py.")
+        print("  refresh the map with scripts/ops/bws-map-refresh.py.")
     if args.apply and unmapped:
         print("\nREFUSING --apply: fix the unmapped targets above first. Nothing was written.")
         return 1

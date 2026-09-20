@@ -112,7 +112,7 @@ elif grep -qi 'vacuous' <<<"$out"; then
 else
     log_fail "retire-shadowed-secrets: refused but never said VACUOUS: ${out:0:120}"
 fi
-if out="$(py_floor x scripts/dev/secret-rename.py SECRET_RENAME_MIN_FILES 999999 files 2>&1)"; then
+if out="$(py_floor x scripts/ops/secret-rename.py SECRET_RENAME_MIN_FILES 999999 files 2>&1)"; then
     log_fail "secret-rename: an impossible MIN_FILES was accepted"
 elif grep -qi 'vacuous' <<<"$out"; then
     EXERCISED=$((EXERCISED + 1))

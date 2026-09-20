@@ -26,9 +26,9 @@
 #     clients never depended on it.
 #
 # Usage:
-#   scripts/dev/r2-oneshot-scrub.sh                    # dry-run default
-#   scripts/dev/r2-oneshot-scrub.sh --execute          # actually delete
-#   scripts/dev/r2-oneshot-scrub.sh --execute --yes    # skip confirmation prompts
+#   scripts/ops/r2-oneshot-scrub.sh                    # dry-run default
+#   scripts/ops/r2-oneshot-scrub.sh --execute          # actually delete
+#   scripts/ops/r2-oneshot-scrub.sh --execute --yes    # skip confirmation prompts
 #
 # Required env: CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, CLOUDFLARE_R2_ENDPOINT
 #   (source from private/account/.env for local runs).

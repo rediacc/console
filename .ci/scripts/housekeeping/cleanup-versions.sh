@@ -1397,7 +1397,7 @@ cleanup_r2() {
         # Drift: exactly one of sentinel/tag is present. Do not auto-heal.
         if ((has_sentinel)); then
             log_error "drift: ${dir}/${ver}/.released exists but git tag ${ver} missing"
-            log_error "  remediation: re-run CD to tag/release ${ver}, or scrub via scripts/dev/scrub-sentinel.sh ${ver} --execute"
+            log_error "  remediation: re-run CD to tag/release ${ver}, or scrub via scripts/ops/scrub-sentinel.sh ${ver} --execute"
         else
             log_error "drift: git tag ${ver} exists but ${dir}/${ver}/.released missing"
             log_error "  remediation: re-run CI for ${ver}, or delete tag ${ver}"

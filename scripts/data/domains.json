@@ -91,23 +91,34 @@
       ]
     },
     {
+      "id": "devbox-bash",
+      "paths": ["scripts/dev/worktree.sh"],
+      "home": "scripts/dev",
+      "stays": true,
+      "why": "The one file under scripts/dev that is NOT operator-only, and the reason scripts/dev survives W9 P2's move. .ci/legacy/run-legacy.sh:793 dispatches it as `./run.sh worktree` and .ci/scripts/test/gates/test-worktree-devbox-teardown.sh:42 executes it as its SUT, so it is CI-reachable and scripts/ops (`why`: nothing but a human runs these) would be a false description of it. This rule sits BEFORE operator-bash because first match wins; without it the file would match no rule at all and the layout gate reports UNCLASSIFIED.",
+      "notes": [
+        "Moving this file is a change to .ci/legacy/run-legacy.sh and to the teardown gate test in the same commit, not a git mv. W9 P2 declined to make it, because run-legacy.sh was owned by a concurrent writer and the exception was already declared."
+      ]
+    },
+    {
       "id": "operator-bash",
-      "paths": ["scripts/dev/**", "scripts/docker/**", "scripts/backup-cutover-preflight.sh"],
+      "paths": ["scripts/ops/**"],
       "home": "scripts/ops",
-      "stays": false,
-      "why": "Operator-only tools: a human runs them by hand and no workflow, npm key, run.sh verb or gate invokes them. Surveyed 2026-09-06, ten are unambiguously operator-only (apply-cf-redirect-rules.sh, backup-d1.sh, bws-map-refresh.py, deploy-bench.sh, derive-shadow-pass-list.sh, linode-cluster-validation.sh, r2-oneshot-scrub.sh, reset-bench.sh, backup-cutover-preflight.sh, docker/build-server.sh) and four more are operator-run with a CI-side reader or test.",
-      "blockedOn": "Driver contract section 2, the `scripts/dev` ownership row: W8 deletes its dead script, W0 and W8 make their edits at the current path, THEN W9 moves the directory. Not before.",
+      "stays": true,
+      "why": "Operator-only tools: a human runs them by hand and no workflow, npm key, run.sh verb or gate invokes them. Surveyed 2026-09-06, ten are unambiguously operator-only (apply-cf-redirect-rules.sh, backup-d1.sh, bws-map-refresh.py, deploy-bench.sh, derive-shadow-pass-list.sh, linode-cluster-validation.sh, r2-oneshot-scrub.sh, reset-bench.sh, backup-cutover-preflight.sh, build-server.sh) and four more are operator-run with a CI-side reader or test.",
+      "blockedOn": "CLEARED 2026-09-20: the move landed. Fourteen files arrived from scripts/dev/, scripts/docker/ and the scripts/ root as git renames, after W8 P1a-P6 and W0.1 had made their edits at the old path and were all ticked. scripts/docker no longer exists; scripts/dev keeps worktree.sh alone under the devbox-bash rule above.",
       "exceptions": [
-        "scripts/dev/lib/cf-auth.sh is sourced by three siblings and moves with them.",
-        "scripts/dev/worktree.sh is NOT operator-only: .ci/legacy/run-legacy.sh:1066 dispatches it and .ci/scripts/test/gates/test-worktree-devbox-teardown.sh:33 executes it as its SUT."
+        "scripts/ops/lib/cf-auth.sh is sourced by three siblings and moved with them.",
+        "scripts/dev/worktree.sh is NOT operator-only and did NOT move; it has its own rule, devbox-bash, immediately above this one."
       ],
       "breaksIfMoved": [
-        ".ci/scripts/quality/check-silent-failure-patterns.sh:66 SCAN_DIRS=(\".ci/scripts\" \"scripts/dev\"). A missing directory makes find return nothing and the gate reports success over half its corpus. SILENTLY GREEN.",
-        ".ci/scripts/security/shfmt.sh:116 loops over `scripts/dev scripts/docker` guarded by [[ -d ]] at :117, so a moved directory silently stops being format-checked. SILENTLY GREEN.",
-        "scripts/gates/check-worker-secret-names.ts:66 parses scripts/dev/deploy-bench.sh with a floor of 20.",
-        ".ci/scripts/quality/check_bws_map.py:121 reads scripts/dev/secret-rename.py as its rename oracle.",
-        ".ci/scripts/test/gates/test-scrub-sentinel-empty.sh:31 and :47, test-worktree-devbox-teardown.sh:33, test-bws-map.sh:33 and :51, test-vacuity-floors.sh:106 all name paths under scripts/dev.",
-        "Dockerfile:12 and :32 mention scripts/docker/build-server.sh in comments only, which is also the only thing keeping it out of check-dead-bash's findings."
+        "REPOINTED 2026-09-20, all six, in the change that moved the files. The list is kept because it names the shape of the damage a FUTURE move would do, not because any entry is still outstanding.",
+        ".ci/scripts/quality/check-silent-failure-patterns.sh:73 SCAN_DIRS and its Python twin .ci/rediacc_ci/quality/silent_failure_patterns.py:84 both now carry scripts/ops. A missing directory makes find return nothing and the gate reports success over half its corpus. SILENTLY GREEN.",
+        ".ci/scripts/security/shfmt.sh:121 loops over `scripts/dev scripts/ops` guarded by [[ -d ]], as does its twin's OPTIONAL_SCOPES at .ci/rediacc_ci/security/shfmt.py:92, so a scope that stops existing silently stops being format-checked. SILENTLY GREEN. A third sweep of the same shape lives at .ci/legacy/run-legacy.sh:488.",
+        "scripts/gates/check-worker-secret-names.ts:66 parses scripts/ops/deploy-bench.sh with a floor of 20.",
+        ".ci/scripts/quality/check_bws_map.py:100 reads scripts/ops/secret-rename.py as its rename oracle, built as ROOT / \"scripts\" / \"ops\" / ... so a path-literal grep cannot see it.",
+        ".ci/scripts/test/gates/test-scrub-sentinel-empty.sh:40 and :56, test-bws-map.sh:40 and :58, test-vacuity-floors.sh:115 name paths under scripts/ops, and three Python gate tests build the same paths out of pathlib parts.",
+        "Dockerfile:12 and :32 mention scripts/ops/build-server.sh in comments only, which is also the only thing keeping it out of check-dead-bash's findings."
       ]
     },
     {

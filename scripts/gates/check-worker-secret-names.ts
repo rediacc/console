@@ -7,7 +7,7 @@
  *   .ci/scripts/deploy/set-account-worker-secrets.sh
  *   .ci/scripts/deploy/set-www-worker-secrets.sh
  *   .ci/scripts/deploy/set-preview-worker-secrets.sh
- *   scripts/dev/deploy-bench.sh
+ *   scripts/ops/deploy-bench.sh
  *   run.sh                                (the local PR-preview builder)
  *
  * and one file says what the Worker will look at:
@@ -63,7 +63,7 @@ const BUILDERS: { file: string; floor: number }[] = [
   { file: '.ci/scripts/deploy/set-account-worker-secrets.sh', floor: 20 },
   { file: '.ci/scripts/deploy/set-www-worker-secrets.sh', floor: 15 },
   { file: '.ci/scripts/deploy/set-preview-worker-secrets.sh', floor: 10 },
-  { file: 'scripts/dev/deploy-bench.sh', floor: 20 },
+  { file: 'scripts/ops/deploy-bench.sh', floor: 20 },
   // The payload moved with the 2026-09-06 router split; run.sh is now a dispatcher
   // that builds no secret object. The floor caught it, which is what the floor is for.
   { file: '.ci/legacy/run-legacy.sh', floor: 10 },

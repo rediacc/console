@@ -1800,7 +1800,7 @@ def test_phase_8d_latches_the_run_as_failed_on_drift_in_either_direction() -> No
     err = result[2].decode()
     assert "drift: cli/v9.0.0/.released exists but git tag v9.0.0 missing" in err
     assert (
-        "remediation: re-run CD to tag/release v9.0.0, or scrub via scripts/dev/scrub-sentinel.sh v9.0.0 --execute"
+        "remediation: re-run CD to tag/release v9.0.0, or scrub via scripts/ops/scrub-sentinel.sh v9.0.0 --execute"
         in err
     )
     assert "drift: git tag v9.1.0 exists but cli/v9.1.0/.released missing" in err

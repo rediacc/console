@@ -485,9 +485,11 @@ fix_shell() {
     fi
     find .ci -name "*.sh" -type f -exec "$shfmt_bin" -i 4 -ci -w {} +
     "$shfmt_bin" -i 4 -ci -w ./run.sh
-    if [[ -d "scripts/dev" ]]; then
-        find scripts/dev -name "*.sh" -type f -exec "$shfmt_bin" -i 4 -ci -w {} +
-    fi
+    for d in scripts/dev scripts/ops; do
+        if [[ -d "$d" ]]; then
+            find "$d" -name "*.sh" -type f -exec "$shfmt_bin" -i 4 -ci -w {} +
+        fi
+    done
     # log_info, not log_success: the latter is defined locally inside
     # .ci/scripts/security/shellcheck.sh and is NOT in the shared common.sh this
     # script sources, so the call died with "log_success: command not found"

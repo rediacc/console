@@ -10,7 +10,7 @@
  *   functions: a `name() {` definition whose name appears nowhere else.
  *   files:     a .sh whose basename is never mentioned by any other tracked file.
  *
- * They are independent on purpose: scripts/dev/linode-cluster-validation.sh is a
+ * They are independent on purpose: scripts/ops/linode-cluster-validation.sh is a
  * genuinely orphaned FILE whose functions are nonetheless live (dispatched via
  * "phase_$p"). Merging the checks would hide one behind the other.
  *

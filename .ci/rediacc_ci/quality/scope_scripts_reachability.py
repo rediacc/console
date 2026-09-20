@@ -33,7 +33,7 @@ WHY THIS EXISTS, in the twin's own words, because the failure is invisible:
 
 INVOKED, NOT MENTIONED, and the distinction is the whole accuracy of the gate:
 
-    Measured 2026-08-06: the first version flagged scripts/dev/scrub-sentinel.sh
+    Measured 2026-08-06: the first version flagged scripts/ops/scrub-sentinel.sh
     from two call sites, and BOTH were `log_error` strings printing remediation
     advice to a human (cleanup-versions.sh:1258, upload-to-r2.sh:223). Treating a
     mention as a dependency would have forced full CI on every scripts/dev edit

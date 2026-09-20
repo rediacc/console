@@ -226,9 +226,9 @@ git blame --line-porcelain -- <file> \
 | 39 | `manual:.ci/scripts/security/dependency-inventory.sh` | 2026-07-21 | 46 |
 | 42 | `manual:.claude/hooks/test-hooks.sh` | 2026-07-21 | 46 |
 | 45 | `manual:.devcontainer/start-vscode.sh` | 2026-07-21 | 46 |
-| 48 | `manual:scripts/dev/apply-cf-redirect-rules.sh` | 2026-07-21 | 46 |
-| 51 | `manual:scripts/dev/linode-cluster-validation.sh` | 2026-07-21 | 46 |
-| 54 | `manual:scripts/dev/r2-oneshot-scrub.sh` | 2026-07-21 | 46 |
+| 48 | `manual:scripts/ops/apply-cf-redirect-rules.sh` | 2026-07-21 | 46 |
+| 51 | `manual:scripts/ops/linode-cluster-validation.sh` | 2026-07-21 | 46 |
+| 54 | `manual:scripts/ops/r2-oneshot-scrub.sh` | 2026-07-21 | 46 |
 | 57 | `manual:scripts/pre-commit-check.sh` | 2026-07-21 | 46 |
 | 60 | `manual:.ci/breakpoint/scripts/sync-breakpoint.sh` | 2026-07-27 | 41 |
 | 63 | `manual:.ci/docker/run-in-web.sh` | 2026-08-28 | 9 |
@@ -424,7 +424,7 @@ W4 P5 asked whether the Bitwarden secret map belongs here. **The answer is no**,
 Measured 2026-09-09 against `.ci/config/bws-secret-map.json`, 191 lines, 58 secrets:
 
 - **Clause 1, decision not data: FAILS.** It carries `refreshed_at` (line 12) and is
-regenerated WHOLESALE from Bitwarden by `scripts/dev/bws-map-refresh.py`, with a second writer at `private/account/scripts/rotation/lib/bws-map.ts:75` that refreshes it after a rotation. Every row is a NAME to UUID pair that Bitwarden decides and this repository copies. Nobody chose any of it, so no row can stop being true in the way a suppression can: it goes stale, which is a
+regenerated WHOLESALE from Bitwarden by `scripts/ops/bws-map-refresh.py`, with a second writer at `private/account/scripts/rotation/lib/bws-map.ts:75` that refreshes it after a rotation. Every row is a NAME to UUID pair that Bitwarden decides and this repository copies. Nobody chose any of it, so no row can stop being true in the way a suppression can: it goes stale, which is a
 different failure with a different fix (re-run the refresher).
 - **Clause 2, BLOCKER-gated: FAILS.** Zero `BLOCKER:` lines, and there is no honest one to
 write. A per-UUID reason would have to be invented, and an invented reason is the exact thing `docs/agent-reference/suppressions.md` exists to keep out of these files.

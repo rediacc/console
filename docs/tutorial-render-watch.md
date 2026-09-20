@@ -29,7 +29,7 @@ Mechanical, not aesthetic. The three shell gates have different corpora:
 
 | gate | corpus |
 |---|---|
-| `check:ci-shell-format` | `.ci/`, `.claude/hooks/`, `./run.sh`, and only `scripts/dev` + `scripts/docker` |
+| `check:ci-shell-format` | `.ci/`, `.claude/hooks/`, `./run.sh`, and only `scripts/dev` + `scripts/ops` |
 | `check:ci-shell-lint` | `.ci/`, `.claude/hooks/`, `./run.sh`, all of `scripts/` |
 | `check:ci-shell-commands` | `.ci/`, all of `scripts/`, `./run.sh` |
 

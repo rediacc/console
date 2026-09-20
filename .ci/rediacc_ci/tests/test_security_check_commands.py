@@ -188,7 +188,7 @@ def test_run_sh_absent_is_not_an_error(tmp_path: pathlib.Path) -> None:
 
 
 def test_scripts_directory_is_also_scanned(tmp_path: pathlib.Path) -> None:
-    """The twin's own comment: `scripts/` joined the corpus after a bash-4-only `mapfile` sat unreported in `scripts/dev/reset-bench.sh` for as long as anyone could remember; keep it in the port's corpus too."""
+    """The twin's own comment: `scripts/` joined the corpus after a bash-4-only `mapfile` sat unreported in `scripts/ops/reset-bench.sh` for as long as anyone could remember; keep it in the port's corpus too."""
     root = _fixture(tmp_path)
     _write(root, "scripts/dev/thing.sh", "#!/bin/bash\nmapfile -t x < f\n")
     old, new = run_both(root)

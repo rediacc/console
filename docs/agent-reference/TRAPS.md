@@ -1058,7 +1058,7 @@ Residue: No scan can tell a name written as a SUBJECT ("we are retiring FOO_EU")
 
 Found 2026-09-02, twice in one turn, by reading a dry run instead of trusting it.
 
-`scripts/dev/secret-rename.py` skips `agent/` precisely because a plan describing a rename must not be rewritten by it. Two files outside that prefix had the same problem and nobody had noticed:
+`scripts/ops/secret-rename.py` skips `agent/` precisely because a plan describing a rename must not be rewritten by it. Two files outside that prefix had the same problem and nobody had noticed:
 
 - A `reason` string in `.ci/config/bws-unrequested.json` said *"the rename points
 the org secret `OBS_OTLP_CREDENTIALS_EU` here"*. After the rewrite it would have read *"points the org secret `OBS_OTLP_CREDENTIALS_EU` here"* — a sentence claiming a name points at itself.

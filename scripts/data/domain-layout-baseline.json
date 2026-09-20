@@ -22,21 +22,6 @@
     ".ci/scripts/docs/compress-cast-idle.mjs",
     ".ci/scripts/docs/process-cast-markers.mjs",
     ".ci/scripts/quality/lint-rule-liveness.mjs",
-    ".ci/scripts/test/smoke-test-preview.ts",
-    "scripts/backup-cutover-preflight.sh",
-    "scripts/dev/SECURITY-HARDENING-SETUP.md",
-    "scripts/dev/apply-cf-redirect-rules.sh",
-    "scripts/dev/backup-d1.sh",
-    "scripts/dev/bws-map-refresh.py",
-    "scripts/dev/deploy-bench.sh",
-    "scripts/dev/derive-shadow-pass-list.sh",
-    "scripts/dev/lib/cf-auth.sh",
-    "scripts/dev/linode-cluster-validation.sh",
-    "scripts/dev/r2-oneshot-scrub.sh",
-    "scripts/dev/reset-bench.sh",
-    "scripts/dev/scrub-sentinel.sh",
-    "scripts/dev/secret-rename.py",
-    "scripts/dev/worktree.sh",
-    "scripts/docker/build-server.sh"
+    ".ci/scripts/test/smoke-test-preview.ts"
   ]
 }

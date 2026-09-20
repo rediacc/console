@@ -97,7 +97,7 @@ ACTION_REF = "./.github/actions/bws-secrets"
 EXEMPT = ROOT / ".ci" / "config" / "bws-unrequested.json"
 REACH = ROOT / ".ci" / "config" / "secret-reachability.json"
 PREIMAGE = ROOT / ".ci" / "config" / "github-secret-preimage.json"
-RENAME_TABLE = ROOT / "scripts" / "dev" / "secret-rename.py"
+RENAME_TABLE = ROOT / "scripts" / "ops" / "secret-rename.py"
 REGIONS = ROOT / "regions.json"
 DEPLOY_DIR = ROOT / ".ci" / "scripts" / "deploy"
 

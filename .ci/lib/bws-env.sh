@@ -5,7 +5,7 @@
 # emptying that file has been blocked on the same absence: 19 of its 49 keys are
 # already in Bitwarden and simply duplicated locally, but nothing could put a
 # stored value into a local shell, so deleting a key broke `./run.sh account dev`,
-# `scripts/dev/deploy-bench.sh`, `./rdc.sh --dev`, `private/renet/build.sh` and
+# `scripts/ops/deploy-bench.sh`, `./rdc.sh --dev`, `private/renet/build.sh` and
 # private/growth's publish pipeline. Sourcing this replaces that.
 #
 # USAGE

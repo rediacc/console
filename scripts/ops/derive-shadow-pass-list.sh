@@ -13,7 +13,7 @@
 # the operator's to execute.
 #
 # Usage:
-#   scripts/dev/derive-shadow-pass-list.sh [--branch <branch>] [--runs <n>]
+#   scripts/ops/derive-shadow-pass-list.sh [--branch <branch>] [--runs <n>]
 set -uo pipefail
 BRANCH="${BRANCH:-$(git symbolic-ref --quiet --short HEAD 2>/dev/null || echo main)}"
 RUNS=6

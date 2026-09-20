@@ -63,7 +63,7 @@ if [[ "$bin_count" -gt 0 ]]; then
 elif rsv_sentinel_exists "$product" "v${VERSION}"; then
     log_error "SEALED-BUT-EMPTY: s3://${BUCKET}/${prefix} has a .released sentinel but NO binaries."
     log_error "  A prior orphan-scrub deleted the bytes; every versioned install of this product will 404."
-    log_error "  Remediation: scrub the sentinel then re-run CI: scripts/dev/scrub-sentinel.sh v${VERSION} --execute"
+    log_error "  Remediation: scrub the sentinel then re-run CI: scripts/ops/scrub-sentinel.sh v${VERSION} --execute"
     FAILED=true
 else
     log_error "R2 versioned prefix s3://${BUCKET}/${prefix} is empty after upload (no binaries, no sentinel)."

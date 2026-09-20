@@ -16,16 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 6058,
- "files": 1247,
+ "count": 6054,
+ "files": 1246,
  "by_rule": {
-  "R1": 1703,
+  "R1": 1700,
   "R11": 191,
   "R14": 1,
   "R18": 2548,
   "R19": 62,
   "R2": 998,
-  "R7": 555
+  "R7": 554
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -79,8 +79,8 @@
     "526b03a09ced2d3a",
     "6513516559020abf",
     "7faceb803bb9ee4e",
-    "8f56e43dd35785d7",
-    "f5660f150df20aba"
+    "8bb5a32b576a2a01",
+    "8f56e43dd35785d7"
    ]
   },
   ".ci/config/language-policy-baseline.json": {
@@ -314,7 +314,7 @@
   },
   ".ci/rediacc_ci/core/secrets.py": {
    "R7": [
-    "b3be11d3517a56ae"
+    "0c06c3e6d30cb74d"
    ]
   },
   ".ci/rediacc_ci/core/toolchain.py": {
@@ -11760,18 +11760,6 @@
     "b2b56628e6287f10"
    ]
   },
-  "scripts/dev/SECURITY-HARDENING-SETUP.md": {
-   "R1": [
-    "10e971631838b398",
-    "1f6fad43b0adb1a1",
-    "c2f4af8f18f33b70"
-   ]
-  },
-  "scripts/dev/secret-rename.py": {
-   "R7": [
-    "9e3d09c076b46b38"
-   ]
-  },
   "scripts/gate-bind.ts": {
    "R1": [
     "c7cbab1b79abb331"
@@ -11809,8 +11797,7 @@
   },
   "scripts/gates/check-ci-parity.ts": {
    "R7": [
-    "5e13104b57780d53",
-    "ec03b2a843113f3c"
+    "acc1e662c3602c7c"
    ]
   },
   "scripts/gates/check-ci-step-env-parity.ts": {
@@ -12070,6 +12057,11 @@
     "62715206f3a26549",
     "da19a89eb23e4033",
     "e6dbf50539ebb3ff"
+   ]
+  },
+  "scripts/ops/secret-rename.py": {
+   "R7": [
+    "8197ca60ecccdfe6"
    ]
   }
  }

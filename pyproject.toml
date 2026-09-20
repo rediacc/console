@@ -79,7 +79,7 @@ ignore = [
     # into `.claude/rediacc_hooks`, a real package with a real `tests/`
     # directory, at which point the directory this ignore exists for no longer
     # exists either. Re-examine the ignore THEN -- and note that removing it is
-    # not free even then, because `.ci/scripts/quality` and `scripts/dev` are
+    # not free even then, because `.ci/scripts/quality` and `scripts/ops` are
     # also flat directories of scripts and would light up.
     "INP001",
 

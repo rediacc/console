@@ -3,12 +3,12 @@
 #
 # Usage:
 #   export CF_MANAGEMENT_TOKEN="<scoped-api-token>"
-#   ./scripts/dev/backup-d1.sh [--dry-run] [--self-destruct] [production|edge]
+#   ./scripts/ops/backup-d1.sh [--dry-run] [--self-destruct] [production|edge]
 #
 # Auth:
 #   CF_MANAGEMENT_TOKEN  - Scoped API token (recommended)
 #   CF_GLOBAL_API_KEY + CF_EMAIL - Global API Key (legacy)
-#   See scripts/dev/lib/cf-auth.sh for token creation details.
+#   See scripts/ops/lib/cf-auth.sh for token creation details.
 #
 # Flags:
 #   --dry-run        Show what would be done without exporting

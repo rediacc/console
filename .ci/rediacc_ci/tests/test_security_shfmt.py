@@ -143,7 +143,7 @@ def fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     _write(fx / ".claude" / "two.sh", CLEAN_SH)
     _write(fx / "run.sh", CLEAN_SH)
     _write(fx / "scripts" / "dev" / "three.sh", CLEAN_SH)
-    _write(fx / "scripts" / "docker" / "four.sh", CLEAN_SH)
+    _write(fx / "scripts" / "ops" / "four.sh", CLEAN_SH)
 
     bindir = fx / "fake" / "bin"
     bindir.mkdir(parents=True, exist_ok=True)
@@ -298,7 +298,7 @@ def block_files(blocks: list[str]) -> list[str]:
 def real_scope_hashes() -> dict[str, str]:
     """sha256 of every file the four scopes reach. A COLLAPSED corpus fails."""
     out: dict[str, str] = {}
-    for rel in (".ci", ".claude", "scripts/dev", "scripts/docker"):
+    for rel in (".ci", ".claude", "scripts/dev", "scripts/ops"):
         for path in port.shell_files(ROOT / rel):
             out[path] = hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
     out["run.sh"] = hashlib.sha256((ROOT / "run.sh").read_bytes()).hexdigest()
@@ -450,7 +450,7 @@ def test_a_clean_fixture_passes_and_names_every_scope(fixture: pathlib.Path) -> 
         "info: Checking .claude/**/*.sh",
         "info: Checking ./run.sh",
         "info: Checking scripts/dev/**/*.sh",
-        "info: Checking scripts/docker/**/*.sh",
+        "info: Checking scripts/ops/**/*.sh",
         "success: Shell script formatting passed",
     ):
         assert scope in old[1], "missing %r in:\n%s" % (scope, old[1])
@@ -482,12 +482,12 @@ def test_a_dirty_run_sh_reports_the_same_diff(fixture: pathlib.Path) -> None:
     assert "info: Checking scripts/dev/**/*.sh" not in old[1]
 
 
-def test_a_dirty_scripts_docker_file_reports_the_same_diff(fixture: pathlib.Path) -> None:
+def test_a_dirty_scripts_ops_file_reports_the_same_diff(fixture: pathlib.Path) -> None:
     """The LAST scope, so this is the only case that proves the tail runs."""
-    _write(fixture / "scripts" / "docker" / "four.sh", DIRTY_SH)
+    _write(fixture / "scripts" / "ops" / "four.sh", DIRTY_SH)
     old = assert_agree(fixture)
     assert old[0] == 1
-    assert "diff scripts/docker/four.sh.orig scripts/docker/four.sh" in old[1]
+    assert "diff scripts/ops/four.sh.orig scripts/ops/four.sh" in old[1]
     assert "info: Checking scripts/dev/**/*.sh" in old[1]
     assert "success:" not in old[1]
 
@@ -505,14 +505,14 @@ def test_an_unparseable_file_puts_the_same_bytes_on_stderr(fixture: pathlib.Path
 def test_the_first_failing_scope_aborts_the_rest(fixture: pathlib.Path) -> None:
     """THE DEFECT, asserted rather than mentioned: three scopes go unchecked.
 
-    A dirty file in `.claude` AND a dirty file in `scripts/docker`; only the first is ever reported, and a reader who fixes it learns about the second on the next run.
+    A dirty file in `.claude` AND a dirty file in `scripts/ops`; only the first is ever reported, and a reader who fixes it learns about the second on the next run.
     """
     _write(fixture / ".claude" / "two.sh", DIRTY_SH)
-    _write(fixture / "scripts" / "docker" / "four.sh", DIRTY_SH)
+    _write(fixture / "scripts" / "ops" / "four.sh", DIRTY_SH)
     old = assert_agree(fixture)
     assert old[0] == 1
     assert "diff .claude/two.sh.orig" in old[1]
-    assert "scripts/docker/four.sh" not in old[1], "the abort defect is gone; rewrite this case"
+    assert "scripts/ops/four.sh" not in old[1], "the abort defect is gone; rewrite this case"
 
 
 def test_the_vacuity_floor_refuses_a_collapsed_corpus(fixture: pathlib.Path) -> None:
@@ -621,8 +621,8 @@ def test_the_scope_list_and_flags_are_the_twins() -> None:
     twin = TWIN.read_text(encoding="utf-8")
     assert 'SHFMT_OPTS="-i 4 -ci -d"' in twin
     assert port.SHFMT_OPTS == ("-i", "4", "-ci", "-d")
-    assert "for dir in scripts/dev scripts/docker; do" in twin
-    assert port.OPTIONAL_SCOPES == ("scripts/dev", "scripts/docker")
+    assert "for dir in scripts/dev scripts/ops; do" in twin
+    assert port.OPTIONAL_SCOPES == ("scripts/dev", "scripts/ops")
     assert 'MIN_SHELL_FILES="${SHFMT_MIN_FILES:-200}"' in twin
     assert port.DEFAULT_MIN_FILES == "200"
     assert 'find .ci .claude scripts -name "*.sh" -type f' in twin

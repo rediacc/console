@@ -30,7 +30,7 @@ TSX = paths.from_root("node_modules", ".bin", "tsx")
 
 SHFMT = paths.from_root(".ci", "scripts", "security", "shfmt.sh")
 RETIRE = paths.from_root(".ci", "scripts", "housekeeping", "retire-shadowed-secrets.py")
-SECRET_RENAME = paths.from_root("scripts", "dev", "secret-rename.py")
+SECRET_RENAME = paths.from_root("scripts", "ops", "secret-rename.py")
 ACTION_REFS = paths.from_root("scripts", "lib", "action-refs.ts")
 
 # Three of the four need no external tool, so a run in which fewer than three were exercised has verified nothing worth printing a green over.

@@ -6,7 +6,7 @@
 # It is INTENTIONALLY NOT wired into ci.yml or cd-v2.yml — deploys are local
 # only, triggered by you running this script.
 #
-# Auth (uses scripts/dev/lib/cf-auth.sh — see that file's header for details):
+# Auth (uses scripts/ops/lib/cf-auth.sh — see that file's header for details):
 #   CF_GLOBAL_API_KEY + CF_EMAIL  Global API Key (recommended; auto-creates a
 #                                 scoped token via cf-auth.sh)
 #   CF_MANAGEMENT_TOKEN      Pre-created scoped API token (if you have one)
@@ -22,7 +22,7 @@
 #   - jq, npx
 #
 # Usage:
-#   ./scripts/dev/deploy-bench.sh
+#   ./scripts/ops/deploy-bench.sh
 #
 # Resources this script touches:
 #   D1:     account-db-bench (uuid ac45c2de-053b-404c-bc47-9ad9cbd2bb15)
@@ -30,7 +30,7 @@
 #   Worker: rediacc-account-bench
 #   Domain: https://bench.rediacc.com
 #
-# To wipe the bench environment, see: scripts/dev/reset-bench.sh
+# To wipe the bench environment, see: scripts/ops/reset-bench.sh
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

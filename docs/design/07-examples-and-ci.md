@@ -56,7 +56,7 @@ Examples never `rm` any config file.
 
 | Gate | Edit |
 |---|---|
-| shfmt (`.ci/scripts/security/shfmt.sh`) | add `examples` to the dir loop (~line 60) — scope today is ONLY `.ci/**`, `run.sh`, `scripts/dev|docker/**` |
+| shfmt (`.ci/scripts/security/shfmt.sh`) | add `examples` to the dir loop (~line 60) — scope today is ONLY `.ci/**`, `run.sh`, `scripts/dev|ops/**` |
 | shellcheck (`.ci/scripts/security/shellcheck.sh`) | guarded `find examples -name '*.sh'` block |
 | eslint | add `'examples/**'` to global ignores (belt-and-braces; the `**/*.ts` glob would otherwise hit any stray TS) |
 | biome / knip | nothing — allowlist/workspace-based, examples/ invisible (do NOT add a package.json to examples/) |

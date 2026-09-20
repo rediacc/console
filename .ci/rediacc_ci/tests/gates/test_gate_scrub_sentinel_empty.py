@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-scrub-sentinel-empty.sh`.
 
-Subject: `scripts/dev/scrub-sentinel.sh`. Regression test for its empty-prefix hang.
+Subject: `scripts/ops/scrub-sentinel.sh`. Regression test for its empty-prefix hang.
 
 Before commit 27e9a49ab the dry-run plan loop called `aws s3 ls --recursive`
 inside `count="$(... | wc -l)"`. `aws s3 ls` returns exit 1 when the prefix is
@@ -28,7 +28,7 @@ from rediacc_ci.tests.gates import harness
 BASH_TWIN = ".ci/scripts/test/gates/test-scrub-sentinel-empty.sh"
 
 ROOT = paths.repo_root()
-SUBJECT = ROOT / "scripts" / "dev" / "scrub-sentinel.sh"
+SUBJECT = ROOT / "scripts" / "ops" / "scrub-sentinel.sh"
 VERSION = "v9.99.99"
 
 # Credentials that cannot work, on an endpoint that cannot resolve. The point is an EMPTY/unreachable prefix, which is what the regression is about.

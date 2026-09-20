@@ -54,7 +54,7 @@
  * spellings must be exported.
  *
  * NOT CHECKED, and said out loud rather than left to be discovered:
- *   - scripts/dev/deploy-bench.sh and run.sh also build a secret payload, but
+ *   - scripts/ops/deploy-bench.sh and run.sh also build a secret payload, but
  *     they read a local `.env` file rather than a workflow `env:` block. That
  *     is a different contract with a different oracle; this gate does not look
  *     at them, and their names are covered by check:ci-worker-secret-names.
@@ -656,7 +656,7 @@ console.log(
     '\n' +
     '  Blind spots, stated rather than left to be found: this proves the NAMES agree, not\n' +
     "  that a value is non-empty (that is the builders' _require_nonempty guards). It does\n" +
-    '  NOT cover scripts/dev/deploy-bench.sh or run.sh, which build the same payload from a\n' +
+    '  NOT cover scripts/ops/deploy-bench.sh or run.sh, which build the same payload from a\n' +
     '  local .env file rather than a workflow env: block -- a different contract with a\n' +
     '  different oracle. Names read by a sourced library are invisible here too.'
 );

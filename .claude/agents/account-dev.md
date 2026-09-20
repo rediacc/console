@@ -1,6 +1,6 @@
 ---
 name: account-dev
-description: Running and driving the account server development environment: ./run.sh account dev (gateway + portal + www + RustFS), the TEST_MODE seams, dev credentials and seeding, port mechanics and orphan cleanup, the tsx no-hot-reload rule, and how the CLI connects to it (./rdc.sh --dev, config init --server, headless auth chains). Also the bench environment (bench.rediacc.com): deploying the account worker with scripts/dev/deploy-bench.sh, wrangler deploys, Cloudflare D1 databases and R2 buckets, worker secrets, and reset-bench.sh wipes. Use when a task needs a live account server or a bench deploy: license/subscription flows, config-storage work, portal testing, drills, D1 or wrangler trouble, or diagnosing gateway weirdness.
+description: Running and driving the account server development environment: ./run.sh account dev (gateway + portal + www + RustFS), the TEST_MODE seams, dev credentials and seeding, port mechanics and orphan cleanup, the tsx no-hot-reload rule, and how the CLI connects to it (./rdc.sh --dev, config init --server, headless auth chains). Also the bench environment (bench.rediacc.com): deploying the account worker with scripts/ops/deploy-bench.sh, wrangler deploys, Cloudflare D1 databases and R2 buckets, worker secrets, and reset-bench.sh wipes. Use when a task needs a live account server or a bench deploy: license/subscription flows, config-storage work, portal testing, drills, D1 or wrangler trouble, or diagnosing gateway weirdness.
 tools: Bash, Read, Edit, Write, Grep, Glob
 model: opus
 ---
@@ -48,7 +48,7 @@ REDIACC_CONFIG. Run the explicit `config init` BEFORE exporting, or init dies wi
 && npm test. E2E (Playwright, gateway REQUIRED): ./run.sh account test e2e [--grep @tag].
 - The on-premise entry (src/entry/on-premise.ts with DELEGATION_CERT_PATH) is the
 only server that attaches delegationCert to issued licenses; the dev gateway is the cloud entry. Delegated-flow work needs that entry or the license-mint fixtures.
-- bench (bench.rediacc.com) is a real deploy target via scripts/dev/deploy-bench.sh,
+- bench (bench.rediacc.com) is a real deploy target via scripts/ops/deploy-bench.sh,
 not a local mode; edge/production deploy from CI only. Deploy order for licensing changes: account servers BEFORE renet BEFORE CLI.
 - `./run.sh account reset` regenerates .env; the gateway must be restarted to pick
 env changes up (same tsx rule).

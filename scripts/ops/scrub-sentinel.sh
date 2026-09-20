@@ -15,9 +15,9 @@
 # object versioning enabled (we assume it does not; the scrub is authoritative).
 #
 # Usage:
-#   scripts/dev/scrub-sentinel.sh v1.0.5                  # dry-run
-#   scripts/dev/scrub-sentinel.sh v1.0.5 --execute        # actually delete
-#   scripts/dev/scrub-sentinel.sh v1.0.5 --execute --yes  # skip confirmation
+#   scripts/ops/scrub-sentinel.sh v1.0.5                  # dry-run
+#   scripts/ops/scrub-sentinel.sh v1.0.5 --execute        # actually delete
+#   scripts/ops/scrub-sentinel.sh v1.0.5 --execute --yes  # skip confirmation
 #
 # Env (required):
 #   CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, CLOUDFLARE_R2_ENDPOINT

@@ -35,7 +35,7 @@
 #
 # So a call site that LAYERS two files has to load them in the reverse of the
 # old order: whichever file should win goes FIRST, because once a key is in the
-# environment the next file cannot take it back. scripts/dev/deploy-bench.sh is
+# environment the next file cannot take it back. scripts/ops/deploy-bench.sh is
 # that case and says so at its call site.
 
 # Prevent re-sourcing. Guard on the function, not on a flag alone, so a caller

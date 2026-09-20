@@ -408,7 +408,7 @@ rsv_assert_bijection() {
         if ((has_cli != has_tag)); then
             if ((has_cli)); then
                 echo "DRIFT ${version}: cli sentinel present, git tag missing"
-                echo "  remediation: re-run CD to tag/release ${version}, or scrub the sentinel via scripts/dev/scrub-sentinel.sh ${version}"
+                echo "  remediation: re-run CD to tag/release ${version}, or scrub the sentinel via scripts/ops/scrub-sentinel.sh ${version}"
             else
                 echo "DRIFT ${version}: git tag present, cli sentinel missing"
                 echo "  remediation: re-run CI to produce artifacts for ${version}, or delete tag ${version}"

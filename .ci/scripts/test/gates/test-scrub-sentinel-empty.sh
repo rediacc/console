@@ -37,7 +37,7 @@ test_dry_run_completes_with_no_credentials() {
     out="$(CLOUDFLARE_R2_ACCESS_KEY_ID="invalid" \
         CLOUDFLARE_R2_SECRET_ACCESS_KEY="invalid" \
         CLOUDFLARE_R2_ENDPOINT="https://invalid.example.invalid" \
-        bash "$REPO_ROOT/scripts/dev/scrub-sentinel.sh" v9.99.99 2>&1)" || rc=$?
+        bash "$REPO_ROOT/scripts/ops/scrub-sentinel.sh" v9.99.99 2>&1)" || rc=$?
 
     assert_exit_code 0 "$rc" "dry-run must succeed even with bad credentials"
     assert_contains "$out" "s3://rediacc-releases/cli/v9.99.99/" "cli plan line printed"
@@ -53,7 +53,7 @@ test_dry_run_emits_zero_object_count() {
     out="$(CLOUDFLARE_R2_ACCESS_KEY_ID="invalid" \
         CLOUDFLARE_R2_SECRET_ACCESS_KEY="invalid" \
         CLOUDFLARE_R2_ENDPOINT="https://invalid.example.invalid" \
-        bash "$REPO_ROOT/scripts/dev/scrub-sentinel.sh" v9.99.99 2>&1)"
+        bash "$REPO_ROOT/scripts/ops/scrub-sentinel.sh" v9.99.99 2>&1)"
 
     # One product (cli), one count line. Must contain "objects: 0".
     local zero_count

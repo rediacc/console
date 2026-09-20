@@ -4,7 +4,7 @@
 # This is destructive: it deletes ALL rows from every table in the bench D1
 # database, then re-applies migrations to recreate the schema, and finally
 # deletes every object in the bench R2 bucket. The worker code itself is
-# left alone — re-deploy via scripts/dev/deploy-bench.sh if you also want
+# left alone — re-deploy via scripts/ops/deploy-bench.sh if you also want
 # fresh worker code.
 #
 # Use this when:
@@ -12,7 +12,7 @@
 #   - a migration is broken on bench and you want to reset and re-deploy
 #   - someone else's test data is in the way
 #
-# Auth (uses scripts/dev/lib/cf-auth.sh — see that file's header for details):
+# Auth (uses scripts/ops/lib/cf-auth.sh — see that file's header for details):
 #   CF_GLOBAL_API_KEY + CF_EMAIL  Global API Key (recommended)
 #   CF_MANAGEMENT_TOKEN           Pre-created scoped API token
 #   Interactive prompt            Asks for one of the above when neither is set
@@ -21,16 +21,16 @@
 # skip the single confirmation prompt for non-interactive use.
 #
 # Usage:
-#   ./scripts/dev/reset-bench.sh                # interactive (asks once)
-#   ./scripts/dev/reset-bench.sh --yes          # non-interactive
-#   ./scripts/dev/reset-bench.sh --d1-only      # skip R2 wipe
-#   ./scripts/dev/reset-bench.sh --r2-only      # skip D1 wipe
+#   ./scripts/ops/reset-bench.sh                # interactive (asks once)
+#   ./scripts/ops/reset-bench.sh --yes          # non-interactive
+#   ./scripts/ops/reset-bench.sh --d1-only      # skip R2 wipe
+#   ./scripts/ops/reset-bench.sh --r2-only      # skip D1 wipe
 #
 # Resources this script touches:
 #   D1:     account-db-bench
 #   R2:     rediacc-configs-bench
 #
-# Does NOT touch the worker code or DNS — see scripts/dev/deploy-bench.sh
+# Does NOT touch the worker code or DNS — see scripts/ops/deploy-bench.sh
 # for that.
 
 set -euo pipefail
@@ -195,4 +195,4 @@ fi
 
 echo
 log_info "bench has been reset"
-echo "  Worker code is unchanged. To redeploy fresh code: scripts/dev/deploy-bench.sh"
+echo "  Worker code is unchanged. To redeploy fresh code: scripts/ops/deploy-bench.sh"

@@ -20,7 +20,8 @@
 #   - cleanup-versions.sh Phase 8 retention loop could die on a deleted-
 #     between-check-and-use race
 #
-# The lint scans every .sh under .ci/scripts/ and scripts/dev/ that has
+# The lint scans every .sh under .ci/scripts/, scripts/dev/ and scripts/ops/
+# that has
 # `set -eo pipefail` (or `set -e ... pipefail`) and flags occurrences of
 # `aws s3 ls`, `find ...`, `grep ...` piped into `wc -l` / `head` / `tail`
 # / `awk` without a `|| true` / `|| echo ...` guard on the same logical
@@ -64,8 +65,12 @@ for arg in "$@"; do
     esac
 done
 
-# Scopes: every shell script under .ci/scripts/ and scripts/dev/.
-SCAN_DIRS=(".ci/scripts" "scripts/dev")
+# Scopes: every shell script under .ci/scripts/, scripts/dev/ and scripts/ops/.
+# scripts/ops joined the list on 2026-09-20, when W9 P2 moved the operator tools
+# out of scripts/dev. A directory that stops existing makes find return nothing
+# and this gate reports success over the half of its corpus that moved, so the
+# new home is named here in the same change as the move.
+SCAN_DIRS=(".ci/scripts" "scripts/dev" "scripts/ops")
 PIPE_HEADS_REGEX='(aws s3 ls|aws s3api list-objects-v2 +--query|find [^|]|grep [^|]+)'
 # Class 2: a redaction filter as the pipeline SINK. `cmd 2>&1 | grep -v X`
 # under pipefail dies with ZERO error text when grep filters every line --
@@ -145,7 +150,7 @@ if [[ ${#findings[@]} -eq 0 ]]; then
     if [[ "$JSON_OUTPUT" == "true" ]]; then
         echo '{"findings": [], "ok": true}'
     else
-        log_info "No unguarded pipefail-risk pipelines found in .ci/scripts/ or scripts/dev/"
+        log_info "No unguarded pipefail-risk pipelines found in .ci/scripts/, scripts/dev/ or scripts/ops/"
     fi
     exit 0
 fi

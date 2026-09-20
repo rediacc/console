@@ -6,7 +6,7 @@ The workflow code changes from the Phase 1-3 hardening are committed, but three 
 2. Mint a scoped Cloudflare token (`CLOUDFLARE_API_TOKEN_PREVIEW`)
 3. Push 19 (secret, env) pairs via `migrate-secrets-to-envs.sh`
 
-Order matters: do steps 1 + 2 BEFORE merging the workflow changes, otherwise the next CI/CD run will fail with missing-secret errors. Step 3 should follow a successful test run of `promote-stable.yml` so you can verify env-scope resolution before deleting the org-level copies.
+Order matters: do steps 1 + 2 BEFORE merging the workflow changes, otherwise the next CI/CD run will fail with missing-secret errors. Step 3 should follow a successful test run of `promote-stable.yml`, so that env-scope resolution is verified before the org-level copies are deleted.
 
 ---
 
@@ -64,11 +64,11 @@ The existing `CLOUDFLARE_API_TOKEN` stays as the production token. A new narrowe
   - Account → Cloudflare Pages: Edit
   - Account → Workers Scripts: Edit (for preview workers)
   - Account → Workers Routes: Edit
-  - Zone → Workers Routes: Edit (only on preview zones if you have a
-    separate one; otherwise omit)
+  - Zone → Workers Routes: Edit (only on preview zones where a separate
+    one exists; otherwise omit)
 - **Account Resources**: include only the rediacc account
-- **Zone Resources**: if you have a dedicated preview zone (e.g.
-`*.preview.rediacc.com`), restrict to that. Otherwise leave blank — the token will still be narrower than the prod one because it only has Pages/Workers edit, not the full account access of the prod token.
+- **Zone Resources**: with a dedicated preview zone (e.g.
+`*.preview.rediacc.com`), restrict to that. Otherwise leave blank — the token is still narrower than the prod one because it only has Pages/Workers edit, not the full account access of the prod token.
 
 **2b. Store as org secret**:
 ```bash

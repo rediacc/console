@@ -5,7 +5,7 @@ PORTED FROM `.ci/scripts/lib/release-state-validator.sh` (496 lines), which stil
     grep -rnP '^\\s*(source|\\.)\\s+.*\\brelease-state-validator\\.sh' .
 
 (`.ci/scripts/quality/check-release-state.sh:23`, `.ci/scripts/deploy/upload-to-r2.sh:258`, `.ci/scripts/deploy/write-release-sentinel.sh:34`, `.ci/scripts/test/assert-r2-sentinel.sh:23`, `.ci/scripts/test/gates/test-release-state-consistency.sh:33`, `.ci/scripts/housekeeping/cleanup-versions.sh:1309`, `.ci/scripts/release/reprobe-r2-sentinel.sh:28`,
-`.ci/scripts/release/advance-contract-floor.sh:49`, `scripts/dev/scrub-sentinel.sh:32`, and two heredocs inside `.ci/rediacc_ci/tests/test_quality_release_state.py:148,213`). It is NOT the
+`.ci/scripts/release/advance-contract-floor.sh:49`, `scripts/ops/scrub-sentinel.sh:32`, and two heredocs inside `.ci/rediacc_ci/tests/test_quality_release_state.py:148,213`). It is NOT the
 "496" in the programme plan, which is this file's LINE COUNT and not its fan-in;
 the twin's own "Sourced by:" header at `release-state-validator.sh:19-24` lists only five and is itself four short.
 
@@ -565,7 +565,7 @@ def assert_bijection(
             out.append("DRIFT %s: cli sentinel present, git tag missing" % version)
             out.append(
                 "  remediation: re-run CD to tag/release %s, or scrub the sentinel via "
-                "scripts/dev/scrub-sentinel.sh %s" % (version, version)
+                "scripts/ops/scrub-sentinel.sh %s" % (version, version)
             )
         else:
             out.append("DRIFT %s: git tag present, cli sentinel missing" % version)

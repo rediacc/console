@@ -250,7 +250,7 @@ landed.
 
 `buildDestinationCommand` and `DestinationBuild` are gone from `backup-schedule-unit-generator.ts`, and the dead rclone branch is gone from `backup-schedule-reconcile.ts` (which let `computeDesiredUnits` become synchronous). A non-hosted-service destination now **throws** instead of emitting an rclone unit.
 
-The interlock in `scripts/backup-cutover-preflight.sh` was **inverted** to match: it used to pass when the rclone emission still worked, and now fails if that emission returns at all, and fails again if nothing refuses a storage destination. A preflight that could only pass while the thing it guards still existed was checking the opposite of what its name claimed.
+The interlock in `scripts/ops/backup-cutover-preflight.sh` was **inverted** to match: it used to pass when the rclone emission still worked, and now fails if that emission returns at all, and fails again if nothing refuses a storage destination. A preflight that could only pass while the thing it guards still existed was checking the opposite of what its name claimed.
 
 Result after the removal: **179 files / 2353 tests passing**, zero skips, up from a 2342 baseline. Preflight 6/6.
 
@@ -319,7 +319,7 @@ Same shape as the gate earlier in this program that printed its failure and exit
 grows one. Not a regression from the removal; the cold path never existed on the new store.
 - **The operator-only cutover item** (`#a450387d`): four `ACCOUNT_BACKUP_S3_*` Worker
 secrets, the bucket-scoped `cf-r2-backup` rotation slug, the migration, and the cutover itself. Default is HOLD.
-- **Bench deploy is plumbed, not run.** `scripts/dev/deploy-bench.sh` now carries
+- **Bench deploy is plumbed, not run.** `scripts/ops/deploy-bench.sh` now carries
 the four `ACCOUNT_BACKUP_S3_*` entries in its `wrangler secret bulk` payload, defaulting from the `R2_*` values in `.env`. It cannot run from here because `lib/cf-auth.sh` needs `CLOUDFLARE_API_TOKEN` or `CF_GLOBAL_API_KEY` + `CF_EMAIL`, and `.env` appeared to carry only `CF_EMAIL`. The operator runs it. (Later finding: `.env` did carry the global key, under the name
 `CF_GLOBAL_API_KEY`, while every consumer read the name `CF_API_KEY`. That variable-name drift was repaired by renaming all consumers to `CF_GLOBAL_API_KEY`.)
 - One earlier claim in this program that `wrangler.bench.toml` was missing was

@@ -66,7 +66,7 @@ from collections.abc import Iterable, Mapping
 # What a masked value is replaced BY. Three asterisks matches what a GitHub Actions runner substitutes for a registered mask, so a log that has been through both this and the runner reads the same way throughout.
 MASK = "***"
 
-# How many hex digits of the sha256 a fingerprint carries. Not chosen here: scripts/dev/bws-map-refresh.py:67 already fingerprints a token's client id as `hashlib.sha256(client_id.encode()).hexdigest()[:16]`, and .ci/config/ bws-token-expiry.json stores the results. A second width would mean the two could never be compared.
+# How many hex digits of the sha256 a fingerprint carries. Not chosen here: scripts/ops/bws-map-refresh.py:67 already fingerprints a token's client id as `hashlib.sha256(client_id.encode()).hexdigest()[:16]`, and .ci/config/ bws-token-expiry.json stores the results. A second width would mean the two could never be compared.
 FINGERPRINT_HEX_DIGITS = 16
 
 PRESENT = "present"
@@ -148,7 +148,7 @@ def missing(source: Mapping[str, str | None], names: Iterable[str]) -> list[str]
 def fingerprint(value: str) -> str:
     """A stable short digest of a value, for telling two values apart.
 
-    ONLY SAFE FOR HIGH-ENTROPY VALUES, and that limit is real rather than ceremonial: sha256 is fast, so the digest of a human-chosen password is recoverable from a wordlist in seconds. The corpus this matches (scripts/dev/bws-map-refresh.py:67) fingerprints a machine-account client id, which is a random identifier. Do not reach for this to describe a passphrase.
+    ONLY SAFE FOR HIGH-ENTROPY VALUES, and that limit is real rather than ceremonial: sha256 is fast, so the digest of a human-chosen password is recoverable from a wordlist in seconds. The corpus this matches (scripts/ops/bws-map-refresh.py:67) fingerprints a machine-account client id, which is a random identifier. Do not reach for this to describe a passphrase.
 
     An empty value returns "" rather than the digest of the empty string. Otherwise every absent variable in a report would carry the same conspicuous constant, which reads as a value and is not one.
     """

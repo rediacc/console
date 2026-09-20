@@ -33,7 +33,7 @@ between boxes."** The risk model is sized for a drain that no longer exists. Mea
 the item safe — it makes the ceremony disproportionate to the queue.
 
 3. **`.ci/scripts/quality/bws-map-refresh.py` does not exist.** The task brief hedged this and
-the hedge was right. The only reader of `bws-token-expiry.json` is `scripts/dev/bws-map-refresh.py:53`. `.ci/lib/bws-env.sh:66` merely *names* the path in an error string; it never parses it. This matters for driver-contract section 2's `scripts/dev` ordering, which puts W8's edits at the CURRENT path before W9 moves the directory.
+the hedge was right. The only reader of `bws-token-expiry.json` is `scripts/ops/bws-map-refresh.py:53`. `.ci/lib/bws-env.sh:66` merely *names* the path in an error string; it never parses it. This matters for driver-contract section 2's `scripts/dev` ordering, which puts W8's edits at the CURRENT path before W9 moves the directory.
 
 ---
 
@@ -41,7 +41,7 @@ the hedge was right. The only reader of `bws-token-expiry.json` is `scripts/dev/
 
 `.ci/config/bws-token-expiry.json` now carries a top-level `warn_days: 5` (preserved byte-for-byte in value) and a `tokens[]` array whose single entry holds `name`, `expires`, `client_id_sha256`, `access`, `used_by`, `replacement_plan`.
 
-The one reader, `scripts/dev/bws-map-refresh.py::warn_if_token_expiring`, was rewritten to match. New behaviour the array buys: the live `BWS_ACCESS_TOKEN` fingerprint now **selects** which entry's date is in force, instead of merely agreeing or disagreeing with the single date. A live token matching no declared entry short-circuits with a "DIFFERENT machine account" report and
+The one reader, `scripts/ops/bws-map-refresh.py::warn_if_token_expiring`, was rewritten to match. New behaviour the array buys: the live `BWS_ACCESS_TOKEN` fingerprint now **selects** which entry's date is in force, instead of merely agreeing or disagreeing with the single date. A live token matching no declared entry short-circuits with a "DIFFERENT machine account" report and
 prints no dates at all, because in that state every date in the file is about the wrong account.
 
 **No CI gate reads this file** — `grep -rn "bws-token-expiry" scripts .ci/scripts package.json` returns only the reader's own line. That is the settled decision (08-driver-contract section 2) and this change does not reopen it.
@@ -57,7 +57,7 @@ suppresses every date; absent `client_id_sha256` prints the add-it note.
 - **selection**: with two entries and no env token only the near one shouts and the far one is
 not named; with an env token pinning the FAR entry the reader goes silent even though a near entry exists; pinning the NEAR entry shouts only about it.
 
-End-to-end, `python3 scripts/dev/bws-map-refresh.py --dry-run` prints the warning on stdout and then dies on its real refusal (`✗ bws secret list exited 1: ... Missing access token`) on stderr — the warning is emitted before the failure it explains, which is the whole point.
+End-to-end, `python3 scripts/ops/bws-map-refresh.py --dry-run` prints the warning on stdout and then dies on its real refusal (`✗ bws secret list exited 1: ... Missing access token`) on stderr — the warning is emitted before the failure it explains, which is the whole point.
 
 ---
 
@@ -288,7 +288,7 @@ reader believe the ledger exists.
 The row describes `.ci/config/shadow-expected-mismatches.json` and "the `Compare shadow secrets against GitHub` step in every workflow" in the present tense. Both are gone. The row's own text ends "**Temporary**: deleted with the org secrets, along with the rest of the shadow" — the org secrets are at zero, so its own condition for deletion is met. `check:ci-suppression-liveness`
 runs 12 probes and none covers this row, so nothing catches it. W11 owns that file.
 
-### F5 — `scripts/dev/derive-shadow-pass-list.sh` is the dead script section 2 of the driver contract assigns to W8
+### F5 — `scripts/ops/derive-shadow-pass-list.sh` is the dead script section 2 of the driver contract assigns to W8
 
 Its stated purpose (`:1-13`) is to derive, from shadow-compare verdicts in CI run logs, which org secrets are safe to delete. The compare step no longer exists and `gh api orgs/rediacc/actions/secrets` returns `total_count: 0`. `git grep -n "derive-shadow-pass-list"` finds no caller anywhere except one prose mention at `docs/ci-overhaul/06-progress.md:6621`. 08-driver-contract
 section 2 sequences this as "W8 deletes its dead script, W0 and W8 make their edits at the current path, THEN W9 moves the directory" — so the deletion is W8's and it must land BEFORE W9 touches `scripts/dev/`. Not deleted here: it falls outside the file set this phase owns.
@@ -310,7 +310,7 @@ The `RDC_RENET_LICENSE=1` section states `ACCOUNT_ED25519_PUBLIC_KEY` "already e
 ✗ .claude/rediacc_hooks/shellscan.py has a shebang but git mode is 100644 (EXE001 in CI)
 ```
 
-All three are W5's uncommitted new files (`git status --porcelain` shows ` A ` for each). The ruff half of the same gate passes on 127 files including `scripts/dev/bws-map-refresh.py`. Fix is `git update-index --chmod=+x` on the three, which is W5's to run. This is the same class as the `ac817a647` commit already on `main` ("restore +x on two gate scripts I stripped").
+All three are W5's uncommitted new files (`git status --porcelain` shows ` A ` for each). The ruff half of the same gate passes on 127 files including `scripts/ops/bws-map-refresh.py`. Fix is `git update-index --chmod=+x` on the three, which is W5's to run. This is the same class as the `ac817a647` commit already on `main` ("restore +x on two gate scripts I stripped").
 
 ### F9 — the gate that exists to catch F1 is green from a snapshot taken before the deletion
 

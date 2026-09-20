@@ -71,7 +71,7 @@ GATED_FILES=("run.sh" ".ci/legacy/run-legacy.sh")
 # Extract root scripts/ paths that are INVOKED, not merely mentioned.
 #
 # The distinction is the whole accuracy of this gate. Measured 2026-08-06: the
-# first version flagged scripts/dev/scrub-sentinel.sh from two call sites, and
+# first version flagged scripts/ops/scrub-sentinel.sh from two call sites, and
 # BOTH were `log_error` strings printing remediation advice to a human
 # (cleanup-versions.sh:1258, upload-to-r2.sh:223). Treating a mention as a
 # dependency would have forced full CI on every scripts/dev edit forever, on

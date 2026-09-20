@@ -2,7 +2,7 @@
 # Build the consolidated rediacc server image locally for testing.
 #
 # Usage:
-#   scripts/docker/build-server.sh onprem  # builds rediacc-server-onprem:dev
+#   scripts/ops/build-server.sh onprem  # builds rediacc-server-onprem:dev
 #
 # Tags are local-only (no ghcr.io/ prefix). They cannot be confused with --
 # or accidentally pushed to -- the production registry path.

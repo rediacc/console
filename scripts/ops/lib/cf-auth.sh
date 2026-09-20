@@ -5,7 +5,7 @@
 # This bash library predates the TypeScript rotation tool at
 # private/account/scripts/rotation/. New rotation logic should NOT live here;
 # extend the TS implementation instead. The only consumer that still depends
-# on this file is scripts/dev/deploy-bench.sh, which will be modernized in a
+# on this file is scripts/ops/deploy-bench.sh, which will be modernized in a
 # follow-up plan. After deploy-bench is rewritten in TS, this file should be
 # deleted.
 #

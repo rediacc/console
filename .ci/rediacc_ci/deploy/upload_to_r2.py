@@ -50,7 +50,7 @@ DEFECT 1, `AN_EMPTY_CLI_DIR_PUBLISHES_A_POINTER`. A `dist/cli/` that EXISTS and 
 `cli/<channel>/latest.json` = `{"version":"<V>"}` and prints
 `CLI: uploaded to cli/v<V>/ + cli/<channel>/`. Every installer and every auto-updater on that channel then resolves to a version with zero binaries. The summary prints `Artifacts uploaded: 0` on the line below and nothing acts on it. This is the same harm the bump-none guard at the top of the same file exists to prevent, arriving by a different door. Driven 2026-09-13.
 
-DEFECT 2, `AN_UNANSWERED_COUNT_READS_AS_SEALED_BUT_EMPTY`. When the sentinel exists and `rsv_binary_count` CANNOT ANSWER (AccessDenied, a 5xx, an expired token), the guard reports the release as corrupt and tells the operator to run `scripts/dev/scrub-sentinel.sh v<V> --execute`, which destroys the sentinel of a perfectly healthy sealed release. The library goes to explicit trouble
+DEFECT 2, `AN_UNANSWERED_COUNT_READS_AS_SEALED_BUT_EMPTY`. When the sentinel exists and `rsv_binary_count` CANNOT ANSWER (AccessDenied, a 5xx, an expired token), the guard reports the release as corrupt and tells the operator to run `scripts/ops/scrub-sentinel.sh v<V> --execute`, which destroys the sentinel of a perfectly healthy sealed release. The library goes to explicit trouble
 to avoid this: its own comment at `release-state-validator.sh:161-166` says the `|| echo 0` was removed because "callers run under `set -e`, so a failed probe now aborts them instead of feeding them a fabricated zero". The abort never happens here,
 because `write_once_guard ... || guard_rc=$?` suppresses errexit inside the
 function, so `bin_count` is the empty string, `[[ "" -gt 0 ]]` is false, and the

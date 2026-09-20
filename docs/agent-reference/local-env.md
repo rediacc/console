@@ -169,7 +169,7 @@ rdc run -f container_exec -m <machine> --param repository=<repo> --param contain
 rdc run -f container_restart -m <machine> --param repository=<repo> --param container=<name>
 ```
 
-## Dev Scripts (`scripts/dev/`)
+## Operator Scripts (`scripts/ops/`)
 
 | Script | Purpose |
 |--------|---------|
@@ -206,4 +206,4 @@ the key to all three regions, smoke-tests propagation, and updates the manifest 
 
 Auth: `AWS_IAM_ADMIN_ACCESS_KEY_ID`/`AWS_IAM_ADMIN_SECRET_ACCESS_KEY` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or `CF_GLOBAL_API_KEY`+`CF_EMAIL`) for Cloudflare, authenticated `gh` CLI for GitHub secrets.
 
-`scripts/dev/deploy-bench.sh` runs `rotation check --for=bench` as a preflight, so a stale `private/account/.env.bench` cannot ship a dead key.
+`scripts/ops/deploy-bench.sh` runs `rotation check --for=bench` as a preflight, so a stale `private/account/.env.bench` cannot ship a dead key.

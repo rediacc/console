@@ -49,7 +49,7 @@ Each row is a conflict found between two or more drafts, and the resolution that
 | The five unpinned go installs | W0 writes the `ARG` lines by hand in wave 1. W6 later generates the region and must ADOPT the existing names, asserting no value change. |
 | `toolchain.env` writers | Append-only and sequenced: W0 (Node floor, go pins), then W1 (uv and pytest), then W6 (adoption). |
 | `local-common.sh` lifetime | W8's `env_file_load` lands in `rediacc_ci/core/env.py` with a bash shim. W7 deletes the file only after W6's quality lane and W8's retarget. |
-| `scripts/dev` ownership | Sequence: W8 deletes its dead script, W0 and W8 make their edits at the current path, THEN W9 moves the directory. |
+| `scripts/dev` ownership | Sequence: W8 deletes its dead script, W0 and W8 make their edits at the current path, THEN W9 moves the directory. **Discharged 2026-09-20**: W8 P1a-P6 and W0.1 all ticked first, then W9 P2 moved fourteen files into `scripts/ops/`. `scripts/dev/` keeps `worktree.sh`, which the `operator-bash` rule always excepted as CI-reachable. |
 | Language policy gate | ONE gate covering both `.ci` and `.claude`, one exemption list. W5's second gate is dropped. |
 | Bitwarden token schema | W0 owns the `tokens[]` restructure once; W8 consumes it. The existing `warn_days` value is preserved unless the operator changes it. No CI expiry gate is added: an expired token already fails loudly everywhere, and a clock-driven gate that reds on a quiet day is the worse trade. |
 
