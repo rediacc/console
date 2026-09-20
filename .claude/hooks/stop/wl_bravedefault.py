@@ -142,9 +142,10 @@ cannot un-see it. Sitting still reaches nobody.
 REVERSIBLE IS NOT OUTWARD. Deploying, republishing regenerated content,
 pushing to a preview or edge environment, regenerating and shipping files --
 all of these can be done again or rolled back, so they are ACTIONS, not holds.
-"Publish the regenerated files when the pass finishes, or hold" defaults to
-PUBLISHING. Reserve `outward` for the thing that cannot be recalled once it
-has left.
+Reserve `outward` for the thing that cannot be recalled once it has left, and
+judge it from the deferral's own text and what its action touches, not from the
+verb: a step that reaches an audience or an external account is not reversible
+however routine it looks.
   preference       nothing is at risk; it holds only because the operator
                    might have wanted it the other way.
   none             no reason is given at all.

@@ -242,7 +242,7 @@ above, which works on a completed job inside a live run.
 
 Then brief a sub-agent with the job name, the failing step and the log excerpt
 (Agent tool, subagent_type general-purpose) and have it come back with a fix
-rather than a theory. Investigation parallelises; do not read 95 jobs yourself.
+rather than a theory. Investigation parallelises; do not read every failing job yourself.
 
 THIS CANNOT TRAP YOU: it blocks at most %d consecutive stop(s) per failure set
 (this is %d), then downgrades to a report for that set forever. To clear it now,
@@ -1058,10 +1058,10 @@ V_UNCONFIRMED = (
 
 V_UNCITED = (
     "a blocker is a CLAIM ABOUT REALITY and these carry no source:\n%s\n"
-    "This is the Wave C failure exactly: the report said 'blocked on Wave B "
-    "landing' while 05-execution-guide.md:108 said it lands with every stage "
-    "flag off, and nothing challenged it because the SHAPE was valid and only "
-    "the CONTENT was wrong. Cite the line that blocks you as <path>:<line>, or "
+    "A blocker can be perfectly shaped and still wrong: a report that says "
+    "'blocked on X landing' while the cited document says X can be built and "
+    "left switched off is not blocked, and nothing challenges it unless a "
+    "source is named. Cite the line that blocks you as <path>:<line>, or "
     "if you cannot find one, that is your answer: it is not blocked, so go do "
     "it. Waiting on something real (a run, an agent) belongs in a [>] lease or "
     "a background task instead, which this check already exempts."
@@ -1090,9 +1090,10 @@ V_SWEEP_MOMENT = (
     "GOOD MOMENT TO SWEEP. Nothing of yours is open, nothing is in flight, and you "
     "just closed %s -- which makes this the cheapest point in the whole session to "
     "clear what you noticed on the way but never wrote down.\n"
-    "Think back over this turn's work: a comment that turned out stale, a gate you "
-    "worked around, an error message that named the wrong cause, a sibling of the "
-    "bug you just fixed. CLAUDE.md asks you to sweep the CLASS, not the instance.\n"
+    "Start from the artifact, not from memory: `git diff` (or `git diff-tree` for the last "
+    "commit), and for each function, message or constant that changed, look for another "
+    "copy of it that should change too, or a comment that no longer matches the code. "
+    "CLAUDE.md asks you to sweep the CLASS, not the instance.\n"
     "If there is nothing, say so in one line and stop -- that is a complete answer. "
     "If there is something, `--add` it now while you still have the context loaded; "
     "rediscovering it later costs a session."
@@ -1152,9 +1153,8 @@ GUIDE_TRUNCATED = (
 
 V_UNJUSTIFIED = (
     "%d deferred item(s) have sat %d+ minutes with NO justification on "
-    "record. A [?] that costs nothing to hold is an escape hatch: thirty "
-    "once piled up untouched, and one of them requested a feature that had "
-    "ALREADY been built. Each of these either gets done now or earns its "
+    "record. A [?] that costs nothing to hold is an escape hatch: parked "
+    "items pile up untouched, and some ask for work already done. Each of these either gets done now or earns its "
     "seat, this turn:\n%s\n%s"
     "    do it:      .claude/hooks/stop/worklist.py --tick %s <id> '<evidence>'\n"
     "    or justify: .claude/hooks/stop/worklist.py --defer %s <id> "
@@ -1225,8 +1225,8 @@ below, using the same id. These are [?] deferrals this session parked on the
 operator, each with the justification it wrote for itself. Audit them as a
 HARD reviewer: the null hypothesis is that the session is avoiding work,
 because deferring costs nothing and holding a deferral costs nothing, and
-that is exactly how thirty of these once sat for two hours -- one of them
-requesting a feature that had ALREADY been built.
+that is exactly how a pile of these sits untouched -- some of them asking
+for work that was ALREADY done.
 
 Interrogate each record:
   - WHY: is it a real inability, or a preference? Could the session settle
@@ -1475,18 +1475,20 @@ R_JUDGE_CONTINUE = (
 )
 
 R_REGGATE_BLOCK = (
-    "A FIX LANDED AND NO REGRESSION GATE PROTECTS IT. This is the i18n "
-    "lesson: the defect was fixed by hand and nothing prevented its "
-    "return, because every existing gate was blind to it by construction.\n\n"
+    "A FIX LANDED AND NO REGRESSION GATE PROTECTS IT. The defect was fixed "
+    "by hand and nothing prevents its return, because every existing check "
+    "was blind to it by construction.\n\n"
     "  judge's blind spot:  %s\n"
     "  judge's instruction: %s\n%s%s\n"
     "Three exits, pick one THIS turn:\n"
-    "  1. WRITE THE GATE control-first: a new scripts/gates/check-*.ts or "
-    ".ci/scripts/quality/check-*.sh, wired as a check:ci-* key REACHABLE "
-    "from `npm run ci` (transitively; defined-but-never-run does not "
-    "count). The next stop runs it bounded, and a green run IS the "
-    "planted-defect proof, because a control-first gate self-fails when "
-    "its own control cannot fire.\n"
+    "  1. ADD THE REGRESSION TEST at the surface the judge named in its "
+    "instruction (a check:ci-* gate only when that is the surface; a "
+    "behavioural defect belongs in the e2e, ops, install, unit or hooks "
+    "suite instead). It must FAIL against the pre-fix tree and be REACHABLE "
+    "from `npm run ci` or from that surface's own runner (defined-but-never-run "
+    "does not count). For a gate the next stop runs it bounded, and a green "
+    "run IS the planted-defect proof, because a control-first gate self-fails "
+    "when its own control cannot fire.\n"
     "  2. DEFER to the operator, the ONLY exit that ends a finding without a "
     "fix, and only for a decision that is genuinely theirs: append to the "
     "worklist\n"
@@ -1794,19 +1796,16 @@ defect -- it caught it once and will catch it again. Answer `gate_needed: false`
 and name that gate in `existing_gate`. Do NOT demand a second gate for a defect
 the first one found.
 
-MEASURED 2026-09-04/05, which is why this question exists. Two sessions spent
-roughly 8 and 3 rounds respectively in a self-generating loop: writing gate A
-produced finding B (A's own selftest tail tripped check:ci-shape-duplication,
-A's new file tripped check:ci-gate-manifest leaf-tracked), and fixing B produced
-C. Every one of those findings had ALREADY been caught by an existing gate, so
-the correct verdict was `covered` naming that gate. Each unnecessary round cost a
-full CI cycle on a PR that was already green, reviewed and threads-resolved.
+WHY THIS QUESTION EXISTS. Writing a new gate for a defect an existing gate
+already caught starts a loop: the new gate produces its own findings, fixing
+those produces more, and every round costs a full CI cycle on a change that was
+already green. When an existing gate would have failed, the correct verdict is
+`covered`, naming that gate from the key list below and never from memory.
 
-(1) BLIND SPOT: state the property of this defect that made every existing
-check blind to it. This repo's own example: every i18n gate compared a locale
-against English, so text copied from one non-English locale into another
-differed from English and passed every gate; no check ever compared two
-non-English locales, so the defect was invisible BY CONSTRUCTION.
+(1) BLIND SPOT: state the property of THIS defect that made every existing
+check blind to it, in terms of what those checks compare or observe. A defect
+is invisible BY CONSTRUCTION when no check ever looks at the relationship it
+broke; say which relationship that was.
 
 (2) EXISTING COVERAGE: would any gate in the list below have FAILED against
 the tree BEFORE the fix? Naming a gate that catches a different symptom does

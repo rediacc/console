@@ -60,18 +60,17 @@ Three answers, and the middle one is a real answer rather than a hedge:
             it. Name it in `harness`. This is checked against the disk: a module that
             does not exist, or that the instances do not import, is treated as `yes`.
   no        they look alike and are not one thing. `divergence` is REQUIRED and must be
-            CONCRETE. Worked example from this repo: `run_gate()` is duplicated 23 times
-            with THREE incompatible return contracts -- one echoes the exit code, one
-            echoes PASS/FAIL, one propagates -- so extracting it verbatim would be wrong.
-            "They are different" is not a divergence; "two accumulate and one exits" is.
+            CONCRETE: a behavioural difference visible in the instances listed above,
+            such as differing return values, error handling or side effects, cited by
+            `file:line` from the counter's list. "They are different" is not a
+            divergence; "two accumulate and one exits" is the kind of thing that is.
 
 WHAT IS NOT DUPLICATION, and the counter already excludes each, so if you see one the
 counter has a bug and `no` with that as the divergence is the right answer:
   - an import preamble. Three files importing the same helper is ADOPTION; an import
     statement IS the consolidation.
   - a comment block. The prose explaining why a guard exists is why it is trustworthy.
-  - a findings report. Measured across ten gates, ten distinct shapes: the sentence
-    saying what failed IS the gate's value.
+  - a findings report. The sentence saying what failed IS the gate's value.
 
 applicable=false only when the instances are not comparable at all -- generated files, a
 vendored dependency, or a fixture whose whole point is to be a copy.
@@ -321,13 +320,30 @@ def corpus_sig(root):
     return h.hexdigest()[:16]
 
 
+SHAPE_INDEX_REL = ".ci/cache/shape-index"
+
+
+def index_present(root):
+    """Is the commit-path cache on disk?
+
+    THE SIGNATURE ALONE IS NOT ENOUGH ANY MORE, and the gap is one-sided in the direction that matters. `corpus_sig` answers "has the corpus changed since the last run", which is the right question for the duplication VERDICT and the wrong one for the cache the verdict now also writes: a fresh checkout, a cleared `.ci/cache`, or the first run after the probe landed all leave an
+    unchanged corpus and no index at all, and the early return below would then keep the commit path advisory-less for as long as nobody edited a gate. The cache is gitignored, so that state is the ordinary one rather than an edge case.
+    """
+    cache = os.environ.get("SHAPE_PROBE_CACHE") or os.path.join(root, SHAPE_INDEX_REL)
+    return os.path.exists(os.path.join(cache, "index.json")) and os.path.exists(
+        os.path.join(cache, "probe.mjs")
+    )
+
+
 def counter_findings(root):
     """(findings, error). Each finding is {shape, files, span}. Never raises."""
     script = os.path.join(root, COUNTER)
     if not os.path.exists(script):
         return [], "counter not present at %s" % COUNTER
     proc = wl_proc.run(
-        ["npx", "tsx", COUNTER, "--json"],
+        # `--emit-index` RIDES THE RUN THAT WAS HAPPENING ANYWAY, which is the whole reason the commit-path probe can afford a fresh cache. The scan is the expensive part (about 1.1s over the corpus); writing the index it just computed is a bundle and two file writes, and it happens exactly when the corpus has changed, because that is when this rule re-runs at all. A refresh on
+        # its own timer would be a second schedule for one fact.
+        ["npx", "tsx", COUNTER, "--json", "--emit-index"],
         timeout=COUNTER_TIMEOUT_S,
         cwd=root,
     )
@@ -359,7 +375,7 @@ def run(root, state):
     `state` is a mutable dict persisted by the caller; only `shapedup_sig` is used.
     """
     sig = corpus_sig(root)
-    if sig == state.get("shapedup_sig"):
+    if sig == state.get("shapedup_sig") and index_present(root):
         return False, "", "", ""
     state["shapedup_sig"] = sig
 

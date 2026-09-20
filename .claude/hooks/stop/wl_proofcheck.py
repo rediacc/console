@@ -98,9 +98,11 @@ is exactly the failure this object exists to catch.
 
 (3) SCOPE AND INSTRUCTION. `scope` names what the transform touched, in a few
 words (a path prefix, a language, a rule name). `instruction` is the concrete
-next step: run `.ci/scripts/quality/shape_cluster_diff.py --rev <base-sha>
-<path...>` (or name the equivalent proof already available for this kind of
-change) and report its real output, not "verify the changes are correct".
+next step: a STRUCTURAL comparison, before and after, of the files the transform
+touched (parsed structure, not line counts), with its real output reported, not
+"verify the changes are correct". For prose and comments,
+`.ci/scripts/quality/shape_cluster_diff.py --rev <base-sha> <path...>` is one
+such tool; for code, an AST comparison is another. Name what fits THIS change.
 
 Fill `proof_obligation` accordingly: applicable, transform_kind (the
 mechanism, one line), scope, proof_kind, evidence (the quote, or empty
@@ -218,8 +220,9 @@ def enforce(out, payload, fixset_files=None):
             action = V_ACTION_DROPPED % {"why": why[:70] or "did not parse"}
     else:
         action = V_ACTION_NOSEARCH % (
-            "Run .ci/scripts/quality/shape_cluster_diff.py --rev <base-sha> over the "
-            "transform's own files and report its output."
+            "Run a structural before/after comparison of the files the transform touched and "
+            "report its real output (for prose, .ci/scripts/quality/shape_cluster_diff.py "
+            "--rev <base-sha> <files>; for code, an AST comparison)."
         )
     wl_rules.apply_order(out, reason, action)
     return "proof-obligation: %s" % payload["transform_kind"][:160]

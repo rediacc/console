@@ -60,7 +60,7 @@ fixcommit src.ts "fix: a real defect"
 shim_judge '{"applicable":true,"blind_spot":"uncovered path","existing_gate":"check:ci-i-dreamed-this","recurring":true,"gate_needed":false,"gate_proven":false,"instruction":"write a gate"}'
 OUT="$(runj)"
 if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "HALLUCINATED" <<<"$OUT" &&
-    grep -qF "WRITE THE GATE control-first" <<<"$OUT" && grep -qF "REBUT" <<<"$OUT"; then
+    grep -qF "ADD THE REGRESSION TEST" <<<"$OUT" && grep -qF "REBUT" <<<"$OUT"; then
     echo "  PASS: a nonexistent gate name is called hallucinated and the block names the exits"
     PASS=$((PASS + 1))
 else
