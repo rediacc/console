@@ -1,5 +1,5 @@
 # PLAN: a staged-files shape-duplication probe at pre-bash, on a cached index
-Status: executing
+Status: done
 Owner: d778be9d
 Updated: 2026-09-20
 
@@ -49,11 +49,16 @@ implementer must measure.
 
 ## Tasks
 
-- [ ] Gate edits in `check-shape-duplication.ts` (exports, `--root`, `--emit-index`, `--no-seed`, `probeMain`) with `--selftest` controls
-- [ ] The emit step: atomic write of `index.json` and `probe.mjs`, esbuild resolved from `tsx`
-- [ ] The guard, its `EDGE_CASES` and `DEFECT`, and its hermetic harness
-- [ ] `wl_shapedup.py` refresh trigger and missing-index bypass
-- [ ] `test_shape_probe_agreement.py`
-- [ ] Register in `hook-inventory-baseline.json`; run `npm run ci:quick`
-- [ ] Measure the composed latency and confirm the loud channel live
-- [ ] Commit, tick worklist `6ef6d1d1`, tick the box in `agent/PLAN-consolidation-pressure.md`, set this plan `Status: done`
+- [x] Gate edits in `check-shape-duplication.ts` (exports, `--root`, `--emit-index`, `--no-seed`, `probeMain`) with `--selftest` controls
+- [x] The emit step: atomic write of `index.json` and `probe.mjs`, esbuild resolved from `tsx`
+- [x] The guard, its `EDGE_CASES` and `DEFECT`, and its hermetic harness
+- [x] `wl_shapedup.py` refresh trigger and missing-index bypass
+- [x] `test_shape_probe_agreement.py`
+- [x] Register in `hook-inventory-baseline.json`; run `npm run ci:quick`
+- [x] Measure the composed latency and confirm the loud channel live
+- [x] Commit, tick worklist `6ef6d1d1`, tick the box in `agent/PLAN-consolidation-pressure.md`, set this plan `Status: done`
+
+## Outcome
+
+Implemented in `e7d882261`. Three design points were corrected on contact: pathspec commits (`git commit -F m -- paths`, the only form the pathspecless-commit guard allows) are probed against the working tree instead of skipped, the drift check excludes the committed paths because `git ls-files -s` reports the index, and stdin needs a retry loop for EAGAIN. Measured guard increment
+about 94 ms with a corpus file staged and about 9 ms without. Still unverified: whether a PreToolUse exit-0 JSON systemMessage reaches the operator; it needs one live check.

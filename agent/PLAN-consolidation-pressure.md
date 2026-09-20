@@ -1,5 +1,5 @@
 # PLAN: Agreement detection and proof obligations for bulk change
-Status: executing
+Status: done
 Owner: d778be9d
 Updated: 2026-09-20
 
@@ -33,7 +33,7 @@ A plan about eliminating duplication had duplicated an existing plan. The rule t
 - [x] Write the shape-cluster diff as a reusable script: normalise every changed line to its shape, cluster, diff per-cluster counts against HEAD
 - [x] Wire the missing-proof refusal into the stop judge, matching the enforcement shape wl_classsweep.py already uses
 - [x] Wire the same refusal into the pre-bash commit, push and gh guards, so the proof is demanded where the change leaves the tree
-- [ ] Add the pre-bash staged-files-only duplication probe against a cached index, budget 200ms, failing OPEN and LOUD when the cache is stale. IN FLIGHT as worklist `6ef6d1d1`, redesigned Plan-first: see `agent/PLAN-staged-duplication-probe.md` once written.
+- [x] Add the pre-bash staged-files-only duplication probe against a cached index, budget 200ms, failing OPEN and LOUD when the cache is stale. Done in `e7d882261`, redesigned Plan-first: see `agent/PLAN-staged-duplication-probe.md`.
 - [x] Record the batch-size-scales-with-proof rule in docs/agent-reference/TRAPS.md with a Trap-Id and an Enforced-By pointer
 The two family-widening boxes this plan started with are GONE rather than ticked-by-doing, and that is the fold. `agent/PLAN-extension-shaped-matchers.md` owns commit 3, has re-checked its sequencing three times, and has deliberately not started it; carrying a duplicate box here would be this plan committing the defect it was written to detect. The operator's question about
 seeding versus draining belongs to that plan and to the numbers it re-measures, not to this one.
