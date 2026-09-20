@@ -1767,6 +1767,19 @@ second gate for it buys nothing. It is not automatically covered -- decide -- bu
 do not reach for `gate_needed: true` here by reflex.
 """
 
+FIXSET_GROUND_TRUTH = """
+
+ACTUAL FILES THIS FIX-SET TOUCHED, computed directly by git just now (%(count)d
+file(s)), never narrated:
+%(files)s%(more)s
+
+The class_sweep and proof_obligation objects below are ONLY about this list and
+the message below. A finding that names a file count, a directory, or a scope
+NOT in this list is not describing the current fix-set -- it is either a
+misreading of the traps note above (which is history, not a report on this
+stop) or an invention, and must not be reported as a fresh finding either way.
+"""
+
 REGGATE_PROMPT = """
 
 A FIX LANDED THIS TURN, so ALSO fill the `regression_gate` object. The fix-set:
@@ -1961,6 +1974,14 @@ round or a
 wasted session to learn. Use them to tell a REAL constraint from an excuse: a
 blocker that matches one of these is credible, and a blocker that contradicts
 one is not. Do not treat the absence of a matching line as evidence either way.
+
+THESE ARE PAST INCIDENTS, NOT A REPORT ABOUT THIS STOP. None of them describes
+the session's CURRENT message or diff; each already happened, in an earlier
+session, and was already fixed. Never restate one of them -- its file count,
+its directory name, its scope -- as a NEW finding about the message below. A
+finding about the current fix-set is legitimate only when every specific it
+names (a file, a count, a path) is quoted or clearly implied by the message
+itself, never borrowed from one of these lines.
 %(traps)s
 
 Sources the session CITED for its blockers, quoted from the tree:

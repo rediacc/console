@@ -18,6 +18,7 @@ import json
 import os
 import pathlib
 import shutil
+import subprocess
 import sys
 import tempfile
 import types
@@ -29,6 +30,7 @@ import wl_core
 import wl_judge
 import wl_proc
 import wl_proofcheck
+import wl_reggate
 import wl_rules
 
 
@@ -1847,6 +1849,97 @@ control("the class-sweep reason survives the second rule", "mention instead of a
 control("the proof-obligation reason is appended, not lost", "a tree-wide rename" in out["reason"], True)
 wl_classsweep.clear_outstanding(MARKER)
 wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+
+# --------------------------------------------------------------------------- PART 3h -- grounding a fired finding in the real fix-set (agent/PLAN-judge-prompt-trap-conflation.md).
+
+
+control("scope_grounded: fixset_files=None never accuses (computation unavailable)", wl_rules.scope_grounded("anything at all", None), True)
+control("scope_grounded: an empty, successfully-computed list is ungrounded for any real claim", wl_rules.scope_grounded("some scope", []), False)
+control("scope_grounded: a scope naming a real path in the fix-set is grounded", wl_rules.scope_grounded(".ci/scripts/quality/reflow.py touched", [".ci/scripts/quality/reflow.py"]), True)
+control("scope_grounded: a scope naming a real path SEGMENT is grounded", wl_rules.scope_grounded("the plans directory", ["plans/reflow.md"]), True)
+control("scope_grounded: HALLUCINATION #2's exact shape -- a fictional plans/ scope against an unrelated real fix-set", wl_rules.scope_grounded("Bulk prose-style reflow applied uniformly to markdown files in plans/ directory", ["docs/agent-reference/TRAPS.md"]), False)
+
+# -- 3i. HALLUCINATION #1's exact shape replayed through PF.enforce: a fired proof_obligation naming a scope with NOTHING in the actual (clean) fix-set. -----
+out = proof_answer(scope="CI scripts", transform_kind="Bulk reflow of 84 CI script files")
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH, fixset_files=[])
+control("HALLUCINATION #1 replay: still fires (never suppressed)", kind, "fire")
+control("HALLUCINATION #1 replay: the reason is annotated UNVERIFIED", "UNVERIFIED" in out["reason"], True)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# CONTROL: the identical fixture, but the scope genuinely matches the fix-set -- no caveat.
+out = proof_answer(scope=".ci/rediacc_ci/quality/prose_style.py")
+kind, _note = wl_proofcheck.apply_verdict(
+    out, path=PROOF_MARKER_PATH, fixset_files=[".ci/rediacc_ci/quality/prose_style.py"]
+)
+control("CONTROL: a grounded scope still fires (the rule itself is unrelated)", kind, "fire")
+control("CONTROL: no UNVERIFIED caveat when the scope is real", "UNVERIFIED" in out["reason"], False)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# -- 3j. HALLUCINATION #2's exact shape replayed through CS.enforce. --------
+out = answer(defect_class="prose reflow in plans/ directory")
+kind, _note = wl_classsweep.apply_verdict(out, path=MARKER, fixset_files=["docs/agent-reference/TRAPS.md"])
+control("HALLUCINATION #2 replay: still fires (never suppressed)", kind, "fire")
+control("HALLUCINATION #2 replay: the reason is annotated UNVERIFIED", "UNVERIFIED" in out["reason"], True)
+wl_classsweep.clear_outstanding(MARKER)
+
+# CONTROL: defect_class matches the fix-set, but locus/search legitimately point OUTSIDE it (the entire point of a sweep) -- grounding checks defect_class alone, never locus/search, so an unrelated locus/search must NOT trigger the caveat.
+out = answer(
+    defect_class="a guard in block-example.sh missing anchoring",
+    locus=".claude/hooks/pre-bash/",
+    search="grep -rln 'block-' .claude/hooks/pre-bash/",
+)
+kind, _note = wl_classsweep.apply_verdict(
+    out, path=MARKER, fixset_files=[".claude/hooks/pre-bash/block-example.sh"]
+)
+control("CONTROL: defect_class grounded, locus outside the fix-set is normal for a sweep, no caveat", "UNVERIFIED" in out["reason"], False)
+wl_classsweep.clear_outstanding(MARKER)
+
+
+def _git(cwd, *args):
+    return subprocess.run(
+        ["git", "-C", str(cwd), *args], capture_output=True, text=True, check=False
+    ).stdout
+
+
+with tempfile.TemporaryDirectory() as _fxroot:
+    _fxroot = pathlib.Path(_fxroot)
+    subprocess.run(["git", "init", "-q", "-b", "main", str(_fxroot)], check=True)
+    subprocess.run(["git", "-C", str(_fxroot), "config", "user.email", "p@example.invalid"], check=True)
+    subprocess.run(["git", "-C", str(_fxroot), "config", "user.name", "p"], check=True)
+    (_fxroot / "a.py").write_text("x = 1\n")
+    subprocess.run(["git", "-C", str(_fxroot), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(_fxroot), "commit", "-qm", "root commit"], check=True)
+    _root_sha = _git(_fxroot, "rev-parse", "HEAD").strip()
+
+    (_fxroot / "b.py").write_text("y = 2\n")
+    (_fxroot / "c.py").write_text("z = 3\n")
+    subprocess.run(["git", "-C", str(_fxroot), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(_fxroot), "commit", "-qm", "add two files"], check=True)
+    _second_sha = _git(_fxroot, "rev-parse", "HEAD").strip()
+
+    control(
+        "fixset_files: a commit sha resolves to its real diff-tree file list",
+        sorted(wl_reggate.fixset_files(_fxroot, [_second_sha])),
+        ["b.py", "c.py"],
+    )
+    control(
+        "fixset_files: a ROOT commit (no parent) still resolves via the --root retry",
+        wl_reggate.fixset_files(_fxroot, [_root_sha]),
+        ["a.py"],
+    )
+    control(
+        "fixset_files: a non-existent id (tick-shaped) falls back to `git status --porcelain`",
+        wl_reggate.fixset_files(_fxroot, ["deadbeef00"]),
+        [],
+    )
+    (_fxroot / "d.py").write_text("w = 4\n")
+    control(
+        "fixset_files: the git-status fallback sees a real untracked file",
+        wl_reggate.fixset_files(_fxroot, ["deadbeef00"]),
+        ["d.py"],
+    )
+    control("fixset_files: an empty ids list on an otherwise-dirty tree still uses the status fallback", wl_reggate.fixset_files(_fxroot, []), ["d.py"])
 
 
 if Tally.fails:

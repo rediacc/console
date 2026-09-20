@@ -65,7 +65,12 @@ formatter over the touched directory" still has a bulk transform inside it.
 (1) APPLICABLE. Does any part of this fix-set apply one mechanical change
 across many files? If every file in the fix-set was individually read and
 edited by a person, applicable=false: a bulk transform needs SCALE THROUGH
-REPETITION, not merely touching several files.
+REPETITION, not merely touching several files. A trap note earlier in this
+prompt describing a PAST bulk transform is never itself evidence that one is
+happening now: judge only the ACTUAL FILES list (if one was injected above)
+and the message below, and answer applicable=false when that list is short,
+clean, or unrelated to what a trap describes even though the message
+discusses a related topic.
 
 (2) IF APPLICABLE, WHAT PROOF DOES THE MESSAGE SHOW. Three kinds, and only
 two count:
@@ -80,11 +85,12 @@ two count:
            check attached: "reflowed N files", "ran the formatter", a diff
            stat, or nothing at all.
 
-A LINE-COUNT OR FILE-COUNT ALONE IS `none`. "884 files changed, +200/-38000"
-proves the transform ran; it proves nothing about whether it destroyed
-structure the transform's own author did not think to check -- which is
-exactly what happened in the incident this rule exists for, with an
-AST-equality proof ALSO attached and ALSO passing.
+A LINE-COUNT OR FILE-COUNT ALONE IS `none`, regardless of how large or small
+it is. Reporting how many files a transform touched proves the transform RAN;
+it proves nothing about whether it destroyed structure its own author did not
+think to check. Judge the count and scope only from the ACTUAL FILES list (if
+one was injected above) and the message below -- never invent a count or a
+directory of one's own to illustrate the point.
 
 Set `proof_attached=true` ONLY when `proof_kind` is not `none`. An assertion
 that the transform is safe, with no verifiable check quoted in `evidence`,
@@ -172,15 +178,24 @@ V_ACTION_DROPPED = "Run a shape-cluster diff or equivalent structural proof over
 V_ACTION_NOSEARCH = "%s"
 
 
-def enforce(out, payload):
+def enforce(out, payload, fixset_files=None):
     """Write the proof order into a judge verdict, in place. Returns the note.
 
     Reuses `wl_classsweep.validate_search`/`names_destructive` rather than re-deriving them, on the same reasoning the plan this rule implements argues for: a safety check consulted twice belongs in one place.
 
     THE RESERVED CHECK RUNS EVEN WHEN `validate_search` SAYS OK, and it has to: `validate_search` proves a string PARSES as a read-only shell command, not that its English is safe to hand over. "commit the reflow now" carries no `git` token and no verb `_DESTRUCTIVE` recognises, so it validates as `ok` -- caught by this module's own planted control, and fixed here and in
     `wl_classsweep.enforce`, which carried the identical gap on its `search` field.
+
+    `fixset_files` is a SEPARATE, later-added gap of the same shape: a fired finding's own SCOPE claim was never checked against what git says actually changed, only that a follow-up command built from it parses. ANNOTATES `reason` only, never suppresses (see agent/PLAN-judge-prompt-trap-conflation.md and `wl_rules.scope_grounded`'s own docstring for why): this rule never
+    fails closed, so a check added here may only make a fired finding more legible about its own uncertainty.
     """
     reason = V_REASON % (payload["transform_kind"], V_ASSERTED if payload["asserted"] else "")
+    if not wl_rules.scope_grounded(payload.get("scope", ""), fixset_files):
+        reason += (
+            " UNVERIFIED: git's own file list for this fix-set does not match '%s' -- if that "
+            "scope is not real, name the actual commit or files this transform touched, or say "
+            "plainly none occurred." % (payload.get("scope") or "")[:80]
+        )
     ok, why = CS.validate_search(payload["instruction"])
     reserved = wl_rules.names_operator_reserved(payload["instruction"]) if ok else ""
     verb = CS.names_destructive(payload["instruction"]) if ok else ""
@@ -230,14 +245,16 @@ def clear_outstanding(path=None):
     PROOF_DEMAND.clear(path)
 
 
-def apply_verdict(out, outstanding=None, path=None):
+def apply_verdict(out, outstanding=None, path=None, fixset_files=None):
     """(kind, note). Mutates `out` when the rule fires; owns the marker lifecycle.
 
     Mirrors `wl_classsweep.apply_verdict`: a silent OR degraded answer discharges any outstanding demand, since carrying one forward on an unreadable judge answer would block a session on the judge's own malfunction.
+
+    `fixset_files` defaults to `None`, so every existing call site that does not know about it behaves byte-identically to before this parameter existed (see `wl_rules.scope_grounded`).
     """
     kind, payload = read_verdict(out)
     if kind == "fire":
-        note = enforce(out, payload)
+        note = enforce(out, payload, fixset_files)
         save_outstanding(payload, outstanding, path)
         return "fire", note
     clear_outstanding(path)

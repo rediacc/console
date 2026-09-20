@@ -697,7 +697,15 @@ def judge_schema_for(extra):
 
 
 def run_judge(
-    remaining_lines, leases, message, streak, loop_desc, citations=None, extra="", traps=None
+    remaining_lines,
+    leases,
+    message,
+    streak,
+    loop_desc,
+    citations=None,
+    extra="",
+    traps=None,
+    fixset_files=None,
 ):
     """(verdict_dict, error_string). Exactly one is non-None."""
     exe = resolve_claude()
@@ -720,7 +728,18 @@ def run_judge(
     # NOT ON A FIX STOP. A regression-gate stop is already asking the judge to rule on a fix's test coverage AND its sibling sweep; adding "and by the way, is that parked question's DEFAULT brave enough" makes one call carry three unrelated judgements, and the parked question is the one least connected to what the session just did. It is not dropped, only deferred: the trigger is
     # the remaining list, which does not go away, so the same item is asked about on the next stop that is not a fix stop.
     brave_extra = "" if is_fix_stop(extra) else BD.prompt_section(remaining_lines)
-    extra = (extra or "") + sweep_extra + proof_extra + brave_extra
+    # GROUND THE SWEEP/PROOF QUESTIONS IN A REAL FILE LIST, computed by git rather than trusted from the model's own prose -- see wl_reggate.fixset_files. Injected only when the caller computed one AND a sweep/proof question is actually being asked, so an ordinary judge call carries no new tokens. `fixset_files is None` (the caller could not compute it, or this is a call site
+    # that has not adopted the parameter yet) means NO claim, never "the tree is clean" -- conflating the two would accuse a fired finding of being ungrounded on missing data rather than on git's own evidence.
+    ground_extra = ""
+    if fixset_files is not None and (sweep_extra or proof_extra):
+        shown = fixset_files[:40]
+        ground_extra = M.FIXSET_GROUND_TRUTH % {
+            "count": len(fixset_files),
+            "files": "\n".join("  " + f for f in shown)
+            or "  (none -- git shows a clean tree and nothing between the fix marker and HEAD)",
+            "more": "\n  (+%d more)" % (len(fixset_files) - 40) if len(fixset_files) > 40 else "",
+        }
+    extra = (extra or "") + ground_extra + sweep_extra + proof_extra + brave_extra
     prompt = M.JUDGE_PROMPT % {
         "streak": streak,
         "remaining": "\n".join("  " + r for r in remaining_lines[:20]) or "  (none tracked)",
@@ -823,7 +842,7 @@ def run_judge(
     # BEFORE sanitize_next_action, deliberately: the search command and the braver default are the MODEL's text, so they go through the operator-only filter like any other next_action rather than around it.
     fired = False
     if sweep_extra:
-        kind, note = CS.apply_verdict(out, sweep_outstanding)
+        kind, note = CS.apply_verdict(out, sweep_outstanding, fixset_files=fixset_files)
         fired = kind == "fire"
         if kind == "degraded":
             # Never a block (see wl_classsweep FAIL SEMANTICS), but never silent either: a paid question that produced no answer must be visible in the one field the session always reads.
@@ -832,7 +851,7 @@ def run_judge(
             ]
     if proof_extra:
         # BOTH RULES MAY FIRE ON ONE STOP, deliberately, on the same reasoning apply_order documents: a verdict already `continue` is APPENDED to, never overwritten, so a class-sweep order and a proof order both reach the session rather than one silently losing to the other.
-        kind, note = PF.apply_verdict(out, proof_outstanding)
+        kind, note = PF.apply_verdict(out, proof_outstanding, fixset_files=fixset_files)
         fired = fired or kind == "fire"
         if kind == "degraded":
             out["reason"] = (

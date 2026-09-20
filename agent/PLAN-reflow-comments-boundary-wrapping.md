@@ -1,5 +1,5 @@
 # PLAN: fold a docstring's opening/closing physical line into reflow correctly
-Status: executing
+Status: done
 Owner: d778be9d
 Updated: 2026-09-17
 
@@ -31,15 +31,23 @@ Exactly one tracked line ends in an odd backslash run (`promote_r2_to_stable_hot
 
 ## Tasks
 
-- [ ] Add `_DOCSTRING_OPEN`, `_ends_in_odd_backslash_run`, `_delimiter_reserve`, `_glue_delimiters` to `prose_style.py`
-- [ ] Rewrite `_python_reflow_lines` for the 4-tuple shape and the opening/closing-line eligibility rules above; widen `_cstyle_reflow_lines`'s tuple for parity
-- [ ] Thread the 4-tuple through `comment_segments` (both `yield "para"` sites) and update its own docstring
-- [ ] Update `reflow_comments` and `underwrap_findings` to reserve width and glue delimiters
-- [ ] Correct the now-narrower claims in `_python_reflow_lines`'s and `reflow_comments`'s own docstrings (excluded only when the line carries no prose alongside its delimiter)
-- [ ] Update the one existing hermetic fixture whose expected value encoded the old boundary-exclusion behavior incidentally (`test_reflow_comments[a trailing comment on a docstring's closing line is never joined]`, `test_quality_prose_style.py:590-601`, and its `selftest()` twin, `prose_style.py:2189-2198`)
-- [ ] Add the five new hermetic tests pinning both directions (short-opening-line-widens, opening/closing-line-alone-over-width wraps, line-continuation-backslash never folds, trailing-quote-adjacency gets a protective space)
-- [ ] Verify: `pytest test_quality_prose_style.py` full pass, `selftest()` full pass, a corpus-wide docstring-normalized AST-equality + idempotency + zero-new-overwidth-line sweep across all 1,057 tracked `.py` files (same shape as `469faae58`'s proof), and `shape_cluster_diff.py` before/after on every changed file expecting zero new clusters of the seven previously-fixed shapes
-- [ ] Commit, `PR-TASK: e87fa3ce`, evidence into worklist `24e4b91d`
+- [x] Add `_DOCSTRING_OPEN`, `_ends_in_odd_backslash_run`, `_delimiter_reserve`, `_glue_delimiters` to `prose_style.py`
+- [x] Rewrite `_python_reflow_lines` for the 4-tuple shape and the opening/closing-line eligibility rules above; widen `_cstyle_reflow_lines`'s tuple for parity
+- [x] Thread the 4-tuple through `comment_segments` (both `yield "para"` sites) and update its own docstring
+- [x] Update `reflow_comments` and `underwrap_findings` to reserve width and glue delimiters
+- [x] Correct the now-narrower claims in `_python_reflow_lines`'s and `reflow_comments`'s own docstrings (excluded only when the line carries no prose alongside its delimiter)
+- [x] The one existing hermetic fixture needed NO expected-value change, a deviation from the design: the closing-line-tail guard found and added during implementation (see Outcome) excludes exactly that fixture's shape, so it keeps reading its ORIGINAL expected value rather than a new one
+- [x] Add six new hermetic tests (five from the design plus one pinning the closing-line-tail guard itself, found during implementation)
+- [x] Verify: `pytest test_quality_prose_style.py` full pass (231), `selftest()` full pass (82), a corpus-wide docstring-normalized AST-equality + idempotency + zero-new-overwidth-line sweep across all 1,057 tracked `.py` files (same shape as `469faae58`'s proof), and `shape_cluster_diff.py` before/after on every changed file: zero new clusters of the seven previously-fixed shapes
+- [x] Commit `d43cd6212`, `PR-TASK: e87fa3ce`, evidence into worklist `24e4b91d`
+
+## Outcome
+
+One real deviation from the design, found during implementation rather than anticipated by it: the closing physical line's own STRING-token text never includes a trailing token after the quote (a real comment sharing that line, `"""D""" # note`), so gluing `close_delim` back on from parts alone silently DROPPED it -- caught by the design's own predicted fixture (the pre-existing "a
+trailing comment on a docstring's closing line is never joined" test) going red on the first implementation pass, not by a new test written in advance. Fixed by reading the raw source line and excluding a closing line whose tail (beyond where the string token ends) is non-blank, falling back to the pre-fix, safe, unchanged behavior for exactly that shape. A new hermetic test pins
+the guard itself so this cannot regress silently a second time.
+
+Applying the corpus-wide reflow (644 files) also surfaced 15 pre-existing `you`/`I`/`my`/`mine`/`yours` prose-style violations across 14 files unrelated to this fix, invisible to the gate only because they sat on lines this reflow's line-shifting then moved into view. Fixed inline (reworded, meaning preserved) rather than re-baselined, per the same commit.
 
 ## What cannot be fixed safely
 

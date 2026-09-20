@@ -289,6 +289,43 @@ GATE_ARTIFACT_GLOBS = (
 GATE_NEUTRAL_PREFIXES = ("agent/", "docs/")
 
 
+def _diff_tree_files(root, sha):
+    """The real files one commit touched, root-commit safe. `[]` on any git failure or an unresolvable ref.
+
+    FACTORED OUT of `gate_only_fixset` and `fix_signals`, which each carried this exact root-commit-retry shape independently -- the third copy of one pattern, found while grounding the judge's prompt in real data rather than narrated claims (agent/PLAN-judge-prompt-trap-conflation.md). `C._git` itself never raises (it returns `""` on any failure), so the `try/except` here is
+    belt-and-suspenders against a future change to that contract, matching the caller this replaces.
+    """
+    try:
+        files = C._git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha).splitlines()
+    except Exception:  # noqa: BLE001 -- a hint must never raise into the stop path
+        return []
+    if files:
+        return [f.strip() for f in files if f.strip()]
+    # A ROOT commit has no parent, so `diff-tree` prints nothing. Retry with `--root`, which does list a root commit's files. Caught by case 96, whose fixture repo's first commit IS the root.
+    try:
+        files = C._git(
+            root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", sha
+        ).splitlines()
+    except Exception:  # noqa: BLE001
+        return []
+    return [f.strip() for f in files if f.strip()]
+
+
+def fixset_files(root, ids):
+    """The real files THIS fix-set touched, computed by git, never narrated.
+
+    `ids` are fix_signals' own ids: commit shas for a commit-based fix-set, a single tick id for a tick-based one. A tick id is not a tree-ish, so `_diff_tree_files` answers `[]` for it -- correct, because a tick-based fix-set's evidence is necessarily still UNCOMMITTED. Falls back to `git status --porcelain`, the same ground truth `gate_only_fixset`'s own docstring already
+    calls out as the honest answer for that shape, so a hallucinated bulk transform can be checked against what git ACTUALLY shows changed rather than trusted from the judge's own prose (agent/PLAN-judge-prompt-trap-conflation.md).
+    """
+    files = set()
+    for i in ids or []:
+        files.update(_diff_tree_files(root, i))
+    if not files:
+        status = C._git(root, "status", "--porcelain") or ""
+        files.update(ln[3:].strip() for ln in status.splitlines() if ln.strip())
+    return sorted(files)
+
+
 def gate_only_fixset(root, shas):
     """True when every NON-BOOKKEEPING file in the fix-set is a CI-gate artifact.
 
@@ -304,24 +341,9 @@ def gate_only_fixset(root, shas):
         return False
     seen = False
     for sha in shas:
-        try:
-            files = C._git(
-                root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha
-            ).splitlines()
-        except Exception:  # noqa: BLE001 -- a hint must never raise into the stop path
-            return False
+        files = _diff_tree_files(root, sha)
         if not files:
-            # A ROOT commit has no parent, so `diff-tree` prints nothing. Retry
-            # with --root, which does list a root commit's files. Caught by case
-            # 96, whose fixture repo's first commit IS the root. Still False if that yields nothing: an unreadable ref says nothing extra.
-            try:
-                files = C._git(
-                    root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", sha
-                ).splitlines()
-            except Exception:  # noqa: BLE001
-                return False
-            if not files:
-                return False
+            return False
         for raw in files:
             path = raw.strip()
             if not path or any(path.startswith(pre) for pre in GATE_NEUTRAL_PREFIXES):

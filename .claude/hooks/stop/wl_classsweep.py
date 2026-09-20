@@ -106,7 +106,10 @@ there is nothing to sweep:
   - "Bumped the pinned action from v4 to v5." A version bump is not a defect
     with siblings. applicable=false.
 
-Answer these about the fix-set above.
+Answer these about the fix-set above. The fix being swept is the one shown in
+the ACTUAL FILES list above (if one was injected) or, when that list is empty,
+a change the message explicitly quotes. If neither points at a real fix,
+applicable=false: there is nothing to sweep.
 
 (1) CLASS. State the defect as a PATTERN, not as a location. "block-x.sh
 matched a mention" is a location; "a guard that greps for a script name
@@ -359,13 +362,22 @@ V_ACTION_DROPPED = (
 )
 
 
-def enforce(out, payload):
+def enforce(out, payload, fixset_files=None):
     """Write the sweep order into a judge verdict, in place. Returns the note.
 
     `search` IS MODEL PROSE TOO, and `validate_search` was never asked to know that: it checks whether a string PARSES as a read-only shell command, not whether its English happens to name a reserved act. "commit the reflow now" carries no `git` token and no verb `_DESTRUCTIVE` recognises, so it validated as `ok` and would have reached the session as `Run: commit the reflow now`,
     the exact second-door shape the comment two lines below was written about for `instruction` and left open here. Found by this module's own sibling, `wl_proofcheck`, planting the identical case against an `instruction` field and noticing `search` had never been asked the same question.
+
+    `fixset_files` checks the TRIGGERING FIX's own claim (`defect_class`), never `locus`/`search`: those legitimately point OUTSIDE the touched files by design (that is the entire point of a sweep), so grounding them against the fix-set would flag every real sweep as ungrounded. Annotates `reason` only, mirroring `wl_proofcheck.enforce` exactly (see
+    agent/PLAN-judge-prompt-trap-conflation.md).
     """
     reason = V_REASON % (payload["defect_class"], V_ASSERTED if payload["asserted"] else "")
+    if not wl_rules.scope_grounded(payload.get("defect_class", ""), fixset_files):
+        reason += (
+            " UNVERIFIED: git's own file list for this fix-set does not match '%s' -- if that "
+            "defect is not real, name the actual commit or files it fixed, or say plainly none "
+            "occurred." % (payload.get("defect_class") or "")[:80]
+        )
     ok, why = validate_search(payload["search"])
     search_reserved = wl_rules.names_operator_reserved(payload["search"]) if ok else ""
     search_verb = names_destructive(payload["search"]) if ok else ""
@@ -425,14 +437,16 @@ def clear_outstanding(path=None):
     SWEEP_DEMAND.clear(path)
 
 
-def apply_verdict(out, outstanding=None, path=None):
+def apply_verdict(out, outstanding=None, path=None, fixset_files=None):
     """(kind, note). Mutates `out` when the rule fires; owns the marker lifecycle.
 
     kind is 'fire', 'silent' or 'degraded'. A silent OR degraded answer discharges any outstanding demand: carrying one forward on an answer nobody could read would block a session on the judge's malfunction rather than on anything it did.
+
+    `fixset_files` defaults to `None`, so every existing call site that does not know about it behaves byte-identically to before this parameter existed (see `wl_rules.scope_grounded`).
     """
     kind, payload = read_verdict(out)
     if kind == "fire":
-        note = enforce(out, payload)
+        note = enforce(out, payload, fixset_files)
         save_outstanding(payload, outstanding, path)
         return "fire", note
     clear_outstanding(path)
