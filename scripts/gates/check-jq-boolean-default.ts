@@ -1,5 +1,8 @@
 #!/usr/bin/env tsx
-// ---- gate ---- step: jq boolean defaults needs: node ---- end gate ----
+// ---- gate ----
+// step: jq boolean defaults
+// needs: node
+// ---- end gate ----
 
 import { execFileSync } from 'node:child_process';
 /**

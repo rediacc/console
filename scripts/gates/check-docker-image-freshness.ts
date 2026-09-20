@@ -1,7 +1,11 @@
 #!/usr/bin/env tsx
-// ---- gate ---- step: Docker image freshness
+// ---- gate ----
+// step: Docker image freshness
 // env-DOCKERHUB_TOKEN: ${{ env.BWS_DOCKERHUB_TOKEN }}
-// needs: node selftest: true lane: quality-content ---- end gate ----
+// needs: node
+// selftest: true
+// lane: quality-content
+// ---- end gate ----
 
 import { spawnSync } from 'node:child_process';
 /**
