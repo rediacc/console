@@ -1115,7 +1115,7 @@ export function assertEquivalent(rows: LedgerRow[], k: number): AssertResult {
     for (const d of disqualified) {
       reasons.push(
         `tree ${d.tree.slice(0, 12)} is DISQUALIFIED: a row against it recorded ${d.verdict}. ` +
-          'The tree id is the content of both implementations, so re-running cannot clear it. ' +
+          'The tree id is the content of both implementations, so this cannot be cleared by re-running. ' +
           `It stops failing the pair once ${k} distinct clean trees are recorded after it.`
       );
     }
