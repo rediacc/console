@@ -774,6 +774,46 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       this document names the find-port shim at its old location and line -- left for
       the concurrent W7P5-b writer's own deletion to settle, since editing it now would
       race that writer's file.
+      **REAL-RUN RUNBOOK 2026-09-20, `door:operator-only`.** The 32 blocklisted scripts each need one real run
+      before their bash twin may be deleted, and this host has no production credentials. The table lists, per
+      script, the external tools its code calls, the credential that implies, and the workflow step to copy the
+      command from (the workflow step is the exact invocation; run it with the real inputs against a staging
+      target, then record the observable in the script's status row). It was derived by reading each script, so
+      confirm the credential against the script before running it. The dry-run ledgers do not substitute.
+      | Script (under .ci/scripts/) | External tools | Credential | Workflow step |
+      |---|---|---|---|
+      | `deploy/cf-purge-urls.sh` | curl | none unless the URL is private | no workflow site |
+      | `deploy/clone-d1.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | no workflow site |
+      | `deploy/delete-r2-channel.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | cleanup-r2-staging.yml:52 |
+      | `deploy/deploy-account.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | cd-deploy-account.yml:273 |
+      | `deploy/deploy-edge.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | no workflow site |
+      | `deploy/deploy-proxy.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | no workflow site |
+      | `deploy/deploy-www.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | ci.yml:1407 |
+      | `deploy/promote-docker-to-stable-hotfix.sh` | docker buildx | registry login (GHCR/Docker Hub) | cd-v2.yml:388 |
+      | `deploy/promote-r2-to-stable-hotfix.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | cd-v2.yml:384 |
+      | `deploy/promote-r2-to-stable.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | promote-stable.yml:120 |
+      | `deploy/purge-media-cache.sh` | curl | none unless the URL is private | no workflow site |
+      | `deploy/set-account-worker-secrets.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | cd-deploy-account.yml:335 |
+      | `deploy/set-preview-worker-secrets.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | ci.yml:1436 |
+      | `deploy/set-www-worker-secrets.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | cd-deploy-worker.yml:210 |
+      | `deploy/simulate-promotion.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | ci.yml:1670 |
+      | `deploy/sync-media-from-r2.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | ci-quality.yml:1825 |
+      | `deploy/sync-media-to-r2.sh` | aws, curl | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint; none unless the URL is private | no workflow site |
+      | `deploy/test-d1-migrations.sh` | wrangler | CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID | ct-tests.yml:187 |
+      | `deploy/upload-repos-to-r2.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | cd-stage.yml:342 |
+      | `deploy/upload-to-r2.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | cd-stage.yml:323 |
+      | `deploy/verify-edge-endpoints.sh` | curl | none unless the URL is private | cd-v2.yml:553 |
+      | `deploy/verify-stable-endpoints.sh` | curl | none unless the URL is private | promote-stable.yml:220 |
+      | `deploy/write-release-sentinel.sh` | aws | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint | ci.yml:1892 |
+      | `release/advance-contract-floor.sh` | git push | push credential for the target repo | cd-v2.yml:702 |
+      | `release/assert-artifact-version.sh` | gh | GH_TOKEN (scope as the calling job grants) | cd-v2.yml:216 |
+      | `release/assert-edge-tag-exists.sh` | aws, gh | R2 key pair (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) + R2 endpoint; GH_TOKEN (scope as the calling job grants) | promote-stable.yml:73 |
+      | `release/cleanup-channel-docker-tags.sh` | none found | none | cd-v2.yml:395 |
+      | `release/create-github-release.sh` | gh | GH_TOKEN (scope as the calling job grants) | cd-v2.yml:712 |
+      | `release/mark-production.sh` | gh | GH_TOKEN (scope as the calling job grants) | promote-stable.yml:228 |
+      | `release/reprobe-r2-sentinel.sh` | none found | none | backfill-release-sentinel.yml:182 |
+      | `release/tag-submodules.sh` | git push | push credential for the target repo | cd-v2.yml:673 |
+      | `release/update-homebrew-tap.sh` | curl, git push | none unless the URL is private; push credential for the target repo | cd-v2.yml:680 |
 - [ ] **W7P5-b S, the true long pole** The 13 real bash libs, **6,840 lines**. `common.sh` has
       **251 sourcers** -- the highest fan-in file in the programme. Order by fan-in ascending:
       `gate-controls` (41), `bws-env` (111), `emit-advisory` (218), `service` (225),
