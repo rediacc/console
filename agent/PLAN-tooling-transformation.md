@@ -562,6 +562,14 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **Left of the licensed 106 (26):** 15 in `autopilot.yml` (runner-temp invocations, pinned
       by `check-autopilot-workflow-invariants.sh`), 2 in `claude-review-reusable.yml`, 9 inside
       `gate-bind` emitter regions. **P4b: 54 paths have no licensed port.**
+      **REMAINDER DONE 2026-09-20 in `70e6ffe24`:** autopilot.yml 15 paths / 25 sites (the
+      model job runs the harness copy with `python3 -P`, because `-m` puts the working directory
+      ahead of PYTHONPATH and that directory holds PR-authored files; a new plant-verified
+      invariant guards the flag), one claude-review site, and the nine gate-bind region steps
+      (lane by lane, `dropped` empty). Two gates registered as bare paths with no npm key
+      (`test:install-script`, `test:write-once-guard`) keep their bash target, because the
+      binder refuses a header `run:` without a package.json script. **57 `.sh` paths remain
+      under `run:`/`with:`; the licensed ones are done, what is left is P4b (no port).**
 - [ ] **W7P5-a S** `deploy/` 27 + `release/` 21 = **48 files, 5,440 lines**, 46 workflow call
       sites, zero Python, zero ledgers. Golden dry-run parity plus **one real run each**, K=5
       ledger before any deletion. Each specimen its own committed git repo; new side under
