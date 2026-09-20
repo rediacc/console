@@ -303,6 +303,25 @@
         "b30a696d"
       ]
     },
+    "agent/PLAN-consolidation-pressure.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
+      "done_sigs": [
+        "13370e7f",
+        "2a2b9199",
+        "419a2340",
+        "5b81afb3",
+        "7a215db9",
+        "a3446cbb",
+        "a443e632",
+        "a984dd31",
+        "b2486512",
+        "f7d91e90"
+      ]
+    },
     "agent/PLAN-devbox-uid-derived-image.md": {
       "status": "draft",
       "owner": "unowned",
@@ -486,6 +505,23 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-judge-prompt-trap-conflation.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
+        "2003b963",
+        "2218eb43",
+        "48e9411c",
+        "6cf28520",
+        "c6514d3b",
+        "c7120cc7",
+        "e6959b0e",
+        "f06b6846"
+      ]
+    },
     "agent/PLAN-lint-css-ci-wiring.md": {
       "status": "compacted",
       "owner": "e6500e92",
@@ -524,6 +560,38 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/PLAN-migrate-plan-doc-discovery.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "open": 23,
+      "done": 0,
+      "open_sigs": [
+        "0113778b",
+        "0b5fc914",
+        "2b7ea54e",
+        "33ba7d0d",
+        "37b624e9",
+        "49436e10",
+        "5432c3c2",
+        "5d3503e8",
+        "66281be1",
+        "8914c94d",
+        "8ebb9b8b",
+        "8f4b4bfe",
+        "8f8c3a7c",
+        "904b992f",
+        "95a326e3",
+        "a1e07247",
+        "b5cd8cff",
+        "bf9839ce",
+        "c414058f",
+        "c4c07b5c",
+        "d322b58b",
+        "e4adea50",
+        "ebada9a3"
+      ],
       "done_sigs": []
     },
     "agent/PLAN-nightly-retry-and-watchdog-noise.md": {
@@ -711,6 +779,24 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-reflow-comments-boundary-wrapping.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "open": 0,
+      "done": 9,
+      "open_sigs": [],
+      "done_sigs": [
+        "09b48ce9",
+        "10c79bdb",
+        "114fff4a",
+        "14ec8ceb",
+        "1bf57814",
+        "3487968a",
+        "8aaf4384",
+        "930f003b",
+        "9f2c95b0"
+      ]
+    },
     "agent/PLAN-reggate-effort-cap.md": {
       "status": "designed",
       "owner": "unowned",
@@ -742,6 +828,23 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/PLAN-rest-graphql-guard-parity.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
+        "07152306",
+        "22b04c9d",
+        "261d3308",
+        "6666e17c",
+        "88510a21",
+        "8c4b79c0",
+        "db5abd71",
+        "e896ee97"
+      ]
     },
     "agent/PLAN-resumable-rebase-executor.md": {
       "status": "implemented",
@@ -890,6 +993,23 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/PLAN-staged-duplication-probe.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
+        "03a0fdfa",
+        "2b3ca805",
+        "5e32f0dd",
+        "6240d9b4",
+        "917f9086",
+        "b1e665a6",
+        "b29ca7a9",
+        "bcb9cb4a"
+      ]
     },
     "agent/PLAN-state-md-session-isolation.md": {
       "status": "compacted",
