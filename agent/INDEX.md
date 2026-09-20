@@ -555,7 +555,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 60 | 0 | 0 | 4148 |
 | `agent/PLAN-test-advisor.md` | compacted | 38 | 0 | 0 | 2708 |
 | `agent/PLAN-testing-surface-audit.md` | compacted | 37 | 0 | 0 | 3661 |
-| `agent/PLAN-tooling-transformation.md` | ready | 6780 | 8 | 146 | 632224 |
+| `agent/PLAN-tooling-transformation.md` | ready | 6781 | 7 | 147 | 632623 |
 | `agent/PLAN-trap-enforcement.md` | w | 503 | 0 | 0 | 48775 |
 | `agent/PLAN-typecheck-orphan-packages.md` | ready | 66 | 0 | 0 | 4499 |
 | `agent/PLAN-unify-trap-corpus.md` | compacted | 38 | 0 | 0 | 2749 |
