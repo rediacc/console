@@ -300,7 +300,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/PLAN-hook-inventory-warn-guards.md` | landed | 68 | 0 | 0 | 4088 |
 | `agent/PLAN-json-prose-scope-audit.md` | done | 78 | 0 | 9 | 8000 |
 | `agent/PLAN-judge-gate-worthiness-and-surface-scope.md` | draft | 419 | 0 | 0 | 29896 |
-| `agent/PLAN-judge-prompt-trap-conflation.md` | done | 63 | 0 | 8 | 7830 |
+| `agent/PLAN-judge-prompt-trap-conflation.md` | done | 63 | 0 | 8 | 7848 |
 | `agent/PLAN-lint-css-ci-wiring.md` | compacted | 53 | 0 | 0 | 4342 |
 | `agent/PLAN-lint-rule-matrix-probe.md` | compacted | 49 | 0 | 0 | 3560 |
 | `agent/PLAN-local-ci-gate-prerequisites.md` | landed | 78 | 0 | 0 | 4660 |
