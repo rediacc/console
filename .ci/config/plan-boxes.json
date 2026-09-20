@@ -1132,10 +1132,9 @@
     "agent/PLAN-tooling-transformation.md": {
       "status": "ready",
       "owner": "d778be9d",
-      "open": 7,
-      "done": 147,
+      "open": 6,
+      "done": 148,
       "open_sigs": [
-        "33b6e35b",
         "4314ed50",
         "788506f9",
         "caff9ad3",
@@ -1171,6 +1170,7 @@
         "30dcaaed",
         "31c07684",
         "3280b448",
+        "33b6e35b",
         "345ee5d3",
         "34e7bc19",
         "35ad24eb",

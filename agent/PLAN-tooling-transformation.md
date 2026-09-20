@@ -534,7 +534,8 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **Trap:** a NEW file not yet in a git index is invisible to the binder (`ls-files` reads the
       index). Use the throwaway-index technique in `08-driver-contract.md` section 5b, and
       validate the index copy before use.
-- [ ] **W7P4-W C, 2 writers, after W7P4-Q** Flip 162 distinct scripts / 275 call sites (count only `run:` and `with:` keys; the 215 / 348 below counted comments).
+- [x] **W7P4-W C, 2 writers, after W7P4-Q** Flip 162 distinct scripts / 275 call sites (count only `run:` and `with:` keys; the 215 / 348 below counted comments).
+    (ticked) 2026-09-20T21:27:28Z by d778be9d: 160 to 39 distinct .ci .sh paths under run:/with: in this branch (P4a 80, remainder 25, P4b 4 families); every removal has fresh K=5 ledgers or an existing licence; each remaining path is named with the reason this host cannot flip it (frozen, sourced, needs root/VM/fleet, no npm key, spawned by path)
       **Creates no new `.sh` files** (see P-C: a new shim is illegal). Call sites flip straight to
       `npm run <id>` or `python3 -m`; the bash is retired in place.
       **Decomposition:** two boxes. **P4a** is the call sites whose script already has a Python
@@ -570,6 +571,22 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       (`test:install-script`, `test:write-once-guard`) keep their bash target, because the
       binder refuses a header `run:` without a package.json script. **57 `.sh` paths remain
       under `run:`/`with:`; the licensed ones are done, what is left is P4b (no port).**
+      **P4b DONE 2026-09-20 WHERE THIS HOST CAN EXERCISE IT (`7135275f4`, `46053f61a`, `654acbb76`,
+      `084be4cd5`): 20 further scripts ported or re-licensed with fresh K=5 ledgers (`w7p4b-*`,
+      all recorded from scratch repos with recording stubs), 20 sites flipped per family, five
+      gates and two closure derivations repaired on the way.** Measured at the end: **39 distinct
+      `.ci/**/*.sh` paths remain under `run:`/`with:`, from 160 at the start of P4a**, and each
+      remaining family has a stated reason. 13 `.ci/breakpoint/scripts/*` are hash-frozen by
+      `MANIFEST.sha256`, so a port is a change to the freeze and its alignment gate, not a flip.
+      `bootstrap.sh`, `config/constants.sh` and `lib/toolchain.sh` are SOURCED libraries, which a
+      module call cannot replace. Five `private/` runners (`license-e2e`, `renet-csi-sanity`,
+      `renet-ebpf-e2e`, `renet-integration`, `renet-root-tests`) need root, eBPF or a VM. Ten
+      `.ci/scripts/test/*` runners need a fleet, installs or docker builds, and two of them
+      (`test-install-script`, `test-write-once-guard`) are registered as bare paths with no
+      npm key, which the binder does not allow a header `run:` for. Four `test/gates/*` are gate
+      tests whose flip is W7P5's twin-retirement, `claude-review-gate` and `epic-context` are a
+      scratch-wrapper ledger and a `Bash(...)` permission pattern, and `tutorials/run-sequence`
+      and `profiler/sampler-linux.sh` are spawned by path from a composite action.
 - [ ] **W7P5-a S** `deploy/` 27 + `release/` 21 = **48 files, 5,440 lines**, 46 workflow call
       sites, zero Python, zero ledgers. Golden dry-run parity plus **one real run each**, K=5
       ledger before any deletion. Each specimen its own committed git repo; new side under
