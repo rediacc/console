@@ -24,7 +24,7 @@ THE COLOUR RULE HERE IS NOT `rediacc_ci.log`'s, AND THE DIFFERENCE IS DELIBERATE
 this a PORT rather than an improvement; a port that quietly fixed the behaviour would disagree with the live twin on every non-CI invocation, which is every local run.
 
 TWO STREAMS, AND THE SPLIT IS LOAD-BEARING. `ci_error` off CI writes to STDERR. Every continuation line -- Affected, Summary, Fix, Action, Details -- is a plain `echo` and goes to STDOUT. So one advisory straddles both streams, and a caller that merges them with `2>&1` sees a coherent block while a caller that does not sees the header in one place and the body in another. That is
-the twin's behaviour, it is surprising, and it is pinned by a case rather than tidied, because `audit.sh` and `age-check.sh` are reading it as it stands.
+the twin's behaviour, it is surprising, and it is pinned by a case rather than tidied, because `age-check.sh` is reading it as it stands, as `audit.sh` did until W7P5-b deleted it.
 
 `echo -e` IS REPRODUCED, NOT DROPPED. `log_error` is `echo -e "${RED}✗ $*${NC}"`,
 which INTERPRETS backslash escapes in the message: an advisory naming a Windows path or a regex prints a tab where the caller wrote `\\t`. `rediacc_ci.log` deliberately diverges there and pins the divergence. This module cannot, because its whole claim is byte equality with the live twin, so `_echo_e` below implements the sequences bash's builtin does. The divergence between the

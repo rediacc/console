@@ -36,7 +36,7 @@ of them is ever wrong, both are.)
 WHY THE PORT KEEPS emit_advisory IN BASH
 --------------------------------------------------------------------------
 The decision and the emission are split here, and that split is the design. `emit_advisory` is a separate bash library with its own contract -- eight optional associative arrays a caller may populate by advisory id, and a `::error::` / `::warning::` GitHub-Actions form -- and porting it was not this phase's job. So this module answers WHAT the verdict is and the shim performs it.
-The two callers that matter (`.ci/scripts/security/audit.sh` and `.ci/scripts/quality/check-go-deps.sh`) keep populating those arrays exactly as they do today, and neither one changes.
+The caller that matters (`.ci/scripts/quality/check-go-deps.sh`) keeps populating those arrays exactly as it does today and does not change. `.ci/scripts/security/audit.sh` was the second until W7P5-b deleted it; its port reaches this module directly.
 
 That also keeps the CI-versus-local branch honest: the level is decided here
 from the CI flag the shim passes in, so the verdict is testable without a

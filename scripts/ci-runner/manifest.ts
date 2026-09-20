@@ -1461,7 +1461,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-security-audit',
     slow: true, // 60.9s measured
     gate: true,
-    leaves: ['.ci/scripts/security/audit.sh'],
+    leaves: ['.ci/rediacc_ci/security/audit.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

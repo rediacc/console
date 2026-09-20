@@ -840,7 +840,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/release | 21 | .sh 21 |
 | .ci/scripts/review | 4 | .sh 4 |
 | .ci/scripts/review/prompts | 2 | .md 2 |
-| .ci/scripts/security | 9 | .sh 9 |
+| .ci/scripts/security | 8 | .sh 8 |
 | .ci/scripts/setup | 3 | .sh 3 |
 | .ci/scripts/signal | 1 | .sh 1 |
 | .ci/scripts/test | 18 | .sh 17, .ts 1 |

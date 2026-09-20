@@ -435,7 +435,7 @@ quality_suppressions() {
 
 quality_audit() {
     check_node_version
-    "$ROOT_DIR/.ci/scripts/security/audit.sh"
+    "$ROOT_DIR/.ci/rediacc_ci/security/audit.py"
 }
 
 quality_shell() {

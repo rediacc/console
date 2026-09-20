@@ -285,7 +285,8 @@ def base_ledger(base: str) -> tuple[dict, str | None]:
         return {}, f"the ledger at {base[:9]} does not parse ({exc}); G-A1 is blind"
 
 
-# BLOCKER: commit 1ae84c3e3 (the 0906-1 safety commit) put 8 plans into the archive as plain adds, and the 2026-09-17 markdown reflow then rewrapped them. That history is shared, so the adds cannot become renames, and the append-only rule it broke did not yet gate that branch. Exempt only a path whose words at HEAD equal its words in that commit, so a real edit or any other commit's add still fails.
+# BLOCKER: commit 1ae84c3e3 (the 0906-1 safety commit) put 8 plans into the archive as plain adds, and the 2026-09-17 markdown reflow then rewrapped them. That history is shared, so the adds cannot become renames, and the append-only rule it broke did not yet gate that branch. Exempt only a path whose words at HEAD equal its words in that commit, so a real edit or any other
+# commit's add still fails.
 EXEMPT_ARCHIVE_COMMIT = "1ae84c3e3"
 
 

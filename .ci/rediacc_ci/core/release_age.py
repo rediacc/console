@@ -1,6 +1,6 @@
 """Release-age freshness deferral, ported from `.ci/scripts/lib/release-age.sh`.
 
-PORTED FROM `.ci/scripts/lib/release-age.sh` (237 lines), which still exists, is untouched by this file, and has exactly TWO real sourcers, re-measured on 2026-09-10 (`grep -rnP '^\\s*(source|\\.)\\s+.*release-age\\.sh'`): `.ci/scripts/security/audit.sh:39` and `.ci/scripts/quality/check-go-deps.sh:43`. That agrees with the twin's own "Consumed by:" line at `release-age.sh:41`, and
+PORTED FROM `.ci/scripts/lib/release-age.sh` (237 lines), which still exists, is untouched by this file, and had TWO real sourcers when measured on 2026-09-10 (`grep -rnP '^\\s*(source|\\.)\\s+.*release-age\\.sh'`): `audit.sh:39` and `check-go-deps.sh:43`. W7P5-b deleted the first, so ONE remains. That agrees with the twin's own "Consumed by:" line at `release-age.sh:41`, and
 it is NOT the "237" in the programme plan, which is this file's LINE COUNT rather than its fan-in.
 
 A PORT OF A SHIM IS ANOTHER SHIM, NOT A THIRD COPY OF THE RULE. The rule collapsed into `scripts/lib/release-age.ts` on 2026-09-06 and lives nowhere else:
@@ -65,7 +65,7 @@ delegate:
 and under the `set -u` the two real callers run with, `now="abc"` prints
 `abc: unbound variable` and also yields ELIGIBLE. So the one shape most likely to arrive from a broken date parse, a number with a stray suffix, resolves to the exact false "must upgrade" the fail-closed rule exists to prevent, and does it silently.
 
-LATENT, NOT LIVE, and the difference is worth stating: both real call sites pass one argument (`is_release_deferred "$epoch"` at `audit.sh:271` and `check-go-deps.sh:151`), so `now` is always `date -u +%s` today. THIS PORT TAKES `now` AS AN `int | None` AND REFUSES ANYTHING ELSE, which is a divergence on inputs no live caller produces; `test_core_release_age.py` drives the TWIN for
+LATENT, NOT LIVE, and the difference is worth stating: the one surviving call site passes one argument (`is_release_deferred "$epoch"` at `check-go-deps.sh:151`), so `now` is always `date -u +%s` today. THIS PORT TAKES `now` AS AN `int | None` AND REFUSES ANYTHING ELSE, which is a divergence on inputs no live caller produces; `test_core_release_age.py` drives the TWIN for
 each of the four rows above so the defect is pinned as a fact about the bash rather than as a claim in a docstring.
 
 --------------------------------------------------------------------------

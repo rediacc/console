@@ -27,7 +27,7 @@ so a grep for `.deps-upgrade-blocklist` will find the name in code that is corre
 
 | Mechanism | File | Reader |
 |---|---|---|
-| Prod npm audit allowlist | `.ci/policy/.audit-prod-allowlist` | `.ci/scripts/security/audit.sh` |
+| Prod npm audit allowlist | `.ci/policy/.audit-prod-allowlist` | `.ci/rediacc_ci/security/audit.py` |
 | Dev npm audit allowlist | `.ci/policy/.audit-allowlist` | same |
 | npm dep upgrade blocklist | `.ci/policy/.deps-upgrade-blocklist` | `scripts/gates/check-deps.ts` |
 | Go dep upgrade blocklist | `.ci/policy/.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check-go-deps.sh` |
@@ -96,13 +96,13 @@ whether the suppressed thing still existed.
 | `package.json` `overrides` | key resolves to a `package-lock.json` node | **warn only** |
 | `.ci/policy/.dead-bash-allowlist` | glob root exists / dispatch prefix matches a function / manual file exists | fail |
 | `.ci/policy/.ci-parity-exempt` | a `ci-only` entry is still invoked by some workflow | fail |
-| `.audit-*` | advisory present in `npm audit` | fail — owned by `audit.sh` |
+| `.audit-*` | advisory present in `npm audit` | fail — owned by `audit.py` |
 | `knip.jsonc` | — | knip self-detects via `--treat-config-hints-as-errors` |
 
 Three rules this gate is built on, all learned the hard way:
 
 - **No oracle, no verdict.** Each probe declares a `minUniverse` floor and skips
-loudly when its oracle returns less than that — the generalization of the `total_vulns > 0` guard in `audit.sh`. It is deliberately NOT a ratio ("all entries condemned ⇒ suspicious"): that would have silenced the electron cleanup, which was right about 101 of 101 entries.
+loudly when its oracle returns less than that — the generalization of the `total_vulns > 0` guard in `audit.py`. It is deliberately NOT a ratio ("all entries condemned ⇒ suspicious"): that would have silenced the electron cleanup, which was right about 101 of 101 entries.
 - **Overrides warn, never fail, and are never auto-removed.** An npm override is
 prophylactic as much as reactive — it constrains what npm may resolve *tomorrow*. "Absent from the lockfile today" is not proof it is dead. Start its reason with `BLOCKER: preventive —` to opt out of the warning permanently.
 - **Offline by construction.** Every oracle is a fact about the current

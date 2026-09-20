@@ -1,5 +1,5 @@
 # Security audit allowlist for dev-only dependencies.
-# Enforced by .ci/scripts/security/audit.sh (two-pass strategy):
+# Enforced by .ci/rediacc_ci/security/audit.py (two-pass strategy):
 #
 #   Pass 1 — production deps (--omit=dev): ZERO TOLERANCE, no allowlist.
 #            Any severity → hard fail.

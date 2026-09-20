@@ -1,6 +1,6 @@
 """`rediacc_ci.core.release_age` against the live `release-age.sh`.
 
-THE TWIN IS LIVE HERE, NOT FROZEN. `.ci/scripts/lib/release-age.sh` is still sourced by `.ci/scripts/security/audit.sh:39` and `.ci/scripts/quality/check-go-deps.sh:43`, so the real file is what runs on both sides of every comparison below.
+THE TWIN IS LIVE HERE, NOT FROZEN. `.ci/scripts/lib/release-age.sh` is still sourced by `.ci/scripts/quality/check-go-deps.sh:43`, so the real file is what runs on both sides of every comparison below. `.ci/scripts/security/audit.sh:39` was the second sourcer until W7P5-b deleted it.
 
 BOTH SIDES DELEGATE TO THE SAME `scripts/lib/release-age.ts`, which is the point: this is a differential over a TRANSPORT, and any disagreement is a transport bug rather than a rounding argument. The rule itself is proved elsewhere (`scripts/lib/release-age.ts` is the only round-up in the tree).
 
@@ -339,7 +339,7 @@ NOW_SHAPES = [
 def test_the_twin_lets_bash_arithmetic_decide_an_unvalidated_now(case, now, expected):
     """A FACT ABOUT THE BASH, pinned so it cannot change unnoticed.
 
-    LATENT, NOT LIVE: both real call sites pass one argument (`audit.sh:271`, `check-go-deps.sh:151`), so `now` is always `date -u +%s` today. `.ci/scripts/lib/` is not this box's to edit, so the twin is not fixed here; the port refuses a non-integer `now` instead, which is the divergence.
+    LATENT, NOT LIVE: the surviving call site passes one argument (`check-go-deps.sh:151`, as the deleted `audit.sh:271` did), so `now` is always `date -u +%s` today. `.ci/scripts/lib/` is not this box's to edit, so the twin is not fixed here; the port refuses a non-integer `now` instead, which is the divergence.
     """
     rc, out, err = diff.bash_streams(
         'source "$LIB"\nif is_release_deferred 1756000000 %s 86400 2>/dev/null; '

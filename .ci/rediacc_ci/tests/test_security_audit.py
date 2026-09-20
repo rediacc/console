@@ -1,42 +1,35 @@
-"""Differential: `rediacc_ci.security.audit` against `.ci/scripts/security/audit.sh`.
+"""Behaviour suite for `rediacc_ci.security.audit`, the live gate `check:ci-security-audit`.
 
-THE TWIN IS THE LIVE GATE `check:ci-security-audit`, so nothing here runs it against the real tree: every case is a scratch fixture holding BOTH implementations at their real relative paths, with recording fakes for `npm`, `gh`, `node` and `sleep` on a scratch PATH. There is no read-only mode of this gate to borrow -- it shells out to the npm registry twice and to the GitHub
-Advisory Database once per advisory -- and a differential that made those calls would be rate-limiting a shared account to prove a text transform.
+THIS WAS A DIFFERENTIAL AGAINST `.ci/scripts/security/audit.sh` UNTIL W7P5-b, and the twin it compared against is now deleted. The differential did its job: it licensed the deletion, alongside the K=5 ledger in `.ci/shadow/w7p6-audit.observations.jsonl`. What survives here is every expectation it established, restated as a LITERAL.
 
-WHY THE FIXTURE COPIES BOTH IMPLEMENTATIONS AND THE WHOLE PACKAGE. Each side resolves the repository root from its OWN location (`audit.sh` walks up from `.ci/scripts/security/`, `paths.repo_root()` walks up from `.ci/rediacc_ci/`), and the twin's four sourced libraries then shell out to `rediacc_ci.core.*` under that root. Pointing both at a fixture therefore means putting both,
-and the package they share, inside it.
+A CASE THAT COULD ONLY EVER SAY "the port matches the bash" says nothing once the bash is gone. The three cases that COMPUTED their expectation by running the twin were therefore rewritten rather than carried over: `describe_fix`'s seven answers and the three jq programs are now written out in full, captured from the twin at deletion time. The control was rewritten the same way,
+and runs each plant against the unplanted gate.
 
-FOUR CHANNELS ARE COMPARED, NOT TWO:
+NOTHING HERE RUNS THE GATE AGAINST THE REAL TREE. Every case is a scratch fixture holding the gate at its real relative path, with recording fakes for `npm`, `gh`, `node` and `sleep` on a scratch PATH. There is no read-only mode of this gate to borrow -- it shells out to the npm registry twice and to the GitHub Advisory Database once per advisory -- and a suite that made those
+calls would be rate-limiting a shared account to prove a text transform.
+
+WHY THE FIXTURE COPIES THE WHOLE PACKAGE. The gate resolves the repository root from its OWN location (`paths.repo_root()` walks up from `.ci/rediacc_ci/`) and imports four `rediacc_ci.core.*` modules under that root, so pointing it at a fixture means putting the package inside the fixture too.
+
+FOUR CHANNELS ARE OBSERVED, NOT TWO:
   * exit code,
   * stdout and stderr, SEPARATELY (`differential.py` argues why at length; this
     gate splits one advisory across both streams, so merging them would hide a
     swap),
-  * the CALL LOG: every fake appends its exact argv, so a port that produced
-    identical bytes by asking different questions fails here,
+  * the CALL LOG: every fake appends its exact argv, so a change that produced
+    identical bytes by asking different questions is still visible,
   * the ARTIFACTS: `audit-report.json` survives a run on purpose (CI uploads it)
-    and `audit-prod.json` must not, so both sides' leftovers are diffed too.
+    and `audit-prod.json` must not, so the leftovers are read back.
 
 TWO NORMALISATIONS, both named:
   * the fixture root, which differs per test,
-  * the SCRIPT PATH inside a `line N: npm: command not found`, which bash spells
-    as the .sh it is running and the port spells as `sys.argv[0]`. Nothing else
-    about that line is normalised, including the line number.
+  * the SCRIPT PATH inside a `line N: npm: command not found`, spelled as
+    `sys.argv[0]`. Nothing else about that line is normalised, including the
+    line number, and those numbers are the DELETED twin's, carried into the port
+    on purpose so the message stayed byte-identical.
 
-ONE COMPARED-AS-A-MULTISET CHANNEL AND ONE KNOWN COUNT DIVERGENCE:
-  * `gh api` runs under `xargs -P 8` / a thread pool, so the call log's order is
-    a race. The log is compared as a sorted multiset, and the non-parallel
-    subsequence is additionally compared IN ORDER, so serialisation is still
-    pinned where it is deterministic.
-  * `node --window-seconds`: the twin re-probes its runner on every delegate
-    call because the assignment happens inside a command substitution
-    (`core/release_age.py` DEFECT 1, measured there), and the port memoises. The
-    twin therefore makes exactly ONE more probe than the port whenever the
-    freshness delegate is reached. That is asserted as a number rather than
-    smoothed away, so it cannot quietly change size.
+ONE CHANNEL IS COMPARED AS A MULTISET, in the control, which is the only place two runs are set against each other: `gh api` runs under a thread pool, so the call log's order is a race. The log is compared as a sorted multiset, and the non-parallel subsequence is additionally compared IN ORDER, so serialisation is still pinned where it is deterministic.
 
-WHAT THIS FILE PROVES ABOUT THE TWIN, not just about the port: six defects, each
-with a case named after it. DEFECT 6 is the one to read first --
-`test_defect6_a_failed_gh_fetch_kills_both_sides_with_a_silent_exit_5`.
+WHAT THIS FILE PROVES ABOUT THE BASH THAT WAS, not just about the Python that is: six defects the port reproduces deliberately, each with a case named after it. DEFECT 6 is the one to read first -- `test_defect6_a_failed_gh_fetch_kills_the_gate_with_a_silent_exit_5`.
 """
 
 from __future__ import annotations
@@ -57,17 +50,8 @@ if typing.TYPE_CHECKING:  # pragma: no cover - annotations only
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN_REL = ".ci/scripts/security/audit.sh"
 PORT_REL = ".ci/rediacc_ci/security/audit.py"
-TWIN = ROOT / TWIN_REL
 PORT = ROOT / PORT_REL
-
-LIB_REL = (
-    ".ci/scripts/lib/emit-advisory.sh",
-    ".ci/scripts/lib/blocker-validator.sh",
-    ".ci/scripts/lib/release-age.sh",
-    ".ci/scripts/lib/age-check.sh",
-)
 
 # THE FAKES RECORD BEFORE THEY ANSWER, and they record TWICE: once into `$FAKE_LOG` (which the call-log channel compares) and once onto stderr with the same `call: ` prefix (which the shadow-gate ledger's `--finding-re` scopes to). The second copy is not decoration: `shadow-gate.ts` classifies `-> ` and `v ` lines as CHATTER before any message regex sees them, so a gate that
 # reports mostly through log_info would record VACUOUS_BOTH_EMPTY rows forever.
@@ -315,7 +299,7 @@ EMPTY_PROD_ALLOWLIST = "# no production suppressions\n"
 EMPTY_DEV_ALLOWLIST = "# no dev suppressions\n"
 EMPTY_BLOCKLIST = "# no packages held back\n"
 
-# Everything the twin, its four libraries, and the port shell out to, minus the four that are faked. `sleep` is deliberately ABSENT: the fake must be the only `sleep` on the PATH, or a case that removes it would wait for real seconds.
+# Everything the gate and this file's oracles shell out to, minus the four that are faked. `sleep` is deliberately ABSENT: the fake must be the only `sleep` on the PATH, or a case that removes it would wait for real seconds. `xargs` left with the twin, whose `xargs -P 8` the port replaced with a thread pool.
 SYS_TOOLS = (
     "bash",
     "sh",
@@ -341,12 +325,11 @@ SYS_TOOLS = (
     "tr",
     "uname",
     "wc",
-    "xargs",
 )
 
 
 class Fixture:
-    """A scratch repository with both implementations, the fakes, and the policy."""
+    """A scratch repository with the gate, the fakes, and the policy."""
 
     def __init__(self, root: pathlib.Path) -> None:
         self.root = root
@@ -404,17 +387,12 @@ class Fixture:
         if count.exists():
             count.unlink()
 
-    def run(self, side: str, **extra: str) -> Run:
+    def run(self, **extra: str) -> Run:
         self._reset()
-        log = self.root / ("calls.%s" % side)
+        log = self.root / "calls"
         log.write_text("", encoding="utf-8")
-        argv = (
-            ["bash", str(self.root / TWIN_REL)]
-            if side == "old"
-            else ["python3", str(self.root / PORT_REL)]
-        )
         proc = subprocess.run(
-            argv,
+            ["python3", str(self.root / PORT_REL)],
             env=self.env(log, **extra),
             cwd=str(self.root),
             capture_output=True,
@@ -423,7 +401,6 @@ class Fixture:
             timeout=300,
         )
         return Run(
-            side=side,
             exit=proc.returncode,
             stdout=self._normalise(proc.stdout),
             stderr=self._normalise(proc.stderr),
@@ -433,7 +410,7 @@ class Fixture:
 
     def _normalise(self, text: str) -> str:
         text = text.replace(str(self.root), "<fx>")
-        return text.replace(TWIN_REL, "<script>").replace(PORT_REL, "<script>")
+        return text.replace(PORT_REL, "<script>")
 
     def _artifacts(self) -> dict[str, str]:
         """Everything the run left behind, so a port that forgot the cleanup fails."""
@@ -450,20 +427,18 @@ class Fixture:
 
 
 class Run:
-    """One side's four channels."""
+    """One run's four channels."""
 
-    __slots__ = ("artifacts", "calls", "exit", "side", "stderr", "stdout")
+    __slots__ = ("artifacts", "calls", "exit", "stderr", "stdout")
 
     def __init__(
         self,
-        side: str,
-        exit: int,  # noqa: A002 -- the channel is called `exit`, like the twin's
+        exit: int,  # noqa: A002 -- the channel is called `exit`, like the deleted twin's
         stdout: str,
         stderr: str,
         calls: list[str],
         artifacts: dict[str, str],
     ) -> None:
-        self.side = side
         self.exit = exit
         self.stdout = stdout
         self.stderr = stderr
@@ -473,19 +448,14 @@ class Run:
 
 @pytest.fixture
 def fx(tmp_path: pathlib.Path) -> Fixture:
-    """A scratch repository holding both implementations and the four fakes."""
+    """A scratch repository holding the gate and the four fakes."""
     root = tmp_path / "fx"
-    (root / ".ci" / "scripts" / "security").mkdir(parents=True)
-    (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / ".ci" / "policy").mkdir(parents=True)
     (root / "fake" / "bin").mkdir(parents=True)
     (root / "fake" / "data").mkdir(parents=True)
     (root / "fake" / "home").mkdir(parents=True)
 
-    shutil.copy2(TWIN, root / TWIN_REL)
-    for rel in LIB_REL:
-        shutil.copy2(ROOT / rel, root / rel)
-    # The WHOLE package: the twin's shims run `python3 -m rediacc_ci.core.*` and the port imports four of those modules, all resolved from the fixture root.
+    # The WHOLE package: the gate imports four `rediacc_ci.core.*` modules, all resolved from the fixture root.
     shutil.copytree(
         ROOT / ".ci" / "rediacc_ci",
         root / ".ci" / "rediacc_ci",
@@ -530,70 +500,65 @@ def fx(tmp_path: pathlib.Path) -> Fixture:
     return fixture
 
 
-# --------------------------------------------------------------------------- comparison ---------------------------------------------------------------------------
-
-WINDOW_PROBE = "call: node --window-seconds"
+# --------------------------------------------------------------------------- running, and comparing two runs ---------------------------------------------------------------------------
 
 
-def assert_agree(fx: Fixture, **extra: str) -> Run:
-    """Run both sides over one fixture and rule on all four channels.
+def run_gate(fx: Fixture, **extra: str) -> Run:
+    """One run of the gate over one fixture, returned on all four channels.
 
-    Returns the TWIN's run, so a case can then assert what it actually saw -- without which two identically broken sides would score as agreement.
+    THIS ASSERTS NOTHING, and the absence is the point. While the bash twin existed the helper here ruled on agreement and handed the case the twin's run; every caller then went on to assert what it had actually seen, because two identically broken sides would otherwise have scored as agreement. Those literal assertions are now the whole test. A helper that quietly re-added an
+    expectation of its own would put the only real claim back out of sight of the case that makes it.
     """
-    old = fx.run("old", **extra)
-    new = fx.run("new", **extra)
+    return fx.run(**extra)
 
-    assert new.exit == old.exit, "exit: twin %s, port %s\ntwin stderr:\n%s\nport stderr:\n%s" % (
-        old.exit,
-        new.exit,
-        old.stderr,
-        new.stderr,
-    )
-    assert new.stdout == old.stdout, "stdout:\n--- twin\n%s--- port\n%s" % (old.stdout, new.stdout)
-    assert new.stderr == old.stderr, "stderr:\n--- twin\n%s--- port\n%s" % (old.stderr, new.stderr)
-    assert new.artifacts == old.artifacts, "artifacts: twin %s, port %s" % (
-        sorted(old.artifacts),
-        sorted(new.artifacts),
-    )
 
-    # THE RUNNER-PROBE DIVERGENCE, AS A NUMBER. See the module docstring.
-    old_probes = old.calls.count(WINDOW_PROBE)
-    new_probes = new.calls.count(WINDOW_PROBE)
-    if old_probes or new_probes:
-        assert old_probes == new_probes + 1, (
-            "the runner-probe divergence changed size: twin %d probes, port %d. "
-            "core/release_age.py DEFECT 1 says the twin re-probes per delegate call "
-            "and the port memoises, which is exactly one extra probe." % (old_probes, new_probes)
-        )
+def assert_same(left: Run, right: Run) -> None:
+    """All four channels of two runs, for the control at the bottom of this file.
 
-    old_rest = [line for line in old.calls if line != WINDOW_PROBE]
-    new_rest = [line for line in new.calls if line != WINDOW_PROBE]
-    assert sorted(new_rest) == sorted(old_rest), "call log:\n--- twin\n%s\n--- port\n%s" % (
-        "\n".join(old.calls),
-        "\n".join(new.calls),
+    THE CALL LOG IS A MULTISET PLUS AN ORDERED SUBSEQUENCE. `gh api` runs under a thread pool, so the order of those lines is a race and comparing them verbatim would flake; everything else runs in a fixed order and is compared as it stands, so serialisation is still pinned where it is deterministic.
+    """
+    assert left.exit == right.exit, "exit: %s then %s\nstderr:\n%s\n%s" % (
+        left.exit,
+        right.exit,
+        left.stderr,
+        right.stderr,
     )
-    # The parallel `gh` fetches are a race; everything else is a fixed order.
-    old_serial = [line for line in old_rest if not line.startswith("call: gh ")]
-    new_serial = [line for line in new_rest if not line.startswith("call: gh ")]
-    assert new_serial == old_serial, "serial call order:\n--- twin\n%s\n--- port\n%s" % (
-        "\n".join(old_serial),
-        "\n".join(new_serial),
+    assert left.stdout == right.stdout, "stdout:\n--- left\n%s--- right\n%s" % (
+        left.stdout,
+        right.stdout,
     )
-    return old
+    assert left.stderr == right.stderr, "stderr:\n--- left\n%s--- right\n%s" % (
+        left.stderr,
+        right.stderr,
+    )
+    assert left.artifacts == right.artifacts, "artifacts: %s then %s" % (
+        sorted(left.artifacts),
+        sorted(right.artifacts),
+    )
+    assert sorted(left.calls) == sorted(right.calls), "call log:\n--- left\n%s\n--- right\n%s" % (
+        "\n".join(left.calls),
+        "\n".join(right.calls),
+    )
+    left_serial = [line for line in left.calls if not line.startswith("call: gh ")]
+    right_serial = [line for line in right.calls if not line.startswith("call: gh ")]
+    assert left_serial == right_serial, "serial call order:\n--- left\n%s\n--- right\n%s" % (
+        "\n".join(left_serial),
+        "\n".join(right_serial),
+    )
 
 
 # --------------------------------------------------------------------------- the happy paths ---------------------------------------------------------------------------
 
 
-def test_a_clean_tree_passes_on_both_sides(fx: Fixture) -> None:
-    old = assert_agree(fx)
-    assert old.exit == 0
-    assert "✓ Security audit passed" in old.stdout
+def test_a_clean_tree_passes(fx: Fixture) -> None:
+    run = run_gate(fx)
+    assert run.exit == 0
+    assert "✓ Security audit passed" in run.stdout
     # SEEN, not inferred: the gate really did run both audits.
-    assert old.calls.count("call: npm audit --json --omit=dev") == 1
-    assert old.calls.count("call: npm audit --json") == 1
-    assert "audit-report.json" in old.artifacts, "pass 2's report must survive for the CI artifact"
-    assert "audit-prod.json" not in old.artifacts, "the prod sidecar must be cleaned up"
+    assert run.calls.count("call: npm audit --json --omit=dev") == 1
+    assert run.calls.count("call: npm audit --json") == 1
+    assert "audit-report.json" in run.artifacts, "pass 2's report must survive for the CI artifact"
+    assert "audit-prod.json" not in run.artifacts, "the prod sidecar must be cleaned up"
 
 
 def test_every_advisory_allowlisted_with_a_blocker(fx: Fixture) -> None:
@@ -606,17 +571,17 @@ def test_every_advisory_allowlisted_with_a_blocker(fx: Fixture) -> None:
     )
     fx.policy(".audit-prod-allowlist", PROD_ALLOWLIST_BOTH)
     fx.policy(".audit-allowlist", DEV_ALLOWLIST_VITEST)
-    old = assert_agree(fx)
-    assert old.exit == 0
-    assert "⚠ Allowed production vulnerabilities: 2" in old.stdout
-    assert "⚠ Allowed dev vulnerabilities: 1" in old.stdout
+    run = run_gate(fx)
+    assert run.exit == 0
+    assert "⚠ Allowed production vulnerabilities: 2" in run.stdout
+    assert "⚠ Allowed dev vulnerabilities: 1" in run.stdout
     # Pass 3 warns on every entry that HAS a fix but carries a BLOCKER.
-    assert "major upgrade required (to 7.0.2) %s BLOCKED:" % port.EM in old.stdout
-    assert "✓ Security audit passed" in old.stdout
+    assert "major upgrade required (to 7.0.2) %s BLOCKED:" % port.EM in run.stdout
+    assert "✓ Security audit passed" in run.stdout
 
 
 def test_defect3_an_empty_vulnerable_range_shifts_the_two_fields(fx: Fixture) -> None:
-    """`Affected: 7.0.2 -> Patched in: Host header SSRF.` -- both sides.
+    """`Affected: 7.0.2 -> Patched in: Host header SSRF.`, and that is not a typo.
 
     GHSA-2pvr's `vulnerable_version_range` is the empty string, so the TAB run in the `@tsv` row collapses, `first_patched_version` lands in the range slot and the DESCRIPTION lands in the patched slot. This is the case that would make a naive `line.split("\\t")` port disagree, and it disagrees in a direction that looks like the port being correct.
     """
@@ -628,12 +593,12 @@ def test_defect3_an_empty_vulnerable_range_shifts_the_two_fields(fx: Fixture) ->
     )
     fx.policy(".audit-prod-allowlist", PROD_ALLOWLIST_BOTH)
     fx.policy(".audit-allowlist", DEV_ALLOWLIST_VITEST)
-    old = assert_agree(fx)
-    assert "  Affected: 7.0.2  →  Patched in: Host header SSRF." in old.stdout, (
-        "the field shift is gone from the twin; DEFECT 3 needs re-measuring"
+    run = run_gate(fx)
+    assert "  Affected: 7.0.2  →  Patched in: Host header SSRF." in run.stdout, (
+        "the field shift is gone; DEFECT 3 needs re-measuring against the twin in git history"
     )
     # The advisory that HAS a range renders correctly, so the shift is the empty field's doing and not a broken renderer.
-    assert "  Affected: < 6.1.6  →  Patched in: 6.1.6" in old.stdout
+    assert "  Affected: < 6.1.6  →  Patched in: 6.1.6" in run.stdout
 
 
 def test_the_github_annotation_form_under_ci(fx: Fixture) -> None:
@@ -646,9 +611,9 @@ def test_the_github_annotation_form_under_ci(fx: Fixture) -> None:
     )
     fx.policy(".audit-prod-allowlist", PROD_ALLOWLIST_BOTH)
     fx.policy(".audit-allowlist", DEV_ALLOWLIST_VITEST)
-    old = assert_agree(fx, CI="true")
-    assert "::warning::Allowed production vulnerabilities: 2" in old.stdout
-    assert "\033[" not in old.stdout, "colour must be off under CI"
+    run = run_gate(fx, CI="true")
+    assert "::warning::Allowed production vulnerabilities: 2" in run.stdout
+    assert "\033[" not in run.stdout, "colour must be off under CI"
 
 
 # --------------------------------------------------------------------------- the failing paths ---------------------------------------------------------------------------
@@ -660,11 +625,11 @@ def test_an_unallowed_production_advisory_fails(fx: Fixture) -> None:
         ("GHSA-j687-52p2-xcff", GHSA_ASTRO_XSS),
         ("GHSA-2pvr-wf23-7pc7", GHSA_ASTRO_SSRF),
     )
-    old = assert_agree(fx)
-    assert old.exit == 1
-    assert "✗ Production vulnerabilities: 0 critical, 1 high, 2 total" in old.stderr
-    assert "major upgrade required (to 7.0.2)" in old.stdout
-    assert "call: npm audit --json" not in old.calls, "pass 2 must not be reached"
+    run = run_gate(fx)
+    assert run.exit == 1
+    assert "✗ Production vulnerabilities: 0 critical, 1 high, 2 total" in run.stderr
+    assert "major upgrade required (to 7.0.2)" in run.stdout
+    assert "call: npm audit --json" not in run.calls, "pass 2 must not be reached"
 
 
 def test_an_unallowed_dev_advisory_fails_in_pass_two(fx: Fixture) -> None:
@@ -676,13 +641,13 @@ def test_an_unallowed_dev_advisory_fails_in_pass_two(fx: Fixture) -> None:
     )
     fx.policy(".audit-prod-allowlist", PROD_ALLOWLIST_BOTH)
     fx.data("npmview.vitest", '{"modified":"2020-01-02T03:04:05.000Z"}\n')
-    old = assert_agree(fx)
-    assert old.exit == 1
-    assert "✗ New dev vulnerabilities: 0 critical, 1 high" in old.stderr
-    assert "transitive fix path exists" in old.stdout
+    run = run_gate(fx)
+    assert run.exit == 1
+    assert "✗ New dev vulnerabilities: 0 critical, 1 high" in run.stderr
+    assert "transitive fix path exists" in run.stdout
     # The freshness delegate WAS consulted, and said the 2020 publish is eligible.
-    assert "call: npm view vitest time --json" in old.calls
-    assert any(line.startswith("call: node --eligible-epoch") for line in old.calls)
+    assert "call: npm view vitest time --json" in run.calls
+    assert any(line.startswith("call: node --eligible-epoch") for line in run.calls)
 
 
 def test_one_advisory_reached_through_two_packages_is_reported_once(fx: Fixture) -> None:
@@ -692,14 +657,14 @@ def test_one_advisory_reached_through_two_packages_is_reported_once(fx: Fixture)
     """
     fx.reports(AUDIT_DUPE)
     fx.advisories(("GHSA-j687-52p2-xcff", GHSA_ASTRO_XSS))
-    old = assert_agree(fx)
-    assert old.exit == 1
-    assert old.stderr.count("1117141 (astro") == 1, "the advisory was emitted twice"
-    assert "(first occurrence)" in old.stderr, "unique_by kept the wrong end"
-    assert "(second occurrence" not in old.stderr
+    run = run_gate(fx)
+    assert run.exit == 1
+    assert run.stderr.count("1117141 (astro") == 1, "the advisory was emitted twice"
+    assert "(first occurrence)" in run.stderr, "unique_by kept the wrong end"
+    assert "(second occurrence" not in run.stderr
     # ONE fetch, not two: the second `via` object never reaches the GHSA table.
-    assert old.calls.count("call: gh api /advisories/GHSA-j687-52p2-xcff") == 1
-    assert not [line for line in old.calls if "GHSA-zzzz" in line]
+    assert run.calls.count("call: gh api /advisories/GHSA-j687-52p2-xcff") == 1
+    assert not [line for line in run.calls if "GHSA-zzzz" in line]
 
 
 def test_a_stale_allowlist_entry_is_named_and_fails(fx: Fixture) -> None:
@@ -718,25 +683,25 @@ def test_a_stale_allowlist_entry_is_named_and_fails(fx: Fixture) -> None:
         "electron chain that pulled it is gone\n1124334\n",
     )
     fx.policy(".audit-allowlist", DEV_ALLOWLIST_VITEST)
-    old = assert_agree(fx)
-    assert old.exit == 1
-    assert "✗ Stale allowlist entry: 1124334 does not appear in audit-prod.json" in old.stderr
-    assert "%s Allowlist problems found %s" % ("\u2717", port.EM) in old.stderr
+    run = run_gate(fx)
+    assert run.exit == 1
+    assert "✗ Stale allowlist entry: 1124334 does not appear in audit-prod.json" in run.stderr
+    assert "%s Allowlist problems found %s" % ("\u2717", port.EM) in run.stderr
 
 
 def test_an_allowlist_entry_with_no_blocker_is_refused(fx: Fixture) -> None:
     fx.policy(".audit-prod-allowlist", "# no reason at all\n1117141\n")
-    old = assert_agree(fx)
-    assert old.exit == 1
-    assert "strict gate enforced" in old.stderr
-    assert "call: npm --version" not in old.calls, "the run must stop before touching npm"
+    run = run_gate(fx)
+    assert run.exit == 1
+    assert "strict gate enforced" in run.stderr
+    assert "call: npm --version" not in run.calls, "the run must stop before touching npm"
 
 
 def test_a_low_effort_blocker_is_refused(fx: Fixture) -> None:
     fx.policy(".audit-prod-allowlist", "# BLOCKER: no fix\n1117141\n")
-    old = assert_agree(fx)
-    assert old.exit == 1
-    assert "strict gate enforced" in old.stderr
+    run = run_gate(fx)
+    assert run.exit == 1
+    assert "strict gate enforced" in run.stderr
 
 
 # --------------------------------------------------------------------------- the six defects ---------------------------------------------------------------------------
@@ -745,17 +710,17 @@ def test_a_low_effort_blocker_is_refused(fx: Fixture) -> None:
 def test_defect1_an_empty_audit_report_is_a_green_run(fx: Fixture) -> None:
     """A ZERO-BYTE `npm audit --json` passes `jq empty` and the gate reports clean.
 
-    This is the vacuity case: the gate audits nothing and says so in green. It is pinned as a fact about the twin, not fixed here.
+    This is the vacuity case: the gate audits nothing and says so in green. It is pinned as the behaviour the bash had and the port kept, not fixed here.
     """
     fx.reports("", "")
-    old = assert_agree(fx)
-    assert old.exit == 0
-    assert "✓ No production vulnerabilities" in old.stdout
-    assert "✓ Security audit passed" in old.stdout
-    assert old.artifacts["audit-report.json"] == "", "the empty report really is empty"
+    run = run_gate(fx)
+    assert run.exit == 0
+    assert "✓ No production vulnerabilities" in run.stdout
+    assert "✓ Security audit passed" in run.stdout
+    assert run.artifacts["audit-report.json"] == "", "the empty report really is empty"
 
 
-def test_defect2_a_non_numeric_allowlist_entry_kills_both_sides_with_exit_5(fx: Fixture) -> None:
+def test_defect2_a_non_numeric_allowlist_entry_kills_the_gate_with_exit_5(fx: Fixture) -> None:
     """`tonumber` on a GHSA-shaped id is jq exit 5, and `set -e` takes it silently."""
     fx.reports(AUDIT_PROD_NO_FIX)
     fx.advisories(
@@ -771,14 +736,14 @@ def test_defect2_a_non_numeric_allowlist_entry_kills_both_sides_with_exit_5(fx: 
         "# BLOCKER: the same astro 7 major migration; written the way the advisory "
         "database spells it\nGHSA-j687-52p2-xcff\n",
     )
-    old = assert_agree(fx)
-    assert old.exit == 5, "the silent jq death is the behaviour under test"
-    assert "Stale allowlist entry" not in old.stderr
+    run = run_gate(fx)
+    assert run.exit == 5, "the silent jq death is the behaviour under test"
+    assert "Stale allowlist entry" not in run.stderr
     # The run got all the way to pass 3 before dying, so both audits already ran.
-    assert "→ Checking allowlist entries against available fixes" in old.stdout
+    assert "→ Checking allowlist entries against available fixes" in run.stdout
 
 
-def test_defect6_a_failed_gh_fetch_kills_both_sides_with_a_silent_exit_5(fx: Fixture) -> None:
+def test_defect6_a_failed_gh_fetch_kills_the_gate_with_a_silent_exit_5(fx: Fixture) -> None:
     """The worst of the six: no advisory JSON for a slug, and the gate exits 5 mute.
 
     `xargs -I {}` rewrites the `{}` inside the worker script, so the fallback
@@ -791,53 +756,53 @@ def test_defect6_a_failed_gh_fetch_kills_both_sides_with_a_silent_exit_5(fx: Fix
     fx.advisories(("GHSA-j687-52p2-xcff", GHSA_ASTRO_XSS))
     fx.policy(".audit-prod-allowlist", PROD_ALLOWLIST_BOTH)
     fx.policy(".audit-allowlist", DEV_ALLOWLIST_VITEST)
-    old = assert_agree(fx)
-    assert old.exit == 5
-    # The fetch was ATTEMPTED: `gh`'s own stderr is redirected to /dev/null by the twin's worker, so the call log is the only place this is visible.
-    assert "call: gh api /advisories/GHSA-2pvr-wf23-7pc7" in old.calls
-    assert "✗" not in old.stderr, "the death says nothing at all, which is the finding"
-    assert "✗" not in old.stdout
-    cached = old.artifacts[".audit-advisory-cache/GHSA-2pvr-wf23-7pc7.json"]
+    run = run_gate(fx)
+    assert run.exit == 5
+    # The fetch was ATTEMPTED: `gh`'s own stderr goes to /dev/null in the worker, so the call log is the only place this is visible.
+    assert "call: gh api /advisories/GHSA-2pvr-wf23-7pc7" in run.calls
+    assert "✗" not in run.stderr, "the death says nothing at all, which is the finding"
+    assert "✗" not in run.stdout
+    cached = run.artifacts[".audit-advisory-cache/GHSA-2pvr-wf23-7pc7.json"]
     assert cached == "GHSA-2pvr-wf23-7pc7\n", (
-        "the xargs placeholder substitution is gone from the twin; DEFECT 6 needs "
-        "re-measuring (expected the slug, got %r)" % cached
+        "the slug fallback is gone; DEFECT 6 needs re-measuring against the twin in "
+        "git history (expected the slug, got %r)" % cached
     )
 
 
 def test_defect5_a_wrong_shaped_report_passes_with_a_jq_error(fx: Fixture) -> None:
     """Valid JSON, no `.vulnerabilities`: jq complains on stderr and the gate is green."""
     fx.reports('{"hello": 1}\n')
-    old = assert_agree(fx)
-    assert old.exit == 0
-    assert "jq: error (at audit-prod.json:1): null (null) has no keys" in old.stderr
-    assert "✓ Security audit passed" in old.stdout
+    run = run_gate(fx)
+    assert run.exit == 0
+    assert "jq: error (at audit-prod.json:1): null (null) has no keys" in run.stderr
+    assert "✓ Security audit passed" in run.stdout
 
 
 def test_a_multiline_wrong_shaped_report_names_the_closing_line(fx: Fixture) -> None:
     """jq's `(at <file>:<line>)` is where the DOCUMENT ENDS, not where the fault is."""
     fx.reports('{\n  "hello": 1,\n  "x": [1,\n2]\n}\n')
-    old = assert_agree(fx)
-    assert "jq: error (at audit-prod.json:5): null (null) has no keys" in old.stderr
+    run = run_gate(fx)
+    assert "jq: error (at audit-prod.json:5): null (null) has no keys" in run.stderr
 
 
 def test_invalid_json_is_refused_with_the_registry_advice(fx: Fixture) -> None:
     fx.reports("not json at all\n")
-    old = assert_agree(fx)
-    assert old.exit == 1
-    assert "✗ npm audit failed to produce valid JSON (exit code: 0)" in old.stderr
-    assert "✗ This may indicate a network error or npm registry issue" in old.stderr
+    run = run_gate(fx)
+    assert run.exit == 1
+    assert "✗ npm audit failed to produce valid JSON (exit code: 0)" in run.stderr
+    assert "✗ This may indicate a network error or npm registry issue" in run.stderr
 
 
 def test_a_killed_npm_audit_blames_the_signal_and_not_the_registry(fx: Fixture) -> None:
     """Exit 137 with truncated JSON is a local OOM, and the message says so."""
     fx.reports('{"vulnerabilities": {"astro": {"via": [\n')
     fx.data("audit-prod.exit", "137\n")
-    old = assert_agree(fx)
-    assert old.exit == 1
+    run = run_gate(fx)
+    assert run.exit == 1
     assert "✗ npm audit was KILLED by signal 9 (raw 137) before it finished writing JSON" in (
-        old.stderr
+        run.stderr
     )
-    assert "NOT a registry or network fault" in old.stderr
+    assert "NOT a registry or network fault" in run.stderr
 
 
 # --------------------------------------------------------------------------- signatures, npm version, missing binaries ---------------------------------------------------------------------------
@@ -846,14 +811,14 @@ def test_a_killed_npm_audit_blames_the_signal_and_not_the_registry(fx: Fixture) 
 def test_a_signature_failure_retries_three_times_and_refuses(fx: Fixture) -> None:
     fx.data("npm.signatures.exit", "1\n")
     fx.data("npm.signatures.out", "EMISSINGSIGNATUREKEY\n")
-    old = assert_agree(fx)
-    assert old.exit == 1
-    assert old.calls.count("call: npm audit signatures") == 3
-    assert old.calls.count("call: sleep 10") == 2, "one sleep between each pair of attempts"
-    assert "npm audit signatures failed %s at least one installed package" % port.EM in (old.stderr)
-    assert "do NOT allowlist" in old.stderr
+    run = run_gate(fx)
+    assert run.exit == 1
+    assert run.calls.count("call: npm audit signatures") == 3
+    assert run.calls.count("call: sleep 10") == 2, "one sleep between each pair of attempts"
+    assert "npm audit signatures failed %s at least one installed package" % port.EM in (run.stderr)
+    assert "do NOT allowlist" in run.stderr
     # The TUF cache is cleared before the first attempt and before each retry.
-    assert old.calls.count("call: npm config get cache") == 3
+    assert run.calls.count("call: npm config get cache") == 3
 
 
 def test_a_signature_failure_that_clears_on_the_second_attempt(fx: Fixture) -> None:
@@ -867,37 +832,37 @@ def test_a_signature_failure_that_clears_on_the_second_attempt(fx: Fixture) -> N
         encoding="utf-8",
     )
     (fx.root / "fake" / "bin" / "npm").chmod(0o755)
-    old = assert_agree(fx)
-    assert old.exit == 0
-    assert old.calls.count("call: npm audit signatures") == 2
-    assert old.calls.count("call: sleep 10") == 1
-    assert "⚠ npm audit signatures failed (attempt 1); clearing TUF cache" in old.stdout
+    run = run_gate(fx)
+    assert run.exit == 0
+    assert run.calls.count("call: npm audit signatures") == 2
+    assert run.calls.count("call: sleep 10") == 1
+    assert "⚠ npm audit signatures failed (attempt 1); clearing TUF cache" in run.stdout
 
 
 def test_an_old_npm_is_upgraded_before_signature_verification(fx: Fixture) -> None:
     fx.data("npm.version", "10.9.4\n")
     fx.data("npm.install.out", "added 1 package\n")
-    old = assert_agree(fx)
-    assert old.exit == 0
-    assert "⚠ Upgrading npm to 11.x for Sigstore attestation key compatibility" in old.stdout
-    assert "call: npm install -g npm@11.17.0 --no-audit --no-fund" in old.calls
+    run = run_gate(fx)
+    assert run.exit == 0
+    assert "⚠ Upgrading npm to 11.x for Sigstore attestation key compatibility" in run.stdout
+    assert "call: npm install -g npm@11.17.0 --no-audit --no-fund" in run.calls
 
 
 def test_a_failed_npm_upgrade_ends_the_run_with_npms_status(fx: Fixture) -> None:
     fx.data("npm.version", "10.9.4\n")
     fx.data("npm.install.exit", "9\n")
-    old = assert_agree(fx)
-    assert old.exit == 9, "set -e hands npm's own status back"
-    assert "call: npm audit signatures" not in old.calls
+    run = run_gate(fx)
+    assert run.exit == 9, "set -e hands npm's own status back"
+    assert "call: npm audit signatures" not in run.calls
 
 
 def test_a_missing_npm_is_a_loud_127_naming_the_line(fx: Fixture) -> None:
     """The one case where the two sides' TEXT differs only in the script path."""
     fx.unfake("npm")
-    old = assert_agree(fx)
-    assert old.exit == 127
-    assert "<script>: line 385: npm: command not found" in old.stderr
-    assert "<script>: line 387: npm: command not found" in old.stderr
+    run = run_gate(fx)
+    assert run.exit == 127
+    assert "<script>: line 385: npm: command not found" in run.stderr
+    assert "<script>: line 387: npm: command not found" in run.stderr
 
 
 # --------------------------------------------------------------------------- deferral ---------------------------------------------------------------------------
@@ -915,13 +880,13 @@ def test_a_fix_held_in_the_upgrade_blocklist_is_deferred_not_failed(fx: Fixture)
         "# held back\nastro  # BLOCKER: astro 7 removes legacy content collections\n",
     )
     fx.policy(".audit-allowlist", DEV_ALLOWLIST_VITEST)
-    old = assert_agree(fx)
-    assert old.exit == 0
+    run = run_gate(fx)
+    assert run.exit == 0
     assert "deferred %s fix requires astro@7.0.2, held in .ci/policy/.deps-upgrade-blocklist" % (
         port.EM
-    ) in (old.stdout)
-    assert "⚠ Deferred 2 production advisory(ies)" in old.stdout
-    assert "call: npm view" not in "\n".join(old.calls), (
+    ) in (run.stdout)
+    assert "⚠ Deferred 2 production advisory(ies)" in run.stdout
+    assert "call: npm view" not in "\n".join(run.calls), (
         "the blocklist arm must short-circuit before the registry lookup"
     )
 
@@ -938,10 +903,10 @@ def test_a_fix_inside_the_freshness_window_is_deferred(fx: Fixture) -> None:
     # `date -u -d @<now> --iso-8601=seconds` would be a second implementation of
     # the clock; the fixture just says "2999", which is inside every window.
     fx.data("npmview.astro", '{"7.0.2":"2999-01-01T00:00:00.000Z"}\n')
-    old = assert_agree(fx)
-    assert old.exit == 0
-    assert "deferred %s fix published 2999-01-01, within freshness window" % port.EM in (old.stdout)
-    assert "call: npm view astro time --json" in old.calls
+    run = run_gate(fx)
+    assert run.exit == 0
+    assert "deferred %s fix published 2999-01-01, within freshness window" % port.EM in (run.stdout)
+    assert "call: npm view astro time --json" in run.calls
 
 
 # --------------------------------------------------------------------------- age ---------------------------------------------------------------------------
@@ -969,17 +934,17 @@ def test_an_allowlist_entry_older_than_the_fail_window_is_refused(fx: Fixture) -
     """The age gate, driven over a REAL git history rather than a stubbed date.
 
     `entry_age_days` is `git log -S<entry> --diff-filter=A`, so the fixture needs
-    a commit that introduced the line and a committer date old enough to cross AGE_FAIL_DAYS. Without the repository both sides answer 0 and the case would pass while measuring nothing.
+    a commit that introduced the line and a committer date old enough to cross AGE_FAIL_DAYS. Without the repository the gate answers 0 and the case would pass while measuring nothing.
     """
     fx.policy(".audit-prod-allowlist", PROD_ALLOWLIST_BOTH)
     _git(fx.root, "init", "-q", "-b", "main")
     _git(fx.root, "add", ".ci/policy/.audit-prod-allowlist")
     _git(fx.root, "commit", "-q", "-m", "seed", when="2019-01-01T00:00:00 +0000")
-    old = assert_agree(fx)
-    assert old.exit == 1
-    assert "days old (>365) %s yearly re-review required" % port.EM in old.stdout
-    assert "strict age gate enforced" in old.stderr
-    assert "1117141 (audit-prod-allowlist entry" in old.stderr
+    run = run_gate(fx)
+    assert run.exit == 1
+    assert "days old (>365) %s yearly re-review required" % port.EM in run.stdout
+    assert "strict age gate enforced" in run.stderr
+    assert "1117141 (audit-prod-allowlist entry" in run.stderr
 
 
 def test_an_allowlist_entry_past_the_warn_window_only_warns(fx: Fixture) -> None:
@@ -987,49 +952,42 @@ def test_an_allowlist_entry_past_the_warn_window_only_warns(fx: Fixture) -> None
     _git(fx.root, "init", "-q", "-b", "main")
     _git(fx.root, "add", ".ci/policy/.audit-prod-allowlist")
     _git(fx.root, "commit", "-q", "-m", "seed", when="2019-01-01T00:00:00 +0000")
-    old = assert_agree(fx, AGE_WARN_DAYS="100", AGE_FAIL_DAYS="100000")
-    assert old.exit == 0
-    assert "days old (>100) %s due for re-review" % port.EM in old.stdout
-    assert "✓ Security audit passed" in old.stdout
+    run = run_gate(fx, AGE_WARN_DAYS="100", AGE_FAIL_DAYS="100000")
+    assert run.exit == 0
+    assert "days old (>100) %s due for re-review" % port.EM in run.stdout
+    assert "✓ Security audit passed" in run.stdout
 
 
-# --------------------------------------------------------------------------- the pure helpers, and the two re-implementations, against the real tools ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the pure helpers, and the re-implementations, against the real tools ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
-    ("fix_type", "is_major", "fix_version", "fix_value"),
+    ("fix_type", "is_major", "fix_version", "fix_value", "expected"),
     [
-        ("null", "null", "", "null"),
-        ("boolean", "null", "", "true"),
-        ("boolean", "null", "", "false"),
-        ("object", "true", "7.0.2", "null"),
-        ("object", "false", "1.2.3", "null"),
-        ("object", "true", "", "null"),
-        ("string", "null", "", "null"),
+        ("null", "null", "", "null", "no fix information in npm audit output"),
+        (
+            "boolean",
+            "null",
+            "",
+            "true",
+            "transitive fix path exists (try 'npm update <pkg>' or add a root overrides entry)",
+        ),
+        ("boolean", "null", "", "false", "no fix available upstream"),
+        ("object", "true", "7.0.2", "null", "major upgrade required (to 7.0.2)"),
+        ("object", "false", "1.2.3", "null", "non-breaking upgrade available (to 1.2.3)"),
+        ("object", "true", "", "null", "major upgrade required"),
+        ("string", "null", "", "null", "unknown fix type: string"),
     ],
 )
-def test_describe_fix_matches_the_twins_case_statement(
-    fx: Fixture, fix_type: str, is_major: str, fix_version: str, fix_value: str
+def test_describe_fix_answers_what_the_twins_case_statement_answered(
+    fix_type: str, is_major: str, fix_version: str, fix_value: str, expected: str
 ) -> None:
-    """The pure helper, driven directly on both sides.
+    """The pure helper, against the seven answers the bash `case` gave.
 
-    The twin's `describe_fix` is a shell function, so it is reached by sourcing the real file and calling it -- not by re-typing its `case` here, which would make this a test of the copy.
+    EACH EXPECTATION IS THE TWIN'S OWN STDOUT, CAPTURED AT DELETION TIME. Until W7P5-b this case lifted `describe_fix() {` out of `audit.sh`'s text and ran it under bash, on the argument that re-typing the `case` here would make the case a test of the copy. That argument dies with the file: there is no longer an original to be a copy OF, and a case that reads a deleted file is
+    not a stricter test, it is a broken one. So the seven answers are written down instead, and this is the record of what the gate used to say as well as the check that it still says it.
     """
-    # `describe_fix` is defined in audit.sh's body; the twin has no library seam
-    # for it, so the function is lifted out of the file's TEXT by name.
-    text = (fx.root / TWIN_REL).read_text(encoding="utf-8")
-    start = text.index("describe_fix() {")
-    end = text.index("\n}\n", start) + 3
-    script = text[start:end] + '\ndescribe_fix "$1" "$2" "$3" "$4"\n'
-    proc = subprocess.run(
-        ["bash", "-c", script, "_", fix_type, is_major, fix_version, fix_value],
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=60,
-    )
-    assert proc.returncode == 0, proc.stderr
-    assert port.describe_fix(fix_type, is_major, fix_version, fix_value) == proc.stdout.rstrip("\n")
+    assert port.describe_fix(fix_type, is_major, fix_version, fix_value) == expected
 
 
 @pytest.mark.parametrize(
@@ -1091,14 +1049,46 @@ def test_deps_blocklist_has_matches_the_real_grep(
     assert port.Audit().deps_blocklist_has(pkg) is (real.returncode == 0)
 
 
-def test_the_jq_programs_match_the_real_jq(fx: Fixture, tmp_path: pathlib.Path) -> None:
-    """Every jq program the twin runs, re-derived from the twin's own TEXT.
+# THE THREE JQ PROGRAMS THE TWIN RAN, WRITTEN OUT IN FULL, indentation included. They were lifted out of `audit.sh`'s text until W7P5-b deleted it; these are the exact strings that lift produced on its last run, and the port's re-implementations are still checked against REAL jq executing them, which is the half of the case that always mattered.
+PROGRAM_ADVISORIES = (
+    '[.vulnerabilities[].via[] | select(type == "object") | .source] | unique | .[]'
+)
 
-    The programs are lifted out of `audit.sh` rather than re-typed, so an edit to the twin's jq that this port did not follow goes red here instead of showing up as a mismatched byte three cases later.
+PROGRAM_ADVISORY_MAP = """[.vulnerabilities | to_entries[].value.via[]
+                     | select(type == "object")
+                     | {source, url, title, severity}]
+                    | unique_by(.source)
+                    | .[] | [.source, .severity, .url, .title] | @tsv"""
+
+PROGRAM_FIX_INFO = """        .vulnerabilities | to_entries[] |
+        select(.value.via[] | objects | select(.source == ($id | tonumber))) |
+        {
+            pkg: .key,
+            fixType: (.value.fixAvailable | type),
+            fixValue: (if (.value.fixAvailable | type) == "boolean"
+                       then (.value.fixAvailable | tostring)
+                       else null end),
+            isMajor: (if (.value.fixAvailable | type) == "object"
+                      then (.value.fixAvailable.isSemVerMajor | tostring)
+                      else null end),
+            fixVersion: (if (.value.fixAvailable | type) == "object"
+                         then .value.fixAvailable.version
+                         else null end),
+            fixName: (if (.value.fixAvailable | type) == "object"
+                      then .value.fixAvailable.name
+                      else null end)
+        }
+    """
+
+
+def test_the_jq_programs_match_the_real_jq(tmp_path: pathlib.Path) -> None:
+    """Every jq program the twin ran, against the jq on this host.
+
+    WHAT THE DELETION COST AND WHAT IT DID NOT. Lifting the programs out of the twin's text caught one thing this cannot: a jq edit in the bash that the port did not follow. There is no bash to drift from any more, so that half is gone with it. The half that remains is the one a re-implementation actually needs -- `program_advisories` and its two siblings are Python rewrites of jq,
+    and jq is still here to say whether they agree.
     """
     report = tmp_path / "audit-prod.json"
     report.write_text(AUDIT_ALL, encoding="utf-8")
-    twin = (fx.root / TWIN_REL).read_text(encoding="utf-8")
 
     def run_jq(*args: str) -> str:
         proc = subprocess.run(
@@ -1109,23 +1099,17 @@ def test_the_jq_programs_match_the_real_jq(fx: Fixture, tmp_path: pathlib.Path) 
 
     document = json.loads(AUDIT_ALL)
 
-    advisories_program = twin[twin.index("[.vulnerabilities[].via[]") :].split("'")[0]
-    assert port.program_advisories(document) == run_jq("-r", advisories_program).split()
-
-    start = twin.index("[.vulnerabilities | to_entries[].value.via[]")
-    map_program = twin[start:].split("'")[0]
-    assert port.program_advisory_map(document) == run_jq("-r", map_program).splitlines()
+    assert port.program_advisories(document) == run_jq("-r", PROGRAM_ADVISORIES).split()
+    assert port.program_advisory_map(document) == run_jq("-r", PROGRAM_ADVISORY_MAP).splitlines()
 
     assert (
         port.jq_print(port.jq_alt(document["metadata"]["vulnerabilities"]["total"], 0))
         == run_jq(".metadata.vulnerabilities.total // 0").strip()
     )
 
-    start = twin.index("        .vulnerabilities | to_entries[] |")
-    fix_program = twin[start:].split("'")[0]
     for advisory_id in ("1117141", "1193684", "9999999"):
         expected = subprocess.run(
-            ["jq", "-c", "--arg", "id", advisory_id, fix_program, str(report)],
+            ["jq", "-c", "--arg", "id", advisory_id, PROGRAM_FIX_INFO, str(report)],
             capture_output=True,
             text=True,
             check=False,
@@ -1162,7 +1146,7 @@ def test_the_details_program_matches_the_real_jq(tmp_path: pathlib.Path) -> None
     assert port.program_details(json.loads(body)) == proc.stdout.rstrip("\n")
 
 
-# --------------------------------------------------------------------------- the control: this differential can go red ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the control: this suite can go red ---------------------------------------------------------------------------
 
 
 def _scenario(fx: Fixture, name: str) -> None:
@@ -1227,26 +1211,31 @@ def _plant(fx: Fixture, old_text: str, new_text: str) -> None:
 def test_a_planted_defect_in_the_port_is_caught(
     fx: Fixture, scenario: str, old_text: str, new_text: str
 ) -> None:
-    """Four plants, four reds. A differential nobody has seen fail is not one.
+    """Four plants, four reds. A suite nobody has seen fail is not one.
 
-    Each plant is a change a reviewer might call an IMPROVEMENT -- a tab split that looks right, a fallback that writes valid JSON, one retry fewer, a green line that stops lying. Every one of them is a behavioural difference from the live gate, and this case is what says so. The last two are the interesting ones: `one attempt fewer` is invisible on stdout and stderr and is caught
-    ONLY by the call log.
+    Each plant is a change a reviewer might call an IMPROVEMENT -- a tab split that looks right, a fallback that writes valid JSON, one retry fewer, a green line that stops lying. Every one of them is a behavioural difference, and this case is what says so. The last two are the interesting ones: `one attempt fewer` is invisible on stdout and stderr and is caught ONLY by the call
+    log.
+
+    THE BASELINE IS THE UNPLANTED GATE, which is what changed at W7P5-b. It used to be the bash twin, and the claim was that the plant made the port disagree with the bash. The two claims are the same claim: the ledger and this file's own cases are what established that the unplanted port and the deleted bash said the same thing, so the recorded run below stands in for the twin
+    exactly. It also removes the last way this control could go green for the wrong reason -- a fixture that cannot run EITHER side no longer exists, because there is only one side and the baseline run must succeed before the plant is written.
     """
     _scenario(fx, scenario)
+    baseline = run_gate(fx)
     _plant(fx, old_text, new_text)
     with pytest.raises(AssertionError):
-        assert_agree(fx)
+        assert_same(baseline, run_gate(fx))
 
 
 @pytest.mark.parametrize("scenario", ["full", "missing-ghsa", "signatures-fail"])
 def test_the_control_passes_without_the_plant(fx: Fixture, scenario: str) -> None:
-    """The other half of the control: the same three fixtures, unplanted, AGREE.
+    """The other half of the control: the same three fixtures, unplanted, REPEAT.
 
-    Without this the plants above would pass for any reason at all, including a fixture that cannot run either side.
+    Without this the plants above would pass for any reason at all, including a gate whose output is not stable between two runs of one fixture -- which would make every plant look caught while catching nothing.
     """
     _scenario(fx, scenario)
-    old = assert_agree(fx)
-    assert old.exit == {"full": 0, "missing-ghsa": 5, "signatures-fail": 1}[scenario]
+    first = run_gate(fx)
+    assert_same(first, run_gate(fx))
+    assert first.exit == {"full": 0, "missing-ghsa": 5, "signatures-fail": 1}[scenario]
 
 
 def test_the_port_on_disk_is_unmodified() -> None:

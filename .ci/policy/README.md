@@ -34,8 +34,8 @@ not as a description of the code today.
 | File | Reader, by symbol | How the path is built today |
 |---|---|---|
 | `.actions-upgrade-blocklist` | `scripts/gates/check-actions.ts` `BLOCKLIST_FILE` | root join |
-| `.audit-allowlist` | `.ci/scripts/security/audit.sh` `parse_blockered_list ".audit-allowlist"` | **bare relative name**, correct only after the `cd "$ROOT_DIR"` in `main()` |
-| `.audit-prod-allowlist` | `.ci/scripts/security/audit.sh` `parse_blockered_list ".audit-prod-allowlist"` | **bare relative name**, same `cd` |
+| `.audit-allowlist` | `.ci/rediacc_ci/security/audit.py` `DEV_ALLOWLIST` | `policy_rel`, over what was a **bare relative name** in the deleted `audit.sh` |
+| `.audit-prod-allowlist` | `.ci/rediacc_ci/security/audit.py` `PROD_ALLOWLIST` | `policy_rel`, over what was the same bare name |
 | `.ci-parity-exempt` | `scripts/gates/check-ci-parity.ts` `EXEMPT_FILE` | env seam (`CI_PARITY_ROOT`) over root join |
 | `.cli-i18n-orphan-allowlist` | `scripts/gates/check-cli-i18n-key-usage.ts` `ORPHAN_ALLOWLIST` | root join |
 | `.dead-bash-allowlist` | `scripts/gates/check-dead-bash.ts` `ALLOWLIST` | env seam (`DEAD_BASH_ROOT`) over root join |
@@ -54,8 +54,8 @@ about a tree nobody has any more.
 
 Eleven of the fifteen are additionally read by `scripts/gates/check-suppression-liveness.ts`, which since 2026-09-06 routes every one of those reads through `policyPath()` and therefore needs no edit when the move lands.
 
-**The four bare-relative reads are the reason the seam exists.** `audit.sh` and `check-profiler-coverage.sh` open their allowlists by bare name and are correct only because they `cd` to the repository root first. A move that updated the root joins and missed these would leave four readers opening a file that is no longer there -- and in every one of these mechanisms, a file that is
-not there parses as zero entries, which is indistinguishable from "nothing is suppressed".
+**The four bare-relative reads are the reason the seam exists.** `audit.sh` and `check-profiler-coverage.sh` opened their allowlists by bare name and were correct only because they `cd` to the repository root first. Two of the four left with `audit.sh` at W7P5-b, and its port reads through `policy_rel` instead. A move that updated the root joins and missed these would leave four
+readers opening a file that is no longer there -- and in every one of these mechanisms, a file that is not there parses as zero entries, which is indistinguishable from "nothing is suppressed".
 
 ### The live inventory, generated
 
@@ -110,8 +110,8 @@ repo-relative path, and after the move those names matched nothing. Classificati
 - **`scripts/ci-runner/manifest.ts`** lists `.plan-housekeeping-allowlist` in the `paths:`
 array of `check:ci-plan-housekeeping`, and `scripts/ci-runner/gates.lock.json` mirrors it. Change detection for that gate breaks silently if the path is not updated. Both files are driver-owned (driver-contract 5e), so W4 P2 shipped the two lines as a patch fragment for the driver to apply rather than editing them itself.
 - **`scripts/lib/doc-providers.ts`** builds the generated suppressions table in
-`scripts/data/doc-registry.md` by scanning every tracked non-source file that contains `BLOCKER:`. It names nothing, so it needed no edit -- but the table's paths changed, so the artifact was regenerated (`npx tsx scripts/gen/gen-docs.ts --write`) in the same change, and the fourteen matching keys in the frozen pre-port SET record (`scripts/data/doc-registry-preport.json`)
-were RE-KEYED in place. A rename reads to `--diff-snapshot` as fourteen MISSING keys, which is fatal there; re-keying only those fourteen strings is what keeps the record diffable without a `--snapshot --force` that would have destroyed every other provider's pre-port state.
+`scripts/data/doc-registry.md` by scanning every tracked non-source file that contains `BLOCKER:`. It names nothing, so it needed no edit -- but the table's paths changed, so the artifact was regenerated (`npx tsx scripts/gen/gen-docs.ts --write`) in the same change, and the fourteen matching keys in the frozen pre-port SET record (`scripts/data/doc-registry-preport.json`) were
+RE-KEYED in place. A rename reads to `--diff-snapshot` as fourteen MISSING keys, which is fatal there; re-keying only those fourteen strings is what keeps the record diffable without a `--snapshot --force` that would have destroyed every other provider's pre-port state.
 
 ---
 

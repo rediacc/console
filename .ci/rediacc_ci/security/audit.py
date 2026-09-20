@@ -1,8 +1,11 @@
+#!/usr/bin/env python3
 """Security audit with allowlist support, ported from `.ci/scripts/security/audit.sh`.
 
-PORTED FROM `.ci/scripts/security/audit.sh` (541 lines), which is the LIVE registered gate `check:ci-security-audit` and is not touched by this file. Both implementations exist; `.ci/rediacc_ci/tests/test_security_audit.py` is the differential that says they agree on both streams, the exit code and the exact argv of every external command, and
-`.ci/shadow/w7p6-audit.observations.jsonl`
-is the K=5 ledger. Cutover is a later, driver-only step.
+THIS FILE IS THE GATE. It carries `check:ci-security-audit` outright: `package.json`, the `Audit` step in `.github/workflows/ci-quality.yml` and `scripts/ci-runner/manifest.ts` all name this path, and `.ci/scripts/security/audit.sh` was deleted in the same change (W7P5-b).
+
+PORTED FROM `.ci/scripts/security/audit.sh` (541 lines). The licence for the deletion is `.ci/shadow/w7p6-audit.observations.jsonl`, a K=5 ledger reading EQUIVALENT over five distinct clean trees with five distinct finding sets, plus the differential in `.ci/rediacc_ci/tests/test_security_audit.py`, which agreed on both streams, the exit code and every external command's argv.
+
+THE BASH LINE NUMBERS QUOTED THROUGHOUT THE COMMENTS BELOW ARE ARCHAEOLOGY. They point into the deleted twin, they are what each clause here was proved against, and they are kept so a future reader can find the same clause in git history rather than guess at it.
 
 WHAT THE GATE DOES, in the order it does it, because the order is the contract:
 
@@ -140,6 +143,9 @@ import re
 import shutil
 import subprocess
 import sys
+
+# THE HOP, copied from `.ci/rediacc_ci/setup/tools.py:92` rather than invented: this file is both a module and a SCRIPT, and the workflow invokes it by path, so as a script it cannot import the package that would put itself on `sys.path`. `parents[2]` is `.ci`.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 from rediacc_ci import paths
 from rediacc_ci.core import advisory, age, blocker_validator, release_age

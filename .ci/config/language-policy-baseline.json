@@ -232,7 +232,6 @@
     ".ci/scripts/review/epic-context.sh",
     ".ci/scripts/review/review-status.sh",
     ".ci/scripts/security/actionlint.sh",
-    ".ci/scripts/security/audit.sh",
     ".ci/scripts/security/check-autopilot-workflow-invariants.sh",
     ".ci/scripts/security/check-ci-workflow-invariants.sh",
     ".ci/scripts/security/check-commands.sh",

@@ -1521,7 +1521,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/security/audit.sh"
+      ".ci/rediacc_ci/security/audit.py"
     ],
     "ci": {
       "kind": "step",

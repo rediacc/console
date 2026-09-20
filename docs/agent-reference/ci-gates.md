@@ -243,7 +243,7 @@ at all (offline branch work; the lookups cannot succeed).
 - **soft** -- schedule / workflow_dispatch: the gate RUNS and reports, but
 `.ci/scripts/quality/run-external-gate.sh` downgrades a failure to a `::warning::` + step summary + exit 0. The nightly's red then means "main is broken", never "the world moved" (5 of the 8 nightlies before 2026-08-04 were red on external drift alone, and the `nightly-red` issue cried wolf).
 
-`audit.sh` deliberately gets only the skip half: a new production advisory against main's unchanged lockfile is a real signal about main, so it still reddens the nightly (operator decision 2026-08-04).
+`audit.py` deliberately gets only the skip half: a new production advisory against main's unchanged lockfile is a real signal about main, so it still reddens the nightly (operator decision 2026-08-04).
 
 Do not hand a new external gate its own `if:` expression or `continue-on-error` (banned by check-workflows.sh): give the step `inputs.external_quality != 'skip'`, route its command through `run-external-gate.sh`, and pass `EXTERNAL_QUALITY_MODE`. The wrapper fails closed (unset or unknown mode behaves as hard), check-ci-parity resolves through it (the wrapped command stays the
 leaf), and test-external-gate-wrapper.sh pins all four directions.

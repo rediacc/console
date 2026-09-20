@@ -1,6 +1,6 @@
 """`rediacc_ci.core.advisory` against the live `emit-advisory.sh`.
 
-THE TWIN IS LIVE, not frozen: `.ci/scripts/lib/emit-advisory.sh` still carries its implementation and is still reached by `blocker-validator.sh:80`, by `age-check.sh` and by `.ci/scripts/security/audit.sh`. Every case below sources that file.
+THE TWIN IS LIVE, not frozen: `.ci/scripts/lib/emit-advisory.sh` still carries its implementation and is still reached by `blocker-validator.sh:80` and by `age-check.sh`; `.ci/scripts/security/audit.sh` was a third reader until W7P5-b deleted it. Every case below sources that file.
 
 THE TWIN IS DRIVEN STANDALONE, WITH NO `common.sh`, AND THAT IS THE WHOLE DIFFERENTIAL'S SCOPE. `emit-advisory.sh` defines its loggers only when nothing has defined them already (`declare -F`), so sourcing `common.sh` first replaces four of the functions under test with common.sh's. A differential that did that would be measuring `common.sh` while appearing to measure this file.
 The transitive branch belongs to whichever box ports `common.sh`; it is named here so its absence reads as a boundary rather than as an oversight.

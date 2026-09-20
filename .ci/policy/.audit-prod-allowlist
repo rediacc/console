@@ -2,7 +2,7 @@
 # Only for upstream issues with no available fix or legitimate blockers.
 # Each numeric line: advisory source ID (from npm audit --json).
 # Each group MUST have a "# BLOCKER: <reason>" line in its comment block;
-# the audit script (.ci/scripts/security/audit.sh) enforces this strictly.
+# the audit gate (.ci/rediacc_ci/security/audit.py) enforces this strictly.
 
 # astro <6.1.6 XSS in define:vars via incomplete </script> sanitization
 # (GHSA-j687-52p2-xcff; fix requires Astro 6.x major)
