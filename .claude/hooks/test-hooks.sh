@@ -2520,6 +2520,8 @@ for mod in context/test-context-bands.py \
     ../rediacc_hooks/guards/test-block_host_toolchain_run.py \
     ../rediacc_hooks/guards/test-block_prose_style_edit.py \
     ../rediacc_hooks/guards/test-block_prose_style_commit.py \
+    ../rediacc_hooks/guards/test-block_unproven_bulk_transform.py \
+    ../rediacc_hooks/guards/test-warn_staged_shape_duplication.py \
     stop/test-completion-evidence.py \
     stop/test-always-tier.py \
     stop/test-planfile.py \

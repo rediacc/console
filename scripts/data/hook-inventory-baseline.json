@@ -54,6 +54,7 @@
   ".claude/rediacc_hooks/guards/block_worktree_add.py",
   ".claude/rediacc_hooks/guards/warn_hook_change.py",
   ".claude/rediacc_hooks/guards/warn_remote_drift.py",
+  ".claude/rediacc_hooks/guards/warn_staged_shape_duplication.py",
   ".claude/rediacc_hooks/guards/warn_stale_index.py",
   ".claude/rediacc_hooks/guards/warn_submodule_deletions.py",
   ".claude/rediacc_hooks/hookio.py",

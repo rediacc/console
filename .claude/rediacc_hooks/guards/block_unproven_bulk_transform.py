@@ -19,6 +19,7 @@ FAILS OPEN ON AN UNRESOLVABLE RANGE, on the same reasoning `messages()`'s `-F <u
 
 import os
 import re
+import subprocess
 
 from rediacc_hooks import hookio, shellscan
 from rediacc_hooks.guards import block_prose_style_commit as PSC
@@ -27,6 +28,12 @@ from rediacc_hooks.guards import block_unverified_push as PUSH
 CHAIN = "pre-bash"
 TWIN = None
 ORDER = 41
+
+# The one branch the differential must be able to see: a commit at bulk scale whose own message quotes no proof. Planting `if False:` there lets every such commit through, which is the whole failure this guard exists to refuse.
+DEFECT = (
+    "if len(files) >= BULK_FILE_THRESHOLD and not _proof_shown(_commit_message_text(cmd, cwd)):",
+    "if False:",
+)
 
 # Measured nowhere yet, chosen rather than derived: 20 files is comfortably above an ordinary multi-file hand fix (this session's own hand-written fixes touched 1-8 files) and comfortably below the smallest bulk transform this branch actually produced (884, then 221, then 6). A threshold this far from both boundaries costs false positives only if a future hand-written fix genuinely
 # spans 20+ files, which is itself worth a moment's proof.
@@ -177,8 +184,45 @@ def run(ev):
 
 
 EDGE_CASES = [
+    ("a bulk commit with no proof quoted", 'git commit -m "reflow the tree"'),
     ("a small commit, well under threshold", 'git commit -m "fix: a small thing"'),
     ("a plain command is not a target", "ls -la"),
     ("gh pr view is not a write", "gh pr view 1"),
     ("git log is not git commit", 'git log --grep "shape_cluster_diff.py"'),
 ]
+
+
+def _bulk_staged_world(target):
+    """A scratch repo with a bulk-sized change already staged, so the commit branch has something to refuse."""
+    target.mkdir(parents=True, exist_ok=True)
+    quiet = {
+        "capture_output": True,
+        "env": {
+            "PATH": "/usr/bin:/bin:/usr/local/bin",
+            "HOME": "/nonexistent",
+            "GIT_AUTHOR_NAME": "Fixture",
+            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+            "GIT_COMMITTER_NAME": "Fixture",
+            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+            "GIT_CONFIG_SYSTEM": "/dev/null",
+        },
+    }
+
+    def run_git(*args):
+        subprocess.run(["git", "-C", str(target), *args], check=True, **quiet)
+
+    run_git("init", "-q", "-b", "main")
+    (target / "base.txt").write_text("x\n", encoding="utf-8")
+    run_git("add", ".")
+    run_git("commit", "-q", "-m", "base")
+    for i in range(BULK_FILE_THRESHOLD + 2):
+        (target / ("bulk-%02d.py" % i)).write_text("x = %d\n" % i, encoding="utf-8")
+    run_git("add", ".")
+    return target
+
+
+FIXTURES = {"bulk-staged": _bulk_staged_world}
+
+# CLAUDE_PROJECT_DIR is the guard's fallback working directory when the payload carries none, so pointing it at the fixture is what puts the staged files under the commit case.
+ENVS = [("bulk-staged", {"CLAUDE_PROJECT_DIR": "{FIXTURE:bulk-staged}"}, {})]

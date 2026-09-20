@@ -69,15 +69,26 @@
  */
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readSync, renameSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { validateBlockerQuality } from '../lib/blocker-validator.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { refuseIfEmpty, runControls } from '../lib/controls.js';
 
-const ROOT = path.resolve(import.meta.dirname, '..', '..');
-const SEED_FILE = path.join(ROOT, 'scripts/data/shape-duplication-seed.json');
+// THE ROOT IS A BINDING RATHER THAN A CONSTANT, and the probe is the reason. `--emit-index` bundles this same file into `probe.mjs`, and inside that bundle `import.meta.dirname` is the CACHE directory rather than `scripts/gates`, so a constant computed at module load would resolve the seed and every corpus read against a path that does not exist. The probe sets the root from its
+// request and the gate sets it from `--root`; the default below is what a plain run has always used.
+let ROOT = path.resolve(import.meta.dirname, '..', '..');
+let SEED_FILE = path.join(ROOT, 'scripts/data/shape-duplication-seed.json');
+
+function setRoot(root: string): void {
+  ROOT = path.resolve(root);
+  SEED_FILE = path.join(ROOT, 'scripts/data/shape-duplication-seed.json');
+  // The tracked-path cache is keyed on nothing, so a root change has to drop it or the next resolution answers about the previous tree.
+  TRACKED_CACHE = null;
+}
 
 /** The Nth copy. Justified from the measured distribution, not from tradition. */
 export const N = 3;
@@ -111,7 +122,36 @@ const FAMILIES: readonly Family[] = [
   { pathspec: '.claude/hooks/pre-bash/block-*.sh', floor: 1 },
 ];
 
-const FAMILY_PATHSPECS = FAMILIES.map((f) => f.pathspec);
+/** Exported for the index: the probe must scan the corpus this gate scans, and one list says so. */
+export const FAMILY_PATHSPECS = FAMILIES.map((f) => f.pathspec);
+
+/**
+ * Which language's lexical rules a corpus path is read under.
+ *
+ * Factored out of `scan` because the probe normalises a STAGED file, which is bytes with no entry in `perFile`, and a second `endsWith` ladder there would be a second answer to one question -- the class this gate exists to count.
+ */
+export function kindFor(file: string): 'ts' | 'sh' | 'py' {
+  return file.endsWith('.ts') ? 'ts' : file.endsWith('.py') ? 'py' : 'sh';
+}
+
+/** A file declaring it deliberately stands apart. Exported for the same reason as `kindFor`: the probe sees staged bytes, never the tracked file. */
+export function isOptedOut(src: string): boolean {
+  return src.includes(OPT_OUT);
+}
+
+/**
+ * What a reader is asked to do about a finding, in one place.
+ *
+ * The gate prints it, and `--emit-index` copies it into the cached index so the pre-commit probe says the SAME words without transcribing them into a second language. An advisory that paraphrased the gate would be two answers to "what now", which is the shape of defect this file counts.
+ */
+export const ADVICE =
+  '\n  Either extract the shared piece, or say which DIVERGENCE makes them not one' +
+  '\n  thing (the way `run_gate()` has three incompatible return contracts).' +
+  '\n  To accept one, put its FINGERPRINT (printed above, beside the copy count) into' +
+  '\n  scripts/data/shape-duplication-seed.json under "accepted", with a BLOCKER: reason' +
+  '\n  naming the divergence. The fingerprint used to be absent from this message, which' +
+  '\n  left the documented escape hatch unusable without reading the source.' +
+  '\n  Triage it: .claude/hooks/stop/worklist.py --triage <you> "<the finding>"';
 
 /**
  * Comments and string literals out, whitespace collapsed, blanks dropped.
@@ -741,19 +781,36 @@ export function coalesce(findings: Finding[]): Finding[] {
  * `seed` is the set of hashes present when the gate was installed. Exported and pure, so
  * the controls drive the real judgement.
  */
-export function judge(
+/**
+ * Every shape, with the files carrying it and the FIRST line it occupies in each.
+ *
+ * FACTORED OUT OF `judge` FOR THE PROBE, and the extraction is the point rather than tidiness. The pre-commit probe (`--emit-index`, then `probe.mjs`) needs the same tally over a cached corpus plus one staged file, and `deadAccepted` and the `--seed` writer each build their own smaller version of it. A counter whose own counting rule existed three times would be the finding this
+ * file reports.
+ *
+ * `seed` is skipped here rather than at the caller so a seeded shape never reaches the tally at all, which is what makes the index buildable with an EMPTY seed: the probe applies the seed it reads at probe time, so editing the seed does not stale the cache.
+ */
+export function countShapes(
   perFile: Map<string, { h: string; line: number }[]>,
   seed: Set<string>
-): Finding[] {
+): Map<string, Map<string, number>> {
   const byShape = new Map<string, Map<string, number>>();
   for (const [file, ws] of perFile) {
     for (const w of ws) {
       if (seed.has(w.h)) continue;
       let m = byShape.get(w.h);
       if (!m) byShape.set(w.h, (m = new Map()));
+      // The FIRST window of this shape in this file. Every later one is the same span sliding forward, and `coalesce` merges them back anyway.
       if (!m.has(file)) m.set(file, w.line);
     }
   }
+  return byShape;
+}
+
+export function judge(
+  perFile: Map<string, { h: string; line: number }[]>,
+  seed: Set<string>
+): Finding[] {
+  const byShape = countShapes(perFile, seed);
   const findings: Finding[] = [];
   for (const [h, files] of byShape) {
     if (files.size < N) continue;
@@ -815,16 +872,24 @@ function tracked(): string[] {
   );
 }
 
-function scan(files: string[]): Map<string, { h: string; line: number }[]> {
+/**
+ * The corpus, hashed. The HELPER SET comes back too, because the index needs it.
+ *
+ * `windows` takes the helper set as an argument and the probe cannot derive one: "already shared" is a count of USERS across the whole corpus, and a probe that scanned one staged file would see no users at all and silence nothing. So the set the corpus scan derived is cached alongside the hashes, which is also the known gap the plan states -- a staged file that newly makes a
+ * module shared changes the answer only at CI.
+ */
+function scan(files: string[]): {
+  perFile: Map<string, { h: string; line: number }[]>;
+  helpers: ReadonlySet<string>;
+} {
   const m = new Map<string, { h: string; line: number }[]>();
   // Computed ONCE over the whole corpus, not per file: "already shared" is a property of the library's user count across the corpus, which no single file can see.
   const helpers = sharedHelperNames(files);
   for (const f of files) {
     // `.py` SHARES THE `#` COMMENT ARM WITH SHELL AND ADDS ONE OF ITS OWN. It was normalised as 'sh' outright until 2026-09-08, on the argument that the two languages have the same lexical shape; they do not, because Python has a triple-quoted literal and its documentation lives inside one. See the `py` arm in `normalise`. Only `.ts` needs the `//` and `/* */` handling.
-    const kind = f.endsWith('.ts') ? 'ts' : f.endsWith('.py') ? 'py' : 'sh';
-    m.set(f, windows(normalise(readFileSync(path.join(ROOT, f), 'utf8'), kind), helpers));
+    m.set(f, windows(normalise(readFileSync(path.join(ROOT, f), 'utf8'), kindFor(f)), helpers));
   }
-  return m;
+  return { perFile: m, helpers };
 }
 
 /** Controls, each the real defect or the real non-defect, reconstructed. */
@@ -1303,6 +1368,71 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       name: 'CONTROL: a file declaring it stands apart is excluded from the corpus',
       ok: !tracked().some((f) => readFileSync(path.join(ROOT, f), 'utf8').includes(OPT_OUT)),
     },
+    // --- the tally and the near index the pre-commit probe reads ------------------
+    {
+      // `countShapes` is the loop `judge` used to carry inline, and the probe now reaches the same tally by a second entry point. What it must report is the FIRST line in each file, because that coordinate is what a reader opens and what `coalesce` merges on.
+      name: 'the tally names every file carrying a shape, at its first line',
+      ok: (() => {
+        const per = mk(N, SPAN);
+        const h = per.get('f0.ts')?.[0]?.h ?? '';
+        const files = countShapes(per, new Set()).get(h);
+        return files?.size === N && files.get('f0.ts') === 1;
+      })(),
+    },
+    {
+      // The seed arm, at the tally rather than at the caller: a seeded shape must not reach the index at all, which is what lets the index be built once and read under whatever seed the probe finds at probe time.
+      name: 'CONTROL: a seeded shape never enters the tally',
+      ok: (() => {
+        const seed = new Set(windows(normalise(SPAN, 'ts')).map((w) => w.h));
+        return countShapes(mk(N + 2, SPAN), seed).size === 0;
+      })(),
+    },
+    {
+      // THE SELECTION RULE THE INDEX SIZE DEPENDS ON. A staged file contributes at most one copy, so a shape carried by N-1 others is the only kind it can push over the line. Keeping more would carry the long tail of once-only shapes onto the commit path for nothing.
+      name: `the near index keeps a shape at ${N - 1} copies, as file:line`,
+      ok: (() => {
+        const near = nearIndex(mk(N - 1, SPAN));
+        const locs = Object.values(near)[0] ?? [];
+        return (
+          Object.keys(near).length === 1 && locs.length === N - 1 && /^f0\.ts:\d+$/.test(locs[0])
+        );
+      })(),
+    },
+    {
+      // The anti-bloat direction, and the one that makes the index a fraction of the corpus: a shape ONE file carries stays two short of N with one more copy, so it is not in the index at all.
+      name: `CONTROL: a shape carried by ${N - 2} file(s) is not in the near index`,
+      ok: Object.keys(nearIndex(mk(N - 2, SPAN))).length === 0,
+    },
+    {
+      // The probe's whole judgement, against a cached neighbour set: two files already agree, a staged third arrives, and the finding names all three.
+      name: 'a staged file reaching the Nth copy is a probe finding naming every file',
+      ok: (() => {
+        const near = nearIndex(mk(N - 1, SPAN));
+        const staged = new Map([['staged.ts', windows(normalise(SPAN, 'ts'))]]);
+        const found = probeFindings(near, staged, new Set());
+        return found.length === 1 && found[0].files.length === N;
+      })(),
+    },
+    {
+      // THE DOUBLE-COUNT THIS EXISTS TO REFUSE. A tracked file staged unchanged is ALREADY in the near index, so counting the cached copy and the staged one separately would report N-1 real copies as N. Staging every copy of a shape carried by exactly N-1 files must stay silent.
+      name: 'CONTROL: a staged file does not count as a copy of itself',
+      ok: (() => {
+        const per = mk(N - 1, SPAN);
+        const near = nearIndex(per);
+        const staged = new Map([...per].map(([f]) => [f, windows(normalise(SPAN, 'ts'))]));
+        return probeFindings(near, staged, new Set()).length === 0;
+      })(),
+    },
+    {
+      // The seed reaches the probe too, and by the same predicate. A shape silenced for the gate that fired on a commit would be an advisory nobody could satisfy.
+      name: 'CONTROL: a seeded shape is silent for the probe as well',
+      ok: (() => {
+        const near = nearIndex(mk(N - 1, SPAN));
+        const staged = new Map([['staged.ts', windows(normalise(SPAN, 'ts'))]]);
+        const seed = new Set(windows(normalise(SPAN, 'ts')).map((w) => w.h));
+        return probeFindings(near, staged, seed).length === 0;
+      })(),
+    },
   ];
 }
 
@@ -1399,8 +1529,305 @@ function loadSeed(): { silent: Set<string>; accepted: string[] } {
   return { silent, accepted: ok };
 }
 
-function main(): void {
+// --------------------------------------------------------------------------- THE CACHED INDEX, AND THE PROBE THAT READS IT ---------------------------------------------------------------------------
+//
+// WHY A BUNDLE AND NOT A SECOND IMPLEMENTATION. A pre-commit probe has to hash the STAGED bytes of a file, which means running `normalise`, `stripNoise` and `windows` over them. A Python guard that reimplemented those would be a second implementation of one decision, which is the class of defect this whole file exists to count -- and `isSharedHelperCall` derives its name set from
+// the WHOLE corpus, so the normalisation cannot be ported by reading a regex. So `--emit-index` bundles this file with esbuild and writes the bundle beside the index it was measured with; the guard spawns it. One implementation, two entry points, and the only thing left to disagree is the cache contents, which `.ci/rediacc_ci/tests/test_shape_probe_agreement.py` pins.
+//
+// WHAT THE PROBE IS ALLOWED TO ASSUME, measured rather than hoped: the full corpus scan is about 1.2s over 352 files and never belongs on a commit, while an esbuild bundle of this file starts in well under a tenth of a second. The gate fires at 3 distinct files, so the index keeps only the shapes ALREADY carried by 2 or more -- a staged file can only matter where two other
+// files already agree.
+
+/** The index format. A probe that reads an older shape must refuse rather than guess, so this is checked before anything else in it is trusted. */
+export const INDEX_SCHEMA = 1;
+
+const CACHE_REL = '.ci/cache/shape-index';
+
+/** Where the index and its probe live. `SHAPE_PROBE_CACHE` is for a test that must not touch the real one. */
+function cacheDir(): string {
+  return process.env.SHAPE_PROBE_CACHE || path.join(ROOT, CACHE_REL);
+}
+
+/**
+ * The shapes a STAGED file could push over the line, as `file:line` per copy.
+ *
+ * `N - 1` IS THE WHOLE SELECTION RULE. A finding needs N distinct files; a staged file contributes at most one of them, so a shape carried by fewer than N-1 others stays silent however the staged file is written. Keeping the rest would multiply the index by the long tail of shapes that occur exactly once, which is most of them.
+ *
+ * The seed is deliberately NOT applied: the probe reads the seed at probe time, so a seed edit does not have to invalidate the cache.
+ */
+export function nearIndex(
+  perFile: Map<string, { h: string; line: number }[]>
+): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [h, files] of countShapes(perFile, new Set())) {
+    if (files.size < N - 1) continue;
+    out[h] = [...files].map(([f, l]) => `${f}:${l}`).sort();
+  }
+  return out;
+}
+
+/** `file:line` back into its two halves, splitting at the LAST colon so a path carrying one survives. */
+function splitLoc(loc: string): { file: string; line: number } {
+  const cut = loc.lastIndexOf(':');
+  return { file: loc.slice(0, cut), line: Number(loc.slice(cut + 1)) };
+}
+
+/**
+ * The findings a set of staged files creates against the cached corpus.
+ *
+ * THE STAGED FILE IS REMOVED FROM ITS OWN NEIGHBOURS, and that is what makes the answer equal the gate's. A tracked file staged unchanged already appears in `near`, so counting it twice would report a 2-copy shape as a 3-copy one. Dropping every staged path from the cached list and then adding the staged version back is the same tally `judge` computes over a corpus where that
+ * file has been replaced.
+ *
+ * Exported and pure, so the agreement test and the controls drive the real judgement rather than a reimplementation.
+ */
+export function probeFindings(
+  near: Record<string, string[]>,
+  staged: Map<string, { h: string; line: number }[]>,
+  seed: Set<string>
+): Finding[] {
+  const byShape = new Map<string, Map<string, number>>();
+  for (const [file, ws] of staged) {
+    for (const w of ws) {
+      if (seed.has(w.h)) continue;
+      let m = byShape.get(w.h);
+      if (!m) {
+        m = new Map();
+        for (const loc of near[w.h] ?? []) {
+          const { file: other, line } = splitLoc(loc);
+          if (!staged.has(other)) m.set(other, line);
+        }
+        byShape.set(w.h, m);
+      }
+      if (!m.has(file)) m.set(file, w.line);
+    }
+  }
+  const findings: Finding[] = [];
+  for (const [h, files] of byShape) {
+    if (files.size < N) continue;
+    findings.push({
+      shape: h,
+      files: [...files].map(([f, l]) => `${f}:${l}`).sort(),
+      span: WINDOW,
+    });
+  }
+  return coalesce(findings);
+}
+
+/**
+ * The silence set, read the way a PROBE has to read it: leniently.
+ *
+ * `loadSeed` exits the process when an `accepted` reason is malformed, which is right for a gate whose job is to refuse and wrong for an advisory that must never fail a commit. The two agree on every tree where the gate passes, which is the only tree a commit is made on; a tree where they differ is one the gate is already red on.
+ */
+function seedSilently(): Set<string> {
+  if (!existsSync(SEED_FILE)) return new Set();
+  try {
+    const raw = JSON.parse(readFileSync(SEED_FILE, 'utf8')) as {
+      shapes?: string[];
+      accepted?: Record<string, string>;
+    };
+    return new Set([...(raw.shapes ?? []), ...Object.keys(raw.accepted ?? {})]);
+  } catch {
+    return new Set();
+  }
+}
+
+interface EsbuildLike {
+  build(options: Record<string, unknown>): Promise<{
+    outputFiles: { path: string; text: string }[];
+    metafile: { inputs: Record<string, unknown> };
+  }>;
+}
+
+/**
+ * esbuild, from `tsx`'s OWN dependency tree.
+ *
+ * NOT A NEW DEPENDENCY, and that is deliberate: `.npmrc` pins this repo's supply chain, and a bundler is already installed here because `tsx` is built on one. Resolving through `tsx/package.json` rather than through this file's own resolution is what makes that explicit -- the version that bundles the probe is the version that already runs every gate.
+ */
+async function resolveEsbuild(): Promise<EsbuildLike> {
+  // RESOLVED FROM THIS FILE, not from `ROOT`. `--root` points the scan at another tree -- the hermetic harness builds an index over a generated corpus -- and that tree has no `node_modules`. The bundler belongs to the checkout this script lives in, which is the one that installed it.
+  const fromHere = createRequire(import.meta.url);
+  let tsxPkg: string;
+  try {
+    tsxPkg = fromHere.resolve('tsx/package.json');
+  } catch {
+    throw new Error(
+      'tsx is not resolvable from this repository, so the probe bundle cannot be built. ' +
+        'Run npm install; do not add a bundler dependency for this.'
+    );
+  }
+  let entry: string;
+  try {
+    entry = createRequire(tsxPkg).resolve('esbuild');
+  } catch {
+    throw new Error(
+      `esbuild is not resolvable from tsx's dependency tree (${tsxPkg}), so the probe ` +
+        'bundle cannot be built. That is a report, not a licence to add a dependency.'
+    );
+  }
+  const mod = (await import(pathToFileURL(entry).href)) as { default?: EsbuildLike };
+  return (mod.default ?? mod) as EsbuildLike;
+}
+
+const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
+
+/** Write through a temporary name in the same directory, so a reader never sees half a file. */
+function writeAtomic(target: string, body: string): void {
+  const tmp = `${target}.tmp-${process.pid}`;
+  writeFileSync(tmp, body);
+  renameSync(tmp, target);
+}
+
+/**
+ * Write `index.json` and `probe.mjs` from the scan that just ran.
+ *
+ * THE TWO FILES ARE ONE ARTIFACT. The index records the sha256 of every source the bundle was built from and of the bundle itself, and the guard refuses to trust an index whose bundle or inputs have moved: an algorithm change that rewrote every hash would otherwise be read as a tree full of new duplication.
+ */
+async function emitIndex(
+  files: string[],
+  perFile: Map<string, { h: string; line: number }[]>,
+  helpers: ReadonlySet<string>
+): Promise<void> {
+  const esbuild = await resolveEsbuild();
+  const dir = cacheDir();
+  const probePath = path.join(dir, 'probe.mjs');
+  const built = await esbuild.build({
+    entryPoints: [path.join(ROOT, 'scripts/gates/check-shape-duplication.ts')],
+    absWorkingDir: ROOT,
+    bundle: true,
+    platform: 'node',
+    format: 'esm',
+    target: 'node22',
+    metafile: true,
+    write: false,
+    outfile: probePath,
+  });
+  const code = built.outputFiles[0].text;
+  const inputs: Record<string, string> = {};
+  for (const rel of Object.keys(built.metafile.inputs).sort()) {
+    inputs[rel] = sha256(readFileSync(path.join(ROOT, rel), 'utf8'));
+  }
+  // `git ls-files -s` over the family pathspecs: the blob sha of every tracked corpus path, INCLUDING the opted-out ones. A path that appears, disappears or changes content between the scan and a commit is drift, and the guard says so rather than answering from a corpus that no longer exists.
+  const corpus: Record<string, string> = {};
+  for (const row of execFileSync('git', ['ls-files', '-s', ...FAMILY_PATHSPECS], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  })
+    .split('\n')
+    .filter(Boolean)) {
+    const tab = row.indexOf('\t');
+    corpus[row.slice(tab + 1)] = row.slice(0, tab).split(' ')[1];
+  }
+  const scanned = new Set(files);
+  const index = {
+    schema: INDEX_SCHEMA,
+    generated: new Date().toISOString(),
+    n: N,
+    window: WINDOW,
+    pathspecs: FAMILY_PATHSPECS,
+    advice: ADVICE,
+    bundle_sha: sha256(code),
+    inputs,
+    corpus,
+    opted_out: Object.keys(corpus)
+      .filter((f) => !scanned.has(f))
+      .sort(),
+    helpers: [...helpers].sort(),
+    near: nearIndex(perFile),
+  };
+  mkdirSync(dir, { recursive: true });
+  writeAtomic(probePath, code);
+  writeAtomic(path.join(dir, 'index.json'), `${JSON.stringify(index)}\n`);
+  // STDERR, because `--json` is a contract. `wl_shapedup.py` reads the LAST stdout line that starts with `{`, so a status line printed to stdout would either be parsed as the verdict or teach the next reader to filter.
+  console.error(
+    `${GREEN}✓${NC} shape index: ${Object.keys(index.near).length} near-shape(s) from ` +
+      `${files.length} file(s) -> ${path.relative(ROOT, dir)}`
+  );
+}
+
+/**
+ * The bundled entry point: staged bytes in on stdin, findings out on stdout.
+ *
+ * The request is `{root, index, files: {path: content}, noSeed}`. The CONTENT arrives in the request rather than being read here, because the bytes a commit captures live in git's index and the guard has already had to resolve them; a probe that read the working tree would answer about a file the commit is not taking.
+ */
+/**
+ * stdin, drained synchronously.
+ *
+ * `readFileSync(0)` IS NOT THIS, and the difference is a measured failure rather than a preference: when the parent hands over a pipe, node's fd 0 can be non-blocking, and the one-shot read then throws `EAGAIN: resource temporarily unavailable` before the writer has said anything. The probe saw it on its first run under the Python guard. A retry loop is what a synchronous
+ * reader of a pipe has to be; `Atomics.wait` is the only sleep available to one.
+ */
+function readStdinSync(): string {
+  const chunks: Buffer[] = [];
+  const buf = Buffer.alloc(1 << 16);
+  const idle = new Int32Array(new SharedArrayBuffer(4));
+  for (;;) {
+    let n = 0;
+    try {
+      n = readSync(0, buf, 0, buf.length, null);
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === 'EAGAIN') {
+        Atomics.wait(idle, 0, 0, 1);
+        continue;
+      }
+      // EOF on a tty, and the end of a pipe on some platforms, arrive as an exception rather than as a zero-length read.
+      if (code === 'EOF') break;
+      throw err;
+    }
+    if (n === 0) break;
+    chunks.push(Buffer.from(buf.subarray(0, n)));
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+function probeMain(): void {
+  const req = JSON.parse(readStdinSync()) as {
+    root: string;
+    index: string;
+    files: Record<string, string>;
+    noSeed?: boolean;
+  };
+  setRoot(req.root);
+  const index = JSON.parse(readFileSync(req.index, 'utf8')) as {
+    schema: number;
+    helpers: string[];
+    near: Record<string, string[]>;
+  };
+  if (index.schema !== INDEX_SCHEMA) {
+    process.stdout.write(
+      JSON.stringify({
+        error: `index schema ${index.schema} is not ${INDEX_SCHEMA}`,
+      })
+    );
+    return;
+  }
+  const helpers = new Set(index.helpers);
+  const seed = req.noSeed ? new Set<string>() : seedSilently();
+  const staged = new Map<string, { h: string; line: number }[]>();
+  const skipped: string[] = [];
+  for (const [file, src] of Object.entries(req.files)) {
+    // The opt-out is a property of the STAGED bytes, not of the tracked file: a commit that adds the marker is a commit whose file has opted out.
+    if (isOptedOut(src)) {
+      skipped.push(file);
+      continue;
+    }
+    staged.set(file, windows(normalise(src, kindFor(file)), helpers));
+  }
+  process.stdout.write(
+    JSON.stringify({ findings: probeFindings(index.near, staged, seed), skipped })
+  );
+}
+
+async function main(): Promise<void> {
   const argv = process.argv.slice(2);
+
+  // THE PROBE IS THE SAME FILE, entered before anything scans. `probe.mjs` is this module bundled, so its `import.meta` points at the cache directory and `process.argv[1]` at the bundle: the entry-point guard at the foot of this file matches, and without this branch a probe run would start a 1.2-second corpus scan on the commit path.
+  if (argv.includes('--probe')) {
+    probeMain();
+    return;
+  }
+
+  const rootAt = argv.indexOf('--root');
+  if (rootAt >= 0 && argv[rootAt + 1]) setRoot(argv[rootAt + 1]);
 
   if (argv.includes('--selftest')) {
     const failed = runControls(controls());
@@ -1411,7 +1838,7 @@ function main(): void {
   }
 
   const files = tracked();
-  const perFile = scan(files);
+  const { perFile, helpers } = scan(files);
 
   // FLOORS. Either means the scan is broken, and a broken scan reports a confident green having verified nothing -- the exact failure this repo gates against.
   if (files.length < 200) {
@@ -1425,6 +1852,9 @@ function main(): void {
     console.error(`${RED}✗${NC} only ${totalWindows} window(s) hashed; normalisation is broken`);
     process.exit(1);
   }
+
+  // AFTER THE FLOORS AND NOT BEFORE, which is the whole reason the cache can be trusted. The floors are what stand between a broken glob and a confident green, so an index written ahead of them would be a cache of the broken scan -- and the guard reading it would report silence with the same confidence.
+  if (argv.includes('--emit-index')) await emitIndex(files, perFile, helpers);
 
   if (argv.includes('--seed')) {
     // RE-SEEDING IS GATE SUPPRESSION, so it is not a routine command. A second `--seed` absorbs every shape that has reached N copies since install -- including the genuine duplication this gate exists to report -- and leaves no record that it did. The exit for a shape that is legitimately not one thing is `accepted` with a BLOCKER, one entry at a time, which is reviewable. This
@@ -1470,15 +1900,20 @@ function main(): void {
     return;
   }
 
-  const { silent: seed, accepted } = loadSeed();
-  if (seed.size === 0) {
+  // `--no-seed` IS FOR THE AGREEMENT TEST AND NOTHING ELSE, and it is not an escape hatch: it makes the gate report the 219-span standing backlog this file's docstring describes, which is a wall rather than a verdict. What it buys is a comparison -- the probe answers about a staged file against a cached corpus, and the only way to check that answer is to ask the whole-corpus scan
+  // the same question with the same silence set, which for a single staged file is no silence at all.
+  const noSeed = argv.includes('--no-seed');
+  const { silent: seed, accepted } = noSeed
+    ? { silent: new Set<string>(), accepted: [] }
+    : loadSeed();
+  if (!noSeed && seed.size === 0) {
     console.error(`${RED}✗${NC} no seed at ${SEED_FILE}; run --seed once, and commit it.`);
     console.error('    Without it every pre-existing shape reports as new.');
     process.exit(1);
   }
 
   // LIVENESS, BEFORE THE VERDICT. An accepted entry that no longer occurs at N copies is debt that was already paid, and leaving it in place is how an escape-hatch list stops shrinking. This fails rather than warns, and names the exact lines to delete.
-  const dead = deadAccepted(perFile, accepted);
+  const dead = noSeed ? [] : deadAccepted(perFile, accepted);
   if (dead.length > 0) {
     console.error(
       `${RED}✗${NC} ${dead.length} accepted divergence(s) no longer occur at ${N} copies:`
@@ -1508,15 +1943,7 @@ function main(): void {
       console.error(`  ~${f.span} lines x ${f.files.length} copies:  ${f.shape}`);
       for (const loc of f.files) console.error(`    ${loc}`);
     }
-    console.error(
-      '\n  Either extract the shared piece, or say which DIVERGENCE makes them not one' +
-        '\n  thing (the way `run_gate()` has three incompatible return contracts).' +
-        '\n  To accept one, put its FINGERPRINT (printed above, beside the copy count) into' +
-        `\n  scripts/data/shape-duplication-seed.json under "accepted", with a BLOCKER: reason` +
-        '\n  naming the divergence. The fingerprint used to be absent from this message, which' +
-        '\n  left the documented escape hatch unusable without reading the source.' +
-        '\n  Triage it: .claude/hooks/stop/worklist.py --triage <you> "<the finding>"'
-    );
+    console.error(ADVICE);
     process.exit(1);
   }
 
@@ -1531,5 +1958,9 @@ function main(): void {
 //
 // The other 23 `scripts/gates/check-*.ts` that both export and call `main()` bare are left alone deliberately: swept 2026-09-01, NONE of them is imported anywhere (the apparent hits in `ci-runner/manifest.ts` are script-name strings, not imports). This one is the only member of the class with a consumer, so it is the only one where the defect is live rather than latent.
 if (process.argv[1] && import.meta.filename === path.resolve(process.argv[1])) {
-  main();
+  // `main` BECAME ASYNC when `--emit-index` did, so the rejection has to be caught here: an unhandled rejection exits non-zero with a stack and no sentence, and this gate's contract is that a failure names what broke.
+  main().catch((err: unknown) => {
+    console.error(`${RED}✗${NC} ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  });
 }

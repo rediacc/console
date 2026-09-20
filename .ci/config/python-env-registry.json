@@ -1673,6 +1673,10 @@
       "WORKLIST_WHY_MAX_CHARS",
       "WORKLIST_WHY_MAX_RECORDS"
     ],
+    ".claude/hooks/stop/wl_proofcheck.py": [
+      "WORKLIST_PROOFCHECK_MAX_FIRES",
+      "WORKLIST_PROOFCHECK_TTL_MIN"
+    ],
     ".claude/hooks/stop/wl_reggate.py": [
       "WORKLIST_REGGATE_CAP",
       "WORKLIST_REGGATE_DEBT_GRACE_MIN",
@@ -1706,6 +1710,7 @@
       "TMPDIR"
     ],
     ".claude/hooks/stop/wl_shapedup.py": [
+      "SHAPE_PROBE_CACHE",
       "WORKLIST_SHAPE_MAX_FIRES",
       "WORKLIST_SHAPE_TTL_MIN"
     ],
@@ -1726,7 +1731,6 @@
       "WORKLIST_JUSTIFY_AGE_MIN",
       "WORKLIST_JUSTIFY_PER_STOP",
       "WORKLIST_LIVE_MIN",
-      "WORKLIST_MIGRATE_PLANS_SHOW",
       "WORKLIST_MIGRATE_PLAN_MIN_OPEN",
       "WORKLIST_STORE_DIR"
     ],
@@ -1764,6 +1768,9 @@
     ],
     ".claude/rediacc_hooks/guards/block_stale_pr_branch_date.py": [
       "PWD"
+    ],
+    ".claude/rediacc_hooks/guards/block_unproven_bulk_transform.py": [
+      "WORKLIST_BULK_FILE_THRESHOLD"
     ],
     ".claude/rediacc_hooks/guards/test-block_host_toolchain_run.py": [
       "PATH"

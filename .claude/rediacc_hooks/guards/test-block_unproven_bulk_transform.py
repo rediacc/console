@@ -109,7 +109,12 @@ for name in os.listdir(repo):
         os.remove(os.path.join(repo, name))
 
 stage_files(repo, BULK - 1, prefix="g")
-case("one file under threshold is allowed with no proof", 'git commit -m "fix: several files"', repo, False)
+case(
+    "one file under threshold is allowed with no proof",
+    'git commit -m "fix: several files"',
+    repo,
+    False,
+)
 git(repo, "reset", "-q")
 
 case("a plain command is not a target", "ls -la", repo, False)
@@ -155,7 +160,12 @@ case(
 
 # A push with no upstream at all: UNRESOLVABLE, so allowed rather than guessed.
 detached = scratch_repo()
-case("a push with no upstream configured is allowed (unresolvable)", "git push origin main", detached, False)
+case(
+    "a push with no upstream configured is allowed (unresolvable)",
+    "git push origin main",
+    detached,
+    False,
+)
 
 # ---- GH PR CREATE, range check against the default base --------------------
 
@@ -180,8 +190,7 @@ if Tally.blocked in (0, TOTAL_CASES):
     )
     Tally.fails += 1
 print(
-    "%d case(s), %d blocked, %d allowed"
-    % (TOTAL_CASES, Tally.blocked, TOTAL_CASES - Tally.blocked)
+    "%d case(s), %d blocked, %d allowed" % (TOTAL_CASES, Tally.blocked, TOTAL_CASES - Tally.blocked)
 )
 print("FAILURES: %d" % Tally.fails)
 sys.exit(1 if Tally.fails else 0)

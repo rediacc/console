@@ -165,8 +165,15 @@ ignore = [
     # Stated rather than listed: a redundant "D103" here would read as load
     # bearing to the next person and survive the day "D" is narrowed.
 ]
-"**/rediacc_hooks/guards/test-block_*.py" = [
-    # N999 (invalid module name). These four are per-guard control harnesses,
+"**/rediacc_hooks/guards/test-*.py" = [
+    # THE GLOB READ `test-block_*.py` UNTIL THE FIRST `warn_` HARNESS ARRIVED, and
+    # the narrower spelling was a fact about which guards happened to have a
+    # dedicated suite rather than a rule about what these files are. The rule is
+    # the one the paragraphs below state -- a per-guard control harness beside its
+    # guard, named as `check-hook-integrity.sh` demands -- and it is true of
+    # `test-warn_staged_shape_duplication.py` in exactly the same way.
+    #
+    # N999 (invalid module name). These are per-guard control harnesses,
     # not modules: nothing imports them, `guards.stems()` admits only
     # `block_`/`warn_`/`require_` prefixes, and pytest's `test_*.py` glob does
     # not match a hyphen either. They run as scripts, from
