@@ -64,7 +64,10 @@
  * content of both implementations, so two different verdicts over one tree id
  * means the comparison is NONDETERMINISTIC, which is a worse finding than a
  * plain mismatch. Clearing it requires changing the code, which changes the
- * tree id. There is no run-until-green.
+ * tree id. There is no run-until-green. The TREE stays refused for good, but
+ * the PAIR ages the mismatch out once K distinct clean trees were recorded
+ * after it: a fixed port re-earns the licence by K new observations, never by
+ * re-running the old one.
  *
  * WHAT THIS MODULE DOES NOT DO. It does not know which gates exist, does not
  * read the registry, and does not decide when a port is finished. It compares
@@ -1011,8 +1014,10 @@ export interface AssertResult {
   ok: boolean;
   /** Distinct clean tree ids carrying an EQUIVALENT row and no contradicting row. */
   distinctTrees: string[];
-  /** Tree ids disqualified because some row against them was not EQUIVALENT. */
+  /** Tree ids disqualified because some row against them was not EQUIVALENT, and still counted against the pair. */
   disqualified: Array<{ tree: string; verdict: Verdict }>;
+  /** Disqualified tree ids that no longer fail the pair because K later distinct clean trees agree. */
+  agedOut: string[];
   /** Distinct finding fingerprints across the counted rows. */
   fingerprints: string[];
   reasons: string[];
@@ -1026,7 +1031,8 @@ export interface AssertResult {
  *   NOT ENOUGH TREES      -- invariant 5. Forty runs on one checkout is one
  *                            observation. K counts distinct `tree.id`.
  *   A TREE THAT DISAGREED -- a non-equivalent row against a tree id disqualifies
- *                            that id permanently. Since the id IS the content of
+ *                            that id permanently (the pair, not the id, ages the
+ *                            mismatch out after K later clean trees). Since the id IS the content of
  *                            both implementations, a later green row over the
  *                            same id means the comparison is nondeterministic,
  *                            which is worse than the mismatch. There is no
@@ -1077,15 +1083,29 @@ export function assertEquivalent(rows: LedgerRow[], k: number): AssertResult {
     byTree.set(r.tree.id, list);
   }
 
-  const disqualified: Array<{ tree: string; verdict: Verdict }> = [];
+  const position = new Map<LedgerRow, number>();
+  clean.forEach((r, i) => {
+    position.set(r, i);
+  });
+  const lastRow = (list: LedgerRow[]): number => position.get(list[list.length - 1]) ?? -1;
+
+  const failing: Array<{ tree: string; verdict: Verdict; at: number }> = [];
   const counted: LedgerRow[] = [];
   for (const [id, list] of byTree) {
     const bad = list.find((r) => r.verdict !== PASS_VERDICT);
     if (bad) {
-      disqualified.push({ tree: id, verdict: bad.verdict });
+      failing.push({ tree: id, verdict: bad.verdict, at: lastRow(list) });
       continue;
     }
     counted.push(list[list.length - 1]);
+  }
+  // A DISQUALIFIED TREE AGES OUT, THE TREE ID DOES NOT. The id stays refused for good (no run-until-green), but the PAIR is judged on the code as it stands: once K distinct clean trees were recorded AFTER a tree's last row, that mismatch describes code that no longer exists and stops failing the pair. Still-recent mismatches keep it red.
+  const disqualified: Array<{ tree: string; verdict: Verdict }> = [];
+  const agedOut: string[] = [];
+  for (const f of failing) {
+    const later = counted.filter((r) => (position.get(r) ?? -1) > f.at).length;
+    if (later >= k) agedOut.push(f.tree);
+    else disqualified.push({ tree: f.tree, verdict: f.verdict });
   }
 
   const distinctTrees = counted.map((r) => r.tree.id).sort();
@@ -1095,8 +1115,8 @@ export function assertEquivalent(rows: LedgerRow[], k: number): AssertResult {
     for (const d of disqualified) {
       reasons.push(
         `tree ${d.tree.slice(0, 12)} is DISQUALIFIED: a row against it recorded ${d.verdict}. ` +
-          'The tree id is the content of both implementations, so this cannot be cleared by ' +
-          're-running -- only by changing the code, which changes the tree id.'
+          'The tree id is the content of both implementations, so re-running cannot clear it. ' +
+          `It stops failing the pair once ${k} distinct clean trees are recorded after it.`
       );
     }
   }
@@ -1150,7 +1170,7 @@ export function assertEquivalent(rows: LedgerRow[], k: number): AssertResult {
     );
   }
 
-  return { ok: reasons.length === 0, distinctTrees, disqualified, fingerprints, reasons };
+  return { ok: reasons.length === 0, distinctTrees, disqualified, agedOut, fingerprints, reasons };
 }
 
 // ---------------------------------------------------------------------------
@@ -1471,6 +1491,52 @@ function selftest(repoRoot: string): number {
     'NO RUN-UNTIL-GREEN: a later EQUIVALENT cannot clear an earlier mismatch on the same tree',
     !poisoned.ok && poisoned.disqualified.some((d) => d.tree === 't2'),
     poisoned.reasons
+  );
+
+  const aged = assertEquivalent(
+    [
+      row('t1', 'MISMATCH_FINDINGS', 'f1'),
+      row('t2', 'EQUIVALENT', 'f2'),
+      row('t3', 'EQUIVALENT', 'f3'),
+      row('t4', 'EQUIVALENT', 'f4'),
+    ],
+    3
+  );
+  ck(
+    'AGING: a mismatch followed by K later distinct clean trees no longer fails the pair',
+    aged.ok && aged.agedOut.includes('t1') && aged.disqualified.length === 0,
+    aged.reasons
+  );
+
+  const recent = assertEquivalent(
+    [
+      row('t1', 'EQUIVALENT', 'f1'),
+      row('t2', 'EQUIVALENT', 'f2'),
+      row('t3', 'EQUIVALENT', 'f3'),
+      row('t4', 'MISMATCH_FINDINGS', 'f4'),
+      row('t5', 'EQUIVALENT', 'f5'),
+    ],
+    3
+  );
+  ck(
+    'AGING CONTROL: a mismatch with fewer than K clean trees after it keeps the pair red',
+    !recent.ok && recent.disqualified.some((d) => d.tree === 't4') && recent.agedOut.length === 0,
+    recent.reasons
+  );
+
+  const beforeOnly = assertEquivalent(
+    [
+      row('t1', 'EQUIVALENT', 'f1'),
+      row('t2', 'EQUIVALENT', 'f2'),
+      row('t3', 'EQUIVALENT', 'f3'),
+      row('t4', 'MISMATCH_FINDINGS', 'f4'),
+    ],
+    3
+  );
+  ck(
+    'AGING CONTROL: clean trees recorded BEFORE the mismatch do not age it out',
+    !beforeOnly.ok && beforeOnly.disqualified.some((d) => d.tree === 't4'),
+    beforeOnly.reasons
   );
 
   const vacuousRow = { ...row('t9', 'VACUOUS_BOTH_EMPTY', 'f0') };

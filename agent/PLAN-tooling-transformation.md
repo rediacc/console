@@ -437,6 +437,17 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       three blockers this work uncovered.
 - [ ] **W7P4-Q S batches, 2 writers** The quality-tree cutover -- this is P-A. Six batches of 13.
       **RE-MEASURED 2026-09-08 from the tree and not from a report: LIVE 75 of 77.**
+      **2026-09-20, TWO BLOCKERS FOUND ON THE LAST TWO GATES.** (a) `staging_tag_guard`:
+      `assertEquivalent` kept every historical MISMATCH row failing the pair for good, which
+      contradicted the module docstring's promise that a fixed port re-earns its licence.
+      FIXED in `scripts/lib/shadow-gate.ts`: a disqualified tree id stays refused, but the
+      pair ages the mismatch out once K later distinct clean trees exist, with three
+      controls (aged out, still-recent stays red, trees before the mismatch do not count);
+      `--pair w7p2-stagingtag --assert --k 5` now holds over 12 trees. The cutover of that
+      gate is the next step. (b) `autopilot_no_bypass`: `bypass_actors` is readable only with
+      Administration:read, which no CI credential holds, so registering the gate turns CI
+      deterministically red. Do NOT register it. `door:operator-only`: the missing
+      Administration:read grant needs an org owner.
       **COMMITTED 2026-09-08 as `aaba93b29` (81 files, 9268 insertions), operator-authorised
       when asked directly.** Until then the whole cutover sat STAGED in a shared index, where
       any session's pathspecless `git commit` would have swept it; the index is now empty.
