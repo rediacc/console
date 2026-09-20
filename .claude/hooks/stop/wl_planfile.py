@@ -311,7 +311,10 @@ def _owner(plan_owner, root, rel):
 
 
 # THE ADOPTION MARKER `worklist.py --migrate <me> --plan <path>` writes into a plan's Owner line: "Owner: <me> (adopted from <prev> <date>)". It is the one place a session states, in a committed document, that it is executing the plan, which is what separates an ADOPTED plan from one that merely names this session as its Owner.
-ADOPTED_RE = re.compile(r"^\*{0,2}Owner\*{0,2}:[^\n]*\(adopted from", re.MULTILINE)
+ADOPTED_MARKER = "(adopted from"
+# ONE HOME FOR BOTH HALVES OF THE CONTRACT. `worklist.py --migrate --plan` WRITES the Owner line from this format and `is_adopted` READS it back with the pattern below, so a wording change on either side cannot silently disarm the adopted-plan order; test-planfile.py round-trips the two.
+ADOPTED_OWNER_FMT = "Owner: %s " + ADOPTED_MARKER + " %s %s)"
+ADOPTED_RE = re.compile(r"^\*{0,2}Owner\*{0,2}:[^\n]*" + re.escape(ADOPTED_MARKER), re.MULTILINE)
 ADOPTED_HEADER_LINES = 12
 
 

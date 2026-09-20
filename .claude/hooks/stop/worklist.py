@@ -978,7 +978,7 @@ def _migrate_cli(argv):
                 )
                 continue
             owner_idx = head.count("\n", 0, om.start())
-            lines[owner_idx] = "Owner: %s (adopted from %s %s)" % (
+            lines[owner_idx] = PF.ADOPTED_OWNER_FMT % (
                 me[:8],
                 (owner or "unowned")[:8],
                 today,

@@ -365,6 +365,18 @@ with tempfile.TemporaryDirectory() as _adopt_root:
     (_ar / "agent" / "PLAN-owned.md").write_text(
         "# PLAN: y\nStatus: ready\nOwner: deadbeef\nUpdated: 2026-09-20\n" + PAD, encoding="utf-8"
     )
+    (_ar / "agent" / "PLAN-roundtrip.md").write_text(
+        "# PLAN: z\nStatus: ready\n"
+        + F.ADOPTED_OWNER_FMT % ("deadbeef", "cafe1234", "2026-09-20")
+        + "\nUpdated: 2026-09-20\n"
+        + PAD,
+        encoding="utf-8",
+    )
+    control(
+        "THE WRITER'S FORMAT IS THE READER'S PATTERN: what --migrate --plan writes, is_adopted reads",
+        F.is_adopted(_ar, "agent/PLAN-roundtrip.md"),
+        True,
+    )
     control(
         "an Owner line carrying the adoption marker is adopted",
         F.is_adopted(_ar, "agent/PLAN-adopted.md"),
