@@ -4742,6 +4742,17 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **A safe partial exists:** the three `PostToolUse` groups with `matcher: null` merge
       into one, 30 -> 28 entries with `patternCount` unchanged at 11, semantically identical.
       Still needs the driver for the CLAUDE.md regeneration.
+      **RE-VERIFIED 2026-09-20, AND THE BOX STAYS OPEN AS BLOCKED BY DESIGN.** `.claude/settings.json` still
+      reads 30 hook commands in 18 groups over 11 distinct (event, matcher) patterns, so the target of 11 is
+      right. Three of the four blockers hold as written: `require-python.sh` may not be ported (its own header,
+      lines 5-12) and a new tracked `.sh` is refused by the language-policy gate;
+      `check_hooks_resolvable.py:103` still pins `FIRST_GUARD = "require-jq.sh"` (the earlier note cited
+      `:121`); and `scripts/lib/doc-providers.ts:295` still reads the hooks table. Two corrections: "8 of the 12
+      processes" is 4 of 12, and the safe partial does NOT reduce the count the acceptance clause measures. The
+      three `PostToolUse` groups with a null matcher hold one command each, so merging them takes 18 groups to
+      16 and leaves 30 commands, which is why 30 -> 28 was wrong. Exit condition: a Python chain head for
+      `require-jq.sh` and `require-python.sh` that runs when Python is missing, or the language policy admitting
+      one bash file for it. Neither is reachable without an operator ruling.
       **D0 is D4's instrument** and now pins both numbers, so whoever lands D4 must repin and
       clause 1 of its acceptance is a one-line diff.
 - [x] **E1 S, largest single port in this track** `setup` in Python. `.ci/rediacc_ci/setup/` holds
