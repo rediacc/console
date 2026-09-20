@@ -99,3 +99,18 @@ providers, so a provider deleted from the code was never compared to its record 
 count-equality passes when 88 are swapped for 88 others. Fixed by recording membership.
 4. **The instrument broken by its own workaround.** A `.git/index` copy taken while another
 session was writing came out with 12 entries instead of 4,720, and running `ci:quick` under it turned 45 gates red at once. That has the shape of a tree-wide regression and is not one. Validate the copy against the real index before using it (08 section 5b).
+
+---
+
+## Before flipping a call site or deleting a twin (added 2026-09-20)
+
+A flip of a workflow `run:` from a script to its port, and the deletion of a bash twin, each broke gates that the per-gate runs did not show. Every item below was found by running the whole battery in a clean checkout with all four submodules initialised, and each has a command.
+
+- [ ] **Run the full bash battery and the full pytest sweep in a clean clone, not in the working tree.** The working tree holds untracked files that satisfy checks a fresh checkout fails: the shape index a hook control needed, ledgers the census counted, submodules a suppression oracle reads. `git clone --no-hardlinks`, initialise all four submodules from the local ones, `python3 .ci/rediacc_ci/battery.py`, and `.ci/cache/toolchain/uv-tools/bin/pytest -q` with no extra flags.
+- [ ] **Grep for the flipped script's basename in every gate test, in both its bash and its Python twin.** Four gate tests pinned the old shell name in workflow text, and each existed twice.
+- [ ] **A derivation that reads `.ci/...` text goes blind to `python3 -m rediacc_ci.<mod>`.** The greenlight closure did, so a PR editing a flipped port would have inherited a green it did not earn. `check_dead_python`, the env-provision check and the typecheck-scope-coverage gate had the same shape. After a flip, run `bash .ci/scripts/test/gates/test-greenlight-closure-trace.sh`.
+- [ ] **A gate registered as a bare path with no npm key cannot take a header `run:`.** The binder refuses it, so its bash run target stays until it gets a key.
+- [ ] **A twin that is also a differential's oracle takes the differential with it.** Re-assert the shadow ledger at K=5 first, retire only the cases that execute or read the twin, and keep every port-only case and anti-vacuity plant.
+- [ ] **`git add` new files before `gen-docs --write`.** The census counts tracked files, so a region generated over untracked ledgers reads low in every clean checkout.
+- [ ] **A green run of a runner that reports only failures is `VACUOUS_BOTH_EMPTY`.** To compare two runners on a green tree, wrap each command so every executed test and the verdict line become findings, strip ANSI, and keep slash literals out of the command (a literal reads as a path outside the recorded tree and the ledger write is refused).
+- [ ] **`battery.py` globs `test-*.sh` and refuses zero matches.** Retire `run-all.sh` while every bash test still exists, add a lock-derived floor, lower `check-shape-duplication.ts`'s `test-*.sh` floor, and only then delete gate-test twins in batches of ten or fewer.
