@@ -5825,7 +5825,8 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `docs/agent-reference/plan-records.md` carrying the record grammar **as a generated region**
       rendered from `wl_planrec.py` -- a hand-typed copy of a grammar that lives in code is the
       "254 fast gates" failure again.
-- [ ] **W12 P2.8, ~14 sessions, THE CALENDAR** 54 uncompacted plans + 1 park resolution.
+- [x] **W12 P2.8, ~14 sessions, THE CALENDAR** 54 uncompacted plans + 1 park resolution.
+    (ticked) 2026-09-20T20:09:09Z by d778be9d: 73 of 102 plan files are records (batches at fdf528e1f and 9becfc0c8 today), check:ci-plan-housekeeping reports none over 33 days and 0 within 7 days, plan-record and plan-boxes green. Residue, not compacted: 16 plans with open boxes (each needs --park, an owner decision) and small plans the 2.0 blob-to-record floor refuses; none is near a deadline.
       Four batches staged against the real dates, not evenly: **B1 starts 2026-09-14** (the 17
       reddening 09-26..09-30, five days of slack); **B2 2026-09-21** (13, sharing a boundary with
       the P3.5 window close); **B3 2026-09-26** (the 11-plan 10-06 spike, alone); **B4 2026-10-01**
