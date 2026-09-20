@@ -16,16 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 5739,
- "files": 1215,
+ "count": 5678,
+ "files": 1199,
  "by_rule": {
-  "R1": 1696,
-  "R11": 188,
+  "R1": 1676,
+  "R11": 178,
   "R14": 1,
-  "R18": 2274,
+  "R18": 2271,
   "R19": 62,
-  "R2": 974,
-  "R7": 544
+  "R2": 958,
+  "R7": 532
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -2725,35 +2725,10 @@
     "dd5c8b8a36862013"
    ]
   },
-  "agent/PLAN-ask-flow-preemptive-settled-check.md": {
-   "R1": [
-    "a2a204ecd4b2505b"
-   ],
-   "R11": [
-    "112bb9f87118210b"
-   ],
-   "R2": [
-    "6a23c67018ed80ab",
-    "86d39614c13ab1c0",
-    "b895bfb5fd117680"
-   ],
-   "R7": [
-    "56eb26c5cd236848",
-    "e8a11cf0c4570f52"
-   ]
-  },
   "agent/PLAN-b2-emit-matrix.md": {
    "R7": [
     "89720eadca96fcf3",
     "c67fc67d01f2ac18"
-   ]
-  },
-  "agent/PLAN-bump-k3s-upstream-1-36-4.md": {
-   "R11": [
-    "9cde75398ae7cc2c"
-   ],
-   "R7": [
-    "15669a0adb45cbac"
    ]
   },
   "agent/PLAN-bws-rotation-on-failure.md": {
@@ -2801,9 +2776,6 @@
    ]
   },
   "agent/PLAN-citation-fragility.md": {
-   "R1": [
-    "878b78c82eb2572b"
-   ],
    "R18": [
     "0e93f2592b184a8c",
     "d8bfd0bbe9ad075a"
@@ -2819,14 +2791,6 @@
     "39bbd40fbe081700"
    ]
   },
-  "agent/PLAN-devbox-uid-derived-image.md": {
-   "R2": [
-    "07503a756679f9d4"
-   ],
-   "R7": [
-    "87944d2f792f6da5"
-   ]
-  },
   "agent/PLAN-env-to-bitwarden-v2.md": {
    "R1": [
     "3364cbbc5518d31f"
@@ -2836,53 +2800,9 @@
     "1d79cb013e44d3f9"
    ]
   },
-  "agent/PLAN-extension-shaped-matchers.md": {
-   "R1": [
-    "016a845231fa2c74"
-   ],
-   "R2": [
-    "60458b0f48d3fb35",
-    "87a2ade4e8bc723c",
-    "d865968df1444690"
-   ]
-  },
-  "agent/PLAN-gh-swallow-gates-audit.md": {
-   "R11": [
-    "531ee34e68e653ec"
-   ],
-   "R18": [
-    "4cbe5605c4e1c4e5",
-    "e789926469f1755a",
-    "fa6b27cd5231edcb"
-   ],
-   "R2": [
-    "837ee6ba3723d5b3",
-    "8fd91923ef925863",
-    "fc1c340f443e1f3f"
-   ],
-   "R7": [
-    "33de7466e5f3c440",
-    "6a691641346f7227"
-   ]
-  },
-  "agent/PLAN-git-history-media-rewrite.md": {
-   "R1": [
-    "fb39e9617e4e6043"
-   ],
-   "R11": [
-    "fbe487f442aef6ce",
-    "fec1bfec1d157d8c"
-   ]
-  },
   "agent/PLAN-hook-inventory-warn-guards.md": {
    "R11": [
     "0d1b3d0dd0656967"
-   ]
-  },
-  "agent/PLAN-judge-gate-worthiness-and-surface-scope.md": {
-   "R1": [
-    "db28395879b3ace2",
-    "ed56c3237f5df030"
    ]
   },
   "agent/PLAN-migrate-plan-doc-discovery.md": {
@@ -2922,38 +2842,9 @@
     "f53f060292289ad7"
    ]
   },
-  "agent/PLAN-reggate-effort-cap.md": {
-   "R1": [
-    "cb89d757e3389b43",
-    "d1fb51c99e03c3bb"
-   ]
-  },
-  "agent/PLAN-resprofile-wave2.md": {
-   "R2": [
-    "ea97fa0dfe9986fa"
-   ]
-  },
-  "agent/PLAN-review-red-stop-hook-check.md": {
-   "R1": [
-    "1c20bc54094580d0"
-   ],
-   "R7": [
-    "b737006eeaab6074",
-    "c1e78f165977f9bb"
-   ]
-  },
   "agent/PLAN-runtime-caller-identity.md": {
    "R2": [
     "74292b5071a24a2d"
-   ]
-  },
-  "agent/PLAN-scope-gate-sort-collation.md": {
-   "R1": [
-    "1cd1cbd20671e32a"
-   ],
-   "R11": [
-    "1158ab156295aeb8",
-    "c62f167980590ee8"
    ]
   },
   "agent/PLAN-secret-namespace-migration.md": {
@@ -3000,15 +2891,6 @@
     "f4bfd4bb024e2444"
    ]
   },
-  "agent/PLAN-sentence-aware-wrapping.md": {
-   "R1": [
-    "53013bddf3fefd66"
-   ],
-   "R2": [
-    "5aaff585f51c16f5",
-    "eff01c9494420e4a"
-   ]
-  },
   "agent/PLAN-session-onboarding-marker.md": {
    "R1": [
     "bfb623a5ffcc15b5"
@@ -3019,12 +2901,6 @@
    ],
    "R7": [
     "fc5a9a33bb4285be"
-   ]
-  },
-  "agent/PLAN-shell-command-gate-regex-fix.md": {
-   "R7": [
-    "25fec66a38648d44",
-    "704847409d670f10"
    ]
   },
   "agent/PLAN-state-md-session-isolation.md": {
@@ -3038,25 +2914,6 @@
   "agent/PLAN-stop-hook-overhaul.md": {
    "R2": [
     "12c4e0c93d49917d"
-   ]
-  },
-  "agent/PLAN-stop-report-queue.md": {
-   "R1": [
-    "6ce0ee4ddafdafcf",
-    "6dca89e5988109ce",
-    "89ceef7785bc2a46",
-    "8bd0c50b91886931",
-    "aa6e50bc6f65eac9",
-    "d8a3b0edcf589e55",
-    "df27eb199c1b3790"
-   ],
-   "R11": [
-    "020d1390c7b04f50",
-    "61f14d351e3e6a59",
-    "7e15bedad38de16f"
-   ],
-   "R7": [
-    "26156b5abf4faf7a"
    ]
   },
   "agent/PLAN-sync-docker-latest-tag-with-releases.md": {
@@ -3144,12 +3001,6 @@
     "e8e1543331f6a271"
    ]
   },
-  "agent/PLAN-w7p4w-docker-cutover.md": {
-   "R1": [
-    "071b18d6bc84600e",
-    "38d96851f95091e3"
-   ]
-  },
   "agent/PLAN-w9p2-script-relocation.md": {
    "R18": [
     "03543fc3c05bcc61",
@@ -3165,16 +3016,6 @@
     "ddfe5872de8d4cef",
     "eb21352db234f6ac",
     "f6eea83f147ae25c"
-   ]
-  },
-  "agent/PLAN-wl-report-liveness-oracle.md": {
-   "R2": [
-    "05e7f18acde68b56",
-    "1bd75dc1c21d6202",
-    "72f2217a49aaabe9"
-   ],
-   "R7": [
-    "bab793af5b328b08"
    ]
   },
   "agent/README.md": {
