@@ -2060,11 +2060,11 @@
     "paths": [
       "scripts/ci-runner/manifest.ts",
       "scripts/ci-runner/gates.lock.json",
-      "scripts/gen-gates-lock.ts"
+      "scripts/gen/gen-gates-lock.ts"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      "scripts/gen-gates-lock.ts"
+      "scripts/gen/gen-gates-lock.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2108,7 +2108,7 @@
     "run": "npm run gen:gates-lock",
     "gate": false,
     "leaves": [
-      "scripts/gen-gates-lock.ts"
+      "scripts/gen/gen-gates-lock.ts"
     ],
     "ci": {
       "kind": "local-only",
@@ -2120,7 +2120,7 @@
     "run": "npm run gen:docs",
     "gate": false,
     "leaves": [
-      "scripts/gen-docs.ts"
+      "scripts/gen/gen-docs.ts"
     ],
     "ci": {
       "kind": "local-only",

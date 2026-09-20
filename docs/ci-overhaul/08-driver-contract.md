@@ -105,7 +105,7 @@ Baseline recorded at branch point `c6d3af163`, 2026-09-06:
 | `ci:quick` wall | 58,029 ms |
 | `ci:quick` selection | what `npm run ci -- --quick --list` prints; do not quote a number |
 | Local full-run floor | 785 s, set by `gate-test:claude-hooks` |
-| Manifest | 406 `gate: true`, 409 `id:` literals as of 2026-09-06, and RISING FAST. It read 390/393 when this table was written and 409 a few hours later, with peers adding entries mid-session. Run `npx tsx scripts/gen-docs.ts --list` rather than quoting this row. |
+| Manifest | 406 `gate: true`, 409 `id:` literals as of 2026-09-06, and RISING FAST. It read 390/393 when this table was written and 409 a few hours later, with peers adding entries mid-session. Run `npx tsx scripts/gen/gen-docs.ts --list` rather than quoting this row. |
 | Gate test files | 131 |
 | Bash quality gates | 74 `check-*.sh` plus 5 wrappers |
 | Files with a `---- gate ----` header | 19 tracked, 14 parsing |

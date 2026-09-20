@@ -37,8 +37,6 @@
     "scripts/dev/scrub-sentinel.sh",
     "scripts/dev/secret-rename.py",
     "scripts/dev/worktree.sh",
-    "scripts/docker/build-server.sh",
-    "scripts/gen-docs.ts",
-    "scripts/gen-gates-lock.ts"
+    "scripts/docker/build-server.sh"
   ]
 }

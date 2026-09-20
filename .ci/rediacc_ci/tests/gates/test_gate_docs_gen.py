@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-docs-gen.sh`.
 
-Subject: `scripts/gen-docs.ts`, the documentation generator, proved in both directions.
+Subject: `scripts/gen/gen-docs.ts`, the documentation generator, proved in both directions.
 
 WHY IT NEEDS A GATE AT ALL. The generator exists because hand-typed registry numbers go stale in silence: `.dead-bash-allowlist` said "the 17 gate scripts" against 131, `check-ci-parity.ts` said "runs 57 gate tests", and `docs/agent-reference/ci-gates.md` said "254 fast gates" against a live 312. A generator that quietly stops generating puts the tree straight back into that state,
 and the symptom -- a document that looks fine -- is invisible.
@@ -52,7 +52,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-docs-gen.sh"
 REAL_TREE_TWIN = True
 
 ROOT = paths.repo_root()
-GEN = ROOT / "scripts" / "gen-docs.ts"
+GEN = ROOT / "scripts" / "gen" / "gen-docs.ts"
 TARGET = ROOT / "scripts" / "data" / "doc-registry.md"
 SNAPSHOT = ROOT / "scripts" / "data" / "doc-registry-preport.json"
 
@@ -177,7 +177,7 @@ def test_verify_accepts_the_tree_as_it_stands(gate):
         gate.log_error(result.err.strip())
         gate.log_fail(
             "gen-docs verify failed. If a provider's inputs changed, run: "
-            "npx tsx scripts/gen-docs.ts --write"
+            "npx tsx scripts/gen/gen-docs.ts --write"
         )
     ok_lines = [line for line in result.out.split("\n") if line.startswith("ok ")]
     if not ok_lines:

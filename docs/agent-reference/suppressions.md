@@ -16,7 +16,7 @@ behaviour to preserve. The 3-line migration was strictly better, and the suppres
 
 ### Current sites
 
-**WHICH mechanisms exist is derived, not listed here.** The authority is the `suppressions` region of [`scripts/data/doc-registry.md`](../../scripts/data/doc-registry.md), rewritten from the tree by `npx tsx scripts/gen-docs.ts --write`: every tracked non-source, non-prose file carrying a `BLOCKER:` line, with its comment form. A new allowlist appears there the moment it exists,
+**WHICH mechanisms exist is derived, not listed.** The authority is the `suppressions` region of [`scripts/data/doc-registry.md`](../../scripts/data/doc-registry.md), rewritten from the tree by `npx tsx scripts/gen/gen-docs.ts --write`: every tracked non-source, non-prose file carrying a `BLOCKER:` line, with its comment form. A new allowlist appears there the moment it exists,
 and `gate-test:docs-gen` fails if the region has drifted from the tree.
 
 The table below is the part that CANNOT be derived, and it is deliberately narrower: which script READS each mechanism, and the per-mechanism liveness arrangements. The generator refuses to compute the reader column, and the reason is measured rather than aesthetic -- a grep-for-the-basename version was built and observed flipping mid-run when an unrelated peer session staged a

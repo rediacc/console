@@ -12042,13 +12042,13 @@
     "9f6098be1cc15d8b"
    ]
   },
-  "scripts/gen-docs.ts": {
+  "scripts/gen/gen-docs.ts": {
    "R2": [
-    "5ff347c277927907",
-    "dcae054c267a38b2"
+    "02e2fe6c7cd083af",
+    "fcfdb8b328dc1396"
    ],
    "R7": [
-    "d591a107c19d1f01"
+    "79e623bc4c48ceb7"
    ]
   },
   "scripts/gen/gen-manifest.ts": {

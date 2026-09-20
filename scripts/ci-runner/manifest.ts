@@ -1975,10 +1975,10 @@ export const GATES: readonly GateSpec[] = [
     paths: [
       'scripts/ci-runner/manifest.ts',
       'scripts/ci-runner/gates.lock.json',
-      'scripts/gen-gates-lock.ts',
+      'scripts/gen/gen-gates-lock.ts',
     ],
     pathsOrigin: 'declared',
-    leaves: ['scripts/gen-gates-lock.ts'],
+    leaves: ['scripts/gen/gen-gates-lock.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1987,7 +1987,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // The parity half of scripts/gen-docs.ts, and the reason it is NOT a strict subset of gate-test:docs-gen: gen-docs DISCOVERS its targets by scanning for markers and refuses only when the target list is EMPTY, while that gate test asserts merely that at least one target was found. So a document that loses its markers stops being checked instead of failing, silently, with both
+    // The parity half of scripts/gen/gen-docs.ts, and the reason it is NOT a strict subset of gate-test:docs-gen: gen-docs DISCOVERS its targets by scanning for markers and refuses only when the target list is EMPTY, while that gate test asserts merely that one target was found. So a document that loses its markers stops being checked instead of failing, silently, with both
     // green. Measured: strip CLAUDE.md's two marker lines and gen-docs still exits 0 saying `ok CLAUDE.md`. That is the rediacc/console#549 class and invariant 1, an emitter landing without its checker.
     //
     // No `paths:` DELIBERATELY. Its providers read the gates lock, the hook wiring, every tracked file carrying BLOCKER: and the whole .ci tree, so any list short of "the repository" is wrong, and a half-populated one makes --changed drop the gate silently.
@@ -2027,7 +2027,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'gen:gates-lock',
     run: 'npm run gen:gates-lock',
     gate: false,
-    leaves: ['scripts/gen-gates-lock.ts'],
+    leaves: ['scripts/gen/gen-gates-lock.ts'],
     ci: {
       kind: 'local-only',
       blocker:
@@ -2038,7 +2038,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'gen:docs',
     run: 'npm run gen:docs',
     gate: false,
-    leaves: ['scripts/gen-docs.ts'],
+    leaves: ['scripts/gen/gen-docs.ts'],
     ci: {
       kind: 'local-only',
       blocker:

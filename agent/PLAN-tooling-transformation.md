@@ -522,31 +522,25 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **Trap:** a NEW file not yet in a git index is invisible to the binder (`ls-files` reads the
       index). Use the throwaway-index technique in `08-driver-contract.md` section 5b, and
       validate the index copy before use.
-- [ ] **W7P4-W C, 2 writers, after PRE-B2** Flip 215 distinct scripts / 348 call sites.
+- [ ] **W7P4-W C, 2 writers, after W7P4-Q** Flip 162 distinct scripts / 275 call sites (count only `run:` and `with:` keys; the 215 / 348 below counted comments).
       **Creates no new `.sh` files** (see P-C: a new shim is illegal). Call sites flip straight to
       `npm run <id>` or `python3 -m`; the bash is retired in place.
-      **Decomposition nobody had:** **61 of the 215 already have a Python port** and can flip as
-      soon as P-A lands; **154 have no port at all** and are almost exactly the P-C backlog plus
-      deploy/release (deploy 21, release 21, test 18, ci 15, autopilot 14, build 14, infra 9,
-      private 9, security 7, housekeeping 6, quality 6, review 4). So this is two boxes: **P4a**
-      the 61, **P4b** the 154.
+      **Decomposition:** two boxes. **P4a** is the call sites whose script already has a Python
+      port (61 paths on the earlier 215-path count; re-measure on the 162 before staffing), and
+      **P4b** is the rest, which has no port and is almost exactly the P-C backlog plus
+      deploy/release (154 paths on the earlier count: deploy 21, release 21, test 18, ci 15,
+      autopilot 14, build 14, infra 9, private 9, security 7, housekeeping 6, quality 6, review 4).
       **Acceptance:** the set of `.ci/**/*.sh` paths in `.github/workflows/**` strictly shrinks,
       printed by name; every removed path has a lock entry whose `leaves` name the replacement
       and whose `ci.step` matches the emitted step. Both directions.
-      **DESIGN 2026-09-08: DO NOT STAFF YET, for two measured reasons.**
-      **(a) `PRE-B2` DOES NOT EXIST.** The only `PRE-*` boxes in this plan are PRE-A0 and
-      PRE-A1. A writer reads the name as either "blocked" and stops, or "no such box" and
-      starts too early. Name the real dependency (probably `B2`) before staffing.
-      **(b) The acceptance is false-positive AND false-negative prone.** It says the set of
-      `.ci/**/*.sh` paths in the workflows must strictly shrink -- but **31 of 290
-      occurrences are on COMMENT lines** and 10 distinct paths appear only in comments, two
-      of them naming files that no longer exist. Deleting a stale comment would tick the box
-      having flipped nothing; flipping a call site whose path also appears in a nearby
-      comment reads as a failed flip. Count only occurrences under a `run:`/`with:` key.
-      **The surface is 27% smaller than the box says**, because the uncommitted W7P4-Q
-      cutover already removed 57 references: 215/348 at HEAD, 158/290 in the tree, and the
-      true `run:` surface is **147 scripts / 258 call sites**. Partition by WORKFLOW FILE,
-      not by script -- the workflows are the contended, driver-only resource.
+      **DESIGN 2026-09-08, resolved 2026-09-20.** The dependency named `PRE-B2` did not exist
+      (the only `PRE-*` boxes are PRE-A0 and PRE-A1); the real one is W7P4-Q, because a flip
+      before its cutover would repoint workflows at gates whose ports are not registered. The
+      acceptance was also false-positive and false-negative prone: 31 of 290 occurrences were
+      COMMENT lines and 10 distinct paths appeared only in comments, so the surface is counted
+      only under a `run:`/`with:` key, which measures 162 distinct paths / 275 call sites.
+      Partition writers by WORKFLOW FILE, not by script -- the workflows are the contended,
+      driver-only resource. P4a stays unstaffed until W7P4-Q's cutover lands.
 - [ ] **W7P5-a S** `deploy/` 27 + `release/` 21 = **48 files, 5,440 lines**, 46 workflow call
       sites, zero Python, zero ledgers. Golden dry-run parity plus **one real run each**, K=5
       ledger before any deletion. Each specimen its own committed git repo; new side under
@@ -1129,6 +1123,13 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       * **`.ci/scripts/test/gates/test-run-all-parallel.sh:44-47`** hard-fails with
         `$RUNNER is missing or not executable` -- 231 lines whose entire subject is the
         deleted runner, plus its `gate-test:run-all-parallel` manifest and lock entries.
+      * **RE-VERIFIED 2026-09-20, TWO MORE.** (4) No shadow ledger pairs `battery.py` with
+        `run-all.sh`: `.ci/shadow/` holds `w7p2-battery-clean-tree` only, which covers a
+        different gate. The pytest differential exists but is fixture-driven, so it is not a
+        K=5 licence. Registering the pair and recording five rows is the next step, and it
+        needs the full battery run against a committed tree. (5) About ten `BLOCKER` texts in
+        `scripts/ci-runner/manifest.ts` say "inside run-all.sh" and must be reworded in the
+        deletion commit.
       Also unresolved by the deletion: `.ci/rediacc_ci/tests/test_battery.py` is a
       differential whose `TWIN` constant IS `run-all.sh`.
       **CENSUS DONE 2026-09-09, nothing deleted. Report:
@@ -6004,7 +6005,8 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       219 files, 101 plan citations over 25 `agent/PLAN-*.md`, 47 over 16 `docs/` files, and the seven
       driver-only fragments. **`.github/workflows/cd-deploy-account.yml:270` is deliberately NOT
       swept** -- it runs under `working-directory: private/account`, so its `scripts/check-` names a
-      different tree. STILL OPEN: the `scripts/gen/` and `scripts/ops/` legs. Eleven loose `.ts`
+      different tree. STILL OPEN: the `scripts/gen/` and `scripts/ops/` legs (the `scripts/gen/`
+      half closed 2026-09-20; `scripts/ops/` remains blocked on W8 and W0). Eleven loose `.ts`
       remain in `scripts/`, not the 25 this box assumed, and one of them (`scripts/gate-bind.ts`)
       is driver-only.
       **AND A NAME-BASED SWEEP MISSED A GATE, found 2026-09-09 by asking the LOCK instead of
@@ -6042,10 +6044,55 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       re-grepping WITHOUT the guard; every other survivor is a bare basename in prose.
       The layout baseline drained **47 -> 39, exactly the 8 moved, 0 added**, verified against
       a copy taken first rather than read off the gate's own arithmetic.
-      **STILL OPEN: `gen-docs.ts` and `gen-gates-lock.ts`**, which the `generators` rule
-      itself blocks -- "scripts/gen-docs.ts, scripts/gen-gates-lock.ts,
-      scripts/lib/doc-providers.ts and scripts/lib/doc-regions.ts are W11 and W2 files under
-      active concurrent edit; they move only once those workstreams have handed over."
+      **DONE 2026-09-20: the last two generators moved, and the `scripts/gen/` leg is closed.**
+      `gen-docs.ts` and `gen-gates-lock.ts` were held by the `generators` rule's own
+      `blockedOn` ("W11 and W2 files under active concurrent edit"); the handover was verified
+      before the move rather than assumed -- `git status` clean on all four named files and
+      `git log -3` showing nothing newer than 2026-09-17 on any of them. Both moved as `R`
+      renames. `blockedOn` now records the clearance, and it no longer names
+      `doc-providers.ts`/`doc-regions.ts`, which are `libraries`-rule files and were never
+      subjects of this one.
+      **5 depth-sensitive lines, and a sixth class a literal grep cannot reach.** Two ROOT
+      resolutions gained a segment (`import.meta.dirname, '..', '..'`), three relative imports
+      gained one (`../lib/doc-providers.js`, `../lib/doc-regions.js`,
+      `../ci-runner/manifest.js`) -- the same shape `gen-manifest.ts` already had, copied
+      rather than invented. **The sixth was `ROOT / "scripts" / "gen-docs.ts"`**, a
+      pathlib PARTS construction in both Python gate-test twins plus one
+      `fixture / "scripts" / "gen-docs.ts"`: the literal `scripts/gen-docs.ts` never appears,
+      so every grep in the measured surface missed all three, and they surfaced only by RUNNING
+      the twins, which failed with "scripts/gen-docs.ts is missing; the generator is gone". The
+      predecessor's lesson generalises past `__dirname` joins to any path built from segments.
+      **The prose-style baseline keys on the PATH, which re-keying alone does not fix.**
+      `Finding.fid` is `sha256(path \x1f rule \x1f text)`
+      (`.ci/rediacc_ci/quality/prose_style.py:669`), so moving a file invalidates every
+      baselined finding for it. The 3 entries (2 R2, 1 R7) were recomputed under the new path
+      by driving `lint_text` over both versions and matching on `(rule, text)` -- same three
+      findings, same lines, count unchanged at 6068, which keeps the shrink-only contract exact
+      instead of draining 10 unrelated stale entries with `--write-baseline`.
+      **Five prose lines went over R18 purely from the four added characters** (381-383 at HEAD,
+      385-387 after) and were trimmed editorially rather than re-wrapped; `reflow` is the wrong
+      instrument here, since it widens.
+      **`knip.jsonc` needed the OPPOSITE of what this plan predicted.** Section 6a of
+      `agent/PLAN-w9p2-script-relocation.md` says both files must be added as explicit entries
+      once out from under the `scripts/*.ts` glob. Adding them reds knip with "Remove redundant
+      entry pattern": knip resolves a file named by a package.json script as an entry by itself,
+      and these two are named by `gen:docs`, `gen:gates-lock` and `check:ci-gates-lock`. The
+      three files listed there ARE listed because no npm script names them. The corrected
+      reasoning is recorded in `knip.jsonc` so the prediction is not re-derived.
+      **The layout baseline drained 39 -> 37, exactly the 2 moved, 0 added**, the `generators`
+      row is gone from `outOfPlace` entirely, and `--diff-snapshot` is BYTE-IDENTICAL to the
+      pre-move capture, so the move dropped no recorded key. Green: `check:ci-parity`,
+      `check:ci-domain-partition`, `check:ci-doc-region-parity`, `check:ci-gate-id-convention`,
+      `check:ci-test-file-orphans`, `check:ci-gate-test-real-file-plants`, `gate-test:docs-gen`
+      and `gate-test:doc-region-parity` in both their bash and Python forms, `knip`, `ruff`,
+      `biome`. `check:ci-gates-lock` is red pending `npm run gen:gates-lock`, which is the
+      operator's to run.
+      **A GATE TEST REGENERATED THE REAL TREE, and it is entitled to.**
+      `test_gate_docs_gen.py`'s `assert_targets_unchanged` MEASURES, it does not restore, so
+      running it against a tree whose regions were stale performed the `--write` for real and
+      left it. That is the missing-override-seam hazard already carried as a BLOCKER in
+      `check_gate_test_real_file_plants.py`; it is named here because a session told not to run
+      `--write` can still cause one by running the verification it was asked to run.
       **`scripts/ci/` is dropped: zero `.cjs` exist under `scripts/`.**
 - [x] **U1 C** Requirement 15: a `json-inventory` provider + region over root / `.ci/config` /
       `scripts/data` / `.ci/policy`, with `Discovered by` and `Configurable path?` cells. The

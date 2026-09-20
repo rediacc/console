@@ -1,5 +1,5 @@
 /**
- * The row providers behind `npx tsx scripts/gen-docs.ts`.
+ * The row providers behind `npx tsx scripts/gen/gen-docs.ts`.
  *
  * A PROVIDER SCANS THE TREE. It never carries a hand-written list of the things it documents,
  * because a hand-written list is exactly the artifact this phase exists to abolish. Three

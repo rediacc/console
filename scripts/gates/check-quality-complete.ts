@@ -392,7 +392,7 @@ function main(argv: readonly string[]): number {
     lock = parsed as typeof lock;
   } catch (e) {
     console.error(`${RED}✗${NC} ${LOCK} is not a gate array: ${String(e)}`);
-    console.error('  Regenerate it with `npx tsx scripts/gen-gates-lock.ts --write`.');
+    console.error('  Regenerate it with `npx tsx scripts/gen/gen-gates-lock.ts --write`.');
     return 1;
   }
 

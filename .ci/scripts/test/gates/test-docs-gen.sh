@@ -8,7 +8,7 @@
 # ---- end gate ----
 # The documentation generator, proved in both directions.
 #
-# WHY IT NEEDS A GATE AT ALL. scripts/gen-docs.ts exists because hand-typed registry numbers go
+# WHY IT NEEDS A GATE AT ALL. scripts/gen/gen-docs.ts exists because hand-typed registry numbers go
 # stale in silence: `.dead-bash-allowlist` said "the 17 gate scripts" against 131,
 # scripts/gates/check-ci-parity.ts said "runs 57 gate tests", and docs/agent-reference/ci-gates.md said
 # "254 fast gates" against a live 312. A generator that quietly stops generating puts the tree
@@ -44,11 +44,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/gates/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GEN="$REPO_ROOT/scripts/gen-docs.ts"
+GEN="$REPO_ROOT/scripts/gen/gen-docs.ts"
 TARGET="$REPO_ROOT/scripts/data/doc-registry.md"
 SNAP="$REPO_ROOT/scripts/data/doc-registry-preport.json"
 
-[[ -f "$GEN" ]] || log_fail "scripts/gen-docs.ts is missing; the generator is gone"
+[[ -f "$GEN" ]] || log_fail "scripts/gen/gen-docs.ts is missing; the generator is gone"
 [[ -f "$TARGET" ]] || log_fail "scripts/data/doc-registry.md is missing; nothing carries a region"
 [[ -f "$SNAP" ]] || log_fail "scripts/data/doc-registry-preport.json is missing; the pre-port SET record is gone"
 
@@ -71,7 +71,7 @@ gen() { (cd "$REPO_ROOT" && npx tsx "$GEN" "$@"); }
 log_test "A. verify mode accepts the tree as it stands"
 if ! gen >"$WORK/a.out" 2>"$WORK/a.err"; then
     log_error "$(cat "$WORK/a.err")"
-    log_fail "A. gen-docs verify failed. If a provider's inputs changed, run: npx tsx scripts/gen-docs.ts --write"
+    log_fail "A. gen-docs verify failed. If a provider's inputs changed, run: npx tsx scripts/gen/gen-docs.ts --write"
 fi
 grep -q '^ok ' "$WORK/a.out" || log_fail "A. verify passed while reporting no target at all -- vacuous"
 log_pass "A. verify is green and named at least one target"

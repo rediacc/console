@@ -24,7 +24,7 @@
  * WHY (5) IS THE WHOLE DESIGN. Because the generated text equals the text already
  * there, `--write` adds nothing but marker lines: the entries do not move, the
  * array order does not change -- and array order is BEHAVIOUR, since
- * `scripts/gen-gates-lock.ts:99` records that `pool.ts` breaks scheduling ties on
+ * `scripts/gen/gen-gates-lock.ts:99` records that `pool.ts` breaks scheduling ties on
  * the array index -- and the regenerated lock is byte-identical by construction
  * rather than by hope. Any entry whose generated form differs is EXCLUDED, never
  * rewritten. A generator that would improve an entry is a generator that is
@@ -297,9 +297,9 @@ function main(argv: string[]): number {
       hadMarkers
         ? 'gen-manifest: the regions in scripts/ci-runner/manifest.ts no longer match what the\n' +
             '  headers derive. An entry inside a region was hand-edited, or a header moved.\n' +
-            '  Regenerate with: npx tsx scripts/gen-manifest.ts --write'
+            '  Regenerate with: npx tsx scripts/gen/gen-manifest.ts --write'
         : 'gen-manifest: scripts/ci-runner/manifest.ts carries no generated regions.\n' +
-            '  Emit them with: npx tsx scripts/gen-manifest.ts --write'
+            '  Emit them with: npx tsx scripts/gen/gen-manifest.ts --write'
     );
     return 1;
   }

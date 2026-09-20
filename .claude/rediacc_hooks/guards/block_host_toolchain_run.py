@@ -100,7 +100,7 @@ EDGE_CASES = [
     # The npx arm fires on SHAPE, whatever the host has.
     ("npx ruff", "npx ruff format packages/cli"),
     ("npx --yes shfmt", "npx --yes shfmt -w run.sh"),
-    ("npx on an npm package is not this guard's business", "npx tsx scripts/gen-docs.ts"),
+    ("npx on an npm package is not this guard's business", "npx tsx scripts/gen/gen-docs.ts"),
     # The bare-tool arm.
     ("a bare shfmt", "shfmt -w run.sh"),
     ("a bare shellcheck", "shellcheck .ci/scripts/quality/check-python-lint.sh"),

@@ -11,7 +11,7 @@
     "because afterwards the tree only knows what it currently is.",
     "",
     "MISSING keys are fatal to `--diff-snapshot`; ADDED keys are reported as normal growth.",
-    "Regenerate ONLY with `tsx scripts/gen-docs.ts --snapshot --force`, deliberately.",
+    "Regenerate ONLY with `tsx scripts/gen/gen-docs.ts --snapshot --force`, deliberately.",
     "",
     "RE-KEYED 2026-09-06 by W4 P2, deliberately and surgically: the fourteen",
     "suppression rows whose mechanism moved from the repository root into",

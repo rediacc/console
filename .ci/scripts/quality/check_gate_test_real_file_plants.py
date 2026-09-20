@@ -103,7 +103,7 @@ ALLOWLIST = {
     "test_gate_docs_gen.py": (
         "BLOCKER: TARGET (scripts/data/doc-registry.md) needs the same "
         "override-seam treatment as WORKLIST_REGISTRY_OVERRIDE_FILE, inside "
-        "scripts/gen-docs.ts (TypeScript, a separate change from the Python "
+        "scripts/gen/gen-docs.ts (TypeScript, a separate change from the Python "
         "fixes). Tracked 2026-09-14; DETECTED for the first time 2026-09-15, "
         "when indirect `ROOT / ...` derivation was added -- until then this "
         "entry excused a finding the scan could not produce."

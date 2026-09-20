@@ -45,7 +45,7 @@ THE FIXTURE'S CONTENTS ARE DERIVED, NOT TYPED, AND THAT IS THE POINT.
 
   So the pathspecs are derived FROM THE GENERATOR, in two steps:
 
-    1. `import_closure()` walks the relative imports out of `scripts/gen-docs.ts`. A
+    1. `import_closure()` walks the relative imports out of `scripts/gen/gen-docs.ts`. A
        specifier that resolves to nothing is a LOUD failure naming it, never a silently
        short walk, because a walk that quietly returns one file would derive one file's
        literals and look like a much smaller repository.
@@ -107,10 +107,10 @@ BASH_TWIN = ".ci/scripts/test/gates/test-doc-region-parity.sh"
 
 ROOT = paths.repo_root()
 GATE = ROOT / "scripts" / "gates" / "check-doc-region-parity.ts"
-GEN = ROOT / "scripts" / "gen-docs.ts"
+GEN = ROOT / "scripts" / "gen" / "gen-docs.ts"
 
 # The generator, repo-relative. Everything the fixture needs is reachable from here.
-GEN_ENTRY = "scripts/gen-docs.ts"
+GEN_ENTRY = "scripts/gen/gen-docs.ts"
 
 # A RELATIVE import out of one of the generator's own modules. `node:` builtins and bare
 # package specifiers are excluded by the required leading dot, which is exactly right: only
@@ -360,10 +360,10 @@ def run_gate(gate, *argv: str) -> harness.RunResult:
 def run_fixgen(gate, fixture: pathlib.Path, *argv: str) -> harness.RunResult:
     """The FIXTURE's COPY of the generator, so `--write` can only reach the fixture.
 
-    gen-docs roots itself at its own parent directory (scripts/gen-docs.ts:74), which is what makes running the copy a containment boundary and not a convention.
+    gen-docs roots itself at its own parent directory (scripts/gen/gen-docs.ts:74), which is what makes running the copy a containment boundary and not a convention.
     """
     return harness.run(
-        [npx(gate), "tsx", str(fixture / "scripts" / "gen-docs.ts"), *argv],
+        [npx(gate), "tsx", str(fixture / "scripts" / "gen" / "gen-docs.ts"), *argv],
         cwd=ROOT,
         timeout=600,
     )
@@ -480,7 +480,7 @@ def test_a_the_fixture_is_real_every_declared_provider_yields_rows(gate, tmp_pat
     if not GATE.is_file():
         gate.log_fail("scripts/gates/check-doc-region-parity.ts is missing; the gate is gone")
     if not GEN.is_file():
-        gate.log_fail("scripts/gen-docs.ts is missing; there is nothing to keep faithful")
+        gate.log_fail("scripts/gen/gen-docs.ts is missing; there is nothing to keep faithful")
     _fixture, document, providers, _pristine, shape = build_fixture(gate, tmp_path)
     body = document.read_text(encoding="utf-8")
     for provider in providers:

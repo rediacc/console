@@ -404,7 +404,7 @@ function main(): number {
     gates = parsed as LockGate[];
   } catch (e) {
     console.error(`✗ ${LOCK} could not be read as a gate array: ${String(e)}`);
-    console.error('  Regenerate it with `npx tsx scripts/gen-gates-lock.ts --write`.');
+    console.error('  Regenerate it with `npx tsx scripts/gen/gen-gates-lock.ts --write`.');
     return 1;
   }
 

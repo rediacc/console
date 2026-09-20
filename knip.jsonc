@@ -31,6 +31,15 @@
         //     scripts/gates/check-directive-quotes.ts.
         // Listed as explicit files rather than a `scripts/gen/*.ts` glob, so a
         // genuinely dead file appearing next to them is still reported.
+        // DELIBERATELY ABSENT, and measured rather than assumed: scripts/gen/gen-docs.ts
+        // and scripts/gen/gen-gates-lock.ts left the "scripts/*.ts" glob when W9 P2 moved
+        // them here on 2026-09-20, and listing them looked necessary for the same reason
+        // the three above are listed. It is not. Knip resolves a file named by a
+        // package.json script as an entry on its own, and those two are named by
+        // `gen:docs`, `gen:gates-lock` and `check:ci-gates-lock`; adding them reds this
+        // config with "Remove redundant entry pattern" under
+        // --treat-config-hints-as-errors. The three above are listed precisely because no
+        // npm script names them -- bash, Python and the operator's own hand run those.
         "scripts/lib/shadow-gate.ts",
         "scripts/gen/generate-third-party-licenses.ts",
         "scripts/gen/fetch-directive-snapshot.ts"

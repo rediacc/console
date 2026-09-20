@@ -153,7 +153,7 @@
       "home": "scripts/gen",
       "stays": false,
       "why": "Files that WRITE artefacts rather than assert about them. Keeping them mixed in with 117 check-*.ts is the reason `scripts/` reads as a single undifferentiated pile. THE HOME ITSELF IS THE FIRST PATTERN, added 2026-09-09: the rule declared `scripts/gen` as a destination and matched only files still sitting OUTSIDE it, so the first file to actually arrive there -- scripts/gen/gen-manifest.ts -- went UNCLASSIFIED and red. A rule that reds at the moment the move it asks for succeeds is the finish-line trap; the same line will be needed for scripts/ops when the operator-script leg lands.",
-      "blockedOn": "Same merge queue as `gates`. scripts/gen-docs.ts, scripts/gen-gates-lock.ts, scripts/lib/doc-providers.ts and scripts/lib/doc-regions.ts are W11 and W2 files under active concurrent edit; they move only once those workstreams have handed over."
+      "blockedOn": "CLEARED 2026-09-20: the leg is complete. scripts/gen-docs.ts and scripts/gen-gates-lock.ts were the last two subjects, held back while W11 and W2 edited them concurrently; both workstreams have handed over and both files now sit at scripts/gen/. scripts/lib/doc-providers.ts and scripts/lib/doc-regions.ts are libraries under the `libraries` rule, not subjects of this one."
     },
 
     {

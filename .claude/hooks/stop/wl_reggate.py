@@ -444,7 +444,7 @@ def _manifest_entries(root):
     whose leading comment sat INSIDE the brace was invisible, and the reachability gate checked a smaller set while printing a healthy "agrees with all N registrations". Found 2026-08-20 with a planted entry it went green over; it was already hiding check:ci-dockerfile-mirror-resilience and check:ci-tutorial-card-fonts, at 259 of 261 seen. The next TS shape nobody anticipated would
     have done it again, silently and in the same direction.
 
-    The lock is that literal, projected to JSON by `scripts/gen-gates-lock.ts` and kept faithful by `check:ci-gates-lock`, which fails when the two disagree. One parse, no regex archaeology, and a shape error is a JSON error rather than a quietly shorter list.
+    The lock is that literal, projected to JSON by `scripts/gen/gen-gates-lock.ts` and kept faithful by `check:ci-gates-lock`, which fails when the two disagree. One parse, no regex archaeology, and a shape error is a JSON error rather than a quietly shorter list.
 
     RETURNS AN EMPTY LIST WHEN THE LOCK IS ABSENT, deliberately and not by oversight. That matches what the regex version did on an unreadable file, and `check_gate_reachability_coverage.py` DEPENDS on it: its control stubs this lookup to empty and requires the probe's verdict to change, which is how that gate proves it can still detect manifest-blindness. Absence is a broken
     checkout rather than a state to tolerate, and the gate that refuses it is check:ci-gates-lock, not this reader.

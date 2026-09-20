@@ -34,9 +34,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { GATES, type GateSpec } from './ci-runner/manifest.js';
+import { GATES, type GateSpec } from '../ci-runner/manifest.js';
 
-const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const LOCK = 'scripts/ci-runner/gates.lock.json';
 
 /**

@@ -47,9 +47,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
 GATE="$REPO_ROOT/scripts/gates/check-doc-region-parity.ts"
-GEN="$REPO_ROOT/scripts/gen-docs.ts"
+GEN="$REPO_ROOT/scripts/gen/gen-docs.ts"
 [[ -f "$GATE" ]] || log_fail "scripts/gates/check-doc-region-parity.ts is missing; the gate is gone"
-[[ -f "$GEN" ]] || log_fail "scripts/gen-docs.ts is missing; there is nothing to keep faithful"
+[[ -f "$GEN" ]] || log_fail "scripts/gen/gen-docs.ts is missing; there is nothing to keep faithful"
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -103,7 +103,7 @@ copy_tracked() {
 # returns silent false zeros on an alternated anchor next to a negated class.
 derive_pathspecs() {
     grep -hoP "['\"\`]\K[A-Za-z0-9_.][A-Za-z0-9_./-]*(?=['\"\`])" \
-        "$REPO_ROOT/scripts/gen-docs.ts" \
+        "$REPO_ROOT/scripts/gen/gen-docs.ts" \
         "$REPO_ROOT/scripts/lib/doc-providers.ts" \
         "$REPO_ROOT/scripts/lib/doc-regions.ts" |
         sort -u |
@@ -131,17 +131,17 @@ fi
 # THE THREE CLOSURE FILES THEMSELVES, because a file is not a literal inside itself: the
 # deriver reads gen-docs.ts and its two libraries for quoted paths, so it can never yield
 # their own names. Dropping them from this line is what "Cannot find module
-# <fixture>/scripts/gen-docs.ts" looks like, which reads as a broken fixture copy rather
+# <fixture>/scripts/gen/gen-docs.ts" looks like, which reads as a broken fixture copy rather
 # than a missing input.
 copy_tracked .claude scripts/ci-runner/gates.lock.json \
-    scripts/gen-docs.ts scripts/lib/doc-providers.ts scripts/lib/doc-regions.ts \
+    scripts/gen/gen-docs.ts scripts/lib/doc-providers.ts scripts/lib/doc-regions.ts \
     "${DERIVED[@]}"
 log_info "fixture: ${#DERIVED[@]} derived pathspec(s)"
 
 gate() { (cd "$REPO_ROOT" && npx tsx "$GATE" "$@"); }
 # The COPY of the generator, so `--write` can only ever reach the fixture: gen-docs roots itself
-# at its own parent directory (scripts/gen-docs.ts:74).
-fixgen() { (cd "$REPO_ROOT" && npx tsx "$FIX/scripts/gen-docs.ts" "$@"); }
+# at its own parent directory (scripts/gen/gen-docs.ts:74).
+fixgen() { (cd "$REPO_ROOT" && npx tsx "$FIX/scripts/gen/gen-docs.ts" "$@"); }
 
 log_test "A. the fixture is real: every declared provider yields rows in it"
 # The index first: every provider enumerates with `git ls-files`, so a fixture that is not yet a

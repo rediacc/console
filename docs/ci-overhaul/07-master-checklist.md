@@ -50,10 +50,10 @@ be answered by a command, the command is given and the command is the answer.
 - [ ] **Sweep the class, not the instance.** Before calling a bug fixed, grep for its siblings.
       One bad call site usually has several. Say what the sweep covered and what it found, even
       when the answer is nothing.
-- [ ] **`npx tsx scripts/gen-docs.ts`** is green, or the drift is explained. Any box that
+- [ ] **`npx tsx scripts/gen/gen-docs.ts`** is green, or the drift is explained. Any box that
       changed the gate registry, the hook wiring, a `BLOCKER:` mechanism or the `.ci` tree has
       moved a derived region.
-- [ ] **`npx tsx scripts/gen-docs.ts --diff-snapshot`** reports no DROPPED rows, or the drop is
+- [ ] **`npx tsx scripts/gen/gen-docs.ts --diff-snapshot`** reports no DROPPED rows, or the drop is
       named row by row and justified. Additions are normal growth. Missing rows are the thing
       this program is most likely to do to itself.
 
