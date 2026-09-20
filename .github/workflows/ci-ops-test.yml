@@ -127,7 +127,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.embed-cache.outputs.cache-hit != 'true'
         with:

@@ -3,7 +3,7 @@
 # step: Run renet quality
 # needs: none
 # id: check:ci-renet
-# run: .ci/scripts/private/run-renet.sh quality
+# run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality
 # lane: quality-go
 # ---- end gate ----
 

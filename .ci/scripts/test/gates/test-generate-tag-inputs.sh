@@ -24,8 +24,9 @@
 #
 # This is not hypothetical: there are two build-renet.sh scripts in this repo,
 # .ci/scripts/build/build-renet.sh (one CI step, and the one hashed here) and
-# .ci/scripts/infra/build-renet.sh (nine CI steps, deliberately NOT hashed --
-# see the comment on BUILD_CONFIG_FILES). A path swap between them is exactly
+# .ci/scripts/infra/build-renet.sh (nine CI steps, which since W7P4-W reach it
+# through rediacc_ci.infra.build_renet, deliberately NOT hashed -- see the
+# comment on BUILD_CONFIG_FILES). A path swap between them is exactly
 # the mistake the silent skip would have absorbed.
 #
 # WHY A FIXTURE TREE. The gate reads real files from the working directory, so
@@ -164,7 +165,8 @@ test_every_declared_input_changes_the_tag() {
 
 test_infra_build_renet_is_not_an_input() {
     # The other direction, and the finding that prompted this file. Nine CI
-    # steps run .ci/scripts/infra/build-renet.sh and it is NOT in the list --
+    # steps build the dev renet (through rediacc_ci.infra.build_renet since
+    # W7P4-W) and .ci/scripts/infra/build-renet.sh is NOT in the list --
     # correctly, because it compiles a dev binary for ct-tests / ci-ops-test,
     # which never pull the renet image and are never handed this tag. Pinning it
     # here means the next reader gets the answer instead of re-deriving it, and

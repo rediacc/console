@@ -154,6 +154,7 @@ const CLOSURES = {
     submodules: ['private/renet'],
     // Steps at ct-tests.yml:1516 / :1544 / :1550 / :1556 / :1560, plus the two libraries they source: run-renet.sh:12 pulls in lib/common.sh, and renet's own private/renet/.ci/scripts/test/run-tests.sh:15-26 sources the CONSOLE-side infra/ci-env.sh, which is why this job is not submodule-only however much it looks like it.
     paths: [
+      '.ci/rediacc_ci',
       // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       '.ci/scripts/private/run-renet.sh',

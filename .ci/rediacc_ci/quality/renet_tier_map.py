@@ -3,8 +3,8 @@
 Ported from `.ci/scripts/quality/check-renet-tier-map.sh`, which is not deleted;
 see `rediacc_ci.quality.__init__` for why both copies live.
 
-THE TWIN IS DECLARED `kind: local-only`, AND ITS BLOCKER IS ABOUT WIRING RATHER THAN ABOUT THE TIER MAP, so it stays with the bash file rather than moving here: "no CI step invokes this script; the seven tier-map tests it drives already run in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step 'Run renet tests'), which resolves to that leaf and not
-this one, so a step pointer would claim CI runs a script it never invokes". A port does not inherit a registration, so nothing here re-states it as a live suppression, and this module is deliberately NOT wired into anything either.
+THE TWIN IS DECLARED `kind: local-only`, AND ITS BLOCKER IS ABOUT WIRING RATHER THAN ABOUT THE TIER MAP, so it stays with the bash file rather than moving here: "no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step 'Run renet tests'), which resolves to that leaf and not this
+one, so a step pointer would claim CI runs a script it never invokes". A port does not inherit a registration, so nothing here re-states it as a live suppression, and this module is deliberately NOT wired into anything either.
 
 WHY THE TWIN EXISTS AT ALL, given CI already runs those tests. `npm run ci` had no leg for them, so a tier-map regression could only be found after a push. The CLI now DERIVES its licence-issuance class from this map through the generated contract (`packages/shared/src/renet-contract/data/license-tiers.generated.ts`, consumed by
 `packages/cli/src/services/renet/renet-license-contract.ts`), which makes the map's completeness a console-side correctness property, not only a renet one.

@@ -2395,7 +2395,7 @@ jobs:
         # package. Refresh metadata first, then install.
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
 
-      # natives: run-account.sh test and the shared build both need the
+      # natives: the account test stage and the shared build both need the
       # compiled ssh2/cpu-features bindings. account: the integration tests run
       # out of private/account's own tree.
       - id: setup
@@ -2407,7 +2407,7 @@ jobs:
 
       - name: Run renet quality
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/private/run-renet.sh quality
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality
 
       - name: Check Go dependency freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
@@ -2532,7 +2532,7 @@ jobs:
 
       - name: Run account integration tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/private/run-account.sh test
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_account test
 
       - name: Run Go cross-language signature tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

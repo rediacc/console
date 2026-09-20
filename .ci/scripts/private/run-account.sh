@@ -3,7 +3,7 @@
 # step: Run account integration tests
 # needs: none
 # id: check:ci-account-server
-# run: .ci/scripts/private/run-account.sh test
+# run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_account test
 # lane: quality-go
 # ---- end gate ----
 

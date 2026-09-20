@@ -3,8 +3,10 @@
 
 A thin wrapper: check that the `private/renet` submodule is checked out, pin `GOTOOLCHAIN`, and hand one stage name to the submodule's own `private/renet/.ci/ci.sh`. It reimplements nothing that script does.
 
-THE BASH TWIN REMAINS THE REGISTERED GATE. `package.json:251` spells `"check:ci-renet": ".ci/scripts/private/run-renet.sh quality"`, `scripts/ci-runner/manifest.ts:3652` names that same file as the gate's `leaf`, and `.github/workflows/ct-tests.yml:1718` runs `... run-renet.sh test`. THIS MODULE CARRIES NO `---- gate ----` HEADER on purpose: the header is what
-`scripts/gate-bind.ts` reads, and a second file claiming `id: check:ci-renet` would give one gate two owners. Cutover is a separate, later, driver-only step.
+THIS MODULE IS WHAT `check:ci-renet` RUNS, since W7P4-W. `package.json` spells the gate `PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality`, `scripts/ci-runner/manifest.ts` names this file as the gate's `leaf` and in its `paths`, and both `.github/workflows/ci-quality.yml` (quality) and `.github/workflows/ct-tests.yml` (test) run the module form. The licence is
+`.ci/shadow/w7p4b-run-renet.observations.jsonl`, nine clean trees at `--assert --k 5`.
+
+THE `---- gate ----` HEADER STAYS ON THE BASH FILE, and that is not an oversight. `scripts/gate-bind.ts` resolves a gate by where its header lives, so a second file claiming `id: check:ci-renet` would give one gate two owners; the header's own `run:` was flipped to the module form instead, which is what the binder emits into the workflow.
 
 -----------------------------------------------------------------------------
 THE SUBMODULE GUARD IS THE ONLY DECISION IN THE FILE, AND IT HAS THREE ARMS

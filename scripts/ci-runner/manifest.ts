@@ -3263,7 +3263,7 @@ export const GATES: readonly GateSpec[] = [
     mutex: ['account-vitest'],
     weight: 2,
     heavy: true,
-    leaves: ['.ci/scripts/private/run-account.sh'],
+    leaves: ['.ci/rediacc_ci/private/run_account.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3359,12 +3359,12 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-renet',
     gate: true,
     // The BARE gitlink, not `private/renet/**`. `git ls-files private/` returns four bare gitlinks with no files underneath, so a /** form translates to a regex matching nothing, and a glob that matches nothing can only exclude. A submodule content change reaches this repository's diff only as a pointer bump on that path.
-    paths: ['private/renet', '.ci/scripts/private/run-renet.sh', '.ci/scripts/lib/common.sh'],
+    paths: ['private/renet', '.ci/rediacc_ci/private/run_renet.py', '.ci/rediacc_ci/core/common.py'],
     pathsOrigin: 'declared',
     // 40.4s measured 2026-08-27, and only now: it used to die at exit 127 in format.sh (goimports installed to $(go env GOPATH)/bin, which was on no PATH) about a second in, so its old "fast" tier was the cost of crashing early rather than of running. With that fixed it does the real work -- gofmt, goimports, golangci-lint and govulncheck over the whole module.
     slow: true,
     mutex: ['renet-bin'],
-    leaves: ['.ci/scripts/private/run-renet.sh'],
+    leaves: ['.ci/rediacc_ci/private/run_renet.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3403,7 +3403,7 @@ export const GATES: readonly GateSpec[] = [
   },
   // No `renet-bin` mutex, deliberately: that group guards the shared WRITE of private/renet/bin/renet (check-renet-types.sh:26, and the renet quality battery that rebuilds it). This gate only runs `go test`, which writes nothing into bin/ and whose build cache is concurrency-safe, so serialising it behind the two binary writers would buy nothing.
   //
-  // `local-only` is measured, not assumed. The tier-map tests DO run in CI, but through ct-tests.yml job test-renet step "Run renet tests", which resolves to the leaf .ci/scripts/private/run-renet.sh (renet's whole `go test ./...` suite) and never to this script. Declaring that as a `step` pointer fails R3 with "the pointer names a step that runs something else", which is the
+  // `local-only` is measured, not assumed. The tier-map tests DO run in CI, but through ct-tests.yml job test-renet step "Run renet tests", which resolves to the leaf .ci/rediacc_ci/private/run_renet.py (renet's whole `go test ./...` suite) and never to this script. Declaring that as a `step` pointer fails R3 with "the pointer names a step that runs something else", which is the
   // oracle working correctly: a manifest pointer asserts CI runs THIS leaf.
   {
     id: 'check:ci-renet-tiers',
@@ -3413,7 +3413,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'local-only',
       blocker:
-        'BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes',
+        'BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes',
     },
   },
   // >>> gen-manifest: region 27
@@ -6948,7 +6948,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'local-only',
       blocker:
-        'BLOCKER: CI runs the full suite under root with -race via ct-tests.yml -> .ci/scripts/private/run-renet.sh -> private/renet/.ci/scripts/test/run-tests.sh. This proxy drops root, the race detector and the account-server phase, and excludes the 8 packages whose tests need privilege, so it covers 60 of 68 and must not claim the CI step.',
+        'BLOCKER: CI runs the full suite under root with -race via ct-tests.yml -> rediacc_ci.private.run_renet -> private/renet/.ci/scripts/test/run-tests.sh. This proxy drops root, the race detector and the account-server phase, and excludes the 8 packages whose tests need privilege, so it covers 60 of 68 and must not claim the CI step.',
     },
   },
   {

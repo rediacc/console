@@ -3488,7 +3488,7 @@
     "weight": 2,
     "heavy": true,
     "leaves": [
-      ".ci/scripts/private/run-account.sh"
+      ".ci/rediacc_ci/private/run_account.py"
     ],
     "ci": {
       "kind": "step",
@@ -3602,8 +3602,8 @@
     "gate": true,
     "paths": [
       "private/renet",
-      ".ci/scripts/private/run-renet.sh",
-      ".ci/scripts/lib/common.sh"
+      ".ci/rediacc_ci/private/run_renet.py",
+      ".ci/rediacc_ci/core/common.py"
     ],
     "pathsOrigin": "declared",
     "slow": true,
@@ -3611,7 +3611,7 @@
       "renet-bin"
     ],
     "leaves": [
-      ".ci/scripts/private/run-renet.sh"
+      ".ci/rediacc_ci/private/run_renet.py"
     ],
     "ci": {
       "kind": "step",
@@ -3663,7 +3663,7 @@
     ],
     "ci": {
       "kind": "local-only",
-      "blocker": "BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step \"Run renet tests\"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes"
+      "blocker": "BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step \"Run renet tests\"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes"
     }
   },
   {
@@ -7532,7 +7532,7 @@
     ],
     "ci": {
       "kind": "local-only",
-      "blocker": "BLOCKER: CI runs the full suite under root with -race via ct-tests.yml -> .ci/scripts/private/run-renet.sh -> private/renet/.ci/scripts/test/run-tests.sh. This proxy drops root, the race detector and the account-server phase, and excludes the 8 packages whose tests need privilege, so it covers 60 of 68 and must not claim the CI step."
+      "blocker": "BLOCKER: CI runs the full suite under root with -race via ct-tests.yml -> rediacc_ci.private.run_renet -> private/renet/.ci/scripts/test/run-tests.sh. This proxy drops root, the race detector and the account-server phase, and excludes the 8 packages whose tests need privilege, so it covers 60 of 68 and must not claim the CI step."
     }
   },
   {

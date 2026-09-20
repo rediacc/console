@@ -2,7 +2,7 @@
 # Local proxy for the renet Go unit tests, the heaviest single leg of CI's
 # test-renet job.
 #
-# WHAT CI RUNS. ct-tests.yml -> .ci/scripts/private/run-renet.sh ->
+# WHAT CI RUNS. ct-tests.yml -> rediacc_ci.private.run_renet ->
 # private/renet/.ci/ci.sh -> private/renet/.ci/scripts/test/run-tests.sh, whose
 # unit phase is
 #

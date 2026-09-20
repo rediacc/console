@@ -3,8 +3,10 @@
 
 A thin wrapper: check that the `private/account` submodule is checked out, install its dependencies if nothing else has, and run one stage. It reimplements nothing that `private/account`'s own npm scripts do.
 
-THE BASH TWIN REMAINS THE REGISTERED GATE. `package.json:250` spells `"check:ci-account-server": ".ci/scripts/private/run-account.sh test"`, `scripts/ci-runner/manifest.ts:3541` names that same file as the gate's `leaf`, and `.github/workflows/ci-quality.yml:2204` runs it. THIS MODULE CARRIES NO `---- gate ----` HEADER on purpose: the header is what `scripts/gate-bind.ts` reads,
-and a second file claiming `id: check:ci-account-server` would give one gate two owners and the parity meta-gates would be right to complain. Cutover is a separate, later, driver-only step.
+THIS MODULE IS WHAT `check:ci-account-server` RUNS, since W7P4-W. `package.json` spells the gate `PYTHONPATH=.ci python3 -m rediacc_ci.private.run_account test`, `scripts/ci-runner/manifest.ts` names this file as the gate's `leaf`, and `.github/workflows/ci-quality.yml` runs the same module form. The licence is
+`.ci/shadow/w7p4b-run-account.observations.jsonl`, ten clean trees at `--assert --k 5`.
+
+THE `---- gate ----` HEADER STAYS ON THE BASH FILE, and that is not an oversight. `scripts/gate-bind.ts` resolves a gate by where its header lives, so a second file claiming `id: check:ci-account-server` would give one gate two owners; the header's own `run:` was flipped to the module form instead, which is what the binder emits into the workflow.
 
 -----------------------------------------------------------------------------
 THE SUBMODULE GUARD HAS THREE ARMS AND THE MIDDLE ONE IS THE WHOLE POINT

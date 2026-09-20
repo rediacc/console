@@ -1,9 +1,10 @@
 """The W7P4-b cutover ledgers, and what each one is allowed to be read as saying.
 
-P4b is the tail of W7P4-W: the `.ci/**/*.sh` paths still named under a `run:` or `with:` key in `.github/workflows/**`. Five of them were cut over to their Python ports here, and a cutover is the one change a ledger genuinely licenses -- after it, CI runs the port and nothing runs the twin, so a divergence nobody recorded is a divergence nobody will ever see.
+P4b is the tail of W7P4-W: the `.ci/**/*.sh` paths still named under a `run:` or `with:` key in `.github/workflows/**`. The families below cut eighteen of them over to their Python ports, and a cutover is the one change a ledger genuinely licenses -- after it, CI runs the port and nothing runs the twin, so a divergence nobody recorded is a divergence nobody will ever see. The first
+family is the five named in the two harness-bug notes below.
 
-Each pair was recorded from a SCRATCH git repo outside this tree, one clean committed tree per scenario, with recording stubs for `gh`, `aws`, `npm`, `curl`, `tar`, `sha256sum`, `uname` and `sleep` first on PATH. Both sides re-emit stdout, stderr, the stub call log, `GITHUB_OUTPUT` and `GITHUB_ENV` under one `--finding-re`, so the comparison covers the external requests and the
-exported variables rather than text alone.
+Each pair was recorded from a SCRATCH git repo outside this tree, one clean committed tree per scenario, with recording stubs for `gh`, `aws`, `npm`, `curl`, `tar`, `sha256sum`, `uname`, `rdc`, `ssh`, `date` and `sleep` first on PATH. Both sides re-emit stdout, stderr, the stub call log, `GITHUB_OUTPUT` and `GITHUB_ENV` under one `--finding-re`, so the comparison covers the
+external requests and the exported variables rather than text alone.
 
 WHAT THIS MODULE REFUSES TO LET DECAY, in four directions:
 
@@ -64,6 +65,32 @@ rather than normalised out of the ledger. A planted `--budget 91` was then watch
 
 BOTH CUTOVERS REACH FURTHER THAN A WORKFLOW LINE, and the reach is what the tests below cannot see. `scope-shadow` had one `run:` in `ci.yml` and nothing else. `typecheck-workers` had that plus three `package.json` scripts (`check:types`, `typecheck`, `lint:unused`), its own `---- gate ----` header's `run:`, two `scripts/ci-runner/manifest.ts` leaves, and
 `scripts/gates/check-typecheck-scope-coverage.ts`, which resolved the clause by looking for a token ending in `.sh` and would have read every `workers/*/tsconfig.json` as uncovered the moment the clause stopped containing one.
+
+-----------------------------------------------------------------------------
+THE FOURTH FAMILY, four pairs, and a gate that had to learn a second spelling
+-----------------------------------------------------------------------------
+`build-renet` (12 rows), `compose-healthcheck-smoke-test` (11), `run-account` (10) and `run-renet` (9). None of the four had a usable older ledger for the same reason as the families above: the `w7p6-` pairs reach their sides through a fixture that no longer exists.
+
+  * THE SUBJECT'S OWN DELEGATE IS THE STUB, not a binary on PATH.
+    `build-renet` never runs `go` itself -- it asks `command -v` whether a toolchain is there and then delegates the whole build to `private/renet/build.sh`, which a PATH stub cannot shadow because the twin invokes it by relative path from inside the submodule. So the recording stand-in IS that file, written into a gitignored `private/` tree by the scenario and removed by
+    `shadow/cleanup.sh`, and `PAIRS` names `build.sh` as the binary for exactly that reason. The same trick carries `run-renet`, whose one delegate is `private/renet/.ci/ci.sh`; that stub logs the stage, the inherited cwd and the exported `GOTOOLCHAIN`, because a port that printed the same banner while never invoking the stage would satisfy a stdout-only comparison and run no Go
+    tests at all.
+  * `uname` IS DELIBERATELY NOT STUBBED for `build-renet`, and the reason is a
+    real asymmetry rather than a convenience. `common.sh` makes two platform probes (`uname -s`, `uname -m`) at SOURCE time, before the twin's own code runs; the port sources no such library and makes only the one probe the subject itself asks for. A recording stub would put those two library calls into the comparison on one side only and turn every row into a mismatch over
+    traffic neither implementation chose. They have no observable effect, so the pair's call log carries the one delegation that does.
+  * THE POLL LOOP NEEDED A DETERMINISTIC CLOCK.
+    `compose-healthcheck-smoke-test` polls a container healthcheck against a wall-clock deadline, so with a real `date` the NUMBER of probes depends on how fast each side happens to run and the two sides disagree about a call log neither of them chose. The stub answers `+%s` from a counter that advances by a fixed step per reading and passes every other format through, which fixes
+    the probe count for both sides; `sleep` is a no-op recorder beside it. That is what makes "db converges on the third probe" a scenario rather than a race.
+  * THE `ssh` STUB LOGS THE WHOLE ARGV, remote program included. The three
+    remote programs this script sends are multi-line shell, so they enter the comparison a line at a time -- which is the point, because WHICH probe runs in WHICH order is the entire subject of a healthcheck smoke test, and both implementations build those strings independently.
+
+THE CUTOVER REACHED A GATE THAT COULD NOT SEE THE NEW SPELLING, and it would have failed loudly rather than quietly, which is the lucky direction. `check:ci-workflow-env-provision` follows ONE HOP out of a `run:` block into the script it names, because nine jobs use `$RENET_BINARY` and only the renet build step writes it to `$GITHUB_ENV`. Its resolver matched a PATH ending in
+`.sh`/`.py`/`.ts`/`.cjs`, and a cut-over step names no path at all. Driven with the repair removed: nine false findings, one per job, exit 1. The gate now resolves `python3 -m rediacc_ci.<mod>` to its file as well, recognises the Python writer's `"NAME=` string shape, and carries two new controls -- one pinning `RENET_BINARY` through the module spelling, one proving an
+unresolvable spec provisions nothing -- because the path half kept passing on a `.sh` file that nothing runs any more.
+
+TWO OF THE FOUR ARE REGISTERED GATES, so their cutover is wider than a workflow line: `check:ci-renet` and `check:ci-account-server` each moved their `package.json` script, their own `---- gate ----` header's `run:` (the header STAYS on the bash file, because `gate-bind` resolves a gate by where its header lives and a second owner would be a parity failure), their
+`scripts/ci-runner/manifest.ts` `leaves`, and for `check:ci-renet` its `paths:` as well -- which had named `run-renet.sh` and `lib/common.sh`, so leaving it would have stopped `--changed` selecting the gate when its own port changed. `check_renet_tier_map.py`'s `blocker:` quotes that leaf by name and had to move with it, in the gate header, in the manifest and in the lock, or the
+three copies of one sentence would have disagreed.
 """
 
 from __future__ import annotations
@@ -158,6 +185,28 @@ PAIRS = {
         ".ci/scripts/ci/scope-shadow.sh",
         "rediacc_ci.ci.scope_shadow",
         "node",
+    ),
+    # `build.sh`, not `go`: the twin only asks `command -v go` and then hands the whole build to `private/renet/build.sh`. See the fourth family's section above for why the stub is a file in the fixture rather than a binary on PATH.
+    "w7p4b-build-renet": (
+        ".ci/scripts/infra/build-renet.sh",
+        "rediacc_ci.infra.build_renet",
+        "build.sh",
+    ),
+    "w7p4b-compose-healthcheck-smoke-test": (
+        ".ci/scripts/private/compose-healthcheck-smoke-test.sh",
+        "rediacc_ci.private.compose_healthcheck_smoke_test",
+        "rdc",
+    ),
+    "w7p4b-run-account": (
+        ".ci/scripts/private/run-account.sh",
+        "rediacc_ci.private.run_account",
+        "npm",
+    ),
+    # `ci.sh`, the submodule's own entry point, for the same reason `build-renet` names `build.sh`: it is invoked by path out of `private/renet`, not from PATH.
+    "w7p4b-run-renet": (
+        ".ci/scripts/private/run-renet.sh",
+        "rediacc_ci.private.run_renet",
+        "ci.sh",
     ),
 }
 
@@ -344,13 +393,60 @@ def test_the_bash_twin_is_still_on_disk(pair: str) -> None:
     )
 
 
+# Pairs whose script is a REGISTERED GATE, mapped to that gate's id. A gate's call site is not one line: it is the `package.json` script, the `---- gate ----` header's own `run:`, and the `scripts/ci-runner/manifest.ts` leaf that has to agree with both. The third family recorded that reach in prose and left it untested, which is how a half-finished cutover reads as a finished one
+# -- the workflow assertion above passes on the workflow line alone while `npm run <id>` still shells out to bash.
+REGISTERED_GATES = {
+    "w7p4b-run-renet": "check:ci-renet",
+    "w7p4b-run-account": "check:ci-account-server",
+    "w7p4b-typecheck-workers": "lint:unused",
+}
+
+# The three files a registered gate's cutover has to reach, beyond the workflow.
+GATE_SURFACES = (
+    "package.json",
+    "scripts/ci-runner/manifest.ts",
+    "scripts/ci-runner/gates.lock.json",
+)
+
+
+@pytest.mark.parametrize("pair", sorted(REGISTERED_GATES))
+def test_a_registered_gate_is_cut_over_everywhere_it_is_named(pair: str) -> None:
+    """The half of a gate cutover a workflow grep cannot see."""
+    twin, module, _ = PAIRS[pair]
+    for rel in GATE_SURFACES:
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        assert twin not in text, (
+            "%s still names %s. The workflow line is only one of a registered gate's "
+            "call sites; `npm run %s` and the manifest leaf are the others, and a "
+            "cutover that moved one of the three leaves the gate running bash."
+            % (rel, twin, REGISTERED_GATES[pair])
+        )
+    header = (ROOT / twin).read_text(encoding="utf-8")
+    assert "# run: " in header, (
+        "%s no longer carries a `---- gate ----` header `run:` line, which is what "
+        "`scripts/gate-bind.ts` emits into the workflow. The header stays on the bash "
+        "file deliberately (one gate, one owner); only its VALUE moves." % twin
+    )
+    assert ("python3 -m %s" % module) in header, (
+        "%s's gate header still runs something other than `python3 -m %s`, so "
+        "`gate:bind --write` would put the old spelling back into the workflow the "
+        "next time anyone runs it." % (twin, module)
+    )
+
+
+def test_the_registered_gate_table_names_real_pairs() -> None:
+    """VACUITY FLOOR on the parametrisation above."""
+    unknown = sorted(set(REGISTERED_GATES) - set(PAIRS))
+    assert not unknown, "REGISTERED_GATES names %s, which no pair is filed under" % unknown
+
+
 def test_the_call_site_reader_can_still_see_a_call_site() -> None:
     """CONTROL on the assertion above, which is the only one that can go quiet.
 
     `_call_site_text` narrows the search from the whole workflow text to `run:` and `with:` values, and a narrowing that returned nothing would pass every cutover assertion in this module for every pair, forever. So one path known to be LIVE has to be visible through it, and the two `breakpoint.yml` mentions of `ci-start-elite.sh` -- a `workflow_dispatch` input description and a
     comment, neither of which runs anything -- have to stay invisible.
 
-    THE WITNESS MOVED ONCE, on 2026-09-20, and that is the hazard this control carries: it used to be `scope-shadow.sh`, which the third family then cut over, at which point the control was asserting that an already-retired path was live. A witness has to be a path NO pair in `PAIRS` names, or the control expires the moment its subject is done. `lint.sh` is that: 52 `.ci/**/*.sh`
+    THE WITNESS MOVED ONCE, on 2026-09-20, and that is the hazard this control carries: it used to be `scope-shadow.sh`, which the third family then cut over, at which point the control was asserting that an already-retired path was live. A witness has to be a path NO pair in `PAIRS` names, or the control expires the moment its subject is done. `lint.sh` is that: 41 `.ci/**/*.sh`
     paths remain under a `run:` or `with:` key, and this one is the shortest-lived candidate only if someone ports it, which is when this line is expected to move again.
     """
     text = _call_site_text()

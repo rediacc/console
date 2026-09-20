@@ -4,7 +4,8 @@
 Deploys the `app-postgres` template on the worker VM through the production `rdc` orchestration path and asserts that the `db` container's Docker healthcheck (`pg_isready -h localhost`, which traverses the eBPF connect4 rewrite `127.0.0.1 -> SERVICE_IP4`) converges to `healthy` inside a bounded window, then that the `app` container reached `running` on the strength of its
 `depends_on: db.condition: service_healthy`.
 
-THE BASH TWIN REMAINS THE LIVE CALL SITE. Nothing in `package.json`, `scripts/ci-runner/manifest.ts` or any workflow points at this module, and this module carries NO `---- gate ----` header, exactly as the twin carries none: the twin is invoked by hand and by the private CT lane, not by the gate estate. Cutover is a separate, later, driver-only step and is not done here.
+THIS MODULE IS THE LIVE CALL SITE SINCE W7P4-W. `.github/workflows/ct-tests.yml`'s "Run compose healthcheck smoke test" step runs `PYTHONPATH=.ci python3 -m rediacc_ci.private.compose_healthcheck_smoke_test`, on the licence in `.ci/shadow/w7p4b-compose-healthcheck-smoke-test.observations.jsonl` (eleven clean trees at `--assert --k 5`). Neither file carries a `---- gate ----`
+header, because this is a private CT-lane step rather than a registered gate, so nothing in `package.json` or `scripts/ci-runner/manifest.ts` names either one.
 
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHY EVEN THE CLOCK IS

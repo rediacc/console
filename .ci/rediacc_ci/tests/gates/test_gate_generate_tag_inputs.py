@@ -238,8 +238,8 @@ def test_every_declared_input_changes_the_tag(gate):
 
 
 def test_infra_build_renet_is_not_an_input(gate):
-    """The other direction, and the finding that prompted the twin. Nine CI steps run `.ci/scripts/infra/build-renet.sh` and it is NOT in the list -- correctly, because it compiles a dev binary for ct-tests / ci-ops-test, which never pull the renet image and are never handed this tag. Pinning it here means the next reader gets the answer instead of re-deriving it, and a future
-    decision to include it has to change this case deliberately."""
+    """The other direction, and the finding that prompted the twin. Nine CI steps build the dev renet -- through `rediacc_ci.infra.build_renet` since W7P4-W -- and `.ci/scripts/infra/build-renet.sh` is NOT in the list, correctly, because it compiles a dev binary for ct-tests / ci-ops-test, which never pull the renet image and are never handed this tag. Pinning it here means the
+    next reader gets the answer instead of re-deriving it, and a future decision to include it has to change this case deliberately."""
     with harness.temp_dir() as tmp:
         root = tmp / "repo"
         build_fixture_tree(gate, root)

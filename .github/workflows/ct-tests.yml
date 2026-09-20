@@ -9,7 +9,7 @@ name: Console CT - Tests
 on:
   workflow_call:
     # Every TEST job here builds a nolicense renet from source on-runner
-    # (.ci/scripts/infra/build-renet.sh); console is public, so a prebuilt
+    # (rediacc_ci.infra.build_renet); console is public, so a prebuilt
     # nolicense binary must never ship via artifacts. Only the embed-assets
     # staging is shared, via the renet-embed-assets cache (same key as
     # ci-build-renet.yml).
@@ -372,7 +372,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.embed-cache.outputs.cache-hit != 'true'
         with:
@@ -534,7 +534,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.embed-cache.outputs.cache-hit != 'true'
         with:
@@ -689,7 +689,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.embed-cache.outputs.cache-hit != 'true'
         with:
@@ -848,7 +848,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.embed-cache.outputs.cache-hit != 'true'
         with:
@@ -1004,7 +1004,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.embed-cache.outputs.cache-hit != 'true'
         with:
@@ -1176,7 +1176,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.embed-cache.outputs.cache-hit != 'true'
         with:
@@ -1388,7 +1388,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.embed-cache.outputs.cache-hit != 'true'
         with:
@@ -1563,7 +1563,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.embed-cache.outputs.cache-hit != 'true'
         with:
@@ -1619,7 +1619,7 @@ jobs:
       # tests can miss — the class of bug that hid nextcloud-talk's
       # 3-day silent failure.
       - name: Run compose healthcheck smoke test
-        run: .ci/scripts/private/compose-healthcheck-smoke-test.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.private.compose_healthcheck_smoke_test
         env:
           VM_NET_BASE: ${{ env.VM_NET_BASE }}
           VM_WORKERS: '11'
@@ -1715,7 +1715,7 @@ jobs:
             test-renet provisions no account server; real-issuance coverage is
             tracked as T1 tier 2 and the enforcing-binary path is covered by the
             License Enforcement job.
-        run: .ci/scripts/private/run-renet.sh test
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet test
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
