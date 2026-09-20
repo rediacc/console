@@ -774,6 +774,10 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       this document names the find-port shim at its old location and line -- left for
       the concurrent W7P5-b writer's own deletion to settle, since editing it now would
       race that writer's file.
+      **RUNBOOK ROWS RE-DERIVED 2026-09-21, ZERO DRIFT.** The 32 table rows equal the 32 entries of
+      `.ci/policy/.w7p5a-real-run-blocklist` in both directions, and every workflow site (searched by script
+      stem in hyphen and underscore form under `.github/workflows`) still matches its row, including the rows
+      that read `no workflow site`.
       **REAL-RUN RUNBOOK 2026-09-20, `door:operator-only`.** The 32 blocklisted scripts each need one real run
       before their bash twin may be deleted, and this host has no production credentials. The table lists, per
       script, the external tools its code calls, the credential that implies, and the workflow step to copy the
@@ -4853,6 +4857,11 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `doc-providers.ts:295` still reads the hooks table; and the language policy still counts 582 bash
       files, 507 frozen, so one more tracked `.sh` for a chain head is refused. The exit condition is
       unchanged and needs an operator ruling.
+      **RE-RUN 2026-09-21, NOTHING CLEARED.** Four probes with full stderr, all rc=0 and no stderr: settings.json
+      reads 30 commands in 18 groups over 11 patterns; `require-python.sh:5-12` still argues it may never be
+      ported; `FIRST_GUARD = "require-jq.sh"` is at `check_hooks_resolvable.py:107` and the hooks table is read at
+      `doc-providers.ts:295`; the language policy reports 539 bash files, 464 frozen, none added, so a new
+      tracked `.sh` is still refused.
       **WHICH RULING CLEARS WHICH BLOCKER (2026-09-20).** Blocker (1), the bash chain head, is the only one that
       needs the operator: EITHER (A, recommended) `.ci/config/language-policy` admits exactly one named file,
       `.claude/hooks/chain-head.sh`, that inlines the two checks and then execs `dispatch.py`, which lets the
