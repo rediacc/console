@@ -126,7 +126,7 @@
       "www-src-probe"
     ],
     "leaves": [
-      ".ci/scripts/quality/typecheck-workers.sh",
+      ".ci/rediacc_ci/quality/typecheck_workers.py",
       "knip"
     ],
     "ci": {
@@ -676,7 +676,7 @@
     "leaves": [
       "tsc",
       "astro",
-      ".ci/scripts/quality/typecheck-workers.sh"
+      ".ci/rediacc_ci/quality/typecheck_workers.py"
     ],
     "ci": {
       "kind": "step",

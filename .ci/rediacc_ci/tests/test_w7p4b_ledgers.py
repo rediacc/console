@@ -42,7 +42,28 @@ THE SECOND FAMILY, seven more pairs, and the two things it did differently
 
 ONE ACCEPTED DIVERGENCE, CUT OVER DELIBERATELY: `clone-d1 --sanitize` on a host that HAS `sqlite3`. `.ci/scripts/deploy/sanitize-d1.sql` was deleted in `57b61098c` and never replaced, so that path fails on both sides -- but it fails through a `< file` redirection, and bash reports that as `<script path>: line 117: <path>: No such file or directory` while the port reports
 `clone-d1.sh: <path>: No such file or directory`. Same stream, same exit status, same path and reason, different leader; `test_deploy_clone_d1.py` normalises exactly that shape and asserts the normaliser is tight. The recording host has no `sqlite3`, so the ledger's `--sanitize` row is the `Required command 'sqlite3' is not available` refusal, which is byte-identical. The missing
-`.sql` file is a defect in its own right and is reported separately: `.github/workflows/edge-clone-d1.yml` passes `--sanitize` today, so that job cannot succeed in EITHER language.
+`.sql` file is a defect in its own right and was reported separately: `.github/workflows/edge-clone-d1.yml` passed `--sanitize`, so that job could not succeed in EITHER language. It was removed for that reason in `9ac3f6a42`, which is why this pair now sits in `RETIRED_WITH_THEIR_WORKFLOW` below.
+
+-----------------------------------------------------------------------------
+THE THIRD FAMILY, two pairs, and the divergence the call log caught
+-----------------------------------------------------------------------------
+
+`typecheck-workers` (9 rows, 9 trees, 9 finding sets) and `scope-shadow` (12 rows, 12 trees, 12 finding sets) were recorded the same way, and neither had a usable older ledger: the `w7p6-` pairs for both reach their sides through a fixture that is gone.
+
+  * `typecheck-workers` is a DISCOVERY gate, so the scenarios vary the thing it
+    discovers rather than its flags alone: three workers and `--list`, no `workers/` directory at all (the zero-discovery refusal), two workers that already have their deps, one that needs `npm ci`, one with no lockfile that needs `npm install`, a clean typecheck, a `tsc` that reds on the second project, an install that fails, and `--isntall` -- the unknown argument the port's own
+    DEFECT A section says falls through to a full run. `npm` and `npx` are recording stubs; nothing reaches a registry.
+  * `scope-shadow` has FOUR `.cjs` children it shells out to, and the real ones
+    reach `gh api` and throw on a closure path absent from HEAD. The config-driven fakes `test_ci_scope_shadow.py` already ships stand in for all four, so the twelve scenarios can reach arms the real engine would never produce on demand: both kill switches, no shas at all, a resolved baseline with and without a greenlight grant, a baseline engine that crashes, a greenlight
+    engine that crashes, a plan writer that throws, a plan whose key set has drifted from scope-map's, an unusable plan mode, a real merge commit so `--classify` runs, and the three tri-state pre-existing conditions. The ledger re-emits `$OUT_DIR/plan.json` under a `[plan]` prefix as well, because the plan is the object this script exists to produce and the one the reconciler
+    audits.
+
+THE `node` STUB IS A PASS-THROUGH, and it earned its keep immediately. It logs the argv and execs the real binary, so the five inline `node -e` programs and the two `node <child>` invocations enter the comparison; ten of the twelve scenarios came back MISMATCH_FINDINGS on the first run. The cause was not a fixture artifact: a shell word closed by `'` includes the newline before
+that quote, so the twin hands node a program that both opens AND closes with `\\n`, while `test_ci_scope_shadow.py`'s extraction helper split on `"\\n'"` and consumed the closing one. All five carried constants in the port were one byte short. Inert to node, invisible to every stream comparison, and a real divergence in the recorded argv -- repaired in the port and in the helper,
+rather than normalised out of the ledger. A planted `--budget 91` was then watched red on the call log alone and restored green, which is the control for this pair.
+
+BOTH CUTOVERS REACH FURTHER THAN A WORKFLOW LINE, and the reach is what the tests below cannot see. `scope-shadow` had one `run:` in `ci.yml` and nothing else. `typecheck-workers` had that plus three `package.json` scripts (`check:types`, `typecheck`, `lint:unused`), its own `---- gate ----` header's `run:`, two `scripts/ci-runner/manifest.ts` leaves, and
+`scripts/gates/check-typecheck-scope-coverage.ts`, which resolved the clause by looking for a token ending in `.sh` and would have read every `workers/*/tsconfig.json` as uncovered the moment the clause stopped containing one.
 """
 
 from __future__ import annotations
@@ -127,10 +148,29 @@ PAIRS = {
         "rediacc_ci.deploy.wait_for_preview_worker",
         "worker",
     ),
+    "w7p4b-typecheck-workers": (
+        ".ci/scripts/quality/typecheck-workers.sh",
+        "rediacc_ci.quality.typecheck_workers",
+        "npx",
+    ),
+    # `node`, and the stub is a PASS-THROUGH. This script is a shell around five inline `node -e` programs and two `node <child>` invocations; what it exists to drive is node, and the argv is where the one divergence the third family found actually lived.
+    "w7p4b-scope-shadow": (
+        ".ci/scripts/ci/scope-shadow.sh",
+        "rediacc_ci.ci.scope_shadow",
+        "node",
+    ),
 }
 
 # A finding that is only the re-emitted status code. Five of these agree about two integers.
 EXIT_ONLY = re.compile(r"^\[error\] \[exit\] -?\d+$")
+
+# Pairs whose CALL SITE was deleted outright rather than cut over, with the commit that did it. A cutover assertion cannot be made about a job that no longer exists, and the two directions it polices split here: the twin must still be absent from the call sites (unchanged), but so must the port, because nothing runs either any more.
+#
+# `w7p4b-clone-d1` entered this set in `9ac3f6a42`, which removed `.github/workflows/edge-clone-d1.yml` -- a manual-dispatch job that passed `--sanitize`, whose PII-scrub SQL had been deleted in `57b61098c`, so it could not complete in either language. That commit kept the script and the port (the D1 migration test still drives them without the flag) and left this module asserting
+# that a workflow ran the port, so `pytest` over this file has been red since. Found on 2026-09-20 while adding the third family; repaired here rather than reported, because the repair is one entry and a branch.
+RETIRED_WITH_THEIR_WORKFLOW = {
+    "w7p4b-clone-d1": "9ac3f6a42 removed .github/workflows/edge-clone-d1.yml",
+}
 
 
 def _ledger(pair: str) -> pathlib.Path:
@@ -188,6 +228,14 @@ def _flatten(value: object) -> str:
     if isinstance(value, list):
         return "\n".join(_flatten(v) for v in value)
     return str(value)
+
+
+def test_the_retired_set_names_real_pairs() -> None:
+    """VACUITY FLOOR on the branch above. An entry for a pair that is not in `PAIRS` excuses nothing and reads as if it did."""
+    unknown = sorted(set(RETIRED_WITH_THEIR_WORKFLOW) - set(PAIRS))
+    assert not unknown, (
+        "RETIRED_WITH_THEIR_WORKFLOW names %s, which no pair is filed under" % unknown
+    )
 
 
 def test_the_pair_set_is_not_empty() -> None:
@@ -272,6 +320,14 @@ def test_the_call_site_was_actually_cut_over(pair: str) -> None:
         "keys strictly shrinks, and this path was counted as removed." % twin
     )
     text = _workflow_text()
+    if pair in RETIRED_WITH_THEIR_WORKFLOW:
+        assert ("python3 -m %s" % module) not in text, (
+            "%s is listed as retired with its workflow (%s), yet a workflow runs "
+            "`python3 -m %s`. Either the job came back, in which case this is an "
+            "ordinary cutover and the entry goes, or the entry names the wrong pair."
+            % (pair, RETIRED_WITH_THEIR_WORKFLOW[pair], module)
+        )
+        return
     assert ("python3 -m %s" % module) in text, (
         "no workflow runs `python3 -m %s`, so %s's ledger licenses a cutover that is "
         "not in the tree." % (module, pair)
@@ -293,12 +349,19 @@ def test_the_call_site_reader_can_still_see_a_call_site() -> None:
 
     `_call_site_text` narrows the search from the whole workflow text to `run:` and `with:` values, and a narrowing that returned nothing would pass every cutover assertion in this module for every pair, forever. So one path known to be LIVE has to be visible through it, and the two `breakpoint.yml` mentions of `ci-start-elite.sh` -- a `workflow_dispatch` input description and a
     comment, neither of which runs anything -- have to stay invisible.
+
+    THE WITNESS MOVED ONCE, on 2026-09-20, and that is the hazard this control carries: it used to be `scope-shadow.sh`, which the third family then cut over, at which point the control was asserting that an already-retired path was live. A witness has to be a path NO pair in `PAIRS` names, or the control expires the moment its subject is done. `lint.sh` is that: 52 `.ci/**/*.sh`
+    paths remain under a `run:` or `with:` key, and this one is the shortest-lived candidate only if someone ports it, which is when this line is expected to move again.
     """
     text = _call_site_text()
-    assert ".ci/scripts/ci/scope-shadow.sh" in text, (
-        "the call-site reader found no `run:` naming scope-shadow.sh, which ci.yml "
+    assert ".ci/scripts/quality/lint.sh" in text, (
+        "the call-site reader found no `run:` naming lint.sh, which ci-quality.yml "
         "still runs. Every cutover assertion in this module passes vacuously when "
         "this reader returns nothing."
+    )
+    assert ".ci/scripts/quality/lint.sh" not in {twin for twin, _, _ in PAIRS.values()}, (
+        "the witness path is itself a cut-over pair, so this control will start "
+        "asserting that a retired path is live the moment that pair lands."
     )
     assert "tunnel + desktop only" not in text, (
         "a workflow_dispatch input description reached the call-site reader, so it is "

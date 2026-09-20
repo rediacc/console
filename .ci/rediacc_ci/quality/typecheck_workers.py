@@ -3,13 +3,13 @@
 
 Typecheck every Cloudflare Worker under `workers/`, installing its deps first. The twin's header owns WHY this is a script rather than more `tsc -p` clauses in `package.json` (each worker is a separate npm project whose `@cloudflare/workers-types` resolves from ITS OWN `node_modules`), and that argument is not restated here.
 
-LIVE CALLER, NOT REPOINTED. The bash twin stays the registered gate: it is named by three `package.json` scripts (`check:types`, `typecheck`, `lint:unused`), twice in `scripts/ci-runner/manifest.ts` as a `leaves` entry, and twice in `scripts/gates/check-typecheck-scope-coverage.ts` as the `rootTypecheck` it shells out to for `--list`. This module is its verified-equivalent
-alternative, and the cutover is a separate, later, driver-only step.
+THIS FILE IS WHAT RUNS, since W7P4-b on 2026-09-20. Five surfaces moved together, because a cutover that leaves any one of them naming the twin is a half-cutover that reads as finished: the `Install worker project deps` step in `.github/workflows/ci-quality.yml`, the three `package.json` scripts (`check:types`, `typecheck`, `lint:unused`), both `scripts/ci-runner/manifest.ts`
+leaves, and `scripts/gates/check-typecheck-scope-coverage.ts`, which resolved the clause by finding a token ending in `.sh` and would have read every `workers/*/tsconfig.json` as UNCOVERED the moment there was no longer one to find.
 
-THE `---- gate ----` HEADER IS DELIBERATELY NOT COPIED. The twin carries one (`id: lint:unused`, `step: Unused exports (knip)`), and `scripts/ci-runner` derives the gate estate from those headers. A second copy of the block in this file would register the same gate id twice from two different files, which is a registry defect dressed up as fidelity. The twin owns the registration
-until the cutover moves it.
+THE `---- gate ----` HEADER STAYED ON THE TWIN, and the `run:` inside it moved with everything else. `gate-bind` requires a header's derived `run` to equal its `package.json` script byte for byte, so the block now reads `run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers --install && knip ...` from a file nothing executes. That is deliberate rather than
+overlooked: `lint:unused` is a COMPOSITE gate whose second clause is `knip`, so the header belongs to neither file more than the other, and moving it would re-derive `needs` under the `.py` rules for no behavioural gain. `check:ci-gate-bind` and `check:ci-parity` were both run green after the move.
 
-Ledger: `.ci/shadow/w7p6-typecheck-workers.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-typecheck-workers --assert --k 5`).
+Ledger: `.ci/shadow/w7p4b-typecheck-workers.observations.jsonl` -- nine rows, nine distinct clean trees, nine distinct finding sets (`npx tsx scripts/lib/shadow-gate.ts --pair w7p4b-typecheck-workers --assert --k 5`). The older `w7p6-typecheck-workers` ledger is superseded and not cited: its rows reach both sides through a fixture that no longer exists.
 
 -----------------------------------------------------------------------------
 `find | sort` IS CALLED, NOT REIMPLEMENTED

@@ -22,8 +22,9 @@
  * "covered" projects is the same promise this gate distrusts. The covered set is derived
  * from `package.json`'s `typecheck` script by walking what it actually invokes -- `tsc -b`
  * dirs, `-p`/`--project` paths, `npm run typecheck --workspace <pkg>` (recursed into that
- * package's own script), and a `.sh` step, which is asked for its set with `--list` so a
- * discovery-based step cannot drift from what this gate believes it covers.
+ * package's own script), and a discovery step (a `.sh` path or a `python3 -m` module),
+ * which is asked for its set with `--list` so a discovery-based step cannot drift from
+ * what this gate believes it covers.
  *
  * Usage:
  *   npx tsx scripts/gates/check-typecheck-scope-coverage.ts [--selftest]
@@ -53,8 +54,8 @@ export interface World {
   rootTypecheck: string;
   /** A workspace's own `typecheck` script, or null when it has none. */
   packageScript(pkgDir: string): string | null;
-  /** What a shell step reports it will typecheck, via its `--list` flag. */
-  shellList(script: string): string[];
+  /** What a discovery step reports it will typecheck, via its `--list` flag. */
+  listStep(clause: string): string[];
   /** The tsconfig a given tsconfig `extends`, repo-relative, or null. */
   extendsTarget(tsconfig: string): string | null;
   /** Every source file a project matches, repo-relative. */
@@ -81,9 +82,11 @@ function resolveClause(clause: string, cwd: string, world: World, depth = 0): st
   const c = clause.trim();
   if (!c || depth > 4) return [];
 
-  // `.ci/scripts/quality/typecheck-workers.sh` and any future shell step: ask it.
-  const shell = c.split(/\s+/).find((t) => t.endsWith('.sh'));
-  if (shell) return world.shellList(shell).map(norm);
+  // A DISCOVERY STEP -- one that finds its own tsconfigs on disk rather than naming them -- is asked for its set instead of being re-implemented here. Two spellings qualify: a `.sh` path, and the `python3 -m <module>` form the workers step took in W7P4-b. Matching on `.sh` alone made this clause silently stop applying the moment that step was ported: the ported clause names no
+  // `tsc`, so it fell through to the empty return below and every `workers/*/tsconfig.json` read as uncovered.
+  if (/(^|\s)\S+\.sh(\s|$)/.test(c) || /(^|\s)python3 -m \S+/.test(c)) {
+    return world.listStep(c).map(norm);
+  }
 
   // `npm run typecheck --workspace packages/www` -> that package's own script.
   const ws = c.match(/npm run (\S+)\s+--workspace[= ]+(\S+)/);
@@ -148,9 +151,8 @@ export function judge(world: World): Verdict {
   const known = new Set(world.discovered);
   const dangling = [...reached].filter((p) => !known.has(p) && !p.startsWith('private/'));
 
-  // THE SECOND HALF, and the one the 185 untypechecked packages/cli test files needed: a project being RUN says nothing about which files it matches. `packages/provisioning`
-  // was run and carried `exclude: ["src/**/*.test.ts"]`; every config here is run and 13
-  // tool configs (vitest.config.ts, playwright.*.config.ts) sat beside `include` patterns that reached past them. So ask each project what it actually compiles.
+  // THE SECOND HALF, and the one the 185 untypechecked packages/cli test files needed: a project being RUN says nothing about which files it matches. `packages/provisioning` was run and carried `exclude: ["src/**/*.test.ts"]`; every config here is run and 13 tool configs (vitest.config.ts, playwright.*.config.ts) sat beside `include` patterns that reached past them. So ask each
+  // project what it actually compiles.
   //
   // ONLY the projects the chain actually RUNS, never the whole `covered` list. A base excused by extension is not run, and the root tsconfig.json declares no `include`, so tsc reports it as matching every .ts in the repository. Counting that set made this very check answer "all compiled" for a planted orphan -- the gate reporting a success it had not verified, which is the failure
   // it exists to prevent. Found by planting.
@@ -183,7 +185,7 @@ function fakeWorld(over: Partial<World>): World {
     discovered: [],
     rootTypecheck: '',
     packageScript: () => null,
-    shellList: () => [],
+    listStep: () => [],
     extendsTarget: () => null,
     projectFiles: () => [],
     trackedSources: [],
@@ -218,20 +220,20 @@ CONTROLS.push(
     expect: (v) => v.uncovered.length === 0 && v.covered.length === 1,
   },
   {
-    name: 'a shell step is asked for its set (the workers shape)',
+    name: 'a discovery step is asked for its set (the workers shape)',
     world: fakeWorld({
       discovered: ['workers/a/tsconfig.json', 'workers/b/tsconfig.json'],
-      rootTypecheck: '.ci/scripts/quality/typecheck-workers.sh',
-      shellList: () => ['workers/a/tsconfig.json', 'workers/b/tsconfig.json'],
+      rootTypecheck: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers',
+      listStep: () => ['workers/a/tsconfig.json', 'workers/b/tsconfig.json'],
     }),
     expect: (v) => v.uncovered.length === 0,
   },
   {
-    name: 'a shell step that reports a SHORTER set leaves the rest uncovered',
+    name: 'a discovery step that reports a SHORTER set leaves the rest uncovered',
     world: fakeWorld({
       discovered: ['workers/a/tsconfig.json', 'workers/b/tsconfig.json'],
-      rootTypecheck: '.ci/scripts/quality/typecheck-workers.sh',
-      shellList: () => ['workers/a/tsconfig.json'],
+      rootTypecheck: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers',
+      listStep: () => ['workers/a/tsconfig.json'],
     }),
     expect: (v) => v.uncovered.join() === 'workers/b/tsconfig.json',
   },
@@ -338,8 +340,9 @@ function realWorld(): World {
       const pkg = JSON.parse(readFileSync(p, 'utf8')) as { scripts?: Record<string, string> };
       return pkg.scripts?.typecheck ?? null;
     },
-    shellList(script) {
-      return execFileSync(path.join(ROOT, script), ['--list'], { cwd: ROOT, encoding: 'utf8' })
+    listStep(clause) {
+      // THE WHOLE CLAUSE, through a shell, rather than one argv[0] and a flag. The workers step is `PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers`: three words, an environment assignment among them, and `execFileSync` on the first of them runs nothing.
+      return execFileSync('bash', ['-c', `${clause} --list`], { cwd: ROOT, encoding: 'utf8' })
         .split('\n')
         .map((s) => s.trim())
         .filter(Boolean);

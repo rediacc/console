@@ -1,5 +1,5 @@
 {
-  // Wired into `npm run typecheck` through .ci/scripts/quality/typecheck-workers.sh,
+  // Wired into `npm run typecheck` through `rediacc_ci.quality.typecheck_workers`,
   // which installs this project's deps first: `types` below resolves only from THIS
   // directory's node_modules, never the repo root.
   "compilerOptions": {

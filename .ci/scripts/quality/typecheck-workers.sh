@@ -3,7 +3,7 @@
 # step: Unused exports (knip)
 # needs: node
 # id: lint:unused
-# run: .ci/scripts/quality/typecheck-workers.sh --install && knip --treat-config-hints-as-errors
+# run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers --install && knip --treat-config-hints-as-errors
 # ---- end gate ----
 
 # Typecheck every Cloudflare Worker under workers/, installing its deps first.

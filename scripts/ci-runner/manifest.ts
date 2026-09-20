@@ -167,7 +167,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     heavy: true,
     mutex: ['www-src-probe'], // see check:i18n
-    leaves: ['.ci/scripts/quality/typecheck-workers.sh', 'knip'],
+    leaves: ['.ci/rediacc_ci/quality/typecheck_workers.py', 'knip'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -672,7 +672,7 @@ export const GATES: readonly GateSpec[] = [
     mutex: ['build-artifacts'],
     heavy: true,
     // `astro` ADDED 2026-09-06, and its absence was not an oversight in this entry -- it was invisible. check-ci-parity.ts resolved `--workspace` only as a package NAME, so `npm run typecheck --workspace packages/www` fell through to the ROOT manifest and the astro leaf never reached the parity surface. Fixing the resolver surfaced it on the first run.
-    leaves: ['tsc', 'astro', '.ci/scripts/quality/typecheck-workers.sh'],
+    leaves: ['tsc', 'astro', '.ci/rediacc_ci/quality/typecheck_workers.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1987,8 +1987,8 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // The parity half of scripts/gen/gen-docs.ts, and the reason it is NOT a strict subset of gate-test:docs-gen: gen-docs DISCOVERS its targets by scanning for markers and refuses only when the target list is EMPTY, while that gate test asserts merely that one target was found. So a document that loses its markers stops being checked instead of failing, silently, with both
-    // green. Measured: strip CLAUDE.md's two marker lines and gen-docs still exits 0 saying `ok CLAUDE.md`. That is the rediacc/console#549 class and invariant 1, an emitter landing without its checker.
+    // The parity half of scripts/gen/gen-docs.ts, and the reason it is NOT a strict subset of gate-test:docs-gen: gen-docs DISCOVERS its targets by scanning for markers and refuses only when the target list is EMPTY, while that gate test asserts merely that one target was found. So a document that loses its markers stops being checked instead of failing, silently, with both green.
+    // Measured: strip CLAUDE.md's two marker lines and gen-docs still exits 0 saying `ok CLAUDE.md`. That is the rediacc/console#549 class and invariant 1, an emitter landing without its checker.
     //
     // No `paths:` DELIBERATELY. Its providers read the gates lock, the hook wiring, every tracked file carrying BLOCKER: and the whole .ci tree, so any list short of "the repository" is wrong, and a half-populated one makes --changed drop the gate silently.
     id: 'check:ci-doc-region-parity',

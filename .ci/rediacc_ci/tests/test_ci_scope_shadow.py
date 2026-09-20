@@ -279,12 +279,19 @@ def assert_same(old: tuple[int, str, str, str], new: tuple[int, str, str, str]) 
 
 
 def _twin_node_bodies() -> list[str]:
+    """Each `node -e '...'` payload, INCLUDING the newline that closes it.
+
+    The `+ "\\n"` is not cosmetic and it is not a guess. A single-quoted shell word runs to the closing quote, so the byte before it belongs to the program: bash hands node `\\nconst fs = ...;\\n`, opening AND closing with a newline. Splitting on `"\\n'"` consumes the closing one, and a port built against this helper was therefore one byte short in all five payloads -- inert
+    to node, and a divergence in the recorded argv the moment anything logs it.
+
+    Found on 2026-09-20 while recording `w7p4b-scope-shadow` behind a pass-through `node` stub: the twin's call log split the payload's last line from the trailing arguments and the port's did not, on ten of twelve scenarios. Repaired in the port rather than normalised away in the ledger.
+    """
     text = TWIN.read_text(encoding="utf-8")
-    return [chunk.split("\n'")[0] for chunk in text.split("node -e '")[1:]]
+    return [chunk.split("\n'")[0] + "\n" for chunk in text.split("node -e '")[1:]]
 
 
 def test_the_five_node_programs_are_verbatim() -> None:
-    """Both directions: the twin still has five, and each one still matches."""
+    """Both directions: the twin still has five, and each one still matches, to the byte."""
     bodies = _twin_node_bodies()
     assert len(bodies) == 5, "the twin now passes %d inline programs to node" % len(bodies)
     carried = [

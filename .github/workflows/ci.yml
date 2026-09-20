@@ -299,7 +299,7 @@ jobs:
       # PR traffic behind it.
       #
       # What "live" does and does not mean here. The step still always exits 0
-      # (scope-shadow.sh ends in an unconditional `exit 0` and every command
+      # (rediacc_ci.ci.scope_shadow ends in an unconditional `return 0` and every command
       # inside it is `|| true`-guarded), and it still emits nothing but
       # `run_<key>=false` lines for keys it rules OUT. So a failure, a timeout,
       # or a shallow clone produces no output lines at all, every consumer's
@@ -308,7 +308,7 @@ jobs:
       # reason: the script owns its own success, which keeps the guarantee
       # where the logic is.
       #
-      # OUTPUT_FILE is REQUIRED, not decoration. scope-shadow.sh treats an
+      # OUTPUT_FILE is REQUIRED, not decoration. rediacc_ci.ci.scope_shadow treats an
       # unset OUTPUT_FILE as "local run, decide nothing" and returns before
       # writing a single line, so dropping this prefix does not fall back to
       # $GITHUB_OUTPUT -- it silently disables scoping while every log line
@@ -345,7 +345,7 @@ jobs:
           FULL_SUITE: ${{ github.event_name != 'push' }}
           POINTER_BUMP_ONLY: ${{ steps.init.outputs.pointer_bump_only }}
           IS_BOT: ${{ steps.init.outputs.is_bot }}
-        run: OUTPUT_FILE="$GITHUB_OUTPUT" .ci/scripts/ci/scope-shadow.sh
+        run: OUTPUT_FILE="$GITHUB_OUTPUT" PYTHONPATH=.ci python3 -m rediacc_ci.ci.scope_shadow
 
       # if-no-files-found: ignore is what makes this succeed unconditionally:
       # the shadow step may legitimately produce neither file (no base/head
