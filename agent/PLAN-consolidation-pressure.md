@@ -35,8 +35,8 @@ A plan about eliminating duplication had duplicated an existing plan. The rule t
 - [x] Wire the same refusal into the pre-bash commit, push and gh guards, so the proof is demanded where the change leaves the tree
 - [x] Add the pre-bash staged-files-only duplication probe against a cached index, budget 200ms, failing OPEN and LOUD when the cache is stale. Done in `e7d882261`, redesigned Plan-first: see `agent/PLAN-staged-duplication-probe.md`.
 - [x] Record the batch-size-scales-with-proof rule in docs/agent-reference/TRAPS.md with a Trap-Id and an Enforced-By pointer
-The two family-widening boxes this plan started with are GONE rather than ticked-by-doing, and that is the fold. `agent/PLAN-extension-shaped-matchers.md` owns commit 3, has re-checked its sequencing three times, and has deliberately not started it; carrying a duplicate box here would be this plan committing the defect it was written to detect. The operator's question about
-seeding versus draining belongs to that plan and to the numbers it re-measures, not to this one.
+The two family-widening boxes this plan started with are GONE rather than ticked-by-doing, and that is the fold. `agent/PLAN-extension-shaped-matchers.md` owns commit 3, has re-checked its sequencing three times, and has deliberately not started it; carrying a duplicate box here would be this plan committing the defect it was written to detect. The operator's question about seeding
+versus draining belongs to that plan and to the numbers it re-measures, not to this one.
 
 WHY THE PROBE'S DESIGN CHANGED. The plan assumed a cheap staged-files check could be built beside `block_unproven_bulk_transform.py`. Reading `scripts/gates/check-shape-duplication.ts` showed that `isSharedHelperCall` derives its helper names from the whole corpus (a module two or more files import is shared by observation) and `stripNoise` carries per-language quirks, so a Python
 port would be a second implementation of one decision, the exact class of the four incidents above. The operator ruled Plan-first, and a Plan agent is designing a mechanism in which the normalization stays in one place.
@@ -54,8 +54,8 @@ The through-line: a policy existed in one place and was silently absent from its
 
 ## Why duplication detection is the wrong instrument, and agreement detection is the right one
 
-`scripts/gates/check-shape-duplication.ts` is 1,553 lines hashing 5-line windows across four families with a seeded baseline and per-family floors, and `.claude/hooks/stop/wl_shapedup.py` is 403 lines routing its findings into the stop judge. That machinery exists and works, so proposing a third-party clone detector beside it would be a second implementation of a question this tree
-already answers, which is incident 1 in miniature.
+`scripts/gates/check-shape-duplication.ts` is a large gate (about 1,950 lines after the probe work added an index emitter) hashing 5-line windows across four families with a seeded baseline and per-family floors, and `.claude/hooks/stop/wl_shapedup.py` routes its findings into the stop judge. That machinery exists and works, so proposing a third-party clone detector beside it would
+be a second implementation of a question this tree already answers, which is incident 1 in miniature.
 
 It would also not have caught any of the four. It strips comments and literals and does not normalise identifiers, so two functions with different bodies making one decision produce no matching window. The gap is not duplication, it is AGREEMENT: two consumers of one policy, or two implementations of one decision, with nothing comparing their answers.
 
