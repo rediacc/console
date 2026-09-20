@@ -89,6 +89,24 @@ test_event_interpolation_in_run_fails() {
     log_pass "github.event.* is banned inside run blocks and only there"
 }
 
+test_harness_python_without_safe_path_fails() {
+    # Drop `-P` from one harness invocation. The model job's cwd is the
+    # PR-authored checkout, and `-m` puts cwd ahead of PYTHONPATH on sys.path,
+    # so without -P a branch-supplied rediacc_ci/ at the repo root runs in
+    # place of the trusted harness module.
+    sed 's|\(PYTHONPATH="\$RUNNER_TEMP/[^"]*" python3\) -P |\1 |' "$REAL" >"$WORK/no-safe-path.yml"
+    assert_mutated "$WORK/no-safe-path.yml"
+    assert_eq "$(run_gate "$WORK/no-safe-path.yml")" "1" "a harness python3 without -P must fail"
+    assert_contains "$(err)" "INVARIANT-FAIL: harness-python-workspace-on-path" "as harness-python-workspace-on-path"
+    # CONTROL for the scope: the real file runs python3 from the WORKSPACE too
+    # (the gate, finish, escalate and sweeper jobs, whose cwd is the trusted
+    # main checkout), and those carry no -P. The clean run above proves the
+    # rule does not reach them.
+    grep -q '^          PYTHONPATH=\.ci python3 -m ' "$REAL" ||
+        log_fail "expected the real workflow to run a workspace-relative python3 -m with no -P"
+    log_pass "a harness invocation cannot let the PR-authored cwd shadow the trusted module"
+}
+
 test_token_before_model_fails() {
     perl -pe 'print qq{      - name: Premature token\n        uses: ./.github/actions/app-token\n} if /^      - name: Model round$/' \
         "$REAL" >"$WORK/pre-token.yml"
@@ -218,6 +236,7 @@ test_real_workflow_passes
 test_missing_workflow_fails_closed
 test_wall4_comment_is_required
 test_event_interpolation_in_run_fails
+test_harness_python_without_safe_path_fails
 test_token_before_model_fails
 test_token_in_gate_fails
 test_persisted_credentials_fail

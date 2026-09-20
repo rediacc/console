@@ -249,7 +249,7 @@ jobs:
         run: |
           applier="$(gh api "repos/$REPO/issues/$PR/timeline" --paginate --jq '[.[] | select(.event=="labeled" and .label.name==env.LABEL)] | (last.actor.login // "")')"
           rc=0
-          PR_NUMBER="$PR" .ci/scripts/quality/check-resolved-threads.sh >/dev/null 2>&1 || rc=$?
+          PR_NUMBER="$PR" PYTHONPATH=.ci python3 -m rediacc_ci.quality.resolved_threads >/dev/null 2>&1 || rc=$?
           threads="$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
           red="$(gh api "repos/$REPO/commits/$HEAD_SHA/check-runs?check_name=Review%20Complete" --jq '([.check_runs[] | select(.conclusion == "failure")] | length) > 0')"
           jq --arg a "$applier" --argjson t "$threads" --argjson r "$red" '. + {label_applier: $a, unresolved_threads: $t, review_gate_red: $r}' "$RUNNER_TEMP/fx/pr-core.json" >"$RUNNER_TEMP/fx/pr.json"
@@ -286,12 +286,12 @@ jobs:
         run: |
           rc=0
           gh pr view "$PR" --repo "$REPO" --json body --jq '.body // ""' >"$RUNNER_TEMP/fx/pr-body.md" || true
-          .ci/scripts/autopilot/fetch-review-threads.sh --pr "$PR" --repo "$REPO" --body "$RUNNER_TEMP/fx/pr-body.md" --out "$RUNNER_TEMP/fx/review-threads.json" || rc=$?
+          PYTHONPATH=.ci python3 -m rediacc_ci.autopilot.fetch_review_threads --pr "$PR" --repo "$REPO" --body "$RUNNER_TEMP/fx/pr-body.md" --out "$RUNNER_TEMP/fx/review-threads.json" || rc=$?
           if [ "$rc" -ne 0 ]; then
             echo "::warning::autopilot gate: review threads could not be fetched; a review-response round will refuse rather than run on a partial payload"
             exit 0
           fi
-          .ci/scripts/autopilot/review-payload.sh --threads "$RUNNER_TEMP/fx/review-threads.json" --author-filter github-actions --out "$RUNNER_TEMP/fx/review-payload.json"
+          PYTHONPATH=.ci python3 -m rediacc_ci.autopilot.review_payload --threads "$RUNNER_TEMP/fx/review-threads.json" --author-filter github-actions --out "$RUNNER_TEMP/fx/review-payload.json"
 
       - name: Select the trusted state comment
         id: state
@@ -302,7 +302,7 @@ jobs:
         run: |
           # --slurp, and it is load-bearing: `--paginate --jq` applies the
           # filter PER PAGE and concatenates, so a PR past 30 comments wrote
-          # two top-level arrays into this file and state-comment.sh select
+          # two top-level arrays into this file and `state_comment select`
           # then emitted two verdicts. --slurp wraps the pages first, and
           # `.[][]` flattens them back into one comment stream. The jq step is
           # a SEPARATE pipe: the runner's gh refuses `--slurp` combined with
@@ -310,7 +310,7 @@ jobs:
           # 2026-08-09 while the local gh accepted it happily.
           gh api "repos/$REPO/issues/$PR/comments" --paginate --slurp >"$RUNNER_TEMP/fx/comments.raw.json"
           jq '[.[][] | {id, author: .user.login, body}]' "$RUNNER_TEMP/fx/comments.raw.json" >"$RUNNER_TEMP/fx/comments.json"
-          sel="$(.ci/scripts/autopilot/state-comment.sh select --comments "$RUNNER_TEMP/fx/comments.json" --bot "$BOT")"
+          sel="$(PYTHONPATH=.ci python3 -m rediacc_ci.autopilot.state_comment select --comments "$RUNNER_TEMP/fx/comments.json" --bot "$BOT")"
           jq -r '.body // ""' <<<"$sel" >"$RUNNER_TEMP/fx/state.txt"
           echo "comment_id=$(jq -r '.id // ""' <<<"$sel")" >>"$GITHUB_OUTPUT"
 
@@ -327,7 +327,7 @@ jobs:
           AUTOPILOT_LABEL: ${{ vars.AUTOPILOT_LABEL }}
           AUTOPILOT_MAX_ROUNDS: ${{ vars.AUTOPILOT_MAX_ROUNDS }}
         run: |
-          .ci/scripts/autopilot/autopilot-gate.sh --classify --event "$RUNNER_TEMP/fx/event.json" --pr "$RUNNER_TEMP/fx/pr.json" --state "$RUNNER_TEMP/fx/state.txt" --failed-jobs "$RUNNER_TEMP/fx/failed-jobs.txt" --watchdog "$RUNNER_TEMP/fx/watchdog.txt" >"$RUNNER_TEMP/fx/decision.json"
+          PYTHONPATH=.ci python3 -m rediacc_ci.autopilot.autopilot_gate --classify --event "$RUNNER_TEMP/fx/event.json" --pr "$RUNNER_TEMP/fx/pr.json" --state "$RUNNER_TEMP/fx/state.txt" --failed-jobs "$RUNNER_TEMP/fx/failed-jobs.txt" --watchdog "$RUNNER_TEMP/fx/watchdog.txt" >"$RUNNER_TEMP/fx/decision.json"
           cat "$RUNNER_TEMP/fx/decision.json"
           cat "$RUNNER_TEMP/fx/decision.json" >>"$GITHUB_STEP_SUMMARY"
           for k in decision mode reason round model rounds_max campaign dispatch_trusted sig sig_count; do
@@ -411,6 +411,15 @@ jobs:
       # $RUNNER_TEMP survives both the PR-head checkout (which empties the
       # workspace) and the action's untracked-file reset; proven the hard way
       # by the review pipeline (claude-review-reusable.yml).
+      # AND EVERY HARNESS COMMAND BELOW PASSES `python3 -P`, which is wall 4
+      # again, one layer down. `-m` puts the CURRENT DIRECTORY at the head of
+      # sys.path, ahead of PYTHONPATH, and from the PR-head checkout onwards
+      # this job's cwd is PR-authored: a branch that adds `rediacc_ci/` at the
+      # repo root would run in place of the trusted copy staged here, with no
+      # checkout and no hook involved. `-P` switches that entry off, and
+      # `harness-python-workspace-on-path` in the invariants gate is what keeps
+      # it on every such line. The other four jobs run python3 from a trusted
+      # `main` checkout and need no such flag.
       - name: Stage harness outside the workspace
         run: |
           rm -rf "$RUNNER_TEMP/harness"
@@ -419,7 +428,7 @@ jobs:
 
       - name: Snapshot trusted agent config
         run: |
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/restore-trusted-config.sh" snapshot --checkout "$GITHUB_WORKSPACE" --snapshot "$RUNNER_TEMP/trusted-config"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.restore_trusted_config snapshot --checkout "$GITHUB_WORKSPACE" --snapshot "$RUNNER_TEMP/trusted-config"
 
       # PR-AUTHORED CONTENT enters here, and only here. persist-credentials
       # MUST stay false: the model reads attacker-influenceable text with
@@ -445,14 +454,14 @@ jobs:
       # the hooks that execute during the model step are main's hooks.
       - name: Restore trusted agent config over the PR checkout
         run: |
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/restore-trusted-config.sh" restore --checkout "$GITHUB_WORKSPACE" --snapshot "$RUNNER_TEMP/trusted-config" --quarantine "$RUNNER_TEMP/quarantine"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.restore_trusted_config restore --checkout "$GITHUB_WORKSPACE" --snapshot "$RUNNER_TEMP/trusted-config" --quarantine "$RUNNER_TEMP/quarantine"
 
       # The control, live in production: if the restore above ever stops
       # holding, this dies before the model gets a shell.
       - name: Assert the protected set matches the trusted snapshot
         id: restore_assert
         run: |
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/restore-trusted-config.sh" assert --checkout "$GITHUB_WORKSPACE" --snapshot "$RUNNER_TEMP/trusted-config"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.restore_trusted_config assert --checkout "$GITHUB_WORKSPACE" --snapshot "$RUNNER_TEMP/trusted-config"
 
       # TRIPWIRE, copied from claude-review-reusable.yml: if anyone
       # re-introduces persisted credentials on the PR-head checkout, die here
@@ -494,7 +503,7 @@ jobs:
           TEMPLATE: ${{ steps.template.outputs.file }}
           MODE: ${{ needs.gate.outputs.mode }}
         run: |
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/compose-prompt.sh" --prompts "$RUNNER_TEMP/harness/.ci/scripts/autopilot/prompts" --fx "$RUNNER_TEMP/fx" --template "$TEMPLATE" --mode "$MODE" --out "$RUNNER_TEMP/prompt.md"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.compose_prompt --prompts "$RUNNER_TEMP/harness/.ci/scripts/autopilot/prompts" --fx "$RUNNER_TEMP/fx" --template "$TEMPLATE" --mode "$MODE" --out "$RUNNER_TEMP/prompt.md"
 
       # claude_args is assembled HERE, from env, rather than interpolated at
       # the call site: the model is now a dispatch input carried in the
@@ -525,7 +534,7 @@ jobs:
           EFFORT: ${{ inputs.effort }}
           AUTOPILOT_EFFORT: ${{ vars.AUTOPILOT_EFFORT }}
         run: |
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/resolve-model-args.sh" --model "$MODEL" --mode "$MODE" --effort "$EFFORT" --effort-var "$AUTOPILOT_EFFORT"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.resolve_model_args --model "$MODEL" --mode "$MODE" --effort "$EFFORT" --effort-var "$AUTOPILOT_EFFORT"
 
       # NO WRITE TOKEN: github_token carries this job's contents:read grant,
       # comments and pushes are impossible from inside the model, and the app
@@ -742,7 +751,7 @@ jobs:
         run: |
           args=(--root "$GITHUB_WORKSPACE" --handoff "$GITHUB_WORKSPACE/handoff.json" --branch "$HEAD_BRANCH" --failed-jobs "$RUNNER_TEMP/fx/failed-jobs.txt" --verdict-out "$RUNNER_TEMP/verdict.json")
           [ "$AUTOPILOT_ALLOW_PUSH" = "true" ] || args+=(--dry-run)
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/autopilot-push.sh" "${args[@]}"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.autopilot_push "${args[@]}"
           echo "outcome=$(jq -r '.outcome // "none"' "$RUNNER_TEMP/verdict.json")" >>"$GITHUB_OUTPUT"
 
       # S4 evidence: the would-be commit, uploaded only when the tripwire
@@ -782,7 +791,7 @@ jobs:
           PR: ${{ needs.gate.outputs.pr_number }}
           HEAD_BRANCH: ${{ needs.gate.outputs.head_branch }}
         run: |
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/submodule-prs.sh" --verdict "$RUNNER_TEMP/verdict.json" --repo "$REPO" --pr "$PR" --branch "$HEAD_BRANCH"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.submodule_prs --verdict "$RUNNER_TEMP/verdict.json" --repo "$REPO" --pr "$PR" --branch "$HEAD_BRANCH"
 
       # ESCALATE, in full: the model's reason and any proposed patch reach the
       # PR as data, then the latch goes on. Model text is extracted with jq
@@ -797,7 +806,7 @@ jobs:
           ROUND: ${{ needs.gate.outputs.round }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/post-escalation.sh" --pr "$PR" --repo "$REPO" --title "the round escalated" --round "$ROUND" --verdict "$RUNNER_TEMP/verdict.json" --run-url "$RUN_URL"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.post_escalation --pr "$PR" --repo "$REPO" --title "the round escalated" --round "$ROUND" --verdict "$RUNNER_TEMP/verdict.json" --run-url "$RUN_URL"
 
       # The other half of the review-response contract: the model recorded
       # dispositions, the harness answers and resolves. A round that escalated
@@ -814,8 +823,8 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
           AUTOPILOT_ALLOW_PUSH: ${{ vars.AUTOPILOT_ALLOW_PUSH }}
         run: |
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/review-reply.sh" plan --verdict "$RUNNER_TEMP/verdict.json" --threads "$RUNNER_TEMP/fx/review-payload.json" --out "$RUNNER_TEMP/reply-plan.json"
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/review-reply.sh" apply --plan "$RUNNER_TEMP/reply-plan.json"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.review_reply plan --verdict "$RUNNER_TEMP/verdict.json" --threads "$RUNNER_TEMP/fx/review-payload.json" --out "$RUNNER_TEMP/reply-plan.json"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.review_reply apply --plan "$RUNNER_TEMP/reply-plan.json"
 
       # A review round that pushed nothing produces no CI run, hence no
       # workflow_run, hence no next round: the loop would stop with the Review
@@ -832,7 +841,7 @@ jobs:
           AUTOPILOT_ALLOW_PUSH: ${{ vars.AUTOPILOT_ALLOW_PUSH }}
           PR: ${{ needs.gate.outputs.pr_number }}
         run: |
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/finish.sh" rerun-review --pr "$PR" --repo "$REPO"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.finish rerun-review --pr "$PR" --repo "$REPO"
 
       # THE LEDGER IS NEVER OPTIONAL (03-v2-autonomy.md section 0): autopilot
       # commits are attributed to the operator, and this comment is the audit
@@ -866,7 +875,7 @@ jobs:
         run: |
           run_id="$(jq -r '.workflow_run.id' "$RUNNER_TEMP/fx/event.json")"
           attempt="$(jq -r '.workflow_run.run_attempt // 1' "$RUNNER_TEMP/fx/event.json")"
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/update-state.sh" --pr "$PR" --repo "$REPO" --comment-id "$COMMENT_ID" --body "$RUNNER_TEMP/fx/state.txt" --state waiting-ci --round "$ROUND" --rounds-max "$MAX_ROUNDS" --head "$(git rev-parse HEAD)" --last-run "$run_id/$attempt handled" --ledger "$(jq -r '.ledger_line' "$RUNNER_TEMP/verdict.json")" --verdict "$RUNNER_TEMP/verdict.json" --campaign "$CAMPAIGN" --model "$MODEL" --last-sig "$SIG" --sig-count "$SIG_COUNT"
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.update_state --pr "$PR" --repo "$REPO" --comment-id "$COMMENT_ID" --body "$RUNNER_TEMP/fx/state.txt" --state waiting-ci --round "$ROUND" --rounds-max "$MAX_ROUNDS" --head "$(git rev-parse HEAD)" --last-run "$run_id/$attempt handled" --ledger "$(jq -r '.ledger_line' "$RUNNER_TEMP/verdict.json")" --verdict "$RUNNER_TEMP/verdict.json" --campaign "$CAMPAIGN" --model "$MODEL" --last-sig "$SIG" --sig-count "$SIG_COUNT"
 
       # Escalation latch: any red above (validator, tripwire, restore assert)
       # applies autopilot-blocked so the gate refuses further rounds until a
@@ -884,7 +893,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           STEPS: restore=${{ steps.restore_assert.conclusion }},model=${{ steps.claude.conclusion }},boundary=${{ steps.boundary.conclusion }},submodules=${{ steps.submodules.conclusion }},escalation=${{ steps.escalation.conclusion }},reply=${{ steps.reply.conclusion }},state=${{ steps.state_update.conclusion }}
         run: |
-          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/post-escalation.sh" --pr "$PR" --repo "$REPO" --title "the round failed" --round "$ROUND" --steps "$STEPS" --run-url "$RUN_URL" || true
+          PYTHONPATH="$RUNNER_TEMP/harness/.ci" python3 -P -m rediacc_ci.autopilot.post_escalation --pr "$PR" --repo "$REPO" --title "the round failed" --round "$ROUND" --steps "$STEPS" --run-url "$RUN_URL" || true
           echo "::error::autopilot round failed; escalation label applied"
 
   finish:
@@ -940,7 +949,8 @@ jobs:
           preset: cd
           repositories: console
 
-      # finish.sh gates its writes on AUTOPILOT_ALLOW_PUSH; the finish STAGE
+      # `rediacc_ci.autopilot.finish` gates its writes on AUTOPILOT_ALLOW_PUSH;
+      # the finish STAGE
       # is armed by AUTOPILOT_ALLOW_FINISH (S3 precedes S5), so the flag is
       # mapped here, deliberately and visibly.
       - name: Ready-flip
@@ -950,10 +960,11 @@ jobs:
           AUTOPILOT_ALLOW_PUSH: ${{ vars.AUTOPILOT_ALLOW_FINISH }}
           PR: ${{ needs.gate.outputs.pr_number }}
         run: |
-          .ci/scripts/autopilot/finish.sh ready-flip --pr "$PR" --repo "$REPO"
+          PYTHONPATH=.ci python3 -m rediacc_ci.autopilot.finish ready-flip --pr "$PR" --repo "$REPO"
 
       # Same flag mapping as the ready-flip above, and for the same reason:
-      # finish.sh gates its writes on AUTOPILOT_ALLOW_PUSH while the finish
+      # `rediacc_ci.autopilot.finish` gates its writes on AUTOPILOT_ALLOW_PUSH
+      # while the finish
       # STAGE is armed by AUTOPILOT_ALLOW_FINISH (S3 precedes S5).
       - name: Re-request the review gate
         if: needs.gate.outputs.mode == 'rerun-review'
@@ -962,7 +973,7 @@ jobs:
           AUTOPILOT_ALLOW_PUSH: ${{ vars.AUTOPILOT_ALLOW_FINISH }}
           PR: ${{ needs.gate.outputs.pr_number }}
         run: |
-          .ci/scripts/autopilot/finish.sh rerun-review --pr "$PR" --repo "$REPO"
+          PYTHONPATH=.ci python3 -m rediacc_ci.autopilot.finish rerun-review --pr "$PR" --repo "$REPO"
 
       # A RERUN ROUND MUST LEAVE A LEDGER LINE. Every gate invocation has to
       # end in a push, a bounded deterministic step, or no action at all
@@ -988,7 +999,7 @@ jobs:
         run: |
           run_id="$(jq -r '.workflow_run.id' "$RUNNER_TEMP/fx/event.json")"
           attempt="$(jq -r '.workflow_run.run_attempt // 1' "$RUNNER_TEMP/fx/event.json")"
-          .ci/scripts/autopilot/update-state.sh --pr "$PR" --repo "$REPO" --comment-id "$COMMENT_ID" --body "$RUNNER_TEMP/fx/state.txt" --state waiting-review --round "$ROUND" --rounds-max "$MAX_ROUNDS" --head "$HEAD_SHA" --last-run "$run_id/$attempt handled" --ledger "r$ROUND | run $run_id/$attempt | rerun-review: re-requested the review gate, no model" --campaign "$CAMPAIGN" --model "$MODEL" --last-sig "$SIG" --sig-count "$SIG_COUNT"
+          PYTHONPATH=.ci python3 -m rediacc_ci.autopilot.update_state --pr "$PR" --repo "$REPO" --comment-id "$COMMENT_ID" --body "$RUNNER_TEMP/fx/state.txt" --state waiting-review --round "$ROUND" --rounds-max "$MAX_ROUNDS" --head "$HEAD_SHA" --last-run "$run_id/$attempt handled" --ledger "r$ROUND | run $run_id/$attempt | rerun-review: re-requested the review gate, no model" --campaign "$CAMPAIGN" --model "$MODEL" --last-sig "$SIG" --sig-count "$SIG_COUNT"
 
       - name: Done detection
         if: needs.gate.outputs.mode == 'done'
@@ -996,7 +1007,7 @@ jobs:
           PR: ${{ needs.gate.outputs.pr_number }}
         run: |
           jq '{ci_green: true, draft, unresolved_threads, reviewed: (.review_gate_red | not)}' "$RUNNER_TEMP/fx/pr.json" >"$RUNNER_TEMP/done.json"
-          .ci/scripts/autopilot/finish.sh check-done --pr "$RUNNER_TEMP/done.json"
+          PYTHONPATH=.ci python3 -m rediacc_ci.autopilot.finish check-done --pr "$RUNNER_TEMP/done.json"
           echo "::notice::autopilot: done-conditions hold for PR #$PR"
 
       # A campaign that is never closed is a loop with no terminating state:
@@ -1023,7 +1034,7 @@ jobs:
           [ -n "$COMMENT_ID" ] || exit 0
           run_id="$(jq -r '.workflow_run.id' "$RUNNER_TEMP/fx/event.json")"
           attempt="$(jq -r '.workflow_run.run_attempt // 1' "$RUNNER_TEMP/fx/event.json")"
-          .ci/scripts/autopilot/update-state.sh --pr "$PR" --repo "$REPO" --comment-id "$COMMENT_ID" --body "$RUNNER_TEMP/fx/state.txt" --state "done" --round "$ROUND" --rounds-max "$MAX_ROUNDS" --head "$HEAD_SHA" --last-run "$run_id/$attempt handled" --campaign "$CAMPAIGN" --model "$MODEL" --last-sig "$SIG" --sig-count "$SIG_COUNT"
+          PYTHONPATH=.ci python3 -m rediacc_ci.autopilot.update_state --pr "$PR" --repo "$REPO" --comment-id "$COMMENT_ID" --body "$RUNNER_TEMP/fx/state.txt" --state "done" --round "$ROUND" --rounds-max "$MAX_ROUNDS" --head "$HEAD_SHA" --last-run "$run_id/$attempt handled" --campaign "$CAMPAIGN" --model "$MODEL" --last-sig "$SIG" --sig-count "$SIG_COUNT"
 
   # A gate no-go is normally silent and free, which is right for `not-armed`,
   # `already-handled` or `superseded` -- nothing has ended. Two are different
@@ -1097,7 +1108,7 @@ jobs:
           REASON: ${{ needs.gate.outputs.reason }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          .ci/scripts/autopilot/post-escalation.sh --pr "$PR" --repo "$REPO" --title "the campaign stopped" --round "$ROUND" --reason "$REASON" --run-url "$RUN_URL"
+          PYTHONPATH=.ci python3 -m rediacc_ci.autopilot.post_escalation --pr "$PR" --repo "$REPO" --title "the campaign stopped" --round "$ROUND" --reason "$REASON" --run-url "$RUN_URL"
 
   sweeper:
     name: Autopilot Sweeper
@@ -1139,7 +1150,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           BOT: ${{ vars.AUTOPILOT_BOT_LOGIN || 'rediacc-autopilot[bot]' }}
         run: |
-          .ci/scripts/autopilot/sweep-collect.sh --repo "$REPO" --label "$LABEL" --bot "$BOT" --work "$RUNNER_TEMP/sweep" --out "$RUNNER_TEMP/sweep/armed.txt"
+          PYTHONPATH=.ci python3 -m rediacc_ci.autopilot.sweep_collect --repo "$REPO" --label "$LABEL" --bot "$BOT" --work "$RUNNER_TEMP/sweep" --out "$RUNNER_TEMP/sweep/armed.txt"
 
       - name: Mint dispatch token
         id: app_token

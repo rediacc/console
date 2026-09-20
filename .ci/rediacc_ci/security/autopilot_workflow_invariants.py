@@ -14,6 +14,8 @@ each:
   trusted-checkout-not-first   a job's FIRST checkout must be rediacc/console@main
   persist-credentials          every checkout must set persist-credentials: false
   event-interpolation-in-run   no `github.event.` inside a run: block scalar
+  harness-python-workspace-on-path
+                               a harness `python3` invocation passes -P, so the PR-authored cwd cannot shadow the trusted module
   token-in-gate                the gate job decides with zero write capability
   token-before-model           no app-token step at or before the model step
   track-progress-armed         track_progress must stay the literal false
@@ -88,6 +90,8 @@ RE_BLANK = re.compile("^" + SP + "*$")
 RE_JOB_HEADER = re.compile("^  [A-Za-z_][A-Za-z0-9_-]*:" + SP + "*$")
 RE_STEP_MARKER = re.compile("^" + SP + r"*-" + SP + "+(name|uses):")
 RE_EVENT = re.compile(r"github\.event\.")
+RE_HARNESS_PYTHONPATH = re.compile(r'PYTHONPATH="\$RUNNER_TEMP/')
+RE_PYTHON_SAFE_PATH = re.compile("python3" + SP + "+-P" + SP)
 RE_RUN_BLOCK = re.compile("^" + SP + "*run:" + SP + r"*[|>]")
 RE_SUBMODULES = re.compile("^" + SP + "*submodules:" + SP + "*")
 RE_SUBMODULES_FALSE = re.compile("submodules:" + SP + "*.?false.?" + SP + "*$")
@@ -177,6 +181,16 @@ def walk(text: str) -> list[tuple[str, str, str]]:
         # Inside a run: block, payload interpolation is the injection surface.
         if in_run and not is_comment and RE_EVENT.search(line):
             out.append(("event-interpolation-in-run", str(nr), stepname()))
+
+        # The model job runs the harness with cwd = the PR-AUTHORED workspace, so a bare `python3 -m` puts that workspace at the head of sys.path and a branch-supplied rediacc_ci/ at the repo root shadows the trusted copy PYTHONPATH names. `-P` is what switches that off.
+        # Not gated on in_run: the hazard is the invocation, whether or not it sits in a block scalar.
+        if (
+            not is_comment
+            and RE_HARNESS_PYTHONPATH.search(line)
+            and "python3" in line
+            and not RE_PYTHON_SAFE_PATH.search(line)
+        ):
+            out.append(("harness-python-workspace-on-path", str(nr), stepname()))
         if not is_comment and RE_RUN_BLOCK.match(line):
             in_run = True
             run_indent = indent

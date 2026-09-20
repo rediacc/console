@@ -2,6 +2,7 @@
 # ---- gate ----
 # step: Shell lint
 # needs: none
+# run: PYTHONPATH=.ci python3 -m rediacc_ci.security.shellcheck
 # id: check:ci-shell-lint
 # selftest: true
 # ---- end gate ----

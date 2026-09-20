@@ -139,10 +139,15 @@ jobs:
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch || github.ref_name }}
         run: |
           set -euo pipefail
-          if [ -x .ci/scripts/review/discover-epics.sh ]; then
-            .ci/scripts/review/discover-epics.sh
+          # THE PROBE IS `-f`, NOT `-x`, BECAUSE THE TARGET IS A PACKAGE MODULE.
+          # It is never executed by path, so an executable bit would say nothing
+          # about whether the tooling is vendored here, which is the only
+          # question this branch asks. Callers other than rediacc/console carry
+          # no .ci tree at all, and that is the case the fallback serves.
+          if [ -f .ci/rediacc_ci/review/discover_epics.py ]; then
+            PYTHONPATH=.ci python3 -m rediacc_ci.review.discover_epics
           else
-            echo "::notice::${GITHUB_REPOSITORY} does not vendor .ci/scripts/review/discover-epics.sh (it lives in rediacc/console). Falling back to one flat review pass."
+            echo "::notice::${GITHUB_REPOSITORY} does not vendor .ci/rediacc_ci/review/discover_epics.py (it lives in rediacc/console). Falling back to one flat review pass."
             echo 'epics=[""]' >>"$GITHUB_OUTPUT"
           fi
 
@@ -271,6 +276,13 @@ jobs:
       # .review-scripts was missing -- which is precisely how the PR-reviews-
       # itself hole above stayed invisible. A missing reviewer must stop the
       # run, never be silently substituted.
+      # STILL THE BASH TWIN, deliberately (W7P4-W P4b). The port is licensed at
+      # K=5, but every row of that ledger records both sides as `bin/run.sh
+      # old` / `bin/run.sh new` -- a scratch wrapper that is not in the tree --
+      # so the command it actually compared cannot be read back, and this
+      # gate's contract is a set of `$GITHUB_OUTPUT` keys that later steps
+      # index by name. The flip wants a ledger whose recorded command is the
+      # `python3 -m` form itself, the way discover-epics has one.
       - name: Assert review tooling came from console@main
         run: |
           test -f .review-scripts/.ci/scripts/review/claude-review-gate.sh ||
@@ -387,6 +399,15 @@ jobs:
           # permission denials, three attempts) and stays best-effort only.
           # Per-event, because the action rejects the flag outright elsewhere.
           track_progress: ${{ env.TRACK_PROGRESS }}
+          # THE LAST ENTRY STAYS ON THE BASH TWIN, deliberately (W7P4-W P4b).
+          # `rediacc_ci.review.epic_context` is licensed at K=5, but this is a
+          # PERMISSION PATTERN, not a call site: the string has to match the
+          # command the model actually types, and that command is written into
+          # the prompt by the review tooling, not here. Flipping one half of
+          # that pair either denies the tool silently or widens the pattern to
+          # cover a leading environment assignment, and neither failure is
+          # visible from this file. The call site and the pattern move together
+          # or not at all.
           settings: |
             {
               "permissions": {

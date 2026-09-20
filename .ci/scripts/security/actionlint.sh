@@ -2,6 +2,7 @@
 # ---- gate ----
 # step: Workflow lint (actionlint)
 # needs: none
+# run: PYTHONPATH=.ci python3 -m rediacc_ci.security.actionlint
 # selftest: true
 # lane: quality-code
 # ---- end gate ----

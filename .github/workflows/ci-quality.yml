@@ -365,7 +365,7 @@ jobs:
         run: .ci/scripts/test/test-install-script.sh
       - name: install.sh config tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/test/test-install-sh-config.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.install_sh_config_check
       - name: Language policy
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_language_policy.py
@@ -422,13 +422,13 @@ jobs:
         run: .ci/rediacc_ci/setup/port_parity.py
       - name: Shell commands exist on the runner image
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/security/check-commands.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.security.check_commands
       - name: Shell format
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/security/shfmt.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.security.shfmt
       - name: Shell lint
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/security/shellcheck.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.security.shellcheck
       - name: Silent-failure patterns
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_silent_failure_patterns.py
@@ -1135,7 +1135,7 @@ jobs:
       - name: Workflow lint (actionlint)
         id: gate_check_ci_actionlint
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
-        run: .ci/scripts/security/actionlint.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.security.actionlint
       - name: Workflow orphan step keys
         id: gate_check_ci_workflow_orphan_step_keys
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1982,7 +1982,7 @@ jobs:
       # PLACED AFTER THE BUILD for the same reason, not after `- id: setup`.
       - name: Browser smoke
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
-        run: .ci/scripts/quality/browser-smoke.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.browser_smoke
       - name: Captcha recovery
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-captcha-recovery
@@ -1994,7 +1994,7 @@ jobs:
         run: npm run check:ci-landmarks
       - name: Page density
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
-        run: .ci/scripts/quality/page-density.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.page_density
       - name: Player CSS scope
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-player-css-scope

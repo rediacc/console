@@ -2,6 +2,7 @@
 # ---- gate ----
 # step: Page density
 # needs: node
+# run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.page_density
 # selftest: true
 # lane: quality-www-build
 # slow: true

@@ -2,6 +2,7 @@
 # ---- gate ----
 # step: Browser smoke
 # needs: node
+# run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.browser_smoke
 # selftest: true
 # lane: quality-www-build
 # slow: true

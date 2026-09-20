@@ -585,7 +585,13 @@ function analyze(inp: Inputs): Finding[] {
     seenIds.add(g.id);
     // An id is either an npm key, or a direct repo-relative script path that exists. The second form is what F3's two Static-lane gates need: the Static lane is a bare checkout with no node_modules, so they are invoked by path and carry no npm key.
     const isKey = g.id in rootScripts;
-    const isPath = !g.run.startsWith('npm ') && inp.fileExists(g.run.split(/\s+/)[0] ?? '');
+    // A PATH-FORM RUN IS RESOLVED, NOT TOKENIZED. The first WORD of `PYTHONPATH=.ci python3 -m rediacc_ci.x.y` is the environment assignment, so an entry running a module read as "neither a package.json script nor a runnable repo path".
+    // The R3 pointer check above had already resolved that same string to the module's file, and two resolvers disagreeing about what one `run:` executes is how a gate gets reported for running nothing while CI runs it. `resolveLeaves` walks past the assignment and maps `-m <module>` to its tracked file, so it is the resolver used here too.
+    const runLeaves = resolveLeaves(g.run, inp.scripts);
+    const isPath =
+      !g.run.startsWith('npm ') &&
+      (inp.fileExists(g.run.split(/\s+/)[0] ?? '') ||
+        (runLeaves.length > 0 && runLeaves.every((l) => inp.fileExists(l))));
     if (!isKey && !isPath) {
       add(
         'hygiene',
@@ -885,6 +891,39 @@ function control(): void {
     fail('a `.py` path exemption did not expand to the package.json key that invokes it');
   }
 
+  // 4c. A PATH-FORM RUN SPELLED AS A PYTHON MODULE. Both directions, because the arm that accepts the resolvable one is worthless unless the unresolvable one is still refused: `missing-module:` is what a typo in a dotted name produces, and an entry running nothing must never read as registered.
+  const moduleRun = (module: string, tracked: readonly string[]): Finding[] =>
+    analyze({
+      ...base,
+      gates: [
+        {
+          id: 'test:planted-module',
+          run: `PYTHONPATH=.ci python3 -m ${module}`,
+          gate: true,
+          leaves: ['.ci/rediacc_ci/quality/planted.py'],
+          ci: {
+            kind: 'step',
+            workflow: '.github/workflows/w.yml',
+            job: 'lane',
+            step: 'Planted module gate',
+          },
+        },
+      ],
+      scripts: universeOf({ '': {} }, {}, tracked),
+      fileExists: (rel) => tracked.includes(rel),
+    });
+  const unrunnable = 'is neither a package.json script nor a runnable repo path';
+  if (
+    moduleRun('rediacc_ci.quality.planted', ['.ci/rediacc_ci/quality/planted.py']).some((f) =>
+      f.message.includes(unrunnable)
+    )
+  ) {
+    fail('a manifest run spelled `python3 -m <module>` was reported as unrunnable');
+  }
+  if (!moduleRun('rediacc_ci.quality.absent', []).some((f) => f.message.includes(unrunnable))) {
+    fail('a manifest run naming a module that resolves to nothing was NOT reported');
+  }
+
   // 5. The tautology guard.
   const tauto = analyze({
     ...base,
@@ -903,6 +942,10 @@ function control(): void {
   console.log('  PASS  a CI-run PORTED (.py) gate with no manifest entry is reported');
   console.log('  PASS  a .py path exemption silences its own finding');
   console.log('  PASS  a .py path exemption expands to the package.json key that invokes it');
+  console.log(
+    '  PASS  a run spelled `python3 -m <module>` resolves to the module, not to its env prefix'
+  );
+  console.log('  PASS  CONTROL: a module that resolves to nothing tracked is still unrunnable');
   console.log('  PASS  `npm run ci` inside a run: block is an error, not coverage');
 }
 

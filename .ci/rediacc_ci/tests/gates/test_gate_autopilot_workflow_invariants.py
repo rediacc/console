@@ -245,6 +245,32 @@ def test_event_interpolation_in_run_fails(gate):
     gate.log_pass("github.event.* is banned inside run blocks and only there")
 
 
+def test_harness_python_without_safe_path_fails(gate):
+    """Drop `-P` from every harness invocation.
+
+    The model job's cwd is the PR-authored checkout, and `-m` puts cwd ahead of PYTHONPATH on sys.path, so without `-P` a branch-supplied `rediacc_ci/` at the repo root runs in place of the trusted harness module.
+    """
+    source = real_source(gate)
+    mutated = substitute_each_line(
+        source, r'(PYTHONPATH="\$RUNNER_TEMP/[^"]*" python3) -P ', r"\1 "
+    )
+    assert_mutated(gate, mutated, "no-safe-path.yml")
+    with harness.temp_dir() as work:
+        result = run_gate(gate, write(work, "no-safe-path.yml", mutated))
+        gate.assert_exit_code(1, result.rc, "a harness python3 without -P must fail")
+        gate.assert_contains(
+            result.err,
+            "INVARIANT-FAIL: harness-python-workspace-on-path",
+            "as harness-python-workspace-on-path",
+        )
+    # CONTROL for the scope: the real file runs python3 from the WORKSPACE too (the gate, finish, escalate and sweeper jobs, whose cwd is the trusted main checkout), and those carry no `-P`. The clean run in test_real_workflow_passes proves the rule does not reach them.
+    if not re.search(r"^          PYTHONPATH=\.ci python3 -m ", source, re.MULTILINE):
+        gate.log_fail(
+            "expected the real workflow to run a workspace-relative python3 -m with no -P"
+        )
+    gate.log_pass("a harness invocation cannot let the PR-authored cwd shadow the trusted module")
+
+
 def test_token_before_model_fails(gate):
     source = real_source(gate)
     mutated = insert_before(

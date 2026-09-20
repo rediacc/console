@@ -2,6 +2,7 @@
 # ---- gate ----
 # step: Shell commands exist on the runner image
 # needs: none
+# run: PYTHONPATH=.ci python3 -m rediacc_ci.security.check_commands
 # id: check:ci-shell-commands
 # selftest: true
 # ---- end gate ----

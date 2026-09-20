@@ -14,6 +14,15 @@
 #                                .git/config is exfiltratable by the model.
 #   event-interpolation-in-run   no ${{ github.event.* }} inside run: blocks;
 #                                untrusted payload text must ride env:.
+#   harness-python-workspace-on-path
+#                                every `PYTHONPATH="$RUNNER_TEMP/..." python3`
+#                                invocation passes -P. The model job's cwd is
+#                                the PR-authored checkout, and -m puts cwd at
+#                                the head of sys.path ahead of PYTHONPATH, so
+#                                without -P a branch-supplied rediacc_ci/ at
+#                                the repo root replaces the trusted harness
+#                                module the line meant to run. Wall 4 through
+#                                the import system.
 #   token-in-gate                the gate decides with zero write capability.
 #   token-before-model           THE core invariant: no app-token step at or
 #                                before the model step, so no write token ever
@@ -100,6 +109,14 @@ BEGIN { job = "<top>"; in_jobs = 0; in_run = 0; run_indent = 0 }
     # Inside a run: block, payload interpolation is the injection surface.
     if (in_run && !is_comment && line ~ /github\.event\./) {
         printf "event-interpolation-in-run\t%d\t%s\n", NR, stepname()
+    }
+    # The model job runs the harness with cwd = the PR-AUTHORED workspace, so
+    # a bare `python3 -m` puts that workspace at the head of sys.path and a
+    # branch-supplied rediacc_ci/ at the repo root shadows the trusted copy
+    # PYTHONPATH names. `-P` is what switches that off. Not gated on in_run:
+    # the hazard is the invocation, whether or not it sits in a block scalar.
+    if (!is_comment && line ~ /PYTHONPATH="\$RUNNER_TEMP\// && line ~ /python3/ && line !~ /python3[[:space:]]+-P[[:space:]]/) {
+        printf "harness-python-workspace-on-path\t%d\t%s\n", NR, stepname()
     }
     if (!is_comment && line ~ /^[[:space:]]*run:[[:space:]]*[|>]/) { in_run = 1; run_indent = indent }
 

@@ -811,7 +811,7 @@
     "run": "npm run check:ci-install-sh-config",
     "gate": true,
     "leaves": [
-      ".ci/scripts/test/test-install-sh-config.sh"
+      ".ci/rediacc_ci/release/install_sh_config_check.py"
     ],
     "ci": {
       "kind": "step",
@@ -1591,7 +1591,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/security/shellcheck.sh"
+      ".ci/rediacc_ci/security/shellcheck.py"
     ],
     "ci": {
       "kind": "step",
@@ -1605,7 +1605,7 @@
     "run": "npm run check:ci-shell-format",
     "gate": true,
     "leaves": [
-      ".ci/scripts/security/shfmt.sh"
+      ".ci/rediacc_ci/security/shfmt.py"
     ],
     "ci": {
       "kind": "step",
@@ -2691,7 +2691,7 @@
     "run": "npm run check:ci-shell-commands",
     "gate": true,
     "leaves": [
-      ".ci/scripts/security/check-commands.sh"
+      ".ci/rediacc_ci/security/check_commands.py"
     ],
     "ci": {
       "kind": "step",
@@ -2889,7 +2889,7 @@
     "run": "npm run check:ci-actionlint",
     "gate": true,
     "leaves": [
-      ".ci/scripts/security/actionlint.sh"
+      ".ci/rediacc_ci/security/actionlint.py"
     ],
     "ci": {
       "kind": "step",
@@ -4035,7 +4035,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/browser-smoke.sh"
+      ".ci/rediacc_ci/quality/browser_smoke.py"
     ],
     "ci": {
       "kind": "step",
@@ -4064,7 +4064,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/page-density.sh"
+      ".ci/rediacc_ci/quality/page_density.py"
     ],
     "ci": {
       "kind": "step",

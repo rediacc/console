@@ -2,6 +2,7 @@
 # ---- gate ----
 # step: Shell format
 # needs: none
+# run: PYTHONPATH=.ci python3 -m rediacc_ci.security.shfmt
 # id: check:ci-shell-format
 # ---- end gate ----
 

@@ -793,7 +793,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-install-sh-config',
     run: 'npm run check:ci-install-sh-config',
     gate: true,
-    leaves: ['.ci/scripts/test/test-install-sh-config.sh'],
+    leaves: ['.ci/rediacc_ci/release/install_sh_config_check.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1523,7 +1523,7 @@ export const GATES: readonly GateSpec[] = [
     // shellcheck.sh enumerates with git ls-files '*.sh' plus untracked. toolchain.env is the only non-.sh input: it pins SHELLCHECK_VERSION, and a different shellcheck emits different findings.
     paths: ['**/*.sh', '.devcontainer/toolchain.env'],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/security/shellcheck.sh'],
+    leaves: ['.ci/rediacc_ci/security/shellcheck.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1536,7 +1536,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-shell-format',
     run: 'npm run check:ci-shell-format',
     gate: true,
-    leaves: ['.ci/scripts/security/shfmt.sh'],
+    leaves: ['.ci/rediacc_ci/security/shfmt.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2552,7 +2552,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-shell-commands',
     run: 'npm run check:ci-shell-commands',
     gate: true,
-    leaves: ['.ci/scripts/security/check-commands.sh'],
+    leaves: ['.ci/rediacc_ci/security/check_commands.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2732,7 +2732,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-actionlint',
     run: 'npm run check:ci-actionlint',
     gate: true,
-    leaves: ['.ci/scripts/security/actionlint.sh'],
+    leaves: ['.ci/rediacc_ci/security/actionlint.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3747,7 +3747,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-browser-smoke',
     slow: true, // 20.4s measured
     gate: true,
-    leaves: ['.ci/scripts/quality/browser-smoke.sh'],
+    leaves: ['.ci/rediacc_ci/quality/browser_smoke.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3774,7 +3774,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-page-density',
     slow: true, // drives 3 routes x 4 viewports in a container
     gate: true,
-    leaves: ['.ci/scripts/quality/page-density.sh'],
+    leaves: ['.ci/rediacc_ci/quality/page_density.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
