@@ -336,6 +336,9 @@ const CHATTER =
 const REFUSAL =
   /(?:VACUOUS INPUT|Refusing to report a verdict|no verdict is possible|verdict would be meaningless|scanned nothing|collapsed to zero|NOTHING was verified|nothing here was verified|is not being executed as written|BASELINE UNREADABLE|CANNOT READ)/i;
 
+/** A test runner's passing assertion line, `PASS: <what was asserted>`. */
+const ASSERTION_PASS = /^PASS:\s/;
+
 /**
  * Indented prose that trails a finding: the advisory continuation lines
  * (`emit-advisory.sh:138-145`) and the caveat paragraphs nearly every green
@@ -441,7 +444,8 @@ export function classify(
         continue;
       }
 
-      if (REFUSAL.test(lead)) {
+      // A passing assertion that QUOTES a refusal phrase is a test's description of a refusal, not the gate refusing. The battery's own tests print such lines, so without this exemption two identical batteries read as two refusals and no verdict could ever be recorded for that pair.
+      if (!ASSERTION_PASS.test(lead) && REFUSAL.test(lead)) {
         refusals.push(normalize(lead));
         carrying = null;
         continue;
@@ -1371,6 +1375,32 @@ function selftest(repoRoot: string): number {
     'REFUSAL: one side refusing suspends the comparison rather than reading as a mismatch',
     oneRefuses.verdict === 'ERROR_REFUSAL',
     oneRefuses.verdict
+  );
+
+  // A passing assertion that quotes a refusal phrase is a test's own description, not a refusal. The battery prints such lines, and reading them as refusals made every recorded battery observation ERROR_REFUSAL.
+  const quotedRefusal = shadow(
+    'selftest-quoted-refusal',
+    'echo "PASS: a gate refusing to report a verdict suspends the comparison"; exit 0',
+    'echo "PASS: a gate refusing to report a verdict suspends the comparison"; exit 0',
+    opts
+  );
+  ck(
+    'REFUSAL CONTROL: a PASS line quoting a refusal phrase is not a refusal',
+    quotedRefusal.verdict !== 'ERROR_REFUSAL' &&
+      quotedRefusal.old.refusals.length === 0 &&
+      quotedRefusal.new.refusals.length === 0,
+    { verdict: quotedRefusal.verdict, old: quotedRefusal.old.refusals }
+  );
+  const bareRefusal = shadow(
+    'selftest-bare-refusal',
+    'echo "Refusing to report a verdict: nothing was scanned" >&2; exit 1',
+    'echo "Refusing to report a verdict: nothing was scanned" >&2; exit 1',
+    opts
+  );
+  ck(
+    'REFUSAL CONTROL: the same phrase WITHOUT the PASS prefix is still a refusal',
+    bareRefusal.verdict === 'ERROR_REFUSAL',
+    bareRefusal.verdict
   );
 
   // The continuation rule. Both sides say "Found 2", and they disagree about both. A header-only comparator calls this EQUIVALENT; it is the single most likely way this module could launder a port, because the header is the only line carrying a severity marker.
