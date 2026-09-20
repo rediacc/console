@@ -3673,7 +3673,8 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       every union. The control then failed a SECOND time for a different reason -- a
       synthetic lane name is refused before the heavy rule is ever reached -- which is the
       control being right twice. Twin 37 PASS, port 37 passed, both agreeing.
-- [ ] **B2 S, driver-only, long pole** Emit the matrix. **Invariant 11 is handled by construction:**
+- [x] **B2 S, driver-only, long pole** Emit the matrix. **Invariant 11 is handled by construction:**
+    (ticked) 2026-09-20T15:45:13Z by d778be9d: emitted for quality-code x4 (0e92e992d); local gates green, first CI run pending the operator's push
       the `include` list is generated only from lanes where `laneCanEmit()` is true, which is the
       same predicate that already refuses a region in a setup-less lane. `quality-branch:389` and
       `quality-submodule-branches:493` (7 steps total) stay hand-written -- verified: those are
