@@ -50,6 +50,8 @@ For each one found:
 - **Do** check it for uncommitted changes and unmerged branches, and report what you find. Do not commit, merge, or delete branches in it without an explicit request.
 - Its remote may not be GitHub. Check `git -C <dir> remote get-url origin` before reaching for `gh`; PR/merge tooling that assumes GitHub silently fails elsewhere.
 - Reading ahead/behind: `git rev-list --left-right --count origin/main...HEAD` prints `<on main only> <on branch only>`. The **second** number is the branch's own unmerged commits. Misreading it as "behind" turns weeks of unmerged work into "stale checkout, ignore it", and this has actually happened.
+- **Merge order when a console change and a change in such a repo belong together** (the U2 decision, taken by default on 2026-09-20 in favour of the documented clone-and-remote procedure over promoting `private/growth` to a submodule, which is hard to reverse): the sibling repo's own PR lands FIRST and only on the operator's explicit request, then the console PR,
+  because nothing in console pins the sibling by commit (there is no pointer to bump) and a console change that depends on the sibling would otherwise merge ahead of the thing it needs. Name the pair in the console PR body so a reviewer can find the other half.
 
 ### Stray worktrees from past sessions
 
