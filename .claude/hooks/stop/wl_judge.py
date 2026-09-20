@@ -728,8 +728,8 @@ def run_judge(
     # NOT ON A FIX STOP. A regression-gate stop is already asking the judge to rule on a fix's test coverage AND its sibling sweep; adding "and by the way, is that parked question's DEFAULT brave enough" makes one call carry three unrelated judgements, and the parked question is the one least connected to what the session just did. It is not dropped, only deferred: the trigger is
     # the remaining list, which does not go away, so the same item is asked about on the next stop that is not a fix stop.
     brave_extra = "" if is_fix_stop(extra) else BD.prompt_section(remaining_lines)
-    # GROUND THE SWEEP/PROOF QUESTIONS IN A REAL FILE LIST, computed by git rather than trusted from the model's own prose -- see wl_reggate.fixset_files. Injected only when the caller computed one AND a sweep/proof question is actually being asked, so an ordinary judge call carries no new tokens. `fixset_files is None` (the caller could not compute it, or this is a call site
-    # that has not adopted the parameter yet) means NO claim, never "the tree is clean" -- conflating the two would accuse a fired finding of being ungrounded on missing data rather than on git's own evidence.
+    # GROUND THE SWEEP/PROOF QUESTIONS IN A REAL FILE LIST, computed by git rather than trusted from the model's own prose -- see wl_reggate.fixset_files. Injected only when the caller computed one AND a sweep/proof question is actually being asked, so an ordinary judge call carries no new tokens. `fixset_files is None` (the caller could not compute it, or this is a call site that
+    # has not adopted the parameter yet) means NO claim, never "the tree is clean" -- conflating the two would accuse a fired finding of being ungrounded on missing data rather than on git's own evidence.
     ground_extra = ""
     if fixset_files is not None and (sweep_extra or proof_extra):
         shown = fixset_files[:40]

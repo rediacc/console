@@ -109,8 +109,7 @@ def _command_substitution(text):
 
 
 def _here_string(text):
-    """`<<<"$x"` feeds `x` plus one newline, so an empty subject is one empty record and not zero records. grep is then run over exactly one line.
-    """
+    """`<<<"$x"` feeds `x` plus one newline, so an empty subject is one empty record and not zero records. grep is then run over exactly one line."""
     return text + "\n"
 
 
@@ -459,8 +458,7 @@ def _printf_line(text):
 
 
 def _grep_only(pattern, text):
-    """`grep -oE <pattern>` -- every non-overlapping match, in order, one per line, across every record. Python's finditer scans left to right and resumes after each match, which is GNU grep's rule too; what differs is leftmost-longest versus leftmost-first, and the module docstring records why the alternations here do not feel it.
-    """
+    """`grep -oE <pattern>` -- every non-overlapping match, in order, one per line, across every record. Python's finditer scans left to right and resumes after each match, which is GNU grep's rule too; what differs is leftmost-longest versus leftmost-first, and the module docstring records why the alternations here do not feel it."""
     compiled = re.compile(pattern)
     records, _ = _records(text)
     out = []

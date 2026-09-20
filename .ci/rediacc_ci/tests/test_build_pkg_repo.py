@@ -868,8 +868,7 @@ def test_the_restated_constants_match_constants_sh():
 
 
 def test_source_common_exports_what_sourcing_the_library_would(monkeypatch):
-    """`common.sh` runs on SOURCE, before line 28 of the twin, so every child inherits `CI_OS`, `CI_ARCH` and `CI_TEMP`. Compared against the library itself rather than against a constant, so a change to `detect_os` is caught.
-    """
+    """`common.sh` runs on SOURCE, before line 28 of the twin, so every child inherits `CI_OS`, `CI_ARCH` and `CI_TEMP`. Compared against the library itself rather than against a constant, so a change to `detect_os` is caught."""
     monkeypatch.delenv("CI_OS", raising=False)
     monkeypatch.delenv("CI_ARCH", raising=False)
     monkeypatch.delenv("CI_TEMP", raising=False)

@@ -305,8 +305,7 @@ def test_the_scratch_path_holds_only_the_six_named_tools(tmp_path) -> None:
 
 
 def test_the_frozen_date_really_answers_and_is_recorded(tmp_path) -> None:
-    """A `date` fake that printed nothing would make `releaseDate` empty on both sides and the comparison would still pass, so the fake is checked first.
-    """
+    """A `date` fake that printed nothing would make `releaseDate` empty on both sides and the comparison would still pass, so the fake is checked first."""
     root = default_fixture(tmp_path)
     log = root / "probe.log"
     log.write_text("", encoding="utf-8")
@@ -424,8 +423,7 @@ def test_the_default_input_is_the_repo_roots_dist_cli_and_is_absolute(tmp_path) 
 def test_defect_3_an_explicit_relative_input_follows_the_caller_not_the_root(
     tmp_path,
 ) -> None:
-    """The other half of defect 3. There is no `cd "$(get_repo_root)"` here, unlike every sibling in `.ci/scripts/build/`, so `--input in` means `$PWD/in`. Driven from a cwd holding a DIFFERENT `in/`, both sides read the caller's and neither reads the repo's.
-    """
+    """The other half of defect 3. There is no `cd "$(get_repo_root)"` here, unlike every sibling in `.ci/scripts/build/`, so `--input in` means `$PWD/in`. Driven from a cwd holding a DIFFERENT `in/`, both sides read the caller's and neither reads the repo's."""
     root = default_fixture(tmp_path)
     elsewhere = tmp_path / "elsewhere"
     (elsewhere / "in").mkdir(parents=True)
@@ -592,8 +590,7 @@ def test_an_empty_version_string_is_also_refused(tmp_path) -> None:
 
 
 def test_defect_4_every_dangling_flag_is_bashs_own_unbound_variable(tmp_path) -> None:
-    """`$2` under `set -u`, with the ARM's line number rather than the flag's name. Each of the five value-taking arms has its own line, so each is driven.
-    """
+    """`$2` under `set -u`, with the ARM's line number rather than the flag's name. Each of the five value-taking arms has its own line, so each is driven."""
     for flag, line in port.FLAG_LINES.items():
         root = default_fixture(tmp_path / ("dangling" + flag))
         old_t, new_t = run_both(root, args=(flag,))
@@ -610,8 +607,7 @@ def test_defect_4_every_dangling_flag_is_bashs_own_unbound_variable(tmp_path) ->
 def test_defect_1_an_input_with_no_checksums_is_an_empty_manifest_and_exit_zero(
     tmp_path,
 ) -> None:
-    """The known hazard `proxy-cli-manifest.sh:160-166` reports and does not enforce: a release published from this manifest offers no downloads at all.
-    """
+    """The known hazard `proxy-cli-manifest.sh:160-166` reports and does not enforce: a release published from this manifest offers no downloads at all."""
     root = fixture(tmp_path, checksums={})
     old_t, new_t = run_both(
         root, args=("--version", "9.9.9", "--input", "in", "--output", "out/manifest.json")
@@ -625,8 +621,7 @@ def test_defect_1_an_input_with_no_checksums_is_an_empty_manifest_and_exit_zero(
 
 
 def test_defect_2_three_different_bad_checksums_all_become_one_warning(tmp_path) -> None:
-    """An empty file, a truncated hash and a multi-line file are distinct situations; `:117-120` folds all three into `⚠ Invalid checksum` and a `continue`, and none of them changes the exit code.
-    """
+    """An empty file, a truncated hash and a multi-line file are distinct situations; `:117-120` folds all three into `⚠ Invalid checksum` and a `continue`, and none of them changes the exit code."""
     cases = {
         "empty": "",
         "truncated": "abc123  rdc-linux-x64\n",
@@ -669,8 +664,7 @@ def test_a_checksum_file_with_leading_whitespace_still_yields_the_first_field(
 
 
 def test_defect_5_the_file_header_never_mentions_the_channel_flag() -> None:
-    """`:5-12` documents four flags; `--channel` decides the download URL and is what `cd-stage.yml:171` passes. Asserted against the twin on disk so the docstring's defect 5 goes red the day someone fixes the header.
-    """
+    """`:5-12` documents four flags; `--channel` decides the download URL and is what `cd-stage.yml:171` passes. Asserted against the twin on disk so the docstring's defect 5 goes red the day someone fixes the header."""
     header = (ROOT / TWIN_REL).read_text(encoding="utf-8").split("set -euo pipefail")[0]
     assert "--version VERSION" in header
     assert "--repo REPO" in header

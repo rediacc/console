@@ -90,8 +90,7 @@ def _skip_substitution(src, i):
 
 
 def _expand_printf(text):
-    """`$(printf FMT ARG...)` without a shell, or the literal text if it is anything else. The suite uses printf only to smuggle quotes and newlines into a payload, so `%s` and the usual backslash escapes are the whole surface -- and a `%d` or a `%*s` appearing later would come out as itself rather than being silently mis-rendered.
-    """
+    """`$(printf FMT ARG...)` without a shell, or the literal text if it is anything else. The suite uses printf only to smuggle quotes and newlines into a payload, so `%s` and the usual backslash escapes are the whole surface -- and a `%d` or a `%*s` appearing later would come out as itself rather than being silently mis-rendered."""
     inner = text[2:-1]
     words = []
     i = 0

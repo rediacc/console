@@ -160,8 +160,7 @@ def test_release_build_refuses_a_malformed_version(gate, tmp_path):
 
 
 def test_dev_build_still_accepts_the_placeholder(gate, tmp_path):
-    """THE OTHER DIRECTION: without RELEASE_BUILD the same placeholder is fine, so PR CI and local `./rdc.sh --native` keep working. Proven by letting the build get PAST the guard and die at the bundler instead (a stub node makes that instant and writes nothing).
-    """
+    """THE OTHER DIRECTION: without RELEASE_BUILD the same placeholder is fine, so PR CI and local `./rdc.sh --native` keep working. Proven by letting the build get PAST the guard and die at the bundler instead (a stub node makes that instant and writes nothing)."""
     gate.log_test("a non-release build still accepts 0.0.0-dev")
     bindir = tmp_path / "bin"
     bindir.mkdir(parents=True, exist_ok=True)
@@ -247,8 +246,7 @@ def test_empty_version_still_fails(gate, tmp_path):
 
 
 def test_planted_noncomparing_check_lets_the_mismatch_through(gate, tmp_path):
-    """THE CONTROL. Plant the pre-fix behaviour -- a comparison that compares nothing -- and watch the mismatch sail through. If this planted defect FAILED, `test_mismatched_version_fails` would prove nothing about the comparison.
-    """
+    """THE CONTROL. Plant the pre-fix behaviour -- a comparison that compares nothing -- and watch the mismatch sail through. If this planted defect FAILED, `test_mismatched_version_fails` would prove nothing about the comparison."""
     gate.log_test("control: with the comparison neutered, the mismatch passes")
     result = run_block(gate, tmp_path, "1.2.17", "1.2.16", mutate=True)
     gate.assert_eq(

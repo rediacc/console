@@ -151,8 +151,7 @@ def run_both(tmp_path: pathlib.Path, args: list[str] | None = None, **kw):
 
 
 def _mask(text: str) -> str:
-    """`$0`, the one thing that cannot agree. Masked by the two exact spellings, so any other absolute path leaking into the output is still compared.
-    """
+    """`$0`, the one thing that cannot agree. Masked by the two exact spellings, so any other absolute path leaking into the output is still compared."""
     masked = text.replace(".ci/scripts/docker/" + TWIN.name, "<SELF>")
     return masked.replace(".ci/rediacc_ci/docker/" + PORT_FILE.name, "<SELF>")
 
@@ -201,8 +200,7 @@ def test_image_and_image_path_are_mutually_exclusive(tmp_path) -> None:
 
 
 def test_the_exclusivity_check_runs_before_the_tag_check(tmp_path) -> None:
-    """ORDER IS OBSERVABLE. With neither `--tag` nor a valid target, the twin reports the exclusivity error; a port that validated `--tag` first would print a different message with the same exit code.
-    """
+    """ORDER IS OBSERVABLE. With neither `--tag` nor a valid target, the twin reports the exclusivity error; a port that validated `--tag` first would print a different message with the same exit code."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--image", "api", "--image-path", "ghcr.io/acme/api"]
     )
@@ -218,8 +216,7 @@ def test_neither_target_refuses(tmp_path) -> None:
 
 
 def test_no_arguments_at_all_reports_the_missing_target_not_the_missing_tag(tmp_path) -> None:
-    """THE ARM THAT WAS MISSING, and its absence was measured rather than guessed: a plant that swapped the "neither target" and "--tag" checks left all 27 tests green, because every case either supplied a target or supplied a tag. A control that does not fire is a claim about the control first, so this is the case that distinguishes the two orders.
-    """
+    """THE ARM THAT WAS MISSING, and its absence was measured rather than guessed: a plant that swapped the "neither target" and "--tag" checks left all 27 tests green, because every case either supplied a target or supplied a tag. A control that does not fire is a claim about the control first, so this is the case that distinguishes the two orders."""
     old, new, old_calls, new_calls = run_both(tmp_path, [])
     _agree(old, new, "no-args", old_calls, new_calls)
     assert old.returncode == 1
@@ -368,8 +365,7 @@ def test_a_missing_docker_is_bashs_own_command_not_found(tmp_path) -> None:
 
 
 def test_defect_a_manifest_that_cannot_be_verified_still_exits_zero(tmp_path) -> None:
-    """The verification is ADVISORY. `inspect` failing produces a warning and exit 0, so a `create` that reported success but pushed nothing readable is reported as a complete run.
-    """
+    """The verification is ADVISORY. `inspect` failing produces a warning and exit 0, so a `create` that reported success but pushed nothing readable is reported as a complete run."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--image", "api", "--tag", "1"], FAKE_INSPECT_RC="1"
     )
@@ -393,8 +389,7 @@ def test_defect_the_latest_manifest_is_never_verified(tmp_path) -> None:
 
 
 def test_defect_a_single_arch_image_is_not_detected_before_the_push(tmp_path) -> None:
-    """`ARCHS` is hard-coded, so the arm64 reference is always passed. Nothing probes whether it exists; the registry decides, and here it accepts.
-    """
+    """`ARCHS` is hard-coded, so the arm64 reference is always passed. Nothing probes whether it exists; the registry decides, and here it accepts."""
     assert port.ARCHS == ("amd64", "arm64")
     old, _new, old_calls, _nc = run_both(tmp_path, ["--image", "api", "--tag", "1"])
     assert "api:1-arm64" in old_calls
@@ -490,8 +485,7 @@ def test_source_images_and_the_field_are_two_different_things() -> None:
 
 
 def test_the_platform_filter_matches_grep_e_on_a_corpus() -> None:
-    """The port reimplements `grep -E "(Platform:|Name:)" | head -10`, so the two are run over the same awkward inputs rather than assumed equal.
-    """
+    """The port reimplements `grep -E "(Platform:|Name:)" | head -10`, so the two are run over the same awkward inputs rather than assumed equal."""
     corpus = [
         "",
         "Name:      x\n",
@@ -559,8 +553,7 @@ def test_the_registry_constant_is_still_constants_shs() -> None:
 
 
 def test_the_quoted_line_numbers_still_name_their_statements() -> None:
-    """Every line number this port prints is checked against the twin, because a twin edit that moves one would otherwise drift silently into a CI log.
-    """
+    """Every line number this port prints is checked against the twin, because a twin edit that moves one would otherwise drift silently into a CI log."""
     lines = TWIN.read_text(encoding="utf-8").splitlines()
     expected = {
         "--image": 'IMAGE_NAME="$2"',

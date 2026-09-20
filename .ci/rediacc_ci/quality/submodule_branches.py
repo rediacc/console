@@ -332,7 +332,7 @@ def branch_exists_in_remote(root: pathlib.Path, sm_path: str, branch: str) -> bo
 
 
 def get_pr_for_branch(repo: str, branch: str) -> str:
-    """"number|url" for the open PR on this branch, or "".
+    """ "number|url" for the open PR on this branch, or "".
 
     jq: `.[0] // empty | "\\(.number)|\\(.url)"`. A missing `gh`, a failed call and a branch with no open PR all produce "", which is the twin's behaviour and the one place it does NOT fail closed: the caller's next move is to ask whether a MERGED PR exists, which is the louder question anyway.
     """
@@ -432,7 +432,7 @@ def pr_is_linked(pr_url: str, text: str) -> bool:
 
 
 def judge_report(comments: list[dict]) -> str:
-    """"none" | "answered" | "unanswered" for a list of issue comments.
+    """ "none" | "answered" | "unanswered" for a list of issue comments.
 
     SPLIT FROM THE FETCH ON PURPOSE. The `gh` call cannot run in a test and the JUDGEMENT is the part that decides a merge, so the judgement is a pure
     function the selftest drives directly and `report_answered` is a thin

@@ -4221,8 +4221,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         judge_log = wl_judge.judge_log_path(worklist, me8)
         judge_streak = wl_judge.continue_streak(judge_log)
         reg_scripts = wl_reggate.package_scripts(root) if reg_signals else {}
-        # GROUND THE JUDGE IN A REAL FILE LIST, computed here rather than left to the model's own prose: twice in one session the judge fabricated a "bulk transform" naming files that did not exist anywhere in the tree, pattern-matching a worked example in PF.PROOF_PROMPT rather than reading the actual diff (agent/PLAN-judge-prompt-trap-conflation.md). Computed
-        # UNCONDITIONALLY (one cheap git call when reg_ids is empty) so a follow-up proof/sweep question on a later stop is grounded too, not only a fresh fire.
+        # GROUND THE JUDGE IN A REAL FILE LIST, computed here rather than left to the model's own prose: twice in one session the judge fabricated a "bulk transform" naming files that did not exist anywhere in the tree, pattern-matching a worked example in PF.PROOF_PROMPT rather than reading the actual diff (agent/PLAN-judge-prompt-trap-conflation.md). Computed UNCONDITIONALLY (one
+        # cheap git call when reg_ids is empty) so a follow-up proof/sweep question on a later stop is grounded too, not only a fresh fire.
         reg_fixset_files = []
         with contextlib.suppress(Exception):
             reg_fixset_files = wl_reggate.fixset_files(root, reg_ids)

@@ -160,9 +160,9 @@ def test_the_coverage_arm_can_actually_fail(label, blind_to):
         blind_to,
     )
     # HEALTHY FIRST, so the plant is shown to be what changed the answer rather than the corpus slice.
-    assert blind_to not in blind_kinds(lint_by_kind, dict(flow_by_kind, **{blind_to: lint_by_kind[blind_to]})), (
-        "%s: the control's own healthy baseline already reads as blind" % label
-    )
+    assert blind_to not in blind_kinds(
+        lint_by_kind, dict(flow_by_kind, **{blind_to: lint_by_kind[blind_to]})
+    ), "%s: the control's own healthy baseline already reads as blind" % label
     assert blind_to in blind_kinds(lint_by_kind, flow_by_kind), (
         "%s: the planted blindness was NOT detected, so the coverage arm cannot fail" % label
     )
@@ -205,7 +205,7 @@ def test_the_cstyle_reflow_never_folds_a_line_the_linter_does_not_police():
             continue
         extra = sorted(
             n
-            for n, (_i, body, _m) in flow.items()
+            for n, (_i, body, _m, _d) in flow.items()
             if n not in lint and ps.scrub(ps._strip_quotes(body)).strip()
         )
         if extra:

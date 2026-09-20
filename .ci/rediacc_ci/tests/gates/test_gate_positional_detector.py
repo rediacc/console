@@ -102,8 +102,7 @@ def scan_all(gate) -> dict[str, bool]:
 
 
 def test_the_case_table_is_not_empty(gate):
-    """PORT-ONLY anti-vacuity. A table that emptied, or a driver that returned no rows, makes `test_detector_both_ways` report "no mismatches" having compared nothing. Both halves are checked, because either one alone can go quiet.
-    """
+    """PORT-ONLY anti-vacuity. A table that emptied, or a driver that returned no rows, makes `test_detector_both_ways` report "no mismatches" having compared nothing. Both halves are checked, because either one alone can go quiet."""
     if not CASES:
         gate.log_fail("the case table is EMPTY, so the both-ways case below compares nothing")
     flagging = [c for c in CASES if c[1]]

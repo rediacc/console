@@ -408,8 +408,7 @@ def test_a_partly_failing_suite_reports_the_failed_count_on_both_sides(
 
 
 def test_a_planted_defect_in_the_port_is_caught(tmp_path: pathlib.Path) -> None:
-    """The plant reverts the fix: it takes the FIRST number after `Tests` instead of the trailing `(N)` total, which is exactly the class of bug this pair was just fixed for.
-    """
+    """The plant reverts the fix: it takes the FIRST number after `Tests` instead of the trailing `(N)` total, which is exactly the class of bug this pair was just fixed for."""
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace(
         'SUMMARY_RE = re.compile(r"^[ \\t]*Tests[ \\t].*\\(([0-9]+)\\)", re.MULTILINE)',

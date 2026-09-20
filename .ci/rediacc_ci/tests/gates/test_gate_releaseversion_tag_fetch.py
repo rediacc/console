@@ -186,8 +186,7 @@ def test_successful_fetch_yields_the_tag(gate, tmp_path):
 
 
 def test_failed_fetch_stops_the_run(gate, tmp_path):
-    """THE DEFECT: the fetch fails. Before the fix this was swallowed and the script went on to compute a version from a tag list it could not refresh.
-    """
+    """THE DEFECT: the fetch fails. Before the fix this was swallowed and the script went on to compute a version from a tag list it could not refresh."""
     gate.log_test("a failing fetch stops the run instead of guessing")
     result = failing_fetch_run(gate, tmp_path)
     gate.assert_eq(result.rc, 1, "a failing fetch must not produce a version")
@@ -224,8 +223,7 @@ def test_no_tags_after_a_good_fetch_stops_the_run(gate, tmp_path):
 
 
 def test_planted_swallowed_fetch_continues(gate, tmp_path):
-    """THE CONTROL. Plant the pre-fix behaviour -- fetch failure swallowed, tag list used regardless -- and prove the same failing fetch sails through. Without this, `test_failed_fetch_stops_the_run` might be red for some unrelated reason.
-    """
+    """THE CONTROL. Plant the pre-fix behaviour -- fetch failure swallowed, tag list used regardless -- and prove the same failing fetch sails through. Without this, `test_failed_fetch_stops_the_run` might be red for some unrelated reason."""
     gate.log_test("control: with the failure swallowed, the run continues on a stale tag list")
     seed_source_repo(gate, tmp_path / "src-stale", "v0.0.9")
     work = init_workdir(gate, tmp_path / "work-stale")

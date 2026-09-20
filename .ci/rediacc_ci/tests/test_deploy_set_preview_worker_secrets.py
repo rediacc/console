@@ -372,7 +372,7 @@ def test_the_guard_list_is_the_twins_guard_list() -> None:
 
 
 def test_the_closing_line_counts_what_is_actually_sent() -> None:
-    """"15" IS A LITERAL IN THE TWIN, not a tally, so the day a sixteenth key lands without touching that line the log under-reports. This is the alarm."""
+    """ "15" IS A LITERAL IN THE TWIN, not a tally, so the day a sixteenth key lands without touching that line the log under-reports. This is the alarm."""
     assert len(port.KEYS) == port.SECRET_COUNT_CLAIM
     assert 'log_info "Set 15 secrets' in _twin_source()
 

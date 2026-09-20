@@ -556,8 +556,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on `CACHE_CONTROL` -- the one value that decides how long media.rediacc.com serves an object before revalidating, and whose corruption leaves both streams, the exit code and the call COUNT completely unchanged while every uploaded object gets the wrong header. Driven red, then the source is confirmed byte-identical and green.
-    """
+    """ANTI-VACUITY, planted on `CACHE_CONTROL` -- the one value that decides how long media.rediacc.com serves an object before revalidating, and whose corruption leaves both streams, the exit code and the call COUNT completely unchanged while every uploaded object gets the wrong header. Driven red, then the source is confirmed byte-identical and green."""
     original = (ROOT / PORT_REL).read_text(encoding="utf-8")
     mutated = original.replace(
         'CACHE_CONTROL = "public, max-age=31536000"',

@@ -205,8 +205,7 @@ def test_from_is_demanded_first(tmp_path) -> None:
 
 
 def test_from_is_demanded_before_the_exclusivity_checks(tmp_path) -> None:
-    """ORDER IS OBSERVABLE. `--all --image api` with no tags reports the missing `--from`, not the mutual exclusion, and a port that validated targets first would print a different message with the same exit code.
-    """
+    """ORDER IS OBSERVABLE. `--all --image api` with no tags reports the missing `--from`, not the mutual exclusion, and a port that validated targets first would print a different message with the same exit code."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--all", "--image", "api"])
     _agree(old, new, "order", old_calls, new_calls)
     assert old.stderr == "✗ --from is required\n"
@@ -223,8 +222,7 @@ def test_the_missing_from_beats_the_image_exclusivity_too(tmp_path) -> None:
 
 
 def test_the_missing_to_also_beats_the_all_exclusivity(tmp_path) -> None:
-    """The same gap one rung down: `--to` is checked before `--all` versus a named target, so this pairing reports the missing `--to`.
-    """
+    """The same gap one rung down: `--to` is checked before `--all` versus a named target, so this pairing reports the missing `--to`."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--all", "--image", "api", "--from", "ci-1"]
     )
@@ -322,8 +320,7 @@ def test_an_image_path_bypasses_the_registry_and_shortens_the_label(tmp_path) ->
 
 
 def test_an_image_with_a_slash_is_treated_as_a_full_path(tmp_path) -> None:
-    """THE UNDOCUMENTED HALF: `--image` does not always mean "relative". The twin decides by looking for a `/` inside `retag_image`, so this reaches the same code path as `--image-path`.
-    """
+    """THE UNDOCUMENTED HALF: `--image` does not always mean "relative". The twin decides by looking for a `/` inside `retag_image`, so this reaches the same code path as `--image-path`."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--image", "ghcr.io/acme/server", "--from", "a", "--to", "b"]
     )
@@ -362,8 +359,7 @@ def test_a_failing_create_counts_as_failed_and_keeps_going(tmp_path) -> None:
 
 
 def test_a_failing_latest_push_aborts_that_image(tmp_path) -> None:
-    """`--push-latest` failing returns 1 BEFORE the `Re-tagged ... successfully` line, so the version tag is live and `:latest` is stale with nothing saying so beyond the summary count.
-    """
+    """`--push-latest` failing returns 1 BEFORE the `Re-tagged ... successfully` line, so the version tag is live and `:latest` is stale with nothing saying so beyond the summary count."""
     body = FAKE_DOCKER.replace(
         "if rc:",
         'if rc and (":latest" in " ".join(argv) or os.environ.get("FAKE_ALL_FAIL")):',
@@ -467,8 +463,7 @@ def test_skip_if_exists_skips_when_the_digests_match(tmp_path) -> None:
 
 
 def test_skip_if_exists_retags_when_the_digests_differ(tmp_path) -> None:
-    """THE CASE THE TWIN'S COMMENT IS ABOUT: a stale destination tag from a previous failed release at the same version must NOT lock the new image out.
-    """
+    """THE CASE THE TWIN'S COMMENT IS ABOUT: a stale destination tag from a previous failed release at the same version must NOT lock the new image out."""
     old, new, old_calls, new_calls = _skip(
         tmp_path, FAKE_DIGEST_DST="sha256:stale", FAKE_DIGEST_SRC="sha256:fresh"
     )
@@ -495,8 +490,7 @@ def test_skip_if_exists_retags_when_the_source_cannot_be_read(tmp_path) -> None:
 
 
 def test_defect_the_failing_summary_is_still_a_green_tick(tmp_path) -> None:
-    """`log_info` on a summary that says `0 succeeded, 2 failed`, so the last line of a totally failed run carries a ✓. `cleanup-staging.sh`, one directory over, uses `log_error` for the same situation.
-    """
+    """`log_info` on a summary that says `0 succeeded, 2 failed`, so the last line of a totally failed run carries a ✓. `cleanup-staging.sh`, one directory over, uses `log_error` for the same situation."""
     old, _new, _oc, _nc = run_both(
         tmp_path, ["--all", "--from", "a", "--to", "b"], FAKE_DOCKER_RC="7"
     )
@@ -505,8 +499,7 @@ def test_defect_the_failing_summary_is_still_a_green_tick(tmp_path) -> None:
 
 
 def test_defect_nothing_verifies_the_destination_after_the_push(tmp_path) -> None:
-    """A docker that records nothing and exits 0 produces a clean promotion report. That is the twin's behaviour and the port reproduces it.
-    """
+    """A docker that records nothing and exits 0 produces a clean promotion report. That is the twin's behaviour and the port reproduces it."""
     silent = "#!/usr/bin/python3\nimport sys\nsys.exit(0)\n"
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["--all", "--from", "a", "--to", "b"], docker_body=silent
@@ -602,8 +595,7 @@ def test_the_merged_stream_keeps_the_twins_line_order(tmp_path) -> None:
 
 
 def test_basename_matches_bash_on_trailing_slashes() -> None:
-    """`os.path.basename` is NOT bash's basename, and the difference would print an empty label. Checked against the real tool rather than assumed.
-    """
+    """`os.path.basename` is NOT bash's basename, and the difference would print an empty label. Checked against the real tool rather than assumed."""
     real = shutil.which("basename")
     assert real is not None, "basename is missing from this machine"
     for candidate in ("a/b", "a/b/", "a/b//", "/", "//", "ghcr.io/acme/server", "x"):

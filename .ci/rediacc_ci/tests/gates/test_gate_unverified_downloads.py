@@ -36,8 +36,7 @@ def test_real_tree_passes(gate):
 
 
 def test_controls_run_every_invocation(gate):
-    """The gate self-tests its detector on every run, so a green IS the planted-defect proof for the pure logic. This asserts that machinery is actually wired.
-    """
+    """The gate self-tests its detector on every run, so a green IS the planted-defect proof for the pure logic. This asserts that machinery is actually wired."""
     result = run(gate)
     gate.assert_contains(
         result.combined,
@@ -61,8 +60,7 @@ def test_bare_allowlist_entry_is_refused(gate, tmp_path):
 
 
 def test_allowlist_is_load_bearing(gate, tmp_path):
-    """An empty allowlist strips the four real exemptions, so the gate must go red on the tree's genuinely-unverifiable fetches. This is the vacuity guard: it proves the allowlist is doing work rather than the gate having nothing to find.
-    """
+    """An empty allowlist strips the four real exemptions, so the gate must go red on the tree's genuinely-unverifiable fetches. This is the vacuity guard: it proves the allowlist is doing work rather than the gate having nothing to find."""
     allow = tmp_path / "allow"
     allow.write_text("", encoding="utf-8")
     result = run(gate, env={"UNVERIFIED_DOWNLOAD_ALLOWLIST": str(allow)})

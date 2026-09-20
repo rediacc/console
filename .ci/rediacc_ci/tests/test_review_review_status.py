@@ -870,7 +870,7 @@ def test_a_non_infra_attempt_never_exhausts_a_head() -> None:
 
 
 def test_spent_attempts_count_against_the_cap_beside_posted_reports() -> None:
-    """"spent", not "posted": the numerator is reports PLUS attempts that burned their budget and posted nothing. Counting reports alone is what read 0/3 here while the gate read 3/3."""
+    """ "spent", not "posted": the numerator is reports PLUS attempts that burned their budget and posted nothing. Counting reports alone is what read 0/3 here while the gate read 3/3."""
 
     def build(world: World) -> None:
         world.write(

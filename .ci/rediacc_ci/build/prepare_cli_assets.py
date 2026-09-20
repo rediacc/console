@@ -178,8 +178,7 @@ def sea_config(asset_pairs: list[tuple[str, str]]) -> str:
 
 
 def asset_count(asset_pairs: list[tuple[str, str]]) -> int:
-    """`:211`, DEFECT 3 preserved. `printf '%b'` writes no trailing newline, so `wc -l` counts the separators between the entries, one fewer than there are.
-    """
+    """`:211`, DEFECT 3 preserved. `printf '%b'` writes no trailing newline, so `wc -l` counts the separators between the entries, one fewer than there are."""
     return max(len(asset_pairs) - 1, 0)
 
 

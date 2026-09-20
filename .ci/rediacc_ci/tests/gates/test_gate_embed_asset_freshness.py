@@ -171,8 +171,7 @@ def test_fails_soft_when_uncheckable(gate, tmp_path):
 
 
 def test_blocklist_rejects_missing_reason(gate, tmp_path):
-    """The blocklist is a BLOCKER-gated suppression list; a bare entry with no substantive reason must fail the gate, not silently hold the pin.
-    """
+    """The blocklist is a BLOCKER-gated suppression list; a bare entry with no substantive reason must fail the gate, not silently hold the pin."""
     require_submodule(gate)
     result = run_gate(tmp_path, upstream_map(gate), blocklist="criu\n")
     gate.assert_exit_code(

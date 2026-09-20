@@ -212,7 +212,7 @@ class Outcome:
 
     @property
     def verdict(self) -> str:
-        """"pass" | "fail" | "vacuous" | "lost". Four outcomes and not two, because `vacuous` and `lost` are the ones a boolean would fold into `pass`."""
+        """ "pass" | "fail" | "vacuous" | "lost". Four outcomes and not two, because `vacuous` and `lost` are the ones a boolean would fold into `pass`."""
         if not self.recorded:
             return "lost"
         if self.rc != 0:

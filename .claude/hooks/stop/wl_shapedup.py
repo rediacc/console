@@ -341,8 +341,8 @@ def counter_findings(root):
     if not os.path.exists(script):
         return [], "counter not present at %s" % COUNTER
     proc = wl_proc.run(
-        # `--emit-index` RIDES THE RUN THAT WAS HAPPENING ANYWAY, which is the whole reason the commit-path probe can afford a fresh cache. The scan is the expensive part (about 1.1s over the corpus); writing the index it just computed is a bundle and two file writes, and it happens exactly when the corpus has changed, because that is when this rule re-runs at all. A refresh on
-        # its own timer would be a second schedule for one fact.
+        # `--emit-index` RIDES THE RUN THAT WAS HAPPENING ANYWAY, which is the whole reason the commit-path probe can afford a fresh cache. The scan is the expensive part (about 1.1s over the corpus); writing the index it just computed is a bundle and two file writes, and it happens exactly when the corpus has changed, because that is when this rule re-runs at all. A refresh on its
+        # own timer would be a second schedule for one fact.
         ["npx", "tsx", COUNTER, "--json", "--emit-index"],
         timeout=COUNTER_TIMEOUT_S,
         cwd=root,

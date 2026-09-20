@@ -117,8 +117,7 @@ def failure_files(directory, prefix: str) -> list:
 
 
 def test_every_moved_function_is_solely_owned_by_this_module(gate):
-    """WHAT THIS REPLACED. Until the cutover run.sh carried its own copy of all four and this compared the bodies byte for byte. run.sh has no copies now -- and this module has DELIBERATELY diverged from what run.sh used to hold, because phase 2 fixed the `wait -n` defect here -- so byte-identity is not merely unmeasurable, it is the wrong question.
-    """
+    """WHAT THIS REPLACED. Until the cutover run.sh carried its own copy of all four and this compared the bodies byte for byte. run.sh has no copies now -- and this module has DELIBERATELY diverged from what run.sh used to hold, because phase 2 fixed the `wait -n` defect here -- so byte-identity is not merely unmeasurable, it is the wrong question."""
     gate.log_test("pool.sh must hold the ONLY definition of all four moved functions")
     media_verify.media_assert_module_owns(gate, "pool.sh", *MOVED)
 

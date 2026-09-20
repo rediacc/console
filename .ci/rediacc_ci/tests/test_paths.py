@@ -95,8 +95,7 @@ def test_an_override_pointing_at_a_file_raises(tmp_path, monkeypatch):
 
 
 def test_the_raise_names_the_variable_so_the_operator_can_act():
-    """The message is the fix. A RootError that does not say which variable is wrong sends the reader hunting through eight per-gate names.
-    """
+    """The message is the fix. A RootError that does not say which variable is wrong sends the reader hunting through eight per-gate names."""
     err = paths.RootError("%s=/nope is not a directory" % paths.ROOT_ENV)
     assert paths.ROOT_ENV in str(err)
 
@@ -360,8 +359,7 @@ def test_a_root_inside_a_worktrees_path_still_walks(tmp_path):
 
 
 def test_a_nested_peer_worktree_is_still_pruned_from_such_a_root(tmp_path):
-    """CONTROL for the test above: walking from inside a worktree must not switch the prune off wholesale. A sub-agent's own tree can hold a peer of its own.
-    """
+    """CONTROL for the test above: walking from inside a worktree must not switch the prune off wholesale. A sub-agent's own tree can hold a peer of its own."""
     root = tmp_path / ".claude" / "worktrees" / "agent-self"
     (root / "src").mkdir(parents=True)
     (root / "src" / "a.py").write_text("", encoding="utf-8")
@@ -410,8 +408,7 @@ def test_a_directory_merely_named_worktrees_is_kept(tmp_path):
 
 
 def test_a_dot_worktrees_directory_is_pruned(tmp_path):
-    """`scripts/dev/worktree.sh` puts checkouts at `$ROOT_DIR/.worktrees` and `.gitignore:146` excludes them. Same bug, second spelling.
-    """
+    """`scripts/dev/worktree.sh` puts checkouts at `$ROOT_DIR/.worktrees` and `.gitignore:146` excludes them. Same bug, second spelling."""
     (tmp_path / ".worktrees" / "0824-1").mkdir(parents=True)
     (tmp_path / ".worktrees" / "0824-1" / "go.mod").write_text("", encoding="utf-8")
     (tmp_path / "go.mod").write_text("", encoding="utf-8")
@@ -431,8 +428,7 @@ def test_exclude_dirs_adds_to_the_standing_prune_rather_than_replacing_it(tmp_pa
 
 
 def test_the_yielded_dirnames_list_is_mutated_in_place(tmp_path):
-    """CALL SITES SORT `dirnames` TO STEER THE WALK, and that only works because the helper mutates the list `os.walk` still holds rather than handing back a new one. `no_app_admin_perm`, `agent_browser_exit` and `e2e_coverage` all do it for deterministic output.
-    """
+    """CALL SITES SORT `dirnames` TO STEER THE WALK, and that only works because the helper mutates the list `os.walk` still holds rather than handing back a new one. `no_app_admin_perm`, `agent_browser_exit` and `e2e_coverage` all do it for deterministic output."""
     for name in ("b", "a", "node_modules"):
         (tmp_path / name).mkdir()
         (tmp_path / name / "f.txt").write_text("", encoding="utf-8")
@@ -453,8 +449,7 @@ def test_walk_tree_does_not_follow_directory_symlinks(tmp_path):
 
 
 def test_a_missing_root_yields_nothing_rather_than_raising(tmp_path):
-    """Several callers rely on this to match a twin's `2>/dev/null`. It is NOT a vacuity hole being blessed: the anti-vacuity floor is per gate, because only the caller knows how big its corpus has to be. See the helper's docstring.
-    """
+    """Several callers rely on this to match a twin's `2>/dev/null`. It is NOT a vacuity hole being blessed: the anti-vacuity floor is per gate, because only the caller knows how big its corpus has to be. See the helper's docstring."""
     assert collect(tmp_path / "no-such-dir") == set()
 
 
@@ -480,8 +475,7 @@ def test_the_real_tree_walk_is_not_trivially_empty():
 
 
 def test_everything_in_dunder_all_exists():
-    """An `__all__` naming something that was renamed is a broken star-import that nothing else in this repo would notice.
-    """
+    """An `__all__` naming something that was renamed is a broken star-import that nothing else in this repo would notice."""
     missing = [name for name in paths.__all__ if not hasattr(paths, name)]
     assert missing == []
 

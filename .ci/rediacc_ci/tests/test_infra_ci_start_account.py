@@ -440,7 +440,7 @@ def test_the_progress_line_fires_only_on_multiples_of_fifteen() -> None:
 
 
 def test_planted_defect_is_caught_by_this_differential() -> None:
-    """"Fix" the substring match in a COPY of the port and watch it diverge.
+    """ "Fix" the substring match in a COPY of the port and watch it diverge.
 
     Turning `grep -q "healthy"` into an equality test is the change a reader would make on sight, and it is a real behaviour change against the twin. This mutates an in-memory copy; the file on disk is never touched.
     """

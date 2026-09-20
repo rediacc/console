@@ -192,8 +192,7 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
 
 
 def test_the_scratch_path_cannot_reach_a_real_npm(tmp_path) -> None:
-    """A PREPENDED PATH would still resolve the real npm, and the real `npm run build:www` is a multi-minute Astro build of this repository. So the fixture REPLACES PATH, and this asserts the replacement holds in both directions: the fake is reachable, and dropping it leaves nothing behind it.
-    """
+    """A PREPENDED PATH would still resolve the real npm, and the real `npm run build:www` is a multi-minute Astro build of this repository. So the fixture REPLACES PATH, and this asserts the replacement holds in both directions: the fake is reachable, and dropping it leaves nothing behind it."""
     root = fixture(tmp_path)
     sealed = scratch_bin(root)
     assert shutil.which("npm", path=sealed) == str(root / "fixture-bin" / "npm")
@@ -221,8 +220,7 @@ def test_a_complete_build_prints_three_lines_and_exits_zero(tmp_path) -> None:
 
 
 def test_a_missing_dist_directory_refuses_with_the_generic_sentence(tmp_path) -> None:
-    """DEFECT 1, driven. `require_dir "packages/www/dist" "www build output"` passes a label that `common.sh:161-167` reads `$1` only, so the label never reaches a terminal and the operator is told nothing about WHICH build produced nothing. The assertion is on the label's ABSENCE, so it fires the day the twin is repaired rather than quietly agreeing with a fixed twin.
-    """
+    """DEFECT 1, driven. `require_dir "packages/www/dist" "www build output"` passes a label that `common.sh:161-167` reads `$1` only, so the label never reaches a terminal and the operator is told nothing about WHICH build produced nothing. The assertion is on the label's ABSENCE, so it fires the day the twin is repaired rather than quietly agreeing with a fixed twin."""
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(root)
     assert old.returncode == 1
@@ -258,8 +256,7 @@ def test_a_failing_npm_is_reported_as_a_failed_build(tmp_path) -> None:
 
 
 def test_defect_npms_exit_code_is_flattened_to_one(tmp_path) -> None:
-    """DEFECT 2. npm exiting 3 -- or 137, an OOM kill -- makes this script exit 1, so the workflow step cannot tell an infrastructure failure from a compilation failure. `buildx-push-web.sh` one file over does the opposite and lets docker's status through, which is what makes this a defect rather than a house rule. A port that "fixed" it would diverge here.
-    """
+    """DEFECT 2. npm exiting 3 -- or 137, an OOM kill -- makes this script exit 1, so the workflow step cannot tell an infrastructure failure from a compilation failure. `buildx-push-web.sh` one file over does the opposite and lets docker's status through, which is what makes this a defect rather than a house rule. A port that "fixed" it would diverge here."""
     for npm_rc in ("3", "137"):
         root = fixture(tmp_path / npm_rc)
         old, new, old_calls, new_calls = run_both(root, FAKE_NPM_RC=npm_rc)
@@ -268,8 +265,7 @@ def test_defect_npms_exit_code_is_flattened_to_one(tmp_path) -> None:
 
 
 def test_defect_the_green_tick_precedes_every_verification(tmp_path) -> None:
-    """DEFECT 3. `✓ www build completed` is printed on npm's exit code alone, so a run that produced an empty dist prints a success line and THEN refuses. Pinned by ORDER, which is the only way it is visible.
-    """
+    """DEFECT 3. `✓ www build completed` is printed on npm's exit code alone, so a run that produced an empty dist prints a success line and THEN refuses. Pinned by ORDER, which is the only way it is visible."""
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(root)
     lines = old.stderr.splitlines()
@@ -279,8 +275,7 @@ def test_defect_the_green_tick_precedes_every_verification(tmp_path) -> None:
 
 
 def test_a_missing_npm_reads_as_a_failed_build_with_bashs_line_above_it(tmp_path) -> None:
-    """The shell's own diagnostic is the ONLY evidence the tool was absent, so the port forges it rather than tracebacking. `$0` differs and is masked; the line number, the binary name and the reason are compared exactly.
-    """
+    """The shell's own diagnostic is the ONLY evidence the tool was absent, so the port forges it rather than tracebacking. `$0` differs and is masked; the line number, the binary name and the reason are compared exactly."""
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(root, drop_npm=True)
     assert old.returncode == 1
@@ -297,8 +292,7 @@ def test_a_missing_npm_reads_as_a_failed_build_with_bashs_line_above_it(tmp_path
 
 
 def test_both_sides_cd_to_the_repo_root_whatever_the_caller_did(tmp_path) -> None:
-    """The `cd` is observable: every later path is relative, so a side that skipped it would refuse with the same sentence for a completely different reason. Driven from a directory that is NOT the fixture root and that holds a decoy `packages/www/dist/index.html` -- a side reading paths relative to the CALLER would find the decoy and exit 0.
-    """
+    """The `cd` is observable: every later path is relative, so a side that skipped it would refuse with the same sentence for a completely different reason. Driven from a directory that is NOT the fixture root and that holds a decoy `packages/www/dist/index.html` -- a side reading paths relative to the CALLER would find the decoy and exit 0."""
     root = fixture(tmp_path)
     decoy = tmp_path / "elsewhere"
     (decoy / "packages" / "www" / "dist").mkdir(parents=True)
@@ -310,8 +304,7 @@ def test_both_sides_cd_to_the_repo_root_whatever_the_caller_did(tmp_path) -> Non
 
 
 def test_npms_own_two_streams_are_inherited_unmerged(tmp_path) -> None:
-    """A build log is the caller's, not this script's. The stream a line arrives on is part of the contract -- the 2026-09-06 emit-advisory incident was a stream SWAP -- so the fake writes to both and each is compared separately.
-    """
+    """A build log is the caller's, not this script's. The stream a line arrives on is part of the contract -- the 2026-09-06 emit-advisory incident was a stream SWAP -- so the fake writes to both and each is compared separately."""
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(
         root,
@@ -326,8 +319,7 @@ def test_npms_own_two_streams_are_inherited_unmerged(tmp_path) -> None:
 
 
 def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> None:
-    """The one assertion made against the REAL tree rather than a fixture. Both answers come from a file's own location three levels up, but from DIFFERENT files, so a directory move that touched one and not the other would go unnoticed until a build ran in the wrong place.
-    """
+    """The one assertion made against the REAL tree rather than a fixture. Both answers come from a file's own location three levels up, but from DIFFERENT files, so a directory move that touched one and not the other would go unnoticed until a build ran in the wrong place."""
     proc = subprocess.run(
         [BASH, "-c", 'source "$1" && get_repo_root', "bash", str(ROOT / COMMON_REL)],
         capture_output=True,

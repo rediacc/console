@@ -186,8 +186,7 @@ def test_a_failure_on_the_first_call_stops_before_the_other_two(tmp_path) -> Non
 
 
 def test_a_failure_on_the_last_call_leaves_two_images_already_promoted(tmp_path) -> None:
-    """THE HALF-PROMOTION IS THE POINT. renet and rdc are at the new version and server is not, and the run says nothing about it beyond docker's own error.
-    """
+    """THE HALF-PROMOTION IS THE POINT. renet and rdc are at the new version and server is not, and the run says nothing about it beyond docker's own error."""
     old, new, old_calls, new_calls = run_both(tmp_path, FAKE_FAIL_ON_CALL="3")
     _agree(old, new, "fail-last", old_calls, new_calls)
 
@@ -208,8 +207,7 @@ def test_a_missing_docker_refuses_before_any_call(tmp_path) -> None:
 
 
 def test_extra_arguments_are_ignored_by_both(tmp_path) -> None:
-    """NOT AN ACADEMIC CASE. `--dry-run` looks like it would be honoured and is not: the twin parses no argv at all, so a caller reaching for a safety flag gets a real promotion. Recorded as agreement rather than as a wish.
-    """
+    """NOT AN ACADEMIC CASE. `--dry-run` looks like it would be honoured and is not: the twin parses no argv at all, so a caller reaching for a safety flag gets a real promotion. Recorded as agreement rather than as a wish."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--dry-run", "extra"])
     _agree(old, new, "argv", old_calls, new_calls)
     assert old.returncode == 0

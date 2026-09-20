@@ -186,8 +186,7 @@ def _agree(old, new, label: str, old_calls: str = "", new_calls: str = "") -> No
 
 
 def test_the_scratch_path_cannot_reach_a_real_npm(tmp_path) -> None:
-    """`npm run build:json` in this checkout is a real site build. A PREPENDED PATH would still resolve the real binary, so the fixture REPLACES it and this asserts the replacement holds in both directions.
-    """
+    """`npm run build:json` in this checkout is a real site build. A PREPENDED PATH would still resolve the real binary, so the fixture REPLACES it and this asserts the replacement holds in both directions."""
     root = fixture(tmp_path)
     sealed = scratch_bin(root)
     assert shutil.which("npm", path=sealed) == str(root / "fixture-bin" / "npm")
@@ -291,8 +290,7 @@ def test_the_two_twins_say_different_things_about_the_same_failure(tmp_path) -> 
 
 
 def test_both_sides_cd_to_the_repo_root_whatever_the_caller_did(tmp_path) -> None:
-    """Driven from a directory holding a DECOY `packages/json/dist/index.html`: a side reading paths relative to the caller would find it and exit 0.
-    """
+    """Driven from a directory holding a DECOY `packages/json/dist/index.html`: a side reading paths relative to the caller would find it and exit 0."""
     root = fixture(tmp_path)
     decoy = tmp_path / "elsewhere"
     (decoy / "packages" / "json" / "dist").mkdir(parents=True)

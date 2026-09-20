@@ -1009,7 +1009,7 @@ def _orphan(sandbox: pathlib.Path, *, email: str, with_main: bool, conflicting: 
 
 
 def test_a_foreign_branch_is_never_rewritten() -> None:
-    """"Ours" is TWO independent facts and this is the first: the tip's committer email must be the autopilot identity. Somebody else's branch stops the round even though it sits at exactly the name this round wants."""
+    """ "Ours" is TWO independent facts and this is the first: the tip's committer email must be the autopilot identity. Somebody else's branch stops the round even though it sits at exactly the name this round wants."""
 
     def scenario(sandbox):
         return _orphan(sandbox, email="stranger@example.invalid", with_main=True, conflicting=False)

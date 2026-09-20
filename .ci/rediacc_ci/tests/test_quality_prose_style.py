@@ -756,9 +756,12 @@ def test_reflow_comments_preserves_the_ast_of_every_tracked_python_file():
         "not one file's reflow touched a docstring's own AST value; the corpus proof this "
         "refactor exists for would then be vacuous for the hazard it is meant to catch"
     )
-    assert not mismatched, "reflow_comments changed the AST outside a docstring in %d file(s): %s" % (
-        len(mismatched),
-        mismatched[:10],
+    assert not mismatched, (
+        "reflow_comments changed the AST outside a docstring in %d file(s): %s"
+        % (
+            len(mismatched),
+            mismatched[:10],
+        )
     )
 
 
@@ -766,8 +769,7 @@ def test_reflow_comments_preserves_the_ast_of_every_tracked_python_file():
 
 
 def test_a_narrow_docstring_paragraph_is_r19_visible_and_gets_rejoined():
-    """THE HOLE THIS REFACTOR CLOSES. Before it, `_python_reflow_lines` never looked at a STRING token at all, so a docstring's prose was invisible to both `comment_segments` and the R19 pass it feeds, no matter how narrow-wrapped it was -- 9,932 such paragraphs across 1,021 files, measured live on this corpus.
-    """
+    """THE HOLE THIS REFACTOR CLOSES. Before it, `_python_reflow_lines` never looked at a STRING token at all, so a docstring's prose was invisible to both `comment_segments` and the R19 pass it feeds, no matter how narrow-wrapped it was -- 9,932 such paragraphs across 1,021 files, measured live on this corpus."""
     text = (
         'def f():\n    """Summary.\n\n    one two three\n    four five six\n'
         '    seven eight nine\n    """\n'
@@ -785,9 +787,9 @@ def test_a_verbatim_usage_docstring_is_never_rewrapped():
     """A REAL, currently-tracked shape, not a hypothetical: `.ci/scripts/housekeeping/retire-shadowed-secrets.py`'s module docstring `print(__doc__)`s a `Usage:` block at 2-space indent -- shallower than the `base + 4` code-block rule, and exactly what a naive "join every flush docstring line" reflow would corrupt into one unreadable line."""
     text = (
         '"""Retire a thing.\n\nUsage:\n'
-        '  retire-thing.py <NAME> [<NAME>...]            # report only, default\n'
-        '  retire-thing.py --apply <NAME> [<NAME>...]    # rewrite the files\n'
-        '  retire-thing.py --selftest\n\n'
+        "  retire-thing.py <NAME> [<NAME>...]            # report only, default\n"
+        "  retire-thing.py --apply <NAME> [<NAME>...]    # rewrite the files\n"
+        "  retire-thing.py --selftest\n\n"
         'Exit: 0 clean, 1 nothing to do, 2 a failed control.\n"""\n'
     )
     assert ps.reflow_comments(text, ".py", 384) == text
@@ -872,7 +874,10 @@ def test_a_list_item_continuation_keeps_its_left_margin():
 def test_an_indented_continuation_joins_without_losing_its_margin():
     """The other half, so the stop above is not satisfied by refusing to reflow anything indented: several continuation lines under one item SHOULD collapse to a single line, and that line has to keep the item's margin rather than the document's."""
     text = "- item\n  first continuation line\n  second continuation line\n"
-    assert ps.reflow_markdown(text, 384) == "- item\n  first continuation line second continuation line\n"
+    assert (
+        ps.reflow_markdown(text, 384)
+        == "- item\n  first continuation line second continuation line\n"
+    )
 
 
 def test_a_midline_semicolon_is_prose_not_commented_out_code():
@@ -919,7 +924,9 @@ def test_a_rest_directive_inside_a_docstring_is_never_rewrapped():
 
 def test_a_short_opening_line_widens_and_joins_the_next_line():
     """THE ROOT BUG THIS PLAN FIXES. Before it, a docstring's opening physical line -- carrying the opening quote plus a lead sentence, this repository's own convention on every multi-line docstring -- was excluded from the eligible map unconditionally and emitted verbatim, so a short lead sentence could never widen by absorbing the line beneath it."""
-    text = 'def f():\n    """Lead sentence.\n    More words that follow on the next line.\n    """\n'
+    text = (
+        'def f():\n    """Lead sentence.\n    More words that follow on the next line.\n    """\n'
+    )
     assert ps.reflow_comments(text, ".py", 384) == (
         'def f():\n    """Lead sentence. More words that follow on the next line.\n    """\n'
     )
@@ -951,6 +958,16 @@ def test_a_closing_line_ending_in_the_delimiters_own_quote_gets_a_protective_spa
     """A REAL, currently-tracked shape: a docstring ending in a quoted word right before its own closing triple-quote. Gluing the closing delimiter straight onto text ending in the same quote character is an UNTERMINATED STRING, not cosmetic, so one space must separate them."""
     text = 'def f():\n    """Reads "The round\n    failed in failure." """\n'
     out = ps.reflow_comments(text, ".py", 384)
+    ast.parse(out)
+
+
+def test_an_opening_line_that_begins_with_a_quote_keeps_a_separating_space():
+    """Found by the repository's own formatter gate rather than by any AST proof, which blanks docstring text and so cannot see it: gluing `\"\"\"` onto a first word that starts with a quote made a run of four, and `ruff format` rewrites that with a space, so the reflow and the formatter disagreed on 56 files until the glue wrote the space itself."""
+    text = 'def f():\n    """ "pass" | "fail". Four outcomes\n    and more words here.\n    """\n'
+    out = ps.reflow_comments(text, ".py", 384)
+    assert '"""  "' not in out
+    assert '""""' not in out
+    assert ps.reflow_comments(out, ".py", 384) == out
     ast.parse(out)
 
 

@@ -123,8 +123,7 @@ def test_flapping_worker_is_not_ready(gate):
 
 
 def test_streak_is_load_bearing(gate):
-    """ANTI-VACUITY. Same stub, same URL, same budget -- only REQUIRED_STREAK drops to 1, which is exactly what this script did before the fix. If this does NOT pass, the flapping case above is failing for some other reason and proves nothing about the streak.
-    """
+    """ANTI-VACUITY. Same stub, same URL, same budget -- only REQUIRED_STREAK drops to 1, which is exactly what this script did before the fix. If this does NOT pass, the flapping case above is failing for some other reason and proves nothing about the streak."""
     result = probe(gate, "flap", {"REQUIRED_STREAK": "1"})
     gate.assert_eq(
         result.rc, 0, "with REQUIRED_STREAK=1 the same flapping worker passes (the old bug)"
@@ -142,8 +141,7 @@ def test_slow_worker_still_becomes_ready(gate):
 
 
 def test_override_does_not_need_a_pr_number(gate):
-    """PREVIEW_URL_OVERRIDE exists so this script is testable without being copied through sed. It has to work with PR_NUMBER unset, or the tests above are quietly exercising a different code path than CI does.
-    """
+    """PREVIEW_URL_OVERRIDE exists so this script is testable without being copied through sed. It has to work with PR_NUMBER unset, or the tests above are quietly exercising a different code path than CI does."""
     with stub("steady") as url:
         result = run_wait(
             gate,
@@ -166,8 +164,7 @@ def test_pr_number_still_required_without_override(gate):
 
 
 def test_ci_defaults_are_still_strict(gate):
-    """The knobs are test-only. If someone weakens the DEFAULTS, CI silently goes back to sampling one probe, and every test above would still pass because they all set their own values.
-    """
+    """The knobs are test-only. If someone weakens the DEFAULTS, CI silently goes back to sampling one probe, and every test above would still pass because they all set their own values."""
     if not WAIT_SCRIPT.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(WAIT_SCRIPT))
     src = WAIT_SCRIPT.read_text(encoding="utf-8")

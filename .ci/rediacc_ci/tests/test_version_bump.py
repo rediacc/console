@@ -517,8 +517,7 @@ def _bash_arith(value: str) -> tuple[int, str]:
 
 
 def test_bash_arith_matches_bash_on_every_value_a_manifest_can_hold() -> None:
-    """BOTH DIRECTIONS. The values that WORK must produce the same number, and the values that DIE must die -- a helper with only the happy half would let `0.0.0-dev` through as `0.0.1` and nobody would notice until a tag was cut.
-    """
+    """BOTH DIRECTIONS. The values that WORK must produce the same number, and the values that DIE must die -- a helper with only the happy half would let `0.0.0-dev` through as `0.0.1` and nobody would notice until a tag was cut."""
     for value, expected in (("29", 30), ("0", 1), ("", 1), ("010", 9), ("0x10", 17), ("7", 8)):
         rc, text = _bash_arith(value)
         assert rc == 0, "%r unexpectedly died in bash: %s" % (value, text)

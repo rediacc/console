@@ -370,7 +370,7 @@ def test_the_real_worklist_answers_the_same_three_verbs() -> None:
 
 
 def test_planted_defect_is_caught_by_this_differential() -> None:
-    """"Fix" the phantom-worker regex in a COPY of the port.
+    """ "Fix" the phantom-worker regex in a COPY of the port.
 
     Requiring at least one id character is exactly the change a reader would make on sight, and it is a real divergence from the twin. The mutation is written to a throwaway file; the tracked port is never touched.
     """

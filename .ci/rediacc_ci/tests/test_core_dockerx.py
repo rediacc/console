@@ -479,8 +479,7 @@ def test_retries_follow_the_documented_backoff(fake_bin):
 
 
 def test_the_cannot_run_code_agrees_with_every_other_definition_in_the_repo():
-    """CORPUS-DERIVED, not hand-typed. 77 is written in four places (pool.ts owns it, and three consumers duplicate the literal because they cannot import a TypeScript constant). This reads them and asserts they all still agree, so the day one of them drifts is the day something says so.
-    """
+    """CORPUS-DERIVED, not hand-typed. 77 is written in four places (pool.ts owns it, and three consumers duplicate the literal because they cannot import a TypeScript constant). This reads them and asserts they all still agree, so the day one of them drifts is the day something says so."""
     root = paths.repo_root()
     found = {}
     patterns = {

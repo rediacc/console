@@ -511,8 +511,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the batch size -- the one number whose loss is invisible in the exit code and in every printed line, and which in production means Cloudflare rejecting an oversized purge while the script reports success. Driven red, then the source is confirmed byte-identical and green.
-    """
+    """ANTI-VACUITY, planted on the batch size -- the one number whose loss is invisible in the exit code and in every printed line, and which in production means Cloudflare rejecting an oversized purge while the script reports success. Driven red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace("BATCH_SIZE = 30", "BATCH_SIZE = 60", 1)
     assert mutated != original, "the line this plant targets is no longer present verbatim"

@@ -1,5 +1,4 @@
-"""wl_ci: publish-ref divergence, PR-body freshness, submodule pointer moves, and the v10 open-PR CI-trouble check. Pure movement from worklist.py; every branch here is paid for by an observed failure, so nothing was "simplified" in the extraction.
-"""
+"""wl_ci: publish-ref divergence, PR-body freshness, submodule pointer moves, and the v10 open-PR CI-trouble check. Pure movement from worklist.py; every branch here is paid for by an observed failure, so nothing was "simplified" in the extraction."""
 
 import contextlib
 import datetime
@@ -405,8 +404,7 @@ def review_gate_row(info):
 
 
 def review_gate_detail(root, info, row):
-    """(title, summary, html_url) for the "Review Complete" check-run, read directly, not guessed. This IS review-status.sh's own posted verdict -- the same text a human reads in `gh pr checks` -- so there is no second definition of "what's wrong" to drift from the real gate.
-    """
+    """(title, summary, html_url) for the "Review Complete" check-run, read directly, not guessed. This IS review-status.sh's own posted verdict -- the same text a human reads in `gh pr checks` -- so there is no second definition of "what's wrong" to drift from the real gate."""
     data, err = _gh_json(
         root,
         [

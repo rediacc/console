@@ -345,8 +345,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the zone id -- the one value that decides WHICH cache is purged, and whose corruption leaves both streams and the exit code completely unchanged while media.rediacc.com keeps serving the stale response the script exists to evict. Driven red, then the source is confirmed byte-identical and green.
-    """
+    """ANTI-VACUITY, planted on the zone id -- the one value that decides WHICH cache is purged, and whose corruption leaves both streams and the exit code completely unchanged while media.rediacc.com keeps serving the stale response the script exists to evict. Driven red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
         'ZONE_ID = "9e802649c143c9cefd811d8fd671d31c"',

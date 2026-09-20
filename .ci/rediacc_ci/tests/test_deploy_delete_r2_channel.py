@@ -378,8 +378,7 @@ def test_pure_helpers() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the `-promoted` suffix -- the one character whose loss leaves the promotion-simulation artifacts in the bucket forever while both streams and the exit code stay IDENTICAL. Driven red, then the source is confirmed byte-identical and green.
-    """
+    """ANTI-VACUITY, planted on the `-promoted` suffix -- the one character whose loss leaves the promotion-simulation artifacts in the bucket forever while both streams and the exit code stay IDENTICAL. Driven red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('PROMOTED_SUFFIX = "-promoted"', 'PROMOTED_SUFFIX = "_promoted"', 1)
     assert mutated != original, "the line this plant targets is no longer present verbatim"

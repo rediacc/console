@@ -273,8 +273,7 @@ def test_the_ci_arm_is_the_reason_the_guard_exists(tmp_path):
 
 
 def test_the_local_arm_is_a_silent_pass_and_that_is_the_hole(tmp_path):
-    """THE COMPLEMENT, and a REAL HOLE IN THE LOCAL GATE, pinned rather than fixed. `npm run check:ci-renet` on a checkout without the submodule prints one warning and exits 0, so the gate reports success having run nothing. That is `common.sh`'s deliberate choice (a fresh clone without `--recursive` stays workable) and closing it is a cutover-box decision, not a port's.
-    """
+    """THE COMPLEMENT, and a REAL HOLE IN THE LOCAL GATE, pinned rather than fixed. `npm run check:ci-renet` on a checkout without the submodule prints one warning and exits 0, so the gate reports success having run nothing. That is `common.sh`'s deliberate choice (a fresh clone without `--recursive` stays workable) and closing it is a cutover-box decision, not a port's."""
     root = _fixture(tmp_path, marker="none")
     binder = _binder(tmp_path)
     for subject in (TWIN_REL, PORT_REL):

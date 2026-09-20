@@ -906,7 +906,9 @@ def markdown_segments(text):
             continue
         # A TAG NAMED INSIDE A CODE SPAN IS PROSE ABOUT HTML, NOT HTML. `HTML_BLOCK_TAG` carries a `.*` prefix so it can catch a tag anywhere on the line, which also makes it fire on a sentence that merely MENTIONS one in backticks -- the mention-versus-target class `docs/ci-overhaul/06-progress.md` already records for six separate guards. The consequence was mild rather than
         # corrupting, since refusing to reflow is the safe direction, but it stranded such a paragraph over the length limit with no tool able to fix it. Matching against the code-span-scrubbed line costs nothing for a real `<details>` block, which carries its tag outside any backticks and still matches.
-        if LIST_ITEM.match(raw) or any(p.match(raw) for p in REFLOW_STOP if p is not HTML_BLOCK_TAG):
+        if LIST_ITEM.match(raw) or any(
+            p.match(raw) for p in REFLOW_STOP if p is not HTML_BLOCK_TAG
+        ):
             if buffer:
                 yield "para", start, buffer
                 buffer = []
@@ -986,7 +988,9 @@ def underwrap_findings(path, text, rule, scope, max_len):
                 continue
             if _looks_hard_wrapped(payload, max_len):
                 findings.append(
-                    Finding(path, start, rule.id, payload[0][:80], "\n".join(payload), rule.severity)
+                    Finding(
+                        path, start, rule.id, payload[0][:80], "\n".join(payload), rule.severity
+                    )
                 )
     elif scope == "comment":
         # `comment` scope only ever reaches here from `lint_text` (a real file); `lint_message` never carries it, since a commit/PR body is markdown-shaped text, not source code.
@@ -996,7 +1000,9 @@ def underwrap_findings(path, text, rule, scope, max_len):
                 continue
             _, start, indent, marker, payload, open_delim, close_delim = item
             avail = max(
-                max_len - len(_comment_prefix(indent, marker)) - _delimiter_reserve(open_delim, close_delim),
+                max_len
+                - len(_comment_prefix(indent, marker))
+                - _delimiter_reserve(open_delim, close_delim),
                 20,
             )
             if _looks_hard_wrapped(payload, avail):
@@ -1437,7 +1443,9 @@ def _glue_delimiters(lines, open_delim, close_delim, quote):
     many quote/backslash characters precede it, which is why a single check suffices.
     """
     if open_delim:
-        lines = [open_delim + lines[0], *lines[1:]]
+        # A first word that begins with the delimiter's own quote character would read as a longer run of quotes (`""""x`), which `ruff format` rewrites with a separating space. Writing the space here keeps the rewrite idempotent under that formatter.
+        gap = " " if lines[0].startswith(open_delim[-1]) else ""
+        lines = [open_delim + gap + lines[0], *lines[1:]]
     if close_delim:
         tail = lines[-1]
         if tail.endswith(quote[0]) or _ends_in_odd_backslash_run(tail):
@@ -1486,7 +1494,9 @@ def _python_reflow_lines(text):
                 open_prose = piece[len(open_delim) :]
                 if not open_prose.strip():
                     continue
-                if _is_structural_comment_line(open_prose) or _ends_in_odd_backslash_run(open_prose):
+                if _is_structural_comment_line(open_prose) or _ends_in_odd_backslash_run(
+                    open_prose
+                ):
                     continue
                 indent_text = _nth_line(text, chunk.start)[: chunk.col]
                 found[chunk.start] = (indent_text, open_prose, None, (open_delim, None))
@@ -1495,7 +1505,9 @@ def _python_reflow_lines(text):
                 close_prose = piece[: len(piece) - len(quote)]
                 if _indent(close_prose) != base or not close_prose.strip():
                     continue
-                if _is_structural_comment_line(close_prose) or _ends_in_odd_backslash_run(close_prose):
+                if _is_structural_comment_line(close_prose) or _ends_in_odd_backslash_run(
+                    close_prose
+                ):
                     continue
                 # A TRAILING TOKEN AFTER THE CLOSING QUOTE (a real comment, or more code on the same physical line) is not part of this string and a reconstruction gluing `close_delim` back on alone would silently drop it -- found live in this session's own test corpus, the trailing note on a docstring's own closing line vanishing on the first implementation attempt. `piece` never
                 # contains it (the tokenizer's own string text ends at the quote), so only the raw source line carries it.
@@ -1515,7 +1527,12 @@ def _python_reflow_lines(text):
             if _is_structural_comment_line(piece):
                 continue
             indent_text = piece[: len(piece) - len(piece.lstrip(" \t"))]
-            found[chunk.start + offset] = (indent_text, piece[len(indent_text) :], None, (None, None))
+            found[chunk.start + offset] = (
+                indent_text,
+                piece[len(indent_text) :],
+                None,
+                (None, None),
+            )
     return found
 
 

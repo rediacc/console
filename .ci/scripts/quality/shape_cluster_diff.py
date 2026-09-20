@@ -133,7 +133,9 @@ def report(rev, paths, want_columns):
         "files_compared": len(files),
         "before": dict(totals_before),
         "after": dict(totals_after),
-        "delta": {k: totals_after[k] - totals_before[k] for k in set(totals_before) | set(totals_after)},
+        "delta": {
+            k: totals_after[k] - totals_before[k] for k in set(totals_before) | set(totals_after)
+        },
     }
     return findings, summary
 
@@ -161,13 +163,17 @@ def selftest():
 
     wrapped = "one two\nthree four\nfive six\n"
     joined = "one two three four five six\n"
-    check("a legitimate rewrap loses no NON-prose shape",
-          all(cluster(joined)[k] >= cluster(wrapped)[k] for k in cluster(wrapped) if k != PROSE))
+    check(
+        "a legitimate rewrap loses no NON-prose shape",
+        all(cluster(joined)[k] >= cluster(wrapped)[k] for k in cluster(wrapped) if k != PROSE),
+    )
 
     indented = "- item\n  continuation line\n"
     flattened = "- item\ncontinuation line\n"
-    check("a flattened continuation is invisible to shapes",
-          cluster(indented)["list-cont"] == cluster(flattened).get("list-cont", 0) + 1)
+    check(
+        "a flattened continuation is invisible to shapes",
+        cluster(indented)["list-cont"] == cluster(flattened).get("list-cont", 0) + 1,
+    )
     check("but visible to columns", columns(indented)[2] == 1 and columns(flattened).get(2, 0) == 0)
 
     check("a table row is a row before it is prose", shape_of("| a | b |") == "table-row")
@@ -203,7 +209,9 @@ def selftest():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--rev", default="HEAD", help="the revision to compare the working tree against")
+    ap.add_argument(
+        "--rev", default="HEAD", help="the revision to compare the working tree against"
+    )
     ap.add_argument("--columns", action="store_true", help="also report lost indent widths")
     ap.add_argument("--json", action="store_true", dest="as_json")
     ap.add_argument("--selftest", action="store_true")
@@ -217,20 +225,26 @@ def main(argv=None):
 
     # VACUOUS FLOOR. Zero compared files is not a clean result, it is the tool failing to see the change it was pointed at, and the two are indistinguishable from the exit code alone.
     if summary["files_compared"] == 0:
-        print("VACUOUS: no tracked file differs from %s; nothing was compared." % args.rev,
-              file=sys.stderr)
+        print(
+            "VACUOUS: no tracked file differs from %s; nothing was compared." % args.rev,
+            file=sys.stderr,
+        )
         return 2
 
     if args.as_json:
         print(json.dumps({"findings": findings, "summary": summary}, indent=2, sort_keys=True))
         return 1 if findings else 0
 
-    print("shape-cluster diff against %s: %d file(s) compared" % (args.rev, summary["files_compared"]))
+    print(
+        "shape-cluster diff against %s: %d file(s) compared" % (args.rev, summary["files_compared"])
+    )
     for shape in sorted(summary["delta"]):
         delta = summary["delta"][shape]
         if delta:
-            print("  %-14s %+d  (%d -> %d)" % (shape, delta, summary["before"].get(shape, 0),
-                                               summary["after"].get(shape, 0)))
+            print(
+                "  %-14s %+d  (%d -> %d)"
+                % (shape, delta, summary["before"].get(shape, 0), summary["after"].get(shape, 0))
+            )
     if not findings:
         print("no file lost a shape; nothing structural disappeared.")
         return 0
@@ -239,7 +253,9 @@ def main(argv=None):
         bits = ", ".join("%s %d->%d" % (k, v[0], v[1]) for k, v in sorted(entry["lost"].items()))
         cols = entry.get("columns_lost")
         if cols:
-            bits += " | indents " + ", ".join("%s:%d->%d" % (k, v[0], v[1]) for k, v in sorted(cols.items()))
+            bits += " | indents " + ", ".join(
+                "%s:%d->%d" % (k, v[0], v[1]) for k, v in sorted(cols.items())
+            )
         print("  %-58s %s" % (entry["path"][:58], bits))
     if len(findings) > 20:
         print("  ... and %d more file(s)" % (len(findings) - 20))

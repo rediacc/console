@@ -149,8 +149,7 @@ def test_age_untracked_file_returns_zero(gate, tmp_path):
 
 
 def test_age_truncated_history_cannot_verify(gate, tmp_path):
-    """A TRUNCATED history reports the graft's date, not the line's, so an old suppression looks new. Measured on the real repo before this was fixed: the github.com/docker/docker entry in .go-deps-upgrade-blocklist read 195 days on a full clone and 2 days on a truncated one, with AGE_WARN_DAYS at 180. The gate whose job is expiring stale suppressions expired nothing, in green.
-    """
+    """A TRUNCATED history reports the graft's date, not the line's, so an old suppression looks new. Measured on the real repo before this was fixed: the github.com/docker/docker entry in .go-deps-upgrade-blocklist read 195 days on a full clone and 2 days on a truncated one, with AGE_WARN_DAYS at 180. The gate whose job is expiring stale suppressions expired nothing, in green."""
     make_shallow_pair(gate, tmp_path, 400, "ENTRY_OLD")
 
     # CONTROL FIRST: the same fixture with FULL history must measure the real age. Without this, -1 below could just mean "the fixture is broken".

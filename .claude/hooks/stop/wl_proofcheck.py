@@ -158,7 +158,10 @@ def read_verdict(out):
     if not po["applicable"]:
         return "silent", "no bulk transform in this fix-set"
     if po["proof_attached"] and kind != "none":
-        return "silent", "proof attached (%s): %s" % (kind, _clean(po, "evidence", 160) or "(quoted)")
+        return "silent", "proof attached (%s): %s" % (
+            kind,
+            _clean(po, "evidence", 160) or "(quoted)",
+        )
     transform_kind = _clean(po, "transform_kind", 300)
     if not transform_kind:
         return "degraded", "proof_obligation fired with no transform_kind named"
@@ -188,8 +191,8 @@ def enforce(out, payload, fixset_files=None):
     THE RESERVED CHECK RUNS EVEN WHEN `validate_search` SAYS OK, and it has to: `validate_search` proves a string PARSES as a read-only shell command, not that its English is safe to hand over. "commit the reflow now" carries no `git` token and no verb `_DESTRUCTIVE` recognises, so it validates as `ok` -- caught by this module's own planted control, and fixed here and in
     `wl_classsweep.enforce`, which carried the identical gap on its `search` field.
 
-    `fixset_files` is a SEPARATE, later-added gap of the same shape: a fired finding's own SCOPE claim was never checked against what git says actually changed, only that a follow-up command built from it parses. ANNOTATES `reason` only, never suppresses (see agent/PLAN-judge-prompt-trap-conflation.md and `wl_rules.scope_grounded`'s own docstring for why): this rule never
-    fails closed, so a check added here may only make a fired finding more legible about its own uncertainty.
+    `fixset_files` is a SEPARATE, later-added gap of the same shape: a fired finding's own SCOPE claim was never checked against what git says actually changed, only that a follow-up command built from it parses. ANNOTATES `reason` only, never suppresses (see agent/PLAN-judge-prompt-trap-conflation.md and `wl_rules.scope_grounded`'s own docstring for why): this rule never fails
+    closed, so a check added here may only make a fired finding more legible about its own uncertainty.
     """
     reason = V_REASON % (payload["transform_kind"], V_ASSERTED if payload["asserted"] else "")
     if not wl_rules.scope_grounded(payload.get("scope", ""), fixset_files):

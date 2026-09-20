@@ -171,8 +171,7 @@ def test_a_negative_floor_is_a_programming_error():
 
 
 def test_a_zero_floor_is_allowed_but_has_to_be_typed():
-    """Writable, deliberately -- a suite built at runtime has no fixed count -- but only at the call site, where a reviewer sees the number.
-    """
+    """Writable, deliberately -- a suite built at runtime has no fixed count -- but only at the call site, where a reviewer sees the number."""
     assert Controls("runtime built", floor=0).floor == 0
 
 
@@ -197,8 +196,7 @@ def test_a_failure_line_names_got_and_wanted_on_stderr(capsys):
 
 
 def test_a_red_report_prints_nothing_on_stdout(capsys):
-    """A red suite whose verdict lands on stdout is a red the harness can miss, and stdout is where the SUCCESS line lives.
-    """
+    """A red suite whose verdict lands on stdout is a red the harness can miss, and stdout is where the SUCCESS line lives."""
     c = Controls("red", floor=0)
     c.check("a", 1, 2)
     c.report()
@@ -249,8 +247,7 @@ def test_exit_is_one_when_only_the_floor_failed():
 
 
 def test_two_runners_do_not_share_state():
-    """`class Tally` with class attributes is shared by every instance and every importer. Two suites in one process silently added up.
-    """
+    """`class Tally` with class attributes is shared by every instance and every importer. Two suites in one process silently added up."""
     a = Controls("a", floor=0)
     b = Controls("b", floor=0)
     a.check("only a", 1, 2)

@@ -515,8 +515,7 @@ def test_decide_is_the_ratchet_rule() -> None:
 
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the monotonicity test itself -- the one line whose removal turns a ratchet into a follower. The mutant advances the floor DOWNWARD to an older observation, which is exactly the scrub this file exists to survive, and it does it while printing a perfectly plausible ::notice:: line. Driven red, then the source is confirmed byte-identical and green.
-    """
+    """ANTI-VACUITY, planted on the monotonicity test itself -- the one line whose removal turns a ratchet into a follower. The mutant advances the floor DOWNWARD to an older observation, which is exactly the scrub this file exists to survive, and it does it while printing a perfectly plausible ::notice:: line. Driven red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
         "    if newer_of(compare_to, oldest) == compare_to:\n",

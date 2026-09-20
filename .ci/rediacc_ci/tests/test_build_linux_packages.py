@@ -258,8 +258,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
 
 
 def test_the_delegate_is_actually_reached_eight_times(tmp_path):
-    """ANTI-VACUITY. Every comparison above is worthless if the delegate never ran, and this also pins the MATRIX and the CWD: eight invocations, in the twin's nesting order, all from the repository root.
-    """
+    """ANTI-VACUITY. Every comparison above is worthless if the delegate never ran, and this also pins the MATRIX and the CWD: eight invocations, in the twin's nesting order, all from the repository root."""
     root = _fixture(tmp_path / "v")
     out = _run(PORT_REL, root)
     assert out["exit"] == 0, out
@@ -315,8 +314,7 @@ def test_the_musl_substitution_only_touches_apk(tmp_path):
 
 
 def test_the_glibc_fallback_is_real_and_silent(tmp_path):
-    """The other half of the same decision, and the one the twin's own header calls out: with no musl binary, `apk` packages the GLIBC binary and says nothing about it. Pinned in both, because a `.apk` holding a glibc binary installs cleanly on Alpine and fails at exec time.
-    """
+    """The other half of the same decision, and the one the twin's own header calls out: with no musl binary, `apk` packages the GLIBC binary and says nothing about it. Pinned in both, because a `.apk` holding a glibc binary installs cleanly on Alpine and fails at exec time."""
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("g-%s" % subject.name))
         out = _run(subject, root)

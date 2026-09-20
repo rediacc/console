@@ -116,8 +116,7 @@ def summary_count(both: str) -> str:
 
 
 def files_count(both: str) -> str:
-    """`grep -oE 'Test Files +[0-9]+ ' | grep -oE '[0-9]+' | tail -1` (:126,134 of the twin). Also ANSI-stripped first, for the same reason as above.
-    """
+    """`grep -oE 'Test Files +[0-9]+ ' | grep -oE '[0-9]+' | tail -1` (:126,134 of the twin). Also ANSI-stripped first, for the same reason as above."""
     found = FILES_RE.findall(_ANSI_RE.sub("", both))
     return found[-1] if found else ""
 
