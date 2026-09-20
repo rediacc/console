@@ -5838,7 +5838,8 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       **Two carried-forward failure modes in every batch brief:** the tool-side `title_of()` fix
       exists, do not re-implement it; and every `## Outcome` is derived from
       `git log --find-object` / `git log -- <path>`, **never from a `Status:` header.**
-- [ ] **W12 P3.5 S, calendar-gated ~2026-09-21** Tick with evidence. Mechanism DONE
+- [x] **W12 P3.5 S, calendar-gated ~2026-09-21** Tick with evidence. Mechanism DONE
+    (ticked) 2026-09-20T16:36:00Z by d778be9d: operator instructed 2026-09-20 not to wait for the 14-day window (census span 13.45 days, 199 rows, first 2026-09-07T03:41Z, last 2026-09-20T14:32Z). C11 fired 0 of 196 rows and its selftest fires on a planted landed blob with no Full-Text line, so it is a rule with no current subject, not a broken instrument.
       (`.ci/scripts/quality/check_plan_record.py:44`, window `:167-168`, anti-vacuity `:74-79`, four set-based floors
       `:663`); tracked census at `agent/census-plan-record.jsonl`, span 0.41 of 14 days.
       **Do not close the window early to get a quiet number** -- B1 runs inside it and will move
