@@ -760,7 +760,7 @@ jobs:
 
       - name: Start account server
         id: deploy
-        run: bash .ci/scripts/infra/ci-start-account.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account
         env:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
@@ -1137,7 +1137,7 @@ jobs:
         env:
           TAG: ${{ env.TAG }}
           CI_MODE: 'true'
-        run: .ci/scripts/infra/ci-start-elite.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_elite
 
       - name: Run Health Check
         run: ./private/elite/scripts/healthcheck.sh
@@ -1517,7 +1517,7 @@ jobs:
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
 
       - name: Wait for preview worker
-        run: .ci/scripts/deploy/wait-for-preview-worker.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.wait_for_preview_worker
 
       - name: Run license smoke test
         run: npx tsx .ci/scripts/test/smoke-test-preview.ts

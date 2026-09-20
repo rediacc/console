@@ -26,6 +26,23 @@ TWO HARNESS BUGS LEFT ROWS IN THESE FILES, and neither is deleted, because a led
 `w7p4b-ensure-nfpm` likewise carries eight rows from a scratch repo that had no `.devcontainer/toolchain.env`, where both sides refused identically at `constants.sh`. Those rows are substantive and honest -- the two implementations agree on a refusal -- and they are simply not the interesting half of the ledger.
 
 THE PORTS ARE NOT RE-TESTED HERE. Each has a permanent side-by-side differential of its own under `.ci/rediacc_ci/tests/`; what was missing is enforcement of the LEDGERS the cutover rests on.
+
+-----------------------------------------------------------------------------
+THE SECOND FAMILY, seven more pairs, and the two things it did differently
+-----------------------------------------------------------------------------
+
+`resolve-version`, `inject-env`, `check-existing-release`, `clone-d1`, `wait-for-preview-worker`, `ci-start-account` and `ci-start-elite` were recorded the same way as the five above, and every one of them already carried an OLDER ledger (`w7p6-*` or `w7p5a-*`) that cannot be read as attesting to anything: those rows reach both sides through a `bash fx/run.sh old|new` or
+`_w7p5a_record_wrapper.sh` indirection whose fixture no longer exists. Re-recorded rather than cited, for the reason the first family gives above.
+
+  * THE RECORDING STUB IS NOT ALWAYS A BINARY ON PATH. `wait-for-preview-worker`
+    shells out to `curl` while its port speaks HTTP through `urllib`, so a PATH stub for the client would have recorded one side and not the other, and the pair would have had to be excused from the call-log rule. The external thing BOTH sides drive is the preview Worker, so the stub is the SERVER: a local `http.server` that appends one `worker GET <path>` line per request. The
+    probe sequence -- which endpoint, how many times, in what order, which is the whole subject of a readiness script -- is therefore inside the compared set for both implementations. `PAIRS` names `worker` as that pair's binary for exactly this reason.
+  * `git` IS STUBBED AS A PASS-THROUGH. `resolve-version`, `inject-env` and
+    `check-existing-release` exist to run real git commands, so their stub logs the argv and then `exec`s the real binary. That keeps `git tag -l`'s answer real while still putting the invocation inside the comparison; a reimplementing stub would have compared two ports against a third implementation.
+
+ONE ACCEPTED DIVERGENCE, CUT OVER DELIBERATELY: `clone-d1 --sanitize` on a host that HAS `sqlite3`. `.ci/scripts/deploy/sanitize-d1.sql` was deleted in `57b61098c` and never replaced, so that path fails on both sides -- but it fails through a `< file` redirection, and bash reports that as `<script path>: line 117: <path>: No such file or directory` while the port reports
+`clone-d1.sh: <path>: No such file or directory`. Same stream, same exit status, same path and reason, different leader; `test_deploy_clone_d1.py` normalises exactly that shape and asserts the normaliser is tight. The recording host has no `sqlite3`, so the ledger's `--sanitize` row is the `Required command 'sqlite3' is not available` refusal, which is byte-identical. The missing
+`.sql` file is a defect in its own right and is reported separately: `.github/workflows/edge-clone-d1.yml` passes `--sanitize` today, so that job cannot succeed in EITHER language.
 """
 
 from __future__ import annotations
@@ -36,7 +53,7 @@ import re
 
 import pytest
 
-from rediacc_ci import paths
+from rediacc_ci import paths, workflows
 
 ROOT = pathlib.Path(paths.repo_root())
 SHADOW = ROOT / ".ci" / "shadow"
@@ -74,6 +91,42 @@ PAIRS = {
         "rediacc_ci.setup.install_cli_global",
         "npm",
     ),
+    "w7p4b-resolve-version": (
+        ".ci/scripts/version/resolve-version.sh",
+        "rediacc_ci.version.resolve_version",
+        "git",
+    ),
+    "w7p4b-inject-env": (
+        ".ci/scripts/version/inject-env.sh",
+        "rediacc_ci.version.inject_env",
+        "git",
+    ),
+    "w7p4b-check-existing-release": (
+        ".ci/scripts/release/check-existing-release.sh",
+        "rediacc_ci.release.check_existing_release",
+        "gh",
+    ),
+    "w7p4b-clone-d1": (
+        ".ci/scripts/deploy/clone-d1.sh",
+        "rediacc_ci.deploy.clone_d1",
+        "npx",
+    ),
+    "w7p4b-ci-start-elite": (
+        ".ci/scripts/infra/ci-start-elite.sh",
+        "rediacc_ci.infra.ci_start_elite",
+        "curl",
+    ),
+    "w7p4b-ci-start-account": (
+        ".ci/scripts/infra/ci-start-account.sh",
+        "rediacc_ci.infra.ci_start_account",
+        "docker",
+    ),
+    # `worker`, not `curl`: the twin drives curl and the port drives urllib, so the stub that records the traffic is the preview Worker itself. See the module docstring.
+    "w7p4b-wait-for-preview-worker": (
+        ".ci/scripts/deploy/wait-for-preview-worker.sh",
+        "rediacc_ci.deploy.wait_for_preview_worker",
+        "worker",
+    ),
 }
 
 # A finding that is only the re-emitted status code. Five of these agree about two integers.
@@ -102,6 +155,39 @@ def _substantive(rows: list[dict]) -> list[dict]:
 
 def _workflow_text() -> str:
     return "\n".join(p.read_text(encoding="utf-8") for p in sorted(WORKFLOWS.glob("*.yml")))
+
+
+def _call_site_text() -> str:
+    """Every `run:` and `with:` VALUE in `.github/workflows/*.yml`, concatenated.
+
+    W7P4-W's acceptance counts a script as still called only under one of those two keys, because 31 of the 290 raw occurrences it started from were comment lines and ten distinct paths appeared in comments alone. A raw text search therefore reads a retired path as live: `ci-start-elite.sh` is named in `breakpoint.yml` by a `workflow_dispatch` input DESCRIPTION and by a comment,
+    neither of which runs anything.
+
+    Parsed with `rediacc_ci.workflows` rather than PyYAML, which is not installed for the interpreter that runs pytest (see that module's own docstring). Keys are collected at any depth, so a reusable workflow's job-level `with:` counts alongside a step's.
+    """
+    found: list[str] = []
+
+    def walk(node: object) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key in ("run", "with"):
+                    found.append(_flatten(value))
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    for path in sorted(WORKFLOWS.glob("*.yml")):
+        walk(workflows.load(path))
+    return "\n".join(found)
+
+
+def _flatten(value: object) -> str:
+    if isinstance(value, dict):
+        return "\n".join(_flatten(v) for v in value.values())
+    if isinstance(value, list):
+        return "\n".join(_flatten(v) for v in value)
+    return str(value)
 
 
 def test_the_pair_set_is_not_empty() -> None:
@@ -180,12 +266,12 @@ def test_the_external_call_log_was_part_of_the_comparison(pair: str) -> None:
 def test_the_call_site_was_actually_cut_over(pair: str) -> None:
     """THE LOAD-BEARING ONE, and the direction a ledger alone cannot police. A licence that nothing consumed is a licence nobody notices going stale; a call site that reverted to bash while the ledger stayed reads as a finished cutover."""
     twin, module, _ = PAIRS[pair]
-    text = _workflow_text()
-    assert twin not in text, (
-        "%s is still named in .github/workflows/*.yml. P4b's acceptance is that the "
-        "set of `.ci/**/*.sh` paths under a `run:` or `with:` key strictly shrinks, "
-        "and this path was counted as removed." % twin
+    assert twin not in _call_site_text(), (
+        "%s is still named under a `run:` or `with:` key in .github/workflows/*.yml. "
+        "P4b's acceptance is that the set of `.ci/**/*.sh` paths under one of those two "
+        "keys strictly shrinks, and this path was counted as removed." % twin
     )
+    text = _workflow_text()
     assert ("python3 -m %s" % module) in text, (
         "no workflow runs `python3 -m %s`, so %s's ledger licenses a cutover that is "
         "not in the tree." % (module, pair)
@@ -199,4 +285,23 @@ def test_the_bash_twin_is_still_on_disk(pair: str) -> None:
     assert (ROOT / twin).is_file(), (
         "%s has been deleted. The ledgers in this module compare against it, so its "
         "removal retires the evidence for the cutover rather than completing it." % twin
+    )
+
+
+def test_the_call_site_reader_can_still_see_a_call_site() -> None:
+    """CONTROL on the assertion above, which is the only one that can go quiet.
+
+    `_call_site_text` narrows the search from the whole workflow text to `run:` and `with:` values, and a narrowing that returned nothing would pass every cutover assertion in this module for every pair, forever. So one path known to be LIVE has to be visible through it, and the two `breakpoint.yml` mentions of `ci-start-elite.sh` -- a `workflow_dispatch` input description and a
+    comment, neither of which runs anything -- have to stay invisible.
+    """
+    text = _call_site_text()
+    assert ".ci/scripts/ci/scope-shadow.sh" in text, (
+        "the call-site reader found no `run:` naming scope-shadow.sh, which ci.yml "
+        "still runs. Every cutover assertion in this module passes vacuously when "
+        "this reader returns nothing."
+    )
+    assert "tunnel + desktop only" not in text, (
+        "a workflow_dispatch input description reached the call-site reader, so it is "
+        "reading prose again and the comment-line false positives W7P4-W measured are "
+        "back."
     )

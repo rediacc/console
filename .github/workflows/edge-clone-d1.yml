@@ -75,4 +75,4 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-        run: .ci/scripts/deploy/clone-d1.sh --source ${{ matrix.source }} --target ${{ matrix.target }} --sanitize
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.clone_d1 --source ${{ matrix.source }} --target ${{ matrix.target }} --sanitize

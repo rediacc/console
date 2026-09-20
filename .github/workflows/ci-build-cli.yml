@@ -106,7 +106,7 @@ jobs:
         shell: bash
         env:
           NEXT_VERSION: ${{ inputs.next_version }}
-        run: .ci/scripts/version/inject-env.sh --version "$NEXT_VERSION" --strict --print
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.version.inject_env --version "$NEXT_VERSION" --strict --print
 
       - name: Build CLI SEA executable
         if: matrix.platform != 'linux-musl'

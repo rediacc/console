@@ -120,13 +120,8 @@ GLOB_ROOTS = {
 # THE NEW ROUTE IS WEAKER THAN THE ONE IT REPLACED, and a future reader should know it: the exemption was unconditional, while the registry lists this module only for as long as it reads an environment variable. If that stops being true the file goes DEAD again with no exemption standing, and the answer then is to re-add an entry here with a fresh reason, not to assume the old one
 # still applies.
 MANUAL_ENTRY_POINTS: dict[str, str] = {
-    ".ci/rediacc_ci/version/resolve_version.py": (
-        "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
-        "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
-        "import graph cannot see the route -- and it is not a gate either: this is a "
-        "workflow run: target script, and any cutover from the .sh call site is a "
-        "separate, later box. Remove the entry the moment a real route lands."
-    ),
+    # `.ci/rediacc_ci/version/resolve_version.py` was named here until W7P4-b's second family, with the reason "remove the entry the moment a real route lands". One landed: `.github/workflows/cd-v2.yml` calls the module, and `.ci/shadow/w7p4b-resolve-version.observations.jsonl` names it on the new side of ten rows. The gate reported the exemption as no longer true, in the direction
+    # that is easy to leave unchecked, and this is that report being obeyed.
     ".ci/rediacc_ci/ci_signal/create_complete.py": (
         "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
         "(rediacc_ci.tests.differential), not by a static import, so this scanner's "

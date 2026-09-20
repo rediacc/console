@@ -2,10 +2,16 @@
 
 Starts the Elite on-premise Docker Compose stack through the operator entry point (`private/elite/run.sh up`), writes the `.env` that entry point reads, waits for the web health endpoint, and prints the surviving containers.
 
-LIVE CALLERS OF THE TWIN, neither repointed by this port:
-  * `.github/workflows/ci.yml:1117` -- `run: .ci/scripts/infra/ci-start-elite.sh`
+LIVE CALLERS, one repointed at this module by W7P4-b and one still on the twin:
+  * `.github/workflows/ci.yml` -- `run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_elite`,
+    licensed by `.ci/shadow/w7p4b-ci-start-elite.observations.jsonl` (seven rows,
+    `--assert --k 5` green). The recording fixture supplies `private/elite/run.sh`
+    itself: the submodule is not part of a scratch tree, and what the ledger attests
+    to is this script's contract WITH that entry point -- the argv it passes and the
+    `.env` it leaves for it to read, both of which the stub echoes back.
   * `.ci/breakpoint/scripts/start-origin.sh:88,92,111` -- the breakpoint
-    `--services onprem` hook, which reads the twin's path from a variable.
+    `--services onprem` hook, which reads the twin's path from a variable. Left on
+    the bash twin, which stays on disk.
 
 WHAT MOVES AND WHAT DOES NOT. The orchestration moves to Python: the `.env` write, the poll loop, the diagnostics, the exit codes. Two things stay bash and are still driven as bash, because a Python reimplementation of either would be a second instrument certifying itself:
 

@@ -143,7 +143,7 @@ jobs:
         if: steps.skip-check.outputs.retry_mode == 'true' || steps.skip-check.outputs.workers_only == 'true'
         id: version
         run: |
-          VERSION=$(.ci/scripts/version/resolve-version.sh --current)
+          VERSION=$(PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --current)
           echo "next_version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "bump_type=none" >> "$GITHUB_OUTPUT"
           echo "::notice::Using existing version $VERSION (from latest tag)"
@@ -176,7 +176,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ steps.init.outputs.next_version }}
-        run: .ci/scripts/release/check-existing-release.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_existing_release
 
       # Artifact-version assertion: catch the stale-ci_run_id foot-gun.
       # If someone dispatches with a ci_run_id whose artifacts were built

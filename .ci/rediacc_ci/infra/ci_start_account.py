@@ -2,8 +2,11 @@
 
 Validates the three account-server secrets, sources the CI environment, writes `.ci/docker/ci/.env`, brings up the `account-server` compose service, waits for its health status, and re-checks that it is not in a restart loop.
 
-LIVE CALLER OF THE TWIN, not repointed by this port:
-  * `.github/workflows/ci.yml:740` -- `run: bash .ci/scripts/infra/ci-start-account.sh`
+LIVE CALLER, repointed at this module by W7P4-b:
+  * `.github/workflows/ci.yml` -- `run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account`,
+    licensed by `.ci/shadow/w7p4b-ci-start-account.observations.jsonl` (nine rows,
+    `--assert --k 5` green, recorded against a fake `docker` that logs its argv). The bash
+    twin stays on disk: the ledger licenses the cutover, not the deletion.
 
 WHAT MOVES AND WHAT DOES NOT. `.ci/scripts/infra/ci-env.sh` is SOURCED, not executed, and stays bash: `source_ci_env` (imported from the sibling elite port would create a package import in a file that must run standalone from a fixture, so it is duplicated deliberately -- see PORT NOTES) runs the real file under a real bash and imports its exported environment. Every `docker` call
 is shelled out to argument for argument.
