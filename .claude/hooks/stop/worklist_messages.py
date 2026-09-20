@@ -1067,6 +1067,19 @@ V_UNCITED = (
     "a background task instead, which this check already exempts."
 )
 
+V_PLAN_ADOPTED = (
+    "%(rel)s WAS ADOPTED BY THIS SESSION, so its open boxes are this session's mission, not an advisory. "
+    "%(n_open)d box(es) are open and %(n_gap)d of them have no live worklist item, so stopping now "
+    "would leave them untracked and unfinished. Adopting a plan is the statement 'this session is "
+    "executing it', which is what separates it from a plan that merely names this session as Owner "
+    "(that stays an advisory and never blocks). Track the boxes, then work them in order:\n%(recipes)s\n"
+    "A box that genuinely cannot be worked now goes to the operator instead of staying invisible:\n"
+    "    .claude/hooks/stop/worklist.py --defer %(me)s <id> '<question> DEFAULT: <action> WHY: <why it "
+    "cannot be settled> HOW: <what resolves it>'\n"
+    "If the plan stopped being this session's, hand it back by editing its Owner line, or set its "
+    "Status to done, parked or superseded."
+)
+
 V_FOUND_NOT_FIXED = (
     "your message carries a 'found, not fixed' list. CLAUDE.md's rule is to FIX "
     "what you find: reporting it is the fallback, not the default. For each item, "

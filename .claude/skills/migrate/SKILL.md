@@ -38,6 +38,14 @@ More than 16 candidates: page by newest first and say how many remain.
 
 Print its output unedited — it is the report of what moved and what it refused. Then fold the printed `HANDED OFF NEXT ACTION` into your own STATE.md under `## Next action` (its first step must be work, not a wait), and commit `agent/worklist/<me>.jsonl` and `agent/<me>/STATE.md` **by name**, or the migration does not travel to the next machine.
 
+## Then OFFER the predecessor's open plans, because a handoff is not enough
+
+The move step prints `<prefix> also owns N open plan(s), not moved`, and a plan is never adopted silently, since it is a committed document. That leaves a gap the operator hit on 2026-09-20: a session was continued, its handoff named plan boxes to work, and the stop hook showed none of them, because the plans still named the predecessor as Owner and a plan a session does not own is
+skipped outright. Only an ADOPTED plan (its Owner line reads `(adopted from <prev> <date>)`) becomes this session's mission and blocks a stop while its boxes are untracked.
+
+So when the output lists open plans, or the handed-off next action names a plan file or plan box ids, ask in one more `AskUserQuestion` (`multiSelect: true`, `header: "Adopt plans"`, one option per plan with its status and open/ticked counts, nothing pre-selected), then run `worklist.py --migrate "$ME" --plan <path> [<path>...]` for the chosen ones and commit the edited plan files
+by name. Adopting a plan is the statement that this session is executing it, and the hook holds the session to that.
+
 ## What it does and does not touch
 
 | moved | left alone |

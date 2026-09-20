@@ -1400,6 +1400,16 @@ def outq_drain(worklist, session_id, state_doc, n):
     take = sorted(q["items"], key=lambda e: (int(e.get("prio") or 0), int(e.get("seq") or 0)))[
         : max(0, n)
     ]
+    # A DIGEST, NOT A QUEUE OF FACTS. Every settled regression-gate outcome is a sticky one-line fact that will never be asked again; released one per stop they took a stop each, and a long session accumulated twenty-five of them. When one comes due, ALL of its siblings ride the same stop as one section, so the queue holds at most one of them however many fixes settled.
+    is_settled = lambda e: str(e.get("key", "")).startswith("reg-settled:")  # noqa: E731
+    if any(is_settled(e) for e in take):
+        ordered = sorted(
+            (e for e in q["items"] if is_settled(e)), key=lambda e: int(e.get("seq") or 0)
+        )
+        merged = dict(ordered[0])
+        merged["text"] = "\n".join(e.get("text", "") for e in ordered)
+        q["items"] = [e for e in q["items"] if not is_settled(e)] + [merged]
+        take = [e for e in take if not is_settled(e)] + [merged]
     picked = {id(e) for e in take}
     for e in take:
         if not e.get("sticky"):
@@ -1940,6 +1950,8 @@ PRIORITY_LADDER = (
             {
                 # The worklist's own `- [ ]` boxes, and the two states that turn a parked box back into an order.
                 "open-items",
+                # A plan this session ADOPTED (its Owner line says so) with boxes nothing tracks: the adoption is the statement that it is being executed.
+                "plan-adopted",
                 "defer-expired",
                 "undefaulted",
                 # agent/programs/<slug>/CHECKLIST.md -- deliverable and wave boxes, same four-state markdown the worklist uses.
@@ -3057,7 +3069,39 @@ def run_stop(event, event_ok, worklist, hook_file):
             root, plan_records(root), fold, session_id, plan_owner
         )
         if _pf_rows:
-            # S2: up to PLAN_PLANS_SHOW plans, sharing ONE quote budget. `render_all` owns both the cap and the remainder line that `render`'s n_more_plans used to carry, so the call site no longer does that arithmetic.
+            # S2: up to PLAN_PLANS_SHOW plans, sharing ONE quote budget. `render_all` owns both the cap and the remainder line that `render`'s n_more_plans used to carry, so the call site no longer does that arithmetic. THE ORDER, distinct from the advisory below and keyed apart from it on purpose: `plan-tasks` must never become a `vadd` (test-planfile.py pins that), because a plan
+            # a session merely OWNS can carry eighteen boxes and would wedge every turn. A plan the session ADOPTED is different in kind -- the adoption is a committed sentence saying it is being executed -- and it blocks only while boxes are untracked or stale, so tracking them (or deferring, or handing the plan back) ends it in one turn.
+            for _row in _pf_rows:
+                if _row.get("census") or not (_row["untracked"] or _row["stale_open"]):
+                    continue
+                if not wl_planfile.is_adopted(root, _row["rel"]):
+                    continue
+                _gap = list(_row["untracked"]) + list(_row["stale_open"])
+                vadd(
+                    "plan-adopted",
+                    False,
+                    M.V_PLAN_ADOPTED
+                    % {
+                        "rel": _row["rel"],
+                        "n_open": _row["n_open"],
+                        "n_gap": len(_gap),
+                        "recipes": "\n".join(
+                            '    .claude/hooks/stop/worklist.py --add %s "%s"'
+                            % (
+                                session_id[:8],
+                                wl_planfile._quote(t if isinstance(t, str) else str(t)),
+                            )
+                            for t in _gap[:3]
+                        )
+                        + (
+                            "\n    + %d more, same verdict" % (len(_gap) - 3)
+                            if len(_gap) > 3
+                            else ""
+                        ),
+                        "me": session_id[:8],
+                    },
+                )
+                break
             _pf_text = wl_planfile.render_all(_pf_rows, _pf_unread)
             if _pf_text:
                 outq_add(worklist, session_id, state_doc, "plan-tasks", _pf_text, 2)
@@ -4413,7 +4457,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "reg-settled",
                     "Regression gate: fix-set %s settled as %s (%s); it will not be asked again."
                     % (reg_sig[:8], reg_settled[0], (reg_settled[1] or "")[:160]),
-                    1,
+                    # PRIORITY 2, NOT 1, and the difference was measured: 25 of the 33 sections queued in one long session were these one-line outcomes, and at priority 1 they drained first, one per stop, ahead of every actionable priority-2 section (open plan boxes, unread sub-agent reports, refused questions), which therefore never surfaced. See outq_drain's digest for the other
+                    # half.
+                    2,
                     sticky=True,
                 )
             if kind == "block":

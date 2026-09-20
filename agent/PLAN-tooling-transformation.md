@@ -1,7 +1,7 @@
 # PLAN: Tooling Transformation
 Status: ready
-Owner: 8f55d4f0
-Updated: 2026-09-07
+Owner: d778be9d (adopted from 8f55d4f0 2026-09-20)
+Updated: 2026-09-20
 
 ONE plan, not two. Round 1 was drafted into `~/.claude/plans/` where nothing tracked it; Round 2 was then written as a SECOND document, which made it worse. Both are now here, in one tracked file: Round 2 is the live plan, Round 1 is kept below in full because its 83 ticked boxes are the only record of what was actually done and why.
 

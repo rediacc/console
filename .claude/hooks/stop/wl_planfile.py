@@ -310,6 +310,19 @@ def _owner(plan_owner, root, rel):
         return None
 
 
+# THE ADOPTION MARKER `worklist.py --migrate <me> --plan <path>` writes into a plan's Owner line: "Owner: <me> (adopted from <prev> <date>)". It is the one place a session states, in a committed document, that it is executing the plan, which is what separates an ADOPTED plan from one that merely names this session as its Owner.
+ADOPTED_RE = re.compile(r"^\*{0,2}Owner\*{0,2}:[^\n]*\(adopted from", re.MULTILINE)
+ADOPTED_HEADER_LINES = 12
+
+
+def is_adopted(root, rel):
+    """True when the plan's header carries the adoption marker. False on any read failure: a check that cannot read the header must fall back to the advisory census, never to a block."""
+    text = _read(pathlib.Path(root) / rel)
+    if text is None:
+        return False
+    return bool(ADOPTED_RE.search("\n".join(text.splitlines()[:ADOPTED_HEADER_LINES])))
+
+
 def in_scope_status(status):
     s = str(status or "").strip().lower()
     return s not in FINISHED_STATES and s not in NOT_STARTED_STATES

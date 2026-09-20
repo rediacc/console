@@ -466,6 +466,7 @@ ARITY = {
                      "citations": "c", "message": "m", "traps": "t"},
     "REGGATE_PROMPT": {"fixset": "f", "keys": "k"},
     "FIXSET_GROUND_TRUTH": {"count": 1, "files": "f", "more": ""},
+    "V_PLAN_ADOPTED": {"rel": "p", "n_open": 2, "n_gap": 1, "recipes": "r", "me": "m"},
     # v20 plan fidelity (wl_planfid.py). V_PLANFID takes the plan path, the
     # umbrella rows, the untracked-task rows, the judge's instruction, and then
     # the session prefix TWICE (once for the --add exit, once as the owner tag

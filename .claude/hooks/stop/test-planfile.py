@@ -352,6 +352,80 @@ control(
 )
 
 
+# --------------------------------------------------------------------------- 8ter. AN ADOPTED PLAN IS AN ORDER, AND ONLY AN ADOPTED ONE. `plan-tasks` above stays an advisory because a plan a session merely OWNS can carry eighteen boxes; a plan the session ADOPTED (its Owner line says "adopted from") is a committed statement that it is being executed, so its untracked boxes block
+# under their own key, in the mission tier. ---------------------------------------------------------------------------
+with tempfile.TemporaryDirectory() as _adopt_root:
+    _ar = pathlib.Path(_adopt_root)
+    (_ar / "agent").mkdir()
+    (_ar / "agent" / "PLAN-adopted.md").write_text(
+        "# PLAN: x\nStatus: ready\nOwner: deadbeef (adopted from cafe1234 2026-09-20)\nUpdated: 2026-09-20\n"
+        + PAD,
+        encoding="utf-8",
+    )
+    (_ar / "agent" / "PLAN-owned.md").write_text(
+        "# PLAN: y\nStatus: ready\nOwner: deadbeef\nUpdated: 2026-09-20\n" + PAD, encoding="utf-8"
+    )
+    control(
+        "an Owner line carrying the adoption marker is adopted",
+        F.is_adopted(_ar, "agent/PLAN-adopted.md"),
+        True,
+    )
+    control("CONTROL: a plain Owner line is not", F.is_adopted(_ar, "agent/PLAN-owned.md"), False)
+    control(
+        "CONTROL: an unreadable plan is not (falls back to the advisory)",
+        F.is_adopted(_ar, "agent/PLAN-missing.md"),
+        False,
+    )
+_adopt_vadds = [
+    n
+    for n in ast.walk(tree)
+    if isinstance(n, ast.Call)
+    and isinstance(n.func, ast.Name)
+    and n.func.id == "vadd"
+    and n.args
+    and isinstance(n.args[0], ast.Constant)
+    and n.args[0].value == "plan-adopted"
+]
+control("the adopted-plan order exists as exactly one vadd", len(_adopt_vadds), 1)
+control(
+    "and it sits in the MISSION tier, where a stop cannot be called 'yours' and skipped",
+    K.check_tier("plan-adopted"),
+    K.T_MISSION,
+)
+control(
+    "CONTROL: the advisory key is still not in the mission tier",
+    K.check_tier("plan-tasks"),
+    K.T_HYGIENE,
+)
+
+
+# --------------------------------------------------------------------------- 8quater. THE QUEUE MUST NOT BURY AN ORDER BEHIND FACTS. Twenty-five one-line "settled" outcomes once drained one per stop ahead of every actionable section, so open plan boxes and unread reports never surfaced. They now ride ONE stop as a digest, at the same priority as the sections that matter.
+# ---------------------------------------------------------------------------
+_saved_save = K.S.save_state
+K.S.save_state = lambda *_args, **_kw: None
+try:
+    _qdoc = {"outq": {"items": [], "shown": {}, "seq": 0}}
+    for _i in range(6):
+        K.outq_add(
+            "wl",
+            "sess",
+            _qdoc,
+            "reg-settled",
+            "Regression gate: fix-set %d settled" % _i,
+            2,
+            sticky=True,
+        )
+    K.outq_add("wl", "sess", _qdoc, "plan-tasks", "PLAN boxes", 2)
+    _first, _left = K.outq_drain("wl", "sess", _qdoc, 1)
+    control("six settled outcomes leave as ONE section", len(_first), 1)
+    control("and that section carries all six", _first[0].count("settled"), 6)
+    control("so the actionable section is next, not seven stops away", _left, 1)
+    _second, _left2 = K.outq_drain("wl", "sess", _qdoc, 1)
+    control("CONTROL: the plan section then surfaces", _second, ["PLAN boxes"])
+finally:
+    K.S.save_state = _saved_save
+
+
 # --------------------------------------------------------------------------- 8bis. THE SessionStart CENSUS (S1). Its entire reason for existing is that the per-stop advisory CANNOT see a plan whose Status is NOT_STARTED, and on this repo that is most of them: `draft` became the default header on plans under active execution, so six of eight box-carrying files hid 72 of 88 open
 # boxes. So the plant is a `draft` plan -- one the advisory drops -- and the assertion is that the census counts it anyway and SAYS it is exempt. ---------------------------------------------------------------------------
 def census_for(*plans):
