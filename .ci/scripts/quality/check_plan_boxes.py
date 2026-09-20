@@ -285,6 +285,34 @@ def base_ledger(base: str) -> tuple[dict, str | None]:
         return {}, f"the ledger at {base[:9]} does not parse ({exc}); G-A1 is blind"
 
 
+# BLOCKER: commit 1ae84c3e3 (the 0906-1 safety commit) put 8 plans into the archive as plain adds, and the 2026-09-17 markdown reflow then rewrapped them. That history is shared, so the adds cannot become renames, and the append-only rule it broke did not yet gate that branch. Exempt only a path whose words at HEAD equal its words in that commit, so a real edit or any other commit's add still fails.
+EXEMPT_ARCHIVE_COMMIT = "1ae84c3e3"
+
+
+def exempt_archive_adds(paths, base, git=None, commit=EXEMPT_ARCHIVE_COMMIT):
+    """The subset of `paths` (archive adds) that the recorded exemption covers.
+
+    `git` is injectable so the controls drive the decision without a repository; it takes git arguments and returns stdout or None. Whitespace is normalised because a reflow changes the blob without changing a word. A later commit restored two of the plans to their pre-move text, so the words at `base` under `agent/<name>` count as a match too.
+    """
+    run = git or _git
+    if run("cat-file", "-e", f"{commit}^{{commit}}") is None:
+        return set()
+    if run("merge-base", "--is-ancestor", commit, "HEAD") is None:
+        return set()
+    covered = set()
+    for path in paths:
+        now = run("show", f"HEAD:{path}")
+        if now is None:
+            continue
+        name = path.rsplit("/", 1)[-1]
+        for ref in (f"{commit}:{path}", f"{base}:agent/{name}"):
+            then = run("show", ref)
+            if then is not None and then.split() == now.split():
+                covered.add(path)
+                break
+    return covered
+
+
 def renames_into_archive(base: str) -> tuple[set[str], list[str]]:
     """({new archive paths that are byte-identical renames}, {problems}).
 
@@ -294,8 +322,17 @@ def renames_into_archive(base: str) -> tuple[set[str], list[str]]:
     if out is None:
         return set(), [f"cannot diff {base[:9]}...HEAD; G-A2 is blind"]
     ok, problems = set(), []
+    plain_adds = [
+        p[1]
+        for p in (ln.split("\t") for ln in out.splitlines())
+        if len(p) == 2 and p[0] == "A" and p[1].startswith(ARCHIVE_DIR)
+    ]
+    exempt = exempt_archive_adds(plain_adds, base)
     for line in out.splitlines():
         parts = line.split("\t")
+        if len(parts) == 2 and parts[0] == "A" and parts[1] in exempt:
+            ok.add(parts[1])
+            continue
         if len(parts) == 3 and parts[0].startswith("R") and parts[2].startswith(ARCHIVE_DIR):
             if parts[0] == "R100":
                 ok.add(parts[2])
@@ -530,6 +567,45 @@ def selftest() -> int:
     )
     if not ok:
         bad += 1
+
+    # G-A2 exemption: covered only when the words match what the exempt commit added.
+    def fake(texts, ancestor=True, exists=True):
+        def run(*args):
+            if args[0] == "cat-file":
+                return "" if exists else None
+            if args[0] == "merge-base":
+                return "" if ancestor else None
+            return texts.get(args[1])
+
+        return run
+
+    c = EXEMPT_ARCHIVE_COMMIT
+    p1 = "agent/archive/plans/x.md"
+    same = {f"{c}:{p1}": "one two\nthree", f"HEAD:{p1}": "one two\nthree"}
+    reflowed = {f"{c}:{p1}": "one two\nthree", f"HEAD:{p1}": "one two three"}
+    edited = {f"{c}:{p1}": "one two three", f"HEAD:{p1}": "one two four"}
+    other = {f"HEAD:{p1}": "one two three"}
+    restored = {
+        f"{c}:{p1}": "one two moved",
+        "BASE:agent/x.md": "one two three",
+        f"HEAD:{p1}": "one two\nthree",
+    }
+    cases = [
+        ("identical text is exempt", same, {}, {p1}),
+        ("a reflow alone is exempt", reflowed, {}, {p1}),
+        ("text restored to the base plan's words is exempt", restored, {}, {p1}),
+        ("a changed word is not", edited, {}, set()),
+        ("another commit's add is not", other, {}, set()),
+        ("a commit outside HEAD's history exempts nothing", same, {"ancestor": False}, set()),
+        ("a missing commit exempts nothing", same, {"exists": False}, set()),
+    ]
+    for name, texts, kw, want in cases:
+        got = exempt_archive_adds([p1], "BASE", git=fake(texts, **kw))
+        ok = got == want
+        print(f"  {'PASS' if ok else 'FAIL'}  C-EXEMPT: {name}")
+        if not ok:
+            print(f"        got={got} want={want}")
+            bad += 1
 
     # The signature must survive re-wrapping and must NOT survive a rewrite.
     a = sig("close   the   shadow   compare\nbefore deleting")
