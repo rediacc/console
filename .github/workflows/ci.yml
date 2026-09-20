@@ -270,7 +270,7 @@ jobs:
           # checks:read, which the app-token presets do not carry.
           CHECKS_TOKEN: ${{ github.token }}
         run: |
-          .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.initialize --output "$GITHUB_OUTPUT"
 
       - name: Generate channel context
         id: staging
@@ -292,7 +292,7 @@ jobs:
       - name: Assert channel matches event
         # Guard against someone reintroducing a dryrun-<sha> fallthrough
         # for schedule events.
-        run: .ci/scripts/ci/assert-channel-for-event.sh "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_channel_for_event "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
 
       # LIVE as of D-1: the `run_<key>` outputs this step writes now gate 17
       # jobs. It was shadow-only until the reconciler had a clean run of real
@@ -430,7 +430,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
-          .ci/scripts/ci/dispatch-watchdog.sh --run-id "$GITHUB_RUN_ID" \
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.dispatch_watchdog --run-id "$GITHUB_RUN_ID" \
             --generation 1 --pr-number "${PR_NUMBER:-}" --head-ref "${HEAD_REF:-}"
 
   # ============================================================================
@@ -772,7 +772,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: bash .ci/scripts/infra/ci-stop.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_stop
 
 
   # ============================================================================
@@ -1120,7 +1120,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Set Image Tags
-        run: .ci/scripts/ci/set-image-tags.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.set_image_tags
         env:
           IMAGE_TAG: ${{ needs.initialize.outputs.image_tag }}
           WEB_TAG: ${{ needs.initialize.outputs.web_tag }}
@@ -1131,7 +1131,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           TAG: ${{ env.TAG }}
-        run: .ci/scripts/infra/ci-pull-images.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_pull_images
 
       - name: Start Elite Services
         env:
@@ -1150,7 +1150,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: .ci/scripts/infra/ci-stop-elite.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_stop_elite
 
   # ============================================================================
   # COLUMN 4E: BREAKPOINT LIFECYCLE
@@ -1404,7 +1404,7 @@ jobs:
 
       # Deploy single combined pr-N Worker (static assets + embedded account server)
       - name: Deploy preview worker
-        run: .ci/scripts/deploy/deploy-www.sh --name "pr-${PR_NUMBER}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www --name "pr-${PR_NUMBER}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -1433,7 +1433,7 @@ jobs:
           CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ steps.create-widget.outputs.secret }}
           AWS_SES_FROM: ${{ vars.AWS_SES_FROM }}
           AWS_SES_CONFIGURATION_SET: ${{ vars.AWS_SES_CONFIGURATION_SET }}
-        run: .ci/scripts/deploy/set-preview-worker-secrets.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
 
       - name: Deployment summary
         run: |
@@ -1667,7 +1667,7 @@ jobs:
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
       - name: Simulate promotion (copy + sed-fix)
-        run: .ci/scripts/deploy/simulate-promotion.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.simulate_promotion
         env:
           AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
@@ -1756,7 +1756,7 @@ jobs:
           sparse-checkout: .ci/scripts
 
       - name: Check all jobs passed
-        run: .ci/scripts/ci/assert-ci-complete.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_ci_complete
         env:
           POINTER_BUMP_ONLY: ${{ needs.initialize.outputs.pointer_bump_only }}
           RESULT_INITIALIZE: ${{ needs.initialize.result }}
@@ -1801,7 +1801,7 @@ jobs:
           # treats the same way every other consumer does: as "full CI", not as
           # an error.
           SCOPE_MODE: ${{ needs.initialize.outputs.scope_mode }}
-        run: .ci/scripts/ci/scope-reconcile-shadow.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.scope_reconcile_shadow
   # ============================================================================
   # FINALIZE RELEASE SENTINEL
   # Atomic commit point of the release pipeline. Writes `.released` sentinels
@@ -1889,7 +1889,7 @@ jobs:
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
         run: |
-          .ci/scripts/deploy/write-release-sentinel.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.write_release_sentinel \
             --version "${{ needs.initialize.outputs.next_version }}" \
             --channel "${{ needs.initialize.outputs.channel }}" \
             --commit-sha "${{ github.sha }}"
@@ -1914,7 +1914,7 @@ jobs:
         if: needs.initialize.outputs.skip_release != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/ci/dispatch-release.sh --dispatch-only
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.dispatch_release --dispatch-only
 
   # (Removed: assert-finalize-sentinel-ran was a single-purpose sentinel
   # job whose only step asserted that finalize-release-sentinel did not
@@ -1957,4 +1957,4 @@ jobs:
             .ci/scripts
       - name: Check finalize-release-sentinel conclusion (release channels only)
         if: needs.initialize.result == 'success' && (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
-        run: .ci/scripts/ci/assert-job-succeeded.sh finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_job_succeeded finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}"

@@ -806,7 +806,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-rdc-sh-env',
     run: 'npm run check:ci-rdc-sh-env',
     gate: true,
-    leaves: ['.ci/scripts/test/test-rdc-sh-env.sh'],
+    leaves: ['.ci/rediacc_ci/security/rdc_sh_env_check.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

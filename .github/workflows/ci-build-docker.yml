@@ -62,11 +62,11 @@ jobs:
         run: .ci/scripts/version/inject-env.sh --version "$NEXT_VERSION" --strict --print
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.version.bump --version ${{ inputs.next_version }}
       - uses: ./.github/actions/setup-workspace
         with:
           build-packages: 'true'
-      - run: .ci/scripts/build/build-cli.sh
+      - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
         env:
           # OTLP credentials are fetched at runtime after `rdc subscription
           # login` — no longer baked into the bundle (renet#51).
@@ -88,7 +88,7 @@ jobs:
         # No working-directory: the script cd's to packages/cli itself. Setting
         # it here made the repo-root-relative script path resolve under
         # packages/cli/ and the step died with exit 127.
-        run: .ci/scripts/build/pack-cli-npm.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.pack_cli_npm
         env:
           VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
@@ -120,7 +120,7 @@ jobs:
       - uses: ./.github/actions/setup-workspace
         with:
           build-packages: 'true'
-      - run: .ci/scripts/build/build-www.sh
+      - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_www
         env:
           APP_VERSION: ${{ inputs.next_version || 'dev' }}
           # THE THIRD CALL SITE, and it was the one left behind. ci-quality.yml:1572
@@ -159,9 +159,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.version.bump --version ${{ inputs.next_version }}
       - uses: ./.github/actions/setup-workspace
-      - run: .ci/scripts/build/build-json.sh
+      - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: build-json${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
@@ -284,7 +284,7 @@ jobs:
           esac
 
       - name: Build & push (amd64)
-        run: .ci/scripts/build/buildx-push-web.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.buildx_push_web
         env:
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           PLATFORM: linux/amd64
@@ -384,7 +384,7 @@ jobs:
           esac
 
       - name: Build & push (arm64)
-        run: .ci/scripts/build/buildx-push-web.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.buildx_push_web
         env:
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           PLATFORM: linux/arm64

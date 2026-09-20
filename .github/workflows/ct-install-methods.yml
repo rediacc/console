@@ -254,7 +254,7 @@ jobs:
           sparse-checkout: .ci/scripts
 
       - name: Check all tests passed
-        run: .ci/scripts/ci/assert-install-methods-complete.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_install_methods_complete
         env:
           RESULT_LINUX_X64: ${{ needs.test-linux-x64.result }}
           RESULT_LINUX_ARM64: ${{ needs.test-linux-arm64.result }}

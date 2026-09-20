@@ -323,7 +323,7 @@
     "check:test-shared": "npm run test -w @rediacc/shared",
     "check:test-workers": "cd workers/www && npm run test:unit",
     "check:ci-install-sh-config": ".ci/scripts/test/test-install-sh-config.sh",
-    "check:ci-rdc-sh-env": ".ci/scripts/test/test-rdc-sh-env.sh",
+    "check:ci-rdc-sh-env": "PYTHONPATH=.ci python3 -m rediacc_ci.security.rdc_sh_env_check",
     "check:test:tutorial-player": "npm run test:tutorial-player -w @rediacc/www",
     "check:ci-www-build-token": ".ci/scripts/quality/check_www_build_token.py",
     "check:ci-rubric-calibration": ".ci/scripts/quality/check_rubric_calibration.py",

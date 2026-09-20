@@ -248,7 +248,7 @@ jobs:
           MATRIX_DOMAIN: ${{ matrix.domain }}
           MATRIX_EDGE_WORKER_NAME: ${{ matrix.edgeWorkerName }}
           MATRIX_EDGE_DOMAIN: ${{ matrix.edgeDomain }}
-        run: .ci/scripts/deploy/resolve-account-deploy-config.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.resolve_account_deploy_config
 
       # Preflight: the production price catalog is only updated by a manual
       # stripe-sync run per regional Stripe account. Fail the deploy if the
@@ -270,7 +270,7 @@ jobs:
         run: npx tsx scripts/check-live-prices.ts
 
       - name: Deploy account Worker (${{ matrix.id }})
-        run: .ci/scripts/deploy/deploy-account.sh --region ${{ steps.config.outputs.region }} --target ${{ inputs.target }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region ${{ steps.config.outputs.region }} --target ${{ inputs.target }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -332,4 +332,4 @@ jobs:
           STRIPE_WEBHOOK_SECRET_ASIA: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_ASIA }}
           STRIPE_WEBHOOK_SECRET_EU: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_EU }}
           STRIPE_WEBHOOK_SECRET_US: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_US }}
-        run: .ci/scripts/deploy/set-account-worker-secrets.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_account_worker_secrets

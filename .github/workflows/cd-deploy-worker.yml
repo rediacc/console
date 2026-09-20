@@ -149,7 +149,7 @@ jobs:
         id: target
         env:
           TARGET: ${{ inputs.target }}
-        run: .ci/scripts/deploy/resolve-www-deploy-target.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.resolve_www_deploy_target
 
       - name: Deploy Worker
         run: .ci/scripts/deploy/${{ steps.target.outputs.script }}
@@ -207,7 +207,7 @@ jobs:
           STRIPE_WEBHOOK_SECRET: ${{ inputs.target == 'stable'
             && env.BWS_STRIPE_WEBHOOK_SECRET_EU
             || env.BWS_STRIPE_SANDBOX_WEBHOOK_SECRET }}
-        run: .ci/scripts/deploy/set-www-worker-secrets.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_www_worker_secrets
 
       - name: Verify Stripe webhook
         run: npx tsx scripts/verify-webhook.ts ${{ steps.target.outputs.sandbox }} --expected-url "https://${{ steps.target.outputs.domain }}/account/api/v1/webhooks/stripe"

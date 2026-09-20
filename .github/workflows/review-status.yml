@@ -112,4 +112,4 @@ jobs:
           WR_RUN_ID: ${{ github.event.workflow_run.id }}
           WR_HTML_URL: ${{ github.event.workflow_run.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
-        run: .ci/scripts/review/review-status.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.review.review_status

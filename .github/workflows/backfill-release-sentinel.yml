@@ -139,13 +139,13 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
           INPUT_SHA: ${{ inputs.commit_sha }}
-        run: .ci/scripts/release/resolve-backfill-commit.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.resolve_backfill_commit
 
       - name: Verify GitHub Release exists with CLI assets
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ inputs.version }}
-        run: .ci/scripts/release/verify-release-assets.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.verify_release_assets
 
       - name: Confirm non-dry-run
         if: ${{ inputs.dry_run == false }}
@@ -170,7 +170,7 @@ jobs:
           CHANNEL: ${{ inputs.channel }}
           COMMIT_SHA: ${{ steps.resolve.outputs.commit_sha }}
           DRY_RUN: ${{ inputs.dry_run }}
-        run: .ci/scripts/release/backfill-write-sentinel.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.backfill_write_sentinel
 
       - name: Re-probe R2 sentinel state
         if: ${{ inputs.dry_run == false }}
@@ -179,4 +179,4 @@ jobs:
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           VERSION: ${{ inputs.version }}
-        run: .ci/scripts/release/reprobe-r2-sentinel.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.reprobe_r2_sentinel

@@ -111,7 +111,7 @@ jobs:
       - name: Build CLI SEA executable
         if: matrix.platform != 'linux-musl'
         shell: bash
-        run: .ci/scripts/build/build-cli-executables.sh --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli_executables --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
         env:
           CLI_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
           # Makes the build script re-check the version with --strict and refuse
@@ -122,7 +122,7 @@ jobs:
       - name: Build CLI SEA executable (musl)
         if: matrix.platform == 'linux-musl'
         shell: bash
-        run: .ci/scripts/build/build-cli-musl.sh --arch ${{ matrix.arch }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli_musl --arch ${{ matrix.arch }}
         env:
           CLI_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
           RELEASE_BUILD: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}

@@ -70,8 +70,7 @@ import { policyPath } from '../lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.CI_PARITY_ROOT || path.resolve(__dirname, '..', '..');
-// Repo-relative for display; the absolute path comes from the same seam, so a
-// message and the file it names can never drift apart.
+// Repo-relative for display; the absolute path comes from the same seam, so a message and the file it names can never drift apart.
 const EXEMPT_PATH = policyPath('.ci-parity-exempt', ROOT);
 const EXEMPT_FILE = path.relative(ROOT, EXEMPT_PATH);
 const BATTERY_DIR = '.ci/scripts/test/gates';
@@ -134,6 +133,13 @@ interface ScriptUniverse {
    * scratch file look like a registered gate.
    */
   tracked: Set<string>;
+}
+
+/**
+ * Is this program word the external-gate wrapper, in either of its spellings? The bash path and the dotted Python module name the same transparent wrapper, and the resolver has to see through both: a step that moves from one to the other changes the failure POLICY and not the command, so the leaf on either side is the wrapped command.
+ */
+function isExternalGateWrapper(prog: string): boolean {
+  return prog.endsWith('run-external-gate.sh') || prog.endsWith('.run_external_gate');
 }
 
 /**
@@ -223,6 +229,17 @@ function resolveLeaves(
       const mIdx = rest.findIndex((a) => a === '-m');
       if (mIdx >= 0) {
         const mod = rest[mIdx + 1] ?? '';
+        // THE TRANSPARENT WRAPPER IS TRANSPARENT IN BOTH LANGUAGES. The `-m` arm
+        // below stops at the module's file, which is right for a gate and wrong
+        // for the external-gate wrapper: that module executes its arguments and
+        // changes only what a FAILURE means, never what runs. Reporting the
+        // wrapper would make every external gate's CI pointer "run something
+        // else" the moment the step moved from the bash spelling to this one,
+        // which is exactly what it did (six R3 findings, W7P4-W).
+        if (isExternalGateWrapper(mod)) {
+          out.push(...resolveLeaves(rest.slice(mIdx + 2).join(' '), u, curScope, seen));
+          continue;
+        }
         const rel = mod.replace(/\./g, '/');
         const cands = [`.ci/${rel}.py`, `.ci/${rel}/__main__.py`, `${rel}.py`];
         const hit = cands.find((c) => u.tracked.has(c));
@@ -253,12 +270,8 @@ function resolveLeaves(
       continue;
     }
 
-    // Transparent wrapper: run-external-gate.sh executes its arguments and
-    // only changes what a FAILURE means (soft on schedule vs hard on a PR),
-    // never what runs. The leaf is the wrapped command; reporting the wrapper
-    // itself would make every external gate's CI pointer "run something else"
-    // the moment it adopted the wrapper.
-    if (prog.endsWith('run-external-gate.sh')) {
+    // Transparent wrapper: run-external-gate.sh executes its arguments and only changes what a FAILURE means (soft on schedule vs hard on a PR), never what runs. The leaf is the wrapped command; reporting the wrapper itself would make every external gate's CI pointer "run something else" the moment it adopted the wrapper.
+    if (isExternalGateWrapper(prog)) {
       out.push(...resolveLeaves(rest.join(' '), u, curScope, seen));
       continue;
     }
@@ -698,6 +711,37 @@ function control(): void {
     // CONTROL: a plain script invocation is unchanged, so the arm cannot eat that form.
     if (leaves('python3 tools/solo.py')[0] !== 'tools/solo.py') {
       fail('a plain `python3 <script>` invocation stopped resolving to its script');
+    }
+  }
+
+  // --- W7P4-W: the external-gate wrapper is transparent in BOTH spellings ---- The bash arm already saw through `run-external-gate.sh`; flipping the six CI steps to the Python port made every one of them resolve to the wrapper and report "runs something else". The leaf has to stay the WRAPPED command whichever spelling carries it.
+  {
+    const u = universeOf({ '': { 'check:x': 'tsx scripts/gates/check-x.ts' } }, {}, [
+      '.ci/rediacc_ci/quality/run_external_gate.py',
+      '.ci/rediacc_ci/quality/npmrc.py',
+      '.ci/scripts/quality/run-external-gate.sh',
+      'scripts/gates/check-x.ts',
+    ]);
+    const leaves = (cmd: string): string[] => resolveLeaves(cmd, u);
+
+    const wrapped = 'scripts/gates/check-x.ts';
+    if (leaves('.ci/scripts/quality/run-external-gate.sh npm run check:x')[0] !== wrapped) {
+      fail('the bash external-gate wrapper stopped resolving to the command it wraps');
+    }
+    if (leaves('python3 -m rediacc_ci.quality.run_external_gate npm run check:x')[0] !== wrapped) {
+      fail('the Python external-gate wrapper does not resolve to the command it wraps');
+    }
+    // THE ANTI-VACUITY DIRECTION: the wrapper's own file must never BE the leaf, which is the exact symptom the six findings had.
+    if (
+      leaves('python3 -m rediacc_ci.quality.run_external_gate npm run check:x').includes(
+        '.ci/rediacc_ci/quality/run_external_gate.py'
+      )
+    ) {
+      fail('the Python external-gate wrapper still reports itself as the leaf');
+    }
+    // CONTROL: a NON-wrapper module in the same package still resolves to its own file, so the arm cannot swallow every `-m`.
+    if (leaves('python3 -m rediacc_ci.quality.npmrc')[0] !== '.ci/rediacc_ci/quality/npmrc.py') {
+      fail('the wrapper arm ate a plain `-m` module invocation');
     }
   }
 

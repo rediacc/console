@@ -136,7 +136,7 @@ jobs:
           # OTLP credentials are NOT baked at build time any more — renet
           # resolves them from env vars at runtime (renet#51).
         run: |
-          .ci/scripts/build/build-renet.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.build.build_renet \
             --version "${{ inputs.next_version }}" \
             --output ./private/bin
 
@@ -232,7 +232,7 @@ jobs:
           password: ${{ github.token }}
 
       - name: Extract Linux binaries + cross-compile Darwin/Windows
-        run: .ci/scripts/build/extract-renet-from-image.sh --tag "${{ inputs.renet_tag }}" --output ./private/bin
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.extract_renet_from_image --tag "${{ inputs.renet_tag }}" --output ./private/bin
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:

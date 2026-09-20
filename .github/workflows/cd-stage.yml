@@ -151,7 +151,7 @@ jobs:
           .ci/scripts/build/ensure-nfpm.sh >>"$GITHUB_PATH"
 
       - name: Build Linux packages
-        run: .ci/scripts/build/build-linux-packages.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_linux_packages
         env:
           NEXT_VERSION: ${{ inputs.next_version }}
           RELEASE_GPG_PRIVATE_KEY: ${{ env.BWS_RELEASE_GPG_PRIVATE_KEY }}
@@ -167,7 +167,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Generate CLI manifest
         run: |
-          .ci/scripts/build/generate-cli-manifest.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.build.generate_cli_manifest \
             --version ${{ inputs.next_version }} \
             --channel "${{ inputs.channel }}" \
             --input dist/cli/ \
@@ -182,7 +182,7 @@ jobs:
           build-packages: 'true'
 
       - name: Assemble pages package
-        run: .ci/scripts/build/build-pages.sh --output dist/pages
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_pages --output dist/pages
 
       - name: Copy CLI manifest to pages
         run: |
@@ -200,7 +200,7 @@ jobs:
           VERSION="${{ inputs.next_version }}"
 
           # Build self-contained repos (packages alongside metadata)
-          .ci/scripts/build/build-pkg-repo.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.build.build_pkg_repo \
             --version "$VERSION" \
             --local-pkgs dist/packages \
             --output dist/repos \
@@ -256,7 +256,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           NEXT_VERSION: ${{ inputs.next_version }}
           CHANNEL: ${{ inputs.channel }}
-        run: .ci/scripts/release/validate-stage-artifacts.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.validate_stage_artifacts
 
       # Install validation handled by validate-install job in ci.yml (6 platforms).
 
@@ -320,7 +320,7 @@ jobs:
       - name: Upload artifacts to R2 channel
         if: inputs.channel != ''
         run: |
-          .ci/scripts/deploy/upload-to-r2.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.upload_to_r2 \
             --version "${{ inputs.next_version }}" \
             --channel "${{ inputs.channel }}"
         env:
@@ -339,7 +339,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
           CHANNEL: ${{ inputs.channel }}
-        run: .ci/scripts/deploy/upload-repos-to-r2.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.upload_repos_to_r2
 
       # -----------------------------------------------------------------------
       # Assert the versioned-path sentinel is actually sealed after upload.

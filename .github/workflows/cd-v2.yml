@@ -115,7 +115,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           INPUT_CI_RUN_ID: ${{ inputs.ci_run_id }}
           ALLOW_STALE: ${{ inputs.allow_stale_ci_run_id }}
-        run: .ci/scripts/release/resolve-ci-run.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.resolve_ci_run
 
       - name: Stale ref check (workers-only)
         if: inputs.deploy_workers_only == true
@@ -136,7 +136,7 @@ jobs:
         env:
           DEPLOY_WORKERS_ONLY: ${{ inputs.deploy_workers_only }}
           RELEASE_MODE: ${{ inputs.release_mode }}
-        run: .ci/scripts/release/decide-release-mode.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.decide_release_mode
 
       # Retry/workers-only mode: use current version from latest tag without bumping
       - name: Resolve version (retry/workers-only mode)
@@ -161,7 +161,7 @@ jobs:
           COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.initialize --output "$GITHUB_OUTPUT"
 
       - name: Generate channel
         id: channel
@@ -213,7 +213,7 @@ jobs:
           # workers-only step wins when it ran, otherwise initialize.sh's.
           VERSION: ${{ steps.version.outputs.next_version || steps.init.outputs.next_version }}
           CI_RUN_ID: ${{ steps.resolve.outputs.ci_run_id }}
-        run: .ci/scripts/release/assert-artifact-version.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_artifact_version
 
   # ============================================================================
   # PUBLISH
@@ -356,7 +356,7 @@ jobs:
         if: needs.init.outputs.workers_only != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/release/verify-artifact-attestation.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.verify_artifact_attestation
 
       # Tag creation + GitHub Release + Homebrew update moved to the
       # `tag-and-release` job below, which runs after edge deploys +
@@ -381,18 +381,18 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
-        run: .ci/scripts/deploy/promote-r2-to-stable-hotfix.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.promote_r2_to_stable_hotfix
 
       - name: Promote Docker to stable (hotfix)
         if: needs.init.outputs.workers_only != 'true' && inputs.publish_stable == true
-        run: .ci/scripts/deploy/promote-docker-to-stable-hotfix.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.promote_docker_to_stable_hotfix
 
       # -----------------------------------------------------------------------
       # Step 5: Cleanup channel Docker tags
       # -----------------------------------------------------------------------
       - name: Cleanup channel Docker tags
         if: needs.init.outputs.workers_only != 'true'
-        run: .ci/scripts/release/cleanup-channel-docker-tags.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.cleanup_channel_docker_tags
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CHANNEL: ${{ needs.init.outputs.channel }}
@@ -409,7 +409,7 @@ jobs:
           VERSION: ${{ needs.init.outputs.next_version }}
           CI_RUN_ID: ${{ needs.init.outputs.ci_run_id }}
           CI_SHA: ${{ needs.init.outputs.ci_sha }}
-        run: .ci/scripts/release/deployment-summary.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.deployment_summary
 
   # Install validation moved to CI (pre-publish). CI validates on all 6 platforms
   # BEFORE publish, so broken artifacts never reach the edge or stable channel.
@@ -550,7 +550,7 @@ jobs:
         env:
           VERSION: ${{ needs.init.outputs.next_version }}
           WORKERS_ONLY: ${{ needs.init.outputs.workers_only }}
-        run: .ci/scripts/deploy/verify-edge-endpoints.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.verify_edge_endpoints
 
   # ============================================================================
   # POST-PUBLISH INSTALL VALIDATION - Reuses ct-install-methods.yml against
@@ -670,14 +670,14 @@ jobs:
           echo "::notice::Created tag v${VERSION}"
 
       - name: Tag submodules
-        run: .ci/scripts/release/tag-submodules.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.tag_submodules
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ needs.init.outputs.next_version }}
 
       - name: Update Homebrew formula
         run: |
-          .ci/scripts/release/update-homebrew-tap.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.update_homebrew_tap \
             --version ${{ needs.init.outputs.next_version }} \
             --local-checksums dist/cli \
             --push
@@ -699,7 +699,7 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
           GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
-        run: .ci/scripts/release/advance-contract-floor.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.advance_contract_floor
 
       - name: Create GitHub Release
         env:
@@ -709,7 +709,7 @@ jobs:
           # Release rather than a clean failure.
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ needs.init.outputs.next_version }}
-        run: .ci/scripts/release/create-github-release.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.create_github_release
 
   # No cleanup-on-failure job. Failure model:
   #   - R2 sentinel is the atomic commit point, written by ci.yml's

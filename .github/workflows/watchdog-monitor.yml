@@ -247,6 +247,6 @@ jobs:
         run: |
           NEXT=$((GENERATION + 1))
           if [ "$RERUN_EXECUTED" = "true" ]; then NEXT=1; fi
-          .ci/scripts/ci/dispatch-watchdog.sh --run-id "$TARGET_RUN_ID" \
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.dispatch_watchdog --run-id "$TARGET_RUN_ID" \
             --generation "$NEXT" --pending-rerun "${PENDING_RERUN:-false}" \
             --pr-number "$PR_NUMBER" --head-ref "$HEAD_REF"

@@ -825,7 +825,7 @@
     "run": "npm run check:ci-rdc-sh-env",
     "gate": true,
     "leaves": [
-      ".ci/scripts/test/test-rdc-sh-env.sh"
+      ".ci/rediacc_ci/security/rdc_sh_env_check.py"
     ],
     "ci": {
       "kind": "step",
