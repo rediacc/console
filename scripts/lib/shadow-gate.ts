@@ -920,7 +920,8 @@ export function toRow(
  *
  * That is not hypothetical: w7p2-stagingtag carries three tree ids recorded that
  * way, and because assertEquivalent disqualifies an id UNCONDITIONALLY, they can
- * never be cleared. Re-recording mints a new id and leaves the old one red. Six
+ * never be cleared. Re-recording mints a new id and leaves the old one red, though
+ * the pair itself recovers once K later clean trees exist. Six
  * more ledgers reach their port through an absolute `PYTHONPATH`, which is the
  * same hole staying quiet because those rows happen to agree.
  *
