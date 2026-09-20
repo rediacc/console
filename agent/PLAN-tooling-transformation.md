@@ -5578,7 +5578,8 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       their own boxes: `json-inventory` (U1, 54 rows) and `env-manifest` (W8 P3, 808 rows).
       The estate is now 14 providers, 14 registered, 14 region ids -- the parity gate checks
       that four ways and all four agree.
-- [ ] **W11 P5b S** The 140-line cut. **Session Defaults is lines 9-233 -- 225 lines, 39% of the
+- [x] **W11 P5b S** The 140-line cut. **Session Defaults is lines 9-233 -- 225 lines, 39% of the
+    (ticked) 2026-09-20T12:11:18Z by d778be9d: commit e82961be8: CLAUDE.md 363 lines / 32,293 bytes -> 326 lines / 30,696 bytes (limits 440 / 30,720); Session Defaults span byte-identical to HEAD (sliced and compared); CLI examples moved verbatim to docs/agent-reference/cli.md
       file, frozen byte-identical** (verified: `## Session Defaults` at 9, `## Architecture` at
       234). The two generated spans are 43 more lines. **So the entire cut comes from a
       hand-written budget of 312 lines: a 45% cut of everything not frozen and not generated.**
