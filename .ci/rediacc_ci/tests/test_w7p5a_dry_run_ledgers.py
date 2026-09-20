@@ -11,8 +11,10 @@ That blocker is about the REAL RUN and nothing else. The dry-run half -- bash tw
   * THE COMPARISON WAS WIDER THAN THE TWO STREAMS. Each row must agree on at least one `[call]` finding, which is the recording stub's log of the exact argv the run sent to `curl` or `aws`. Two implementations can print identical lines while issuing different requests, and a ledger that only compared stdout could not tell them apart.
   * AND IT IS STILL ONLY A DRY RUN. A path carrying a `dry_run_ledger` must still be `status: "blocked"` and must still be listed in the blocklist. That is the assertion that matters most here: a future reader must not be able to promote stubbed evidence into "the real run happened" by deleting a line, and the blocklist's own liveness clause reads the same `status` field.
 
-THE PORTS ARE NOT RE-TESTED HERE. Each of these five scripts already has a permanent side-by-side differential (`test_deploy_cf_purge_urls.py`, `test_deploy_delete_r2_channel.py`, `test_deploy_promote_r2_to_stable.py`, `test_deploy_purge_media_cache.py`, `test_deploy_upload_repos_to_r2.py`), each driving the twin and the port through recording fakes. Repeating them would buy
-nothing; what was missing is enforcement of the LEDGERS those runs produced.
+THE PORTS ARE NOT RE-TESTED HERE. Every script named by a `dry_run_ledger` already has a permanent side-by-side differential of its own -- `test_deploy_cf_purge_urls.py` for the first of them, and one `test_<family>_<stem>.py` for each of the rest -- driving the twin and the port through recording fakes. Repeating them would buy nothing; what was missing is enforcement of the
+LEDGERS those runs produced.
+
+THE SET OF LEDGERED PATHS IS PINNED BELOW rather than read from the status file alone. Every test above is parameterised over whatever rows carry the field, so deleting a field would retire that path's enforcement in silence and leave a green module behind; `EXPECTED_DRY_RUN_PATHS` is what turns that deletion into a red.
 """
 
 from __future__ import annotations
@@ -30,6 +32,23 @@ BLOCKLIST = pathlib.Path(ROOT) / ".ci" / "policy" / ".w7p5a-real-run-blocklist"
 
 # The shadow-gate rule these ledgers were recorded to satisfy.
 K = 5
+
+# Every path whose dry-run half has been driven and recorded, and the external tool whose argv the row's `[call]` findings must therefore carry. The tool is the one named in that path's BLOCKER line, so this table is also the check that a ledger recorded the RIGHT script's traffic: `mark-production` agreeing only on `curl` lines would mean the fixture answered a neighbour's probes.
+EXPECTED_DRY_RUN_PATHS = {
+    ".ci/scripts/deploy/cf-purge-urls.sh": ("curl",),
+    ".ci/scripts/deploy/delete-r2-channel.sh": ("aws",),
+    ".ci/scripts/deploy/promote-docker-to-stable-hotfix.sh": ("docker",),
+    ".ci/scripts/deploy/promote-r2-to-stable.sh": ("aws", "curl"),
+    ".ci/scripts/deploy/purge-media-cache.sh": ("curl",),
+    ".ci/scripts/deploy/upload-repos-to-r2.sh": ("aws", "curl"),
+    ".ci/scripts/deploy/verify-edge-endpoints.sh": ("curl",),
+    ".ci/scripts/deploy/verify-stable-endpoints.sh": ("curl",),
+    ".ci/scripts/deploy/write-release-sentinel.sh": ("aws",),
+    ".ci/scripts/release/assert-artifact-version.sh": ("gh",),
+    ".ci/scripts/release/assert-edge-tag-exists.sh": ("aws", "gh"),
+    ".ci/scripts/release/create-github-release.sh": ("gh",),
+    ".ci/scripts/release/mark-production.sh": ("gh",),
+}
 
 
 def _status_rows() -> list[dict]:
@@ -104,7 +123,9 @@ def test_every_row_names_the_pair_it_is_filed_under(path: str) -> None:
     rel = row["dry_run_ledger"]
     pair = row["dry_run_pair"]
     stem = pathlib.PurePath(path).stem.replace("-", "_")
-    port = ".ci/rediacc_ci/deploy/%s.py" % stem
+    # THE FAMILY IS READ OFF THE PATH, NOT ASSUMED. This was `deploy` verbatim while every ledgered pair happened to be a deploy script; the first release/ pair would have been asserted against a port path that does not exist, and the red would have named a missing module rather than the wrong constant.
+    family = pathlib.PurePath(path).parent.name
+    port = ".ci/rediacc_ci/%s/%s.py" % (family, stem)
 
     for n, r in enumerate(_ledger_rows(rel), 1):
         assert r["pair"] == pair, "%s row %d is filed under pair %r, not %r" % (
@@ -182,3 +203,32 @@ def test_the_note_does_not_claim_a_real_run(path: str) -> None:
     assert "real run each done directly" not in blob, (
         "%s's dry-run note uses the phrase the blocklist gate reads as a confirmed real run" % path
     )
+
+
+def test_no_ledgered_path_quietly_loses_its_field() -> None:
+    """THE PARAMETERISATION CANNOT POLICE ITSELF. Dropping `dry_run_ledger` from a row removes that path from every `_ids()` sweep above, and the module stays green while one script's evidence is no longer checked at all. Recording a pair is an addition here, which is a one-line edit; losing one is a red."""
+    missing = sorted(set(EXPECTED_DRY_RUN_PATHS) - set(_ids()))
+    assert not missing, (
+        "%s no longer carries a `dry_run_ledger` in %s. The field was recorded from a "
+        "real shadow-gate run; if the ledger was genuinely retired, retire it here in "
+        "the same change rather than leaving this module asserting nothing about it."
+        % (missing, STATUS.name)
+    )
+
+
+@pytest.mark.parametrize("path", sorted(EXPECTED_DRY_RUN_PATHS))
+def test_the_ledger_carries_the_tool_the_blocker_names(path: str) -> None:
+    """A ledger proves something about the RIGHT script only if the traffic it agreed on is that script's. Each path's BLOCKER names the external system its real-run leg reaches for, so the recorded call log must carry that tool's argv; a fixture wired to the wrong probes, or a row copied in from a neighbouring pair, agrees on somebody else's."""
+    rel = _row_for(path)["dry_run_ledger"]
+    logged = {
+        agreed.split("[call] ", 1)[1].split()[0]
+        for row in _ledger_rows(rel)
+        for agreed in row["agreed"]
+        if "[call] " in agreed and agreed.split("[call] ", 1)[1].split()
+    }
+    for tool in EXPECTED_DRY_RUN_PATHS[path]:
+        assert tool in logged, (
+            "%s agreed on no `[call] %s ...` line, yet %s's real-run branch is blocked "
+            "on exactly that tool. The recorded calls were %s."
+            % (rel, tool, path, sorted(logged) or "none")
+        )
