@@ -77,6 +77,13 @@ SWEEP_PROMPT = """
 SWEEP THE CLASS, NOT THE INSTANCE. ALSO fill the `class_sweep` object, about
 the same fix-set.
 
+WHAT THIS IS FOR: CONSOLIDATION, THE DRY PRINCIPLE. The question is whether the
+LOGIC THIS FIX CHANGED exists as another copy or as a sibling implementation of
+the same decision somewhere else in the tree. If it does, the right outcome is
+usually ONE shared home that every caller consults, not the same patch applied
+N times. It is not a keyword hunt over the words of the session's own message,
+and it is never a report on how the session behaved.
+
 This project's standing rule is "Before calling a bug fixed, grep for its
 siblings. One bad call site usually has several." It is written down and
 routinely not followed. Three real defects, each fixed at ONE site while the
@@ -142,6 +149,13 @@ false.
 enumerate them? Name a real command (a grep or rg with the actual pattern, a
 glob over the sibling directory), because the session is going to be told to
 run exactly this.
+
+ANCHOR THE SEARCH TO THE CHANGED CODE. Build the pattern from something that
+appears in the files of the fix-set: a function or constant name, a regex, a
+call shape, an idiom that was edited. Words such as "claim", "swept" or
+"transform" taken from the message's own prose describe the WORK, not the code,
+and match thousands of unrelated comments. A search that cannot be traced to a
+line the fix touched is not a sweep: answer applicable=false instead.
 
 THE COMMAND IS CHECKED BEFORE IT IS HANDED OVER. It must parse, and every
 directory or file it names must actually exist in this repo. Two real misfires:
@@ -342,23 +356,24 @@ def validate_search(search, root=None):
 
 
 V_REASON = (
-    "SWEEP THE CLASS, NOT THE INSTANCE. A fix landed and the message shows only "
-    "its own instance fixed. Class: %s. No evidence that the siblings were "
-    "searched for%s."
+    "SWEEP THE CLASS, NOT THE INSTANCE (a DRY check). A fix landed and the message "
+    "shows only its own instance fixed. Class: %s. No evidence that other copies of "
+    "the changed logic were searched for%s."
 )
 V_ASSERTED = " (the sweep is asserted, but no gate, no scan count and no explicit search is quoted)"
 
 V_ACTION = (
-    "Run: %s -- fix every sibling it finds and say the COUNT, or say plainly that it found none."
+    "Run: %s -- other copies of the CHANGED code? Consolidate into one home or fix each; "
+    "say the COUNT, or that none exist."
 )
 V_ACTION_NOSEARCH = (
-    "Grep for siblings of this class across the repo, fix every one you find and say the COUNT, "
-    "or say plainly that this is the only instance. %s"
+    "Grep for siblings of the CHANGED code (its function, constant or pattern): consolidate "
+    "copies into one home or fix each, say the COUNT, or that none exist. %s"
 )
 # Kept SHORT on purpose: wl_rules.apply_order caps next_action at 200 characters, and the first draft of this string put the reason last, where the cap ate it -- the session was handed a sentence that stopped mid-word. The WHY leads, and the rejected command is deliberately NOT echoed: it is the one thing that must not be run, and quoting it is what blew the budget.
 V_ACTION_DROPPED = (
-    "Proposed command DROPPED: %(why)s. Grep for siblings yourself, fix each and say the "
-    "COUNT, or say it is the only instance."
+    "Command DROPPED: %(why)s. Grep for copies of the changed code yourself; "
+    "consolidate or fix each, say the COUNT or none."
 )
 
 

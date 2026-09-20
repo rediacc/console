@@ -392,7 +392,7 @@ control(
 # wl_rules.apply_order caps next_action at 200 characters. The first draft of the dropped-command order ran to exactly 200 and was cut mid-word, so the session was handed a sentence that stopped at "or say plainly it is t". Pin the fit.
 control(
     "the dropped-command order fits inside the 200-char next_action cap",
-    len(out["next_action"]) < 200 and out["next_action"].endswith("instance."),
+    len(out["next_action"]) < 200 and out["next_action"].endswith("none."),
     True,
 )
 wl_classsweep.clear_outstanding(MARKER)
