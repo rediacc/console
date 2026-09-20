@@ -4807,6 +4807,12 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       16 and leaves 30 commands, which is why 30 -> 28 was wrong. Exit condition: a Python chain head for
       `require-jq.sh` and `require-python.sh` that runs when Python is missing, or the language policy admitting
       one bash file for it. Neither is reachable without an operator ruling.
+      **RE-RUN 2026-09-20 LATER THE SAME DAY, NOTHING CLEARED.** `.claude/settings.json` reads 30 commands in 18
+      groups over 11 patterns; `require-python.sh:5-12` still argues it may never be ported;
+      `check_hooks_resolvable.py:107` pins `FIRST_GUARD = "require-jq.sh"` (line moved from 103);
+      `doc-providers.ts:295` still reads the hooks table; and the language policy still counts 582 bash
+      files, 507 frozen, so one more tracked `.sh` for a chain head is refused. The exit condition is
+      unchanged and needs an operator ruling.
       **D0 is D4's instrument** and now pins both numbers, so whoever lands D4 must repin and
       clause 1 of its acceptance is a one-line diff.
 - [x] **E1 S, largest single port in this track** `setup` in Python. `.ci/rediacc_ci/setup/` holds
