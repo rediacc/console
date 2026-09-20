@@ -565,7 +565,7 @@ export const suppressionsProvider: Provider = {
       // A FROZEN TEST CORPUS IS NOT A SUPPRESSION MECHANISM. Goldens under a tests directory are byte copies of real allow/block lists, recorded so a port can be proved to agree with the reader it replaces, and they carry BLOCKER: for the same reason the originals do. The predicate below is "carries BLOCKER: and is not source or prose", which cannot tell a recording from the thing
       // recorded: when W1 P3's allowlist goldens landed on 2026-09-06 this census went 24 rows to 39, and all 15 additions were copies of lists already counted once. A census that double-counts its own fixtures overstates the escape hatches in the tree, which is the one number this table exists to keep honest.
       if (/(^|\/)tests\/goldens\//.test(f)) continue;
-      // THE WORKLIST EVENT LOGS ARE PROSE THAT GROWS ON EVERY VERB. `agent/worklist/*.jsonl` carries session notes, and a note that quotes `BLOCKER:` made this census list the log and then change its row on the next unrelated `--tick`, so the region could never be committed in a state a clean checkout reproduces.
+      // THE WORKLIST EVENT LOGS ARE PROSE THAT GROWS ON EVERY VERB. `agent/worklist/*.jsonl` carries session notes, and a note that quotes `BLOCKER:` made this census list the log and then change its row on the next unrelated `--tick`, so the region could not be committed in a state a clean checkout reproduces.
       if (f.startsWith('agent/worklist/')) continue;
       if (NOT_A_MECHANISM.has(path.extname(f))) continue;
       let text: string;

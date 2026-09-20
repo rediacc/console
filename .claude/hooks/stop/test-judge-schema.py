@@ -1308,8 +1308,12 @@ try:
     wl_shapedup.counter_findings = _boom
     _st3 = {}
     wl_shapedup.ask = lambda _inst: (None, "stubbed: no model call in a control")
+    # The skip also needs a shape index on disk, which a fresh checkout does not have until the first scan writes one; pinning it makes this control about the signature and not about the checkout it runs in.
+    _index_present = wl_shapedup.index_present
+    wl_shapedup.index_present = lambda _root: True
     wl_shapedup.run(REPO, _st3)
     wl_shapedup.run(REPO, _st3)
+    wl_shapedup.index_present = _index_present
     control("an unchanged corpus is scanned once, not twice", len(_calls), 1)
     control(
         "the signature is recorded so the skip can happen", bool(_st3.get("shapedup_sig")), True
