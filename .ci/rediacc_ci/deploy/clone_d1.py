@@ -5,7 +5,8 @@ Clone a D1 database from source to target: export the source, wrap the dump in
 `PRAGMA defer_foreign_keys=ON` / `foreign_keys=OFF` because D1 exports tables
 alphabetically rather than in FK dependency order, import into the target, and verify FK integrity afterwards.
 
-LIVE CALLERS, NOT REPOINTED. `.github/workflows/edge-clone-d1.yml:78` runs the bash twin, and so does `.ci/scripts/deploy/test-d1-migrations.sh:114` (whose own port, `deploy/test_d1_migrations.py`, deliberately invokes the BASH twin for the reason its docstring gives). This module is the twin's verified-equivalent alternative; the cutover is a separate, later, driver-only step.
+LIVE CALLERS, NOT REPOINTED. the removed edge-clone-d1.yml workflow (deleted 2026-09-20) runs the bash twin, and so does `.ci/scripts/deploy/test-d1-migrations.sh:114` (whose own port, `deploy/test_d1_migrations.py`, deliberately invokes the BASH twin for the reason its docstring gives). This module is the twin's verified-equivalent alternative; the cutover is a separate, later,
+driver-only step.
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) and `sqlite3` are the only two programs that could, and the differential (`.ci/rediacc_ci/tests/test_deploy_clone_d1.py`) puts a RECORDING FAKE for each on a scratch PATH. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger
 is a separate, achievable piece of work. This is that piece.
@@ -53,8 +54,8 @@ Twin :117 reads `"$SCRIPT_DIR/sanitize-d1.sql"`. That file was DELETED on 2026-0
     $ ls .ci/scripts/deploy/sanitize-d1.sql
     ls: cannot access '.ci/scripts/deploy/sanitize-d1.sql': No such file or directory
 
-The ONLY caller that passes `--sanitize` is `.github/workflows/edge-clone-d1.yml:78`, so that workflow's clone step has been unable to complete for five months. It FAILS CLOSED, which is the one piece of good news: the input redirection cannot be opened, `set -e` ends the run before the import, and no unsanitised data reaches the target. The comment above it -- "The target D1 never
-sees real PII" -- is true only because the target sees nothing at all. Reproduced here, not repaired: recreating a deleted 152-line SQL file is not a port's decision.
+The ONLY caller that passes `--sanitize` is the removed edge-clone-d1.yml workflow (deleted 2026-09-20), so that workflow's clone step has been unable to complete for five months. It FAILS CLOSED, which is the one piece of good news: the input redirection cannot be opened, `set -e` ends the run before the import, and no unsanitised data reaches the target. The comment above it --
+"The target D1 never sees real PII" -- is true only because the target sees nothing at all. Reproduced here, not repaired: recreating a deleted 152-line SQL file is not a port's decision.
 
 -----------------------------------------------------------------------------
 DEFECT B -- A FAILED FK VERIFICATION IS REPORTED AS ZERO VIOLATIONS
@@ -89,7 +90,7 @@ builds `--env=X` and there is no `cloneSource` here: the only assignment is
 `CONFIG_FLAG="--config $WRANGLER_CONFIG"` (:61). The suppression is correct
 about the mechanism (word-splitting is genuinely wanted) and stale about the value, which is the shape the BLOCKER-liveness convention exists to catch.
 
-AND `--wrangler-config` HAS NO CALLER AT ALL. `edge-clone-d1.yml` passes `--source/--target/--sanitize`; `test-d1-migrations.sh` passes `--source/--target`. The flag, its documented usage line, and both BLOCKER comments are all about a code path nothing exercises.
+AND `--wrangler-config` HAS NO CALLER AT ALL. the removed `edge-clone-d1.yml` passed `--source/--target/--sanitize`; `test-d1-migrations.sh` passes `--source/--target`. The flag, its documented usage line, and both BLOCKER comments are all about a code path nothing exercises.
 
 -----------------------------------------------------------------------------
 WHAT IS BYTE-IDENTICAL, AND THE THREE THINGS THAT ARE NOT

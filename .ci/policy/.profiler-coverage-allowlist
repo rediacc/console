@@ -116,10 +116,6 @@ ct-tests.yml:test-renet
 # ct-update-flow.yml
 ct-update-flow.yml:test-linux-x64
 #
-# edge-clone-d1.yml
-edge-clone-d1.yml:clone
-edge-clone-d1.yml:read-regions
-#
 # housekeeping.yml
 housekeeping.yml:cleanup
 housekeeping.yml:stripe-cleanup

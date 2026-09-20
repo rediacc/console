@@ -90,7 +90,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.go-deps-upgrade-blocklist` | name per line | 2 | 3 | both |
 | `.language-policy-allowlist` | name per line | 14 | 15 | both |
 | `.plan-housekeeping-allowlist` | name per line | 0 | 1 | both |
-| `.profiler-coverage-allowlist` | name per line | 71 | 4 | both |
+| `.profiler-coverage-allowlist` | name per line | 69 | 4 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |
 | `.unverified-download-allowlist` | name per line | 4 | 4 | both |
 | `.w7p5a-real-run-blocklist` | name per line | 32 | 24 | both |
