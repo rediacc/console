@@ -3474,6 +3474,12 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       returning `None` IS strict mode (`:478`, `:788`) -- the flip is a file deletion and no code
       change. **Acceptance:** the gate exits 0 printing `language policy STRICT: N bash file(s)
       ... all M allowlisted`, N == M.
+      **MEASURED 2026-09-20:** `check_language_policy.py` reads 583 bash files under `.ci` and `.claude`, 508
+      frozen in the baseline (shrink-only, none added) and 75 exempt by name across 14 allowlist entries. The
+      box cannot move until those 508 are ported or allowlisted, and deleting the baseline before then reds the
+      gate, so it stays terminal and blocked by the port chain (W7P4-Q, W7P5-a/b/c). A new tracked `.sh` also
+      counts against it: a session added one this week and the gate refused it, so new bash cases belong in an
+      existing file.
 
 ---
 
