@@ -510,29 +510,21 @@ export function gateStepId(id: string): string {
 }
 
 /**
- * T-SCHED B2 D4, second clause. A YAML single-quoted scalar holding the JSON array,
- * emitted RAW into `env:` the way every other env value already is (`emitStep` does no
- * quoting of its own) -- single quotes because GitHub Actions env values are read as
- * plain strings regardless, and a bare `[...]` would otherwise parse as a YAML flow
- * sequence rather than the JSON text a later `JSON.parse` needs literally. YAML's own
- * escape for an embedded `'` inside a single-quoted scalar is doubling it, so ids are
- * defensively escaped that way even though no lock id in this repo contains one today.
+ * T-SCHED B2 D4, second clause, WITHDRAWN 2026-09-20 on the first lane that really sharded.
  *
- * CORRECTION, found while designing the receipt step this was meant to feed: a step's
- * `env:` is process-local to that step and is NOT part of the `steps` context --
- * `toJSON(steps)` and every `steps.<id>.X` reference in this whole repository (checked:
- * every existing cross-step data pass in .github/workflows/*.yml uses `outputs`, via
- * `$GITHUB_OUTPUT`, never `env`) exposes only `outputs`, `outcome` and `conclusion`. A
- * later receipt step CANNOT read an earlier step's `GATE_LOCK_IDS` this way, so this
- * value is NOT what the eventual receipt step's counter reads -- see `jobLockIdMap`
- * below for the map that actually is. `GATE_LOCK_IDS` is kept for its own, narrower
- * value: a human reading the emitted YAML can see which lock id(s) a given step
- * represents without cross-referencing the lock, the same reason `id:` itself is
- * useful to a reader even before any receipt step exists to consume it.
+ * This emitted `GATE_LOCK_IDS: '["check:ci-foo"]'` onto every conjuncted step, and it was
+ * decorative from the start: its own note recorded that a step's `env:` is process-local
+ * and absent from the `steps` context, so no receipt step can read it and
+ * `jobLockIdMap` is what actually crosses step outcomes back into lock ids. The value kept
+ * was that a reader could see a step's lock ids without consulting the lock -- which the
+ * `id:` line, `gate_check_ci_foo`, already says.
+ *
+ * What it cost, once a lane was populated: 65 findings from `check:ci-step-env-parity`, one
+ * per conjuncted step, each demanding a declaration for a key the DRIVER computes. Declaring
+ * a driver-computed value in 65 headers is the stale-in-the-silent-direction failure the
+ * shard conjunct itself exists to avoid, and exempting the key would be narrowing a parity
+ * gate to fit an annotation nothing reads. The annotation goes instead.
  */
-export function lockIdsEnvValue(ids: readonly string[]): string {
-  return `'${JSON.stringify(ids).replace(/'/g, "''")}'`;
-}
 
 /**
  * T-SCHED B2 D4, corrected. What the eventual receipt step actually needs: the WHOLE
@@ -542,22 +534,31 @@ export function lockIdsEnvValue(ids: readonly string[]): string {
  * cannot read. `steps.<id>.outcome` (native to the `steps` context, unlike `env`) is
  * then the only RUNTIME fact the receipt script needs per step.
  *
- * ONE ENTRY PER GATE, NOT PER STEP, and that is a known, narrower scope than "one per
- * STEP after the D1 merge" this box's own text asks for. `rewriteRegions` itself does
- * not collapse two auto-emitted gates sharing one `.step` name into one emitted block
- * today -- keying `gateStepId` on `b.id` here matches what it actually emits, one block
- * per gate. That collapse is a separate, currently non-live gap (no header-declared
- * gate shares a step with another today; the live example, `Lint`, is hand-registered
- * via the manifest and never reaches `byLane` at all) and is not this function's or
- * D4's to fix -- recorded here rather than silently assumed away.
+ * ONE ENTRY PER EMITTED STEP, CARRYING EVERY LOCK ID THAT RIDES IT. The first version
+ * keyed each step id to its own emitting gate alone, on the reasoning that no
+ * header-declared gate shares a step with another -- true, and beside the point, because
+ * a MANIFEST-registered entry can share one. Measured on `quality-code` the moment it
+ * really sharded: `check:lint:cli`, `check:lint:web`, `check:lint:tooling` and
+ * `check:lint:account` are four lock entries riding the one `Lint` step that
+ * `check:lint`'s header emits, so leg 1 reported `gates: 11` against a plan that gives it
+ * 15, and `check:ci-quality-complete`'s composition clause red on a lane that was running
+ * exactly what the plan said. They run when `Lint` runs, in one `run:` block in one shell,
+ * so the honest count credits all five to that step's outcome.
+ *
+ * `peersByStep` is the lane's step name to lock ids, built by the caller from the lock.
+ * Absent, each step maps to its own gate, which is what every control that does not model
+ * a shared step expects.
  */
-export function jobLockIdMap(entries: readonly Emitting[]): Record<string, string[]> {
+export function jobLockIdMap(
+  entries: readonly Emitting[],
+  peersByStep?: ReadonlyMap<string, readonly string[]>
+): Record<string, string[]> {
   const map: Record<string, string[]> = {};
-  for (const b of entries) map[gateStepId(b.id)] = [b.id];
+  for (const b of entries) map[gateStepId(b.id)] = [...(peersByStep?.get(b.step) ?? [b.id])];
   return map;
 }
 
-/** Same YAML-single-quote-scalar shape as `lockIdsEnvValue`, generalised to any JSON value. */
+/** A YAML single-quoted scalar holding JSON text, so a bare `[...]` cannot parse as a flow sequence. An embedded quote is doubled, YAML's own escape inside such a scalar. */
 function jsonEnvValue(value: unknown): string {
   return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
 }
@@ -568,56 +569,52 @@ function jsonEnvValue(value: unknown): string {
  * needs a receipt written even then -- a driver-emitted literal would report a full leg
  * regardless, which is the exact vacuity this mechanism exists to defend against.
  *
- * The script is a heredoc to a real file, not a `node -e "..."` one-liner: GHA does its
- * OWN `${{ }}` substitution as a text replacement over the entire `run:` block BEFORE a
- * shell ever sees it, so any JS in the script must never contain that literal substring
- * (this one uses plain `process.env.X` reads and string concatenation, never a template
- * literal, specifically to keep the two `${` grammars from colliding). The heredoc
- * delimiter is single-quoted (`<<'GATERECEIPT'`) so bash does not interpolate the
- * script body either -- only GHA's own substitution touches this text, and only where
- * `${{ }}` literally appears in the `env:` values below, never inside the heredoc.
+ * THE SCRIPT IS A COMMITTED FILE, NOT A HEREDOC, and the first real lane to shard is what
+ * proved it had to be. This emitted the whole receipt script inline until 2026-09-20, when
+ * `SHARD_COUNTS` was populated for the first time and `check:ci-workflows` immediately
+ * red: 18 logic lines in one `run:` block against a documented cap of 8, whose whole point
+ * is that a workflow step stays env wiring plus one call. The mechanism had been built,
+ * proven inert and never once measured against the gates that judge what it writes. The
+ * body now lives at `scripts/ci/write-shard-receipt.cjs`, beside the other committed
+ * node helpers this repo's workflows call, where it is also readable and runnable by hand.
+ *
+ * A SIDE EFFECT WORTH NAMING: a `run:` of one command cannot collide with GHA's own
+ * `${{ }}` substitution, which is a text replacement over the entire block before a shell
+ * sees it. The inline version had to avoid template literals for exactly that reason.
  *
  * Counts in the aggregator's currency, LOCK IDS
  * (`scripts/gates/check-quality-complete.ts:226` compares `gates` against
  * `declaredShard.ids.length`), crossing `jobLockIdMap` (built at compile time, since
  * gate-bind already knows every conjuncted gate's id when it writes the region) against
  * `steps.<id>.outcome` (native to the `steps` context, read via `toJSON(steps)` --
- * the only thing this script needs at runtime; see `lockIdsEnvValue`'s docstring for why
- * a step's OWN `env:` cannot serve this instead).
+ * the only thing this script needs at runtime; a step's OWN `env:` cannot serve, being
+ * process-local and absent from the `steps` context).
  */
-export function emitReceiptStep(job: string, of: number, entries: readonly Emitting[]): string[] {
+export const RECEIPT_WRITER = 'scripts/ci/write-shard-receipt.cjs';
+
+/** The two steps below, named once: the `--write` strip guard has to know they come back. */
+export const RECEIPT_STEP_NAMES = ['Write shard receipt', 'Upload shard receipt'] as const;
+
+export function emitReceiptStep(
+  job: string,
+  of: number,
+  entries: readonly Emitting[],
+  peersByStep?: ReadonlyMap<string, readonly string[]>
+): string[] {
   const receiptFile = `/tmp/gate-receipt-${job}.json`;
   return [
-    '      - name: Write shard receipt',
+    `      - name: ${RECEIPT_STEP_NAMES[0]}`,
     '        if: always()',
     '        env:',
-    `          GATE_STEP_LOCK_MAP: ${jsonEnvValue(jobLockIdMap(entries))}`,
+    `          GATE_STEP_LOCK_MAP: ${jsonEnvValue(jobLockIdMap(entries, peersByStep))}`,
     '          STEPS_JSON: ${{ toJSON(steps) }}',
     '          SHARD_INDEX: ${{ matrix.shard }}',
     `          SHARD_OF: '${of}'`,
     '          JOB_STATUS: ${{ job.status }}',
     `          RECEIPT_LANE: '${job}'`,
     `          RECEIPT_PATH: '${receiptFile}'`,
-    '        run: |',
-    "          cat > /tmp/gate-receipt.js <<'GATERECEIPT'",
-    '          const stepsCtx = JSON.parse(process.env.STEPS_JSON);',
-    '          const map = JSON.parse(process.env.GATE_STEP_LOCK_MAP);',
-    '          let gates = 0;',
-    '          for (const stepId of Object.keys(map)) {',
-    '            const s = stepsCtx[stepId];',
-    "            if (s && s.outcome !== 'skipped') gates += map[stepId].length;",
-    '          }',
-    '          const receipt = {',
-    '            lane: process.env.RECEIPT_LANE,',
-    '            index: Number(process.env.SHARD_INDEX),',
-    '            of: Number(process.env.SHARD_OF),',
-    '            result: process.env.JOB_STATUS,',
-    '            gates: gates,',
-    '          };',
-    "          require('fs').writeFileSync(process.env.RECEIPT_PATH, JSON.stringify(receipt));",
-    '          GATERECEIPT',
-    '          node /tmp/gate-receipt.js',
-    '      - name: Upload shard receipt',
+    `        run: node ${RECEIPT_WRITER}`,
+    `      - name: ${RECEIPT_STEP_NAMES[1]}`,
     '        if: always()',
     '        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1',
     '        with:',
@@ -756,7 +753,13 @@ export function rewriteRegions(
    * steps they emitted before: an unsharded lane must not gain a conjunct, and no lane is
    * in `SHARD_COUNTS` today.
    */
-  shards?: ReadonlyMap<string, ReadonlyMap<string, number>>
+  shards?: ReadonlyMap<string, ReadonlyMap<string, number>>,
+  /**
+   * Per-lane step name to the lock ids riding that step, for the receipt's own count.
+   * Optional for the same reason `shards` is: absent, every step credits its own gate,
+   * which is what an unsharded lane and every no-shard control already assume.
+   */
+  stepPeers?: ReadonlyMap<string, ReadonlyMap<string, readonly string[]>>
 ): { text: string; lanes: string[]; dropped: string[] } {
   const lines = workflow.split('\n');
   const out: string[] = [];
@@ -808,7 +811,6 @@ export function rewriteRegions(
               when: b.when ? `(${b.when}) && matrix.shard == ${leg}` : `matrix.shard == ${leg}`,
               // T-SCHED B2 D4, second clause. The eventual receipt step counts in LOCK IDS (`check-quality-complete.ts:226` compares against `declaredShard.ids.length`), but it can only see `steps.<id>.outcome`, one outcome per EMITTED STEP -- which is coarser than one per lock id the moment two ids ever share a step (D1's whole reason for merging them). This map is what lets the
               // receipt step translate "this step ran" back into "these lock ids ran", correct today (always exactly `[b.id]`, since no auto-emitted gate currently shares a step with another) and correct if that ever changes, without the receipt script itself needing to know which case it is in.
-              env: { ...b.env, GATE_LOCK_IDS: lockIdsEnvValue([b.id]) },
             };
       if (leg !== undefined) shardedEntries.push(b);
       out.push(...emitStep(step, guard, leg === undefined ? undefined : gateStepId(b.id)));
@@ -816,7 +818,7 @@ export function rewriteRegions(
     // T-SCHED B2 D4, final clause. One receipt step per sharded job, emitted from the SAME `shardOf` this region already used to conjunct every gate above it -- `of` is the highest leg number `shardPlan` assigned, which is correct because `shardPlan`'s bin-packer always fills legs 1..N with none left empty (its own acceptance clause 3, "no shard is empty").
     if (shardOf !== null && shardOf.size > 0) {
       const of = Math.max(...shardOf.values());
-      out.push(...emitReceiptStep(job, of, shardedEntries));
+      out.push(...emitReceiptStep(job, of, shardedEntries, stepPeers?.get(job)));
     }
     while (i < lines.length && !CLOSE_RE.test(lines[i])) {
       const step = /^\s*-\s*name:\s*(.+?)\s*$/.exec(lines[i]);
@@ -1875,12 +1877,7 @@ function selftest(): number {
     )
   );
   ck(
-    'lockIdsEnvValue is a single-quoted YAML scalar holding the JSON array',
-    lockIdsEnvValue(['check:ci-foo']) === `'["check:ci-foo"]'` &&
-      JSON.parse(lockIdsEnvValue(['a', 'b']).slice(1, -1))[1] === 'b'
-  );
-  ck(
-    "CONTROL: an unsharded step's env is untouched by D4 (no GATE_LOCK_IDS key at all)",
+    'CONTROL: no emitted step carries a driver-computed env key, sharded or not',
     !emitStep(base).some((l) => l.includes('GATE_LOCK_IDS'))
   );
   ck(
@@ -1891,7 +1888,22 @@ function selftest(): number {
     })()
   );
   ck(
-    'rewriteRegions end to end: a sharded gate carries both id: and env: GATE_LOCK_IDS',
+    'jobLockIdMap: a step several lock ids ride credits ALL of them to that one step id',
+    (() => {
+      const m = jobLockIdMap([base], new Map([[base.step, [base.id, 'check:lint:cli']]]));
+      return (
+        Object.keys(m).length === 1 &&
+        JSON.stringify(m[gateStepId(base.id)]) === JSON.stringify([base.id, 'check:lint:cli'])
+      );
+    })()
+  );
+  ck(
+    'CONTROL: a peer map naming ANOTHER step leaves this one crediting its own gate alone',
+    JSON.stringify(jobLockIdMap([base], new Map([['Some other step', ['check:x']]]))) ===
+      JSON.stringify(jobLockIdMap([base]))
+  );
+  ck(
+    'rewriteRegions end to end: a sharded gate carries its step id and NO undeclared env key',
     (() => {
       const region = [
         '  quality-static:',
@@ -1904,10 +1916,7 @@ function selftest(): number {
         undefined,
         new Map([['quality-static', new Map([[base.id, 1]])]])
       );
-      return (
-        rw.text.includes(`id: ${gateStepId(base.id)}`) &&
-        rw.text.includes(`GATE_LOCK_IDS: ${lockIdsEnvValue([base.id])}`)
-      );
+      return rw.text.includes(`id: ${gateStepId(base.id)}`) && !rw.text.includes('GATE_LOCK_IDS');
     })()
   );
 
@@ -1929,10 +1938,20 @@ function selftest(): number {
     })()
   );
   ck(
-    'CONTROL: the receipt script never contains a literal `${{`, so GHA cannot mis-substitute inside it',
-    !emitReceiptStep('quality-code', 4, [base]).some(
-      (l) => l.includes('${{') && l.includes('process.env')
-    )
+    'the receipt step is env wiring plus ONE call, which is what `check:ci-workflows` caps at 8',
+    (() => {
+      const out = emitReceiptStep('quality-code', 4, [base]);
+      const runs = out.filter((l) => /^\s+run: /.test(l));
+      return (
+        runs.length === 1 &&
+        runs[0] === `        run: node ${RECEIPT_WRITER}` &&
+        !out.some((l) => l.includes('run: |'))
+      );
+    })()
+  );
+  ck(
+    'CONTROL: the receipt writer the emitted step names is a file that really exists',
+    fs.existsSync(path.join(ROOT, RECEIPT_WRITER))
   );
   ck(
     'rewriteRegions: a sharded job gets the receipt step, an unsharded one does not',
@@ -2029,14 +2048,10 @@ function main(argv: string[]): void {
   //
   // The emitted order inside a region is ALPHABETICAL, and a region must sit after its
   // lane's PREREQUISITE steps rather than merely after `- id: setup` -- quality-www-build
-  // builds www first and check-landmarks.ts:89 refuses without dist/. Both of those are
-  // per-lane judgements, which is the second reason one lane at a time is the only safe
-  // shape: they cannot be made once for eight lanes.
+  // builds www first and check-landmarks.ts:89 refuses without dist/. Both of those are per-lane judgements, which is the second reason one lane at a time is the only safe shape: they cannot be made once for eight lanes.
   const laneIdx = argv.indexOf('--lane');
   const onlyLane = laneIdx >= 0 ? argv[laneIdx + 1] : undefined;
-  // `--allow-drop <step>` IS THE ONE TYPED ESCAPE from the strip guard below, repeatable.
-  // Typed, because the whole point is that removing a step from CI should cost a
-  // deliberate keystroke naming the step, not a silent line in a summary.
+  // `--allow-drop <step>` IS THE ONE TYPED ESCAPE from the strip guard below, repeatable. Typed, because the whole point is that removing a step from CI should cost a deliberate keystroke naming the step, not a silent line in a summary.
   const allowDrop = new Set(
     argv.flatMap((a, i) => (a === '--allow-drop' && argv[i + 1] ? [argv[i + 1]] : []))
   );
@@ -2048,11 +2063,7 @@ function main(argv: string[]): void {
 
   // --extract-all: one process for the whole manifest.
   //
-  // WHY THIS EXISTS AS A MODE RATHER THAN A SHELL LOOP. Extracting 20 gates with
-  // `for id in ...; do npx tsx gate-bind.ts --extract $id; done` cost ~40s, and about
-  // 38 of those were node and tsx starting up 20 times. The scan itself is ~1s over 603
-  // files. Batching removes the only cost that mattered; nothing here is CPU-bound
-  // enough for workers to beat one pass.
+  // WHY THIS EXISTS AS A MODE RATHER THAN A SHELL LOOP. Extracting 20 gates with `for id in ...; do npx tsx gate-bind.ts --extract $id; done` cost ~40s, and about 38 of those were node and tsx starting up 20 times. The scan itself is ~1s over 603 files. Batching removes the only cost that mattered; nothing here is CPU-bound enough for workers to beat one pass.
   if (argv.includes('--extract-all')) {
     const dry = argv.includes('--dry-run');
     const manifestText = read('scripts/ci-runner/manifest.ts');
@@ -2063,8 +2074,7 @@ function main(argv: string[]): void {
     for (const id of manifestIds(manifestText)) {
       const plan = planExtract(manifestText, id, read, pkg[id] ?? '', caps, false);
       if ('error' in plan) {
-        // Grouped by REASON, not listed per gate: ~200 refusals of four shapes is a
-        // wall, and a wall is what stops anyone reading the handful that matter.
+        // Grouped by REASON, not listed per gate: ~200 refusals of four shapes is a wall, and a wall is what stops anyone reading the handful that matter.
         const key = plan.error.includes('is shared by')
           ? 'shares a step with other gates (sub-gate of an aggregate)'
           : plan.error.includes('outside the scan')
@@ -2110,10 +2120,7 @@ function main(argv: string[]): void {
     const pkgScripts = (JSON.parse(read('package.json')) as { scripts: Record<string, string> })
       .scripts;
     reg.run = pkgScripts[id] ?? '';
-    // A HEADER THE BINDER WILL NEVER READ IS WORSE THAN NO HEADER. The scan is
-    // `git ls-files .ci/scripts scripts`; extraction wrote valid headers into
-    // packages/cli/scripts/ and packages/www/scripts/, which sit outside it, and they
-    // were simply never seen -- the same silent-ignore this gate already closed once
+    // A HEADER THE BINDER WILL NEVER READ IS WORSE THAN NO HEADER. The scan is `git ls-files .ci/scripts scripts`; extraction wrote valid headers into packages/cli/scripts/ and packages/www/scripts/, which sit outside it, and they were simply never seen -- the same silent-ignore this gate already closed once
     // for file NAMES, returning through file PATHS.
     if (!inScope(reg.file)) {
       console.error(
@@ -2122,11 +2129,8 @@ function main(argv: string[]): void {
       );
       process.exit(1);
     }
-    // A GATE WITH NO STEP OF ITS OWN CANNOT DECLARE ONE. 132 gate-tests share the single
-    // step 'Quality-gate unit tests' and 10 i18n checks share 'i18n': they are sub-gates
-    // of one aggregate command, not steps. Emitting a header for each would write the
-    // same step name N times into a lane. This is the ceiling on what --extract can
-    // ever cover, and it is better stated here than discovered per gate.
+    // A GATE WITH NO STEP OF ITS OWN CANNOT DECLARE ONE. 132 gate-tests share the single step 'Quality-gate unit tests' and 10 i18n checks share 'i18n': they are sub-gates of one aggregate command, not steps. Emitting a header for each would write the same step name N times into a lane. This is the ceiling on what --extract can ever cover, and it is better stated here than
+    // discovered per gate.
     const sharers = (
       manifestText.match(
         new RegExp(`step: '${reg.step.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`, 'g')
@@ -2141,8 +2145,7 @@ function main(argv: string[]): void {
     }
     const src = rbAt !== -1 ? stripHeader(read(reg.file)) : read(reg.file);
     const needs = inferredNeeds(src);
-    // PIN THE LANE ONLY WHEN THE INFERENCE DISAGREES. Emitting `lane:` unconditionally
-    // would freeze today's placement into 129 files and make the derivation decorative.
+    // PIN THE LANE ONLY WHEN THE INFERENCE DISAGREES. Emitting `lane:` unconditionally would freeze today's placement into 129 files and make the derivation decorative.
     const placed = placeGate(laneCapabilities(read(WORKFLOW)), needs);
     const pinLane = !('lane' in placed) || placed.lane !== reg.job;
     const next = insertHeader(reg.file, src, headerLines(reg, needs, pinLane, id));
@@ -2150,12 +2153,9 @@ function main(argv: string[]): void {
       console.error(`✗ ${reg.file}: ${next.error}`);
       process.exit(1);
     }
-    // THE EXTRACTION MUST ROUND-TRIP. A header that re-derives something OTHER than what
-    // is registered would move the gate silently, which is the class this tool closes.
+    // THE EXTRACTION MUST ROUND-TRIP. A header that re-derives something OTHER than what is registered would move the gate silently, which is the class this tool closes.
     const rb = bind(reg.file, next);
-    // RUN IS PART OF THE ROUND TRIP. Checking only id and step let six headers be
-    // written whose `run` disagreed with package.json -- the gate then reported them as
-    // binding problems, which is the tool creating the work it exists to remove.
+    // RUN IS PART OF THE ROUND TRIP. Checking only id and step let six headers be written whose `run` disagreed with package.json -- the gate then reported them as binding problems, which is the tool creating the work it exists to remove.
     const runOk = reg.run === '' || rb?.run === reg.run;
     if (rb === null || rb.id !== id || rb.step !== reg.step || !runOk) {
       const got = rb === null ? 'nothing' : `${rb.id} / "${rb.step}" / ${rb.run}`;
@@ -2178,10 +2178,7 @@ function main(argv: string[]): void {
 
   const pkg = JSON.parse(read('package.json')) as { scripts: Record<string, string> };
   const manifest = read('scripts/ci-runner/manifest.ts');
-  // THE LOCK, not the manifest text, decides whether an id is a gate-test. `manifest.ts`
-  // is TypeScript and this file would have to re-implement a fragment of a TS parser to
-  // read `qualityGateTest` out of it, which is the exact archaeology gates.lock.json was
-  // committed to end.
+  // THE LOCK, not the manifest text, decides whether an id is a gate-test. `manifest.ts` is TypeScript and this file would have to re-implement a fragment of a TS parser to read `qualityGateTest` out of it, which is the exact archaeology gates.lock.json was committed to end.
   const lock = JSON.parse(read('scripts/ci-runner/gates.lock.json')) as {
     id: string;
     run: string;
@@ -2190,8 +2187,7 @@ function main(argv: string[]): void {
   const lockById = new Map(lock.map((g) => [g.id, g]));
   const workflow = read(WORKFLOW);
   const caps = laneCapabilities(workflow);
-  // The lock, for the shard assignment below. Read here and not inside the loop so a
-  // malformed lock fails once, loudly, rather than once per sharded lane.
+  // The lock, for the shard assignment below. Read here and not inside the loop so a malformed lock fails once, loudly, rather than once per sharded lane.
   const lockEntries = JSON.parse(read('scripts/ci-runner/gates.lock.json')) as Parameters<
     typeof shardAssignment
   >[1];
@@ -2211,8 +2207,7 @@ function main(argv: string[]): void {
 
   const { declared, malformed } = scanDeclarations(present, read);
 
-  // ANTI-VACUITY. Until the drain lands, "no gate declares a header" is what a broken
-  // scan looks like and what a clean tree looks like, and they must not be the same.
+  // ANTI-VACUITY. Until the drain lands, "no gate declares a header" is what a broken scan looks like and what a clean tree looks like, and they must not be the same.
   if (declared.length === 0) {
     console.error(
       '✗ VACUOUS: not one tracked gate carries a `---- gate ----` header. Either the ' +
@@ -2221,18 +2216,10 @@ function main(argv: string[]): void {
     process.exit(1);
   }
 
-  // A MALFORMED HEADER REFUSES EVERY MODE, NOT JUST THE VERIFY ONE. This list was
-  // collected here and then only ever folded into `problems`, which is reached AFTER the
-  // `write` branch returns -- so `--write` and `--dry-run` both ran to completion with a
-  // voided declaration in the tree and said nothing. Found 2026-09-06 by two agents who
-  // planted `---- /gate ----` in a gate-test, watched `--dry-run` exit 0 without naming
-  // the file, and correctly concluded their headers were unread. They were half right:
-  // the tree really was out of scope, and this is the OTHER half.
+  // A MALFORMED HEADER REFUSES EVERY MODE, NOT JUST THE VERIFY ONE. This list was collected here and then only ever folded into `problems`, which is reached AFTER the `write` branch returns -- so `--write` and `--dry-run` both ran to completion with a voided declaration in the tree and said nothing. Found 2026-09-06 by two agents who planted `---- /gate ----` in a gate-test,
+  // watched `--dry-run` exit 0 without naming the file, and correctly concluded their headers were unread. They were half right: the tree really was out of scope, and this is the OTHER half.
   //
-  // Refusing a `--write` matters more than refusing a report. A voided declaration is a
-  // gate this binder cannot see, so the region it would have emitted is written WITHOUT
-  // it, and `--write` owns whole regions: the gate does not become unregistered, it
-  // disappears.
+  // Refusing a `--write` matters more than refusing a report. A voided declaration is a gate this binder cannot see, so the region it would have emitted is written WITHOUT it, and `--write` owns whole regions: the gate does not become unregistered, it disappears.
   if (malformed.length > 0) {
     console.error(`✗ ${malformed.length} malformed \`---- gate ----\` block(s):`);
     for (const m of malformed) console.error(`    ${m}`);
@@ -2246,12 +2233,8 @@ function main(argv: string[]): void {
   if (write) {
     const byLane = new Map<string, Emitting[]>();
     const handRegistered: string[] = [];
-    // ONLY `kind: step` IS EMITTED. A battery gate rides a hand-written step it does not
-    // own, and a `test` or `local-only` gate has no step at all; emitting any of them
-    // would write 143 duplicate copies of one battery step into a region.
-    // HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a
-    // hand-written step a region must not take over; not saying so would make "declared
-    // and deliberately not emitted" look identical to "declared and forgotten", which is the exact confusion the import guard above exists to end.
+    // ONLY `kind: step` IS EMITTED. A battery gate rides a hand-written step it does not own, and a `test` or `local-only` gate has no step at all; emitting any of them would write 143 duplicate copies of one battery step into a region. HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a hand-written step a region must not take over; not saying so
+    // would make "declared and deliberately not emitted" look identical to "declared and forgotten", which is the exact confusion the import guard above exists to end.
     const declaredHoldouts = declared.filter((b) => b.kind === 'step' && b.emit === false);
     if (declaredHoldouts.length > 0) {
       console.log(
@@ -2294,6 +2277,7 @@ function main(argv: string[]): void {
     }
     // THE SHARD ASSIGNMENT, computed once per run from the SAME plan the aggregator re-runs. A lane absent from SHARD_COUNTS yields nothing and its steps emit exactly as before, which is what keeps this change inert for the nine unsharded lanes.
     const shardMap = new Map<string, ReadonlyMap<string, number>>();
+    const peerMap = new Map<string, ReadonlyMap<string, readonly string[]>>();
     for (const job of Object.keys(SHARD_COUNTS)) {
       const assigned = shardAssignment(job, lockEntries, caps, byLane.get(job) ?? []);
       if (assigned === null) continue;
@@ -2310,6 +2294,13 @@ function main(argv: string[]): void {
         for (const id of assigned.replicated) console.log(`    ${id}`);
       }
       shardMap.set(job, assigned.legs);
+      // THE RECEIPT'S CURRENCY, built from the lock rather than from the emitted gates. A manifest-registered entry can ride a step a HEADER-declared gate emits (`check:lint:cli` and three siblings ride `check:lint`'s `Lint` step), and crediting only the emitter undercounts the leg against the very plan the aggregator re-derives. See `jobLockIdMap`.
+      const peers = new Map<string, string[]>();
+      for (const e of lockEntries) {
+        if (e.ci.kind !== 'step' || e.ci.job !== job || e.ci.step === undefined) continue;
+        peers.set(e.ci.step, [...(peers.get(e.ci.step) ?? []), e.id]);
+      }
+      peerMap.set(job, peers);
     }
     // T-SCHED B2 D3, BEFORE rewriteRegions: a shard conjunct on a job with no real `strategy:` block is Finding 2's vacuity (GitHub evaluates `matrix.shard` as `null` with no `strategy.matrix`, so every conjuncted step silently skips). A REFUSAL, not a rewrite -- see rewriteStrategyRegions's own docstring for why this one region is never auto-applied.
     const strategyFindings = rewriteStrategyRegions(workflow, SHARD_COUNTS);
@@ -2318,12 +2309,17 @@ function main(argv: string[]): void {
       for (const f of strategyFindings) console.error(`    ${f}`);
       process.exit(1);
     }
-    const { text, lanes, dropped } = rewriteRegions(workflow, scoped, only, shardMap);
+    const { text, lanes, dropped } = rewriteRegions(workflow, scoped, only, shardMap, peerMap);
     // REFUSE TO SILENTLY DELETE A STEP THE MANIFEST STILL POINTS AT. A step inside the region that no declared gate emits is either stale (fine to drop) or a gate someone hand-added in the wrong place (NOT fine -- dropping it stops that gate running in CI). The manifest is the arbiter: if it names the step, the removal is a regression and this refuses rather than reporting a tidy
-    // "rewrote N region(s)". Keyed by the JOB the gate was PLACED in, which is byLane's key -- not b.lane, which is the optional header override and is undefined for most gates. Keying on it made every emitted step look like an unexplained removal.
-    const emitted = new Set(
-      [...scoped.entries()].flatMap(([lane, gates]) => gates.map((b) => `${lane}: ${b.step}`))
-    );
+    // "rewrote N region(s)". Keyed by the JOB the gate was PLACED in, which is byLane's key -- not b.lane, which is the optional header override and is undefined for most gates. Keying on it made every emitted step look like an unexplained removal. THE RECEIPT STEPS COUNT AS EMITTED, and leaving them out made a sharded lane unwritable a second time. `rewriteRegions` emits them
+    // from the same `shardMap` it conjuncts with, so on the next `--write` they are stripped and re-emitted exactly like any other region step -- but they belong to no declared gate, so the set below did not know they were coming back. The strip guard therefore refused every re-run with "2 step(s) would be REMOVED ... and re-emitted by nothing", found on the first lane ever
+    // populated into `SHARD_COUNTS`: D4 built the steps, and nothing re-ran the writer over a lane that had them.
+    const emitted = new Set([
+      ...[...scoped.entries()].flatMap(([lane, gates]) => gates.map((b) => `${lane}: ${b.step}`)),
+      ...[...scoped.keys()]
+        .filter((lane) => (shardMap.get(lane)?.size ?? 0) > 0)
+        .flatMap((lane) => RECEIPT_STEP_NAMES.map((step) => `${lane}: ${step}`)),
+    ]);
     // THE STRIP GUARD (box A2). The refusal below catches a drop the MANIFEST still names, which is the loudest case. It is not the only harmful one, and the gap has a receipt: strip `DOCKERHUB_TOKEN` from `.github/workflows/ci-quality.yml:1159` in a scratch copy and run the whole battery -- NOTHING reds. A step can carry `env:`, `if:`, a `with:` block or a secret that no manifest
     // entry mentions, and dropping it was reported as a tidy `rewrote N region(s)`.
     //

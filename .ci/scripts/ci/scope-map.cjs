@@ -173,6 +173,12 @@ const RULES = [
     full: 'harness',
   },
 
+  {
+    name: 'scripts-shard-receipt',
+    match: (p) => p === 'scripts/ci/write-shard-receipt.cjs',
+    full: 'harness',
+  },
+
   // Everything else under scripts/: the check-* gates, their shared libs and data snapshots, the local ci-runner, and operator tooling. Traced 2026-08-06: nothing here is reachable from any of the 18 scoped keys.
   { name: 'scripts-gates', match: matchPrefix('scripts/'), modules: ['gates'] },
   { name: 'eslint-harness', match: matchPrefix('eslint-rules/'), full: 'harness' },

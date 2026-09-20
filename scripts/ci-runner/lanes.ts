@@ -354,7 +354,7 @@ function orderUnit(
  * "either half alone is dead". Both halves therefore read THIS, and
  * `check:ci-quality-complete` asserts the workflow agrees with it.
  *
- * EMPTY, AND B2 PROVED THE OBVIOUS CANDIDATE WRONG BEFORE FILLING IT (2026-09-09).
+ * B2 PROVED THE OBVIOUS CANDIDATE WRONG BEFORE FILLING THIS (2026-09-09).
  *
  * `quality-security` was populated at x4 on the strength of holding 166 of the lock's 477
  * registered steps -- the largest lane by a wide margin -- and then BACKED OUT, because
@@ -372,17 +372,47 @@ function orderUnit(
  *
  * SO THE RANKING INVERTS: by the measure that matters, `quality-code` (98 steps, and 99
  * lock entries, so nearly every entry IS its own step) is the target, not
- * `quality-security` (5th). `quality-code` holds 8 `heavy` gates, so `shardPlan` refuses
- * anything under x8 -- that trade, eight setups against 98 steps, is the decision B2 still
- * owes.
+ * `quality-security` (5th). The x8 floor recorded here before D1 was an artifact of
+ * counting heavy LOCK IDS: the five `check:lint*` ids are one `Lint` step, and once
+ * `shardPlan` merges a shared step into one unit the heavy-UNIT count is 4.
  *
- * THE MECHANISM IS BUILT AND STAYS: `shardAssignment` in scripts/gate-bind.ts computes each
- * gate's leg from this constant via the same `shardPlan` that `check:ci-quality-complete`
- * re-runs, and `rewriteRegions` ANDs `matrix.shard == N` onto any header `when`. It is
- * inert while this is empty, which is the state the aggregator's both-directions pin
- * requires.
+ * THE MECHANISM: `shardAssignment` in scripts/gate-bind.ts computes each gate's leg from
+ * this constant via the same `shardPlan` that `check:ci-quality-complete` re-runs, and
+ * `rewriteRegions` ANDs `matrix.shard == N` onto any header `when`. A lane absent from
+ * here yields nothing and its steps emit exactly as they did before.
+ *
+ * POPULATED 2026-09-20, `quality-code` AT FOUR, AND EVERY TERM OF THAT IS MEASURED.
+ *
+ * Candidates, ranked by the only currency that decides this -- how much of the lane sits
+ * inside the emitted region, where a conjunct can reach it. Lock entries joined to
+ * `.ci/cache/gate-durations.json` at the floor-of-recent the tier oracle uses
+ * (scripts/gates/check-gate-manifest.ts:513):
+ *
+ *     lane               entries  region steps  replicated  region s  replicated s
+ *     quality-code           102            65    33 (32%)      1139           476
+ *     quality-static          58            55      3 (5%)       294            30
+ *     quality-content         43            31    12 (28%)       136            51
+ *     quality-www-build       16             7     9 (56%)        53           129
+ *     quality-i18n            40             8    32 (80%)        28           309
+ *     quality-security       166            13   153 (92%)        54          3253
+ *
+ * `quality-code` is the only lane carrying wall clock worth dividing. It is also the ONLY
+ * lane ever measured on a real runner rather than locally -- 568 s and 644 s against a
+ * `timeout-minutes: 15` budget, runs 34811039022 and 34740890431 -- and the two models
+ * agree on the ratio, which is what makes the local figures usable here: real-CI
+ * arithmetic puts x4 at 1.46x, the local floor sums put it at 1.49x.
+ *
+ * FOUR IS THE FLOOR AND THE KNEE AT ONCE. `shardPlan` refuses x2 and x3 outright ("4 heavy
+ * gate(s) but only 3 shard(s)"), so four is the smallest realisable count. Above it the
+ * return collapses, because the `Lint` unit bounds the makespan: x5 measures 1.49x, x6
+ * 1.72x and x8 1.74x, each for more runners than the lane can use.
+ *
+ * `quality-static` is the better-DISTRIBUTED lane (5% replicated, no heavy) and is
+ * deliberately not here: it runs on `ubuntu-slim`, whose minimal image is the reason
+ * `check_commands.py:169` and `shell_size.py:57` exist, and D4's receipt step is a `node`
+ * invocation. A lane whose receipt cannot run is a lane whose shards cannot report.
  */
-export const SHARD_COUNTS: Readonly<Record<string, number>> = {};
+export const SHARD_COUNTS: Readonly<Record<string, number>> = { 'quality-code': 4 };
 
 /**
  * T-SCHED B2 D2. The ceiling on a sharded lane's REPLICATED share -- lock entries whose
@@ -400,8 +430,16 @@ export const SHARD_COUNTS: Readonly<Record<string, number>> = {};
  * declared ceiling turns that into a refusal at `--write` time, before a single runner
  * is added: quality-security's replicated share is ~153/166, about 92%, so any ceiling
  * under that refuses it without a human having to re-derive the arithmetic by hand.
+ *
+ * `quality-code`'s own share, measured against the live lock and the live region: 33 of
+ * 102 entries, 32.4%. The ceiling is set at 0.35 rather than at the measurement, so a
+ * single new hand-written step does not red the gate, and three do. It is not slack for
+ * its own sake: the same 33 entries carry 476 s of the lane's 1615 s, and the two changes
+ * that would move them into the region (splitting the composite `Lint` step, and giving
+ * `check:types` and `check:ci-dead-bash` declarations) are the prerequisite for raising
+ * this lane's ceiling past 1.46x. Lowering this number is how that progress gets ratcheted.
  */
-export const SHARD_REPLICATED_MAX: Readonly<Record<string, number>> = {};
+export const SHARD_REPLICATED_MAX: Readonly<Record<string, number>> = { 'quality-code': 0.35 };
 
 /**
  * Shard each named lane, or REFUSE and say why.

@@ -392,6 +392,10 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
   [HOST_LANE]:
     'holds this gate, which polices the lane structure and therefore cannot run inside ' +
     'a lane an emitted region could conjunct onto one shard leg',
+  [AGGREGATOR_JOB]:
+    'runs the receipts half of this same gate, downstream of every sharded lane; a ' +
+    'region there would conjunct the judge onto one leg of the matrix it is judging, ' +
+    'which is the trap the host lane exists to avoid',
 };
 
 /**
@@ -405,6 +409,81 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
  * VISIBLE instead of silent is what it does.
  */
 export const UNDECIDED_LANES: readonly string[] = ['ci-quick', 'quality-packages', 'quality-go'];
+
+/**
+ * Step names a lane's `# >>> gate-bind` region emits, per lane.
+ *
+ * THE SAME LINE-ORIENTED READ as everything else here, and for the same reason: this must
+ * run on a clean runner with no YAML dependency.
+ */
+export function regionStepNames(workflowText: string): Map<string, Set<string>> {
+  const out = new Map<string, Set<string>>();
+  let job: string | null = null;
+  let inJobs = false;
+  let inRegion = false;
+  for (const raw of workflowText.split('\n')) {
+    if (/^jobs:\s*$/.test(raw)) {
+      inJobs = true;
+      continue;
+    }
+    if (!inJobs) continue;
+    if (raw !== '' && !/^\s/.test(raw) && !raw.startsWith('#')) break;
+    const m = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(raw);
+    if (m) {
+      job = m[1] as string;
+      inRegion = false;
+      out.set(job, new Set());
+      continue;
+    }
+    if (job === null) continue;
+    if (raw.trim().startsWith('# >>> gate-bind')) inRegion = true;
+    else if (/^\s*# <<< gate-bind\s*$/.test(raw)) inRegion = false;
+    const step = /^\s*-\s*name:\s*(.+?)\s*$/.exec(raw);
+    if (step && inRegion) (out.get(job) as Set<string>).add(step[1] as string);
+  }
+  return out;
+}
+
+/**
+ * The declared plan, RESTATED IN THE CURRENCY A RECEIPT CAN COUNT.
+ *
+ * THIS IS A CURRENCY BUG THE FIRST REAL LANE EXPOSED, not a relaxation. `shardPlan` assigns
+ * a leg to every LOCK ENTRY of the lane, replicated ones included; the receipt can only
+ * observe `steps.<id>.outcome` for steps the region actually emitted, and a replicated entry
+ * has no emitted step, no `id:`, and runs on every leg rather than on one. Comparing the two
+ * directly makes the composition clause red on every leg of a correctly-sharded lane:
+ * measured on `quality-code` at four, the plan gives legs 22/27/27/26 while the legs can only
+ * ever report 11/19/17/18.
+ *
+ * WHAT THE CLAUSE STILL ASSERTS, and it is the whole of what it was written for: the leg and
+ * this aggregator agree about WHICH gates ran WHERE. The leg assignment still comes from
+ * `shardPlan`; only the set being counted is narrowed, to the gates a conjunct can reach. A
+ * binder that put a gate on leg 2 while the plan says leg 3 still lands both counts wrong.
+ *
+ * AN EMPTY NARROWING IS A FINDING, NOT A PASS. A shard whose conjunctable set is empty would
+ * accept a receipt saying `gates: 0`, which is Finding 2's vacuity with extra steps.
+ */
+export function conjunctableShards(
+  declared: readonly Shard[],
+  stepOf: ReadonlyMap<string, string>,
+  regionSteps: ReadonlyMap<string, Set<string>>
+): { shards: Shard[]; findings: string[] } {
+  const findings: string[] = [];
+  const shards = declared.map((s) => {
+    const emitted = regionSteps.get(s.lane) ?? new Set<string>();
+    const ids = s.ids.filter((id) => emitted.has(stepOf.get(id) ?? ''));
+    if (ids.length === 0) {
+      findings.push(
+        `shard ${shardKey(s.lane, s.index, s.of)} holds ${s.ids.length} planned entr(y|ies) ` +
+          "and NOT ONE of them is a step the lane's `# >>> gate-bind` region emits, so no " +
+          'conjunct can reach any of them. That leg would report `gates: 0` and be judged ' +
+          'against zero.'
+      );
+    }
+    return { ...s, ids };
+  });
+  return { shards, findings };
+}
 
 /** Jobs holding a `# >>> gate-bind` region, read the same line-oriented way as the rest. */
 export function regionLanes(workflowText: string): Set<string> {
@@ -520,7 +599,7 @@ function main(argv: readonly string[]): number {
   const workflowText = readOr(WORKFLOW, 'the quality workflow');
   if (lockText === null || workflowText === null) return 1;
 
-  let lock: { id: string; ci: { kind: string; job?: string } }[];
+  let lock: { id: string; ci: { kind: string; job?: string; step?: string } }[];
   try {
     const parsed: unknown = JSON.parse(lockText);
     if (!Array.isArray(parsed)) throw new Error('the lock is not a JSON array');
@@ -613,7 +692,14 @@ function main(argv: readonly string[]): number {
     }
     const { receipts, problems } = readReceipts(dir);
     for (const p of problems) findings.push(p);
-    findings.push(...judgeReceipts(declared, receipts));
+    // THE PLAN, NARROWED TO WHAT A LEG CAN COUNT. See `conjunctableShards`: `shardPlan` assigns a leg to every lock entry of the lane, a receipt can only see the steps the region emitted, and comparing the two raw made the composition clause red on every leg of a correctly-sharded lane.
+    const countable = conjunctableShards(
+      declared,
+      new Map(lock.filter((e) => e.ci.step !== undefined).map((e) => [e.id, e.ci.step as string])),
+      regionStepNames(workflowText)
+    );
+    findings.push(...countable.findings);
+    findings.push(...judgeReceipts(countable.shards, receipts));
     if (findings.length === 0) {
       console.log(
         `${GREEN}✓${NC} quality-complete: all ${declared.length} declared shard(s) reported ` +
@@ -1015,6 +1101,93 @@ function selftest(): number {
       })(),
     },
     // --- the receipt reader ---------------------------------------------------
+    {
+      name: 'regionStepNames reads only the steps BETWEEN the markers, not the whole job',
+      ok: (() => {
+        const wf = [
+          'jobs:',
+          '  lane-a:',
+          '    steps:',
+          '      - name: Before',
+          '      # >>> gate-bind (generated; do not edit inside)',
+          '      - name: Inside',
+          '      # <<< gate-bind',
+          '      - name: After',
+        ].join('\n');
+        const got = regionStepNames(wf).get('lane-a') as Set<string>;
+        return got.size === 1 && got.has('Inside');
+      })(),
+    },
+    {
+      name: 'conjunctableShards narrows a shard to the ids whose step the region emits',
+      ok: (() => {
+        const shard: Shard = {
+          lane: 'lane-a',
+          index: 1,
+          of: 1,
+          runsOn: 'ubuntu-latest',
+          timeoutMinutes: 15,
+          ids: ['check:in', 'check:out'],
+          weight: 2,
+          slow: 0,
+          heavy: 0,
+        };
+        const out = conjunctableShards(
+          [shard],
+          new Map([
+            ['check:in', 'Inside'],
+            ['check:out', 'Hand written'],
+          ]),
+          new Map([['lane-a', new Set(['Inside'])]])
+        );
+        return (
+          out.findings.length === 0 &&
+          out.shards.length === 1 &&
+          JSON.stringify(out.shards[0]?.ids) === JSON.stringify(['check:in'])
+        );
+      })(),
+    },
+    {
+      name: 'FIRES: a shard whose every planned id sits OUTSIDE the region would be judged against zero',
+      ok: conjunctableShards(
+        [
+          {
+            lane: 'lane-a',
+            index: 2,
+            of: 2,
+            runsOn: 'ubuntu-latest',
+            timeoutMinutes: 15,
+            ids: ['check:out'],
+            weight: 1,
+            slow: 0,
+            heavy: 0,
+          },
+        ],
+        new Map([['check:out', 'Hand written']]),
+        new Map([['lane-a', new Set(['Inside'])]])
+      ).findings.some((f) => f.includes('NOT ONE of them')),
+    },
+    {
+      name: 'CONTROL: the live plan narrows to a NON-EMPTY set on every leg, so the clause is not fixture-only',
+      ok: (() => {
+        if (Object.keys(SHARD_COUNTS).length === 0) return true;
+        const text = readFileSync(path.join(ROOT, WORKFLOW), 'utf-8');
+        const live = JSON.parse(readFileSync(path.join(ROOT, LOCK), 'utf-8')) as {
+          id: string;
+          ci: { kind: string; job?: string; step?: string };
+        }[];
+        const plan = shardPlan(live, laneCapabilities(text), SHARD_COUNTS);
+        if ('error' in plan) return false;
+        const out = conjunctableShards(
+          plan.lanes.flatMap((l) => l.shards),
+          new Map(
+            live.filter((e) => e.ci.step !== undefined).map((e) => [e.id, e.ci.step as string])
+          ),
+          regionStepNames(text)
+        );
+        return out.findings.length === 0 && out.shards.every((s) => s.ids.length > 0);
+      })(),
+    },
     {
       name: 'a receipt missing a required field is a PROBLEM, not a silent skip',
       ok: (() => {

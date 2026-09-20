@@ -101,6 +101,16 @@
       ]
     },
     {
+      "id": "ci-node-helpers",
+      "paths": ["scripts/ci/*.cjs"],
+      "home": "scripts/ci",
+      "stays": true,
+      "why": "Node helpers that a workflow step calls, born at their final home rather than under .ci/scripts/ci, which the incoming-ci-helpers rule drains. scripts/ci/write-shard-receipt.cjs is the first.",
+      "notes": [
+        "scripts/ci/write-shard-receipt.cjs is named by scripts/gate-bind.ts (RECEIPT_WRITER) and by the quality-code shard receipt step in ci-quality.yml; scope-map.cjs pins it to full CI under the scripts-shard-receipt rule."
+      ]
+    },
+    {
       "id": "operator-bash",
       "paths": ["scripts/ops/**"],
       "home": "scripts/ops",
