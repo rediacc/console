@@ -553,6 +553,15 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       only under a `run:`/`with:` key, which measures 162 distinct paths / 275 call sites.
       Partition writers by WORKFLOW FILE, not by script -- the workflows are the contended,
       driver-only resource. P4a stays unstaffed until W7P4-Q's cutover lands.
+      **P4a DONE 2026-09-20 in `c5cb6e8a6`.** Measured on `run:`/`with:` only: 160 distinct
+      paths / 273 sites; 106 paths have a port licensed at K=5. 80 paths (120 sites) flipped to
+      `PYTHONPATH=.ci python3 -m rediacc_ci.<module>` (the ports carry no sys.path hop, so the
+      bare-path form fails with ModuleNotFoundError); the set shrank 160 -> 80 with none added.
+      **23 of the flipped paths are on the W7P5-a real-run blocklist**: licensed by dry-run
+      parity only, bash still in the tree, each site reverts by restoring its old `run:` line.
+      **Left of the licensed 106 (26):** 15 in `autopilot.yml` (runner-temp invocations, pinned
+      by `check-autopilot-workflow-invariants.sh`), 2 in `claude-review-reusable.yml`, 9 inside
+      `gate-bind` emitter regions. **P4b: 54 paths have no licensed port.**
 - [ ] **W7P5-a S** `deploy/` 27 + `release/` 21 = **48 files, 5,440 lines**, 46 workflow call
       sites, zero Python, zero ledgers. Golden dry-run parity plus **one real run each**, K=5
       ledger before any deletion. Each specimen its own committed git repo; new side under
