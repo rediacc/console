@@ -1955,6 +1955,56 @@ function selftest(): number {
       );
     })()
   );
+  ck(
+    'a lane WITH an assignment emits matrix.shard == N on exactly the steps the plan gives that leg',
+    (() => {
+      const other = { ...base, id: 'check:ci-other', step: 'Other', file: 'x/check_other.py' };
+      const region = [
+        '  quality-static:',
+        '    # >>> gate-bind (generated; do not edit inside)',
+        '    # <<< gate-bind',
+      ].join('\n');
+      const rw = rewriteRegions(
+        region,
+        new Map([['quality-static', [base, other]]]),
+        undefined,
+        new Map([
+          [
+            'quality-static',
+            new Map([
+              [base.id, 1],
+              [other.id, 2],
+            ]),
+          ],
+        ])
+      );
+      const conjuncts = rw.text.split('\n').filter((l) => l.includes('matrix.shard =='));
+      return (
+        conjuncts.length === 2 &&
+        conjuncts.filter((l) => l.includes('matrix.shard == 1')).length === 1 &&
+        conjuncts.filter((l) => l.includes('matrix.shard == 2')).length === 1
+      );
+    })()
+  );
+  ck(
+    'a lane WITHOUT an assignment emits byte-identically to a call that passes no shard map',
+    (() => {
+      const region = [
+        '  quality-static:',
+        '    # >>> gate-bind (generated; do not edit inside)',
+        '    # <<< gate-bind',
+      ].join('\n');
+      const byLane = new Map([['quality-static', [base]]]);
+      const plain = rewriteRegions(region, byLane).text;
+      const elsewhere = rewriteRegions(
+        region,
+        byLane,
+        undefined,
+        new Map([['quality-code', new Map([[base.id, 1]])]])
+      ).text;
+      return plain === elsewhere && !plain.includes('matrix.shard');
+    })()
+  );
 
   return bad;
 }
