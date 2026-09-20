@@ -1203,6 +1203,25 @@ def test_the_loader_refuses(label, text):
         ps.load_rules(text)
 
 
+def _r18(name: str, text: str) -> list:
+    findings, _ = ps.lint_text(name, text, RULES, GLOBALS)
+    return [f for f in findings if f.rule == "R18"]
+
+
+def test_a_long_table_row_and_a_touched_list_are_not_width_findings():
+    """A table cannot wrap a row and the plan-record parser reads one line of `Touched:`, so R18 has nothing to fold there."""
+    long = ", ".join("agent/PLAN-%03d.md" % n for n in range(40))
+    assert len(long) > 384
+    assert _r18("a.md", "| `package.json` | %s |\n" % long) == []
+    assert _r18("a.md", "Touched: %s\n" % long) == []
+
+
+def test_the_same_length_in_ordinary_prose_is_still_a_width_finding():
+    """CONTROL for the case above: the exemption is the row and the key, not the length."""
+    long = ", ".join("agent/PLAN-%03d.md" % n for n in range(40))
+    assert len(_r18("a.md", "Prose that is far too long: %s\n" % long)) == 1
+
+
 def test_the_loader_accepts_the_real_file():
     """The MIRROR for the seven refusals above. Without it they prove only that `load_rules` can raise, which a `raise RuleError` on line one would satisfy."""
     globals_, rules = ps.load_rules_file(ROOT)

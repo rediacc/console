@@ -14,13 +14,9 @@ THE PLANTED CONTROL IS NOT DECORATION. A two-file entry in the cached index, giv
 
 import json
 import os
-import pathlib
 import subprocess
-import sys
 
 import pytest
-
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 from rediacc_ci import paths
 

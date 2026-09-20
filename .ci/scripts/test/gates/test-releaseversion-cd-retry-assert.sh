@@ -54,7 +54,7 @@ test_step_exists() {
     log_test "the artifact-version assertion step is present"
     local block
     block="$(step_block "$WORKFLOW")"
-    assert_contains "$block" "assert-artifact-version.sh" "the step must still run the assertion script"
+    assert_contains "$block" "assert_artifact_version" "the step must still run the assertion script"
     log_pass "step found in cd-v2.yml"
 }
 
@@ -124,7 +124,7 @@ test_planted_old_condition_is_caught() {
     rm -rf "$fixture"
 
     assert_contains "$block" "retry_mode" "planted condition must be visible to the extractor (else these checks prove nothing)"
-    assert_contains "$block" "assert-artifact-version.sh" "planted fixture must still be the right step"
+    assert_contains "$block" "assert_artifact_version" "planted fixture must still be the right step"
     log_pass "the extractor demonstrably sees a retry_mode exclusion when one exists"
 }
 

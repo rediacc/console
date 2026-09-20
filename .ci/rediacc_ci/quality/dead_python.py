@@ -120,29 +120,12 @@ GLOB_ROOTS = {
 # THE NEW ROUTE IS WEAKER THAN THE ONE IT REPLACED, and a future reader should know it: the exemption was unconditional, while the registry lists this module only for as long as it reads an environment variable. If that stops being true the file goes DEAD again with no exemption standing, and the answer then is to re-add an entry here with a fresh reason, not to assume the old one
 # still applies.
 MANUAL_ENTRY_POINTS: dict[str, str] = {
-    ".ci/rediacc_ci/proxies/cli_manifest.py": (
-        "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
-        "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
-        "import graph cannot see the route -- and it is not a gate either: this is a "
-        "workflow run: target script, and any cutover from the .sh call site is a "
-        "separate, later box. Remove the entry the moment a real route lands."
-    ),
-    ".ci/rediacc_ci/proxies/docker_prepull.py": (
-        "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
-        "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
-        "import graph cannot see the route -- and it is not a gate either: this is a "
-        "workflow run: target script, and any cutover from the .sh call site is a "
-        "separate, later box. Remove the entry the moment a real route lands."
-    ),
     ".ci/rediacc_ci/version/resolve_version.py": (
         "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
         "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
         "import graph cannot see the route -- and it is not a gate either: this is a "
         "workflow run: target script, and any cutover from the .sh call site is a "
         "separate, later box. Remove the entry the moment a real route lands."
-    ),
-    ".ci/rediacc_ci/deploy/upload_media_to_r2.py": (
-        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
     ),
     ".ci/rediacc_ci/ci_signal/create_complete.py": (
         "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
@@ -154,6 +137,8 @@ MANUAL_ENTRY_POINTS: dict[str, str] = {
 }
 
 _PY_TOKEN = re.compile(r"[\w.\-/]*[\w\-]\.py")
+# A port invoked as `python3 -m rediacc_ci.<pkg>.<mod>`, the form the workflow flips use, names no `.py` path.
+_MODULE_TOKEN = re.compile(r"-m\s+rediacc_ci\.([\w.]+)")
 _SH_TOKEN = re.compile(r"[\w.\-/]*[\w\-]\.sh")
 
 
@@ -282,6 +267,12 @@ def shadow_admissions(
             new_cmd = (rec.get("new") or {}).get("cmd", "")
             old_cmd = (rec.get("old") or {}).get("cmd", "")
             ports = [m for m in _PY_TOKEN.findall(new_cmd) if m in pyset]
+            ports += [
+                mod_path
+                for mod in _MODULE_TOKEN.findall(new_cmd)
+                for mod_path in (".ci/rediacc_ci/%s.py" % mod.replace(".", "/"),)
+                if mod_path in pyset
+            ]
             if not ports:
                 continue
             twins = re.findall(_SH_TOKEN, old_cmd)
@@ -748,6 +739,29 @@ def selftest(verbose: bool = False) -> int:
             "and it is attributed to `shadow`, not to the ledger's text",
             scan(root, glob_roots={}, manual={}).routes[".ci/scripts/quality/check_orphan.py"],
             "shadow",
+        )
+
+        # The module-name form a workflow flip uses: `python3 -m rediacc_ci.<pkg>.<mod>` names no .py path, so the route must read the module.
+        modroot = _fixture(
+            tmp / "shadow-module", {".ci/rediacc_ci/quality/orphan_mod.py": "X = 1\n"}
+        )
+        _write(
+            modroot,
+            ".ci/shadow/w7p4b-orphan-mod.observations.jsonl",
+            json.dumps(
+                {
+                    "verdict": "EQUIVALENT",
+                    "old": {"cmd": "bash .ci/scripts/quality/check-orphan.sh"},
+                    "new": {"cmd": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.orphan_mod"},
+                }
+            )
+            + "\n",
+        )
+        _write(modroot, ".ci/scripts/quality/check-orphan.sh", "#!/bin/bash\ntrue\n")
+        c.check(
+            "route shadow: a port named by `-m rediacc_ci.<mod>` in the ledger is not dead",
+            _findings(modroot),
+            [],
         )
 
         (root / ".ci/scripts/quality/check-orphan.sh").unlink()

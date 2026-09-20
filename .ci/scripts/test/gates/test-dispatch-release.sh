@@ -472,9 +472,9 @@ finalize_job_text() {
 test_ci_yml_wires_the_script() {
     local wf job
     wf="$(cat "$CI_WORKFLOW")"
-    assert_contains "$wf" "dispatch-release.sh" "ci.yml calls the script"
+    assert_contains "$wf" "dispatch_release" "ci.yml calls the script"
     job="$(finalize_job_text)"
-    assert_contains "$job" ".ci/scripts/ci/dispatch-release.sh" "from the finalize-release-sentinel job"
+    assert_contains "$job" "rediacc_ci.ci.dispatch_release" "from the finalize-release-sentinel job"
     assert_not_contains "$job" "gh workflow run cd-v2.yml" \
         "and the inline dispatch is gone, so there is only ONE place the decision can be made"
     assert_contains "$job" "GH_TOKEN" "the script still gets its token"

@@ -2267,7 +2267,7 @@ jobs:
         run: npm run check:ci-secret-scope
       - name: Staging tag guard
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/rediacc_ci/quality/staging_tag_guard.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.staging_tag_guard
       - name: Test-file orphan check
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_test_file_orphans.py
@@ -2282,7 +2282,7 @@ jobs:
       # 2026-08-04). The label skip survives for offline branch work.
       - name: Audit
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
-        run: .ci/rediacc_ci/security/audit.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.security.audit
         env:
           # Authenticates `gh api /advisories/...` calls inside the audit so the
           # GHSA detail fetch uses the 1000/hr github.token limit instead of

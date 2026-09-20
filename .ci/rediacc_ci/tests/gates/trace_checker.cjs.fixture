@@ -95,6 +95,18 @@ const scanCiPaths = (text) => {
   return out;
 };
 
+// A step that runs `PYTHONPATH=.ci python3 -m rediacc_ci.<pkg>.<mod>` executes a MODULE, and that path never appears as `.ci/...` text, so the `.ci/` scan above cannot see it. Without this the closure went blind to every step flipped from a script to its port: a PR editing the port would inherit a green it did not earn. The module file is derived exactly, and the package root `.ci/rediacc_ci` is derived with it because the module imports siblings the workflow text cannot name.
+const scanModules = (text) => {
+  const out = new Set();
+  const re = /python3?\s+(?:-P\s+)?-m\s+rediacc_ci\.([A-Za-z0-9_.]+)/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    out.add(`.ci/rediacc_ci/${m[1].split('.').join('/')}.py`);
+    out.add('.ci/rediacc_ci');
+  }
+  return out;
+};
+
 const exists = (p) => fs.existsSync(path.join(root, p));
 
 // One level into every script the workflow names directly, and ONLY along the
@@ -155,6 +167,7 @@ const deriveFor = (key) => {
     const body = stripComments(block);
 
     for (const p of scanCiPaths(body)) required.add(p);
+    for (const p of scanModules(body)) required.add(p);
 
     // Local composite actions.
     const usesRe = /uses:\s*\.\/(\.github\/actions\/[A-Za-z0-9_-]+)/g;

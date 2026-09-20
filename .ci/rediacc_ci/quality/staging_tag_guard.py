@@ -12,6 +12,7 @@ step: Staging tag guard
 needs: none
 selftest: true
 lane: quality-security
+run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.staging_tag_guard
 ---- end gate ----
 
 WHY THIS EXISTS, carried whole from the twin, dated incident included:
@@ -95,9 +96,6 @@ import re
 import subprocess
 import sys
 import tempfile
-
-# THE HOP, the same one `.ci/rediacc_ci/security/audit.py:148` takes and for the same reason: this file is both a module and a SCRIPT, and the workflow invokes it by path, so as a script it cannot import the package that would put itself on `sys.path`. `parents[2]` is `.ci`.
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 from rediacc_ci.controls import Controls
 

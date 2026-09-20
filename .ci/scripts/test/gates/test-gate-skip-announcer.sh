@@ -164,7 +164,7 @@ test_workflow_wiring_covers_every_held_gate() {
     }
     local held announced
     held="$(grep -c "inputs.media_quality != 'skip'" "$wf" || true)"
-    announced="$(grep -c "announce-gate-skips.sh no-media-quality" "$wf" || true)"
+    announced="$(grep -c "announce_gate_skips no-media-quality" "$wf" || true)"
     [ "$held" -ge 3 ] || log_fail "expected at least 3 media-held steps, found $held"
     [ "$announced" -eq 2 ] || log_fail "expected 2 announcer invocations (content + i18n), found $announced"
 
@@ -172,8 +172,8 @@ test_workflow_wiring_covers_every_held_gate() {
     # actually held somewhere, and vice versa. Otherwise the announcement
     # drifts into fiction the first time a gate is added or removed.
     local gate
-    for gate in $(grep -oE "announce-gate-skips\.sh no-media-quality[a-zA-Z0-9:._ -]*" "$wf" |
-        sed 's/announce-gate-skips\.sh no-media-quality //'); do
+    for gate in $(grep -oE "announce_gate_skips no-media-quality[a-zA-Z0-9:._ -]*" "$wf" |
+        sed 's/announce_gate_skips no-media-quality //'); do
         grep -q "run: npm run $gate\$" "$wf" ||
             log_fail "announcer names '$gate' but no step in ci-quality.yml runs it"
     done

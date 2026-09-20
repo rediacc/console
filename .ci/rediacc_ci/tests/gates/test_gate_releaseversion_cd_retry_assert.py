@@ -60,7 +60,7 @@ def test_step_exists(gate):
     gate.log_test("the artifact-version assertion step is present")
     block = step_block(WORKFLOW)
     gate.assert_contains(
-        block, "assert-artifact-version.sh", "the step must still run the assertion script"
+        block, "assert_artifact_version", "the step must still run the assertion script"
     )
     gate.log_pass("step found in cd-v2.yml")
 
@@ -137,6 +137,6 @@ def test_planted_old_condition_is_caught(gate, tmp_path):
         "planted condition must be visible to the extractor (else these checks prove nothing)",
     )
     gate.assert_contains(
-        block, "assert-artifact-version.sh", "planted fixture must still be the right step"
+        block, "assert_artifact_version", "planted fixture must still be the right step"
     )
     gate.log_pass("the extractor demonstrably sees a retry_mode exclusion when one exists")

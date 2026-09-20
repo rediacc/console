@@ -435,7 +435,7 @@ quality_suppressions() {
 
 quality_audit() {
     check_node_version
-    "$ROOT_DIR/.ci/rediacc_ci/security/audit.py"
+    PYTHONPATH="$ROOT_DIR/.ci" python3 -m rediacc_ci.security.audit
 }
 
 quality_shell() {

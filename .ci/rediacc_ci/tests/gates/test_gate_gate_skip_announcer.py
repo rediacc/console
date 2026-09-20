@@ -31,8 +31,8 @@ MIN_HELD_STEPS = 3
 EXPECTED_ANNOUNCERS = 2
 
 HELD_MARKER = "inputs.media_quality != 'skip'"
-ANNOUNCE_MARKER = "announce-gate-skips.sh no-media-quality"
-ANNOUNCE_RE = re.compile(r"announce-gate-skips\.sh no-media-quality([a-zA-Z0-9:._ -]*)")
+ANNOUNCE_MARKER = "announce_gate_skips no-media-quality"
+ANNOUNCE_RE = re.compile(r"announce_gate_skips no-media-quality([a-zA-Z0-9:._ -]*)")
 
 
 def run_announcer(gate, mode: str | None, expected: int, label: str, *args: str) -> str:

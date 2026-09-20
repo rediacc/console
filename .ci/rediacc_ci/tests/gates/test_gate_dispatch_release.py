@@ -484,10 +484,10 @@ def finalize_job_text() -> str:
 
 def test_ci_yml_wires_the_script(gate):
     workflow = CI_WORKFLOW.read_text(encoding="utf-8")
-    gate.assert_contains(workflow, "dispatch-release.sh", "ci.yml calls the script")
+    gate.assert_contains(workflow, "dispatch_release", "ci.yml calls the script")
     job = finalize_job_text()
     gate.assert_contains(
-        job, ".ci/scripts/ci/dispatch-release.sh", "from the finalize-release-sentinel job"
+        job, "rediacc_ci.ci.dispatch_release", "from the finalize-release-sentinel job"
     )
     gate.assert_not_contains(
         job,

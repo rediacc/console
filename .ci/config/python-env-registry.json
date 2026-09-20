@@ -1775,6 +1775,9 @@
     ".claude/rediacc_hooks/guards/test-block_host_toolchain_run.py": [
       "PATH"
     ],
+    ".claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py": [
+      "PATH"
+    ],
     ".claude/rediacc_hooks/hookio.py": [
       "PATH"
     ],

@@ -1,28 +1,8 @@
 #!/usr/bin/env python3
-# Sample this Linux runner's CPU / RAM / disk / network into a TSV log.
-#
-# WHY: standard runners are free and unlimited on this public repo, so the cost of a mis-sized job is not money or wall clock, it is core-minutes burned for nothing. A job that uses ~1 core on a 4-vCPU ubuntu-latest VM burns roughly 4x the cores it needs. Deciding which jobs fit ubuntu-slim (1 vCPU / 5 GB / 14 GB disk, hard 15-minute cap) needs measurements, not guesses.
-#
-# CGROUP-FIRST, deliberately. ubuntu-slim runs in an UNPRIVILEGED CONTAINER, not a VM. Inside a container `nproc` and /proc/meminfo report the HOST, so an advisor fed from /proc would read 4 cores / 16 GB on a 1-core / 5 GB runner and be confidently wrong in the one direction that matters. Every sample therefore carries the tier it was resolved at (CGROUP_V2 | CGROUP_V1 |
-# PROC_HOST), and the report refuses to advise from PROC_HOST numbers.
-#
-# NO FORKS IN THE SAMPLE LOOP. Every reading is a `read < file` builtin plus $(( )) arithmetic; timestamps come from $EPOCHREALTIME, and the inter-sample wait is a `read -t` on a fifo rather than /bin/sleep. On 1 vCPU the fork-free loop costs ~1 ms per sample against 15-30 ms for a $(cat)+awk equivalent, and a profiler that perturbs a 1-core runner is measuring itself. Disk is the
-# one exception: `df` is an external command, so it is sampled on a decimated cadence (about once a minute) rather than every tick.
-#
-# Usage: .ci/scripts/ci/profiler/sampler-linux.sh --out <file> [--interval <sec>] .ci/scripts/ci/profiler/sampler-linux.sh --probe
-#
-# Optional env (flags win): PROFILER_INTERVAL seconds between samples (default 10) PROFILER_OUT TSV output path PROFILER_RUNNER_LABEL runner label, e.g. ubuntu-slim (default $RUNNER_LABEL)
-#   PROFILER_MAX_SECONDS   self-terminate after this long (default 21600 = 6h,
-#                          GitHub's own job ceiling; stops an orphan running forever)
-# PROFILER_DISK_EVERY_S seconds between `df` calls (default 60)
-#   PROFILER_CGROUP_ROOT   cgroup mount to read (default /sys/fs/cgroup; test seam)
-#
-# Run locally: .ci/scripts/ci/profiler/sampler-linux.sh --probe
-#   PROFILER_RUNNER_LABEL=self .ci/scripts/ci/profiler/sampler-linux.sh \
 """Port of `.ci/scripts/ci/profiler/sampler-linux.sh` (627 lines).
 
-THE 39 COMMENT LINES ABOVE ARE THE TWIN'S LINES 2-40, CARRIED BYTE FOR BYTE, and they are not decoration. `usage()` in the twin is `sed -n '2,40p' "$0" | sed 's/^# \\?//'` (`sampler-linux.sh:80`), so `--help` prints the script's OWN first 39 comment lines. A port whose `--help` printed a Python docstring would differ from the twin on its most-read output, so this file reproduces
-the mechanism rather than the string: `usage()` below slices lines 2-40 of THIS file and strips the same prefix. `test_help_is_byte_identical` compares the two renderings.
+HELP_TEXT CARRIES THE TWIN'S LINES 2-40, BYTE FOR BYTE, and it is not decoration. `usage()` in the twin is `sed -n '2,40p' "$0" | sed 's/^# \\?//'` (`sampler-linux.sh:80`), so `--help` prints the script's OWN first 39 comment lines. A port that paraphrased them would give the two a different `--help`. The text is a string constant here rather than a comment block because comment
+prose is reflowed to the house width, which silently changed this port's `--help` once; a string literal is not rewrapped. `test_the_carried_header_block_is_byte_identical` compares the constant to the twin's slice, and `test_help_is_byte_identical` compares the two renderings.
 
 That slice ends mid-continuation, with a dangling `\\` on the last line, because line 41 (`--out /tmp/p.tsv --interval 2 &`) is outside the range. Reproduced, not tidied: tidying it would mean the two `--help` outputs no longer match.
 
@@ -124,7 +104,6 @@ import contextlib
 import errno
 import os
 import pathlib
-import re
 import select
 import shutil
 import signal
@@ -233,14 +212,51 @@ def _iter_fields(path: str, count: int) -> typing.Iterator[list[str]]:
             yield _split_fields(text[:-1], count)
 
 
-def usage() -> None:
-    """`usage()` (`:79-81`): `sed -n '2,40p' "$0" | sed 's/^# \\?//'`.
+HELP_TEXT = r"""Sample this Linux runner's CPU / RAM / disk / network into a TSV log.
 
-    Slices THIS file, not the twin. The 39 lines are carried verbatim at the top precisely so the two renderings are the same bytes.
-    """
-    lines = SELF.read_text(encoding="utf-8").split("\n")
-    for line in lines[1:40]:
-        print(re.sub(r"^# ?", "", line))
+WHY: standard runners are free and unlimited on this public repo, so the cost
+of a mis-sized job is not money or wall clock, it is core-minutes burned for
+nothing. A job that uses ~1 core on a 4-vCPU ubuntu-latest VM burns roughly 4x
+the cores it needs. Deciding which jobs fit ubuntu-slim (1 vCPU / 5 GB /
+14 GB disk, hard 15-minute cap) needs measurements, not guesses.
+
+CGROUP-FIRST, deliberately. ubuntu-slim runs in an UNPRIVILEGED CONTAINER, not
+a VM. Inside a container `nproc` and /proc/meminfo report the HOST, so an
+advisor fed from /proc would read 4 cores / 16 GB on a 1-core / 5 GB runner and
+be confidently wrong in the one direction that matters. Every sample therefore
+carries the tier it was resolved at (CGROUP_V2 | CGROUP_V1 | PROC_HOST), and
+the report refuses to advise from PROC_HOST numbers.
+
+NO FORKS IN THE SAMPLE LOOP. Every reading is a `read < file` builtin plus
+$(( )) arithmetic; timestamps come from $EPOCHREALTIME, and the inter-sample
+wait is a `read -t` on a fifo rather than /bin/sleep. On 1 vCPU the fork-free
+loop costs ~1 ms per sample against 15-30 ms for a $(cat)+awk equivalent, and a
+profiler that perturbs a 1-core runner is measuring itself. Disk is the one
+exception: `df` is an external command, so it is sampled on a decimated
+cadence (about once a minute) rather than every tick.
+
+Usage:
+  .ci/scripts/ci/profiler/sampler-linux.sh --out <file> [--interval <sec>]
+  .ci/scripts/ci/profiler/sampler-linux.sh --probe
+
+Optional env (flags win):
+  PROFILER_INTERVAL      seconds between samples (default 10)
+  PROFILER_OUT           TSV output path
+  PROFILER_RUNNER_LABEL  runner label, e.g. ubuntu-slim (default $RUNNER_LABEL)
+  PROFILER_MAX_SECONDS   self-terminate after this long (default 21600 = 6h,
+                         GitHub's own job ceiling; stops an orphan running forever)
+  PROFILER_DISK_EVERY_S  seconds between `df` calls (default 60)
+  PROFILER_CGROUP_ROOT   cgroup mount to read (default /sys/fs/cgroup; test seam)
+
+Run locally:
+  .ci/scripts/ci/profiler/sampler-linux.sh --probe
+  PROFILER_RUNNER_LABEL=self .ci/scripts/ci/profiler/sampler-linux.sh \
+"""
+
+
+def usage() -> None:
+    """`usage()` (`:79-81`): `sed -n '2,40p' "$0" | sed 's/^# \\?//'`, rendered from HELP_TEXT."""
+    print(HELP_TEXT, end="")
 
 
 # --------------------------------------------------------------------------- The sampler ---------------------------------------------------------------------------

@@ -2120,7 +2120,7 @@ function main(argv: string[]): void {
     const pkgScripts = (JSON.parse(read('package.json')) as { scripts: Record<string, string> })
       .scripts;
     reg.run = pkgScripts[id] ?? '';
-    // A HEADER THE BINDER WILL NEVER READ IS WORSE THAN NO HEADER. The scan is `git ls-files .ci/scripts scripts`; extraction wrote valid headers into packages/cli/scripts/ and packages/www/scripts/, which sit outside it, and they were simply never seen -- the same silent-ignore this gate already closed once
+    // A HEADER THE BINDER DOES NOT READ IS WORSE THAN NO HEADER. The scan is `git ls-files .ci/scripts scripts`; extraction wrote valid headers into packages/cli/scripts/ and packages/www/scripts/, which sit outside it, and they were simply never seen -- the same silent-ignore this gate already closed once
     // for file NAMES, returning through file PATHS.
     if (!inScope(reg.file)) {
       console.error(

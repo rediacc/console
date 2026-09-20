@@ -55,7 +55,7 @@ CHAIN = "pre-edit"
 TWIN = None
 ORDER = 12
 
-# THE SCOPE TEST. Planting `False` makes the guard lint every file it is handed, including the three exclusions that are decisions rather than oversights (`packages/www`, `private/` submodules, `.sh`), and the EDGE_CASES below carry one of each so the plant changes a real answer.
+# THE SCOPE TEST. Planting `False` makes the guard lint every file it is handed, including the two exclusions that are decisions rather than oversights (`private/` submodules, `.sh`), and the EDGE_CASES below carry one of each, plus `packages/www`, which is linted like every other tree so the plant changes a real answer.
 #
 # THE FIRST DEFECT DECLARED HERE WAS `if finding.fid in baseline:` -> `if False:`, and `test_the_differential_can_fail` reported it UNPROVEN on 2026-09-16: no EDGE_CASE carried text that was actually in the baseline, so removing the baseline consultation changed no answer. That is the control working. The declaration was moved rather than the case set padded, because a defect
 # nobody can reach is not a defect this file's green depends on.
@@ -135,7 +135,7 @@ EDGE_CASES = [
         },
     ),
     (
-        "packages/www is excluded",
+        "packages/www is linted like every other tree",
         {
             "tool_name": "Write",
             "tool_input": {"file_path": "packages/www/src/a.md", "content": "Did you run it?\n"},

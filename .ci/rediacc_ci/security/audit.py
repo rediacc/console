@@ -144,9 +144,6 @@ import shutil
 import subprocess
 import sys
 
-# THE HOP, copied from `.ci/rediacc_ci/setup/tools.py:92` rather than invented: this file is both a module and a SCRIPT, and the workflow invokes it by path, so as a script it cannot import the package that would put itself on `sys.path`. `parents[2]` is `.ci`.
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
-
 from rediacc_ci import paths
 from rediacc_ci.core import advisory, age, blocker_validator, release_age
 from rediacc_ci.policy_paths import policy_rel

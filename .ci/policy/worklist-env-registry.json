@@ -153,6 +153,12 @@
         "'90'"
       ]
     },
+    "WORKLIST_BULK_FILE_THRESHOLD": {
+      "kind": "tuning",
+      "defaults": [
+        "'20'"
+      ]
+    },
     "WORKLIST_CADENCE": {
       "kind": "flag",
       "defaults": [
@@ -528,6 +534,18 @@
       "kind": "path",
       "defaults": [
         "NONE"
+      ]
+    },
+    "WORKLIST_PROOFCHECK_MAX_FIRES": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_PROOFCHECK_TTL_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'120'"
       ]
     },
     "WORKLIST_PUBLISH_REF": {

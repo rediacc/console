@@ -16,16 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 6054,
- "files": 1246,
+ "count": 5739,
+ "files": 1215,
  "by_rule": {
-  "R1": 1700,
-  "R11": 191,
+  "R1": 1696,
+  "R11": 188,
   "R14": 1,
-  "R18": 2548,
+  "R18": 2274,
   "R19": 62,
-  "R2": 998,
-  "R7": 554
+  "R2": 974,
+  "R7": 544
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -1531,10 +1531,6 @@
     "dfdb8b01b45bade3",
     "f72eb0093bd3028d"
    ],
-   "R18": [
-    "6fe8a89225e176ea",
-    "d089fce75f85027e"
-   ],
    "R2": [
     "e514167890719813"
    ]
@@ -2729,16 +2725,6 @@
     "dd5c8b8a36862013"
    ]
   },
-  "agent/PLAN-add-chunkstore-backup-verb.md": {
-   "R18": [
-    "207f7bca200cf6ca"
-   ]
-  },
-  "agent/PLAN-add-js-extensions-shared.md": {
-   "R18": [
-    "50db8ff51a606f7b"
-   ]
-  },
   "agent/PLAN-ask-flow-preemptive-settled-check.md": {
    "R1": [
     "a2a204ecd4b2505b"
@@ -2762,21 +2748,6 @@
     "c67fc67d01f2ac18"
    ]
   },
-  "agent/PLAN-backup-list-executor-fix.md": {
-   "R18": [
-    "ccdebc791241c719"
-   ]
-  },
-  "agent/PLAN-backup-quota-delta-gc.md": {
-   "R18": [
-    "21edd155313ca81f"
-   ]
-  },
-  "agent/PLAN-backup-restore-target-license.md": {
-   "R18": [
-    "278ecabd7beb1cba"
-   ]
-  },
   "agent/PLAN-bump-k3s-upstream-1-36-4.md": {
    "R11": [
     "9cde75398ae7cc2c"
@@ -2792,15 +2763,7 @@
     "f2fef3c8bc18dd45"
    ]
   },
-  "agent/PLAN-chunk-store-browse-engine.md": {
-   "R18": [
-    "9261ce15b01b2af7"
-   ]
-  },
   "agent/PLAN-chunk-store-browse-server.md": {
-   "R18": [
-    "14a43dc4975dee94"
-   ],
    "R2": [
     "ec23ab12b1bdd734"
    ]
@@ -2846,11 +2809,6 @@
     "d8bfd0bbe9ad075a"
    ]
   },
-  "agent/PLAN-cli-em-dash-lint-gate.md": {
-   "R18": [
-    "4c1c00aec820f902"
-   ]
-  },
   "agent/PLAN-cold-path.md": {
    "R1": [
     "22ea80e7062a3c17"
@@ -2873,10 +2831,6 @@
    "R1": [
     "3364cbbc5518d31f"
    ],
-   "R18": [
-    "6ddb6426c61482e2",
-    "c6fbb6bd077b084c"
-   ],
    "R7": [
     "067d0c3e00264869",
     "1d79cb013e44d3f9"
@@ -2892,35 +2846,12 @@
     "d865968df1444690"
    ]
   },
-  "agent/PLAN-fix-ci-contention-aware-timeouts.md": {
-   "R2": [
-    "c60f3d31ea6ed3b1"
-   ]
-  },
   "agent/PLAN-gh-swallow-gates-audit.md": {
    "R11": [
     "531ee34e68e653ec"
    ],
    "R18": [
-    "032aa3792dc45bfb",
-    "0784dde5208058fa",
-    "19ff872d0764b119",
-    "1ca3ea757a35e1cd",
-    "1e50d0b8243d34ad",
-    "273ce4ab54687523",
-    "3a646787cfdd6cee",
     "4cbe5605c4e1c4e5",
-    "564c87770c02b6cb",
-    "62ae51cf7eabefa6",
-    "67211308546f6ef4",
-    "7bdbe7cd5ef4f6c9",
-    "b9fc4b1b56b1846a",
-    "bbf4a9ca0d99d85c",
-    "c0791da2f7f04f27",
-    "cb11bcd51200a609",
-    "d9b1bc935d512ac4",
-    "dfcab8c63899a3d5",
-    "e21bdfc2076e717f",
     "e789926469f1755a",
     "fa6b27cd5231edcb"
    ],
@@ -2943,17 +2874,6 @@
     "fec1bfec1d157d8c"
    ]
   },
-  "agent/PLAN-git-ignore-aware-discover.md": {
-   "R11": [
-    "76bb4539816a318e",
-    "896c54baec3b317b",
-    "f062b7f92e0b1922"
-   ],
-   "R7": [
-    "392b180327a8f27b",
-    "5614722e52531c92"
-   ]
-  },
   "agent/PLAN-hook-inventory-warn-guards.md": {
    "R11": [
     "0d1b3d0dd0656967"
@@ -2963,11 +2883,6 @@
    "R1": [
     "db28395879b3ace2",
     "ed56c3237f5df030"
-   ]
-  },
-  "agent/PLAN-localize-cheat-sheet-rendering.md": {
-   "R18": [
-    "e4fa1f6ee96ee136"
    ]
   },
   "agent/PLAN-migrate-plan-doc-discovery.md": {
@@ -3002,35 +2917,9 @@
     "95369cf74043108d"
    ]
   },
-  "agent/PLAN-promote-mutation-runner.md": {
-   "R18": [
-    "aec186cd10e77875"
-   ],
-   "R2": [
-    "065c136b02760d0c",
-    "98d2870920811e99",
-    "d0448b4cad43b978",
-    "fb96d21682d0231b"
-   ],
-   "R7": [
-    "3803702733fa8f1b",
-    "4670d30b89e7fcfe",
-    "b29ac29bfbc4b178",
-    "b71dec409ae13c77"
-   ]
-  },
   "agent/PLAN-pytest-parallelism.md": {
    "R18": [
     "f53f060292289ad7"
-   ],
-   "R2": [
-    "43eff3156f3058fe",
-    "7565cf7a8b0aec79",
-    "757159e2113afc8f",
-    "886ea7bf483186e0",
-    "cba6c3173ca1b3bb",
-    "ed121cf06955abcc",
-    "f54f4f5a2e4a2b70"
    ]
   },
   "agent/PLAN-reggate-effort-cap.md": {
@@ -3042,14 +2931,6 @@
   "agent/PLAN-resprofile-wave2.md": {
    "R2": [
     "ea97fa0dfe9986fa"
-   ]
-  },
-  "agent/PLAN-resumable-rebase-executor.md": {
-   "R2": [
-    "58cd6ce68c015b1b",
-    "8deb6186aacb10cd",
-    "c53def9d230f704c",
-    "e0d7a48f076449df"
    ]
   },
   "agent/PLAN-review-red-stop-hook-check.md": {
@@ -3123,11 +3004,6 @@
    "R1": [
     "53013bddf3fefd66"
    ],
-   "R18": [
-    "352eac82f57b0ad6",
-    "496b3b12ee37d8c9",
-    "ef8443600696093e"
-   ],
    "R2": [
     "5aaff585f51c16f5",
     "eff01c9494420e4a"
@@ -3151,46 +3027,12 @@
     "704847409d670f10"
    ]
   },
-  "agent/PLAN-shell-resource-profiling.md": {
-   "R1": [
-    "edc9c690519ddd66"
-   ],
-   "R2": [
-    "253ae3deb0fd9b0b",
-    "2aaca1cc17d31c86",
-    "47fb967a916b5278",
-    "4f43e9467213a082",
-    "b19cd07b0034948b"
-   ],
-   "R7": [
-    "4756116ced5121a7"
-   ]
-  },
-  "agent/PLAN-skip-release-gates-r2-manifest.md": {
-   "R7": [
-    "d25e4865c88273ae",
-    "ecb753fbfcc27bc6"
-   ]
-  },
   "agent/PLAN-state-md-session-isolation.md": {
    "R2": [
     "939879a30d15c159"
    ],
    "R7": [
     "e64c2f1a4a6be481"
-   ]
-  },
-  "agent/PLAN-stop-always-tier.md": {
-   "R1": [
-    "4cfa25da22f73999",
-    "5343954b06131f5c",
-    "aceb820207cf47dd"
-   ],
-   "R2": [
-    "03f4a838f0bded79"
-   ],
-   "R7": [
-    "ca703d1ecbe1b0f3"
    ]
   },
   "agent/PLAN-stop-hook-overhaul.md": {
@@ -3222,18 +3064,11 @@
     "939756fc86994f08"
    ]
   },
-  "agent/PLAN-test-advisor.md": {
-   "R2": [
-    "aa8d137123b3adcf",
-    "ce5c8ef4c0e1d8a7"
-   ]
-  },
   "agent/PLAN-tooling-transformation.md": {
    "R11": [
     "2fd5c00b47dde545"
    ],
    "R18": [
-    "0e02c7c8a3ef1d4b",
     "1ad561f7e18725e5",
     "2342ee80ffde6669",
     "2b254f6d89a95748",
@@ -3247,7 +3082,6 @@
     "4ca1d8696a146367",
     "4f7a2f719bd32f88",
     "51d5ba99f81186d8",
-    "5203ad52045579fe",
     "57cc33981045514f",
     "5dc0b88ca1f5d9ce",
     "66fe84e3a9861e5e",
@@ -3522,15 +3356,6 @@
    "R11": [
     "cc10ff857619b4d4"
    ],
-   "R18": [
-    "4efe7fae528a1965",
-    "536dbec09012d191",
-    "542fb41b8b3c737b",
-    "72765462efc320d2",
-    "82240b7190b7e1c2",
-    "b3e3e25019d269db",
-    "d90d4153e1383f7c"
-   ],
    "R7": [
     "450b470df458461b",
     "9536f10bb9fb9727"
@@ -3539,23 +3364,6 @@
   "agent/archive/plans/PLAN-github-secrets-removal.md": {
    "R1": [
     "8b7a83f3b4f02930"
-   ],
-   "R18": [
-    "0414b3c840be9c8d",
-    "3614d52aab2103ec",
-    "37834e4212e62204",
-    "3a616dae877da6ae",
-    "63fbafdccd9224c3",
-    "654f387225f2e6cc",
-    "6a0ec6b3f30a0c7b",
-    "7484d336fe85f045",
-    "92a2046232509328",
-    "96484bca28973616",
-    "9ddbb28937ffd959",
-    "d581892540f1d710",
-    "d7b7e31626b65d53",
-    "f0acf188251025c7",
-    "ffb0806544e52e5e"
    ],
    "R2": [
     "2ea5756ebb5088e6",
@@ -3617,9 +3425,6 @@
   "agent/archive/plans/PLAN-secret-names-one-to-one.md": {
    "R1": [
     "f55a115e22312d03"
-   ],
-   "R18": [
-    "6a91e867a5273bcf"
    ]
   },
   "agent/archive/plans/PLAN-stop-plan-box-enforcement.md": {
@@ -3910,9 +3715,6 @@
    ]
   },
   "agent/programs/www-simplification/03-bugs-and-gates.md": {
-   "R18": [
-    "56f4bbdb346564c1"
-   ],
    "R2": [
     "13bea76b8b3f071a",
     "272b36733fd875ca",
@@ -3997,9 +3799,6 @@
     "39395eca9e069d4d",
     "e23a344f18f174c1"
    ],
-   "R18": [
-    "d491a02d6cd55ae7"
-   ],
    "R2": [
     "bc976eb8d57ae02d",
     "e2991b89a31cd496"
@@ -4011,12 +3810,6 @@
     "602c43108fcfd9e8",
     "a33749df2ac93e97",
     "c560f285ca86df5a"
-   ],
-   "R18": [
-    "278f924912b16680",
-    "50ef8e9830474121",
-    "64aabc17374579a2",
-    "6df5f650f3c78a7b"
    ],
    "R2": [
     "28b8859c1bfb4abb",
@@ -4207,9 +4000,6 @@
    "R1": [
     "1702a8db81d39780"
    ],
-   "R18": [
-    "7af9405b31fcc348"
-   ],
    "R2": [
     "3e29745171fc04a3",
     "3f4cefc70230ceb2",
@@ -4346,9 +4136,6 @@
   "docs/DESIGN-CONFIG-STORAGE.md": {
    "R1": [
     "a93a31f896e956a6"
-   ],
-   "R18": [
-    "ec510e2385830cc0"
    ]
   },
   "docs/PLAN-ebpf-network-isolation.md": {
@@ -4504,22 +4291,13 @@
    ],
    "R18": [
     "0474d1d7bf3b9f29",
-    "175c3ffbd875af27",
     "3a1a970d5fcac275",
     "3d53c9cd7d12158e",
     "3e9bbf8994647c4e",
     "417ee2a1e79cdb0d",
-    "45426dd8a51c0483",
     "4bc42f92cc45edf0",
-    "7f7fae332d761b7d",
-    "80e66b1185c3e586",
-    "93eb5e0620824fd5",
-    "a2652e2b238f3862",
-    "b218354d54a91ae2",
     "b45ff17d4282097c",
-    "c70137ed9ec63eb5",
-    "c864eab7d84c648e",
-    "da8e8348f74a4dfd"
+    "c864eab7d84c648e"
    ],
    "R2": [
     "26a5b842b47e6959",
@@ -4574,9 +4352,6 @@
     "b04ab5424a606e8e"
    ],
    "R18": [
-    "2b267cc233a46d5e",
-    "b5ffbe068ab16241",
-    "e161f06230ca1f61",
     "e9c344c9ceb8e779"
    ]
   },
@@ -4673,13 +4448,6 @@
     "a264ac478706c551",
     "a8f076db30e62d67"
    ],
-   "R18": [
-    "1fb643093c2b9923",
-    "2ab55616a665094e",
-    "4f1391fd1892872b",
-    "5b9d6722b929bfde",
-    "9c744df9d8e530b1"
-   ],
    "R2": [
     "a1fb482578babdd4",
     "a49eafcd43fac792"
@@ -4774,9 +4542,6 @@
     "aa59587ea36e5c35",
     "af4a72284ff8c548"
    ],
-   "R18": [
-    "15bc6fe0c5ffa5e0"
-   ],
    "R2": [
     "24052d441b7f2be4",
     "405858b3bb263de7",
@@ -4844,34 +4609,6 @@
    ]
   },
   "docs/ci-overhaul/07-tooling-decisions.md": {
-   "R18": [
-    "03308a136e3eba1f",
-    "1022470c282db01e",
-    "11e89c3aeaac60d9",
-    "1ebaefc84b8cf8a6",
-    "368ae691ebddc60b",
-    "38dd646f25384ff9",
-    "39704d76063dddb7",
-    "4f7e0246d256d31d",
-    "5df7df1f16c15e94",
-    "6377cc293e18c1f7",
-    "6787674c489dfbc7",
-    "72818836fb4eb296",
-    "734ef3c350a12fd8",
-    "8482dd28ecb9c1e3",
-    "911838d2ea61af33",
-    "9362fd6f5d4c4aea",
-    "94a75631afa91a13",
-    "a89018a4f2fa9e8e",
-    "b91d1ba83bf1a071",
-    "c101a2ad35af1a66",
-    "d0a038cc2299126f",
-    "dbc2db3e62067bc1",
-    "e0681db5c2e4be35",
-    "e0889bae1ebe49d2",
-    "ea531edc1a569025",
-    "f5be7fc4b478c00c"
-   ],
    "R2": [
     "71dad5744ead5563"
    ]
@@ -4978,9 +4715,6 @@
     "37f8f1da4b74a421",
     "69a46433e1dc1971"
    ],
-   "R18": [
-    "8739d96ec3e4e92b"
-   ],
    "R2": [
     "596bbb30c2ab7844"
    ]
@@ -4988,11 +4722,6 @@
   "docs/config-universe-follow-up/README.md": {
    "R1": [
     "b6c7dba825071ab1"
-   ]
-  },
-  "docs/design/01-current-architecture.md": {
-   "R18": [
-    "9865d67beea97337"
    ]
   },
   "docs/design/02-target-architecture.md": {
@@ -5024,12 +4753,6 @@
     "7d3fd10a59f8a749",
     "d891b62a3df9a529"
    ],
-   "R18": [
-    "2f069301b0105117",
-    "561a2e74fe2e7d21",
-    "832d5e7ee4cc3ad8",
-    "b7972ab4b25d0c51"
-   ],
    "R2": [
     "c8ccfbba1d7d246c"
    ],
@@ -5038,9 +4761,6 @@
    ]
   },
   "docs/design/07-examples-and-ci.md": {
-   "R18": [
-    "f934601e6f6846b9"
-   ],
    "R7": [
     "5dc2909419f97cc1"
    ]
@@ -5048,9 +4768,6 @@
   "docs/design/09-implementation-phases.md": {
    "R1": [
     "4c4c4ba60c2991c2"
-   ],
-   "R18": [
-    "df76c4b13ec8cc49"
    ],
    "R7": [
     "0b2d2db809816b6a",
@@ -5060,10 +4777,6 @@
   "docs/design/README.md": {
    "R1": [
     "76b439185c33ffc4"
-   ],
-   "R18": [
-    "368514344b7cf992",
-    "69bbd4d2599ed4eb"
    ]
   },
   "docs/design/spec/00-gate-review.md": {
@@ -5076,42 +4789,11 @@
    "R1": [
     "887d4623147ce942"
    ],
-   "R18": [
-    "02a877229c83d3cd",
-    "0663b02a9f5a171b",
-    "0ac061c2955e2eab",
-    "4e5280b1164d912c",
-    "5846738f659c6bd7",
-    "7f762967cc713a78",
-    "89fafb6b4f0b861a",
-    "baf2edb6723f4c1e",
-    "d2c387dc7386e06a",
-    "f2ede02e5d73d5ce",
-    "fbbc1bac10d6156c"
-   ],
    "R7": [
     "8c13ec46220139d0"
    ]
   },
   "docs/design/spec/02-reporuntime-contract.md": {
-   "R18": [
-    "00005bd5fcda5e92",
-    "18bcb6450390b446",
-    "2ba786baa428e4fb",
-    "364075617d976b7d",
-    "52fa47ca2ef5a855",
-    "6932f1cd7292969d",
-    "83e8ba2a44cc5986",
-    "898e258201308098",
-    "8a1966b6fc024959",
-    "a1c51d4a9c3cad5c",
-    "ac68c0f398f8dbea",
-    "b1c6e2325739624d",
-    "c538287f90b4eb49",
-    "d3642f793ec53aae",
-    "df6e51a95987ef53",
-    "df9b106917d7b88f"
-   ],
    "R7": [
     "39656321f12d9668",
     "5f71d28604f3d3d7",
@@ -5135,22 +4817,6 @@
     "ec83b085b43c00dd",
     "f0acd216f5d944b4"
    ],
-   "R18": [
-    "023bd798aaee326a",
-    "1414f71aa86cbf0b",
-    "1a68a2c46cdca96a",
-    "4fbcfceafb9b0e37",
-    "5919d6e56fba5819",
-    "70660e826cc764b1",
-    "82d496b1d53dd82a",
-    "912c8aea2ef91252",
-    "a86c1e91725f902a",
-    "b0d82e633139a02e",
-    "bb2c5bc1d01508d0",
-    "c403838d914bd153",
-    "f1d21541013380f5",
-    "f6c9eaf288b0eff4"
-   ],
    "R7": [
     "126da13fc29e709f",
     "1a3dcd4b39727414",
@@ -5172,19 +4838,6 @@
    ]
   },
   "docs/design/spec/07-p1-gate-review.md": {
-   "R18": [
-    "3387def68265ef09",
-    "50984910235625f5",
-    "65147bbf7ed5dbff",
-    "65e6121b073fca1f",
-    "7cafc4d4892a65e1",
-    "92b8218778dec643",
-    "9e769fb5a981462e",
-    "c13aab2cfa1113da",
-    "c716cb3cb51c13e8",
-    "e1ef7d7b208f1964",
-    "e9c713abab47560c"
-   ],
    "R2": [
     "139171288c00125d",
     "836fad720bd11b3e",
@@ -5193,17 +4846,6 @@
    ]
   },
   "docs/design/spec/08-p2-gate-review.md": {
-   "R18": [
-    "01f359c5f0cd613a",
-    "0f2313495d307f4d",
-    "1d5ae8724f0993c1",
-    "316b3a825398df26",
-    "35a5e872749446a6",
-    "56c05787864c7e83",
-    "66026435f061b2f6",
-    "b8ca0cb51221b622",
-    "fc266bcdd0b2421c"
-   ],
    "R2": [
     "21130038a3b584e4",
     "3bbc75f7c42ea7f7",
@@ -5220,27 +4862,6 @@
    ]
   },
   "docs/design/spec/10-p3-gate-review.md": {
-   "R18": [
-    "00ca656bbd1fe27f",
-    "1702ff3eb0a3c702",
-    "22d92f8163929564",
-    "260cf6e612e856b4",
-    "3a120725dd7f447c",
-    "4f9d68509dac3399",
-    "52c0a52a24e8d0a8",
-    "5f2f1bcfd054529d",
-    "71a62befc8b4b45a",
-    "755da1e7620b4e94",
-    "a62bdf833d50c92c",
-    "a87e35adbbccbf67",
-    "b2f2f62c7c82ed94",
-    "c03eda1d73d34fab",
-    "c2084bfb488a4582",
-    "c2c3a4a46301e2b8",
-    "c64b6b467a6ec0db",
-    "f9f6d4f5a5b3d549",
-    "fe33ea149bcce3d4"
-   ],
    "R2": [
     "1813a762e863b7b9",
     "1f283b6a9da77ca6",
@@ -5341,10 +4962,6 @@
   "docs/design/spec/13-wave2-ledger.md": {
    "R1": [
     "573e41f797b5af74"
-   ],
-   "R18": [
-    "50f29599c5fc00fe",
-    "c2d311881007d374"
    ]
   },
   "docs/dev-environments.md": {
@@ -5379,7 +4996,6 @@
   },
   "docs/observability/architecture.md": {
    "R18": [
-    "284f650488eaa82f",
     "af6064e1fd292bc3"
    ]
   },
@@ -7220,11 +6836,6 @@
     "efbfdab6109a1bcf"
    ]
   },
-  "packages/www/src/content/docs/ar/legal-hipaa.md": {
-   "R18": [
-    "56b7a508907e9e01"
-   ]
-  },
   "packages/www/src/content/docs/ar/legal-nis2-dora.md": {
    "R18": [
     "04d43c2f1c914f81"
@@ -7382,7 +6993,6 @@
     "1219fd7fd1d29284",
     "37b20a9bbef8abaa",
     "6714930c60504c04",
-    "76806ed92fb33b80",
     "7e06e644b633581a",
     "b9cc15e7f3f8546f",
     "cd1c1429bce93a64",
@@ -7480,19 +7090,11 @@
   },
   "packages/www/src/content/docs/de/legal-gdpr.md": {
    "R18": [
-    "3ce236b109f5c2dd",
-    "5dd0a5524be8cfd2",
-    "d9a77ae1620ba0c0"
-   ]
-  },
-  "packages/www/src/content/docs/de/legal-hipaa.md": {
-   "R18": [
-    "a4698b8884bf9e1b"
+    "3ce236b109f5c2dd"
    ]
   },
   "packages/www/src/content/docs/de/legal-iso27001.md": {
    "R18": [
-    "3cb25d2e55dd316c",
     "e4cc85a49e505281"
    ]
   },
@@ -7506,16 +7108,6 @@
     "4860a8baa7729df3",
     "a8bc3a293073606e",
     "c0dfbc9c9d46eddf"
-   ]
-  },
-  "packages/www/src/content/docs/de/legal-pci-dss.md": {
-   "R18": [
-    "c8f3aa0cb94c4730"
-   ]
-  },
-  "packages/www/src/content/docs/de/legal-soc2.md": {
-   "R18": [
-    "b0e43108859cbf21"
    ]
   },
   "packages/www/src/content/docs/de/license-chain.md": {
@@ -8133,9 +7725,7 @@
     "b85b882bcc434232"
    ],
    "R18": [
-    "6237076f89812cb7",
-    "b701a612c3dfd410",
-    "d1370a9f4376a56e"
+    "6237076f89812cb7"
    ]
   },
   "packages/www/src/content/docs/en/legal-hipaa.md": {
@@ -8143,9 +7733,6 @@
     "15cd4a9a2eb2967b",
     "4e600767dcc8d6a6",
     "58afcf2c03053d48"
-   ],
-   "R18": [
-    "4def80a84877e1a5"
    ]
   },
   "packages/www/src/content/docs/en/legal-iso27001.md": {
@@ -8201,9 +7788,6 @@
     "07fa70dd2da81a97",
     "10c2b32813cdfef3",
     "a74de3b08824559d"
-   ],
-   "R18": [
-    "297d83c68b7eb857"
    ],
    "R2": [
     "124c4b4d7a325266",
@@ -8801,7 +8385,6 @@
     "13909352242371f3",
     "3e54a2da271928a3",
     "8ef9a0b322d3b7bc",
-    "9f547eaa391287a9",
     "b39a57653de9335e",
     "c86ffca07a89c0b2",
     "cf77a422521e16d2"
@@ -8894,23 +8477,17 @@
   },
   "packages/www/src/content/docs/es/legal-gdpr.md": {
    "R18": [
-    "407ccbf41eb8478c",
-    "891bbc2006ee8137",
-    "917b39b75e0bc779",
-    "997d6753729489f1"
+    "891bbc2006ee8137"
    ]
   },
   "packages/www/src/content/docs/es/legal-hipaa.md": {
    "R18": [
-    "6f69064db66b1a72",
-    "759ceb3eae5cfcbb",
-    "82ba22c6ce94a270"
+    "6f69064db66b1a72"
    ]
   },
   "packages/www/src/content/docs/es/legal-iso27001.md": {
    "R18": [
-    "a7c888b41aaa91eb",
-    "f65d514d4b9f3414"
+    "a7c888b41aaa91eb"
    ]
   },
   "packages/www/src/content/docs/es/legal-nis2-dora.md": {
@@ -8924,15 +8501,9 @@
     "d168f08ecbba6275"
    ]
   },
-  "packages/www/src/content/docs/es/legal-pci-dss.md": {
-   "R18": [
-    "c49bdd6f19e150ce"
-   ]
-  },
   "packages/www/src/content/docs/es/legal-soc2.md": {
    "R18": [
-    "0e2e69f3938376db",
-    "9e9b1a2db0ff9e06"
+    "0e2e69f3938376db"
    ]
   },
   "packages/www/src/content/docs/es/license-chain.md": {
@@ -9240,16 +8811,7 @@
   },
   "packages/www/src/content/docs/et/legal-gdpr.md": {
    "R18": [
-    "7c9abe199ea6ae34",
-    "7f53b5f94a6db5fd",
-    "a5da8ff17258274b",
-    "ad88359b86f70f1b"
-   ]
-  },
-  "packages/www/src/content/docs/et/legal-hipaa.md": {
-   "R18": [
-    "335720e42dbc4f2e",
-    "33e9f93b97216fa0"
+    "7c9abe199ea6ae34"
    ]
   },
   "packages/www/src/content/docs/et/legal-iso27001.md": {
@@ -9269,16 +8831,6 @@
    "R18": [
     "189e9e9b200db7a2",
     "b2c4138e2fbd5467"
-   ]
-  },
-  "packages/www/src/content/docs/et/legal-pci-dss.md": {
-   "R18": [
-    "0e68e1fe5701551c"
-   ]
-  },
-  "packages/www/src/content/docs/et/legal-soc2.md": {
-   "R18": [
-    "c1f02489b55f7551"
    ]
   },
   "packages/www/src/content/docs/et/license-chain.md": {
@@ -9466,7 +9018,6 @@
     "2e72a629b3e79f98",
     "3f581f2585e50156",
     "6b8353e3a0508128",
-    "78df9d841c60630c",
     "8daba3be173e88cb",
     "abd1f81f0864df3f",
     "c09c5b0ee906f9e0",
@@ -9569,22 +9120,16 @@
   "packages/www/src/content/docs/fr/legal-gdpr.md": {
    "R18": [
     "02ae8bd5ba3daa2a",
-    "1044992132e20869",
-    "5d0365e9b77141e2",
-    "7c4ba8a9f47dd7eb",
     "e996ac34a8437074"
    ]
   },
   "packages/www/src/content/docs/fr/legal-hipaa.md": {
    "R18": [
-    "9d7cdeb61c7e29a6",
-    "dc2bc8747902854a",
-    "e476dde60278a06e"
+    "dc2bc8747902854a"
    ]
   },
   "packages/www/src/content/docs/fr/legal-iso27001.md": {
    "R18": [
-    "60b28eb37ecf559e",
     "ee702627cb8bb3f4"
    ]
   },
@@ -9602,15 +9147,12 @@
   "packages/www/src/content/docs/fr/legal-pci-dss.md": {
    "R18": [
     "c8dcbc82bc2663cd",
-    "d0aa9cb356b3e249",
-    "ebd7498ea4a985d9"
+    "d0aa9cb356b3e249"
    ]
   },
   "packages/www/src/content/docs/fr/legal-soc2.md": {
    "R18": [
-    "854a46b73343ed7e",
-    "b3114a766ce034a1",
-    "d082b8075840378e"
+    "854a46b73343ed7e"
    ]
   },
   "packages/www/src/content/docs/fr/license-chain.md": {
@@ -9859,7 +9401,6 @@
     "3f9c07198565f7ac",
     "664573041c6c0b45",
     "746e8fa522e34e5c",
-    "7ae2e71d6e799b2b",
     "aac4cb3d5c42c12f"
    ],
    "R2": [
@@ -10081,10 +9622,7 @@
   },
   "packages/www/src/content/docs/it/legal-gdpr.md": {
    "R18": [
-    "1c0b5103a425603b",
-    "2657f04e50fd8249",
-    "bd4da6784c869dd2",
-    "fe2a18214148b7a4"
+    "bd4da6784c869dd2"
    ],
    "R2": [
     "42eda869da7d775d",
@@ -10093,10 +9631,6 @@
    ]
   },
   "packages/www/src/content/docs/it/legal-hipaa.md": {
-   "R18": [
-    "1e1a09a0ba361c28",
-    "cfee6724d99066eb"
-   ],
    "R2": [
     "85a6ed32d4735cae",
     "a4629d3bc89d40ff"
@@ -10134,7 +9668,6 @@
   },
   "packages/www/src/content/docs/it/legal-pci-dss.md": {
    "R18": [
-    "26e969e0bd153044",
     "8fe65f5a1bce095f"
    ],
    "R2": [
@@ -10145,10 +9678,6 @@
    ]
   },
   "packages/www/src/content/docs/it/legal-soc2.md": {
-   "R18": [
-    "c556ab723c76934d",
-    "fdc622021ac5ae9d"
-   ],
    "R2": [
     "33fcf3b08c19b473",
     "f9872d88da1a91b4"
@@ -10700,8 +10229,7 @@
     "3665ea20ae5b0fb2",
     "3e24efb58b48a0b3",
     "9488a937b12e03ca",
-    "d25190fa652621a0",
-    "e2db9f1b1e1eeb82"
+    "d25190fa652621a0"
    ]
   },
   "packages/www/src/content/docs/pt/architecture.md": {
@@ -10789,22 +10317,16 @@
   },
   "packages/www/src/content/docs/pt/legal-gdpr.md": {
    "R18": [
-    "064b6903d8c197f6",
-    "0711900083e145e2",
-    "2ae7eba1d529469f",
-    "c3e90e97557ea5d8"
+    "064b6903d8c197f6"
    ]
   },
   "packages/www/src/content/docs/pt/legal-hipaa.md": {
    "R18": [
-    "0ffba6d9d69d94ed",
-    "7e83a09a8b573f36",
-    "cf1290b2b3f3e2bd"
+    "0ffba6d9d69d94ed"
    ]
   },
   "packages/www/src/content/docs/pt/legal-iso27001.md": {
    "R18": [
-    "43b73e345e53fd25",
     "aebc9a2e554eeb93"
    ]
   },
@@ -10819,14 +10341,8 @@
     "580592a2cf4119f4"
    ]
   },
-  "packages/www/src/content/docs/pt/legal-pci-dss.md": {
-   "R18": [
-    "dc90cee39f0fea61"
-   ]
-  },
   "packages/www/src/content/docs/pt/legal-soc2.md": {
    "R18": [
-    "8c1713eb050a98a5",
     "bb3fb434f17faf86"
    ]
   },
@@ -11141,22 +10657,18 @@
   },
   "packages/www/src/content/docs/ru/legal-gdpr.md": {
    "R18": [
-    "191a13e2eddfaace",
     "48e781058f5d1f2f",
-    "59d447f46b9180b9",
-    "640b8b7fbf75a3e6"
+    "59d447f46b9180b9"
    ]
   },
   "packages/www/src/content/docs/ru/legal-hipaa.md": {
    "R18": [
-    "3909e05b3ff75f5f",
-    "4f93cf4707e04290"
+    "3909e05b3ff75f5f"
    ]
   },
   "packages/www/src/content/docs/ru/legal-iso27001.md": {
    "R18": [
-    "c1866322669e3469",
-    "d6c5c8a2ef0272f3"
+    "c1866322669e3469"
    ]
   },
   "packages/www/src/content/docs/ru/legal-nis2-dora.md": {
@@ -11170,17 +10682,6 @@
     "5988f354c22dcdca",
     "dbc64af103fca9e7",
     "fa056c85c87fa850"
-   ]
-  },
-  "packages/www/src/content/docs/ru/legal-pci-dss.md": {
-   "R18": [
-    "40e8990c3b9db786"
-   ]
-  },
-  "packages/www/src/content/docs/ru/legal-soc2.md": {
-   "R18": [
-    "7942bc4a2a753cc0",
-    "f198432c47645a2a"
    ]
   },
   "packages/www/src/content/docs/ru/license-chain.md": {
@@ -11389,7 +10890,6 @@
     "1b105ddefcda2f9d",
     "3323186cce3432dc",
     "411173d632bf658d",
-    "9a35f87840aae33a",
     "ad3c723930858ec2",
     "ef3d4089d23d7339"
    ]
@@ -11471,14 +10971,7 @@
   },
   "packages/www/src/content/docs/tr/legal-gdpr.md": {
    "R18": [
-    "d9b6d1bebdd2c6ab",
-    "e221fc5400b2de0d",
     "ef7cb1e60d794154"
-   ]
-  },
-  "packages/www/src/content/docs/tr/legal-hipaa.md": {
-   "R18": [
-    "a98b40d7e6e5c91a"
    ]
   },
   "packages/www/src/content/docs/tr/legal-iso27001.md": {
@@ -11495,16 +10988,6 @@
    "R18": [
     "015376b7c5e60567",
     "01e56a7586b125d0"
-   ]
-  },
-  "packages/www/src/content/docs/tr/legal-pci-dss.md": {
-   "R18": [
-    "b03e468cba5ab7ea"
-   ]
-  },
-  "packages/www/src/content/docs/tr/legal-soc2.md": {
-   "R18": [
-    "4df0e3b05ec30f38"
    ]
   },
   "packages/www/src/content/docs/tr/license-chain.md": {

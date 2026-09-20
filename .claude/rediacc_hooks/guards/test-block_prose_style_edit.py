@@ -96,9 +96,9 @@ CASES = [
         False,
     ),
     (
-        "packages/www is excluded",
+        "packages/www is linted like every other tree",
         {"file_path": "packages/www/src/probe.md", "content": "Did %s run it?\n" % Y},
-        False,
+        True,
     ),
     (
         "a submodule path is excluded",

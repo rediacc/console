@@ -52,6 +52,8 @@ const VM_E2E_SUBMODULES = [
 ];
 
 const VM_E2E_PATHS = [
+  // A step flipped from a script to its Python port runs `python3 -m rediacc_ci...`, so the module and everything it imports belong to the closure; the package root is declared whole because the imports are not derivable from workflow text.
+  '.ci/rediacc_ci',
   // The shadow-run step every VM E2E leg now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so every key sharing this list must hold it or a change to the action does not re-run these legs.
   '.github/actions/bws-secrets',
   // and the compare step beside it, extracted from 62 inline bodies on 2026-09-03 (check:ci-workflows caps inline logic at 8 lines). Built and installed globally by every leg: build-cli.sh:32 runs `npm run build:cli`, install-cli-global.sh:36-48 packs and installs it. packages/locales rides along as a workspace dependency of the CLI (packages/cli/package.json:53-55).
@@ -180,6 +182,7 @@ const CLOSURES = {
     // would cost greenlights on every elite pointer bump for no coverage gain.
     submodules: ['private/renet', 'private/account'],
     paths: [
+      '.ci/rediacc_ci',
       // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       'packages/cli',
@@ -212,6 +215,7 @@ const CLOSURES = {
     // No leg checks out submodules. The pointers are pinned anyway because the artifacts under test are built from them: the SEA embeds renet, and the brew leg installs from the tap.
     submodules: ['private/renet', 'private/homebrew-tap'],
     paths: [
+      '.ci/rediacc_ci',
       'packages/cli',
       'packages/shared',
       'packages/provisioning',
@@ -281,6 +285,7 @@ const CLOSURES = {
     // `submodules: true` at ct-tests.yml:1743 checks out all four, but only two are consumed: rdc.sh builds renet unconditionally (rdc.sh:188) and the drills log in against the account gateway. Pinning the two that are read matches scope-map.cjs:290 (['cli', 'shared', 'account'] plus the renet build).
     submodules: ['private/renet', 'private/account'],
     paths: [
+      '.ci/rediacc_ci',
       // The shadow-run step every ct-tests job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the job's closure has to hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       'packages/cli',
@@ -316,6 +321,7 @@ const CLOSURES = {
     jobNames: ['Elite Run'],
     submodules: ['private/elite', 'private/renet', 'private/account'],
     paths: [
+      '.ci/rediacc_ci',
       // The shadow-run step every ct-tests job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the job's closure has to hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       // The images this job pulls are content-tagged builds of the console tree: derive-image-tag.sh turns the tree into the tag, so a change anywhere in the image's inputs pulls a DIFFERENT image and the evidence would be about something else. Dockerfile:93 copies ./www-assets/ and :95 the account SPA, and ci-build-docker.yml:214-225 builds both from packages/www, packages/shared
@@ -402,6 +408,7 @@ const CLOSURES = {
     // EMPTY, and the emptiness is derived: ci.yml:709 is a bare checkout with no `with:` block at all, so no submodule is present and rule 2 has nothing to compare. The binary under test is a dummy shell script the harness synthesises in-job (test-linux-packages.sh:122-131), which is also why no packages/ tree is listed.
     submodules: [],
     paths: [
+      '.ci/rediacc_ci',
       '.ci/scripts/test/test-linux-packages.sh',
       // Invoked at test-linux-packages.sh:137,146,155,164 and :323,352.
       '.ci/scripts/build/build-linux-pkg.sh',

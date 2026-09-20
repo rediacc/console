@@ -119,11 +119,11 @@ def _slice_2_40(path: pathlib.Path) -> str:
 
 
 def test_the_carried_header_block_is_byte_identical() -> None:
-    """The port's lines 2-40 ARE the twin's lines 2-40, in both directions.
+    """The port's HELP_TEXT IS the twin's lines 2-40, prefix stripped.
 
     This is the transcription check. If the twin's header is edited and the port is not, `--help` starts lying about the flags it accepts, and nothing else in this file would notice.
     """
-    assert _slice_2_40(PORT) == _slice_2_40(TWIN)
+    assert _slice_2_40(TWIN) + "\n" == port.HELP_TEXT
 
 
 def test_help_is_byte_identical() -> None:

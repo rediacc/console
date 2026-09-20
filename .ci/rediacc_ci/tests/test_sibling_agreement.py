@@ -17,11 +17,8 @@ walk were ever re-split back into the two independently maintained copies it rep
 """
 
 import pathlib
-import sys
 
 import pytest
-
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 from rediacc_ci.quality import prose_style as ps
 

@@ -210,6 +210,8 @@ TABLE_RULE = re.compile(r"^\s*\|?[\s:|-]+\|[\s:|-]*$")
 # flattened into one prose paragraph and rewrapped, destroying the table. Found live: `check_prose_style.py reflow --write` merged a 5-row table in a freshly written plan into two garbled lines the moment it ran tree-wide. `TABLE_RULE` alone caught the separator between the header and the first data row, so a two-row table (header + one data row) never showed the bug -- it takes 3+
 # rows in a row for the gap to be visible.
 TABLE_ROW = re.compile(r"^\s{0,3}\|")
+# Doc-header keys whose value is a machine-written list on ONE line.
+MACHINE_LIST_KEYS = ("Touched:",)
 # A line carrying an HTML comment: a gen-docs region marker (`<!-- >>> gen-docs: ... -->` / `<!-- <<< gen-docs -->`, see REGION_OPEN/
 # REGION_CLOSE below) or a `<!-- style-ok -->` exemption (DEFAULT_MARKERS).
 # Found live 2026-09-17, same session as TABLE_ROW: joining a marker line into an adjacent paragraph either shifted a gen-docs region boundary by a line (reported by check:ci-doc-region-parity as "closing marker with no open
@@ -687,6 +689,9 @@ def lint_line(line, rules, scope, max_len):
         if not rule.applies_to(scope):
             continue
         if rule.detection == "measured":
+            # A table row and a record's `Touched:` list are single-line by grammar: a table cannot wrap a row and the plan-record parser reads only the first line of a `Touched:` value, so the width limit has nothing to fold.
+            if TABLE_ROW.match(line.raw) or line.raw.startswith(MACHINE_LIST_KEYS):
+                continue
             if max_len is not None and len(line.raw) > max_len:
                 hits.append((rule, "line is %d characters, limit %d" % (len(line.raw), max_len)))
             continue
