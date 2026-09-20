@@ -3927,3 +3927,20 @@ therefore covers all 863 markdown files while the rewrite touched only the 11 ca
 
 `72f36408b` seeded the baseline at 6,088 findings over 205,624 prose lines. R19 fell from 7,946 findings to 62 because the reflow fixed the debt instead of the baseline hiding it, and those 62 are exactly the `src/content` paragraphs the ledger protects. It is the SECOND seed: the first captured the tree while continuations were still being flattened to column 0, and committing it
 would have frozen that corruption as the reference.
+
+## Agreement tests, a proof obligation for bulk change, and a judge that invented its evidence (2026-09-17/20)
+
+The consolidation-pressure plan (`agent/PLAN-consolidation-pressure.md`) answered four incidents in which one policy lived in two implementations and nothing compared them. Duplicate-text detection could not have caught any of the four, so the instrument is AGREEMENT: `.ci/rediacc_ci/tests/test_sibling_agreement.py` runs two independent implementations of one decision over the real
+corpus, with a containment arm (the reflow never folds a line the linter does not police) and a coverage arm, for the Python pair and the C-style pair. Each anti-vacuity control calls the same verdict function as the real arm, because a control that re-derives the inequality inline was caught twice being the same defect one function down.
+
+`.ci/scripts/quality/shape_cluster_diff.py` is the proof a bulk transform owes: every changed line becomes a shape, and per-shape counts are diffed against a revision, with `--columns` for lost indent widths. It was built against markdown and collided with Python on first contact (`heading` and `indent-code` matched ordinary `#` comments), so those two shapes are now markdown-only
+(`bcfb87458`). The refusal is enforced twice: `wl_proofcheck.py` asks the stop judge on a fix stop, and `block_unproven_bulk_transform.py` refuses at pre-bash commit, push and `gh pr create` above 20 files with no quoted proof. TRAPS.md records why a proof can be the wrong proof.
+
+Two reflow consequences. Anchoring the commented-out-code test to a trailing semicolon (`469faae58`) unlocked 988 R19 findings across 593 files, reflowed and proven by a docstring-normalized AST comparison for Python and an untouched-line comparison for C-style. A docstring's opening and closing physical lines now fold and wrap when prose shares the line with the quotes
+(`d43cd6212`, `agent/PLAN-reflow-comments-boundary-wrapping.md`): 644 files, zero AST mismatches, and a closing line with a trailing token after the quote is excluded because gluing the delimiter back would drop it.
+
+The stop judge fabricated a bulk transform twice with specifics that did not exist (an 84-file reflow, a `plans/` directory). The live proof prompt quoted a real 884-file incident as a worked example, and the judge paraphrased it as a finding. `c1a6128aa` (`agent/PLAN-judge-prompt-trap-conflation.md`) injects a git-computed file list into the prompt, removes the magic number, and
+annotates a fired finding UNVERIFIED when its scope does not match that list, never suppressing it. `2bc1b2ad9` rewrote the class-sweep block around its purpose, consolidation: look for other copies of the CHANGED code, with any search anchored to the fix-set's own files.
+
+Still open: `agent/PLAN-staged-duplication-probe.md` (a pre-bash staged-files duplication probe). A quick Python port of `check-shape-duplication.ts` was rejected because `isSharedHelperCall` derives its helper names from the whole corpus, so a port would be a second implementation of one decision; a Plan agent is designing a mechanism that keeps the normalization in one place. An
+audit of the other stop-hook prompts for job-specific wording is in flight.
