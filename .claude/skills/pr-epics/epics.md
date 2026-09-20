@@ -11,7 +11,7 @@ An epic is a **label over** worklist items, never an item itself. The items stay
 
 `compact()` rewrites the event log to the minimal set reproducing the current fold: `md`, `add`, `lease`. A novel event kind there is **destroyed on the next compact**, silently. Measured on this repo: after a compact the log held only `{md: 1, add: 29}`, every `state`/`triage`/`lease` event folded away.
 
-`record_intent` hit this first and says so at its own definition. `wl_epic.py` stores epics in `<worklist>.epics` for the same reason. If you add anything to this family, register the suffix in `wl_store.py`'s sidecar docstring: `check-tracked-sidecars.sh` **parses that list**, so a sidecar missing from it is one the gate cannot see.
+`record_intent` hit this first and says so at its own definition. `wl_epic.py` stores epics in `<worklist>.epics` for the same reason. If you add anything to this family, register the suffix in `wl_store.py`'s sidecar docstring: `check_tracked_sidecars.py` **parses that list**, so a sidecar missing from it is one the gate cannot see.
 
 ## Why the snapshot exists
 

@@ -19,7 +19,7 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. It is a SHORT header -- no `emit:`, no `blocker:`, no `lane:` -- and that is the twin's shape, not an omission. This gate IS emitted, so `gate:bind --write` owns its step in `quality-static` and will rewrite that step's `run:` from the twin's path to this file's path in the same pass. Adding a `lane:` here to be tidy would pin a lane
 the header never claimed.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-tracked-sidecars.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-tracked-sidecars.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Tracked runtime sidecars

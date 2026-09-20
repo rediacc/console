@@ -185,7 +185,7 @@ Searching the whole repo for bug numbers 67–85 in `docs/` returns exactly **`#
 **I verified it is currently fresh** — I regenerated it from the live Commander tree and diffed byte-identical — so today's greens from those nine are meaningful. But the *gate* is absent. An author who changes the tree, is forced by `check:ci-cli-contract` to regenerate `contract.json`, and forgets `export:command-tree`, leaves all nine validators grading **the previous CLI** —
 silently, and greenly. That is exactly the shape this program has been bitten by seven times: a validator's blind spot is indistinguishable from a passing check.
 
-**Exact fix:** a `check:ci-command-tree` that regenerates to a temp dir and diffs (~15 lines, copy `check-cli-contract.sh`), wired into the `ci` chain.
+**Exact fix:** a `check:ci-command-tree` that regenerates to a temp dir and diffs (~15 lines, copy `check_cli_contract.py`), wired into the `ci` chain.
 
 ---
 

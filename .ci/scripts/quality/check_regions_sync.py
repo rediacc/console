@@ -14,11 +14,11 @@ and driven again on this tree, both streams captured SEPARATELY, the twin and th
 
 `python3 -m rediacc_ci.quality.regions_sync` also works and is still the wrong registration: `check:ci-parity`'s tokenizer cannot read `-m` and resolves the leaves to `[python3]`. The registered command is the bare path to this file.
 
-THE `blocker:` BELOW NAMES A HARNESS THAT MUST BE RETARGETED IN THE SAME CHANGE. `.ci/scripts/test/gates/test-regions-sync.sh:38` hard-codes
-`SUT=...check-regions-sync.sh`. That harness IS this gate's whole CI coverage --
-no lane invokes it directly -- so if the registration moves here while the harness still drives the twin, CI stops running the registered gate and the blocker below becomes false. The harness line is part of this cutover's patch set, not a follow-up.
+THE `blocker:` BELOW NAMES A HARNESS THAT WAS RETARGETED IN THE SAME CHANGE. `.ci/scripts/test/gates/test-regions-sync.sh` sets its `SUT` to this file.
+That harness IS this gate's whole CI coverage --
+no lane invokes it directly -- so had the registration moved here while the harness still drove the twin, CI would have stopped running the registered gate and the blocker below would be false.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-regions-sync.sh` is NOT deleted here. Registering this file is not a second gate for the same subject: what moved is which of the two the registry invokes. Deletion is W7 P5.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-regions-sync.sh` was retired by W7 P5. Registering this file was not a second gate for the same subject: what moved is which of the two the registry invokes.
 
 ---- gate ----
 kind: test

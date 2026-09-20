@@ -40,8 +40,8 @@ in it, because a probe the sweep never walks is how a plant fails to fire for re
              .ci/scripts/__gate_probe_shell_size.sh (5002 lines)
       ok   S2. 621 shell file(s) actually scanned
 
-The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference, because a runner that writes into the real tree makes twin and port agree by both reading the same corrupted tree. INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-shell-size.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's
-job.
+The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference, because a runner that writes into the real tree makes twin and port agree by both reading the same corrupted tree. INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-shell-size.sh` was the differential twin that W7 P5 retired; the shadow ledger
+is the licence record.
 
 ---- gate ----
 step: Shell file size

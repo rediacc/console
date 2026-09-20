@@ -425,7 +425,7 @@ packages/shared/src/renet-contract/data --version dev` after each family change.
 2. `check:ci-e2e-coverage` greps packages/e2e-tests for EVERY generated name (raw
 `datastore_attach` or spaced `datastore attach`). The 9 added + 4 renamed names each need a real reference in packages/e2e-tests — plan the rewritten suites (16-k8s-ceph replacement, new datastore-lifecycle suite) to exercise them for real, not as grep fodder. The 11 deleted names drop out of the generated array automatically; sweep e2e sources for their now-dead references anyway
 (§2.8).
-3. The e2e ALLOWLIST in `.ci/scripts/quality/check-e2e-coverage.sh` currently exempts
+3. The e2e ALLOWLIST read by `.ci/scripts/quality/check_e2e_coverage.py` currently exempts
 `repository_takeover` — update alongside the rename or the gate fails on the new uncovered name.
 4. Renet dead-code gate (`private/renet/.ci/scripts/quality/deadcode.sh`): fails on BOTH
 dangling references and stale `.deadcode-allowlist` entries; run per area (§2 rules).
@@ -449,7 +449,7 @@ unchanged.
 6. **Maintain timer hardcodes the default datastore** (not mentioned in the suite):
 `pkg/daemon/storage_maintain_timer.go:31` bakes `repository maintain --datastore /mnt/rediacc` into the systemd unit. Multi-datastore silently exempts named datastores from trim/auto-grow unless this is retargeted (§1.5). Added to P1 scope.
 7. **e2e allowlist debt collides with the rename**: `repository_takeover` (among 20+
-legacy names) is exempted in `check-e2e-coverage.sh`; renaming to `repository_promote` either needs the allowlist entry moved or real coverage added. The suite's e2e notes (09 §3) do not mention the allowlist file.
+legacy names) is exempted in `check_e2e_coverage.py`; renaming to `repository_promote` either needs the allowlist entry moved or real coverage added. The suite's e2e notes (09 §3) do not mention the allowlist file.
 8. **`kube_prep_fork` keep-vs-obsolete tension**: 02 §6 KEEPs it, but the 04 §2 hot
 group-snap fork explicitly replaces the drain+stop path that is its main caller (`cluster-kube.ts:252,406,524`). Resolved in §1.5: kept for cross-site migrate cutover + mount sweeping; its per-node role in FORK dies with the agent-image mapping.
 9. **Suite identifiers confirmed real** (no phantom citations found): `EnsureNamespace`/

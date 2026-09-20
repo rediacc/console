@@ -1,6 +1,6 @@
 """Every CLI flag a script actually has is taught in its canonical doc.
 
-Ported from `.ci/scripts/quality/check-cli-doc-coverage.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-cli-doc-coverage.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 Why this exists. `check-ci-watch-recipe.sh`'s Check G did this for exactly one pair (ci-trace.py / ci-watch's SKILL.md) and immediately found two real, previously-invisible gaps (--until-final, --timeout) the moment it ran. Generalized here (2026-08-27) to a second real pair found by the same sweep:
 `scripts/ci-runner/run.ts`'s hand-rolled `switch (arg) { case '--flag': }` parser

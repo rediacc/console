@@ -34,7 +34,7 @@ paragraph split across TWO streams, so a reader piping stdout saw six dangling c
 DRIVEN RED AS WELL, against a plant in the real tree: one bogus path (`__gate_probe_missing.txt`) added to the `e2e_migrate` closure in `.ci/scripts/ci/greenlight.cjs`. Both sides exit 1, both print an EMPTY stdout and a byte-identical 289-byte stderr naming `__gate_probe_missing.txt -- named by a closure but NOT ON DISK`. The plant was then reverted by its exact inverse and the
 file verified byte-identical (sha256 26b3eed64efa3b96c03b6474e142d5f6a96bfb831c74a94d2dec08e2c5cc4a49) to its pre-plant state, with both sides back at exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-greenlight-closures.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-greenlight-closures.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Greenlight closure paths

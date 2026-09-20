@@ -1,6 +1,6 @@
 """Every path a greenlight closure names must exist on disk AND be tracked by git.
 
-Ported from `.ci/scripts/quality/check-greenlight-closures.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-greenlight-closures.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under `.ci/shadow/` is what licensed the retirement.
 
 WHY THE TWIN EXISTS, AND IT IS NOT THE OBVIOUS REASON. Carried over from its header, because the archaeology is the half of a gate that cannot be recovered
 from the code:

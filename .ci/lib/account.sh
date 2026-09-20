@@ -1082,7 +1082,7 @@ account_db() {
         #
         # devbox.sh sources no library at all since find-port.sh was deleted,
         # so pulling it in adds no constants.sh readonly hazard. Guarded so a
-        # second source is a no-op, because check-account-probes.sh sources this
+        # second source is a no-op, because check_account_probes.py sources this
         # file standalone under `set +eu` and that path is documented as fragile.
         if ! declare -F devbox_state_get >/dev/null 2>&1; then
             # shellcheck source=./devbox.sh

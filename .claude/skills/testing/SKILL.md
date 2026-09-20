@@ -38,4 +38,4 @@ declaring it fixed.
 
 ## Coverage of the surfaces themselves
 
-Two surfaces have a gate that notices a MISSING test: E2E (`check-e2e-coverage.sh`, both directions) and hooks (`check_test_file_orphans.py`). The ops workflow has no such gate of its own, but the machines it provisions are exercised by the E2E suites, so most ops regressions surface there rather than going unwatched.
+Two surfaces have a gate that notices a MISSING test: E2E (`check_e2e_coverage.py`, both directions) and hooks (`check_test_file_orphans.py`). The ops workflow has no such gate of its own, but the machines it provisions are exercised by the E2E suites, so most ops regressions surface there rather than going unwatched.

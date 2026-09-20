@@ -1,7 +1,7 @@
 r"""`drill_summary`'s verdict logic, driven rather than read.
 
-Ported from `.ci/scripts/quality/check-drill-verdicts.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-drill-verdicts.sh`, retired in W7 P5;
+see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 WHY THIS EXISTS, in the twin's own words, because the incident is the whole gate:
 

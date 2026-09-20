@@ -1,6 +1,6 @@
 """The two review scripts measure the SAME thing against the SAME cap.
 
-Ported from `.ci/scripts/quality/check-review-cap-coherence.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-review-cap-coherence.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 WHY THE TWIN EXISTS, carried over from its own header because the incident IS the specification. On 2026-08-07 PR #553 became green, ready, thread-clean and PERMANENTLY UNMERGEABLE. `review-status.sh` carries an explicit DEADLOCK GUARD
 for exactly that outcome: when the cap is reached the marker can never advance,

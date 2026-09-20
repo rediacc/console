@@ -17,7 +17,8 @@
 # deleted out from under it.
 #
 # Sourced by:
-#   .ci/scripts/quality/check-release-state.sh           (the BLOCKER drift gate)
+#   (the BLOCKER drift gate ported its five functions into
+#    .ci/rediacc_ci/quality/release_state.py and no longer sources this file)
 #   .ci/scripts/deploy/upload-to-r2.sh                   (idempotent write guard; no scrub)
 #   .ci/scripts/deploy/write-release-sentinel.sh         (commit-phase writer; refuses empty)
 #   .ci/scripts/test/assert-r2-sentinel.sh               (post-upload binaries-present gate)

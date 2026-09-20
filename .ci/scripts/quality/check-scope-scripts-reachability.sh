@@ -105,7 +105,7 @@ extract_refs() {
 # and therefore unscopeable. That is false in the other direction: several
 # `.ci/scripts/quality/` files are executed from NON-quality jobs --
 # `.github/workflows/ci-build-renet.yml:131` runs check-no-otlp-creds.sh against
-# the real release binaries, `ci.yml:834` runs check-release-state.sh, and
+# the real release binaries, `ci.yml:834` runs check_release_state.py, and
 # `ci.yml:531,536,539` run three `.ci/scripts/test/gates/` tests in `run-sh-tests`.
 # Those jobs happen to carry no `run_*` gate TODAY, which is luck rather than
 # architecture. Scanning workflow-wide (not per-job) keeps that luck from being

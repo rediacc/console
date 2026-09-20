@@ -23,7 +23,7 @@ exit 0, and here the STDERR is byte-identical too, npm's own warnings included.
 THE RED DRIVE IS THEREFORE THE LOAD-BEARING ONE. Against a fixture root holding a copy of `.ci`, a copy of `packages/shared/src/cli-contract/data` with a line appended to `contract.generated.ts`, and PATH shims standing in for the builder and the generator (the generator shim writes the UNPLANTED golden data, so the committed copy is genuinely the stale one), both sides exit 1 and
 print identical stdout and identical stderr, naming `contract.generated.ts`.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-cli-contract.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-cli-contract.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: CLI contract

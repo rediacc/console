@@ -33,7 +33,7 @@ guard token in it. The file was restored from a `cp` and its sha256 compared
 with the pre-plant value (dd63548fda6b1264...), identical.
 Both sides -> exit 1, stdout 484 bytes, sha256 790164231f5864e6..., stderr 155 bytes, sha256 dfe461906b46d424....
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-setup-idempotency.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_setup_idempotency.py` compares this port against, and deleting it is W7 P5's job in a later change.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-setup-idempotency.sh` was the differential twin that `.ci/rediacc_ci/tests/test_quality_setup_idempotency.py` compared this port against, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Setup path idempotency

@@ -1,6 +1,6 @@
 """Every pinned gate tool must have a RUNTIME guard, not just a definition.
 
-Ported from `.ci/scripts/quality/check-host-toolchain-coverage.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-host-toolchain-coverage.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under `.ci/shadow/` is what licensed the retirement.
 
 WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 

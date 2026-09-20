@@ -1,6 +1,6 @@
 r"""battery.py's tree guard must survive a CLEAN checkout.
 
-Ported from `.ci/scripts/quality/check-battery-clean-tree.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live and for the phase-5 decision that retires the twin.
+Ported from `.ci/scripts/quality/check-battery-clean-tree.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 -----------------------------------------------------------------------------
 RETARGETED 2026-09-09 (W7P3-BAT), FROM `.ci/scripts/test/run-all.sh` ONTO `.ci/rediacc_ci/battery.py`.

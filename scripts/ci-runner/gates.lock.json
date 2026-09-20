@@ -1418,8 +1418,7 @@
       ".claude/skills/ci-watch/**",
       "scripts/ci-runner/run.ts",
       "docs/agent-reference/ci-gates.md",
-      ".ci/scripts/quality/check_cli_doc_coverage.py",
-      ".ci/scripts/quality/check-cli-doc-coverage.sh"
+      ".ci/scripts/quality/check_cli_doc_coverage.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [

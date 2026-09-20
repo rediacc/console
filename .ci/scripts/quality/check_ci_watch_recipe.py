@@ -28,7 +28,7 @@ NO NORMALISATION WAS APPLIED and none was needed. The twin was run TWICE against
 DRIVEN RED AS WELL, which is the half that matters. The plant is rule C's banned invocation (`gh run watch ... --exit-status --interval`) appended to the TRACKED file `.claude/commands/ask.md`. Tracked is required, not incidental: `scan_files` enumerates with `git ls-files`, so an untracked probe would never have been read and the plant would have looked like a gate that cannot
 fail. The file was restored from a `cp` taken before the plant and its sha256 compared byte for byte with the pre-plant value (472a1877bc9e57da...), identical. Both sides -> exit 1, stdout 716 bytes, sha256 cf9603c7f3f927f3..., stderr 84 bytes, sha256 8631886f416f29fd....
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-ci-watch-recipe.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_ci_watch_recipe.py` compares this port against, and deleting it is W7 P5's job in a later change.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-ci-watch-recipe.sh` was the differential twin that `.ci/rediacc_ci/tests/test_quality_ci_watch_recipe.py` compared this port against, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: CI-watch recipe has one source

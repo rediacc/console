@@ -101,8 +101,9 @@ the entrypoint re-exports only `fetch`; the nightly `event_log` retention sweep 
 16. Dead `-w/--watch` flag on five backup commands, advertised in a curated help
     example, read by nothing.
 17. The regenerate hint in five generated contract files and two gate scripts points
-    at a nonexistent `./build.sh deploy prep` target; the real command is in
-    `check-e2e-coverage.sh:90`.
+    at a nonexistent `./build.sh deploy prep` target. The citation that followed,
+    `check-e2e-coverage.sh:90`, named neither that command nor a surviving file:
+    the gate was retired in W7 P5, and line 90 of it was a regex, not a hint.
 18. CLAUDE.md documents `commandFactory.ts`, which no longer exists; CLI structure
     section stale.
 19. Delta `.delta` footer does not cover offsets (see foundation facts).

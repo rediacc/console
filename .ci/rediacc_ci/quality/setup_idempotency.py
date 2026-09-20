@@ -1,6 +1,6 @@
 r"""The machine-setup path must stay idempotent, guarded, and honest.
 
-Ported from `.ci/scripts/quality/check-setup-idempotency.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-setup-idempotency.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS. Seven invariants, each paid for by a defect found while building this feature.

@@ -36,8 +36,8 @@ and their stderr agrees on all eight lines under the same port normalisation:
 
 The plant was reverted by its exact inverse, `.ci/lib/account.sh` verified back at sha256 6aef42c5c6120cbf... and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-account-probes.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job, and there is a second reason to leave it exactly where it is: it is PINNED BY PATH at `.ci/scripts/test/gates/test-gate-anti-vacuity.sh:64`, which asserts the diagnostic substring "nothing to check" against an empty tree. That
-row goes on exercising the bash twin after this cutover and goes on passing, so the registry flip alone does not move it. Repointing it is the driver's call and belongs on the MODULE, not on this three-line entry point, because the needle it pins is behavioural.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-account-probes.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record. The anti-vacuity harness that pinned the twin BY PATH was repointed at this entry point first, so
+`.ci/scripts/test/gates/test-gate-anti-vacuity.sh` asserts the "nothing to check" diagnostic against this file and the retirement leaves no row exercising a file that is gone.
 
 ---- gate ----
 step: Dev-stack liveness probes

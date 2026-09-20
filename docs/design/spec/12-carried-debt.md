@@ -157,7 +157,7 @@ Fixed by aligning the union to what the code actually dispatches (16 verbs) and 
 
 ### The gate that should have caught it is the NINTH broken gate of this program
 
-`check-audit-coverage.sh` **greps for a literal `functionName: '…'`** — but `datastore.ts` dispatches through a **variable**. So the gate could not see a single datastore verb: it was **green by construction for the entire family**, and it reported only the two verbs that happened to be written as literals elsewhere. It measured *source text*, not *dispatches* — the same
+`check_audit_coverage.py` **greps for a literal `functionName: '…'`** — but `datastore.ts` dispatches through a **variable**. So the gate could not see a single datastore verb: it was **green by construction for the entire family**, and it reported only the two verbs that happened to be written as literals elsewhere. It measured *source text*, not *dispatches* — the same
 adjacent-measurement disease as the other eight.
 
 **P5 fix:** the audit-coverage gate must **walk the dispatch**, not grep the source. A grep-based coverage check cannot see a variable dispatch, and therefore cannot fail for the reason it exists.

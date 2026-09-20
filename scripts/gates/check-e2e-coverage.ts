@@ -2,8 +2,8 @@
 /**
  * e2e-tests coverage gate — FORWARD direction (live-config membership).
  *
- * This is the TypeScript half of .ci/scripts/quality/check-e2e-coverage.sh.
- * The shell entry still owns Phase 3 (the reverse "dispatched verbs must still
+ * This is the TypeScript half of .ci/scripts/quality/check_e2e_coverage.py.
+ * The Python entry point owns Phase 3 (the reverse "dispatched verbs must still
  * exist" scan, which deliberately reads ALL files including dark ones). This
  * half answers the forward question — "is every shipped renet function actually
  * exercised by a suite CI RUNS?" — and it is in TypeScript for one reason: bash
@@ -39,7 +39,7 @@
  *
  * Usage:
  *   npx tsx scripts/gates/check-e2e-coverage.ts
- *   (invoked by .ci/scripts/quality/check-e2e-coverage.sh)
+ *   (invoked by .ci/rediacc_ci/quality/e2e_coverage.py through FORWARD_ARGV)
  *
  * Exit codes:
  *   0 - Every non-allowlisted renet function is covered by a LIVE suite

@@ -1,7 +1,7 @@
 r"""The account portal must typecheck and build.
 
-Ported from `.ci/scripts/quality/check-account-portal.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live and for the phase-5 decision that retires the twin.
+Ported from `.ci/scripts/quality/check-account-portal.sh`, retired in W7 P5;
+see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 THE TWIN'S OWN HEADER, carried over:
 

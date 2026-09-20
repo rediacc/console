@@ -1,6 +1,6 @@
 """The subscription schema must stay in step between TypeScript and Go.
 
-Ported from `.ci/scripts/quality/check-subscription-schema.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-subscription-schema.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER AND ITS THREE PHASES, CARRIED ACROSS.

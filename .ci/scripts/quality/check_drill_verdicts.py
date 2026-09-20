@@ -23,7 +23,7 @@ The empty stdout is exactly why the streams are captured apart: this gate puts i
 DRIVEN RED AS WELL, which for this pair is the load-bearing half. Planted the 2026-08-05 defect itself into `scripts/drills/lib.sh`: the zero-assertion branch made to print `PASSED` where it must print `SKIPPED`. Both sides exit 1, both print an EMPTY stdout, and their stderr is byte-identical at 568 bytes -- the first of the four verdict assertions reds, the other three still
 pass, so the gate is shown discriminating rather than collapsing. Reverted by its exact inverse and the file verified byte-identical to its pre-plant state, with the twin back at exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-drill-verdicts.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-drill-verdicts.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Drill verdict logic

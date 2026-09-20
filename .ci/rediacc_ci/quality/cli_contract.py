@@ -1,7 +1,7 @@
 """The generated CLI contract must not drift from the CLI it is generated from.
 
-Ported from `.ci/scripts/quality/check-cli-contract.sh`, which is not deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-cli-contract.sh`, retired in W7 P5;
+see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 WHAT THE CONTRACT IS, from the twin's header. `packages/shared/src/cli-contract/data` is derived from the live Commander tree, COMMAND_METADATA and the i18n catalogues. It drives the web console, the `rdc --proxy` thin client and the executor, so a stale contract means those consumers disagree with the CLI they are driving.
 

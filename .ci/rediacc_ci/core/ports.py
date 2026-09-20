@@ -23,7 +23,7 @@ The bash file carried `_sha256sum_portable`, which chose `sha256sum` when presen
 
 `_sha256sum_portable` also carried a correction worth keeping, because it records a comment that was WRONG and was fixed by measurement. It said the
 function must not depend on `local-common.sh` because find-port.sh is sourced
-standalone by `check-account-probes.sh`. It is not. The gate that sourced it standalone was `.ci/scripts/quality/check-setup-idempotency.sh`, whose control C ran `bash -c "source '$fp'; derive_slot ..."`; check-account-probes.sh sources `.ci/lib/account.sh`, and account.sh was what pulled find-port.sh in. Both call sites now run this module directly (control C through PYTHONPATH,
+standalone by the account-probes gate. It is not. The gate that sourced it standalone was the setup-idempotency gate, whose control C ran `bash -c "source '$fp'; derive_slot ..."`; the account-probes gate sources `.ci/lib/account.sh`, and account.sh was what pulled find-port.sh in. Both call sites now run this module directly (control C through PYTHONPATH,
 which is what the shim was setting anyway) and the shim is deleted. The constraint is real either way -- this module must stay importable on its own -- and the misattribution is recorded so nobody re-derives it from the wrong gate.
 
 --------------------------------------------------------------------------

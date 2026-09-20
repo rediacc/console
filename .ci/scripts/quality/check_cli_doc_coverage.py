@@ -21,7 +21,7 @@ WHY AN ENTRY POINT AT ALL, rather than registering the module. Both reasons are 
      wrong: `check:ci-parity`'s tokenizer cannot read `-m`, so it resolves the
      leaves to `[python3]`. The registered command is the bare path to this file.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-cli-doc-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-cli-doc-coverage.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: CLI docs stay in sync with their scripts' real flags

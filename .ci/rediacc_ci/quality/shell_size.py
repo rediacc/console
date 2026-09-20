@@ -1,6 +1,6 @@
 """A SHELL FILE CAN GROW UNTIL IT KILLS THE LINTER, and nothing noticed.
 
-Ported from `.ci/scripts/quality/check-shell-size.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a committed differential ledger retires the twin.
+Ported from `.ci/scripts/quality/check-shell-size.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under `.ci/shadow/` is what retired the twin.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS. The measurements below are the original's.

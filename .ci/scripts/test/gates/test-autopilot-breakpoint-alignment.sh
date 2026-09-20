@@ -6,7 +6,7 @@
 # needs: none
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
 # ---- end gate ----
-# Tests for .ci/scripts/quality/check-autopilot-breakpoint-alignment.sh, the
+# Tests for .ci/scripts/quality/check_autopilot_breakpoint_alignment.py, the
 # gate that holds autopilot.yml's copied debug inputs to breakpoint.yml's
 # originals.
 #

@@ -232,7 +232,7 @@ leg_enabled() {
 # it. Without this a typo is SILENT: `--legs a,b,c,d,e,f,g,h,jj` drops leg jj,
 # runs everything else, and prints PASSED for a narrower battery than the
 # operator asked for. The harness protects against the empty case (zero
-# assertions reports SKIPPED, never PASSED — see check-drill-verdicts.sh), but
+# assertions reports SKIPPED, never PASSED — see check_drill_verdicts.py), but
 # nothing protected against a partially-mistyped list.
 KNOWN_LEGS="a b c d e f g h i j k"
 validate_legs() {

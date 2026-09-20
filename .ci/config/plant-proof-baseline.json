@@ -8,12 +8,6 @@
       "text": "sed -i \"s|set \\$account_backend \\\"127.0.0.1:3000\\\"|set \\$account_backend \\\"${ACCOUNT_BACKEND}\\\"|\" /etc/nginx/http.d/default.conf"
     },
     {
-      "id": "92015c18d1775a60",
-      "lang": "bash",
-      "file": ".ci/scripts/quality/check-devcontainer-scripts.sh",
-      "text": "for e in \"$@\"; do sed -i \"$e\" \"$dst\"; done"
-    },
-    {
       "id": "8a981a8d3b8db626",
       "lang": "bash",
       "file": ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh",

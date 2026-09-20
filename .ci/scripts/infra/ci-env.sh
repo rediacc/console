@@ -131,7 +131,7 @@ export CI_COMPOSE_FILE="$CI_DOCKER_DIR/docker-compose.yml"
 #
 # This single list prevents the class of bugs where a variable is added to
 # docker-compose.yml but forgotten in one of the persistence targets.
-# The quality check (check-compose-env.sh) validates this list stays complete.
+# The quality check (check_compose_env.py) validates this list stays complete.
 PERSISTED_ENV=$(
     cat <<ENVBLOCK
 DOCKER_REGISTRY=${DOCKER_REGISTRY}

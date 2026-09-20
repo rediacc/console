@@ -1,7 +1,7 @@
 """Every docker-compose env var must be PERSISTED, not merely exported once.
 
-Ported from `.ci/scripts/quality/check-compose-env.sh`, which is not deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-compose-env.sh`, retired in W7 P5;
+see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 THE BUG CLASS, from the twin's header. This "prevents silent failures when env vars are added to docker-compose.yml but not exported in ci-env.sh (or its .env / GITHUB_ENV blocks). This catches the class of bugs where a new variable works on first docker compose invocation (same shell) but breaks on subsequent invocations (new shell) because the variable isn't persisted."
 

@@ -1,6 +1,6 @@
 """Catch shell scripts that pipe a command which can exit non-zero on empty input.
 
-Ported from `.ci/scripts/quality/check-silent-failure-patterns.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-silent-failure-patterns.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS.

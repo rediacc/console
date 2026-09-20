@@ -40,7 +40,7 @@ moving the probe one directory down turned both red at once. Recorded because th
 
 The probe was deleted and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-e2e-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-e2e-coverage.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Check E2E test coverage for all renet functions

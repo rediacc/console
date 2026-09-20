@@ -23,7 +23,7 @@ THE SHIM CONTRACT, stated once here rather than in each module. For every module
      "the Python works".
   4. THE DELEGATION IS PROVED BY THE ORIGINAL CALLERS, driven end to end, not
      by a new test written alongside the port. `.ci/scripts/test/gates/
-     test-age-check.sh` and `.ci/scripts/quality/check-setup-idempotency.sh`
+     test-age-check.sh` and `.ci/scripts/quality/check_setup_idempotency.py`
      already exercise these two libraries against real git fixtures and real
      port probes; they are the proof, and they had to keep passing unedited
      except where the port moved the line a planted-defect control mutates.

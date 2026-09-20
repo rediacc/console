@@ -33,7 +33,7 @@ DRIVEN RED AS WELL, by a probe script at `.ci/scripts/quality/__gate_probe_silen
 `set -euo pipefail` and then `count=$(find . -name '*.txt' | wc -l)`, the
 unguarded pipefail-risk pipeline this gate exists for. Both sides exit 1 with stdout still empty and BYTE-IDENTICAL 585-byte stderr, naming the same file, the same line 3 and the same three remedies. The probe was deleted afterwards and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-silent-failure-patterns.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-silent-failure-patterns.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Silent-failure patterns

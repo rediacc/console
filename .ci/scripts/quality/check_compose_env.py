@@ -22,7 +22,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY:
 
 and driven RED as well, against a fixture root whose compose file references a variable `ci-env.sh` does not persist: both sides exit 1 with byte-identical stdout, the two-line fix advice plus the `See:` pointer. THE RED DRIVE IS THE LOAD-BEARING ONE for this pair, because the clean stdout is empty and an empty comparison proves only that neither side crashed.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-compose-env.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-compose-env.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Compose env

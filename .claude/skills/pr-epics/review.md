@@ -12,7 +12,7 @@ A matrix over an empty array does **not run the job at all**, so a PR with no ep
 
 ## Accounting is keyed per epic
 
-`review_report_count <pr> [epic]` counts the producer constant `**Claude finished (epic <id>)`. N epics against a 3-pass cap would blow the cap on round one if the numerator stayed global. Two coherence gates pin this, `check-review-turn-capacity.sh` (which mutates the literal `per_kloc=25` as its control) and `check-review-cap-coherence.sh` (DRY numerator and denominator, one
+`review_report_count <pr> [epic]` counts the producer constant `**Claude finished (epic <id>)`. N epics against a 3-pass cap would blow the cap on round one if the numerator stayed global. Two coherence gates pin this, `check-review-turn-capacity.sh` (which mutates the literal `per_kloc=25` as its control) and `check_review_cap_coherence.py` (DRY numerator and denominator, one
 definition in `lib/common.sh`). Change either side and both must still fail on their own mutants.
 
 `check-review-report-replies.sh` fans out per epic by re-invoking itself with `REVIEW_EPIC_PREFIX` set. Newest-wins is preserved, but it is now newest **per epic**: gating only the newest report overall would enforce the last epic's reply and silently excuse the rest, which is worse than not gating because the unanswered ones then look cleared.

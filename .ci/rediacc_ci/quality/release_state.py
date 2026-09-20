@@ -1,6 +1,6 @@
 """The R2 `.released` sentinels, the git tags and the channel pointers agree.
 
-Ported from `.ci/scripts/quality/check-release-state.sh` TOGETHER WITH the parts of `.ci/scripts/lib/release-state-validator.sh` it calls, neither of which is deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-release-state.sh` TOGETHER WITH the parts of `.ci/scripts/lib/release-state-validator.sh` it calls. W7 P5 retired the twin and the library stays for its five other bash consumers; see `rediacc_ci.quality.__init__` for the phase-5 decision.
 
 WHY THE LIBRARY COMES WITH IT. The bash gate is thirty lines of glue over five library functions, and the library has five other bash consumers (`upload-to-r2.sh`, `write-release-sentinel.sh`, `assert-r2-sentinel.sh`, `cleanup-versions.sh`) that still source it. A port of the gate alone would be a port of the glue, and the differential would compare two programs that both delegate
 the interesting half to the same shell file, which proves nothing about the half that decides. So the five functions the gate reaches are ported here, into the gate's own module, and the bash library stays exactly where it is for its other callers.

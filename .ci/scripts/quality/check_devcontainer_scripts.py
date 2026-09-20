@@ -29,7 +29,7 @@ DRIVEN RED AS WELL, which is the half that matters. The plant is an UNTRACKED `.
 would have been a control failure rather than a gate failure. The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference, because a runner that writes into the real tree makes twin and port agree by both reading the same corrupted tree. Both sides -> exit 1, stdout 314 bytes, sha256 c83e1b98f1ba9d4a..., stderr 232 bytes,
 sha256 b47774f79c5278be....
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-devcontainer-scripts.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_devcontainer_scripts.py` compares this port against, and deleting it is W7 P5's job in a later change.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-devcontainer-scripts.sh` was the differential twin that `.ci/rediacc_ci/tests/test_quality_devcontainer_scripts.py` compared this port against, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Devcontainer script stderr visibility

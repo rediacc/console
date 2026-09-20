@@ -76,7 +76,7 @@ const backupEventTypes = [
   'cli.backup.restore',
 ] as const;
 
-// Every datastore verb `packages/cli/src/commands/datastore.ts` dispatches. It goes through a `dispatch(functionName, …)` helper rather than a `functionName: '…'` literal, so check-audit-coverage.sh — which greps for the literal — cannot see most of them: it only ever flagged `fork` and `volumes_close`. The rest were emitting event types absent from this union, which makes
+// Every datastore verb `packages/cli/src/commands/datastore.ts` dispatches. It goes through a `dispatch(functionName, …)` helper rather than a `functionName: '…'` literal, so check_audit_coverage.py — which greps for the literal — cannot see most of them: it only ever flagged `fork` and `volumes_close`. The rest were emitting event types absent from this union, which makes
 // functionNameToEventType return null and the audit record vanish, on exactly the class-D ops (attach, delete, resize) that most need an audit trail. `init`, `ceph_init` and `ceph_unfork` are the mirror image: literals for functions that no longer exist (#34 / the P4 rename).
 const datastoreEventTypes = [
   'cli.datastore.adopt',

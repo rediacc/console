@@ -27,7 +27,7 @@ reduced to a bare `grep -v '^??'`, which under `set -euo pipefail` aborts the sn
 `rc=1 out=` while BOTH controls still pass, so the instrument is shown intact.
 Reverted by its exact inverse and the file verified byte-identical to its pre-plant state (it carried an unrelated modification from another session at baseline, so the comparison was against a `cp` taken immediately before the plant, not against HEAD), with the twin back at exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-battery-clean-tree.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-battery-clean-tree.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Battery clean-tree guard

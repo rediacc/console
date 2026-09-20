@@ -1,7 +1,7 @@
 """Every www build in CI must pass GITHUB_TOKEN. All of them, not most of them.
 
-Ported from `.ci/scripts/quality/check-www-build-token.sh`, which is not deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-www-build-token.sh`, retired in W7 P5;
+see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 THE DEFECT, twice. `packages/www/src/pages/[lang]/downloads.astro` fetches the latest release from the GitHub API at BUILD time and deliberately THROWS rather than shipping a downloads page with nothing on it. Unauthenticated, that call is capped at 60/hour per runner IP -- which is SHARED -- so the build dies with
 

@@ -26,7 +26,7 @@ the same reason: rollup emits its `@__PURE__` annotation warnings in an order th
 DRIVEN RED TWICE, on a fixture root with PATH shims, because a seven-phase gate whose phases are ordered can agree on the clean path and still disagree on where it stops. Plant A fails `npx tsc` in phase 2: both sides exit 1 after "Frontend typecheck failed!", with identical stdout and stderr. Plant B lets all seven phases succeed and removes the build output: both sides run every
 phase in the twin's order and then exit 1 on "Expected build output not found", again identically. The second plant is the one that proves the ORDER survived the port.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-account-portal.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-account-portal.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Check account portal (typecheck + build)

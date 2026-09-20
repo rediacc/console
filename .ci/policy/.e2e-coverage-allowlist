@@ -6,7 +6,7 @@
 #
 # This is the forward-direction allowlist ONLY (is every shipped verb tested?).
 # The reverse direction (does a test dispatch a verb renet no longer registers?)
-# lives in .ci/scripts/quality/check-e2e-coverage.sh and has no allowlist.
+# lives in .ci/scripts/quality/check_e2e_coverage.py and has no allowlist.
 
 # BLOCKER: legacy renet functions that predate the packages/e2e-tests suite and
 # are not yet exercised by any suite CI runs. The middleware-backed

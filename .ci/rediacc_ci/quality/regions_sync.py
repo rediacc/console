@@ -1,7 +1,7 @@
 """The two copies of the region list must be identical.
 
-Ported from `.ci/scripts/quality/check-regions-sync.sh`, which is not deleted;
-see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-regions-sync.sh`, retired in W7 P5;
+see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 WHY. `packages/shared/src/regions/index.ts` imports `./data.json` and its comment says it is "a copy of the root regions.json kept in sync by the build process". There is no such build process. The two files are identical today only because somebody copied one onto the other by hand, and nothing would have said so if they had drifted.
 

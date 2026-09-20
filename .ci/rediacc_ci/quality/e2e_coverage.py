@@ -1,7 +1,7 @@
 """Renet functions and the e2e suite must agree in BOTH directions.
 
-Ported from `.ci/scripts/quality/check-e2e-coverage.sh`, which is NOT deleted;
-`rediacc_ci.quality.__init__` says why both copies live until W7 phase 5.
+Ported from `.ci/scripts/quality/check-e2e-coverage.sh`, retired in W7 P5;
+`rediacc_ci.quality.__init__` says how W7 phase 5 retired the twin.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED. Everything below this line up to PORT NOTES is the bash file's own archaeology, transliterated rather than summarised, because the prose is the only copy of why the gate has this shape.

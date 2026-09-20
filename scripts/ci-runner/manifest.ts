@@ -1364,9 +1364,8 @@ export const GATES: readonly GateSpec[] = [
       '.claude/skills/ci-watch/**',
       'scripts/ci-runner/run.ts',
       'docs/agent-reference/ci-gates.md',
-      // BOTH halves of the pair, on purpose: `leaves` names what CI RUNS and moved to the port at the W7 P4 cutover, while `paths` decides which changes SELECT this gate. The twin stays on disk until W7 P5, so an edit to it must still select the gate that compares against it.
+      // The port is both what CI RUNS (`leaves`) and what an edit SELECTS (`paths`). The bash twin that used to sit beside it here was retired in W7 P5.
       '.ci/scripts/quality/check_cli_doc_coverage.py',
-      '.ci/scripts/quality/check-cli-doc-coverage.sh',
     ],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_cli_doc_coverage.py'],

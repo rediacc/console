@@ -1,6 +1,6 @@
 """The `.devcontainer` bootstrap scripts must REPORT failures, not swallow them.
 
-Ported from `.ci/scripts/quality/check-devcontainer-scripts.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-devcontainer-scripts.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 The twin's header, carried whole because the incident and the control-first rule are the gate:
 

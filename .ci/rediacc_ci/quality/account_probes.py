@@ -1,7 +1,7 @@
 """Behavioural gate for the dev-stack liveness probes in `.ci/lib/account.sh`.
 
-Ported from `.ci/scripts/quality/check-account-probes.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live side by side.
+Ported from `.ci/scripts/quality/check-account-probes.sh`, retired in W7 P5;
+see `rediacc_ci.quality.__init__`; the committed differential ledger under `.ci/shadow/` is what licensed the retirement.
 
 The twin's own header, carried because the incident IS the gate:
 

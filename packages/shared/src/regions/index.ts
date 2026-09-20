@@ -12,7 +12,7 @@ import type { SignedSubscriptionBlob } from '../subscription/types.js';
 
 // Baked-in fallback regions: a copy of the root regions.json.
 //
-// NOT "kept in sync by the build process", which is what this comment used to say -- no such process exists, and the two files were identical only because somebody last copied one onto the other by hand. They are now held together by a gate (.ci/scripts/quality/check-regions-sync.sh), which fails CI if they
+// NOT "kept in sync by the build process", which is what this comment used to say -- no such process exists, and the two files were identical only because somebody last copied one onto the other by hand. They are now held together by a gate (.ci/scripts/quality/check_regions_sync.py), which fails CI if they
 // diverge; keep them in step with `cp regions.json packages/shared/src/regions/data.json`.
 //
 // And "fallback" overstates the runtime path: region-discovery.ts fetches

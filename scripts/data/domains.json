@@ -85,7 +85,7 @@
         ".ci/scripts/ci/scope-map.cjs:233 matchPrefix('scripts/drills/') with full: 'harness'. A missed prefix downgrades CI scope, so a drill edit would classify reduced and skip the whole VM matrix.",
         ".ci/scripts/ci/greenlight.cjs:421 lists 'scripts/drills' in the cache-key closure. A missed prefix reuses a stale green.",
         ".ci/scripts/quality/check-probe-parity.sh:45 PROBE=\"scripts/drills/transfer.sh\", hard fail at :56.",
-        ".ci/scripts/quality/check-drill-verdicts.sh:44 DRILL_LIB=\"scripts/drills/lib.sh\", hard fail at :48.",
+        ".ci/rediacc_ci/quality/drill_verdicts.py:70 DRILL_LIB=\"scripts/drills/lib.sh\", hard fail at :236.",
         ".ci/scripts/quality/check-scope-scripts-reachability.sh:196 uses scripts/drills/lib.sh as its positive control.",
         ".ci/scripts/test/gates/test-scope-engine.sh:699 golden expectation, and test-gate-anti-vacuity.sh:61 fixture subject."
       ]
@@ -123,7 +123,7 @@
       ],
       "breaksIfMoved": [
         "REPOINTED 2026-09-20, all six, in the change that moved the files. The list is kept because it names the shape of the damage a FUTURE move would do, not because any entry is still outstanding.",
-        ".ci/scripts/quality/check-silent-failure-patterns.sh:73 SCAN_DIRS and its Python twin .ci/rediacc_ci/quality/silent_failure_patterns.py:84 both now carry scripts/ops. A missing directory makes find return nothing and the gate reports success over half its corpus. SILENTLY GREEN.",
+        ".ci/rediacc_ci/quality/silent_failure_patterns.py:80 carries scripts/ops, as the retired bash twin did at its own line 73. A missing directory makes find return nothing and the gate reports success over half its corpus. SILENTLY GREEN.",
         ".ci/scripts/security/shfmt.sh:121 loops over `scripts/dev scripts/ops` guarded by [[ -d ]], as does its twin's OPTIONAL_SCOPES at .ci/rediacc_ci/security/shfmt.py:92, so a scope that stops existing silently stops being format-checked. SILENTLY GREEN. A third sweep of the same shape lives at .ci/legacy/run-legacy.sh:488.",
         "scripts/gates/check-worker-secret-names.ts:66 parses scripts/ops/deploy-bench.sh with a floor of 20.",
         ".ci/scripts/quality/check_bws_map.py:100 reads scripts/ops/secret-rename.py as its rename oracle, built as ROOT / \"scripts\" / \"ops\" / ... so a path-literal grep cannot see it.",

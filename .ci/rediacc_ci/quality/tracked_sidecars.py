@@ -1,6 +1,6 @@
 """No stop-hook RUNTIME sidecar may be tracked by git.
 
-Ported from `.ci/scripts/quality/check-tracked-sidecars.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-tracked-sidecars.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under `.ci/shadow/` is what licensed the retirement.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS. Every date and every named file below is the original's, not a paraphrase of it.

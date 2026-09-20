@@ -101,7 +101,7 @@ on:
         default: ''
 
       # The three inputs below are COPIED FROM .ci/breakpoint/workflow/breakpoint.yml
-      # and held to it by .ci/scripts/quality/check-autopilot-breakpoint-alignment.sh:
+      # and held to it by .ci/scripts/quality/check_autopilot_breakpoint_alignment.py:
       # `hold-duration` mirrors breakpoint's `duration` option list exactly, and
       # the two booleans mirror its types and defaults. A debug session that
       # behaves differently here than in the tool people already know is a trap,

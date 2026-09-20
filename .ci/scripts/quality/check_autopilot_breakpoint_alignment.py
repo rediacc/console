@@ -17,11 +17,11 @@ that cannot fail.
 
 WHY AN ENTRY POINT AT ALL. A port cannot be run by path (`from rediacc_ci ...` fails with `.ci` off `sys.path`, which the insert below fixes), and the `-m` form that does work is unreadable to `check:ci-parity`'s tokenizer, which resolves its leaves to `[python3]`. `check_npmrc.py` records both measurements.
 
-THE `blocker:` BELOW NAMES A HARNESS THAT MUST BE RETARGETED IN THE SAME CHANGE. `.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh:32` hard-codes
-`GATE=...check-autopilot-breakpoint-alignment.sh`. That harness IS this gate's
-whole CI coverage -- no lane invokes it directly -- so if the registration moves here while the harness still drives the twin, CI stops running the registered gate and the blocker below becomes false. The harness line is part of this cutover's patch set, not a follow-up.
+THE `blocker:` BELOW NAMES A HARNESS THAT WAS RETARGETED IN THE SAME CHANGE. `.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh` sets its `GATE` to this file.
+That harness IS this gate's
+whole CI coverage -- no lane invokes it directly -- so had the registration moved here while the harness still drove the twin, CI would have stopped running the registered gate and the blocker below would be false.
 
-INVARIANT 5 IS INTACT: the twin is NOT deleted here; deletion is W7 P5.
+INVARIANT 5 IS DISCHARGED: W7 P5 retired the twin; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 kind: test

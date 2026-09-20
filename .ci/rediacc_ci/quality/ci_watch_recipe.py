@@ -1,6 +1,6 @@
 """There is ONE way to read CI, and every surface points at it.
 
-Ported from `.ci/scripts/quality/check-ci-watch-recipe.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-ci-watch-recipe.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 The twin's header, carried whole:
 

@@ -1,7 +1,7 @@
 r"""Audit-logging coverage for machine-level CLI operations.
 
-Ported from `.ci/scripts/quality/check-audit-coverage.sh`, which is NOT deleted;
-see `rediacc_ci.quality.__init__` for why both copies live and for the phase-5 decision that retires the twin.
+Ported from `.ci/scripts/quality/check-audit-coverage.sh`, retired in W7 P5;
+see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 THE TWIN'S OWN HEADER, carried over because the list of invariants IS the gate:
 

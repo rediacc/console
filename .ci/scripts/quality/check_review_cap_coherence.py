@@ -43,7 +43,7 @@ proved only that the gate refuses a broken control. So the plant ADDS a line and
 
 The plant was reverted by restoring the file from a `cp` backup, verified back at its pre-plant sha256 with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-review-cap-coherence.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-review-cap-coherence.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Review cap is measured coherently

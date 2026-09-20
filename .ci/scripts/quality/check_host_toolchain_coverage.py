@@ -43,7 +43,7 @@ port.err)` is empty. Named exactly: the ONLY normalisation applied is collapsing
 
 The plant was reverted by its exact inverse and `check-toolchain-pins.sh` verified byte-identical to its pre-plant state, with both sides back at exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-host-toolchain-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-host-toolchain-coverage.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Host toolchain runtime coverage

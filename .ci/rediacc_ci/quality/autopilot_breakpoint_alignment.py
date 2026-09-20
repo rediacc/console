@@ -1,6 +1,6 @@
 """The autopilot's hold-open debug session COPIES three dispatch inputs from breakpoint. This gate holds the copies to the original.
 
-Ported from `.ci/scripts/quality/check-autopilot-breakpoint-alignment.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-autopilot-breakpoint-alignment.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 WHY A GATE AND NOT A COMMENT. `.github/workflows/autopilot.yml`'s model job can hold its runner open with a tmate shell behind a Cloudflare tunnel, driven by the vendored scripts in `.ci/breakpoint/scripts/`. The inputs that drive it (`hold-duration`, `debug-shell`, `send-email`) are hand-copied from `.ci/breakpoint/workflow/breakpoint.yml`, because breakpoint.yml is FROZEN in
 MANIFEST.sha256 and cannot grow an autopilot-shaped variant, and GitHub has no include mechanism for workflow inputs. Hand-copied shapes drift silently, and the drift is worst exactly where it matters: `send-email` defaulting to false in one file and true in the other would mean one of the two tools prints a bearer-credential URL into a world-readable log while the operator

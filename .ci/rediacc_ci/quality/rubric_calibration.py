@@ -1,6 +1,6 @@
 """A calibrated rubric may not change without being re-calibrated.
 
-Ported from `.ci/scripts/quality/check-rubric-calibration.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-rubric-calibration.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
 THE GAP. Three prompt constants drive the stop judge's rules, and each has a fixture set in `.claude/hooks/stop/calibrate-judge-rules.py` that scores it against a REAL model: SWEEP_PROMPT (SWEEP_CASES), BRAVE_PROMPT (BRAVE_CASES), REGGATE_PROMPT, SHAPE_PROMPT (SHAPE_CASES). Nothing forced the two to move together. Editing a rubric is cheap and silent; re-calibrating costs 14 live
 model calls and several minutes, so the pressure is entirely toward skipping it -- and a rubric whose calibration describes an older text is a rubric nobody has measured.

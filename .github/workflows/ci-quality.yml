@@ -1561,7 +1561,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
       # natives: config-migrations loads the CLI's runtime imports, which pull
       # in ssh2/cpu-features. build-packages: the cluster services import
-      # @rediacc/provisioning through its dist/, and check-account-portal.sh
+      # @rediacc/provisioning through its dist/, and check_account_portal.py
       # typechecks against @rediacc/shared's dist.
       - id: setup
         uses: ./.github/actions/setup-workspace

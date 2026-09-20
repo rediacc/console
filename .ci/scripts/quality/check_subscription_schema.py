@@ -16,7 +16,7 @@ whole, both sides resolve to {go, node, submodules}, unchanged.
 
 `selftest: true` IS INERT HERE and is carried anyway: `headerLines` emits that field only for `.ts` (`gate-bind.ts:598`), so for a `.py` gate it decides nothing. It is true of the port regardless.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-subscription-schema.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-subscription-schema.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Check subscription schema consistency

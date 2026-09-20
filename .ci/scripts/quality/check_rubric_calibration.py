@@ -14,7 +14,7 @@ rubrics in the same order, byte for byte.
 
 WHY AN ENTRY POINT AT ALL. A port cannot be run by path (`from rediacc_ci ...` fails with `.ci` off `sys.path`, which the insert below fixes), and the `-m` form that does work is unreadable to `check:ci-parity`'s tokenizer, which resolves its leaves to `[python3]`. `check_npmrc.py` records both measurements.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-rubric-calibration.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-rubric-calibration.sh` was the differential twin, and W7 P5 retired it; the shadow ledger under `.ci/shadow/` is the licence record.
 
 ---- gate ----
 step: Rubric calibration

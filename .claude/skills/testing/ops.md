@@ -7,7 +7,7 @@ For `rdc ops`, KVM/qemu provisioning, the base-image cache, eBPF socket isolatio
 - **`.github/workflows/ci-ops-test.yml`** — `ops-vm-provision` (matrix, real
 KVM), `ops-qemu-provision`, `ops-platform-check`. Steps named `"Test: <what>"`, invoking the built CLI bundle directly because the job has already built it. This is where a PROVISIONING behaviour is asserted: does the fleet come up, is the image cache honoured, does eBPF isolation hold.
 - **The E2E suites (Tests + Infra)** — the same VMs, exercised by
-`packages/e2e-tests/tests/`. Anything that happens ON a provisioned machine is covered here, not in the ops workflow, and `check-e2e-coverage.sh` enforces it in both directions. See [e2e.md](e2e.md).
+`packages/e2e-tests/tests/`. Anything that happens ON a provisioned machine is covered here, not in the ops workflow, and `check_e2e_coverage.py` enforces it in both directions. See [e2e.md](e2e.md).
 
 So the routing question is narrow: **did provisioning break, or did something on the machine break?** The first is an ops step; the second is an E2E case, and the E2E surface is the one with a coverage gate behind it.
 
