@@ -339,7 +339,7 @@
       "done_sigs": []
     },
     "agent/PLAN-duplication-angle.md": {
-      "status": "implemented",
+      "status": "compacted",
       "owner": "unowned",
       "open": 0,
       "done": 0,
@@ -382,7 +382,7 @@
       "done_sigs": []
     },
     "agent/PLAN-fix-ci-contention-aware-timeouts.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "unowned",
       "open": 0,
       "done": 0,
@@ -406,7 +406,7 @@
       "done_sigs": []
     },
     "agent/PLAN-fix-tutorial-player-debug-hook-attachment.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "unowned",
       "open": 0,
       "done": 0,
@@ -437,7 +437,7 @@
       "done_sigs": []
     },
     "agent/PLAN-git-ignore-aware-discover.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "d778be9d",
       "open": 0,
       "done": 10,
@@ -680,7 +680,7 @@
       ]
     },
     "agent/PLAN-printf-echo-pipefail-sweep.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "d778be9d",
       "open": 0,
       "done": 33,
@@ -722,7 +722,7 @@
       ]
     },
     "agent/PLAN-promote-mutation-runner.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "99ccf057",
       "open": 0,
       "done": 0,
@@ -753,7 +753,7 @@
       ]
     },
     "agent/PLAN-pytest-parallelism.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "8f55d4f0",
       "open": 0,
       "done": 10,
@@ -847,7 +847,7 @@
       ]
     },
     "agent/PLAN-resumable-rebase-executor.md": {
-      "status": "implemented",
+      "status": "compacted",
       "owner": "9d92d9b6",
       "open": 0,
       "done": 0,
@@ -971,7 +971,7 @@
       "done_sigs": []
     },
     "agent/PLAN-shell-resource-profiling.md": {
-      "status": "landed",
+      "status": "compacted",
       "owner": "unowned",
       "open": 0,
       "done": 0,
@@ -979,7 +979,7 @@
       "done_sigs": []
     },
     "agent/PLAN-skip-release-gates-r2-manifest.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "854ac1c6",
       "open": 0,
       "done": 0,
@@ -1020,7 +1020,7 @@
       "done_sigs": []
     },
     "agent/PLAN-stop-always-tier.md": {
-      "status": "landed",
+      "status": "compacted",
       "owner": "unowned",
       "open": 0,
       "done": 0,
@@ -1114,7 +1114,7 @@
       "done_sigs": []
     },
     "agent/PLAN-test-advisor.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "b7baf3ee",
       "open": 0,
       "done": 0,

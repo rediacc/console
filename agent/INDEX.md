@@ -27,9 +27,13 @@ To read one in full:
 | agent/PLAN-cli-em-dash-lint-gate.md | compacted | 0 / 0 / 0 | `629e12f4662163b2e5b78fecaa292abf7354ae6f` |
 | agent/PLAN-cold-path.md | compacted | 0 / 0 / 0 | `94817d485e814eefcb2a0fc24d339c9a8a974c48` |
 | agent/PLAN-docker-image-freshness-soak-filter.md | compacted | 0 / 0 / 0 | `8a20e7d7e8d59b4a066a2472883dc5be5aadaa0f` |
+| agent/PLAN-duplication-angle.md | compacted | 0 / 0 / 0 | `49d0c8831c5086a49590a8c127d9a4ebd5b15e6e` |
 | agent/PLAN-durable-reports-and-push-inbox.md | compacted | 0 / 0 / 0 | `a91ac53ed56cfecca406211ee76856603b192686` |
+| agent/PLAN-fix-ci-contention-aware-timeouts.md | compacted | 0 / 0 / 0 | `c52485b570655e7c9ac98b3e84c13085c7d6e614` |
 | agent/PLAN-fix-german-translation-artifacts.md | compacted | 0 / 0 / 0 | `0ce3e39893deecb4e3e91cbfed5abdae0db3edd1` |
 | agent/PLAN-fix-in-session-rule.md | compacted | 0 / 0 / 0 | `de11703cc3f80d419da467c90f6da7494ade49e3` |
+| agent/PLAN-fix-tutorial-player-debug-hook-attachment.md | compacted | 0 / 0 / 0 | `42c5e4bdcf9adcefc94d87417cf982f920f7f7c5` |
+| agent/PLAN-git-ignore-aware-discover.md | compacted | 10 / 0 / 0 | `665806c8207762ab129e4425a19794d7359cef65` |
 | agent/PLAN-github-actions-workflow-run-trigger-fix.md | compacted | 0 / 0 / 0 | `5a72b31733f38380ee001b6361fbfba1b40657e5` |
 | agent/PLAN-greenlight-verify-at-read.md | compacted | 0 / 0 / 0 | `797d986ae411011b63c51b254fb17ebc0518d143` |
 | agent/PLAN-lint-css-ci-wiring.md | compacted | 0 / 0 / 0 | `e97837565b685d82e72fd542652a452a05df1e97` |
@@ -37,19 +41,27 @@ To read one in full:
 | agent/PLAN-localize-cheat-sheet-rendering.md | compacted | 0 / 0 / 0 | `f109c90887d63c381f47f648b684bcf281a24c53` |
 | agent/PLAN-nightly-retry-and-watchdog-noise.md | compacted | 0 / 0 / 0 | `4a9cbc2c50de489738800acfa12a87f853130c27` |
 | agent/PLAN-npm-ci-parallel-parity.md | compacted | 0 / 0 / 0 | `579a43b2793afd84e1ec525e2c236f98ed11e94e` |
+| agent/PLAN-printf-echo-pipefail-sweep.md | compacted | 33 / 0 / 0 | `b78238643fecdaf894630b6245b3dc7244a1ccff` |
+| agent/PLAN-promote-mutation-runner.md | compacted | 0 / 0 / 0 | `81e70861b4491aafc5fcb60eac2ed77445c60c0e` |
+| agent/PLAN-pytest-parallelism.md | compacted | 10 / 0 / 0 | `043547f131a60caa448fcd8d07cc8d832d7e2f1e` |
 | agent/PLAN-rclone-decommission.md | compacted | 0 / 0 / 0 | `09c51ce36a58383f4f12ac17ed21fe99cdbcab29` |
 | agent/PLAN-renet-fetch-hardening.md | parked | 0 / 0 / 0 | `0f714f0ac7271327eb51438deb66d7250cb4b174` |
 | agent/PLAN-require-testid-sweep.md | compacted | 0 / 0 / 0 | `d9c09956f72585468cd1af419f11a2077981748c` |
+| agent/PLAN-resumable-rebase-executor.md | compacted | 0 / 0 / 0 | `0de01ed0e941e9b219977dd009621b603df52b51` |
 | agent/PLAN-runtime-caller-identity.md | compacted | 0 / 0 / 0 | `61d22f80a7aa9243a0363a1e1245cd4ff7e3558a` |
 | agent/PLAN-scope-gates-split.md | compacted | 0 / 0 / 0 | `d1a4acd100bbcc1fbbace2d22f4d59663f7c2687` |
+| agent/PLAN-shell-resource-profiling.md | compacted | 0 / 0 / 0 | `acfed5118c57313c4f59592e73370b780616f5ac` |
+| agent/PLAN-skip-release-gates-r2-manifest.md | compacted | 0 / 0 / 0 | `b9f4b3fbe9b685d698dbb4cba7919e82c20ecae1` |
 | agent/PLAN-ssr-nav-locale.md | compacted | 0 / 0 / 0 | `607afdb545574a449e1959a5adfa926879358bc0` |
 | agent/PLAN-state-md-session-isolation.md | compacted | 0 / 0 / 0 | `bb261677a201d15fcc277f98ee32d489d091d269` |
+| agent/PLAN-stop-always-tier.md | compacted | 0 / 0 / 0 | `4117fa10f7f154c69832f9a53c7231a9ff2de6b3` |
 | agent/PLAN-stop-hook-cadence.md | compacted | 0 / 0 / 0 | `af70feee31f7c4646bb5fe3783be6bbfc4814871` |
 | agent/PLAN-sync-docker-latest-tag-with-releases.md | compacted | 0 / 0 / 0 | `785e89eea1f5954063ba22f0fe60adc16ce7eed1` |
+| agent/PLAN-test-advisor.md | compacted | 0 / 0 / 0 | `2a9b231bbfe9745800132f1859ddda383771ae94` |
 | agent/PLAN-unify-trap-corpus.md | compacted | 0 / 0 / 0 | `477232b48be389ccf464567572800f6dde8b0d5a` |
 | agent/PLAN-wire-account-vitest-ci.md | compacted | 0 / 0 / 0 | `5b450ce4f57e84c5814a44de44b81dc8d1d4c2a1` |
 
-36 record(s): 35 compacted, 1 parked. A parked record stays on the housekeeping clock on purpose -- its work is not finished, only its text is compacted.
+48 record(s): 47 compacted, 1 parked. A parked record stays on the housekeeping clock on purpose -- its work is not finished, only its text is compacted.
 
 ## Files these records touch
 
@@ -58,50 +70,102 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | File | Records |
 |---|---|
 | `.ci/config/constants.sh` | agent/PLAN-sync-docker-latest-tag-with-releases.md |
+| `.ci/config/prose-style-rules.json` | agent/PLAN-git-ignore-aware-discover.md |
+| `.ci/docker/ci/docker-compose.yml` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/lib/devbox.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/lib/local-common.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/rediacc_ci/battery.py` | agent/PLAN-pytest-parallelism.md |
+| `.ci/rediacc_ci/check_pytest.py` | agent/PLAN-pytest-parallelism.md |
+| `.ci/rediacc_ci/gitx.py` | agent/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/paths.py` | agent/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/ci_scans_tracked_paths.py` | agent/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/dead_python.py` | agent/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/editorconfig.py` | agent/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/pipefail_grep_q.py` | agent/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/rediacc_ci/quality/plant_proofs.py` | agent/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/prose_style.py` | agent/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/quality/python_env_registry.py` | agent/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/tests/gates/test_twin_parity.py` | agent/PLAN-pytest-parallelism.md |
+| `.ci/rediacc_ci/tests/test_core_ports.py` | agent/PLAN-pytest-parallelism.md |
+| `.ci/rediacc_ci/tests/test_gitx.py` | agent/PLAN-git-ignore-aware-discover.md |
+| `.ci/rediacc_ci/tests/test_quality_pipefail_grep_q.py` | agent/PLAN-printf-echo-pipefail-sweep.md |
 | `.ci/scripts/build/prepare-cli-assets.sh` | agent/PLAN-scope-gates-split.md |
 | `.ci/scripts/ci/ci-trace.py` | agent/PLAN-ci-trace-no-pr-branch.md |
 | `.ci/scripts/ci/scope-engine.cjs` | agent/PLAN-greenlight-verify-at-read.md |
 | `.ci/scripts/ci/scope-map.cjs` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-npm-ci-parallel-parity.md, agent/PLAN-wire-account-vitest-ci.md |
-| `.ci/scripts/housekeeping/cleanup-versions.sh` | agent/PLAN-nightly-retry-and-watchdog-noise.md |
+| `.ci/scripts/env/create-e2e-env.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/housekeeping/cleanup-versions.sh` | agent/PLAN-nightly-retry-and-watchdog-noise.md, agent/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/infra/ci-start-account.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/infra/ci-start-elite.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/infra/wait-for-vm-ssh.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/lib/common.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
 | `.ci/scripts/private/run-account.sh` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-wire-account-vitest-ci.md |
 | `.ci/scripts/quality/check-cli-contract.sh` | agent/PLAN-npm-ci-parallel-parity.md |
 | `.ci/scripts/quality/check-command-tree.sh` | agent/PLAN-npm-ci-parallel-parity.md, agent/PLAN-scope-gates-split.md |
 | `.ci/scripts/quality/check-e2e-coverage.sh` | agent/PLAN-add-chunkstore-backup-verb.md |
+| `.ci/scripts/quality/check-label-references.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/quality/check-pipefail-grep-q.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
 | `.ci/scripts/quality/check-probe-parity.sh` | agent/PLAN-unify-trap-corpus.md |
 | `.ci/scripts/quality/check-renet-types.sh` | agent/PLAN-add-chunkstore-backup-verb.md |
+| `.ci/scripts/quality/check-tracked-sidecars.sh` | agent/PLAN-shell-resource-profiling.md |
 | `.ci/scripts/quality/check_gate_reachability_coverage.py` | agent/PLAN-agent-hints-implementation.md |
+| `.ci/scripts/quality/check_language_policy.py` | agent/PLAN-git-ignore-aware-discover.md |
+| `.ci/scripts/quality/check_tutorial_healthcheck_headroom.py` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
 | `.ci/scripts/quality/lint-rule-liveness.mjs` | agent/PLAN-agent-hints-in-stop-hook.md |
 | `.ci/scripts/review/claude-review-gate.sh` | agent/PLAN-github-actions-workflow-run-trigger-fix.md |
 | `.ci/scripts/review/review-status.sh` | agent/PLAN-github-actions-workflow-run-trigger-fix.md |
+| `.ci/scripts/security/shellcheck.sh` | agent/PLAN-shell-resource-profiling.md |
+| `.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh` | agent/PLAN-duplication-angle.md |
+| `.ci/scripts/test/gates/test-breakpoint-teardown.sh` | agent/PLAN-shell-resource-profiling.md |
+| `.ci/scripts/test/gates/test-claude-hooks.sh` | agent/PLAN-promote-mutation-runner.md |
 | `.ci/scripts/test/gates/test-embed-asset-freshness.sh` | agent/PLAN-rclone-decommission.md |
 | `.ci/scripts/test/gates/test-embed-credits.sh` | agent/PLAN-rclone-decommission.md |
 | `.ci/scripts/test/gates/test-gate-anti-vacuity.sh` | agent/PLAN-lint-rule-matrix-probe.md |
+| `.ci/scripts/test/gates/test-installmethods-linuxpkg-idiom.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/gates/test-media-shims.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
 | `.ci/scripts/test/gates/test-positional-detector.sh` | agent/PLAN-scope-gates-split.md |
+| `.ci/scripts/test/gates/test-run-sh.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/gates/test-shadow-gate.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/gates/test-verify-version.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
 | `.ci/scripts/test/gates/test-worklist-hooks.sh` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md |
+| `.ci/scripts/test/lib/test-helpers.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
 | `.ci/scripts/test/mutate-check.sh` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md |
+| `.ci/scripts/test/proxies/proxy-go-unit.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/run-account-e2e.sh` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/test/run-all.sh` | agent/PLAN-promote-mutation-runner.md, agent/PLAN-shell-resource-profiling.md |
 | `.ci/scripts/test/run-unit.sh` | agent/PLAN-wire-account-vitest-ci.md |
+| `.ci/scripts/test/smoke-test-preview.ts` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.ci/scripts/test/test-install-methods.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
+| `.ci/scripts/test/test-linux-packages.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
 | `.ci/tutorials/tutorial-backup-restore.sh` | agent/PLAN-chunk-store-browse-engine.md |
 | `.claude/agents/account-dev.md` | agent/PLAN-agent-hints-implementation.md |
 | `.claude/agents/pr-babysitter.md` | agent/PLAN-durable-reports-and-push-inbox.md |
 | `.claude/hooks/pre-bash/block-cli-bundle.sh` | agent/PLAN-add-js-extensions-shared.md |
 | `.claude/hooks/pre-edit/block-agent-state-shape.sh` | agent/PLAN-unify-trap-corpus.md |
+| `.claude/hooks/stop/test-worklist-v5.sh` | agent/PLAN-shell-resource-profiling.md |
 | `.claude/hooks/stop/wl_ci.py` | agent/PLAN-ci-trace-no-pr-branch.md |
+| `.claude/oracles/README.md` | agent/PLAN-printf-echo-pipefail-sweep.md |
 | `.claude/settings.json` | agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-unify-trap-corpus.md |
+| `.devcontainer/start-kvm.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
 | `.e2e-coverage-allowlist` | agent/PLAN-chunk-store-browse-engine.md |
 | `.github/actions/app-token/action.yml` | agent/PLAN-nightly-retry-and-watchdog-noise.md |
+| `.github/labels.yml` | agent/PLAN-skip-release-gates-r2-manifest.md |
 | `.github/workflows/ci-ops-test.yml` | agent/PLAN-chunk-store-browse-engine.md |
 | `.github/workflows/ci-quality.yml` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-localize-cheat-sheet-rendering.md, agent/PLAN-wire-account-vitest-ci.md |
+| `.github/workflows/ci.yml` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
+| `.github/workflows/ct-tests.yml` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
 | `.gitignore` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-unify-trap-corpus.md |
 | `.gitmodules` | agent/PLAN-rclone-decommission.md |
 | `CLAUDE.md` | agent/PLAN-fix-in-session-rule.md, agent/PLAN-unify-trap-corpus.md |
 | `agent/PLAN-localize-cheat-sheet-rendering.md` | agent/PLAN-lint-css-ci-wiring.md |
 | `agent/programs/www-simplification/research/RESEARCH-docs.md` | agent/PLAN-lint-css-ci-wiring.md |
-| `docs/agent-reference/TRAPS.md` | agent/PLAN-unify-trap-corpus.md |
+| `docs/agent-reference/TRAPS.md` | agent/PLAN-promote-mutation-runner.md, agent/PLAN-shell-resource-profiling.md, agent/PLAN-unify-trap-corpus.md |
 | `docs/agent-reference/ci-gates.md` | agent/PLAN-npm-ci-parallel-parity.md |
 | `docs/agent-reference/suppressions.md` | agent/PLAN-npm-ci-parallel-parity.md |
 | `docs/backup-storage/02-design.md` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-quota-delta-gc.md |
 | `docs/backup-storage/05-docs-and-decommission.md` | agent/PLAN-chunk-store-browse-server.md, agent/PLAN-rclone-decommission.md |
 | `docs/backup-storage/README.md` | agent/PLAN-chunk-store-browse-server.md |
+| `docs/ci-overhaul/06-progress.md` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
 | `docs/design/06-cli-reshape.md` | agent/PLAN-add-chunkstore-backup-verb.md |
 | `eslint-rules/e2e-test-naming-convention.js` | agent/PLAN-lint-rule-matrix-probe.md |
 | `eslint-rules/i18n/index.js` | agent/PLAN-lint-rule-matrix-probe.md |
@@ -109,7 +173,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `eslint-rules/i18n/shared/require-path-option.js` | agent/PLAN-lint-rule-matrix-probe.md |
 | `eslint-rules/require-testid.js` | agent/PLAN-lint-rule-matrix-probe.md |
 | `eslint.config.js` | agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-require-testid-sweep.md |
-| `package.json` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-cli-em-dash-lint-gate.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-localize-cheat-sheet-rendering.md, agent/PLAN-npm-ci-parallel-parity.md, agent/PLAN-wire-account-vitest-ci.md |
+| `package.json` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-cli-em-dash-lint-gate.md, agent/PLAN-fix-ci-contention-aware-timeouts.md, agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-localize-cheat-sheet-rendering.md, agent/PLAN-npm-ci-parallel-parity.md, agent/PLAN-promote-mutation-runner.md, agent/PLAN-skip-release-gates-r2-manifest.md, agent/PLAN-test-advisor.md, agent/PLAN-wire-account-vitest-ci.md |
 | `packages/cli/scripts/check-command-planes.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
 | `packages/cli/src/adapters/config-file-storage.ts` | agent/PLAN-chunk-store-browse-server.md |
 | `packages/cli/src/adapters/remote-config-adapter.ts` | agent/PLAN-chunk-store-browse-server.md |
@@ -158,7 +222,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `packages/cli/src/utils/timeline.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
 | `packages/cli/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
 | `packages/e2e-tests/package.json` | agent/PLAN-add-js-extensions-shared.md |
-| `packages/e2e-tests/playwright.config.ts` | agent/PLAN-chunk-store-browse-engine.md |
+| `packages/e2e-tests/playwright.config.ts` | agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-fix-ci-contention-aware-timeouts.md |
 | `packages/e2e-tests/tests/26-backup-storage-cli.test.ts` | agent/PLAN-chunkstore-restore.md |
 | `packages/e2e-tests/tests/migrate/18-dual-group-migrate.test.ts` | agent/PLAN-backup-list-executor-fix.md |
 | `packages/json/package.json` | agent/PLAN-wire-account-vitest-ci.md |
@@ -176,17 +240,22 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `packages/shared/src/subscription/types.ts` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-chunkstore-restore.md |
 | `packages/shared/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
 | `packages/shared/vitest.config.ts` | agent/PLAN-backup-quota-delta-gc.md |
-| `packages/www/package.json` | agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-wire-account-vitest-ci.md |
+| `packages/www/package.json` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-wire-account-vitest-ci.md |
 | `packages/www/scripts/generate-search-index.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
 | `packages/www/scripts/lib/cli-reference-catalog.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
 | `packages/www/scripts/validate-content-accuracy.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
 | `packages/www/scripts/validate-docs-cli-usage.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
 | `packages/www/src/components/solution-pages/SPHowItWorks.astro` | agent/PLAN-lint-css-ci-wiring.md |
+| `packages/www/src/components/solution-pages/SolutionPage.astro` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md |
 | `packages/www/src/content/docs/de/rdc-cheat-sheet.md` | agent/PLAN-localize-cheat-sheet-rendering.md |
 | `packages/www/src/content/docs/en/rdc-cheat-sheet.md` | agent/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/src/content/docs/en/tutorial-production-mode.mdx` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md |
 | `packages/www/src/hooks/useLanguage.ts` | agent/PLAN-ssr-nav-locale.md |
 | `packages/www/src/layouts/BaseLayout.astro` | agent/PLAN-ssr-nav-locale.md |
-| `packages/www/src/layouts/DocsLayout.astro` | agent/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/src/layouts/DocsLayout.astro` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/src/plugins/remark-tutorial-embed.ts` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md |
+| `packages/www/src/scripts/tutorial-video-hydrate.ts` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md |
+| `packages/www/src/styles/tutorial-video.css` | agent/PLAN-fix-tutorial-player-debug-hook-attachment.md |
 | `packages/www/src/utils/solution-video.ts` | agent/PLAN-scope-gates-split.md |
 | `private/account/e2e/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
 | `private/account/package.json` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-wire-account-vitest-ci.md |
@@ -205,7 +274,8 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `private/account/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
 | `private/account/vitest.config.ts` | agent/PLAN-backup-quota-delta-gc.md |
 | `private/account/web/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
-| `private/renet/.ci/scripts/quality/i18n.sh` | agent/PLAN-add-chunkstore-backup-verb.md |
+| `private/elite/docker-compose.yml` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
+| `private/renet/.ci/scripts/quality/i18n.sh` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-printf-echo-pipefail-sweep.md |
 | `private/renet/.ci/scripts/test/run-tests.sh` | agent/PLAN-backup-quota-delta-gc.md |
 | `private/renet/cmd/renet/backup_list.go` | agent/PLAN-backup-list-executor-fix.md |
 | `private/renet/cmd/renet/backup_pull.go` | agent/PLAN-chunkstore-restore.md |
@@ -220,6 +290,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `private/renet/pkg/chunkstore/session.go` | agent/PLAN-backup-restore-target-license.md |
 | `private/renet/pkg/chunkstore/uploader.go` | agent/PLAN-chunk-store-browse-server.md |
 | `private/renet/pkg/credentials/keyfile.go` | agent/PLAN-chunk-store-browse-engine.md |
+| `private/renet/pkg/daemon/start_foreground.go` | agent/PLAN-fix-ci-contention-aware-timeouts.md |
 | `private/renet/pkg/embed/embed.go` | agent/PLAN-chunk-store-browse-engine.md |
 | `private/renet/pkg/filesystem/ext4.go` | agent/PLAN-chunk-store-browse-engine.md |
 | `private/renet/pkg/functions/commands/backup.go` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-list-executor-fix.md |
@@ -235,15 +306,22 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `private/renet/pkg/repodiff/types.go` | agent/PLAN-chunk-store-browse-engine.md |
 | `private/renet/pkg/repodiff/walk.go` | agent/PLAN-chunk-store-browse-engine.md |
 | `private/renet/pkg/vaultcrypto/vault.go` | agent/PLAN-chunk-store-browse-engine.md |
+| `private/renet/scripts/ci-test.sh` | agent/PLAN-printf-echo-pipefail-sweep.md |
+| `pyproject.toml` | agent/PLAN-pytest-parallelism.md |
 | `run.sh` | agent/PLAN-scope-gates-split.md |
-| `scripts/ci-runner/manifest.ts` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-cli-em-dash-lint-gate.md, agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-wire-account-vitest-ci.md |
+| `scripts/ci-runner/exec.ts` | agent/PLAN-shell-resource-profiling.md |
+| `scripts/ci-runner/manifest.ts` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-cli-em-dash-lint-gate.md, agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-promote-mutation-runner.md, agent/PLAN-wire-account-vitest-ci.md |
+| `scripts/ci-runner/pool.ts` | agent/PLAN-pytest-parallelism.md |
+| `scripts/ci-runner/run.ts` | agent/PLAN-promote-mutation-runner.md, agent/PLAN-pytest-parallelism.md |
 | `scripts/dev/lib/cf-auth.sh` | agent/PLAN-rclone-decommission.md |
 | `scripts/drills/backup.sh` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-chunkstore-restore.md |
-| `scripts/gates/check-ci-parity.ts` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md |
+| `scripts/gates/check-ci-parity.ts` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-promote-mutation-runner.md |
+| `scripts/gates/check-dead-bash.ts` | agent/PLAN-promote-mutation-runner.md |
 | `scripts/gates/check-design-tree.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
 | `scripts/gates/check-docker-image-freshness.ts` | agent/PLAN-docker-image-freshness-soak-filter.md |
 | `scripts/gates/check-e2e-coverage.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
 | `scripts/gates/check-em-dash-surfaces.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
+| `scripts/gates/check-gate-manifest.ts` | agent/PLAN-pytest-parallelism.md |
 | `scripts/gates/check-suppression-liveness.ts` | agent/PLAN-npm-ci-parallel-parity.md |
 | `scripts/gen/sync-translations.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
 | `scripts/lib/embed-asset-sources.ts` | agent/PLAN-rclone-decommission.md |
@@ -284,17 +362,17 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/PLAN-consolidation-pressure.md` | done | 90 | 0 | 10 | 10875 |
 | `agent/PLAN-devbox-uid-derived-image.md` | draft | 121 | 0 | 0 | 11122 |
 | `agent/PLAN-docker-image-freshness-soak-filter.md` | compacted | 38 | 0 | 0 | 2692 |
-| `agent/PLAN-duplication-angle.md` | implemented | 167 | 0 | 0 | 12429 |
+| `agent/PLAN-duplication-angle.md` | compacted | 36 | 0 | 0 | 2620 |
 | `agent/PLAN-durable-reports-and-push-inbox.md` | compacted | 51 | 0 | 0 | 3669 |
 | `agent/PLAN-env-to-bitwarden-v2.md` | draft | 494 | 5 | 4 | 44882 |
 | `agent/PLAN-extension-shaped-matchers.md` | executing | 281 | 0 | 0 | 39418 |
-| `agent/PLAN-fix-ci-contention-aware-timeouts.md` | done | 185 | 0 | 0 | 20343 |
+| `agent/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 37 | 0 | 0 | 3402 |
 | `agent/PLAN-fix-german-translation-artifacts.md` | compacted | 49 | 0 | 0 | 3094 |
 | `agent/PLAN-fix-in-session-rule.md` | compacted | 54 | 0 | 0 | 3554 |
-| `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | done | 229 | 0 | 0 | 19712 |
+| `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 36 | 0 | 0 | 3125 |
 | `agent/PLAN-gh-swallow-gates-audit.md` | done | 490 | 0 | 6 | 49920 |
 | `agent/PLAN-git-history-media-rewrite.md` | ready | 251 | 0 | 0 | 16769 |
-| `agent/PLAN-git-ignore-aware-discover.md` | done | 357 | 0 | 10 | 25939 |
+| `agent/PLAN-git-ignore-aware-discover.md` | compacted | 56 | 0 | 10 | 4707 |
 | `agent/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 53 | 0 | 0 | 3904 |
 | `agent/PLAN-greenlight-verify-at-read.md` | compacted | 43 | 0 | 0 | 3583 |
 | `agent/PLAN-hook-inventory-warn-guards.md` | landed | 68 | 0 | 0 | 4088 |
@@ -312,10 +390,10 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/PLAN-pipefail-grep-q-renet-gate.md` | draft | 252 | 16 | 0 | 22440 |
 | `agent/PLAN-plan-file-lifecycle.md` | ready | 346 | 3 | 10 | 28693 |
 | `agent/PLAN-plyr-css-on-demand-loading.md` | draft | 130 | 4 | 7 | 11025 |
-| `agent/PLAN-printf-echo-pipefail-sweep.md` | done | 219 | 0 | 33 | 24706 |
-| `agent/PLAN-promote-mutation-runner.md` | done | 557 | 0 | 0 | 51448 |
+| `agent/PLAN-printf-echo-pipefail-sweep.md` | compacted | 102 | 0 | 33 | 10253 |
+| `agent/PLAN-promote-mutation-runner.md` | compacted | 38 | 0 | 0 | 2954 |
 | `agent/PLAN-prose-style-under-wrap.md` | draft | 233 | 12 | 1 | 21685 |
-| `agent/PLAN-pytest-parallelism.md` | done | 178 | 0 | 10 | 16058 |
+| `agent/PLAN-pytest-parallelism.md` | compacted | 56 | 0 | 10 | 4621 |
 | `agent/PLAN-rclone-decommission.md` | compacted | 38 | 0 | 0 | 2996 |
 | `agent/PLAN-reflow-comments-boundary-wrapping.md` | done | 57 | 0 | 9 | 7994 |
 | `agent/PLAN-reggate-effort-cap.md` | designed | 193 | 0 | 0 | 16579 |
@@ -323,7 +401,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/PLAN-require-testid-sweep.md` | compacted | 38 | 0 | 0 | 2488 |
 | `agent/PLAN-resprofile-wave2.md` | approved | 69 | 0 | 0 | 8252 |
 | `agent/PLAN-rest-graphql-guard-parity.md` | done | 115 | 0 | 8 | 12515 |
-| `agent/PLAN-resumable-rebase-executor.md` | implemented | 144 | 0 | 0 | 9813 |
+| `agent/PLAN-resumable-rebase-executor.md` | compacted | 35 | 0 | 0 | 2189 |
 | `agent/PLAN-review-red-stop-hook-check.md` | done | 502 | 0 | 0 | 36295 |
 | `agent/PLAN-rotation-gh-removal.md` | plan | 48 | 0 | 0 | 3878 |
 | `agent/PLAN-runtime-caller-identity.md` | compacted | 38 | 0 | 0 | 2519 |
@@ -333,21 +411,21 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/PLAN-sentence-aware-wrapping.md` | draft | 313 | 0 | 0 | 26933 |
 | `agent/PLAN-session-onboarding-marker.md` | draft | 129 | 5 | 5 | 11939 |
 | `agent/PLAN-shell-command-gate-regex-fix.md` | draft | 519 | 0 | 0 | 57457 |
-| `agent/PLAN-shell-resource-profiling.md` | landed | 248 | 0 | 0 | 31393 |
-| `agent/PLAN-skip-release-gates-r2-manifest.md` | done | 313 | 0 | 0 | 26164 |
+| `agent/PLAN-shell-resource-profiling.md` | compacted | 37 | 0 | 0 | 3301 |
+| `agent/PLAN-skip-release-gates-r2-manifest.md` | compacted | 38 | 0 | 0 | 3133 |
 | `agent/PLAN-ssr-nav-locale.md` | compacted | 35 | 0 | 0 | 1953 |
 | `agent/PLAN-staged-duplication-probe.md` | done | 64 | 0 | 8 | 6747 |
 | `agent/PLAN-state-md-session-isolation.md` | compacted | 39 | 0 | 0 | 2527 |
-| `agent/PLAN-stop-always-tier.md` | landed | 146 | 0 | 0 | 12385 |
+| `agent/PLAN-stop-always-tier.md` | compacted | 38 | 0 | 0 | 3122 |
 | `agent/PLAN-stop-hook-cadence.md` | compacted | 37 | 0 | 0 | 2599 |
 | `agent/PLAN-stop-hook-overhaul.md` | ready | 182 | 31 | 0 | 14546 |
 | `agent/PLAN-stop-report-queue.md` | done | 420 | 0 | 0 | 29504 |
 | `agent/PLAN-subagent-idle-detection.md` | ready | 263 | 0 | 0 | 21346 |
 | `agent/PLAN-subscription-status-error-swallowing.md` | done | 88 | 0 | 5 | 4583 |
 | `agent/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 60 | 0 | 0 | 4148 |
-| `agent/PLAN-test-advisor.md` | done | 82 | 0 | 0 | 6884 |
+| `agent/PLAN-test-advisor.md` | compacted | 38 | 0 | 0 | 2708 |
 | `agent/PLAN-testing-surface-audit.md` | draft | 427 | 0 | 0 | 39971 |
-| `agent/PLAN-tooling-transformation.md` | ready | 6759 | 12 | 142 | 629552 |
+| `agent/PLAN-tooling-transformation.md` | ready | 6780 | 8 | 146 | 632224 |
 | `agent/PLAN-trap-enforcement.md` | w | 503 | 0 | 0 | 48775 |
 | `agent/PLAN-typecheck-orphan-packages.md` | ready | 66 | 0 | 0 | 4499 |
 | `agent/PLAN-unify-trap-corpus.md` | compacted | 38 | 0 | 0 | 2749 |
