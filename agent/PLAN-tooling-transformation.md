@@ -6010,7 +6010,8 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       files were invisible, and it proved this by reporting its own new file as out of place
       only once that file was tracked in a fixture. Scope is now `--cached --others
       --exclude-standard`.
-- [ ] **W9 P2 S, ALONE IN ITS WAVE** The moves. 120 `check-*.ts` -> `scripts/gates/`, 10
+- [x] **W9 P2 S, ALONE IN ITS WAVE** The moves. 120 `check-*.ts` -> `scripts/gates/`, 10
+    (ticked) 2026-09-20T15:26:16Z by d778be9d: generators (0b4165afd), check-*.ts to scripts/gates (126 files, all cited paths exist), and the scripts/ops leg (f59db0679, scan counts equal or higher, planted defects red) are all committed
       generators -> `scripts/gen/`, 15 operator scripts -> `scripts/ops/`, 9 `.cjs` ->
       `scripts/ci/`. **271 tracked files contain the literal `scripts/check-`**, including 185 in
       `package.json`, 159 in `manifest.ts`, 157 in `gates.lock.json` -- three driver-only files at
