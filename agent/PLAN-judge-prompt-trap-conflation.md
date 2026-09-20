@@ -24,7 +24,7 @@ The repo's own failure-direction contract for these two objects is explicit and 
 
 ### 1. Ground the prompt in a real, computed file list (primary fix)
 
-Add `wl_reggate.fixset_files(root, ids)` (extracted from the duplicated diff-tree-with-root-fallback logic already at `wl_reggate.py:293-320` and `:365-368` -- itself its own small class-sweep): returns the real files a fix-set's commit ids touched via `git diff-tree`, falling back to `git status --porcelain` for a tick-based (uncommitted) fix-set, since a tick id is not a
+The fix adds `wl_reggate.fixset_files(root, ids)` (extracted from the duplicated diff-tree-with-root-fallback logic already at `wl_reggate.py:293-320` and `:365-368` -- itself its own small class-sweep): returns the real files a fix-set's commit ids touched via `git diff-tree`, falling back to `git status --porcelain` for a tick-based (uncommitted) fix-set, since a tick id is not a
 tree-ish. In `wl_checks.py`, compute `reg_fixset_files` beside the existing `reg_scripts` line and pass it into `wl_judge.run_judge(..., fixset_files=reg_fixset_files)` unconditionally (one cheap git call) so a follow-up question is grounded too, not just a fresh fire.
 
 In `wl_judge.py`, thread `fixset_files=None` through `run_judge`, and when set, inject a new `M.FIXSET_GROUND_TRUTH` block (real file list, capped at 40 + a remainder count) into the prompt right before `sweep_extra`/`proof_extra`, telling the judge explicitly: the class_sweep and proof_obligation questions are ONLY about this list and the message below; a finding naming a file
@@ -40,8 +40,8 @@ These are wording-only changes to constants the existing 399 controls compare by
 
 ### 3. Deterministic grounding check -- annotate, never suppress (defense in depth)
 
-Add `wl_rules.scope_grounded(text, fixset_files)`: `fixset_files is None` (computation unavailable) always reads `True` (never accuse of ungrounded on missing data); an empty, successfully-computed list reads `False` for any non-empty text; otherwise checks whether `text` names a real path or path segment from the list. In `wl_proofcheck.enforce`/`wl_classsweep.enforce`, when a
-verdict already fired, append an "UNVERIFIED: git's own file list does not match '...'" sentence to `reason` when `scope_grounded` fails against `payload["scope"]`/`payload["defect_class"]` -- appended to `reason`, never used to flip the verdict. Thread `fixset_files=None` through `apply_verdict` so every existing call site (which does not know the parameter) behaves
+The fix adds `wl_rules.scope_grounded(text, fixset_files)`: `fixset_files is None` (computation unavailable) always reads `True` (never accuse of ungrounded on missing data); an empty, successfully-computed list reads `False` for any non-empty text; otherwise checks whether `text` names a real path or path segment from the list. In `wl_proofcheck.enforce`/`wl_classsweep.enforce`,
+when a verdict already fired, append an "UNVERIFIED: git's own file list does not match '...'" sentence to `reason` when `scope_grounded` fails against `payload["scope"]`/`payload["defect_class"]` -- appended to `reason`, never used to flip the verdict. Thread `fixset_files=None` through `apply_verdict` so every existing call site (which does not know the parameter) behaves
 byte-identically to today.
 
 ## Verification plan

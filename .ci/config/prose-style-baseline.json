@@ -16,16 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 6068,
- "files": 1250,
+ "count": 6058,
+ "files": 1247,
  "by_rule": {
-  "R1": 1705,
-  "R11": 192,
+  "R1": 1703,
+  "R11": 191,
   "R14": 1,
-  "R18": 2547,
+  "R18": 2548,
   "R19": 62,
-  "R2": 1004,
-  "R7": 557
+  "R2": 998,
+  "R7": 555
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -1259,6 +1259,11 @@
     "9771ca57b50358d9"
    ]
   },
+  ".ci/scripts/quality/check_label_inventory.py": {
+   "R18": [
+    "355430e097b0e55b"
+   ]
+  },
   ".ci/scripts/quality/check_plan_boxes.py": {
    "R2": [
     "4682c96cc0b045f9"
@@ -1292,8 +1297,11 @@
    ]
   },
   ".ci/scripts/quality/check_profiler_coverage.py": {
+   "R18": [
+    "59901789cc3d4759"
+   ],
    "R7": [
-    "81bf62792e0ba8f7"
+    "5fd8f15c0d27512a"
    ]
   },
   ".ci/scripts/quality/check_python_control_plants.py": {
@@ -2784,16 +2792,6 @@
     "f2fef3c8bc18dd45"
    ]
   },
-  "agent/PLAN-chunk-store-browse-DECISION.md": {
-   "R2": [
-    "1bcc93d86b1c5e6f",
-    "237e9d79fd3596da",
-    "336cc9fd068c3384",
-    "b2c832c5ca04efcd",
-    "b57cf987e7d49b6b",
-    "e5521b9311d6d67a"
-   ]
-  },
   "agent/PLAN-chunk-store-browse-engine.md": {
    "R18": [
     "9261ce15b01b2af7"
@@ -2810,17 +2808,6 @@
   "agent/PLAN-ci-pr-head-ref-trigger-resolution.md": {
    "R7": [
     "43d1a88ee2a5f361"
-   ]
-  },
-  "agent/PLAN-ci-trace-no-pr-branch.md": {
-   "R1": [
-    "a0c94ed185606c81"
-   ],
-   "R11": [
-    "48b36fac2cc43e13"
-   ],
-   "R7": [
-    "20dda19094716227"
    ]
   },
   "agent/PLAN-ci-vacuity-baseline-registry.md": {
@@ -2989,11 +2976,6 @@
    ],
    "R7": [
     "5d6845cf3381f91c"
-   ]
-  },
-  "agent/PLAN-nightly-retry-and-watchdog-noise.md": {
-   "R1": [
-    "81a7486e29c83245"
    ]
   },
   "agent/PLAN-npm-ci-parallel-parity.md": {
@@ -3273,7 +3255,6 @@
     "6f0f930d890a3969",
     "701e3bbfef773f1d",
     "72c9b5568471de25",
-    "735d282e4a8cb4de",
     "81c082a512e6da01",
     "822763be34cc9019",
     "83537fe567f48b21",
@@ -11987,11 +11968,6 @@
   "scripts/gates/check-pricing-consistency.ts": {
    "R7": [
     "5c864df577cb57ca"
-   ]
-  },
-  "scripts/gates/check-quality-complete.ts": {
-   "R7": [
-    "301cd0a4be4720fd"
    ]
   },
   "scripts/gates/check-recovery-context.ts": {

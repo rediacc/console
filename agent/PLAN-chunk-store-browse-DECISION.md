@@ -8,7 +8,8 @@ Record-Sig: 7a76ed95
 Whether chunk-store browse (file listing from backups) was feasible and what shape it should take. Two independent commissioned plans reached the same core finding: a manifest of LUKS-encrypted cells carries no filesystem information and cannot produce a file listing at any cost. This ruled out the cheapest approaches and forced a new artifact decision.
 
 ## Outcome
-Stage 1 (local read-only browse) shipped in the private/renet submodule. Evidence: three commits in that submodule's history explicitly name browse—one fixing help text, one shipping the fourteen raw strings through i18n, one adding the license tier. A feature does not acquire translations and a tier unless it exists. The core design (encrypted TOC produced at snapshot time, client-side decryption, opaque server storage) was converged independently by two agents, one arguing engine-first and one server-first; both rejected the zero-knowledge regression that a plaintext server-side TOC would have introduced.
+Stage 1 (local read-only browse) shipped in the private/renet submodule. Evidence: three commits in that submodule's history explicitly name browse—one fixing help text, one shipping the fourteen raw strings through i18n, one adding the license tier. A feature does not acquire translations and a tier unless it exists. The core design (encrypted TOC produced at snapshot time,
+client-side decryption, opaque server storage) was converged independently by two agents, one arguing engine-first and one server-first; both rejected the zero-knowledge regression that a plaintext server-side TOC would have introduced.
 
 ## Lessons
 - A manifest grid of hashes over ciphertext is pure metadata; it reveals nothing about the filesystem even indirectly—walk-time answers are non-negotiable.

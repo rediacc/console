@@ -1400,7 +1400,7 @@ def outq_drain(worklist, session_id, state_doc, n):
     take = sorted(q["items"], key=lambda e: (int(e.get("prio") or 0), int(e.get("seq") or 0)))[
         : max(0, n)
     ]
-    # A DIGEST, NOT A QUEUE OF FACTS. Every settled regression-gate outcome is a sticky one-line fact that will never be asked again; released one per stop they took a stop each, and a long session accumulated twenty-five of them. When one comes due, ALL of its siblings ride the same stop as one section, so the queue holds at most one of them however many fixes settled.
+    # A DIGEST, NOT A QUEUE OF FACTS. Every settled regression-gate outcome is a sticky one-line fact that is not asked again; released one per stop they took a stop each, and a long session accumulated twenty-five of them. When one comes due, ALL of its siblings ride the same stop as one section, so the queue holds at most one of them however many fixes settled.
     is_settled = lambda e: str(e.get("key", "")).startswith("reg-settled:")  # noqa: E731
     if any(is_settled(e) for e in take):
         ordered = sorted(

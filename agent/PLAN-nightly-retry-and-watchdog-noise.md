@@ -5,10 +5,12 @@ Full-Text-Blob: 4a9cbc2c50de489738800acfa12a87f853130c27
 Record-Sig: be1d7534
 
 ## Why
-The watchdog-monitor.yml workflow generates ~2,000 runs/month, almost all of which fail by design (to signal CI cancellation). This drowns a nightly retry sweeper in false positives and makes the run-cleanup job unreachable — it scans only the newest 1,000 runs and watchdog runs sit 18 days old, outside the 30-day retention window. The cleanup exits green while deleting zero runs, a vacuous success masquerading as completion.
+The watchdog-monitor.yml workflow generates ~2,000 runs/month, almost all of which fail by design (to signal CI cancellation). This drowns a nightly retry sweeper in false positives and makes the run-cleanup job unreachable — it scans only the newest 1,000 runs and watchdog runs sit 18 days old, outside the 30-day retention window. The cleanup exits green while deleting zero runs,
+a vacuous success masquerading as completion.
 
 ## Outcome
-Phases 1, 2, and 3a landed on branch 0826-1 (PR #576). Phase 1 adds per-workflow retention overrides so watchdog runs can be pruned on a 7-day schedule. Phase 2 installs a nightly retry job in housekeeping.yml that filters on failure + live head + non-watchdog paths + attempt cap. Phase 3a makes the watchdog's by-design failure legible with a step summary and annotation, rather than relying on a run-name that GitHub evaluates before the outcome exists. Phase 3b (exiting 0 instead of non-zero) was deliberately deferred pending a grep for consumers of the watchdog's exit code.
+Phases 1, 2, and 3a landed on branch 0826-1 (PR #576). Phase 1 adds per-workflow retention overrides so watchdog runs can be pruned on a 7-day schedule. Phase 2 installs a nightly retry job in housekeeping.yml that filters on failure + live head + non-watchdog paths + attempt cap. Phase 3a makes the watchdog's by-design failure legible with a step summary and annotation, rather
+than relying on a run-name that GitHub evaluates before the outcome exists. Phase 3b (exiting 0 instead of non-zero) was deliberately deferred pending a grep for consumers of the watchdog's exit code.
 
 ## Lessons
 - GitHub evaluates `run-name` at workflow creation, before the run outcome exists — it cannot express a verdict decided mid-run. Step summaries and annotations are the earliest surface for legibility.

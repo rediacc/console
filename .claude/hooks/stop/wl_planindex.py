@@ -170,10 +170,7 @@ def render_census(rows):
     n_boxed = sum(1 for r in rows if r[3] or r[4])
     return (
         "\n%s\n\n"
-        "Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans\n"
-        "block can be printed from THIS file instead of opening all %d of them. The\n"
-        "hook checks freshness with `stat` alone (path set plus byte size) and falls\n"
-        "back to reading the plans, loudly, when the two disagree.\n\n"
+        "Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all %d of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.\n\n"
         "| Plan | Status | lines | open | ticked | bytes |\n|---|---|---|---|---|---|\n%s"
         "\n%d plan(s), %d carrying boxes. Regenerate with `%s`.\n"
         % (CENSUS_SECTION, len(rows), body, len(rows), n_boxed, REGEN_CMD)
