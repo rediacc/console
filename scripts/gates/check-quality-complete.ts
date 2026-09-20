@@ -49,40 +49,36 @@
  * would be a declaration that reads as wired and is not. Registration is the root driver's,
  * via package.json, scripts/ci-runner/manifest.ts and the workflow step.
  *
- * T-SCHED B2 D5, second clause -- FOUND, NOT YET SAFELY FIXED, recorded rather than
- * guessed at under low budget. `lane: quality-code` below is exactly the box's own
- * named concern: once `quality-code` is ever sharded, a gate declaring that lane gets
- * its OWN step placed inside that job's auto-emitted region, conjuncted onto one leg --
- * the aggregator would run once instead of once per job, watching a lane it is itself
- * embedded inside. Tried moving it to `quality-branch` (the home for the other
- * hand-registered structural gates, `check_plan_boxes.py` / `check_resprofile.py`) and
- * `check:ci-gate-bind` went from a clean rc=0 to two real findings -- `quality-branch`
- * does not provide `node` (this gate's own declared need), and the workflow has no
- * step named "Quality shard aggregation" in that job (one apparently already exists,
- * coincidentally or by design, in `quality-code`, which is WHY `quality-code` passes
- * clean today). Reverted rather than land a guess under this session's remaining
- * budget. Whoever moves this at real registration time must trace why `quality-code`
- * satisfies `stepInJob` today before picking its replacement, not just its `needs`.
+ * T-SCHED B2 D5, second clause -- CLOSED, and the lane below is the answer. The gate
+ * used to declare `lane: quality-code`, which is the box's own named trap: once
+ * `quality-code` is sharded, gate-bind ANDs `matrix.shard == N` onto every step of that
+ * lane's region, including this gate's own, so the aggregator would run on ONE leg and
+ * skip on the rest -- watching a matrix from inside a leg of it, and reporting green on
+ * every leg where it never ran.
  *
- * TRACED 2026-09-15, answering the question above so the next reader inherits the
- * answer rather than the question. It is NOT a coincidence. "Quality shard
- * aggregation" sits at ci-quality.yml:1009, INSIDE the `>>> gate-bind` region that
- * opens at :880 -- so gate-bind EMITS it, from this file's own header declaring
- * `lane: quality-code`. The step exists in that job precisely BECAUSE the header
- * names that lane; `stepInJob` is satisfied by the emitter, not by luck.
+ * WHY THE OBVIOUS MOVE WAS REFUSED, having been attempted and reverted once already.
+ * `quality-branch` hosts the other hand-registered structural gates
+ * (`check_plan_boxes.py`, `check_resprofile.py`) and is unshardable, because it has no
+ * `- id: setup` and invariant 11 therefore forbids a region there at all. It
+ * also runs on ubuntu-slim, which has no node, and node is this gate's declared need.
+ * `quality-submodule-branches` is the same shape. Every OTHER lane has node and is a
+ * live `SHARD_COUNTS` candidate. No existing lane answers both halves.
  *
- * Which makes the `quality-branch` attempt impossible for a deeper reason than the
- * missing `node`. `quality-branch` has no `- id: setup`, so per invariant 11 it hosts
- * no gate-bind region AT ALL -- ci-quality.yml:553 and :563 say so and call the lane
- * HAND-WRITTEN, "and it must stay that way", because emitted steps there would guard
- * on an empty `steps.setup.outcome` and every one would SKIP while the job reported
- * green. That is why its structural neighbours, check_plan_boxes.py and
- * check_resprofile.py, carry NO gate header at all.
+ * SO THE LANE IS A NEW ONE. `quality-wiring` (ci-quality.yml, the last job in the file)
+ * is node and nothing else, holds no gate-bind region, and hand-writes the step this
+ * header names. Unshardable is ASSERTED rather than intended: `partitionFindings`
+ * below refuses this lane appearing in `SHARD_COUNTS`, so the trap is not re-entered by
+ * populating a constant in another file.
  *
- * So the move is not a lane swap. It requires dropping this file's `---- gate ----`
- * header and hand-registering the step, exactly as those two neighbours are -- and it
- * still has to answer the independent `node` problem. Two blockers, not one, and the
- * first is a design invariant rather than something to trace.
+ * THE COMPLETENESS CLAUSE, and why a partition needs three sets rather than two. A job
+ * of this workflow is one of: region-bearing (gate-bind owns its steps), declared
+ * hand-written (`DECLARED_HAND_WRITTEN_LANES`, each with the reason recorded beside it),
+ * or UNDECIDED (`UNDECIDED_LANES`) -- setup-having and region-less, hand-written by
+ * omission rather than by design. A two-set partition inferring "hand-written" from "has
+ * no region today" would grandfather in every future lane that simply never got a gate
+ * registered, which is the drift the clause exists to catch. The third set makes that
+ * gap a NAMED, printed decision instead, and its members are deliberately not decided
+ * here.
  *
  * Usage:
  *   npx tsx scripts/gates/check-quality-complete.ts                 the static wiring half
@@ -91,7 +87,7 @@
  *
  * ---- gate ----
  * step: Quality shard aggregation
- * lane: quality-code
+ * lane: quality-wiring
  * needs: node
  * selftest: true
  * why: a matrix job reports ONE result for every leg, so a leg that was never created is
@@ -104,7 +100,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 import { type Shard, SHARD_COUNTS, laneCapabilities, shardPlan } from '../ci-runner/lanes.js';
-import { rewriteStrategyRegions } from '../gate-bind.js';
+import { laneCanEmit, rewriteStrategyRegions } from '../gate-bind.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { runControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
@@ -369,6 +365,145 @@ export function wiringFindings(
   return findings;
 }
 
+// --------------------------------------------------------------------------- The completeness partition: every job is region-bearing, declared hand-written, or an open decision ---------------------------------------------------------------------------
+
+/**
+ * The lane holding this gate's own step. Named once, so a rename reds by name rather
+ * than by a `stepInJob` failure three gates away.
+ */
+export const HOST_LANE = 'quality-wiring';
+
+/**
+ * Jobs whose steps are hand-written BY DESIGN, each with the reason recorded beside it.
+ *
+ * EXPLICIT, NEVER INFERRED. "Hand-written" derived from "holds no region today" would
+ * grandfather in every lane that merely never got a gate registered, which is the exact
+ * drift the partition below exists to catch: a new job could be added, hold nothing, and
+ * be reported as correct forever.
+ *
+ * The reason is load-bearing for a lane that HAS `- id: setup`. The two invariant-11
+ * lanes cannot hold a region at all, so their entry is self-explaining; any other lane
+ * in this map could have had one and does not, and that choice has to be written down
+ * where the next reader finds it.
+ */
+export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
+  'quality-branch': 'no `- id: setup`, so invariant 11 forbids a region here outright',
+  'quality-submodule-branches': 'no `- id: setup`, so invariant 11 forbids a region here',
+  [HOST_LANE]:
+    'holds this gate, which polices the lane structure and therefore cannot run inside ' +
+    'a lane an emitted region could conjunct onto one shard leg',
+};
+
+/**
+ * Jobs that are setup-having, region-less and hand-written BY OMISSION -- nobody has
+ * registered a manifest gate against them.
+ *
+ * NOT A SECOND ALLOWLIST, and the difference is the whole point. An entry here is an
+ * open decision, printed on every run: either the lane earns a region by having gates
+ * registered against it, or it moves into `DECLARED_HAND_WRITTEN_LANES` with its reason.
+ * Deciding that is a design call this gate deliberately does not make; making the gap
+ * VISIBLE instead of silent is what it does.
+ */
+export const UNDECIDED_LANES: readonly string[] = ['ci-quick', 'quality-packages', 'quality-go'];
+
+/** Jobs holding a `# >>> gate-bind` region, read the same line-oriented way as the rest. */
+export function regionLanes(workflowText: string): Set<string> {
+  const out = new Set<string>();
+  const lines = workflowText.split('\n');
+  let job: string | null = null;
+  let inJobs = false;
+  for (const raw of lines) {
+    if (/^jobs:\s*$/.test(raw)) {
+      inJobs = true;
+      continue;
+    }
+    if (!inJobs) continue;
+    if (raw !== '' && !/^\s/.test(raw) && !raw.startsWith('#')) break;
+    const m = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(raw);
+    if (m) {
+      job = m[1] as string;
+      continue;
+    }
+    if (job !== null && raw.trim().startsWith('# >>> gate-bind')) out.add(job);
+  }
+  return out;
+}
+
+/**
+ * The partition, both directions, plus the two clauses that keep the allowlist honest.
+ *
+ * A job in NO set is the drift this exists for. A job in TWO sets is the same file
+ * claiming a lane is generated and hand-written at once, and whichever answer a later
+ * reader takes will be half wrong.
+ */
+export function partitionFindings(
+  jobs: readonly string[],
+  regions: ReadonlySet<string>,
+  handWritten: Readonly<Record<string, string>>,
+  undecided: readonly string[],
+  hasSetup: (lane: string) => boolean,
+  counts: Readonly<Record<string, number>>
+): string[] {
+  const findings: string[] = [];
+  const known = new Set(jobs);
+  const sets: [string, readonly string[]][] = [
+    ['region-bearing', [...regions]],
+    ['declared hand-written', Object.keys(handWritten)],
+    ['undecided', undecided],
+  ];
+
+  // A NAME NO JOB ANSWERS TO, first: every clause below reads these lists, and a stale entry makes the union look complete while the lane it names is gone.
+  for (const [what, members] of sets) {
+    for (const lane of [...members].sort()) {
+      if (!known.has(lane)) {
+        findings.push(
+          `${lane} is listed as ${what} but ${WORKFLOW} has no such job. The list and the ` +
+            'workflow have drifted; fix the list, not the workflow.'
+        );
+      }
+    }
+  }
+
+  for (const lane of [...jobs].sort()) {
+    const inSets = sets.filter(([, members]) => members.includes(lane)).map(([what]) => what);
+    if (inSets.length === 0) {
+      findings.push(
+        `${lane} is in NO set: it holds no \`# >>> gate-bind\` region, is not in ` +
+          'DECLARED_HAND_WRITTEN_LANES, and is not named as an open decision. A lane ' +
+          'nobody has decided about runs whatever it happens to hold, forever.'
+      );
+    }
+    if (inSets.length > 1) {
+      findings.push(`${lane} is in ${inSets.length} sets at once (${inSets.join(', ')})`);
+    }
+  }
+
+  // THE ALLOWLIST CLAUSE. A lane with no setup step is hand-written by construction; one WITH a setup step chose to be, and the choice has to be recorded or the allowlist quietly absorbs lanes that should have earned a region.
+  for (const [lane, why] of Object.entries(handWritten).sort()) {
+    if (known.has(lane) && hasSetup(lane) && why.trim() === '') {
+      findings.push(
+        `${lane} is allowlisted as hand-written and HAS an \`- id: setup\` step, so it ` +
+          'could hold a region, with no reason recorded for why it does not'
+      );
+    }
+  }
+
+  // THE SELF-REFERENCE CLAUSE. This gate's own lane being sharded is the trap D5b exists to close: its step would be conjuncted onto one leg and skip on the rest, reporting green from the legs where it never ran.
+  if (Object.keys(counts).includes(HOST_LANE)) {
+    findings.push(
+      `${HOST_LANE} holds this gate's own step and is in SHARD_COUNTS. An emitted region ` +
+        'there would conjunct this gate onto one leg of the matrix it is judging.'
+    );
+  }
+  if (!Object.keys(handWritten).includes(HOST_LANE)) {
+    findings.push(
+      `${HOST_LANE} holds this gate's own step but is not in DECLARED_HAND_WRITTEN_LANES, ` +
+        'so nothing keeps a region out of it.'
+    );
+  }
+  return findings;
+}
+
 // --------------------------------------------------------------------------- The real run ---------------------------------------------------------------------------
 
 function readOr(file: string, what: string): string | null {
@@ -426,19 +561,47 @@ function main(argv: readonly string[]): number {
     declared = plan.lanes.flatMap((l) => l.shards);
   }
 
+  const regions = regionLanes(workflowText);
   const shape =
-    `${lock.length} lock entries, ${caps.size} jobs in ${path.basename(WORKFLOW)}, ` +
+    `${lock.length} lock entries, ${caps.size} jobs in ${path.basename(WORKFLOW)} ` +
+    `(${regions.size} region-bearing, ${Object.keys(DECLARED_HAND_WRITTEN_LANES).length} ` +
+    `declared hand-written, ${UNDECIDED_LANES.length} undecided), ` +
     `${sharded.length} sharded lane(s) [${sharded.join(', ') || 'none'}], ` +
     `${declared.length} declared shard(s), aggregator job ` +
     `${needs.has(AGGREGATOR_JOB) ? 'present' : 'absent'}`;
 
+  /**
+   * THE OPEN DECISION, PRINTED EVERY RUN, on the green path as loudly as on the red one.
+   * These lanes have a setup step and no region: hand-written by omission, not by design.
+   * A gate that only reported them when something else failed would be a gate that hides
+   * the gap it was written to expose.
+   */
+  const openDecision = (): void => {
+    if (UNDECIDED_LANES.length === 0) return;
+    console.log(
+      `  OPEN DECISION, ${UNDECIDED_LANES.length} lane(s) hand-written by omission rather ` +
+        `than by design: ${[...UNDECIDED_LANES].sort().join(', ')}.`
+    );
+    console.log(
+      '  Each either earns a `# >>> gate-bind` region by having gates registered against ' +
+        'it, or moves into DECLARED_HAND_WRITTEN_LANES with the reason recorded.'
+    );
+  };
+
   // T-SCHED B2 D5, first clause. `rewriteStrategyRegions` re-asserted from THIS side, independently of `gate-bind --write`: a `matrix.shard` list that has drifted from `SHARD_COUNTS` (hand-edited, or left stale after a count change landed without `gate-bind --write` being re-run) is Finding 2's vacuity all over again -- a job whose real matrix does not match what this aggregator
-  // believes it does.
-  // `gate-bind`'s own check is the first line of defense at write time; this is the
-  // second, independent one at judge time, so a bypass of one cannot silently defeat the other. Kept separate from `wiringFindings` (job-graph wiring) rather than merged into it, so that function's own fixtures do not need a real shard-strategy region added just to keep testing what they already test.
+  // believes it does. `gate-bind`'s own check is the first line of defense at write time; this is the second, independent one at judge time, so a bypass of one cannot silently defeat the other. Kept separate from `wiringFindings` (job-graph wiring) rather than merged into it, so that function's own fixtures do not need a real shard-strategy region added just to keep testing what
+  // they already test.
   const findings = [
     ...wiringFindings(SHARD_COUNTS, needs),
     ...rewriteStrategyRegions(workflowText, SHARD_COUNTS),
+    ...partitionFindings(
+      [...caps.keys()],
+      regionLanes(workflowText),
+      DECLARED_HAND_WRITTEN_LANES,
+      UNDECIDED_LANES,
+      (lane) => laneCanEmit(workflowText, lane),
+      SHARD_COUNTS
+    ),
   ];
 
   const at = argv.indexOf('--receipts');
@@ -456,15 +619,18 @@ function main(argv: readonly string[]): number {
         `${GREEN}✓${NC} quality-complete: all ${declared.length} declared shard(s) reported ` +
           `success. ${shape}`
       );
+      openDecision();
       return 0;
     }
   } else if (findings.length === 0) {
     console.log(`${GREEN}✓${NC} quality-complete wiring: ${shape}`);
+    openDecision();
     return 0;
   }
 
   console.error(`${RED}✗${NC} quality-complete: ${findings.length} finding(s). ${shape}`);
   for (const f of findings) console.error(`  ${f}`);
+  openDecision();
   console.error(
     '  Fix the wiring or the shard receipts. Do NOT lower the declared count to match what ' +
       'arrived: a shard that did not report is a shard whose gates did not run.'
@@ -520,6 +686,37 @@ const WF_SHARDED_WITH_REGION = [
   '    runs-on: ubuntu-slim',
   '',
 ].join('\n');
+
+// T-SCHED B2, the completeness partition. Four jobs, one of each kind, plus the host lane: a region-bearing lane, a no-setup lane invariant 11 keeps hand-written, a setup-having lane nobody has decided about, and the lane this gate's own step lives in.
+const WF_PARTITION = [
+  'jobs:',
+  '  quality-branch:',
+  '    runs-on: ubuntu-slim',
+  '  quality-code:',
+  '    runs-on: ubuntu-latest',
+  '    steps:',
+  '      - id: setup',
+  '      # >>> gate-bind (generated by scripts/gate-bind.ts --write; do not edit inside)',
+  '      # <<< gate-bind',
+  '  quality-go:',
+  '    runs-on: ubuntu-latest',
+  '    steps:',
+  '      - id: setup',
+  `  ${HOST_LANE}:`,
+  '    runs-on: ubuntu-latest',
+  '    steps:',
+  '      - id: setup',
+  '',
+].join('\n');
+
+const PART_JOBS: readonly string[] = ['quality-branch', 'quality-code', 'quality-go', HOST_LANE];
+const PART_REGIONS: ReadonlySet<string> = new Set(['quality-code']);
+const PART_HAND: Readonly<Record<string, string>> = {
+  'quality-branch': 'no `- id: setup`, so invariant 11 forbids a region here',
+  [HOST_LANE]: 'holds this gate, which must never be conjuncted onto a shard leg',
+};
+const PART_UNDECIDED: readonly string[] = ['quality-go'];
+const PART_SETUP = (lane: string): boolean => lane !== 'quality-branch';
 
 function selftest(): number {
   const two = [shard('quality-security', 1, 2, 40), shard('quality-security', 2, 2, 42)];
@@ -692,6 +889,130 @@ function selftest(): number {
       ok: rewriteStrategyRegions(WF_SHARDED_WITH_REGION, { 'quality-security': 4 }).some((f) =>
         f.includes('expected [1, 2, 3, 4]')
       ),
+    },
+    // --- T-SCHED B2, the completeness partition ------------------------------
+    {
+      name: 'MATCH: a workflow whose jobs partition cleanly is no finding',
+      ok:
+        partitionFindings(PART_JOBS, PART_REGIONS, PART_HAND, PART_UNDECIDED, PART_SETUP, {})
+          .length === 0,
+      detail: JSON.stringify(
+        partitionFindings(PART_JOBS, PART_REGIONS, PART_HAND, PART_UNDECIDED, PART_SETUP, {})
+      ),
+    },
+    {
+      name: 'FIRES: a lane in NEITHER set (a new job nobody decided about)',
+      ok: partitionFindings(
+        [...PART_JOBS, 'quality-new'],
+        PART_REGIONS,
+        PART_HAND,
+        PART_UNDECIDED,
+        PART_SETUP,
+        {}
+      ).some((f) => f.includes('quality-new is in NO set')),
+    },
+    {
+      name: 'FIRES: a lane in BOTH sets (region-bearing and allowlisted at once)',
+      ok: partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        { ...PART_HAND, 'quality-code': 'a reason that does not make it hand-written' },
+        PART_UNDECIDED,
+        PART_SETUP,
+        {}
+      ).some((f) => f.includes('quality-code is in 2 sets at once')),
+    },
+    {
+      name: 'FIRES: an allowlisted lane WITH `- id: setup` and no recorded reason',
+      ok: partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        { ...PART_HAND, 'quality-go': '   ' },
+        [],
+        PART_SETUP,
+        {}
+      ).some((f) => f.includes('quality-go is allowlisted as hand-written and HAS an')),
+      detail: JSON.stringify(
+        partitionFindings(
+          PART_JOBS,
+          PART_REGIONS,
+          { ...PART_HAND, 'quality-go': '   ' },
+          [],
+          PART_SETUP,
+          {}
+        )
+      ),
+    },
+    {
+      name: 'CONTROL: a lane with NO setup step needs no recorded reason',
+      ok: !partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        { ...PART_HAND, 'quality-branch': '' },
+        PART_UNDECIDED,
+        PART_SETUP,
+        {}
+      ).some((f) => f.includes('quality-branch is allowlisted')),
+    },
+    {
+      name: 'FIRES: a list naming a job the workflow no longer defines',
+      ok: partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        PART_HAND,
+        [...PART_UNDECIDED, 'quality-gone'] as readonly string[],
+        PART_SETUP,
+        {}
+      ).some((f) => f.includes('quality-gone is listed as undecided')),
+    },
+    {
+      name: `FIRES: ${HOST_LANE}, which holds this gate's own step, appearing in SHARD_COUNTS`,
+      ok: partitionFindings(PART_JOBS, PART_REGIONS, PART_HAND, PART_UNDECIDED, PART_SETUP, {
+        [HOST_LANE]: 2,
+      }).some((f) => f.includes('is in SHARD_COUNTS')),
+    },
+    {
+      name: `FIRES: ${HOST_LANE} dropped out of the hand-written allowlist`,
+      ok: partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        { 'quality-branch': 'no `- id: setup`, so invariant 11 forbids a region here' },
+        [...PART_UNDECIDED, HOST_LANE],
+        PART_SETUP,
+        {}
+      ).some((f) => f.includes('is not in DECLARED_HAND_WRITTEN_LANES')),
+    },
+    {
+      name: 'the region reader finds a region lane and not a region-less one',
+      ok:
+        regionLanes(WF_PARTITION).has('quality-code') &&
+        !regionLanes(WF_PARTITION).has('quality-go'),
+      detail: JSON.stringify([...regionLanes(WF_PARTITION)]),
+    },
+    {
+      name: 'CONTROL: a `# >>> gate-bind` in the file header, above `jobs:`, belongs to no lane',
+      ok:
+        JSON.stringify([...regionLanes(`# >>> gate-bind in a file comment\n${WF_PARTITION}`)]) ===
+        JSON.stringify([...regionLanes(WF_PARTITION)]),
+    },
+    {
+      name: 'CONTROL: the live workflow really partitions, so the clause is not fixture-only',
+      ok: (() => {
+        const text = readOr(WORKFLOW, 'the quality workflow');
+        if (text === null) return false;
+        const jobs = [...laneCapabilities(text).keys()];
+        return (
+          jobs.length >= 10 &&
+          partitionFindings(
+            jobs,
+            regionLanes(text),
+            DECLARED_HAND_WRITTEN_LANES,
+            UNDECIDED_LANES,
+            (lane) => laneCanEmit(text, lane),
+            SHARD_COUNTS
+          ).length === 0
+        );
+      })(),
     },
     // --- the receipt reader ---------------------------------------------------
     {

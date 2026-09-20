@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: Staging tag guard
-# needs: none
-# selftest: true
-# lane: quality-security
-# ---- end gate ----
-
+# NO LONGER THE GATE, AND NO LONGER REGISTERED ANYWHERE. `check:ci-staging-tag-guard`
+# runs `.ci/rediacc_ci/quality/staging_tag_guard.py`, which carries the `---- gate ----`
+# header this file used to hold; package.json, the manifest leaf and the workflow step
+# all name the port (W7P4-Q, licensed by `.ci/shadow/w7p2-stagingtag.observations.jsonl`
+# at K=5 over 12 clean trees).
+#
+# WHAT THIS FILE IS NOW: the SUBJECT of `.ci/rediacc_ci/tests/test_quality_staging_tag_guard.py`,
+# which runs it over a fixture and compares both streams byte for byte against the port.
+# It is kept so that differential keeps comparing two live implementations rather than
+# the port against literals captured from a twin nobody can re-run. Its behaviour must
+# not drift: a change here that the port does not match reds that test.
+#
 # A CALLER MAY NOT HAND cleanup-staging.sh A TAG IT WILL REFUSE.
 #
 # WHY THIS EXISTS. cleanup-staging.sh deletes GHCR tags and guards itself with

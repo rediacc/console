@@ -1009,9 +1009,6 @@ jobs:
       - name: Paths-origin provenance
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-paths-origin
-      - name: Quality shard aggregation
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-quality-complete
       - name: Retention knob parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-retention-knob-parity
@@ -2180,7 +2177,7 @@ jobs:
         run: npm run check:ci-secret-scope
       - name: Staging tag guard
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check-staging-tag-guard.sh
+        run: .ci/rediacc_ci/quality/staging_tag_guard.py
       - name: Test-file orphan check
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_test_file_orphans.py
@@ -2451,3 +2448,53 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         working-directory: private/renet
         run: go test -v ./pkg/subscription/... -run TestCrossLanguage
+
+  # ============================================================================
+  # L11 WIRING -- node, nothing else, and NEVER a shard.
+  #
+  # WHY A TWELFTH JOB RATHER THAN A STEP IN AN EXISTING LANE. The gates here
+  # police the lane structure of this very file, so a lane that can be sharded
+  # is the one place they cannot run: `scripts/gate-bind.ts` ANDs
+  # `matrix.shard == N` onto every step of a sharded lane's region, so the
+  # aggregation step would land on ONE leg and skip on the others -- a gate
+  # that watches a matrix from inside a leg of it, reporting green on the legs
+  # where it never ran. T-SCHED B2 D5's second clause is exactly that trap.
+  #
+  # WHY NOT `quality-branch`, the home of the other structural gates. It runs
+  # on ubuntu-slim, which has no node, and it has no `- id: setup`, so per
+  # invariant 11 it can host no region and its gates must be hand-registered.
+  # That lane answers the never-sharded half and fails the node half; every
+  # node-having lane today answers node and is a live `SHARD_COUNTS`
+  # candidate. No existing lane answers both, which is why this one exists.
+  #
+  # NEVER SHARDED IS ASSERTED, NOT INTENDED. `check:ci-quality-complete`
+  # refuses its own lane appearing in `SHARD_COUNTS`, so the trap cannot be
+  # re-entered by populating a constant in another file.
+  #
+  # HAND-WRITTEN, AND IT STAYS THAT WAY: no `# >>> gate-bind` region here.
+  # A region would put the step back under the emitter, and the whole point of
+  # the lane is a step the emitter never conjuncts. The step is therefore
+  # registered by hand in scripts/ci-runner/manifest.ts like the lane's
+  # capabilities themselves, and `check:ci-parity` holds the two together.
+  # ============================================================================
+  quality-wiring:
+    name: Wiring
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Reads the working tree and nothing else: no API call, no App token, no
+    # Bitwarden secret, exactly like the quick lane above.
+    permissions:
+      contents: read
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Defaults deliberately: no submodules, no natives, no package build.
+      # The gates here read the workflow, the lock and the manifest, all of
+      # which are in the bare checkout; node is the whole requirement.
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+
+      - name: Quality shard aggregation
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-quality-complete

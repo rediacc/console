@@ -1,6 +1,18 @@
+#!/usr/bin/env python3
 """A caller may not hand cleanup-staging.sh a tag it will refuse.
 
-Ported from `.ci/scripts/quality/check-staging-tag-guard.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "Staging tag guard", needs none, lane quality-security.
+THIS FILE IS THE GATE. It carries `check:ci-staging-tag-guard` outright: package.json, the `Staging tag guard` step in `.github/workflows/ci-quality.yml` and its `scripts/ci-runner/manifest.ts` leaf all name this path, and the `---- gate ----` header below moved here from the twin in the same change (W7P4-Q). The licence for the cutover is
+`.ci/shadow/w7p2-stagingtag.observations.jsonl`, which reads EQUIVALENT over 12 distinct clean trees at K=5, plus the differential in `.ci/rediacc_ci/tests/test_quality_staging_tag_guard.py`.
+
+`.ci/scripts/quality/check-staging-tag-guard.sh` IS STILL IN THE TREE, and is no longer registered anywhere. It is the SUBJECT of that differential: every case there runs the real twin over a fixture and compares both streams byte for byte against this file. Deleting it would mean rewriting those cases to literals captured from a twin nobody could re-run, so the deletion is a
+separate change with its own reason, not a side effect of this one.
+
+---- gate ----
+step: Staging tag guard
+needs: none
+selftest: true
+lane: quality-security
+---- end gate ----
 
 WHY THIS EXISTS, carried whole from the twin, dated incident included:
 
@@ -83,6 +95,9 @@ import re
 import subprocess
 import sys
 import tempfile
+
+# THE HOP, the same one `.ci/rediacc_ci/security/audit.py:148` takes and for the same reason: this file is both a module and a SCRIPT, and the workflow invokes it by path, so as a script it cannot import the package that would put itself on `sys.path`. `parents[2]` is `.ci`.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 from rediacc_ci.controls import Controls
 

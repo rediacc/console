@@ -410,7 +410,7 @@ const ACQUIRE: Record<string, string[]> = {
  *
  * The guard is a PER-LANE FACT, like the prerequisite placement and the hold-outs before
  * it, so it is declared where the lane is: `# >>> gate-bind guard: build-www`. Absent, it
- * is `setup`, which is what eight of ten lanes want.
+ * is `setup`, which is what every region-bearing lane but `quality-www-build` wants.
  */
 const GUARD_RE = /^\s*# >>> gate-bind\b[^\n]*\bguard:\s*([A-Za-z0-9_-]+)/;
 
@@ -1394,7 +1394,7 @@ function selftest(): number {
   // produces; emitting them under the setup guard would run them against a missing
   // dist/ whenever the build failed.
   ck(
-    'the emitted guard defaults to setup, which is what eight of ten lanes want',
+    'the emitted guard defaults to setup, which is what all but one region-bearing lane wants',
     emitStep({ file: 'x.py', id: 'check:ci-x', run: 'x.py', kind: 'step', step: 'X', needs: [] })
       .join('\n')
       .includes("steps.setup.outcome == 'success'")

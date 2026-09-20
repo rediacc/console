@@ -186,7 +186,7 @@
     "check:ci-tracked-credentials": "tsx scripts/gates/check-tracked-credentials.ts",
     "check:ci-release-key-canonical": ".ci/scripts/quality/check_release_key_canonical.py",
     "check:ci-release-signing-coverage": ".ci/scripts/quality/check_release_signing_coverage.py",
-    "check:ci-staging-tag-guard": ".ci/scripts/quality/check-staging-tag-guard.sh",
+    "check:ci-staging-tag-guard": ".ci/rediacc_ci/quality/staging_tag_guard.py",
     "check:ci-secret-reachability": ".ci/scripts/quality/check_secret_reachability.py",
     "check:ci-scope-completeness": ".ci/scripts/quality/check_scope_completeness.py",
     "check:ci-env-file-adoption": ".ci/scripts/quality/check_env_file_adoption.py",

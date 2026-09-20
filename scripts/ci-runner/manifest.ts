@@ -2105,7 +2105,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-staging-tag-guard',
     run: 'npm run check:ci-staging-tag-guard',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-staging-tag-guard.sh'],
+    leaves: ['.ci/rediacc_ci/quality/staging_tag_guard.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4611,7 +4611,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-code',
+      job: 'quality-wiring',
       step: 'Quality shard aggregation',
     },
   },

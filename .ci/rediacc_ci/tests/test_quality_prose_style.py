@@ -692,6 +692,38 @@ def test_reflow_comments_is_idempotent(label, suffix, before, _after):
     assert ps.reflow_comments(once, suffix, 384) == once, label
 
 
+def test_a_gate_header_is_never_folded_into_one_line():
+    """`b13267223` folded two real gate headers and unregistered both gates; this is the control that stops it returning.
+
+    A `---- gate ----` block is parsed one field per line by `scripts/lib/gate-header.ts`, so a join turns a declaration into prose that nothing reads. The paragraph BENEATH the block still folds, which is what keeps this a stop rather than a blanket refusal to touch the docstring.
+    """
+    before = (
+        '"""A gate.\n'
+        "\n"
+        "---- gate ----\n"
+        "step: CLI docs stay in sync\n"
+        "needs: none\n"
+        "lane: quality-code\n"
+        "slow: true\n"
+        "---- end gate ----\n"
+        "\n"
+        "one two\n"
+        "three four\n"
+        '"""\n'
+    )
+    out = ps.reflow_comments(before, ".py", 384)
+    for line in (
+        "---- gate ----",
+        "step: CLI docs stay in sync",
+        "needs: none",
+        "lane: quality-code",
+        "slow: true",
+        "---- end gate ----",
+    ):
+        assert line in out.split("\n"), "%r was folded into another line: %r" % (line, out)
+    assert "one two three four" in out, "the prose below the block must still fold: %r" % out
+
+
 def test_reflow_comments_over_the_width_rewraps_and_loses_no_word():
     text = "# " + ("word " * 200).strip() + "\n"
     out = ps.reflow_comments(text, ".py", 80)

@@ -1401,6 +1401,16 @@ COMMENT_BODY_FLUSH = 2
 RULE_LINE_BANNER = re.compile(r"^\s*(?:-{4,}|={4,}|_{4,}|\*{4,})\s*$")
 ALLCAPS_HEADING = re.compile(r"^\s*[A-Z][A-Z0-9 ,'`/()\[\]._-]{6,}[.:]?\s*$")
 COMMENT_LIST_ITEM = re.compile(r"^\s*(?:\d+\.|[-*+])\s")
+# A `---- gate ----` block, whose line structure IS its content: `scripts/lib/gate-header.ts` parses it one field per line, so a join turns a declaration into prose. This is not hypothetical. `b13267223`, the commit that added the three stops above, reflowed 884 files in the same pass and folded the header of `.ci/scripts/quality/check_cli_doc_coverage.py` into `---- gate ----
+# step: CLI docs stay ...` and `needs: none lane: quality-code ---- end gate ----`, and did the same to `check_format_scope.py`. Both gates stopped being DECLARED, which no gate notices: `check:ci-gate-bind` only verifies gates that parse, so the two vanished from its count while their workflow steps stayed, and `gate-bind --write` then refused repo-wide with "2 step(s) would be
+# REMOVED from a region and re-emitted by nothing". Found 2026-09-20 by running that write path, three days after the fold landed.
+#
+# THE FIELD NAMES ARE MATCHED, not just the two markers, because folding starts at the marker and eats the NEXT line: protecting `---- gate ----` alone leaves `step:` free to absorb `needs:`. Over-matching is the safe direction here, the same trade the note above records.
+GATE_HEADER_LINE = re.compile(
+    r"^\s*(?:#\s*)?(?:-{4}\s*(?:end\s+)?gate\s*-{4}"
+    r"|(?:step|lane|id|run|kind|needs|needs-not|selftest|slow|emit|why|when|blocker"
+    r"|env-[A-Za-z0-9_]+):)"
+)
 COMMENT_STRUCTURE = (
     DOCTEST_PROMPT,
     REST_FIELD,
@@ -1408,6 +1418,7 @@ COMMENT_STRUCTURE = (
     RULE_LINE_BANNER,
     ALLCAPS_HEADING,
     COMMENT_LIST_ITEM,
+    GATE_HEADER_LINE,
 )
 
 

@@ -237,7 +237,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-python-env-registry | quality-static / Python env registry | yes | no | no |
 | check:ci-python-gate-deps | quality-static / Python gate deps | yes | no | no |
 | check:ci-python-lint | quality-static / Python lint + format (ruff) | yes | no | no |
-| check:ci-quality-complete | quality-code / Quality shard aggregation | yes | no | no |
+| check:ci-quality-complete | quality-wiring / Quality shard aggregation | yes | no | no |
 | check:ci-quality-gates | quality-security / Quality-gate unit tests | no | no | no |
 | check:ci-rdc-native | quality-static / rdc.sh wrapper budget and --native arms | yes | no | no |
 | check:ci-rdc-sh-env | quality-static / rdc.sh env tests | yes | no | no |
@@ -811,7 +811,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/review | 6 | .py 6 |
 | .ci/rediacc_ci/security | 11 | .py 11 |
 | .ci/rediacc_ci/setup | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 286 | .py 286 |
+| .ci/rediacc_ci/tests | 287 | .py 287 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/gates | 163 | .py 162, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
@@ -850,7 +850,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/test/manual | 1 | .sh 1 |
 | .ci/scripts/test/proxies | 10 | .sh 10 |
 | .ci/scripts/version | 4 | .sh 4 |
-| .ci/shadow | 260 | .jsonl 259, .json 1 |
+| .ci/shadow | 266 | .jsonl 265, .json 1 |
 | .ci/tutorials | 21 | .sh 20, .md 1 |
 | .ci/tutorials/apps/demo-pgadmin | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/apps/heartbeat | 2 | (none) 1, .yaml 1 |
