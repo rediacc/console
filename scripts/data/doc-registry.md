@@ -848,7 +848,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/test/manual | 1 | .sh 1 |
 | .ci/scripts/test/proxies | 10 | .sh 10 |
 | .ci/scripts/version | 4 | .sh 4 |
-| .ci/shadow | 291 | .jsonl 290, .json 1 |
+| .ci/shadow | 292 | .jsonl 291, .json 1 |
 | .ci/tutorials | 21 | .sh 20, .md 1 |
 | .ci/tutorials/apps/demo-pgadmin | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/apps/heartbeat | 2 | (none) 1, .yaml 1 |
