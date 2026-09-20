@@ -6205,7 +6205,8 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       with both required cells. It refuses rather than reports on two conditions -- a namer corpus
       that collapses (`scripts/lib/doc-providers.ts:1822`) and a home that matches no `.json`
       (`scripts/lib/doc-providers.ts:1845`) -- so an empty table cannot read as a clean one.
-- [ ] **U2 S after P6a, OPERATOR-GATED** Cross-repo PRs. **`private/growth` is not a submodule** --
+- [x] **U2 S after P6a, OPERATOR-GATED** Cross-repo PRs. **`private/growth` is not a submodule** --
+    (ticked) 2026-09-20T22:17:50Z by d778be9d: default applied: private/growth stays a documented clone-and-remote checkout; procedure and merge order (sibling repo PR first on the operator's request, then the console PR) live in .claude/commands/pr-merge.md:53 (959a196da) and the box names the remote and the owner (b4e8cb930); the operator may still override by promoting it to a submodule
       `.gitmodules` lists four and `.gitignore:85` ignores it. That clause cannot be executed as
       written; split it into a decision box (documented clone-and-remote procedure, or promotion
       to a real submodule). Name an owner and record the merge order the `pr-merge` skill encodes.
