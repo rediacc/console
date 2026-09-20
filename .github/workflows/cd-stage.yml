@@ -148,7 +148,7 @@ jobs:
           # carry its own copy and kept the old `| sudo tar` form after ci.yml
           # was fixed, so the pinned checksum was verified on one of the two
           # installs and not the other.
-          .ci/scripts/build/ensure-nfpm.sh >>"$GITHUB_PATH"
+          PYTHONPATH=.ci python3 -m rediacc_ci.build.ensure_nfpm >>"$GITHUB_PATH"
 
       - name: Build Linux packages
         run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_linux_packages
@@ -357,7 +357,7 @@ jobs:
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
-        run: .ci/scripts/test/assert-r2-sentinel.sh "${{ inputs.channel }}" "${{ inputs.next_version }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_r2_sentinel "${{ inputs.channel }}" "${{ inputs.next_version }}"
 
       # -----------------------------------------------------------------------
       # Attest staging artifacts (Sigstore provenance for supply chain integrity)

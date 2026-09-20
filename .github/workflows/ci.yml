@@ -413,7 +413,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: .ci/scripts/ci/cancel-older-runs.sh --timeout 60 --poll-interval 10
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.cancel_older_runs --timeout 60 --poll-interval 10
 
       # The monitor itself lives in watchdog-monitor.yml as a chain of short
       # ubuntu-slim generations: the 1-vCPU runner's 15-minute job cap is a
@@ -900,7 +900,7 @@ jobs:
       - name: Install packaging tools
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq createrepo-c rpm
-          .ci/scripts/build/ensure-nfpm.sh >>"$GITHUB_PATH"
+          PYTHONPATH=.ci python3 -m rediacc_ci.build.ensure_nfpm >>"$GITHUB_PATH"
 
       - name: Run Linux package tests
         run: .ci/scripts/test/test-linux-packages.sh

@@ -120,7 +120,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ inputs.target_run_id }}
-        run: .ci/scripts/ci/check-rerun-attempt.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.check_rerun_attempt
 
       - name: Monitor jobs and cancel on failure
         id: monitor

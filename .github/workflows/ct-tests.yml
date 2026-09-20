@@ -355,7 +355,7 @@ jobs:
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
-        run: .ci/scripts/setup/install-cli-global.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
@@ -517,7 +517,7 @@ jobs:
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
-        run: .ci/scripts/setup/install-cli-global.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
@@ -672,7 +672,7 @@ jobs:
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
-        run: .ci/scripts/setup/install-cli-global.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
@@ -831,7 +831,7 @@ jobs:
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
-        run: .ci/scripts/setup/install-cli-global.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
@@ -987,7 +987,7 @@ jobs:
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
-        run: .ci/scripts/setup/install-cli-global.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
@@ -1159,7 +1159,7 @@ jobs:
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
-        run: .ci/scripts/setup/install-cli-global.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
@@ -1371,7 +1371,7 @@ jobs:
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
-        run: .ci/scripts/setup/install-cli-global.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
@@ -1546,7 +1546,7 @@ jobs:
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
-        run: .ci/scripts/setup/install-cli-global.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
