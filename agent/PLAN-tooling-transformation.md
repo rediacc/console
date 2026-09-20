@@ -4853,6 +4853,15 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `doc-providers.ts:295` still reads the hooks table; and the language policy still counts 582 bash
       files, 507 frozen, so one more tracked `.sh` for a chain head is refused. The exit condition is
       unchanged and needs an operator ruling.
+      **WHICH RULING CLEARS WHICH BLOCKER (2026-09-20).** Blocker (1), the bash chain head, is the only one that
+      needs the operator: EITHER (A, recommended) `.ci/config/language-policy` admits exactly one named file,
+      `.claude/hooks/chain-head.sh`, that inlines the two checks and then execs `dispatch.py`, which lets the
+      collapse reach 11 entries, OR (B) the acceptance is amended so `require-jq.sh` and `require-python.sh` stay
+      as their own entries, which keeps the language policy as it is and leaves the count at 22 over 11 patterns.
+      Blockers (2) and (3) need no ruling: re-key `FIRST_GUARD` and regenerate the hooks table in the same change.
+      Blocker (4) needs a quiet window or an operator-created worktree (`! git worktree add`), because a wrong
+      second of `.claude/settings.json` is wrong for every concurrent session. After a ruling the change is one
+      commit, with the `test_guards_differential` verdict set unchanged as its proof.
       **D0 is D4's instrument** and now pins both numbers, so whoever lands D4 must repin and
       clause 1 of its acceptance is a one-line diff.
 - [x] **E1 S, largest single port in this track** `setup` in Python. `.ci/rediacc_ci/setup/` holds
