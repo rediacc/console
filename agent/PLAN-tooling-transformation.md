@@ -435,7 +435,8 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       `.ci/rediacc_ci/tests/test_quality_pool_writer_safety.py`, 40 failed -> **84 passed**.
       **THE DELETION IS NOT DONE AND IS NOT THIS BOX'S** -- see W7P5-c, which now carries the
       three blockers this work uncovered.
-- [ ] **W7P4-Q S batches, 2 writers** The quality-tree cutover -- this is P-A. Six batches of 13.
+- [x] **W7P4-Q S batches, 2 writers** The quality-tree cutover -- this is P-A. Six batches of 13.
+    (ticked) 2026-09-20T14:35:51Z by d778be9d: 76 of 77 quality gates run from Python: staging_tag_guard cut over in 814893cb7 after the shadow-gate aging fix (ledger holds over 12 trees). The last, autopilot_no_bypass, stays unregistered: door:operator-only, its bypass_actors read needs an org-owner Administration:read grant that no CI credential holds.
       **RE-MEASURED 2026-09-08 from the tree and not from a report: LIVE 75 of 77.**
       **2026-09-20, TWO BLOCKERS FOUND ON THE LAST TWO GATES.** (a) `staging_tag_guard`:
       `assertEquivalent` kept every historical MISMATCH row failing the pair for good, which
