@@ -6214,6 +6214,13 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       (clone-and-remote vs. promote `private/growth` to a submodule) with structural,
       hard-to-reverse consequences, not something to infer from the tree. Still genuinely
       operator-gated on its own merits; not attempted here.
+      **DEFAULT APPLIED 2026-09-20, awaiting the operator's confirmation.** `private/growth` stays a clone-and-remote
+      checkout: it is gitignored, not a submodule, and its own remote is
+      `gitlab.rediacc.io/rediacc-org/secret/growth.git`, which is not GitHub, so the merge tooling that assumes
+      `gh` does not apply to it. The procedure and the merge order live in `.claude/commands/pr-merge.md:53`
+      (commit `959a196da`): the sibling repo's own PR lands first and only on the operator's explicit request, then the console PR, and no console PR carries a pointer for it. Owner: the operator, since no other
+      session may merge to that remote. Promoting it to a real submodule stays available and is the only choice
+      that changes every checkout.
 - [x] **U3 C, DONE 2026-09-08** Widen `.ci/scripts/test/gates/test-shrink-only-composition.sh:97-102`. It greps `--include=*.ts
       --include=*.js` over `scripts/` and `packages/www/scripts/` -- **two** blind spots: it
       excludes `.py` AND its roots exclude the entire `.ci/` tree. Live subjects today: exactly
