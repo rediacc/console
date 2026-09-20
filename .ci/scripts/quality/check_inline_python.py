@@ -17,7 +17,12 @@ Run modes:
     check_inline_python.py --file P   judge ONE file, for the pre-edit hook
     check_inline_python.py --selftest controls only, no repo scan
 
----- gate ---- step: No inline Python in JS/TS needs: none id: check:ci-no-inline-python selftest: true ---- end gate ----
+---- gate ----
+step: No inline Python in JS/TS
+needs: none
+id: check:ci-no-inline-python
+selftest: true
+---- end gate ----
 """
 
 import argparse

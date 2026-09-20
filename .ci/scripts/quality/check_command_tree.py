@@ -30,7 +30,11 @@ while checking nothing" with a comma. The character is named rather than reprodu
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-command-tree.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Command tree needs: node selftest: true ---- end gate ----
+---- gate ----
+step: Command tree
+needs: node
+selftest: true
+---- end gate ----
 """
 
 import sys

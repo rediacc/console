@@ -33,7 +33,13 @@ package.json resolves to [...]"). And it buys nothing anyway -- scope-map.cjs:13
 
 Design: agent/PLAN-lint-rule-matrix-probe.md
 
----- gate ---- step: Enabled lint rules can actually fire needs: none selftest: true lane: quality-content slow: true ---- end gate ----
+---- gate ----
+step: Enabled lint rules can actually fire
+needs: none
+selftest: true
+lane: quality-content
+slow: true
+---- end gate ----
 """
 
 import argparse

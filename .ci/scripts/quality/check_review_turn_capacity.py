@@ -55,7 +55,11 @@ capture with no difference.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-review-turn-capacity.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Review turn budget cannot starve a routed review needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Review turn budget cannot starve a routed review
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

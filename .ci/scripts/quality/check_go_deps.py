@@ -49,7 +49,11 @@ capture with no difference.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-go-deps.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Check Go dependency freshness needs: none selftest: true lane: quality-go
+---- gate ----
+step: Check Go dependency freshness
+needs: none
+selftest: true
+lane: quality-go
 `.ci/scripts/quality/check-go-deps.sh` by an awk range over its `env-EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
 ---- end gate ----
 """

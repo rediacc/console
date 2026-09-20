@@ -16,10 +16,13 @@ WHY AN ENTRY POINT AT ALL. A port cannot be run by path (`from rediacc_ci ...` f
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-rubric-calibration.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
 
----- gate ---- step: Rubric calibration
+---- gate ----
+step: Rubric calibration
      # The EXISTING step name. Renaming a step is a separate change from
      # moving which file the step invokes.
-needs: none lane: quality-code ---- end gate ----
+needs: none
+lane: quality-code
+---- end gate ----
 """
 
 import sys

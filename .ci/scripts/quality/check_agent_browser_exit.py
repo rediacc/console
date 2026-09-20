@@ -47,7 +47,12 @@ The plant was removed with `rm` and `git status --porcelain` diffed against its 
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-agent-browser-exit.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: agent-browser exit status needs: none selftest: true `slow: true ---- end gate ----
+---- gate ----
+step: agent-browser exit status
+needs: none
+selftest: true
+`slow: true
+---- end gate ----
 """
 
 import sys

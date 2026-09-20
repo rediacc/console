@@ -38,7 +38,11 @@ THE BOOTSTRAP, in one line each: a PRISTINE baseline (refreshed_at null, zero jo
 
 WHAT IT DOES NOT DO. It does not predict cost or duration, and it never edits a workflow. It asserts one thing: that a measured, repeatedly-observed fit is either taken or justified.
 
----- gate ---- step: Runner sizing advice needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Runner sizing advice
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import argparse

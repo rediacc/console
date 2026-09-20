@@ -31,7 +31,14 @@ sha256 b47774f79c5278be....
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-devcontainer-scripts.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_devcontainer_scripts.py` compares this port against, and deleting it is W7 P5's job in a later change.
 
----- gate ---- step: Devcontainer script stderr visibility emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code ---- end gate ----
+---- gate ----
+step: Devcontainer script stderr visibility
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import sys

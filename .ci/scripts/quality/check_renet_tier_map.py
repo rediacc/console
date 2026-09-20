@@ -33,8 +33,12 @@ infers NOTHING. Carried whole, both sides resolve to {go, submodules}.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-renet-tier-map.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- kind: local-only id: check:ci-renet-tiers blocker: BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes needs: go,
-submodules ---- end gate ----
+---- gate ----
+kind: local-only
+id: check:ci-renet-tiers
+blocker: BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes
+needs: go, submodules
+---- end gate ----
 """
 
 import sys

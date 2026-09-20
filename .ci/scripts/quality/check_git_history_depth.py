@@ -35,7 +35,11 @@ The class is therefore NOT-GATEABLE at the script level with a concrete divergen
 WHAT COUNTS AS READING HISTORY is deliberately narrow -- see HISTORY_OPS. `git log -1`, `git rev-parse HEAD` and `git status` are all CORRECT on a depth-1 clone and are not flagged. False positives here would push authors toward `fetch-depth: 0` everywhere, which is the opposite of what this repo wants: the media-history rewrite exists precisely so clones stay cheap.
 
 
----- gate ---- step: Git history depth needs: python-yaml selftest: true ---- end gate ----
+---- gate ----
+step: Git history depth
+needs: python-yaml
+selftest: true
+---- end gate ----
 """
 
 import os

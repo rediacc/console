@@ -23,8 +23,13 @@ whole CI coverage -- no lane invokes it directly -- so if the registration moves
 
 INVARIANT 5 IS INTACT: the twin is NOT deleted here; deletion is W7 P5.
 
----- gate ---- kind: test test: .ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh blocker: BLOCKER: test-autopilot-breakpoint-alignment.sh:59 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real comparison executes
-every CI run; the mutated-copy cases around it prove both fire directions id: check:ci-autopilot-bp-align needs: none ---- end gate ----
+---- gate ----
+kind: test
+test: .ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh
+blocker: BLOCKER: test-autopilot-breakpoint-alignment.sh:59 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real comparison executes every CI run; the mutated-copy cases around it prove both fire directions
+id: check:ci-autopilot-bp-align
+needs: none
+---- end gate ----
 """
 
 import sys

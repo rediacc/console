@@ -41,7 +41,13 @@ canonical `.ci/scripts/lib/blocker-validator.sh` and prints what it says.
 
 Exit 0 clean, 1 on a finding or a vacuous corpus, 2 on a failed control, 77 when the gate CANNOT RUN (no git, no bash, no validator). 77 is never a verdict.
 
----- gate ---- step: Language policy needs: none lane: quality-static selftest: true why: ruling 7 makes .ci and .claude Python; the bash surface there may shrink, never grow ---- end gate ----
+---- gate ----
+step: Language policy
+needs: none
+lane: quality-static
+selftest: true
+why: ruling 7 makes .ci and .claude Python; the bash surface there may shrink, never grow
+---- end gate ----
 """
 
 from __future__ import annotations

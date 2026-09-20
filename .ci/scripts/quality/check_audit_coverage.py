@@ -45,7 +45,11 @@ capture with no difference.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-audit-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Check audit logging coverage for CLI operations needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Check audit logging coverage for CLI operations
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

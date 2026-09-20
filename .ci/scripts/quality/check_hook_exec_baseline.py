@@ -5,7 +5,12 @@ The logic lives in `rediacc_ci.quality.hook_exec_baseline`; this file exists so 
 
 The `---- gate ----` header is on the MODULE rather than here, which is the shape `check-swallowed-failures` and the rest of the ported family use.
 
----- gate ---- step: Hook exec baseline needs: none lane: quality-static selftest: true why: W5's "2 processes per Bash tool call" target had no baseline in the tree at
+---- gate ----
+step: Hook exec baseline
+needs: none
+lane: quality-static
+selftest: true
+why: W5's "2 processes per Bash tool call" target had no baseline in the tree at
      all, so the cost of the hook wiring could grow without anything noticing.
      This pins the per-tool and per-event process counts derived from
      .claude/settings.json and refuses in both directions, so a collapse has to

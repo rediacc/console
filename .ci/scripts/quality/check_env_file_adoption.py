@@ -3,7 +3,12 @@
 
 The logic lives in `rediacc_ci.quality.env_file_adoption`; this file exists so the registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring.
 
----- gate ---- step: Env file adoption needs: none lane: quality-static selftest: true why: `set -a; source <envfile>` both EXECUTES the file and lets it overwrite the
+---- gate ----
+step: Env file adoption
+needs: none
+lane: quality-static
+selftest: true
+why: `set -a; source <envfile>` both EXECUTES the file and lets it overwrite the
      shell, and the files it is used on hold ACCOUNT_ED25519_PRIVATE_KEY and
      ACCOUNT_JWT_SECRET. Three call sites adopted env_file_load instead; this
      sweeps for the pattern coming back, RUNS each adopted site's own invocation

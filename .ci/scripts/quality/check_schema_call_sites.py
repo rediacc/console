@@ -8,7 +8,10 @@ THE INVARIANT. A function that builds a `--json-schema` model invocation must ro
 
 Blind spot, stated: this proves the helper is CALLED in the same function, not that its result is used correctly. A site that calls it and discards `proc` passes here.
 
----- gate ---- step: Schema call sites needs: none why: a per-site sweep added the retry to four judge call sites and missed the fifth in
+---- gate ----
+step: Schema call sites
+needs: none
+why: a per-site sweep added the retry to four judge call sites and missed the fifth in
      wl_shapedup.py, because five examples are not a property over the set
 ---- end gate ----
 """

@@ -28,7 +28,11 @@ DRIVEN RED AS WELL, against a fixture root holding a copy of `.ci`, a copy of `p
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-renet-types.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Check renet types freshness needs: go, submodules selftest: true ---- end gate ----
+---- gate ----
+step: Check renet types freshness
+needs: go, submodules
+selftest: true
+---- end gate ----
 """
 
 import sys

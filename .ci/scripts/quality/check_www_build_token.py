@@ -16,10 +16,13 @@ deletes it, and editing it would re-key its ledger.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-www-build-token.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
 
----- gate ---- step: www build token
+---- gate ----
+step: www build token
      # The EXISTING step name, lower case and all. Renaming it is a separate
      # change from moving which file it invokes.
-needs: none lane: quality-code why: every www build must pass github.token. Found and fixed by hand at two of
+needs: none
+lane: quality-code
+why: every www build must pass github.token. Found and fixed by hand at two of
      three call sites, twice, before the third reddened job 99839065246
 ---- end gate ----
 """

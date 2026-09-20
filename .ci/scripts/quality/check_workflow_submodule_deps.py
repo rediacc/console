@@ -12,7 +12,11 @@ The test-runner hop is the load-bearing one and the reason this is not a grep. T
 
 WHAT IT DOES NOT DO. It does not check that a submodule checkout is NEEDED -- an unnecessary one costs fetch time, not correctness, and pruning those is a performance question with a different owner.
 
----- gate ---- step: Workflow submodule deps needs: python-yaml selftest: true ---- end gate ----
+---- gate ----
+step: Workflow submodule deps
+needs: python-yaml
+selftest: true
+---- end gate ----
 """
 
 import json

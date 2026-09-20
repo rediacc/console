@@ -55,7 +55,11 @@ pre-plant sha256 with `sha256sum -c`, and `git status --porcelain` diffed agains
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-lockfile.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Lockfile needs: node selftest: true ---- end gate ----
+---- gate ----
+step: Lockfile
+needs: node
+selftest: true
+---- end gate ----
 """
 
 import sys

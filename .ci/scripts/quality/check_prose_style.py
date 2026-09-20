@@ -35,7 +35,12 @@ WHAT A GREEN HERE DOES AND DOES NOT MEAN, said plainly so nobody reads it as mor
 
 ZERO INPUTS IS A FAILURE HERE, in two places rather than one. Zero files matched fails; so does a non-empty file set that yields ZERO extracted prose lines, which is the extractor breaking rather than the glob, and which would otherwise look exactly like a clean tree.
 
----- gate ---- step: Check prose style (the work, not the person) needs: none selftest: true lane: quality-content ---- end gate ----
+---- gate ----
+step: Check prose style (the work, not the person)
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import sys

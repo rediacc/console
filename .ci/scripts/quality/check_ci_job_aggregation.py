@@ -16,7 +16,13 @@ THE LEDGER CONDITION IS MET. Driven 2026-09-08:
     npx tsx scripts/lib/shadow-gate.ts --pair w7p2-ci-job-aggregation --assert --k 5
     -> equivalence holds over 5 distinct trees
 
----- gate ---- step: CI job aggregation needs: none id: check:ci-job-aggregation selftest: true lane: quality-code why: every non-exempt job in ci.yml must be aggregated by ci-complete and tiered, or a
+---- gate ----
+step: CI job aggregation
+needs: none
+id: check:ci-job-aggregation
+selftest: true
+lane: quality-code
+why: every non-exempt job in ci.yml must be aggregated by ci-complete and tiered, or a
      job can fail while the pipeline reports success. The gate existed and ran nowhere
      from the day it was written until 2026-09-08.
 ---- end gate ----

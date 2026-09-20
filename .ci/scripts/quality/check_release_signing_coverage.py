@@ -40,7 +40,12 @@ The fixture was restored from its `.orig` copy and `git status --porcelain` diff
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-release-signing-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Release signing coverage needs: none selftest: true lane: quality-security ---- end gate ----
+---- gate ----
+step: Release signing coverage
+needs: none
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 import sys

@@ -23,7 +23,12 @@ That admits a reference from an unreachable caller -- but a caller that is itsel
 
 ANTI-VACUITY. Zero discovered files is a failure, not a pass: a glob that stops matching would otherwise report success having checked nothing. The success line prints the counts so a collapse is visible rather than silent.
 
----- gate ---- step: Test-file orphan check needs: none selftest: true lane: quality-security ---- end gate ----
+---- gate ----
+step: Test-file orphan check
+needs: none
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 import json

@@ -16,7 +16,11 @@ SCOPED TO THE SHAPE, NOT THE FILE. The sibling gate learned this the hard way --
 
 WHAT COUNTS AS RETRIED is deliberately generous, because the goal is a second attempt, not a particular spelling: curl's own `--retry`, wget's `--tries`, a shared ARG carrying them, or an enclosing hand-rolled loop. Any of those is a pass.
 
----- gate ---- step: Fetch retry needs: none lane: quality-code ---- end gate ----
+---- gate ----
+step: Fetch retry
+needs: none
+lane: quality-code
+---- end gate ----
 """
 
 import os

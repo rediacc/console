@@ -28,11 +28,16 @@ A HEADER MOVE MUST CARRY EVERY FIELD, and this one did not on its first pass. Th
 assertions above it still ran and still agreed. The loss would have surfaced first as damage -- on the next `gate:bind --write` a second copy of this step lands inside the emitted region, `gate-bind` reds with two steps of one name in `quality-code`, and the guard the blocker exists to protect is gone. Restored 2026-09-07, verbatim from the twin, by a reviewer reading the two
 headers side by side rather than by any gate.
 
----- gate ---- step: Block legacy-peer-deps workarounds
+---- gate ----
+step: Block legacy-peer-deps workarounds
      # The step name is the EXISTING one, not a tidier one. gate-bind matches a
      # header against the workflow step that already runs, and renaming the step
      # is a separate change from moving which file it invokes.
-emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
 why: `.npmrc` must keep ignore-scripts, allow-git=none and minimum-release-age,
      enforced in BOTH directions so neither a missing file nor a weakened value
      passes. First port cut over from bash to Python under W7 P4, on the

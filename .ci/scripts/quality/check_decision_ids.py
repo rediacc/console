@@ -49,7 +49,10 @@ The success line prints the SHAPE, not just a verdict: rows, source keys, cited 
 
 Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
 
----- gate ---- step: Decision ids needs: none lane: quality-branch
+---- gate ----
+step: Decision ids
+needs: none
+lane: quality-branch
 env-GITHUB_BASE_REF: ${{ github.base_ref }}
 ---- end gate ----
 """

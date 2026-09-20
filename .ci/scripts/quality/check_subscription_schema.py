@@ -18,7 +18,11 @@ whole, both sides resolve to {go, node, submodules}, unchanged.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-subscription-schema.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Check subscription schema consistency needs: go, node, submodules selftest: true ---- end gate ----
+---- gate ----
+step: Check subscription schema consistency
+needs: go, node, submodules
+selftest: true
+---- end gate ----
 """
 
 import sys

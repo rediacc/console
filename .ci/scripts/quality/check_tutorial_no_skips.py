@@ -10,7 +10,12 @@ WHAT IT FORBIDS: any self-exclusion marker in a tutorial script, and any skip me
 
 WHAT IT CANNOT SEE. A tutorial that runs but asserts nothing. Coverage of that belongs to the sequence runner's own exit codes, not here.
 
----- gate ---- step: Tutorials cannot skip themselves needs: none selftest: true lane: quality-content ---- end gate ----
+---- gate ----
+step: Tutorials cannot skip themselves
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import pathlib

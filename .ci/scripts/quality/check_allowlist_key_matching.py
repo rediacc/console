@@ -15,7 +15,10 @@ or build the full key and look it up.
 
 Usage: check_allowlist_key_matching.py [--selftest]
 
----- gate ---- step: Allowlist key matching needs: none why: docker-npm-pin-exclusions.json was matched with `k in line`, so the bare
+---- gate ----
+step: Allowlist key matching
+needs: none
+why: docker-npm-pin-exclusions.json was matched with `k in line`, so the bare
      `npm install` key claimed the `npm install --omit=dev` line and the correct
      entry was reported as dead scaffolding
 ---- end gate ----

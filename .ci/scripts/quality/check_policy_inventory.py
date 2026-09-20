@@ -56,7 +56,12 @@ every count, so a collapse is visible rather than silent.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
 
----- gate ---- step: Policy inventory needs: none lane: quality-static selftest: true why: the `.ci/policy/` directory, the TypeScript POLICY_FILES and the Python
+---- gate ----
+step: Policy inventory
+needs: none
+lane: quality-static
+selftest: true
+why: the `.ci/policy/` directory, the TypeScript POLICY_FILES and the Python
      POLICY_FILES must be one set; a file in the directory that is in neither
      list is a live suppression nobody is counting, and a name with no file
      reads to every consumer as "nothing is suppressed"

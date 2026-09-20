@@ -17,7 +17,12 @@ WHAT IT DOES. One precondition, checked once, before the lane's verdicts mean an
 
 WHAT IT DOES NOT DO. It does not verify each gate's own scope logic -- that stays each gate's job, and `check_secret_reachability.py` is the model, refusing a verdict when a repo it knows about is unscannable. This is the floor beneath them, not a replacement for them.
 
----- gate ---- step: Scope completeness needs: none selftest: true lane: quality-security ---- end gate ----
+---- gate ----
+step: Scope completeness
+needs: none
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 import argparse

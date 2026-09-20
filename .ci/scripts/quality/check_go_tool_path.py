@@ -20,8 +20,14 @@ THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, including `emit: false`, its `b
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-go-tool-path.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
 
----- gate ---- step: Go tool PATH emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code why: Console's own scripts already use the right shape -- toolchain.sh
-installs
+---- gate ----
+step: Go tool PATH
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+why: Console's own scripts already use the right shape -- toolchain.sh installs
      with GOBIN and invokes by absolute path, which is why check:ci-shell-format
      passes on a host with no shfmt on PATH. This gate exists so that stays
      true: the defect it names cost four instances in the renet submodule on

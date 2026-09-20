@@ -20,7 +20,11 @@ WHAT IT CHECKS, for every command in settings.json's hook blocks:
 
 WHAT IT DOES NOT DO. It does not execute the hooks or judge their logic -- `.ci/scripts/test/gates/` owns behaviour. This asserts only that the wiring resolves, which is the part that fails silently.
 
----- gate ---- step: Hooks resolvable needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Hooks resolvable
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import argparse

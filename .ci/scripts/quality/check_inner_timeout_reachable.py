@@ -14,7 +14,12 @@ WHAT THIS ASSERTS. For every registered gate that declares a `*_TIMEOUT_S` const
 
 WHAT IT DOES NOT ASSERT. Not that the number is big enough -- that is a measurement, and it belongs with the suite that measures. Only that the smaller of the two guards is the one that can actually speak.
 
----- gate ---- step: Inner kill timers are reachable needs: none selftest: true lane: quality-code why: A gate's own kill timer must sit below its job's timeout-minutes, or CI
+---- gate ----
+step: Inner kill timers are reachable
+needs: none
+selftest: true
+lane: quality-code
+why: A gate's own kill timer must sit below its job's timeout-minutes, or CI
      cancels the job first and the gate's diagnostic never prints -- the failure
      shape reads as an unexplained cancel rather than as a named verdict.
 ---- end gate ----

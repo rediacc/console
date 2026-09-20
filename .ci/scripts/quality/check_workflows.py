@@ -32,7 +32,12 @@ sides -> exit 1, stdout 276 bytes, sha256 cd8229d78325ce47..., stderr 219 bytes,
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-workflows.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_workflows.py` compares this port against, and deleting it is W7 P5's job in a later change.
 
----- gate ---- step: Workflow banned patterns needs: node selftest: true slow: true ---- end gate ----
+---- gate ----
+step: Workflow banned patterns
+needs: node
+selftest: true
+slow: true
+---- end gate ----
 """
 
 import sys

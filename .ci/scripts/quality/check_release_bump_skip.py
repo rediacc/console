@@ -25,8 +25,12 @@ WHY AN ENTRY POINT AT ALL. A port cannot be run by path (`from rediacc_ci ...` f
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-release-bump-skip.sh` is NOT deleted here; deletion is W7 P5.
 
----- gate ---- kind: test test: .ci/scripts/quality/check_release_bump_skip.py blocker: BLOCKER: the gate IS the test -- it drives the real dispatch-release.sh decide branch with a shimmed gh through all five paths, so ci-quality.yml quality-security runs the real decision every CI run; it exists because a bump-none merge and a broken decision both produce "no release" and only the
-emitted signal distinguishes them, which no release gate could see needs: none ---- end gate ----
+---- gate ----
+kind: test
+test: .ci/scripts/quality/check_release_bump_skip.py
+blocker: BLOCKER: the gate IS the test -- it drives the real dispatch-release.sh decide branch with a shimmed gh through all five paths, so ci-quality.yml quality-security runs the real decision every CI run; it exists because a bump-none merge and a broken decision both produce "no release" and only the emitted signal distinguishes them, which no release gate could see
+needs: none
+---- end gate ----
 """
 
 import sys

@@ -31,7 +31,12 @@ builder: commit the plans with a BACKDATED committer date and both sides exit 1 
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-plan-housekeeping.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_plan_housekeeping.py` compares this port against, and deleting it is W7 P5's job in a later change.
 
----- gate ---- step: Plan file housekeeping needs: none selftest: true lane: quality-i18n ---- end gate ----
+---- gate ----
+step: Plan file housekeeping
+needs: none
+selftest: true
+lane: quality-i18n
+---- end gate ----
 """
 
 import sys

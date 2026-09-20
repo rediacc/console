@@ -66,7 +66,13 @@ THE REAL TREE WAS NEVER WRITTEN TO for this gate; `git status --porcelain` carri
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-scope-scripts-reachability.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Scope map, reachable scripts/ paths force full CI needs: node selftest: true lane: quality-security its `slow: true ---- end gate ----
+---- gate ----
+step: Scope map, reachable scripts/ paths force full CI
+needs: node
+selftest: true
+lane: quality-security
+its `slow: true
+---- end gate ----
 """
 
 import sys

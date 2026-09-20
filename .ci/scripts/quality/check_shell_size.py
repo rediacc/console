@@ -43,7 +43,14 @@ in it, because a probe the sweep never walks is how a plant fails to fire for re
 The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference, because a runner that writes into the real tree makes twin and port agree by both reading the same corrupted tree. INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-shell-size.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's
 job.
 
----- gate ---- step: Shell file size emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code ---- end gate ----
+---- gate ----
+step: Shell file size
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import sys

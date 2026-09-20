@@ -42,7 +42,12 @@ Both are the same shape as the dead i18n rules: the instrument reports success b
 
 WHAT IT DOES NOT DO. It does not judge whether a file's rules are the right rules -- only that some linter sees it. A file linted by a config that happens to enable nothing would pass here and be caught by the liveness gate instead. The two are complements and neither subsumes the other.
 
----- gate ---- step: Every source file reaches a linter needs: submodules selftest: true lane: quality-code ---- end gate ----
+---- gate ----
+step: Every source file reaches a linter
+needs: submodules
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import argparse

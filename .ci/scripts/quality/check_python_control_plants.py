@@ -30,7 +30,12 @@ ANTI-VACUITY, both halves. Discovering zero modules FAILS. Discovering zero `pla
 
 Exit 1 on any finding, 2 on a failed control.
 
----- gate ---- step: Python control plants needs: none lane: quality-static selftest: true why: a Python control plant built by raw substitution can silently no-op, handing
+---- gate ----
+step: Python control plants
+needs: none
+lane: quality-static
+selftest: true
+why: a Python control plant built by raw substitution can silently no-op, handing
      the gate its clean fixture while the control reports a pass; the harness in
      `rediacc_ci.controls` makes that impossible and this gate requires the harness.
 ---- end gate ----

@@ -51,7 +51,13 @@ Four refusals, each returning 77 rather than a verdict:
 
 That last one is the clause worth reading twice. A2 and A3 skip when the bash is gone and A5 stands in for them, so a run with no bash AND no ledger would have skipped its way to a green while checking one thing.
 
----- gate ---- id: check:ci-setup-port-parity step: Setup port parity needs: none selftest: true why: the shadow ledger proves the bash and Python setup agreed over five frozen trees and says nothing about tomorrow's, so the phase order has to be re-derived from both implementations on every run ---- end gate ----
+---- gate ----
+id: check:ci-setup-port-parity
+step: Setup port parity
+needs: none
+selftest: true
+why: the shadow ledger proves the bash and Python setup agreed over five frozen trees and says nothing about tomorrow's, so the phase order has to be re-derived from both implementations on every run
+---- end gate ----
 """
 
 from __future__ import annotations

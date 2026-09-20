@@ -23,7 +23,12 @@ The escape hatch is .ci/config/docker-npm-pin-exclusions.json, keyed `<path>:<li
 
 Exit 1 on an unpinned install or a dead exclusion, 2 on a failed control.
 
----- gate ---- step: Dockerfile npm pins needs: submodules selftest: true lane: quality-code why: A build that broke with no commit behind it: private/account's image resolved
+---- gate ----
+step: Dockerfile npm pins
+needs: submodules
+selftest: true
+lane: quality-code
+why: A build that broke with no commit behind it: private/account's image resolved
      its whole dep tree live, and a package published that morning crashed npm's
      arborist. This is the regression test for the CLASS, not for that package.
 ---- end gate ----

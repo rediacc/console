@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """check:ci-pathspec-scope -- a `git ls-files` pathspec must not use `**/`.
 
----- gate ---- step: Pathspec scope needs: none why: a count floor cannot tell the two spellings apart, so only a shape check sees it ---- end gate ----
+---- gate ----
+step: Pathspec scope
+needs: none
+why: a count floor cannot tell the two spellings apart, so only a shape check sees it
+---- end gate ----
 
 THE DEFECT, measured 2026-09-06. Two gates enumerated their corpus with `git ls-files '.ci/**/*.sh'`. Git's DEFAULT pathspec matching is wildmatch WITHOUT `WM_PATHNAME`, so `*` already crosses `/`. That makes `.ci/*.sh` reach every depth,
 while `.ci/**/*.sh` demands a literal slash after `.ci/` and therefore silently skips

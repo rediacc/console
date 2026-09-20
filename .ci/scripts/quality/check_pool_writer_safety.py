@@ -31,7 +31,11 @@ byte-identical streams, so the red is attributable to the plant and not to the f
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-pool-writer-safety.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_pool_writer_safety.py` compares this port against, and deleting it is W7 P5's job in a later change.
 
----- gate ---- step: Pool-registered tests do not write the real tree needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Pool-registered tests do not write the real tree
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

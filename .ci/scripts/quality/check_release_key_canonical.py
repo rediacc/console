@@ -40,7 +40,12 @@ The fixture was restored from its `.orig` copy and `git status --porcelain` diff
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-release-key-canonical.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Release key canonical needs: none selftest: true lane: quality-security ---- end gate ----
+---- gate ----
+step: Release key canonical
+needs: none
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 import sys

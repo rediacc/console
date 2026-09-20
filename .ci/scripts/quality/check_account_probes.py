@@ -39,7 +39,11 @@ The plant was reverted by its exact inverse, `.ci/lib/account.sh` verified back 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-account-probes.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job, and there is a second reason to leave it exactly where it is: it is PINNED BY PATH at `.ci/scripts/test/gates/test-gate-anti-vacuity.sh:64`, which asserts the diagnostic substring "nothing to check" against an empty tree. That
 row goes on exercising the bash twin after this cutover and goes on passing, so the registry flip alone does not move it. Repointing it is the driver's call and belongs on the MODULE, not on this three-line entry point, because the needle it pins is behavioural.
 
----- gate ---- step: Dev-stack liveness probes needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Dev-stack liveness probes
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

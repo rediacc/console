@@ -65,7 +65,13 @@ THE REAL TREE WAS NEVER WRITTEN TO for this gate.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-content-quality.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Check content for AI slop patterns needs: none selftest: true lane: quality-content `slow: true ---- end gate ----
+---- gate ----
+step: Check content for AI slop patterns
+needs: none
+selftest: true
+lane: quality-content
+`slow: true
+---- end gate ----
 """
 
 import sys

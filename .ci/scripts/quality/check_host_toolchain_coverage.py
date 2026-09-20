@@ -45,7 +45,13 @@ The plant was reverted by its exact inverse and `check-toolchain-pins.sh` verifi
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-host-toolchain-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Host toolchain runtime coverage emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it. needs: node selftest: true ---- end gate ----
+---- gate ----
+step: Host toolchain runtime coverage
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+needs: node
+selftest: true
+---- end gate ----
 """
 
 import sys

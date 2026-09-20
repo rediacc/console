@@ -64,7 +64,14 @@ THE REAL TREE WAS NEVER WRITTEN TO for this gate.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-hook-integrity.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Hook integrity emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it. needs: none selftest: true lane: quality-code ---- end gate ----
+---- gate ----
+step: Hook integrity
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import sys

@@ -42,7 +42,12 @@ The probe was deleted and `git status --porcelain` diffed against its pre-plant 
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-e2e-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Check E2E test coverage for all renet functions needs: node, submodules selftest: true lane: quality-content ---- end gate ----
+---- gate ----
+step: Check E2E test coverage for all renet functions
+needs: node, submodules
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import sys

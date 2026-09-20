@@ -14,7 +14,12 @@ that distinction VISIBLE -- an omission and a decision look identical in a confi
 
 Exit 1 on any uncovered manifest or unusable reason, 2 on a failed control.
 
----- gate ---- step: syncpack source coverage needs: submodules selftest: true lane: quality-code ---- end gate ----
+---- gate ----
+step: syncpack source coverage
+needs: submodules
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 from __future__ import annotations

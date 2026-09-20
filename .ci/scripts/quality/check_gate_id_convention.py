@@ -66,7 +66,11 @@ THE REAL TREE WAS NEVER WRITTEN TO for this gate: `scripts/ci-runner/gates.lock.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-gate-id-convention.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Gate registration follows the gates/ convention needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Gate registration follows the gates/ convention
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

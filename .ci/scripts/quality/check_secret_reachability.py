@@ -14,7 +14,12 @@ is the same failure shape as the thing it is here to catch.
 
 WHAT IT CANNOT DO. It cannot see an org admin removing a repo from an allowlist after the last refresh. That is what MAX_BASELINE_AGE_DAYS is for: the record going stale is itself a failure, so the blind window is bounded and visible rather than open-ended.
 
----- gate ---- step: Secret reachability needs: python-yaml selftest: true lane: quality-security ---- end gate ----
+---- gate ----
+step: Secret reachability
+needs: python-yaml
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 import argparse

@@ -30,7 +30,15 @@ fail. The file was restored from a `cp` taken before the plant and its sha256 co
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-ci-watch-recipe.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_ci_watch_recipe.py` compares this port against, and deleting it is W7 P5's job in a later change.
 
----- gate ---- step: CI-watch recipe has one source emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none id: check:ci-watch-recipe selftest: true lane: quality-code ---- end gate ----
+---- gate ----
+step: CI-watch recipe has one source
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+id: check:ci-watch-recipe
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import sys

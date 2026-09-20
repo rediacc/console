@@ -23,11 +23,14 @@ WHY AN ENTRY POINT AT ALL, rather than registering the module. Both reasons are 
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-cli-doc-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
 
----- gate ---- step: CLI docs stay in sync with their scripts' real flags
+---- gate ----
+step: CLI docs stay in sync with their scripts' real flags
      # The EXISTING step name, character for character, not a tidier one.
      # gate-bind matches a header against the step that already runs, so
      # renaming a step is a separate change from moving what it invokes.
-needs: none lane: quality-code ---- end gate ----
+needs: none
+lane: quality-code
+---- end gate ----
 """
 
 import sys

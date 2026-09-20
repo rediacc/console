@@ -21,7 +21,15 @@ duplicate step written into the emitted region by `gate:bind --write`.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-script-exec-bit.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
 
----- gate ---- step: Block non-executable invoked scripts emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code slow: true ---- end gate ----
+---- gate ----
+step: Block non-executable invoked scripts
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+slow: true
+---- end gate ----
 """
 
 import sys

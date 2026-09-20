@@ -25,7 +25,11 @@ pass, so the gate is shown discriminating rather than collapsing. Reverted by it
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-drill-verdicts.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Drill verdict logic needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Drill verdict logic
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

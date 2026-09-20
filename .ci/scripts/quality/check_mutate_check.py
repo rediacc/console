@@ -17,7 +17,11 @@ declaration says so on both sides.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-mutate-check.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Mutation runner self-test needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Mutation runner self-test
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

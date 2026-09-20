@@ -68,7 +68,12 @@ ALLOWLIST: two entries, both live, both proven live on every run. It held three.
 class above rather than a relaxation: that entry's whole argument was "the target
 is verified NOT tracked by git", asserted once by a human in 2026-09-14 prose. The classifier now asks `git ls-files` that question on every run, so the entry would name no finding and fail the liveness check. A machine-checked claim replaced a hand-checked one; if the probe is ever moved onto a tracked path it becomes a hazard again by itself, with nobody having to remember.
 
----- gate ---- step: Gate-test real-file plants needs: none lane: quality-code selftest: true ---- end gate ----
+---- gate ----
+step: Gate-test real-file plants
+needs: none
+lane: quality-code
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations

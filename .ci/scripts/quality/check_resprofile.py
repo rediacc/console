@@ -22,7 +22,11 @@ KNOWN OPEN, 2026-09-15 (docs/ci-overhaul/07-tooling-decisions.md O-4). The dilat
 live outside the tree (`~/.claude/resprofile/<repo>/<day>/<run>/` via `.ci/cache/profiles.prev`) and regenerate every run -- the data that exposed the divergence was already gone by the time anyone looked. NOT fixed: whoever reproduces the triggering run config and diffs `W.derive(caps)` against `W.derive([W.dilate(c, 2.3) for c in caps])` will name the offending predicate; nobody
 has spent the ~56 minutes yet.
 
----- gate ---- step: Resource profile (previous run's captures) needs: none lane: quality-branch ---- end gate ----
+---- gate ----
+step: Resource profile (previous run's captures)
+needs: none
+lane: quality-branch
+---- end gate ----
 """
 
 from __future__ import annotations

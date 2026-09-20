@@ -28,7 +28,12 @@ and print the same three-line stdout block, sha256 10eaeecd8b8bcaa38d75ae1ced463
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-peer-deps.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Verify no peer dependency conflicts needs: none selftest: true lane: quality-code ---- end gate ----
+---- gate ----
+step: Verify no peer dependency conflicts
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import sys

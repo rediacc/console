@@ -35,8 +35,13 @@ untouched, which is the exact divergence this gate exists to catch. THE CONTROL 
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_toolchain_env_dockerfile_sync.py` compares this port against, and deleting it is W7 P5's job in a later change.
 
----- gate ---- step: Toolchain env/Dockerfile sync emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: node selftest: true why: check-toolchain-pins.sh's A1 deliberately EXEMPTS
-GO_VERSION/NODE_VERSION
+---- gate ----
+step: Toolchain env/Dockerfile sync
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: node
+selftest: true
+why: check-toolchain-pins.sh's A1 deliberately EXEMPTS GO_VERSION/NODE_VERSION
      from its single-source check (they legitimately appear elsewhere: go.mod,
      third-party action inputs) -- which also removes any check that the TWO
      files meant to carry the identical value on purpose (toolchain.env and the

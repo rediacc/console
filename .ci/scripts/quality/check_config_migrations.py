@@ -19,7 +19,12 @@ the port still drives a real `npx tsx` harness over every committed fixture.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-config-migrations.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Check config-migration runner + fixtures needs: node selftest: true lane: quality-packages ---- end gate ----
+---- gate ----
+step: Check config-migration runner + fixtures
+needs: node
+selftest: true
+lane: quality-packages
+---- end gate ----
 """
 
 import sys

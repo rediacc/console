@@ -25,7 +25,12 @@ print identical stdout and identical stderr, naming `contract.generated.ts`.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-cli-contract.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: CLI contract needs: node selftest: true lane: quality-packages ---- end gate ----
+---- gate ----
+step: CLI contract
+needs: node
+selftest: true
+lane: quality-packages
+---- end gate ----
 """
 
 import sys

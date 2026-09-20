@@ -24,7 +24,11 @@ THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. It is a SHORT header -- no `emi
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-probe-parity.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
 
----- gate ---- step: Capability-probe parity needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Capability-probe parity
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

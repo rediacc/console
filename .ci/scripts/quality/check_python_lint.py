@@ -75,7 +75,11 @@ THE REAL TREE WAS NEVER WRITTEN TO for this gate. `git status --porcelain` carri
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-python-lint.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Python lint + format (ruff) needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Python lint + format (ruff)
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

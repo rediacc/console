@@ -16,7 +16,13 @@ basename does not derive `check:ci-app-admin-perm`, so without the explicit `id:
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-no-app-admin-perm.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: App admin permission needs: none id: check:ci-app-admin-perm selftest: true lane: quality-code ---- end gate ----
+---- gate ----
+step: App admin permission
+needs: none
+id: check:ci-app-admin-perm
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import sys

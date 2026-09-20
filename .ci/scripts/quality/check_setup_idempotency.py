@@ -35,7 +35,14 @@ Both sides -> exit 1, stdout 484 bytes, sha256 790164231f5864e6..., stderr 155 b
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-setup-idempotency.sh` is NOT deleted by this change. It stays on disk as the differential twin that `.ci/rediacc_ci/tests/test_quality_setup_idempotency.py` compares this port against, and deleting it is W7 P5's job in a later change.
 
----- gate ---- step: Setup path idempotency emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it. needs: submodules selftest: true lane: quality-code ---- end gate ----
+---- gate ----
+step: Setup path idempotency
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+needs: submodules
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import sys

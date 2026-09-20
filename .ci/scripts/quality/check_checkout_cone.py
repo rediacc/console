@@ -15,7 +15,12 @@ here: a missed path fails loudly in CI with the exact message above, while a fal
 
 Exit 1 on any uncovered invocation, 2 on a failed control.
 
----- gate ---- kind: step step: Checkout cone covers what steps run lane: quality-static needs-not: node blocker: BLOCKER: this gate is pure Python and never runs node. `inferredNeeds`
+---- gate ----
+kind: step
+step: Checkout cone covers what steps run
+lane: quality-static
+needs-not: node
+blocker: BLOCKER: this gate is pure Python and never runs node. `inferredNeeds`
      reads string literals, and the only npx/tsx/node text here is the REGEX
      that DETECTS interpreter invocations in workflow files (:66) plus the
      selftest descriptions that exercise it (:177-180). Measured 2026-09-07:
@@ -25,7 +30,8 @@ Exit 1 on any uncovered invocation, 2 on a failed control.
      the inference instead was REJECTED on measurement: 24 files would lose it
      and at least one, test_gate_policy_path.py, really does execute
      node_modules/.bin/tsx.
-why: A step may not run a file its job never checked out. ---- end gate ----
+why: A step may not run a file its job never checked out.
+---- end gate ----
 """
 
 from __future__ import annotations

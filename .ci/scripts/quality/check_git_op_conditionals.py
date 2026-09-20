@@ -33,7 +33,14 @@ THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, including `emit: false`, its `b
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-git-op-conditionals.sh` is NOT deleted here. It stays on disk as the differential twin, and as the one path the exemption above names; deletion is W7 P5.
 
----- gate ---- step: Git-op conditional guards emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code ---- end gate ----
+---- gate ----
+step: Git-op conditional guards
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import sys

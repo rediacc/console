@@ -65,7 +65,12 @@ COMMAND LINE
 
 EXIT 77 IS CANNOT-RUN AND IS NEVER A VERDICT. It is returned for exactly one condition: the repository root could not be resolved, so the pins corpus that every corpus-derived floor here is keyed on cannot be read at all. That is a harness fault, not a finding about the tree, and reporting it as 1 would put a green-able number on a run that scanned nothing.
 
----- gate ---- id: check:ci-install-table step: Install table needs: none selftest: true why: six bash enumerations answered "what a machine needs" and none compared the set installed against the set used, so a pinned tool could be required by a gate and named nowhere -- which is how the drafted table came to carry no pytest row
+---- gate ----
+id: check:ci-install-table
+step: Install table
+needs: none
+selftest: true
+why: six bash enumerations answered "what a machine needs" and none compared the set installed against the set used, so a pinned tool could be required by a gate and named nowhere -- which is how the drafted table came to carry no pytest row
      (Only the FIRST line of `why:` reaches the parser, measured against
      check_allowlist_key_matching.py which behaves the same way, so the line
      above is written to stand alone. The rest is for a reader of this file.

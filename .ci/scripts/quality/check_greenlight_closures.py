@@ -36,7 +36,11 @@ file verified byte-identical (sha256 26b3eed64efa3b96c03b6474e142d5f6a96bfb831c7
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-greenlight-closures.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Greenlight closure paths needs: node selftest: true ---- end gate ----
+---- gate ----
+step: Greenlight closure paths
+needs: node
+selftest: true
+---- end gate ----
 """
 
 import sys

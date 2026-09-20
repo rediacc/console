@@ -45,7 +45,11 @@ The plant was reverted by restoring the file from a `cp` backup, verified back a
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-review-cap-coherence.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Review cap is measured coherently needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Review cap is measured coherently
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

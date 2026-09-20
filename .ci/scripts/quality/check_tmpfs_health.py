@@ -9,7 +9,12 @@ this gate is the instrumented tripwire so the NEXT uninstrumented temp-file habi
 SCOPE, stated so it is not mistaken for more than it is. This measures CURRENT inode headroom at gate-run time -- a single point-in-time reading, not a before/after delta bracketing every CI phase. A delta needs a write on each side of every job step across every workflow, which is a wiring change to every job, not a single check script; open the design in a plan if that is wanted.
 A single-point threshold gate run in the quality lane already catches the actual failure mode above, because the exhaustion is monotonic within a run (nothing frees inodes mid-CI-job) -- by the time any phase's tmp usage is past 90%, the NEXT phase is the one that would have hit the wall.
 
----- gate ---- step: Tmpfs health needs: none lane: quality-code selftest: true ---- end gate ----
+---- gate ----
+step: Tmpfs health
+needs: none
+lane: quality-code
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations

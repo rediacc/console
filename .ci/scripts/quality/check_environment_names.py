@@ -13,7 +13,10 @@ WHAT THIS DELIBERATELY DOES NOT DO. It says nothing about the /deployments RECOR
 
 Exit 1 on an unbounded environment name, 2 on a failed control.
 
----- gate ---- step: Environment names needs: none why: 25 orphaned pr-* environments accumulated because a job-level environment: creates
+---- gate ----
+step: Environment names
+needs: none
+why: 25 orphaned pr-* environments accumulated because a job-level environment: creates
      an object CI has no permission to delete
 ---- end gate ----
 """

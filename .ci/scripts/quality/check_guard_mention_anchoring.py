@@ -11,8 +11,14 @@ So the pattern itself is turned into a CONCRETE INSTANCE -- the shortest literal
 
 ANCHOR, DO NOT NARROW. The fix for a finding here is to require command position `(^|[;&|(])`, never to delete the pattern: a guard that stops catching the real command is a worse outcome than the false positive it was cured of.
 
----- gate ---- step: Guard mention anchoring emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code why: A guard that refuses PROSE is a guard nobody can write a
-doc line about.
+---- gate ----
+step: Guard mention anchoring
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+why: A guard that refuses PROSE is a guard nobody can write a doc line about.
      The class recurred FOUR times on 2026-08-28 and every instance was fixed
      by hand, including one reintroduced within the hour by the session doing
      the fixing -- which is the i18n lesson exactly. This probes each guard

@@ -29,7 +29,11 @@ Reverted by its exact inverse and the file verified byte-identical to its pre-pl
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-battery-clean-tree.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Battery clean-tree guard needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Battery clean-tree guard
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

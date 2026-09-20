@@ -23,7 +23,12 @@ second plant took its name from `secrets.token_hex` at run time, which nothing i
 
 NOT REGISTERED BY THIS WRITER. `package.json`, `scripts/ci-runner/manifest.ts` and `.github/workflows/ci-quality.yml` are driver-only, so the registration fragment travels in the report instead. Until it lands, this gate reaches CI through nothing and is run locally only, which is the one-sided shape the programme exists to prevent and is called out rather than left in a diff.
 
----- gate ---- step: Dead Python needs: none lane: quality-static selftest: true why: a Python file no execution route reaches is dead code sitting beside live
+---- gate ----
+step: Dead Python
+needs: none
+lane: quality-static
+selftest: true
+why: a Python file no execution route reaches is dead code sitting beside live
      gates, and the specific case this tree keeps producing is a bash-to-Python
      port that shadowed EQUIVALENT, was never registered, and whose twin was
      later deleted; nothing else in the estate can see that file stop running

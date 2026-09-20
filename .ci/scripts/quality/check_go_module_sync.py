@@ -17,7 +17,12 @@ declared side identical; what the twin inferred for free is discussed under DRIV
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-go-module-sync.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Check Go module sync against the renet worktree needs: none selftest: true lane: quality-go ---- end gate ----
+---- gate ----
+step: Check Go module sync against the renet worktree
+needs: none
+selftest: true
+lane: quality-go
+---- end gate ----
 """
 
 import sys

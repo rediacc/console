@@ -66,8 +66,13 @@ The plant was removed with `rm` and `git status --porcelain` diffed against its 
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-label-references.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- kind: test id: check:ci-label-refs test: .ci/scripts/test/gates/test-label-references.sh blocker: BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire
-directions needs: none ---- end gate ----
+---- gate ----
+kind: test
+id: check:ci-label-refs
+test: .ci/scripts/test/gates/test-label-references.sh
+blocker: BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions
+needs: none
+---- end gate ----
 """
 
 import sys

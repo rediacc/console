@@ -17,7 +17,12 @@ THE LEDGER CONDITION IS MET. Driven 2026-09-08:
     npx tsx scripts/lib/shadow-gate.ts --pair w7p2-swallowed-failures --assert --k 5
     -> equivalence holds over 10 distinct trees
 
----- gate ---- step: Swallowed failures needs: none selftest: true lane: quality-code why: a gate that captures a probe whose failure is indistinguishable from an empty
+---- gate ----
+step: Swallowed failures
+needs: none
+selftest: true
+lane: quality-code
+why: a gate that captures a probe whose failure is indistinguishable from an empty
      result reports success it never verified. This is the scanner for that class, and
      it ran nowhere from the day it was written until 2026-09-08.
 ---- end gate ----

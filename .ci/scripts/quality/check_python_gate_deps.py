@@ -14,7 +14,11 @@ WHAT IT DOES NOT DO. It does not follow imports transitively. A gate that runs i
 THE ONE HOP IT DOES FOLLOW, and only for sys.path, not for dependencies. A sibling module a script imports may be the thing that puts a directory on sys.path -- `.ci/scripts/quality/_cipath.py` is exactly that, extracted so eighty-one gate entry points stop repeating the insert. Its importers are read one hop deep for the DIRECTORIES they gain, which keeps `rediacc_ci` first-party.
 What is NOT read one hop deep is the neighbour's own imports, so the limit in the paragraph above is unchanged.
 
----- gate ---- step: Python gate deps needs: python-yaml selftest: true ---- end gate ----
+---- gate ----
+step: Python gate deps
+needs: python-yaml
+selftest: true
+---- end gate ----
 """
 
 import ast

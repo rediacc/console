@@ -14,7 +14,12 @@ fires. If any planted defect passes, this gate declares itself broken and exits 
 
 Design: agent/PLAN-agent-hints-implementation.md (sections 5 and 6).
 
----- gate ---- step: Agent hints can actually fire needs: none selftest: true lane: quality-content ---- end gate ----
+---- gate ----
+step: Agent hints can actually fire
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 from __future__ import annotations

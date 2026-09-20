@@ -35,7 +35,12 @@ unguarded pipefail-risk pipeline this gate exists for. Both sides exit 1 with st
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-silent-failure-patterns.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Silent-failure patterns needs: none id: check:ci-silent-failures selftest: true ---- end gate ----
+---- gate ----
+step: Silent-failure patterns
+needs: none
+id: check:ci-silent-failures
+selftest: true
+---- end gate ----
 """
 
 import sys

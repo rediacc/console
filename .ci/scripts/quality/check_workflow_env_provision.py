@@ -22,7 +22,11 @@ slash, turning `.ci/scripts/...` into `ci/scripts/...`, which resolves to nothin
 
 Exit 1 on any finding, 2 on a failed control.
 
----- gate ---- step: Workflow env provision needs: python-yaml selftest: true ---- end gate ----
+---- gate ----
+step: Workflow env provision
+needs: python-yaml
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations

@@ -24,7 +24,11 @@ and driven RED as well, against a fixture root whose compose file references a v
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-compose-env.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Compose env needs: none selftest: true ---- end gate ----
+---- gate ----
+step: Compose env
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import sys

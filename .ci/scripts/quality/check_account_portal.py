@@ -28,7 +28,12 @@ phase in the twin's order and then exit 1 on "Expected build output not found", 
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-account-portal.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Check account portal (typecheck + build) needs: node, submodules selftest: true lane: quality-packages ---- end gate ----
+---- gate ----
+step: Check account portal (typecheck + build)
+needs: node, submodules
+selftest: true
+lane: quality-packages
+---- end gate ----
 """
 
 import sys

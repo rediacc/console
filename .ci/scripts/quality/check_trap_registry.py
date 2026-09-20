@@ -58,8 +58,14 @@ THE REAL TREE WAS NEVER WRITTEN TO for this gate. `docs/agent-reference/TRAPS.md
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-trap-registry.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- step: Trap registry dispositions emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code why: TRAPS.md is a REGISTRY, not prose: every `## ` entry
-names the instrument
+---- gate ----
+step: Trap registry dispositions
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+why: TRAPS.md is a REGISTRY, not prose: every `## ` entry names the instrument
      that enforces it, and the gate proves that pointer RESOLVES and is LIVE.
      Presence alone would be worse than nothing -- the cheapest thing to name
      under a coverage gate is a check that cannot fire -- so a gate: pointer
