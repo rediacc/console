@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-schema-coverage.sh`.
+"""Port of `.ci/scripts/test/gates/test-schema-coverage.sh`, retired in W7 P5.
 
 Integration test for `scripts/gates/check-schema-coverage.ts` (`check:ci-schema-coverage`).
 
@@ -16,8 +16,6 @@ NO `xdist_group`. Both cases are read-only subprocesses: one runs the gate over 
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-schema-coverage.sh"
 
 SUT = paths.from_root("scripts/gates", "check-schema-coverage.ts")
 TSX = paths.from_root("node_modules", ".bin", "tsx")

@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-breakpoint-drift.sh`.
+"""Port of `.ci/scripts/test/gates/test-breakpoint-drift.sh`, retired in W7 P5.
 
 Gate test for `check-breakpoint-drift.sh`, the integrity oracle for the vendored `.ci/breakpoint/` folder.
 
@@ -32,8 +32,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-breakpoint-drift.sh"
 
 BP_SRC = paths.from_root(".ci", "breakpoint")
 GATE_REL = "scripts/check-breakpoint-drift.sh"

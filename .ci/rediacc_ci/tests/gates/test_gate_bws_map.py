@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-bws-map.sh`.
+"""Port of `.ci/scripts/test/gates/test-bws-map.sh`, retired in W7 P5.
 
 Drives the REAL scan in `.ci/scripts/quality/check_bws_map.py` against fixture trees, which its internal `selftest()` cannot do.
 
@@ -14,8 +14,6 @@ import json
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-bws-map.sh"
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_bws_map.py")
 

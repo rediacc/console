@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-preview-worker-reaping.sh`.
+"""Port of `.ci/scripts/test/gates/test-preview-worker-reaping.sh`, retired in W7 P5.
 
 Phase 5b of `.ci/scripts/housekeeping/cleanup-versions.sh` reaps orphaned per-PR preview Workers -- and must never reap anything else, because there is no undo.
 
@@ -20,8 +20,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-preview-worker-reaping.sh"
 
 SUT = paths.from_root(".ci", "scripts", "housekeeping", "cleanup-versions.sh")
 

@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-detect-bump-type.sh`.
+"""Port of `.ci/scripts/test/gates/test-detect-bump-type.sh`, retired in W7 P5.
 
 Both-ways test for `.ci/scripts/version/detect-bump-type.sh`, the script that turns PR labels into the version bump a release takes.
 
@@ -21,8 +21,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-detect-bump-type.sh"
 
 UNDER_TEST = paths.from_root(".ci", "scripts", "version", "detect-bump-type.sh")
 LABELS_FILE = paths.from_root(".github", "labels.yml")

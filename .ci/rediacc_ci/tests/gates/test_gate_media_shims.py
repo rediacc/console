@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-media-shims.sh`.
+"""Port of `.ci/scripts/test/gates/test-media-shims.sh`, retired in W7 P5.
 
 Tests for the two COMPATIBILITY ENTRY POINTS W10 phase 3 left behind, and for the interfaces they forward to. Four claims, in the twin's order:
 
@@ -35,8 +35,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-media-shims.sh"
 
 ROOT = paths.repo_root()
 

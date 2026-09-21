@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-stage-artifacts-channel.sh`.
+"""Port of `.ci/scripts/test/gates/test-stage-artifacts-channel.sh`, retired in W7 P5.
 
 Unit test for the channel gating of the APT/RPM metadata assertions in `.ci/scripts/release/validate-stage-artifacts.sh`.
 
@@ -24,8 +24,6 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-stage-artifacts-channel.sh"
 
 VALIDATOR_SRC = paths.from_root(".ci", "scripts", "release", "validate-stage-artifacts.sh")
 COMMON_SRC = paths.from_root(".ci", "scripts", "lib", "common.sh")

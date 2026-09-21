@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-unverified-downloads.sh`.
+"""Port of `.ci/scripts/test/gates/test-unverified-downloads.sh`, retired in W7 P5.
 
 Integration test for `scripts/gates/check-unverified-downloads.ts`.
 
@@ -12,8 +12,6 @@ it verbatim and adds nothing, because there is nothing to add.
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-unverified-downloads.sh"
 
 GATE = paths.from_root("scripts/gates", "check-unverified-downloads.ts")
 

@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-simulate-promotion-serverside.sh`.
+"""Port of `.ci/scripts/test/gates/test-simulate-promotion-serverside.sh`, retired in W7 P5.
 
 Both-ways test for the SERVER-SIDE copy in `.ci/scripts/deploy/simulate-promotion.sh`.
 
@@ -23,8 +23,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-simulate-promotion-serverside.sh"
 
 SUT = paths.from_root(".ci", "scripts", "deploy", "simulate-promotion.sh")
 COMMON = paths.from_root(".ci", "scripts", "lib", "common.sh")

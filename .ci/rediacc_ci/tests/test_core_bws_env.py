@@ -1,6 +1,7 @@
 """`rediacc_ci.core.bws_env` against the live `.ci/lib/bws-env.sh`.
 
-NO REAL STORE IS EVER TOUCHED. `bws` is faked on PATH, exactly as `.ci/scripts/test/gates/test-bws-env.sh` fakes it and for the same reason its header gives: the fake is the point, not a limitation, because an empty stored value and a missing name cannot be produced on demand against a live store. The fake also REFUSES if the caller omits `--color no`, so a port that dropped the
+NO REAL STORE IS EVER TOUCHED. `bws` is faked on PATH, exactly as `.ci/rediacc_ci/tests/gates/test_gate_bws_env.py` fakes it and for the same reason its header gives: the fake is the point, not a limitation, because an empty stored value and a missing name cannot be produced on demand against a live store. The fake also REFUSES if the caller omits `--color no`, so a port that
+dropped the
 flag fails here rather than in production against a bws that wraps its JSON in truecolor escapes.
 
 THE PATH IS SCRUBBED ON BOTH SIDES, AND THAT IS NOT DECORATION. A real `bws` exists on this machine at `~/.local/bin/bws`. The first run of this differential compared a bash side that found the REAL binary through `command -v` against a Python side pinned to a fake path, and reported a stderr difference that looked like a port defect. It was an asymmetric harness. Every case below

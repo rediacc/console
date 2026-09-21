@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-media-entry.sh`.
+"""Port of `.ci/scripts/test/gates/test-media-entry.sh`, retired in W7 P5.
 
 Tests for `.ci/media/media-entry.sh` -- the one entry point for the media pipeline.
 
@@ -40,8 +40,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness, media_verify, media_verify_ext
-
-BASH_TWIN = ".ci/scripts/test/gates/test-media-entry.sh"
 
 ROOT = paths.repo_root()
 ENTRY = ROOT / ".ci" / "media" / "media-entry.sh"

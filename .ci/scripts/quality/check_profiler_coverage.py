@@ -23,7 +23,7 @@ PINNED BY PATH IN TWO RUN-IN-PLACE ROWS, so both take the ENTRY POINT arm if the
   - `.ci/scripts/test/gates/test-profiler-coverage.sh:31` (`GATE=`, then runs it)
   - `.ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py:63` (`GATE_REL`)
 
-`.ci/rediacc_ci/tests/test_quality_profiler_coverage.py:34` is the DIFFERENTIAL and must keep naming the twin. Three further hits are prose only and pin nothing: `test-policy-path.sh:18`, `test-emit-advisory.sh:97` and `test_gate_emit_advisory.py:11` all name this gate in comments about libraries it sources, and
+`.ci/rediacc_ci/tests/test_quality_profiler_coverage.py:34` is the DIFFERENTIAL and must keep naming the twin. Two further hits are prose only and pin nothing: `test-policy-path.sh:18` and `test_gate_emit_advisory.py:11` name this gate (a third, `test-emit-advisory.sh:97`, went with that twin in W7 P5) in comments about libraries it sources, and
 `.ci/rediacc_ci/tests/goldens/allowlist/corpus/profiler-coverage-allowlist.list:2` carries the path in a golden's own comment header.
 
 BECAUSE THIS GATE IS `kind: test`, the run-in-place rows decide which side CI executes: while `test-profiler-coverage.sh:31` still names the `.sh`, CI executes the TWIN. Repointing is the driver's call and is called out in the report.

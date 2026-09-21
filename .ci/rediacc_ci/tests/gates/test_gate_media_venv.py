@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-media-venv.sh`.
+"""Port of `.ci/scripts/test/gates/test-media-venv.sh`, retired in W7 P5.
 
 `.ci/media/venv.sh`, the generative Python environment.
 
@@ -31,8 +31,6 @@ is in bash, which removes the one module-global the twin does mutate.
 import shutil
 
 from rediacc_ci.tests.gates import harness, media_verify
-
-BASH_TWIN = ".ci/scripts/test/gates/test-media-venv.sh"
 
 MODULE = media_verify.MEDIA_DIR / "venv.sh"
 

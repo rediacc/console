@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-ci-trace-branch.sh`.
+"""Port of `.ci/scripts/test/gates/test-ci-trace-branch.sh`, retired in W7 P5.
 
 ci-trace must be able to read a branch that has NO open PR, and the read must stay OPT-IN. Measured 2026-08-25 against Console CI run 32903007256 (b4b5797e on main) while that run was still in_progress: a branch tracer that answered from the PR query alone reported nothing at all.
 
@@ -32,17 +32,12 @@ import sys
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-BASH_TWIN = ".ci/scripts/test/gates/test-ci-trace-branch.sh"
-
 HOOKS_DIR = paths.from_root(".claude", "hooks", "stop")
 WL_CI = HOOKS_DIR / "wl_ci.py"
 TRACE = paths.from_root(".ci", "scripts", "ci", "ci-trace.py")
 
-# The two files that call `ci_rollup` as a FIXTURE rather than as a consumer.
-SELF_EXCLUDED = (
-    BASH_TWIN,
-    ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py",
-)
+# The file that calls `ci_rollup` as a FIXTURE rather than as a consumer. The bash twin was the other, until W7 P5 census batch A10 retired it; an absent file never reaches the enumeration, so the entry goes rather than becoming a path nothing can match.
+SELF_EXCLUDED = (".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py",)
 
 FAKE_GH = """#!/bin/bash
 q="$*"

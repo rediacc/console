@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-watchdog-observer-exclusion.sh`.
+"""Port of `.ci/scripts/test/gates/test-watchdog-observer-exclusion.sh`, retired in W7 P5.
 
 The watchdog must never read an OBSERVER check as a failed CI job.
 
@@ -14,8 +14,6 @@ import pathlib
 import re
 
 from rediacc_ci import paths
-
-BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-observer-exclusion.sh"
 
 WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
 

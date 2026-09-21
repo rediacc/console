@@ -44,7 +44,7 @@
 # what makes the relocation safe without them.
 #
 # HOW THE CONTRACT IS CHECKED FROM THIS SIDE, since the callers cannot be:
-# .ci/scripts/test/gates/test-media-shims.sh drives the OLD path, with docker absent,
+# .ci/rediacc_ci/tests/gates/test_gate_media_shims.py drives the OLD path, with docker absent,
 # and requires argv, exit status, stdin and cwd to arrive here unaltered. It also
 # freezes the environment-variable surface this wrapper reads, so a rename here that a
 # cross-repo caller still spells the old way is red HERE rather than at the next

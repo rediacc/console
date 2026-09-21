@@ -1,7 +1,7 @@
 """Port of `.ci/scripts/deploy/wait-for-preview-worker.sh`.
 
 Blocks until a per-PR preview Worker answers both `/health` and `.well-known/server-info` for `REQUIRED_STREAK` consecutive probes. The twin's own header explains why this is testable at all without touching a real Worker: it was written with `PREVIEW_URL_OVERRIDE` / `REQUIRED_STREAK` / `MAX_ATTEMPTS` / `PROBE_INTERVAL_SECONDS` test-only knobs specifically so
-`.ci/scripts/test/gates/test-preview-readiness.sh` can drive it against a local Node HTTP stub. This port reuses exactly that stub technique in `test_deploy_wait_for_preview_worker.py`: no real Cloudflare Worker, no credentials, nothing that leaves this host.
+`.ci/rediacc_ci/tests/gates/test_gate_preview_readiness.py` can drive it against a local Node HTTP stub. This port reuses exactly that stub technique in `test_deploy_wait_for_preview_worker.py`: no real Cloudflare Worker, no credentials, nothing that leaves this host.
 
 REAL HTTP, NOT A STUBBED BINARY. The external tool the twin shells out to is `curl`, a generic HTTP client with no state and no credential of its own -- unlike `wrangler`/`aws`/`gh`, faking the BINARY would just reimplement `urllib.request` under a different name. So this port makes the HTTP calls directly with `urllib.request`, matching `curl -fsSL`'s semantics (raise on a non-2xx
 status, follow redirects, no output), and the differential proves parity by pointing both sides' target URL at the SAME local stub server via `PREVIEW_URL_OVERRIDE`, exactly as the existing bash gate test already does.

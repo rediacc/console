@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-scrub-sentinel-empty.sh`.
+"""Port of `.ci/scripts/test/gates/test-scrub-sentinel-empty.sh`, retired in W7 P5.
 
 Subject: `scripts/ops/scrub-sentinel.sh`. Regression test for its empty-prefix hang.
 
@@ -24,8 +24,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-scrub-sentinel-empty.sh"
 
 ROOT = paths.repo_root()
 SUBJECT = ROOT / "scripts" / "ops" / "scrub-sentinel.sh"

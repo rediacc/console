@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-vacuity-floors.sh`.
+"""Port of `.ci/scripts/test/gates/test-vacuity-floors.sh`, retired in W7 P5.
 
 Every vacuity floor must actually REFUSE an empty corpus.
 
@@ -22,8 +22,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-vacuity-floors.sh"
 
 ROOT = paths.repo_root()
 TSX = paths.from_root("node_modules", ".bin", "tsx")

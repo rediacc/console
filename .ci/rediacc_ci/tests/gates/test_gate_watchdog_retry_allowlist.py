@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-watchdog-retry-allowlist.sh`.
+"""Port of `.ci/scripts/test/gates/test-watchdog-retry-allowlist.sh`, retired in W7 P5.
 
 Unit test for the retry policy in `.ci/scripts/ci/watchdog-monitor.cjs` (issue #537).
 
@@ -21,8 +21,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-retry-allowlist.sh"
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 CI_WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")

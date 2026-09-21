@@ -7,7 +7,7 @@ THE THING BEING REPLACED is `.ci/scripts/lib/common.sh:18-55`: the colour block 
 HOW EQUIVALENCE IS PROVEN. Not by reading both and agreeing they look alike. A bash child runs the REAL common.sh, with stdout and stderr captured SEPARATELY and, where the case needs one, a real pseudo-terminal on stderr. The bytes it produced are compared against the bytes `rediacc_ci.log` produces under the same conditions. That is the shape
 `.ci/scripts/quality/check-python-lint.sh` uses for its own control: build a specimen, run the instrument, compare.
 
-WHY THE STREAMS ARE NEVER MERGED. The defect these tests exist to prevent is a stream swap -- `emit-advisory.sh` moved log_info from stderr to stdout on 2026-09-06 and nothing noticed. `test-emit-advisory.sh:100-102` says it plainly: "The defect is a stream swap; the `2>&1` used by every case above merges the two streams back together and would hide it completely."
+WHY THE STREAMS ARE NEVER MERGED. The defect these tests exist to prevent is a stream swap -- `emit-advisory.sh` moved log_info from stderr to stdout on 2026-09-06 and nothing noticed. `test_gate_emit_advisory.py` says it plainly: "The defect is a stream swap; the `2>&1` used by every case above merges the two streams back together and would hide it completely."
 
 THE TWO DIVERGENCES ARE ASSERTED, NOT AVOIDED. A differential that only tests where two implementations agree is a differential that will be quietly broken by the first person who "fixes" a difference nobody wrote down. Both places where this module deliberately differs from common.sh have a test asserting the difference in both directions.
 """

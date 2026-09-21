@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-media-args.sh`.
+"""Port of `.ci/scripts/test/gates/test-media-args.sh`, retired in W7 P5.
 
 Tests for the ARGUMENT PARSING in `.ci/media/tutorials.sh`, and for `.ci/media/teaser.sh`.
 
@@ -34,8 +34,6 @@ NO `xdist_group`. Every fixture and sandbox is under pytest's own `tmp_path`; th
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness, media_verify, media_verify_ext
-
-BASH_TWIN = ".ci/scripts/test/gates/test-media-args.sh"
 
 ROOT = paths.repo_root()
 TUTORIALS = ROOT / ".ci" / "media" / "tutorials.sh"

@@ -1,4 +1,4 @@
-r"""Port of `.ci/scripts/test/gates/test-client-bundle-budget.sh`.
+r"""Port of `.ci/scripts/test/gates/test-client-bundle-budget.sh`, retired in W7 P5.
 
 `scripts/gates/check-client-bundle-budget.ts`, and, crucially, a MUTANT of it.
 
@@ -28,8 +28,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-client-bundle-budget.sh"
 
 GATE = paths.from_root("scripts", "gates", "check-client-bundle-budget.ts")
 DIST = paths.from_root("packages", "www", "dist")

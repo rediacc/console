@@ -245,7 +245,7 @@ function selftest(): boolean {
   // The first draft of these plants pointed at `mid.js`, which the island chain above
   // already reaches, and at a dynamic import the `import(` regex catches on its own --
   // so both passed against the very defect they were written for, and the mutant control
-  // in .ci/scripts/test/gates/test-client-bundle-budget.sh is what caught that.
+  // in .ci/rediacc_ci/tests/gates/test_gate_client_bundle_budget.py is what caught that.
   write('assets/facade.js', 'import"./facade-only.js";import"./facade-dyn.js";');
   write('assets/facade-only.js', `export const q = "${'q'.repeat(30_000)}";`);
   write('assets/facade-deferred.js', `export const z = "${'z'.repeat(20_000)}";`);

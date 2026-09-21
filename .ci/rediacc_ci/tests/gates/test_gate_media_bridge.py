@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-media-bridge.sh`.
+"""Port of `.ci/scripts/test/gates/test-media-bridge.sh`, retired in W7 P5.
 
 Tests for `.ci/media/bridge.sh` -- VM provisioning and the host->bridge SSH helpers.
 
@@ -38,8 +38,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness, media_verify, media_verify_ext
-
-BASH_TWIN = ".ci/scripts/test/gates/test-media-bridge.sh"
 
 ROOT = paths.repo_root()
 MODULE = ROOT / ".ci" / "media" / "bridge.sh"

@@ -73,7 +73,7 @@ main() {
         # stood here, so every spelling, message and exit code is unchanged; the
         # `Usage: ./run.sh www ...` lines it prints still name this script, because
         # that is still how a person reaches it.
-        # .ci/scripts/test/gates/test-media-entry.sh drives a real
+        # .ci/rediacc_ci/tests/gates/test_gate_media_entry.py drives a real
         # run.sh -> media-entry.sh -> module call and fails if this delegation stops
         # landing on the function that used to be here. THESE TWO ARMS STAY IN THE
         # ROUTER for that reason and one other: the sandbox that test drives copies

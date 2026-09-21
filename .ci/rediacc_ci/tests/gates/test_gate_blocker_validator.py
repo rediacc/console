@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-blocker-validator.sh`.
+"""Port of `.ci/scripts/test/gates/test-blocker-validator.sh`, retired in W7 P5.
 
 Unit tests for `.ci/scripts/lib/blocker-validator.sh`: the parser that reads a `BLOCKER:`-annotated suppression list, and the quality rule that decides whether a stated reason is a reason at all.
 
@@ -16,8 +16,6 @@ import shlex
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-blocker-validator.sh"
 
 LIB = paths.from_root(".ci", "scripts", "lib", "blocker-validator.sh")
 

@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-untagged-commit-branch.sh`.
+"""Port of `.ci/scripts/test/gates/test-untagged-commit-branch.sh`, retired in W7 P5.
 
 `block_untagged_commit` must know WHICH BRANCH it is judging, including when HEAD is detached.
 
@@ -35,8 +35,6 @@ import subprocess
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-untagged-commit-branch.sh"
 
 DISPATCH = paths.from_root(".claude", "rediacc_hooks", "dispatch.py")
 GUARD = "block_untagged_commit"

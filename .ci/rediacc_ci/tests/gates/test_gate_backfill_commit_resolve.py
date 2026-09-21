@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-backfill-commit-resolve.sh`.
+"""Port of `.ci/scripts/test/gates/test-backfill-commit-resolve.sh`, retired in W7 P5.
 
 Both-ways test for `.ci/scripts/release/resolve-backfill-commit.sh` -- the step that decides which commit a backfilled release sentinel records.
 
@@ -26,8 +26,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-backfill-commit-resolve.sh"
 
 SUT = paths.from_root(".ci", "scripts", "release", "resolve-backfill-commit.sh")
 

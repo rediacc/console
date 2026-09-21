@@ -684,7 +684,7 @@ def test_a_key_outside_the_source_prefix_is_refused_rather_than_doubled(tmp_path
     `${src_key#"$SRC_PREFIX"}` on a key that does not carry the prefix is a
     SILENT NO-OP, and the copy would then land at `apt/pr-123-promoted/somewhere-else/stray`. The install tests that follow would read a channel nobody wrote, so the run stops instead.
 
-    THE GUARD CANNOT BE REACHED THROUGH A REAL LISTING, since `aws s3 ls <prefix>` only returns keys under that prefix. The fake supplies one anyway, which is the same thing `test-simulate-promotion-serverside.sh` does and for the same reason: an unreachable guard still has to be proved to work, or its port is unchecked.
+    THE GUARD CANNOT BE REACHED THROUGH A REAL LISTING, since `aws s3 ls <prefix>` only returns keys under that prefix. The fake supplies one anyway, which is the same thing `test_gate_simulate_promotion_serverside.py` does and for the same reason: an unreachable guard still has to be proved to work, or its port is unchecked.
     """
     _root, old, new = run_both(tmp_path, FAKE_AWS_LS_ROGUE="1")
     _agree(old, new, "rogue-key")

@@ -68,7 +68,8 @@ Driven live on 2026-09-10, bash 5.3.9:
 and the `echo "rc=$?"` NEVER RUNS: `command not found` is 127, errexit fires on
 it, and the function dies BEFORE its `rm -f "$err"` and before its `return 1`. So on that path the documented three-state contract collapses into a 127 abort plus a leaked `mktemp` file, and the caller is told nothing about R2 at all.
 
-BLAST RADIUS, MEASURED RATHER THAN GUESSED: 1 of the 11 sourcers does not source `common.sh` (`.ci/scripts/test/gates/test-release-state-consistency.sh`, a REGISTERED gate test), and it exercises only the two PURE assertion functions, which contain no `log_error`. So there are ZERO live paths today. It is latent, not exploitable, and it is the same shape as the `service.sh` /
+BLAST RADIUS, MEASURED RATHER THAN GUESSED: 1 of the 11 sourcers does not source `common.sh` (`.ci/rediacc_ci/tests/gates/test_gate_release_state_consistency.py`, a REGISTERED gate test), and it exercises only the two PURE assertion functions, which contain no `log_error`. So there are ZERO live paths today. It is latent, not exploitable, and it is the same shape as the
+`service.sh` /
 `check_docker` finding from this workstream's first wave. This port defines its own `_log_error` and therefore cannot inherit the defect; a test pins that the twin still has it, so the pin goes red the day the twin is fixed.
 
 --------------------------------------------------------------------------

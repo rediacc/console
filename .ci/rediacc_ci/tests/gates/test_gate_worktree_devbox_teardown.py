@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-worktree-devbox-teardown.sh`.
+"""Port of `.ci/scripts/test/gates/test-worktree-devbox-teardown.sh`, retired in W7 P5.
 
 `worktree remove` must tear the devbox down BEFORE it deletes the directory.
 
@@ -27,8 +27,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-worktree-devbox-teardown.sh"
 
 SUT = paths.from_root("scripts", "dev", "worktree.sh")
 

@@ -1,8 +1,9 @@
-"""Port of `.ci/scripts/test/gates/test-installmethods-container-version.sh`.
+"""Port of `.ci/scripts/test/gates/test-installmethods-container-version.sh`, retired in W7 P5.
 
 The container version fence in `.ci/scripts/test/test-install-methods.sh`.
 
-WHY THIS CLASS NEEDS A GATE. On 2026-08-07 a release published CLI binaries built as 1.2.16 under the label 1.2.17. `verify_version()` was one hole (pinned by test-verify-version.sh). The other, larger one: SEVEN of the eleven install methods -- apt, dnf, apk, pacman, npm, linuxbrew, quick -- never compared a version at all. Each ended its `docker run ... set -e` heredoc with a
+WHY THIS CLASS NEEDS A GATE. On 2026-08-07 a release published CLI binaries built as 1.2.16 under the label 1.2.17. `verify_version()` was one hole (pinned by test_gate_verify_version.py). The other, larger one: SEVEN of the eleven install methods -- apt, dnf, apk, pacman, npm, linuxbrew, quick -- never compared a version at all. Each ended its `docker run ... set -e` heredoc
+with a
 bare
 `${PKG_BINARY_NAME} --version` whose output was never captured and never
 compared. `$VERSION` was referenced ZERO times inside any of those functions, so the only assertion was "the installed binary exits 0" -- which a mislabelled binary does.
@@ -22,8 +23,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness, shellsubject
-
-BASH_TWIN = ".ci/scripts/test/gates/test-installmethods-container-version.sh"
 
 TARGET = paths.from_root(".ci", "scripts", "test", "test-install-methods.sh")
 SUBJECT = shellsubject.Subject(TARGET)

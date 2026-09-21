@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-ci-compat-prose.sh`.
+"""Port of `.ci/scripts/test/gates/test-ci-compat-prose.sh`, retired in W7 P5.
 
 `.ci/scripts/security/check-commands.sh` must not read its own documentation as code.
 
@@ -31,8 +31,6 @@ import tempfile
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-ci-compat-prose.sh"
 
 SUT = paths.from_root(".ci", "scripts", "security", "check-commands.sh")
 

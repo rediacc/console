@@ -471,7 +471,7 @@ def _manifest_gate_ids(root):
 def _manifest_gate_run_paths(root):
     """`run:` script paths for every `gate: true` manifest entry, as a set.
 
-    A citation of real, ci-runner-scheduled coverage is far more often a FILE PATH ("test-ci-trace-branch.sh" or its full repo-relative path, optionally
+    A citation of real, ci-runner-scheduled coverage is far more often a FILE PATH ("test_gate_ci_trace_branch.py" or its full repo-relative path, optionally
     with "::test_name" naming the specific case inside it) than the manifest's
     own `id:` string -- both a human and a judge model reach for the path they can see in the tree, not an id that exists only in manifest.ts. Checking ids alone (the first fix here) left that whole citation shape unrecognized and still reporting real coverage as hallucinated. Same regex/parsing approach as _manifest_gate_ids, deliberately: one manifest scan, two views.
     """
@@ -696,7 +696,8 @@ def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
         # gate-test:ci-trace-branch) was unconditionally reported as hallucinated. Verified live 2026-08-27: `npx tsx scripts/ci-runner/run.ts --only gate-test:ci-trace-branch` actually executes and passes it.
         if eg in _manifest_gate_ids(root):
             return "settle", "covered", eg
-        # A citation is at least as often a FILE PATH (optionally with "::test_name") as it is a manifest id -- both a human rebuttal and the judge itself reach for the path visible in the tree. Observed live 2026-08-27: three consecutive REBUTs, each naming a real, already-passing case in test-ci-trace-branch.sh by path/function, kept reporting hallucinated because only the bare
+        # A citation is at least as often a FILE PATH (optionally with "::test_name") as it is a manifest id -- both a human rebuttal and the judge itself reach for the path visible in the tree. Observed live 2026-08-27: three consecutive REBUTs, each naming a real, already-passing case in test_gate_ci_trace_branch.py by path/function, kept reporting hallucinated because only
+        # the bare
         # id was checked.
         if _citation_matches_gate(eg, root):
             return "settle", "covered", eg

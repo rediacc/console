@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-edge-verify-retries.sh`.
+"""Port of `.ci/scripts/test/gates/test-edge-verify-retries.sh`, retired in W7 P5.
 
 Assert the edge smoke test cannot be failed by ONE unlucky sample.
 
@@ -24,8 +24,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-edge-verify-retries.sh"
 
 TARGET = paths.from_root(".ci", "scripts", "deploy", "verify-edge-endpoints.sh")
 

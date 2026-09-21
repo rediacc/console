@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-rebase-resolve.sh`.
+"""Port of `.ci/scripts/test/gates/test-rebase-resolve.sh`, retired in W7 P5.
 
 Drive `wl_git.py rebase-resolve` against REAL halted rebases, one per kind.
 
@@ -27,8 +27,6 @@ import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-rebase-resolve.sh"
 
 WL = paths.from_root(".claude", "hooks", "stop", "wl_git.py")
 FIXTURE_LIB = paths.from_root(".ci", "scripts", "test", "lib", "git-fixture.sh")

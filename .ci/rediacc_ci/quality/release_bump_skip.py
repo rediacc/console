@@ -2,7 +2,8 @@
 
 Ported from `.ci/scripts/quality/check-release-bump-skip.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__` for the phase-5 decision that retired the twin.
 
-WHY THIS EXISTS. Two gates already cover neighbouring ground and neither touches this: `check-ci-workflow-invariants.sh` asserts the WIRING in ci.yml (that the decision is declared once, threaded, and not re-decided in finalize-release-sentinel), and `test-skip-release-channel-pointer.sh` proves the UPLOAD script's guard branches correctly. Nothing drove `dispatch-release.sh`'s own
+WHY THIS EXISTS. Two gates already cover neighbouring ground and neither touches this: `check-ci-workflow-invariants.sh` asserts the WIRING in ci.yml (that the decision is declared once, threaded, and not re-decided in finalize-release-sentinel), and `test_gate_skip_release_channel_pointer.py` proves the UPLOAD script's guard branches correctly. Nothing drove
+`dispatch-release.sh`'s own
 decision branch, so "Finalize Release emitted the skip signal for the right reason" was unobservable by construction. Release gates could say a release succeeded or was absent; they could not say WHY.
 
 That distinction is not academic here. A bump-none merge and a broken decision both produce "no release". They are indistinguishable from the outside, and the only thing that tells them apart is the signal this script emits:

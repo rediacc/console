@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-label-guide-comment.sh`.
+"""Port of `.ci/scripts/test/gates/test-label-guide-comment.sh`, retired in W7 P5.
 
 WHAT IT GUARDS. The repo carries twelve labels, several of them kill switches whose effect is invisible unless you already know they exist. The module posts one comment per PR explaining them, rendered from `.github/labels.yml`, and the contract it has to keep is create/update/NO-OP: a PR gets a CI run per push, so a poster that wrote unconditionally would bury the conversation.
 
@@ -31,8 +31,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-label-guide-comment.sh"
 
 MODULE = paths.from_root(".ci", "scripts", "ci", "label-guide-comment.cjs")
 REAL_LABELS = paths.from_root(".github", "labels.yml")

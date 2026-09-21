@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-shrink-only-composition.sh`.
+"""Port of `.ci/scripts/test/gates/test-shrink-only-composition.sh`, retired in W7 P5.
 
 Every shrink-only baseline in this repo must enforce shrink-only on the WRITE path, and this file is both the detector and its test: there is no separate `check-*.ts` to shell out to, so porting it means re-expressing the scan in Python. Parity here is therefore a claim about two implementations agreeing on the same tree, which is why the controls matter more than usual.
 
@@ -34,8 +34,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-shrink-only-composition.sh"
 
 # Four control cases plant a probe inside the scanned tree. See the docstring.
 REAL_TREE_TWIN = True
@@ -511,15 +509,13 @@ def test_this_module_is_not_itself_an_offender(gate):
             "%s is in its OWN offender corpus, so this gate now reports its own source. "
             "Keep the flag split (FLAG) and every probe body rendered through %%s." % own
         )
-    # AND THE SPLIT MUST STILL PRODUCE THE REAL FLAG. A control that only checks
-    # for absence is satisfied by a typo, and a typo would make every probe below
-    # invisible to the scan while all four controls kept passing. CHECKED AGAINST THE TWIN, which is a `.sh` file and therefore outside this corpus, so it can carry the flag whole; a literal written here would either be a tautology or a second thing to keep rendered.
-    twin = (ROOT / BASH_TWIN).read_text(encoding="utf-8")
-    if FLAG not in twin:
+    # AND THE SPLIT MUST STILL PRODUCE THE REAL FLAG. A control that only checks for absence is satisfied by a typo, and a typo would make every probe below invisible to the scan while all four controls kept passing. CHECKED AGAINST THE GUARD, which implements the flag and therefore carries it whole; a literal written here would either be a tautology or a second thing to keep
+    # rendered. The oracle was the bash twin until W7 P5 retired it, and the guard is the stronger choice anyway: it proves the rendered flag is the real string AND that the corpus scan above can see it in the subject.
+    if GUARD not in corpus:
         gate.log_fail(
             "the rendered flag %r does not appear in %s, so it is a typo -- the probes "
             "below would be invisible to the scan and all four controls would still pass"
-            % (FLAG, BASH_TWIN)
+            % (FLAG, GUARD)
         )
     gate.assert_eq(
         FLAG in UNGUARDED_PY_BODY and FLAG in UNGUARDED_TS_BODY,

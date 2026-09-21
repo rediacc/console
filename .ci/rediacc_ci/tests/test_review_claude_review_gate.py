@@ -58,7 +58,7 @@ OLD_SHA = "1" * 40
 NEW_SHA = "2" * 40
 THIRD_SHA = "3" * 40
 
-# Three literal backticks inside a shell-ish string are a parsing hazard for no benefit; the same trick `test-review-labels.sh` uses.
+# Three literal backticks inside a shell-ish string are a parsing hazard for no benefit; the same trick `test_gate_review_labels.py` uses.
 TICKS = "```"
 
 FAKE_GH = r'''#!/usr/bin/python3

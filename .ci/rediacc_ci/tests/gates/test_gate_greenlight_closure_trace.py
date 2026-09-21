@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-greenlight-closure-trace.sh`.
+"""Port of `.ci/scripts/test/gates/test-greenlight-closure-trace.sh`, retired in W7 P5.
 
 Completeness gate for the cross-PR greenlight closure table, `.ci/scripts/ci/greenlight.cjs::CLOSURES`.
 
@@ -18,8 +18,8 @@ THE `.fixture` SUFFIX IS LOAD-BEARING AND WAS PAID FOR. Named plainly `trace_che
 `89:33 error Unnecessary escape character` (`no-useless-escape`), measured 2026-09-07. That finding is real and is INVISIBLE today only because the program lives inside a bash heredoc where no linter looks. Fixing the escape would break the byte-identity this port's whole fidelity argument rests on, so the file is named for what it is -- a fixture, a frozen copy of somebody else's
 bytes -- and node is handed a `.cjs` copy instead. Node refuses an unknown extension outright (`ERR_UNKNOWN_FILE_EXTENSION`), so the materialisation is not optional.
 
-THE PRICE OF A SECOND COPY IS DRIFT, so the copy is a CHECKED INVARIANT rather than a hope. `test_the_checker_is_byte_identical_to_the_twins` -- an ADDED case, not one of the twin's four -- extracts the twin's heredoc and requires it to equal the file. A drift that would otherwise make the two files silently answer different questions is a red naming the byte count on each side.
-When W7 P5 deletes the twin, that case has nothing left to compare and must be deleted with it; it is written to FAIL rather than skip if the twin is gone, so the deletion cannot be forgotten.
+THERE IS NO SECOND COPY ANY MORE, WHICH IS WHY THE DRIFT CHECK IS GONE. While both files existed, `test_the_checker_is_byte_identical_to_the_twins` -- an ADDED case, not one of the twin's four -- extracted the twin's heredoc and required it to equal the file, and it was written to FAIL rather than skip if the twin vanished so the pairing could not be forgotten. W7 P5 census
+batch A8 retired the twin, so that case was deleted in the same change: with one copy left there is nothing to compare, and a case comparing a file against nothing passes over nothing. `trace_checker.cjs.fixture` is now the only copy of the checker, and `write_checker` below is what refuses a run with the fixture missing, before any case can pass over nothing.
 
 WHERE THIS REIMPLEMENTS awk AND grep, AND WHY THE ANSWERS AGREE. Only the assertions around the checker's own stdout, which is a fixed line grammar the checker writes itself (`DERIVED <key> <n>` and `UNCOVERED <key> <path> <why>`):
 
@@ -43,16 +43,9 @@ import pathlib
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-BASH_TWIN = ".ci/scripts/test/gates/test-greenlight-closure-trace.sh"
-
 ROOT = paths.repo_root()
 ENGINE = ROOT / ".ci" / "scripts" / "ci" / "greenlight.cjs"
-TWIN = ROOT / BASH_TWIN
 CHECKER_PATH = pathlib.Path(__file__).resolve().parent / "trace_checker.cjs.fixture"
-
-# The heredoc delimiters in the twin, named here so the drift case fails on a RENAMED delimiter instead of quietly comparing against an empty string.
-HEREDOC_OPEN = "cat >\"$CHECKER\" <<'CHECKER_EOF'\n"
-HEREDOC_CLOSE = "\nCHECKER_EOF\n"
 
 
 def node(gate) -> str:  # noqa: ARG001 - `gate` keeps every caller uniform
@@ -132,43 +125,6 @@ def mutate_table(gate, source: pathlib.Path, target: pathlib.Path, program: str)
         )
     if not target.is_file():
         gate.log_fail("the table mutation wrote no file at %s" % target)
-
-
-def test_the_checker_is_byte_identical_to_the_twins(gate):
-    """ADDED CASE, not one of the twin's four. See the module docstring: the port carries the checker rather than reimplementing it, and this is what stops the two copies from silently answering different questions."""
-    if not CHECKER_PATH.is_file():
-        gate.log_fail("%s is missing; there is nothing to compare" % CHECKER_PATH)
-    if not TWIN.is_file():
-        gate.log_fail(
-            "%s is gone. This case compares the checker beside this module against the "
-            "twin's heredoc, and with the twin deleted it has nothing to compare, so it "
-            "must be deleted too rather than left passing over nothing." % BASH_TWIN
-        )
-    source = TWIN.read_text(encoding="utf-8")
-    if HEREDOC_OPEN not in source or HEREDOC_CLOSE not in source:
-        gate.log_fail(
-            "the twin's checker heredoc delimiters have changed, so this comparison "
-            "would run against the wrong bytes rather than fail honestly"
-        )
-    start = source.index(HEREDOC_OPEN) + len(HEREDOC_OPEN)
-    end = source.index(HEREDOC_CLOSE, start)
-    theirs = source[start:end] + "\n"
-    ours = CHECKER_PATH.read_text(encoding="utf-8")
-    gate.assert_eq(
-        len(ours),
-        len(theirs),
-        "the port's copy of the checker is %d bytes and the twin's heredoc is %d; they "
-        "have drifted and the two files now ask different questions" % (len(ours), len(theirs)),
-    )
-    if ours != theirs:
-        gate.log_fail(
-            "the port's copy of the checker and the twin's heredoc are the same length "
-            "but differ; re-copy the heredoc rather than editing one side"
-        )
-    gate.log_pass(
-        "the ported checker is byte-identical to the twin's heredoc (%d bytes, %d lines)"
-        % (len(ours), ours.count("\n"))
-    )
 
 
 def test_derivation_is_not_vacuous(gate, tmp_path):

@@ -168,7 +168,7 @@ judge() {
             return 1
             ;;
         # COULD_NOT_TELL_ARM_BEGIN (anchor for the gate test's planted defect --
-        # .ci/scripts/test/gates/test-assert-edge-tag-exists.sh rebuilds this arm
+        # .ci/rediacc_ci/tests/gates/test_gate_assert_edge_tag_exists.py rebuilds this arm
         # as `return 0` and requires the 403 case to go green; do not remove the
         # markers)
         unknown:*)

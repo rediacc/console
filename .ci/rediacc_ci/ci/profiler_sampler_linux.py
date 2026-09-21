@@ -13,8 +13,10 @@ LIVE CALLERS OF THE TWIN, none repointed by this port:
     invokes the composite.
   * `.github/workflows/profiler-probe.yml:54` and `:72` -- `--probe`.
   * `.ci/scripts/test/profiler-control.sh:50,121`.
-  * `.ci/scripts/test/gates/test-profiler-report.sh:34,398,409,421,478,506` and
-    its Python port `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:59,703`.
+  * `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:59,703`. Its bash
+    twin carried the same calls at
+    `.ci/scripts/test/gates/test-profiler-report.sh:34,398,409,421,478,506`
+    until W7 P5 census batch A8 retired it.
 
 FOUR MEASURED DEFECTS, ALL FIXED IN BOTH SIDES IN LOCKSTEP ON 2026-09-10. Each paragraph below is the record of what was wrong, kept because the measurement is the expensive part and because the differential tests that used to pin the bug now pin the fix. Everything AFTER "PORT NOTES" is still reproduced, not repaired.
 
@@ -29,7 +31,8 @@ deliberately off (`:54-57` explains why), so `while (($# > 0))` never terminated
 100% of one core, no output on either stream, no exit. On ubuntu-slim that is the whole machine, and the production caller spawns the sampler `detached: true` with `child.unref()`, so nothing would reap it before the job's 6-hour ceiling. `PROFILER_MAX_SECONDS` could not help: it is evaluated inside the sample loop, which the spin never reached.
 
 BLAST RADIUS, COUNTED NOT ESTIMATED, AND THE FIRST COUNT WAS AN UNDERCOUNT. The twin has 14 real invocation sites (docstrings, this file and the ledgers excluded). TWELVE pass a value after `--out`/`--interval`: `.github/actions/profiler/index.js:117`, `.ci/scripts/test/profiler-control.sh:121`, `.ci/scripts/test/gates/test-profiler-report.sh:398,409,421,478,506` and its Python
-port `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:548,568,592,656,703`. TWO use `--probe` only, `.github/workflows/profiler-probe.yml:54,72`. ZERO were reachable; the defect was one hand-typed invocation away, and it failed SILENTLY, which is what made it worth fixing rather than noting. (A first pass wrote "8 and 2", having missed the five sites in the gate-test port;
+port `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:548,568,592,656,703`. TWO use `--probe` only, `.github/workflows/profiler-probe.yml:54,72`. (W7 P5 census batch A8 later retired `test-profiler-report.sh`; the count above is the 2026-09-10 measurement and is left as it was taken.) ZERO were reachable; the defect was one hand-typed invocation away, and it failed
+SILENTLY, which is what made it worth fixing rather than noting. (A first pass wrote "8 and 2", having missed the five sites in the gate-test port;
 re-derived by enumerating every match rather than by recalling the earlier grep.) Every arm of the loop now consumes at least one argument, and a missing value is the exit 2 every other bad argument already got. `test_a_dangling_value_flag_exits_on_both_sides` pins it.
 
 (2) `--interval 08` KILLED THE SAMPLER. `DISK_EVERY=$(((DISK_EVERY_S + INTERVAL -

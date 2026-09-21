@@ -8,8 +8,10 @@ THREE THINGS IT GETS RIGHT THAT AN INLINE `subprocess.run` DOES NOT.
   1. STDOUT AND STDERR ARE NEVER MERGED. `2>&1` is the default reflex and it
      destroys exactly the defect these tests exist to catch. The 2026-09-06
      emit-advisory incident was a STREAM SWAP -- log_info moved from stderr to
-     stdout -- and `.ci/scripts/test/gates/test-emit-advisory.sh:100-102` says
-     so in as many words: "The cases below capture stdout and stderr into
+     stdout -- and the emit-advisory gate test said so in as many words, at
+     `.ci/scripts/test/gates/test-emit-advisory.sh:100-102` before W7 P5 retired
+     that twin and `.ci/rediacc_ci/tests/gates/test_gate_emit_advisory.py` took
+     the cases over: "The cases below capture stdout and stderr into
      SEPARATE files on purpose. The defect is a stream swap; the `2>&1` used by
      every case above merges the two streams back together and would hide it
      completely." Every function here returns the two separately, and there is
@@ -183,7 +185,7 @@ def bash_streams(
 def escape_bytes(text: str) -> int:
     """How many ESC bytes are in `text`.
 
-    The single number that answers "did colour leak into this stream", which is the assertion `test-emit-advisory.sh:172` makes with `tr -cd '\\033' | wc -c`. Counted rather than pattern-matched so a NEW escape sequence nobody anticipated still trips it.
+    The single number that answers "did colour leak into this stream", which is the assertion `test_gate_emit_advisory.py` carries, and `test-emit-advisory.sh:172` made before that twin's W7 P5 retirement, with `tr -cd '\\033' | wc -c`. Counted rather than pattern-matched so a NEW escape sequence nobody anticipated still trips it.
     """
     return text.count("\033")
 

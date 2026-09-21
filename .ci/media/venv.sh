@@ -6,7 +6,7 @@
 # from run.sh byte for byte, comments included, because the comments are the
 # archaeology: each one records an incident that the code's shape is the answer to.
 # Phase 2 deleted run.sh's copies, so this file is now the only definition of each name;
-# the gate test .ci/scripts/test/gates/test-media-venv.sh asserts exactly that, so a
+# the gate test .ci/rediacc_ci/tests/gates/test_gate_media_venv.py asserts exactly that, so a
 # second copy reappearing anywhere is red rather than merely duplicated.
 #
 # SOURCED, NEVER EXECUTED. It defines functions and nothing else, so sourcing it

@@ -11,7 +11,7 @@
 # Part of the media pipeline extraction (W10). Moved out of run.sh byte for byte in
 # phase 1, comments included; phase 2 deleted run.sh's copy, and this module is the only
 # definition of these four names anywhere.
-# .ci/scripts/test/gates/test-media-pool.sh asserts that ownership and exercises the pool
+# .ci/rediacc_ci/tests/gates/test_gate_media_pool.py asserts that ownership and exercises the pool
 # with a fake renderer, so its concurrency bound, its per-item failure files and the
 # caller's report block are all proved with node and npx absent. It is also where the one
 # DELIBERATE behaviour change of phase 2 lives: `wait -n || true` in _tutorial_video_pool,

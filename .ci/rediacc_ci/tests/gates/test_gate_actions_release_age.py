@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-actions-release-age.sh`.
+"""Port of `.ci/scripts/test/gates/test-actions-release-age.sh`, retired in W7 P5.
 
 Test for the release-age deferral and the anti-vacuity guard in `scripts/gates/check-actions.ts`.
 
@@ -30,8 +30,6 @@ import json
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-actions-release-age.sh"
 
 GATE = paths.from_root("scripts/gates", "check-actions.ts")
 LIB = paths.from_root("scripts", "lib", "release-age.ts")

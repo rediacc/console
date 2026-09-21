@@ -739,7 +739,7 @@ main() {
 
         # `provision` and `www` are NOT here: both are media verbs and both are served
         # by the ROUTER (../../run.sh), which execs .ci/media/media-entry.sh directly.
-        # They stayed there because .ci/scripts/test/gates/test-media-entry.sh drives the
+        # They stayed there because .ci/rediacc_ci/tests/gates/test_gate_media_entry.py drives the
         # chain through a sandbox that copies run.sh and symlinks the rest of .ci -- a
         # media verb arriving here would step outside the sandbox it is being tested in.
 

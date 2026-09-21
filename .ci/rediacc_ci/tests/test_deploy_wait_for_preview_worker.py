@@ -1,6 +1,7 @@
 """`rediacc_ci.deploy.wait_for_preview_worker` against its bash twin.
 
-THE STUB IS THE SAME TECHNIQUE `.ci/scripts/test/gates/test-preview-readiness.sh` ALREADY USES, ported from a Node one-off to a small `http.server` here so both sides of the differential can point at it: `/health` always answers 200, `/server-info` flaps according to `mode` (`steady` always good, `flap` good on one probe in three so the streak never reaches 2, `late` cold for the
+THE STUB IS THE SAME TECHNIQUE `.ci/rediacc_ci/tests/gates/test_gate_preview_readiness.py` ALREADY USES, ported from a Node one-off to a small `http.server` here so both sides of the differential can point at it: `/health` always answers 200, `/server-info` flaps according to `mode` (`steady` always good, `flap` good on one probe in three so the streak never reaches 2, `late`
+cold for the
 first three probes then steady). Nothing here is a fake Cloudflare Worker or a real network call -- it is a loopback HTTP server this process owns and tears down.
 
 EACH SIDE GETS ITS OWN FRESH SERVER INSTANCE, restarted between the bash run and the python run, because the flap/late counters are per-server state keyed on request order: reusing one server across both sides would let whichever side runs SECOND see a different sequence of good/bad answers than the side that ran first, which is a test artifact, not a real divergence.

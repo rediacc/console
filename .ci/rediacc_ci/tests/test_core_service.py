@@ -4,7 +4,8 @@ REAL DOCKER, NO STACK. Every case runs the real `docker ps` and `docker inspect`
 left as an absence: `service_start` and `service_stop`.
 
 THE CLOCK IS FROZEN ON BOTH SIDES, BY DIFFERENT SEAMS, AND THAT IS DELIBERATE.
-`service_status` prints an uptime derived from `date +%s`, so two runs a second apart disagree and no byte comparison is possible. The twin's seam is a fake `date` earlier on PATH -- the same trick `test-bws-env.sh` uses for `bws`. The port reads the clock in-process, so its seam is `SERVICE_STATUS_NOW`. Both are supplied by `env_for` below from ONE value, so the two sides cannot
+`service_status` prints an uptime derived from `date +%s`, so two runs a second apart disagree and no byte comparison is possible. The twin's seam is a fake `date` earlier on PATH -- the same trick `test_gate_bws_env.py` uses for `bws`. The port reads the clock in-process, so its seam is `SERVICE_STATUS_NOW`. Both are supplied by `env_for` below from ONE value, so the two sides
+cannot
 drift apart through the harness.
 
 `check_docker` IS DEFINED BY THE HARNESS ON THE BASH SIDE because the twin does not define it: it lives in `.ci/legacy/run-legacy.sh`, the file that SOURCES `service.sh`, and only late binding makes the twin work at all. The definition below is copied from that file verbatim. That is defect 3 in the port's docstring, and the harness having to supply it is the evidence for it.

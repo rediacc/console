@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-go-deps-probe-failure.sh`.
+"""Port of `.ci/scripts/test/gates/test-go-deps-probe-failure.sh`, retired in W7 P5.
 
 The probe-failure guard in `.ci/scripts/quality/check-go-deps.sh`.
 
@@ -43,8 +43,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-go-deps-probe-failure.sh"
 
 REAL_GATE = paths.from_root(".ci", "scripts", "quality", "check-go-deps.sh")
 

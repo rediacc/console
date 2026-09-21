@@ -19,7 +19,7 @@
 # Anything added here becomes a second implementation of a contract that already has one.
 #
 # HOW THE FORWARD IS PROVEN, given private/growth cannot be inspected:
-# .ci/scripts/test/gates/test-media-shims.sh drives THIS path with aws, npx and the
+# .ci/rediacc_ci/tests/gates/test_gate_media_shims.py drives THIS path with aws, npx and the
 # network absent and requires the invocation to arrive in .ci/media/tools/upload-r2.sh with
 # argv byte-identical, from an arbitrary cwd, with the exit status forwarded. The same
 # gate freezes the accepted flag set (--kind --key --lang --field --file --engine

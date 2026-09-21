@@ -22,7 +22,7 @@
 # .ci/scripts/deploy/upload-media-to-r2.sh forwards here with exec.
 #
 # HOW THE CONTRACT IS CHECKED FROM THIS SIDE, since private/growth cannot be:
-# .ci/scripts/test/gates/test-media-shims.sh drives the OLD path with aws, npx and the
+# .ci/rediacc_ci/tests/gates/test_gate_media_shims.py drives the OLD path with aws, npx and the
 # network absent, and requires argv to arrive here byte-identical from an arbitrary cwd
 # with the exit status forwarded. It also FREEZES the accepted flag set below against a
 # recorded list, so dropping or renaming a flag a caller passes is red here rather than

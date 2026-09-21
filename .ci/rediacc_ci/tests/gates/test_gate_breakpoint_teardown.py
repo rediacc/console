@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-breakpoint-teardown.sh`.
+"""Port of `.ci/scripts/test/gates/test-breakpoint-teardown.sh`, retired in W7 P5.
 
 Proves that breakpoint teardown kills what it started and NOTHING ELSE, and that it is safe to run again.
 
@@ -26,8 +26,6 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-breakpoint-teardown.sh"
 
 pytestmark = pytest.mark.xdist_group("breakpoint-teardown")
 

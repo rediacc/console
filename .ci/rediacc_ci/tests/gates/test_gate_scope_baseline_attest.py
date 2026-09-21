@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-scope-baseline-attest.sh`.
+"""Port of `.ci/scripts/test/gates/test-scope-baseline-attest.sh`, retired in W7 P5.
 
 Unit test for VERIFY-AT-READ baseline attestation in the CI scope engine: `.ci/scripts/ci/scope-engine.cjs` (`attestPlan` + `createRepoIo` + the fenced walk).
 
@@ -27,8 +27,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-scope-baseline-attest.sh"
 
 ENGINE = paths.from_root(".ci", "scripts", "ci", "scope-engine.cjs")
 MAP = paths.from_root(".ci", "scripts", "ci", "scope-map.cjs")

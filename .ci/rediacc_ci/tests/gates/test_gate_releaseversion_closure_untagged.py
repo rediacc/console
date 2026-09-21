@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-releaseversion-closure-untagged.sh`.
+"""Port of `.ci/scripts/test/gates/test-releaseversion-closure-untagged.sh`, retired in W7 P5.
 
 The version component of the closure key in `.ci/scripts/ci/generate-tag.sh`.
 
@@ -16,8 +16,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-releaseversion-closure-untagged.sh"
 
 GENERATE_TAG = paths.from_root(".ci", "scripts", "ci", "generate-tag.sh")
 

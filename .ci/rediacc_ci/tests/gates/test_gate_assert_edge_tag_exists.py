@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-assert-edge-tag-exists.sh`.
+"""Port of `.ci/scripts/test/gates/test-assert-edge-tag-exists.sh`, retired in W7 P5.
 
 `promote-stable` must refuse to promote a version that does not fully exist -- and must refuse just as loudly when it CANNOT TELL whether it exists.
 
@@ -34,8 +34,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-assert-edge-tag-exists.sh"
 
 TARGET = paths.from_root(".ci", "scripts", "release", "assert-edge-tag-exists.sh")
 LIB_DIR = paths.from_root(".ci", "scripts", "lib")

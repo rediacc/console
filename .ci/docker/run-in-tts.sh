@@ -16,7 +16,7 @@
 # next reader would have to diff two files to answer "what does this do".
 #
 # HOW THE FORWARD IS PROVEN, given the callers cannot be inspected:
-# .ci/scripts/test/gates/test-media-shims.sh drives THIS path with docker absent and
+# .ci/rediacc_ci/tests/gates/test_gate_media_shims.py drives THIS path with docker absent and
 # requires the invocation to arrive in .ci/media/tools/run-in-tts.sh with argv byte-identical,
 # from an arbitrary cwd, with the exit status forwarded and stdin still connected. That is
 # the whole of what a caller depends on, so proving it here is equivalent to proving it

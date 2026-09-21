@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-mark-production.sh`.
+"""Port of `.ci/scripts/test/gates/test-mark-production.sh`, retired in W7 P5.
 
 The production marker must refuse to lie about what is live.
 
@@ -17,8 +17,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-mark-production.sh"
 
 SUT = paths.from_root(".ci", "scripts", "release", "mark-production.sh")
 

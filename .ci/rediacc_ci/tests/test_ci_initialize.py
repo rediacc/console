@@ -447,7 +447,7 @@ def test_an_argument_that_is_not_a_shell_identifier_is_printfs_own_refusal(
     """
     old, new, files = run_both(tmp_path, "--a.b=1", env_extra=dict(PAT_ENV))
     assert old[0] == 2
-    assert old[2].endswith("line 333: printf: `ARG_A.B': not a valid identifier\n")
+    assert old[2].endswith("line 334: printf: `ARG_A.B': not a valid identifier\n")
     assert new[0] == 2
     assert new[2] == "printf: `ARG_A.B': not a valid identifier\n"
     assert files["old_calls"] == ""
@@ -729,7 +729,7 @@ def test_the_deciders_stderr_is_swallowed_by_the_two_to_one_redirect(
     assert_identical(old, new, files)
 
 
-# --------------------------------------------------------------------------- The tag fetch: the block `test-releaseversion-tag-fetch.sh` also guards ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The tag fetch: the block `test_gate_releaseversion_tag_fetch.py` also guards ---------------------------------------------------------------------------
 
 
 def test_defect_a_an_unset_repository_slug_dies_at_line_219(

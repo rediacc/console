@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-breakpoint-naming.sh`.
+"""Port of `.ci/scripts/test/gates/test-breakpoint-naming.sh`, retired in W7 P5.
 
 Pins the tunnel-naming grammar produced by `.ci/breakpoint/scripts/derive-descriptor.sh`.
 
@@ -23,8 +23,6 @@ import os
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-breakpoint-naming.sh"
 
 DERIVE = paths.from_root(".ci", "breakpoint", "scripts", "derive-descriptor.sh")
 CONF = paths.from_root(".ci", "breakpoint", "breakpoint.conf")

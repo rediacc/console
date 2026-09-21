@@ -364,7 +364,7 @@ def check2(yaml: ModuleType, workflows_dir: str, real_tree: bool, registry_file:
     # --- carried verbatim from check-workflow-gates.sh, lines 337-347 --------------------- An exemption naming a declaration that is gone, or one that IS read, excuses nothing and would sit forever looking like coverage.
     #
     # SCOPED TO THE REAL TREE, and that scoping is not a nicety. The exemptions name files in .github/workflows; a CHECK 1/CHECK 3 fixture tree contains two or three synthetic YAMLs and none of them. Sweeping there reported every exemption as dangling, which made this script exit 1 on EVERY fixture tree and turned two unrelated gate tests red for a file their fixtures were never
-    # meant to have -- test-slim-timeout.sh and test-workflow-contracts.sh, nightly run 34014201256. A liveness probe that cannot see the thing it probes for must stay silent, not condemn it.
+    # meant to have -- test_gate_slim_timeout.py and test_gate_workflow_contracts.py, nightly run 34014201256. A liveness probe that cannot see the thing it probes for must stay silent, not condemn it.
     if real_tree:
         for fname, name in sorted(declared_unused_ok):
             doc = docs.get(fname)

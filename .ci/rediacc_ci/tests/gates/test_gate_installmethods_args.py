@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-installmethods-args.sh`.
+"""Port of `.ci/scripts/test/gates/test-installmethods-args.sh`, retired in W7 P5.
 
 `.ci/scripts/test/test-install-methods.sh` must not be able to report success without having accounted for at least one test. Reproduced live on 2026-08-07:
 
@@ -17,8 +17,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-installmethods-args.sh"
 
 TARGET = paths.from_root(".ci", "scripts", "test", "test-install-methods.sh")
 

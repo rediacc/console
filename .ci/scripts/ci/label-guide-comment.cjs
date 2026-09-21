@@ -10,7 +10,7 @@
 // with it for longer than one CI run.
 //
 // IDEMPOTENCE IS THE WHOLE DESIGN. A PR gets a CI run per push; a guide posted
-// per run would bury the conversation. So: find the existing guide by an HTML marker, and write ONLY when the rendered body actually differs. A rerun on an unchanged tree performs zero API writes -- see test-label-guide-comment.sh's no-op case, which asserts an empty write trace rather than merely asserting "one comment exists".
+// per run would bury the conversation. So: find the existing guide by an HTML marker, and write ONLY when the rendered body actually differs. A rerun on an unchanged tree performs zero API writes -- see test_gate_label_guide_comment.py's no-op case, which asserts an empty write trace rather than merely asserting "one comment exists".
 //
 // Env:
 //   LABEL_GUIDE_LABELS_FILE - test seam; defaults to the repo's .github/labels.yml

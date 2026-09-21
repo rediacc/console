@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-workflow-env-shell-vars.sh`.
+"""Port of `.ci/scripts/test/gates/test-workflow-env-shell-vars.sh`, retired in W7 P5.
 
 Both-ways test for the env-shell-var rule in `.ci/scripts/quality/check-workflows.sh`.
 
@@ -19,8 +19,6 @@ NO `xdist_group`. Each case gets its own `mktemp -d` fixture directory, and the 
 """
 
 from rediacc_ci.tests.gates import harness, workflow_rule
-
-BASH_TWIN = ".ci/scripts/test/gates/test-workflow-env-shell-vars.sh"
 
 
 def test_flags_runner_temp(gate):

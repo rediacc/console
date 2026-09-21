@@ -357,162 +357,65 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:test:tutorial-player | quality-packages / Tutorial player release gate | yes | yes | no |
 | check:types | quality-code / TypeScript | yes | yes | no |
 | check:version | quality-code / Versions | yes | no | no |
-| gate-test:actions-release-age | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:age-check | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:assert-edge-tag-exists | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:autopilot-breakpoint-alignment | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:autopilot-guide-comment | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:autopilot-harness | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:autopilot-no-bypass | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:autopilot-workflow-invariants | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:backfill-commit-resolve | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:blocker-golden-corpus | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:blocker-validator | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:breakpoint-drift | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:breakpoint-mode-selection | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:breakpoint-naming | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:breakpoint-pins | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:breakpoint-portability | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:breakpoint-secret-exposure | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:breakpoint-teardown | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:bws-env | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:bws-map | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:channel-for-event | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:ci-compat-prose | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:ci-complete-tiers | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:ci-job-aggregation | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:ci-parity | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:ci-runner | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:ci-trace-branch | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:ci-workflow-invariants | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:claude-hooks | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:client-bundle-budget | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:commit-identity | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:dead-bash | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:dead-case-arms | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:detect-bump-type | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:devbox-hostname | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:devbox-probes | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:devcontainer-pin-freshness | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:dispatch-release | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:doc-region-parity | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:docs-gen | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:e2e-coverage | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:edge-verify-retries | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:embed-arch-parity | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:embed-asset-freshness | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:embed-credits | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:emit-advisory | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:external-gate-wrapper | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:fetch-depth-safety | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:form-validation | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:gate-anti-vacuity | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:gate-header | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:gate-lanes | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:gate-paths-exist | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:gate-skip-announcer | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:generate-tag-inputs | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:go-deps-probe-failure | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:go-module-sync | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:greenlight | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:greenlight-closure-trace | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:housekeeping-phases | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:hydration-clean | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:installmethods-args | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:installmethods-container-version | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:installmethods-linuxpkg-idiom | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:installmethods-manifest | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:knip-blockers | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:label-guide-comment | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:label-inventory | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:label-references | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:language-policy | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:layout-overflow | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:mark-production | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:media-args | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:media-bridge | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:media-cuda | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:media-docs | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:media-entry | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:media-helpers | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:media-pool | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:media-portable | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:media-r2 | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:media-shims | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:media-venv | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:nightly-retry-filters | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:nightly-status-report | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:overrides-reasons | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:plan-housekeeping | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:policy-liveness-floors | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:policy-path | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:positional-detector | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:preview-readiness | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:preview-worker-reaping | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:profiler-coverage | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:profiler-report | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:rebase-resolve | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:regions-sync | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:release-state-consistency | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:releaseversion-attestation | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:releaseversion-build-version | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:releaseversion-cd-retry-assert | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:releaseversion-closure-untagged | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:releaseversion-inject-env | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:releaseversion-tag-fetch | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:renet-deadcode | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:resprofile | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:review-labels | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:review-status | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:run-all-parallel | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:run-sh | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:runner-advice | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:schema-coverage | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:scope-baseline-attest | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:scope-engine | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:scope-gate-outputs | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:scrub-sentinel-empty | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:shadow-gate | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:shell-counter-increment | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:shrink-only-composition | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:simulate-promotion-serverside | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:skip-plan-reconcile | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:skip-release-channel-pointer | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:slim-timeout | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:stage-artifacts-channel | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:stop-hook-stdin | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:suppression-liveness | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:swallowed-failures | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:toolchain | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:trap-registry | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:tutorial-render-queue | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:untagged-commit-branch | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:unverified-downloads | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:vacuity-floors | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:verify-version | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:watchdog-binary-exec-guard | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:watchdog-classifier-chain | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:watchdog-designed-failure | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:watchdog-log-capture | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:watchdog-monitor-ordering | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:watchdog-no-retry-cancel | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:watchdog-observer-exclusion | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:watchdog-retry-allowlist | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:watchdog-schedule-exemption | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:watchdog-supersession | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:workflow-contracts | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:workflow-env-shell-vars | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:workflow-inline | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:workflow-pr-environment | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:worklist-hooks | quality-security / Quality-gate unit tests | yes | yes | yes |
-| gate-test:worktree-devbox-teardown | quality-security / Quality-gate unit tests | yes | no | yes |
 | gen:docs | local-only | no | no | no |
 | gen:gates-lock | local-only | no | no | no |
 | lint:unused | quality-code / Unused exports (knip) | yes | yes | no |
 | test:install-script | quality-static / Install-script tests | yes | no | no |
 | test:write-once-guard | quality-static / Write-once guard tests | yes | no | no |
 
-487 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+390 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -755,7 +658,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | knip.jsonc | 26 | // comment |
 | package.json | 28 | JSON value |
 | scripts/ci-runner/gates.lock.json | 25 | JSON value |
-| scripts/data/shape-duplication-seed.json | 13 | JSON value |
+| scripts/data/shape-duplication-seed.json | 12 | JSON value |
 
 34 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
@@ -846,7 +749,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/signal | 1 | .sh 1 |
 | .ci/scripts/test | 17 | .sh 16, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
-| .ci/scripts/test/gates | 149 | .sh 149 |
+| .ci/scripts/test/gates | 52 | .sh 52 |
 | .ci/scripts/test/lib | 3 | .sh 3 |
 | .ci/scripts/test/manual | 1 | .sh 1 |
 | .ci/scripts/test/proxies | 10 | .sh 10 |

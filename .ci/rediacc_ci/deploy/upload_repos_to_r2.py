@@ -106,7 +106,7 @@ REQUIRED_ENV: tuple[tuple[str, str], ...] = (
 
 # The `case` arms of `skip_release_requested` (:70-73). A SET, because the twin lists each spelling explicitly rather than lowercasing: `TrUe` and `Y` are NOT
 # skip values, and a port using `.lower() in {...}` would skip a release the twin
-# publishes. Sits between the two marker comments the gate test `.ci/scripts/test/gates/test-skip-release-channel-pointer.sh` splits the twin on; that test assembles its mutants from the twin's own text, so it is unaffected by this file, but the set has to stay in step with those lines.
+# publishes. Sits between the two marker comments the gate test `.ci/rediacc_ci/tests/gates/test_gate_skip_release_channel_pointer.py` splits the twin on; that test assembles its mutants from the twin's own text, so it is unaffected by this file, but the set has to stay in step with those lines.
 SKIP_RELEASE_VALUES = frozenset({"true", "TRUE", "True", "1", "yes", "YES", "y", "on", "ON"})
 
 # `if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]` (:77). A `pr-N`

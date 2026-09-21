@@ -421,7 +421,8 @@ def run(root=None):
 def baseline_additions(old, new):
     """Keys `new` carries that `old` did not -- the DIFF half of the shrink-only guard.
 
-    Named the way `.ci/scripts/quality/check_language_policy.py:442` names it, and extracted from the call site rather than left inline, because the composition gate at `.ci/scripts/test/gates/test-shrink-only-composition.sh:148` requires a writer to DEFINE the diff, CALL the verdict, and compute both -- a writer that reseeds without a named diff can drain thirty findings, absorb
+    Named the way `.ci/scripts/quality/check_language_policy.py:442` names it, and extracted from the call site rather than left inline, because the composition gate, whose cases moved to `.ci/rediacc_ci/tests/gates/test_gate_shrink_only_composition.py` when W7 P5 retired the bash twin that carried them at `test-shrink-only-composition.sh:148`, requires a writer to DEFINE the
+    diff, CALL the verdict, and compute both -- a writer that reseeds without a named diff can drain thirty findings, absorb
     one brand new one, and print a smaller number while doing it.
     """
     return [] if old is None else [k for k in new if k not in old]

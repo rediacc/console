@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-slim-timeout.sh`.
+"""Port of `.ci/scripts/test/gates/test-slim-timeout.sh`, retired in W7 P5.
 
 Both-ways test for CHECK 3 in `.ci/scripts/security/check-workflow-gates.sh`.
 
@@ -16,8 +16,6 @@ The check is driven against fixture trees via `WORKFLOWS_DIR`, so every case but
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-slim-timeout.sh"
 
 CHECK = paths.from_root(".ci", "scripts", "security", "check-workflow-gates.sh")
 

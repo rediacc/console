@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-worklist-hooks.sh`.
+"""Port of `.ci/scripts/test/gates/test-worklist-hooks.sh`, retired in W7 P5.
 
 CI wrapper for the Stop-hook harnesses under `.claude/hooks/stop/`.
 
@@ -54,8 +54,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-worklist-hooks.sh"
 
 # The root conftest reads this attribute (rediacc_ci.xdist_groups.GROUP_ATTR) and turns it into the xdist group for every item in the module. A `pytestmark` would NOT do the same thing: the project's grouping is declaration-driven so that `group_for` can answer the same question the parity driver asks, from the module object rather than from a filename.
 XDIST_GROUP = "stop-hook-harnesses"

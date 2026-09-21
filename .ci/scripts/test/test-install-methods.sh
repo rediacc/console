@@ -326,8 +326,8 @@ verify_version() {
 #
 # The comparison is done on the HOST so it goes through verify_version, the one
 # primitive whose silent-pass classes are pinned by tests
-# (gates/test-verify-version.sh). That is only safe if we compare the binary's
-# own output and nothing else: `apt-get install`, `npm install -g` and
+# (.ci/rediacc_ci/tests/gates/test_gate_verify_version.py). That is only safe if we
+# compare the binary's own output and nothing else: `apt-get install`, `npm install -g` and
 # `brew install` all PRINT the package version themselves, so grepping the whole
 # container transcript for the expected version would pass even when the
 # installed binary reported something different -- a check that cannot fail,

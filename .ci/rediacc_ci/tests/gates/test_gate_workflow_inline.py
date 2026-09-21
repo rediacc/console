@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-workflow-inline.sh`.
+"""Port of `.ci/scripts/test/gates/test-workflow-inline.sh`, retired in W7 P5.
 
 Both-ways test for the inline-run rule in `.ci/scripts/quality/check-workflows.sh`.
 
@@ -23,8 +23,6 @@ NO `xdist_group`. Each case gets its own `mktemp -d` fixture directory, and the 
 import pathlib
 
 from rediacc_ci.tests.gates import harness, workflow_rule
-
-BASH_TWIN = ".ci/scripts/test/gates/test-workflow-inline.sh"
 
 # INLINE_MAX_LOGIC, restated so the boundary cases can be read without opening the subject. It is a MIRROR of the rule's constant, not the source of it: the boundary case below drives 8 and 9 through the real script, so a change to the rule reds there rather than silently agreeing with this line.
 INLINE_MAX_LOGIC = 8

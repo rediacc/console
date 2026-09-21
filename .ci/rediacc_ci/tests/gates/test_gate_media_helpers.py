@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-media-helpers.sh`.
+"""Port of `.ci/scripts/test/gates/test-media-helpers.sh`, retired in W7 P5.
 
 Two subjects, and the first one carries the second: `with_fake_bin` / `fake_bin_record` in `.ci/scripts/test/lib/test-helpers.sh`, and the `.ci/media` scan root in `.ci/scripts/quality/check-dead-case-arms.sh`.
 
@@ -16,8 +16,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-media-helpers.sh"
 
 HELPERS = paths.from_root(".ci", "scripts", "test", "lib", "test-helpers.sh")
 GATE = paths.from_root(".ci", "scripts", "quality", "check-dead-case-arms.sh")

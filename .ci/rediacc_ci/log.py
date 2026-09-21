@@ -16,7 +16,7 @@ developer piping a gate into `less` gets escapes. Only `common.sh` tests the str
 
 The colour VALUES disagree too: `YELLOW` is `\\033[1;33m` in `common.sh` and `\\033[0;33m` in `.ci/bootstrap.sh`. Both are "yellow"; neither file knows the other exists.
 
-THE INCIDENT THIS MODULE IS SHAPED BY (2026-09-06, recorded verbatim at `.ci/scripts/lib/emit-advisory.sh:22-50` and pinned by `.ci/scripts/test/gates/test-emit-advisory.sh:85-105`). `emit-advisory.sh` used to assign RED/GREEN/YELLOW/NC and define log_error / log_success / log_warn / log_info UNCONDITIONALLY. Four quality gates -- check-profiler-coverage.sh,
+THE INCIDENT THIS MODULE IS SHAPED BY (2026-09-06, recorded verbatim at `.ci/scripts/lib/emit-advisory.sh:22-50` and pinned by `.ci/rediacc_ci/tests/gates/test_gate_emit_advisory.py`). `emit-advisory.sh` used to assign RED/GREEN/YELLOW/NC and define log_error / log_success / log_warn / log_info UNCONDITIONALLY. Four quality gates -- check-profiler-coverage.sh,
 check-swallowed-failures.sh, check-ci-job-aggregation.sh and check-go-deps.sh -- source `common.sh` first and then reach `emit-advisory.sh` transitively through `blocker-validator.sh:26`, so the later definitions won and silently replaced common.sh's TTY-gated logger. Two consequences:
 
   1. log_info / log_warn / log_success moved from stderr to STDOUT, so a gate

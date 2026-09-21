@@ -38,6 +38,9 @@ import re
 import subprocess
 import sys
 
+import _cipath  # noqa: F401
+from rediacc_ci.controls import plant
+
 # Vacuity floor. This repo wires dozens of hook commands; a handful means the parse broke, and every check below would be over an empty set -- which reads exactly like "every hook resolves".
 MIN_COMMANDS = 10
 
@@ -264,7 +267,7 @@ def controls(root):
     entry = table.entry_command(key)
     if len(expand_commands([entry], table)) <= 1:
         return f"the {key} entry expanded to itself, so the member commands are not being read"
-    ghost = entry.replace(" " + key, " __a_pattern_that_does_not_exist__")
+    ghost = plant(entry, " " + key, " __a_pattern_that_does_not_exist__")
     if not routing_verdicts({"hooks": {"Stop": [{"hooks": [{"command": ghost}]}]}}, table):
         return "planted an entry naming an unknown hook pattern and the detector stayed silent"
     if routing_verdicts({"hooks": {"Stop": [{"hooks": [{"command": entry}]}]}}, table):

@@ -869,7 +869,7 @@ def test_the_cache_control_policies_are_the_twins() -> None:
 
 
 def test_the_skip_values_are_the_twins_case_arms() -> None:
-    """STALENESS ALARM for the `case` arms, which sit between the two markers the gate test `test-skip-release-channel-pointer.sh` splits the twin on to build its mutants."""
+    """STALENESS ALARM for the `case` arms, which sit between the two markers the gate test `test_gate_skip_release_channel_pointer.py` splits the twin on to build its mutants."""
     source = TWIN.read_text(encoding="utf-8")
     arm = re.search(r"case \"\$\{SKIP_RELEASE:-\}\" in\n\s*([^)]*)\) return 0", source)
     assert arm is not None, "the case shape changed; this alarm reads nothing"

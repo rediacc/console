@@ -95,11 +95,12 @@ Both shapes are in the tree. `scripts/gates/check-backup-bucket-conformance.ts:1
 THE SHELL LEXER, AND WHY IT REPORTS ITS OWN DEGRADATION
 -----------------------------------------------------------------------------
 
-Deciding whether a `sed -i` is CODE or a STRING needs quote state, and quote state in bash crosses lines. Three measured false positives depend on getting this right, and all three are in the tree today:
+Deciding whether a `sed -i` is CODE or a STRING needs quote state, and quote state in bash crosses lines. Three measured false positives depended on getting this right; two are still in the tree, and the third left it with its file:
 
     check-control-vacuity.sh:83   grep -qE '...|sed -i'      inside one line's quotes
-    test-media-portable.sh:272    'sed -i "s/a/b/" f'        a fixture ROW, not a command
     test-install-methods.sh:807   [ -f \"\$f\" ] && sed -i   inside a multi-line "..."
+
+The third was `test-media-portable.sh:272`, a fixture ROW reading `'sed -i "s/a/b/" f'` rather than a command, retired with that twin in W7 P5. Its Python port is outside this corpus, which scans `.sh` and `.ts` only.
 
 So the lexer carries quote state and heredoc state across lines. It is not a bash parser: it does not model `$( )` nesting, and on eight of the 520 tracked shell files the state does not return to neutral at EOF. Those files are scanned in DEGRADED mode -- per line, quote state reset each line -- and the count of them is PRINTED. Degraded scanning over-reports rather than
 under-reports, which is the direction this gate wants: a spurious "add a proof" costs one line, a missed vacuous plant costs a gate that cannot fail. Measured 2026-09-09: the eight degraded files contain ZERO plants under either reading, so the choice is currently free.
@@ -1012,7 +1013,8 @@ def _new_finding(row):
 def baseline_additions(old, new):
     """Keys `new` carries that `old` did not -- the DIFF half of the shrink-only guard.
 
-    Named the way `.ci/scripts/quality/check_language_policy.py:442` names it, and extracted from the call site rather than left inline, because the composition gate at `.ci/scripts/test/gates/test-shrink-only-composition.sh:148` requires a writer to DEFINE the diff, CALL the verdict, and compute both -- a writer that reseeds without a named diff can drain thirty findings, absorb
+    Named the way `.ci/scripts/quality/check_language_policy.py:442` names it, and extracted from the call site rather than left inline, because the composition gate, whose cases moved to `.ci/rediacc_ci/tests/gates/test_gate_shrink_only_composition.py` when W7 P5 retired the bash twin that carried them at `test-shrink-only-composition.sh:148`, requires a writer to DEFINE the
+    diff, CALL the verdict, and compute both -- a writer that reseeds without a named diff can drain thirty findings, absorb
     one brand new one, and print a smaller number while doing it.
     """
     return [] if old is None else [k for k in new if k not in old]

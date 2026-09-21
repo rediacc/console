@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-workflow-contracts.sh`.
+"""Port of `.ci/scripts/test/gates/test-workflow-contracts.sh`, retired in W7 P5.
 
 Both-ways test for the reusable-workflow contract checks in `.ci/scripts/security/check-workflow-gates.sh`: CHECK 2 (callers in this repo), CHECK 4 (callers in other repositories, declared in `.github/external-callers.yml`) and arm a2 (a `workflow_call` secret declaration nothing reads).
 
@@ -7,7 +7,8 @@ WHY THIS CLASS NEEDS A GATE AT ALL. Inside a reusable workflow, `secrets.FOO` fo
 with a blank telemetry credential. The failure is invisible at every layer except a
 parser that compares declaration to use, which is what this asserts.
 
-Both directions matter, and the too-loud direction has already cost a nightly: `secrets: inherit`, `GITHUB_TOKEN`, optional inputs and a script filename ending in `-secrets.sh` must NOT be reported. Arm a2's liveness sweep shipped with no test at all and reddened `test-slim-timeout.sh` plus every case in the twin, because the sweep ran on FIXTURE trees and judged them against the
+Both directions matter, and the too-loud direction has already cost a nightly: `secrets: inherit`, `GITHUB_TOKEN`, optional inputs and a script filename ending in `-secrets.sh` must NOT be reported. Arm a2's liveness sweep shipped with no test at all and reddened `test_gate_slim_timeout.py` plus every case in the twin, because the sweep ran on FIXTURE trees and judged them
+against the
 real tree's exemption list (nightly 34014201256). `test_liveness_stands_down_on_fixture_trees` is that regression, kept verbatim.
 
 WHAT THE PORT KEEPS. Every fixture is written into pytest's own `tmp_path`, and the subject is driven with `WORKFLOWS_DIR` / `EXTERNAL_CALLERS_FILE` / `EXTERNAL_CALLERS_ROOT` as an env OVERLAY per invocation, exactly as the twin does. The twin's three `sed -i` edits become Python string replacement on the same bytes, and its inline `python3 - <<PYX` heredoc becomes an ordinary
@@ -21,8 +22,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-workflow-contracts.sh"
 
 CHECK = paths.from_root(".ci", "scripts", "security", "check-workflow-gates.sh")
 

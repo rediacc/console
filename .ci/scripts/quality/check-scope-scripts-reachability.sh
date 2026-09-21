@@ -156,7 +156,7 @@ check_path() {
 # regression that made the extractor return NOTHING would leave this gate
 # printing its success line over an empty scan -- "I flagged nothing today"
 # reported as "nothing is reachable". Found by review 2026-08-26, one round
-# after the identical defect shipped in test-ci-compat-prose.sh.
+# after the identical defect shipped in test-ci-compat-prose.sh, retired in W7 P5.
 #
 # So: plant a synthetic file containing one command-position reference and one
 # log_error mention, and require the extractor to return EXACTLY the first.

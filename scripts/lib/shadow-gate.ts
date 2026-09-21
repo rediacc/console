@@ -391,10 +391,10 @@ const SHA_MASK: [RegExp, string] = [/\b[0-9a-f]{40}\b/g, '<sha>'];
  * BOTH STREAMS ARE READ, and they are read SEPARATELY into this function rather
  * than merged by the caller. The 2026-09-06 emit-advisory incident was a stream
  * SWAP -- log_info moved from stderr to stdout -- and `2>&1` hides it
- * completely (`.ci/scripts/test/gates/test-emit-advisory.sh:100-102`). Findings
+ * completely (`.ci/scripts/test/gates/test-emit-advisory.sh:100-102`, retired in W7 P5). Findings
  * are compared as a set that ignores which stream carried them, because the
  * repo's own helpers split error to stderr and warn to stdout; the STREAM
- * question is a different gate's job, and `test-emit-advisory.sh` is that gate.
+ * question is a different gate's job, and `test_gate_emit_advisory.py` is that gate.
  */
 export function classify(
   stdout: string,

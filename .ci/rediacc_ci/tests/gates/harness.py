@@ -99,7 +99,8 @@ def run(
     environment, so a fixture that meant to set one variable silently drops PATH, HOME and everything else, and the failure arrives as "command not found" in a test that has nothing to do with PATH.
 
     `env_replace=True` IS THE `env -i` CASE, and it is opt-in by name because it
-    is exactly the mistake the overlay defaults exist to prevent. Two twins need it for a real reason rather than for tidiness: `test-ci-complete-tiers.sh` drives assert-ci-complete.sh under `env -i` so that a `RESULT_*` variable the fixture did NOT set reads as `<unset>` -- which is the case that catches a renamed job -- and it cannot do that while this process's own environment
+    is exactly the mistake the overlay defaults exist to prevent. Two twins need it for a real reason rather than for tidiness: `test_gate_ci_complete_tiers.py` drives assert-ci-complete.sh under `env -i` so that a `RESULT_*` variable the fixture did NOT set reads as `<unset>` -- which is the case that catches a renamed job -- and it cannot do that while this process's own
+    environment
     is inherited, because a real CI run exports those very names. Callers pass the WHOLE environment they want, PATH included; nothing is added back for them.
     """
     merged = dict(env or {}) if env_replace else dict(os.environ)

@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-media-cuda.sh`.
+"""Port of `.ci/scripts/test/gates/test-media-cuda.sh`, retired in W7 P5.
 
 `.ci/media/cuda.sh`, the flash-attn accelerator probe.
 
@@ -18,8 +18,6 @@ its own `mktemp -d`), and `MEDIA_MODULE_DIR` is a per-call ARGUMENT in the port 
 import stat
 
 from rediacc_ci.tests.gates import harness, media_verify
-
-BASH_TWIN = ".ci/scripts/test/gates/test-media-cuda.sh"
 
 MODULE = media_verify.MEDIA_DIR / "cuda.sh"
 FUNCTION = "install_flash_attn_if_supported"

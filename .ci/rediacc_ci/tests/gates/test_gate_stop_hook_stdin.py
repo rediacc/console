@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-stop-hook-stdin.sh`.
+"""Port of `.ci/scripts/test/gates/test-stop-hook-stdin.sh`, retired in W7 P5.
 
 The Stop hook must survive a hostile stdin: never crash, never hang.
 
@@ -50,8 +50,6 @@ import sys
 import time
 
 from rediacc_ci import paths
-
-BASH_TWIN = ".ci/scripts/test/gates/test-stop-hook-stdin.sh"
 
 ROOT = paths.repo_root()
 HOOK = ROOT / ".claude" / "hooks" / "stop" / "worklist.py"

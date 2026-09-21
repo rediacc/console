@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-releaseversion-cd-retry-assert.sh`.
+"""Port of `.ci/scripts/test/gates/test-releaseversion-cd-retry-assert.sh`, retired in W7 P5.
 
 Both-ways test for the artifact-version assertion's reachability in `.github/workflows/cd-v2.yml`.
 
@@ -17,8 +17,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-releaseversion-cd-retry-assert.sh"
 
 WORKFLOW = paths.from_root(".github", "workflows", "cd-v2.yml")
 STEP_NAME = "Assert artifact version matches promotion target"

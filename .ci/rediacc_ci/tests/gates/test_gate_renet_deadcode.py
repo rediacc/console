@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-renet-deadcode.sh`.
+"""Port of `.ci/scripts/test/gates/test-renet-deadcode.sh`, retired in W7 P5.
 
 `private/renet/.ci/scripts/quality/deadcode.sh`, the Go whole-program reachability gate, driven through its two pure predicates: `evaluate_deadcode` over a fixture dead-list plus a fixture allowlist, and `validate_blocker_reason` over one reason string. Nothing here runs Go, downloads the deadcode tool, or touches the renet checkout beyond READING the script.
 
@@ -22,8 +22,6 @@ NO `xdist_group`. Every case writes its fixtures into pytest's own `tmp_path` an
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-renet-deadcode.sh"
 
 DEADCODE_SH = paths.from_root("private", "renet", ".ci", "scripts", "quality", "deadcode.sh")
 

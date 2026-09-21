@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-gate-skip-announcer.sh`.
+"""Port of `.ci/scripts/test/gates/test-gate-skip-announcer.sh`, retired in W7 P5.
 
 `.ci/scripts/quality/announce-gate-skips.sh` is the step that makes a label-held gate VISIBLE.
 
@@ -20,8 +20,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-gate-skip-announcer.sh"
 
 ANNOUNCER = paths.from_root(".ci", "scripts", "quality", "announce-gate-skips.sh")
 DEFAULT_WORKFLOW = paths.from_root(".github", "workflows", "ci-quality.yml")

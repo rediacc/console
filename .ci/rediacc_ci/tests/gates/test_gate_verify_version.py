@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-verify-version.sh`.
+"""Port of `.ci/scripts/test/gates/test-verify-version.sh`, retired in W7 P5.
 
 Tests for `verify_version()` in `.ci/scripts/test/test-install-methods.sh`.
 
@@ -19,8 +19,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-verify-version.sh"
 
 TARGET = paths.from_root(".ci", "scripts", "test", "test-install-methods.sh")
 

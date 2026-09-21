@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-positional-detector.sh`.
+"""Port of `.ci/scripts/test/gates/test-positional-detector.sh`, retired in W7 P5.
 
 Both-ways test for `scripts/lib/positional-cli-detector.ts`.
 
@@ -27,8 +27,6 @@ import json
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-positional-detector.sh"
 
 DETECTOR = paths.from_root("scripts", "lib", "positional-cli-detector.ts")
 

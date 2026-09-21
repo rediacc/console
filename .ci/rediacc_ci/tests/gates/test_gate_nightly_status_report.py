@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-nightly-status-report.sh`.
+"""Port of `.ci/scripts/test/gates/test-nightly-status-report.sh`, retired in W7 P5.
 
 WHAT BROKE, kept from the twin because it is the reason the module exists. Nothing reported the nightly's verdict anywhere. A scheduled run that fails at 01:00 UTC notifies nobody, appears in no PR, and blocks nothing, and the nightly is the ONLY suite validating main, because ci.yml sets
 `full_suite: github.event_name != 'push'`. Measured 2026-07-27: twelve
@@ -22,8 +22,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-nightly-status-report.sh"
 
 REPORTER = paths.from_root(".ci", "scripts", "ci", "report-nightly-status.cjs")
 WORKFLOW = paths.from_root(".github", "workflows", "nightly-status.yml")

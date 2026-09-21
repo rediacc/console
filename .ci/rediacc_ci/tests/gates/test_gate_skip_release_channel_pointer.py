@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-skip-release-channel-pointer.sh`.
+"""Port of `.ci/scripts/test/gates/test-skip-release-channel-pointer.sh`, retired in W7 P5.
 
 Gate: on a `bump-none` merge the R2 uploaders must write NOTHING on a release channel, and must keep writing everything the moment the signal is absent.
 
@@ -28,8 +28,6 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-skip-release-channel-pointer.sh"
 
 REAL_UPLOAD = paths.from_root(".ci", "scripts", "deploy", "upload-to-r2.sh")
 REAL_REPOS = paths.from_root(".ci", "scripts", "deploy", "upload-repos-to-r2.sh")

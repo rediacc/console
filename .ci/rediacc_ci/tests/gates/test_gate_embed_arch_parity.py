@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-embed-arch-parity.sh`.
+"""Port of `.ci/scripts/test/gates/test-embed-arch-parity.sh`, retired in W7 P5.
 
 Both-ways test for `scripts/gates/check-embed-arch-parity.ts`.
 
@@ -17,8 +17,6 @@ import json
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-embed-arch-parity.sh"
 
 GATE = paths.from_root("scripts/gates", "check-embed-arch-parity.ts")
 REAL_LOCKFILE = paths.from_root("private", "renet", "embed-assets.lock.json")

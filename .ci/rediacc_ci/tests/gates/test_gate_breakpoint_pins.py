@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-breakpoint-pins.sh`.
+"""Port of `.ci/scripts/test/gates/test-breakpoint-pins.sh`, retired in W7 P5.
 
 Static analysis of breakpoint's third-party tool pins. Downloads NOTHING: a gate that hits the network to prove a checksum is a gate that goes red on somebody else's outage, and it would then get skipped.
 
@@ -27,8 +27,6 @@ NO `xdist_group`. Every case only READS tracked files; nothing is written, no po
 import re
 
 from rediacc_ci import paths
-
-BASH_TWIN = ".ci/scripts/test/gates/test-breakpoint-pins.sh"
 
 BP = paths.from_root(".ci", "breakpoint")
 VERSIONS = BP / "versions.sh"

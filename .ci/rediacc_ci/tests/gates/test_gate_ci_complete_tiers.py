@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-ci-complete-tiers.sh`.
+"""Port of `.ci/scripts/test/gates/test-ci-complete-tiers.sh`, retired in W7 P5.
 
 Both-ways test for the tier logic in `.ci/scripts/ci/assert-ci-complete.sh`, added with the pointer-bump fast path (2026-07-22).
 
@@ -25,8 +25,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-ci-complete-tiers.sh"
 
 SUT = paths.from_root(".ci", "scripts", "ci", "assert-ci-complete.sh")
 

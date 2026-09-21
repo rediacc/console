@@ -30,7 +30,7 @@
 # broader rule is FALSE and would break a correct job: `stage-artifacts` also
 # consumes the channel and MUST run with an empty one, staging the nightly's
 # artifacts while skipping only its two channel-scoped metadata assertions
-# (see .ci/scripts/test/gates/test-stage-artifacts-channel.sh, which exists to
+# (see .ci/rediacc_ci/tests/gates/test_gate_stage_artifacts_channel.py, which exists to
 # prove that skip stayed narrow). Tag selection is the discriminating detail:
 # an empty channel there resolves to a DIFFERENT IMAGE rather than to nothing.
 #

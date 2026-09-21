@@ -10,7 +10,7 @@
 # prose carried across unchanged -- each paragraph records an incident. media.sh keeps
 # none of it: phase 2 reduced that file to three lines that exec into media-entry.sh, so
 # this is the only copy and there is nothing left for it to fork from.
-# .ci/scripts/test/gates/test-media-args.sh checks both halves separately: this module
+# .ci/rediacc_ci/tests/gates/test_gate_media_args.py checks both halves separately: this module
 # must be the SOLE definition of `die`, `pass_owns` and `venv_for` (the control re-plants
 # `die` into media.sh in its ONE-LINE form, which is how media.sh really wrote it), and
 # every incident sentence must still be present here word for word and absent there.

@@ -152,7 +152,7 @@ LEDGER_PREFIX = "<!-- claude-labels:"
 # major is a statement to every consumer of the version stream.
 MANAGED_LABELS = ("bug", "enhancement", "documentation", "ci", "bump-minor", "bump-none")
 
-# "<name>|<color>|<description>", one row per label, created on demand immediately before first use. Each row is asserted equal to `.github/labels.yml` by `test-review-labels.sh`, since neither implementation can read labels.yml: the post-review steps run from a staged copy of `.ci` alone.
+# "<name>|<color>|<description>", one row per label, created on demand immediately before first use. Each row is asserted equal to `.github/labels.yml` by `test_gate_review_labels.py`, since neither implementation can read labels.yml: the post-review steps run from a staged copy of `.ci` alone.
 CREATE_ON_DEMAND_LABELS = (
     "ci|FEF2C0|Build system, CI workflows, or .ci tooling (applied by the automated review)",
     (

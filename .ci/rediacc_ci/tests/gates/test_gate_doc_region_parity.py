@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-doc-region-parity.sh`.
+"""Port of `.ci/scripts/test/gates/test-doc-region-parity.sh`, retired in W7 P5.
 
 `check:ci-doc-region-parity`, proved in both directions against a REAL fixture tree.
 
@@ -102,8 +102,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-doc-region-parity.sh"
 
 ROOT = paths.repo_root()
 GATE = ROOT / "scripts" / "gates" / "check-doc-region-parity.ts"
@@ -390,7 +388,7 @@ def build_fixture(gate, tmp_path: pathlib.Path):
     # The index first: every provider enumerates with `git ls-files`, so a fixture that is not yet a repository makes them THROW rather than report, which reads as a broken gate instead of a broken fixture.
     #
     # `--initial-branch=main`: a bare-or-not fixture whose HEAD points at a branch the
-    # runner's init.defaultBranch does not create is the trap test-fetch-depth-safety.sh exists for.
+    # runner's init.defaultBranch does not create is the trap test_gate_fetch_depth_safety.py exists for.
     harness.run([binary, "-C", str(fixture), "init", "-q", "--initial-branch=main", "."])
     staged = harness.run([binary, "-C", str(fixture), "add", "-A", "--", "."], timeout=600)
     if staged.rc != 0:

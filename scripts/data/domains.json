@@ -127,7 +127,7 @@
         ".ci/scripts/security/shfmt.sh:121 loops over `scripts/dev scripts/ops` guarded by [[ -d ]], as does its twin's OPTIONAL_SCOPES at .ci/rediacc_ci/security/shfmt.py:92, so a scope that stops existing silently stops being format-checked. SILENTLY GREEN. A third sweep of the same shape lives at .ci/legacy/run-legacy.sh:488.",
         "scripts/gates/check-worker-secret-names.ts:66 parses scripts/ops/deploy-bench.sh with a floor of 20.",
         ".ci/scripts/quality/check_bws_map.py:100 reads scripts/ops/secret-rename.py as its rename oracle, built as ROOT / \"scripts\" / \"ops\" / ... so a path-literal grep cannot see it.",
-        ".ci/scripts/test/gates/test-scrub-sentinel-empty.sh:40 and :56, test-bws-map.sh:40 and :58, test-vacuity-floors.sh:115 name paths under scripts/ops, and three Python gate tests build the same paths out of pathlib parts.",
+        "test-bws-map.sh:40 and :58 and test-vacuity-floors.sh:115 name paths under scripts/ops (a third, .ci/scripts/test/gates/test-scrub-sentinel-empty.sh:40 and :56, was retired in W7 P5 census batch A8), and three Python gate tests build the same paths out of pathlib parts.",
         "Dockerfile:12 and :32 mention scripts/ops/build-server.sh in comments only, which is also the only thing keeping it out of check-dead-bash's findings."
       ]
     },

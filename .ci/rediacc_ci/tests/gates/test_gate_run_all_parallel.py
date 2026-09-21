@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-run-all-parallel.sh`.
+"""Port of `.ci/scripts/test/gates/test-run-all-parallel.sh`, retired in W7 P5.
 
 Proof battery for the parallel scheduler inside `.ci/rediacc_ci/battery.py`.
 
@@ -38,8 +38,6 @@ import time
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-run-all-parallel.sh"
 
 RUNNER = paths.from_root(".ci", "rediacc_ci", "battery.py")
 

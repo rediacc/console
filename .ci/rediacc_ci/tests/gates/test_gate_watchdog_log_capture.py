@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-watchdog-log-capture.sh`.
+"""Port of `.ci/scripts/test/gates/test-watchdog-log-capture.sh`, retired in W7 P5.
 
 Failed-step log capture in `.ci/scripts/ci/watchdog-monitor.cjs`.
 
@@ -20,8 +20,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-log-capture.sh"
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 

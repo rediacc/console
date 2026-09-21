@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-dispatch-release.sh`.
+"""Port of `.ci/scripts/test/gates/test-dispatch-release.sh`, retired in W7 P5.
 
 Both-ways test for `.ci/scripts/ci/dispatch-release.sh`, the step that decides whether a merge to main earns a release at all.
 
@@ -22,8 +22,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-dispatch-release.sh"
 
 UNDER_TEST = paths.from_root(".ci", "scripts", "ci", "dispatch-release.sh")
 CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")

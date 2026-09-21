@@ -12,9 +12,9 @@
 # Part of the media pipeline extraction (W10). Moved out of run.sh byte for byte in
 # phase 1, comments included; phase 2 deleted run.sh's copies, so this file is now the
 # only definition of every name in it. Two gate tests cover it:
-# .ci/scripts/test/gates/test-media-args.sh asserts that ownership and drives the
+# .ci/rediacc_ci/tests/gates/test_gate_media_args.py asserts that ownership and drives the
 # argument parsers (the part with real branching), and
-# .ci/scripts/test/gates/test-media-entry.sh drives every routed verb from a real
+# .ci/rediacc_ci/tests/gates/test_gate_media_entry.py drives every routed verb from a real
 # ./run.sh invocation and requires it to arrive inside the function here that owns it.
 #
 # SOURCED, NEVER EXECUTED. Callers supply ROOT_DIR, the log_* helpers, and

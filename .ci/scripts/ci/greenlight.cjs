@@ -164,7 +164,8 @@ const CLOSURES = {
       '.ci/scripts/private/renet-integration.sh',
       '.ci/scripts/lib/common.sh',
       '.ci/scripts/infra/ci-env.sh',
-      // ADDED 2026-08-08, and it was a real hole rather than a tidy-up: this job mints its submodule-capable token through the composite action (ct-tests.yml:1473) exactly as account_e2e does, but only account_e2e declared it. An edit to the action would not have withdrawn a renet greenlight. Found by test-greenlight-closure-trace.sh on its first run, which is the case that gate
+      // ADDED 2026-08-08, and it was a real hole rather than a tidy-up: this job mints its submodule-capable token through the composite action (ct-tests.yml:1473) exactly as account_e2e does, but only account_e2e declared it. An edit to the action would not have withdrawn a renet greenlight. Found by test_gate_greenlight_closure_trace.py on its first run, which is the case
+      // that gate
       // exists for.
       '.github/actions/app-token',
       '.github/workflows/ct-tests.yml',

@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-profiler-report.sh`.
+"""Port of `.ci/scripts/test/gates/test-profiler-report.sh`, retired in W7 P5.
 
 Tests for the profiler's aggregation: `.ci/scripts/ci/profiler/report.awk` via `.ci/scripts/ci/profiler/panel.sh`, plus the sampler's own two hard refusals.
 
@@ -27,8 +27,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-profiler-report.sh"
 
 PANEL_SH = paths.from_root(".ci", "scripts", "ci", "profiler", "panel.sh")
 REPORT_AWK = paths.from_root(".ci", "scripts", "ci", "profiler", "report.awk")

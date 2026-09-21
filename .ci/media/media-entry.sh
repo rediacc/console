@@ -30,7 +30,7 @@
 # so that phase 2 would be a deletion rather than a translation, and it was.
 #
 # run.sh now `exec`s this file for both of those verbs and defines none of the functions.
-# .ci/scripts/test/gates/test-media-entry.sh no longer compares the two dispatch trees --
+# .ci/rediacc_ci/tests/gates/test_gate_media_entry.py no longer compares the two dispatch trees --
 # one of them is empty -- and instead drives each routed verb from a real ./run.sh in a
 # sandbox repo, requiring it to arrive inside the module function that owns it. Every
 # `Usage: ./run.sh ...` string below still names run.sh, because that is still how a

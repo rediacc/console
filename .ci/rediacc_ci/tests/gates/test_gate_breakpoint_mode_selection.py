@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-breakpoint-mode-selection.sh`.
+"""Port of `.ci/scripts/test/gates/test-breakpoint-mode-selection.sh`, retired in W7 P5.
 
 Pins the security property of `.ci/breakpoint/scripts/select-mode.sh`:
 NAMED MODE NEVER SILENTLY DEGRADES TO QUICK MODE.
@@ -28,8 +28,6 @@ import os
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-breakpoint-mode-selection.sh"
 
 SELECT = paths.from_root(".ci", "breakpoint", "scripts", "select-mode.sh")
 PREFLIGHT = paths.from_root(".ci", "breakpoint", "scripts", "preflight-breakpoint.sh")

@@ -68,7 +68,7 @@
  *                 leaves ['scripts/gates/check-doc-region-parity.ts'],
  *                 ci: step "Doc region parity" in quality-code
  *   workflow      a step named exactly "Doc region parity" in the quality-code job
- *   and the gate test .ci/scripts/test/gates/test-doc-region-parity.sh registered as
+ *   and the gate test .ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py registered as
  *   gate-test:doc-region-parity, qualityGateTest: true, riding "Quality-gate unit tests".
  */
 import { execFileSync } from 'node:child_process';

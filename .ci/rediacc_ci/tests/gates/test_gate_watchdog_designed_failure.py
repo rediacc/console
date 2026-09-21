@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-watchdog-designed-failure.sh`.
+"""Port of `.ci/scripts/test/gates/test-watchdog-designed-failure.sh`, retired in W7 P5.
 
 The watchdog's by-design failure must SAY it is by design.
 
@@ -14,8 +14,6 @@ WHAT THIS GATE CANNOT SEE: it asserts the marker and the ordering in the source.
 import re
 
 from rediacc_ci import paths
-
-BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-designed-failure.sh"
 
 SUT = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 SWEEPER = paths.from_root(".ci", "scripts", "housekeeping", "retry-failed-runs.sh")

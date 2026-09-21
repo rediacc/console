@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-release-state-consistency.sh`.
+"""Port of `.ci/scripts/test/gates/test-release-state-consistency.sh`, retired in W7 P5.
 
 Unit-tests `rsv_assert_bijection` and `rsv_assert_channel_pointer_tagged` in `.ci/scripts/lib/release-state-validator.sh` against synthetic version lists. The live R2 and git probes are exercised end to end by the quality gate itself during CI; this pins the pure assertion logic so drift detection stays correct even if callers refactor.
 
@@ -27,8 +27,6 @@ import shlex
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-release-state-consistency.sh"
 
 LIB = paths.from_root(".ci", "scripts", "lib", "release-state-validator.sh")
 

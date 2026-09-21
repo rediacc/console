@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-installmethods-manifest.sh`.
+"""Port of `.ci/scripts/test/gates/test-installmethods-manifest.sh`, retired in W7 P5.
 
 `test_update_check()` in `.ci/scripts/test/test-install-methods.sh`.
 
@@ -23,8 +23,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness, shellsubject
-
-BASH_TWIN = ".ci/scripts/test/gates/test-installmethods-manifest.sh"
 
 TARGET = paths.from_root(".ci", "scripts", "test", "test-install-methods.sh")
 SUBJECT = shellsubject.Subject(TARGET)

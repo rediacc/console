@@ -165,7 +165,8 @@ git log --diff-filter=D --oneline -- packages/www/scripts/generate-team-video-au
 
 which answers `c482e6246` on the current graph. If the team-video feature is ever restored, restore the R2 coverage with it rather than letting it land back in git.
 
-**The backtick convention in this file is load-bearing.** A commit SHA inside backticks is a claim that this repository can resolve it and that it is an ancestor of `HEAD`; `.ci/scripts/test/gates/test-media-docs.sh` checks every one of them and reds when a rewrite invalidates one. A SHA written WITHOUT backticks is prose about a commit that is gone, which is the only way this
+**The backtick convention in this file is load-bearing.** A commit SHA inside backticks is a claim that this repository can resolve it and that it is an ancestor of `HEAD`; `.ci/rediacc_ci/tests/gates/test_gate_media_docs.py` checks every one of them and reds when a rewrite invalidates one. A SHA written WITHOUT backticks is prose about a commit that is gone, which is the only
+way this
 section can record its own correction without the gate refusing the sentence that explains it.
 
 ## 7. Restoring media after a fresh clone

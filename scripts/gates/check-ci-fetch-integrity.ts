@@ -80,7 +80,7 @@ export interface Finding {
  * Both false positives this gate produced on its first measurement were text
  * inside quotes, not invocations: `check-python-lint.sh` ECHOES
  * `curl ... | sh` as advice for a human to run, and
- * `test-unverified-downloads.sh` names `curl|bash` inside an assertion message.
+ * `test_gate_unverified_downloads.py` names `curl|bash` inside an assertion message.
  * Stripping quoted spans removes both while leaving a real invocation visible,
  * because in `curl -fsSL "$URL" | bash` the pipe sits OUTSIDE the quotes.
  */

@@ -37,7 +37,7 @@
 # measured, and then reporting the resulting truncated coverage as if it were a fact about
 # the tests. A probe that perturbs its subject and reports the perturbed number is worse
 # than no probe. The seam version writes to a descriptor nothing captures, and
-# test-media-docs.sh asserts that a traced run and an untraced one produce the same verdict.
+# test_gate_media_docs.py asserts that a traced run and an untraced one produce the same verdict.
 #
 # ONLY THE REAL FILES ARE COUNTED, and that is why media-entry.sh reads 0 percent even
 # though several tests drive a whole ./run.sh through it. Those tests run a sandbox COPY,
@@ -68,12 +68,18 @@ ROOT_DIR="$(cd "$MEDIA_DIR/../.." && pwd)"
 # named. Unset in every normal run.
 SUBJECT_DIR="${MEDIA_COVERAGE_MODULE_DIR:-$MEDIA_DIR}"
 GATES="${MEDIA_COVERAGE_GATES_DIR:-$ROOT_DIR/.ci/scripts/test/gates}"
+# THE SECOND CORPUS ROOT, added when W7 P5 census batch A4 retired ten bash media gate
+# tests and left their Python ports carrying the cases. `named_outside_a_comment` reads
+# both roots; with only the bash one it reported nine of ten modules as tested by nothing
+# the moment those twins left. It follows MEDIA_COVERAGE_GATES_DIR rather than taking a
+# seam of its own, so a fixture corpus stays exactly the directory the caller named.
+PORTS="${MEDIA_COVERAGE_GATES_DIR:-$ROOT_DIR/.ci/rediacc_ci/tests/gates}"
 
 MIN=""
 UNCOVERED=""
 UNTESTED_ONLY=""
 # --only exists so the probe's own machinery can be gated cheaply. A full run drives EVERY
-# media gate test, which is far too slow for `npm run ci`; test-media-docs.sh measures one
+# media gate test, which is far too slow for `npm run ci`; test_gate_media_docs.py measures one
 # fast test and asserts that the result is non-vacuous, which is what keeps this file from
 # rotting into a script that reports zeroes and is never read.
 ONLY="*"
@@ -131,7 +137,7 @@ done
 #
 # THE PREDICATE IS "NAMED OUTSIDE A COMMENT", and the comment half is load-bearing rather
 # than fussy. Every one of these gate tests opens with a long header, and those headers
-# name sibling modules while arguing about scope -- test-media-docs.sh mentions pool.sh in
+# name sibling modules while arguing about scope -- test_gate_media_docs.py mentions pool.sh in
 # prose and drives none of it. Counting prose would let a module be "covered" by somebody
 # writing its name in a paragraph, which is the cheapest possible way to satisfy a check
 # and the least useful. Code that names a module is code that reaches for it.
@@ -155,7 +161,7 @@ done
 # exists to avoid. The real folder has eleven gate tests and would have hidden it forever.
 named_outside_a_comment() {
     local hits
-    hits="$({ grep -Hn -F -- "$1" "$GATES"/test-media-*.sh 2>/dev/null || true; } |
+    hits="$({ grep -Hn -F -- "$1" "$GATES"/test-media-*.sh "$PORTS"/test_gate_media_*.py 2>/dev/null || true; } |
         { grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true; })"
     [ -n "$hits" ]
 }
@@ -200,6 +206,16 @@ fi
 # failures tolerated: a red gate still produces a trace, and refusing to report coverage
 # because a test is failing would make this useless in exactly the situation where it is
 # most wanted. What the run's exit status was is reported at the end.
+#
+# THIS ARM STILL DRIVES BASH ONLY, AND SINCE W7 P5 BATCH A4 THAT IS ONE FILE. Ten of the
+# eleven media gate tests are now Python ports under .ci/rediacc_ci/tests/gates, driven by
+# pytest rather than by an executable path, so the percentages below are measured from
+# whatever bash twins survive and no longer from the whole suite. `media_verify.py`
+# implements the same MEDIA_COVERAGE_FILE seam that verify.sh does, so the ports can be
+# traced; what is missing is a pytest invocation here, which is a design change to this
+# instrument rather than a consequence of the deletion. The "no test at all" assertion
+# above reads both corpora and is unaffected; only the percentage is narrowed, and the
+# header already records that a zero here has two meanings.
 failed=()
 for t in "$GATES"/test-media-$ONLY.sh; do
     [ -f "$t" ] || {
@@ -209,7 +225,7 @@ for t in "$GATES"/test-media-$ONLY.sh; do
     name="$(basename "$t" .sh)"
     # ONE TRACE FILE PER TEST, so a failing test's partial trace can be told apart from a
     # module nothing exercises. MEDIA_COVERAGE_FILE is read by verify.sh and by nothing
-    # else; a gate test that does not source verify.sh (test-media-helpers.sh, deliberately,
+    # else; a gate test that does not source verify.sh (test_gate_media_helpers.py, deliberately,
     # since it validates the scaffolding the others stand on) simply contributes nothing.
     if ! MEDIA_COVERAGE_FILE="$TRACE_DIR/$name.trace" "$t" >/dev/null 2>&1; then
         failed+=("$name")

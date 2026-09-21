@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-watchdog-classifier-chain.sh`.
+"""Port of `.ci/scripts/test/gates/test-watchdog-classifier-chain.sh`, retired in W7 P5.
 
 The failure-classifier PROVIDER CHAIN in `.ci/scripts/ci/watchdog-monitor.cjs`.
 
@@ -26,8 +26,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-classifier-chain.sh"
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 PROMPT = paths.from_root(".ci", "prompts", "ci-failure-classifier.md")

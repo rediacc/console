@@ -4,11 +4,11 @@ WHY IT IS SHARED, and why between exactly these callers rather than every workfl
 exact and easy to get subtly wrong: `WORKFLOW_INLINE_ONLY=1` is what empties
 GITHUB_YAMLS (check-workflows.sh:38-40) so the banned-pattern scans become no-ops and the FIXTURE TREE is the only thing judged. Without it a test both trips on and depends on the real `.github` state.
 
-test-workflow-contracts.sh looks like it belongs here and does NOT: it drives `.ci/scripts/security/check-workflow-gates.sh` with `WORKFLOWS_DIR` -- a different script, a different variable, no inline-only switch. The five lines rhyme; the contract does not. Folding it in would produce a helper with two meanings.
+test_gate_workflow_contracts.py looks like it belongs here and does NOT: it drives `.ci/scripts/security/check-workflow-gates.sh` with `WORKFLOWS_DIR` -- a different script, a different variable, no inline-only switch. The five lines rhyme; the contract does not. Folding it in would produce a helper with two meanings.
 
 THE ONE DIFFERENCE FROM THE BASH ORIGINAL, and it is a real one rather than a
 translation artefact. `workflow-rule.sh` hard-codes `CI=true`, and
-test-workflow-inline.sh does NOT source it: that file defines its own `run_check`
+test_gate_workflow_inline.py does NOT source it: that file defines its own `run_check`
 with no `CI` assignment at all. Two callers, two environments, one incantation
 otherwise. Rather than hide that difference behind a default, `ci` is an explicit argument here and each caller states which side of it it is on, so a reader can see that inline's fixtures are judged with CI unset exactly as the twin judges them.
 

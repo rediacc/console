@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-releaseversion-inject-env.sh`.
+"""Port of `.ci/scripts/test/gates/test-releaseversion-inject-env.sh`, retired in W7 P5.
 
 Both-ways test for `.ci/scripts/version/inject-env.sh --strict`.
 
@@ -15,8 +15,6 @@ WHAT THIS MODULE READS FROM THE REAL TREE, and why that is safe for the parity d
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-releaseversion-inject-env.sh"
 
 GATE = paths.from_root(".ci", "scripts", "version", "inject-env.sh")
 

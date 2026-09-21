@@ -1,4 +1,4 @@
-r"""Port of `.ci/scripts/test/gates/test-media-portable.sh`.
+r"""Port of `.ci/scripts/test/gates/test-media-portable.sh`, retired in W7 P5.
 
 `.ci/media/portable.sh`, the seams where this pipeline names a system tool that is spelled differently, or does not exist, off Linux.
 
@@ -26,8 +26,6 @@ import shutil
 import stat
 
 from rediacc_ci.tests.gates import harness, media_verify
-
-BASH_TWIN = ".ci/scripts/test/gates/test-media-portable.sh"
 
 MODULE = media_verify.MEDIA_DIR / "portable.sh"
 

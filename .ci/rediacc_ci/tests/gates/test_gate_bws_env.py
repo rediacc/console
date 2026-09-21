@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-bws-env.sh`.
+"""Port of `.ci/scripts/test/gates/test-bws-env.sh`, retired in W7 P5.
 
 Both-ways test for `.ci/lib/bws-env.sh`, the shared Bitwarden fetcher local scripts use instead of reading `private/account/.env`.
 
@@ -19,8 +19,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-bws-env.sh"
 
 HELPER = paths.from_root(".ci", "lib", "bws-env.sh")
 

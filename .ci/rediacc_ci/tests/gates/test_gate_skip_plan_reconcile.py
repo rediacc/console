@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-skip-plan-reconcile.sh`.
+"""Port of `.ci/scripts/test/gates/test-skip-plan-reconcile.sh`, retired in W7 P5.
 
 Unit test for the attested skip-plan reconciler, `.ci/scripts/ci/skip-plan-reconcile.cjs` (Wave B edge cases 25-32, section E).
 
@@ -22,8 +22,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-skip-plan-reconcile.sh"
 
 RECONCILE = paths.from_root(".ci", "scripts", "ci", "skip-plan-reconcile.cjs")
 MAP = paths.from_root(".ci", "scripts", "ci", "scope-map.cjs")

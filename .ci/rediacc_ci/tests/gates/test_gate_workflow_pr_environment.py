@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-workflow-pr-environment.sh`.
+"""Port of `.ci/scripts/test/gates/test-workflow-pr-environment.sh`, retired in W7 P5.
 
 Both-ways test for the pr-environment rule in `.ci/scripts/quality/check-workflows.sh`.
 
@@ -19,8 +19,6 @@ NO `xdist_group`. Each case gets its own `mktemp -d` fixture directory, and the 
 """
 
 from rediacc_ci.tests.gates import harness, workflow_rule
-
-BASH_TWIN = ".ci/scripts/test/gates/test-workflow-pr-environment.sh"
 
 
 def test_mapping_form_is_caught(gate):

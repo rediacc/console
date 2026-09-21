@@ -244,7 +244,7 @@ REGISTRY=(
     # a dist and has therefore been vacuous on every developer machine for its whole life.
     "check-anchor-integrity.ts|Refusing to run"
     "check-client-bundle-budget.ts|Refusing to run"
-    # NOT registered here: .ci/scripts/test/gates/test-skip-plan-reconcile.sh.
+    # NOT registered here: .ci/rediacc_ci/tests/gates/test_gate_skip_plan_reconcile.py.
     # Measured, not assumed: it passes all 55 assertions against the empty tree,
     # because it is a pure unit test that builds every fixture it needs (its
     # plans and job lists are constructed in-test, and it reads scope-map only
@@ -253,7 +253,7 @@ REGISTRY=(
     # here could never fail and would be exactly the dead assertion this
     # harness exists to catch. Its anti-vacuity controls are inline instead.
     #
-    # NOT registered here either: .ci/scripts/test/gates/test-scope-baseline-attest.sh,
+    # NOT registered here either: .ci/rediacc_ci/tests/gates/test_gate_scope_baseline_attest.py,
     # for the same reason and measured the same way: all 75 assertions pass
     # against the empty tree (exit 0), because it too builds every fixture it
     # needs. It drives the real createRepoIo with an INJECTED `run`, so it makes
@@ -282,7 +282,10 @@ REGISTRY=(
     # diagnostic. The control now runs first.
     #
     # NOT registered here either: .ci/scripts/test/gates/test-watchdog-supersession.sh,
-    # and the same measurement was taken rather than reasoned: all 9 assertions
+    # retired in W7 P5 with its cases carried by
+    # .ci/rediacc_ci/tests/gates/test_gate_watchdog_supersession.py, which this
+    # harness does not register because it registers bash gate tests only.
+    # The same measurement was taken rather than reasoned: all 9 assertions
     # pass against the empty tree (exit 0). Its only repo dependency is
     # .ci/scripts/ci/watchdog-monitor.cjs, which this harness copies in, and
     # every input to the decision under test is a literal in the test itself.
@@ -292,8 +295,8 @@ REGISTRY=(
     # "a real failure is never laundered as supersession" red, and relaxing
     # `newerRunExists === true` to `Boolean(newerRunExists)` flips
     # "newerRunExists is compared strictly" red. Both directions were run, not
-    # assumed. Its sibling test-watchdog-schedule-exemption.sh is unregistered
-    # on the same grounds.
+    # assumed. Its sibling test-watchdog-schedule-exemption.sh was unregistered
+    # on the same grounds and retired in the same batch.
 )
 
 # run_against_empty_tree <script> -- execute <script> with scripts/ copied into

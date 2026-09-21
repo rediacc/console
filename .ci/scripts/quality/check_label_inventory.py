@@ -24,10 +24,9 @@ PINNED BY PATH IN FOUR PLACES, AND THE ROWS SPLIT ACROSS ALL THREE ARMS:
   - RUN-IN-PLACE, so ENTRY POINT if repointed:
     `.ci/scripts/test/gates/test-label-inventory.sh:34` (`GATE=`, then runs it)
     `.ci/rediacc_ci/tests/gates/test_gate_label_inventory.py:48` (`GATE_REL`)
-  - GREPS A BEHAVIOURAL NEEDLE, so MODULE if repointed. Both
-    `.ci/scripts/test/gates/test-review-labels.sh:576,648` and
-    `.ci/rediacc_ci/tests/gates/test_gate_review_labels.py:691,792` read the
-    gate as TEXT and assert the literal
+  - GREPS A BEHAVIOURAL NEEDLE, so MODULE if repointed.
+    `.ci/rediacc_ci/tests/gates/test_gate_review_labels.py:691,792` reads the
+    gate as TEXT and asserts the literal
     `"ci|.ci/scripts/review/claude-review-gate.sh"` and its `bump-none` sibling
     are present in its CREATE_ON_DEMAND table. That needle is not in this
     three-line shim; it is in `.ci/rediacc_ci/quality/label_inventory.py`.

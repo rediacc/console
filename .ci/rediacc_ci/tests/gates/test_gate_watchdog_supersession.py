@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-watchdog-supersession.sh`.
+"""Port of `.ci/scripts/test/gates/test-watchdog-supersession.sh`, retired in W7 P5.
 
 The supersession verdict in `.ci/scripts/ci/watchdog-monitor.cjs`.
 
@@ -30,8 +30,6 @@ READ-ONLY against the subject: node `require`s it and two cases read its text.
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-supersession.sh"
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 

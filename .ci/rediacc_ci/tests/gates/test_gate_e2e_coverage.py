@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-e2e-coverage.sh`.
+"""Port of `.ci/scripts/test/gates/test-e2e-coverage.sh`, retired in W7 P5.
 
 Integration test for the FORWARD half of the e2e-coverage gate (`scripts/gates/check-e2e-coverage.ts`), driven through its `E2E_COV_*` overrides against a controlled fixture tree.
 
@@ -10,8 +10,6 @@ The fixture is entirely inside `tmp_path`; the only real-tree access is READING 
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-e2e-coverage.sh"
 
 GATE = paths.from_root("scripts/gates", "check-e2e-coverage.ts")
 

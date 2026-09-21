@@ -70,7 +70,7 @@ CONTROL A EXISTS BECAUSE THE OTHER CONTROLS DID NOT TOUCH THE EXTRACTOR:
     regression that made the extractor return NOTHING would leave this gate
     printing its success line over an empty scan -- "I flagged nothing today"
     reported as "nothing is reachable". Found by review 2026-08-26, one round
-    after the identical defect shipped in test-ci-compat-prose.sh.
+    after the identical defect shipped in test-ci-compat-prose.sh, retired in W7 P5.
 
 THE awk ATTRIBUTION IS NOT A WINDOW, and both wrong versions are recorded:
 

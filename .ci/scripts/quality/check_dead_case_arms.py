@@ -19,10 +19,9 @@ NO `id:` IS CORRECT HERE: `derivedId` (`gate-header.ts:260`) maps this basename 
 
 THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files. Both infer `[]` and both resolve to the empty set `needs: none` declares.
 
-PINNED BY PATH IN FOUR HARNESS ROWS, ALL OF THEM RUN-IN-PLACE, so all four take the ENTRY POINT arm if they are ever repointed:
+PINNED BY PATH IN THREE HARNESS ROWS, ALL OF THEM RUN-IN-PLACE, so all three take the ENTRY POINT arm if they are ever repointed. A fourth, `.ci/scripts/test/gates/test-media-helpers.sh:31`, went with its twin in W7 P5 and is covered by the port below it:
 
   - `.ci/scripts/test/gates/test-dead-case-arms.sh:25`   `GATE=` then runs it
-  - `.ci/scripts/test/gates/test-media-helpers.sh:31`    `GATE=` then runs it
   - `.ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py:41`  runs it
   - `.ci/rediacc_ci/tests/gates/test_gate_media_helpers.py:40`   runs it
 

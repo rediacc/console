@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-media-pool.sh`.
+"""Port of `.ci/scripts/test/gates/test-media-pool.sh`, retired in W7 P5.
 
 `.ci/media/pool.sh`, the render side of tutorial media.
 
@@ -38,8 +38,6 @@ NO `xdist_group`. `fake_bin` mutates PATH on this process and restores it in a `
 import stat
 
 from rediacc_ci.tests.gates import harness, media_verify
-
-BASH_TWIN = ".ci/scripts/test/gates/test-media-pool.sh"
 
 MODULE = media_verify.MEDIA_DIR / "pool.sh"
 

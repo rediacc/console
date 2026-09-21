@@ -11,8 +11,6 @@
     ".ci/scripts/quality/check_tutorial_no_skips.py",
     ".ci/scripts/quality/check_workflow_submodule_deps.py",
     ".ci/scripts/security/check-commands.sh",
-    ".ci/scripts/test/gates/test-skip-release-channel-pointer.sh",
-    ".ci/scripts/test/gates/test-watchdog-log-capture.sh",
     "scripts/gates/check-actions.ts",
     "scripts/gates/check-baseline-key-semantics.ts",
     "scripts/gates/check-cli-i18n-key-usage.ts",

@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-watchdog-schedule-exemption.sh`.
+"""Port of `.ci/scripts/test/gates/test-watchdog-schedule-exemption.sh`, retired in W7 P5.
 
 The cancel-exemption in `.ci/scripts/ci/watchdog-monitor.cjs`.
 
@@ -23,8 +23,6 @@ NO `xdist_group`. Every case is a short-lived `node -e` subprocess or a file rea
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-schedule-exemption.sh"
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")

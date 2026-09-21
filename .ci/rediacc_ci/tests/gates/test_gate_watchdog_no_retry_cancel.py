@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-watchdog-no-retry-cancel.sh`.
+"""Port of `.ci/scripts/test/gates/test-watchdog-no-retry-cancel.sh`, retired in W7 P5.
 
 The no-retry force-cancel decision in `.ci/scripts/ci/watchdog-monitor.cjs`: WHICH failures kill the run immediately, and WHAT the kill waits for.
 
@@ -27,8 +27,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-watchdog-no-retry-cancel.sh"
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
 # The WATCHDOG_* env block lives with the monitor step, which moved from ci.yml to the chained watchdog-monitor.yml (ubuntu-slim generations).

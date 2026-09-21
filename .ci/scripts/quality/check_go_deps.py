@@ -22,8 +22,9 @@ NO `id:` IS CORRECT HERE: `derivedId` (`gate-header.ts:260`) maps this basename 
 PINNED BY PATH, and this is the one row in this batch that a harness names. `.ci/scripts/test/gates/test-swallowed-failures.sh:44` sets
 `GO_DEPS="$REPO_ROOT/.ci/scripts/quality/check-go-deps.sh"` and at line 126
 counts `__PROBE_FAILED__` markers in it, asserting that the 2026-07-28 fix this gate's probe received is still present. That row does NOT run the file: it greps it. It asserts a BEHAVIOURAL NEEDLE in the source, and the needle is not in this three-line shim, so if it is ever repointed it must be repointed at the MODULE `.ci/rediacc_ci/quality/go_deps.py`, never at this entry point.
-Verified by reading lines 44 and 120-130 of the harness rather than assuming. It goes on passing unchanged after this cutover because invariant 5 keeps the twin on disk, and repointing is the driver's call. `.ci/scripts/test/gates/test-go-deps-probe-failure.sh:47` copies the twin into a fixture and RUNS the copy, so that one is a run-by-path row and would have to be repointed at
-the ENTRY POINT instead. Both arms are present in this single gate, which is why the brief says decide per row.
+Verified by reading lines 44 and 120-130 of the harness rather than assuming. It goes on passing unchanged after this cutover because invariant 5 keeps the twin on disk, and repointing is the driver's call. A second row used to be the other arm: `.ci/scripts/test/gates/test-go-deps-probe-failure.sh:47` copied the twin into a fixture and RAN the copy, a run-by-path row that
+would have had to be repointed at the ENTRY POINT instead. W7 P5 census batch A8
+retired that twin and `.ci/rediacc_ci/tests/gates/test_gate_go_deps_probe_failure.py` carries its cases, so only the grep arm is left here; the brief's rule stands and the example is now historical.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 

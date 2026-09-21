@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-review-labels.sh`.
+"""Port of `.ci/scripts/test/gates/test-review-labels.sh`, retired in W7 P5.
 
 Both-ways test for `claude-review-gate.sh --apply-labels`, the arm that labels a PR
 from the automated review that just ran.
@@ -35,8 +35,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-review-labels.sh"
 
 UNDER_TEST = paths.from_root(".ci", "scripts", "review", "claude-review-gate.sh")
 LABELS_FILE = paths.from_root(".github", "labels.yml")

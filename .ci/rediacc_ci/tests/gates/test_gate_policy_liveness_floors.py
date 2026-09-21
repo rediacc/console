@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-policy-liveness-floors.sh`.
+"""Port of `.ci/scripts/test/gates/test-policy-liveness-floors.sh`, retired in W7 P5.
 
 Test for the PER-PROBE INPUT FLOORS in `scripts/gates/check-suppression-liveness.ts`.
 
@@ -24,8 +24,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-policy-liveness-floors.sh"
 
 GATE = paths.from_root("scripts/gates", "check-suppression-liveness.ts")
 TSX = paths.from_root("node_modules", ".bin", "tsx")

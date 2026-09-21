@@ -4,7 +4,7 @@
 // the work for them -- or, worse, no way to find the switch that stops it. So each PR gets one short comment saying both.
 //
 // WHY IT IS NOT RENDERED, AND WHAT REPLACES THAT. The label guide is a projection of .github/labels.yml, which is the right design when a machine- readable source of truth exists. This guide describes a WORKFLOW: its arming paths live in shell `if` branches, its bounds in three different files, and no parser turns those into prose. Hand-written prose is exactly the rotting fourth
-// copy label-guide-comment.cjs's header warns about, so the mitigation is moved into the test: test-autopilot-guide-comment.sh asserts that every variable name, label name and numeric bound quoted below still appears in the
+// copy label-guide-comment.cjs's header warns about, so the mitigation is moved into the test: test_gate_autopilot_guide_comment.py asserts that every variable name, label name and numeric bound quoted below still appears in the
 // file it was taken from. The prose is human; the FACTS in it are pinned, and a
 // rename in autopilot.yml turns this comment red rather than stale.
 //

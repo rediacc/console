@@ -100,7 +100,7 @@ fi
 # behaviour; on any other channel this is a logged no-op.
 #
 # SKIP_RELEASE_GUARD_BEGIN (anchor for the gate test's planted defects --
-# .ci/scripts/test/gates/test-skip-release-channel-pointer.sh assembles its
+# .ci/rediacc_ci/tests/gates/test_gate_skip_release_channel_pointer.py assembles its
 # mutants by splitting this file on these two markers; do not remove them)
 skip_release_requested() {
     case "${SKIP_RELEASE:-}" in

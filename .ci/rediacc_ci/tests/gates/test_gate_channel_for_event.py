@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-channel-for-event.sh`.
+"""Port of `.ci/scripts/test/gates/test-channel-for-event.sh`, retired in W7 P5.
 
 Unit test for `.ci/scripts/ci/assert-channel-for-event.sh`.
 
@@ -11,8 +11,6 @@ THE PORT CHANGES ONE THING AND IT IS NOT A VERDICT. The twin keeps the last run'
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-channel-for-event.sh"
 
 ASSERT = paths.from_root(".ci", "scripts", "ci", "assert-channel-for-event.sh")
 CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")

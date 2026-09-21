@@ -12,7 +12,7 @@
 #               (not required when PREVIEW_URL_OVERRIDE is set)
 #
 # Test-only env. CI sets NONE of these; the defaults below are the real policy.
-# They exist so .ci/scripts/test/gates/test-preview-readiness.sh can drive this
+# They exist so .ci/rediacc_ci/tests/gates/test_gate_preview_readiness.py can drive this
 # script against a local stub in seconds instead of copying it through sed --
 # which is how it had to be tested before, and a script you must fork to test is
 # a script that stops being tested.

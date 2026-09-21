@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-emit-advisory.sh`.
+"""Port of `.ci/scripts/test/gates/test-emit-advisory.sh`, retired in W7 P5.
 
 `.ci/scripts/lib/emit-advisory.sh`, in two halves that ask different questions.
 
@@ -31,8 +31,6 @@ import os
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-emit-advisory.sh"
 
 LIB_DIR = paths.from_root(".ci", "scripts", "lib")
 EMIT = LIB_DIR / "emit-advisory.sh"

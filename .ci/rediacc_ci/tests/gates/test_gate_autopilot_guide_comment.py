@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-autopilot-guide-comment.sh`.
+"""Port of `.ci/scripts/test/gates/test-autopilot-guide-comment.sh`, retired in W7 P5.
 
 Structurally a mirror of the label-guide port, because the module is a mirror of that poster: same marker discipline, same bot-only ownership, same create/update/no-op contract driven against a fake GitHub client and asserted on the call trace. What differs is the CONTENT half, where every documented fact is re-derived from the file it came from, so a rename in `autopilot.yml`,
 `autopilot-gate.sh` or `resolve-model-args.sh` turns this red instead of leaving a wrong comment sitting on every PR.
@@ -33,8 +33,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-autopilot-guide-comment.sh"
 
 MODULE = paths.from_root(".ci", "scripts", "ci", "autopilot-guide-comment.cjs")
 LABEL_MODULE = paths.from_root(".ci", "scripts", "ci", "label-guide-comment.cjs")

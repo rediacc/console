@@ -57,7 +57,7 @@ import { policyPath } from '../lib/policy-paths.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, '..', '..');
 
-// Every root is overridable via an E2E_COV_* env var so the gate-fixture test (.ci/scripts/test/gates/test-e2e-coverage.sh) can point the exact production code at a controlled fixture tree — the "prove the instrument" discipline. Unset, they resolve to the real repo paths, so production behaviour is identical whether or not the overrides exist.
+// Every root is overridable via an E2E_COV_* env var so the gate-fixture test (.ci/rediacc_ci/tests/gates/test_gate_e2e_coverage.py) can point the exact production code at a controlled fixture tree — the "prove the instrument" discipline. Unset, they resolve to the real repo paths, so production behaviour is identical whether or not the overrides exist.
 const E2E_DIR = process.env.E2E_COV_E2E_DIR ?? path.join(REPO_ROOT, 'packages/e2e-tests');
 const FUNCTIONS_FILE =
   process.env.E2E_COV_FUNCTIONS_FILE ??

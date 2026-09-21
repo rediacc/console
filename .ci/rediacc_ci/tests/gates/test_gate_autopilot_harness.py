@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-autopilot-harness.sh`.
+"""Port of `.ci/scripts/test/gates/test-autopilot-harness.sh`, retired in W7 P5.
 
 Tests for the Wave C autopilot harness (`.ci/scripts/autopilot/`), the deterministic write path that runs AFTER the model exits (docs/ci-overhaul/03-v2-autonomy.md). The two invariants under test:
 
@@ -34,8 +34,6 @@ import subprocess
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-autopilot-harness.sh"
 
 AUTOPILOT = paths.from_root(".ci", "scripts", "autopilot")
 VALIDATE = AUTOPILOT / "validate-handoff.cjs"

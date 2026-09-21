@@ -124,7 +124,7 @@ RELEASE_CHANNELS = ("stable", "edge")
 
 # The `case` arms of `skip_release_requested` (:106-109). A SET of SPELLINGS, because the twin lists each one rather than lowercasing: `TrUe` and `Y` are NOT
 # skip values, and a port using `.lower() in {...}` would suppress a release the
-# twin publishes. These lines sit between the SKIP_RELEASE_GUARD_BEGIN/END markers that `.ci/scripts/test/gates/test-skip-release-channel-pointer.sh` splits the twin on to assemble its mutants.
+# twin publishes. These lines sit between the SKIP_RELEASE_GUARD_BEGIN/END markers that `.ci/rediacc_ci/tests/gates/test_gate_skip_release_channel_pointer.py` splits the twin on to assemble its mutants.
 SKIP_RELEASE_VALUES = frozenset({"true", "TRUE", "True", "1", "yes", "YES", "y", "on", "ON"})
 
 # The three credentials checked, IN ORDER, when `--dry-run` is absent (:146). The first missing one wins, and the loop is what makes that observable.

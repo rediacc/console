@@ -10,7 +10,7 @@
 #
 # Part of the media pipeline extraction (W10). Moved out of run.sh byte for byte in
 # phase 1, comments included; phase 2 deleted run.sh's copies.
-# .ci/scripts/test/gates/test-media-bridge.sh asserts that this module is the sole owner
+# .ci/rediacc_ci/tests/gates/test_gate_media_bridge.py asserts that this module is the sole owner
 # of all nine names, and drives `./run.sh provision start` end to end -- through run.sh's
 # exec into media-entry.sh and into this file -- with no cluster anywhere near it.
 #

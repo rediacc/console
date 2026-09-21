@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-external-gate-wrapper.sh`.
+"""Port of `.ci/scripts/test/gates/test-external-gate-wrapper.sh`, retired in W7 P5.
 
 Tests for `.ci/scripts/quality/run-external-gate.sh`, the wrapper that gives externally-dependent quality gates their three-state behaviour: hard on a normal PR, absent on a labelled PR via the step `if:`, soft on schedule.
 
@@ -12,8 +12,6 @@ import os
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-external-gate-wrapper.sh"
 
 WRAPPER = paths.from_root(".ci", "scripts", "quality", "run-external-gate.sh")
 

@@ -9,7 +9,7 @@
 # fixture tree is the ONLY thing judged. Without it a test both trips on and
 # depends on the real .github state.
 #
-# test-workflow-contracts.sh looks like it belongs here and does NOT: it drives
+# test_gate_workflow_contracts.py looks like it belongs here and does NOT: it drives
 # .ci/scripts/security/check-workflow-gates.sh with WORKFLOWS_DIR -- a different
 # script, a different variable, no inline-only switch. The five lines rhyme; the
 # contract does not. Folding it in would produce a helper with two meanings.

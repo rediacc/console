@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-embed-credits.sh`.
+"""Port of `.ci/scripts/test/gates/test-embed-credits.sh`, retired in W7 P5.
 
 Integration test for `scripts/gates/check-embed-credits.ts`.
 
@@ -13,8 +13,6 @@ WHY THE TWIN'S `setup_fixtures` HAS NO COUNTERPART HERE. It writes `bad-credits.
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-embed-credits.sh"
 
 VALIDATOR = paths.from_root("scripts/gates", "check-embed-credits.ts")
 DOCKERFILE = paths.from_root("private", "renet", "Dockerfile")

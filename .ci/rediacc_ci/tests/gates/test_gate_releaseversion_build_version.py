@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-releaseversion-build-version.sh`.
+"""Port of `.ci/scripts/test/gates/test-releaseversion-build-version.sh`, retired in W7 P5.
 
 Both-ways test for the two version checks inside `.ci/scripts/build/build-cli-executables.sh`.
 
@@ -29,8 +29,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-releaseversion-build-version.sh"
 
 GATE = paths.from_root(".ci", "scripts", "build", "build-cli-executables.sh")
 

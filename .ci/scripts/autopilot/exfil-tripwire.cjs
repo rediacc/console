@@ -5,7 +5,7 @@
 // REGARDLESS of prefix. rule 3 total diff > 256 KB trips. On a trip: no commit, no push, escalate. The tripped diff is NEVER uploaded as an artifact: console artifacts are publicly downloadable, so uploading the very diff suspected of exfiltration would complete the exfiltration. This tool therefore prints byte counts and paths only, never diff content.
 //
 // THE IMPLICATED SET, three hops, first two reused from the scope engine: hop 1 failed job display name -> plan key: EXPECTED_JOB_NAMES + matchJobName from ../ci/skip-plan-reconcile.cjs (imported). hop 2 plan key -> modules: JOB_SURFACES from ../ci/scope-map.cjs. hop 3 module -> path prefixes: scope-map's RULES matchers are opaque closures, so path->module CANNOT be inverted.
-// MODULE_PREFIXES below is a small declarative mirror in the module->path direction, drift-checked by test-autopilot-harness.sh against the exported classify() as an oracle (every (module, prefix) pair must classify back to that module, and every JOB_SURFACES module must have at least one prefix here). A failed job that maps to NO plan key (a quality lane, a build job)
+// MODULE_PREFIXES below is a small declarative mirror in the module->path direction, drift-checked by test_gate_autopilot_harness.py against the exported classify() as an oracle (every (module, prefix) pair must classify back to that module, and every JOB_SURFACES module must have at least one prefix here). A failed job that maps to NO plan key (a quality lane, a build job)
 // contributes nothing to the implicated set; with an empty set every added
 // byte is out-of-scope, which fails in the tighter direction on purpose.
 //

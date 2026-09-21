@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-breakpoint-secret-exposure.sh`.
+"""Port of `.ci/scripts/test/gates/test-breakpoint-secret-exposure.sh`, retired in W7 P5.
 
 breakpoint must never route an access credential through a step `env:`.
 
@@ -30,8 +30,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-breakpoint-secret-exposure.sh"
 
 BP = paths.from_root(".ci", "breakpoint")
 WORKFLOW = BP / "workflow" / "breakpoint.yml"

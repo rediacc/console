@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-releaseversion-tag-fetch.sh`.
+"""Port of `.ci/scripts/test/gates/test-releaseversion-tag-fetch.sh`, retired in W7 P5.
 
 Both-ways test for the tag-fetch block in `.ci/scripts/ci/initialize.sh`.
 
@@ -20,8 +20,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-releaseversion-tag-fetch.sh"
 
 GATE = paths.from_root(".ci", "scripts", "ci", "initialize.sh")
 

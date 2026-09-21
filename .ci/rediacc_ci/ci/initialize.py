@@ -3,7 +3,8 @@
 
 The first job of every CI run: validate the app token, decide whether the push came from a bot, initialise the private submodules, mint the three image tags, resolve the next version from the tag list, and ask the registry which of the three images already exist. Everything downstream reads its outputs, so a wrong answer here is a wrong answer everywhere.
 
-LIVE CALLER, not repointed. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step. The twin is also the subject of `.ci/scripts/test/gates/test-releaseversion-tag-fetch.sh`, which EXTRACTS its tag-fetch block by literal anchors; nothing here changes those anchors because nothing here
+LIVE CALLER, not repointed. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step. The twin is also the subject of `.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py`, which EXTRACTS its tag-fetch block by literal anchors; nothing here changes those anchors because
+nothing here
 touches the twin.
 
 Ledger: `.ci/shadow/w7p6-initialize.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).

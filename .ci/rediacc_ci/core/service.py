@@ -332,7 +332,8 @@ def main(argv: list[str]) -> int:
     verb, rest = argv[0], argv[1:]
     if verb == "status":
         check_docker()
-        # THE HARNESS SEAM FOR `now`, AND WHY IT IS AN ENVIRONMENT VARIABLE. `service_status` prints an uptime derived from the wall clock, so two runs a second apart disagree and no byte comparison against the twin is possible without freezing it on BOTH sides. The twin's seam is a fake `date` earlier on PATH, which is how `test-bws-env.sh` already fakes `bws`; this is the same
+        # THE HARNESS SEAM FOR `now`, AND WHY IT IS AN ENVIRONMENT VARIABLE. `service_status` prints an uptime derived from the wall clock, so two runs a second apart disagree and no byte comparison against the twin is possible without freezing it on BOTH sides. The twin's seam is a fake `date` earlier on PATH, which is how `test_gate_bws_env.py` already fakes `bws`; this is
+        # the same
         # trick spelled for a process that reads the clock directly. UNSET IN EVERY REAL RUN, so the default is the wall clock and nothing about production behaviour depends on it.
         pinned = os.environ.get("SERVICE_STATUS_NOW", "")
         try:

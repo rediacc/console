@@ -1227,7 +1227,7 @@ const monitor = async ({ github, context, core }) => {
       // Capture this job's log NOW, before any branch below decides what to do about it. Capture is evidence, not classification, and tying the two together loses the evidence exactly where it matters most.
       //
       // It used to happen as a side effect of classifyFailure, which is only reached on the last branch. Every earlier branch -- a no-retry Quality failure, a cancel-exempt scheduled run, max-attempts -- returned or continued without ever fetching a log. So the NIGHTLY, which now takes the exempt path by construction, captured nothing at all. Caught by
-      // test-watchdog-log-capture.sh's scheduled-run case, which expected one captured file and found zero.
+      // test_gate_watchdog_log_capture.py's scheduled-run case, which expected one captured file and found zero.
       //
       // Cached in logTails, so the later classification does not re-fetch.
       await getLogTail(job);

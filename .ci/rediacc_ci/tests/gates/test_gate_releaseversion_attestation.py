@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-releaseversion-attestation.sh`.
+"""Port of `.ci/scripts/test/gates/test-releaseversion-attestation.sh`, retired in W7 P5.
 
 Both-ways test for `.ci/scripts/release/verify-artifact-attestation.sh`.
 
@@ -19,8 +19,6 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-releaseversion-attestation.sh"
 
 GATE_SRC = paths.from_root(".ci", "scripts", "release", "verify-artifact-attestation.sh")
 COMMON_SRC = paths.from_root(".ci", "scripts", "lib", "common.sh")

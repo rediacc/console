@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-preview-readiness.sh`.
+"""Port of `.ci/scripts/test/gates/test-preview-readiness.sh`, retired in W7 P5.
 
 Unit test for `.ci/scripts/deploy/wait-for-preview-worker.sh`.
 
@@ -26,8 +26,6 @@ import threading
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-preview-readiness.sh"
 
 WAIT_SCRIPT = paths.from_root(".ci", "scripts", "deploy", "wait-for-preview-worker.sh")
 

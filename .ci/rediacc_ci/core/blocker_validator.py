@@ -1,8 +1,11 @@
 """The BLOCKER convention transport, ported from `.ci/scripts/lib/blocker-validator.sh`.
 
-PORTED FROM `.ci/scripts/lib/blocker-validator.sh` (356 lines), which still exists, is untouched by this file, and has EIGHT real sourcers re-measured on 2026-09-10 (`grep -rnP '^\\s*(source|\\.)\\s+.*blocker-validator\\.sh'`): `.ci/scripts/quality/check-ci-job-aggregation.sh:52`, `.ci/scripts/quality/check-go-deps.sh:37`, `.ci/scripts/quality/check-profiler-coverage.sh:85`,
-`.ci/scripts/quality/check-swallowed-failures.sh:86`, `.ci/scripts/security/audit.sh:36`, `.ci/scripts/test/gates/test-blocker-validator.sh:26`, `.ci/scripts/test/gates/test-emit-advisory.sh:141` and `:168` (one file, two heredoc-driven subshells), and `.ci/rediacc_ci/tests/test_core_allowlist.py:155` and `:183`, which drive the real library from bash snippets. This module does NOT
-shim any of them: deletion and cutover are a later box, both implementations are live, and `.ci/rediacc_ci/tests/test_core_blocker_validator.py` is what says they agree.
+PORTED FROM `.ci/scripts/lib/blocker-validator.sh` (356 lines), which still exists and is untouched by this file. SIX real sourcers, re-measured on 2026-09-21 with the grep that produced the earlier count of eight (`grep -rnP '^\\s*(source|\\.)\\s+.*blocker-validator\\.sh'`): `.ci/scripts/quality/check-ci-job-aggregation.sh:52`,
+`.ci/scripts/quality/check-go-deps.sh:37`, `.ci/scripts/quality/check-profiler-coverage.sh:85`, `.ci/scripts/quality/check-swallowed-failures.sh:86`, and `.ci/rediacc_ci/tests/test_core_allowlist.py:126` and `:153`, which drive the real library from bash snippets.
+
+THREE SITES LEFT THE LIST SINCE 2026-09-10, and naming them beats letting the number look like drift: `.ci/scripts/security/audit.sh:36` went with W7 P5's audit deletion, and `.ci/scripts/test/gates/test-blocker-validator.sh:26` plus `.ci/scripts/test/gates/test-emit-advisory.sh:141` and `:168` went with census batch A7. Their cases are carried by
+`.ci/rediacc_ci/tests/gates/test_gate_blocker_validator.py` and `.ci/rediacc_ci/tests/gates/test_gate_emit_advisory.py`, which exercise this module rather than the twin. This module does NOT shim any sourcer: cutover is a later box, both implementations are live, and
+`.ci/rediacc_ci/tests/test_core_blocker_validator.py` is what says they agree.
 
 WHAT THIS FILE IS NOT. It is not a second copy of the BLOCKER rule. The twin stopped being an implementation on 2026-09-09: its grammar, its two banned-phrase tables, its 30-character floor and all four message bodies live in `rediacc_ci.core.allowlist`, and `parse_blockered_list` / `verify_all_blockers` there are TRANSPORTS that decide nothing. This is the Python transport over
 the same canonical module, so the hop the twin pays (bash -> python3 -m ... -> bash) collapses to a function call, and nothing about the verdict moves.

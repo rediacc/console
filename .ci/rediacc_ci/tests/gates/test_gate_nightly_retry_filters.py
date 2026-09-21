@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-nightly-retry-filters.sh`.
+"""Port of `.ci/scripts/test/gates/test-nightly-retry-filters.sh`, retired in W7 P5.
 
 The nightly retry's FILTERS are the whole feature, so they are what this tests.
 
@@ -23,8 +23,6 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-nightly-retry-filters.sh"
 
 SUT = paths.from_root(".ci", "scripts", "housekeeping", "retry-failed-runs.sh")
 

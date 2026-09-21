@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-fetch-depth-safety.sh`.
+"""Port of `.ci/scripts/test/gates/test-fetch-depth-safety.sh`, retired in W7 P5.
 
 No git operation may quietly reshape the repository a later step measures, and no fixture may be built in a shape that measures nothing.
 
@@ -66,8 +66,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-fetch-depth-safety.sh"
 
 ROOT = paths.repo_root()
 MODULE = ROOT / "packages" / "www" / "scripts" / "lib" / "translation-freshness-git.js"

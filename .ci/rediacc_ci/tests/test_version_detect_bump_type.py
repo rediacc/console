@@ -4,7 +4,8 @@ REAL GIT REPOSITORIES, NOT A STUBBED `git`. Every case builds an actual reposito
 are exactly the ones a fake gets wrong: `--sort=-v:refname` is git's own version
 collation (`v0.9.0` before `v0.10.0`), and `merge-base --is-ancestor` is a real question about the object graph.
 
-`gh` IS FAKED, because the ONLY thing it does here is answer `commits/<sha>/pulls`, and reaching the network would make the suite depend on a repository nobody controls. The fake is a router over per-SHA fixture files that applies the CALLER's own `--jq` through the real `jq`, the shape `.ci/scripts/test/gates/test-detect-bump-type.sh` established, so both sides parse the fixture
+`gh` IS FAKED, because the ONLY thing it does here is answer `commits/<sha>/pulls`, and reaching the network would make the suite depend on a repository nobody controls. The fake is a router over per-SHA fixture files that applies the CALLER's own `--jq` through the real `jq`, the shape `.ci/rediacc_ci/tests/gates/test_gate_detect_bump_type.py` established, so both sides parse
+the fixture
 with one jq rather than two opinions about it.
 
 THE CALL LOG IS COMPARED IN EVERY CASE, and for this script that is the whole point rather than a refinement. `patch` is both the correct answer for a release with no labels AND the output of all nine fallback paths, so a port that never called the API at all would agree with the twin on the printed word in most cases. The predecessor of this script was green for weeks doing

@@ -143,7 +143,7 @@ FAKE
 # Extracted 2026-09-02 because a third copy appeared and check:ci-shape-
 # duplication caught it. Only the `run_check`-shaped harnesses fit: the runner
 # must return the gate's EXIT CODE and leave its output in $LAST_OUT. A harness
-# whose runner returns the output on stdout instead (test-bws-map.sh's
+# whose runner returns the output on stdout instead (test_gate_bws_map.py's
 # run_gate) has a different contract and keeps its own copy -- one copy is not
 # duplication, and forcing one return contract onto two is how a shared helper
 # becomes worse than the repetition it replaced.

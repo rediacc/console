@@ -9,7 +9,7 @@
 #
 # Part of the media pipeline extraction (W10). Moved out of run.sh byte for byte in
 # phase 1, comments included; phase 2 deleted run.sh's copy, so this is the only
-# definition of the name anywhere. .ci/scripts/test/gates/test-media-cuda.sh asserts that
+# definition of the name anywhere. .ci/rediacc_ci/tests/gates/test_gate_media_cuda.py asserts that
 # ownership and drives all four of this function's exits with python, nvcc and pip faked,
 # so nothing here needs a GPU to be covered.
 #

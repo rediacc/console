@@ -78,13 +78,13 @@ MANAGED_LABELS=(bug enhancement documentation ci bump-minor bump-none)
 # Created on demand immediately before its first use, the nightly-red pattern
 # (see the CREATE_ON_DEMAND allowlist in ../quality/check-label-inventory.sh).
 # The colour and description are asserted equal to .github/labels.yml by
-# test-review-labels.sh, since this file cannot read labels.yml: the post-review
+# test_gate_review_labels.py, since this file cannot read labels.yml: the post-review
 # steps run from a staged copy of .ci alone.
 # "<name>|<color>|<description>", one row per label. A TABLE rather than the
 # three scalars this used to be: bump-none arrived needing exactly the same
 # treatment as `ci`, and a second set of scalars would have been the copy that
 # drifts. Each row is asserted equal to .github/labels.yml by
-# test-review-labels.sh, since this file cannot read labels.yml itself: the
+# test_gate_review_labels.py, since this file cannot read labels.yml itself: the
 # post-review steps run from a staged copy of .ci alone.
 CREATE_ON_DEMAND_LABELS=(
     "ci|FEF2C0|Build system, CI workflows, or .ci tooling (applied by the automated review)"

@@ -8,7 +8,7 @@
 # way that goes wrong is not dramatic. Nobody writes `stat -c` believing it is portable.
 # They write it because they are on Linux, it works, and the file is 400 lines long by the
 # time anybody looks. The fix is not to be careful; it is to make the careless spelling
-# UNAVAILABLE, which is what .ci/scripts/test/gates/test-media-portable.sh does by
+# UNAVAILABLE, which is what .ci/rediacc_ci/tests/gates/test_gate_media_portable.py does by
 # refusing an un-seamed use anywhere in this folder.
 #
 # WHAT IS AND IS NOT CLAIMED HERE. This does NOT make the media pipeline run on macOS.
@@ -40,7 +40,7 @@
 #
 # NOT USED FOR REMOTE HASHES. bridge.sh runs `sha256sum` inside an ssh command; that runs
 # on the bridge VM, which is Linux by construction, and rewriting it to a local seam would
-# be a category error. test-media-portable.sh's scan excludes quoted remote commands for
+# be a category error. test_gate_media_portable.py's scan excludes quoted remote commands for
 # exactly this reason and says so.
 if command -v sha256sum >/dev/null 2>&1; then
     MEDIA_SHA256=(sha256sum)

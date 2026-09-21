@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-media-docs.sh`.
+"""Port of `.ci/scripts/test/gates/test-media-docs.sh`, retired in W7 P5.
 
 Tests that the media folder's own DOCUMENTATION stays true, and that its coverage probe stays honest.
 
@@ -52,8 +52,6 @@ import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-media-docs.sh"
 
 ROOT = paths.repo_root()
 COVERAGE = ROOT / ".ci" / "media" / "coverage.sh"
@@ -361,7 +359,7 @@ def test_the_commit_citation_scan_can_fail(gate, tmp_path):
         return result
 
     # `--initial-branch=main` on purpose: a fixture whose HEAD points at a branch the
-    # runner's init.defaultBranch does not create is the second shape of the empty-fixture trap test-fetch-depth-safety.sh exists for.
+    # runner's init.defaultBranch does not create is the second shape of the empty-fixture trap test_gate_fetch_depth_safety.py exists for.
     run_git("init", "-q", "--initial-branch=main")
     run_git("config", "user.email", "probe@example.com")
     run_git("config", "user.name", "probe")

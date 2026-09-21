@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-devcontainer-pin-freshness.sh`.
+"""Port of `.ci/scripts/test/gates/test-devcontainer-pin-freshness.sh`, retired in W7 P5.
 
 `scripts/gates/check-devcontainer-pin-freshness.ts`, driven entirely through its test seams so it runs offline and deterministically:
 
@@ -31,8 +31,6 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-devcontainer-pin-freshness.sh"
 
 VALIDATOR = paths.from_root("scripts", "gates", "check-devcontainer-pin-freshness.ts")
 REAL_DOCKERFILE = paths.from_root(".devcontainer", "Dockerfile")

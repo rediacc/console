@@ -2,7 +2,9 @@
 # Verification support for the media pipeline: the proof that a verb typed at run.sh or
 # media.sh still lands on the .ci/media function that used to be inside them, and the
 # sandbox the behaviour tests run those functions in. Sourced by
-# .ci/scripts/test/gates/test-media-*.sh and by nothing else.
+# .ci/scripts/test/gates/test-media-r2.sh and by nothing else: W7 P5 census batch A4
+# retired the other ten bash media gate tests, and their Python ports reach the same
+# seams through .ci/rediacc_ci/tests/gates/media_verify.py instead.
 #
 # WHAT THIS FILE USED TO PROVE, AND WHY THAT PROOF IS GONE.
 #
@@ -118,7 +120,8 @@ MEDIA_ENV_BIN="$(command -v env || true)"
 
 # THE MEDIA GATE TESTS' WHOLE PROLOGUE, AND WHY IT LIVES HERE.
 #
-# Every .ci/scripts/test/gates/test-media-*.sh opened with the same five lines: set the
+# Every .ci/scripts/test/gates/test-media-*.sh opened with the same five lines, back when
+# there were eleven of them rather than the one that outlived batch A4: set the
 # shell options, resolve SCRIPT_DIR, source test-helpers.sh, resolve ROOT four levels up,
 # source this file. check:ci-shape-duplication reported that block at SEVEN copies, which
 # is the correct reading of it: five identical lines whose only purpose is to find this
@@ -236,7 +239,7 @@ media_assert_absent_from_origins() {
 # stdout and stderr into LAST_OUT and the behaviour cases assert on that text, so a probe
 # that writes trace onto those streams is changing what the subject observes. Scoped here,
 # the trace goes to its own descriptor and LAST_OUT is byte-identical with the probe on and
-# off -- which .ci/scripts/test/gates/test-media-docs.sh asserts rather than assumes.
+# off -- which .ci/rediacc_ci/tests/gates/test_gate_media_docs.py asserts rather than assumes.
 #
 # THE PRELUDE IS TEXT, spliced into the code string, because the option has to be set INSIDE
 # the fresh shell: SHELLOPTS is readonly in a running bash, so it can only be inherited from

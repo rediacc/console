@@ -196,7 +196,8 @@ def test_a_dangling_value_flag_exits_on_both_sides() -> None:
 
     Why it mattered more than its reachability suggested: the production caller (`.github/actions/profiler/index.js:117-123`) spawns the sampler `detached: true` and `child.unref()`s it, so nothing would have reaped the spin before GitHub's 6-hour job ceiling, and `PROFILER_MAX_SECONDS` could not help because it is evaluated inside a loop the spin never reached.
 
-    Counted, not estimated: of the twin's 14 real invocation sites, TWELVE pass a value after the flag (`index.js:117`, `profiler-control.sh:121`, `test-profiler-report.sh:398,409,421,478,506`, `test_gate_profiler_report.py:548,568,592,656,703`) and TWO use `--probe` only (`profiler-probe.yml:54,72`), so ZERO were reachable -- it was one hand-typed invocation away and it failed
+    Counted, not estimated: of the twin's 14 real invocation sites, TWELVE pass a value after the flag (`index.js:117`, `profiler-control.sh:121`, `test-profiler-report.sh:398,409,421,478,506`, `test_gate_profiler_report.py:548,568,592,656,703`) and TWO use `--probe` only (`profiler-probe.yml:54,72`), so ZERO were reachable -- `test-profiler-report.sh` was retired in W7 P5
+    census batch A8 and the count is left as it was taken -- it was one hand-typed invocation away and it failed
     silently, which is why it was worth fixing.
 
     THE TIMEOUT STAYS on `run`. It is now the control: if either side regresses to the spin, this fails as a TimeoutExpired rather than hanging the suite.

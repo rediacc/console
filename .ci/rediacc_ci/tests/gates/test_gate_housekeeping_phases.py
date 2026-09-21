@@ -1,4 +1,4 @@
-"""Port of `.ci/scripts/test/gates/test-housekeeping-phases.sh`.
+"""Port of `.ci/scripts/test/gates/test-housekeeping-phases.sh`, retired in W7 P5.
 
 Both-ways test for `.ci/scripts/housekeeping/cleanup-versions.sh`, specifically for the parts of it that had never executed anywhere.
 
@@ -30,8 +30,6 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
-
-BASH_TWIN = ".ci/scripts/test/gates/test-housekeeping-phases.sh"
 
 UNDER_TEST = paths.from_root(".ci", "scripts", "housekeeping", "cleanup-versions.sh")
 
