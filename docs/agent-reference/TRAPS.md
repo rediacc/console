@@ -1291,7 +1291,7 @@ condition).
 
 ## `git fetch --depth` TRUNCATES a full clone, and the step that pays is not the step that did it
 Trap-Id: fetch-depth-truncates-full-clone
-Enforced-By: file:.ci/scripts/test/gates/test-fetch-depth-safety.sh, file:packages/www/scripts/lib/translation-freshness-git.js
+Enforced-By: gate:check:ci-pytest, file:packages/www/scripts/lib/translation-freshness-git.js
 Residue:
 
 `--depth` reads like a limit on what a fetch transfers. On a complete repository it is not: git writes a graft to `.git/shallow` and the whole history is truncated from that point. Measured against the real remote on 2026-09-03:
