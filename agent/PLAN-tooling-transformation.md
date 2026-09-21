@@ -1187,6 +1187,15 @@ exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:
       cannot move until `.ci/rediacc_ci/setup/phases.py`'s six bridged phases are ported
       for real.
 - [ ] **W7P5-c S** The deletion box, the only one that removes anything.
+      **OPERATOR RULING 2026-09-21 ON THE HOOK ORACLES AND THE TOOLCHAIN BASH.** The 47 `.claude/oracles/**` bash
+      files stay as a permanent language-policy exemption (`tree:.claude/oracles/`, abda9690f), chosen over goldens,
+      history extraction, mutation tests and Python reference rewrites after scoring (4.65 of 5 against 3.50, 3.10
+      and 2.75): their value is real bash execution, which caught bash 5.3 vs 5.2 diagnostic wording and
+      empty-pipeline output that Python cannot reproduce, and about 78 percent of the 5,844 cases only assert
+      silence. Equivalence to bash stays the spec, so the two tests that read the oracle sources stay. The
+      toolchain checks fold into one bash file, `chain-head.sh`, and every other `.claude` bash file is to be ported
+      where it can be: `bash_env.sh` cannot (BASH_ENV sources bash into the shell, and only the machine-local
+      `~/.claude/settings.json` wires it), inline shell in settings.json was rejected as a policy loophole.
       **THREE BLOCKERS ON `run-all.sh` SPECIFICALLY, each verified against the enforcing code
       on 2026-09-09, not inferred.** The wiring is done (W7P3-BAT) and the licence is granted
       at `27 == 27`; these are what still stops the file being removed.
