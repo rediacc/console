@@ -182,7 +182,7 @@ for cand in $TARGETS; do
         esac
         rargs=$(tr '\0' ' ' <"/proc/$rpid/cmdline" 2>/dev/null)
         printf '%s' "$rargs" | cut -d' ' -f1-4 | grep -qE -- "$pat" || continue
-        printf '%s' "$rargs" | grep -qE '\.claude/hooks/(pre-bash|pre-edit|pre-ask|post-bash)/' && continue
+        printf '%s' "$rargs" | grep -qE '\.claude/hooks/((pre-bash|pre-edit|pre-ask|post-bash)/|chain-head\.sh)' && continue
         running="$running$rpid $(printf '%s' "$rargs" | cut -c1-80)
 "
     done

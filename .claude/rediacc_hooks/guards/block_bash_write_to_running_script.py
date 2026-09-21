@@ -130,7 +130,7 @@ REDIR_TARGET = NOT_ARROW + r">>?[" + _S + r']*"?[^|&;<' + _S + r'"]+\.[A-Za-z0-9
 
 ANY_TAIL = r"[A-Za-z0-9_.$/-]+\.[A-Za-z0-9]+$"
 
-HOOK_CHAIN = r"\.claude/hooks/(pre-bash|pre-edit|pre-ask|post-bash)/"
+HOOK_CHAIN = r"\.claude/hooks/((pre-bash|pre-edit|pre-ask|post-bash)/|chain-head\.sh)"
 
 META = r"([.\[\\*^$()+?{}|])"
 
