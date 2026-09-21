@@ -14,7 +14,7 @@ import sys
 
 import pytest
 
-from rediacc_hooks import dispatch, guards
+from rediacc_hooks import dispatch, guards, lifecycle
 from rediacc_hooks.tests import guardcorpus
 
 ROOT = guardcorpus.repo_root()
@@ -72,6 +72,14 @@ def test_no_two_modules_share_a_twin():
 DISPATCH_RE = re.compile(r"rediacc_hooks/dispatch\.py\"?\s+--chain\s+([a-z-]+)")
 
 
+def block_commands(block):
+    """One block's commands as they really run, with any collapsed entry expanded."""
+    out = []
+    for hook in block.get("hooks", []) or []:
+        out.extend(m["command"] for m in lifecycle.expand(hook.get("command", "")))
+    return out
+
+
 def effective_order():
     """The position every guard REALLY runs at, keyed by module name.
 
@@ -84,14 +92,16 @@ def effective_order():
     Settings.json now names ONE command per chain. It still fixes the BASE -- how many commands run before the dispatcher, and therefore what position the chain's first guard occupies -- but the order WITHIN the dispatcher is `by_chain`, which sorts on ORDER itself. So the remaining independent facts are: the base, the length, and that the declared numbers form a contiguous run
     with no gap and no duplicate. Those are exactly what changes when someone adds, removes or reorders a COMMAND entry, which is the mistake the original check was built for and the one the brief calls out. What is no longer checkable from outside is two guards SWAPPING ORDER values, because after the collapse ORDER is the definition of the run order rather than a claim about
     another file. That is stated here rather than papered over.
+
+    AND SINCE THE 2026-09-21 COLLAPSE the commands are read through `lifecycle.expand`, because settings.json names one command per (event, matcher) PATTERN rather than per chain. The base is unchanged -- the same commands run in the same order -- but the file no longer spells them, so a reader that took it literally would find no dispatcher entry at all and every ORDER would
+    be reported as a guard that never runs.
     """
-    settings = json.loads((ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    settings = json.loads(lifecycle.settings_path().read_text(encoding="utf-8"))
     order = {}
     for event in ("PreToolUse", "PostToolUse"):
         for block in settings.get("hooks", {}).get(event, []) or []:
             position = 0
-            for hook in block.get("hooks", []) or []:
-                command = hook.get("command", "")
+            for command in block_commands(block):
                 found = DISPATCH_RE.search(command)
                 if not found:
                     position += 1
@@ -104,12 +114,12 @@ def effective_order():
 
 def dispatched_chains():
     """Every chain `.claude/settings.json` routes to the dispatcher."""
-    settings = json.loads((ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    settings = json.loads(lifecycle.settings_path().read_text(encoding="utf-8"))
     chains = []
     for event in ("PreToolUse", "PostToolUse"):
         for block in settings.get("hooks", {}).get(event, []) or []:
-            for hook in block.get("hooks", []) or []:
-                found = DISPATCH_RE.search(hook.get("command", ""))
+            for command in block_commands(block):
+                found = DISPATCH_RE.search(command)
                 if found:
                     chains.append(found.group(1))
     return chains

@@ -18,6 +18,9 @@ WHAT IT CHECKS, for every command in settings.json's hook blocks:
     order is invisible to every other check here (added 2026-09-06, see
     first_guard_verdicts)
 
+EVERY COMMAND MEANS THE FLATTENED ONE, since the 2026-09-21 collapse. settings.json names one command per (event, matcher) pattern and the commands that pattern used to name live in `.claude/rediacc_hooks/lifecycle.py`, so reading the file literally would resolve two scripts and stop checking the other twenty-eight. `expand_commands` walks through that table, which is also what
+keeps the ordering predicate below about the run order rather than about a wrapper's name.
+
 WHAT IT DOES NOT DO. It does not execute the hooks or judge their logic -- `.ci/scripts/test/gates/` owns behaviour. This asserts only that the wiring resolves, which is the part that fails silently.
 
 ---- gate ----
@@ -28,6 +31,7 @@ selftest: true
 """
 
 import argparse
+import importlib.util
 import json
 import pathlib
 import re
@@ -43,8 +47,22 @@ SETTINGS = ".claude/settings.json"
 PATH_RE = re.compile(r"(?:\$CLAUDE_PROJECT_DIR/)?(\.claude/[A-Za-z0-9_./-]+\.(?:sh|py|cjs|js|ts))")
 
 
-def commands(settings):
-    """Every command string under every hook block."""
+LIFECYCLE = ".claude/rediacc_hooks/lifecycle.py"
+
+
+def lifecycle(root):
+    """The pattern table, loaded by path because `.claude` is on no import path.
+
+    A hard failure rather than a fallback. Silently treating the file as absent would flatten nothing, resolve the two wrapper scripts and report every other hook as checked, which is the shape this whole gate exists to refuse.
+    """
+    spec = importlib.util.spec_from_file_location("hook_lifecycle", root / LIFECYCLE)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def raw_commands(settings):
+    """Every command string under every hook block, as the file spells it."""
     out = []
 
     def walk(node):
@@ -60,6 +78,37 @@ def commands(settings):
 
     walk(settings.get("hooks", {}))
     return out
+
+
+def expand_commands(cmds, table):
+    """The same commands with every collapsed entry replaced by the members it runs."""
+    if table is None:
+        return list(cmds)
+    out = []
+    for cmd in cmds:
+        out.extend(m["command"] for m in table.expand(cmd))
+    return out
+
+
+def commands(settings, table=None):
+    """Every command a hook block really runs, wrappers expanded."""
+    return expand_commands(raw_commands(settings), table)
+
+
+def routing_verdicts(settings, table):
+    """A collapsed entry naming a pattern the table does not know runs NOTHING.
+
+    `lifecycle.expand` leaves such a command alone, so `PATH_RE` finds the wrapper, the wrapper exists, and the gate would report it as resolving while the whole pattern it stands for is inert.
+    """
+    if table is None:
+        return []
+    wrappers = (table.HEAD_SCRIPT.rsplit("/", 1)[-1], table.RUNNER_SCRIPT.rsplit("/", 1)[-1])
+    return [
+        f"{cmd.strip()} runs a collapsed hook pattern, but names no key that "
+        f"{LIFECYCLE} declares, so every hook that pattern carries is inert."
+        for cmd in raw_commands(settings)
+        if any(w in cmd for w in wrappers) and table.routed_key(cmd) is None
+    ]
 
 
 def git_mode(root, rel):
@@ -107,25 +156,35 @@ def verdicts(root, refs):
 FIRST_GUARD = "require-jq.sh"
 
 
-def guarded_blocks(settings):
-    """(label, block) for every chain require-jq.sh must lead.
+def guarded_blocks(settings, table=None):
+    """(label, commands) for every chain require-jq.sh must lead.
 
     Every PreToolUse block -- Bash, the Edit family, AskUserQuestion -- plus the PostToolUse block matched on Bash. The other PostToolUse blocks are matcher- less and fire for every tool; they are not jq-parsing Bash chains, so they are deliberately out of scope.
+
+    The commands are FLATTENED. Since the collapse each of those blocks holds one entry naming `chain-head.sh`, and a predicate about that name would be a predicate about a wrapper rather than about the position the hook actually runs at.
     """
     hooks = settings.get("hooks", {}) or {}
-    out = []
+    blocks = []
     for i, block in enumerate(hooks.get("PreToolUse", []) or []):
         if isinstance(block, dict):
-            out.append((f"PreToolUse[{block.get('matcher') or i}]", block))
-    out.extend(
+            blocks.append((f"PreToolUse[{block.get('matcher') or i}]", block))
+    blocks.extend(
         ("PostToolUse[Bash]", block)
         for block in hooks.get("PostToolUse", []) or []
         if isinstance(block, dict) and block.get("matcher") == "Bash"
     )
+    out = []
+    for label, block in blocks:
+        cmds = [
+            h.get("command", "")
+            for h in (block.get("hooks", []) or [])
+            if isinstance(h, dict) and isinstance(h.get("command"), str)
+        ]
+        out.append((label, expand_commands(cmds, table)))
     return out
 
 
-def first_guard_verdicts(settings):
+def first_guard_verdicts(settings, table=None):
     """require-jq.sh must lead every jq-parsing chain. Pure, so controls drive it.
 
     WHY POSITION, AND WHY NOTHING ELSE HERE CAN SEE IT. Every other verdict in this file is about a command in isolation: does the file exist, is it a file, is it non-empty, is its git mode right. `commands()` flattens the whole hooks tree precisely because that is all those checks need. Order survives none of that flattening, and order is the entire contract of require-jq.sh: it
@@ -136,7 +195,7 @@ def first_guard_verdicts(settings):
     On PostToolUse it prevents nothing, the tool having already run. It converts a silent no-op into a visible one, which is the whole difference.
     """
     out = []
-    blocks = guarded_blocks(settings)
+    blocks = guarded_blocks(settings, table)
     if not blocks:
         vacuous = (
             "no PreToolUse block and no PostToolUse Bash block was found at all, so this "
@@ -144,12 +203,7 @@ def first_guard_verdicts(settings):
             "being led correctly."
         )
         return [vacuous]
-    for label, block in blocks:
-        cmds = [
-            h.get("command", "")
-            for h in (block.get("hooks", []) or [])
-            if isinstance(h, dict) and isinstance(h.get("command"), str)
-        ]
+    for label, cmds in blocks:
         if not cmds:
             out.append(f"{label} has no hook commands at all, so {FIRST_GUARD} cannot lead it.")
             continue
@@ -200,6 +254,21 @@ def controls(root):
         return f"a fixture with {FIRST_GUARD} FIRST in both chains was reported as misordered"
     if not first_guard_verdicts(_fixture([other, lead])):
         return f"a fixture with {FIRST_GUARD} SECOND in both chains was accepted"
+
+    # The flattening, driven in both directions off the real table. Without these the collapse would be certified by a gate that had quietly gone back to reading two wrapper scripts and calling it thirty.
+    table = lifecycle(root)
+    collapsed = [k for k, p in table.PATTERNS.items() if p["collapsed"]]
+    if not collapsed:
+        return f"{LIFECYCLE} declares no collapsed pattern, so the flattening checks nothing"
+    key = collapsed[0]
+    entry = table.entry_command(key)
+    if len(expand_commands([entry], table)) <= 1:
+        return f"the {key} entry expanded to itself, so the member commands are not being read"
+    ghost = entry.replace(" " + key, " __a_pattern_that_does_not_exist__")
+    if not routing_verdicts({"hooks": {"Stop": [{"hooks": [{"command": ghost}]}]}}, table):
+        return "planted an entry naming an unknown hook pattern and the detector stayed silent"
+    if routing_verdicts({"hooks": {"Stop": [{"hooks": [{"command": entry}]}]}}, table):
+        return f"a real collapsed entry ({key}) was reported as naming no pattern"
     return None
 
 
@@ -230,16 +299,20 @@ def unregistered_guards(root, refs):
 
 
 def main(argv=None):
-    argparse.ArgumentParser(description=__doc__).parse_args(argv)
+    ap = argparse.ArgumentParser(description=__doc__)
+    # A proposed settings file can be driven before anybody rewires a shared worktree with it, which is the only way to check a wiring change without a wrong second of it landing on every concurrent session.
+    ap.add_argument("--settings", default=None, help=f"path to a settings file ({SETTINGS})")
+    args = ap.parse_args(argv)
     root = pathlib.Path(__file__).resolve().parents[3]
-    settings_path = root / SETTINGS
+    settings_path = pathlib.Path(args.settings) if args.settings else root / SETTINGS
 
     if not settings_path.is_file():
         print(f"VACUOUS INPUT: {SETTINGS} is missing, so no hook can be checked", file=sys.stderr)
         return 1
 
     settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    cmds = commands(settings)
+    table = lifecycle(root)
+    cmds = commands(settings, table)
     refs = [m for c in cmds for m in PATH_RE.findall(c)]
 
     if len(cmds) < MIN_COMMANDS or not refs:
@@ -261,6 +334,14 @@ def main(argv=None):
         )
         return 1
 
+    inert = routing_verdicts(settings, table)
+    if inert:
+        print("A hook pattern is wired to a key nothing runs:", file=sys.stderr)
+        for line in inert:
+            print(f"  - {line}", file=sys.stderr)
+        print(f"  Add the key to PATTERNS in {LIFECYCLE}, or fix the command.", file=sys.stderr)
+        return 1
+
     problems = verdicts(root, refs)
     if problems:
         print("Hooks referenced by settings.json do not resolve:", file=sys.stderr)
@@ -268,7 +349,7 @@ def main(argv=None):
             print(f"  - {p}", file=sys.stderr)
         return 1
 
-    misordered = first_guard_verdicts(settings)
+    misordered = first_guard_verdicts(settings, table)
     if misordered:
         print(
             f"{FIRST_GUARD} does not lead every chain that depends on it:",
@@ -303,7 +384,7 @@ def main(argv=None):
 
     print(
         f"{len(set(refs))} hook script(s) across {len(cmds)} command(s) all resolve, "
-        f"{FIRST_GUARD} leads all {len(guarded_blocks(settings))} chain(s) that need it, and "
+        f"{FIRST_GUARD} leads all {len(guarded_blocks(settings, table))} chain(s) that need it, and "
         f"every guard on disk is registered (controls fired in both directions)"
     )
     return 0

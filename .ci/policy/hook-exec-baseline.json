@@ -11,11 +11,11 @@
     "tool": "Bash",
     "reading": "fullmatch",
     "processes": 2,
-    "why": "W5's stated target, recorded here so the gap is a number rather than a memory. Today's value is in measured.tools.Bash; the gate does NOT enforce the target, it enforces that today's value cannot drift without an edit here. D4 (lifecycle collapse 30 -> 11) is the box that moves it."
+    "why": "W5's stated target, recorded here so the gap is a number rather than a memory. Today's value is in measured.tools.Bash; the gate does NOT enforce the target, it enforces that today's value cannot drift without an edit here. D4 (lifecycle collapse 30 -> 11) moved it on 2026-09-21, from 12 to 3: one harness command per (event, matcher) pattern, with the commands each pattern used to register now listed in .claude/rediacc_hooks/lifecycle.py. The remaining 3 are the PreToolUse chain head and the two PostToolUse entries."
   },
   "probeTools": {
     "AskUserQuestion": "the third PreToolUse matcher. Its chain is the shortest, which makes it the row that notices a guard being added to every chain by habit.",
-    "Bash": "the tool W5's '2 processes per Bash tool call' target is stated about. This row IS the target, and it is 12 today.",
+    "Bash": "the tool W5's '2 processes per Bash tool call' target is stated about. This row IS the target, and it is 3 today, down from 12 at the D4 collapse.",
     "BashOutput": "not a matcher, a PROBE for the unanchored `Bash` matcher. It is the one tool in this table whose two readings disagree; see ambiguousMatchers.",
     "Edit": "inside the anchored Edit-family alternation.",
     "Glob": "a read-only tool no PreToolUse matcher names. Its row is the cost of the three wildcard PostToolUse entries and nothing else, so it is the floor every tool pays.",
@@ -29,153 +29,153 @@
   "ambiguousMatchers": {
     "BashOutput": {
       "counts": {
-        "search": 12,
-        "fullmatch": 3
+        "search": 3,
+        "fullmatch": 1
       },
-      "why": "BLOCKER: the `Bash` matcher in .claude/settings.json is written bare, not anchored, and nothing in this repository documents whether the harness matches a matcher with search or with fullmatch. Under search, `Bash` selects `BashOutput` and every Bash-chain guard runs on a BashOutput call; under fullmatch it does not. The two readings differ by 9 processes. This is pinned rather than resolved because resolving it means either reading the harness or anchoring the matcher to `^Bash$`, and anchoring it is a behaviour change to every Bash guard that belongs in its own box with its own evidence. It shrinks by anchoring the matcher, never by editing this list."
+      "why": "BLOCKER: the `Bash` matcher in .claude/settings.json is written bare, not anchored, and nothing in this repository documents whether the harness matches a matcher with search or with fullmatch. Under search, `Bash` selects `BashOutput` and every Bash-chain guard runs on a BashOutput call; under fullmatch it does not. The two readings differ by 2 processes, down from 9 before the D4 collapse; the ambiguity itself is unchanged, only its cost. This is pinned rather than resolved because resolving it means either reading the harness or anchoring the matcher to `^Bash$`, and anchoring it is a behaviour change to every Bash guard that belongs in its own box with its own evidence. It shrinks by anchoring the matcher, never by editing this list."
     }
   },
   "measured": {
-    "entryCount": 30,
+    "entryCount": 11,
     "patternCount": 11,
     "tools": {
       "AskUserQuestion": {
         "search": {
-          "PreToolUse": 3,
-          "PostToolUse": 3,
-          "total": 6
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
         },
         "fullmatch": {
-          "PreToolUse": 3,
-          "PostToolUse": 3,
-          "total": 6
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
         }
       },
       "Bash": {
         "search": {
-          "PreToolUse": 4,
-          "PostToolUse": 8,
-          "total": 12
+          "PreToolUse": 1,
+          "PostToolUse": 2,
+          "total": 3
         },
         "fullmatch": {
-          "PreToolUse": 4,
-          "PostToolUse": 8,
-          "total": 12
+          "PreToolUse": 1,
+          "PostToolUse": 2,
+          "total": 3
         }
       },
       "BashOutput": {
         "search": {
-          "PreToolUse": 4,
-          "PostToolUse": 8,
-          "total": 12
+          "PreToolUse": 1,
+          "PostToolUse": 2,
+          "total": 3
         },
         "fullmatch": {
           "PreToolUse": 0,
-          "PostToolUse": 3,
-          "total": 3
+          "PostToolUse": 1,
+          "total": 1
         }
       },
       "Edit": {
         "search": {
-          "PreToolUse": 4,
-          "PostToolUse": 3,
-          "total": 7
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
         },
         "fullmatch": {
-          "PreToolUse": 4,
-          "PostToolUse": 3,
-          "total": 7
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
         }
       },
       "Glob": {
         "search": {
           "PreToolUse": 0,
-          "PostToolUse": 3,
-          "total": 3
+          "PostToolUse": 1,
+          "total": 1
         },
         "fullmatch": {
           "PreToolUse": 0,
-          "PostToolUse": 3,
-          "total": 3
+          "PostToolUse": 1,
+          "total": 1
         }
       },
       "MultiEdit": {
         "search": {
-          "PreToolUse": 4,
-          "PostToolUse": 3,
-          "total": 7
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
         },
         "fullmatch": {
-          "PreToolUse": 4,
-          "PostToolUse": 3,
-          "total": 7
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
         }
       },
       "NotebookEdit": {
         "search": {
-          "PreToolUse": 4,
-          "PostToolUse": 3,
-          "total": 7
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
         },
         "fullmatch": {
-          "PreToolUse": 4,
-          "PostToolUse": 3,
-          "total": 7
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
         }
       },
       "Read": {
         "search": {
           "PreToolUse": 0,
-          "PostToolUse": 3,
-          "total": 3
+          "PostToolUse": 1,
+          "total": 1
         },
         "fullmatch": {
           "PreToolUse": 0,
-          "PostToolUse": 3,
-          "total": 3
+          "PostToolUse": 1,
+          "total": 1
         }
       },
       "Task": {
         "search": {
           "PreToolUse": 0,
-          "PostToolUse": 3,
-          "total": 3
+          "PostToolUse": 1,
+          "total": 1
         },
         "fullmatch": {
           "PreToolUse": 0,
-          "PostToolUse": 3,
-          "total": 3
+          "PostToolUse": 1,
+          "total": 1
         }
       },
       "TodoWrite": {
         "search": {
           "PreToolUse": 0,
-          "PostToolUse": 3,
-          "total": 3
+          "PostToolUse": 1,
+          "total": 1
         },
         "fullmatch": {
           "PreToolUse": 0,
-          "PostToolUse": 3,
-          "total": 3
+          "PostToolUse": 1,
+          "total": 1
         }
       },
       "Write": {
         "search": {
-          "PreToolUse": 4,
-          "PostToolUse": 3,
-          "total": 7
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
         },
         "fullmatch": {
-          "PreToolUse": 4,
-          "PostToolUse": 3,
-          "total": 7
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
         }
       }
     },
     "events": {
-      "PostCompact": 4,
+      "PostCompact": 1,
       "PreCompact": 1,
-      "SessionStart": 3,
+      "SessionStart": 1,
       "Stop": 1,
       "SubagentStop": 1,
       "TeammateIdle": 1

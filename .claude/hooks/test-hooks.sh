@@ -210,20 +210,41 @@ hook_files() {
         grep -vE '^test-' | sort -u
 }
 
-# hook_registrations <settings-file> -- the same relative paths, as named by
-# the hook command strings in settings.json
+# hook_registrations <settings-file> [<drop-name>] [<extra-name>] -- the same
+# relative paths, as named by the commands settings.json really runs.
+#
+# FLATTENED THROUGH lifecycle.py SINCE THE 2026-09-21 COLLAPSE. settings.json
+# names one command per (event, matcher) pattern, and the commands each pattern
+# used to name live in .claude/rediacc_hooks/lifecycle.py. Read literally, the
+# file names two wrapper scripts and every guard behind them is UNWIRED. The
+# union of the file and the table reads correctly whichever shape the file is
+# in, which is what lets this run before and after the entries are collapsed.
+#
+# <drop-name> and <extra-name> ARE THE CONTROLS' PLANTS, and they plant into
+# this stream rather than into a copy of settings.json. The old drop control
+# filtered a command out of the file, and the command it filtered is no longer
+# spelled in the file at all: the filter would have matched nothing and the
+# control would have reported the tree's own green as its own.
 hook_registrations() {
-    jq -r '.hooks // {} | to_entries[] | .value[]? | .hooks[]? | .command // empty' "$1" 2>/dev/null |
-        sed 's|.*/\.claude/hooks/||; s|".*||' |
-        grep -E '^(pre-bash|pre-edit|post-bash|pre-ask)/[A-Za-z0-9._-]+\.sh$|^[A-Za-z0-9._-]+\.sh$' | sort -u
+    local settings="$1" drop="${2:-}" extra="${3:-}"
+    {
+        jq -r '.hooks // {} | to_entries[] | .value[]? | .hooks[]? | .command // empty' \
+            "$settings" 2>/dev/null
+        python3 "$DIR/../rediacc_hooks/lifecycle.py" --flatten 2>/dev/null | jq -r '.[][].command'
+        python3 "$DIR/../rediacc_hooks/lifecycle.py" --hooks 2>/dev/null |
+            jq -r '.[][].hooks[].command'
+        [[ -n "$extra" ]] && printf '%s\n' "$extra"
+    } | sed 's|.*/\.claude/hooks/||; s|".*||; s| .*||' |
+        grep -E '^(pre-bash|pre-edit|post-bash|pre-ask)/[A-Za-z0-9._-]+\.sh$|^[A-Za-z0-9._-]+\.sh$' |
+        { [[ -n "$drop" ]] && grep -vxF -- "$drop" || cat; } | sort -u
 }
 
-# check_wiring <settings-file> <hooks-root> -- 0 when the two sets agree, 1
-# otherwise, naming every offender on stdout.
+# check_wiring <settings-file> <hooks-root> [<drop-name>] [<extra-name>] -- 0
+# when the two sets agree, 1 otherwise, naming every offender on stdout.
 check_wiring() {
-    local settings="$1" root="$2" rc=0 unwired dangling
-    unwired="$(comm -23 <(hook_files "$root") <(hook_registrations "$settings"))"
-    dangling="$(comm -13 <(hook_files "$root") <(hook_registrations "$settings"))"
+    local settings="$1" root="$2" drop="${3:-}" extra="${4:-}" rc=0 unwired dangling
+    unwired="$(comm -23 <(hook_files "$root") <(hook_registrations "$settings" "$drop" "$extra"))"
+    dangling="$(comm -13 <(hook_files "$root") <(hook_registrations "$settings" "$drop" "$extra"))"
     if [[ -n "$unwired" ]]; then
         rc=1
         while read -r f; do printf 'UNWIRED (on disk, not in settings): %s\n' "$f"; done <<<"$unwired"
@@ -235,11 +256,11 @@ check_wiring() {
     return "$rc"
 }
 
-# wiring_case <expected-exit> <settings> <hooks-root> <label> [<must-name>...]
+# wiring_case <expected-exit> <settings> <hooks-root> <drop> <extra> <label> [<must-name>...]
 wiring_case() {
-    local expected="$1" settings="$2" root="$3" label="$4" out rc miss="" needle
-    shift 4
-    out="$(check_wiring "$settings" "$root" 2>&1)"
+    local expected="$1" settings="$2" root="$3" drop="$4" extra="$5" label="$6" out rc miss="" needle
+    shift 6
+    out="$(check_wiring "$settings" "$root" "$drop" "$extra" 2>&1)"
     rc=$?
     for needle in "$@"; do
         grep -qF -- "$needle" <<<"$out" || miss="$miss $needle"
@@ -254,7 +275,8 @@ wiring_case() {
     fi
 }
 
-wiring_case 0 "$DIR/../settings.json" "$DIR" "wiring: every hook on disk is registered, every registration exists"
+wiring_case 0 "$DIR/../settings.json" "$DIR" "" "" \
+    "wiring: every hook on disk is registered, every registration exists"
 
 # CONTROL, so the green above is agreement and not a check that cannot fire:
 # one fixture drops a real registration, the other invents one. Each must fail
@@ -268,26 +290,27 @@ wiring_case 0 "$DIR/../settings.json" "$DIR" "wiring: every hook on disk is regi
 # control would have reported the tree's own green as its own. A control that
 # plants nothing proves nothing. block-pathspecless-git-commit.sh is the pre-bash
 # guard still registered as a file, so it is the one that can be dropped.
-WIRE_TMP="$(mktemp -d)"
-jq '(.hooks[]?[]?.hooks) |= map(select((.command // "") | contains("block-pathspecless-git-commit.sh") | not))' \
-    "$DIR/../settings.json" >"$WIRE_TMP/unwired.json"
-# THE PLANT MUST BE PROVEN TO HAVE LANDED. Comparing the fixture to the original
-# is one line and it is the difference between "the control fired" and "the jq
-# filter matched nothing and the fixture is the tree".
-if cmp -s "$WIRE_TMP/unwired.json" "$DIR/../settings.json"; then
-    FAIL=$((FAIL + 1))
-    printf 'FAIL [1] wiring CONTROL: the unwired fixture is IDENTICAL to settings.json, so nothing was planted\n'
-else
+#
+# AND THE PLANTS MOVED AGAIN at the 2026-09-21 collapse, into the registration
+# stream rather than into a copy of settings.json, for the same reason a second
+# time: that guard is now a member of the pre-bash pattern and the file does not
+# spell it either. A plant that lands wherever the wiring lives cannot stop
+# firing when the wiring moves.
+WIRE_DROP="pre-bash/block-pathspecless-git-commit.sh"
+if hook_registrations "$DIR/../settings.json" | grep -qxF -- "$WIRE_DROP"; then
     PASS=$((PASS + 1))
-    printf 'ok   [0] wiring CONTROL: the unwired fixture really differs from settings.json\n'
+    printf 'ok   [0] wiring CONTROL: the drop fixture'"'"'s subject is really registered\n'
+else
+    FAIL=$((FAIL + 1))
+    printf 'FAIL [1] wiring CONTROL: %s is not registered, so nothing would be planted\n' "$WIRE_DROP"
 fi
-wiring_case 1 "$WIRE_TMP/unwired.json" "$DIR" "wiring CONTROL: a dropped registration is caught as UNWIRED" \
-    "UNWIRED (on disk, not in settings): pre-bash/block-pathspecless-git-commit.sh"
-jq '(.hooks[]?[]?.hooks) |= . + [{"type":"command","command":"bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-nonexistent-ghost.sh\""}]' \
-    "$DIR/../settings.json" >"$WIRE_TMP/dangling.json"
-wiring_case 1 "$WIRE_TMP/dangling.json" "$DIR" "wiring CONTROL: a registration with no file is caught as DANGLING" \
+wiring_case 1 "$DIR/../settings.json" "$DIR" "$WIRE_DROP" "" \
+    "wiring CONTROL: a dropped registration is caught as UNWIRED" \
+    "UNWIRED (on disk, not in settings): $WIRE_DROP"
+wiring_case 1 "$DIR/../settings.json" "$DIR" "" \
+    'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-nonexistent-ghost.sh"' \
+    "wiring CONTROL: a registration with no file is caught as DANGLING" \
     "DANGLING (in settings, not on disk): pre-bash/block-nonexistent-ghost.sh"
-rm -rf "$WIRE_TMP"
 
 # --- should BLOCK (exit 2) ---
 # The PR body is generated, so a hand-written whole-body write silently drops

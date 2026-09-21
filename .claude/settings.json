@@ -7,19 +7,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-jq.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-python.sh\""
-          },
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/rediacc_hooks/dispatch.py\" --chain pre-bash"
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-pathspecless-git-commit.sh\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/chain-head.sh\" pre-bash",
+            "timeout": 240
           }
         ]
       },
@@ -28,19 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-jq.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-python.sh\""
-          },
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/why-on-edit.py\""
-          },
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/rediacc_hooks/dispatch.py\" --chain pre-edit"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/chain-head.sh\" pre-edit",
+            "timeout": 240
           }
         ]
       },
@@ -49,15 +27,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-jq.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-python.sh\""
-          },
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/rediacc_hooks/dispatch.py\" --chain pre-ask"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/chain-head.sh\" pre-ask",
+            "timeout": 180
           }
         ]
       }
@@ -68,23 +39,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-jq.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-python.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-bash/cancel-old-ci.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-bash/refresh-pr-body.sh\""
-          },
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/trapguard/dispatch.py\" --posttool"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/chain-head.sh\" post-bash",
+            "timeout": 300
           }
         ]
       },
@@ -92,24 +48,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/wl_wait.py\" --nudge"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/band-notice.py\"",
-            "timeout": 15
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/onboard.py\""
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/rediacc_hooks/lifecycle.py\" post-tool",
+            "timeout": 135
           }
         ]
       }
@@ -161,32 +101,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/worklist.py\" --post-compact"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/wl_report.py\" --post-compact"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/epoch-reset.py\"",
-            "timeout": 15
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/onboard.py\" --arm"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/rediacc_hooks/lifecycle.py\" post-compact",
+            "timeout": 195
           }
         ]
       }
@@ -196,23 +112,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/worklist.py\" --session-start"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/wl_report.py\" --session-start"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/context/onboard.py\" --arm"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/rediacc_hooks/lifecycle.py\" session-start",
+            "timeout": 180
           }
         ]
       }

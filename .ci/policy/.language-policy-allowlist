@@ -109,3 +109,6 @@ file:.ci/scripts/infra/ci-env.sh
 
 # BLOCKER: a bound fixture, not a standalone tool, doubly tied to bash -- .ci/rediacc_ci/quality/mutate_check.py:105-106 hardcodes SUITE_NAME as this exact basename and mutate-check.sh:162,167 invokes it as `bash "$SUITE"` explicitly; a Python rewrite would need edits to another gate's live contract plus the already-exempted mutate-check.sh, neither owned by this box
 file:.ci/scripts/test/fixtures/mutate-check/fixture-suite.sh
+
+# BLOCKER: the head of every guarded hook pattern, admitted by operator ruling 2026-09-21 (option A of PLAN-tooling-transformation.md box D4) so .claude/settings.json can carry one command per (event, matcher) pattern; it runs .claude/hooks/require-python.sh, whose own header at lines 5-12 argues that check may never be ported because a Python implementation cannot start in the one condition it exists to report, so a head that leads it cannot be Python either
+file:.claude/hooks/chain-head.sh
